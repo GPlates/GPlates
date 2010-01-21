@@ -73,15 +73,18 @@ GPlatesGui::NurbsRenderer::NurbsRenderer()
 		 "Not enough memory for OpenGL to create new NURBS renderer.");
 	}
 
-#if !defined(__APPLE__) || (MAC_OSX_MAJOR_VERSION >= 10 && MAC_OSX_MINOR_VERSION > 4)
+#if !defined(__APPLE__) || \
+	(MAC_OSX_MAJOR_VERSION >= 10 && MAC_OSX_MINOR_VERSION >= 5) || \
+	(CXX_MAJOR_VERSION >= 4 && CXX_MINOR_VERSION >= 2)
 	// All non apple platforms use this path.
-	// Also Mac OSX version 10.5 and greater use this code path.
+	// Also MacOS X using OS X version 10.5 and greater (or g++ 4.2 and greater)
+	// use this code path.
 	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR, &NurbsError);
 #else
 	// A few OS X platforms need this instead - could be OS X 10.4 or
 	// gcc 4.0.0 or PowerPC Macs ?
 	// Update: it seems after many installations on different Macs that
-	// Mac OSX versions 10.4 require this code path.
+	// Mac OSX versions 10.4 using the default compiler g++ 4.0 require this code path.
 	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR,
 		reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&NurbsError));
 #endif

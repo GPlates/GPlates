@@ -53,12 +53,35 @@ if(APPLE)
         endif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
     endif (NOT OSX_VERSION_RESULT)
 
+    # Detect g++ compiler version.
+    # Generate a fatal error if the version is not 4.2 or above.
+    # This is required by the CGAL dependency library because apparently there is a bug in g++ 4.0 on MacOS X
+    # that causes CGAL to fail (see http://www.cgal.org/FAQ.html#mac_optimization_bug).
+    execute_process(COMMAND "${CMAKE_CXX_COMPILER}" "-dumpversion"
+        OUTPUT_VARIABLE CXX_VERSION
+        RESULT_VARIABLE CXX_VERSION_RESULT)
+    if (NOT CXX_VERSION_RESULT)
+		message("g++ version=${CXX_VERSION}")
+        # Convert 4.2.1 to 4.2 for example.
+        string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" CXX_MAJOR_MINOR_VERSION ${CXX_VERSION})
+        string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" CXX_MAJOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
+        string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" CXX_MINOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
+        add_definitions(-DCXX_MAJOR_VERSION=${CXX_MAJOR_VERSION})
+        add_definitions(-DCXX_MINOR_VERSION=${CXX_MINOR_VERSION})
+        if (CXX_MAJOR_VERSION STRLESS "4")
+			message(FATAL_ERROR "g++ compiler version less than 4.0.")
+        elseif (CXX_MINOR_VERSION STRLESS "2")
+			message(FATAL_ERROR "Require g++ compiler version 4.2 or above for GPlates on MacOS X. "
+					"Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
+        endif (CXX_MAJOR_VERSION STRLESS "4")
+    endif (NOT CXX_VERSION_RESULT)
+
     # Automatically adds compiler definitions to all subdirectories too.
     add_definitions(-D__APPLE__)
 
     # Mac OSX uses CMAKE_COMPILER_IS_GNUCXX compiler (always?) which is set later below.
     # 'bind_at_load' causes undefined symbols to be referenced at load/launch.
-    set(CMAKE_EXE_LINKER_FLAGS "-bind_at_load")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -bind_at_load")
 endif(APPLE)
 
 
@@ -116,10 +139,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         set(warnings_flags_list )
     else(APPLE)
         # Use a list instead of a string so we can have multiple lines (instead of one giant line).
-#        set(warnings_flags_list
-#            -W -Wall -pedantic -ansi -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
-#            -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
-#            -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
         set(warnings_flags_list
             -W -Wall -ansi -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
             -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
@@ -134,23 +153,21 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     # Flags common to all build types.
     if (GPLATES_PUBLIC_RELEASE)
         # Disable all warnings when releasing source code to non-developers.
-        set(CMAKE_CXX_FLAGS "-w")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 		add_definitions(-DGPLATES_PUBLIC_RELEASE)
     else (GPLATES_PUBLIC_RELEASE)
-        set(CMAKE_CXX_FLAGS "${warnings_flags}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings_flags}")
     endif (GPLATES_PUBLIC_RELEASE)
-
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frounding-math")
 
     #set(CMAKE_EXE_LINKER_FLAGS )
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )
 
     # Build configuration-specific flags.
-	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb3 -DGPLATES_DEBUG")
-	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-O3 -ggdb3 -DGPLATES_DEBUG")
-	set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb3 -DGPLATES_DEBUG")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -ggdb3 -DGPLATES_DEBUG")
+	set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os")
 
     # Disable profiling when releasing to the public.
     if (NOT GPLATES_PUBLIC_RELEASE)
@@ -202,3 +219,9 @@ if (NOT GPLATES_PUBLIC_RELEASE)
       set(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} ProfileGplates CACHE STRING "" FORCE)
     endif(CMAKE_CONFIGURATION_TYPES)
 endif (NOT GPLATES_PUBLIC_RELEASE)
+
+# Let the user know what flags we are using.
+# NOTE: This is only here because CGAL also prints the compiler/linker flags but then we add our own flags
+# so this prints out the final version of the compiler/linker flags.
+message( STATUS "USING CXXFLAGS = '${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CGAL_BUILD_TYPE_UPPER}}'" )
+message( STATUS "USING EXEFLAGS = '${CMAKE_EXE_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS_${CGAL_BUILD_TYPE_UPPER}}'" )

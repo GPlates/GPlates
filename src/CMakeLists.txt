@@ -10,10 +10,10 @@ endforeach(lib)
 # - we only need the program_options boost library for the command-line version of GPLates (gplates-cli), and
 # - since boost is mostly just headers we can still compile the GUI version of GPlates
 #   (which currently only uses boost headers).
-find_package("Boost" 1.33.1 COMPONENTS program_options thread)
+find_package("Boost" 1.33.1 COMPONENTS program_options)
 # However we do need to find the boost include directory to locate the headers.
 if (NOT Boost_INCLUDE_DIR)
-	message(FATAL_ERROR, "Boost include path not found.")
+	message(FATAL_ERROR "Boost include path not found.")
 endif (NOT Boost_INCLUDE_DIR)
 # If the boost program_options library is not found then we will only disable the 'gplates-cli' target.
 if (Boost_PROGRAM_OPTIONS_FOUND)
@@ -21,10 +21,6 @@ if (Boost_PROGRAM_OPTIONS_FOUND)
 else (Boost_PROGRAM_OPTIONS_FOUND)
 	message("Warning: boost program_options library not found so GPlates command-line executable gplates-cli will not be available (the GUI version 'gplates' will be available though).")
 endif (Boost_PROGRAM_OPTIONS_FOUND)
-# We currently require the boost thread library since it's used by CGAL.
-if (NOT Boost_THREAD_FOUND)
-	message(FATAL_ERROR, "Boost 'thread' library not found (required by CGAL).")
-endif (NOT Boost_THREAD_FOUND)
 
 # Tell Qt that we use QtXML.
 # NOTE: subdirectory 'CMakeList.txt' files will also see our QT_USE_* variables.
@@ -39,13 +35,16 @@ SET(ICU_USE_I18N 1)
 SET(ICU_USE_IO 1)
 include (${ICU_USE_FILE})
 
-# The WIN32 inclusion is a temporary hack - will be removed soon.
-if(WIN32)
 # Include CGAL.
-if (CGAL_FOUND)
-	include(${CGAL_USE_FILE})
-endif (CGAL_FOUND)
-endif(WIN32)
+include(${CGAL_USE_FILE})
+
+# Include compiler options for the C++ programming language.
+# NOTE: We do this after all dependency packages have been found because we are going to modify the
+# compiler/linker flags without overriding them (by appending to them).
+# Previously this was included before the packages but now that we use CGAL (which sets the compiler flags
+# to be the same as when the CGAL library was built) it's easiest if we just append our own flags after
+# CGAL has overridden the flags.
+include (CompileOptionsCPlusPlus)
 
 # Some useful utilities.
 include (Util)
@@ -137,10 +136,6 @@ set(external_INCLUDE_DIRS
 	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
 	${Boost_INCLUDE_DIR}
 	${PROJ4_INCLUDE_DIR})
-# The WIN32 exclusion is a temporary hack - will be removed soon.
-if(NOT WIN32)
-set(external_INCLUDE_DIRS ${external_INCLUDE_DIRS} ${CGAL_INCLUDE_DIR})
-endif(NOT WIN32)
 	
 # Internal include directories:
 set(internal_INCLUDE_DIRS
@@ -243,6 +238,12 @@ if (APPLE)
 		PROPERTIES MACOSX_BUNDLE_COPYRIGHT "${GPLATES_COPYRIGHT_STRING}")
 endif (APPLE)
 
+# NOTE: Even though Qt and ICU includes are taken care of by including QT_USE_FILE and ICU_USE_FILE
+# their libraries still have to be explicitly listed at each 'target_link_libraries()' call.
+# CGAL also uses a CGAL_USE_FILE but it differs from QT and ICU in that it uses the deprecated
+# 'link_libraries()' to link it's library to all targets (it's not physically deprecated, just
+# advised not to use). See http://www.cmake.org/pipermail/cmake/2009-April/028439.html
+#	for a description of the difference between 'link_libraries' and 'target_link_libraries'.
 set(dependency_LIBS
 	${GDAL_LIBRARY}
 	${ICU_LIBRARIES}
@@ -250,10 +251,6 @@ set(dependency_LIBS
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
 	)
-# The WIN32 exclusion is a temporary hack - will be removed soon.
-if(NOT WIN32)
-set(dependency_LIBS ${dependency_LIBS} ${CGAL_LIBRARY})
-endif(NOT WIN32)
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
 if (NOT WIN32)
