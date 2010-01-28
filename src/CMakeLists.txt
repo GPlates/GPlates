@@ -196,15 +196,25 @@ endif (APPLE)
 #
 # Add executable target(s).
 #
+# NOTE: On MacOS X some libraries referenced by these executable targets do not have
+# their full path specified in the executables themselves. When this happens
+# the error "dyld: Library not loaded:" error is generated when trying to
+# run the executable. An example is CGAL installed via Macports.
+# GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET() creates a post-build command
+# that looks at a built executable target and does these fixups.
+#
 add_executable(gplates
 	${target_GPlates_SRCS}
 	${GPlates_ICON})
+GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates TRUE)
 
 # The "EXCLUDE_FROM_ALL" flag means you have to type 'make gplates-no-gui' to build this target -
 # it is not built by default.
 add_executable(gplates-no-gui EXCLUDE_FROM_ALL ${target_GPlates_no_gui_SRCS})
+GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-no-gui FALSE)
 if (ADD_GPLATES_CLI_TARGET)
 	add_executable(gplates-cli EXCLUDE_FROM_ALL ${target_GPlates_cli_SRCS})
+	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-cli FALSE)
 endif (ADD_GPLATES_CLI_TARGET)
 
 # Referenced in "Package.cmake" so it knows which executable to package up.

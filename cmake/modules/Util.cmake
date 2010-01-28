@@ -147,3 +147,50 @@ MACRO (GPLATES_POST_ADD_TARGET _target_name _target_srcs)
 		
 	endif (GPLATES_USE_PCH)
 ENDMACRO (GPLATES_POST_ADD_TARGET _target_name )
+
+# NOTE: On MacOS X some libraries referenced by executable targets do not have
+# their full path specified in the executables themselves. When this happens
+# the error "dyld: Library not loaded:" error is generated when trying to
+# run the executable. An example is CGAL installed via Macports.
+# GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET() creates a post-build command
+# that looks at a built executable target and does these fixups.
+#
+MACRO (GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET _target_name _is_target_bundle)
+
+	if (APPLE)
+		# If the target is a bundle then it has a different path.
+		set(is_target_bundle ${_is_target_bundle})
+		if(is_target_bundle)
+			set(_target_path ${CMAKE_BINARY_DIR}/bin/gplates.app/Contents/MacOS/${_target_name})
+		else(is_target_bundle)
+			set(_target_path ${CMAKE_BINARY_DIR}/bin/${_target_name})
+		endif(is_target_bundle)
+
+		set(_eol_char "E")
+		set(_cgal_regex "^\\t(libCGAL.*dylib) .*${_eol_char}$")
+
+		# Write a cmake script to a file so we can execute it later when the target is built.
+		set(_util_fix_macos_library_path_cmake_script "${CMAKE_BINARY_DIR}/cmake/modules/Util_FixMacosLibraryPaths_${_target_name}.cmake")
+		file(WRITE ${_util_fix_macos_library_path_cmake_script}
+			"execute_process(\n"
+			"  COMMAND otool -L ${_target_path} OUTPUT_VARIABLE _otool_output)\n"
+			"string(REGEX REPLACE \"\\n\" \"${_eol_char};\" _lines \"\${_otool_output}\")\n"
+			"foreach(_line \${_lines})\n"
+			"  # Fixup the reference to the CGAL library...\n"
+			"  if (_line MATCHES \"${_cgal_regex}\")\n"
+			"    string(REGEX REPLACE \"${_cgal_regex}\" \"\\\\1\" _cgal_lib_no_path \"\${_line}\")\n"
+			"    execute_process(\n"
+			"      COMMAND install_name_tool -change \${_cgal_lib_no_path} ${CGAL_LIBRARIES_DIR}/\${_cgal_lib_no_path} ${_target_path})\n"
+			"  endif (_line MATCHES \"${_cgal_regex}\")\n"
+			"endforeach(_line)\n"
+		)
+
+		# The custom command will run just after the executable target is built
+		# and the custom command will execute the cmake script that we wrote to the file above.
+		add_custom_command(TARGET ${_target_name} POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -P "${_util_fix_macos_library_path_cmake_script}"
+		)
+
+	endif (APPLE)
+
+ENDMACRO (GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET _target_name)
