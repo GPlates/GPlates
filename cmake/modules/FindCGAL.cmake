@@ -21,9 +21,9 @@ if ( NOT CGAL_DIR )
   # Get the system search path as a list.
   if(UNIX)
     string(REGEX MATCHALL "[^:]+" CGAL_DIR_SEARCH1 "$ENV{PATH}")
-  else()
+  else(UNIX)
     string(REGEX REPLACE "\\\\" "/" CGAL_DIR_SEARCH1 "$ENV{PATH}")
-  endif()
+  endif(UNIX)
   
   string(REGEX REPLACE "/;" ";" CGAL_DIR_SEARCH2 "${CGAL_DIR_SEARCH1}")
 
@@ -34,7 +34,7 @@ if ( NOT CGAL_DIR )
   
     set(CGAL_DIR_SEARCH ${CGAL_DIR_SEARCH} ${dir}/../lib/CGAL )
       
-  endforeach()
+  endforeach(dir)
 
 
   #
@@ -70,23 +70,50 @@ if ( NOT CGAL_DIR )
     DOC "The ${CGAL_DIR_DESCRIPTION}"
   )
   
-endif()
+endif ( NOT CGAL_DIR )
 
 if ( CGAL_DIR )
   
   if ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
     include( "${CGAL_DIR}/CGALConfig.cmake" )
     set( CGAL_FOUND TRUE )
-  endif()
+  endif ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
 
-endif()
+else ( CGAL_DIR )
+
+  # Versions of CGAL before 3.4 don't use cmake so we need to search for the
+  # include/lib directories ourself and we also need to add the appropriate
+  # compiler options (CGAL requires us to use the same options as were used
+  # to build the CGAL library).
+  # This is currently necessary only for Linux systems (eg, Ubuntu 8.04 has
+  # CGAL 3.3.1 as a package) - using the package manager avoids requiring
+  # the user to download and install CGAL from source code.
+  if (NOT WIN32 AND NOT APPLE AND CMAKE_COMPILER_IS_GNUCXX)
+    # Search for the CGAL include directory and library.
+    # We are only interested in libcgal-dev packages on linux which should be
+    # installed in standard locations and the library should be called "libCGAL.so".
+    find_path(CGAL_INCLUDE_DIR CGAL/version.h DOC "Include directory for the CGAL library")
+    find_library(CGAL_LIBRARY NAMES CGAL DOC "CGAL library")
+
+    if (CGAL_INCLUDE_DIR AND CGAL_LIBRARY)
+      set(CGAL_FOUND TRUE)
+      set(CGAL_USE_FILE "${CMAKE_MODULE_PATH}/UseCGAL_3_3.cmake")
+    endif (CGAL_INCLUDE_DIR AND CGAL_LIBRARY)
+
+    if (NOT CGAL_FOUND)
+      # This is a linux only error message.
+      set(CGAL_DIR_MESSAGE "CGAL not found.  Either install the 'libcgal-dev' package (if using CGAL 3.3 or below) or set the CGAL_DIR cmake variable or environment variable (if using CGAL 3.4 or above) to the ${CGAL_DIR_DESCRIPTION}")
+    endif (NOT CGAL_FOUND)
+  endif (NOT WIN32 AND NOT APPLE AND CMAKE_COMPILER_IS_GNUCXX)
+
+endif ( CGAL_DIR )
 
 if( NOT CGAL_FOUND)
   if(CGAL_FIND_REQUIRED)
     MESSAGE(FATAL_ERROR ${CGAL_DIR_MESSAGE})
-  else()
+  else(CGAL_FIND_REQUIRED)
     if(NOT CGAL_FIND_QUIETLY)
       MESSAGE(STATUS ${CGAL_DIR_MESSAGE})
-    endif()
-  endif()
-endif()
+    endif(NOT CGAL_FIND_QUIETLY)
+  endif(CGAL_FIND_REQUIRED)
+endif( NOT CGAL_FOUND)
