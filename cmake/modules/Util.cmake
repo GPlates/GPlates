@@ -167,21 +167,46 @@ MACRO (GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET _target_name _is_tar
 		endif(is_target_bundle)
 
 		set(_eol_char "E")
-		set(_cgal_regex "^\\t(libCGAL.*dylib) .*${_eol_char}$")
+		# First character of the line is a tab then look for
+		# a library path that does not start with '/' (ie, not an absolute path).
+		set(_lib_no_path_regex "^\\t([^/ ]+) .*${_eol_char}$")
 
 		# Write a cmake script to a file so we can execute it later when the target is built.
 		set(_util_fix_macos_library_path_cmake_script "${CMAKE_BINARY_DIR}/cmake/modules/Util_FixMacosLibraryPaths_${_target_name}.cmake")
 		file(WRITE ${_util_fix_macos_library_path_cmake_script}
+			"# Pass some cmake variables used by 'find_library()'...\n"
+			"set(CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_FIND_LIBRARY_PREFIXES})\n"
+			"set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})\n"
+			"set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH})\n"
+			"set(CMAKE_FRAMEWORK_PATH ${CMAKE_FRAMEWORK_PATH})\n"
+			"set(CMAKE_SYSTEM_LIBRARY_PATH ${CMAKE_SYSTEM_LIBRARY_PATH})\n"
+			"set(CMAKE_SYSTEM_FRAMEWORK_PATH ${CMAKE_SYSTEM_FRAMEWORK_PATH})\n"
+			"set(CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK})\n"
+			"# Get a list of libraries referenced by the target executable...\n"
 			"execute_process(\n"
 			"  COMMAND otool -L ${_target_path} OUTPUT_VARIABLE _otool_output)\n"
+			"# In the output replace newlines with 'E;'.\n"
+			"# The ';' makes it a cmake list that we can iterate over.\n"
 			"string(REGEX REPLACE \"\\n\" \"${_eol_char};\" _lines \"\${_otool_output}\")\n"
 			"foreach(_line \${_lines})\n"
-			"  # Fixup the reference to the CGAL library...\n"
-			"  if (_line MATCHES \"${_cgal_regex}\")\n"
-			"    string(REGEX REPLACE \"${_cgal_regex}\" \"\\\\1\" _cgal_lib_no_path \"\${_line}\")\n"
-			"    execute_process(\n"
-			"      COMMAND install_name_tool -change \${_cgal_lib_no_path} ${CGAL_LIBRARIES_DIR}/\${_cgal_lib_no_path} ${_target_path})\n"
-			"  endif (_line MATCHES \"${_cgal_regex}\")\n"
+			"  # If the library path is not absolute then make it absolute...\n"
+			"  if (_line MATCHES \"${_lib_no_path_regex}\")\n"
+			"   # Extract the library name from the line...\n"
+			"    string(REGEX REPLACE \"${_lib_no_path_regex}\" \"\\\\1\" _lib_no_path \"\${_line}\")\n"
+			"    # Find the library path...\n"
+			"    find_library(_lib_full_path \${_lib_no_path})\n"
+			"    if (_lib_full_path)\n"
+			"      # If the library is a framework then we need to append the library name to the path...\n"
+			"      if (_lib_full_path MATCHES \"\\\\.framework\")\n"
+			"        set(_lib_full_path \"\${_lib_full_path}/\${_lib_no_path}\")\n"
+			"      endif (_lib_full_path MATCHES \"\\\\.framework\")\n"
+			"      # Replace the library name with full path inside the target executable...\n"
+			"      execute_process(\n"
+			"        COMMAND install_name_tool -change \${_lib_no_path} \${_lib_full_path} ${_target_path})\n"
+			"    else (_lib_full_path)\n"
+			"      message(\"Unable to find location of library '\${_lib_no_path}' - executable may not run.\")\n"
+			"    endif (_lib_full_path)\n"
+			"  endif (_line MATCHES \"${_lib_no_path_regex}\")\n"
 			"endforeach(_line)\n"
 		)
 
