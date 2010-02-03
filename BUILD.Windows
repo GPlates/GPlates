@@ -72,7 +72,8 @@ Creating Visual Studio solution and project files with CMake
           right-click->properties->compatibility(tab)->check "run this program as an administrator".
   4.  Set the 'source' directory to the root GPlates source directory (the one that has
       'src' as a sub-directory).
-  5.  Set the 'build' directory to be the same as the 'source' directory.
+  5.  Set the 'build' directory to be the same as the 'source' directory for in-place builds or
+      to a different directory for out-of-place builds (recommended for developers).
   6.  Click 'configure'.
   6.  Specify 'Visual Studio 2005'.
   7.  Once configuration finished you should get no popup messages.

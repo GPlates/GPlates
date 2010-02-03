@@ -74,7 +74,10 @@ Boost
 
   1. Get and install boost_1_34_1_setup.exe from:
      http://www.boostpro.com/download
-      * In addition to the default packages, also install "Program Options".
+	 * Under 'Select Default Variants' select your compiler (eg, 'Visual C++ 8.0'),
+	   and select all 'Variants'.
+     * In addition to the default packages, also install "Program Options",
+	    "Test (unit test framework)" and "Thread".
 
 ICU
 
@@ -101,7 +104,7 @@ CGAL
 
   1. Get and install the CGAL 3.5 source code from http://www.cgal.org/:
      * Download and run 'CGAL-3.5-Setup.exe'.
-	 * Under 'Select Default Variants' leave everything unticked.
+	 * Under 'Select Default Variants' leave everything unticked (except for 'Platforms').
 	 * Under 'Choose Components' untick everything ('Main CGAL' cannot be unticked).
 	 * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.5'.
 	 * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
