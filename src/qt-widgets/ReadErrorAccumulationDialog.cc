@@ -133,6 +133,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::MoreThanOneDistinctPoint,
 				QT_TR_NOOP("More than one point"),
 				QT_TR_NOOP("A single distinct point was expected, but more were encountered.") },
+		{ GPlatesFileIO::ReadErrors::NoValidGeometriesInPlatesFeature,
+				QT_TR_NOOP("No valid geometries found in feature"),
+				QT_TR_NOOP("This might be caused by all geometry points having pen-down ('3') codes.") },
 		
 		// Error descriptions for PLATES rotation-format files:
 		{ GPlatesFileIO::ReadErrors::CommentMovingPlateIdAfterNonCommentSequence,

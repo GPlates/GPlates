@@ -800,7 +800,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		// Invalid if more than one geometry.
 		// Invalid if a sole geometry contains more than one distinct point.
 		if (geometry_seq.size() > 1 ||
-			GPlatesMaths::count_distinct_adjacent_points(geometry_seq.front()) > 1)
+			GPlatesMaths::count_distinct_adjacent_points(geometry_seq.front()) != 1)
 		{
 			// FIXME: This will be counted as an error, be caught down in read_file, 
 			// and nuke the feature. This is a little harsh, but it's the best we can do for now.
@@ -1827,6 +1827,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			const geometry_seq_type &geometry_seq,
 			GPlatesFileIO::ReadErrorAccumulation &errors)
 	{
+		if (geometry_seq.empty())
+		{
+			// We don't have any geometries - this can happen if all points in
+			// a feature have "PEN_SKIP_TO" codes (all points get skipped).
+			throw GPlatesFileIO::ReadErrors::NoValidGeometriesInPlatesFeature;
+		}
+
 		try {
 			creation_function(model, collection, old_plates_header, geometry_seq);
 		} catch (GPlatesGlobal::Exception &e) {

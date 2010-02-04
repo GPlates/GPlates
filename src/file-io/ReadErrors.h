@@ -77,6 +77,7 @@ namespace GPlatesFileIO
 			AdjacentSkipToPlotterCodes,
 			AmbiguousPlatesIceShelfCode,
 			MoreThanOneDistinctPoint,
+			NoValidGeometriesInPlatesFeature,
 
 			// The following are specific to GPlates 8 hydrid PLATES line-format
 			MissingPlatepolygonBoundaryFeature,
