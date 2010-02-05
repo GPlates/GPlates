@@ -143,7 +143,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
             -W -Wall -ansi -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
             -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
             -Woverloaded-virtual -Wno-long-long -Wold-style-cast
-            -isystem /usr/include/qt4)
+            -isystem /usr/include/qt4 -fno-strict-aliasing)
     endif(APPLE)
     # Convert the semi-colon separated list 'warnings_flags_list' to the string 'warnings_flags' 
     # (otherwise semi-colons will appear on the compiler command-line).
