@@ -79,6 +79,27 @@ namespace{
 	}
 
 
+/*
+ * We use this macro to compare the return value of 'fread' (the number of objects read) with the
+ * number of objects expected, and return (after closing the file to avoid a resource leak) if the
+ * two numbers don't match.
+ *
+ * We weren't initially making this comparison, but now G++ 4.4.1 complains if we don't:
+ *   RasterReader.cc: In function ‘void<unnamed>::load_tga_file(const QString&,
+ *     GPlatesPropertyValues::InMemoryRaster&, GPlatesFileIO::ReadErrorAccumulation&)’:
+ *   RasterReader.cc:103: error: ignoring return value of ‘size_t fread(void*, size_t, size_t,
+ *     FILE*)’, declared with attribute warn_unused_result
+ *
+ * The behaviour of returning without complaining was chosen because this is how the existing code
+ * in this function was handling error conditions.
+ */
+#define FREAD_OR_RETURN(obj_ptr, obj_size, num_objs, stream) \
+		if (fread((obj_ptr), (obj_size), (num_objs), (stream)) != (num_objs)) { \
+			fclose(stream); \
+			return; \
+		}
+
+
 	void
 	load_tga_file(
 			const QString &filename,
@@ -91,20 +112,17 @@ namespace{
 		unsigned short width, height;
 		unsigned char bpp;
 
-		int size;
-
 		FILE *tga_file;
-
 		if ( ! (tga_file = fopen(filename.toStdString().c_str(), "rb"))) {
 			return;
 		}
 
 		// skip over some header data
-		fread(&temp_char, sizeof (unsigned char), 1, tga_file);
-		fread(&temp_char, sizeof (unsigned char), 1, tga_file);
+		FREAD_OR_RETURN(&temp_char, sizeof (unsigned char), 1, tga_file)
+		FREAD_OR_RETURN(&temp_char, sizeof (unsigned char), 1, tga_file)
 
 		// get the type, and make sure it's RGB
-		fread(&type, sizeof (unsigned char), 1, tga_file);
+		FREAD_OR_RETURN(&type, sizeof (unsigned char), 1, tga_file)
 
 		if (type != 2) {
 			fclose(tga_file);
@@ -112,39 +130,35 @@ namespace{
 		}
 
 		// skip over some more header data
-		fread(&temp_short, sizeof(unsigned short), 1, tga_file);
-		fread(&temp_short, sizeof(unsigned short), 1, tga_file);
-		fread(&temp_char, sizeof(unsigned char), 1, tga_file);
-		fread(&temp_short, sizeof(unsigned short), 1, tga_file);
-		fread(&temp_short, sizeof(unsigned short), 1, tga_file);
+		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&temp_char, sizeof(unsigned char), 1, tga_file)
+		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
 
 		// read the width, height, and bits-per-pixel.
-		fread(&width, sizeof(unsigned short), 1, tga_file);
-		fread(&height, sizeof(unsigned short), 1, tga_file);
-		fread(&bpp, sizeof(unsigned char), 1, tga_file);
+		FREAD_OR_RETURN(&width, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&height, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&bpp, sizeof(unsigned char), 1, tga_file)
 
-		fread(&temp_char, sizeof(unsigned char), 1, tga_file);
+		FREAD_OR_RETURN(&temp_char, sizeof(unsigned char), 1, tga_file)
 
 		if (bpp != 24) {
 			fclose(tga_file);
 			return;
 		}
 
-		size = width * height; 
+		size_t size = width * height; 
 
 		std::vector<GLubyte> image_data_vector(size*3);
 
-		int num_read = fread(&image_data_vector[0], sizeof(unsigned char), size*3, tga_file);
+		FREAD_OR_RETURN(&image_data_vector[0], sizeof(unsigned char), size*3, tga_file)
 
 		fclose (tga_file);
 
-		if (num_read != size*3) {
-			return;
-		}
-
 		// change BGR to RGB
 		GLubyte temp;
-		for (int i = 0; i < size * 3; i += 3) {
+		for (size_t i = 0; i < size * 3; i += 3) {
 			temp = image_data_vector[i];
 			image_data_vector[i] = image_data_vector[i + 2];
 			image_data_vector[i + 2] = temp;
