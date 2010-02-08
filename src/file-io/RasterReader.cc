@@ -81,11 +81,10 @@ namespace{
 
 	void
 	load_tga_file(
-		const QString &filename,
-		GPlatesPropertyValues::InMemoryRaster &raster,
-		GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			const QString &filename,
+			GPlatesPropertyValues::InMemoryRaster &raster,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-
 		unsigned char temp_char;
 		unsigned char type;
 		unsigned short temp_short;
@@ -96,33 +95,36 @@ namespace{
 
 		FILE *tga_file;
 
-		if (!(tga_file = fopen (filename.toStdString().c_str(), "rb")))
+		if ( ! (tga_file = fopen (filename.toStdString().c_str(), "rb"))) {
 			return;
+		}
 
 		// skip over some header data
-		fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-		fread (&temp_char, sizeof (unsigned char), 1, tga_file);
+		fread(&temp_char, sizeof (unsigned char), 1, tga_file);
+		fread(&temp_char, sizeof (unsigned char), 1, tga_file);
 
 		// get the type, and make sure it's RGB
-		fread (&type, sizeof (unsigned char), 1, tga_file);
+		fread(&type, sizeof (unsigned char), 1, tga_file);
 
-		if (type != 2) return;
+		if (type != 2) {
+			return;
+		}
 
 		// skip over some more header data
-		fread (&temp_short,sizeof(unsigned short),1,tga_file);
-		fread (&temp_short,sizeof(unsigned short),1,tga_file);
-		fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-		fread (&temp_short,sizeof(unsigned short),1,tga_file);
-		fread (&temp_short,sizeof(unsigned short),1,tga_file);
+		fread(&temp_short, sizeof(unsigned short), 1, tga_file);
+		fread(&temp_short, sizeof(unsigned short), 1, tga_file);
+		fread(&temp_char, sizeof(unsigned char), 1, tga_file);
+		fread(&temp_short, sizeof(unsigned short), 1, tga_file);
+		fread(&temp_short, sizeof(unsigned short), 1, tga_file);
 
 		// read the width, height, and bits-per-pixel.
-		fread(&width,sizeof(unsigned short),1,tga_file);
-		fread(&height,sizeof(unsigned short),1,tga_file);
-		fread(&bpp,sizeof(unsigned char),1,tga_file);
+		fread(&width, sizeof(unsigned short), 1, tga_file);
+		fread(&height, sizeof(unsigned short), 1, tga_file);
+		fread(&bpp, sizeof(unsigned char), 1, tga_file);
 
-		fread(&temp_char,sizeof(unsigned char),1,tga_file);
+		fread(&temp_char, sizeof(unsigned char), 1, tga_file);
 
-		if (bpp != 24){
+		if (bpp != 24) {
 			return;
 		}
 
@@ -130,18 +132,17 @@ namespace{
 
 		std::vector<GLubyte> image_data_vector(size*3);
 
-		int num_read = fread(&image_data_vector[0],sizeof (unsigned char),size*3,tga_file);
+		int num_read = fread(&image_data_vector[0], sizeof(unsigned char), size*3, tga_file);
 
 		fclose (tga_file);
 
-		if (num_read != size*3){
+		if (num_read != size*3) {
 			return;
 		}
 
 		// change BGR to RGB
 		GLubyte temp;
-		for (int i = 0; i < size * 3; i += 3)
-		{
+		for (int i = 0; i < size * 3; i += 3) {
 			temp = image_data_vector[i];
 			image_data_vector[i] = image_data_vector[i + 2];
 			image_data_vector[i + 2] = temp;
@@ -153,10 +154,7 @@ namespace{
 
 		QSize image_size = QSize(width,height);
 
-		raster.generate_raster(image_data_vector,
-								  image_size,
-								  format);
-
+		raster.generate_raster(image_data_vector, image_size, format);
 		raster.set_enabled(true);
 	}
 
