@@ -92,6 +92,9 @@ namespace{
  *
  * The behaviour of returning without complaining was chosen because this is how the existing code
  * in this function was handling error conditions.
+ *
+ * FIXME:  We should report to the user that there was an error reading their file (and what the
+ * problem was) rather than silently dropping the file.
  */
 #define FREAD_OR_RETURN(obj_ptr, obj_size, num_objs, stream) \
 		if (fread((obj_ptr), (obj_size), (num_objs), (stream)) != (num_objs)) { \
