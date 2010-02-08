@@ -85,10 +85,10 @@ namespace{
  * two numbers don't match.
  *
  * We weren't initially making this comparison, but now G++ 4.4.1 complains if we don't:
- *   RasterReader.cc: In function ‘void<unnamed>::load_tga_file(const QString&,
- *     GPlatesPropertyValues::InMemoryRaster&, GPlatesFileIO::ReadErrorAccumulation&)’:
- *   RasterReader.cc:103: error: ignoring return value of ‘size_t fread(void*, size_t, size_t,
- *     FILE*)’, declared with attribute warn_unused_result
+ *   RasterReader.cc: In function 'void<unnamed>::load_tga_file(const QString&,
+ *     GPlatesPropertyValues::InMemoryRaster&, GPlatesFileIO::ReadErrorAccumulation&)':
+ *   RasterReader.cc:103: error: ignoring return value of 'size_t fread(void*, size_t, size_t,
+ *     FILE*)', declared with attribute warn_unused_result
  *
  * The behaviour of returning without complaining was chosen because this is how the existing code
  * in this function was handling error conditions.
