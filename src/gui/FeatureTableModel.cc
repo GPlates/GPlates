@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -146,11 +146,10 @@ namespace
 		if (weak_ref)
 		{
 			// See if type derived from ReconstructionGeometry has a plate id.
-			GPlatesModel::integer_plate_id_type plate_id = 0;
-			if (GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(
-					geometry, plate_id))
-			{
-				return QVariant(static_cast<quint32>(plate_id));
+			boost::optional<GPlatesModel::integer_plate_id_type> found_plate_id =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(geometry);
+			if (found_plate_id) {
+				return QVariant(static_cast<quint32>(*found_plate_id));
 			}
 			else
 			{

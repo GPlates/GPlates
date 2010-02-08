@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -125,15 +125,14 @@ namespace GPlatesAppLogic
 		 * Visits a @a ReconstructionGeometry to get a plate id (the plate id could be
 		 * a reconstruction plate id in @a ReconstructedFeatureGeometry or a plate id
 		 * to assign to other features in @a ResolvedTopologicalBoundary).
-		 * Returns false if derived type of reconstruction geometry has no plate id.
+		 * Returns boost::none if derived type of reconstruction geometry has no plate id.
 		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
 		 * non-const pointer to a @a ReconstructionGeometry.
 		 */
 		template <typename ReconstructionGeometryPointer>
-		bool
+		const boost::optional<GPlatesModel::integer_plate_id_type>
 		get_plate_id(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::integer_plate_id_type &plate_id);
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
 		/**
@@ -512,24 +511,14 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 
 		template <typename ReconstructionGeometryPointer>
-		bool
+		const boost::optional<GPlatesModel::integer_plate_id_type>
 		get_plate_id(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::integer_plate_id_type &plate_id)
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
 		{
 			GetPlateId get_plate_id_visitor;
 			reconstruction_geom_ptr->accept_visitor(get_plate_id_visitor);
-
-			const boost::optional<GPlatesModel::integer_plate_id_type> &plate_id_opt =
-					get_plate_id_visitor.get_plate_id();
-			if (!plate_id_opt)
-			{
-				return false;
-			}
-
-			plate_id = *plate_id_opt;
-
-			return true;
+			return boost::optional<GPlatesModel::integer_plate_id_type>(
+					get_plate_id_visitor.get_plate_id());
 		}
 
 

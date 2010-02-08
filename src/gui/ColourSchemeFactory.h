@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -44,20 +44,12 @@ namespace
 		
 		typedef GPlatesModel::integer_plate_id_type return_type;
 
-		boost::optional<return_type>
+		const boost::optional<return_type>
 		operator()(
 				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
 		{
-			GPlatesModel::integer_plate_id_type plate_id;
-			if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(
-						&reconstruction_geometry, plate_id))
-			{
-				return boost::none;
-			}
-			else
-			{
-				return boost::optional<return_type>(plate_id);
-			}
+			return GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(
+						&reconstruction_geometry);
 		}
 	};
 }
