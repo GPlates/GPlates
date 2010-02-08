@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2008, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -95,7 +95,7 @@ namespace{
 
 		FILE *tga_file;
 
-		if ( ! (tga_file = fopen (filename.toStdString().c_str(), "rb"))) {
+		if ( ! (tga_file = fopen(filename.toStdString().c_str(), "rb"))) {
 			return;
 		}
 
@@ -107,6 +107,7 @@ namespace{
 		fread(&type, sizeof (unsigned char), 1, tga_file);
 
 		if (type != 2) {
+			fclose(tga_file);
 			return;
 		}
 
@@ -125,6 +126,7 @@ namespace{
 		fread(&temp_char, sizeof(unsigned char), 1, tga_file);
 
 		if (bpp != 24) {
+			fclose(tga_file);
 			return;
 		}
 
