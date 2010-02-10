@@ -15,6 +15,8 @@ set(srcs
     AnimationSequenceUtils.h
     CallStackTracker.cc
     CallStackTracker.h
+    CommandLineParser.cc
+    CommandLineParser.h
     ExportTemplateFilenameSequence.cc
     ExportTemplateFilenameSequence.h
     ExportTemplateFilenameSequenceFormats.cc

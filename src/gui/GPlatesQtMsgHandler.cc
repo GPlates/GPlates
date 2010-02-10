@@ -52,6 +52,31 @@ GPlatesGui::GPlatesQtMsgHandler::GPlatesQtMsgHandler() :
 	}
 
 	d_log_stream.reset( new QTextStream(&d_log_file) );
+
+	const char *log_level = std::getenv("GPLATES_LOGLEVEL");
+	if(log_level != NULL)
+	{
+		if(std::string(log_level) == "Debug")
+		{
+			d_log_level = QtDebugMsg;
+		}
+		else if(std::string(log_level) == "Warning")
+		{
+			d_log_level = QtWarningMsg;
+		}
+		else if(std::string(log_level) == "Critical")
+		{
+			d_log_level = QtCriticalMsg;
+		}
+		else
+		{
+			d_log_level = QtWarningMsg;
+		}
+	}
+	else
+	{
+		d_log_level = QtWarningMsg;
+	}
 }
 
 	
@@ -159,6 +184,9 @@ GPlatesGui::GPlatesQtMsgHandler::handle_qt_message(
 		QtMsgType msg_type,
 		const char * msg)
 {
+	if(msg_type < d_log_level)
+		return;
+
     switch (msg_type)
 	{
 #if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system.

@@ -49,21 +49,15 @@
 #include "global/NotYetImplementedException.h"
 
 #include "utils/Profile.h"
+#include "utils/CommandLineParser.h"
 
 
 namespace
 {
 	/**
-	 * A response file to contain command-line options for those systems that
-	 * have a small limit on the size of the command-line arguments.
+	 * Option name to print usage of a specific GPlates command.
 	 */
-	const char *RESPONSE_FILE_OPTION_NAME = "response-file";
-
-	/**
-	 * Configuration file containing options that the user wants to store in a file instead
-	 * of having to type them on the command-line every time they run GPlates.
-	 */
-	const char *CONFIG_FILE_OPTION_NAME = "config-file";
+	const char *HELP_COMMAND_OPTION_NAME = "help-command";
 
 	/**
 	 * The option name used to extract the first positional command-line argument which
@@ -74,124 +68,18 @@ namespace
 	 */
 	const char *COMMAND_OPTION_NAME = "command";
 
-	/**
-	 * The option name used to print the program usage on the command-line.
-	 */
-	const char *HELP_OPTION_NAME = "help";
-	//! Same as @a HELP_OPTION_NAME but with additional short option char.
-	const char *HELP_OPTION_NAME_WITH_SHORT_OPTION = "help,h";
 
 	/**
-	 * The option name used to print the program version on the command-line.
+	 * Adds the help command option.
 	 */
-	const char *VERSION_OPTION_NAME = "version";
-	//! Same as @a VERSION_OPTION_NAME but with additional short option char.
-	const char *VERSION_OPTION_NAME_WITH_SHORT_OPTION = "version,v";
-
-	/**
-	 * Option name to print usage of a specific GPlates command.
-	 */
-	const char *HELP_COMMAND_OPTION_NAME = "help-command";
-
-
-	/**
-	 * Groups options into different categories.
-	 */
-	struct InputOptions
+	void
+	add_help_command_option(
+			GPlatesUtils::CommandLineParser::InputOptions &input_options)
 	{
-		InputOptions() :
-			generic_options("Generic options (can only appear on the command line)"),
-			config_options("Configuration options (can appear on command-line or in a config file)"),
-			hidden_options("Hidden options")
-		{  }
-
-
-		/**
-		 * Adds the basic options.
-		 */
-		void
-		add_simple_options()
-		{
-			generic_options.add_options()
-				(HELP_COMMAND_OPTION_NAME,
-						boost::program_options::value<std::string>(),
-						"print options available for the specified command")
-				(HELP_OPTION_NAME_WITH_SHORT_OPTION, "produce help message")
-				(VERSION_OPTION_NAME_WITH_SHORT_OPTION, "print version string")
-				(RESPONSE_FILE_OPTION_NAME,
-						boost::program_options::value<std::string>(),
-						"read command-line options from a response file "
-						"(note: can use @filename instead)")
-				(CONFIG_FILE_OPTION_NAME,
-						boost::program_options::value<std::vector<std::string> >(),
-						"read configuration options from file (multiple files are allowed - "
-						"use multiple options, one for each config file)");
-		}
-
-
-		// Options that will be allowed only on command line.
-		// NOTE: please add new options to GPlatesCli::CommandDispatcher
-		// instead of here. The basic 'help' and 'version' options are here
-		// but all GPlates specific functionality and command-line argument
-		// insertion/testing should go into GPlatesCli::CommandDispatcher.
-		boost::program_options::options_description generic_options;
-
-		// Options that will be allowed both on command line and in config file.
-		// NOTE: please add new options to GPlatesCli::CommandDispatcher
-		// instead of here.
-		boost::program_options::options_description config_options;
-
-		// Hidden options that will be allowed both on command line and
-		// in config files but will not be shown to the user.
-		// NOTE: please add new options to GPlatesCli::CommandDispatcher
-		// instead of here.
-		boost::program_options::options_description hidden_options;
-
-		// Positional options.
-		boost::program_options::positional_options_description positional_options;
-	};
-
-
-	boost::program_options::options_description
-	get_cmdline_options(
-			const InputOptions &input_options)
-	{
-		// All command-line options.
-		boost::program_options::options_description cmdline_options;
-		cmdline_options
-				.add(input_options.generic_options)
-				.add(input_options.config_options)
-				.add(input_options.hidden_options);
-
-		return cmdline_options;
-	}
-
-
-	boost::program_options::options_description
-	get_config_file_options(
-			const InputOptions &input_options)
-	{
-		// All config file options.
-		boost::program_options::options_description config_file_options;
-		config_file_options
-				.add(input_options.config_options)
-				.add(input_options.hidden_options);
-
-		return config_file_options;
-	}
-
-
-	boost::program_options::options_description
-	get_visible_options(
-			const InputOptions &input_options)
-	{
-		// All options visible to the user (displayed in help/usage).
-		boost::program_options::options_description visible("Allowed options");
-		visible
-				.add(input_options.generic_options)
-				.add(input_options.config_options);
-
-		return visible;
+		input_options.generic_options.add_options()
+			(HELP_COMMAND_OPTION_NAME,
+			boost::program_options::value<std::string>(),
+			"print options available for the specified command");
 	}
 
 
@@ -207,8 +95,10 @@ namespace
 				command_name_and_desc_seq_type;
 
 		// Add the simple options (such as help and version).
-		InputOptions input_options;
+		GPlatesUtils::CommandLineParser::InputOptions input_options;
 		input_options.add_simple_options();
+		add_help_command_option(input_options);
+
 
 		// Get the list of commands.
 		const command_name_and_desc_seq_type command_names_and_descriptions =
@@ -234,273 +124,12 @@ namespace
 		// Print the visible options.
 		os
 				<< std::endl
-				<< get_visible_options(input_options)
+				<< GPlatesUtils::CommandLineParser::get_visible_options(input_options)
 				<< std::endl;
 	}
 
 
-	/**
-	 * Function for parsing options that the regular parser doesn't recognise.
-	 *
-	 * In particular we parse response filenames that look like "@filename".
-	 */
-	std::pair<std::string, std::string>
-	at_option_parser(
-			const std::string &option_name)
-	{
-		if ('@' == option_name[0])
-		{
-			return std::make_pair(RESPONSE_FILE_OPTION_NAME, option_name.substr(1));
-		}
-
-		return std::pair<std::string, std::string>();
-	}
-
-
-	/**
-	 * Parse specified options using @a command_line_parser and store parsed
-	 * results in @a vm.
-	 */
-	void
-	parse_options(
-			boost::program_options::variables_map &vm,
-			boost::program_options::command_line_parser &command_line_parser,
-			const boost::program_options::options_description &cmdline_options,
-			const boost::program_options::positional_options_description &positional_options)
-	{
-		command_line_parser.options(cmdline_options).positional(positional_options);
-
-		// Parse options.
-		const boost::program_options::parsed_options parsed = command_line_parser.run();
-
-		// Store parsed options.
-		boost::program_options::store(parsed, vm);
-	}
-
-
-	/**
-	 * Parse the command-line arguments defined by @a argc and @a argv.
-	 */
-	void
-	parse_command_line(
-			boost::program_options::variables_map &vm,
-			int argc,
-			char* argv[],
-			const boost::program_options::options_description &cmdline_options,
-			const boost::program_options::positional_options_description &positional_options)
-	{
-		// Setup the parser for the command-line.
-		boost::program_options::command_line_parser command_line_parser(argc, argv);
-		command_line_parser.extra_parser(at_option_parser);
-
-		// Parse options and store in 'vm'.
-		parse_options(
-				vm,
-				command_line_parser,
-				cmdline_options,
-				positional_options);
-	}
-
-	/**
-	 * Parses a file containing configuration options.
-	 *
-	 * @param config_filename the name of config file to parse
-	 * @param config_file_options the options to looks for in the config file
-	 * @param vm the place to store configuration values found
-	 */
-	void
-	parse_config_file(
-			const std::string &config_filename,
-			const boost::program_options::options_description &config_file_options,
-			boost::program_options::variables_map &vm)
-	{
-        // Load the file and tokenize it.
-		std::ifstream config_file(config_filename.c_str());
-        if (!config_file)
-		{
-			throw GPlatesFileIO::ErrorOpeningFileForReadingException(
-					GPLATES_EXCEPTION_SOURCE,
-					config_filename.c_str());
-        }
-
-        // Parse the file and store the options.
-		boost::program_options::store(
-				boost::program_options::parse_config_file(config_file, config_file_options),
-				vm);
-	}
-
-
-	/**
-	 * Parses any files containing configuration options.
-	 * The user specifies these files with the command-line options.
-	 *
-	 * @param config_file_options the options to looks for in the config files
-	 * @param vm the place to store configuration values found
-	 */
-	void
-	parse_config_files(
-			boost::program_options::variables_map &vm,
-			const boost::program_options::options_description &config_file_options)
-	{
-		// Parse any configuration files specified by the user.
-		if (!vm.count(CONFIG_FILE_OPTION_NAME))
-		{
-			return;
-		}
-
-		// Get the config filenames.
-		const std::vector<std::string> &config_filenames =
-				vm[CONFIG_FILE_OPTION_NAME].as<std::vector<std::string> >();
-
-		try
-		{
-			// Parse each config file.
-			std::for_each(
-					config_filenames.begin(),
-					config_filenames.end(),
-					boost::bind(&parse_config_file,
-								_1/*config filename*/,
-								boost::cref(config_file_options),
-								boost::ref(vm)));
-		}
-		catch (GPlatesFileIO::ErrorOpeningFileForReadingException &exc)
-		{
-			// The main exception handler will print an error message but
-			// it's not so easy to read so print it here also to make it obvious
-			// to the program user.
-			std::cerr
-					<< "Error opening config file '"
-					<< exc.filename().toStdString().c_str()
-					<< "' for reading."
-					<< std::endl;
-
-			// Re-throw exception to force program termination via main exception handler.
-			throw;
-		}
-	}
-
-
-	/**
-	 * Reads response file named by @a RESPONSE_FILE_OPTION_NAME option and tokenizes
-	 * it into a vector of strings which is returned by this function.
-	 */
-	std::vector<std::string>
-	read_response_file(
-			const boost::program_options::variables_map &vm)
-	{
-		// Parse any configuration files specified by the user.
-		if (!vm.count(RESPONSE_FILE_OPTION_NAME))
-		{
-			return std::vector<std::string>();
-		}
-
-		// Get the response filename.
-		const std::string &response_filename =
-				vm[RESPONSE_FILE_OPTION_NAME].as<std::string>();
-
-		// Load the file and tokenize it.
-		std::ifstream response_file(response_filename.c_str());
-		if (!response_file)
-		{
-			throw GPlatesFileIO::ErrorOpeningFileForReadingException(
-					GPLATES_EXCEPTION_SOURCE,
-					response_filename.c_str());
-		}
-
-		// Read the whole file into a string.
-		std::ostringstream ostr_stream;
-		ostr_stream << response_file.rdbuf();
-		const std::string response_file_content = ostr_stream.str();
-
-		// Split the file content
-		boost::char_separator<char> sep(" \n\r");
-		boost::tokenizer<boost::char_separator<char> > tok(response_file_content, sep);
-		std::vector<std::string> args;
-		std::copy(tok.begin(), tok.end(), std::back_inserter(args));
-
-		return args;
-	}
-
-
-	/**
-	 * Parses a response file containing command-line options.
-	 *
-	 * @param config_file_options the options to looks for in the response file
-	 * @param vm the place to store configuration values found
-	 */
-	void
-	parse_response_file(
-			boost::program_options::variables_map &vm,
-			const boost::program_options::options_description &cmdline_options,
-			const boost::program_options::positional_options_description &positional_options)
-	{
-		const std::vector<std::string> args = read_response_file(vm);
-
-		// Setup the parser.
-		boost::program_options::command_line_parser command_line_parser(args);
-
-		// Parse options and store in 'vm'.
-		parse_options(
-				vm,
-				command_line_parser,
-				cmdline_options,
-				positional_options);
-	}
-
-
-	/**
-	 * Parse the command-line options and also parse any response file and config files
-	 * that are specified and store parsed results in @a vm.
-	 */
-	void
-	parse_command_line_options(
-			boost::program_options::variables_map &vm,
-			int argc,
-			char* argv[],
-			const InputOptions &input_options)
-	{
-		// All command-line options.
-		boost::program_options::options_description cmdline_options =
-				get_cmdline_options(input_options);
-
-		// All config file options.
-		boost::program_options::options_description config_file_options =
-				get_config_file_options(input_options);
-
-		// All options visible to the user (displayed in help/usage).
-		boost::program_options::options_description visible =
-				get_visible_options(input_options);
-
-		//
-		// We parse the command-line before the config file.
-		// This has implications if parameters exist in both.
-		//   For some parameters this means the command-line version overrides
-		//   the config file version (eg, an integer or string).
-		//   For other parameters that call 'composing()' this means the values
-		//   from both sources are merged together.
-		//
-
-		// Parse the command-line.
-		parse_command_line(
-				vm,
-				argc,
-				argv,
-				cmdline_options,
-				input_options.positional_options);
-
-		// Parse response file if it exists.
-		parse_response_file(
-				vm, cmdline_options, input_options.positional_options);
-
-		// Parse any config files the user specified on the command-line (or in response file).
-		// This should be done after parsing the response file since the response file
-		// could contain command-line arguments specifying config files.
-		parse_config_files(vm, config_file_options);
-
-		// Notify any callbacks we might have registered.
-		boost::program_options::notify(vm);
-	}
-
+	
 
 	/**
 	 * Parses the command-line without expecting a command.
@@ -514,23 +143,32 @@ namespace
 			char* argv[])
 	{
 		// Add some simple options.
-		InputOptions input_options;
+		GPlatesUtils::CommandLineParser::InputOptions input_options;
 		input_options.add_simple_options();
+		add_help_command_option(input_options);
 
-		// Parse the command-line options.
 		boost::program_options::variables_map vm;
-		parse_command_line_options(
+
+		try
+		{
+			// Parse the command-line options.
+			GPlatesUtils::CommandLineParser::parse_command_line_options(
 				vm, argc, argv, input_options);
+		}
+		catch(std::exception& exc)
+		{
+			std::cout<<"Error processing command-line: "<<exc.what()<<std::endl;
+		}
 
 		// Print usage if 'help' option is specified.
-		if (vm.count(HELP_OPTION_NAME))
+		if (GPlatesUtils::CommandLineParser::is_help_requested(vm))
 		{
 			print_usage(std::cout, command_dispatcher);
 			return;
 		}
 
 		// Print GPlates version if requested.
-		if (vm.count(VERSION_OPTION_NAME))
+		if (GPlatesUtils::CommandLineParser::is_version_requested(vm))
 		{
 			std::cout << GPlatesGlobal::VersionString << std::endl;
 			return;
@@ -552,7 +190,7 @@ namespace
 			}
 
 			// Get the command's options.
-			InputOptions command_options;
+			GPlatesUtils::CommandLineParser::InputOptions command_options;
 			command_dispatcher.add_options_for_command(
 					command,
 					command_options.generic_options,
@@ -561,7 +199,7 @@ namespace
 					command_options.positional_options);
 
 			// Just print the options belonging to the command and nothing else.
-			std::cout << get_visible_options(command_options) << std::endl;
+			std::cout << GPlatesUtils::CommandLineParser::get_visible_options(command_options) << std::endl;
 			return;
 		}
 
@@ -593,8 +231,9 @@ namespace
 			char* argv[])
 	{
 		// Add some simple options.
-		InputOptions input_options;
+		GPlatesUtils::CommandLineParser::InputOptions input_options;
 		input_options.add_simple_options();
+		add_help_command_option(input_options);
 
 		// Since we have parsed a command we know that the user must specify a single
 		// positional option (ie, not a regular option like "--command <cmd>" or
@@ -619,10 +258,18 @@ namespace
 				input_options.hidden_options,
 				input_options.positional_options);
 
-		// Parse the command-line options.
 		boost::program_options::variables_map vm;
-		parse_command_line_options(
+
+		try
+		{
+			// Parse the command-line options.
+			parse_command_line_options(
 				vm, argc, argv, input_options);
+		}
+		catch(std::exception& exc)
+		{
+			std::cout<<"Error processing command-line: "<<exc.what()<<std::endl;
+		}
 
 		//
 		// Get the GPlates command dispatcher to look at the parsed options and run

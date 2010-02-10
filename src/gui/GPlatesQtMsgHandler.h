@@ -96,6 +96,8 @@ namespace GPlatesGui
 		QFile d_log_file;
 		boost::scoped_ptr<QTextStream> d_log_stream;
 
+		int d_log_level;
+
 		//
 		// Instance methods
 		//

@@ -40,6 +40,8 @@
 #include <QStringList>
 #include <QTextStream>
 
+#include "global/Constants.h"
+
 #include "gui/GPlatesQApplication.h"
 #include "gui/GPlatesQtMsgHandler.h"
 
@@ -48,63 +50,122 @@
 #include "qt-widgets/ViewportWindow.h"
 
 #include "utils/Profile.h"
+#include "utils/CommandLineParser.h"
 
 
 namespace {
 
-	// This type is a pair of lists: the first a list of line format files,
-	// the second is a list of rotation files.
-	typedef std::pair<QStringList, QStringList> cmdline_options_type;
+	/**
+	 * The results of parsing the command-line options.
+	 */
+	class CommandLineOptions
+	{
+	public:
+		CommandLineOptions()
+		{ }
+
+		QStringList line_format_filenames;
+		QStringList rotation_format_filenames;
+	};
+	
+	const char *ROTATION_FILE_OPTION_NAME_WITH_SHORT_OPTION = "rotation-file,r";
+	const char *LINE_FILE_OPTION_NAME_WITH_SHORT_OPTION = "line-file,l";
+	const char *ROTATION_FILE_OPTION_NAME = "rotation-file";
+	const char *LINE_FILE_OPTION_NAME = "line-file";
 
 	void
-	print_usage(const std::string &progname) {
+	print_usage(
+			std::ostream &os,
+			const GPlatesUtils::CommandLineParser::InputOptions &input_options) {
 
-		std::cerr << "Usage: " << progname 
-			<< " -r PLATES_ROTATION_FILE_1 -r PLATES_ROTATION_FILE_2 ... "\
-				" PLATES_LINE_FILE_1 PLATES_LINE_FILE_2 ..."
+		// Print the visible options.
+		os
+			<< GPlatesUtils::CommandLineParser::get_visible_options(input_options)
+			<< std::endl;
+
+		// Let the user know that the line format filenames are positional arguments
+		// and hence the '-l' is optional for them.
+		os
+			<< "NOTE: The line files do not need to be prefixed with '"
+			<< LINE_FILE_OPTION_NAME_WITH_SHORT_OPTION
+			<< "'"
 		   	<< std::endl;
 	}
 
 	void
-	print_usage_and_exit(const std::string &progname) {
+	print_usage_and_exit(
+			std::ostream &os,
+			const GPlatesUtils::CommandLineParser::InputOptions &input_options) {
 
-		print_usage(progname);
+		print_usage(os, input_options);
 		exit(1);
 	}
 
-	cmdline_options_type
-	process_command_line_options(int argc, char *argv[], 
-			const std::string &progname) {
+	CommandLineOptions
+	process_command_line_options(
+			int argc, 
+			char *argv[])
+	{
+		GPlatesUtils::CommandLineParser::InputOptions input_options;
+		input_options.add_simple_options();
+		
+		input_options.generic_options.add_options()
+			(ROTATION_FILE_OPTION_NAME_WITH_SHORT_OPTION, boost::program_options::value< std::vector<std::string> >(),
+			"specify rotation files")
+			(LINE_FILE_OPTION_NAME_WITH_SHORT_OPTION, boost::program_options::value< std::vector<std::string> >(),
+			"specify line files")
+			;
+		
+		input_options.positional_options.add(LINE_FILE_OPTION_NAME, -1);
+		
+		boost::program_options::variables_map vm;
 
-		static const QString ROTATION_FILE_OPTION = "-r";
+		try
+		{
+			parse_command_line_options(
+				vm, argc, argv, input_options);
+		}
+		catch(std::exception& exc)
+		{
+			//TODO: process the exception instead of printing out error message
+			std::cout<<"Error processing command-line: "<<exc.what()<<std::endl;
+		}
 
-		QStringList cmdline;
-		std::copy(&argv[1], &argv[argc], std::back_inserter(cmdline));
+		if (GPlatesUtils::CommandLineParser::is_help_requested(vm))
+		{	
+			print_usage_and_exit(std::cout, input_options);
+		}
 
-		cmdline_options_type res;
+		// Print GPlates version if requested.
+		if (GPlatesUtils::CommandLineParser::is_version_requested(vm))
+		{
+			std::cout << GPlatesGlobal::VersionString << std::endl;
+			exit(1);
+		}
 
-		QStringList::iterator iter = cmdline.begin();
-		for ( ; iter != cmdline.end(); ++iter) {
-			if (*iter == ROTATION_FILE_OPTION) {
-				if (++iter != cmdline.end()) {
-					// Next argument after the ROTATION_FILE_OPTION should be
-					// the rotation file name.
-					res.second.push_back(*iter);
-				} else {
-					// We got the ROTATION_FILE_OPTION but there's no associated
-					// rotation file.
-					break;
-				}
-			} else {
-				// We didn't get the ROTATION_FILE_OPTION so this command line
-				// argument must be a plates line format file.
-				res.first.push_back(*iter);
+		CommandLineOptions command_line_options;
+
+		if(vm.count(ROTATION_FILE_OPTION_NAME))
+		{
+			std::vector<std::string> rotation_files =
+				vm[ROTATION_FILE_OPTION_NAME].as<std::vector<std::string> >();
+			for(unsigned int i=0; i<rotation_files.size(); i++)
+			{
+				command_line_options.rotation_format_filenames.push_back(rotation_files[i].c_str());
+			}
+
+		}
+		if(vm.count(LINE_FILE_OPTION_NAME))
+		{
+			std::vector<std::string> line_files =
+				vm[LINE_FILE_OPTION_NAME].as<std::vector<std::string> >();
+			for(unsigned int i=0; i<line_files.size(); i++)
+			{
+				command_line_options.line_format_filenames.push_back(line_files[i].c_str());
 			}
 		}
 
-		// N.B. We allow the situtation where no rotation files have been specified.
-
-		return res;
+		return command_line_options;
 	}
 }
 
@@ -124,12 +185,8 @@ int internal_main(int argc, char* argv[])
 
 	Q_INIT_RESOURCE(qt_widgets);
 
-	// All the libtool cruft causes the value of 'argv[0]' to be not what the user invoked,
-	// so we'll have to hard-code this for now.
-	const std::string prog_name = "gplates-demo";
-
-	cmdline_options_type cmdline = process_command_line_options(
-			qapplication.argc(), qapplication.argv(), prog_name);
+	CommandLineOptions command_line_options = process_command_line_options(
+			qapplication.argc(), qapplication.argv());
 
 	// The application state and view state are stored in this object.
 	GPlatesPresentation::Application state;
@@ -137,7 +194,9 @@ int internal_main(int argc, char* argv[])
 	// The main window widget.
 	GPlatesQtWidgets::ViewportWindow main_window_widget(state);
 	main_window_widget.show();
-	main_window_widget.load_files(cmdline.first + cmdline.second);
+	main_window_widget.load_files(
+			command_line_options.line_format_filenames +
+				command_line_options.rotation_format_filenames);
 	main_window_widget.reconstruct_to_time_with_root(0.0, 0);
 	// Make sure the appropriate tool status message is displayed at start up. 
 	main_window_widget.update_tools_and_status_message();
