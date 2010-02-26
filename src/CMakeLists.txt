@@ -252,6 +252,7 @@ GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates TRUE)
 # it is not built by default.
 add_executable(gplates-no-gui EXCLUDE_FROM_ALL ${target_GPlates_no_gui_SRCS})
 GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-no-gui FALSE)
+
 if (ADD_GPLATES_CLI_TARGET)
     message(STATUS "Adding executable for GPlates command line application.")
 	add_executable(gplates-cli EXCLUDE_FROM_ALL ${target_GPlates_cli_SRCS})
@@ -261,6 +262,7 @@ endif (ADD_GPLATES_CLI_TARGET)
 if (ADD_UNIT_TEST_TARGET)
     message(STATUS "Adding executable for GPlates unit test application.")
 	add_executable(gplates-unit-test EXCLUDE_FROM_ALL ${target_GPlates_unit_test_SRCS})
+	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-unit-test FALSE)
 endif (ADD_UNIT_TEST_TARGET)
 
 # Referenced in "Package.cmake" so it knows which executable to package up.
