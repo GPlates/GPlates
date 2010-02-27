@@ -36,7 +36,9 @@
 
 #include "FileInfo.h"
 #include "OgrException.h"
+#include "PropertyMapper.h"
 #include "ShapefileUtils.h"
+
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/KeyValueDictionaryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
@@ -62,7 +64,6 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
-#include "qt-widgets/ShapefilePropertyMapper.h"
 #include "utils/UnicodeStringUtils.h"
 
 #include "OgrWriter.h"

@@ -66,8 +66,6 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 
-#include "qt-widgets/ShapefilePropertyMapper.h"
-
 
 
 boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::ShapefileReader::s_property_mapper;

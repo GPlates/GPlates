@@ -28,6 +28,40 @@
 #ifndef GPLATES_FILEIO_PROPERTYMAPPER_H
 #define GPLATES_FILEIO_PROPERTYMAPPER_H
 
+namespace ShapefileAttributes {
+	enum ModelProperties {
+
+		PLATEID = 0,	
+		FEATURE_TYPE,
+		BEGIN,
+		END,
+		NAME,
+		DESCRIPTION,
+		FEATURE_ID
+	};
+
+	static const QString model_properties[] = {
+		"ReconstructionPlateId",
+		"FeatureType",
+		"Begin",
+		"End",
+		"Name",
+		"Description",
+		"FeatureId"
+	};
+	
+	static const QString default_attributes[] = {
+		"PLATEID1",
+		"TYPE",
+		"FROMAGE",
+		"TOAGE",
+		"NAME",
+		"DESCR",
+		"FEATURE_ID"
+	};
+
+}
+
 namespace GPlatesFileIO
 {
 	/**

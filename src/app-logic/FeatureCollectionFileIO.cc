@@ -39,8 +39,6 @@
 
 #include "model/Model.h"
 
-#include "qt-widgets/ShapefilePropertyMapper.h"
-
 
 GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		GPlatesModel::ModelInterface &model,

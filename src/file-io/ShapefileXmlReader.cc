@@ -30,8 +30,7 @@
 #include <QFile>
 #include <QMap>
 
-#include "qt-widgets/ShapefilePropertyMapper.h"
-
+#include "PropertyMapper.h"
 #include "ShapefileXmlReader.h"
 
 GPlatesFileIO::ShapefileXmlReader::ShapefileXmlReader():
