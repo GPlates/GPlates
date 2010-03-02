@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -87,7 +87,7 @@ GPlatesModel::ModelUtils::append_property_value_to_feature(
 
 
 const GPlatesModel::TopLevelProperty::non_null_ptr_type
-GPlatesModel::ModelUtils::append_property_value_to_feature(
+GPlatesModel::ModelUtils::append_property_to_feature(
 		TopLevelProperty::non_null_ptr_type top_level_property,
 		const FeatureHandle::weak_ref &feature)
 {
@@ -100,7 +100,7 @@ GPlatesModel::ModelUtils::append_property_value_to_feature(
 
 
 void
-GPlatesModel::ModelUtils::remove_property_value_from_feature(
+GPlatesModel::ModelUtils::remove_property_from_feature(
 		FeatureHandle::properties_iterator properties_iterator,
 		const FeatureHandle::weak_ref &feature)
 {
@@ -111,7 +111,7 @@ GPlatesModel::ModelUtils::remove_property_value_from_feature(
 
 
 void
-GPlatesModel::ModelUtils::remove_property_values_from_feature(
+GPlatesModel::ModelUtils::remove_properties_from_feature_by_name(
 		const PropertyName &property_name,
 		const FeatureHandle::weak_ref &feature)
 {
@@ -128,7 +128,7 @@ GPlatesModel::ModelUtils::remove_property_values_from_feature(
 		if (current_feature_properties_iter.is_valid() &&
 			(*current_feature_properties_iter)->property_name() == property_name)
 		{
-			remove_property_value_from_feature(
+			remove_property_from_feature(
 					current_feature_properties_iter, feature);
 		}
 	}
