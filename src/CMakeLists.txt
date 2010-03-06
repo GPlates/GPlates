@@ -38,6 +38,15 @@ else (Boost_UNIT_TEST_FRAMEWORK_FOUND)
 	endif (NOT GPLATES_PUBLIC_RELEASE)
 endif (Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
+# Mac OS 10.4 produced alot of "error: template with C linkage" errors when using -isystem for 'src/system-fixes' directory.
+# Mac OS 10.5 was fine though - could just be the g++ compiler version (was 4.0.0 on OS 10.4 and 4.0.1 on OS 10.5).
+# Just disable on all Macs for now.
+# Moved this from "CompileOptionsCPlusPlus.cmake" to here because it is used in the following included cmake scripts.
+# TODO: Sort out why "-isystem" seems to fail on some compilers (this is what the "SYSTEM" cmake variable produces for gcc).
+if (NOT APPLE)
+	set(SYSTEM_INCLUDE_FLAG SYSTEM)
+endif (NOT APPLE)
+
 # Tell Qt that we use QtXML.
 # NOTE: subdirectory 'CMakeList.txt' files will also see our QT_USE_* variables.
 SET(QT_USE_QTXML 1)

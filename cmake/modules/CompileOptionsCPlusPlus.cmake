@@ -2,19 +2,6 @@
 # C++ compile options #
 #######################
 
-# Disable pre-compiled headers if showing include headers.
-# The only reason to show include headers is to use 'list_external_includes.py' script to generates pch header.
-if (GPLATES_SHOW_INCLUDES)
-    set(GPLATES_USE_PCH false)
-endif (GPLATES_SHOW_INCLUDES)
-
-# Mac OS 10.4 produced alot of "error: template with C linkage" errors when using -isystem for 'src/system-fixes' directory.
-# Mac OS 10.5 was fine though - could just be the g++ compiler version (was 4.0.0 on OS 10.4 and 4.0.1 on OS 10.5).
-# Just disable on all Macs for now.
-if (NOT APPLE)
-	set(SYSTEM_INCLUDE_FLAG SYSTEM)
-endif (NOT APPLE)
-
 #
 # Compiler flags.
 #
