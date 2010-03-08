@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -46,7 +46,8 @@ namespace
 	{
 		const QString name;
 		const QString suggested_type;
-		bool is_time_dependent;
+		bool is_time_dependent;		// Do we need to deal with a ConstantValue wrapper?
+		bool is_very_common;			// Should this be emboldened and at the top of the list?
 	};
 	
 	/**
@@ -70,57 +71,84 @@ namespace
 	 * stuff needs to be stripped out.
 	 */
 	static const PropertyNameInfo property_name_info_table[] = {
-		{ "gpml:angle", "gpml:angle", false },
-		{ "gpml:boundary", "gml:Polygon", true }, // TimeDependentPropertyValue<>
-		{ "gpml:centerLineOf", "gml:LineString", true }, // TimeDependentPropertyValue<> _Geometry
-		{ "gpml:conjugatePlateId", "gpml:plateId", false },	// half-way support for Isochron.
-		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration", false }, // Enumeration
-		{ "gml:description", "xs:string", false },
-		{ "gpml:dipAngle", "gpml:angle", false },
-		{ "gpml:dipSide", "gpml:DipSideEnumeration", false }, // Enumeration
-		{ "gpml:dipSlip", "gpml:DipSlipEnumeration", false }, // Enumeration
-		{ "gpml:edge", "gpml:ContinentalBoundaryEdgeEnumeration", false }, // Enumeration
-		{ "gpml:errorBounds", "gml:Polygon", true }, // TimeDependentPropertyValue<_Geometry>
-	//	{ "gpml:fixedReferenceFrame", "gpml:plateId", false }, // For TotalReconstructionSequence
-	//	{ "gpml:movingReferenceFrame", "gpml:plateId", false }, // For TotalReconstructionSequence
-		{ "gpml:foldAnnotation", "gpml:FoldPlaneAnnotationEnumeration", false }, // Enumeration
-		{ "gpml:isActive", "xs:boolean", true }, // TimeDependentPropertyValue<>
-		{ "gpml:leftPlate", "gpml:plateId", false },
-	//	{ "gpml:leftUnit", "gpml:FeatureReference", false }, // FeatureReference<AbstractRockUnit>
-	//	{ "gml:metaDataProperty", "gml:_MetaData", false },
-		{ "gpml:motion", "gpml:StrikeSlipEnumeration", true }, // Enumeration. Just for fun, it's also time-dependent.
-		{ "gml:name", "xs:string", false },
-		{ "gpml:oldPlatesHeader", "gpml:OldPlatesHeader", false },
-		{ "gpml:outlineOf", "gml:Polygon", true }, // _Geometry
-		{ "gpml:polarityChronId", "gpml:PolarityChronId", false },
-		{ "gpml:polarityChronOffset", "xs:double", false },
-		{ "gpml:position", "gml:Point", false },
-		{ "gpml:primarySlipComponent", "gpml:SlipComponentEnumeration", false }, // Enumeration
-		{ "gpml:reconstructedPlateId", "gpml:plateId", false }, // For InstantaneousFeatures
-		{ "gpml:reconstructedTime", "gml:TimeInstant", false }, // For InstantaneousFeatures
-		{ "gpml:reconstructionPlateId", "gpml:plateId", true }, // For ReconstructableFeatures
-		{ "gpml:rightPlate", "gpml:plateId", false },
-	//	{ "gpml:rightUnit", "gpml:FeatureReference", false }, // FeatureReference<AbstractRockUnit>
-	//	{ "gpml:shipTrack", "gpml:FeatureReference", false }, // FeatureReference<MagneticAnomalyShipTrack>
-		{ "gpml:strikeSlip", "gpml:StrikeSlipEnumeration", false },
-		{ "gpml:subductingSlab", "gpml:SubductionSideEnumeration", true }, // TimeDependentPropertyValue<>
-	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
-	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false }, // Enumeration. For AbsoluteReferenceFrame.
-		{ "gpml:unclassifiedGeometry", "gml:MultiPoint", true },	// _Geometry
-		{ "gml:validTime", "gml:TimePeriod", false },
+		{ "gpml:angle", "gpml:angle", false, false },
+		{ "gpml:averageAge", "xs:double", false, false },
+		{ "gpml:averageDeclination", "xs:double", false, false },
+		{ "gpml:averageInclination", "xs:double", false, false },
+		{ "gpml:averageSampleSitePosition", "gml:Point", false, false },	// Geometry
+		{ "gpml:boundary", "gml:Polygon", true, false }, // TimeDependentPropertyValue<>
+		{ "gpml:centerLineOf", "gml:LineString", true, false }, // TimeDependentPropertyValue<> _Geometry
+		{ "gpml:conjugatePlateId", "gpml:plateId", false, true },	// half-way support for Isochron.
+		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration", false, false }, // Enumeration
+		{ "gml:description", "xs:string", false, true },
+		{ "gpml:dipAngle", "gpml:angle", false, false },
+		{ "gpml:dipSide", "gpml:DipSideEnumeration", false, false }, // Enumeration
+		{ "gpml:dipSlip", "gpml:DipSlipEnumeration", false, false }, // Enumeration
+		{ "gpml:edge", "gpml:ContinentalBoundaryEdgeEnumeration", false, false }, // Enumeration
+		{ "gpml:errorBounds", "gml:Polygon", true, false }, // TimeDependentPropertyValue<_Geometry>
+	//	{ "gpml:fixedReferenceFrame", "gpml:plateId", false, false }, // For TotalReconstructionSequence
+	//	{ "gpml:movingReferenceFrame", "gpml:plateId", false, false }, // For TotalReconstructionSequence
+		{ "gpml:foldAnnotation", "gpml:FoldPlaneAnnotationEnumeration", false, false }, // Enumeration
+		{ "gpml:isActive", "xs:boolean", true, false }, // TimeDependentPropertyValue<>
+		{ "gpml:leftPlate", "gpml:plateId", false, true },
+	//	{ "gpml:leftUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
+	//	{ "gml:metaDataProperty", "gml:_MetaData", false, false },
+		{ "gpml:motion", "gpml:StrikeSlipEnumeration", true, false }, // Enumeration. Just for fun, it's also time-dependent.
+		{ "gml:name", "xs:string", false, true },
+		{ "gpml:oldPlatesHeader", "gpml:OldPlatesHeader", false, false },
+		{ "gpml:outlineOf", "gml:Polygon", true, false }, // _Geometry
+		{ "gpml:polarityChronId", "gpml:PolarityChronId", false, false },
+		{ "gpml:polarityChronOffset", "xs:double", false, false },
+		{ "gpml:poleA95", "xs:double", false, false },
+		{ "gpml:poleDp", "xs:double", false, false },
+		{ "gpml:poleDm", "xs:double", false, false },
+		{ "gpml:polePosition", "gml:Point", false, false },	// Geometry
+		{ "gpml:position", "gml:Point", false, false },
+		{ "gpml:primarySlipComponent", "gpml:SlipComponentEnumeration", false, false }, // Enumeration
+		{ "gpml:reconstructedPlateId", "gpml:plateId", false, false }, // For InstantaneousFeatures
+		{ "gpml:reconstructedTime", "gml:TimeInstant", false, false }, // For InstantaneousFeatures
+		{ "gpml:reconstructionPlateId", "gpml:plateId", true, true }, // For ReconstructableFeatures
+		{ "gpml:rightPlate", "gpml:plateId", false, true },
+	//	{ "gpml:rightUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
+	//	{ "gpml:shipTrack", "gpml:FeatureReference", false, false }, // FeatureReference<MagneticAnomalyShipTrack>
+		{ "gpml:strikeSlip", "gpml:StrikeSlipEnumeration", false, false },
+		{ "gpml:subductingSlab", "gpml:SubductionSideEnumeration", true, false }, // TimeDependentPropertyValue<>
+	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true, false }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
+	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false, false }, // Enumeration. For AbsoluteReferenceFrame.
+		{ "gpml:unclassifiedGeometry", "gml:MultiPoint", true, false },	// _Geometry
+		{ "gml:validTime", "gml:TimePeriod", false, true },
 	};
 	
 	void
 	populate_property_name_combobox(
 			QComboBox *combobox)
 	{
-		// Add all property names present in the property_name_info_table, and their
-		// suggested property type mapping.
-		const PropertyNameInfo *begin = property_name_info_table;
-		const PropertyNameInfo *end = begin + NUM_ELEMS(property_name_info_table);
-		for ( ; begin != end; ++begin) {
+		// Icons to indicate useful properties. Blanks to keep list spaced properly.
+		static const QIcon commonly_useful_icon(":/gnome_emblem_new_16.png");
+		static const QIcon blank_icon(":/blank_16.png");
+		
+		const PropertyNameInfo *iter = property_name_info_table;
+		const PropertyNameInfo *end = iter + NUM_ELEMS(property_name_info_table);
+
+		// First add the most commonly useful property names  in the property_name_info_table,
+		// along with their suggested property mapping etc. This list can't (easily) be in bold,
+		// because we'd have to implement it as a Model/View rather than a simple item list,
+		// but we can set a "Favourite" icon or somesuch.
+		for ( ; iter != end; ++iter) {
 			// Set up property name combo box from table.
-			combobox->addItem(begin->name, begin->suggested_type);
+			if (iter->is_very_common) {
+				combobox->addItem(commonly_useful_icon, iter->name, iter->suggested_type);
+			}
+		}
+		
+		// Then add all property names present in the property_name_info_table, and their
+		// suggested property type mapping.
+		iter = property_name_info_table;
+		end = iter + NUM_ELEMS(property_name_info_table);
+		
+		for ( ; iter != end; ++iter) {
+			// Set up property name combo box from table.
+			combobox->addItem(blank_icon, iter->name, iter->suggested_type);
 		}
 	}
 	
