@@ -2073,6 +2073,31 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 }
 
 
+GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
+		AssignPlateIdMethodType assign_plate_id_method,
+		const GPlatesModel::ModelInterface &model,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+				topological_boundary_feature_collections,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+				reconstruction_feature_collections,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id) :
+	d_assign_plate_id_method(assign_plate_id_method),
+	d_model(model),
+	d_reconstruction_time(reconstruction_time),
+	d_reconstruction(
+			GPlatesAppLogic::ReconstructUtils::create_reconstruction(
+					topological_boundary_feature_collections,
+					reconstruction_feature_collections,
+					reconstruction_time,
+					anchor_plate_id))
+{
+	// Query the resolved boundaries in the reconstruction for partitioning geometry.
+	d_resolved_boundaries_geometry_partitioning_query = GPlatesAppLogic::TopologyUtils::
+			query_resolved_topologies_for_geometry_partitioning(*d_reconstruction);
+}
+
+
 bool
 GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_ids(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref)

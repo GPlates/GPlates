@@ -11,11 +11,15 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    CliAssignPlateIdsCommand.cc
+    CliAssignPlateIdsCommand.h
     CliCommand.h
     CliCommandDispatcher.cc
     CliCommandDispatcher.h
     CliConvertToGpmlCommand.cc
     CliConvertToGpmlCommand.h
+    CliFeatureCollectionFileIO.cc
+    CliFeatureCollectionFileIO.h
     CliReconstructCommand.cc
     CliReconstructCommand.h
     CliRequiredOptionNotPresent.h

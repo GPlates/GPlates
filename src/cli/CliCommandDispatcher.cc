@@ -29,6 +29,7 @@
 
 #include "CliCommandDispatcher.h"
 
+#include "CliAssignPlateIdsCommand.h"
 #include "CliReconstructCommand.h"
 #include "CliConvertToGpmlCommand.h"
 
@@ -48,6 +49,10 @@ GPlatesCli::CommandDispatcher::CommandDispatcher()
 	// Add ConvertToGpmlCommand.
 	command_ptr_type convert_to_gpml_cmd(new ConvertToGpmlCommand());
 	d_command_map[convert_to_gpml_cmd->get_command_name()] = convert_to_gpml_cmd;
+
+	// Add AssignPlateIdsCommand.
+	command_ptr_type assign_plate_ids_command(new AssignPlateIdsCommand());
+	d_command_map[assign_plate_ids_command->get_command_name()] = assign_plate_ids_command;
 }
 
 

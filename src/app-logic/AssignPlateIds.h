@@ -130,6 +130,8 @@ namespace GPlatesAppLogic
 		 * Use the reconstruction, reconstruction time and anchor plate id from
 		 * @a reconstruct to find our resolved topological boundaries to be used
 		 * for cookie-cutting.
+		 *
+		 * Only the resolved topological boundaries are used from the @a Reconstruction.
 		 */
 		static
 		non_null_ptr_type
@@ -147,6 +149,10 @@ namespace GPlatesAppLogic
 		 * Create an internal @a Reconstruction using the active files from @a file_state
 		 * and @a reconstruction_time and @a anchor_plate_id to create a new set of
 		 * resolved topological boundaries to be used for cookie-cutting.
+		 *
+		 * Only the topological closed plate boundary features (and any features they reference)
+		 * are needed from @a file_state - only resolved topological boundaries are used from
+		 * the internal @a Reconstruction.
 		 */
 		static
 		non_null_ptr_type
@@ -159,6 +165,39 @@ namespace GPlatesAppLogic
 		{
 			return non_null_ptr_type(new AssignPlateIds(
 					assign_plate_id_method, model, file_state,
+					reconstruction_time, anchor_plate_id));
+		}
+
+
+		/**
+		 * Create an internal @a Reconstruction using @a topological_boundary_feature_collections,
+		 * @a reconstruction_feature_collections, @a reconstruction_time and @a anchor_plate_id
+		 * to create a new set of resolved topological boundaries to be used for cookie-cutting.
+		 *
+		 * Only the topological closed plate boundary features (and any features they reference)
+		 * are needed from @a topological_boundary_feature_collections - only resolved topological
+		 * boundaries are used from the internal @a Reconstruction.
+		 *
+		 * @a reconstruction_feature_collections contains rotations required to reconstruct
+		 * the topological closed plate boundaries and any features that are later assigned
+		 * plate ids (if those features have plate ids already and hence require rotating to
+		 * the reconstruction time so they can be cookie-cut).
+		 */
+		static
+		non_null_ptr_type
+		create_at_new_reconstruction_time(
+				AssignPlateIdMethodType assign_plate_id_method,
+				const GPlatesModel::ModelInterface &model,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						topological_boundary_feature_collections,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						reconstruction_feature_collections,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id)
+		{
+			return non_null_ptr_type(new AssignPlateIds(
+					assign_plate_id_method, model,
+					topological_boundary_feature_collections, reconstruction_feature_collections,
 					reconstruction_time, anchor_plate_id));
 		}
 
@@ -273,6 +312,21 @@ namespace GPlatesAppLogic
 				AssignPlateIdMethodType assign_plate_id_method,
 				const GPlatesModel::ModelInterface &model,
 				FeatureCollectionFileState &file_state,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id);
+
+		/**
+		 * Create an internal @a Reconstruction using @a topological_boundary_feature_collections,
+		 * @a reconstruction_feature_collections, @a reconstruction_time and @a anchor_plate_id
+		 * to create a new set of resolved topological boundaries to be used for cookie-cutting.
+		 */
+		AssignPlateIds(
+				AssignPlateIdMethodType assign_plate_id_method,
+				const GPlatesModel::ModelInterface &model,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						topological_boundary_feature_collections,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						reconstruction_feature_collections,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id);
 	};

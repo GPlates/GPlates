@@ -52,6 +52,12 @@ namespace GPlatesFileIO
 
 namespace GPlatesAppLogic
 {
+	/**
+	 * Handles feature collection file loading/saving.
+	 *
+	 * Loaded files are then added to @a FeatureCollectionFileState for access
+	 * by other objects in the application.
+	 */
 	class FeatureCollectionFileIO :
 			public QObject,
 			private boost::noncopyable
