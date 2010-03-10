@@ -38,7 +38,7 @@
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 
 GPlatesModel::Model::Model():

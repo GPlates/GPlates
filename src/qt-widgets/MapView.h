@@ -35,10 +35,14 @@
 #include <boost/optional.hpp>
 
 #include "gui/ViewportZoom.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "qt-widgets/SceneView.h"
 #include "view-operations/QueryProximityThreshold.h"
 
+namespace GPlatesGui
+{
+	class MapTransform;
+}
 
 namespace GPlatesPresentation
 {
@@ -55,7 +59,9 @@ namespace GPlatesQtWidgets
 		public GPlatesViewOperations::QueryProximityThreshold,
 		public SceneView
 	{
-	Q_OBJECT
+
+		Q_OBJECT
+
 	public:
 
 		struct MousePressInfo
@@ -90,8 +96,8 @@ namespace GPlatesQtWidgets
 
 		MapView(
 			GPlatesPresentation::ViewState &view_state,
-			QWidget *parent,
-			MapCanvas *map_canvas);
+			MapCanvas *map_canvas,
+			QWidget *parent);
 
 		/** 
 		 * Translates the view so that the LatLonPoint llp is centred on the viewport. 
@@ -187,7 +193,6 @@ namespace GPlatesQtWidgets
 		void
 		update_centre_of_viewport();
 
-
 		/**
 		 * Return a pointer to the viewport zoom, which is really the GlobeCanvas' viewport zoom. 
 		 */ 
@@ -207,6 +212,13 @@ namespace GPlatesQtWidgets
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_point) const;
 
+		void
+		set_mouse_wheel_enabled(
+				bool enabled = true)
+		{
+			d_mouse_wheel_enabled = enabled;
+		}
+
 	public slots:
 
 		void
@@ -214,8 +226,6 @@ namespace GPlatesQtWidgets
 
 
 	protected:
-
-
 
 		virtual 
 		void 
@@ -288,6 +298,15 @@ namespace GPlatesQtWidgets
 		void
 		view_changed();
 
+	private slots:
+
+		void
+		handle_translate(
+				qreal dx, qreal dy);
+
+		void
+		handle_rotate(
+				double angle);
 
 	private:
 
@@ -349,11 +368,6 @@ namespace GPlatesQtWidgets
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
 		/**
-		 * The coordinates (in scene coords) of the centre of the visible viewport.
-		 */
-		QPointF d_centre_of_viewport;
-
-		/**
 		 * The visible area of the MapView will initially be set to cover this area of the QGraphicsScene.
 		 */
 		QRectF d_scene_rect;
@@ -362,6 +376,16 @@ namespace GPlatesQtWidgets
 		 * The QGLWidget that we use for this widget's viewport
 		 */
 		QGLWidget *d_gl_widget_ptr;
+
+		/**
+		 * Whether the mouse wheel is enabled
+		 */
+		bool d_mouse_wheel_enabled;
+		
+		/**
+		 * Translates and rotates maps
+		 */
+		GPlatesGui::MapTransform &d_map_transform;
 	};
 
 }

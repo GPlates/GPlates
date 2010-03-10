@@ -25,8 +25,8 @@
 
 #include <boost/none.hpp>
 
+#include "Colour.h"
 #include "GeometryFocusHighlight.h"
-#include "gui/ColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "model/ReconstructionGeometryFinder.h"
 #include "view-operations/RenderedGeometryCollection.h"

@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the implementation of the LatLonPoint class.
  *
  * Most recent change:
  *   $Date$
@@ -32,7 +32,7 @@
 #include <sstream>
 #include <algorithm>  /* std::transform, std::back_inserter */
 
-#include "LatLonPointConversions.h"
+#include "LatLonPoint.h"
 #include "InvalidLatLonException.h"
 #include "IndeterminateResultException.h"
 #include "PointOnSphere.h"

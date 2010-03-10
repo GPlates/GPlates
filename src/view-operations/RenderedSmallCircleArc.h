@@ -29,7 +29,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourTable.h"
+#include "gui/ColourProxy.h"
 
 namespace GPlatesViewOperations
 {
@@ -41,7 +41,7 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::PointOnSphere &centre,
 				const GPlatesMaths::PointOnSphere &start_point,
 				const GPlatesMaths::Real &arc_length_in_radians,
-				const GPlatesGui::Colour &colour,
+				const GPlatesGui::ColourProxy &colour,
 				float line_width_hint) :
 		d_centre(centre),
 		d_start_point(start_point),
@@ -86,7 +86,7 @@ namespace GPlatesViewOperations
 			return d_arc_length_in_radians;
 		}			
 
-		const GPlatesGui::Colour &
+		const GPlatesGui::ColourProxy &
 		get_colour() const
 		{
 			return d_colour;
@@ -108,7 +108,7 @@ namespace GPlatesViewOperations
 		//! Length of arc in radians.
 		GPlatesMaths::Real d_arc_length_in_radians;
 		
-		GPlatesGui::Colour d_colour;
+		GPlatesGui::ColourProxy d_colour;
 		float d_line_width_hint;
 	};
 }

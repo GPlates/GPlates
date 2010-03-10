@@ -33,6 +33,7 @@
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+	class MapTransform;
 }
 
 namespace GPlatesQtWidgets
@@ -78,7 +79,8 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::MapCanvas &map_canvas,
 				GPlatesQtWidgets::MapView &map_view,
 				const GPlatesQtWidgets::ViewportWindow &view_state,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget)
+				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+				GPlatesGui::MapTransform &map_transform_)
 		{
 			return MapManipulatePole::non_null_ptr_type(
 					new MapManipulatePole(
@@ -86,7 +88,8 @@ namespace GPlatesCanvasTools
 							map_canvas,
 							map_view,
 							view_state,
-							pole_widget),
+							pole_widget,
+							map_transform_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 		}
 		
@@ -102,6 +105,7 @@ namespace GPlatesCanvasTools
 
 
 	protected:
+
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		MapManipulatePole(
@@ -109,7 +113,8 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::MapCanvas &map_canvas,
 				GPlatesQtWidgets::MapView &map_view,
 				const GPlatesQtWidgets::ViewportWindow &view_state,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget);
+				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+				GPlatesGui::MapTransform &map_transform_);
 
 	private:
 

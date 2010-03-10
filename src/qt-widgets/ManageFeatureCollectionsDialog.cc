@@ -107,7 +107,7 @@ namespace
 		}
 	}
 	
-	std::vector<std::pair<QString, QString> >
+	GPlatesQtWidgets::SaveFileDialog::filter_list_type
 	get_output_filters_for_file(
 			GPlatesAppLogic::FeatureCollectionFileState &file_state,
 			GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter,
@@ -139,7 +139,7 @@ namespace
 		const bool has_reconstruction_features =
 				GPlatesAppLogic::ClassifyFeatureCollection::found_reconstruction_feature(classification);
 
-		std::vector<std::pair<QString, QString> > filters;
+		GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
 		
 		// Build the list of filters depending on the original file format.
 		switch ( file_iter->get_loaded_file_format() )
@@ -302,14 +302,14 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	d_open_file_path(""),
 	d_save_file_as_dialog_ptr(
 			SaveFileDialog::get_save_file_dialog(
-				parent_,
+				this,
 				"Save File As",
-				std::vector<std::pair<QString, QString> >())),
+				SaveFileDialog::filter_list_type())),
 	d_save_file_copy_dialog_ptr(
 			SaveFileDialog::get_save_file_dialog(
-				parent_,
+				this,
 				"Save a copy of the file with a different name",
-				std::vector<std::pair<QString, QString> >())),
+				SaveFileDialog::filter_list_type())),
 	d_gzip_available(false)
 {
 	setupUi(this);

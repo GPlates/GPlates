@@ -55,6 +55,10 @@
 #include "view-operations/QueryProximityThreshold.h"
 #include "view-operations/RenderedGeometryFactory.h"
 
+namespace GPlatesGui
+{
+	class ColourScheme;
+}
 
 namespace GPlatesPresentation
 {
@@ -121,8 +125,33 @@ namespace GPlatesQtWidgets
 		explicit
 		GlobeCanvas(
 				GPlatesPresentation::ViewState &view_state,
+				boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
 				QWidget *parent_ = 0);
 
+	private:
+
+		//! Private constructor for use by clone()
+		explicit
+		GlobeCanvas(
+				GlobeCanvas *existing_globe_canvas,
+				GPlatesPresentation::ViewState &view_state_,
+				GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
+				bool mouse_pointer_is_on_globe_,
+				GPlatesGui::Globe &existing_globe_,
+				bool mouse_wheel_enabled_,
+				boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme_,
+				QWidget *parent_ = 0);
+
+		//! Common code for both constructors
+		void
+		init();
+
+	public:
+
+		GlobeCanvas *
+		clone(
+				boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+				QWidget *parent_ = 0);
 
 		/**
 		 * The proximity inclusion threshold is a measure of how close a geometry must be
@@ -190,60 +219,6 @@ namespace GPlatesQtWidgets
 		}
 
 		void
-		toggle_point_display();
-
-		void
-		enable_point_display();
-
-		void
-		disable_point_display();
-
-		void
-		toggle_line_display();
-
-		void
-		enable_line_display();
-
-		void
-		disable_line_display();
-
-		void
-		toggle_polygon_display();
-
-		void
-		enable_polygon_display();
-
-		void
-		disable_polygon_display();
-
-		void
-		toggle_multipoint_display();
-
-		void
-		enable_multipoint_display();
-
-		void
-		disable_multipoint_display();
-
-		void
-		toggle_arrows_display();
-
-		void
-		enable_arrows_display();
-
-		void
-		disable_arrows_display();
-
-		void
-		toggle_strings_display();
-
-		void
-		enable_strings_display();
-
-		void
-		disable_strings_display();
-
-		void
 		toggle_raster_image();
 
 		void
@@ -283,6 +258,13 @@ namespace GPlatesQtWidgets
 		set_camera_viewpoint(
 			const GPlatesMaths::LatLonPoint &llp);
 
+
+		void
+		set_mouse_wheel_enabled(
+				bool enabled = true)
+		{
+			d_mouse_wheel_enabled = enabled;
+		}
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -467,6 +449,7 @@ namespace GPlatesQtWidgets
 #endif
 
 	signals:
+
 		void
 		mouse_pointer_position_changed(
 				const GPlatesMaths::PointOnSphere &new_virtual_pos,
@@ -514,7 +497,8 @@ namespace GPlatesQtWidgets
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
-	private slots:
+	public slots:
+
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -523,6 +507,9 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 	private:
+
+		GPlatesPresentation::ViewState &d_view_state;
+
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
 		 * on the globe.
@@ -532,39 +519,25 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesMaths::PointOnSphere d_virtual_mouse_pointer_pos_on_globe;
 
-		/**
-		 * Whether the mouse pointer is on the globe.
-		 */
+		//! Whether the mouse pointer is on the globe.
 		bool d_mouse_pointer_is_on_globe;
 
-		/**
-		 * The x-coord of the mouse pointer position on the screen.
-		 */
+		//! The x-coord of the mouse pointer position on the screen.
 		int d_mouse_pointer_screen_pos_x;
 
-		/**
-		 * The y-coord of the mouse pointer position on the screen.
-		 */
+		//! The y-coord of the mouse pointer position on the screen.
 		int d_mouse_pointer_screen_pos_y;
 
-		/**
-		 * The width of the canvas in integer screen coordinates.
-		 */
+		//! The width of the canvas in integer screen coordinates.
 		int d_canvas_screen_width;
 
-		/**
-		 * The height of the canvas in integer screen coordinates.
-		 */
+		//! The height of the canvas in integer screen coordinates.
 		int d_canvas_screen_height;
 
-		/**
-		 * The smaller of the dimensions (width/height) of the screen.
-		 */
+		//! The smaller of the dimensions (width/height) of the screen.
 		double d_smaller_dim;
 
-		/**
-		 * The larger of the dimensions (width/height) of the screen.
-		 */
+		//! The larger of the dimensions (width/height) of the screen.
 		double d_larger_dim;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
@@ -573,6 +546,8 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::ViewportZoom &d_viewport_zoom;
 
+		//! Whether the mouse wheel is enabled
+		bool d_mouse_wheel_enabled;
 
 		void
 		set_view();
@@ -639,6 +614,11 @@ namespace GPlatesQtWidgets
 		void
 		clear_canvas(
 				const QColor& color = Qt::black);
+
+		//! Calculates scaling for lines, points and text based on size of canvas
+		float
+		calculate_scale();
+
 	};
 
 }

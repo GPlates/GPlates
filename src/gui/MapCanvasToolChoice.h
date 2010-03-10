@@ -28,7 +28,6 @@
 
 #include <QObject>
 
-#include "gui/ColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "MapCanvasTool.h"
 #include "FeatureTableModel.h"
@@ -36,6 +35,7 @@
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+	class MapTransform;
 	class TopologySectionsContainer;
 }
 
@@ -78,6 +78,7 @@ namespace GPlatesGui
 		Q_OBJECT
 
 	public:
+
 		/**
 		 * Construct a MapCanvasToolChoice instance.
 		 *
@@ -99,7 +100,8 @@ namespace GPlatesGui
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state);
+				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
+				GPlatesGui::MapTransform &map_transform_);
 
 		~MapCanvasToolChoice()
 		{  }

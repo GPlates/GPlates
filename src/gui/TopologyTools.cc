@@ -68,7 +68,7 @@
 #include "maths/GeometryOnSphere.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/InvalidLatLonCoordinateException.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/ProximityCriteria.h"

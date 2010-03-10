@@ -32,7 +32,7 @@
 #include "StructurePropertyCreatorMap.h"
 #include "GpmlReaderUtils.h"
 #include "utils/UnicodeStringUtils.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"

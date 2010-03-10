@@ -29,7 +29,7 @@
 
 #include "maths/PolylineOnSphere.h" // FIXME: for testing
 
-#include "gui/ColourTable.h"
+#include "gui/ColourProxy.h"
 #include "model/PropertyName.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"

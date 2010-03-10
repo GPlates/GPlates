@@ -39,7 +39,7 @@ GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::ExportReconstructedF
 		QWidget *parent)
 {
 	// create filters for save dialog box
-	std::vector<std::pair<QString, QString> > filters;
+	SaveFileDialog::filter_list_type filters;
 	filters.push_back(std::make_pair("GMT xy (*.xy)", "xy"));
 	filters.push_back(std::make_pair("ESRI Shapefile (*.shp)", "shp"));
 

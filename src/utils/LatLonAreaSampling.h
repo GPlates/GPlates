@@ -39,7 +39,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/UnitVector3D.h"
 #include "maths/types.h"
 

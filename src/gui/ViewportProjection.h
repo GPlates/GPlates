@@ -23,15 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_VIEW_OPERATIONS_VIEWPORTPROJECTION_H
-#define GPLATES_VIEW_OPERATIONS_VIEWPORTPROJECTION_H
+#ifndef GPLATES_GUI_VIEWPORTPROJECTION_H
+#define GPLATES_GUI_VIEWPORTPROJECTION_H
 
 #include <QObject>
 
-#include "gui/MapProjection.h"
+#include "MapProjection.h"
 
-
-namespace GPlatesViewOperations
+namespace GPlatesGui
 {
 	/**
 	 * A central place to set view projection and listens for changes.
@@ -39,10 +38,11 @@ namespace GPlatesViewOperations
 	class ViewportProjection :
 			public QObject
 	{
+
 		Q_OBJECT
 		
-
 	public:
+
 		explicit
 		ViewportProjection(
 				GPlatesGui::ProjectionType projection_type) :
@@ -90,11 +90,11 @@ namespace GPlatesViewOperations
 	signals:
 		void
 		projection_type_changed(
-				const GPlatesViewOperations::ViewportProjection &viewport_projection);
+				const GPlatesGui::ViewportProjection &viewport_projection);
 
 		void
 		central_meridian_changed(
-				const GPlatesViewOperations::ViewportProjection &viewport_projection);
+				const GPlatesGui::ViewportProjection &viewport_projection);
 
 	private:
 		GPlatesGui::ProjectionType d_projection_type;
@@ -102,4 +102,4 @@ namespace GPlatesViewOperations
 	};
 }
 
-#endif // GPLATES_VIEW_OPERATIONS_VIEWPORTPROJECTION_H
+#endif // GPLATES_GUI_VIEWPORTPROJECTION_H

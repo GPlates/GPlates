@@ -60,7 +60,7 @@
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsString.h"

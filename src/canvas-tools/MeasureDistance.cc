@@ -31,6 +31,7 @@
 #include "MeasureDistance.h"
 #include "MeasureDistanceState.h"
 #include "gui/Colour.h"
+#include "gui/ColourProxy.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"

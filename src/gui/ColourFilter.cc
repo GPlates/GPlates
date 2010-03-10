@@ -1,11 +1,13 @@
 /* $Id$ */
 
 /**
- * \file 
- * $Revision$
- * $Date$ 
+ * @file 
+ * Contains the implementation of the ColourFilter class.
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Most recent change:
+ *   $Date$
+ * 
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,21 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_ABSTRACTWINDOW
-#define GPLATES_GUI_ABSTRACTWINDOW
+#include "ColourFilter.h"
 
-#include "Viewport.h"
-
-namespace GPlatesGui
+GPlatesGui::Colour
+GPlatesGui::IdentityColourFilter::change_colour(
+		const GPlatesGui::Colour &input_colour)
 {
-	class AbstractWindow
-	{
-	public:
-	
-	private:
-		Viewport *d_viewport;
-	};
+	return input_colour;
 }
-
-#endif
-

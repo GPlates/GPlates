@@ -29,26 +29,26 @@
 #ifndef GPLATES_GUI_RENDERSETTINGS_H
 #define GPLATES_GUI_RENDERSETTINGS_H
 
+#include <QObject>
+
 namespace GPlatesGui
 {
-	struct RenderSettings
+	class RenderSettings :
+		public QObject
 	{
-		bool show_points;
-		bool show_multipoints;
-		bool show_lines;
-		bool show_polygons;
-		bool show_arrows;
-		bool show_topology;
-		bool show_strings;
+
+		Q_OBJECT
+
+	public:
 
 		RenderSettings() :
-			show_points(true),
-			show_multipoints(true),
-			show_lines(true),
-			show_polygons(true),
-			show_arrows(true),
-			show_topology(true),
-			show_strings(true)
+			d_show_points(true),
+			d_show_multipoints(true),
+			d_show_lines(true),
+			d_show_polygons(true),
+			d_show_arrows(true),
+			d_show_topology(true),
+			d_show_strings(true)
 		{  }
 
 		RenderSettings(
@@ -59,14 +59,45 @@ namespace GPlatesGui
 				bool show_arrows_,
 				bool show_topology_,
 				bool show_strings_) :
-			show_points(show_points_),
-			show_multipoints(show_multipoints_),
-			show_lines(show_lines_),
-			show_polygons(show_polygons_),
-			show_arrows(show_arrows_),
-			show_topology(show_topology_),
-			show_strings(show_strings_)
+			d_show_points(show_points_),
+			d_show_multipoints(show_multipoints_),
+			d_show_lines(show_lines_),
+			d_show_polygons(show_polygons_),
+			d_show_arrows(show_arrows_),
+			d_show_topology(show_topology_),
+			d_show_strings(show_strings_)
 		{  }
+
+		bool show_points() const { return d_show_points; }
+		bool show_multipoints() const { return d_show_multipoints; }
+		bool show_lines() const { return d_show_lines; }
+		bool show_polygons() const { return d_show_polygons; }
+		bool show_arrows() const { return d_show_arrows; }
+		bool show_topology() const { return d_show_topology; }
+		bool show_strings() const { return d_show_strings; }
+
+		void set_show_points(bool b) { d_show_points = b; emit settings_changed(); }
+		void set_show_multipoints(bool b) { d_show_multipoints = b; emit settings_changed(); }
+		void set_show_lines(bool b) { d_show_lines = b; emit settings_changed(); }
+		void set_show_polygons(bool b) { d_show_polygons = b; emit settings_changed(); }
+		void set_show_arrows(bool b) { d_show_arrows = b; emit settings_changed(); }
+		void set_show_topology(bool b) { d_show_topology = b; emit settings_changed(); }
+		void set_show_strings(bool b) { d_show_strings = b; emit settings_changed(); }
+	
+	signals:
+
+		void
+		settings_changed();
+
+	private:
+
+		bool d_show_points;
+		bool d_show_multipoints;
+		bool d_show_lines;
+		bool d_show_polygons;
+		bool d_show_arrows;
+		bool d_show_topology;
+		bool d_show_strings;
 
 	};
 

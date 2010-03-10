@@ -30,7 +30,7 @@
 #include "InvalidGridException.h"
 #include "FunctionDomainException.h"
 #include "ViolatedClassInvariantException.h"
-#include "LatLonPointConversions.h"
+#include "LatLonPoint.h"
 #include "Rotation.h"
 #include "Vector3D.h"
 

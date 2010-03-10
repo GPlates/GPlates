@@ -34,6 +34,7 @@
 
 #include "MapCanvas.h"
 
+#include "gui/MapTransform.h"
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
 #include "gui/QGLWidgetTextRenderer.h"
@@ -67,34 +68,72 @@ namespace
 
 }
 
-
 GPlatesQtWidgets::MapView::MapView(
-	GPlatesPresentation::ViewState &view_state,
-	QWidget *parent_,
-	GPlatesQtWidgets::MapCanvas *map_canvas_):
+		GPlatesPresentation::ViewState &view_state,
+		GPlatesQtWidgets::MapCanvas *map_canvas_,
+		QWidget *parent_):
 	d_viewport_zoom(&view_state.get_viewport_zoom()),
 	d_map_canvas_ptr(map_canvas_),
-	d_centre_of_viewport(0.,0.),
 	d_scene_rect(-180,-90,360,180),
-	d_gl_widget_ptr(new QGLWidget(
-			QGLFormat(QGL::SampleBuffers)))
+	d_gl_widget_ptr(
+			new QGLWidget(
+				QGLFormat(QGL::SampleBuffers),
+				this)),
+	d_mouse_wheel_enabled(true),
+	d_map_transform(view_state.get_map_transform())
 {
 	setViewport(d_gl_widget_ptr);
-	d_map_canvas_ptr->set_text_renderer(
+	d_map_canvas_ptr->map().set_text_renderer(
 				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr));
-
+	setScene(map_canvas_);
 	setViewportUpdateMode(
 		QGraphicsView::MinimalViewportUpdate);
+	setInteractive(false);
 
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
 	// Flip the vertical axis so that positive latitude is upwards. 
 	scale(1.,-1.);
+	fitInView(d_scene_rect, Qt::KeepAspectRatio);
 
-	fitInView(d_scene_rect,Qt::KeepAspectRatio);
+	// Get rid of the border
+	setFrameShape(QFrame::NoFrame);
 
-	setInteractive(false);
+	// Set initial rotation and translation
+	handle_translate(
+			d_map_transform.get_total_translation_x(),
+			d_map_transform.get_total_translation_y());
+	handle_rotate(
+			d_map_transform.get_total_rotation());
+
+	// Handle map transforms
+	QObject::connect(
+			&d_map_transform,
+			SIGNAL(translate(qreal, qreal)),
+			this,
+			SLOT(handle_translate(qreal, qreal)));
+	QObject::connect(
+			&d_map_transform,
+			SIGNAL(rotate(double)),
+			this,
+			SLOT(handle_rotate(double)));
+}
+
+void
+GPlatesQtWidgets::MapView::handle_translate(
+		qreal dx, qreal dy)
+{
+	setTransformationAnchor(QGraphicsView::NoAnchor);
+	translate(dx, dy);
+}
+
+void
+GPlatesQtWidgets::MapView::handle_rotate(
+		double angle)
+{
+	setTransformationAnchor(QGraphicsView::NoAnchor);
+	rotate(angle);
 }
 
 void
@@ -130,7 +169,7 @@ GPlatesQtWidgets::MapView::set_view()
 	scale(zoom,zoom);
 
 	// Reinstate the original offset.
-	centerOn(d_centre_of_viewport);
+	centerOn(d_map_transform.get_centre_of_viewport());
 }
 
 void
@@ -243,7 +282,6 @@ void
 GPlatesQtWidgets::MapView::mouseMoveEvent(
 	QMouseEvent *move_event)
 {
-
 	QPointF translation = mapToScene(move_event->pos()) - 
 		mapToScene(d_last_mouse_view_coords);
 
@@ -301,7 +339,14 @@ void
 GPlatesQtWidgets::MapView::wheelEvent(
 	  QWheelEvent *wheel_event)
 {
-	handle_wheel_rotation(wheel_event->delta());	
+	if (d_mouse_wheel_enabled)
+	{
+		handle_wheel_rotation(wheel_event->delta());	
+	}
+	else
+	{
+		wheel_event->ignore();
+	}
 }
 
 void
@@ -348,7 +393,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 	boost::optional<GPlatesMaths::LatLonPoint> llp;
 
 
-	llp = d_map_canvas_ptr->projection().inverse_transform(x_mouse_pos,y_mouse_pos);
+	llp = d_map_canvas_ptr->map().projection().inverse_transform(x_mouse_pos,y_mouse_pos);
 
 	if (!llp)
 	{
@@ -358,7 +403,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 	// Forward transform the lat-lon point and see where it would end up. 
 	double x_scene_pos = llp->longitude();
 	double y_scene_pos = llp->latitude();
-	d_map_canvas_ptr->projection().forward_transform(x_scene_pos,y_scene_pos);
+	d_map_canvas_ptr->map().projection().forward_transform(x_scene_pos,y_scene_pos);
 
 	// If we don't end up at the same point, we're off the map. 
 
@@ -396,19 +441,19 @@ void
 GPlatesQtWidgets::MapView::update_centre_of_viewport()
 {
 	QPoint view_centre = viewport()->rect().center();
-	d_centre_of_viewport = mapToScene(view_centre);
+	d_map_transform.set_centre_of_viewport(mapToScene(view_centre));
 }
 
 void
 GPlatesQtWidgets::MapView::set_camera_viewpoint(
 	const GPlatesMaths::LatLonPoint &desired_centre)
 {
-// Convert the llp to canvas coordinates.
+	// Convert the llp to canvas coordinates.
 	double x_pos = desired_centre.longitude();
 	double y_pos = desired_centre.latitude();
 
 	try{
-		d_map_canvas_ptr->projection().forward_transform(x_pos,y_pos);
+		d_map_canvas_ptr->map().projection().forward_transform(x_pos,y_pos);
 	}
 	catch(GPlatesGui::ProjectionException &e)
 	{
@@ -417,8 +462,9 @@ GPlatesQtWidgets::MapView::set_camera_viewpoint(
 	}
 
 	// Centre the view on this point.
-	centerOn(x_pos,y_pos);
-	d_centre_of_viewport = QPointF(x_pos,y_pos);
+	const QPointF &current_centre = d_map_transform.get_centre_of_viewport();
+	d_map_transform.translate_maps(current_centre.x() - x_pos, current_centre.y() - y_pos);
+	d_map_transform.set_centre_of_viewport(QPointF(x_pos,y_pos));
 
 	// Tell the ReconstructionView that the camera llp has changed. 
 	emit view_changed();
@@ -427,8 +473,9 @@ GPlatesQtWidgets::MapView::set_camera_viewpoint(
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::MapView::camera_llp() const
 {
-	double x_pos = d_centre_of_viewport.x();
-	double y_pos = d_centre_of_viewport.y();
+	const QPointF &centre_of_viewport = d_map_transform.get_centre_of_viewport();
+	double x_pos = centre_of_viewport.x();
+	double y_pos = centre_of_viewport.y();
 
 	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
 	double screen_x = x_pos;
@@ -436,10 +483,8 @@ GPlatesQtWidgets::MapView::camera_llp() const
 	// Tolerance for comparing forward transformed longitude with screen longitude. 
 	double tolerance = 1.;
 
-
-	
 	boost::optional<GPlatesMaths::LatLonPoint> llp =
-		d_map_canvas_ptr->projection().inverse_transform(x_pos,y_pos);
+		d_map_canvas_ptr->map().projection().inverse_transform(x_pos,y_pos);
 		
 	if (!llp)
 	{
@@ -449,13 +494,13 @@ GPlatesQtWidgets::MapView::camera_llp() const
 	// Forward transform the lat-lon point and see where it would end up. 
 	double x_scene_pos = llp->longitude();
 	double y_scene_pos = llp->latitude();
-	d_map_canvas_ptr->projection().forward_transform(x_scene_pos,y_scene_pos);
+	d_map_canvas_ptr->map().projection().forward_transform(x_scene_pos,y_scene_pos);
 
 	// If we don't end up at the same point, we're off the map. 
 	if (std::fabs(x_scene_pos - screen_x) > tolerance)
 	{
 		return boost::none;
-	}		
+	}
 		
 	return llp;
 
@@ -503,14 +548,11 @@ GPlatesQtWidgets::MapView::update_canvas()
 void
 GPlatesQtWidgets::MapView::move_camera_up()
 {
-	setTransformationAnchor(QGraphicsView::NoAnchor);
-
 	// This translation will be zoom-dependent, as it's based on view coordinates. 
 	// This is slightly different from the globe behaviour, which is always a 5 degree increment, 
 	// irrespective of zoom level.
-
 	QPointF translation = get_scene_translation_from_view_translation(this,0,5);
-	translate(translation.x(),translation.y());
+	d_map_transform.translate_maps(translation.x(), translation.y());
 
 	update_centre_of_viewport();
 	emit view_changed();
@@ -521,10 +563,9 @@ void
 GPlatesQtWidgets::MapView::move_camera_down()
 {
 	// See comments under "move_camera_up" above. 
-	setTransformationAnchor(QGraphicsView::NoAnchor);
-
 	QPointF translation = get_scene_translation_from_view_translation(this,0,-5);
-	translate(translation.x(),translation.y());
+	d_map_transform.translate_maps(translation.x(), translation.y());
+
 	update_centre_of_viewport();
 	emit view_changed();
 	handle_mouse_pointer_pos_change();
@@ -534,10 +575,9 @@ void
 GPlatesQtWidgets::MapView::move_camera_left()
 {
 	// See comments under "move_camera_up" above. 
-	setTransformationAnchor(QGraphicsView::NoAnchor);
-
 	QPointF translation = get_scene_translation_from_view_translation(this,5,0);
-	translate(translation.x(),translation.y());
+	d_map_transform.translate_maps(translation.x(), translation.y());
+
 	update_centre_of_viewport();
 	emit view_changed();
 	handle_mouse_pointer_pos_change();
@@ -547,10 +587,9 @@ void
 GPlatesQtWidgets::MapView::move_camera_right()
 {
 	// See comments under "move_camera_up" above. 
-	setTransformationAnchor(QGraphicsView::NoAnchor);
-
 	QPointF translation = get_scene_translation_from_view_translation(this,-5,0);
-	translate(translation.x(),translation.y());
+	d_map_transform.translate_maps(translation.x(), translation.y());
+
 	update_centre_of_viewport();
 	emit view_changed();
 	handle_mouse_pointer_pos_change();
@@ -559,9 +598,8 @@ GPlatesQtWidgets::MapView::move_camera_right()
 void
 GPlatesQtWidgets::MapView::rotate_camera_clockwise()
 {
-	setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+	d_map_transform.rotate_maps(-5.0);
 
-	rotate(-5.);
 	update_centre_of_viewport();
 	emit view_changed();
 	handle_mouse_pointer_pos_change();
@@ -570,9 +608,8 @@ GPlatesQtWidgets::MapView::rotate_camera_clockwise()
 void
 GPlatesQtWidgets::MapView::rotate_camera_anticlockwise()
 {
-	setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+	d_map_transform.rotate_maps(5.0);
 
-	rotate(5.);
 	update_centre_of_viewport();
 	emit view_changed();
 	handle_mouse_pointer_pos_change();
@@ -581,6 +618,7 @@ GPlatesQtWidgets::MapView::rotate_camera_anticlockwise()
 void
 GPlatesQtWidgets::MapView::reset_camera_orientation()
 {
+	/*
 	// Set the identity matrix as the transform.
 	setTransform(QTransform());
 
@@ -588,7 +626,8 @@ GPlatesQtWidgets::MapView::reset_camera_orientation()
 
 	// This will reset the scale to the current zoom value. 
 	set_view();
-
+	*/
+	d_map_transform.reset_rotation();
 	
 	update_centre_of_viewport();
 	emit view_changed();
@@ -651,7 +690,7 @@ GPlatesQtWidgets::MapView::current_proximity_inclusion_threshold(
 	double y_ = threshold_point.y();
 
 	boost::optional<GPlatesMaths::LatLonPoint> llp = 
-		map_canvas().projection().inverse_transform(x_, y_);
+		map_canvas().map().projection().inverse_transform(x_, y_);
 
 	if (!llp)
 	{

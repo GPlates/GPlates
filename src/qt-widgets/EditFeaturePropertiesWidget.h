@@ -57,7 +57,11 @@ namespace GPlatesQtWidgets
 
 		virtual
 		~EditFeaturePropertiesWidget()
-		{  }
+		{
+			// The view does not take ownership of the model.
+			// See http://doc.trolltech.com/4.4/qabstractitemview.html#setModel
+			delete d_property_model_ptr;
+		}
 		
 		GPlatesGui::FeaturePropertyTableModel &
 		model()

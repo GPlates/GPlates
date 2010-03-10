@@ -34,6 +34,9 @@ set(srcs
     AssignReconstructionPlateIdsDialog.h
     AssignReconstructionPlateIdsDialogUi.ui
     BuildTopologyWidgetUi.ui
+    ColouringDialog.cc
+    ColouringDialog.h
+    ColouringDialogUi.ui
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
@@ -107,6 +110,8 @@ set(srcs
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
+    GlobeAndMapWidget.cc
+    GlobeAndMapWidget.h
     GlobeCanvas.cc
     GlobeCanvas.h
     GMenuButton.cc
@@ -147,6 +152,8 @@ set(srcs
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
     NoActiveEditWidgetException.h
+    PaletteSelectionWidget.cc
+    PaletteSelectionWidget.h
     ProjectionControlWidget.cc
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui

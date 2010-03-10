@@ -27,6 +27,38 @@
 
 #include "QGLWidgetTextRenderer.h"
 #include "OpenGL.h"
+#include <cmath>
+
+namespace
+{
+	const qreal MIN_POINT_SIZE = 2.0;
+	const int MIN_PIXEL_SIZE = 2;
+
+	QFont
+	scale_font(
+			const QFont &font,
+			float scale)
+	{
+		QFont ret = font;
+		int pixel_size = font.pixelSize();
+		if (pixel_size == -1)
+		{
+			// Size was specified in points
+			qreal point_size = font.pointSizeF();
+			ret.setPointSizeF((std::max)(
+						MIN_POINT_SIZE,
+						point_size * scale));
+		}
+		else
+		{
+			// Size was specified in pixels
+			ret.setPixelSize((std::max)(
+						MIN_PIXEL_SIZE,
+						static_cast<int>(pixel_size * scale + 0.5f)));
+		}
+		return ret;
+	}
+}
 
 GPlatesGui::QGLWidgetTextRenderer::QGLWidgetTextRenderer(
 		QGLWidget *gl_widget_ptr) :
@@ -40,12 +72,13 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 		int y,
 		const QString &string,
 		const GPlatesGui::Colour &colour,
-		const QFont &font) const
+		const QFont &font,
+		float scale) const
 {
 	glColor3fv(colour);
 	// need to change to GL_MODULATE for a moment otherwise the text will be rendered as white
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	d_gl_widget_ptr->renderText(x, y, string, font);
+	d_gl_widget_ptr->renderText(x, y, string, scale_font(font, scale));
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 }
 
@@ -58,7 +91,8 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 		const GPlatesGui::Colour &colour,
 		int x_offset,
 		int y_offset,
-		const QFont &font) const
+		const QFont &font,
+		float scale) const
 {
 	// compute screen coordinates
 	glColor3fv(colour);
@@ -73,6 +107,10 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 
 	// render, with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other)
 	int height = view[3];
-	render_text(static_cast<int>(winX) + x_offset, height - (static_cast<int>(winY) + y_offset), string, colour, font);
+	render_text(
+			static_cast<int>(winX) + x_offset, height - (static_cast<int>(winY) + y_offset),
+			string,
+			colour,
+			scale_font(font, scale));
 }
 

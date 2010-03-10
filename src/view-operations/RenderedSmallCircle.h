@@ -29,7 +29,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourTable.h"
+#include "gui/ColourProxy.h"
 
 //#include "maths/SmallCircle.h"
 
@@ -43,7 +43,7 @@ namespace GPlatesViewOperations
 		RenderedSmallCircle(
 			const GPlatesMaths::PointOnSphere &centre,
 			const GPlatesMaths::Real &radius_in_radians,
-			const GPlatesGui::Colour &colour,
+			const GPlatesGui::ColourProxy &colour,
 			float line_width_hint) :
 			d_centre(centre),
 			d_radius_in_radians(radius_in_radians),
@@ -82,7 +82,7 @@ namespace GPlatesViewOperations
 			return d_radius_in_radians;
 		}
 
-		const GPlatesGui::Colour &
+		const GPlatesGui::ColourProxy &
 		get_colour() const
 		{
 			return d_colour;
@@ -99,7 +99,7 @@ namespace GPlatesViewOperations
 		GPlatesMaths::PointOnSphere d_centre;
 		GPlatesMaths::Real d_radius_in_radians;
 
-		GPlatesGui::Colour d_colour;
+		GPlatesGui::ColourProxy d_colour;
 		float d_line_width_hint;
 	};
 }

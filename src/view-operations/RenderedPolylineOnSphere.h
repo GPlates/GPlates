@@ -29,7 +29,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourTable.h"
+#include "gui/ColourProxy.h"
 #include "maths/PolylineOnSphere.h"
 
 namespace GPlatesViewOperations
@@ -40,7 +40,7 @@ namespace GPlatesViewOperations
 	public:
 		RenderedPolylineOnSphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
-				const GPlatesGui::Colour &colour,
+				const GPlatesGui::ColourProxy &colour,
 				float line_width_hint) :
 		d_polyline_on_sphere(polyline_on_sphere),
 		d_colour(colour),
@@ -69,7 +69,7 @@ namespace GPlatesViewOperations
 			return d_polyline_on_sphere;
 		}
 
-		const GPlatesGui::Colour &
+		const GPlatesGui::ColourProxy &
 		get_colour() const
 		{
 			return d_colour;
@@ -83,7 +83,7 @@ namespace GPlatesViewOperations
 
 	private:
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_polyline_on_sphere;
-		GPlatesGui::Colour d_colour;
+		GPlatesGui::ColourProxy d_colour;
 		float d_line_width_hint;
 	};
 }

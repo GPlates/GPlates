@@ -40,17 +40,13 @@
 #include <QMainWindow>
 #include <QSplitter>
 #include <QWidget>
-
 #include <boost/optional.hpp>
 
-#include "gui/ViewportZoom.h"
-#include "maths/LatLonPointConversions.h"
-#include "ReconstructionViewWidgetUi.h"
-
-#include "ZoomSliderWidget.h"
 #include "GMenuButton.h"
-
-
+#include "ReconstructionViewWidgetUi.h"
+#include "ZoomSliderWidget.h"
+#include "gui/ViewportZoom.h"
+#include "maths/LatLonPoint.h"
 
 namespace GPlatesMaths
 {
@@ -60,7 +56,6 @@ namespace GPlatesMaths
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
-	class ViewportProjection;
 }
 
 namespace GPlatesPresentation
@@ -71,10 +66,12 @@ namespace GPlatesPresentation
 namespace GPlatesGui
 {
 	class AnimationController;
+	class ViewportProjection;
 }
 
 namespace GPlatesQtWidgets
 {
+	class GlobeAndMapWidget;
 	class GlobeCanvas;
 	class AnimateControlWidget;
 	class ZoomControlWidget;
@@ -93,6 +90,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+
 		ReconstructionViewWidget(
 				GPlatesGui::AnimationController &animation_controller,
 				ViewportWindow &viewport_window,
@@ -105,12 +103,6 @@ namespace GPlatesQtWidgets
 			TASK_PANEL_INDEX
 		};
 
-		GlobeCanvas &
-		globe_canvas() const
-		{
-			return *d_globe_canvas_ptr;
-		}
-
 		/**
 		 * The Task Panel is created, and initialised by ViewportWindow.
 		 * ViewportWindow uses this method to insert the panel into the
@@ -120,25 +112,21 @@ namespace GPlatesQtWidgets
 		void
 		insert_task_panel(
 				std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel);
-				
+
+		GlobeCanvas &
+		globe_canvas() const;
 
 		MapView &
-		map_view() const
-		{
-			return *d_map_view_ptr;
-		}
+		map_view() const;
 
 		SceneView &
-		active_view() const
-		{
-			return *d_active_view_ptr;
-		}
+		active_view() const;
 
 		MapCanvas &
-		map_canvas() const
-		{
-			return *d_map_canvas_ptr;
-		}
+		map_canvas() const;
+
+		GlobeAndMapWidget &
+		globe_and_map_widget() const;
 
 		bool
 		globe_is_active();
@@ -147,18 +135,7 @@ namespace GPlatesQtWidgets
 		map_is_active();
 
 		GPlatesMaths::LatLonPoint &
-		camera_llp()
-		{
-			return *d_camera_llp;
-		}
-		
-#if 0
-		GPlatesGui::ViewportZoom &
-		viewport_zoom() 
-		{
-			return d_viewport_zoom;
-		}
-#endif
+		camera_llp();
 
 		void
 		enable_raster_display();
@@ -166,43 +143,8 @@ namespace GPlatesQtWidgets
 		void
 		disable_raster_display();
 
-		void
-		enable_point_display();
-		
-		void
-		disable_point_display();
-		
-		void
-		enable_line_display();
-
-		void
-		disable_line_display();		
-
-		void
-		enable_polygon_display();
-
-		void
-		disable_polygon_display();
-
-		void
-		enable_multipoint_display();
-
-		void
-		disable_multipoint_display();
-
-		void
-		enable_arrows_display();
-
-		void
-		disable_arrows_display();
-
-		void
-		enable_strings_display();
-		
-		void
-		disable_strings_display();
-
 	public slots:
+
 		void
 		activate_time_spinbox();
 
@@ -223,17 +165,18 @@ namespace GPlatesQtWidgets
 		activate_zoom_spinbox();
 
 		void
-		handle_zoom_change();
+		handle_update_tools_and_status_message();
 
-		void
-		change_projection(
-			const GPlatesViewOperations::ViewportProjection &view_projection);
-			
 	signals:
 
 		void
 		update_tools_and_status_message();
-		
+	
+	private slots:
+
+		void
+		handle_globe_and_map_widget_resized(
+				int new_width, int new_height);
 
 	private:
 		
@@ -245,7 +188,7 @@ namespace GPlatesQtWidgets
 		std::auto_ptr<QWidget>
 		construct_awesomebar_two(
 				GPlatesGui::ViewportZoom &vzoom,
-				GPlatesViewOperations::ViewportProjection &vprojection);
+				GPlatesGui::ViewportProjection &vprojection);
 
 		std::auto_ptr<QWidget>
 		construct_viewbar(
@@ -255,10 +198,9 @@ namespace GPlatesQtWidgets
 		std::auto_ptr<QWidget>
 		construct_viewbar_with_projections(
 				GPlatesGui::ViewportZoom &vzoom,
-				GPlatesViewOperations::ViewportProjection &vprojection);
-				
-				
-			
+				GPlatesGui::ViewportProjection &vprojection);
+		
+		GPlatesPresentation::ViewState &d_view_state;
 
 		/**
 		 * The QSplitter responsible for dividing the interface between canvas
@@ -276,24 +218,17 @@ namespace GPlatesQtWidgets
 		 */
 		QLabel *d_label_mouse_coords;
 
-		GlobeCanvas *d_globe_canvas_ptr;
+		/**
+		 * Holds the globe and the map.
+		 */
+		GlobeAndMapWidget *d_globe_and_map_widget_ptr;
+
 		AnimateControlWidget *d_animate_control_widget_ptr;
 		ZoomControlWidget *d_zoom_control_widget_ptr;
 		TimeControlWidget *d_time_control_widget_ptr;
 		ZoomSliderWidget *d_zoom_slider_widget;
 		ProjectionControlWidget *d_projection_control_widget_ptr;
 		GMenuButton *d_gmenu_button_ptr;
-
-		// The QGraphicsScene representing the map canvas.
-		MapCanvas *d_map_canvas_ptr;
-
-		// The QGraphicsView associated with the map canvas.
-		MapView *d_map_view_ptr;
-
-		// The active scene view.
-		SceneView *d_active_view_ptr;
-
-		boost::optional<GPlatesMaths::LatLonPoint> d_camera_llp;
 
 	};
 }

@@ -2,12 +2,12 @@
 
 /**
  * @file 
- * File specific comments.
+ * Contains the implementation of the FeatureColourPalette class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,31 +25,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <map>
-#include <algorithm>
+#include "FeatureColourPalette.h"
 
-#include "FeatureColourTable.h"
-#include "app-logic/ReconstructionGeometryUtils.h"
-
-
-GPlatesGui::FeatureColourTable *
-GPlatesGui::FeatureColourTable::Instance()
+GPlatesGui::FeatureColourPalette::FeatureColourPalette()
 {
-	if (d_instance == NULL) {
-
-		// create a new instance
-		d_instance = new FeatureColourTable();
-	}
-	return d_instance;
-}
-
-
-GPlatesGui::FeatureColourTable::FeatureColourTable()
-{
+	// FIXME: Pick nicer colours
+	
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
 			GPlatesGui::Colour::get_black();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TopologicalNetwork") ] =
-			GPlatesGui::Colour::get_olive();
+			GPlatesGui::Colour::get_grey();
 
 	// Reconstruction features.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence") ] = 
@@ -178,37 +163,19 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 	//see file-io/FeaturePropertiesMap.h
 }
 
-
-GPlatesGui::ColourTable::const_iterator
-GPlatesGui::FeatureColourTable::lookup(
-		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
-{
-	GPlatesModel::FeatureHandle::weak_ref feature_ref;
-	if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-			&reconstruction_geometry, feature_ref))
-	{
-		return end();
-	}
-
-	return lookup_by_feature_type(feature_ref->feature_type());
-}
-
-
-GPlatesGui::ColourTable::const_iterator
-GPlatesGui::FeatureColourTable::lookup_by_feature_type(
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::FeatureColourPalette::get_colour(
 		const GPlatesModel::FeatureType &feature_type) const
 {
-	GPlatesGui::ColourTable::const_iterator colour = end();
-
-	colour_map_type::const_iterator iter = d_colours.find(feature_type);
-	if (iter != d_colours.end())
+	std::map<GPlatesModel::FeatureType, Colour>::const_iterator colour =
+		d_colours.find(feature_type);
+	if (colour == d_colours.end())
 	{
-		colour = &(iter->second);
+		return boost::none;
 	}
-
-	return colour;
+	else
+	{
+		return boost::optional<Colour>(colour->second);
+	}
 }
 
-
-GPlatesGui::FeatureColourTable *
-GPlatesGui::FeatureColourTable::d_instance;

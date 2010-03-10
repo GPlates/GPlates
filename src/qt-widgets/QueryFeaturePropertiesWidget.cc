@@ -32,7 +32,7 @@
 #include "feature-visitors/QueryFeaturePropertiesWidgetPopulator.h"
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "property-values/GpmlPlateId.h"
 #include "utils/UnicodeStringUtils.h"
 #include "presentation/ViewState.h"

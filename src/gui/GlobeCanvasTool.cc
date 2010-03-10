@@ -46,10 +46,10 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
 		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
 {
 	if ( ! d_is_in_reorientation_op) {
-		d_globe_ptr->SetNewHandlePos(initial_pos_on_globe);
+		d_globe_ptr->set_new_handle_pos(initial_pos_on_globe);
 		d_is_in_reorientation_op = true;
 	}
-	d_globe_ptr->UpdateHandlePos(current_pos_on_globe);
+	d_globe_ptr->update_handle_pos(current_pos_on_globe);
 }
 
 
@@ -64,10 +64,10 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_release(
 		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
 {
 	if ( ! d_is_in_reorientation_op) {
-		d_globe_ptr->SetNewHandlePos(initial_pos_on_globe);
+		d_globe_ptr->set_new_handle_pos(initial_pos_on_globe);
 		d_is_in_reorientation_op = true;
 	}
-	d_globe_ptr->UpdateHandlePos(current_pos_on_globe);
+	d_globe_ptr->update_handle_pos(current_pos_on_globe);
 	d_is_in_reorientation_op = false;
 }
 
@@ -131,7 +131,7 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_update(
 			return;
 		}
 
-		d_globe_ptr->SetNewHandlePos(*initial_point_on_horizon);
+		d_globe_ptr->set_new_handle_pos(*initial_point_on_horizon);
 		d_is_in_reorientation_op = true;
 	}
 
@@ -142,7 +142,7 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_update(
 		// the it was at the centre of the viewport.  Hence, nothing to be done.
 		return;
 	}
-	d_globe_ptr->UpdateHandlePos(*current_point_on_horizon);
+	d_globe_ptr->update_handle_pos(*current_point_on_horizon);
 }
 
 
@@ -169,7 +169,7 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_release(
 			return;
 		}
 
-		d_globe_ptr->SetNewHandlePos(*initial_point_on_horizon);
+		d_globe_ptr->set_new_handle_pos(*initial_point_on_horizon);
 		d_is_in_reorientation_op = true;
 	}
 
@@ -180,6 +180,6 @@ GPlatesGui::GlobeCanvasTool::rotate_globe_by_drag_release(
 		// the it was at the centre of the viewport.  Hence, nothing to be done.
 		return;
 	}
-	d_globe_ptr->UpdateHandlePos(*current_point_on_horizon);
+	d_globe_ptr->update_handle_pos(*current_point_on_horizon);
 	d_is_in_reorientation_op = false;
 }

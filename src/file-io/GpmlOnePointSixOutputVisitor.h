@@ -284,7 +284,6 @@ namespace GPlatesFileIO
 				const GPlatesPropertyValues::XsString &xs_string);
 
 	private:
-		static const ExternalProgram *s_gzip_program;
 
 		void
 		write_gpml_key_value_dictionary_element(

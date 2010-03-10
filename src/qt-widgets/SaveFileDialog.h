@@ -50,7 +50,11 @@ namespace GPlatesQtWidgets
 	 */
 	class SaveFileDialog
 	{
+
 	public:
+
+		//! Convenience typedef for std::vector<std::pair<QString, QString> >
+		typedef std::vector<std::pair<QString, QString> > filter_list_type;
 
 		/**
 		 * Gets a file name from the user.
@@ -68,7 +72,7 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		set_filters(
-				const std::vector<std::pair<QString, QString> > &filters,
+				const filter_list_type &filters,
 				unsigned int default_filter) = 0;
 
 		/**
@@ -79,7 +83,7 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		set_filters(
-				const std::vector<std::pair<QString, QString> > &filters) = 0;
+				const filter_list_type &filters) = 0;
 
 		/**
 		 * Selects a file in the dialog box.
@@ -93,7 +97,7 @@ namespace GPlatesQtWidgets
 		//! Destructor
 		virtual
 		~SaveFileDialog();
-		
+
 		/**
 		 * Returns a pointer to a platform-specific instance of SaveFileDialog.
 		 * @param parent The parent window for the dialog box.
@@ -110,7 +114,7 @@ namespace GPlatesQtWidgets
 		boost::shared_ptr<SaveFileDialog> get_save_file_dialog(
 				QWidget *parent,
 				const QString &caption,
-				const std::vector<std::pair<QString, QString> > &filters,
+				const filter_list_type &filters,
 				unsigned int default_filter = 0);
 
 	};
@@ -126,7 +130,7 @@ namespace GPlatesQtWidgets
 		WindowsSaveFileDialog(
 				QWidget *parent_,
 				const QString &caption,
-				const std::vector<std::pair<QString, QString> > &filters,
+				const filter_list_type &filters,
 				unsigned int default_filter = 0);
 
 		boost::optional<QString>
@@ -134,12 +138,12 @@ namespace GPlatesQtWidgets
 
 		void
 		set_filters(
-				const std::vector<std::pair<QString, QString> > &filters,
+				const filter_list_type &filters,
 				unsigned int default_filter);
 
 		void
 		set_filters(
-				const std::vector<std::pair<QString, QString> > &filters);
+				const filter_list_type &filters);
 
 		void
 		select_file(
@@ -172,7 +176,7 @@ namespace GPlatesQtWidgets
 		OtherSaveFileDialog(
 				QWidget *parent_,
 				const QString &caption,
-				const std::vector<std::pair<QString, QString> > &filters,
+				const filter_list_type &filters,
 				unsigned int default_filter = 0);
 
 		boost::optional<QString>
@@ -180,12 +184,12 @@ namespace GPlatesQtWidgets
 
 		void
 		set_filters(
-				const std::vector<std::pair<QString, QString> > &filters,
+				const filter_list_type &filters,
 				unsigned int default_filter);
 
 		void
 		set_filters(
-				const std::vector<std::pair<QString, QString> > &filters);
+				const filter_list_type &filters);
 
 		void
 		select_file(

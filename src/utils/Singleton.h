@@ -29,10 +29,28 @@
 #define GPLATES_UTILS_SINGLETON_H
 
 #include <boost/noncopyable.hpp>
+#include <boost/scoped_ptr.hpp>
+#ifdef GPLATES_SINGLETON_THREADSAFE
 #include <QMutexLocker>
+#endif
 
 namespace GPlatesUtils
 {
+	template<class T>
+	class DefaultSingletonFactory
+	{
+	public:
+		T *
+		create_instance()
+		{
+			return new T();
+		}
+	};
+
+	class DefaultInstance
+	{
+	};
+
 	/**
 	 * Base class for types that are singletons. Subclasses will then have
 	 * a static instance() function that will return a reference to the
@@ -41,9 +59,9 @@ namespace GPlatesUtils
 	 * If it should not be possible to independently create objects of
 	 * subclasses, insert the GPLATES_SINGLETON_CONSTRUCTOR_DEF(ClassName)
 	 * macro at the top of the subclass definition. This defines (but does
-	 * not implement) the constructor as protected, and adds makes
-	 * Singleton<T> a friend class so that the instance() function can
-	 * construct such the singleton. Alternatively, use
+	 * not implement) the constructor as protected, and makes
+	 * DefaultSingletonFactory<T> a friend class so that it can
+	 * construct the singleton. Alternatively, use
 	 * GPLATES_SINGLETON_CONSTRUCTOR_IMPL(ClassName) to define and
 	 * implement the constructor as protected, and add the friend statement.
 	 *
@@ -51,68 +69,52 @@ namespace GPlatesUtils
 	 *
 	 *     Singleton<T>::instance()
 	 *
-	 * Note that this implementation of a singleton is not thread-safe. Use
-	 * ThreadsafeSingleton where this is required.
+	 * Note that this implementation of a singleton is not thread-safe. Define
+	 * GPLATES_SINGLETON_THREADSAFE before including this header if this is required.
 	 */
-	template<class T>
-	class Singleton : public boost::noncopyable
+	template<class T, class SingletonFactory = DefaultSingletonFactory<T>, class Instance = DefaultInstance>
+	class Singleton :
+		public boost::noncopyable
 	{
-		public:
-			static
-			T&
-			instance()
-			{
-				static T _instance;
-				return _instance;
-			}
-	};
+	public:
 
-	/**
-	 * Base class for types that are singletons. Subclasses will then have
-	 * a static instance() function that will return a reference to the
-	 * singleton object; this object cannot be copied.
-	 *
-	 * If it should not be possible to independently create objects of
-	 * subclasses, insert the GPLATES_SINGLETON_CONSTRUCTOR_DEF(ClassName)
-	 * macro at the top of the subclass definition. This defines (but does
-	 * not implement) the constructor as protected, and adds makes
-	 * Singleton<T> a friend class so that the instance() function can
-	 * construct such the singleton. Alternatively, use
-	 * GPLATES_SINGLETON_CONSTRUCTOR_IMPL(ClassName) to define and
-	 * implement the constructor as protected, and add the friend statement.
-	 *
-	 * It is also possible to obtain a singleton of an existing class T by calling
-	 *
-	 *     ThreadsafeSingleton<T>::instance()
-	 *
-	 * Note that this implementation of a singleton IS thread-safe (i.e.
-	 * it is safe for there to be simultaneous invocations of instance()).
-	 */
-	template<class T>
-	class ThreadsafeSingleton : public boost::noncopyable
-	{
-		public:
-			static
-			T&
-			instance()
+		/**
+		 * Returns a reference to the single instance of T. If the instance has not
+		 * been created yet, the instance is created using SingletonFactory.
+		 */
+		static
+		T&
+		instance()
+		{
+#ifdef GPLATES_SINGLETON_THREADSAFE
+			QMutexLocker locker;
+#endif
+			if (!s_instance_ptr)
 			{
-				QMutexLocker mutex_locker;
-				static T _instance;
-				return _instance;
+				SingletonFactory factory;
+				s_instance_ptr.reset(factory.create_instance());
 			}
+			return *s_instance_ptr;
+		}
+	
+	private:
+		static boost::scoped_ptr<T> s_instance_ptr;
+
 	};
 }
+
+template<class T, class SingletonFactory, class Instance>
+boost::scoped_ptr<T>
+GPlatesUtils::Singleton<T, SingletonFactory, Instance>::s_instance_ptr(NULL);
 
 #define GPLATES_SINGLETON_CONSTRUCTOR_DEF(T) \
 	protected: \
 		T(); \
-		friend class GPlatesUtils::Singleton<T>; \
-		friend class GPlatesUtils::ThreadsafeSingleton<T>;
+		friend class GPlatesUtils::DefaultSingletonFactory<T>;
 
 #define GPLATES_SINGLETON_CONSTRUCTOR_IMPL(T) \
 	protected: \
 		T() { } \
-		friend class GPlatesUtils::Singleton<T>; \
-		friend class GPlatesUtils::ThreadsafeSingleton<T>;
+		friend class GPlatesUtils::DefaultSingletonFactory<T>;
 
 #endif  // GPLATES_UTILS_SINGLETON_H

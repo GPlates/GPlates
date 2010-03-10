@@ -122,6 +122,12 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 	setup_connections();
 }
 
+GPlatesQtWidgets::TopologyToolsWidget::~TopologyToolsWidget()
+{
+	// This pointer isn't owned by anyone else
+	delete d_topology_tools_ptr;
+}
+
 void
 GPlatesQtWidgets::TopologyToolsWidget::setup_widgets()
 {

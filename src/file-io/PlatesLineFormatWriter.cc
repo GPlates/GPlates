@@ -49,7 +49,7 @@
 
 #include "maths/Real.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/InvalidPolylineContainsZeroPointsException.h"
 #include "maths/InvalidPolylineContainsOnlyOnePointException.h"
 

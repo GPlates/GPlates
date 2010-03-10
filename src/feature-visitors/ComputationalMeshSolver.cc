@@ -51,7 +51,7 @@
 
 #include "maths/PolylineOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/ProximityCriteria.h"
 #include "maths/PolylineIntersections.h"
 #include "maths/CalculateVelocity.h"

@@ -39,7 +39,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourTable.h"
+#include "gui/ColourProxy.h"
 
 #include "model/Reconstruction.h"
 #include "model/ResolvedTopologicalNetwork.h"
@@ -122,8 +122,7 @@ namespace
 void
 GPlatesViewOperations::render_reconstruction_geometries(
 		GPlatesModel::Reconstruction &reconstruction,
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		const GPlatesGui::ColourTable &colour_table)
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection)
 {
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
@@ -160,20 +159,11 @@ GPlatesViewOperations::render_reconstruction_geometries(
 	{
 		const GPlatesModel::ReconstructionGeometry *reconstruction_geom = iter->get();
 
-		GPlatesGui::ColourTable::const_iterator colour =
-				colour_table.lookup(*reconstruction_geom);
-
-		if (colour == colour_table.end())
-		{
-			// Anything not in the table uses the 'Olive' colour.
-			colour = &GPlatesGui::Colour::get_olive();
-		}
-
 		// Create a RenderedGeometry for drawing the reconstructed geometry.
 		RenderedGeometry rendered_geom =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 						reconstruction_geom->geometry(),
-						*colour,
+						GPlatesGui::ColourProxy(*iter),
 						RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
 						RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
 

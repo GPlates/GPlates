@@ -26,9 +26,9 @@
    <property name="geometry" >
     <rect>
      <x>48</x>
-     <y>25</y>
+     <y>26</y>
      <width>676</width>
-     <height>517</height>
+     <height>515</height>
     </rect>
    </property>
   </widget>
@@ -38,7 +38,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>25</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -120,45 +120,14 @@
       </property>
       <addaction name="action_Colour_By_Plate_ID_Default" />
       <addaction name="action_Colour_By_Plate_ID_Regional" />
-      <addaction name="action_Colour_By_Plate_ID_CPT" />
-      <addaction name="action_Colour_By_Plate_ID_Customise" />
-     </widget>
-     <widget class="QMenu" name="menu_Feature_Type" >
-      <property name="title" >
-       <string>Feature &amp;Type</string>
-      </property>
-      <addaction name="action_Colour_By_Feature_Type_Default" />
-      <addaction name="action_Colour_By_Feature_Type_CPT" />
-      <addaction name="separator" />
-      <addaction name="action_Colour_By_Feature_Type_Customise" />
-     </widget>
-     <widget class="QMenu" name="menu_Feature_Age" >
-      <property name="title" >
-       <string>Feature &amp;Age</string>
-      </property>
-      <addaction name="action_Colour_By_Feature_Age_Default" />
-      <addaction name="action_Colour_By_Feature_Age_CPT" />
-      <addaction name="separator" />
-      <addaction name="action_Colour_By_Feature_Age_Customise" />
-     </widget>
-     <widget class="QMenu" name="menu_Feature_Collection" >
-      <property name="title" >
-       <string>Feature &amp;Collection</string>
-      </property>
-      <addaction name="action_Colour_By_Feature_Collection_Default" />
-      <addaction name="action_Colour_By_Feature_Collection_CPT" />
-      <addaction name="separator" />
-      <addaction name="action_Colour_By_Feature_Collection_Customise" />
      </widget>
      <addaction name="menu_Plate_ID" />
      <addaction name="menu_Single_Colour" />
      <addaction name="action_Colour_By_Feature_Type" />
-     <addaction name="menu_Feature_Type" />
      <addaction name="action_Colour_By_Age" />
-     <addaction name="menu_Feature_Age" />
-     <addaction name="menu_Feature_Collection" />
     </widget>
     <addaction name="menu_Colour_Geometries_By" />
+    <addaction name="action_Geometry_Colours" />
     <addaction name="separator" />
     <addaction name="action_Show_Raster" />
     <addaction name="action_Set_Raster_Surface_Extent" />
@@ -228,9 +197,9 @@
    <property name="geometry" >
     <rect>
      <x>0</x>
-     <y>678</y>
+     <y>677</y>
      <width>724</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>
@@ -238,9 +207,9 @@
    <property name="geometry" >
     <rect>
      <x>0</x>
-     <y>25</y>
+     <y>26</y>
      <width>48</width>
-     <height>653</height>
+     <height>651</height>
     </rect>
    </property>
    <property name="contextMenuPolicy" >
@@ -286,7 +255,7 @@
    <property name="geometry" >
     <rect>
      <x>48</x>
-     <y>548</y>
+     <y>547</y>
      <width>676</width>
      <height>130</height>
     </rect>
@@ -351,7 +320,7 @@
           <x>0</x>
           <y>0</y>
           <width>649</width>
-          <height>103</height>
+          <height>102</height>
          </rect>
         </property>
         <attribute name="title" >
@@ -1535,92 +1504,9 @@
     <string>Group by &amp;Region</string>
    </property>
   </action>
-  <action name="action_Colour_By_Plate_ID_Customise" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
+  <action name="action_Geometry_Colours" >
    <property name="text" >
-    <string>&amp;Customise...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Plate_ID_CPT" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>CPT &amp;File...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Type_Default" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Default</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Type_Customise" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Customise...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Type_CPT" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>CPT &amp;File...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Age_Default" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Default</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Age_Customise" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Customise...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Age_CPT" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>CPT &amp;File...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Collection_Default" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Default</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Collection_CPT" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>CPT &amp;File...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Collection_Customise" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Customise...</string>
+    <string>Geometry Colours</string>
    </property>
   </action>
  </widget>

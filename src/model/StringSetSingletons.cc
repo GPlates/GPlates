@@ -26,116 +26,110 @@
  */
 
 #include "StringSetSingletons.h"
-
+#include "utils/Singleton.h"
 
 GPlatesUtils::IdStringSet &
-GPlatesModel::StringSetSingletons::feature_id_instance() {
-	if (s_feature_id_instance == NULL) {
-		s_feature_id_instance = new GPlatesUtils::IdStringSet();
-	}
-	return *s_feature_id_instance;
+GPlatesModel::StringSetSingletons::feature_id_instance()
+{
+	return GPlatesUtils::Singleton<GPlatesUtils::IdStringSet>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::feature_type_instance() {
-	if (s_feature_type_instance == NULL) {
-		s_feature_type_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_feature_type_instance;
+GPlatesModel::StringSetSingletons::feature_type_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		FeatureTypeInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::property_name_instance() {
-	if (s_property_name_instance == NULL) {
-		s_property_name_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_property_name_instance;
+GPlatesModel::StringSetSingletons::property_name_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		PropertyNameInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::template_type_parameter_type_instance() {
-	if (s_template_type_parameter_type_instance == NULL) {
-		s_template_type_parameter_type_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_template_type_parameter_type_instance;
+GPlatesModel::StringSetSingletons::template_type_parameter_type_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		TemplateTypeParameterTypeInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::text_content_instance() {
-	if (s_text_content_instance == NULL) {
-		s_text_content_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_text_content_instance;
+GPlatesModel::StringSetSingletons::text_content_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		TextContentInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::xml_attribute_name_instance() {
-	if (s_xml_attribute_name_instance == NULL) {
-		s_xml_attribute_name_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_xml_attribute_name_instance;
+GPlatesModel::StringSetSingletons::xml_attribute_name_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		XMLAttributeNameInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::xml_attribute_value_instance() {
-	if (s_xml_attribute_value_instance == NULL) {
-		s_xml_attribute_value_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_xml_attribute_value_instance;
+GPlatesModel::StringSetSingletons::xml_attribute_value_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		XMLAttributeValueInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::xml_namespace_instance() {
-	if (s_xml_namespace_instance == NULL) {
-		s_xml_namespace_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_xml_namespace_instance;
+GPlatesModel::StringSetSingletons::xml_namespace_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		XMLNamespaceInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::xml_namespace_alias_instance() {
-	if (s_xml_namespace_alias_instance == NULL) {
-		s_xml_namespace_alias_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_xml_namespace_alias_instance;
+GPlatesModel::StringSetSingletons::xml_namespace_alias_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		XMLNamespaceAliasInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::xml_element_name_instance() {
-	if (s_xml_element_name_instance == NULL) {
-		s_xml_element_name_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_xml_element_name_instance;
+GPlatesModel::StringSetSingletons::xml_element_name_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		XMLElementNameInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::enumeration_content_instance() {
-	if (s_enumeration_content_instance == NULL) {
-		s_enumeration_content_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_enumeration_content_instance;
+GPlatesModel::StringSetSingletons::enumeration_content_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		EnumerationContentInstance>::instance();
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::enumeration_type_instance() {
-	if (s_enumeration_type_instance == NULL) {
-		s_enumeration_type_instance = new GPlatesUtils::StringSet();
-	}
-	return *s_enumeration_type_instance;
+GPlatesModel::StringSetSingletons::enumeration_type_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		EnumerationTypeInstance>::instance();
 }
-
-
-GPlatesUtils::IdStringSet *GPlatesModel::StringSetSingletons::s_feature_id_instance = NULL;
-
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_feature_type_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_property_name_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_template_type_parameter_type_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_text_content_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_name_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_value_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_namespace_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_namespace_alias_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_element_name_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_enumeration_content_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_enumeration_type_instance = NULL;
 

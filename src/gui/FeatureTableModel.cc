@@ -45,7 +45,7 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/XsString.h"
 #include "utils/UnicodeStringUtils.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"

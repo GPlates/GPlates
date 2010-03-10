@@ -68,7 +68,6 @@ set(srcs
     RenderReconstructionGeometries.h
     UndoRedo.cc
     UndoRedo.h
-    ViewportProjection.h
     VisibleReconstructedFeatureGeometryExport.cc
     VisibleReconstructedFeatureGeometryExport.h
 )

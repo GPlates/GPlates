@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the LatLonPoint class.
  *
  * Most recent change:
  *   $Date$
@@ -28,12 +28,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MATHS_LATLONPOINTCONVERSIONS_H
-#define GPLATES_MATHS_LATLONPOINTCONVERSIONS_H
+#ifndef GPLATES_MATHS_LATLONPOINT_H
+#define GPLATES_MATHS_LATLONPOINT_H
 
 #include <iosfwd>
 #include <list>
-
 
 namespace GPlatesMaths
 {
@@ -128,4 +127,4 @@ namespace GPlatesMaths
 
 }
 
-#endif  // GPLATES_MATHS_LATLONPOINTCONVERSIONS_H
+#endif  // GPLATES_MATHS_LATLONPOINT_H

@@ -43,7 +43,7 @@
 
 #include "maths/Real.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/UnitQuaternion3D.h"
 #include "utils/StringFormattingUtils.h"
 #include "utils/MathUtils.h"
@@ -80,6 +80,20 @@ namespace
 			<< " !"
 			<< comment
 			<< std::endl;
+	}
+}
+
+
+GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
+		const FileInfo &file_info)
+{
+	d_output.reset(new std::ofstream(file_info.get_qfileinfo().filePath().toStdString().c_str()));
+
+	// Check whether the file could be opened for writing.
+	if (!(*d_output))
+	{
+		throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
+				file_info.get_qfileinfo().filePath());
 	}
 }
 
@@ -169,7 +183,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::finalise_post_feature_properties(
 {
 	// Print reconstruction poles when we can.
 	if (d_accum.have_sufficient_info_for_output()) {
-		d_accum.print_rotation_lines(d_output);
+		d_accum.print_rotation_lines(d_output.get());
 	}
 }
 

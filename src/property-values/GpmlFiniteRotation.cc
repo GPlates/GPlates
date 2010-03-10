@@ -29,7 +29,7 @@
 
 #include "GpmlFiniteRotation.h"
 #include "GmlPoint.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
 

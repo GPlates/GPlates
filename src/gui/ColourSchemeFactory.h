@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,55 +28,47 @@
 #ifndef GPLATES_GUI_COLOURSCHEMEFACTORY_H
 #define GPLATES_GUI_COLOURSCHEMEFACTORY_H
 
-#include "GenericColourScheme.h"
-#include "PlateIdColourPalettes.h"
-#include "model/types.h"
-#include "app-logic/ReconstructionGeometryUtils.h"
-
-#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QColor>
 
-namespace
+namespace GPlatesAppLogic
 {
-	class PlateIdPropertyExtractor
-	{
-	public:
-		
-		typedef GPlatesModel::integer_plate_id_type return_type;
-
-		const boost::optional<return_type>
-		operator()(
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
-		{
-			return GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(
-						&reconstruction_geometry);
-		}
-	};
+	class Reconstruct;
 }
 
 namespace GPlatesGui
 {
-	typedef GenericColourScheme<PlateIdPropertyExtractor> PlateIdColourScheme;
+	class ColourScheme;
 
+	/**
+	 * Contains static helper functions to create ColourSchemes.
+	 */
 	class ColourSchemeFactory
 	{
 	public:
 
 		static
 		boost::shared_ptr<ColourScheme>
-		create_default_plate_id_colour_scheme()
-		{
-			return boost::shared_ptr<ColourScheme>(
-					new PlateIdColourScheme(new DefaultPlateIdColourPalette()));
-		}
+		create_single_colour_scheme(
+				const QColor &qcolor);
 
 		static
 		boost::shared_ptr<ColourScheme>
-		create_regional_plate_id_colour_scheme()
-		{
-			return boost::shared_ptr<ColourScheme>(
-					new PlateIdColourScheme(new RegionalPlateIdColourPalette()));
-		}
+		create_default_plate_id_colour_scheme();
+
+		static
+		boost::shared_ptr<ColourScheme>
+		create_regional_plate_id_colour_scheme();
+
+		static
+		boost::shared_ptr<ColourScheme>
+		create_default_age_colour_scheme(
+				const GPlatesAppLogic::Reconstruct &reconstruct);
+
+		static
+		boost::shared_ptr<ColourScheme>
+		create_default_feature_colour_scheme();
+		
 	};
 }
 

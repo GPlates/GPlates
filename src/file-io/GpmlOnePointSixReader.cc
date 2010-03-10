@@ -49,7 +49,7 @@
 #include "utils/UnicodeStringUtils.h"
 #include "utils/MathUtils.h"
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 #include "model/Model.h"
 #include "model/FeatureRevision.h"

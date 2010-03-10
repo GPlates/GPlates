@@ -27,8 +27,8 @@ variable is not case sensitive, so it could be called Path instead.)
         the change will affect all users on the computer. Edit the variable in
         whichever section is most suitable. If the PATH variable does not exist,
         click the New button to add it. Separate paths with semicolons.
- * Windows Vista (if you have administrator access and you wish to change the
-   PATH variable for all users):
+ * Windows Vista and Windows 7 (if you have administrator access and you wish
+   to change the PATH variable for all users):
      1. Click on the Start button.
      2. Right-click on Computer and select Properties.
      3. Click on the Advanced system settings link in the left-hand Tasks panel.
@@ -37,8 +37,8 @@ variable is not case sensitive, so it could be called Path instead.)
      6. Edit the PATH variable in the System variables section. If the PATH
         variable does not exist, click the New button to add it. Separate paths
         with semicolons.
- * Windows Vista (if you do not have administrator access or you wish to change
-   the PATH variable only for your account):
+ * Windows Vista and Windows 7 (if you do not have administrator access or you
+   wish to change the PATH variable only for your account):
      1. Click on the Start button.
      2. Click your account's picture at the very top of the second column.
      3. Click on the Change my environment variables link in the left-hand Tasks
@@ -62,7 +62,9 @@ Qt
 
   1. Download qt-win-opensource-src-4.3.4.zip from: http://get.qt.nokia.com/qt/source/
   2. Extract it to a path containing no spaces 
-  3. Run: configure 
+  3. Run: configure
+      * If there are errors, open the "Visual Studio 200x Command Prompt" from
+        the Start menu, and run configure from there.
   4. Run: nmake 
   5. In VC access Tools, Options, Projects, Directories and add the following Qt 
     directories: 
@@ -78,6 +80,10 @@ Boost
 	   and select all 'Variants'.
      * In addition to the default packages, also install "Program Options",
 	    "Test (unit test framework)" and "Thread".
+  2. Add the \boost\boost_1_xx directory to the CMAKE_INCLUDE_PATH environment
+     variable.
+  3. Add the \boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
+     environment variable.
 
 ICU
 
@@ -87,6 +93,7 @@ ICU
      ICU directories: 
        * Executable files: \bin
   3. Add the \bin directory to the PATH environment variable (see above).
+  4. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
 
 Expat
 
@@ -107,12 +114,15 @@ CGAL
 	 * Under 'Select Default Variants' leave everything unticked (except for 'Platforms').
 	 * Under 'Choose Components' untick everything ('Main CGAL' cannot be unticked).
 	 * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.5'.
+	     * In particular, do not install under Program Files on Windows Vista and
+	       above because you will likely run into permissions issues later.
 	 * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
   2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
      * Specify the CGAL installation location as the source and build directories.
+     * Click the 'Configure' button.
 	 * Untick all 'WITH_*' options.
 	 * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-3.5').
-	 * Click the 'Configure' button twice.
+	 * Click the 'Configure' button again.
 	 * Click the 'Generate' button.
 	 * If this is successful then a Visual Studio solution file 'CGAL.sln'.
   3. Build CGAL:

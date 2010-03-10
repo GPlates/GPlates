@@ -29,29 +29,26 @@
 #include <algorithm>
 
 #include "GlobeRenderedGeometryCollectionPainter.h"
-
 #include "OpenGL.h"
-
 #include "gui/NurbsRenderer.h"
-
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryUtils.h"
 
-
-
-
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollectionPainter(
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		const RenderSettings &render_settings,
+		RenderSettings &render_settings,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
-		const GlobeVisibilityTester &visibility_tester) :
+		const GlobeVisibilityTester &visibility_tester,
+		boost::shared_ptr<ColourScheme> colour_scheme) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_current_layer_far_depth(0),
 	d_depth_range_per_layer(0),
 	d_render_settings(render_settings),
 	d_text_renderer_ptr(text_renderer_ptr),
-	d_visibility_tester(visibility_tester)
+	d_visibility_tester(visibility_tester),
+	d_colour_scheme(colour_scheme),
+	d_scale(1.0f)
 {
 }
 
@@ -78,7 +75,6 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint(
 
 	// Draw the layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
-
 
 	// Re-enable writes to the depth buffer.
 	// This is might have been turned off when rendering the individual layers.
@@ -111,7 +107,9 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 			*d_paint_params->d_nurbs_renderer,
 			d_render_settings,
 			d_text_renderer_ptr,
-			d_visibility_tester);
+			d_visibility_tester,
+			d_colour_scheme);
+	rendered_geom_layer_painter.set_scale(d_scale);
 	rendered_geom_layer_painter.paint();
 
 	// We've already visited the rendered geometry layer so don't visit its rendered geometries.

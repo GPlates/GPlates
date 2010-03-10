@@ -31,7 +31,7 @@
 
 
 #include "CartesianConvMatrix3D.h"
-#include "LatLonPointConversions.h"
+#include "LatLonPoint.h"
 
 
 GPlatesMaths::CartesianConvMatrix3D::CartesianConvMatrix3D(const PointOnSphere

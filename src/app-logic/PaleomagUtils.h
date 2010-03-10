@@ -26,7 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_PALEOMAGUTILS_H
 #define GPLATES_APP_LOGIC_PALEOMAGUTILS_H
 
-#include "gui/Colour.h"
+#include "gui/ColourProxy.h"
 #include "maths/Rotation.h"
 #include "model/FeatureVisitor.h"
 #include "model/FeatureHandle.h"
@@ -111,7 +111,7 @@ namespace GPlatesAppLogic
 				boost::optional<const double> &reconstruction_time,
 				boost::optional<GPlatesMaths::Rotation> &additional_rotation,
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type target_layer,
-				const GPlatesGui::Colour &colour,
+				const GPlatesGui::ColourProxy &colour,
 				bool draw_error_as_ellipse = true
 				):
 				d_reconstruction(reconstruction),
@@ -160,7 +160,7 @@ namespace GPlatesAppLogic
 			boost::optional<const double> d_reconstruction_time;
 			boost::optional<GPlatesMaths::Rotation> d_additional_rotation;
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_target_layer;
-			const GPlatesGui::Colour &d_colour;
+			const GPlatesGui::ColourProxy &d_colour;
 			const bool d_draw_error_as_ellipse;
 			
 			boost::optional<GPlatesMaths::PointOnSphere> d_site_point;

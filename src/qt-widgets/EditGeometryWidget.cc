@@ -41,7 +41,7 @@
 #include "feature-visitors/GeometrySetter.h"
 #include "gui/GeometricPropertyValueConstructor.h"
 #include "maths/InvalidLatLonException.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"

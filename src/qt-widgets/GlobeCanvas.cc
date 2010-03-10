@@ -42,6 +42,7 @@
 #include <QtGui/QMouseEvent>
 #include <QSizePolicy>
 
+#include "gui/ColourScheme.h"
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/QGLWidgetTextRenderer.h"
 #include "gui/SvgExport.h"
@@ -49,7 +50,7 @@
 
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 #include "global/GPlatesException.h"
 #include "model/FeatureHandle.h"
@@ -183,17 +184,57 @@ GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
 }
 
 
+// Public constructor
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
+		boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
 		QWidget *parent_):
 	QGLWidget(parent_),
+	d_view_state(view_state),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
-	d_globe(view_state.get_rendered_geometry_collection(),
+	d_globe(
+			view_state.get_rendered_geometry_collection(),
+			view_state.get_render_settings(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
-			GPlatesGui::GlobeVisibilityTester(*this)),
-	d_viewport_zoom(view_state.get_viewport_zoom())
+			GPlatesGui::GlobeVisibilityTester(*this),
+			colour_scheme),
+	d_viewport_zoom(view_state.get_viewport_zoom()),
+	d_mouse_wheel_enabled(true)
+{
+	init();
+}
+
+
+// Private constructor
+GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
+		GlobeCanvas *existing_globe_canvas,
+		GPlatesPresentation::ViewState &view_state_,
+		GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
+		bool mouse_pointer_is_on_globe_,
+		GPlatesGui::Globe &existing_globe_,
+		bool mouse_wheel_enabled_,
+		boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme_,
+		QWidget *parent_) :
+	QGLWidget(parent_, existing_globe_canvas /* share display lists and texture objects */),
+	d_view_state(view_state_),
+	d_virtual_mouse_pointer_pos_on_globe(virtual_mouse_pointer_pos_on_globe_),
+	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
+	d_globe(
+			existing_globe_,
+			GPlatesGui::QGLWidgetTextRenderer::create(this),
+			GPlatesGui::GlobeVisibilityTester(*this),
+			colour_scheme_),
+	d_viewport_zoom(view_state_.get_viewport_zoom()),
+	d_mouse_wheel_enabled(mouse_wheel_enabled_)
+{
+	init();
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::init()
 {
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
@@ -212,26 +253,56 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	setSizePolicy(globe_size_policy);
 	setMinimumSize(100, 100);
 
-	QObject::connect(&globe().orientation(), SIGNAL(orientation_changed()),
+	QObject::connect(&(d_globe.orientation()), SIGNAL(orientation_changed()),
 			this, SLOT(notify_of_orientation_change()));
-	QObject::connect(&globe().orientation(), SIGNAL(orientation_changed()),
+	QObject::connect(&(d_globe.orientation()), SIGNAL(orientation_changed()),
 			this, SLOT(force_mouse_pointer_pos_change()));
 
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
 	// This will cause 'paintGL()' to be called which will visit the rendered
 	// geometry collection and redraw it.
 	QObject::connect(
-		&view_state.get_rendered_geometry_collection(),
-		SIGNAL(collection_was_updated(
-				GPlatesViewOperations::RenderedGeometryCollection &,
-				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
-		this,
-		SLOT(update_canvas()));
+			&(d_view_state.get_rendered_geometry_collection()),
+			SIGNAL(collection_was_updated(
+					GPlatesViewOperations::RenderedGeometryCollection &,
+					GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
+			this,
+			SLOT(update_canvas()));
+
+	// Update canvas whenever RenderSettings gets changed.
+	QObject::connect(
+			&(d_view_state.get_render_settings()),
+			SIGNAL(settings_changed()),
+			this,
+			SLOT(update_canvas()));
+
+	// Update canvas whenever Texture gets changed.
+	QObject::connect(
+			&(d_globe.texture()),
+			SIGNAL(texture_changed()),
+			this,
+			SLOT(update_canvas()));
 
 	handle_zoom_change();
 
 	setAttribute(Qt::WA_NoSystemBackground);
+}
 
+
+GPlatesQtWidgets::GlobeCanvas *
+GPlatesQtWidgets::GlobeCanvas::clone(
+		boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+		QWidget *parent_)
+{
+	return new GlobeCanvas(
+			this,
+			d_view_state,
+			d_virtual_mouse_pointer_pos_on_globe,
+			d_mouse_pointer_is_on_globe,
+			d_globe,
+			d_mouse_wheel_enabled,
+			colour_scheme,
+			parent_);
 }
 
 
@@ -340,7 +411,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
 		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
-		d_globe.paint_vector_output(viewport_zoom_factor);
+		d_globe.paint_vector_output(viewport_zoom_factor, calculate_scale());
 	}
 	catch (const GPlatesGlobal::Exception &e){
 			std::cerr << e << std::endl;
@@ -370,7 +441,7 @@ GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 		d_virtual_mouse_pointer_pos_on_globe = new_pos;
 		d_mouse_pointer_is_on_globe = is_now_on_globe;
 
-		GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
+		GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.orient(new_pos);
 		emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
 	}
 }
@@ -389,7 +460,7 @@ GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 	d_virtual_mouse_pointer_pos_on_globe = new_pos;
 	d_mouse_pointer_is_on_globe = is_now_on_globe;
 
-	GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
+	GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.orient(new_pos);
 	emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
 }
 
@@ -417,10 +488,13 @@ GPlatesQtWidgets::GlobeCanvas::resizeGL(
 		int new_width,
 		int new_height) 
 {
-	try {
+	try
+	{
 		set_view();
-	} catch (const GPlatesGlobal::Exception &e){
-			std::cerr << e << std::endl;
+	}
+	catch (const GPlatesGlobal::Exception &e)
+	{
+		std::cerr << e << std::endl;
 	}
 }
 
@@ -446,7 +520,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
 		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
-		d_globe.paint(viewport_zoom_factor);
+		d_globe.paint(viewport_zoom_factor, calculate_scale());
 
 	} catch (const GPlatesGlobal::Exception &e){
 			std::cerr << e << std::endl;
@@ -498,12 +572,12 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		if (d_mouse_press_info->d_is_mouse_drag) {
 			emit mouse_dragged(
 					d_mouse_press_info->d_mouse_pointer_pos,
-					d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
+					d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 					d_mouse_press_info->d_is_on_globe,
 					virtual_mouse_pointer_pos_on_globe(),
-					d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
+					d_globe.orient(virtual_mouse_pointer_pos_on_globe()),
 					mouse_pointer_is_on_globe(),
-					d_globe.Orient(centre_of_viewport()),
+					d_globe.orient(centre_of_viewport()),
 					d_mouse_press_info->d_button,
 					d_mouse_press_info->d_modifiers);
 		}
@@ -519,9 +593,9 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		//
 		emit mouse_moved_without_drag(
 				virtual_mouse_pointer_pos_on_globe(),
-				d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
+				d_globe.orient(virtual_mouse_pointer_pos_on_globe()),
 				mouse_pointer_is_on_globe(),
-				d_globe.Orient(centre_of_viewport()));
+				d_globe.orient(centre_of_viewport()));
 	}
 }
 
@@ -556,18 +630,18 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 	if (d_mouse_press_info->d_is_mouse_drag) {
 		emit mouse_released_after_drag(
 				d_mouse_press_info->d_mouse_pointer_pos,
-				d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
+				d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 				d_mouse_press_info->d_is_on_globe,
 				virtual_mouse_pointer_pos_on_globe(),
-				d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
+				d_globe.orient(virtual_mouse_pointer_pos_on_globe()),
 				mouse_pointer_is_on_globe(),
-				d_globe.Orient(centre_of_viewport()),
+				d_globe.orient(centre_of_viewport()),
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
 	} else {
 		emit mouse_clicked(
 				d_mouse_press_info->d_mouse_pointer_pos,
-				d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
+				d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 				d_mouse_press_info->d_is_on_globe,
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
@@ -579,13 +653,22 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 void GPlatesQtWidgets::GlobeCanvas::wheelEvent(
 		QWheelEvent *wheel_event) 
 {
-	handle_wheel_rotation(wheel_event->delta());
+	if (d_mouse_wheel_enabled)
+	{
+		handle_wheel_rotation(wheel_event->delta());
+	}
+	else
+	{
+		wheel_event->ignore();
+	}
 }
 
 
 void
 GPlatesQtWidgets::GlobeCanvas::handle_zoom_change() 
 {
+	// switch context before we do any GL stuff
+	makeCurrent();
 
 	set_view();
 
@@ -600,7 +683,7 @@ GPlatesQtWidgets::GlobeCanvas::handle_zoom_change()
 	handle_mouse_pointer_pos_change();
 }
 
-		
+
 void
 GPlatesQtWidgets::GlobeCanvas::set_view() 
 {
@@ -723,11 +806,12 @@ GPlatesQtWidgets::GlobeCanvas::clear_canvas(
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+
 // raster display
 void
 GPlatesQtWidgets::GlobeCanvas::toggle_raster_image()
 {
-	d_globe.toggle_raster_image();
+	d_globe.toggle_raster_display();
 	update_canvas();
 }
 
@@ -742,121 +826,6 @@ void
 GPlatesQtWidgets::GlobeCanvas::disable_raster_display()
 {
 	d_globe.disable_raster_display();
-}
-
-
-// points display
-void
-GPlatesQtWidgets::GlobeCanvas::toggle_point_display()
-{
-	d_globe.toggle_point_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::enable_point_display()
-{
-	d_globe.enable_point_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::disable_point_display()
-{
-	d_globe.disable_point_display();
-}
-
-// lines display 
-void
-GPlatesQtWidgets::GlobeCanvas::toggle_line_display()
-{
-	d_globe.toggle_line_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::enable_line_display()
-{
-	d_globe.enable_line_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::disable_line_display()
-{
-	d_globe.disable_line_display();
-}
-
-// polygons display
-void
-GPlatesQtWidgets::GlobeCanvas::toggle_polygon_display()
-{
-	d_globe.toggle_polygon_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::enable_polygon_display()
-{
-	d_globe.enable_polygon_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::disable_polygon_display()
-{
-	d_globe.disable_polygon_display();
-}
-
-// multipoint display
-void
-GPlatesQtWidgets::GlobeCanvas::toggle_multipoint_display()
-{
-	d_globe.toggle_multipoint_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::enable_multipoint_display()
-{
-	d_globe.enable_multipoint_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::disable_multipoint_display()
-{
-	d_globe.disable_multipoint_display();
-}
-
-// arrow display
-void
-GPlatesQtWidgets::GlobeCanvas::toggle_arrows_display()
-{
-	d_globe.toggle_arrows_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::enable_arrows_display()
-{
-	d_globe.enable_arrows_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::disable_arrows_display()
-{
-	d_globe.disable_arrows_display();
-}
-
-// strings display
-void
-GPlatesQtWidgets::GlobeCanvas::toggle_strings_display()
-{
-	d_globe.toggle_strings_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::enable_strings_display()
-{
-	d_globe.enable_strings_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::disable_strings_display()
-{
-	d_globe.disable_strings_display();
 }
 
 
@@ -1011,8 +980,8 @@ GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
 	GPlatesMaths::PointOnSphere oriented_desired_centre = 
 	d_globe.orientation().orient_point(
 		GPlatesMaths::make_point_on_sphere(desired_centre));
-	d_globe.SetNewHandlePos(oriented_desired_centre);
-	d_globe.UpdateHandlePos(centre_of_canvas);
+	d_globe.set_new_handle_pos(oriented_desired_centre);
+	d_globe.update_handle_pos(centre_of_canvas);
 			
 	d_globe.orientation().orient_poles_vertically();
 	
@@ -1028,7 +997,7 @@ GPlatesQtWidgets::GlobeCanvas::camera_llp() const
 	static const GPlatesMaths::PointOnSphere centre_of_canvas =
 			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
 
-	GPlatesMaths::PointOnSphere oriented_centre = globe().Orient(centre_of_canvas);
+	GPlatesMaths::PointOnSphere oriented_centre = globe().orient(centre_of_canvas);
 	return GPlatesMaths::make_lat_lon_point(oriented_centre);
 }
 
@@ -1073,3 +1042,12 @@ GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
 {
 	globe().orientation().orient_poles_vertically();
 }
+
+float
+GPlatesQtWidgets::GlobeCanvas::calculate_scale()
+{
+	int min_dimension = (std::min)(size().width(), size().height());
+	return static_cast<float>(min_dimension) /
+		static_cast<float>(d_view_state.get_main_viewport_min_dimension());
+}
+

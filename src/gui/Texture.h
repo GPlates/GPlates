@@ -30,11 +30,8 @@
 
 #include <QtOpenGL/qgl.h>
 #include <QString>
+#include <QObject>
 #include "property-values/InMemoryRaster.h"
-
-
-
-
 
 namespace GPlatesGui {
 
@@ -70,11 +67,16 @@ namespace GPlatesGui {
 		float z;
 	};
 
-	class Texture:
-			public GPlatesPropertyValues::InMemoryRaster
+	class Texture :
+		public QObject,
+		public GPlatesPropertyValues::InMemoryRaster
 	{
+
+		Q_OBJECT
+
 	public:
-		Texture():
+
+		Texture() :
 			d_image_data(0),
 			d_image_width(0),
 			d_image_height(0),
@@ -84,11 +86,11 @@ namespace GPlatesGui {
 			d_max(0),
 			d_corresponds_to_data(false),
 			d_extent(INITIAL_EXTENT),
-			d_should_be_remapped(false)
-			{}
+			d_should_be_remapped(false),
+			d_is_loaded(false)
+		{ }
 
 		~Texture();
-
 
 		/**
 		 * Generates a texture using the data contained in a std::vector<unsigned_byte_type>.
@@ -109,7 +111,6 @@ namespace GPlatesGui {
 			unsigned_byte_type *data,
 			QSize &size,
 			ColourFormat format);
-
 
 		/**
 		 * Generates a checker-board pattern in memory, and creates a texture from this.
@@ -135,7 +136,8 @@ namespace GPlatesGui {
 		 * is displayed. 
 		 */ 
 		bool
-		is_enabled(){
+		is_enabled()
+		{
 			return d_enabled;
 		}
 
@@ -145,7 +147,8 @@ namespace GPlatesGui {
 		 * interpretation of the colour display. 
 		 */
 		bool
-		corresponds_to_data(){
+		corresponds_to_data()
+		{
 			return d_corresponds_to_data;
 		}
 
@@ -155,9 +158,7 @@ namespace GPlatesGui {
 		 */
 		void
 		set_enabled(
-			bool enabled){
-			d_enabled = enabled;
-		}
+			bool enabled);
 	
 		/**
 		 * Toggles the state of the boolean d_enabled, which determines whether or not the texture
@@ -171,7 +172,8 @@ namespace GPlatesGui {
 		 * represents the minimum of the range of values used to generate colour values.
 		 */
 		float
-		get_min(){
+		get_min()
+		{
 			return d_min;
 		}
 
@@ -180,7 +182,8 @@ namespace GPlatesGui {
 		 * represents the maximum of the range of values used to generate colour values.
 		 */
 		float
-		get_max(){
+		get_max()
+		{
 				return d_max;
 		}
 
@@ -191,8 +194,10 @@ namespace GPlatesGui {
 		 */ 
 		void
 		set_min(
-			float min){
+			float min)
+		{
 			d_min = min;
+			emit texture_changed();
 		}
 
 		/**
@@ -202,8 +207,10 @@ namespace GPlatesGui {
 		 */ 
 		void
 		set_max(
-			float max){
+			float max)
+		{
 			d_max = max;
+			emit texture_changed();
 		}
 
 		/**
@@ -214,8 +221,10 @@ namespace GPlatesGui {
 		 */
 		void
 		set_corresponds_to_data(
-			bool data){
+			bool data)
+		{
 			d_corresponds_to_data = data;
+			emit texture_changed();
 		}
 
 		/**
@@ -224,7 +233,6 @@ namespace GPlatesGui {
 		void
 		set_extent(
 			const QRectF &rect);
-
 
 		/**
 		 * Return the coordinate range over which the texture is mapped.
@@ -236,9 +244,16 @@ namespace GPlatesGui {
 		}
 
 		bool
-		texture_is_loaded();
+		is_loaded()
+		{
+			return d_is_loaded;
+		}
 
+	signals:
 
+		//! Emitted when the raster is loaded or changed, and when the texture is enabled/disabled
+		void
+		texture_changed();
 
 	private:
 
@@ -338,13 +353,15 @@ namespace GPlatesGui {
 		 */
 		QRectF d_extent;
 		
-		
 		/**
 		 * Whether or not the texture needs to be remapped.                                                                     
 		 */
-		 bool d_should_be_remapped;
+		bool d_should_be_remapped;
 
-
+		/**
+		 * Whether a raster has been loaded.
+		 */
+		bool d_is_loaded;
 	};
 
 }

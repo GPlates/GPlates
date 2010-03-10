@@ -27,16 +27,6 @@
 #include "Colour.h"
 #include <vector>
 
-GPlatesGui::ColourSpectrum *
-GPlatesGui::ColourSpectrum::Instance()
-{
-	if (d_instance == NULL) {
-		// create a new instance
-		d_instance = new ColourSpectrum();
-	}
-	return d_instance;
-}
-
 GPlatesGui::ColourSpectrum::ColourSpectrum()
 {
 	//worked out the ranges from the QtColourDialogue
@@ -102,5 +92,3 @@ GPlatesGui::ColourSpectrum::get_colour_spectrum()
 	return d_colours;
 }
 
-GPlatesGui::ColourSpectrum *
-GPlatesGui::ColourSpectrum::d_instance = NULL; 

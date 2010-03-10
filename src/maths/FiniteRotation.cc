@@ -41,7 +41,7 @@
 #include "GreatCircleArc.h"
 #include "GreatCircle.h"
 #include "SmallCircle.h"
-#include "LatLonPointConversions.h"
+#include "LatLonPoint.h"
 #include "InvalidOperationException.h"
 #include "IndeterminateResultException.h"
 #include "ConstGeometryOnSphereVisitor.h"

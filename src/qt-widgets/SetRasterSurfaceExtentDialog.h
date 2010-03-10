@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_SETRASTERSURFACEEXTENTDIALOG_H
 
 #include <QDialog>
+#include <boost/scoped_ptr.hpp>
 #include "SetRasterSurfaceExtentDialogUi.h"
 
 namespace GPlatesGui
@@ -36,11 +37,9 @@ namespace GPlatesGui
 
 namespace GPlatesQtWidgets
 {
-
 	class InformationDialog;
-	class ViewportWindow;
 
-	class SetRasterSurfaceExtentDialog:
+	class SetRasterSurfaceExtentDialog :
 		public QDialog,
 		protected Ui_SetRasterSurfaceExtentDialog
 	{
@@ -50,12 +49,11 @@ namespace GPlatesQtWidgets
 
 		explicit
 		SetRasterSurfaceExtentDialog(
-			ViewportWindow &viewport_window,
-			QWidget *parent_ = NULL);
+				GPlatesGui::Texture &texture,
+				QWidget *parent_ = NULL);
 
 		virtual
-		~SetRasterSurfaceExtentDialog()
-		{ }
+		~SetRasterSurfaceExtentDialog();
 
 		const QRectF 
 		extent() const
@@ -64,7 +62,6 @@ namespace GPlatesQtWidgets
 		}
 
 	public slots:
-
 
 		void
 		accept();
@@ -75,13 +72,18 @@ namespace GPlatesQtWidgets
 		void
 		handle_reset_to_default_fields();
 
+	private slots:
+
+		void
+		close_help_dialog(int);
+
 	private:
 
-		ViewportWindow *d_viewport_window_ptr;
+		GPlatesGui::Texture &d_texture;
 
 		QRectF d_extent;
 
-		InformationDialog *d_help_dialog;
+		boost::scoped_ptr<InformationDialog> d_help_dialog;
 
 		static const QString s_help_dialog_text;
 		static const QString s_help_dialog_title;

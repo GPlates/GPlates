@@ -30,34 +30,26 @@
 
 #include <vector>
 
-#include "ColourTable.h"
-
+#include "Colour.h"
+#include "utils/Singleton.h"
 
 namespace GPlatesGui 
 {
-	class ColourSpectrum
+	class ColourSpectrum :
+		public GPlatesUtils::Singleton<ColourSpectrum>
 	{
+
+		GPLATES_SINGLETON_CONSTRUCTOR_DEF(ColourSpectrum)
+
 	public:
-		static
-		ColourSpectrum *
-		Instance();
 
 		std::vector<GPlatesGui::Colour> &
 		get_colour_spectrum();
 
-	protected:
-		/**
-		 * Private constructor to enforce singleton design.
-		 */
-		ColourSpectrum();
-
 	private:
-		/**
-		 * The singleton instance.
-		 */
-		static ColourSpectrum *d_instance;
 
 		std::vector<GPlatesGui::Colour> d_colours;
+
 	};
 }
 

@@ -31,7 +31,7 @@
 #include <iterator>
 #include <vector>
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"

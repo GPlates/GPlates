@@ -61,7 +61,7 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonOnSphere.h"

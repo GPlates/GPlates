@@ -174,11 +174,16 @@ GPlatesFileIO::get_feature_collection_writer(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
 		FeatureCollectionWriteFormat::Format write_format)
 {
+	// The following check is commented out because	it fails in certain circumstances
+	// on newer versions of Windows. We'll just try and open the file for writing
+	// and throw an exception if it fails.
+#if 0
 	if ( ! is_writable(file_info) )
 	{
 		throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
 				file_info.get_qfileinfo().filePath());
 	}
+#endif
 
 	// Assert GMT format compatilibity.
 	switch (write_format)

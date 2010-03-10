@@ -29,7 +29,6 @@
 #include <boost/noncopyable.hpp>
 #include <QObject>
 
-#include "gui/ColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "GlobeCanvasTool.h"
 #include "FeatureTableModel.h"

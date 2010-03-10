@@ -31,6 +31,7 @@
 #include <QSizePolicy>
 #include <QToolButton>
 #include <QMenu>
+#include <cmath>
 
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
@@ -42,13 +43,14 @@
 #include "MapCanvas.h"
 #include "MapView.h"
 #include "LeaveFullScreenButton.h"
+#include "GlobeAndMapWidget.h"
 
+#include "gui/ViewportProjection.h"
 #include "maths/PointOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "presentation/ViewState.h"
 #include "qt-widgets/TaskPanel.h"
 #include "utils/FloatingPointComparisons.h"
-#include "view-operations/ViewportProjection.h"
 
 
 namespace
@@ -167,24 +169,12 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
+	d_view_state(view_state),
 	d_splitter_widget(new QSplitter(this))
 {
 	setupUi(this);
 
-	// Create the GlobeCanvas.
-	d_globe_canvas_ptr = new GlobeCanvas(view_state, this);
-	// Create the MapCanvas.
-	d_map_canvas_ptr = new MapCanvas(view_state.get_rendered_geometry_collection(),
-							view_state.get_viewport_zoom());
-	// Create the ZoomSliderWidget for the right-hand side.
-	d_zoom_slider_widget = new ZoomSliderWidget(view_state.get_viewport_zoom(), this);
-
-	// Create the MapView.
-	d_map_view_ptr = new MapView(view_state,this,d_map_canvas_ptr);
-
-	// Set the active_view_ptr to the globe view.
-	d_active_view_ptr = static_cast<SceneView*>(d_globe_canvas_ptr);
-
+	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(view_state, this);
 	
 	// Construct the Awesome Bar. This used to go on top, but we want to push this
 	// down so it goes to the left of the splitter, giving the TaskPanel some more
@@ -197,7 +187,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 		construct_viewbar_with_projections(view_state.get_viewport_zoom(),
 										   view_state.get_viewport_projection());
 
-
 	// With all our widgets constructed, on to the main canvas layout:-
 
 	// Create a tiny invisible widget with a tiny invisible horizontal layout to
@@ -209,6 +198,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QSizePolicy canvas_widget_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	canvas_widget_size_policy.setHorizontalStretch(255);
 	canvas_widget->setSizePolicy(canvas_widget_size_policy);
+
 	// Another hack (but for stretchable-task-panel reasons I'm having to do things
 	// this way for now), add two AwesomeBars to the top of this canvas_widget,
 	// allowing the TaskPanel to consume more vertical space.
@@ -217,27 +207,26 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	bars_plus_canvas_layout->setContentsMargins(0, 0, 0, 0);
 	bars_plus_canvas_layout->addWidget(awesomebar_one.release());
 
-	// Globe and slider:
-	
+	// Globe/Map + slider
 	QHBoxLayout *canvas_widget_layout = new QHBoxLayout();
 	bars_plus_canvas_layout->addItem(canvas_widget_layout);
 	canvas_widget_layout->setSpacing(2);
 	canvas_widget_layout->setContentsMargins(0, 0, 0, 0);
 
-	// Add GlobeCanvas, MapView, and ZoomSliderWidget to this hand-made widget.
+	// Add GlobeCanvas, MapView to this hand-made widget.
+	d_globe_and_map_widget_ptr->setParent(canvas_widget);
+	canvas_widget_layout->addWidget(d_globe_and_map_widget_ptr);
 
-	QWidget *globe_and_map_widget = new QWidget(canvas_widget);
-	QHBoxLayout *globe_and_map_layout = new QHBoxLayout(globe_and_map_widget);
-	globe_and_map_layout->setSpacing(0);
-	globe_and_map_layout->setContentsMargins(0, 0, 0, 0);
-	globe_and_map_layout->addWidget(d_globe_canvas_ptr);
-	globe_and_map_layout->addWidget(d_map_view_ptr);
-	d_map_view_ptr->hide();
-	canvas_widget_layout->addWidget(globe_and_map_widget);
+	// Add ZoomSliderWidget to this hand-made widget too.
+	d_zoom_slider_widget = new ZoomSliderWidget(view_state.get_viewport_zoom(), canvas_widget);
 	canvas_widget_layout->addWidget(d_zoom_slider_widget);
 
+	// Sometimes if the user moves off the splitter too quickly, the mouse pointer stays as the splitter cursor
+	d_zoom_slider_widget->setCursor(Qt::ArrowCursor);
+	
 	// Then add that widget (globe (+ map) + zoom slider) to the QSplitter.
 	d_splitter_widget->addWidget(canvas_widget);
+
 	// The splitter should eat as much space as possible.
 	QSizePolicy splitter_size(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	d_splitter_widget->setSizePolicy(splitter_size);
@@ -254,39 +243,89 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	splitter_plus_viewbar_layout->addWidget(d_splitter_widget);
 	splitter_plus_viewbar_layout->addWidget(viewbar.release());
 
-	// FIXME: we can do this in the view's constructor.
-	d_map_view_ptr->setScene(d_map_canvas_ptr);
-
-	// Miscellaneous signal / slot connections that ReconstructionViewWidget deals with.
-	
-	QObject::connect(&(d_globe_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
-			d_globe_canvas_ptr, SLOT(notify_of_orientation_change()));
-	QObject::connect(&(d_globe_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
-			this, SLOT(recalc_camera_position()));
-	QObject::connect(&(d_globe_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
-			d_globe_canvas_ptr, SLOT(force_mouse_pointer_pos_change()));
-
-	QObject::connect(d_map_view_ptr, SIGNAL(view_changed()),
-			this, SLOT(recalc_camera_position()));
-
-	GPlatesGui::ViewportZoom &vzoom = view_state.get_viewport_zoom();
-	QObject::connect(&vzoom, SIGNAL(zoom_changed()),
-			this, SLOT(handle_zoom_change()));
-
-	GPlatesViewOperations::ViewportProjection &vprojection = view_state.get_viewport_projection();
+	// Handle signals to recalculate the camera position
 	QObject::connect(
-			&vprojection, SIGNAL(projection_type_changed(const GPlatesViewOperations::ViewportProjection &)),
-			this, SLOT(change_projection(const GPlatesViewOperations::ViewportProjection &)));
-			
+			&(d_globe_and_map_widget_ptr->get_globe_canvas().globe().orientation()),
+			SIGNAL(orientation_changed()),
+			this,
+			SLOT(recalc_camera_position()));
 	QObject::connect(
-			&vprojection, SIGNAL(central_meridian_changed(const GPlatesViewOperations::ViewportProjection &)),
-			this, SLOT(change_projection(const GPlatesViewOperations::ViewportProjection &))); 
+			&(d_globe_and_map_widget_ptr->get_map_view()),
+			SIGNAL(view_changed()),
+			this,
+			SLOT(recalc_camera_position()));
 
-	QObject::connect(this,SIGNAL(update_tools_and_status_message()),
-			&viewport_window,SLOT(update_tools_and_status_message()));
+	// Propagate messages up to ViewportWindow
+	QObject::connect(
+			d_globe_and_map_widget_ptr,
+			SIGNAL(update_tools_and_status_message()),
+			this,
+			SLOT(handle_update_tools_and_status_message()));
+	QObject::connect(
+			this,
+			SIGNAL(update_tools_and_status_message()),
+			&viewport_window,
+			SLOT(update_tools_and_status_message()));
+
+	// Our GlobeAndMapWidget is the main viewport for ViewportWindow
+	QObject::connect(
+			d_globe_and_map_widget_ptr,
+			SIGNAL(resized(int, int)),
+			this,
+			SLOT(handle_globe_and_map_widget_resized(int, int)));
 
 	recalc_camera_position();
+}
 
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::handle_globe_and_map_widget_resized(
+		int new_width, int new_height)
+{
+	d_view_state.set_main_viewport_min_dimension((std::min)(new_width, new_height));
+}
+
+
+GPlatesQtWidgets::GlobeCanvas &
+GPlatesQtWidgets::ReconstructionViewWidget::globe_canvas() const
+{
+	return d_globe_and_map_widget_ptr->get_globe_canvas();
+}
+
+
+GPlatesQtWidgets::MapView &
+GPlatesQtWidgets::ReconstructionViewWidget::map_view() const
+{
+	return d_globe_and_map_widget_ptr->get_map_view();
+}
+
+
+GPlatesQtWidgets::SceneView &
+GPlatesQtWidgets::ReconstructionViewWidget::active_view() const
+{
+	return d_globe_and_map_widget_ptr->get_active_view();
+}
+
+
+GPlatesQtWidgets::MapCanvas &
+GPlatesQtWidgets::ReconstructionViewWidget::map_canvas() const
+{
+	return d_globe_and_map_widget_ptr->get_map_canvas();
+}
+
+
+GPlatesQtWidgets::GlobeAndMapWidget &
+GPlatesQtWidgets::ReconstructionViewWidget::globe_and_map_widget() const
+{
+	return *d_globe_and_map_widget_ptr;
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::handle_update_tools_and_status_message()
+{
+	recalc_camera_position();
+	emit update_tools_and_status_message();
 }
 
 
@@ -315,8 +354,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
 
 	// Create the TimeControlWidget.
 	d_time_control_widget_ptr = new TimeControlWidget(animation_controller, awesomebar_widget.get());
-	QObject::connect(d_time_control_widget_ptr, SIGNAL(editing_finished()),
-			d_globe_canvas_ptr, SLOT(setFocus()));
+	QObject::connect(
+			d_time_control_widget_ptr,
+			SIGNAL(editing_finished()),
+			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
+			SLOT(setFocus()));
 	
 	// Insert Time and Animate controls.
 	awesomebar_layout->addWidget(d_gmenu_button_ptr);
@@ -335,7 +377,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
 std::auto_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
 		GPlatesGui::ViewportZoom &vzoom,
-		GPlatesViewOperations::ViewportProjection &vprojection)
+		GPlatesGui::ViewportProjection &vprojection)
 {
 	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
 	// auto_ptr will keep tabs on the memory for us until we can return it
@@ -388,9 +430,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 
 	// Create the ZoomControlWidget.
 	d_zoom_control_widget_ptr = new ZoomControlWidget(vzoom, viewbar_widget.get());
-	QObject::connect(d_zoom_control_widget_ptr, SIGNAL(editing_finished()),
-			d_globe_canvas_ptr, SLOT(setFocus()));
-
+	QObject::connect(
+			d_zoom_control_widget_ptr,
+			SIGNAL(editing_finished()),
+			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
+			SLOT(setFocus()));
 
 	// Insert Zoom control and coordinate labels.
 	viewbar_layout->addWidget(wrap_with_frame(d_zoom_control_widget_ptr));
@@ -403,7 +447,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 std::auto_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 	GPlatesGui::ViewportZoom &vzoom,
-	GPlatesViewOperations::ViewportProjection &vprojection)
+	GPlatesGui::ViewportProjection &vprojection)
 {
 	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
 	// auto_ptr will keep tabs on the memory for us until we can return it
@@ -435,8 +479,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 
 	// Create the ZoomControlWidget.
 	d_zoom_control_widget_ptr = new ZoomControlWidget(vzoom, viewbar_widget.get());
-	QObject::connect(d_zoom_control_widget_ptr, SIGNAL(editing_finished()),
-		d_globe_canvas_ptr, SLOT(setFocus()));
+	QObject::connect(
+			d_zoom_control_widget_ptr,
+			SIGNAL(editing_finished()),
+			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
+			SLOT(setFocus()));
 
 	// Create the ProjectionControlWidget
 	d_projection_control_widget_ptr = new ProjectionControlWidget(vprojection,viewbar_widget.get());
@@ -477,21 +524,30 @@ GPlatesQtWidgets::ReconstructionViewWidget::activate_time_spinbox()
 }
 
 
+GPlatesMaths::LatLonPoint &
+GPlatesQtWidgets::ReconstructionViewWidget::camera_llp()
+{
+	return *(d_globe_and_map_widget_ptr->get_camera_llp());
+}
+
+
 void
 GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 {
-
-	d_camera_llp = d_active_view_ptr->camera_llp();
+	// FIXME: This is a bit convoluted.
+	boost::optional<GPlatesMaths::LatLonPoint> llp =
+		d_globe_and_map_widget_ptr->get_active_view().camera_llp();
+	d_globe_and_map_widget_ptr->get_camera_llp() = llp;
 
 	QString lat_label(QObject::tr("(lat: "));
 	QString lon_label(QObject::tr(" ; lon: "));
 	QString position_as_string;
 
-	if (d_camera_llp)
+	if (llp)
 	{
 		QLocale locale_;
-		QString lat = locale_.toString((*d_camera_llp).latitude(), 'f', 2);
-		QString lon = locale_.toString((*d_camera_llp).longitude(), 'f', 2);
+		QString lat = locale_.toString((*llp).latitude(), 'f', 2);
+		QString lon = locale_.toString((*llp).longitude(), 'f', 2);
 		position_as_string.append(lat_label);
 		position_as_string.append(lat);
 		position_as_string.append(lon_label);
@@ -566,7 +622,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 }
 
 
-
 void
 GPlatesQtWidgets::ReconstructionViewWidget::activate_zoom_spinbox()
 {
@@ -574,173 +629,27 @@ GPlatesQtWidgets::ReconstructionViewWidget::activate_zoom_spinbox()
 }
 
 
-void
-GPlatesQtWidgets::ReconstructionViewWidget::handle_zoom_change()
-{
-	d_active_view_ptr->handle_zoom_change();
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::change_projection(
-		const GPlatesViewOperations::ViewportProjection &view_projection)
-{
-	// Update the map canvas' projection
-	d_map_canvas_ptr->set_projection_type(
-		view_projection.get_projection_type());
-		
-	d_map_canvas_ptr->set_central_meridian(
-		view_projection.get_central_meridian());		
-
-	switch(view_projection.get_projection_type())
-	{
-	case GPlatesGui::ORTHOGRAPHIC:
-		d_active_view_ptr = d_globe_canvas_ptr;
-		d_globe_canvas_ptr->update_canvas();
-		if (d_camera_llp)
-		{
-			d_globe_canvas_ptr->set_camera_viewpoint(*d_camera_llp);
-		}
-		d_map_view_ptr->hide();
-		d_globe_canvas_ptr->show();
-		break;
-	default:
-		d_active_view_ptr = d_map_view_ptr;
-		d_map_view_ptr->set_view();
-		d_map_view_ptr->update_canvas();
-		if (d_camera_llp)
-		{
-			d_map_view_ptr->set_camera_viewpoint(*d_camera_llp);	
-		}
-		d_globe_canvas_ptr->hide();
-		d_map_view_ptr->show();
-		break;
-	}
-	
-	recalc_camera_position();
-	emit update_tools_and_status_message();
-}
-
 bool
 GPlatesQtWidgets::ReconstructionViewWidget::globe_is_active()
 {
-	return d_globe_canvas_ptr->isVisible();
+	return d_globe_and_map_widget_ptr->get_globe_canvas().isVisible();
 }
 
 bool
 GPlatesQtWidgets::ReconstructionViewWidget::map_is_active()
 {
-	return d_map_view_ptr->isVisible();
+	return d_globe_and_map_widget_ptr->get_map_view().isVisible();
 }
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::enable_raster_display()
 {
-	d_globe_canvas_ptr->enable_raster_display();
-	// map doesn't show rasters
-	d_active_view_ptr->update_canvas();
+	d_globe_and_map_widget_ptr->get_globe_canvas().enable_raster_display();
 }
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::disable_raster_display()
 {
-	d_globe_canvas_ptr->disable_raster_display();
-	// map doesn't show rasters
-	d_active_view_ptr->update_canvas();
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::enable_point_display()
-{
-	d_globe_canvas_ptr->enable_point_display();
-	d_map_canvas_ptr->enable_point_display();
-	d_active_view_ptr->update_canvas();
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::disable_point_display()
-{
-	d_globe_canvas_ptr->disable_point_display();
-	d_map_canvas_ptr->disable_point_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::enable_line_display()
-{
-	d_globe_canvas_ptr->enable_line_display();
-	d_map_canvas_ptr->enable_line_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::disable_line_display()
-{
-	d_globe_canvas_ptr->disable_line_display();
-	d_map_canvas_ptr->disable_line_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::enable_polygon_display()
-{
-	d_globe_canvas_ptr->enable_polygon_display();
-	d_map_canvas_ptr->enable_polygon_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::disable_polygon_display()
-{
-	d_globe_canvas_ptr->disable_polygon_display();
-	d_map_canvas_ptr->disable_polygon_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::enable_multipoint_display()
-{
-	d_globe_canvas_ptr->enable_multipoint_display();
-	d_map_canvas_ptr->enable_multipoint_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::disable_multipoint_display()
-{
-	d_globe_canvas_ptr->disable_multipoint_display();
-	d_map_canvas_ptr->disable_multipoint_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::enable_arrows_display()
-{
-	d_globe_canvas_ptr->enable_arrows_display();
-	d_map_canvas_ptr->enable_arrows_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::disable_arrows_display()
-{
-	d_globe_canvas_ptr->disable_arrows_display();
-	d_map_canvas_ptr->disable_arrows_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::enable_strings_display()
-{
-	d_globe_canvas_ptr->enable_strings_display();
-	d_map_canvas_ptr->enable_strings_display();
-	d_active_view_ptr->update_canvas();	
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::disable_strings_display()
-{
-	d_globe_canvas_ptr->disable_strings_display();
-	d_map_canvas_ptr->disable_strings_display();
-	d_active_view_ptr->update_canvas();	
+	d_globe_and_map_widget_ptr->get_globe_canvas().disable_raster_display();
 }
 

@@ -11,26 +11,30 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
-    AbstractWindow.h
     AddClickedGeometriesToFeatureTable.cc
     AddClickedGeometriesToFeatureTable.h
-    AgeColourTable.cc
-    AgeColourTable.h
+    AgeColourPalette.cc
+    AgeColourPalette.h
     AnimationController.cc
     AnimationController.h
     ChooseCanvasTool.cc
     ChooseCanvasTool.h
     Colour.cc
     Colour.h
+    ColourFilter.cc
+    ColourFilter.h
     ColourNameSet.cc
     ColourNameSet.h
     ColourPalette.h
+    ColourProxy.cc
+    ColourProxy.h
     ColourScheme.h
+    ColourSchemeDelegator.cc
+    ColourSchemeDelegator.h
+    ColourSchemeFactory.cc
     ColourSchemeFactory.h
     ColourSpectrum.cc
     ColourSpectrum.h
-    ColourTable.h
-    ColourTableDelegator.h
     CsvExport.cc
     CsvExport.h
     EnableCanvasTool.cc
@@ -47,8 +51,8 @@ set(srcs
     ExportSvgAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc
     ExportVelocityAnimationStrategy.h
-    FeatureColourTable.cc
-    FeatureColourTable.h
+    FeatureColourPalette.cc
+    FeatureColourPalette.h
     FeatureFocus.cc
     FeatureFocus.h
     FeaturePropertyTableModel.cc
@@ -91,6 +95,8 @@ set(srcs
     HTMLColourNames.cc
     HTMLColourNames.h
     Interface.h
+    Map.cc
+    Map.h
     MapCanvasPainter.cc
     MapCanvasPainter.h
     MapCanvasTool.cc
@@ -101,6 +107,8 @@ set(srcs
     MapCanvasToolChoice.h
     MapProjection.cc
     MapProjection.h
+    MapTransform.cc
+    MapTransform.h
     ModifyLoadedFeatureCollectionsFilter.cc
     ModifyLoadedFeatureCollectionsFilter.h
     NurbsRenderer.cc
@@ -138,7 +146,7 @@ set(srcs
     TopologyTools.h
     TreeWidgetBuilder.cc
     TreeWidgetBuilder.h
-    Viewport.h
+    ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h
 )

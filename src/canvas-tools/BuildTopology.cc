@@ -36,7 +36,7 @@
 #include "feature-visitors/PropertyValueFinder.h"
 #include "global/InternalInconsistencyException.h"
 #include "gui/AddClickedGeometriesToFeatureTable.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "presentation/ViewState.h"

@@ -50,7 +50,7 @@
 #include "property-values/GmlPolygon.h"
 #include "property-values/GpmlConstantValue.h"
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 

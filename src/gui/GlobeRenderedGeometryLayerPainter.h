@@ -45,6 +45,7 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
+	class ColourScheme;
 	class NurbsRenderer;
 
 	/**
@@ -60,16 +61,19 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const double &inverse_viewport_zoom_factor,
 				GPlatesGui::NurbsRenderer &nurbs_renderer,
-				const RenderSettings &render_settings,
+				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
-				const GlobeVisibilityTester &visibility_tester) :
+				const GlobeVisibilityTester &visibility_tester,
+				boost::shared_ptr<ColourScheme> colour_scheme) :
 			d_rendered_geometry_layer(rendered_geometry_layer),
 			d_nurbs_renderer(&nurbs_renderer),
 			d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 			d_draw_opaque_primitives(true),
 			d_render_settings(render_settings),
 			d_text_renderer_ptr(text_renderer_ptr),
-			d_visibility_tester(visibility_tester)
+			d_visibility_tester(visibility_tester),
+			d_colour_scheme(colour_scheme),
+			d_scale(1.0f)
 		{  }
 
 
@@ -79,6 +83,13 @@ namespace GPlatesGui
 		 */
 		void
 		paint();
+
+		void
+		set_scale(
+				float scale)
+		{
+			d_scale = scale;
+		}
 
 	private:
 	
@@ -128,7 +139,6 @@ namespace GPlatesGui
 		visit_rendered_string(
 				const GPlatesViewOperations::RenderedString &rendered_string);
 
-	private:
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 		GPlatesGui::NurbsRenderer *const d_nurbs_renderer;
 		const double d_inverse_zoom_factor;
@@ -137,7 +147,7 @@ namespace GPlatesGui
 		bool d_draw_opaque_primitives;
 
 		//! Rendering flags for determining what gets shown
-		const RenderSettings &d_render_settings;
+		RenderSettings &d_render_settings;
 
 		//! For rendering text
 		TextRenderer::ptr_to_const_type d_text_renderer_ptr;
@@ -145,17 +155,32 @@ namespace GPlatesGui
 		//! For determining whether a particular point on the globe is visible or not
 		GlobeVisibilityTester d_visibility_tester;
 
+		//! For assigning colours to RenderedGeometry
+		boost::shared_ptr<ColourScheme> d_colour_scheme;
+
+		//! When rendering scaled globes that are meant to be a scaled version of another
+		float d_scale;
+
 		//! Multiplying factor to get point size of 1.0f to look like one screen-space pixel.
 		static const float POINT_SIZE_ADJUSTMENT;
+
 		//! Multiplying factor to get line width of 1.0f to look like one screen-space pixel.
 		static const float LINE_WIDTH_ADJUSTMENT;
-
 
 		/**
 		 * Visit each rendered geometry in our sequence.
 		 */
 		void
 		visit_rendered_geoms();
+
+		/**
+		 * Determines the colour of a RenderedGeometry type using d_colour_scheme
+		 */
+		template <class T>
+		inline
+		boost::optional<Colour>
+		get_colour_of_rendered_geometry(
+				const T &geom);
 	};
 }
 

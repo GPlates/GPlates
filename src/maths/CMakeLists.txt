@@ -43,8 +43,8 @@ set(srcs
     InvalidOperationException.h
     InvalidPolylineContainsOnlyOnePointException.h
     InvalidPolylineContainsZeroPointsException.h
-    LatLonPointConversions.cc
-    LatLonPointConversions.h
+    LatLonPoint.cc
+    LatLonPoint.h
     MathematicalException.h
     MultiPointOnSphere.cc
     MultiPointOnSphere.h

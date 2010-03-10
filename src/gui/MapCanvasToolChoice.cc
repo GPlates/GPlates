@@ -59,11 +59,18 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 		GPlatesGui::TopologySectionsContainer &topology_sections_container,
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state):
+		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
+		GPlatesGui::MapTransform &map_transform_):
 	d_pan_map_tool_ptr(GPlatesCanvasTools::PanMap::create(
-			map_canvas_, map_view_,view_state_)),
+			map_canvas_,
+			map_view_,
+			view_state_,
+			map_transform_)),
 	d_zoom_map_tool_ptr(GPlatesCanvasTools::ZoomMap::create(
-			map_canvas_, map_view_, view_state_)),
+			map_canvas_,
+			map_view_,
+			view_state_,
+			map_transform_)),
 	d_click_geometry_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::ClickGeometry(
 				rendered_geom_collection,
@@ -73,7 +80,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				feature_focus),
 			map_canvas_,
 			map_view_,
-			view_state_)),
+			view_state_,
+			map_transform_)),
 	d_digitise_polyline_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::DigitiseGeometry(
 				GPlatesViewOperations::GeometryType::POLYLINE,
@@ -85,7 +93,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_)),
+			view_state_,
+			map_transform_)),
 	d_digitise_multipoint_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::DigitiseGeometry(
 				GPlatesViewOperations::GeometryType::MULTIPOINT,
@@ -97,7 +106,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_)),
+			view_state_,
+			map_transform_)),
 	d_digitise_polygon_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::DigitiseGeometry(
 				GPlatesViewOperations::GeometryType::POLYGON,
@@ -109,7 +119,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_)),
+			view_state_,
+			map_transform_)),
 	d_move_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::MoveVertex(
 				geometry_operation_target,
@@ -119,7 +130,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_)),
+			view_state_,
+			map_transform_)),
 	d_delete_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::DeleteVertex(
 				geometry_operation_target,
@@ -129,7 +141,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_)),
+			view_state_,
+			map_transform_)),
 	d_insert_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::InsertVertex(
 				geometry_operation_target,
@@ -139,20 +152,23 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_)),
+			view_state_,
+			map_transform_)),
 	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::MapManipulatePole::create(
 			rendered_geom_collection,
 			map_canvas_,
 			map_view_,
 			view_state_,
-			pole_widget)),
+			pole_widget,
+			map_transform_)),
 	d_measure_distance_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::MeasureDistance(
 				rendered_geom_collection,
 				measure_distance_state),
 			map_canvas_,
 			map_view_,
-			view_state_)),
+			view_state_,
+			map_transform_)),
 	d_tool_choice_ptr(d_pan_map_tool_ptr)
 {
 	// Delay any notification of changes to the rendered geometry collection

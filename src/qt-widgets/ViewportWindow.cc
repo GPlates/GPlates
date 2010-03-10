@@ -53,6 +53,7 @@
 #include "AnimateDialog.h"
 #include "ActionButtonBox.h"
 #include "AssignReconstructionPlateIdsDialog.h"
+#include "ColouringDialog.h"
 #include "CreateFeatureDialog.h"
 #include "ExportAnimationDialog.h"
 #include "ExportReconstructedFeatureGeometryDialog.h"
@@ -61,6 +62,7 @@
 #include "InformationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "ReadErrorAccumulationDialog.h"
+#include "SaveFileDialog.h"
 #include "SetCameraViewpointDialog.h"
 #include "SetProjectionDialog.h"
 #include "SetRasterSurfaceExtentDialog.h"
@@ -82,10 +84,8 @@
 #include "global/GPlatesException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
-#include "gui/AgeColourTable.h"
 #include "gui/ChooseCanvasTool.h"
 #include "gui/EnableCanvasTool.h"
-#include "gui/FeatureColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
 #include "gui/FeatureWeakRefSequence.h"
@@ -100,7 +100,7 @@
 #include "gui/TopologySectionsTable.h"
 
 #include "maths/PointOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/Real.h"
 
@@ -117,6 +117,8 @@
 #include "file-io/ShapefileReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 
+#include "gui/ViewportProjection.h"
+
 #include "presentation/Application.h"
 #include "presentation/ViewState.h"
 
@@ -129,7 +131,6 @@
 #include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
-#include "view-operations/ViewportProjection.h"
 
 
 void
@@ -168,6 +169,7 @@ GPlatesQtWidgets::ViewportWindow::handle_read_errors(
 }
 
 
+// ViewportWindow constructor
 GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 		GPlatesPresentation::Application &application) :
 	d_application(application),
@@ -183,6 +185,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_assign_recon_plate_ids_dialog_ptr(
 			new AssignReconstructionPlateIdsDialog(
 					get_application_state(), get_view_state(), this)),
+	d_colouring_dialog_ptr(NULL),
 	d_export_animation_dialog_ptr(NULL),
 	d_export_rfg_dialog_ptr(NULL),
 	d_feature_properties_dialog_ptr(
@@ -372,7 +375,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					*d_topology_sections_container_ptr,
 					d_task_panel_ptr->topology_tools_widget(),
-					*d_measure_distance_state_ptr));
+					*d_measure_distance_state_ptr,
+					get_view_state().get_map_transform()));
 
 
 
@@ -421,7 +425,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	progress_bar->hide();
 	statusBar()->addPermanentWidget(progress_bar.release());
 
-
 	// Registered a slot to be called when a new reconstruction is generated.
 	QObject::connect(
 			&get_view_state().get_reconstruct(),
@@ -435,12 +438,21 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// Check the default colouring option
 	change_checked_colouring_action(action_Colour_By_Plate_ID_Default);
 
-	// FIXME: these colouring options aren't implemented yet, so hide them for now
-	menu_Colour_Geometries_By->removeAction(menu_Feature_Type->menuAction());
-	menu_Colour_Geometries_By->removeAction(menu_Feature_Age->menuAction());
-	menu_Colour_Geometries_By->removeAction(menu_Feature_Collection->menuAction());
-	menu_Plate_ID->removeAction(action_Colour_By_Plate_ID_CPT);
-	menu_Plate_ID->removeAction(action_Colour_By_Plate_ID_Customise);
+	// Disable the Show Background Raster menu item until raster is loaded
+	action_Show_Raster->setEnabled(false);
+	action_Show_Raster->setCheckable(false);
+
+	// Synchronise the "Show X Features" menu items with RenderSettings
+	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
+	action_Show_Point_Features->setChecked(render_settings.show_points());
+	action_Show_Line_Features->setChecked(render_settings.show_lines());
+	action_Show_Polygon_Features->setChecked(render_settings.show_polygons());
+	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
+	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
+	action_Show_Strings->setChecked(render_settings.show_strings());
+
+	// Remove access to new colouring dialog (for now)
+	action_Geometry_Colours->setVisible(false);
 }
 
 
@@ -592,12 +604,14 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Assign_Plate_IDs, SIGNAL(triggered()),
 			this, SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
 	
-	// View Menu:
+	// Layers Menu:
+	QObject::connect(action_Geometry_Colours, SIGNAL(triggered()),
+			this, SLOT(pop_up_colouring_dialog()));
 	QObject::connect(action_Show_Raster, SIGNAL(triggered()),
 			this, SLOT(enable_raster_display()));
 	QObject::connect(action_Set_Raster_Surface_Extent, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_raster_surface_extent_dialog()));
-
+	// ----
 	QObject::connect(action_Show_Point_Features, SIGNAL(triggered()),
 			this, SLOT(enable_point_display()));
 	QObject::connect(action_Show_Line_Features, SIGNAL(triggered()),
@@ -1000,6 +1014,29 @@ GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
+{
+	if (!d_colouring_dialog_ptr)
+	{
+		d_colouring_dialog_ptr.reset(
+				new ColouringDialog(
+					get_view_state(),
+					&(reconstruction_view_widget().globe_and_map_widget()),
+					this));
+	}
+
+	d_colouring_dialog_ptr->show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_colouring_dialog_ptr->activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_colouring_dialog_ptr->raise();
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::pop_up_export_animation_dialog()
 {
 	if (!d_export_animation_dialog_ptr)
@@ -1381,9 +1418,7 @@ GPlatesQtWidgets::ViewportWindow::change_checked_colouring_action(
 
 		// Plate ID submenu
 		action_Colour_By_Plate_ID_Default,
-		action_Colour_By_Plate_ID_Regional,
-		action_Colour_By_Plate_ID_CPT,
-		action_Colour_By_Plate_ID_Customise
+		action_Colour_By_Plate_ID_Regional
 	};
 
 #if 0  // FIXME: Re-enable once we increase minimum Boost to 1.34.
@@ -1411,8 +1446,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_red()
 	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_red());
 	change_checked_colouring_action(action_Colour_By_Single_Colour_Red);
 
-	// Force a new reconstruction.
-	get_view_state().get_reconstruct().reconstruct();
+	// Force a redraw (no need to reconstruct due to ColourProxy)
+	d_reconstruction_view_widget.active_view().update_canvas();
 }
 
 
@@ -1422,8 +1457,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_blue()
 	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_blue());
 	change_checked_colouring_action(action_Colour_By_Single_Colour_Blue);
 
-	// Force a new reconstruction.
-	get_view_state().get_reconstruct().reconstruct();
+	// Force a redraw (no need to reconstruct due to ColourProxy)
+	d_reconstruction_view_widget.active_view().update_canvas();
 }
 
 
@@ -1433,8 +1468,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_green()
 	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_green());
 	change_checked_colouring_action(action_Colour_By_Single_Colour_Green);
 
-	// Force a new reconstruction.
-	get_view_state().get_reconstruct().reconstruct();
+	// Force a redraw (no need to reconstruct due to ColourProxy)
+	d_reconstruction_view_widget.active_view().update_canvas();
 }
 
 
@@ -1444,8 +1479,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_yellow()
 	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_yellow());
 	change_checked_colouring_action(action_Colour_By_Single_Colour_Yellow);
 
-	// Force a new reconstruction.
-	get_view_state().get_reconstruct().reconstruct();
+	// Force a redraw (no need to reconstruct due to ColourProxy)
+	d_reconstruction_view_widget.active_view().update_canvas();
 }
 
 
@@ -1455,8 +1490,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_white()
 	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_white());
 	change_checked_colouring_action(action_Colour_By_Single_Colour_White);
 
-	// Force a new reconstruction.
-	get_view_state().get_reconstruct().reconstruct();
+	// Force a redraw (no need to reconstruct due to ColourProxy)
+	d_reconstruction_view_widget.active_view().update_canvas();
 }
 
 
@@ -1471,8 +1506,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_customise()
 		get_view_state().choose_colour_by_single_colour(qcolor);
 		change_checked_colouring_action(action_Colour_By_Single_Colour_Customise);
 
-		// Force a new reconstruction
-		get_view_state().get_reconstruct().reconstruct();
+		// Force a redraw (no need to reconstruct due to ColourProxy)
+		d_reconstruction_view_widget.active_view().update_canvas();
 	}
 }
 
@@ -1483,8 +1518,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_plate_id_default()
 	get_view_state().choose_colour_by_plate_id_default();
 	change_checked_colouring_action(action_Colour_By_Plate_ID_Default);
 
-	// Force a new reconstruction.
-	get_view_state().get_reconstruct().reconstruct();
+	// Force a redraw (no need to reconstruct due to ColourProxy)
+	d_reconstruction_view_widget.active_view().update_canvas();
 }
 
 
@@ -1494,8 +1529,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_plate_id_regional()
 	get_view_state().choose_colour_by_plate_id_regional();
 	change_checked_colouring_action(action_Colour_By_Plate_ID_Regional);
 
-	// Force a new reconstruction.
-	get_view_state().get_reconstruct().reconstruct();
+	// Force a redraw (no need to reconstruct due to ColourProxy)
+	d_reconstruction_view_widget.active_view().update_canvas();
 }
 
 
@@ -1505,8 +1540,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_feature_type()
 	get_view_state().choose_colour_by_feature_type();
 	change_checked_colouring_action(action_Colour_By_Feature_Type);
 
-	// Force a new reconstruction.
-	get_view_state().get_reconstruct().reconstruct();
+	// Force a redraw (no need to reconstruct due to ColourProxy)
+	d_reconstruction_view_widget.active_view().update_canvas();
 }
 
 
@@ -1516,8 +1551,8 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_age()
 	get_view_state().choose_colour_by_age();
 	change_checked_colouring_action(action_Colour_By_Age);
 
-	// Force a new reconstruction.
-	get_view_state().get_reconstruct().reconstruct();
+	// Force a redraw (no need to reconstruct due to ColourProxy)
+	d_reconstruction_view_widget.active_view().update_canvas();
 }
 
 
@@ -1554,15 +1589,23 @@ GPlatesQtWidgets::ViewportWindow::pop_up_manage_feature_collections_dialog()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::create_svg_file()
+GPlatesQtWidgets::ViewportWindow::pop_up_export_geometry_snapshot_dialog()
 {
-	QString filename = QFileDialog::getSaveFileName(this,
-			tr("Save As"), "", tr("SVG file (*.svg)"));
-
-	if (filename.isEmpty()){
-		return;
+	if (!d_export_geometry_snapshot_dialog_ptr)
+	{
+		SaveFileDialog::filter_list_type filters;
+		filters.push_back(std::make_pair("SVG file (*.svg)", "svg"));
+		d_export_geometry_snapshot_dialog_ptr = SaveFileDialog::get_save_file_dialog(
+				this,
+				"Export Geometry Snapshot",
+				filters);
 	}
-	create_svg_file(filename);
+
+	boost::optional<QString> filename = d_export_geometry_snapshot_dialog_ptr->get_file_name();
+	if (filename)
+	{
+		create_svg_file(*filename);
+	}
 }
 
 void
@@ -1599,6 +1642,10 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	if (d_assign_recon_plate_ids_dialog_ptr)
 	{
 		d_assign_recon_plate_ids_dialog_ptr->reject();
+	}
+	if (d_colouring_dialog_ptr)
+	{
+		d_colouring_dialog_ptr->reject();
 	}
 	if (d_export_animation_dialog_ptr)
 	{
@@ -1661,82 +1708,46 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(QCloseEvent *close_event)
 void
 GPlatesQtWidgets::ViewportWindow::enable_point_display()
 {
-	if (action_Show_Point_Features->isChecked())
-	{
-		d_reconstruction_view_widget.enable_point_display();
-	}
-	else
-	{
-		d_reconstruction_view_widget.disable_point_display();
-	}
+	get_view_state().get_render_settings().set_show_points(
+			action_Show_Point_Features->isChecked());
 }
 
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_line_display()
 {
-	if (action_Show_Line_Features->isChecked())
-	{
-		d_reconstruction_view_widget.enable_line_display();
-	}
-	else
-	{
-		d_reconstruction_view_widget.disable_line_display();
-	}
+	get_view_state().get_render_settings().set_show_lines(
+			action_Show_Line_Features->isChecked());
 }
 
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_polygon_display()
 {
-	if (action_Show_Polygon_Features->isChecked())
-	{
-		d_reconstruction_view_widget.enable_polygon_display();
-	}
-	else
-	{
-		d_reconstruction_view_widget.disable_polygon_display();
-	}
+	get_view_state().get_render_settings().set_show_polygons(
+			action_Show_Polygon_Features->isChecked());
 }
 
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_multipoint_display()
 {
-	if (action_Show_Multipoint_Features->isChecked())
-	{
-		d_reconstruction_view_widget.enable_multipoint_display();
-	}
-	else
-	{
-		d_reconstruction_view_widget.disable_multipoint_display();
-	}
+	get_view_state().get_render_settings().set_show_multipoints(
+			action_Show_Multipoint_Features->isChecked());
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_arrows_display()
 {
-	if (action_Show_Arrow_Decorations->isChecked())
-	{
-		d_reconstruction_view_widget.enable_arrows_display();
-	}
-	else
-	{
-		d_reconstruction_view_widget.disable_arrows_display();
-	}
+	get_view_state().get_render_settings().set_show_arrows(
+			action_Show_Arrow_Decorations->isChecked());
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_strings_display()
 {
-	if (action_Show_Strings->isChecked())
-	{
-		d_reconstruction_view_widget.enable_strings_display();
-	}
-	else
-	{
-		d_reconstruction_view_widget.disable_strings_display();
-	}
+	get_view_state().get_render_settings().set_show_strings(
+			action_Show_Strings->isChecked());
 }
 
 void
@@ -1785,6 +1796,8 @@ GPlatesQtWidgets::ViewportWindow::load_raster(
 	try{
 
 		GPlatesFileIO::RasterReader::read_file(file_info, d_globe_canvas_ptr->globe().texture(), read_errors);
+		action_Show_Raster->setEnabled(true);
+		action_Show_Raster->setCheckable(true);
 		action_Show_Raster->setChecked(true);
 		result = true;
 	}
@@ -1847,6 +1860,8 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 
 	if (!d_time_dependent_raster_map.isEmpty())
 	{
+		action_Show_Raster->setEnabled(true);
+		action_Show_Raster->setCheckable(true);
 		action_Show_Raster->setChecked(true);
 		update_time_dependent_raster();
 	}
@@ -1903,7 +1918,8 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_raster_surface_extent_dialog()
 {
 	if (!d_set_raster_surface_extent_dialog_ptr)
 	{
-		d_set_raster_surface_extent_dialog_ptr.reset(new SetRasterSurfaceExtentDialog(*this, this));
+		d_set_raster_surface_extent_dialog_ptr.reset(
+				new SetRasterSurfaceExtentDialog(d_globe_canvas_ptr->globe().texture(), this));
 	}
 
 	d_set_raster_surface_extent_dialog_ptr->exec();
@@ -1922,7 +1938,11 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 	bool globe_is_active = d_reconstruction_view_widget.globe_is_active();
 	action_Open_Raster->setEnabled(globe_is_active);
 	action_Open_Time_Dependent_Raster_Sequence->setEnabled(globe_is_active);
-	action_Show_Raster->setEnabled(globe_is_active);	
+	GPlatesGui::Texture &texture = d_globe_canvas_ptr->globe().texture();
+	bool enable_show_raster = globe_is_active && texture.is_loaded();
+	action_Show_Raster->setEnabled(enable_show_raster);
+	action_Show_Raster->setCheckable(enable_show_raster);
+	action_Show_Raster->setChecked(texture.is_enabled());
 	action_Set_Raster_Surface_Extent->setEnabled(globe_is_active);
 	action_Show_Arrow_Decorations->setEnabled(globe_is_active);
 	
@@ -2003,7 +2023,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_projection_dialog()
 		try {
 			// Notify the view state of the projection change.
 			// It will handle the rest.
-			GPlatesViewOperations::ViewportProjection &viewport_projection =
+			GPlatesGui::ViewportProjection &viewport_projection =
 					get_view_state().get_viewport_projection();
 			viewport_projection.set_projection_type(
 					d_set_projection_dialog_ptr->get_projection_type());

@@ -44,8 +44,6 @@
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
-#include "utils/UnicodeStringUtils.h"
-#include "utils/XmlNamespaces.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlDataBlock.h"
@@ -86,20 +84,11 @@
 
 #include "maths/PolylineOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
-
-const GPlatesFileIO::ExternalProgram &
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::gzip_program()
-{
-	if (s_gzip_program == NULL) {
-		s_gzip_program = new ExternalProgram("gzip", "gzip --version");
-	}
-	return *s_gzip_program;
-}
-
-
-const GPlatesFileIO::ExternalProgram *GPlatesFileIO::GpmlOnePointSixOutputVisitor::s_gzip_program = NULL;
+#include "utils/Singleton.h"
+#include "utils/UnicodeStringUtils.h"
+#include "utils/XmlNamespaces.h"
 
 
 namespace
@@ -446,7 +435,23 @@ namespace
 				coordinates_iterator_ranges.end());
 	}
 
+	
+	class GzipFactory
+	{
+	public:
+		GPlatesFileIO::ExternalProgram *
+		create_instance()
+		{
+			return new GPlatesFileIO::ExternalProgram("gzip", "gzip --version");
+		}
+	};
+}
 
+
+const GPlatesFileIO::ExternalProgram &
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::gzip_program()
+{
+	return GPlatesUtils::Singleton<ExternalProgram, GzipFactory>::instance();
 }
 
 

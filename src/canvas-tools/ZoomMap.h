@@ -28,6 +28,10 @@
 
 #include "gui/MapCanvasTool.h"
 
+namespace GPlatesGui
+{
+	class MapTransform;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -64,10 +68,15 @@ namespace GPlatesCanvasTools
 		create(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_)
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesGui::MapTransform &map_transform_)
 		{
 			ZoomMap::non_null_ptr_type ptr(
-					new ZoomMap(map_canvas_, map_view_, view_state_),
+					new ZoomMap(
+						map_canvas_,
+						map_view_,
+						view_state_,
+						map_transform_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -106,8 +115,9 @@ namespace GPlatesCanvasTools
 		ZoomMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_):
-			MapCanvasTool(map_canvas_, map_view_),
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesGui::MapTransform &map_transform_):
+			MapCanvasTool(map_canvas_, map_view_, map_transform_),
 			d_view_state_ptr(&view_state_)
 		{  }
 

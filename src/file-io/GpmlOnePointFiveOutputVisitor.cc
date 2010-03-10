@@ -46,7 +46,7 @@
 #include "property-values/XsString.h"
 
 #include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 
 void

@@ -42,7 +42,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 #include "model/types.h"
 #include "model/FeatureVisitor.h"

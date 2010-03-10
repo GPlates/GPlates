@@ -34,7 +34,7 @@
 
 #include "gui/ProjectionException.h"
 #include "maths/GreatCircle.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 
 namespace GPlatesGui

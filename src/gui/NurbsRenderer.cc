@@ -36,7 +36,7 @@
 
 #include "maths/GenericVectorOps3D.h"
 #include "maths/GreatCircleArc.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"

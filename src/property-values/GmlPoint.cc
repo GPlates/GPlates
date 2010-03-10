@@ -26,7 +26,7 @@
  */
 
 #include "GmlPoint.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 
 

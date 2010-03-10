@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <boost/bind.hpp>
 
+#include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "NurbsRenderer.h"
 #include "OpenGL.h"
@@ -47,16 +48,14 @@
 #include "view-operations/RenderedSmallCircle.h"
 #include "view-operations/RenderedSmallCircleArc.h"
 
-
-
 namespace 
 {
 	/**
 	 * We will draw a NURBS if the two endpoints of a great circle arc are
 	 * more than PI/36 radians (= 5 degrees) apart.
 	 */
-	const double GCA_DISTANCE_THRESHOLD_DOT = std::cos(GPlatesMaths::PI/36.0);
-	const double TWO_PI = 2.*GPlatesMaths::PI;
+	const double GCA_DISTANCE_THRESHOLD_DOT = std::cos(GPlatesMaths::PI / 36.0);
+	const double TWO_PI = 2. * GPlatesMaths::PI;
 
 	inline
 	void
@@ -283,7 +282,7 @@ namespace
 	
 	}
 	
-}
+} // anonymous namespace
 
 
 const float GPlatesGui::GlobeRenderedGeometryLayerPainter::POINT_SIZE_ADJUSTMENT = 1.0f;
@@ -328,11 +327,20 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_geoms()
 }
 
 
+template <class T>
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::GlobeRenderedGeometryLayerPainter::get_colour_of_rendered_geometry(
+		const T &geom)
+{
+	return geom.get_colour().get_colour(d_colour_scheme);
+}
+
+
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 		const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 {
-	if (!d_render_settings.show_points)
+	if (!d_render_settings.show_points())
 	{
 		return;
 	}
@@ -342,11 +350,16 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 		return;
 	}
 
-	glColor3fv(rendered_point_on_sphere.get_colour());
-	glPointSize(rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
-	glBegin(GL_POINTS);
-		draw_vertex(rendered_point_on_sphere.get_point_on_sphere());
-	glEnd();
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_point_on_sphere);
+	if (colour)
+	{
+		glColor3fv(*colour);
+		glPointSize(rendered_point_on_sphere.get_point_size_hint() *
+				POINT_SIZE_ADJUSTMENT * d_scale);
+		glBegin(GL_POINTS);
+			draw_vertex(rendered_point_on_sphere.get_point_on_sphere());
+		glEnd();
+	}
 }
 
 
@@ -354,7 +367,7 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sphere(
 		const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
 {
-	if (!d_render_settings.show_multipoints)
+	if (!d_render_settings.show_multipoints())
 	{
 		return;
 	}
@@ -364,15 +377,20 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 		return;
 	}
 
-	glColor3fv(rendered_multi_point_on_sphere.get_colour());
-	glPointSize(rendered_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_multi_point_on_sphere);
+	if (colour)
+	{
+		glColor3fv(*colour);
+		glPointSize(rendered_multi_point_on_sphere.get_point_size_hint() *
+				POINT_SIZE_ADJUSTMENT * d_scale);
 
-	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
-		rendered_multi_point_on_sphere.get_multi_point_on_sphere();
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
+			rendered_multi_point_on_sphere.get_multi_point_on_sphere();
 
-	draw_points_for_multi_point(
-			multi_point_on_sphere->begin(),
-			multi_point_on_sphere->end());
+		draw_points_for_multi_point(
+				multi_point_on_sphere->begin(),
+				multi_point_on_sphere->end());
+	}
 }
 
 
@@ -380,7 +398,7 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 		const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 {
-	if (!d_render_settings.show_lines)
+	if (!d_render_settings.show_lines())
 	{
 		return;
 	}
@@ -390,16 +408,21 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 		return;
 	}
 
-	glColor3fv(rendered_polyline_on_sphere.get_colour());
-	glLineWidth(rendered_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_polyline_on_sphere);
+	if (colour)
+	{
+		glColor3fv(*colour);
+		glLineWidth(rendered_polyline_on_sphere.get_line_width_hint() *
+				LINE_WIDTH_ADJUSTMENT * d_scale);
 
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
-		rendered_polyline_on_sphere.get_polyline_on_sphere();
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
+			rendered_polyline_on_sphere.get_polyline_on_sphere();
 
-	draw_arcs_for_polyline(
-			polyline_on_sphere->begin(),
-			polyline_on_sphere->end(),
-			*d_nurbs_renderer);
+		draw_arcs_for_polyline(
+				polyline_on_sphere->begin(),
+				polyline_on_sphere->end(),
+				*d_nurbs_renderer);
+	}
 }
 
 
@@ -407,7 +430,7 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 {
-	if (!d_render_settings.show_polygons)
+	if (!d_render_settings.show_polygons())
 	{
 		return;
 	}
@@ -416,18 +439,22 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 	{
 		return;
 	}
+	
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_polygon_on_sphere);
+	if (colour)
+	{
+		glColor3fv(*colour);
+		glLineWidth(rendered_polygon_on_sphere.get_line_width_hint() *
+				LINE_WIDTH_ADJUSTMENT * d_scale);
 
-	glColor3fv(rendered_polygon_on_sphere.get_colour());
-	glLineWidth(rendered_polygon_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
+			rendered_polygon_on_sphere.get_polygon_on_sphere();
 
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
-		rendered_polygon_on_sphere.get_polygon_on_sphere();
-
-	draw_arcs_for_polygon(
-			polygon_on_sphere->begin(),
-			polygon_on_sphere->end(),
-			*d_nurbs_renderer);
-
+		draw_arcs_for_polygon(
+				polygon_on_sphere->begin(),
+				polygon_on_sphere->end(),
+				*d_nurbs_renderer);
+	}
 }
 
 
@@ -435,66 +462,72 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 		const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow)
 {
-	if (!d_render_settings.show_arrows)
+	if (!d_render_settings.show_arrows())
 	{
 		return;
 	}
 
-	const GPlatesMaths::Vector3D start(
-			rendered_direction_arrow.get_start_position().position_vector());
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_direction_arrow);
 
-	// Calculate position from start point along tangent direction to
-	// end point off the globe. The length of the arrow in world space
-	// is inversely proportional to the zoom or magnification.
-	const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
-			d_inverse_zoom_factor * rendered_direction_arrow.get_arrow_direction();
-
-	glColor3fv(rendered_direction_arrow.get_colour());
-
-	if (d_draw_opaque_primitives)
+	if (colour)
 	{
-		const GPlatesMaths::Vector3D arrowline = end - start;
-		const GPlatesMaths::real_t arrowline_length = arrowline.magnitude();
+		const GPlatesMaths::Vector3D start(
+				rendered_direction_arrow.get_start_position().position_vector());
 
-		// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
-		if (arrowline_length == 0)
+		// Calculate position from start point along tangent direction to
+		// end point off the globe. The length of the arrow in world space
+		// is inversely proportional to the zoom or magnification.
+		const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
+				d_inverse_zoom_factor * rendered_direction_arrow.get_arrow_direction();
+
+		glColor3fv(*colour);
+
+		if (d_draw_opaque_primitives)
 		{
-			return;
+			const GPlatesMaths::Vector3D arrowline = end - start;
+			const GPlatesMaths::real_t arrowline_length = arrowline.magnitude();
+
+			// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
+			if (arrowline_length == 0)
+			{
+				return;
+			}
+
+			GPlatesMaths::real_t arrowhead_size =
+					d_inverse_zoom_factor * rendered_direction_arrow.get_arrowhead_projected_size();
+
+			const float min_ratio_arrowhead_to_arrowline =
+					rendered_direction_arrow.get_min_ratio_arrowhead_to_arrowline();
+
+			// We want to keep the projected arrowhead size constant regardless of the
+			// the length of the arrowline, except...
+			//
+			// ...if the ratio of arrowhead size to arrowline length is large enough then
+			// we need to start scaling the arrowhead size by the arrowline length so
+			// that the arrowhead disappears as the arrowline disappears.
+			if (arrowhead_size > min_ratio_arrowhead_to_arrowline * arrowline_length)
+			{
+				arrowhead_size = min_ratio_arrowhead_to_arrowline * arrowline_length;
+			}
+			
+			const GPlatesMaths::Vector3D arrowline_unit_vector = (1.0 / arrowline_length) * arrowline;
+
+			// Specify end of arrowhead and direction of arrow.
+			draw_cone(
+					end,
+					arrowhead_size * arrowline_unit_vector);
 		}
-
-		GPlatesMaths::real_t arrowhead_size =
-				d_inverse_zoom_factor * rendered_direction_arrow.get_arrowhead_projected_size();
-
-		const float min_ratio_arrowhead_to_arrowline =
-				rendered_direction_arrow.get_min_ratio_arrowhead_to_arrowline();
-
-		// We want to keep the projected arrowhead size constant regardless of the
-		// the length of the arrowline, except...
-		//
-		// ...if the ratio of arrowhead size to arrowline length is large enough then
-		// we need to start scaling the arrowhead size by the arrowline length so
-		// that the arrowhead disappears as the arrowline disappears.
-		if (arrowhead_size > min_ratio_arrowhead_to_arrowline * arrowline_length)
+		else
 		{
-			arrowhead_size = min_ratio_arrowhead_to_arrowline * arrowline_length;
+			glLineWidth(rendered_direction_arrow.get_arrowline_width_hint() *
+					LINE_WIDTH_ADJUSTMENT * d_scale);
+
+			// Render a single line segment for the arrow body.
+			glBegin(GL_LINES);
+				glVertex3d(start.x().dval(), start.y().dval(), start.z().dval());
+				glVertex3d(end.x().dval(), end.y().dval(), end.z().dval());
+			glEnd();
 		}
-		
-		const GPlatesMaths::Vector3D arrowline_unit_vector = (1.0 / arrowline_length) * arrowline;
-
-		// Specify end of arrowhead and direction of arrow.
-		draw_cone(
-				end,
-				arrowhead_size * arrowline_unit_vector);
-	}
-	else
-	{
-		glLineWidth(rendered_direction_arrow.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT);
-
-		// Render a single line segment for the arrow body.
-		glBegin(GL_LINES);
-			glVertex3d(start.x().dval(), start.y().dval(), start.z().dval());
-			glVertex3d(end.x().dval(), end.y().dval(), end.z().dval());
-		glEnd();
 	}
 }
 
@@ -502,39 +535,47 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
 		const GPlatesViewOperations::RenderedString &rendered_string)
 {
-	if (!d_render_settings.show_strings)
+	if (!d_render_settings.show_strings())
 	{
 		return;
 	}
 
-	if(d_visibility_tester.is_point_visible(rendered_string.get_point_on_sphere()))
+	if (d_visibility_tester.is_point_visible(rendered_string.get_point_on_sphere()))
 	{
 		const GPlatesMaths::UnitVector3D &uv = rendered_string.get_point_on_sphere().position_vector();
 
 		// render drop shadow, if any
-		if (rendered_string.get_shadow_colour())
+		boost::optional<Colour> shadow_colour = rendered_string.get_shadow_colour().get_colour(
+				d_colour_scheme);
+		if (shadow_colour)
 		{
 			d_text_renderer_ptr->render_text(
 					uv.x().dval(),
 					uv.y().dval(),
 					uv.z().dval(),
 					rendered_string.get_string(),
-					*rendered_string.get_shadow_colour(),
+					*shadow_colour,
 					rendered_string.get_x_offset() + 1, // right 1px
 					rendered_string.get_y_offset() - 1, // down 1px
-					rendered_string.get_font());
+					rendered_string.get_font(),
+					d_scale);
 		}
 
 		// render main text
-		d_text_renderer_ptr->render_text(
-				uv.x().dval(),
-				uv.y().dval(),
-				uv.z().dval(),
-				rendered_string.get_string(),
-				rendered_string.get_colour(),
-				rendered_string.get_x_offset(),
-				rendered_string.get_y_offset(),
-				rendered_string.get_font());
+		boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_string);
+		if (colour)
+		{
+			d_text_renderer_ptr->render_text(
+					uv.x().dval(),
+					uv.y().dval(),
+					uv.z().dval(),
+					rendered_string.get_string(),
+					*colour,
+					rendered_string.get_x_offset(),
+					rendered_string.get_y_offset(),
+					rendered_string.get_font(),
+					d_scale);
+		}
 	}
 }
 
@@ -543,37 +584,45 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle(
 		const GPlatesViewOperations::RenderedSmallCircle &rendered_small_circle)
 {
-
 	if (d_draw_opaque_primitives)
 	{
 		return;
 	}
+	
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle);
+	if (colour)
+	{
+		glColor3fv(*colour);
+		glLineWidth(rendered_small_circle.get_line_width_hint() *
+				LINE_WIDTH_ADJUSTMENT * d_scale);
 
-	glColor3fv(rendered_small_circle.get_colour());
-	glLineWidth(rendered_small_circle.get_line_width_hint() * POINT_SIZE_ADJUSTMENT);
-
-	d_nurbs_renderer->draw_small_circle(
-		rendered_small_circle.get_centre(),
-		rendered_small_circle.get_radius_in_radians());
+		d_nurbs_renderer->draw_small_circle(
+			rendered_small_circle.get_centre(),
+			rendered_small_circle.get_radius_in_radians());
+	}
 }
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
 		const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc)
 {
-
 	if (d_draw_opaque_primitives)
 	{
 		return;
 	}
 
-	glColor3fv(rendered_small_circle_arc.get_colour());
-	glLineWidth(rendered_small_circle_arc.get_line_width_hint() * POINT_SIZE_ADJUSTMENT);
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle_arc);
+	if (colour)
+	{
+		glColor3fv(*colour);
+		glLineWidth(rendered_small_circle_arc.get_line_width_hint() *
+				LINE_WIDTH_ADJUSTMENT * d_scale);
 
-	d_nurbs_renderer->draw_small_circle_arc(
-			rendered_small_circle_arc.get_centre(),
-			rendered_small_circle_arc.get_start_point(),
-			rendered_small_circle_arc.get_arc_length_in_radians());	
+		d_nurbs_renderer->draw_small_circle_arc(
+				rendered_small_circle_arc.get_centre(),
+				rendered_small_circle_arc.get_start_point(),
+				rendered_small_circle_arc.get_arc_length_in_radians());
+	}
 }
 
 void
@@ -585,10 +634,15 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_ellipse(
 		return;
 	}
 
-	glColor3fv(rendered_ellipse.get_colour());
-	glLineWidth(rendered_ellipse.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);	
-	
-	draw_ellipse(rendered_ellipse,d_inverse_zoom_factor);
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_ellipse);
+	if (colour)
+	{
+		glColor3fv(*colour);
+		glLineWidth(rendered_ellipse.get_line_width_hint() *
+				LINE_WIDTH_ADJUSTMENT * d_scale);	
+		
+		draw_ellipse(rendered_ellipse,d_inverse_zoom_factor);
+	}
 }
 
 

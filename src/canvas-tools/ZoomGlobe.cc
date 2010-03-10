@@ -28,7 +28,7 @@
 #include "ZoomGlobe.h"
 
 #include "gui/ViewportZoom.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "presentation/ViewState.h"
@@ -58,8 +58,8 @@ GPlatesCanvasTools::ZoomGlobe::handle_left_click(
 			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
 
 	// First, re-orient the globe so the click-point is in the centre of the canvas.
-	globe().SetNewHandlePos(click_pos_on_globe);
-	globe().UpdateHandlePos(centre_of_canvas);
+	globe().set_new_handle_pos(click_pos_on_globe);
+	globe().update_handle_pos(centre_of_canvas);
 
 	// Now, zoom in.
 	d_view_state.get_viewport_zoom().zoom_in();

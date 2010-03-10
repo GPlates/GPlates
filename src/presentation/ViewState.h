@@ -56,10 +56,13 @@ namespace GPlatesAppLogic
 namespace GPlatesGui
 {
 	class Colour;
-	class ColourTable;
-	class ColourTableDelegator;
+	class ColourScheme;
+	class ColourSchemeDelegator;
 	class GeometryFocusHighlight;
 	class FeatureFocus;
+	class MapTransform;
+	class RenderSettings;
+	class ViewportProjection;
 	class ViewportZoom;
 }
 
@@ -77,7 +80,6 @@ namespace GPlatesViewOperations
 {
 	class ReconstructView;
 	class RenderedGeometryCollection;
-	class ViewportProjection;
 }
 
 namespace GPlatesPresentation
@@ -142,7 +144,7 @@ namespace GPlatesPresentation
 		get_viewport_zoom();
 
 
-		GPlatesViewOperations::ViewportProjection &
+		GPlatesGui::ViewportProjection &
 		get_viewport_projection();
 
 
@@ -178,20 +180,32 @@ namespace GPlatesPresentation
 		get_last_single_colour() const;
 
 		/**
-		 * Returns the colour table.
+		 * Returns the current colour scheme.
 		 *
-		 * When performing colour lookup with the returned colour table
-		 * it will always refer to the latest colour table selected with
-		 * @a choose_colour_by_age for example.
-		 * This is because the returned colour table delegates colour lookup to an
-		 * actual colour table implementation which itself can be switched inside the
+		 * When performing colour lookup with the returned colour scheme
+		 * it will always refer to the latest colour scheme selected.
+		 * This is because the returned colour scheme delegates colour lookup to an
+		 * actual colour scheme implementation which itself can be switched inside the
 		 * delegate.
-		 * 
 		 */
-		GPlatesGui::ColourTable *
-		get_colour_table();
+		boost::shared_ptr<GPlatesGui::ColourScheme>
+		get_colour_scheme();
+
+		GPlatesGui::RenderSettings &
+		get_render_settings();
+
+		GPlatesGui::MapTransform &
+		get_map_transform();
+
+		int
+		get_main_viewport_min_dimension();
+
+		void
+		set_main_viewport_min_dimension(
+				int min_dimension);
 
 	private slots:
+
 		void
 		handle_zoom_change();
 
@@ -211,14 +225,14 @@ namespace GPlatesPresentation
 		//! Contains all rendered geometries for this view state.
 		boost::scoped_ptr<GPlatesViewOperations::RenderedGeometryCollection> d_rendered_geometry_collection;
 
-		//! Keeps track of the currently selected colour table.
-		boost::scoped_ptr<GPlatesGui::ColourTableDelegator> d_colour_table;
+		//! Keeps track of the currently selected colour scheme.
+		boost::shared_ptr<GPlatesGui::ColourSchemeDelegator> d_colour_scheme;
 
 		//! The viewport zoom state.
 		boost::scoped_ptr<GPlatesGui::ViewportZoom> d_viewport_zoom;
 
 		//! The viewport projection state.
-		boost::scoped_ptr<GPlatesViewOperations::ViewportProjection> d_viewport_projection;
+		boost::scoped_ptr<GPlatesGui::ViewportProjection> d_viewport_projection;
 
 		/**
 		 * Renders the focused geometry highlighted.
@@ -252,16 +266,27 @@ namespace GPlatesPresentation
 		boost::shared_ptr<GPlatesAppLogic::PaleomagWorkflow> d_paleomag_workflow;
 		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_paleomag_unregister;
 
-		//! Performs tasks each time a reconstruction is generated.
 		/**
 		 * Performs tasks each time a reconstruction is generated.
 		 *
-		 * Depends on d_plate_velocity_workflow, d_rendered_geometry_collection, d_colour_table.
+		 * Depends on d_plate_velocity_workflow, d_rendered_geometry_collection.
 		 */
 		boost::scoped_ptr<GPlatesViewOperations::ReconstructView> d_reconstruct_view;
 
 		//! The current choice of colour for the "Single Colour" colouring option
 		QColor d_last_single_colour;
+
+		//! What gets rendered and what doesn't
+		boost::scoped_ptr<GPlatesGui::RenderSettings> d_render_settings;
+
+		//! Sends signals to transform maps
+		boost::scoped_ptr<GPlatesGui::MapTransform> d_map_transform;
+
+		/**
+		 * The smaller of width or height of the main globe or map attached.
+		 * Used for scaling additional globes and maps.
+		 */
+		int d_main_viewport_min_dimension;
 
 		void
 		connect_to_viewport_zoom();

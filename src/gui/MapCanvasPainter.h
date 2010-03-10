@@ -30,11 +30,10 @@
 
 #include <proj_api.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 
-#include "gui/ColourTable.h"
-#include "gui/RenderSettings.h"
-#include "gui/TextRenderer.h"
-#include "qt-widgets/MapCanvas.h"
+#include "RenderSettings.h"
+#include "TextRenderer.h"
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
@@ -42,25 +41,33 @@
 
 namespace GPlatesGui
 {
+	class Colour;
+	class ColourScheme;
+	class Map;
+
 	/**
 	 * This is a Visitor to paint geometries on the map canvas.
 	 */
 	class MapCanvasPainter:
-			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor
+			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor,
+			public boost::noncopyable
 	{
 	public:
 		explicit
 		MapCanvasPainter(
-				GPlatesQtWidgets::MapCanvas &canvas_,
-				const GPlatesGui::RenderSettings &render_settings,
+				Map &map,
+				GPlatesGui::RenderSettings &render_settings,
 				GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
-				const double &inverse_zoom_factor):
-			d_canvas_ptr(&canvas_),
+				const double &inverse_zoom_factor,
+				boost::shared_ptr<ColourScheme> colour_scheme):
+			d_map(map),
 			d_render_settings(render_settings),
 			d_text_renderer_ptr(text_renderer_ptr),
 			d_main_rendered_layers_to_visit(layers_to_visit),
-			d_inverse_zoom_factor(inverse_zoom_factor)
+			d_inverse_zoom_factor(inverse_zoom_factor),
+			d_colour_scheme(colour_scheme),
+			d_scale(1.0f)
 		{  }
 		
 		virtual
@@ -124,34 +131,39 @@ namespace GPlatesGui
 		visit_rendered_string(
 				const GPlatesViewOperations::RenderedString &rendered_string);
 
+		void
+		set_scale(
+				float scale)
+		{
+			d_scale = scale;
+		}
+
 	private:
 
-
-		// This operator should never be defined, because we don't want to allow
-		// copy-assignment.
-		MapCanvasPainter &
-		operator=(
-				const MapCanvasPainter &);
-
-		// FIXME: temporary variable, remove when done.
-		static int s_num_vertices_drawn;
-
-		GPlatesQtWidgets::MapCanvas *d_canvas_ptr;
+		Map &d_map;
 
 		//! Rendering flags for determining what gets shown
-		const RenderSettings &d_render_settings;
+		RenderSettings &d_render_settings;
 
-		//! Used for rendering text
-		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer_ptr;
+		//! For rendering text
+		TextRenderer::ptr_to_const_type d_text_renderer_ptr;
 
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_main_rendered_layers_to_visit;
 
 		const double d_inverse_zoom_factor;
 
+		//! For assigning colours to RenderedGeometry
+		boost::shared_ptr<ColourScheme> d_colour_scheme;
+
+		//! When rendering maps that are meant to be a scaled version of another
+		float d_scale;
+
+		//! For hard-coded tweaking of the size of points
 		static const float POINT_SIZE_ADJUSTMENT;
+		
+		//! For hard-coded tweaking of the width of lines
 		static const float LINE_WIDTH_ADJUSTMENT;
 
-		
 	};
 
 }

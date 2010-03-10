@@ -25,10 +25,10 @@
 
 #include "PanMap.h"
 
+#include "gui/MapTransform.h"
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/MapView.h"
 #include "qt-widgets/ViewportWindow.h"
-
 
 void
 GPlatesCanvasTools::PanMap::handle_activation()
@@ -64,8 +64,7 @@ GPlatesCanvasTools::PanMap::handle_left_drag(
 	bool is_on_surface,
 	const QPointF &translation)
 {
-	map_view().setTransformationAnchor(QGraphicsView::NoAnchor);
-	map_view().translate(translation.x(),translation.y());
+	map_transform().translate_maps(translation.x(), translation.y());
 }
 
 void

@@ -27,9 +27,8 @@
 
 #include "MoveGeometry.h"
 
-#include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 
 GPlatesCanvasTools::MoveGeometry::MoveGeometry(

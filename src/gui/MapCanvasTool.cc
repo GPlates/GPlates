@@ -26,6 +26,7 @@
 #include <cmath_ext.h>
 
 #include "maths/types.h"
+#include "maths/Real.h"
 #include "utils/MathUtils.h"
 #include "MapCanvasTool.h"
 
@@ -81,7 +82,7 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag(
 
 	double angle = angle_between_vectors(previous_vector,current_vector);
 
-	if (std::isnan(angle)) {
+	if (GPlatesMaths::is_nan(angle)) {
 #if 0
 		qDebug() << "isnan";
 		qDebug() << "previous: " << previous_vector;
@@ -98,7 +99,7 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag(
 	// the centre of the view. 
 	// Ideally I want this to rotate about the centre of the view, but without 
 	// re-centring the map each time. 
-	map_view().rotate(angle);
+	map_transform().rotate_maps(angle);
 
 #if 0
 	qDebug();

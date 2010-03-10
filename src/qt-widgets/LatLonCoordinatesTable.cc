@@ -39,7 +39,7 @@
 #include "gui/Colour.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/InvalidLatLonCoordinateException.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/Real.h"
 #include "utils/GeometryCreationUtils.h"

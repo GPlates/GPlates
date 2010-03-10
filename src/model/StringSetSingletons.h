@@ -32,9 +32,10 @@
 #include "utils/IdStringSet.h"
 
 
-namespace GPlatesModel {
-
-	class StringSetSingletons {
+namespace GPlatesModel
+{
+	class StringSetSingletons
+	{
 
 	public:
 
@@ -92,19 +93,20 @@ namespace GPlatesModel {
 		// instantiation of this class.
 		StringSetSingletons();
 
-		static GPlatesUtils::IdStringSet *s_feature_id_instance;
+		// Empty structs just so we can get different instances of StringSet returned
+		// from different *_instance() functions.
+		struct FeatureTypeInstance { };
+		struct PropertyNameInstance { };
+		struct TemplateTypeParameterTypeInstance { };
+		struct TextContentInstance { };
+		struct XMLAttributeNameInstance { };
+		struct XMLAttributeValueInstance { };
+		struct XMLNamespaceInstance { };
+		struct XMLNamespaceAliasInstance { };
+		struct XMLElementNameInstance { };
+		struct EnumerationContentInstance { };
+		struct EnumerationTypeInstance { };
 
-		static GPlatesUtils::StringSet *s_feature_type_instance;
-		static GPlatesUtils::StringSet *s_property_name_instance;
-		static GPlatesUtils::StringSet *s_template_type_parameter_type_instance;
-		static GPlatesUtils::StringSet *s_text_content_instance;
-		static GPlatesUtils::StringSet *s_xml_attribute_name_instance;
-		static GPlatesUtils::StringSet *s_xml_attribute_value_instance;
-		static GPlatesUtils::StringSet *s_xml_namespace_instance;
-		static GPlatesUtils::StringSet *s_xml_namespace_alias_instance;
-		static GPlatesUtils::StringSet *s_xml_element_name_instance;
-		static GPlatesUtils::StringSet *s_enumeration_content_instance;
-		static GPlatesUtils::StringSet *s_enumeration_type_instance;
 	};
 
 }

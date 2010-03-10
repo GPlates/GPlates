@@ -28,9 +28,11 @@
 #define GPLATES_FILEIO_PLATESROTATIONFORMATWRITER_H
 
 #include <iosfwd>
+#include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
 #include <list>
 #include <fstream>
+#include "ErrorOpeningFileForWritingException.h"
 #include "FileInfo.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
@@ -54,16 +56,7 @@ namespace GPlatesFileIO
 
 		explicit
 		PlatesRotationFormatWriter(
-				const FileInfo &file_info)
-		{
-			d_output = new std::ofstream(file_info.get_qfileinfo().filePath().toStdString().c_str());
-		}
-
-		virtual
-		~PlatesRotationFormatWriter() 
-		{
-			delete d_output;
-		}
+				const FileInfo &file_info);
 
 	protected:
 
@@ -195,7 +188,7 @@ namespace GPlatesFileIO
 		};
 	   	
 		PlatesRotationFormatAccumulator d_accum;
-		std::ostream *d_output;
+		boost::scoped_ptr<std::ostream> d_output;
 	};
 }
 

@@ -35,7 +35,7 @@
 #include "OgrWriter.h"
 #include "OgrException.h"
 #include "feature-visitors/ToQvariantConverter.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 

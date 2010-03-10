@@ -26,40 +26,35 @@
  */
 
 #include <QApplication>
-#include <QDebug>
 #include <QGLWidget>
 #include <QGraphicsView>
 #include <QPaintEngine>
 #include <QPainter>
 
-#include "gui/MapCanvasPainter.h"
 #include "gui/MapProjection.h"
+#include "gui/RenderSettings.h"
+#include "presentation/ViewState.h"
 #include "MapCanvas.h"
-
-namespace
-{
-	void
-	set_opengl_flags()
-	{
-		glShadeModel(GL_SMOOTH);
-		glEnable(GL_POINT_SMOOTH);
-		glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-		glEnable(GL_LINE_SMOOTH);
-		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	
-	}
-}
+#include "MapView.h"
 
 GPlatesQtWidgets::MapCanvas::MapCanvas(
-	GPlatesViewOperations::RenderedGeometryCollection &collection,
-	GPlatesGui::ViewportZoom &viewport_zoom_):
-		d_rendered_geometry_collection(&collection),
-		d_viewport_zoom(viewport_zoom_)
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		GPlatesGui::RenderSettings &render_settings,
+		GPlatesGui::ViewportZoom &viewport_zoom,
+		boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+		GPlatesPresentation::ViewState &view_state,
+		QWidget *parent_):
+	QGraphicsScene(parent_),
+	d_view_state(view_state),
+	d_map(
+			rendered_geometry_collection,
+			render_settings,
+			viewport_zoom,
+			colour_scheme),
+	d_rendered_geometry_collection(&rendered_geometry_collection)
 {
-
 	// Give the scene a nice big rectangle.
-	setSceneRect(QRect(-360,-180,720,360));
+	setSceneRect(QRect(-360, -180, 720, 360));
 
 	QObject::connect(d_rendered_geometry_collection,
 		SIGNAL(collection_was_updated(
@@ -70,34 +65,12 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			GPlatesViewOperations::RenderedGeometryCollection &,
 			GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)));
 
-}
-
-void
-GPlatesQtWidgets::MapCanvas::set_projection_type(
-	GPlatesGui::ProjectionType projection_type_)
-{
-	d_map_projection.set_projection_type(projection_type_);
-}
-
-GPlatesGui::ProjectionType
-GPlatesQtWidgets::MapCanvas::projection_type()
-{
-	return d_map_projection.projection_type();
-}
-
-void
-GPlatesQtWidgets::MapCanvas::set_central_meridian(
-	double central_meridian_)
-{
-	GPlatesMaths::LatLonPoint llp(0.0, central_meridian_);
-	d_map_projection.set_central_llp(llp);
-}
-
-double
-GPlatesQtWidgets::MapCanvas::central_meridian()
-{
-	GPlatesMaths::LatLonPoint llp = d_map_projection.central_llp();
-	return llp.longitude();
+	// Update if RenderSettings gets changed
+	QObject::connect(
+			&render_settings,
+			SIGNAL(settings_changed()),
+			this,
+			SLOT(update_canvas()));
 }
 
 void
@@ -105,106 +78,7 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 	QPainter *painter,
 	const QRectF &rect)
 {
-
-	if (painter->paintEngine()->type() != QPaintEngine::OpenGL)
-	{
-		std::cerr << "Could not find an openGL paint engine." << std::endl;
-		return;
-	}
-
-	set_opengl_flags();
-	
-	glClearColor(0.35f,0.35f,0.35f,1.0f);
-
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	try
-	{
-		draw_grid_lines();
-	}
-	catch(const GPlatesGui::ProjectionException &e)
-	{
-		std::cerr << e << std::endl;
-	}
-
-}
-
-void
-GPlatesQtWidgets::MapCanvas::draw_grid_lines()
-{
-	static const int NUM_LAT_LINES = 7;
-	static const int NUM_LON_LINES = 13;
-	static const int NUM_LAT_VERTICES = 100;
-	static const int NUM_LON_VERTICES = 200;
-
-	// LAT_MARGIN represents the number of degrees above -90 and below 90 between
-	// which each line of longitude will be drawn. This gives you a little space
-	// at the top and bottom, so that grid lines which converge at the poles don't
-	// look too busy. 
-
-	//static const double LAT_MARGIN = 1.5;
-	static const double LAT_MARGIN = 0.;
-
-	double lat_line_spacing = 180./(NUM_LAT_LINES-1);
-	double lon_line_spacing = 360./(NUM_LON_LINES-1);
-
-	double lat_vertex_spacing = 360./NUM_LAT_VERTICES;
-	double lon_vertex_spacing = (180.- 2.*LAT_MARGIN)/NUM_LON_VERTICES;
-
-	double lat_0 = -90.;
-	double lon_0 = d_map_projection.central_llp().longitude()-180.;
-
-	double lat,lon;
-	double screen_x,screen_y;
-
-	glColor3fv(GPlatesGui::Colour::get_silver());
-	glLineWidth(1.0f);
-
-	// Lines of latitude.
-	lat = lat_0;
-	for (int count1 = 0; count1 < NUM_LAT_LINES ; count1++)
-	{
-		glBegin(GL_LINE_STRIP);
-		lon = lon_0;
-		screen_x = lon;
-		screen_y = lat;
-		d_map_projection.forward_transform(screen_x,screen_y);
-		glVertex2d(screen_x,screen_y);
-		for (int count2 = 0; count2 < NUM_LAT_VERTICES; count2++)
-		{
-			lon += lat_vertex_spacing;
-			screen_x = lon;
-			screen_y = lat;
-			d_map_projection.forward_transform(screen_x,screen_y);
-			glVertex2d(screen_x,screen_y);
-		}
-		glEnd();
-		lat += lat_line_spacing;
-	}
-
-
-	// Lines of longitude.
-	lon = lon_0;
-	for (int count1 = 0; count1 < NUM_LON_LINES ; count1++)
-	{
-		glBegin(GL_LINE_STRIP);
-		lat = lat_0 + LAT_MARGIN;
-		screen_x = lon;
-		screen_y = lat;
-		d_map_projection.forward_transform(screen_x,screen_y);
-		glVertex2d(screen_x,screen_y);
-		for (int count2 = 0; count2 < NUM_LON_VERTICES; count2++)
-		{
-			lat += lon_vertex_spacing;
-			screen_x = lon;
-			screen_y = lat;
-			d_map_projection.forward_transform(screen_x,screen_y);
-			glVertex2d(screen_x,screen_y);
-		}
-		glEnd();
-		lon += lon_line_spacing;
-	}	
-
+	d_map.draw_background();
 }
 
 void
@@ -215,46 +89,27 @@ GPlatesQtWidgets::MapCanvas::drawItems(
 	const QStyleOptionGraphicsItem options[], 
 	QWidget *widget)
 {
-	try{
-		set_opengl_flags();
-
-		double inverse_zoom_factor = 1.0/d_viewport_zoom.zoom_factor();
-
-		GPlatesGui::MapCanvasPainter map_canvas_painter(
-			*this,
-			d_render_settings,
-			d_text_renderer_ptr,
-			d_update_type,
-			inverse_zoom_factor);
-
-		d_rendered_geometry_collection->accept_visitor(map_canvas_painter);
-	}
-	catch (const GPlatesGlobal::Exception &e){
-		std::cerr << e << std::endl;
-	}
+	d_map.paint(calculate_scale());
 }
 
-#if 0
 void
 GPlatesQtWidgets::MapCanvas::update_canvas()
 {
 	update();
 }
-#endif
 
 void
 GPlatesQtWidgets::MapCanvas::update_canvas(
 	GPlatesViewOperations::RenderedGeometryCollection &collection,
 	GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type update_type)
 {
-	d_update_type = update_type;
+	d_map.set_update_type(update_type);
 	update();
 }
 
 void
 GPlatesQtWidgets::MapCanvas::draw_svg_output()
 {
-
 	// Switch off unwanted layers - taken from the Globe's painting routines. 
 
 	// Get current rendered layer active state so we can restore later.
@@ -272,11 +127,10 @@ GPlatesQtWidgets::MapCanvas::draw_svg_output()
 		GPlatesViewOperations::RenderedGeometryCollection::MOUSE_MOVEMENT_LAYER,
 		false);
 
-
 	update();
 
 	// Force the update signal to be processed so that 
-	// content is drawn to the openGL feedback buffer. 
+	// content is drawn to the OpenGL feedback buffer. 
 	QApplication::processEvents();
 
 
@@ -285,3 +139,12 @@ GPlatesQtWidgets::MapCanvas::draw_svg_output()
 		prev_rendered_layer_active_state);
 
 }
+
+float
+GPlatesQtWidgets::MapCanvas::calculate_scale()
+{
+	int min_dimension = (std::min)(d_map_view_ptr->width(), d_map_view_ptr->height());
+	return static_cast<float>(min_dimension) /
+		static_cast<float>(d_view_state.get_main_viewport_min_dimension());
+}
+

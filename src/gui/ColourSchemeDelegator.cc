@@ -3,9 +3,9 @@
 /**
  * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,22 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_VIEWPORT
-#define GPLATES_GUI_VIEWPORT
+#include "ColourSchemeDelegator.h"
 
-#include "View.h"
-#include "ViewportProjection.h"
-
-namespace GPlatesGui
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::ColourSchemeDelegator::get_colour(
+		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
 {
-	class Viewport
-	{
-	private:
-		ViewportProjection *d_viewport_projection;
-		
-		View *d_view;
-	};
+	return d_colour_scheme->get_colour(reconstruction_geometry);
 }
-
-#endif
 

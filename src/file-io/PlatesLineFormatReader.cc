@@ -40,7 +40,7 @@
 #include "utils/StringUtils.h"
 #include "utils/MathUtils.h"
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 

@@ -33,7 +33,7 @@
 
 #include "GeometryOnSphere.h"
 #include "UnitVector3D.h"
-#include "LatLonPointConversions.h"
+#include "LatLonPoint.h"
 #include "TrailingLatLonCoordinateException.h"
 #include "InvalidLatLonCoordinateException.h"
 

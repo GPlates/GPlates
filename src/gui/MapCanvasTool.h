@@ -28,11 +28,11 @@
 
 #include <QDebug>
 
+#include "gui/MapTransform.h"
 #include "qt-widgets/MapView.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
-
 
 class QPointF;
 
@@ -44,6 +44,7 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesGui
 {
+	class MapTransform;
 
 	/**
 	 * This class is the abstract base of all map canvas tools.
@@ -73,11 +74,12 @@ namespace GPlatesGui
 		 */
 		explicit
 		MapCanvasTool(
-			GPlatesQtWidgets::MapCanvas &map_canvas_,
-			GPlatesQtWidgets::MapView &map_view_):
+				GPlatesQtWidgets::MapCanvas &map_canvas_,
+				GPlatesQtWidgets::MapView &map_view_,
+				MapTransform &map_transform_):
 			d_map_view_ptr(&map_view_),
-			d_map_canvas_ptr(&map_canvas_)
-
+			d_map_canvas_ptr(&map_canvas_),
+			d_map_transform_ptr(&map_transform_)
 		{  }
 
 		virtual
@@ -260,8 +262,7 @@ namespace GPlatesGui
 				bool is_on_surface,
 				const QPointF &translation)
 		{
-			map_view().setTransformationAnchor(QGraphicsView::NoAnchor);
-			map_view().translate(translation.x(),translation.y());
+			map_transform().translate_maps(translation.x(), translation.y());
 		}
 
 		/**
@@ -379,6 +380,7 @@ namespace GPlatesGui
 		{  }
 
 	protected:
+
 		GPlatesQtWidgets::MapView &
 		map_view() const
 		{
@@ -389,6 +391,12 @@ namespace GPlatesGui
 		map_canvas() const
 		{
 			return *d_map_canvas_ptr;
+		}
+
+		MapTransform &
+		map_transform() const
+		{
+			return *d_map_transform_ptr;
 		}
 
 		/**
@@ -475,15 +483,15 @@ namespace GPlatesGui
 
 	private:
 
-		/**
-		 * The map view
-		 */
+		//! The map view.
 		GPlatesQtWidgets::MapView *d_map_view_ptr;
 
-		/**
-		 * The map canvas.
-		 */
+		//! The map canvas.
 		GPlatesQtWidgets::MapCanvas *d_map_canvas_ptr;
+
+		//! Used for notifying maps of transformations
+		MapTransform *d_map_transform_ptr;
+
 	};
 }
 

@@ -65,8 +65,10 @@ namespace GPlatesGui
 		 */
 		explicit
 		GenericColourScheme(
-				ColourPaletteType *colour_palette_ptr) :
-			d_colour_palette_ptr(colour_palette_ptr)
+				ColourPaletteType *colour_palette_ptr,
+				const PropertyExtractorType &property_extractor = PropertyExtractorType()) :
+			d_colour_palette_ptr(colour_palette_ptr),
+			d_property_extractor(property_extractor)
 		{
 		}
 
@@ -98,8 +100,8 @@ namespace GPlatesGui
 	
 	private:
 
-		PropertyExtractorType d_property_extractor;
 		boost::scoped_ptr<ColourPaletteType> d_colour_palette_ptr;
+		PropertyExtractorType d_property_extractor;
 
 	};
 }

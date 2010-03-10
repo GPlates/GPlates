@@ -56,10 +56,20 @@ namespace GPlatesGui
 	class Globe
 	{
 	public:
+
 		Globe(
-				GPlatesViewOperations::RenderedGeometryCollection &,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
-				const GlobeVisibilityTester &visibility_tester);
+				const GlobeVisibilityTester &visibility_tester,
+				boost::shared_ptr<ColourScheme> colour_scheme);
+
+		//! To clone a Globe
+		Globe(
+				Globe &existing_globe,
+				TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const GlobeVisibilityTester &visibility_tester,
+				boost::shared_ptr<ColourScheme> colour_scheme);
 
 		~Globe()
 		{  }
@@ -67,50 +77,44 @@ namespace GPlatesGui
 		SimpleGlobeOrientation &
 		orientation()
 		{
-			return d_globe_orientation;
+			return *d_globe_orientation_ptr;
 		}
 
-		// currently does nothing.
 		void
-		SetTransparency(
-				bool trans = true)
-		{  }
-
-		void
-		SetNewHandlePos(
+		set_new_handle_pos(
 				const GPlatesMaths::PointOnSphere &pos);
 
 		void
-		UpdateHandlePos(
+		update_handle_pos(
 				const GPlatesMaths::PointOnSphere &pos);
 
 		const GPlatesMaths::PointOnSphere
-		Orient(
+		orient(
 				const GPlatesMaths::PointOnSphere &pos) const;
 
 		/**
 		 * Paint the globe and all the visible features and rasters on it.
-		 *
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
 		 */
 		void paint(
-				const double &viewport_zoom_factor);
+				const double &viewport_zoom_factor,
+				float scale);
 		
 		/*
 		 * A special version of the globe's paint() method more suitable
 		 * for vector output
-		 *
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
 		 */
 		void paint_vector_output(
-				const double &viewport_zoom_factor);
+				const double &viewport_zoom_factor,
+				float scale);
 
 		void
-		toggle_raster_image();
+		toggle_raster_display();
 
 		void
 		enable_raster_display();
@@ -121,57 +125,16 @@ namespace GPlatesGui
 		Texture &
 		texture()
 		{
-			return *d_texture;
+			return **d_texture_ptr;
 		}
-
-		/** 
-		 * Functions to change display state variables
-		 */ 
-		void enable_point_display()			{ d_render_settings.show_points = true; }
-		void enable_line_display()			{ d_render_settings.show_lines = true; }
-		void enable_polygon_display() 		{ d_render_settings.show_polygons = true; }
-		void enable_topology_display() 		{ d_render_settings.show_topology = true; }
-		void enable_multipoint_display()	{ d_render_settings.show_multipoints = true; }
-		void enable_arrows_display()		{ d_render_settings.show_arrows = true; }
-		void enable_strings_display()		{ d_render_settings.show_strings = true; }
-
-		void disable_point_display() 		{ d_render_settings.show_points = false; }
-		void disable_line_display() 		{ d_render_settings.show_lines = false; }
-		void disable_polygon_display() 		{ d_render_settings.show_polygons = false; }
-		void disable_topology_display() 	{ d_render_settings.show_topology = false; }
-		void disable_multipoint_display()	{ d_render_settings.show_multipoints = false; }
-		void disable_arrows_display()		{ d_render_settings.show_arrows = false; }
-		void disable_strings_display()		{ d_render_settings.show_strings = false; }
-
-		void toggle_point_display()			{ d_render_settings.show_points = !d_render_settings.show_points; }
-		void toggle_line_display() 			{ d_render_settings.show_lines = !d_render_settings.show_lines; }
-		void toggle_polygon_display() 		{ d_render_settings.show_polygons = !d_render_settings.show_polygons; }
-		void toggle_topology_display() 		{ d_render_settings.show_topology = !d_render_settings.show_topology; }
-		void toggle_multipoint_display()	{ d_render_settings.show_multipoints = !d_render_settings.show_multipoints; }
-		void toggle_arrows_display()		{ d_render_settings.show_arrows = !d_render_settings.show_arrows; }
-		void toggle_strings_display()		{ d_render_settings.show_strings = !d_render_settings.show_strings; }
-
-		bool point_display_is_enabled()		{ return d_render_settings.show_points; }
-		bool line_display_is_enabled()		{ return d_render_settings.show_lines; }		
-		bool polygon_display_is_enabled()		{ return d_render_settings.show_polygons; }
-		bool topology_display_is_enabled()		{ return d_render_settings.show_topology; }
-		bool multipoint_display_is_enabled()	{ return d_render_settings.show_multipoints; }
-		bool arrows_display_is_enabled()		{ return d_render_settings.show_arrows; }
-		bool strings_display_is_enabled()		{ return d_render_settings.show_strings; }
-
 
 	private:
 			
-		/**
-		* Flags to determine what data to show
-		*/
-		RenderSettings d_render_settings;
-			// FIXME: be sure to synchronise default RenderSettings with ViewportWidgetUi.ui
+		//! Flags to determine what data to show
+		RenderSettings &d_render_settings;
 		
-		/**
-		 * The collection of @a RenderedGeometry objects we need to paint.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
+		//! The collection of @a RenderedGeometry objects we need to paint.
+		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
 		/**
 		 * The NurbsRenderer used to draw large GreatCircleArcs.
@@ -188,6 +151,7 @@ namespace GPlatesGui
 		private:
 			Colour d_colour;
 		};
+
 		/**
 		 * The solid earth.
 		 */
@@ -197,7 +161,7 @@ namespace GPlatesGui
 		 * A (single) texture to be texture-mapped over the sphere surface.
 		 * Delay creation until it's used.
 		 */
-		GPlatesUtils::VirtualProxy<Texture> d_texture;
+		boost::shared_ptr<GPlatesUtils::VirtualProxy<Texture> > d_texture_ptr;
 
 		/**
 		 * Lines of lat and lon on surface of earth.
@@ -207,7 +171,7 @@ namespace GPlatesGui
 		/**
 		 * The accumulated orientation of the globe.
 		 */
-		SimpleGlobeOrientation d_globe_orientation;
+		boost::shared_ptr<SimpleGlobeOrientation> d_globe_orientation_ptr;
 
 		/**
 		 * Painter used to draw @a RenderedGeometry objects on the globe.

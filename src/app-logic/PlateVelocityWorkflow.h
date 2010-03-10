@@ -69,17 +69,15 @@ namespace GPlatesAppLogic
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer) :
 			d_model(application_state.get_model_interface()),
 			d_comp_mesh_point_layer(comp_mesh_point_layer),
-			d_comp_mesh_arrow_layer(comp_mesh_arrow_layer)
+			d_comp_mesh_arrow_layer(comp_mesh_arrow_layer),
+			d_instance_number(s_instance_number++)
 		{
 		}
 
 
 		virtual
 		tag_type
-		get_tag() const
-		{
-			return "PlateVelocityWorkflow";
-		}
+		get_tag() const;
 
 
 		/**
@@ -226,6 +224,10 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_comp_mesh_point_layer;
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_comp_mesh_arrow_layer;
+
+		// FIXME: Find a better way to uniquely identify workflow instances
+		static int s_instance_number;
+		int d_instance_number;
 	};
 }
 

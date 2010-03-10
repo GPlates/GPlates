@@ -51,12 +51,10 @@ GPlatesViewOperations::ReconstructView::end_reconstruction(
 	// Draw paleomag-specific geometries.
 	d_paleomag_workflow.draw_paleomag_features(
 			reconstruction,
-			reconstruction_time,
-			d_colour_table);
+			reconstruction_time);
 
 	// Render all reconstruction geometries as rendered geometries.
 	GPlatesViewOperations::render_reconstruction_geometries(
 			reconstruction,
-			d_rendered_geom_collection,
-			d_colour_table);
+			d_rendered_geom_collection);
 }

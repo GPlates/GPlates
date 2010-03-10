@@ -33,7 +33,7 @@
 #include "PaleomagUtils.h"
 
 #include "feature-visitors/GeometryFinder.h"
-#include "gui/ColourTable.h"
+#include "gui/ColourProxy.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/ModelInterface.h"
 #include "model/ReconstructedFeatureGeometry.h"
@@ -41,10 +41,9 @@
 
 namespace
 {
-	const GPlatesGui::Colour 
+	const GPlatesGui::ColourProxy
 	get_colour_from_feature(
-		const GPlatesModel::FeatureCollectionHandle::features_iterator feature_iterator,
-		const GPlatesGui::ColourTable &colour_table)
+		const GPlatesModel::FeatureCollectionHandle::features_iterator feature_iterator)
 	{
 		GPlatesModel::PropertyName vgp_name = 
 			GPlatesModel::PropertyName::create_gpml("polePosition");
@@ -64,7 +63,7 @@ namespace
 
 		if (!finder.has_found_geometries())
 		{
-			return GPlatesGui::Colour::get_olive();
+			return GPlatesGui::ColourProxy(boost::none);
 		}
 		
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
@@ -81,23 +80,26 @@ namespace
 
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg = 
 			GPlatesModel::ReconstructedFeatureGeometry::create(
-			geometry,
-			**feature_iterator,
-			(*feature_iterator)->properties_begin(),
-			optional_plate_id,
-			boost::none);	
+				geometry,
+				**feature_iterator,
+				(*feature_iterator)->properties_begin(),
+				optional_plate_id,
+				boost::none);
 
-		GPlatesGui::ColourTable::const_iterator colour =
-			colour_table.lookup(*rfg);
-
-		if (colour == colour_table.end())
-		{
-			// Anything not in the table uses the 'Olive' colour.
-			colour = &GPlatesGui::Colour::get_olive();
-		}
-
-		return *colour;
+		return GPlatesGui::ColourProxy(rfg);
 	}
+}
+
+int
+GPlatesAppLogic::PaleomagWorkflow::s_instance_number = 0;
+
+GPlatesAppLogic::FeatureCollectionWorkflow::tag_type
+GPlatesAppLogic::PaleomagWorkflow::get_tag() const
+{
+	// FIXME: We're only doing this because each ViewState wants to have its own workflow instances
+	QString id;
+	id.setNum(d_instance_number);
+	return QString("PaleomagWorkflow").append(id);
 }
 
 bool
@@ -173,8 +175,7 @@ GPlatesAppLogic::PaleomagWorkflow::set_file_active(
 void
 GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 		GPlatesModel::Reconstruction &reconstruction,
-		const double &reconstruction_time,
-		const GPlatesGui::ColourTable &colour_table)
+		const double &reconstruction_time)
 {
 	//FIXME: make this extract the a95 and/or dm and dp properties from
 	// the paleomag feature(s), and render this on the globe as a circle/ellipse. 
@@ -230,8 +231,7 @@ GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 						boost::optional<const double>(reconstruction_time);
 					boost::optional<GPlatesMaths::Rotation> additional_rotation;
 
-					const GPlatesGui::Colour colour =
-						get_colour_from_feature(iter,colour_table);
+					const GPlatesGui::ColourProxy colour = get_colour_from_feature(iter);
 
 					PaleomagUtils::VgpRenderer vgp_renderer(
 						reconstruction,

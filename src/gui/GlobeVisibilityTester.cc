@@ -26,7 +26,7 @@
  */
 
 #include "maths/PointOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "qt-widgets/GlobeCanvas.h"
 
 bool

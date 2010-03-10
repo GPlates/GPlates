@@ -101,11 +101,13 @@ namespace GPlatesQtWidgets
 	class AboutDialog;
 	class AnimateDialog;
 	class AssignReconstructionPlateIdsDialog;
+	class ColouringDialog;
 	class ExportAnimationDialog;
 	class ExportReconstructedFeatureGeometryDialog;
 	class FeaturePropertiesDialog;
 	class ManageFeatureCollectionsDialog;
 	class ReadErrorAccumulationDialog;
+	class SaveFileDialog;
 	class SetCameraViewpointDialog;
 	class SetProjectionDialog;
 	class SetRasterSurfaceExtentDialog;
@@ -150,9 +152,6 @@ namespace GPlatesQtWidgets
 		{
 			return *d_globe_canvas_ptr;
 		}
-
-		void
-		create_svg_file();
 
 		void
 		create_svg_file(
@@ -377,10 +376,7 @@ namespace GPlatesQtWidgets
 		pop_up_manage_feature_collections_dialog();
 
 		void
-		pop_up_export_geometry_snapshot_dialog()
-		{
-			create_svg_file();
-		}
+		pop_up_export_geometry_snapshot_dialog();
 
 		void
 		pop_up_export_animation_dialog();
@@ -448,6 +444,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
+		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<ExportReconstructedFeatureGeometryDialog> d_export_rfg_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
@@ -460,6 +457,8 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<SpecifyTimeIncrementDialog> d_specify_time_increment_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
+
+		boost::shared_ptr<SaveFileDialog> d_export_geometry_snapshot_dialog_ptr;
 
 		GlobeCanvas *d_globe_canvas_ptr;
 
@@ -586,6 +585,9 @@ namespace GPlatesQtWidgets
 		
 		void
 		pop_up_about_dialog();
+
+		void
+		pop_up_colouring_dialog();
 
 		void
 		close_all_dialogs();
