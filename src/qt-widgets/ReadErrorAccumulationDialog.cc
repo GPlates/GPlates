@@ -739,7 +739,7 @@ const QString GPlatesQtWidgets::ReadErrorAccumulationDialog::s_information_dialo
 		"incorrect data in the way you would expect; and to be aware of incorrect data which "
 		"other programs may handle differently. </li>\n"
 		"</ul>\n"
-		"<i>Please be aware that all software needs to respond to situations such as these; "
+		"<i>Please be aware that all software need to respond to situations such as these; "
 		"GPlates is simply informing you when these situations occur!<i>\n"
 		"</body></html>\n");
 
