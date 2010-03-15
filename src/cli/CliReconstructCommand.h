@@ -84,25 +84,8 @@ namespace GPlatesCli
 		typedef std::vector<GPlatesFileIO::File::shared_ref> loaded_feature_collection_file_seq_type;
 
 		GPlatesModel::ModelInterface d_model;
-		loaded_feature_collection_file_seq_type d_loaded_reconstructable_files;
-		loaded_feature_collection_file_seq_type d_loaded_reconstruction_files;
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
-
-
-		void
-		load_feature_collections(
-				const boost::program_options::variables_map &vm);
-
-		void
-		load_feature_collections(
-				const std::vector<std::string> &filenames,
-				loaded_feature_collection_file_seq_type &files);
-
-		void
-		get_feature_collections(
-				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
-				loaded_feature_collection_file_seq_type &files);
 	};
 }
 

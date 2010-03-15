@@ -185,19 +185,12 @@ GPlatesFileIO::get_feature_collection_writer(
 	}
 #endif
 
-	// Assert GMT format compatilibity.
-	switch (write_format)
-	{
-	case FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER:
-	case FeatureCollectionWriteFormat::GMT_VERBOSE_HEADER:
-	case FeatureCollectionWriteFormat::GMT_PREFER_PLATES4_STYLE_HEADER:
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_feature_collection_file_format(file_info) == FeatureCollectionFileFormat::GMT,
-				GPLATES_ASSERTION_SOURCE);
-		break;
-	default:
-		break;
-	}
+	// Make sure write format is compatible with file format.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			is_write_format_compatible_with_file_format(
+					write_format,
+					get_feature_collection_file_format(file_info)),
+			GPLATES_ASSERTION_SOURCE);
 
 	// Create and return feature writer.
 	switch (write_format)

@@ -1,11 +1,12 @@
 /* $Id$ */
 
+
 /**
  * \file 
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,9 +23,9 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-#ifndef GPLATES_CLI_CLIREQUIREDOPTIONNOTPRESENT_H
-#define GPLATES_CLI_CLIREQUIREDOPTIONNOTPRESENT_H
+ 
+#ifndef GPLATES_CLI_CLIINVALIDOPTIONVALUE_H
+#define GPLATES_CLI_CLIINVALIDOPTIONVALUE_H
 
 #include <string>
 
@@ -34,18 +35,19 @@
 namespace GPlatesCli
 {
 	/**
-	 * This exception is thrown when an option is required but was not present (not found on
-	 * command-line or in a config file).
+	 * This exception is thrown when the value of an option is invalid.
 	 */
-	class RequiredOptionNotPresent :
+	class InvalidOptionValue :
 			public GPlatesGlobal::Exception
 	{
 	public:
-		RequiredOptionNotPresent(
+		InvalidOptionValue(
 				const GPlatesUtils::CallStack::Trace &exception_source,
-				const char *option_):
+				const char *option_,
+				const std::string &message_):
 			Exception(exception_source),
-			d_option(option_)
+			d_option(option_),
+			d_message(message_)
 		{  }
 
 		/**
@@ -57,12 +59,21 @@ namespace GPlatesCli
 			return d_option;
 		}
 
+		/**
+		 * Return the error message.
+		 */
+		const std::string &
+		message() const
+		{
+			return d_message;
+		}
+
 	protected:
 		virtual
 		const char *
 		exception_name() const
 		{
-			return "RequiredOptionNotPresent";
+			return "InvalidOptionValue";
 		}
 
 		virtual
@@ -72,7 +83,7 @@ namespace GPlatesCli
 		{
 			write_string_message(
 					os,
-					std::string("Option '") + d_option + "' is required and was not found.");
+					std::string("Option '") + d_option + "' has an invalid value - " + d_message);
 		}
 
 	private:
@@ -80,7 +91,12 @@ namespace GPlatesCli
 		 * The option that was required but not present.
 		 */
 		std::string d_option;
+
+		/**
+		 * Error message describing reason option value is invalid.
+		 */
+		std::string d_message;
 	};
 }
 
-#endif // GPLATES_CLI_CLIREQUIREDOPTIONNOTPRESENT_H
+#endif // GPLATES_CLI_CLIINVALIDOPTIONVALUE_H

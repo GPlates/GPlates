@@ -25,6 +25,7 @@
 
 
 #include "CliReconstructCommand.h"
+#include "CliFeatureCollectionFileIO.h"
 #include "CliRequiredOptionNotPresent.h"
 
 #include "app-logic/ReconstructUtils.h"
@@ -107,8 +108,25 @@ int
 GPlatesCli::ReconstructCommand::run(
 		const boost::program_options::variables_map &vm)
 {
-	// Load the feature collections.
-	load_feature_collections(vm);
+	FeatureCollectionFileIO file_io(d_model, vm);
+
+	//
+	// Load the feature collection files
+	//
+
+	FeatureCollectionFileIO::feature_collection_file_seq_type reconstructable_files =
+			file_io.load_files(LOAD_RECONSTRUCTABLE_OPTION_NAME);
+	FeatureCollectionFileIO::feature_collection_file_seq_type reconstruction_files =
+			file_io.load_files(LOAD_RECONSTRUCTION_OPTION_NAME);
+
+	// Extract the feature collections from the owning files.
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+			reconstructable_feature_collections,
+			reconstruction_feature_collections;
+	extract_feature_collections(
+			reconstructable_feature_collections, reconstructable_files);
+	extract_feature_collections(
+			reconstruction_feature_collections, reconstruction_files);
 
 
 	//
@@ -116,19 +134,11 @@ GPlatesCli::ReconstructCommand::run(
 	// and export reconstructed geometries to GMT format.
 	//
 
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-			reconstructable_features_collection;
-	get_feature_collections(reconstructable_features_collection, d_loaded_reconstructable_files);
-
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-			reconstruction_features_collection;
-	get_feature_collections(reconstruction_features_collection, d_loaded_reconstruction_files);
-
 	// Perform reconstruction.
 	const GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
 			GPlatesAppLogic::ReconstructUtils::create_reconstruction(
-					reconstructable_features_collection,
-					reconstruction_features_collection,
+					reconstructable_feature_collections,
+					reconstruction_feature_collections,
 					d_recon_time,
 					d_anchor_plate_id);
 
@@ -144,13 +154,13 @@ GPlatesCli::ReconstructCommand::run(
 			reconstruction_geometries.end(),
 			reconstruct_feature_geom_seq);
 
-	// Get the sequence of reconstructable files as weak references.
-	GPlatesFileIO::ReconstructedFeatureGeometryExport::files_collection_type reconstructable_files;
-	loaded_feature_collection_file_seq_type::const_iterator file_iter = d_loaded_reconstructable_files.begin();
-	loaded_feature_collection_file_seq_type::const_iterator file_end = d_loaded_reconstructable_files.end();
+	// Get the sequence of reconstructable files as File pointers.
+	GPlatesFileIO::ReconstructedFeatureGeometryExport::files_collection_type reconstructable_file_ptrs;
+	loaded_feature_collection_file_seq_type::const_iterator file_iter = reconstructable_files.begin();
+	loaded_feature_collection_file_seq_type::const_iterator file_end = reconstructable_files.end();
 	for ( ; file_iter != file_end; ++file_iter)
 	{
-		reconstructable_files.push_back(file_iter->get());
+		reconstructable_file_ptrs.push_back(file_iter->get());
 	}
 
 	// Export filename - currently a GMT format file.
@@ -160,74 +170,9 @@ GPlatesCli::ReconstructCommand::run(
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
 				export_filename,
 				reconstruct_feature_geom_seq,
-				reconstructable_files,
+				reconstructable_file_ptrs,
 				d_anchor_plate_id,
 				d_recon_time);
 
 	return 0;
-}
-
-
-void
-GPlatesCli::ReconstructCommand::load_feature_collections(
-		const boost::program_options::variables_map &vm)
-{
-    if (!vm.count(LOAD_RECONSTRUCTABLE_OPTION_NAME))
-    {
-		throw RequiredOptionNotPresent(
-				GPLATES_EXCEPTION_SOURCE, LOAD_RECONSTRUCTABLE_OPTION_NAME);
-	}
-
-    if (!vm.count(LOAD_RECONSTRUCTION_OPTION_NAME))
-    {
-		throw RequiredOptionNotPresent(
-				GPLATES_EXCEPTION_SOURCE, LOAD_RECONSTRUCTION_OPTION_NAME);
-	}
-
-	// Get the feature collection filenames.
-	const std::vector<std::string> reconstructable_filenames =
-			vm[LOAD_RECONSTRUCTABLE_OPTION_NAME].as< std::vector<std::string> >();
-	const std::vector<std::string> reconstruction_filenames =
-			vm[LOAD_RECONSTRUCTION_OPTION_NAME].as< std::vector<std::string> >();
-
-	load_feature_collections(reconstructable_filenames, d_loaded_reconstructable_files);
-	load_feature_collections(reconstruction_filenames, d_loaded_reconstruction_files);
-}
-
-
-void
-GPlatesCli::ReconstructCommand::load_feature_collections(
-		const std::vector<std::string> &filenames,
-		loaded_feature_collection_file_seq_type &files)
-{
-	// Load each feature collection file.
-	std::vector<std::string>::const_iterator filename_iter = filenames.begin();
-	std::vector<std::string>::const_iterator filename_end = filenames.end();
-	for ( ; filename_iter != filename_end; ++filename_iter)
-	{
-		GPlatesFileIO::ReadErrorAccumulation read_errors;
-
-		// Read the feature collection from the file.
-		const QString filename(filename_iter->c_str());
-		const GPlatesFileIO::FileInfo file_info(filename);
-		GPlatesFileIO::File::shared_ref file =
-				GPlatesFileIO::read_feature_collection(file_info, d_model, read_errors);
-
-		files.push_back(file);
-	}
-}
-
-
-void
-GPlatesCli::ReconstructCommand::get_feature_collections(
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
-		loaded_feature_collection_file_seq_type &files)
-{
-	// Load each feature collection file.
-	loaded_feature_collection_file_seq_type::iterator file_iter = files.begin();
-	loaded_feature_collection_file_seq_type::iterator file_end = files.end();
-	for ( ; file_iter != file_end; ++file_iter)
-	{
-		feature_collections.push_back((*file_iter)->get_feature_collection());
-	}
 }

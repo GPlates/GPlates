@@ -20,6 +20,7 @@ set(srcs
     CliConvertToGpmlCommand.h
     CliFeatureCollectionFileIO.cc
     CliFeatureCollectionFileIO.h
+    CliInvalidOptionValue.h
     CliReconstructCommand.cc
     CliReconstructCommand.h
     CliRequiredOptionNotPresent.h

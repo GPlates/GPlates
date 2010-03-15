@@ -81,25 +81,7 @@ namespace GPlatesCli
 				const boost::program_options::variables_map &vm);
 
 	private:
-		typedef std::vector<GPlatesFileIO::File::shared_ref> loaded_feature_collection_file_seq_type;
-
 		GPlatesModel::ModelInterface d_model;
-
-		/**
-		 * The topological closed plate boundary features and the boundary features they reference.
-		 */
-		loaded_feature_collection_file_seq_type d_loaded_topological_closed_plate_boundary_files;
-
-		/**
-		 * The features that will have their plate ids (re)assigned.
-		 */
-		loaded_feature_collection_file_seq_type d_loaded_assign_plate_id_files;
-
-		/**
-		 * The rotation files used to rotate both the topological boundary features and
-		 * the features having their plate ids (re)assigned.
-		 */
-		loaded_feature_collection_file_seq_type d_loaded_reconstruction_files;
 
 		/**
 		 * The reconstruction time at which to do the cookie-cutting or plate id (re)assigning.
@@ -108,21 +90,6 @@ namespace GPlatesCli
 		double d_recon_time;
 
 		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
-
-
-		void
-		load_feature_collections(
-				const boost::program_options::variables_map &vm);
-
-		void
-		load_feature_collections(
-				const std::vector<std::string> &filenames,
-				loaded_feature_collection_file_seq_type &files);
-
-		void
-		get_feature_collections(
-				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
-				loaded_feature_collection_file_seq_type &files);
 	};
 }
 
