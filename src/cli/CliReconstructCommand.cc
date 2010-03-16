@@ -123,9 +123,9 @@ GPlatesCli::ReconstructCommand::run(
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
 			reconstructable_feature_collections,
 			reconstruction_feature_collections;
-	extract_feature_collections(
+	FeatureCollectionFileIO::extract_feature_collections(
 			reconstructable_feature_collections, reconstructable_files);
-	extract_feature_collections(
+	FeatureCollectionFileIO::extract_feature_collections(
 			reconstruction_feature_collections, reconstruction_files);
 
 

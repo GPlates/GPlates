@@ -59,21 +59,13 @@ namespace GPlatesUtils
 			add_simple_options();
 			
 			// Options that will be allowed only on command line.
-			// NOTE: please add new options to GPlatesCli::CommandDispatcher
-			// instead of here. The basic 'help' and 'version' options are here
-			// but all GPlates specific functionality and command-line argument
-			// insertion/testing should go into GPlatesCli::CommandDispatcher.
 			boost::program_options::options_description generic_options;
 
 			// Options that will be allowed both on command line and in config file.
-			// NOTE: please add new options to GPlatesCli::CommandDispatcher
-			// instead of here.
 			boost::program_options::options_description config_options;
 
 			// Hidden options that will be allowed both on command line and
 			// in config files but will not be shown to the user.
-			// NOTE: please add new options to GPlatesCli::CommandDispatcher
-			// instead of here.
 			boost::program_options::options_description hidden_options;
 
 			// Positional options.

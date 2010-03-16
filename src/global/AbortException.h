@@ -24,63 +24,51 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_CLI_CLIINVALIDOPTIONVALUE_H
-#define GPLATES_CLI_CLIINVALIDOPTIONVALUE_H
+#ifndef GPLATES_GLOBAL_ABORTEXCEPTION_H
+#define GPLATES_GLOBAL_ABORTEXCEPTION_H
 
-#include <string>
+#include "GPlatesException.h"
 
-#include "global/GPlatesException.h"
-
-
-namespace GPlatesCli
+namespace GPlatesGlobal
 {
 	/**
-	 * This exception is thrown when the value of an option is invalid.
+	 * Base GPlatesGlobal::Exception class which should be used for aborts;
+	 * these exceptions indicate something is seriously wrong with
+	 * the internal state of the program.
 	 */
-	class InvalidOptionValue :
-			public GPlatesGlobal::Exception
+	class AbortException :
+			public Exception
 	{
 	public:
-		InvalidOptionValue(
-				const GPlatesUtils::CallStack::Trace &exception_source,
-				const char *option_):
+		/**
+		 * @param exception_source should be supplied using the @c GPLATES_EXCEPTION_SOURCE macro,
+		 */
+		explicit
+		AbortException(
+				const GPlatesUtils::CallStack::Trace &exception_source) :
 			Exception(exception_source),
-			d_option(option_)
+			d_filename(exception_source.get_filename()),
+			d_line_num(exception_source.get_line_num())
 		{  }
 
-		/**
-		 * Return the option that was required but not present.
-		 */
-		const std::string &
-		option() const
-		{
-			return d_option;
-		}
-
 	protected:
+
 		virtual
 		const char *
 		exception_name() const
 		{
-			return "InvalidOptionValue";
+			return "AbortException";
 		}
 
 		virtual
 		void
 		write_message(
-				std::ostream &os) const
-		{
-			write_string_message(
-					os,
-					std::string("Option '") + d_option + "' has an invalid value.");
-		}
+				std::ostream &os) const;
 
 	private:
-		/**
-		 * The option that was required but not present.
-		 */
-		std::string d_option;
+		const char *d_filename;
+		int d_line_num;
 	};
 }
 
-#endif // GPLATES_CLI_CLIINVALIDOPTIONVALUE_H
+#endif // GPLATES_GLOBAL_ABORTEXCEPTION_H

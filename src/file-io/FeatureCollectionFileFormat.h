@@ -29,6 +29,7 @@
 #define GPLATES_FILEIO_FEATURECOLLECTIONFILEFORMAT_H
 
 #include <QFileInfo>
+#include <QString>
 
 
 namespace GPlatesFileIO
@@ -88,6 +89,15 @@ namespace GPlatesFileIO
 	FeatureCollectionFileFormat::Format
 	get_feature_collection_file_format(
 			const QFileInfo& file_info);
+
+	/**
+	 * Returns the filename extension for @a format.
+	 *
+	 * If @a format is @a UNKNOWN then returns empty string.
+	 */
+	QString
+	get_filename_extension(
+			FeatureCollectionFileFormat::Format format);
 }
 
 #endif // GPLATES_FILEIO_FEATURECOLLECTIONFILEFORMAT_H

@@ -33,8 +33,10 @@
 
 #include "CliRequiredOptionNotPresent.h"
 
+#include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/File.h"
 
+#include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 
 
@@ -76,6 +78,74 @@ namespace GPlatesCli
 		load_files(
 				const std::string &option_name);
 
+
+		/**
+		 * Extracts the feature collections from their containing @a File objects.
+		 *
+		 * Extracted feature collections are appended to @a feature_collections.
+		 */
+		static
+		void
+		extract_feature_collections(
+				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
+				FeatureCollectionFileIO::feature_collection_file_seq_type &files);
+
+
+		/**
+		 * Write the feature collection associated to a file described by @a file_info.
+		 */
+		static
+		void
+		save_file(
+				const GPlatesFileIO::FileInfo &file_info,
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
+
+
+		//
+		// Values specified by user on command-line for the save file type.
+		//
+		static const std::string SAVE_FILE_TYPE_GPML;
+		static const std::string SAVE_FILE_TYPE_GPML_GZ;
+		static const std::string SAVE_FILE_TYPE_PLATES_LINE;
+		static const std::string SAVE_FILE_TYPE_PLATES_ROTATION;
+		static const std::string SAVE_FILE_TYPE_SHAPEFILE;
+		static const std::string SAVE_FILE_TYPE_GMT;
+		static const std::string SAVE_FILE_TYPE_GMAP;
+
+		/**
+		 * Returns the save filename by changing the extension of @a file_info using
+		 * the save file format of @a save_file_format.
+		 */
+		static
+		GPlatesFileIO::FeatureCollectionFileFormat::Format
+		get_save_file_format(
+				const std::string &save_file_type);
+
+		/**
+		 * Returns the save filename by changing the extension of @a file_info using
+		 * the save file format of @a save_file_format.
+		 */
+		static
+		GPlatesFileIO::FileInfo
+		get_save_file_info(
+				const GPlatesFileIO::FileInfo &file_info,
+				GPlatesFileIO::FeatureCollectionFileFormat::Format save_file_format);
+
+		/**
+		 * Returns the save filename by changing the extension of @a file_info using
+		 * the save file format of @a save_file_format.
+		 */
+		static
+		GPlatesFileIO::FileInfo
+		get_save_file_info(
+				const GPlatesFileIO::FileInfo &file_info,
+				const std::string &save_file_type)
+		{
+			return get_save_file_info(
+					file_info,
+					get_save_file_format(save_file_type));
+		}
+
 	private:
 		/**
 		 * Used to create feature collections when loading files.
@@ -93,17 +163,6 @@ namespace GPlatesCli
 				const std::vector<std::string> &filenames,
 				feature_collection_file_seq_type &files);
 	};
-
-
-	/**
-	 * Extracts the feature collections from their containing @a File objects.
-	 *
-	 * Extracted feature collections are appended to @a feature_collections.
-	 */
-	void
-	extract_feature_collections(
-			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
-			FeatureCollectionFileIO::feature_collection_file_seq_type &files);
 }
 
 #endif // GPLATES_CLI_CLILOADFEATURECOLLECTIONS_H

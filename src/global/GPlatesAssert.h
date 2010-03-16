@@ -38,7 +38,8 @@ namespace GPlatesGlobal
 {
 	/**
 	 * Outputs the call stack contained in @a CallStack to std::cerr
-	 * and then calls @a std::abort.
+	 * and then calls @a std::abort (if the current GPlates build
+	 * is considered a debug build) or an instance of @a AbortException is instantiated and thrown.
 	 *
 	 * @param abort_location the caller's call stack location.
 	 */

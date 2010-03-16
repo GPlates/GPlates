@@ -24,10 +24,21 @@
  */
 
 #include "CliFeatureCollectionFileIO.h"
+#include "CliInvalidOptionValue.h"
+
+#include "app-logic/FeatureCollectionFileIO.h"
 
 #include "file-io/FeatureCollectionReaderWriter.h"
 #include "file-io/ReadErrorAccumulation.h"
 
+
+const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML = "gpml";
+const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML_GZ = "compressed-gpml";
+const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_PLATES_LINE = "plates4-line";
+const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_PLATES_ROTATION = "plates4-rotation";
+const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_SHAPEFILE = "shapefile";
+const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GMT = "gmt";
+const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GMAP = "vgp";
 
 GPlatesCli::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		GPlatesModel::ModelInterface &model,
@@ -83,7 +94,7 @@ GPlatesCli::FeatureCollectionFileIO::load_feature_collections(
 
 
 void
-GPlatesCli::extract_feature_collections(
+GPlatesCli::FeatureCollectionFileIO::extract_feature_collections(
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
 		FeatureCollectionFileIO::feature_collection_file_seq_type &files)
 {
@@ -94,4 +105,100 @@ GPlatesCli::extract_feature_collections(
 	{
 		feature_collections.push_back((*file_iter)->get_feature_collection());
 	}
+}
+
+
+void
+GPlatesCli::FeatureCollectionFileIO::save_file(
+		const GPlatesFileIO::FileInfo &file_info,
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+{
+	// The write format is based on the file extension except for GMT where we choose
+	// to have the verbose header.
+	GPlatesFileIO::FeatureCollectionWriteFormat::Format write_format =
+			GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION;
+	if (GPlatesFileIO::get_feature_collection_file_format(file_info) ==
+			GPlatesFileIO::FeatureCollectionFileFormat::GMT)
+	{
+		write_format = GPlatesFileIO::FeatureCollectionWriteFormat::GMT_VERBOSE_HEADER;
+	}
+
+	GPlatesAppLogic::FeatureCollectionFileIO::save_file(
+			file_info, feature_collection, write_format);
+}
+
+
+GPlatesFileIO::FeatureCollectionFileFormat::Format
+GPlatesCli::FeatureCollectionFileIO::get_save_file_format(
+		const std::string &save_file_type)
+{
+	if (save_file_type == SAVE_FILE_TYPE_GPML)
+	{
+		return GPlatesFileIO::FeatureCollectionFileFormat::GPML;
+	}
+	else if (save_file_type == SAVE_FILE_TYPE_GPML_GZ)
+	{
+		return GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ;
+	}
+	else if (save_file_type == SAVE_FILE_TYPE_PLATES_LINE)
+	{
+		return GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE;
+	}
+	else if (save_file_type == SAVE_FILE_TYPE_PLATES_ROTATION)
+	{
+		return GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION;
+	}
+	else if (save_file_type == SAVE_FILE_TYPE_SHAPEFILE)
+	{
+		return GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE;
+	}
+	else if (save_file_type == SAVE_FILE_TYPE_GMT)
+	{
+		return GPlatesFileIO::FeatureCollectionFileFormat::GMT;
+	}
+	else if (save_file_type == SAVE_FILE_TYPE_GMAP)
+	{
+		return GPlatesFileIO::FeatureCollectionFileFormat::GMAP;
+	}
+
+	throw GPlatesCli::InvalidOptionValue(
+			GPLATES_EXCEPTION_SOURCE,
+			save_file_type.c_str());
+}
+
+
+GPlatesFileIO::FileInfo
+GPlatesCli::FeatureCollectionFileIO::get_save_file_info(
+		const GPlatesFileIO::FileInfo &file_info,
+		GPlatesFileIO::FeatureCollectionFileFormat::Format save_file_format)
+{
+	//
+	// Generate the output filename.
+	//
+	QString output_filename = file_info.get_qfileinfo().filePath();
+	const int ext_index = output_filename.lastIndexOf('.');
+	if (ext_index >= 0)
+	{
+		// Remove extension.
+		QString output_basename = output_filename.left(ext_index);
+
+		// If the extension is "gz" then we have a "gpml.gz" extension so
+		// remove the "gpml" part as well.
+		if (output_filename.mid(ext_index + 1) == "gz")
+		{
+			const int next_ext_index = output_basename.lastIndexOf('.');
+			if (next_ext_index >= 0)
+			{
+				output_basename = output_basename.left(next_ext_index);
+			}
+		}
+
+		output_filename = output_basename;
+	}
+
+	output_filename.append('.');
+	output_filename.append(
+			GPlatesFileIO::get_filename_extension(save_file_format));
+
+	return GPlatesFileIO::FileInfo(output_filename);
 }

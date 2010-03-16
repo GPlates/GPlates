@@ -28,9 +28,25 @@
 #include "FeatureCollectionFileFormat.h"
 #include "FileInfo.h"
 
+#include "global/GPlatesAssert.h"
+
 
 namespace
 {
+	//
+	// Filename extensions for the various file formats.
+	//
+
+	const QString FILE_FORMAT_EXT_GPML = "gpml";
+	const QString FILE_FORMAT_EXT_GPML_GZ = "gpml.gz";
+	const QString FILE_FORMAT_EXT_PLATES4_LINE = "dat";
+	const QString FILE_FORMAT_EXT_PLATES4_LINE_ALTERNATIVE = "pla";
+	const QString FILE_FORMAT_EXT_PLATES4_ROTATION = "rot";
+	const QString FILE_FORMAT_EXT_SHAPEFILE = "shp";
+	const QString FILE_FORMAT_EXT_GMT = "xy";
+	const QString FILE_FORMAT_EXT_GMAP = "vgp";
+
+
 	bool
 	file_name_ends_with(
 			const QFileInfo &file, const QString &suffix)
@@ -44,7 +60,7 @@ namespace
 	is_gmt_format_file(
 			const QFileInfo &file)
 	{
-		return file_name_ends_with(file, "xy");
+		return file_name_ends_with(file, FILE_FORMAT_EXT_GMT);
 	}
 
 
@@ -52,8 +68,8 @@ namespace
 	is_plates_line_format_file(
 			const QFileInfo &file)
 	{
-		return file_name_ends_with(file, "dat") ||
-			file_name_ends_with(file, "pla");
+		return file_name_ends_with(file, FILE_FORMAT_EXT_PLATES4_LINE) ||
+			file_name_ends_with(file, FILE_FORMAT_EXT_PLATES4_LINE_ALTERNATIVE);
 	}
 
 
@@ -61,14 +77,14 @@ namespace
 	is_plates_rotation_format_file(
 			const QFileInfo &file)
 	{
-		return file_name_ends_with(file, "rot");
+		return file_name_ends_with(file, FILE_FORMAT_EXT_PLATES4_ROTATION);
 	}
 
 	bool
 	is_shapefile_format_file(
 			const QFileInfo &file)
 	{
-		return file_name_ends_with(file, "shp");
+		return file_name_ends_with(file, FILE_FORMAT_EXT_SHAPEFILE);
 
 	// RJW: Testing ESRI Geodatabases.
 	//	return file_name_ends_with(file, "mdb");
@@ -78,19 +94,19 @@ namespace
 	is_gpml_format_file(
 			const QFileInfo &file)
 	{
-		return file_name_ends_with(file, "gpml");
+		return file_name_ends_with(file, FILE_FORMAT_EXT_GPML);
 	}
 
 	bool
 	is_gpml_gz_format_file(const QFileInfo &file)
 	{
-		return file_name_ends_with(file, "gpml.gz");
+		return file_name_ends_with(file, FILE_FORMAT_EXT_GPML_GZ);
 	}
 	
 	bool
 	is_gmap_format_file(const QFileInfo &file)
 	{
-		return file_name_ends_with(file,"vgp");
+		return file_name_ends_with(file, FILE_FORMAT_EXT_GMAP);
 	}
 	
 }
@@ -142,4 +158,46 @@ GPlatesFileIO::get_feature_collection_file_format(
 	{
 		return FeatureCollectionFileFormat::UNKNOWN;
 	}
+}
+
+
+QString
+GPlatesFileIO::get_filename_extension(
+		FeatureCollectionFileFormat::Format format)
+{
+	switch (format)
+	{
+	case FeatureCollectionFileFormat::GPML:
+		return FILE_FORMAT_EXT_GPML;
+
+	case FeatureCollectionFileFormat::GPML_GZ:
+		return FILE_FORMAT_EXT_GPML_GZ;
+
+	case FeatureCollectionFileFormat::PLATES4_LINE:
+		return FILE_FORMAT_EXT_PLATES4_LINE;
+
+	case FeatureCollectionFileFormat::PLATES4_ROTATION:
+		return FILE_FORMAT_EXT_PLATES4_ROTATION;
+
+	case FeatureCollectionFileFormat::SHAPEFILE:
+		return FILE_FORMAT_EXT_SHAPEFILE;
+
+	case FeatureCollectionFileFormat::GMT:
+		return FILE_FORMAT_EXT_GMT;
+
+	case FeatureCollectionFileFormat::GMAP:
+		return FILE_FORMAT_EXT_GMAP;
+
+	case FeatureCollectionFileFormat::UNKNOWN:
+		return QString();
+
+	default:
+		break;
+	}
+
+	// Shouldn't get here.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// Avoid compiler warning.
+	return QString();
 }
