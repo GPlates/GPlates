@@ -157,7 +157,7 @@ namespace
 		}
 		catch(std::exception& exc)
 		{
-			std::cout<<"Error processing command-line: "<<exc.what()<<std::endl;
+			std::cerr<<"Error processing command-line: "<<exc.what()<<std::endl;
 		}
 
 		// Print usage if 'help' option is specified.
@@ -183,7 +183,7 @@ namespace
 			if (!command_dispatcher.is_recognised_command(command))
 			{
 				// The command was not a recognised command.
-				std::cout
+				std::cerr
 						<< "Command '" << command.c_str() << "' is not a recognised command."
 						<< std::endl;
 				return;
@@ -268,7 +268,7 @@ namespace
 		}
 		catch(std::exception& exc)
 		{
-			std::cout<<"Error processing command-line: "<<exc.what()<<std::endl;
+			std::cerr<<"Error processing command-line: "<<exc.what()<<std::endl;
 		}
 
 		//
@@ -353,7 +353,7 @@ namespace
 		case FIRST_ARG_IS_UNRECOGNISED_COMMAND:
 			// The first command-line argument was not a recognised command but it did
 			// look like a command (rather than an option).
-			std::cout
+			std::cerr
 					<< "Command '" << command.c_str() << "' is not a recognised command."
 					<< std::endl;
 			return 1;

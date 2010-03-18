@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <QString>
@@ -30,7 +31,9 @@
 #include "CliCommandDispatcher.h"
 
 #include "CliAssignPlateIdsCommand.h"
+#include "CliInvalidOptionValue.h"
 #include "CliReconstructCommand.h"
+#include "CliRequiredOptionNotPresent.h"
 #include "CliConvertFileFormatCommand.h"
 
 #include "global/PreconditionViolationError.h"
@@ -124,8 +127,23 @@ GPlatesCli::CommandDispatcher::run(
 		throw GPlatesGlobal::PreconditionViolationError(GPLATES_EXCEPTION_SOURCE);
 	}
 
-	// Get the command to run.
-	return cmd->run(vm);
+	try
+	{
+		// Get the command to run.
+		return cmd->run(vm);
+	}
+	catch(RequiredOptionNotPresent &exc)
+	{
+		std::cerr << exc << std::endl;
+		return 1; // Zero is success
+	}
+	catch(InvalidOptionValue &exc)
+	{
+		std::cerr << exc << std::endl;
+		return 1; // Zero is success
+	}
+
+	return 0; // Zero is success
 }
 
 

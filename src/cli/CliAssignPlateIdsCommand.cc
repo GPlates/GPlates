@@ -183,7 +183,9 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 			// std::vector allows multiple load files and
 			// 'composing()' allows merging of command-line and config files.
 			boost::program_options::value< std::vector<std::string> >()->composing(),
-			"load reconstruction feature collection file (multiple options allowed)"
+			(std::string("load reconstruction feature collection file (multiple options allowed) - "
+					"this is optional if '") + RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION +
+					"' is zero.").c_str()
 		)
 		(
 			ASSIGN_METHOD_OPTION_NAME_WITH_SHORT_OPTION,
@@ -270,8 +272,23 @@ GPlatesCli::AssignPlateIdsCommand::run(
 			file_io.load_files(ASSIGN_PLATE_ID_FILES_OPTION_NAME);
 	// The rotation files used to rotate both the topological boundary features and
 	// the features having their plate ids (re)assigned.
-	FeatureCollectionFileIO::feature_collection_file_seq_type reconstruction_files =
-			file_io.load_files(RECONSTRUCTION_FILES_OPTION_NAME);
+	FeatureCollectionFileIO::feature_collection_file_seq_type reconstruction_files;
+	// Reconstruction files are optional as long as the reconstruction time is zero.
+	if (vm.count(RECONSTRUCTION_FILES_OPTION_NAME) == 0)
+	{
+		if (d_recon_time > 0)
+		{
+			throw RequiredOptionNotPresent(
+					GPLATES_EXCEPTION_SOURCE,
+					RECONSTRUCTION_FILES_OPTION_NAME,
+					std::string("A reconstruction feature collection is required for a "
+							"non-zero reconstruction time."));
+		}
+	}
+	else
+	{
+		reconstruction_files = file_io.load_files(RECONSTRUCTION_FILES_OPTION_NAME);
+	}
 
 	// Extract the feature collections from the owning files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
