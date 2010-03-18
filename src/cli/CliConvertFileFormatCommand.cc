@@ -41,18 +41,12 @@ namespace
 	//! Option name for loading feature collection file(s) with short version.
 	const char *LOAD_FEATURE_COLLECTION_OPTION_NAME_WITH_SHORT_OPTION = "load-fc,l";
 
-	//! Option name for type of file to save.
-	const char *SAVE_FILE_TYPE_OPTION_NAME = "save-file-type";
 	//! Option name for type of file to save with short version.
 	const char *SAVE_FILE_TYPE_OPTION_NAME_WITH_SHORT_OPTION = "save-file-type,e";
 
-	//! Option name for prefix of saved filenames.
-	const char *SAVE_FILE_PREFIX_OPTION_NAME = "save-file-prefix";
 	//! Option name for prefix of saved filenames with short option.
 	const char *SAVE_FILE_PREFIX_OPTION_NAME_WITH_SHORT_OPTION = "save-file-prefix,p";
 
-	//! Option name for suffix of saved filenames.
-	const char *SAVE_FILE_SUFFIX_OPTION_NAME = "save-file-suffix";
 	//! Option name for suffix of saved filenames with short option.
 	const char *SAVE_FILE_SUFFIX_OPTION_NAME_WITH_SHORT_OPTION = "save-file-suffix,s";
 }

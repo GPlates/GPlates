@@ -54,8 +54,6 @@ namespace
 	//! Option name for loading reconstruction feature collection file(s) with short version.
 	const char *LOAD_RECONSTRUCTION_OPTION_NAME_WITH_SHORT_OPTION = "load-reconstruction,r";
 
-	//! Option name for filename to export.
-	const char *EXPORT_FILENAME_OPTION_NAME = "export-filename";
 	//! Option name for filename to export with short version.
 	const char *EXPORT_FILENAME_OPTION_NAME_WITH_SHORT_OPTION = "export-filename,o";
 
