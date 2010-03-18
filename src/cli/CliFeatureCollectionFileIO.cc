@@ -251,3 +251,20 @@ GPlatesCli::FeatureCollectionFileIO::get_save_file_info(
 
 	return GPlatesFileIO::FileInfo(output_filename);
 }
+
+
+GPlatesFileIO::FileInfo
+GPlatesCli::FeatureCollectionFileIO::get_save_file_info(
+		const QString &filename_no_extension,
+		GPlatesFileIO::FeatureCollectionFileFormat::Format save_file_format)
+{
+	//
+	// Generate the output filename.
+	//
+	QString output_filename(filename_no_extension);
+	append_filename_extension(
+			output_filename,
+			GPlatesFileIO::get_filename_extension(save_file_format));
+
+	return GPlatesFileIO::FileInfo(output_filename);
+}

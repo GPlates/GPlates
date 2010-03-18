@@ -26,6 +26,7 @@
 
 #include "CliReconstructCommand.h"
 #include "CliFeatureCollectionFileIO.h"
+#include "CliInvalidOptionValue.h"
 #include "CliRequiredOptionNotPresent.h"
 
 #include "app-logic/ReconstructUtils.h"
@@ -53,11 +54,44 @@ namespace
 	//! Option name for loading reconstruction feature collection file(s) with short version.
 	const char *LOAD_RECONSTRUCTION_OPTION_NAME_WITH_SHORT_OPTION = "load-reconstruction,r";
 
+	//! Option name for filename to export.
+	const char *EXPORT_FILENAME_OPTION_NAME = "export-filename";
+	//! Option name for filename to export with short version.
+	const char *EXPORT_FILENAME_OPTION_NAME_WITH_SHORT_OPTION = "export-filename,o";
+
+	//! Option name for type of file to export.
+	const char *EXPORT_FILE_TYPE_OPTION_NAME = "export-file-type";
+	//! Option name for type of file to export with short version.
+	const char *EXPORT_FILE_TYPE_OPTION_NAME_WITH_SHORT_OPTION = "export-file-type,e";
+
 	//! Option name for reconstruction time with short version.
 	const char *RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION = "recon-time,t";
 
 	//! Option name for anchor plate id with short version.
 	const char *ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "anchor-plate-id,a";
+
+
+	/**
+	 * Parses command-line option to get the export file type.
+	 */
+	std::string
+	get_export_file_type(
+			const boost::program_options::variables_map &vm)
+	{
+		const std::string &export_file_type =
+				vm[EXPORT_FILE_TYPE_OPTION_NAME].as<std::string>();
+
+		// We're only allowing a subset of the save file types that make sense for us.
+		if (export_file_type == GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GMT ||
+			export_file_type == GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_SHAPEFILE)
+		{
+			return export_file_type;
+		}
+
+		throw GPlatesCli::InvalidOptionValue(
+				GPLATES_EXCEPTION_SOURCE,
+				export_file_type.c_str());
+	}
 }
 
 
@@ -76,31 +110,56 @@ GPlatesCli::ReconstructCommand::add_options(
 		boost::program_options::positional_options_description &positional_options)
 {
 	config_options.add_options()
-		(LOAD_RECONSTRUCTABLE_OPTION_NAME_WITH_SHORT_OPTION,
-				// std::vector allows multiple load files and
-				// 'composing()' allows merging of command-line and config files.
-				boost::program_options::value< std::vector<std::string> >()->composing(),
-				"load reconstructable feature collection file (multiple options allowed)")
-		(LOAD_RECONSTRUCTION_OPTION_NAME_WITH_SHORT_OPTION,
-				// std::vector allows multiple load files and
-				// 'composing()' allows merging of command-line and config files.
-				boost::program_options::value< std::vector<std::string> >()->composing(),
-				"load reconstruction feature collection file (multiple options allowed)")
-		(RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION,
-				boost::program_options::value<double>(&d_recon_time)->default_value(0),
-				"set reconstruction time (defaults to zero)")
-		(ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION,
-				boost::program_options::value<GPlatesModel::integer_plate_id_type>(
-						&d_anchor_plate_id)->default_value(0),
-				"set anchor plate id (defaults to zero)")
+		(
+			LOAD_RECONSTRUCTABLE_OPTION_NAME_WITH_SHORT_OPTION,
+			// std::vector allows multiple load files and
+			// 'composing()' allows merging of command-line and config files.
+			boost::program_options::value< std::vector<std::string> >()->composing(),
+			"load reconstructable feature collection file (multiple options allowed)"
+		)
+		(
+			LOAD_RECONSTRUCTION_OPTION_NAME_WITH_SHORT_OPTION,
+			// std::vector allows multiple load files and
+			// 'composing()' allows merging of command-line and config files.
+			boost::program_options::value< std::vector<std::string> >()->composing(),
+			"load reconstruction feature collection file (multiple options allowed)"
+		)
+		(
+			EXPORT_FILENAME_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<std::string>(&d_export_filename)
+					->default_value("reconstructed"),
+			"export filename without extension (defaults to 'reconstructed')"
+		)
+		(
+			EXPORT_FILE_TYPE_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<std::string>()->default_value(
+					FeatureCollectionFileIO::SAVE_FILE_TYPE_GMT),
+			(std::string(
+					"file type to export reconstructed geometries (defaults to '")
+					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_GMT
+					+ "') - valid values are:\n"
+					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_GMT
+					+ " - Generic Mapping Tools (GMT) format\n"
+					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_SHAPEFILE
+					+ " - ArcGIS Shapefile format\n").c_str()
+		)
+		(
+			RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<double>(&d_recon_time)->default_value(0),
+			"set reconstruction time (defaults to zero)"
+		)
+		(
+			ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<GPlatesModel::integer_plate_id_type>(
+					&d_anchor_plate_id)->default_value(0),
+			"set anchor plate id (defaults to zero)"
+		)
 		;
 
-#if 0
 	// The feature collection files can also be specified directly on command-line
 	// without requiring the option prefix.
 	// '-1' means unlimited arguments are allowed.
 	positional_options.add(LOAD_RECONSTRUCTABLE_OPTION_NAME, -1);
-#endif
 }
 
 
@@ -128,6 +187,8 @@ GPlatesCli::ReconstructCommand::run(
 	FeatureCollectionFileIO::extract_feature_collections(
 			reconstruction_feature_collections, reconstruction_files);
 
+	// The export filename information.
+	const std::string export_file_type = get_export_file_type(vm);
 
 	//
 	// Currently we just reconstruct feature collections
@@ -163,12 +224,15 @@ GPlatesCli::ReconstructCommand::run(
 		reconstructable_file_ptrs.push_back(file_iter->get());
 	}
 
-	// Export filename - currently a GMT format file.
-	const QString export_filename("reconstructed.xy");
+	// Export filename.
+	const GPlatesFileIO::FileInfo export_filename =
+			FeatureCollectionFileIO::get_save_file_info(
+					d_export_filename.c_str(),
+					export_file_type);
 
 	// Export the reconstructed feature geometries.
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
-				export_filename,
+				export_filename.get_qfileinfo().filePath(),
 				reconstruct_feature_geom_seq,
 				reconstructable_file_ptrs,
 				d_anchor_plate_id,

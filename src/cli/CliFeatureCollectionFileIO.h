@@ -123,6 +123,31 @@ namespace GPlatesCli
 				const std::string &save_file_type);
 
 		/**
+		 * Returns the save filename by appending the filename extension determined by
+		 * @a save_file_format to @a filename_no_extension.
+		 */
+		static
+		GPlatesFileIO::FileInfo
+		get_save_file_info(
+				const QString &filename_no_extension,
+				GPlatesFileIO::FeatureCollectionFileFormat::Format save_file_format);
+
+		/**
+		 * Returns the save filename by appending the filename extension determined by
+		 * @a save_file_type to @a filename_no_extension.
+		 */
+		static
+		GPlatesFileIO::FileInfo
+		get_save_file_info(
+				const QString &filename_no_extension,
+				const std::string &save_file_type)
+		{
+			return get_save_file_info(
+					filename_no_extension,
+					get_save_file_format(save_file_type));
+		}
+
+		/**
 		 * Returns the save filename by changing the extension of @a file_info using
 		 * the save file format of @a save_file_format.
 		 */

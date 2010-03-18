@@ -26,6 +26,7 @@
 #ifndef GPLATES_SRC_CLI_RECONSTRUCT_COMMAND_H
 #define GPLATES_SRC_CLI_RECONSTRUCT_COMMAND_H
 
+#include <string>
 #include <vector>
 
 #include "CliCommand.h"
@@ -86,6 +87,8 @@ namespace GPlatesCli
 		GPlatesModel::ModelInterface d_model;
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
+
+		std::string d_export_filename;
 	};
 }
 
