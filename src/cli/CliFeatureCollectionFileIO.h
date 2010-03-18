@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 #include <boost/program_options/variables_map.hpp>
+#include <QString>
 
 #include "CliRequiredOptionNotPresent.h"
 
@@ -129,7 +130,9 @@ namespace GPlatesCli
 		GPlatesFileIO::FileInfo
 		get_save_file_info(
 				const GPlatesFileIO::FileInfo &file_info,
-				GPlatesFileIO::FeatureCollectionFileFormat::Format save_file_format);
+				GPlatesFileIO::FeatureCollectionFileFormat::Format save_file_format,
+				const QString &filename_prefix = "",
+				const QString &filename_suffix = "");
 
 		/**
 		 * Returns the save filename by changing the extension of @a file_info using
@@ -139,11 +142,15 @@ namespace GPlatesCli
 		GPlatesFileIO::FileInfo
 		get_save_file_info(
 				const GPlatesFileIO::FileInfo &file_info,
-				const std::string &save_file_type)
+				const std::string &save_file_type,
+				const QString &filename_prefix = "",
+				const QString &filename_suffix = "")
 		{
 			return get_save_file_info(
 					file_info,
-					get_save_file_format(save_file_type));
+					get_save_file_format(save_file_type),
+					filename_prefix,
+					filename_suffix);
 		}
 
 	private:

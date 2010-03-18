@@ -16,8 +16,8 @@ set(srcs
     CliCommand.h
     CliCommandDispatcher.cc
     CliCommandDispatcher.h
-    CliConvertToGpmlCommand.cc
-    CliConvertToGpmlCommand.h
+    CliConvertFileFormatCommand.cc
+    CliConvertFileFormatCommand.h
     CliFeatureCollectionFileIO.cc
     CliFeatureCollectionFileIO.h
     CliInvalidOptionValue.h

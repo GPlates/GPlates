@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CLI_CLICONVERTTOGPML_H
-#define GPLATES_CLI_CLICONVERTTOGPML_H
+#ifndef GPLATES_CLI_CLICONVERTFILEFORMATCOMMAND_H
+#define GPLATES_CLI_CLICONVERTFILEFORMATCOMMAND_H
 
 #include <string>
 #include <vector>
@@ -36,11 +36,11 @@
 
 namespace GPlatesCli
 {
-	class ConvertToGpmlCommand :
+	class ConvertFileFormatCommand :
 			public Command
 	{
 	public:
-		ConvertToGpmlCommand();
+		ConvertFileFormatCommand();
 
 
 		//! Name of this command as seen on the command-line.
@@ -48,7 +48,7 @@ namespace GPlatesCli
 		std::string
 		get_command_name() const
 		{
-			return "convert-to-gpml";
+			return "convert-file-format";
 		}
 
 
@@ -57,7 +57,7 @@ namespace GPlatesCli
 		std::string
 		get_command_description() const
 		{
-			return "converts loaded feature collection(s) to GPML format";
+			return "converts loaded feature collection(s) to a different file format";
 		}
 
 
@@ -79,8 +79,11 @@ namespace GPlatesCli
 
 	private:
 		GPlatesModel::ModelInterface d_model;
-		std::string d_output_basename_suffix;
+
+		std::string d_save_file_type;
+		std::string d_save_file_prefix;
+		std::string d_save_file_suffix;
 	};
 }
 
-#endif // GPLATES_CLI_CLICONVERTTOGPML_H
+#endif // GPLATES_CLI_CLICONVERTFILEFORMATCOMMAND_H

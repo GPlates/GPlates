@@ -31,7 +31,7 @@
 
 #include "CliAssignPlateIdsCommand.h"
 #include "CliReconstructCommand.h"
-#include "CliConvertToGpmlCommand.h"
+#include "CliConvertFileFormatCommand.h"
 
 #include "global/PreconditionViolationError.h"
 
@@ -46,8 +46,8 @@ GPlatesCli::CommandDispatcher::CommandDispatcher()
 	command_ptr_type reconstruct_cmd(new ReconstructCommand());
 	d_command_map[reconstruct_cmd->get_command_name()] = reconstruct_cmd;
 
-	// Add ConvertToGpmlCommand.
-	command_ptr_type convert_to_gpml_cmd(new ConvertToGpmlCommand());
+	// Add ConvertFileFormatCommand.
+	command_ptr_type convert_to_gpml_cmd(new ConvertFileFormatCommand());
 	d_command_map[convert_to_gpml_cmd->get_command_name()] = convert_to_gpml_cmd;
 
 	// Add AssignPlateIdsCommand.

@@ -25,9 +25,11 @@
 
 
 #include <algorithm>
+#include <cstddef> // For std::size_t
 #include <string>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
+#include <QString>
 
 #include "CliAssignPlateIdsCommand.h"
 #include "CliInvalidOptionValue.h"
@@ -71,6 +73,12 @@ namespace
 	const char *SAVE_FILE_TYPE_OPTION_NAME = "save-file-type";
 	//! Option name for type of file to save with short version.
 	const char *SAVE_FILE_TYPE_OPTION_NAME_WITH_SHORT_OPTION = "save-file-type,s";
+
+	//! Option name for prefix of saved filenames.
+	const char *SAVE_FILE_PREFIX_OPTION_NAME = "save-file-prefix";
+
+	//! Option name for suffix of saved filenames.
+	const char *SAVE_FILE_SUFFIX_OPTION_NAME = "save-file-suffix";
 
 	//! Option name for reconstruction time with short version.
 	const char *RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION = "recon-time,t";
@@ -215,6 +223,16 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 					+ " - PLATES version 4.0 line format\n").c_str()
 		)
 		(
+			SAVE_FILE_PREFIX_OPTION_NAME,
+			boost::program_options::value<std::string>(&d_save_file_prefix)->default_value(""),
+			"prefix to prepend to filename of saved files (defaults to '')"
+		)
+		(
+			SAVE_FILE_SUFFIX_OPTION_NAME,
+			boost::program_options::value<std::string>(&d_save_file_suffix)->default_value(""),
+			"suffix to append to filename of saved files (defaults to '')"
+		)
+		(
 			RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION,
 			boost::program_options::value<double>(&d_recon_time)->default_value(0),
 			"set reconstruction time at which to cookie-cut when assigning plate ids (defaults to zero)"
@@ -226,6 +244,11 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 			"set anchor plate id (defaults to zero)"
 		)
 		;
+
+	// The (re)assigned plate id feature collection files can also be specified directly
+	// on the command-line without requiring the option prefix.
+	// '-1' means unlimited arguments are allowed.
+	positional_options.add(ASSIGN_PLATE_ID_FILES_OPTION_NAME, -1);
 }
 
 
@@ -266,7 +289,7 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	const GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_ids_method =
 			get_assign_plate_ids_method(vm);
 
-	// The save file type used to save the feature collections.
+	// The save filename information used to save the feature collections.
 	const std::string save_file_type = get_save_file_type(vm);
 
 	// Create the object used to assign plate ids.
@@ -305,7 +328,9 @@ GPlatesCli::AssignPlateIdsCommand::run(
 		const GPlatesFileIO::FileInfo save_file_info =
 				FeatureCollectionFileIO::get_save_file_info(
 						input_file.get_file_info(),
-						save_file_type);
+						save_file_type,
+						d_save_file_prefix.c_str(),
+						d_save_file_suffix.c_str());
 
 		// Save the file with (re)assigned plate ids.
 		FeatureCollectionFileIO::save_file(save_file_info, feature_collection);

@@ -26,6 +26,7 @@
 #ifndef GPLATES_SRC_CLI_ASSIGN_PLATE_IDS_COMMAND_H
 #define GPLATES_SRC_CLI_ASSIGN_PLATE_IDS_COMMAND_H
 
+#include <string>
 #include <vector>
 
 #include "CliCommand.h"
@@ -90,6 +91,9 @@ namespace GPlatesCli
 		double d_recon_time;
 
 		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
+
+		std::string d_save_file_prefix;
+		std::string d_save_file_suffix;
 	};
 }
 

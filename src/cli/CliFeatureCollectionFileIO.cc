@@ -32,6 +32,70 @@
 #include "file-io/ReadErrorAccumulation.h"
 
 
+namespace
+{
+	/**
+	 * Removes filename extension.
+	 *
+	 * Also removes '.*.gz' if found to support removing '.gpml.gz'.
+	 */
+	QString
+	remove_filename_extension(
+			const QString &filename)
+	{
+		const int ext_index = filename.lastIndexOf('.');
+		if (ext_index < 0)
+		{
+			// No extension found.
+			return filename;
+		}
+
+		// Remove extension.
+		QString output_basename = filename.left(ext_index);
+
+		// If the extension is "gz" then we have a "gpml.gz" extension so
+		// remove the "gpml" part as well.
+		if (filename.mid(ext_index + 1) == "gz")
+		{
+			const int next_ext_index = output_basename.lastIndexOf('.');
+			if (next_ext_index >= 0)
+			{
+				output_basename = output_basename.left(next_ext_index);
+			}
+		}
+
+		return output_basename;
+	}
+
+
+	void
+	prepend_filename_prefix(
+			QString &filename,
+			const QString &filename_prefix)
+	{
+		filename.prepend(filename_prefix);
+	}
+
+
+	void
+	append_filename_suffix(
+			QString &filename,
+			const QString &filename_suffix)
+	{
+		filename.append(filename_suffix);
+	}
+
+
+	void
+	append_filename_extension(
+			QString &filename,
+			const QString &filename_extension)
+	{
+		filename.append('.').append(filename_extension);
+	}
+}
+
+
 const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML = "gpml";
 const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML_GZ = "compressed-gpml";
 const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_PLATES_LINE = "plates4-line";
@@ -170,34 +234,19 @@ GPlatesCli::FeatureCollectionFileIO::get_save_file_format(
 GPlatesFileIO::FileInfo
 GPlatesCli::FeatureCollectionFileIO::get_save_file_info(
 		const GPlatesFileIO::FileInfo &file_info,
-		GPlatesFileIO::FeatureCollectionFileFormat::Format save_file_format)
+		GPlatesFileIO::FeatureCollectionFileFormat::Format save_file_format,
+		const QString &filename_prefix,
+		const QString &filename_suffix)
 {
 	//
 	// Generate the output filename.
 	//
 	QString output_filename = file_info.get_qfileinfo().filePath();
-	const int ext_index = output_filename.lastIndexOf('.');
-	if (ext_index >= 0)
-	{
-		// Remove extension.
-		QString output_basename = output_filename.left(ext_index);
-
-		// If the extension is "gz" then we have a "gpml.gz" extension so
-		// remove the "gpml" part as well.
-		if (output_filename.mid(ext_index + 1) == "gz")
-		{
-			const int next_ext_index = output_basename.lastIndexOf('.');
-			if (next_ext_index >= 0)
-			{
-				output_basename = output_basename.left(next_ext_index);
-			}
-		}
-
-		output_filename = output_basename;
-	}
-
-	output_filename.append('.');
-	output_filename.append(
+	output_filename = remove_filename_extension(output_filename);
+	prepend_filename_prefix(output_filename, filename_prefix);
+	append_filename_suffix(output_filename, filename_suffix);
+	append_filename_extension(
+			output_filename,
 			GPlatesFileIO::get_filename_extension(save_file_format));
 
 	return GPlatesFileIO::FileInfo(output_filename);
