@@ -26,17 +26,33 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <boost/mpl/for_each.hpp>
 #include <QString>
 
 #include "CliCommandDispatcher.h"
 
-#include "CliAssignPlateIdsCommand.h"
+#include "CliCommandRegistry.h"
 #include "CliInvalidOptionValue.h"
-#include "CliReconstructCommand.h"
 #include "CliRequiredOptionNotPresent.h"
-#include "CliConvertFileFormatCommand.h"
 
 #include "global/PreconditionViolationError.h"
+
+
+GPlatesCli::CommandDispatcher::AddCommand::AddCommand(
+		command_map_type &command_map) :
+	d_command_map(command_map)
+{
+}
+
+
+template <class CommandType>
+void
+GPlatesCli::CommandDispatcher::AddCommand::operator()(
+		const CommandType &)
+{
+	command_ptr_type command(new CommandType());
+	d_command_map[command->get_command_name()] = command;
+}
 
 
 GPlatesCli::CommandDispatcher::CommandDispatcher()
@@ -45,17 +61,14 @@ GPlatesCli::CommandDispatcher::CommandDispatcher()
 	// Each new command type must be instantiated here and added to the map.
 	//
 
-	// Add ReconstructCommand.
-	command_ptr_type reconstruct_cmd(new ReconstructCommand());
-	d_command_map[reconstruct_cmd->get_command_name()] = reconstruct_cmd;
+	// A utility functor used to add the registered command types to the
+	// command dispatcher.
+	AddCommand add_command(d_command_map);
 
-	// Add ConvertFileFormatCommand.
-	command_ptr_type convert_to_gpml_cmd(new ConvertFileFormatCommand());
-	d_command_map[convert_to_gpml_cmd->get_command_name()] = convert_to_gpml_cmd;
-
-	// Add AssignPlateIdsCommand.
-	command_ptr_type assign_plate_ids_command(new AssignPlateIdsCommand());
-	d_command_map[assign_plate_ids_command->get_command_name()] = assign_plate_ids_command;
+	// Iterate over the command types (actual class types stored in a boost::mpl::vector)
+	// and call the functor to add them to the command dispatcher.
+	boost::mpl::for_each<CommandTypes::command_types>(
+			boost::ref(add_command));
 }
 
 

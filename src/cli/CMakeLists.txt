@@ -16,6 +16,7 @@ set(srcs
     CliCommand.h
     CliCommandDispatcher.cc
     CliCommandDispatcher.h
+    CliCommandRegistry.h
     CliConvertFileFormatCommand.cc
     CliConvertFileFormatCommand.h
     CliFeatureCollectionFileIO.cc
