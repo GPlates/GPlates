@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -52,11 +52,28 @@
 				this->*member_ptr_lvalue = rvalue;  \
 			} else {  \
 				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);  \
-				C::non_null_ptr_type dup = clone_as_derived_type();  \
+				C::non_null_ptr_type dup = clone();  \
 				dup.get()->*member_ptr_lvalue = rvalue;  \
 				container()->bubble_up_change(this, dup, transaction);  \
 				transaction.commit();  \
 			}  \
+		}
+
+
+// This macro is used to define the virtual function 'deep_clone_as_prop_val' inside a class which
+// derives from PropertyValue.  The function definition is exactly identical in every PropertyValue
+// derivation, but the function must be defined in each derived class (rather than in the base)
+// because it invokes the non-virtual member function 'deep_clone' of that specific derived class.
+// (This function 'deep_clone' cannot be moved into the base class, because (i) its return type is
+// the type of the derived class, and (ii) it must perform different actions in different classes.)
+// To define the function, invoke the macro in the class definition.  The macro invocation will
+// expand to a definition of the function.
+#define DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()  \
+		virtual  \
+		const GPlatesModel::PropertyValue::non_null_ptr_type  \
+		deep_clone_as_prop_val() const  \
+		{  \
+			return deep_clone();  \
 		}
 
 
@@ -133,11 +150,15 @@ namespace GPlatesModel
 		{  }
 
 		/**
-		 * Create a duplicate of this PropertyValue instance.
+		 * Create a duplicate of this PropertyValue instance, including a recursive copy
+		 * of any property values this instance might contain.
+		 *
+		 * The Bubble-Up revisioning system @em might make this function redundant
+		 * when it's fully operational.  Until then, however...
 		 */
 		virtual
 		const non_null_ptr_type
-		clone() const = 0;
+		deep_clone_as_prop_val() const = 0;
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

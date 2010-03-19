@@ -1,0 +1,58 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * File specific comments.
+ *
+ * Most recent change:
+ *   $Date$
+ * 
+ * Copyright (C) 2010 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#include "GpmlHotSpotTrailMark.h"
+
+
+const GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_type
+GPlatesPropertyValues::GpmlHotSpotTrailMark::deep_clone() const
+{
+	GpmlHotSpotTrailMark::non_null_ptr_type dup = clone();
+
+	GmlPoint::non_null_ptr_type cloned_position = d_position->deep_clone();
+	dup->d_position = cloned_position;
+
+	if (d_trail_width) {
+		GpmlMeasure::non_null_ptr_type cloned_trail_width =
+				(*d_trail_width)->deep_clone();
+		dup->d_trail_width = cloned_trail_width;
+	}
+
+	if (d_measured_age) {
+		GmlTimeInstant::non_null_ptr_type cloned_measured_age =
+				(*d_measured_age)->deep_clone();
+		dup->d_measured_age = cloned_measured_age;
+	}
+
+	if (d_measured_age_range) {
+		GmlTimePeriod::non_null_ptr_type cloned_measured_age_range =
+				(*d_measured_age_range)->deep_clone();
+		dup->d_measured_age_range = cloned_measured_age_range;
+	}
+
+	return dup;
+}

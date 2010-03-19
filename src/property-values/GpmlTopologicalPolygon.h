@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2008-07-11 19:36:59 -0700 (Fri, 11 Jul 2008) $
  * 
- * Copyright (C) 2008, 2009 California Institute of Technology
+ * Copyright (C) 2008, 2009, 2010 California Institute of Technology
  *
  * This file is part of GPlates.
  *
@@ -83,14 +83,18 @@ namespace GPlatesPropertyValues {
 			return ptr;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GpmlTopologicalPolygon::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+			GpmlTopologicalPolygon::non_null_ptr_type dup(
 					new GpmlTopologicalPolygon(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+		const GpmlTopologicalPolygon::non_null_ptr_type
+		deep_clone() const;
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the time sample vector?  (For consistency with the non-const

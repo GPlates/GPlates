@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2008-07-11 19:36:59 -0700 (Fri, 11 Jul 2008) $
  * 
- * Copyright (C) 2008, 2009 California Institute of Technology 
+ * Copyright (C) 2008, 2009, 2010 California Institute of Technology 
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,25 @@
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALSECTION_H
 
 #include "model/PropertyValue.h"
+
+
+// This macro is used to define the virtual function 'deep_clone_as_topo_section' inside a class
+// which derives from TopologicalSection.  The function definition is exactly identical in every
+// TopologicalSection derivation, but the function must be defined in each derived class (rather
+// than in the base) because it invokes the non-virtual member function 'deep_clone' of that
+// specific derived class.
+// (This function 'deep_clone' cannot be moved into the base class, because (i) its return type is
+// the type of the derived class, and (ii) it must perform different actions in different classes.)
+// To define the function, invoke the macro in the class definition.  The macro invocation will
+// expand to a definition of the function.
+#define DEFINE_FUNCTION_DEEP_CLONE_AS_TOPO_SECTION()  \
+		virtual  \
+		const GpmlTopologicalSection::non_null_ptr_type  \
+		deep_clone_as_topo_section() const  \
+		{  \
+			return deep_clone();  \
+		}
+
 
 namespace GPlatesPropertyValues {
 
@@ -97,6 +116,10 @@ namespace GPlatesPropertyValues {
 
 		virtual
 		~GpmlTopologicalSection() {  }
+
+		virtual
+		const GpmlTopologicalSection::non_null_ptr_type
+		deep_clone_as_topo_section() const = 0;
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

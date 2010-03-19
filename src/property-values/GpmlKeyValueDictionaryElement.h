@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway.
+ * Copyright (C) 2008, 2010 Geological Survey of Norway.
  *
  * This file is part of GPlates.
  *
@@ -49,7 +49,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		~GpmlKeyValueDictionaryElement() {  }
 
-
+		const GpmlKeyValueDictionaryElement
+		deep_clone() const;
 
 		const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type
 		key() const {
@@ -78,7 +79,7 @@ namespace GPlatesPropertyValues {
 
 	private:
 
-		GPlatesPropertyValues::XsString::non_null_ptr_type d_key;
+		XsString::non_null_ptr_type d_key;
 		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
 		TemplateTypeParameterType d_value_type;
 

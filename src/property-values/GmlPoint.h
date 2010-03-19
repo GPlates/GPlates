@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -97,17 +97,37 @@ namespace GPlatesPropertyValues
 				const GPlatesMaths::PointOnSphere &p);
 
 		/**
-		 * Create a duplicate of this PropertyValue instance.
+		 * Create a GmlPoint instance from a non-null-intrusive-pointer to a
+		 * GPlatesMaths::PointOnSphere.
 		 */
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		static
+		const non_null_ptr_type
+		create(
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
+						GPlatesUtils::NullIntrusivePointerHandler> p)
+		{
+			GmlPoint::non_null_ptr_type point_ptr(
+					new GmlPoint(p), GPlatesUtils::NullIntrusivePointerHandler());
+			return point_ptr;
+		}
+
+		const GmlPoint::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GmlPoint(*this),
+			GmlPoint::non_null_ptr_type dup(new GmlPoint(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+		const GmlPoint::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the GPlatesMaths::PointOnSphere which encodes the geometry of this

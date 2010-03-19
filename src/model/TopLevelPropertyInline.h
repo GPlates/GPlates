@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *  (under the name "InlinePropertyContainer.h")
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *  (under the name "TopLevelPropertyInline.h")
  *
  * This file is part of GPlates.
@@ -104,13 +104,17 @@ namespace GPlatesModel
 
 		virtual
 		const TopLevelProperty::non_null_ptr_type
-		clone() const 
+		clone() const
 		{
 			TopLevelProperty::non_null_ptr_type dup(
 					new TopLevelPropertyInline(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+		virtual
+		const TopLevelProperty::non_null_ptr_type
+		deep_clone() const;
 
 		const_iterator
 		begin() const

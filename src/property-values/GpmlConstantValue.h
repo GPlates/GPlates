@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -90,14 +90,17 @@ namespace GPlatesPropertyValues {
 			return ptr;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GpmlConstantValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GpmlConstantValue(*this),
+			GpmlConstantValue::non_null_ptr_type dup(new GpmlConstantValue(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+		const GpmlConstantValue::non_null_ptr_type
+		deep_clone() const;
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		value() const {

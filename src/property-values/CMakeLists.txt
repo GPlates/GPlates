@@ -16,46 +16,62 @@ set(srcs
     EnumerationType.h
     GeoTimeInstant.cc
     GeoTimeInstant.h
+    GmlDataBlock.cc
     GmlDataBlock.h
     GmlDataBlockCoordinateList.h
     GmlLineString.cc
     GmlLineString.h
     GmlMultiPoint.cc
     GmlMultiPoint.h
+    GmlOrientableCurve.cc
     GmlOrientableCurve.h
     GmlPoint.cc
     GmlPoint.h
     GmlPolygon.h
     GmlTimeInstant.h
+    GmlTimePeriod.cc
     GmlTimePeriod.h
+    GpmlConstantValue.cc
     GpmlConstantValue.h
     GpmlFeatureReference.h
     GpmlFeatureSnapshotReference.h
     GpmlFiniteRotation.cc
     GpmlFiniteRotation.h
     GpmlFiniteRotationSlerp.h
+    GpmlHotSpotTrailMark.cc
     GpmlHotSpotTrailMark.h
     GpmlInterpolationFunction.h
+    GpmlIrregularSampling.cc
     GpmlIrregularSampling.h
+    GpmlKeyValueDictionary.cc
     GpmlKeyValueDictionary.h
+    GpmlKeyValueDictionaryElement.cc
     GpmlKeyValueDictionaryElement.h
     GpmlMeasure.h
     GpmlOldPlatesHeader.h
+    GpmlPiecewiseAggregation.cc
     GpmlPiecewiseAggregation.h
     GpmlPlateId.h
     GpmlPolarityChronId.h
     GpmlPropertyDelegate.h
     GpmlRevisionId.h
+    GpmlTimeSample.cc
     GpmlTimeSample.h
+    GpmlTimeWindow.cc
     GpmlTimeWindow.h
+    GpmlTopologicalIntersection.cc
     GpmlTopologicalIntersection.h
+    GpmlTopologicalLineSection.cc
     GpmlTopologicalLineSection.h
+    GpmlTopologicalPoint.cc
     GpmlTopologicalPoint.h
+    GpmlTopologicalPolygon.cc
     GpmlTopologicalPolygon.h
     GpmlTopologicalSection.h
     InMemoryRaster.h
     TemplateTypeParameterType.h
     TextContent.h
+    UninterpretedPropertyValue.cc
     UninterpretedPropertyValue.h
     ValueObjectType.h
     XsBoolean.h

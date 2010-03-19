@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 Geological Survey of Norway.
+ * Copyright (C) 2008, 2010 Geological Survey of Norway.
  *
  * This file is part of GPlates.
  *
@@ -97,15 +97,17 @@ namespace GPlatesPropertyValues {
 			return ptr;
 		}
 
-
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GpmlKeyValueDictionary::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GpmlKeyValueDictionary(*this),
+			GpmlKeyValueDictionary::non_null_ptr_type dup(new GpmlKeyValueDictionary(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+		const GpmlKeyValueDictionary::non_null_ptr_type
+		deep_clone() const;
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const std::vector<GpmlKeyValueDictionaryElement> &
 		elements() const {
@@ -149,6 +151,7 @@ namespace GPlatesPropertyValues {
 			return d_elements.empty();
 		}
 
+		// FIXME: Why does this return an 'int', rather than a 'std::vector<T>::size_type'?
 		int
 		num_elements() const
 		{

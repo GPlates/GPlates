@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -109,19 +109,22 @@ namespace GPlatesPropertyValues
 		}
 
 		const GpmlOldPlatesHeader::non_null_ptr_type
-		clone_as_derived_type() const 
+		clone() const 
 		{
 			GpmlOldPlatesHeader::non_null_ptr_type dup(new GpmlOldPlatesHeader(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone() const 
+		const GpmlOldPlatesHeader::non_null_ptr_type
+		deep_clone() const 
 		{
-			return clone_as_derived_type();
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
 		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		unsigned int
 		region_number() const 

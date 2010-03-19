@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -137,18 +137,23 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create_zero_rotation();
 
-		/**
-		 * Create a duplicate of this PropertyValue instance.
-		 */
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GpmlFiniteRotation::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GpmlFiniteRotation(*this),
+			GpmlFiniteRotation::non_null_ptr_type dup(new GpmlFiniteRotation(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+		const GpmlFiniteRotation::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Return whether this GpmlFiniteRotation instance represents a "zero" rotation.

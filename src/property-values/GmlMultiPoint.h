@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -85,17 +85,23 @@ namespace GPlatesPropertyValues
 		create(
 				const internal_multipoint_type &multipoint_);
 
-		/**
-		 * Create a duplicate of this PropertyValue instance.
-		 */
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GmlMultiPoint::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GmlMultiPoint(*this),
+			GmlMultiPoint::non_null_ptr_type dup(new GmlMultiPoint(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+		const GmlMultiPoint::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the GPlatesMaths::MultiPointOnSphere which encodes the geometry of this

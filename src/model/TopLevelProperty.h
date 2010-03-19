@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *  (under the name "PropertyContainer.h")
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *  (under the name "TopLevelProperty.h")
  *
  * This file is part of GPlates.
@@ -120,10 +120,32 @@ namespace GPlatesModel
 
 		/**
 		 * Create a duplicate of this TopLevelProperty instance.
+		 *
+		 * Note that this will @em not duplicate any property values contained within it.
+		 * As a result, the new (duplicate) instance will "contain" (reference by pointer)
+		 * the same property values as the original.  (The pointer @em values are copied,
+		 * not the pointer @em targets.)  Until the automatic Bubble-Up revisioning system
+		 * is fully operational, this is probably @em not what you want, when you're cloning
+		 * a feature:  If a property value is modified in the original, the duplicate will
+		 * now also contain a modified property value...
+		 *
+		 * Compare with @a deep_clone, which @em does duplicate any property values
+		 * contained within.
 		 */
 		virtual
 		const non_null_ptr_type
 		clone() const = 0;
+
+		/**
+		 * Create a duplicate of this TopLevelProperty instance, plus any property values
+		 * which it might contain.
+		 *
+		 * Until the automatic Bubble-Up revisioning system is fully operational, this is
+		 * the function you should call, when you're cloning a feature.
+		 */
+		virtual
+		const non_null_ptr_type
+		deep_clone() const = 0;
 
 		// Note that no "setter" is provided:  The property name of a TopLevelProperty
 		// instance should never be changed.

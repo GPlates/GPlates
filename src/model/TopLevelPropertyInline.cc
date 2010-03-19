@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,6 +28,22 @@
 #include "TopLevelPropertyInline.h"
 #include "ConstFeatureVisitor.h"
 #include "FeatureVisitor.h"
+
+
+const GPlatesModel::TopLevelProperty::non_null_ptr_type
+GPlatesModel::TopLevelPropertyInline::deep_clone() const 
+{
+	TopLevelPropertyInline::non_null_ptr_type dup(
+			new TopLevelPropertyInline(*this),
+			GPlatesUtils::NullIntrusivePointerHandler());
+
+	const_iterator iter, end_ = d_values.end();
+	for (iter = d_values.begin(); iter != end_; ++iter) {
+		PropertyValue::non_null_ptr_type cloned_pval = (*iter)->deep_clone_as_prop_val();
+		dup->d_values.push_back(cloned_pval);
+	}
+	return TopLevelProperty::non_null_ptr_type(dup);
+}
 
 
 void

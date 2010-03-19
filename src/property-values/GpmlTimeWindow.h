@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -60,6 +60,9 @@ namespace GPlatesPropertyValues {
 			d_valid_time(other.d_valid_time),
 			d_value_type(other.d_value_type)
 		{  }
+
+		const GpmlTimeWindow
+		deep_clone() const;
 
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		time_dependent_value() const {

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -85,14 +85,18 @@ namespace GPlatesPropertyValues {
 			return ptr;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GpmlPiecewiseAggregation::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+			GpmlPiecewiseAggregation::non_null_ptr_type dup(
 					new GpmlPiecewiseAggregation(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+		const GpmlPiecewiseAggregation::non_null_ptr_type
+		deep_clone() const;
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the time sample vector?  (For consistency with the non-const
