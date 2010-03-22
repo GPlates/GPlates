@@ -411,8 +411,8 @@ populate_feature_store(
 
 void
 output_as_gpml(
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator begin,
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator end)
+		GPlatesModel::FeatureCollectionHandle::children_const_iterator begin,
+		GPlatesModel::FeatureCollectionHandle::children_const_iterator end)
 {
 	QFile standard_output;
 	standard_output.open(stdout, QIODevice::WriteOnly);
@@ -426,10 +426,10 @@ output_as_gpml(
 
 void
 output_reconstructions(
-		GPlatesModel::FeatureCollectionHandle::features_iterator isochrons_begin,
-		GPlatesModel::FeatureCollectionHandle::features_iterator isochrons_end,
-		GPlatesModel::FeatureCollectionHandle::features_iterator total_recon_seqs_begin,
-		GPlatesModel::FeatureCollectionHandle::features_iterator total_recon_seqs_end)
+		GPlatesModel::FeatureCollectionHandle::children_iterator isochrons_begin,
+		GPlatesModel::FeatureCollectionHandle::children_iterator isochrons_end,
+		GPlatesModel::FeatureCollectionHandle::children_iterator total_recon_seqs_begin,
+		GPlatesModel::FeatureCollectionHandle::children_iterator total_recon_seqs_end)
 {
 	static const double recon_times_to_test[] = {
 		0.0,
@@ -451,7 +451,7 @@ output_reconstructions(
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
-		GPlatesModel::FeatureCollectionHandle::features_iterator iter1 =
+		GPlatesModel::FeatureCollectionHandle::children_iterator iter1 =
 				total_recon_seqs_begin;
 		for ( ; iter1 != total_recon_seqs_end; ++iter1) {
 			rtp.visit_feature(iter1);
@@ -469,7 +469,7 @@ output_reconstructions(
 				*reconstruction,
 				reconstruction->reconstruction_tree());
 
-		GPlatesModel::FeatureCollectionHandle::features_iterator iter2 = isochrons_begin;
+		GPlatesModel::FeatureCollectionHandle::children_iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
 			rfgp.visit_feature(iter2);
 		}
@@ -549,7 +549,7 @@ main(int argc, char *argv[])
 			GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
 					isochrons_and_total_recon_seqs.second);
 
-	::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
+	::output_as_gpml(isochrons->children_begin(), isochrons->children_end());
 //	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
 //			total_recon_seqs->features_begin(), total_recon_seqs->features_end());
 
@@ -569,7 +569,7 @@ main(int argc, char *argv[])
 
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref features =
 				file->get_const_feature_collection();
-		::output_as_gpml(features->features_begin(), features->features_end());
+		::output_as_gpml(features->children_begin(), features->children_end());
 
 #if 0
 		QFile file(filename);
