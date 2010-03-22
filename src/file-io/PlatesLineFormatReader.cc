@@ -8,6 +8,7 @@
  * 
  * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -34,6 +35,8 @@
 #include <vector>
 #include <boost/bind.hpp>
 
+#include <QDebug>
+
 #include "ReadErrors.h"
 #include "LineReader.h"
 
@@ -41,6 +44,7 @@
 #include "utils/MathUtils.h"
 
 #include "maths/LatLonPoint.h"
+#include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
@@ -51,6 +55,7 @@
 #include "model/ModelUtils.h"
 
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
@@ -111,6 +116,39 @@ namespace
 	typedef std::map<std::string, GPlatesModel::FeatureId> old_id_to_new_id_map_type;
 	typedef old_id_to_new_id_map_type::const_iterator old_id_to_new_id_map_const_iterator;
 	old_id_to_new_id_map_type id_map;
+
+	
+	/**
+	 * Checks that @a geomtry_seq is appropriate for constructing a multipoint.
+	 *
+	 * Returns true if the @a geometry_seq has at least two geometries, and 
+	 * each of these geometries contains only a single point.
+	 *
+	 * Otherwise returns false.
+	 */
+	bool
+	sequence_is_valid_multipoint(
+		const geometry_seq_type &geometry_seq)
+	{
+		if (geometry_seq.size() < 2)
+		{
+			return false;
+		}
+	
+		geometry_seq_type::const_iterator 
+			it = geometry_seq.begin(),
+			end = geometry_seq.end();
+
+		for (; it != end ; ++it)
+		{	
+			if (GPlatesMaths::count_distinct_adjacent_points(*it) != 1)
+			{
+				return false;
+			}
+		}
+		return true;
+	}	
+
 
 	//
 	//
@@ -782,6 +820,31 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		return feature_handle;
 	}
 
+	/**
+	 * Create a multipoint feature.
+	 *
+	 * Each geometry in @a geometry_seq should contain only a single point; otherwise
+	 * we throw ReadErrors::InvalidMultipointGeometry
+	 */
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_multi_point_feature(
+		GPlatesModel::ModelInterface &model, 
+		GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+		GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+		const geometry_seq_type &geometry_seq,
+		const GPlatesModel::FeatureType &feature_type,
+		const GPlatesModel::PropertyName &geometry_property_name)
+	{
+		// Check that geometry_seq is appropriate for a multipoint. 
+		if (!sequence_is_valid_multipoint(geometry_seq))
+		{
+			throw GPlatesFileIO::ReadErrors::InvalidMultipointGeometry;
+		}
+		
+		// Assume create_common will do the right thing with append_appropriate_geometry.
+		return create_common(model, collection, header, geometry_seq, feature_type, geometry_property_name);
+		
+	}
 
 	/**
 	 * Creates a GPML feature from PLATES data where the GPML feature accepts a single point only.
@@ -1092,9 +1155,30 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_single_point_feature(model, collection, header, geometry_seq, 
-				GPlatesModel::FeatureType::create_gpml("HotSpot"), 
+		// Check our geometry sequence. If we have only one point, create a single-point feature;
+		// if we have more than one, create a multi-point feature.
+		if (geometry_seq.size() > 1)
+		{
+#if 1
+			return create_multi_point_feature(model,collection,header,geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("HotSpot"),
+				GPlatesModel::PropertyName::create_gpml("multiPosition"));
+#else
+			// create_common will create a feature with distinct multiple point geometries,
+			// as opposed to a multipoint.
+			return create_common(model,collection,header,geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("HotSpot"),
 				GPlatesModel::PropertyName::create_gpml("position"));
+#endif
+		}
+		else 
+		{
+			// Zero geometries, or a geometry containing more than one point, 
+			// will get caught in the create_single_point_feature function. 
+			return create_single_point_feature(model,collection,header,geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("HotSpot"),
+				GPlatesModel::PropertyName::create_gpml("position"));
+		}	
 	}
 
 
@@ -1243,9 +1327,31 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 	{
 		// FIXME: fill in the rest of MagneticAnomalyIdentification from the appropriate PLATES header data,
 		// assuming it is available.
-		return create_single_point_feature(model, collection, header, geometry_seq,
+		
+		// Check our geometry sequence. If we have only one point, create a single-point feature;
+		// if we have more than one, create a multi-point feature.
+		if (geometry_seq.size() > 1)
+		{
+#if 1
+			return create_multi_point_feature(model,collection,header,geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification"),
+				GPlatesModel::PropertyName::create_gpml("multiPosition"));
+#else
+			// create_common will create a feature with distinct multiple point geometries,
+			// as opposed to a multipoint.
+			return create_common(model,collection,header,geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification"),
 				GPlatesModel::PropertyName::create_gpml("position"));
+#endif
+		}
+		else 
+		{
+			// Zero geometries, or a geometry containing more than one point, 
+			// will get caught in the create_single_point_feature function. 
+			return create_single_point_feature(model,collection,header,geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification"),
+				GPlatesModel::PropertyName::create_gpml("position"));
+		}
 	}
 
 
@@ -1589,6 +1695,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		map["OP"] = create_ophiolite_belt;
 		map["OR"] = create_orogenic_belt;
 		map["PB"] = create_inferred_paleo_boundary;
+		map["PA"] = create_magnetic_pick;
 		map["PC"] = create_magnetic_pick;
 		map["PM"] = create_magnetic_pick;
 		map["RA"] = create_island_arc_inactive;
@@ -1919,6 +2026,12 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 			GPlatesFileIO::ReadErrorAccumulation &errors)
 	{
+	
+	
+// The following check for adjacent skip-to codes has been commented out to allow adjacent
+// skip-to codes to be accepted as points. 
+// An empty point_seq will still be caught in the test_validity_of_points() function.
+#if 0
 		// If we have one point then it means we had adjacent skip-to plotter codes.
 		if (point_seq.size() < 2)
 		{
@@ -1934,7 +2047,8 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 			return;
 		}
-
+#endif
+		
 		// Test the validity of the points as a geometry.
 		// We do this here instead of in 'append_appropriate_geometry()' because
 		// we have access to the line number at which the current geometry, of the

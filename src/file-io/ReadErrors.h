@@ -78,6 +78,7 @@ namespace GPlatesFileIO
 			AmbiguousPlatesIceShelfCode,
 			MoreThanOneDistinctPoint,
 			NoValidGeometriesInPlatesFeature,
+			InvalidMultipointGeometry,
 
 			// The following are specific to GPlates 8 hydrid PLATES line-format
 			MissingPlatepolygonBoundaryFeature,
@@ -102,6 +103,7 @@ namespace GPlatesFileIO
 			UnrecognisedShapefileFeatureType,
 			InvalidShapefileAgeOfAppearance,
 			InvalidShapefileAgeOfDisappearance,
+			InvalidShapefileConjugatePlateIdNumber,
 			InvalidShapefilePoint,
 			InvalidShapefileMultiPoint,
 			InvalidShapefilePolyline,

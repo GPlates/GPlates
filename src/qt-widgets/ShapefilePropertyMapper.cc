@@ -46,18 +46,7 @@ GPlatesQtWidgets::ShapefilePropertyMapper::map_properties(
 	else{
 		return (map_initial_properties(filename,field_names,model_to_attribute_map,d_parent_window_ptr));
 	}
-#if 0
-	ShapefileAttributeMapperDialog mapper(d_parent_window_ptr);
-	mapper.setup(filename,field_names,model_to_attribute_map,remapping);
-	mapper.exec();
 
-	if (mapper.result() == QDialog::Rejected){
-		return false;
-	}
-	else{
-		return true;
-	}
-#endif
 }
 
 bool

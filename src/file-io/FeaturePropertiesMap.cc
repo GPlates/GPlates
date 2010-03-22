@@ -223,6 +223,8 @@ namespace
 
 		map[ PropertyName::create_gpml("position") ] = 
 			GET_PROP_VAL_NAME(create_point);
+		map[ PropertyName::create_gpml("multiPosition") ] = 
+			GET_PROP_VAL_NAME(create_gml_multi_point);
 		map[ PropertyName::create_gpml("polarityChronId") ] = 
 			GET_PROP_VAL_NAME(create_polarity_chron_id);
 		map[ PropertyName::create_gpml("polarityChronOffset") ] =
@@ -339,6 +341,8 @@ namespace
 
 		map[ PropertyName::create_gpml("position") ] =
 			GET_PROP_VAL_NAME(create_point);
+		map[ PropertyName::create_gpml("multiPosition") ] = 
+			GET_PROP_VAL_NAME(create_gml_multi_point);
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("trail") ] = 

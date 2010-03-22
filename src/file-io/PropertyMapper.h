@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -37,7 +37,10 @@ namespace ShapefileAttributes {
 		END,
 		NAME,
 		DESCRIPTION,
-		FEATURE_ID
+		FEATURE_ID,
+		CONJUGATE_PLATE_ID,
+		
+		NUM_PROPERTIES
 	};
 
 	static const QString model_properties[] = {
@@ -47,7 +50,8 @@ namespace ShapefileAttributes {
 		"End",
 		"Name",
 		"Description",
-		"FeatureId"
+		"FeatureId",
+		"ConjugatePlateId"
 	};
 	
 	static const QString default_attributes[] = {
@@ -57,7 +61,8 @@ namespace ShapefileAttributes {
 		"TOAGE",
 		"NAME",
 		"DESCR",
-		"FEATURE_ID"
+		"FEATURE_ID",
+		"PLATEID2"
 	};
 
 }

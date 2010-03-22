@@ -96,6 +96,7 @@ GPlatesFileIO::ShapefileUtils::build_feature_map()
 	map["OP"] = "BasicRockUnit";
 	map["OR"] = "OrogenicBelt";
 	map["PB"] = "InferredPaleoBoundary";
+	map["PA"] = "MagneticAnomalyIdentification";
 	map["PC"] = "MagneticAnomalyIdentification";
 	map["PM"] = "MagneticAnomalyIdentification";
 	map["RA"] = "IslandArc";

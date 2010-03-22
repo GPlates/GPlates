@@ -80,6 +80,8 @@ namespace{
 		{
 		case QVariant::Int:
 			return QString("integer");
+		case QVariant::UInt:
+			return QString("integer");
 			break;
 		case QVariant::Double:
 			return QString("double");
@@ -100,6 +102,8 @@ namespace{
 		switch (variant.type())
 		{
 		case QVariant::Int:
+			return OFTInteger;
+		case QVariant::UInt:
 			return OFTInteger;
 			break;
 		case QVariant::Double:
@@ -180,7 +184,8 @@ namespace{
 
 			if (num_attributes_in_layer != num_attributes_in_dictionary)
 			{
-				qDebug() << "Mismatch in number of fields.";
+				// The loop below will stop 
+				qDebug() << "OGR Writer: Mismatch in number of fields.";
 			}
 
 			element_iterator_type 
@@ -208,10 +213,13 @@ namespace{
 				if (layer_type != model_type)
 				{
 					// FIXME: Think of something suitable to do here. 
-					qDebug() << "Mismatch in field types.";
+					qDebug() << "OGR Writer: Mismatch in field types.";
 				}
 
 				// FIXME: Check that it's possible to represent the variants in the required forms.
+				// The various QVariant .toXXX functions will return 0/0.0/empty-string if the 
+				// QVariant could not be converted to the requested form, but we should 
+				// warn the user if this happens.
 				switch(layer_type)
 				{
 				case OFTInteger:

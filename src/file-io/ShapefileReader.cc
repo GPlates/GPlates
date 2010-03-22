@@ -240,14 +240,31 @@ namespace
 			GPlatesModel::PropertyName::create_gml("description"), 
 			feature);
 	}
+	
+	void
+	append_conjugate_plate_id_to_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
+		int conjugate_plate_id_as_int)
+	{
+		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conjugate_plate_id = 
+			GPlatesPropertyValues::GpmlPlateId::create(conjugate_plate_id_as_int);
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
+			GPlatesModel::ModelUtils::create_gpml_constant_value(conjugate_plate_id,
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("conjugatePlateId")),
+			GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+			feature);
+	}	
 
 	/**
 	 * Removes properties with the property names:
 	 *		reconstructionPlateId,
 	 *		validTime,
-	 *		description  and
-	 *		name
+	 *		description
+	 *		name and
+	 *		conjugatePlateId
 	 *	from the feature given by @a feature_handle.
+	 *
+	 * This is used when re-mapping model properties from shapefile attributes.
 	 */
 	void
 	remove_old_properties(
@@ -259,6 +276,7 @@ namespace
 		property_name_list << QString("validTime"); 
 		property_name_list << QString("description"); 
 		property_name_list << QString("name"); 
+		property_name_list << QString("conjugatePlateId");
 
 		GPlatesModel::FeatureHandle::children_iterator p_iter = feature->children_begin();
 		GPlatesModel::FeatureHandle::children_iterator p_iter_end = feature->children_end();
@@ -386,6 +404,27 @@ namespace
 		if (age_of_appearance && age_of_disappearance){
 			append_geo_time_to_feature(feature,*age_of_appearance,*age_of_disappearance);
 		}
+
+		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::CONJUGATE_PLATE_ID]);		
+		if (it != model_to_attribute_map.constEnd())
+		{
+			attribute = get_qvariant_from_finder(it.value(),feature);
+			bool ok;
+			int conjugate_plate_id_as_int = attribute.toInt(&ok);
+			if (ok){
+				append_conjugate_plate_id_to_feature(feature,conjugate_plate_id_as_int);
+			}
+			else{
+				read_errors.d_warnings.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefileConjugatePlateIdNumber,
+					GPlatesFileIO::ReadErrors::AttributeIgnored));
+			}
+
+		}		
+		
 	}
 
 	/**

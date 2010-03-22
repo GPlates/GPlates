@@ -78,6 +78,7 @@ GPlatesFileIO::ShapefileXmlWriter::write_file(
 						"End ..................... The age of disappearance (gml:end part of gml:validTime). \n"
 						"Name .................... The name of the feature (gml:name). \n"
 						"Description ............. A description of the feature (gml:description). \n"
+						"ConjugatePlateId......... The conjugate plate id. \n"
 						"\n"
 						"On loading a shapefile, GPlates will use the mapping stored in this file, if it exists. \n"
 						"If no such file exists, GPlates will generate a file according to the mapping \n"

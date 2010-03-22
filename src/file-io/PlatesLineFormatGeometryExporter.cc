@@ -156,6 +156,28 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::export_geometry(
 }
 
 void
+GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_multi_point_on_sphere(
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+{
+	GPlatesMaths::MultiPointOnSphere::const_iterator 
+		it = multi_point_on_sphere->begin(),
+		end = multi_point_on_sphere->end();
+	
+	for (; it != end ; ++it)
+	{
+		// Skip-to then draw-to the same location, producing a point.
+		print_plates_coordinate_line(*d_stream_ptr, *it, PenPositions::PEN_SKIP_TO_POINT,
+			d_reverse_coordinate_order);
+			
+	// The following line will export a "2" code after each point.
+#if 0
+		print_plates_coordinate_line(*d_stream_ptr, *it, PenPositions::PEN_DRAW_TO_POINT,
+			d_reverse_coordinate_order);
+#endif
+	}
+}
+
+void
 GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_point_on_sphere(
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
@@ -165,8 +187,11 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_point_on_sphere(
 	// Skip-to then draw-to the same location, producing a point.
 	print_plates_coordinate_line(*d_stream_ptr, *point_on_sphere, PenPositions::PEN_SKIP_TO_POINT,
 			d_reverse_coordinate_order);
+	// The following line will export a "2" code after each ponit.
+#if 0
 	print_plates_coordinate_line(*d_stream_ptr, *point_on_sphere, PenPositions::PEN_DRAW_TO_POINT,
 			d_reverse_coordinate_order);
+#endif
 }
 
 

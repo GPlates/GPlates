@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2008, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -57,58 +57,64 @@ namespace
 
 	/**
 	 * Fills the QStringList default_fields with field names from the list of default_attributes 
-	 * defined in "ShapefilePropertyMapper.h"
+	 * defined in "PropertyMapper.h"
 	 */
 	void
 	fill_fields_from_default_list(
 		QStringList &default_fields)
 	{
-		default_fields.insert(ShapefileAttributes::PLATEID,ShapefileAttributes::default_attributes[ShapefileAttributes::PLATEID]);
-		default_fields.insert(ShapefileAttributes::FEATURE_TYPE,ShapefileAttributes::default_attributes[ShapefileAttributes::FEATURE_TYPE]);
-		default_fields.insert(ShapefileAttributes::BEGIN,ShapefileAttributes::default_attributes[ShapefileAttributes::BEGIN]);
-		default_fields.insert(ShapefileAttributes::END,ShapefileAttributes::default_attributes[ShapefileAttributes::END]);
-		default_fields.insert(ShapefileAttributes::NAME,ShapefileAttributes::default_attributes[ShapefileAttributes::NAME]);
-		default_fields.insert(ShapefileAttributes::DESCRIPTION,ShapefileAttributes::default_attributes[ShapefileAttributes::DESCRIPTION]);
-		default_fields.insert(ShapefileAttributes::FEATURE_ID,ShapefileAttributes::default_attributes[ShapefileAttributes::FEATURE_ID]);
+		for (unsigned int i = 0; i < ShapefileAttributes::NUM_PROPERTIES ; ++i)
+		{
+			default_fields.insert(i,ShapefileAttributes::default_attributes[i]);
+		}
 	}
 
+	/**
+	 *  Fills the QStringList default_fields with the field names from the 
+	 *  QMap<QString,QString> model_to_attribute_map. 
+	 *
+	 *  This is used for filling the combo-box fields when a model-to-attribute-map exists. 
+	 */
 	void
 	fill_fields_from_qmap(
 		QStringList &default_fields,
 		const QMap<QString,QString> &model_to_attribute_map,
-		const QStringList &field_names,
-		int field_index)
+		const QStringList &field_names)
 	{
-		QMap<QString,QString>::const_iterator it = 
-			model_to_attribute_map.constFind(ShapefileAttributes::model_properties[field_index]);
-
-	//	display_field_names(field_names);	
-	//	display_qmap(model_to_attribute_map);
-
-
-		if (it == model_to_attribute_map.constEnd())
+		for (unsigned int field_index = 0; field_index < ShapefileAttributes::NUM_PROPERTIES ; ++field_index)
 		{
-			// We didn't find an entry for the current model property in the map, so use the default field name. 
-			default_fields.insert(field_index,
-					ShapefileAttributes::default_attributes[field_index]);
-		}
-		else{
 
-			// We found an entry for the current model property in the map. 
+			QMap<QString,QString>::const_iterator it = 
+				model_to_attribute_map.constFind(ShapefileAttributes::model_properties[field_index]);
 
-			if (field_names.contains(it.value()))
+			//	display_field_names(field_names);	
+			//	display_qmap(model_to_attribute_map);
+
+
+			if (it == model_to_attribute_map.constEnd())
 			{
-				// The map's attribute field was found in the shapefile attribute list. 
-				default_fields.insert(field_index,it.value());
-			}
-			else
-			{
-				// The map's attribute field wasn't found amongst the shapefile's attributes, so
-				// use the default field name. 
+				// We didn't find an entry for the current model property in the map, so use the default field name. 
 				default_fields.insert(field_index,
 					ShapefileAttributes::default_attributes[field_index]);
 			}
-		}		
+			else{
+
+				// We found an entry for the current model property in the map. 
+
+				if (field_names.contains(it.value()))
+				{
+					// The map's attribute field was found in the shapefile attribute list. 
+					default_fields.insert(field_index,it.value());
+				}
+				else
+				{
+					// The map's attribute field wasn't found amongst the shapefile's attributes, so
+					// use the default field name. 
+					default_fields.insert(field_index,
+						ShapefileAttributes::default_attributes[field_index]);
+				}
+			}	
+		}	
 	}
 }
 
@@ -143,13 +149,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::ShapefileAttributeWidget(
 	else
 	{
 		// The map does provide us with default fields for the combo boxes. Use these where we can. 
-		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::PLATEID);
-		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::FEATURE_TYPE);
-		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::BEGIN);
-		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::END);
-		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::NAME);
-		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::DESCRIPTION);
-		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::FEATURE_ID);
+		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names);
 	}
 
 	setup();
@@ -171,6 +171,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	combo_name->addItem(QString(QObject::tr("<none>")));
 	combo_description->addItem(QString(QObject::tr("<none>")));
 	combo_feature_id->addItem(QString(QObject::tr("<none>")));
+	combo_conjugate->addItem(QString(QObject::tr("<none>")));
 
 	// Fill the remaining fields from the QStringList d_field_names.
 	combo_plateID->addItems(d_field_names);
@@ -180,6 +181,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	combo_name->addItems(d_field_names);
 	combo_description->addItems(d_field_names);
 	combo_feature_id->addItems(d_field_names);
+	combo_conjugate->addItems(d_field_names);
 
 	// Check for any of the default field names. If we find any, set the combo box to the default.
 	// 1 is added to the index to account for the <none> item, which is 0th in each combo box. 
@@ -212,6 +214,10 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::FEATURE_ID])) != -1) {	
 		combo_feature_id->setCurrentIndex(index + 1);		
 	}
+	
+	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::CONJUGATE_PLATE_ID])) != -1) {	
+		combo_conjugate->setCurrentIndex(index + 1);		
+	}	
 
 
 // save the state of the combo boxes so that we can reset them.
@@ -223,6 +229,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	d_combo_reset_map.push_back(combo_name->currentIndex());
 	d_combo_reset_map.push_back(combo_description->currentIndex());
 	d_combo_reset_map.push_back(combo_feature_id->currentIndex());
+	d_combo_reset_map.push_back(combo_conjugate->currentIndex());
 	
 }
 
@@ -238,7 +245,8 @@ GPlatesQtWidgets::ShapefileAttributeWidget::reset_fields()
 	combo_name->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::NAME]);
 	combo_description->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::DESCRIPTION]);
 	combo_feature_id->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::FEATURE_ID]);
-
+	combo_conjugate->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::CONJUGATE_PLATE_ID]);
+	
 }
 
 void
@@ -291,7 +299,13 @@ GPlatesQtWidgets::ShapefileAttributeWidget::accept_fields()
 			d_model_to_attribute_map.insert(
 				ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID],
 						d_field_names[combo_feature_id->currentIndex()-1]);
-		}		
+		}	
+		
+		if (combo_conjugate->currentIndex() != 0){
+			d_model_to_attribute_map.insert(
+				ShapefileAttributes::model_properties[ShapefileAttributes::CONJUGATE_PLATE_ID],
+					d_field_names[combo_conjugate->currentIndex()-1]);
+		}			
 
 }
 
