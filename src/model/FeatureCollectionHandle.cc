@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,17 +25,66 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-
 #include "FeatureCollectionHandle.h"
 #include "FeatureStoreRootHandle.h"
 #include "DummyTransactionHandle.h"
 
 
+const GPlatesModel::FeatureCollectionHandle::children_const_iterator
+GPlatesModel::FeatureCollectionHandle::get_const_iterator(
+		const children_iterator &iter)
+{
+	if (iter.collection_handle_ptr() == NULL)
+	{
+		return children_const_iterator();
+	}
+	return children_const_iterator::create_for_index(
+			*(iter.collection_handle_ptr()), iter.index());
+}
+
+
+const GPlatesModel::FeatureCollectionHandle::const_weak_ref
+GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
+		const weak_ref &ref)
+{
+	if (ref.handle_ptr() == NULL)
+	{
+		return const_weak_ref();
+	}
+	return const_weak_ref(*(ref.handle_ptr()));
+}
+
+
+const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+GPlatesModel::FeatureCollectionHandle::create()
+{
+	non_null_ptr_type ptr(
+			new FeatureCollectionHandle(),
+			GPlatesUtils::NullIntrusivePointerHandler());
+	return ptr;
+}
+
+
 GPlatesModel::FeatureCollectionHandle::~FeatureCollectionHandle()
 {
-	weak_observer_unsubscribe_forward(d_first_const_weak_observer);
-	weak_observer_unsubscribe_forward(d_first_weak_observer);
+}
+
+
+const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+GPlatesModel::FeatureCollectionHandle::clone() const
+{
+	non_null_ptr_type dup(
+			new FeatureCollectionHandle(*this),
+			GPlatesUtils::NullIntrusivePointerHandler());
+	return dup;
+}
+
+
+const GPlatesModel::FeatureCollectionHandle::const_weak_ref
+GPlatesModel::FeatureCollectionHandle::reference() const
+{
+	const_weak_ref ref(*this);
+	return ref;
 }
 
 
@@ -53,12 +102,12 @@ GPlatesModel::FeatureCollectionHandle::unload()
 	}
 	// OK, now we need a collections-iterator which indicates this feature collection within
 	// its feature store root.
-	FeatureStoreRootHandle::collections_iterator iter =
-			FeatureStoreRootHandle::collections_iterator::create_for_index(
+	FeatureStoreRootHandle::children_iterator iter =
+			FeatureStoreRootHandle::children_iterator::create_for_index(
 					*d_container_handle, d_index_in_container);
 
 	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-	d_container_handle->remove_feature_collection(iter, transaction);
+	d_container_handle->remove_child(iter, transaction);
 	transaction.commit();
 
 	// FIXME:  When this operation no longer results in the FeatureCollectionHandle being
@@ -70,8 +119,44 @@ GPlatesModel::FeatureCollectionHandle::unload()
 }
 
 
+const GPlatesModel::FeatureCollectionHandle::weak_ref
+GPlatesModel::FeatureCollectionHandle::reference()
+{
+	weak_ref ref(*this);
+	return ref;
+}
+
+
+const GPlatesModel::FeatureCollectionHandle::children_const_iterator
+GPlatesModel::FeatureCollectionHandle::children_begin() const
+{
+	return children_const_iterator::create_begin(*this);
+}
+
+
+const GPlatesModel::FeatureCollectionHandle::children_iterator
+GPlatesModel::FeatureCollectionHandle::children_begin()
+{
+	return children_iterator::create_begin(*this);
+}
+
+
+const GPlatesModel::FeatureCollectionHandle::children_const_iterator
+GPlatesModel::FeatureCollectionHandle::children_end() const
+{
+	return children_const_iterator::create_end(*this);
+}
+
+
+const GPlatesModel::FeatureCollectionHandle::children_iterator
+GPlatesModel::FeatureCollectionHandle::children_end()
+{
+	return children_iterator::create_end(*this);
+}
+
+
 void
-GPlatesModel::FeatureCollectionHandle::set_container(
+GPlatesModel::FeatureCollectionHandle::set_parent_ptr(
 		FeatureStoreRootHandle *new_handle,
 		container_size_type new_index)
 {
@@ -82,30 +167,117 @@ GPlatesModel::FeatureCollectionHandle::set_container(
 }
 
 
-const GPlatesModel::FeatureCollectionHandle::features_iterator
-GPlatesModel::FeatureCollectionHandle::append_feature(
+const GPlatesModel::FeatureCollectionHandle::children_iterator
+GPlatesModel::FeatureCollectionHandle::append_child(
 		FeatureHandle::non_null_ptr_type new_feature,
 		DummyTransactionHandle &transaction)
 {
 	container_size_type new_index =
-			current_revision()->append_feature(new_feature, transaction);
-	return features_iterator::create_for_index(*this, new_index);
+			current_revision()->append_child(new_feature, transaction);
+	return children_iterator::create_for_index(*this, new_index);
 }
 
 
 void
-GPlatesModel::FeatureCollectionHandle::remove_feature(
-		features_const_iterator iter,
+GPlatesModel::FeatureCollectionHandle::remove_child(
+		children_const_iterator iter,
 		DummyTransactionHandle &transaction)
 {
-	current_revision()->remove_feature(iter.index(), transaction);
+	current_revision()->remove_child(iter.index(), transaction);
 }
 
 
 void
-GPlatesModel::FeatureCollectionHandle::remove_feature(
-		features_iterator iter,
+GPlatesModel::FeatureCollectionHandle::remove_child(
+		children_iterator iter,
 		DummyTransactionHandle &transaction)
 {
-	current_revision()->remove_feature(iter.index(), transaction);
+	current_revision()->remove_child(iter.index(), transaction);
 }
+
+
+bool
+GPlatesModel::FeatureCollectionHandle::contains_unsaved_changes() const
+{
+	return d_contains_unsaved_changes;
+}
+
+
+void
+GPlatesModel::FeatureCollectionHandle::set_contains_unsaved_changes(
+		bool new_status) const
+{
+	d_contains_unsaved_changes = new_status;
+}
+
+
+const GPlatesModel::FeatureCollectionRevision::non_null_ptr_to_const_type
+GPlatesModel::FeatureCollectionHandle::current_revision() const
+{
+	return d_current_revision;
+}
+
+
+const GPlatesModel::FeatureCollectionRevision::non_null_ptr_type
+GPlatesModel::FeatureCollectionHandle::current_revision()
+{
+	return d_current_revision;
+}
+
+
+void
+GPlatesModel::FeatureCollectionHandle::set_current_revision(
+		FeatureCollectionRevision::non_null_ptr_type rev)
+{
+	d_current_revision = rev;
+}
+
+
+GPlatesModel::FeatureStoreRootHandle *
+GPlatesModel::FeatureCollectionHandle::parent_ptr() const
+{
+	return d_container_handle;
+}
+
+
+GPlatesModel::container_size_type
+GPlatesModel::FeatureCollectionHandle::index_in_container() const
+{
+	return d_index_in_container;
+}
+
+
+GPlatesModel::FeatureCollectionHandle::tags_collection_type &
+GPlatesModel::FeatureCollectionHandle::tags()
+{
+	return d_tags;
+}
+
+
+const GPlatesModel::FeatureCollectionHandle::tags_collection_type &
+GPlatesModel::FeatureCollectionHandle::tags() const
+{
+	return d_tags;
+}
+
+
+GPlatesModel::FeatureCollectionHandle::FeatureCollectionHandle() :
+	d_current_revision(FeatureCollectionRevision::create()),
+	d_container_handle(NULL),
+	d_index_in_container(INVALID_INDEX),
+	d_contains_unsaved_changes(true)
+{
+}
+
+
+GPlatesModel::FeatureCollectionHandle::FeatureCollectionHandle(
+		const FeatureCollectionHandle &other) :
+	WeakObserverPublisher<FeatureCollectionHandle>(),
+	GPlatesUtils::ReferenceCount<FeatureCollectionHandle>(),
+	d_current_revision(other.d_current_revision),
+	d_container_handle(NULL),
+	d_index_in_container(INVALID_INDEX),
+	d_contains_unsaved_changes(true)
+{
+}
+

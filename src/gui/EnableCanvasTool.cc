@@ -407,7 +407,7 @@ GPlatesGui::EnableCanvasTool::update_edit_topology_tool()
 			static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
 			static const QString topology_network_type_name ("TopologicalNetwork");
 			QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-					d_feature_focus->focused_feature()->feature_type().get_name() );
+					d_feature_focus->focused_feature()->handle_data().feature_type().get_name() );
 
 			// Only activate for topologies.
 			if (feature_type_name == topology_boundary_type_name ||

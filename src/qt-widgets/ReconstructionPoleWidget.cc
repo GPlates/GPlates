@@ -306,7 +306,7 @@ namespace
 			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
 			const double &reconstruction_time,
-			GPlatesModel::FeatureCollectionHandle::features_iterator &current_feature)
+			GPlatesModel::FeatureCollectionHandle::children_iterator &current_feature)
 	{
 		using namespace GPlatesQtWidgets;
 
@@ -425,10 +425,10 @@ namespace
 				continue;
 			}
 
-			FeatureCollectionHandle::features_iterator features_iter =
-					current_collection->features_begin();
-			FeatureCollectionHandle::features_iterator features_end =
-					current_collection->features_end();
+			FeatureCollectionHandle::children_iterator features_iter =
+					current_collection->children_begin();
+			FeatureCollectionHandle::children_iterator features_end =
+					current_collection->children_end();
 			for ( ; features_iter != features_end; ++features_iter) {
 				examine_trs(sequence_choices, trs_plate_id_finder,
 						trs_time_period_finder, plate_id_of_interest,

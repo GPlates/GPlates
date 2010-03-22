@@ -95,11 +95,11 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 		create_gpml_topological_section(
-				const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+				const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
 				bool reverse_order = false,
-				const boost::optional<GPlatesModel::FeatureHandle::properties_iterator>
+				const boost::optional<GPlatesModel::FeatureHandle::children_iterator>
 						&start_intersecting_geometry_property = boost::none,
-				const boost::optional<GPlatesModel::FeatureHandle::properties_iterator>
+				const boost::optional<GPlatesModel::FeatureHandle::children_iterator>
 						&end_intersecting_geometry_property = boost::none,
 				const boost::optional<GPlatesMaths::PointOnSphere> &
 						present_day_reference_point = boost::none);
@@ -118,7 +118,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection>
 		create_gpml_topological_intersection(
-				const GPlatesModel::FeatureHandle::properties_iterator &adjacent_geometry_property,
+				const GPlatesModel::FeatureHandle::children_iterator &adjacent_geometry_property,
 				const GPlatesMaths::PointOnSphere &present_day_reference_point);
 
 
@@ -133,7 +133,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 		create_geometry_property_delegate(
-				const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+				const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
 				const QString &property_value_type);
 
 
@@ -180,7 +180,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
-				const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+				const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
 				GPlatesModel::Reconstruction *reconstruction);
 
 

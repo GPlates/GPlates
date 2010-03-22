@@ -138,7 +138,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 
 
 	QString type_name( GPlatesUtils::make_qstring_from_icu_string(
-		feature_handle.feature_type().get_name() ) );
+		feature_handle.handle_data().feature_type().get_name() ) );
 
 	//
 	// super short-cut for non-mesh features
@@ -287,8 +287,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	GPlatesModel::PropertyName range_set_prop_name =
 		GPlatesModel::PropertyName::create_gml("rangeSet");
 
-	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
+	GPlatesModel::FeatureHandle::children_iterator iter = feature_handle.children_begin();
+	GPlatesModel::FeatureHandle::children_iterator end = feature_handle.children_end();
 
 	// loop over properties
 	for ( ; iter != end; ++iter)
@@ -304,7 +304,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 		{
 			// Delete the old boundary 
 			GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-			feature_handle.remove_top_level_property(iter, transaction);
+			feature_handle.remove_child(iter, transaction);
 			transaction.commit();
 			// FIXME: this seems to create NULL pointers in the properties collection
 			// see FIXME note above to check for NULL? 

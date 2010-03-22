@@ -87,7 +87,7 @@ namespace
 			static const GPlatesModel::FeatureType mesh_node_feature_type = 
 					GPlatesModel::FeatureType::create_gpml("MeshNode");
 
-			if (feature_handle.feature_type() == mesh_node_feature_type)
+			if (feature_handle.handle_data().feature_type() == mesh_node_feature_type)
 			{
 				d_found_velocity_mesh_nodes = true;
 			}
@@ -125,7 +125,7 @@ namespace
 			static const GPlatesModel::FeatureType mesh_node_feature_type = 
 					GPlatesModel::FeatureType::create_gpml("MeshNode");
 
-			if (feature_handle.feature_type() != mesh_node_feature_type)
+			if (feature_handle.handle_data().feature_type() != mesh_node_feature_type)
 			{
 				// Don't visit this feature.
 				return false;

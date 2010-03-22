@@ -401,7 +401,7 @@ namespace
 			// so just return the full gpml feature type.
 			// Mark will put in code in his external scripts to check for this.
 			return GPlatesUtils::make_qstring_from_icu_string(
-					source_feature->feature_type().get_name());
+					source_feature->handle_data().feature_type().get_name());
 		}
 	};
 
@@ -524,7 +524,7 @@ namespace
 
 			// Only interested in "SubductionZone" features.
 			// If something is not a subduction zone then it is considering a ridge/transform.
-			if (feature_handle.feature_type() != subduction_zone_type)
+			if (feature_handle.handle_data().feature_type() != subduction_zone_type)
 			{
 				return false;
 			}

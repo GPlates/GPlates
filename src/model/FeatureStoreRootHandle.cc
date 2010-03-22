@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,30 +28,63 @@
 #include "FeatureStoreRootHandle.h"
 
 
-GPlatesModel::FeatureStoreRootHandle::~FeatureStoreRootHandle()
+const GPlatesModel::FeatureStoreRootHandle::non_null_ptr_type
+GPlatesModel::FeatureStoreRootHandle::create()
 {
-	weak_observer_unsubscribe_forward(d_first_weak_observer);
+	non_null_ptr_type ptr(
+			new FeatureStoreRootHandle(),
+			GPlatesUtils::NullIntrusivePointerHandler());
+	return ptr;
 }
 
 
-const GPlatesModel::FeatureStoreRootHandle::collections_iterator
-GPlatesModel::FeatureStoreRootHandle::append_feature_collection(
+const GPlatesModel::FeatureStoreRootHandle::non_null_ptr_type
+GPlatesModel::FeatureStoreRootHandle::clone() const
+{
+	non_null_ptr_type dup(
+			new FeatureStoreRootHandle(*this),
+			GPlatesUtils::NullIntrusivePointerHandler());
+	return dup;
+}
+
+
+const GPlatesModel::FeatureStoreRootHandle::children_iterator
+GPlatesModel::FeatureStoreRootHandle::children_begin()
+{
+	return children_iterator::create_begin(*this);
+}
+
+
+const GPlatesModel::FeatureStoreRootHandle::children_iterator
+GPlatesModel::FeatureStoreRootHandle::children_end()
+{
+	return children_iterator::create_end(*this);
+}
+
+
+GPlatesModel::FeatureStoreRootHandle::~FeatureStoreRootHandle()
+{
+}
+
+
+const GPlatesModel::FeatureStoreRootHandle::children_iterator
+GPlatesModel::FeatureStoreRootHandle::append_child(
 		FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
 		DummyTransactionHandle &transaction)
 {
 	container_size_type new_index =
-			current_revision()->append_feature_collection(new_feature_collection, transaction);
+			current_revision()->append_child(new_feature_collection, transaction);
 
 	// FIXME:  The following line is not transaction roll-back friendly!
-	new_feature_collection->set_container(this, new_index);
+	new_feature_collection->set_parent_ptr(this, new_index);
 
-	return collections_iterator::create_for_index(*this, new_index);
+	return children_iterator::create_for_index(*this, new_index);
 }
 
 
 void
-GPlatesModel::FeatureStoreRootHandle::remove_feature_collection(
-		collections_iterator iter,
+GPlatesModel::FeatureStoreRootHandle::remove_child(
+		children_iterator iter,
 		DummyTransactionHandle &transaction)
 {
 	if (iter.collection_handle_ptr() != this) {
@@ -70,7 +103,45 @@ GPlatesModel::FeatureStoreRootHandle::remove_feature_collection(
 		return;
 	}
 	// FIXME:  The following line is not transaction roll-back friendly!
-	(*iter)->set_container(NULL, INVALID_INDEX);
+	(*iter)->set_parent_ptr(NULL, INVALID_INDEX);
 
-	current_revision()->remove_feature_collection(iter.index(), transaction);
+	current_revision()->remove_child(iter.index(), transaction);
 }
+
+
+const GPlatesModel::FeatureStoreRootRevision::non_null_ptr_to_const_type
+GPlatesModel::FeatureStoreRootHandle::current_revision() const
+{
+	return d_current_revision;
+}
+
+
+const GPlatesModel::FeatureStoreRootRevision::non_null_ptr_type
+GPlatesModel::FeatureStoreRootHandle::current_revision()
+{
+	return d_current_revision;
+}
+
+
+void
+GPlatesModel::FeatureStoreRootHandle::set_current_revision(
+		FeatureStoreRootRevision::non_null_ptr_type rev)
+{
+	d_current_revision = rev;
+}
+
+
+GPlatesModel::FeatureStoreRootHandle::FeatureStoreRootHandle() :
+	d_current_revision(FeatureStoreRootRevision::create())
+{
+}
+
+
+GPlatesModel::FeatureStoreRootHandle::FeatureStoreRootHandle(
+		const FeatureStoreRootHandle &other) :
+	WeakObserverPublisher<FeatureStoreRootHandle>(),
+	GPlatesUtils::ReferenceCount<FeatureStoreRootHandle>(),
+	d_current_revision(other.d_current_revision)
+{
+}
+

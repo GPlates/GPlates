@@ -34,7 +34,6 @@
 #include "FeatureHandle.h"
 
 #include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -81,25 +80,20 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for 
-		 * PlatesUtils::non_null_intrusive_ptr<FeatureCollectionRevision,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * PlatesUtils::non_null_intrusive_ptr<FeatureCollectionRevision>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureCollectionRevision,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureCollectionRevision> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureCollectionRevision,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureCollectionRevision>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureCollectionRevision,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureCollectionRevision> non_null_ptr_to_const_type;
 
 		/**
 		 * The type used for the collection of features.
 		 */
-		typedef std::vector<boost::intrusive_ptr<FeatureHandle> > feature_collection_type;
+		typedef std::vector<boost::intrusive_ptr<FeatureHandle> > collection_type;
 
 		~FeatureCollectionRevision()
 		{  }
@@ -162,7 +156,7 @@ namespace GPlatesModel
 		operator[](
 				container_size_type index) const
 		{
-			return access_feature(index);
+			return access_child(index);
 		}
 
 		/**
@@ -181,7 +175,7 @@ namespace GPlatesModel
 		operator[](
 				container_size_type index)
 		{
-			return access_feature(index);
+			return access_child(index);
 		}
 
 		/**
@@ -197,7 +191,7 @@ namespace GPlatesModel
 		 * instances; it returns a pointer to a const FeatureHandle instance.
 		 */
 		const boost::intrusive_ptr<const FeatureHandle>
-		access_feature(
+		access_child(
 				container_size_type index) const
 		{
 			boost::intrusive_ptr<const FeatureHandle> ptr;
@@ -220,7 +214,7 @@ namespace GPlatesModel
 		 * instances; it returns a pointer to a non-const FeatureHandle instance.
 		 */
 		const boost::intrusive_ptr<FeatureHandle>
-		access_feature(
+		access_child(
 				container_size_type index)
 		{
 			boost::intrusive_ptr<FeatureHandle> ptr;
@@ -234,7 +228,7 @@ namespace GPlatesModel
 		 * Append @a new_feature to the feature collection.
 		 */
 		container_size_type
-		append_feature(
+		append_child(
 				FeatureHandle::non_null_ptr_type new_feature,
 				DummyTransactionHandle &transaction);
 
@@ -246,7 +240,7 @@ namespace GPlatesModel
 		 * function will be a no-op.
 		 */
 		void
-		remove_feature(
+		remove_child(
 				container_size_type index,
 				DummyTransactionHandle &transaction);
 
@@ -261,7 +255,7 @@ namespace GPlatesModel
 		 * mechanism.
 		 */
 		void
-		set_handle_ptr(
+		set_parent_ptr(
 				FeatureCollectionHandle *new_ptr)
 		{
 			d_handle_ptr = new_ptr;
@@ -290,7 +284,7 @@ namespace GPlatesModel
 		 *
 		 * Any of the pointers in this container might be NULL.
 		 */
-		feature_collection_type d_features;
+		collection_type d_features;
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.

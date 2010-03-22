@@ -175,7 +175,7 @@ namespace
 	 *
 	 * It returns an invalid iterator if no match is found.
 	 */
-	GPlatesModel::FeatureHandle::properties_iterator
+	GPlatesModel::FeatureHandle::children_iterator
 	find_properties_iterator(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 			const GPlatesModel::PropertyName &property_name)
@@ -183,12 +183,12 @@ namespace
 		if ( ! feature_ref.is_valid())
 		{
 			// Return invalid properties iterator.
-			return GPlatesModel::FeatureHandle::properties_iterator();
+			return GPlatesModel::FeatureHandle::children_iterator();
 		}
 
 		// Iterate through the top level properties; look for the first name that matches.
-		GPlatesModel::FeatureHandle::properties_iterator it = feature_ref->properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
+		GPlatesModel::FeatureHandle::children_iterator it = feature_ref->children_begin();
+		GPlatesModel::FeatureHandle::children_iterator end = feature_ref->children_end();
 		for ( ; it != end; ++it)
 		{
 			// Elements of this properties vector can be NULL pointers.  (See the comment in
@@ -201,7 +201,7 @@ namespace
 
 		// No match.
 		// Return invalid properties iterator.
-		return GPlatesModel::FeatureHandle::properties_iterator();
+		return GPlatesModel::FeatureHandle::children_iterator();
 	}
 }
 
@@ -224,12 +224,12 @@ GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
 }
 
 GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
-		const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+		const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
 		const boost::optional<GPlatesMaths::PointOnSphere> &click_point,
 		bool reverse_order) :
 	d_feature_id(
 			geometry_property.is_valid()
-					? geometry_property.collection_handle_ptr()->feature_id()
+					? geometry_property.collection_handle_ptr()->handle_data().feature_id()
 					: GPlatesModel::FeatureId()),
 	d_feature_ref(
 			geometry_property.is_valid()

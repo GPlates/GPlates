@@ -200,7 +200,7 @@ namespace GPlatesModel
 		 * Access the topological polygon feature property used to generate
 		 * the resolved topological geometry.
 		 */
-		const FeatureHandle::properties_iterator
+		const FeatureHandle::children_iterator
 		property() const
 		{
 			return d_network_impl->property();

@@ -148,11 +148,11 @@ namespace GPlatesFeatureVisitors
 		 */
 		struct ReconstructedGeometryInfo
 		{
-			GPlatesModel::FeatureHandle::properties_iterator d_property;
+			GPlatesModel::FeatureHandle::children_iterator d_property;
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry;
 			
 			ReconstructedGeometryInfo(
-					const GPlatesModel::FeatureHandle::properties_iterator property,
+					const GPlatesModel::FeatureHandle::children_iterator property,
 					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry):
 				d_property(property),
 				d_geometry(geometry)
@@ -179,7 +179,7 @@ namespace GPlatesFeatureVisitors
 		GPlatesGui::TreeWidgetBuilder d_tree_widget_builder;
 
 		//! The focused geometry if any.
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_focused_geometry;
+		boost::optional<GPlatesModel::FeatureHandle::children_iterator> d_focused_geometry;
 
 		/**
 		 * Records details about the top-level items (properties) that we are building.
@@ -209,7 +209,7 @@ namespace GPlatesFeatureVisitors
 		 */
 		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 		get_reconstructed_geometry_for_property(
-				const GPlatesModel::FeatureHandle::properties_iterator property);
+				const GPlatesModel::FeatureHandle::children_iterator property);
 
 
 		void

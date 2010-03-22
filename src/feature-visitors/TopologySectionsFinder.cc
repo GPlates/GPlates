@@ -104,7 +104,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_propertie
 	// super short-cut for features without boundary list properties
 	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
 	static const QString topology_network_type_name("TopologicalNetwork");
-	const QString feature_type = GPlatesUtils::make_qstring_from_icu_string( feature_handle.feature_type().get_name() );
+	const QString feature_type = GPlatesUtils::make_qstring_from_icu_string( feature_handle.handle_data().feature_type().get_name() );
 
 	// Quick-out: No need to continue.
 	if ( ( feature_type != topology_boundary_type_name ) &&

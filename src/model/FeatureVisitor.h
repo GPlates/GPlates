@@ -131,7 +131,7 @@ namespace GPlatesModel
 		 */
 		bool
 		visit_feature(
-				const FeatureCollectionHandle::features_iterator &iterator)
+				const FeatureCollectionHandle::children_iterator &iterator)
 		{
 			if (iterator.is_valid()) {
 				visit_feature_handle(**iterator);
@@ -216,7 +216,7 @@ namespace GPlatesModel
 		/**
 		 * Access the iterator of the top-level property which we're currently visiting.
 		 */
-		const boost::optional<FeatureHandle::properties_iterator> &
+		const boost::optional<FeatureHandle::children_iterator> &
 		current_top_level_propiter() const
 		{
 			return d_current_top_level_propiter;
@@ -514,12 +514,12 @@ namespace GPlatesModel
 
 		void
 		log_invalid_iterator(
-				const FeatureCollectionHandle::features_iterator &iterator);
+				const FeatureCollectionHandle::children_iterator &iterator);
 
 		/**
 		 * Tracks the iterator of the most-recently read top-level property.
 		 */
-		boost::optional<FeatureHandle::properties_iterator> d_current_top_level_propiter;
+		boost::optional<FeatureHandle::children_iterator> d_current_top_level_propiter;
 
 		/**
 		 * Tracks the name of the most-recently read top-level property.

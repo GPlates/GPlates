@@ -91,9 +91,9 @@ namespace
 			}
 
 			// Iterate through the feature handles in the current feature collection.
-			GPlatesModel::FeatureCollectionHandle::features_const_iterator features_iter;
-			for (features_iter = feature_collection_handle->features_begin();
-				features_iter != feature_collection_handle->features_end();
+			GPlatesModel::FeatureCollectionHandle::children_const_iterator features_iter;
+			for (features_iter = feature_collection_handle->children_begin();
+				features_iter != feature_collection_handle->children_end();
 				++features_iter)
 			{
 				const GPlatesModel::FeatureHandle *feature_handle_ptr = (*features_iter).get();

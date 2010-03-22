@@ -29,8 +29,8 @@
 #include "DummyTransactionHandle.h"
 
 
-GPlatesModel::FeatureStoreRootRevision::feature_collection_container_type::size_type
-GPlatesModel::FeatureStoreRootRevision::append_feature_collection(
+GPlatesModel::FeatureStoreRootRevision::collection_type::size_type
+GPlatesModel::FeatureStoreRootRevision::append_child(
 		FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
 		DummyTransactionHandle &transaction)
 {
@@ -41,7 +41,7 @@ GPlatesModel::FeatureStoreRootRevision::append_feature_collection(
 
 
 void
-GPlatesModel::FeatureStoreRootRevision::remove_feature_collection(
+GPlatesModel::FeatureStoreRootRevision::remove_child(
 		container_size_type index,
 		DummyTransactionHandle &transaction)
 {

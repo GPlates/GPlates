@@ -110,8 +110,8 @@ namespace
 		// Search through FeatureCollection, comparing weakrefs until we find one that points
 		// to the same FeatureHandle. I was going to use STL find but it bitched to me about
 		// operator== not matching up quite right, presumably due to const weakref fun.
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator it = collection_ref->features_begin();
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator end = collection_ref->features_end();
+		GPlatesModel::FeatureCollectionHandle::children_const_iterator it = collection_ref->children_begin();
+		GPlatesModel::FeatureCollectionHandle::children_const_iterator end = collection_ref->children_end();
 		for (; it != end; ++it) {
 			// 'it' is a revision aware iterator (intrusive ptr to FeatureHandle),
 			if (it.is_valid()) {
@@ -254,7 +254,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	
 	// Feature Type.
 	lineedit_type->setText(GPlatesUtils::make_qstring_from_icu_string(
-			feature_ref->feature_type().build_aliased_name()));
+			feature_ref->handle_data().feature_type().build_aliased_name()));
 	
 	// Feature Name.
 	// FIXME: Need to adapt according to user's current codeSpace setting.
@@ -312,7 +312,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	{
 		// There was an associated ReconstructionGeometry, which means there
 		// was a clicked geometry.
-		GPlatesModel::FeatureHandle::properties_iterator geometry_property;
+		GPlatesModel::FeatureHandle::children_iterator geometry_property;
 		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
 				associated_rg, geometry_property))
 		{

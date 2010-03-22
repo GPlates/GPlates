@@ -40,8 +40,8 @@ void
 GPlatesModel::FeatureVisitor::visit_feature_properties(
 		FeatureHandle &feature_handle)
 {
-	FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
-	FeatureHandle::properties_iterator end = feature_handle.properties_end();
+	FeatureHandle::children_iterator iter = feature_handle.children_begin();
+	FeatureHandle::children_iterator end = feature_handle.children_end();
 	for ( ; iter != end; ++iter) {
 		if (iter.is_valid()) {
 			d_current_top_level_propiter = iter;
@@ -76,7 +76,7 @@ GPlatesModel::FeatureVisitor::log_invalid_weak_ref(
 
 void
 GPlatesModel::FeatureVisitor::log_invalid_iterator(
-		const FeatureCollectionHandle::features_iterator &iterator)
+		const FeatureCollectionHandle::children_iterator &iterator)
 {
 	std::cerr << "invalid iterator not dereferenced." << std::endl;
 }

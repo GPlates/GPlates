@@ -452,7 +452,7 @@ namespace
 	 */
 	bool
 	is_geometry_property(
-			const GPlatesModel::FeatureHandle::properties_iterator &feature_properties_iter)
+			const GPlatesModel::FeatureHandle::children_iterator &feature_properties_iter)
 	{
 		GPlatesFeatureVisitors::GeometryTypeFinder geom_type_finder;
 		(*feature_properties_iter)->accept_visitor(geom_type_finder);
@@ -466,7 +466,7 @@ namespace
 	 */
 	bool
 	is_reconstruction_plate_id_property(
-			const GPlatesModel::FeatureHandle::properties_iterator &feature_properties_iter)
+			const GPlatesModel::FeatureHandle::children_iterator &feature_properties_iter)
 	{
 		static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
@@ -484,15 +484,15 @@ namespace
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 	{
 		// Iterate over the feature properties of the feature.
-		GPlatesModel::FeatureHandle::properties_iterator feature_properties_iter =
-				feature_ref->properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator feature_properties_end =
-				feature_ref->properties_end();
+		GPlatesModel::FeatureHandle::children_iterator feature_properties_iter =
+				feature_ref->children_begin();
+		GPlatesModel::FeatureHandle::children_iterator feature_properties_end =
+				feature_ref->children_end();
 		while (feature_properties_iter != feature_properties_end)
 		{
 			// Increment iterator before we remove property.
 			// I don't think this is currently necessary but it doesn't hurt.
-			GPlatesModel::FeatureHandle::properties_iterator current_feature_properties_iter =
+			GPlatesModel::FeatureHandle::children_iterator current_feature_properties_iter =
 					feature_properties_iter;
 			++feature_properties_iter;
 
@@ -525,15 +525,15 @@ namespace
 		// Create a new feature.
 		const GPlatesModel::FeatureHandle::weak_ref new_feature_ref =
 				model->create_feature(
-						old_feature_ref->feature_type(),
+						old_feature_ref->handle_data().feature_type(),
 						feature_collection_ref);
 
 		// Iterate over the feature properties of the original feature
 		// and clone them and append the cloned versions to the new feature.
-		GPlatesModel::FeatureHandle::properties_iterator old_feature_properties_iter =
-				old_feature_ref->properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator old_feature_properties_end =
-				old_feature_ref->properties_end();
+		GPlatesModel::FeatureHandle::children_iterator old_feature_properties_iter =
+				old_feature_ref->children_begin();
+		GPlatesModel::FeatureHandle::children_iterator old_feature_properties_end =
+				old_feature_ref->children_end();
 		for ( ; old_feature_properties_iter != old_feature_properties_end;
 			++old_feature_properties_iter)
 		{
@@ -569,7 +569,7 @@ namespace
 	{
 	public:
 		GeometryPropertiesIteratorRemover(
-				const GPlatesModel::FeatureHandle::properties_iterator &geometry_properties_iterator) :
+				const GPlatesModel::FeatureHandle::children_iterator &geometry_properties_iterator) :
 			d_geometry_properties_iterator(geometry_properties_iterator)
 		{
 		}
@@ -592,7 +592,7 @@ namespace
 		}
 
 	private:
-		GPlatesModel::FeatureHandle::properties_iterator d_geometry_properties_iterator;
+		GPlatesModel::FeatureHandle::children_iterator d_geometry_properties_iterator;
 	};
 
 
@@ -601,13 +601,13 @@ namespace
 	public:
 		GeometryPropertyAllPartitionedGeometries(
 				const GPlatesModel::PropertyName &geometry_property_name_,
-				const GPlatesModel::FeatureHandle::properties_iterator &geometry_properties_iterator_) :
+				const GPlatesModel::FeatureHandle::children_iterator &geometry_properties_iterator_) :
 			geometry_property_name(geometry_property_name_),
 			geometry_properties_iterator(geometry_properties_iterator_)
 		{  }
 
 		GPlatesModel::PropertyName geometry_property_name;
-		GPlatesModel::FeatureHandle::properties_iterator geometry_properties_iterator;
+		GPlatesModel::FeatureHandle::children_iterator geometry_properties_iterator;
 		GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_geometries_seq_type
 				partitioned_inside_geometries_seq;
 		GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type
@@ -1422,7 +1422,7 @@ namespace
 					geometry_property_all_partitioned_geometries = 
 							*geometry_property_all_partitioned_geometries_iter;
 
-			GPlatesModel::FeatureHandle::properties_iterator geometry_properties_iterator =
+			GPlatesModel::FeatureHandle::children_iterator geometry_properties_iterator =
 					geometry_property_all_partitioned_geometries.geometry_properties_iterator;
 
 			// Make sure geometry property gets removed from the original feature
@@ -1914,7 +1914,7 @@ namespace
 			static const GPlatesModel::FeatureType vgp_feature_type = 
 					GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
 
-			return feature_ref->feature_type() == vgp_feature_type;
+			return feature_ref->handle_data().feature_type() == vgp_feature_type;
 		}
 
 
@@ -1934,7 +1934,7 @@ namespace
 				qDebug() << "WARNING: Unable to find 'gpml:averageSampleSitePosition' property "
 						"in 'VirtualGeomagneticPole' with feature id = ";
 				qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-						feature_ref->feature_id().get());
+						feature_ref->handle_data().feature_id().get());
 				return false;
 			}
 			const GPlatesMaths::PointOnSphere &sample_site_point = *sample_site_gml_point->point();
@@ -1949,7 +1949,7 @@ namespace
 				qDebug() << "WARNING: Unable to assign 'reconstructionPlateId' to "
 						"'VirtualGeomagneticPole' with feature id = ";
 				qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-						feature_ref->feature_id().get());
+						feature_ref->handle_data().feature_id().get());
 				qDebug() << "because it's sample site is not inside any topological "
 						"closed plate boundaries.";
 				return false;
@@ -1965,7 +1965,7 @@ namespace
 				qDebug() << "WARNING: Unable to find 'gpml:reconstructionPlateId' property "
 						"in 'VirtualGeomagneticPole' with feature id = ";
 				qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-						feature_ref->feature_id().get());
+						feature_ref->handle_data().feature_id().get());
 				// This shouldn't really happen since all resolved boundaries should
 				// have a reconstruction plate id.
 				return false;
@@ -2109,10 +2109,10 @@ GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_ids(
 
 	bool assigned_any_plate_ids = false;
 
-	GPlatesModel::FeatureCollectionHandle::features_iterator feature_iter =
-			feature_collection_ref->features_begin();
-	GPlatesModel::FeatureCollectionHandle::features_iterator feature_end =
-			feature_collection_ref->features_end();
+	GPlatesModel::FeatureCollectionHandle::children_iterator feature_iter =
+			feature_collection_ref->children_begin();
+	GPlatesModel::FeatureCollectionHandle::children_iterator feature_end =
+			feature_collection_ref->children_end();
 	for ( ; feature_iter != feature_end; ++feature_iter)
 	{
 		if (feature_iter.is_valid())

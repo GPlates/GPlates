@@ -78,7 +78,7 @@ namespace GPlatesModel
 		create(
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::properties_iterator property_iterator_,
+				FeatureHandle::children_iterator property_iterator_,
 				boost::optional<integer_plate_id_type> reconstruction_plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_)
 		{
@@ -105,7 +105,7 @@ namespace GPlatesModel
 		create(
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::properties_iterator property_iterator_)
+				FeatureHandle::children_iterator property_iterator_)
 		{
 			non_null_ptr_type ptr(
 					new ReconstructedFeatureGeometry(geometry_ptr, feature_handle,
@@ -188,7 +188,7 @@ namespace GPlatesModel
 		/**
 		 * Access the feature property which contained the reconstructed geometry.
 		 */
-		const FeatureHandle::properties_iterator
+		const FeatureHandle::children_iterator
 		property() const
 		{
 			return d_property_iterator;
@@ -248,7 +248,7 @@ namespace GPlatesModel
 		 * This is an iterator to the (geometry-valued) property from which this RFG was
 		 * derived.
 		 */
-		FeatureHandle::properties_iterator d_property_iterator;
+		FeatureHandle::children_iterator d_property_iterator;
 
 		/**
 		 * The cached reconstruction plate ID, if it exists.
@@ -283,7 +283,7 @@ namespace GPlatesModel
 		ReconstructedFeatureGeometry(
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::properties_iterator property_iterator_,
+				FeatureHandle::children_iterator property_iterator_,
 				boost::optional<integer_plate_id_type> reconstruction_plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_):
 			ReconstructionGeometry(geometry_ptr),
@@ -303,7 +303,7 @@ namespace GPlatesModel
 		ReconstructedFeatureGeometry(
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::properties_iterator property_iterator_):
+				FeatureHandle::children_iterator property_iterator_):
 			ReconstructionGeometry(geometry_ptr),
 			WeakObserverType(feature_handle),
 			d_property_iterator(property_iterator_)

@@ -82,7 +82,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
 		// This serves two purposes:
 		//   1) highlights to the user which geometry (of the feature) is in focus.
 		//   2) serves a dramatic optimisation for large number of geometries in feature.
-		GPlatesModel::FeatureHandle::properties_iterator focused_geometry_property;
+		GPlatesModel::FeatureHandle::children_iterator focused_geometry_property;
 		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
 				focused_rg, focused_geometry_property))
 		{

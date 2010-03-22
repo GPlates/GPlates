@@ -186,7 +186,7 @@ namespace GPlatesFeatureVisitors
 		GPlatesGui::TreeWidgetBuilder d_tree_widget_builder;
 
 		//! The focused geometry if any.
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_focused_geometry;
+		boost::optional<GPlatesModel::FeatureHandle::children_iterator> d_focused_geometry;
 
 		void
 		add_child_then_visit_value(

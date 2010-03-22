@@ -624,10 +624,10 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_feature_handle(
 {
 	// Every feature must be wrapped in a "gml:featureMember" element.
 	d_output.writeStartGmlElement("featureMember");
-		bool pop = d_output.writeStartElement(feature_handle.feature_type());
+		bool pop = d_output.writeStartElement(feature_handle.handle_data().feature_type());
 
 			d_output.writeStartGpmlElement("identity");
-				d_output.writeText(feature_handle.feature_id().get());
+				d_output.writeText(feature_handle.handle_data().feature_id().get());
 			d_output.writeEndElement();
 
 			d_output.writeStartGpmlElement("revision");

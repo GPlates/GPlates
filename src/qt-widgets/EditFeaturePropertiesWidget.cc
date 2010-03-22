@@ -189,7 +189,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::handle_selection_change(
 	}
 
 	// We have a valid selection. Find out what it is!
-	GPlatesModel::FeatureHandle::properties_iterator it = 
+	GPlatesModel::FeatureHandle::children_iterator it = 
 			d_property_model_ptr->get_property_iterator_for_row(idx.row());
 	
 	// Enable things which depend on an item being selected.
@@ -223,7 +223,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 	}
 	
 	// We have a valid selection. Find out what it is!
-	GPlatesModel::FeatureHandle::properties_iterator it = 
+	GPlatesModel::FeatureHandle::children_iterator it = 
 			d_property_model_ptr->get_property_iterator_for_row(idx.row());
 
 	// Clear the selection beforehand, or we could end up in trouble.
@@ -238,7 +238,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 	// FIXME: UNDO
 	// Delete the property container for the given iterator.
 	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-	d_feature_ref->remove_top_level_property(it, transaction);
+	d_feature_ref->remove_child(it, transaction);
 	transaction.commit();
 
 	// We have just changed the model. Tell anyone who cares to know.

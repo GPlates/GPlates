@@ -546,7 +546,7 @@ UnicodeString
 GPlatesFileIO::PlatesFormatUtils::get_plates_data_type_code(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 {
-	const GPlatesModel::FeatureType &feature_type = feature->feature_type();
+	const GPlatesModel::FeatureType &feature_type = feature->handle_data().feature_type();
 
 	const plates_data_type_code_map_type &plates_data_type_code_map =
 			get_data_type_code_map();

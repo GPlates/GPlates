@@ -546,10 +546,12 @@ GPlatesFileIO::GmapReader::read_file(
 		QString header_line = input.readLine();
 		if (line_is_header(header_line))
 		{
-			try {
+			try
+			{
 				read_feature(model, collection, header_line, input, source, line_number, read_errors);
 			} 
-			catch (GPlatesFileIO::ReadErrors::Description error) {
+			catch (GPlatesFileIO::ReadErrors::Description error)
+			{
 				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
 					new GPlatesFileIO::LineNumberInFile(line_number));
 				read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
@@ -558,7 +560,7 @@ GPlatesFileIO::GmapReader::read_file(
 		}
 		line_number++;
 	}
-	if (collection->features_begin() == collection->features_end())
+	if (collection->children_begin() == collection->children_end())
 	{
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
 			new GPlatesFileIO::LineNumberInFile(0));

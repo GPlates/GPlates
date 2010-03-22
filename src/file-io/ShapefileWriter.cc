@@ -174,8 +174,8 @@ namespace
 		GPlatesModel::FeatureHandle &non_const_feature_handle = 
 			const_cast<GPlatesModel::FeatureHandle&>(feature_handle);
 			
-		GPlatesModel::FeatureHandle::properties_iterator p_iter = non_const_feature_handle.properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator p_iter_end = non_const_feature_handle.properties_end();
+		GPlatesModel::FeatureHandle::children_iterator p_iter = non_const_feature_handle.children_begin();
+		GPlatesModel::FeatureHandle::children_iterator p_iter_end = non_const_feature_handle.children_end();
 
 		for ( ; p_iter != p_iter_end ; ++p_iter)
 		{
@@ -192,7 +192,7 @@ namespace
 			{
 				//qDebug() << "Removing old kvd...";
 				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-				non_const_feature_handle.remove_top_level_property(p_iter, transaction);
+				non_const_feature_handle.remove_child(p_iter, transaction);
 				transaction.commit();
 			}
 
@@ -344,7 +344,7 @@ namespace
 		}
 
 		QString feature_type_model_qstring = GPlatesUtils::make_qstring_from_icu_string(
-			feature->feature_type().get_name());
+			feature->handle_data().feature_type().get_name());
 
 		QString feature_type_key = feature_map.key(feature_type_model_qstring);
 
@@ -576,7 +576,7 @@ namespace
 	{
 
 		GPlatesModel::PropertyValue::non_null_ptr_type feature_id_value =
-			GPlatesPropertyValues::XsString::create(feature->feature_id().get());
+			GPlatesPropertyValues::XsString::create(feature->handle_data().feature_id().get());
 
 		QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 			ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID]);
@@ -770,9 +770,9 @@ namespace
 	{
 		if (feature_collection.is_valid())
 		{
-			GPlatesModel::FeatureCollectionHandle::features_const_iterator
-				iter = feature_collection->features_begin(), 
-				end = feature_collection->features_end();
+			GPlatesModel::FeatureCollectionHandle::children_const_iterator
+				iter = feature_collection->children_begin(), 
+				end = feature_collection->children_end();
 
 			while ((iter != end) && !default_key_value_dictionary)
 			{
@@ -864,9 +864,9 @@ GPlatesFileIO::ShapefileWriter::ShapefileWriter(
 
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
 
-	GPlatesModel::FeatureCollectionHandle::features_const_iterator 
-		iter = feature_collection_ref->features_begin(),
-		end = feature_collection_ref->features_end();
+	GPlatesModel::FeatureCollectionHandle::children_const_iterator 
+		iter = feature_collection_ref->children_begin(),
+		end = feature_collection_ref->children_end();
 
 	for ( ; iter != end ; ++iter)
 	{

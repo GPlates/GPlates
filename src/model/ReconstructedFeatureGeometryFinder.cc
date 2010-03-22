@@ -48,7 +48,7 @@ namespace
 	bool
 	properties_iterator_matches(
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
-			const GPlatesModel::FeatureHandle::properties_iterator &properties_iterator_to_match)
+			const GPlatesModel::FeatureHandle::children_iterator &properties_iterator_to_match)
 	{
 		if ( ! rfg.property().is_valid()) {
 			// Nothing we can do here.

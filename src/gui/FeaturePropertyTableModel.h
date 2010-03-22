@@ -47,7 +47,7 @@ namespace GPlatesGui
 	struct FeaturePropertyTableInfo
 	{
 		GPlatesModel::PropertyName property_name;
-		GPlatesModel::FeatureHandle::properties_iterator property_iterator;
+		GPlatesModel::FeatureHandle::children_iterator property_iterator;
 		bool editable_inline;
 	};
 	
@@ -153,7 +153,7 @@ namespace GPlatesGui
 		 * Given a row of the table model, returns the corresponding property iterator.
 		 * Throws an STL out of bounds exception if you ask for something stupid.
 		 */
-		GPlatesModel::FeatureHandle::properties_iterator
+		GPlatesModel::FeatureHandle::children_iterator
 		get_property_iterator_for_row(
 				int row) const;
 
@@ -163,7 +163,7 @@ namespace GPlatesGui
 		 */
 		int
 		get_row_for_property_iterator(
-				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const;
+				GPlatesModel::FeatureHandle::children_iterator property_iterator) const;
 
 		bool
 		is_property_editable_inline(

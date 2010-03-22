@@ -36,7 +36,6 @@
 #include "types.h"
 
 #include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -84,26 +83,20 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<FeatureRevision,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<FeatureRevision>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureRevision,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureRevision> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureRevision,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureRevision>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureRevision,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureRevision> non_null_ptr_to_const_type;
 
 		/**
 		 * The type used to represent the top-level properties of this feature revision.
 		 */
-		typedef std::vector<boost::intrusive_ptr<TopLevelProperty> >
-				top_level_property_collection_type;
+		typedef std::vector<boost::intrusive_ptr<TopLevelProperty> > collection_type;
 
 		~FeatureRevision()
 		{  }
@@ -193,7 +186,7 @@ namespace GPlatesModel
 		operator[](
 				container_size_type index) const
 		{
-			return access_top_level_property(index);
+			return access_child(index);
 		}
 
 		/**
@@ -212,7 +205,7 @@ namespace GPlatesModel
 		operator[](
 				container_size_type index)
 		{
-			return access_top_level_property(index);
+			return access_child(index);
 		}
 
 		/**
@@ -228,7 +221,7 @@ namespace GPlatesModel
 		 * returns a pointer to a const TopLevelProperty instance.
 		 */
 		const boost::intrusive_ptr<const TopLevelProperty>
-		access_top_level_property(
+		access_child(
 				container_size_type index) const
 		{
 			boost::intrusive_ptr<const TopLevelProperty> ptr;
@@ -251,7 +244,7 @@ namespace GPlatesModel
 		 * instances; it returns a pointer to a non-const TopLevelProperty instance.
 		 */
 		const boost::intrusive_ptr<TopLevelProperty>
-		access_top_level_property(
+		access_child(
 				container_size_type index)
 		{
 			boost::intrusive_ptr<TopLevelProperty> ptr;
@@ -265,7 +258,7 @@ namespace GPlatesModel
 		 * Append @a new_top_level_property to the collection.
 		 */
 		container_size_type
-		append_top_level_property(
+		append_child(
 				TopLevelProperty::non_null_ptr_type new_top_level_property,
 				DummyTransactionHandle &transaction);
 
@@ -277,7 +270,7 @@ namespace GPlatesModel
 		 * function will be a no-op.
 		 */
 		void
-		remove_top_level_property(
+		remove_child(
 				container_size_type index,
 				DummyTransactionHandle &transaction);
 
@@ -298,7 +291,7 @@ namespace GPlatesModel
 		 * pointer rather than removed, so that the indices, which are used to reference
 		 * the other elements in the vector, remain valid.
 		 */
-		top_level_property_collection_type d_properties;
+		collection_type d_properties;
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.

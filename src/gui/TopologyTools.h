@@ -481,7 +481,7 @@ namespace GPlatesGui
 		void
 		display_feature(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-			const GPlatesModel::FeatureHandle::properties_iterator &properties_iter);
+			const GPlatesModel::FeatureHandle::children_iterator &properties_iter);
 
 		/**
 		 * Initialise the topology from the currently focused feature.
@@ -527,7 +527,7 @@ namespace GPlatesGui
 		int
 		find_topological_section_index(
 				const GPlatesModel::FeatureHandle::weak_ref &feature,
-				const GPlatesModel::FeatureHandle::properties_iterator &properties_iter);
+				const GPlatesModel::FeatureHandle::children_iterator &properties_iter);
 
 		void
 		create_child_rendered_layers();

@@ -203,7 +203,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types_list() const
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::FeatureHandle::properties_iterator it)
+		GPlatesModel::FeatureHandle::children_iterator it)
 {
 	if ( ! feature_ref.is_valid()) {
 		// Although in principle we only need the properties_iterator here,
@@ -226,7 +226,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
 void
 GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::FeatureHandle::properties_iterator it)
+		GPlatesModel::FeatureHandle::children_iterator it)
 {
 	if ( ! feature_ref.is_valid()) {
 		// Although in principle we only need the properties_iterator here,

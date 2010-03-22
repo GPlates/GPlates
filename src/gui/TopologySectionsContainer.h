@@ -94,7 +94,7 @@ namespace GPlatesGui
 			 * topological section - the reverse flag is usually always false in this case.
 			 */
 			TableRow(
-					const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+					const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
 					const boost::optional<GPlatesMaths::PointOnSphere> &click_point = boost::none,
 					bool reverse_order = false);
 
@@ -114,7 +114,7 @@ namespace GPlatesGui
 			}
 
 			//! Get the geometry property iterator.
-			const GPlatesModel::FeatureHandle::properties_iterator &
+			const GPlatesModel::FeatureHandle::children_iterator &
 			get_geometry_property() const
 			{
 				return d_geometry_property;
@@ -183,7 +183,7 @@ namespace GPlatesGui
 			 * NOTE: 'd_geometry_property' must be declared/initialised after 'd_feature_ref'
 			 * since it uses it when constructed.
 			 */
-			GPlatesModel::FeatureHandle::properties_iterator d_geometry_property;
+			GPlatesModel::FeatureHandle::children_iterator d_geometry_property;
 
 			/**
 			 * The point the user clicked on to select the section.

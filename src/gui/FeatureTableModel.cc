@@ -106,7 +106,7 @@ namespace
 				get_feature_weak_ref_if_valid(geometry);
 		if (weak_ref) {
 			return QVariant(GPlatesUtils::make_qstring_from_icu_string(
-					(*weak_ref)->feature_type().build_aliased_name()));
+					(*weak_ref)->handle_data().feature_type().build_aliased_name()));
 		}
 		return QVariant();
 	}
@@ -443,12 +443,12 @@ namespace
 
 
 	template <typename ReconstructionGeometryPointer>
-	const boost::optional<GPlatesModel::FeatureHandle::properties_iterator>
+	const boost::optional<GPlatesModel::FeatureHandle::children_iterator>
 	get_geometry_property_if_valid(
 			ReconstructionGeometryPointer geometry)
 	{
 		// See if type derived from ReconstructionGeometry has a valid geometry property.
-		GPlatesModel::FeatureHandle::properties_iterator geometry_property;
+		GPlatesModel::FeatureHandle::children_iterator geometry_property;
 		if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
 				geometry, geometry_property))
 		{
@@ -457,7 +457,7 @@ namespace
 			return boost::none;
 		}
 
-		return boost::optional<GPlatesModel::FeatureHandle::properties_iterator>(
+		return boost::optional<GPlatesModel::FeatureHandle::children_iterator>(
 				geometry_property);
 	}
 
@@ -466,7 +466,7 @@ namespace
 	get_present_day_geometry(
 			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> property =
+		boost::optional<GPlatesModel::FeatureHandle::children_iterator> property =
 				get_geometry_property_if_valid(geometry);
 		if (property) {
 			GPlatesFeatureVisitors::GeometryFinder geometry_finder;
@@ -485,7 +485,7 @@ namespace
 	get_clicked_geometry_property(
 			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> property =
+		boost::optional<GPlatesModel::FeatureHandle::children_iterator> property =
 				get_geometry_property_if_valid(geometry);
 		if (property) {
 			return QVariant(GPlatesUtils::make_qstring_from_icu_string(
@@ -738,7 +738,7 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 		// found and we start drawing RFGs from different reconstruction times.
 		// FIXME: A better solution might be to store geometry property iterators in the
 		// table rather than reconstruction geometries.
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> rg_geom_property =
+		boost::optional<GPlatesModel::FeatureHandle::children_iterator> rg_geom_property =
 				get_geometry_property_if_valid(rg);
 		if (rg_geom_property)
 		{

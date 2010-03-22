@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -36,6 +36,103 @@
 
 namespace GPlatesModel
 {
+	namespace RevisionAwareIteratorInternals
+	{
+		/**
+		 * Helper traits classes to turn boost::intrusive_ptr<T> into
+		 *   - const boost::intrusive_ptr<T> for non-const Handles.
+		 *   - const boost::intrusive_ptr<const T> for const Handles.
+		 * 
+		 * If RevisionAwareIterator needs to return pointers other than boost::intrusive_ptr
+		 * you'll need to add a new template specialisation.
+		 */
+		template<class Handle, class Pointer>
+		struct pointer_traits
+		{
+		};
+
+		template<class Handle, class T>
+		struct pointer_traits<Handle, boost::intrusive_ptr<T> >
+		{
+			typedef const boost::intrusive_ptr<T> corrected_pointer_type;
+		};
+
+		template<class Handle, class T>
+		struct pointer_traits<const Handle, boost::intrusive_ptr<T> >
+		{
+			typedef const boost::intrusive_ptr<const T> corrected_pointer_type;
+		};
+
+		/**
+		 * Resolves appropriate types for a Handle's collection type and collection type's value type
+		 * based on whether the Handle is const or not.
+		 */
+		template<class Handle>
+		struct handle_traits
+		{
+
+		private:
+
+			typedef typename Handle::revision_component_type revision_component_type;
+			typedef typename revision_component_type::collection_type non_const_collection_type;
+
+		public:
+
+			/**
+			 * The type of the collection inside the Handle that the RevisionAwareIterator will be
+			 * iterating through. It is always const because the collection cannot be modified through
+			 * the RevisionAwareIterator (so you cannot subvert the revisioning system).
+			 */
+			typedef const non_const_collection_type collection_type;
+
+			/**
+			 * The type of the elements of the collection_type that will be returned by
+			 * RevisionAwareIterator upon dereference. Note that the intrusive_ptr is always const
+			 * because its target pointer cannot be changed via RevisionAwareIterator.
+			 *
+			 * For example, for non-const FeatureCollectionHandle, this is const::intrusive_ptr<FeatureHandle>.
+			 * For const FeatureCollectionHandle, this is const::intrusive_ptr<const FeatureHandle>.
+			 */
+			typedef typename pointer_traits<Handle, typename collection_type::value_type>::corrected_pointer_type collection_value_type;
+
+		};
+
+		/**
+		 * Resolves appropriate types for a Handle's collection type and collection type's value type
+		 * based on whether the Handle is const or not.
+		 */
+		template<class Handle>
+		struct handle_traits<const Handle>
+		{
+
+		private:
+
+			typedef typename Handle::revision_component_type revision_component_type;
+			typedef typename revision_component_type::collection_type non_const_collection_type;
+
+		public:
+
+			/**
+			 * The type of the collection inside the Handle that the RevisionAwareIterator will be
+			 * iterating through. It is always const because the collection cannot be modified through
+			 * the RevisionAwareIterator (so you cannot subvert the revisioning system).
+			 */
+			typedef const non_const_collection_type collection_type;
+
+			/**
+			 * The type of the elements of the collection_type that will be returned by
+			 * RevisionAwareIterator upon dereference. Note that the intrusive_ptr is always const
+			 * because its target pointer cannot be changed via RevisionAwareIterator.
+			 *
+			 * For example, for non-const FeatureCollectionHandle, this is const::intrusive_ptr<FeatureHandle>.
+			 * For const FeatureCollectionHandle, this is const::intrusive_ptr<const FeatureHandle>.
+			 */
+			typedef typename pointer_traits<const Handle, typename collection_type::value_type>::corrected_pointer_type collection_value_type;
+
+		};
+
+	}
+
 	/**
 	 * A revision-aware iterator to iterate over the container within a revisioning collection.
 	 *
@@ -80,33 +177,38 @@ namespace GPlatesModel
 	 *
 	 * @par The template parameters
 	 * The template parameters are:
-	 *  - @em H: the type of the handle of the revisioning collection (for example,
+	 *  - @em Handle: the type of the handle of the revisioning collection (for example,
 	 * '@c FeatureCollectionHandle ')
-	 *  - @em C: the type of the container over which this iterator will iterate (for example,
+	 *  - @em Collection: the type of the container over which this iterator will iterate (for example,
 	 * '@c std::vector@<boost::intrusive_ptr@<FeatureHandle@>@> ')
-	 *  - @em D: the type of the container elements, the type to which the iterator will
+	 *  - @em Value: the type of the container elements, the type to which the iterator will
 	 * dereference (for example,
 	 * '@c boost::intrusive_ptr@<FeatureHandle@> ')
 	 */
-	template<typename H, typename C, typename D>
-	class RevisionAwareIterator:
-			public WeakObserver<H>,
-			public std::iterator<std::bidirectional_iterator_tag, D>
+	template<
+		typename Handle,
+		typename Collection = typename RevisionAwareIteratorInternals::handle_traits<Handle>::collection_type,
+		typename Value = typename RevisionAwareIteratorInternals::handle_traits<Handle>::collection_value_type>
+	class RevisionAwareIterator :
+			public WeakObserver<Handle>,
+			public std::iterator<std::bidirectional_iterator_tag, Value>
 	{
+
 	public:
+
 		/**
 		 * This is the type of the handle of the revisioning collection.
 		 *
 		 * (For example, '@c FeatureCollectionHandle ')
 		 */
-		typedef H collection_handle_type;
+		typedef Handle collection_handle_type;
 
 		/**
 		 * This is the type of the container over which this iterator will iterate.
 		 *
 		 * (For example, '@c std::vector@<boost::intrusive_ptr@<FeatureHandle@>@> '.)
 		 */
-		typedef C container_type;
+		typedef Collection container_type;
 
 		/**
 		 * This is the type of the container elements, the type to which the iterator will
@@ -115,7 +217,7 @@ namespace GPlatesModel
 		 * (For example, '@c boost::intrusive_ptr@<FeatureHandle@> ' or
 		 * '@c boost::intrusive_ptr@<const @c FeatureHandle@> '.)
 		 */
-		typedef D dereference_type;
+		typedef Value value_type;
 
 		/**
 		 * This is the type used to index the elements of the container.
@@ -189,7 +291,7 @@ namespace GPlatesModel
 		collection_handle_type *
 		collection_handle_ptr() const
 		{
-			return WeakObserver<H>::publisher_ptr();
+			return WeakObserver<Handle>::publisher_ptr();
 		}
 
 		/**
@@ -237,7 +339,7 @@ namespace GPlatesModel
 		operator=(
 				const RevisionAwareIterator &other)
 		{
-			WeakObserver<H>::operator=(other);
+			WeakObserver<Handle>::operator=(other);
 			d_index = other.d_index;
 
 			return *this;
@@ -281,7 +383,7 @@ namespace GPlatesModel
 		 *
 		 * As long as the iterator is valid, this function will not throw.
 		 */
-		const dereference_type
+		const value_type
 		operator*() const
 		{
 			return current_element();
@@ -299,7 +401,7 @@ namespace GPlatesModel
 		 *
 		 * As long as the iterator is valid, this function will not throw.
 		 */
-		const dereference_type
+		const value_type
 		operator*()
 		{
 			return current_element();
@@ -361,7 +463,7 @@ namespace GPlatesModel
 		virtual
 		void
 		accept_weak_observer_visitor(
-				WeakObserverVisitor<H> &visitor)
+				WeakObserverVisitor<Handle> &visitor)
 		{
 #if 0
 			// FIXME:  What I'm doing right now is very very bad.
@@ -396,7 +498,7 @@ namespace GPlatesModel
 		RevisionAwareIterator(
 				collection_handle_type &collection_handle,
 				index_type index_):
-			WeakObserver<H>(collection_handle),
+			WeakObserver<Handle>(collection_handle),
 			d_index(index_)
 		{  }
 
@@ -408,7 +510,7 @@ namespace GPlatesModel
 		 *
 		 * As long as the index is valid, this function will not throw.
 		 */
-		const dereference_type
+		const value_type
 		current_element() const
 		{
 			return (*(collection_handle_ptr()->current_revision()))[index()];
@@ -422,7 +524,7 @@ namespace GPlatesModel
 		 *
 		 * As long as the index is valid, this function will not throw.
 		 */
-		const dereference_type
+		const value_type
 		current_element()
 		{
 			return (*(collection_handle_ptr()->current_revision()))[index()];

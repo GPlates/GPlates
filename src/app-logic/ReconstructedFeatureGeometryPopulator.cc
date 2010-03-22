@@ -123,7 +123,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 {
 	using namespace GPlatesMaths;
 
-	GPlatesModel::FeatureHandle::properties_iterator property = *current_top_level_propiter();
+	GPlatesModel::FeatureHandle::children_iterator property = *current_top_level_propiter();
 
 	if (d_reconstruction_params.get_recon_plate_id()) {
 		const FiniteRotation &r = *d_recon_rotation;
@@ -160,7 +160,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 {
 	using namespace GPlatesMaths;
 
-	GPlatesModel::FeatureHandle::properties_iterator property = *(current_top_level_propiter());
+	GPlatesModel::FeatureHandle::children_iterator property = *(current_top_level_propiter());
 
 	if (d_reconstruction_params.get_recon_plate_id()) {
 		const FiniteRotation &r = *d_recon_rotation;
@@ -205,7 +205,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 {
 	using namespace GPlatesMaths;
 
-	GPlatesModel::FeatureHandle::properties_iterator property = *(current_top_level_propiter());
+	GPlatesModel::FeatureHandle::children_iterator property = *(current_top_level_propiter());
 
 	if (d_reconstruction_params.get_recon_plate_id()) {
 		const FiniteRotation &r = *d_recon_rotation;
@@ -242,7 +242,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 {
 	using namespace GPlatesMaths;
 
-	GPlatesModel::FeatureHandle::properties_iterator property = *(current_top_level_propiter());
+	GPlatesModel::FeatureHandle::children_iterator property = *(current_top_level_propiter());
 
 	if (d_reconstruction_params.get_recon_plate_id()) {
 		// Reconstruct the exterior PolygonOnSphere,

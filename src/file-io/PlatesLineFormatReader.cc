@@ -775,7 +775,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		// file the map with id data 
 		std::string s = header->old_feature_id(); // GP8 
-		const GPlatesModel::FeatureId &fid = feature_handle->feature_id();
+		const GPlatesModel::FeatureId &fid = feature_handle->handle_data().feature_id();
 		id_map.insert( std::make_pair(s, fid) );
 
 

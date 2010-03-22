@@ -101,7 +101,7 @@ namespace GPlatesGui
 		 *
 		 * NOTE: Remember to check 'is_valid()' on returned properties iterator.
 		 */
-		const GPlatesModel::FeatureHandle::properties_iterator &
+		const GPlatesModel::FeatureHandle::children_iterator &
 		associated_geometry_property() const
 		{
 			return d_associated_geometry_property;
@@ -152,7 +152,7 @@ namespace GPlatesGui
 		void
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
-				GPlatesModel::FeatureHandle::properties_iterator new_associated_property);
+				GPlatesModel::FeatureHandle::children_iterator new_associated_property);
 
 		/**
 		 * Clear the focus.
@@ -273,7 +273,7 @@ namespace GPlatesGui
 		 *
 		 * Note that when focused feature changes the associated.
 		 */
-		GPlatesModel::FeatureHandle::properties_iterator d_associated_geometry_property;
+		GPlatesModel::FeatureHandle::children_iterator d_associated_geometry_property;
 
 		/**
 		 * Manages reconstruction generation.

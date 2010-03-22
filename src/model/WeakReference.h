@@ -30,7 +30,9 @@
 
 #include "WeakObserver.h"
 #include "WeakObserverVisitor.h"
+#include "WeakReferenceCallback.h"
 
+#include <boost/shared_ptr.hpp>
 
 namespace GPlatesModel
 {
@@ -88,7 +90,9 @@ namespace GPlatesModel
 	class WeakReference:
 			public WeakObserver<H>
 	{
+
 	public:
+
 		/**
 		 * This is the type of the handle.
 		 *
@@ -268,6 +272,87 @@ namespace GPlatesModel
 		{
 			visitor.visit_weak_reference(*this);
 		}
+
+		/**
+		 * Attach a callback to this WeakReference. The callback will be notified
+		 * when the WeakReference's publisher is modified or about to be deleted.
+		 */
+		void
+		attach_callback(
+				typename WeakReferenceCallback<H>::shared_ptr_type callback)
+		{
+			d_callback = callback;
+		}
+
+		/**
+		 * Unattaches the callback, if any, from this WeakReference.
+		 */
+		void
+		unattach_callback()
+		{
+			d_callback = WeakReferenceCallback<H>::shared_ptr_type();
+		}
+
+		/**
+		 * Notify the callback that the publisher has been modified.
+		 *
+		 * Used by WeakReferenceVisitor.
+		 */
+		void
+		publisher_modified()
+		{
+			if (d_callback)
+			{
+				d_callback->publisher_modified(this->publisher_ptr());
+			}
+		}
+
+		/**
+		 * Notify the callback that the publisher has been deactivated (conceptually deleted).
+		 *
+		 * Used by WeakReferenceVisitor.
+		 */
+		void
+		published_deactivated()
+		{
+			if (d_callback)
+			{
+				d_callback->publisher_deactivated(this->publisher_ptr());
+			}
+		}
+
+		/**
+		 * Notify the callback that the publisher has been reactivated (conceptually undeleted).
+		 *
+		 * Used by WeakReferenceVisitor.
+		 */
+		void
+		published_reactivated()
+		{
+			if (d_callback)
+			{
+				d_callback->publisher_reactivated(this->publisher_ptr());
+			}
+		}
+
+		/**
+		 * Notify the callback that the publisher is about to be destroyed (in the C++ sense).
+		 *
+		 * Used by WeakReferenceVisitor.
+		 */
+		void
+		published_about_to_be_destroyed()
+		{
+			if (d_callback)
+			{
+				d_callback->publisher_about_to_be_destroyed(this->publisher_ptr());
+			}
+		}
+
+	private:
+
+		//! An optional callback to use when publisher is modified or about to be deleted.
+		typename WeakReferenceCallback<H>::shared_ptr_type d_callback;
 
 	};
 

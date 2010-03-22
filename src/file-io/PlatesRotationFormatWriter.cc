@@ -164,8 +164,8 @@ GPlatesFileIO::PlatesRotationFormatWriter::initialise_pre_feature_properties(
 		gpmlAbsoluteReferenceFrame =
 			GPlatesModel::FeatureType::create_gpml("AbsoluteReferenceFrame");
 
-	if ((feature_handle.feature_type() != gpmlTotalReconstructionSequence)
-			&& (feature_handle.feature_type() != gpmlAbsoluteReferenceFrame)) {
+	if ((feature_handle.handle_data().feature_type() != gpmlTotalReconstructionSequence)
+			&& (feature_handle.handle_data().feature_type() != gpmlAbsoluteReferenceFrame)) {
 		// These are not the features you're looking for.
 		return false;
 	}

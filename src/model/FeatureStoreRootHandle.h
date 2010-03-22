@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,11 +30,10 @@
 
 #include "FeatureStoreRootRevision.h"
 #include "RevisionAwareIterator.h"
+#include "WeakObserverPublisher.h"
 
 #include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
-
 
 namespace GPlatesModel
 {
@@ -66,25 +65,23 @@ namespace GPlatesModel
 	 * the content within it.
 	 */
 	class FeatureStoreRootHandle :
+			public WeakObserverPublisher<FeatureStoreRootHandle>,
 			public GPlatesUtils::ReferenceCount<FeatureStoreRootHandle>
 	{
+
 	public:
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle> non_null_ptr_to_const_type;
 
 		/**
 		 * The type of this class.
@@ -104,32 +101,17 @@ namespace GPlatesModel
 		 * The type used for (non-const) iteration over the feature collections contained
 		 * within this feature store root.
 		 */
-		typedef RevisionAwareIterator<FeatureStoreRootHandle,
-				revision_component_type::feature_collection_container_type,
-				boost::intrusive_ptr<FeatureCollectionHandle> >
-				collections_iterator;
-
- 		/**
-		 * The base type of all weak observers of instances of this class.
-		 */
-		typedef WeakObserver<FeatureStoreRootHandle> weak_observer_type;
+		typedef RevisionAwareIterator<FeatureStoreRootHandle> children_iterator;
 
 		/**
 		 * Create a new FeatureStoreRootHandle instance.
 		 */
 		static
 		const non_null_ptr_type
-		create()
-		{
-			non_null_ptr_type ptr(new FeatureStoreRootHandle(),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
+		create();
 
 		/**
 		 * Destructor.
-		 *
-		 * Unsubscribes all weak observers.
 		 */
 		~FeatureStoreRootHandle();
 
@@ -139,32 +121,21 @@ namespace GPlatesModel
 		 * Note that this will perform a "shallow copy".
 		 */
 		const non_null_ptr_type
-		clone() const
-		{
-			non_null_ptr_type dup(new FeatureStoreRootHandle(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
-		}
+		clone() const;
 
 		/**
 		 * Return the "begin" iterator to iterate over the feature collections contained
 		 * within this feature store root.
 		 */
-		const collections_iterator
-		collections_begin()
-		{
-			return collections_iterator::create_begin(*this);
-		}
+		const children_iterator
+		children_begin();
 
 		/**
 		 * Return the "end" iterator used during iteration over the feature collections
 		 * contained within this feature store root.
 		 */
-		const collections_iterator
-		collections_end()
-		{
-			return collections_iterator::create_end(*this);
-		}
+		const children_iterator
+		children_end();
 
 		/**
 		 * Append @a new_feature_collection to the container of feature collections.
@@ -178,8 +149,8 @@ namespace GPlatesModel
 		 * what was the "end" iterator will now be the iterator to the last element of the
 		 * sequence.
 		 */
-		const collections_iterator
-		append_feature_collection(
+		const children_iterator
+		append_child(
 				FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
 				DummyTransactionHandle &transaction);
 
@@ -193,8 +164,8 @@ namespace GPlatesModel
 		 * sequence will not change, only a feature-collection-slot will become NULL.
 		 */
 		void
-		remove_feature_collection(
-				collections_iterator iter,
+		remove_child(
+				children_iterator iter,
 				DummyTransactionHandle &transaction);
 
 		/**
@@ -206,10 +177,7 @@ namespace GPlatesModel
 		 * instances; it returns a pointer to a const FeatureStoreRootRevision instance.
 		 */
 		const FeatureStoreRootRevision::non_null_ptr_to_const_type
-		current_revision() const
-		{
-			return d_current_revision;
-		}
+		current_revision() const;
 
 		/**
 		 * Access the current revision of this feature collection.
@@ -230,10 +198,7 @@ namespace GPlatesModel
 		 * instance, use the function @a set_current_revision below.
 		 */
 		const FeatureStoreRootRevision::non_null_ptr_type
-		current_revision()
-		{
-			return d_current_revision;
-		}
+		current_revision();
 
 		/**
 		 * Set the current revision of this feature collection to @a rev.
@@ -242,36 +207,7 @@ namespace GPlatesModel
 		 */
 		void
 		set_current_revision(
-				FeatureStoreRootRevision::non_null_ptr_type rev)
-		{
-			d_current_revision = rev;
-		}
-
- 		/**
-		 * Access the first weak observer of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by WeakObserver.
-		 */
-		weak_observer_type *&
-		first_weak_observer() const
-		{
-			return d_first_weak_observer;
-		}
-
-		/**
-		 * Access the last weak observer of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by WeakObserver.
-		 */
-		weak_observer_type *&
-		last_weak_observer() const
-		{
-			return d_last_weak_observer;
-		}
+				FeatureStoreRootRevision::non_null_ptr_type rev);
 
 	private:
 
@@ -280,25 +216,11 @@ namespace GPlatesModel
 		 */
 		FeatureStoreRootRevision::non_null_ptr_type d_current_revision;
 
- 		/**
-		 * The first weak observer of this instance.
-		 */
-		mutable weak_observer_type *d_first_weak_observer;
-
-		/**
-		 * The last weak observer of this instance.
-		 */
-		mutable weak_observer_type *d_last_weak_observer;
-
 		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		FeatureStoreRootHandle():
-			d_current_revision(FeatureStoreRootRevision::create()),
-			d_first_weak_observer(NULL),
-			d_last_weak_observer(NULL)
-		{  }
+		FeatureStoreRootHandle();
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
@@ -315,12 +237,7 @@ namespace GPlatesModel
 		 * copy-ctor, except that it should initialise the ref-count to zero.
 		 */
 		FeatureStoreRootHandle(
-				const FeatureStoreRootHandle &other) :
-			GPlatesUtils::ReferenceCount<FeatureStoreRootHandle>(),
-			d_current_revision(other.d_current_revision),
-			d_first_weak_observer(NULL),
-			d_last_weak_observer(NULL)
-		{  }
+				const FeatureStoreRootHandle &other);
 
 		/**
 		 * This operator should never be defined, because we don't want to allow
@@ -333,58 +250,9 @@ namespace GPlatesModel
 		FeatureStoreRootHandle &
 		operator=(
 				const FeatureStoreRootHandle &);
+		
 	};
 
-	/**
-	 * Get the first weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This function mimics the Boost
-	 * intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
-	inline
-	WeakObserver<FeatureStoreRootHandle> *&
-	weak_observer_get_first(
-			FeatureStoreRootHandle *publisher_ptr,
-			const WeakObserver<FeatureStoreRootHandle> *)
-	{
-		return publisher_ptr->first_weak_observer();
-	}
-
-
-	/**
-	 * Get the last weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This style of function mimics the
-	 * Boost intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
-	inline
-	WeakObserver<FeatureStoreRootHandle> *&
-	weak_observer_get_last(
-			FeatureStoreRootHandle *publisher_ptr,
-			const WeakObserver<FeatureStoreRootHandle> *)
-	{
-		return publisher_ptr->last_weak_observer();
-	}
 }
 
 #endif  // GPLATES_MODEL_FEATURESTOREROOTHANDLE_H

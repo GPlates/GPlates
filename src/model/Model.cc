@@ -52,8 +52,8 @@ GPlatesModel::Model::create_feature_collection()
 	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
 			GPlatesModel::FeatureCollectionHandle::create();
-	GPlatesModel::FeatureStoreRootHandle::collections_iterator iter =
-			d_feature_store->root()->append_feature_collection(feature_collection,
+	GPlatesModel::FeatureStoreRootHandle::children_iterator iter =
+			d_feature_store->root()->append_child(feature_collection,
 			transaction);
 	transaction.commit();
 	return (*iter)->reference();
@@ -80,7 +80,7 @@ GPlatesModel::Model::create_feature(
 			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
 	
 	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	target_collection->append_feature(feature_handle, transaction);
+	target_collection->append_child(feature_handle, transaction);
 	transaction.commit();
 
 	return feature_handle->reference();
@@ -98,7 +98,7 @@ GPlatesModel::Model::create_feature(
 			GPlatesModel::FeatureHandle::create(feature_type, feature_id, revision_id);
 	
 	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	target_collection->append_feature(feature_handle, transaction);
+	target_collection->append_child(feature_handle, transaction);
 	transaction.commit();
 
 	return feature_handle->reference();

@@ -30,7 +30,7 @@
 
 
 GPlatesModel::container_size_type
-GPlatesModel::FeatureRevision::append_top_level_property(
+GPlatesModel::FeatureRevision::append_child(
 		TopLevelProperty::non_null_ptr_type new_top_level_property,
 		DummyTransactionHandle &transaction)
 {
@@ -41,7 +41,7 @@ GPlatesModel::FeatureRevision::append_top_level_property(
 
 
 void
-GPlatesModel::FeatureRevision::remove_top_level_property(
+GPlatesModel::FeatureRevision::remove_child(
 		container_size_type index,
 		DummyTransactionHandle &transaction)
 {

@@ -73,7 +73,7 @@ GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 	// Make sure only processing topology networks.
 	static QString type("TopologicalNetwork");
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.feature_type().get_name() ) ) 
+			feature_handle.handle_data().feature_type().get_name() ) ) 
 	{ 
 		// Quick-out: No need to continue.
 		return false; 
@@ -341,7 +341,7 @@ GPlatesAppLogic::TopologyNetworkResolver::debug_output_topological_section_featu
 {
 	qDebug() << "Topological network feature_id=";
 	qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-			d_currently_visited_feature->feature_id().get());
+			d_currently_visited_feature->handle_data().feature_id().get());
 	qDebug() << "Topological section referencing feature_id=";
 	qDebug() << GPlatesUtils::make_qstring_from_icu_string(section_feature_id.get());
 }

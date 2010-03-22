@@ -96,7 +96,7 @@ namespace
 	{
 		if (row_data.get_feature_ref().is_valid()) {
 			cell.setData(Qt::DisplayRole, QVariant(GPlatesUtils::make_qstring_from_icu_string(
-					row_data.get_feature_ref()->feature_type().build_aliased_name() )));
+					row_data.get_feature_ref()->handle_data().feature_type().build_aliased_name() )));
 		}
 	}
 			

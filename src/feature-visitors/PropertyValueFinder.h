@@ -327,7 +327,7 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::ConstFeatureVisitor, \
 				GPlatesModel::FeatureHandle::const_weak_ref, \
-				GPlatesModel::FeatureCollectionHandle::features_const_iterator, \
+				GPlatesModel::FeatureCollectionHandle::children_const_iterator, \
 				const GPlatesModel::TopLevelPropertyInline, \
 				const GPlatesPropertyValues::GpmlConstantValue) \
 		/* non-const weak_ref/features_iterator for const property-value */ \
@@ -336,7 +336,7 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::ConstFeatureVisitor, \
 				GPlatesModel::FeatureHandle::weak_ref, \
-				GPlatesModel::FeatureCollectionHandle::features_iterator, \
+				GPlatesModel::FeatureCollectionHandle::children_iterator, \
 				const GPlatesModel::TopLevelPropertyInline, \
 				const GPlatesPropertyValues::GpmlConstantValue) \
 		/* non-const weak_ref/features_iterator for non-const property-value */ \
@@ -345,7 +345,7 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::FeatureVisitor, \
 				GPlatesModel::FeatureHandle::weak_ref, \
-				GPlatesModel::FeatureCollectionHandle::features_iterator, \
+				GPlatesModel::FeatureCollectionHandle::children_iterator, \
 				GPlatesModel::TopLevelPropertyInline, \
 				GPlatesPropertyValues::GpmlConstantValue) \
 

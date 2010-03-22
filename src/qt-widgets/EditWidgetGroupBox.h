@@ -121,7 +121,7 @@ namespace GPlatesQtWidgets
 		void
 		activate_appropriate_edit_widget(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::FeatureHandle::properties_iterator it);
+				GPlatesModel::FeatureHandle::children_iterator it);
 
 		/**
 		 * Uses EditWidgetChooser to update the editing widget to the latest value of
@@ -138,7 +138,7 @@ namespace GPlatesQtWidgets
 		void
 		refresh_edit_widget(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::FeatureHandle::properties_iterator it);
+				GPlatesModel::FeatureHandle::children_iterator it);
 		 
 		/**
 		 * Uses a dispatch table to activate the editing widget for a given

@@ -128,8 +128,8 @@ namespace
 			// Nothing can be done.
 			return 0;
 		}
-		GPlatesModel::FeatureHandle::properties_iterator it = feature_ref->properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
+		GPlatesModel::FeatureHandle::children_iterator it = feature_ref->children_begin();
+		GPlatesModel::FeatureHandle::children_iterator end = feature_ref->children_end();
 		for (; it != end; ++it)
 		{
 			if (it.is_valid()) {
@@ -252,7 +252,7 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 		return false;
 	}
 	
-	GPlatesModel::FeatureHandle::properties_iterator it = get_property_iterator_for_row(idx.row());
+	GPlatesModel::FeatureHandle::children_iterator it = get_property_iterator_for_row(idx.row());
 	if ( ! it.is_valid()) {
 		// Always check your property iterators.
 		return false;
@@ -386,8 +386,8 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 
 	// Go through every actual property iterator in the feature, and see if it needs
 	// to be added to the table.
-	GPlatesModel::FeatureHandle::properties_iterator add_it = d_feature_ref->properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator add_end = d_feature_ref->properties_end();
+	GPlatesModel::FeatureHandle::children_iterator add_it = d_feature_ref->children_begin();
+	GPlatesModel::FeatureHandle::children_iterator add_end = d_feature_ref->children_end();
 	for (; add_it != add_end; ++add_it)
 	{
 		// Check the properties_iterator and the intrusive_ptr it refers to.
@@ -429,18 +429,18 @@ GPlatesGui::FeaturePropertyTableModel::get_property_name(
 }
 
 
-GPlatesModel::FeatureHandle::properties_iterator
+GPlatesModel::FeatureHandle::children_iterator
 GPlatesGui::FeaturePropertyTableModel::get_property_iterator_for_row(
 		int row) const
 {
-	GPlatesModel::FeatureHandle::properties_iterator it = d_property_info_cache.at(row).property_iterator;
+	GPlatesModel::FeatureHandle::children_iterator it = d_property_info_cache.at(row).property_iterator;
 	return it;
 }
 
 
 int
 GPlatesGui::FeaturePropertyTableModel::get_row_for_property_iterator(
-		GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
+		GPlatesModel::FeatureHandle::children_iterator property_iterator) const
 {
 	int row = 0;
 	// Figure out which row of the table (if any) contains the property iterator.
@@ -490,7 +490,7 @@ GPlatesGui::FeaturePropertyTableModel::get_property_value_as_qvariant(
 		int row,
 		int role) const
 {
-	GPlatesModel::FeatureHandle::properties_iterator it = get_property_iterator_for_row(row);
+	GPlatesModel::FeatureHandle::children_iterator it = get_property_iterator_for_row(row);
 	if ( ! it.is_valid()) {
 		// Always check your property iterators.
 		return QVariant("< NULL >");

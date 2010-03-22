@@ -260,8 +260,8 @@ namespace
 		property_name_list << QString("description"); 
 		property_name_list << QString("name"); 
 
-		GPlatesModel::FeatureHandle::properties_iterator p_iter = feature->properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator p_iter_end = feature->properties_end();
+		GPlatesModel::FeatureHandle::children_iterator p_iter = feature->children_begin();
+		GPlatesModel::FeatureHandle::children_iterator p_iter_end = feature->children_end();
 
 		for ( ; p_iter != p_iter_end ; ++p_iter)
 		{
@@ -277,7 +277,7 @@ namespace
 			if (property_name_list.contains(q_prop_name))
 			{
 				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-				feature->remove_top_level_property(p_iter, transaction);
+				feature->remove_child(p_iter, transaction);
 				transaction.commit();
 			}
 
@@ -403,8 +403,8 @@ namespace
 
 		GPlatesModel::FeatureCollectionHandle::weak_ref collection = file.get_feature_collection();
 
-		GPlatesModel::FeatureCollectionHandle::features_iterator it = collection->features_begin();
-		GPlatesModel::FeatureCollectionHandle::features_iterator it_end = collection->features_end();
+		GPlatesModel::FeatureCollectionHandle::children_iterator it = collection->children_begin();
+		GPlatesModel::FeatureCollectionHandle::children_iterator it_end = collection->children_end();
 		int count = 0;
 		for ( ; it != it_end ; ++it)
 		{

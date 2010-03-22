@@ -243,7 +243,7 @@ GPlatesGui::TopologyTools::activate_edit_mode()
  		static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
  		static const QString topology_network_type_name("TopologicalNetwork");
 		const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-			(d_feature_focus_ptr->focused_feature())->feature_type().get_name() );
+			(d_feature_focus_ptr->focused_feature())->handle_data().feature_type().get_name() );
 
 		if ( feature_type_name == topology_boundary_type_name )
 		{ 
@@ -621,7 +621,7 @@ GPlatesGui::TopologyTools::set_focus(
  	static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
  	static const QString topology_network_type_name ("TopologicalNetwork");
 	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		feature_ref->feature_type().get_name() );
+		feature_ref->handle_data().feature_type().get_name() );
 
 	if ( ( feature_type_name == topology_boundary_type_name ) ||
 		( feature_type_name == topology_network_type_name ) )
@@ -670,7 +670,7 @@ GPlatesGui::TopologyTools::display_feature_focus_modified(
 void
 GPlatesGui::TopologyTools::display_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-		const GPlatesModel::FeatureHandle::properties_iterator &properties_iter)
+		const GPlatesModel::FeatureHandle::children_iterator &properties_iter)
 {
 	if (! d_is_active) { return; }
 
@@ -707,7 +707,7 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
  	static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
  	static const QString topology_network_type_name ("TopologicalNetwork");
 	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		feature_ref->feature_type().get_name() );
+		feature_ref->handle_data().feature_type().get_name() );
 
 	if ( ( feature_type_name == topology_boundary_type_name ) ||
 		( feature_type_name == topology_network_type_name ) )
@@ -747,7 +747,7 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 int 
 GPlatesGui::TopologyTools::find_topological_section_index(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-		const GPlatesModel::FeatureHandle::properties_iterator &properties_iter)
+		const GPlatesModel::FeatureHandle::children_iterator &properties_iter)
 {
 	if ( !(feature_ref.is_valid() && properties_iter.is_valid()) )
 	{
@@ -826,7 +826,7 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
 	static const QString topology_network_type_name("TopologicalNetwork");
 	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		(d_feature_focus_ptr->focused_feature())->feature_type().get_name() );
+		(d_feature_focus_ptr->focused_feature())->handle_data().feature_type().get_name() );
 	if ( feature_type_name == topology_boundary_type_name ||
 		feature_type_name == topology_network_type_name ) 
 	{
@@ -1826,8 +1826,8 @@ namespace
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 			const GPlatesModel::PropertyName &property_name)
 	{
-		GPlatesModel::FeatureHandle::properties_iterator iter = feature_ref->properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
+		GPlatesModel::FeatureHandle::children_iterator iter = feature_ref->children_begin();
+		GPlatesModel::FeatureHandle::children_iterator end = feature_ref->children_end();
 		// loop over properties
 		for ( ; iter != end; ++iter) 
 		{
@@ -1843,7 +1843,7 @@ namespace
 			{
 				// Delete the old boundary 
 				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-				feature_ref->remove_top_level_property(iter, transaction);
+				feature_ref->remove_child(iter, transaction);
 				transaction.commit();
 				// FIXME: this seems to create NULL pointers in the properties collection
 				// see FIXME note above to check for NULL? 
@@ -1972,7 +1972,7 @@ GPlatesGui::TopologyTools::create_topological_sections(
 		const SectionInfo &section_info = d_section_info_seq[section_index];
 
 		// Is there an intersection with the previous section?
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> prev_intersection;
+		boost::optional<GPlatesModel::FeatureHandle::children_iterator> prev_intersection;
 		if (section_info.d_intersection_point_with_prev)
 		{
 			// Get the previous section info.
@@ -1984,7 +1984,7 @@ GPlatesGui::TopologyTools::create_topological_sections(
 		}
 
 		// Is there an intersection with the next section?
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> next_intersection;
+		boost::optional<GPlatesModel::FeatureHandle::children_iterator> next_intersection;
 		if (section_info.d_intersection_point_with_next)
 		{
 			// Get the next section info.
@@ -2033,7 +2033,7 @@ GPlatesGui::TopologyTools::show_numbers()
 	if ( d_feature_focus_ptr->is_valid() ) 
 	{
 		qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string( 
-			d_feature_focus_ptr->focused_feature()->feature_id().get() );
+			d_feature_focus_ptr->focused_feature()->handle_data().feature_id().get() );
 
 		static const GPlatesModel::PropertyName name_property_name = 
 			GPlatesModel::PropertyName::create_gml("name");
@@ -2055,7 +2055,7 @@ GPlatesGui::TopologyTools::show_numbers()
 	//
 	if ( d_topology_feature_ref.is_valid() ) 
 	{
-		qDebug() << "d_topology_feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( d_topology_feature_ref->feature_id().get() );
+		qDebug() << "d_topology_feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( d_topology_feature_ref->handle_data().feature_id().get() );
 		static const GPlatesModel::PropertyName name_property_name = 
 			GPlatesModel::PropertyName::create_gml("name");
 

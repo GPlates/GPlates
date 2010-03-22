@@ -82,7 +82,7 @@ namespace GPlatesAppLogic
 				static const GPlatesModel::FeatureType paleomag_feature_type = 
 					GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
 
-				if (feature_handle.feature_type() == paleomag_feature_type)
+				if (feature_handle.handle_data().feature_type() == paleomag_feature_type)
 				{
 					d_found_paleomag_features = true;
 				}

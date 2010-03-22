@@ -56,6 +56,20 @@ namespace GPlatesModel
 		};
 
 
+		/**
+		 * Makes a deep clone of a feature. The returned feature has a new feature ID
+		 * and revision; it also has the same properties, but its properties are
+		 * distinct objects from those of the original feature.
+		 *
+		 * The new feature is not in a feature collection. The caller of this function
+		 * is responsible for placing the feature in a feature collection, if that is
+		 * desired.
+		 */
+		FeatureHandle::non_null_ptr_type
+		deep_clone_feature(
+				const FeatureHandle::weak_ref &feature);
+
+
 		const TopLevelPropertyInline::non_null_ptr_type
 		append_property_value_to_feature(
 				PropertyValue::non_null_ptr_type property_value,
@@ -90,7 +104,7 @@ namespace GPlatesModel
 
 		void
 		remove_property_from_feature(
-				FeatureHandle::properties_iterator properties_iterator,
+				FeatureHandle::children_iterator properties_iterator,
 				const FeatureHandle::weak_ref &feature);
 
 
@@ -162,7 +176,7 @@ namespace GPlatesModel
 				TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
 
 		DummyTransactionHandle transaction(__FILE__, __LINE__);
-		feature->append_top_level_property(top_level_property, transaction);
+		feature->append_child(top_level_property, transaction);
 		transaction.commit();
 
 		return top_level_property;

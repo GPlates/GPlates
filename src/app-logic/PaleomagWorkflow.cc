@@ -43,7 +43,7 @@ namespace
 {
 	const GPlatesGui::ColourProxy
 	get_colour_from_feature(
-		const GPlatesModel::FeatureCollectionHandle::features_iterator feature_iterator)
+		const GPlatesModel::FeatureCollectionHandle::children_iterator feature_iterator)
 	{
 		GPlatesModel::PropertyName vgp_name = 
 			GPlatesModel::PropertyName::create_gpml("polePosition");
@@ -73,7 +73,7 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		boost::optional<GPlatesModel::integer_plate_id_type> optional_plate_id;
-		if (GPlatesFeatureVisitors::get_property_value((*feature_iterator)->reference(),								plate_id_property_name,plate_id))
+		if (GPlatesFeatureVisitors::get_property_value((*feature_iterator)->reference(), plate_id_property_name,plate_id))
 		{
 			optional_plate_id.reset(plate_id->value());
 		}
@@ -82,7 +82,7 @@ namespace
 			GPlatesModel::ReconstructedFeatureGeometry::create(
 				geometry,
 				**feature_iterator,
-				(*feature_iterator)->properties_begin(),
+				(*feature_iterator)->children_begin(),
 				optional_plate_id,
 				boost::none);
 
@@ -213,11 +213,11 @@ GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 		if (paleomag_feature_collection.is_valid())
 		{
 
-			GPlatesModel::FeatureCollectionHandle::features_iterator iter =
-				paleomag_feature_collection->features_begin();	
+			GPlatesModel::FeatureCollectionHandle::children_iterator iter =
+				paleomag_feature_collection->children_begin();	
 
-			GPlatesModel::FeatureCollectionHandle::features_iterator end =
-				paleomag_feature_collection->features_end();								
+			GPlatesModel::FeatureCollectionHandle::children_iterator end =
+				paleomag_feature_collection->children_end();								
 
 
 

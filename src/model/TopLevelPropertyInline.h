@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of TopLevelPropertyInline.
  *
  * Most recent change:
  *   $Date$

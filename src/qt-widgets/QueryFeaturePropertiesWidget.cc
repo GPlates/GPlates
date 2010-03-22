@@ -150,7 +150,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 	
 	// Update our text fields at the top.
 	lineedit_feature_id->setText(
-			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->feature_id().get()));
+			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->handle_data().feature_id().get()));
 	lineedit_revision_id->setText(
 			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->revision_id().get()));
 

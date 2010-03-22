@@ -175,7 +175,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 	// Regardless of whether there's a gpml:oldPlatesHeader property we need to
 	// add the feature id somewhere. The end of the geographic description seems
 	// like a good place.
-	append_feature_id_to_geog_description(feature->feature_id(),
+	append_feature_id_to_geog_description(feature->handle_data().feature_id(),
 			old_plates_header.geographic_description);
 
 	/*

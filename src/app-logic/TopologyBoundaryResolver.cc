@@ -79,7 +79,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::initialise_pre_feature_properties(
 	// super short-cut for features without boundary list properties
 	static QString type("TopologicalClosedPlateBoundary");
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.feature_type().get_name() ) ) 
+			feature_handle.handle_data().feature_type().get_name() ) ) 
 	{ 
 		// Quick-out: No need to continue.
 		return false; 
@@ -579,7 +579,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 				"insufficient points for a polygon.";
 		qDebug() << "Skipping creation for topological polygon feature_id=";
 		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-				d_currently_visited_feature->feature_id().get());
+				d_currently_visited_feature->handle_data().feature_id().get());
 		return;
 	}
 
@@ -627,7 +627,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::debug_output_topological_section_feat
 {
 	qDebug() << "Topological polygon feature_id=";
 	qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-			d_currently_visited_feature->feature_id().get());
+			d_currently_visited_feature->handle_data().feature_id().get());
 	qDebug() << "Topological section referencing feature_id=";
 	qDebug() << GPlatesUtils::make_qstring_from_icu_string(section_feature_id.get());
 }

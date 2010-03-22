@@ -23,6 +23,7 @@ set(srcs
     FeatureCollectionRevision.h
     FeatureHandle.cc
     FeatureHandle.h
+    FeatureHandleData.h
     FeatureHandleWeakRefBackInserter.h
     FeatureId.h
     FeatureRevision.cc
@@ -35,6 +36,7 @@ set(srcs
     FeatureType.h
     FeatureVisitor.cc
     FeatureVisitor.h
+    HandleData.h
     IdTypeGenerator.h
     Model.cc
     Model.h
@@ -79,9 +81,12 @@ set(srcs
     TopLevelPropertyInline.h
     types.h
     WeakObserver.h
+    WeakObserverPublisher.h
     WeakObserverVisitor.cc
     WeakObserverVisitor.h
     WeakReference.h
+    WeakReferenceCallback.h
+    WeakReferenceVisitor.h
     XmlAttributeName.h
     XmlAttributeValue.h
     XmlNode.cc

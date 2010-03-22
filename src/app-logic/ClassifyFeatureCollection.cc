@@ -177,10 +177,10 @@ GPlatesAppLogic::ClassifyFeatureCollection::find_classified_features(
 	bool found = false;
 
 	// Iterate through the features in the feature collection.
-	GPlatesModel::FeatureCollectionHandle::features_iterator feature_iter =
-			feature_collection->features_begin();
-	GPlatesModel::FeatureCollectionHandle::features_iterator feature_end =
-			feature_collection->features_end();
+	GPlatesModel::FeatureCollectionHandle::children_iterator feature_iter =
+			feature_collection->children_begin();
+	GPlatesModel::FeatureCollectionHandle::children_iterator feature_end =
+			feature_collection->children_end();
 	for ( ; feature_iter != feature_end; ++feature_iter)
 	{
 		// Reset the classifier and visit a new feature to be classified.
