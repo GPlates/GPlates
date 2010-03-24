@@ -86,6 +86,9 @@ namespace GPlatesQtWidgets
 		QTreeWidget &
 		property_tree() const;
 
+		void
+		load_data_if_necessary();
+		
 	public slots:
 
 		/**
@@ -122,6 +125,8 @@ namespace GPlatesQtWidgets
 		 * The @a ReconstructionGeometry associated with the feature that is in focus.
 		 */
 		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_rg;
+
+		bool d_need_load_data;
 	};
 }
 

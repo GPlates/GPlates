@@ -99,6 +99,7 @@
 #include "gui/TopologySectionsContainer.h"
 #include "gui/TopologySectionsTable.h"
 
+#include "maths/PolylineIntersections.h"
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPoint.h"
 #include "maths/InvalidLatLonException.h"
@@ -122,8 +123,13 @@
 #include "presentation/Application.h"
 #include "presentation/ViewState.h"
 
+#include "property-values/GmlMultiPoint.h"
+
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ShapefilePropertyMapper.h"
+
+//#include "utils/GeometryUtil.h"
+#include "utils/Profile.h"
 
 #include "view-operations/ActiveGeometryOperation.h"
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
@@ -132,6 +138,7 @@
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 
+#include "MeshDialog.h"
 
 void
 GPlatesQtWidgets::ViewportWindow::load_files(
@@ -195,6 +202,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_application_state().get_feature_collection_file_state(),
 				get_application_state().get_feature_collection_file_io(),
 				this)),
+	d_mesh_dialog_ptr(NULL),
 	d_read_errors_dialog_ptr(
 			new ReadErrorAccumulationDialog(this)),
 	d_set_camera_viewpoint_dialog_ptr(NULL),
@@ -607,6 +615,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// Layers Menu:
 	QObject::connect(action_Geometry_Colours, SIGNAL(triggered()),
 			this, SLOT(pop_up_colouring_dialog()));
+	QObject::connect(action_Generate_Mesh_Cap, SIGNAL(triggered()),
+		this, SLOT(generate_mesh_cap()));
+	
+	// View Menu:
 	QObject::connect(action_Show_Raster, SIGNAL(triggered()),
 			this, SLOT(enable_raster_display()));
 	QObject::connect(action_Set_Raster_Surface_Extent, SIGNAL(triggered()),
@@ -1647,6 +1659,10 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_colouring_dialog_ptr->reject();
 	}
+	if (d_mesh_dialog_ptr)
+	{
+		d_mesh_dialog_ptr->reject();
+	}
 	if (d_export_animation_dialog_ptr)
 	{
 		d_export_animation_dialog_ptr->reject();
@@ -2075,3 +2091,21 @@ GPlatesQtWidgets::ViewportWindow::pop_up_shapefile_attribute_viewer_dialog()
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	d_shapefile_attribute_viewer_dialog_ptr->raise();
 }
+
+void
+GPlatesQtWidgets::ViewportWindow::generate_mesh_cap()
+{
+	if (!d_mesh_dialog_ptr)
+	{
+		d_mesh_dialog_ptr.reset(
+				new MeshDialog(
+				get_view_state(),
+				*d_manage_feature_collections_dialog_ptr,
+				this));
+	}
+
+	d_mesh_dialog_ptr->show();
+	d_mesh_dialog_ptr->activateWindow();
+	d_mesh_dialog_ptr->raise();
+}
+

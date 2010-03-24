@@ -69,6 +69,9 @@ namespace GPlatesQtWidgets
 		set_geometry_builder(
 				GPlatesViewOperations::GeometryBuilder *geom_builder);
 
+		void
+		reload_if_necessary();
+
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -154,6 +157,10 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesViewOperations::GeometryOperation *d_current_geometry_operation;
 
+		/**
+		 * A flag to indicate whether we need to reload data.
+		 */
+		bool d_need_to_reload_data;
 
 		void
 		connect_to_active_geometry_operation_signals(

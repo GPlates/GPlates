@@ -120,6 +120,7 @@ void
 GPlatesQtWidgets::FeaturePropertiesDialog::choose_query_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_query_feature_properties_widget);
+	d_query_feature_properties_widget->load_data_if_necessary();
 	pop_up();
 }
 
@@ -170,6 +171,10 @@ GPlatesQtWidgets::FeaturePropertiesDialog::handle_tab_change(
 		int index)
 {
 	const QIcon icon = tabwidget_query_edit->tabIcon(index);
+	if(index == 0)
+	{
+		d_query_feature_properties_widget->load_data_if_necessary();
+	}
 	setWindowIcon(icon);
 }
 

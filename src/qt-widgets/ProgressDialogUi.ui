@@ -1,0 +1,60 @@
+<ui version="4.0" >
+ <class>ProgressDialog</class>
+ <widget class="QDialog" name="ProgressDialog" >
+  <property name="windowModality" >
+   <enum>Qt::NonModal</enum>
+  </property>
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>336</width>
+    <height>124</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Progress</string>
+  </property>
+  <widget class="QProgressBar" name="progress_bar" >
+   <property name="geometry" >
+    <rect>
+     <x>20</x>
+     <y>50</y>
+     <width>241</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="value" >
+    <number>24</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="info_label" >
+   <property name="geometry" >
+    <rect>
+     <x>20</x>
+     <y>20</y>
+     <width>281</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>TextLabel</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="cancel_button" >
+   <property name="geometry" >
+    <rect>
+     <x>250</x>
+     <y>90</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>Cancel</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

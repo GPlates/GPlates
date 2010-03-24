@@ -32,6 +32,7 @@
 #include <QTreeWidget>
 #include <boost/scoped_ptr.hpp>
 #include "ModifyGeometryWidgetUi.h"
+#include "LatLonCoordinatesTable.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -61,6 +62,12 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 
 		~ModifyGeometryWidget();
+
+		void
+		reload_coordinates_table_if_necessary()
+		{
+			d_lat_lon_coordinates_table->reload_if_necessary();
+		}
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments

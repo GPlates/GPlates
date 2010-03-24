@@ -106,6 +106,7 @@ namespace GPlatesQtWidgets
 	class ExportReconstructedFeatureGeometryDialog;
 	class FeaturePropertiesDialog;
 	class ManageFeatureCollectionsDialog;
+	class MeshDialog;
 	class ReadErrorAccumulationDialog;
 	class SaveFileDialog;
 	class SetCameraViewpointDialog;
@@ -449,6 +450,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ExportReconstructedFeatureGeometryDialog> d_export_rfg_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
+		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
@@ -654,6 +656,9 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		handle_gui_debug_action();
+		
+		void
+		generate_mesh_cap();
 
 	protected:
 	

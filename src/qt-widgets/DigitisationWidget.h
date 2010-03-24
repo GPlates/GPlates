@@ -33,6 +33,7 @@
 #include <boost/none.hpp>
 #include <boost/scoped_ptr.hpp>
 #include "DigitisationWidgetUi.h"
+#include "LatLonCoordinatesTable.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "model/ModelInterface.h"
@@ -99,6 +100,12 @@ namespace GPlatesQtWidgets
 		get_create_feature_dialog()
 		{
 			return *d_create_feature_dialog;
+		}
+
+		void
+		reload_coordinates_table_if_necessary()
+		{
+			d_lat_lon_coordinates_table->reload_if_necessary();
 		}
 
 	private slots:

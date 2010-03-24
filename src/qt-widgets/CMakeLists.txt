@@ -148,12 +148,17 @@ set(srcs
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
+    MeshDialog.cc
+    MeshDialog.h
+    MeshDialogUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
     NoActiveEditWidgetException.h
     PaletteSelectionWidget.cc
     PaletteSelectionWidget.h
+	ProgressDialog.h
+	ProgressDialogUi.ui
     ProjectionControlWidget.cc
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui

@@ -33,6 +33,8 @@ set(srcs
     FeatureCollectionFileStateImplDecls.h
     FeatureCollectionWorkflow.cc
     FeatureCollectionWorkflow.h
+    MeshGenerator.cc
+    MeshGenerator.h
     PaleomagUtils.cc
     PaleomagUtils.h
     PaleomagWorkflow.cc

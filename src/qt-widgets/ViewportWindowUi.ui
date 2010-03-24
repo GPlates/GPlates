@@ -79,6 +79,7 @@
     <addaction name="action_Export_Reconstruction" />
     <addaction name="separator" />
     <addaction name="action_Assign_Plate_IDs" />
+	<addaction name="action_Generate_Mesh_Cap" />
    </widget>
    <widget class="QMenu" name="menu_Edit" >
     <property name="title" >
@@ -1350,6 +1351,11 @@
   <action name="action_Assign_Plate_IDs" >
    <property name="text" >
     <string>&amp;Assign Plate IDs...</string>
+   </property>
+  </action>
+  <action name="action_Generate_Mesh_Cap" >
+   <property name="text" >
+    <string>&amp;Generate Mesh Cap...</string>
    </property>
   </action>
   <action name="action_Export_Reconstruction" >

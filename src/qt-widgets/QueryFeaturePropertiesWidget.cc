@@ -22,7 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #include <QLocale>
 #include "QueryFeaturePropertiesWidget.h"
 
@@ -42,7 +42,8 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_reconstruct_ptr(&view_state_.get_reconstruct())
+	d_reconstruct_ptr(&view_state_.get_reconstruct()),
+	d_need_load_data(false)
 {
 	setupUi(this);
 
@@ -218,6 +219,29 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 	GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(
 			property_tree());
-	populator.populate(d_feature_ref, d_focused_rg);
+
+	if(this->isVisible())
+	{
+		populator.populate(d_feature_ref, d_focused_rg);
+		d_need_load_data = false;
+	}
+	else
+	{
+		d_need_load_data = true;
+	}
+
 }
+void
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::load_data_if_necessary()
+{
+	if(d_need_load_data)
+	{
+		GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator 
+			populator(property_tree());
+		populator.populate(d_feature_ref, d_focused_rg);
+		d_need_load_data = false;
+	}
+	return;
+}
+
 

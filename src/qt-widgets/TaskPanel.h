@@ -30,6 +30,7 @@
 #include <QStackedWidget>
 
 #include "DigitisationWidget.h"
+#include "ModifyGeometryWidget.h"
 #include "ReconstructionPoleWidget.h"
 #include "ActionButtonBox.h"
 
@@ -205,12 +206,14 @@ namespace GPlatesQtWidgets
 		choose_digitisation_tab()
 		{
 			choose_tab(DIGITISATION);
+			d_digitisation_widget_ptr->reload_coordinates_table_if_necessary();
 		}		
 		
 		void
 		choose_modify_geometry_tab()
 		{
 			choose_tab(MODIFY_GEOMETRY);
+			d_modify_geometry_widget_ptr->reload_coordinates_table_if_necessary();
 		}		
 
 		void

@@ -25,7 +25,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
+#include "utils/Profile.h"
 #include <memory>
 #include <boost/bind.hpp>
 #include <boost/cast.hpp>
@@ -235,7 +235,8 @@ GPlatesQtWidgets::LatLonCoordinatesTable::LatLonCoordinatesTable(
 d_coordinates_table(coordinates_table),
 d_tree_widget_builder(coordinates_table),
 d_current_geometry_builder(NULL),
-d_current_geometry_operation(NULL)
+d_current_geometry_operation(NULL),
+d_need_to_reload_data(false)
 {
 	if (active_geometry_operation)
 	{
@@ -277,7 +278,6 @@ GPlatesQtWidgets::LatLonCoordinatesTable::connect_to_active_geometry_operation_s
 		GPlatesViewOperations::ActiveGeometryOperation *active_geometry_operation)
 {
 	// Connect to the geometry operation's signals.
-
 	// GeometryOperation has just highlighted a vertex.
 	QObject::connect(
 			active_geometry_operation,
@@ -459,6 +459,11 @@ GPlatesQtWidgets::LatLonCoordinatesTable::highlight_point_in_geometry(
 		GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
 		const GPlatesGui::Colour &highlight_colour)
 {
+	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
+	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
+	{
+		return;
+	}
 	QTreeWidgetItem *coord_item = get_coord_item(geometry_index, point_index);
 
 	highlight_lat_lon(coord_item, highlight_colour);
@@ -476,6 +481,11 @@ GPlatesQtWidgets::LatLonCoordinatesTable::unhighlight_point_in_geometry(
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
 		GPlatesViewOperations::GeometryBuilder::PointIndex point_index)
 {
+	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
+	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
+	{
+		return;
+	}
 	QTreeWidgetItem *coord_item = get_coord_item(geometry_index, point_index);
 
 	unhighlight_lat_lon(coord_item);
@@ -487,6 +497,11 @@ GPlatesQtWidgets::LatLonCoordinatesTable::change_actual_geometry_type(
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
 		GPlatesViewOperations::GeometryType::Value geometry_type)
 {
+	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
+	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
+	{
+		return;
+	}
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			boost::numeric_cast<unsigned int>(geometry_index) <
 					get_num_top_level_items(d_tree_widget_builder),
@@ -509,6 +524,11 @@ void
 GPlatesQtWidgets::LatLonCoordinatesTable::insert_geometry(
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index)
 {
+	if(!d_coordinates_table->isVisible() )
+	{
+		d_need_to_reload_data = true;
+		return;
+	}
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			boost::numeric_cast<unsigned int>(geometry_index) <=
 					get_num_top_level_items(d_tree_widget_builder),
@@ -531,13 +551,16 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_geometry(
 	//
 	// If inserted geometry contains any points then add them also.
 	//
+	
 	const unsigned int num_points_in_geom =
 		d_current_geometry_builder->get_num_points_in_geometry(geometry_index);
 
+	//PROFILE_BLOCK("latlon coordinate");
+	
 	// Iterate through all points in inserted geometry.
 	for (unsigned int point_index = 0;
-		point_index < num_points_in_geom;
-		++point_index)
+			point_index < num_points_in_geom;
+			++point_index)
 	{
 		// Get point in inserted geometry.
 		const GPlatesMaths::PointOnSphere &point =
@@ -546,15 +569,31 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_geometry(
 		// Insert point into our table.
 		insert_point_into_geometry(geometry_index, point_index, point);
 	}
-
+	d_need_to_reload_data = false;
 	// Update the QTreeWidget with our changes.
 	d_tree_widget_builder.update_qtree_widget_with_added_or_inserted_items();
+
+}
+
+void
+GPlatesQtWidgets::LatLonCoordinatesTable::reload_if_necessary()
+{
+	if(d_need_to_reload_data)
+	{
+		initialise_table_from_current_geometry_builder();
+	}
+	return;
 }
 
 void
 GPlatesQtWidgets::LatLonCoordinatesTable::remove_geometry(
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index)
 {
+	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
+	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
+	{
+		return;
+	}
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			boost::numeric_cast<unsigned int>(geometry_index) <
 					get_num_top_level_items(d_tree_widget_builder),
@@ -580,6 +619,11 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_current_geometry(
 		GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_globe)
 {
+	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
+	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
+	{
+		return;
+	}
 	// Get index of current geometry.
 	const GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index =
 		d_current_geometry_builder->get_current_geometry_index();
@@ -637,6 +681,11 @@ GPlatesQtWidgets::LatLonCoordinatesTable::move_point_in_current_geometry(
 		GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
 		const GPlatesMaths::PointOnSphere &new_oriented_pos_on_globe)
 {
+	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
+	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
+	{
+		return;
+	}
 	// Get index of current geometry.
 	const GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index =
 		d_current_geometry_builder->get_current_geometry_index();
@@ -673,6 +722,11 @@ void
 GPlatesQtWidgets::LatLonCoordinatesTable::remove_point_from_current_geometry(
 		GPlatesViewOperations::GeometryBuilder::PointIndex point_index)
 {
+	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
+	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
+	{
+		return;
+	}
 	// Get index of current geometry.
 	const GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index =
 		d_current_geometry_builder->get_current_geometry_index();
@@ -693,7 +747,6 @@ GPlatesQtWidgets::LatLonCoordinatesTable::remove_point_from_geometry(
 {
 	// Figure out which 'geometry' QTreeWidgetItem is the one where we need to add
 	// this coordinate.
-
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			boost::numeric_cast<unsigned int>(geometry_index) <
 					get_num_top_level_items(d_tree_widget_builder),
