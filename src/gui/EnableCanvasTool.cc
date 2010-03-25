@@ -188,6 +188,7 @@ GPlatesGui::EnableCanvasTool::update()
 	update_move_geometry_tool();
 	update_move_vertex_tool();
 	update_insert_vertex_tool();
+	update_split_feature_tool();
 	update_delete_vertex_tool();
 	update_manipulate_pole_tool();
 	update_build_topology_tool();
@@ -282,6 +283,53 @@ GPlatesGui::EnableCanvasTool::update_insert_vertex_tool()
 	}
 
 	d_viewport_window->enable_insert_vertex_tool(enable);
+}
+
+void
+GPlatesGui::EnableCanvasTool::update_split_feature_tool()
+{
+	if (
+		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE ||
+		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT ||
+		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON)
+	{
+		d_viewport_window->enable_split_feature_tool(false);
+		return;
+	}
+
+	if(!d_feature_focus->is_valid())
+	{
+		d_viewport_window->enable_split_feature_tool(false);
+		return;
+	}
+
+
+	unsigned int num_vertices;
+	GPlatesViewOperations::GeometryType::Value geometry_type;
+	boost::tie(num_vertices, geometry_type) = get_target_geometry_parameters_if_tool_chosen_next(
+		GPlatesCanvasTools::CanvasToolType::SPLIT_FEATURE);
+
+	bool enable;
+	switch (geometry_type)
+	{
+	case GPlatesViewOperations::GeometryType::NONE:
+	case GPlatesViewOperations::GeometryType::POINT:
+	case GPlatesViewOperations::GeometryType::MULTIPOINT:
+	case GPlatesViewOperations::GeometryType::POLYGON:
+		enable = false;
+		break;
+
+	
+	case GPlatesViewOperations::GeometryType::POLYLINE:
+		enable = (num_vertices > 1);
+		break;
+
+	default:
+		enable = false;
+		break;
+	}
+
+	d_viewport_window->enable_split_feature_tool(enable);
 }
 
 void

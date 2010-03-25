@@ -165,6 +165,31 @@ namespace GPlatesFeatureVisitors
 		bool d_found_polyline_geometries;
 		bool d_found_polygon_geometries;
 	};
+	/**
+	 * Find the first geometry property from a feature.
+	 *
+	 * The iterator of the property will be returned.
+	 */
+	 boost::optional<GPlatesModel::FeatureHandle::children_iterator>
+	find_first_geometry_property(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref);
+	/**
+	 * Determine if the given property contains a geometry.
+	 *
+	 * Return true if the property is not a geometry, otherwise false.
+	 */
+	bool
+	is_not_geometry_property(
+			const GPlatesModel::FeatureHandle::children_iterator &feature_properties_iter);
+	/**
+	 * Find the first geometry from a property.
+	 *
+	 * A const pointer of GeometryOnSphere will be returned.
+	 */
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type 
+	find_first_geometry(
+			GPlatesModel::FeatureHandle::children_iterator iter);
+
 }
 
 #endif  // GPLATES_FEATUREVISITORS_GEOMETRYTYPEFINDER_H

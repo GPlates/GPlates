@@ -59,32 +59,11 @@ namespace GPlatesViewOperations
 
 		virtual
 		void
-		redo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			// Add point to geometry builder.
-			// This will also cause GeometryBuilder to emit a signal to
-			// its observers.
-			d_undo_operation = d_geometry_builder->insert_point_into_current_geometry(
-				d_point_index_to_insert_at,
-				d_oriented_pos_on_globe);
-		}
+		redo();
 
 		virtual
 		void
-		undo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			// The undo operation will also cause GeometryBuilder to emit
-			// a signal to its observers.
-			d_geometry_builder->undo(d_undo_operation);
-		}
+		undo();
 
 	private:
 		GeometryBuilder* d_geometry_builder;
@@ -114,31 +93,11 @@ namespace GPlatesViewOperations
 
 		virtual
 		void
-		redo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			// Remove point from geometry builder.
-			// This will also cause GeometryBuilder to emit a signal to
-			// its observers.
-			d_undo_operation = d_geometry_builder->remove_point_from_current_geometry(
-				d_point_index_to_remove_at);
-		}
+		redo();
 
 		virtual
 		void
-		undo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			// The undo operation will also cause GeometryBuilder to emit
-			// a signal to its observers.
-			d_geometry_builder->undo(d_undo_operation);
-		}
+		undo();
 
 	private:
 		GeometryBuilder* d_geometry_builder;
@@ -171,33 +130,11 @@ namespace GPlatesViewOperations
 
 		virtual
 		void
-		redo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			// Move point in geometry builder.
-			// This will also cause GeometryBuilder to emit a signal to
-			// its observers.
-			d_undo_operation = d_geometry_builder->move_point_in_current_geometry(
-				d_point_index_to_move,
-				d_oriented_pos_on_globe,
-				d_is_intermediate_move);
-		}
+		redo();
 
 		virtual
 		void
-		undo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			// The undo operation will also cause GeometryBuilder to emit
-			// a signal to its observers.
-			d_geometry_builder->undo(d_undo_operation);
-		}
+		undo();
 
 		/**
 		 * Merge this move command with another move command.
@@ -210,36 +147,7 @@ namespace GPlatesViewOperations
 		virtual
 		bool
 		mergeWith(
-				const QUndoCommand *other_command)
-		{
-			// If other command is same type as us then coalesce its command into us.
-			const GeometryBuilderMovePointUndoCommand *other_move_command =
-				dynamic_cast<const GeometryBuilderMovePointUndoCommand *>(other_command);
-
-			if (other_move_command != NULL)
-			{
-				//
-				// Merge the other move vertex command with ours.
-				//
-
-				// Use the other command's destination vertex position.
-				d_oriented_pos_on_globe = other_move_command->d_oriented_pos_on_globe;
-
-				// If the other command is not an intermediate move then the merged
-				// command is also not an intermediate move.
-				if (!other_move_command->d_is_intermediate_move)
-				{
-					d_is_intermediate_move = false;
-				}
-
-				// But keep our undo operation.
-
-				return true;
-			}
-
-			return false;
-		}
-
+				const QUndoCommand *other_command);
 	private:
 		GeometryBuilder* d_geometry_builder;
 		GeometryBuilder::PointIndex d_point_index_to_move;
@@ -282,51 +190,15 @@ namespace GPlatesViewOperations
 		virtual
 		bool
 		mergeWith(
-				const QUndoCommand *other_command)
-		{
-			// Is other command same type as us ?
-			const GeometryBuilderSetGeometryTypeUndoCommand *other_set_geom_type_command =
-				dynamic_cast<const GeometryBuilderSetGeometryTypeUndoCommand *>(other_command);
-
-			if (other_set_geom_type_command != NULL)
-			{
-				// We use our undo operation for undo'ing but use their geometry type
-				// for redo'ing.
-				d_geom_type_to_build = other_set_geom_type_command->d_geom_type_to_build;
-
-				return true;
-			}
-
-			return false;
-		}
+				const QUndoCommand *other_command);
 
 		virtual
 		void
-		redo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			// Set geometry type to build in geometry builder.
-			// This will also cause GeometryBuilder to emit a signal to
-			// its observers.
-			d_undo_operation = d_geometry_builder->set_geometry_type_to_build(
-				d_geom_type_to_build);
-		}
+		redo();
 
 		virtual
 		void
-		undo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			// The undo operation will also cause GeometryBuilder to emit
-			// a signal to its observers.
-			d_geometry_builder->undo(d_undo_operation);
-		}
+		undo();
 
 	private:
 		GeometryBuilder* d_geometry_builder;
@@ -354,25 +226,11 @@ namespace GPlatesViewOperations
 
 		virtual
 		void
-		redo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			d_undo_operation = d_geometry_builder->clear_all_geometries();
-		}
+		redo();
 
 		virtual
-			void
-			undo()
-		{
-			// Delay any notification of changes to the rendered geometry collection
-			// until end of current scope block.
-			RenderedGeometryCollection::UpdateGuard update_guard;
-
-			d_geometry_builder->undo(d_undo_operation);
-		}
+		void
+		undo();
 
 	private:
 		GeometryBuilder* d_geometry_builder;

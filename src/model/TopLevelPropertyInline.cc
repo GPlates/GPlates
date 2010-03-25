@@ -33,9 +33,10 @@
 const GPlatesModel::TopLevelProperty::non_null_ptr_type
 GPlatesModel::TopLevelPropertyInline::deep_clone() const 
 {
-	TopLevelPropertyInline::non_null_ptr_type dup(
-			new TopLevelPropertyInline(*this),
-			GPlatesUtils::NullIntrusivePointerHandler());
+	TopLevelPropertyInline::non_null_ptr_type dup = create(
+			property_name(),
+			container_type(),
+			xml_attributes());
 
 	const_iterator iter, end_ = d_values.end();
 	for (iter = d_values.begin(); iter != end_; ++iter) {

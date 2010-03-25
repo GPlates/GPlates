@@ -41,6 +41,7 @@
 #include "canvas-tools/DeleteVertex.h"
 #include "canvas-tools/InsertVertex.h"
 #include "canvas-tools/MoveVertex.h"
+#include "canvas-tools/SplitFeature.h"
 
 #include "canvas-tools/GlobeManipulatePole.h"
 
@@ -142,6 +143,18 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 			viewport_window)),
 	d_insert_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
 			new GPlatesCanvasTools::InsertVertex(
+				geometry_operation_target,
+				active_geometry_operation,
+				rendered_geom_collection,
+				choose_canvas_tool,
+				query_proximity_threshold),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_split_feature_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::SplitFeature(
+				feature_focus,
+				view_state,
 				geometry_operation_target,
 				active_geometry_operation,
 				rendered_geom_collection,

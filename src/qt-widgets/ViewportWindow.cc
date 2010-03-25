@@ -81,6 +81,18 @@
 
 #include "canvas-tools/MeasureDistanceState.h"
 
+#include "feature-visitors/GeometryTypeFinder.h"
+
+#include "file-io/ReadErrorAccumulation.h"
+#include "file-io/ErrorOpeningFileForReadingException.h"
+#include "file-io/FileFormatNotSupportedException.h"
+#include "file-io/ErrorOpeningPipeFromGzipException.h"
+#include "file-io/FileInfo.h"
+#include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/RasterReader.h"
+#include "file-io/ShapefileReader.h"
+#include "file-io/ErrorOpeningFileForWritingException.h"
+
 #include "global/GPlatesException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
@@ -107,16 +119,7 @@
 
 #include "model/Model.h"
 #include "model/types.h"
-
-#include "file-io/ReadErrorAccumulation.h"
-#include "file-io/ErrorOpeningFileForReadingException.h"
-#include "file-io/FileFormatNotSupportedException.h"
-#include "file-io/ErrorOpeningPipeFromGzipException.h"
-#include "file-io/FileInfo.h"
-#include "file-io/FeatureCollectionFileFormat.h"
-#include "file-io/RasterReader.h"
-#include "file-io/ShapefileReader.h"
-#include "file-io/ErrorOpeningFileForWritingException.h"
+#include "model/DummyTransactionHandle.h"
 
 #include "gui/ViewportProjection.h"
 
@@ -129,9 +132,12 @@
 #include "qt-widgets/ShapefilePropertyMapper.h"
 
 //#include "utils/GeometryUtil.h"
+#include "utils/GeometryUtil.h"
 #include "utils/Profile.h"
 
+
 #include "view-operations/ActiveGeometryOperation.h"
+#include "view-operations/CloneOperation.h"
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/GeometryOperationTarget.h"
@@ -231,6 +237,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 					*d_focused_feature_geometry_builder,
 					get_view_state().get_feature_focus(),
 					*d_choose_canvas_tool)),
+	d_clone_operation_prt(
+			new GPlatesViewOperations::CloneOperation(
+					d_choose_canvas_tool.get(),
+					d_digitise_geometry_builder.get(),
+					d_focused_feature_geometry_builder.get(),
+					get_view_state())),
 	d_active_geometry_operation(
 			new GPlatesViewOperations::ActiveGeometryOperation()),
 	d_focused_feature_geom_manipulator(
@@ -518,6 +530,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			d_choose_canvas_tool.get(), SLOT(choose_delete_vertex_tool()));
 	QObject::connect(action_Insert_Vertex, SIGNAL(triggered()),
 			d_choose_canvas_tool.get(), SLOT(choose_insert_vertex_tool()));
+	QObject::connect(action_Split_Feature, SIGNAL(triggered()),
+		d_choose_canvas_tool.get(), SLOT(choose_split_feature_tool()));
 	// FIXME: The Move Geometry tool, although it has an awesome icon,
 	// is to be disabled until it can be implemented.
 	action_Move_Geometry->setVisible(false);
@@ -582,6 +596,11 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// ----
 	QObject::connect(action_Clear_Selection, SIGNAL(triggered()),
 			&get_view_state().get_feature_focus(), SLOT(unset_focus()));
+
+	QObject::connect(action_Clone_Geometry, SIGNAL(triggered()),
+			d_clone_operation_prt.get(), SLOT(clone_focused_geometry()));
+	QObject::connect(action_Clone_Feature, SIGNAL(triggered()),
+			d_clone_operation_prt.get(), SLOT(clone_focused_feature()));
 
 	// Reconstruction Menu:
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
@@ -860,6 +879,8 @@ GPlatesQtWidgets::ViewportWindow::set_up_task_panel_actions()
 	feature_actions.add_action(action_Delete_Feature);
 #endif
 	feature_actions.add_action(action_Clear_Selection);
+	feature_actions.add_action(action_Clone_Geometry);
+	feature_actions.add_action(action_Clone_Feature);
 }
 
 
@@ -1191,6 +1212,12 @@ GPlatesQtWidgets::ViewportWindow::enable_insert_vertex_tool(
 	action_Insert_Vertex->setEnabled(enable);
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::enable_split_feature_tool(
+	bool enable)
+{
+	action_Split_Feature->setEnabled(enable);
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_manipulate_pole_tool(
@@ -1323,6 +1350,16 @@ GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
 }
 
 void
+GPlatesQtWidgets::ViewportWindow::choose_split_feature_tool()
+{
+	action_Split_Feature->setChecked(true);
+	d_globe_canvas_tool_choice_ptr->choose_split_feature_tool();
+	d_map_canvas_tool_choice_ptr->choose_split_feature_tool();
+
+	d_task_panel_ptr->choose_modify_geometry_tab();
+}
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_measure_distance_tool()
 {
 	action_Measure_Distance->setChecked(true);
@@ -1393,6 +1430,8 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	action_Delete_Feature->setDisabled(true);
 #endif
 	action_Clear_Selection->setEnabled(true);
+	action_Clone_Geometry->setEnabled(enable_canvas_tool_actions);
+	action_Clone_Feature->setEnabled(enable_canvas_tool_actions);
 
 #if 0
 	// FIXME: Add to Selection is unimplemented and should stay disabled for now.
@@ -2108,4 +2147,5 @@ GPlatesQtWidgets::ViewportWindow::generate_mesh_cap()
 	d_mesh_dialog_ptr->activateWindow();
 	d_mesh_dialog_ptr->raise();
 }
+
 

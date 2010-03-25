@@ -163,6 +163,9 @@ namespace GPlatesGui
 		void
 		update_insert_vertex_tool();
 
+		void 
+		update_split_feature_tool();
+
 		void
 		update_delete_vertex_tool();
 

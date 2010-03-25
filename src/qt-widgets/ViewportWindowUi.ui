@@ -94,6 +94,9 @@
     <addaction name="action_Delete_Feature" />
     <addaction name="separator" />
     <addaction name="action_Clear_Selection" />
+    <addaction name="separator" />
+    <addaction name="action_Clone_Geometry" />
+	<addaction name="action_Clone_Feature" />
    </widget>
    <widget class="QMenu" name="menu_Layers" >
     <property name="title" >
@@ -248,6 +251,7 @@
    <addaction name="action_Move_Vertex" />
    <addaction name="action_Insert_Vertex" />
    <addaction name="action_Delete_Vertex" />
+   <addaction name="action_Split_Feature" />
    <addaction name="action_Manipulate_Pole" />
    <addaction name="action_Build_Topology" />
    <addaction name="action_Edit_Topology" />
@@ -1022,6 +1026,22 @@
     <string>Clear Se&amp;lection</string>
    </property>
   </action>
+  <action name="action_Clone_Geometry" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/clone_geometry_22.png</iconset>
+   </property>
+   <property name="text" >
+    <string>C&amp;lone Gometry</string>
+   </property>
+  </action>
+  <action name="action_Clone_Feature" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/clone_feature_22.png</iconset>
+   </property>
+   <property name="text" >
+    <string>C&amp;lone Feature</string>
+   </property>
+  </action>
   <action name="action_Information_Dock_At_Bottom" >
    <property name="icon" >
     <iconset resource="../qt-resources/qt_widgets.qrc" >
@@ -1513,6 +1533,17 @@
   <action name="action_Geometry_Colours" >
    <property name="text" >
     <string>Geometry Colours</string>
+   </property>
+  </action>
+   <action name="action_Split_Feature" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/split_geometry_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Split Feature</string>
    </property>
   </action>
  </widget>

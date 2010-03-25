@@ -334,3 +334,68 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 
 	return feature;
 }
+
+GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::ModelUtils::clone_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+		GPlatesModel::ModelInterface &model,
+		property_predicate_type predicate)
+{
+	//Create a new feature.
+	const GPlatesModel::FeatureHandle::weak_ref new_feature_ref =
+			model->create_feature(
+					feature_ref->handle_data().feature_type(),
+					feature_collection_ref);
+		
+	GPlatesModel::FeatureHandle::children_iterator old_feature_properties_iter =
+		feature_ref->children_begin();
+
+	GPlatesModel::FeatureHandle::children_iterator old_feature_properties_end =
+		feature_ref->children_end();
+
+	for ( ; old_feature_properties_iter != old_feature_properties_end;
+		++old_feature_properties_iter)
+	{
+		if(!old_feature_properties_iter.is_valid() ||
+		   !predicate(old_feature_properties_iter))
+		{
+			continue;
+		}
+		
+		const GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_property_value =
+			(*old_feature_properties_iter)->clone();
+
+		GPlatesModel::ModelUtils::append_property_to_feature(
+			cloned_property_value, new_feature_ref);
+	}
+
+	return new_feature_ref;
+}
+
+bool
+GPlatesModel::ModelUtils::remove_feature(
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref,
+	GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+
+	GPlatesModel::FeatureCollectionHandle::children_iterator
+		feature_iter = feature_collection_ref->children_begin();
+	GPlatesModel::FeatureCollectionHandle::children_iterator 
+		feature_end = feature_collection_ref->children_end();
+
+	for (; feature_iter != feature_end; ++feature_iter) 
+	{
+		if (feature_iter.is_valid()) 
+		{
+			if(feature_ref.handle_ptr() == (*feature_iter).get()) 
+			{
+				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+				feature_collection_ref->remove_child(feature_iter,transaction);
+				transaction.commit();
+				return true;
+			}
+		}
+	}
+	return false;
+}

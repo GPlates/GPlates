@@ -54,6 +54,7 @@
 
 #include "utils/GeometryCreationUtils.h"
 #include "utils/UnicodeStringUtils.h"
+#include "utils/GeometryUtil.h"
 
 
 GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
@@ -267,7 +268,7 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 
 		// Get the section geometry.
 		std::vector<GPlatesMaths::PointOnSphere> node_points;
-		TopologyInternalUtils::get_geometry_points(
+		GPlatesUtils::GeometryUtil::get_geometry_points(
 				*section.d_geometry.get(), node_points);
 
 		// Create a subsegment structure that'll get used when

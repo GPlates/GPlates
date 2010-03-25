@@ -46,6 +46,8 @@ set(srcs
     PanMap.h
     ReorientGlobe.cc
     ReorientGlobe.h
+    SplitFeature.cc
+    SplitFeature.h
     ZoomGlobe.cc
     ZoomGlobe.h
     ZoomMap.cc

@@ -6,6 +6,8 @@
     <file>africa_vertices_35.png</file>
     <file>blank_16.png</file>
     <file>click_geometry_35.png</file>
+    <file>clone_geometry_22.png</file>
+	<file>clone_feature_22.png</file>
     <file>digitise_multipoint_35.png</file>
     <file>digitise_polygon_35.png</file>
     <file>digitise_polyline_35.png</file>
@@ -85,6 +87,7 @@
     <file>seek_end_22.png</file>
     <file>select_plate_35.png</file>
     <file>spin_globe_35.png</file>
+    <file>split_geometry_35.png</file>
     <file>tango_document_save_22.png</file>
     <file>tango_emblem_unreadable_22.png</file>
     <file>tango_go_bottom_22.png</file>

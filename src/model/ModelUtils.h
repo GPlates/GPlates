@@ -26,6 +26,8 @@
 #ifndef GPLATES_MODEL_MODELUTILS_H
 #define GPLATES_MODEL_MODELUTILS_H
 
+#include <boost/function.hpp>
+
 #include "ModelInterface.h"
 #include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
@@ -42,10 +44,19 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/TemplateTypeParameterType.h"
 
+#include "app-logic/FeatureCollectionFileState.h"
+
+#include "global/InvalidFeatureCollectionException.h"
+#include "global/InvalidParametersException.h"
+
+
 namespace GPlatesModel
 {
 	namespace ModelUtils
 	{
+		typedef boost::function<bool (const GPlatesModel::FeatureHandle::children_iterator &)>
+			property_predicate_type;
+
 		struct TotalReconstructionPoleData
 		{
 			double time;
@@ -157,6 +168,30 @@ namespace GPlatesModel
 				unsigned long fixed_plate_id,
 				unsigned long moving_plate_id,
 				const std::vector<TotalReconstructionPoleData> &five_tuples);
+	
+		/**
+		 * The default clone properties predicate always returns true.
+		 */
+		inline
+		bool
+		default_clone_properties_predicate(
+		const GPlatesModel::FeatureHandle::children_iterator&)
+		{
+			return true;
+		}
+
+		GPlatesModel::FeatureHandle::weak_ref
+			clone_feature(
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+			GPlatesModel::ModelInterface &model,
+			property_predicate_type predicate = &default_clone_properties_predicate);
+
+		
+		bool
+		remove_feature(
+				GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
 	}
 
 

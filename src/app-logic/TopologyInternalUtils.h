@@ -281,39 +281,7 @@ namespace GPlatesAppLogic
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_intersected_segment);
 
 
-		/**
-		 * Copies the @a PointOnSphere points from @a geometry_on_sphere to the @a points array.
-		 *
-		 * Does not clear @a points - just appends whatever points it
-		 * finds in @a geometry_on_sphere.
-		 *
-		 * If @a reverse_points is true then the order of the points in @a geometry_on_sphere
-		 * are reversed before appending to @a points.
-		 */
-		void
-		get_geometry_points(
-				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
-				std::vector<GPlatesMaths::PointOnSphere> &points,
-				bool reverse_points = false);
-
-
-		/**
-		 * Returns the end points of @a geometry_on_sphere.
-		 *
-		 * If @a reverse_points is true then the order of the returned end points
-		 * is reversed.
-		 *
-		 * This is faster than calling @a get_geometry_points and then picking out the
-		 * first and last points as it doesn't retrieve all the points.
-		 */
-		std::pair<
-				GPlatesMaths::PointOnSphere/*start point*/,
-				GPlatesMaths::PointOnSphere/*end point*/>
-		get_geometry_end_points(
-				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
-				bool reverse_points = false);
-
-
+		
 		/**
 		 * A useful predicate fuction used to include only reconstructed feature geometries.
 		 *

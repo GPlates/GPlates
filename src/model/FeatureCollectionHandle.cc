@@ -195,6 +195,40 @@ GPlatesModel::FeatureCollectionHandle::remove_child(
 	current_revision()->remove_child(iter.index(), transaction);
 }
 
+bool
+GPlatesModel::feature_collection_contains_feature(
+		GPlatesModel::FeatureCollectionHandle::weak_ref collection_ref,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	if ( ! collection_ref.is_valid()) 
+	{
+		return false;
+	}
+	if ( ! feature_ref.is_valid()) 
+	{
+		return false;
+	}
+
+	GPlatesModel::FeatureCollectionHandle::children_iterator
+		it = collection_ref->children_begin();
+	GPlatesModel::FeatureCollectionHandle::children_iterator
+		it_end = collection_ref->children_end();
+
+	for (; it != it_end; ++it) 
+	{
+		if (it.is_valid()) 
+		{
+			GPlatesModel::FeatureHandle &it_handle = **it;
+			if (feature_ref.handle_ptr() == &it_handle) 
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
 
 bool
 GPlatesModel::FeatureCollectionHandle::contains_unsaved_changes() const

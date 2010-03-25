@@ -16,7 +16,7 @@ if(NOT USE_CGAL_FILE_INCLUDED)
   # to a certain extent what the 'UseCGAL.cmake' file does (for CGAL versions 3.4 and above).
   #
   # 'CGAL_INCLUDE_DIR' and 'CGAL_LIBRARY' were set in 'FindCGAL.cmake'.
-  include_directories ( ${SYSTEM_INCLUDE_FLAG} ${CGAL_INCLUDE_DIR} )     
+  include_directories ( ${CGAL_INCLUDE_DIR} )     
   link_libraries      ( ${CGAL_LIBRARY} )
 
   # Set the compiler flags that are required to match those used when building the CGAL library.

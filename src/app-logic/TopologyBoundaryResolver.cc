@@ -55,6 +55,7 @@
 #include "utils/GeometryCreationUtils.h"
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
+#include "utils/GeometryUtil.h"
 
 
 // Create a ReconstructedFeatureGeometry for the rotated reference points in each
@@ -544,7 +545,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the plate polygon points.
-		TopologyInternalUtils::get_geometry_points(
+		GPlatesUtils::GeometryUtil::get_geometry_points(
 				*section.d_subsegment_geom.get(), polygon_points, section.d_use_reverse);
 
 #if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)

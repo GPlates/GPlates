@@ -458,6 +458,15 @@ namespace GPlatesModel
 
 	};
 
+	/**
+	 * Return true if the feature  collection contains the given feature
+	 * Otherwise, return false.
+	 */
+	bool
+	feature_collection_contains_feature(
+			GPlatesModel::FeatureCollectionHandle::weak_ref collection_ref,
+			GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
 }
 
 #endif  // GPLATES_MODEL_FEATURECOLLECTIONHANDLE_H

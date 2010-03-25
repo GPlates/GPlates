@@ -115,6 +115,7 @@
 
 #include "utils/GeometryCreationUtils.h"
 #include "utils/UnicodeStringUtils.h"
+#include "utils/GeometryUtil.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
@@ -1297,7 +1298,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry()
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
 				focus_feature_end_points =
-					GPlatesAppLogic::TopologyInternalUtils::get_geometry_end_points(
+					GPlatesUtils::GeometryUtil::get_geometry_end_points(
 							*d_feature_focus_ptr->associated_reconstruction_geometry()->geometry());
 
 		// draw the focused end_points
@@ -2099,7 +2100,7 @@ GPlatesGui::TopologyTools::update_topology_vertices()
 
 		// Get the vertices from the possibly clipped section geometry
 		// and add them to the list of topology vertices.
-		GPlatesAppLogic::TopologyInternalUtils::get_geometry_points(
+		GPlatesUtils::GeometryUtil::get_geometry_points(
 				*section_info.d_subsegment_geometry_unreversed.get(),
 				d_topology_vertices,
 				section_info.d_table_row.get_reverse());
@@ -2186,7 +2187,7 @@ GPlatesGui::TopologyTools::should_reverse_section(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			current_subsegment_geometry_end_points =
-				GPlatesAppLogic::TopologyInternalUtils::get_geometry_end_points(
+				GPlatesUtils::GeometryUtil::get_geometry_end_points(
 						*section_info.d_subsegment_geometry_unreversed.get(),
 						section_info.d_table_row.get_reverse());
 
@@ -2203,7 +2204,7 @@ GPlatesGui::TopologyTools::should_reverse_section(
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
 				prev_subsegment_geometry_end_points =
-					GPlatesAppLogic::TopologyInternalUtils::get_geometry_end_points(
+					GPlatesUtils::GeometryUtil::get_geometry_end_points(
 							*prev_section_info.d_subsegment_geometry_unreversed.get(),
 							prev_section_info.d_table_row.get_reverse());
 		const GPlatesMaths::PointOnSphere &prev_section_tail =
@@ -2228,7 +2229,7 @@ GPlatesGui::TopologyTools::should_reverse_section(
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
 				next_subsegment_geometry_end_points =
-					GPlatesAppLogic::TopologyInternalUtils::get_geometry_end_points(
+					GPlatesUtils::GeometryUtil::get_geometry_end_points(
 							*next_section_info.d_subsegment_geometry_unreversed.get(),
 							next_section_info.d_table_row.get_reverse());
 		const GPlatesMaths::PointOnSphere &next_section_head =
@@ -2364,7 +2365,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			section_geometry_end_points =
-				GPlatesAppLogic::TopologyInternalUtils::get_geometry_end_points(
+				GPlatesUtils::GeometryUtil::get_geometry_end_points(
 						*section_geometry_unreversed,
 						d_table_row.get_reverse());
 

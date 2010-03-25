@@ -53,6 +53,7 @@ namespace GPlatesAppLogic
 		class ReconstructableWorkflow;
 		class ReconstructionWorkflow;
 		class WorkflowManager;
+	
 	}
 
 	class FeatureCollectionActivationStrategy;
@@ -695,6 +696,16 @@ namespace GPlatesAppLogic
 				file_iterator file_iter,
 				const workflow_tag_type &workflow_tag);
 	};
+
+	/**
+	 * Return FeatureCollectionHandle which contains the given feature handle.
+	 *
+	 */
+	boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref>
+	get_feature_collection_containing_feature(
+			GPlatesAppLogic::FeatureCollectionFileState &file_state_ref,
+			GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
 }
 
 #endif // GPLATES_APP_LOGIC_FEATURECOLLECTIONFILESTATE_H

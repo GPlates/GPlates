@@ -91,6 +91,7 @@ namespace GPlatesPresentation
 namespace GPlatesViewOperations
 {
 	class ActiveGeometryOperation;
+	class CloneOperation;
 	class FocusedFeatureGeometryManipulator;
 	class GeometryBuilder;
 	class GeometryOperationTarget;
@@ -252,6 +253,10 @@ namespace GPlatesQtWidgets
 				bool enable = true);
 
 		void
+			enable_split_feature_tool(
+			bool enable = true);
+
+		void
 		enable_manipulate_pole_tool(
 				bool enable = true);
 
@@ -296,6 +301,9 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_insert_vertex_tool();
+
+		void
+		choose_split_feature_tool();
 
 		void
 		choose_manipulate_pole_tool();
@@ -473,6 +481,8 @@ namespace GPlatesQtWidgets
 		// Depends on d_digitise_geometry_builder, d_focused_feature_geometry_builder,
 		// d_geometry_operation_target.
 		boost::scoped_ptr<GPlatesViewOperations::GeometryOperationTarget> d_geometry_operation_target;
+
+		boost::scoped_ptr<GPlatesViewOperations::CloneOperation> d_clone_operation_prt;
 
 		boost::scoped_ptr<GPlatesViewOperations::ActiveGeometryOperation> d_active_geometry_operation;
 
@@ -660,6 +670,7 @@ namespace GPlatesQtWidgets
 		void
 		generate_mesh_cap();
 
+		
 	protected:
 	
 		/**

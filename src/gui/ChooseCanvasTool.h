@@ -134,6 +134,9 @@ namespace GPlatesGui
 		choose_insert_vertex_tool();
 
 		void
+		choose_split_feature_tool();
+
+		void
 		choose_manipulate_pole_tool();
 
 		void

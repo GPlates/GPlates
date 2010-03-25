@@ -208,6 +208,8 @@ namespace GPlatesAppLogic
 			}
 		};
 	}
+
+
 }
 
 
@@ -829,4 +831,28 @@ GPlatesAppLogic::FeatureCollectionFileState::emit_activation_signal(
 	{
 		emit workflow_file_activation(*this, file_iter, workflow_tag, new_active_state);
 	}
+}
+
+boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref>
+GPlatesAppLogic::get_feature_collection_containing_feature(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state_ref,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
+		file_state_ref.get_loaded_files();
+
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
+
+	for (; it != end; ++it) 
+	{
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+			it->get_feature_collection();
+
+		if (GPlatesModel::feature_collection_contains_feature(feature_collection_ref, feature_ref)) 
+		{
+			return feature_collection_ref;
+		}
+	}
+	return boost::none;
 }

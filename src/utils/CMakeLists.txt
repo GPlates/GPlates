@@ -26,6 +26,8 @@ set(srcs
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
     GeometryCreationUtils.h
+    GeometryUtil.cc
+    GeometryUtil.h
     IdStringSet.cc
     IdStringSet.h
     LatLonAreaSampling.h

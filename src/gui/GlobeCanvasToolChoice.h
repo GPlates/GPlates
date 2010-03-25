@@ -178,6 +178,12 @@ namespace GPlatesGui
 		}
 
 		void
+		choose_split_feature_tool()
+		{
+			change_tool_if_necessary(d_split_feature_tool_ptr);
+		}
+
+		void
 		choose_manipulate_pole_tool()
 		{
 			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
@@ -251,6 +257,11 @@ namespace GPlatesGui
 		 * This is the InsertVertex tool which the user may choose.
 		 */
 		GlobeCanvasTool::non_null_ptr_type d_insert_vertex_tool_ptr;
+
+		/**
+		 * This is the SplitFeature tool which the user may choose.
+		 */
+		GlobeCanvasTool::non_null_ptr_type d_split_feature_tool_ptr;
 
 		/**
 		 * This is the ManipulatePole tool which the user may choose.

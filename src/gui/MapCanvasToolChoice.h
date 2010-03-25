@@ -162,6 +162,12 @@ namespace GPlatesGui
 		}
 
 		void
+		choose_split_feature_tool()
+		{
+			change_tool_if_necessary(d_insert_vertex_tool_ptr);
+		}
+
+		void
 		choose_delete_vertex_tool()
 		{
 			change_tool_if_necessary(d_delete_vertex_tool_ptr);

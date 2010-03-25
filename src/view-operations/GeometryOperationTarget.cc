@@ -72,7 +72,8 @@ namespace
 				is_digitise_new_geometry_tool(tool_type) ||
 				tool_type == GPlatesCanvasTools::CanvasToolType::MOVE_VERTEX ||
 				tool_type == GPlatesCanvasTools::CanvasToolType::DELETE_VERTEX ||
-				tool_type == GPlatesCanvasTools::CanvasToolType::INSERT_VERTEX;
+				tool_type == GPlatesCanvasTools::CanvasToolType::INSERT_VERTEX ||
+				tool_type == GPlatesCanvasTools::CanvasToolType::SPLIT_FEATURE;
 	}
 }
 
