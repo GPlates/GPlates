@@ -80,8 +80,6 @@ namespace{
 		{
 		case QVariant::Int:
 			return QString("integer");
-		case QVariant::UInt:
-			return QString("integer");
 			break;
 		case QVariant::Double:
 			return QString("double");
@@ -102,8 +100,6 @@ namespace{
 		switch (variant.type())
 		{
 		case QVariant::Int:
-			return OFTInteger;
-		case QVariant::UInt:
 			return OFTInteger;
 			break;
 		case QVariant::Double:
@@ -184,7 +180,6 @@ namespace{
 
 			if (num_attributes_in_layer != num_attributes_in_dictionary)
 			{
-				// The loop below will stop 
 				qDebug() << "OGR Writer: Mismatch in number of fields.";
 			}
 
@@ -201,7 +196,7 @@ namespace{
 				if (QString::compare(model_string,layer_string) != 0)
 				{
 					// FIXME: Think of something suitable to do here. 
-					qDebug() << "Mismatch in field names.";
+					qDebug() << "Mismatch in field names: model: " << model_string << ", layer : " << layer_string;
 				}
 
 				QVariant value_variant = get_qvariant_from_element(*iter);
@@ -220,21 +215,31 @@ namespace{
 				// The various QVariant .toXXX functions will return 0/0.0/empty-string if the 
 				// QVariant could not be converted to the requested form, but we should 
 				// warn the user if this happens.
+				bool ok;
 				switch(layer_type)
 				{
 				case OFTInteger:
-					ogr_feature->SetField(count,value_variant.toInt());
+					{			
+						int value = value_variant.toInt(&ok);
+						if (ok)
+						{
+							ogr_feature->SetField(count,value);					
+						}
+					}
 					break;
 				case OFTReal:
-					ogr_feature->SetField(count,value_variant.toDouble());
+					{
+						double value = value_variant.toDouble(&ok);
+						if (ok)
+						{
+							ogr_feature->SetField(count,value);					
+						}
+					}
 					break;
 				case OFTString:
+				default:
 					ogr_feature->SetField(count,value_variant.toString().toStdString().c_str());
 					break;
-				default:
-					// Handle anything else as a string. 
-					ogr_feature->SetField(count,value_variant.toString().toStdString().c_str());
-					
 				}
 
 			}

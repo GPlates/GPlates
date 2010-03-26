@@ -220,10 +220,10 @@ namespace
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		QString name)
 	{
-		GPlatesPropertyValues::XsString::non_null_ptr_type gml_description = 
+		GPlatesPropertyValues::XsString::non_null_ptr_type gml_name = 
 			GPlatesPropertyValues::XsString::create(UnicodeString(name.toStdString().c_str()));
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gml_description, 
+			gml_name, 
 			GPlatesModel::PropertyName::create_gml("name"), 
 			feature);
 	}
@@ -984,31 +984,27 @@ GPlatesFileIO::ShapefileReader::get_attributes()
 	int count;
 	for (count=0; count < num_fields; count++){
 		OGRFieldDefn *field_def_ptr = feature_def_ptr->GetFieldDefn(count);
-		if (field_def_ptr->GetType()==OFTInteger){
-			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsInteger(count)));
+		QVariant value_variant;
+		if (!d_feature_ptr->IsFieldSet(count))
+		{
+			value_variant = QVariant();
+		}
+		else if (field_def_ptr->GetType()==OFTInteger){
+			value_variant = QVariant(d_feature_ptr->GetFieldAsInteger(count));
 		}
 		else if (field_def_ptr->GetType()==OFTReal){
-			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsDouble(count)));
+			value_variant = QVariant(d_feature_ptr->GetFieldAsDouble(count));
 		}
 		else if (field_def_ptr->GetType()==OFTString){
-			QString temp_string;
-			temp_string = QString(d_feature_ptr->GetFieldAsString(count));
-			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsString(count)));
+			value_variant = QVariant(d_feature_ptr->GetFieldAsString(count));
 		}
 		else if (field_def_ptr->GetType()==OFTDate)
 		{
 			// Store this as a string. It's possible to extract the various year/month/day
-			// fields separately. 
-			QString temp_string;
-			temp_string = QString(d_feature_ptr->GetFieldAsString(count));
-			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsString(count)));
+			// fields separately if it becomes necessary. 
+			value_variant = QVariant(d_feature_ptr->GetFieldAsString(count));
 		}
-		else{
-			// Any other attribute types are not handled at the moment...use an
-			// empty string so that the size of d_attributes keeps in sync with the number
-			// of fields.
-			d_attributes.push_back(QVariant(QString()));
-		}
+		d_attributes.push_back(value_variant);
 	}
 }
 
@@ -1046,34 +1042,41 @@ GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
 			GPlatesPropertyValues::XsString::create(
 				GPlatesUtils::make_icu_string_from_qstring(fieldname));
 
+		bool ok;
 		// Add the attribute to the dictionary.
 		switch(type_){
 			case QVariant::Int:
+			{
+				int i = attribute.toInt(&ok);
+				if (ok)
 				{
-				int i = attribute.toInt();
-				GPlatesPropertyValues::XsInteger::non_null_ptr_type value = 
-					GPlatesPropertyValues::XsInteger::create(i);
-				GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-					key,
-					value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
-				dictionary->elements().push_back(element);
+					GPlatesPropertyValues::XsInteger::non_null_ptr_type value = 
+						GPlatesPropertyValues::XsInteger::create(i);
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
+						key,
+						value,
+						GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
+					dictionary->elements().push_back(element);
 				}
-				break;
+			}
+			break;
 			case QVariant::Double:
+			{
+				double d = attribute.toDouble(&ok);
+				if (ok)
 				{
-				double d = attribute.toDouble();
-				GPlatesPropertyValues::XsDouble::non_null_ptr_type value = 
-					GPlatesPropertyValues::XsDouble::create(d);
-				GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-					key,
-					value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"));
-				dictionary->elements().push_back(element);
+					GPlatesPropertyValues::XsDouble::non_null_ptr_type value = 
+						GPlatesPropertyValues::XsDouble::create(d);
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
+						key,
+						value,
+						GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"));
+					dictionary->elements().push_back(element);
 				}
-				break;
+			}
+			break;
 			case QVariant::String:
-				{
+			default:
 				GPlatesPropertyValues::XsString::non_null_ptr_type value = 
 					GPlatesPropertyValues::XsString::create(
 							GPlatesUtils::make_icu_string_from_qstring(attribute.toString()));
@@ -1082,9 +1085,6 @@ GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
 					value,
 					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
 				dictionary->elements().push_back(element);
-				}
-				break;
-			default:
 				break;
 		}
 
