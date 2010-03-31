@@ -80,14 +80,6 @@ namespace
 			QTableWidgetItem &)
 	{  }
 
-	void
-	get_data_reversed_flag(
-			const GPlatesGui::TopologySectionsContainer::TableRow &row_data,
-			QTableWidgetItem &cell)
-	{
-		cell.setCheckState(row_data.get_reverse()? Qt::Checked : Qt::Unchecked);
-	}
-
 
 	void
 	get_data_feature_type(
@@ -173,26 +165,6 @@ namespace
 			const QTableWidgetItem &)
 	{  }
 
-	void
-	set_data_reversed_flag(
-			GPlatesGui::TopologySectionsContainer::TableRow &row_data,
-			const QTableWidgetItem &cell)
-	{
-		// Convert the QTableWidgetItem's checked status into a bool.
-		bool new_reverse_flag = false;
-		if (cell.checkState() == Qt::Checked) {
-			new_reverse_flag = true;
-		}
-		
-		// Modify the TableRow data.
-		if (new_reverse_flag != row_data.get_reverse()) {
-			row_data.set_reverse(new_reverse_flag);
-			// Note: the update_data_from_table() method will push this table row into
-			// the d_container_ptr vector, which will ultimately emit signals to notify
-			// others about the updated data.
-		}
-	}
-
 
 	/**
 	 * Defines characteristics of each column of the table.
@@ -217,7 +189,7 @@ namespace
 	 */
 	enum ColumnLayout
 	{
-		COLUMN_ACTIONS, COLUMN_REVERSE, COLUMN_FEATURE_TYPE, COLUMN_PLATE_ID, COLUMN_NAME,
+		COLUMN_ACTIONS, COLUMN_FEATURE_TYPE, COLUMN_PLATE_ID, COLUMN_NAME,
 		NUM_COLUMNS
 	};
 
@@ -234,12 +206,6 @@ namespace
 				Qt::AlignCenter,
 				0,
 				null_data_accessor, null_data_mutator },
-
-		{ QT_TR_NOOP("Reverse"), QT_TR_NOOP("Controls whether the coordinates of the section will be applied in natural or reverse order."),
-				60, QHeaderView::Fixed,
-				Qt::AlignCenter,
-				Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable,
-				get_data_reversed_flag, set_data_reversed_flag },
 
 		{ QT_TR_NOOP("Feature type"), QT_TR_NOOP("The type of this feature"),
 				140, QHeaderView::ResizeToContents,

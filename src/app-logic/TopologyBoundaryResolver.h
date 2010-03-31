@@ -34,6 +34,7 @@
 #include <boost/optional.hpp>
 
 #include "app-logic/ReconstructionFeatureProperties.h"
+#include "app-logic/TopologyBoundaryIntersections.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -145,6 +146,7 @@ namespace GPlatesAppLogic
 
 				//! The reference (clicked) point for the intersection.
 				GPlatesMaths::PointOnSphere d_reference_point;
+
 				//! The reconstructed reference point - optional because valid not known at construction.
 				boost::optional<GPlatesMaths::PointOnSphere> d_reconstructed_reference_point;
 			};
@@ -154,23 +156,48 @@ namespace GPlatesAppLogic
 			{
 			public:
 				Section(
-						const GPlatesModel::FeatureId &source_feature_id) :
+						const GPlatesModel::FeatureId &source_feature_id,
+						const GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type &source_rfg) :
 					d_source_feature_id(source_feature_id),
-					d_use_reverse(false)
+					d_source_rfg(source_rfg),
+					d_use_reverse(false),
+					d_intersection_results(source_rfg->geometry())
 				{  }
 
 				//! The feature id of the feature referenced by this topological section.
 				GPlatesModel::FeatureId d_source_feature_id;
+
 				//! The source @a ReconstructedFeatureGeometry.
-				boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type> d_source_rfg;
-				//! The possibly clipped boundary segment geometry.
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_subsegment_geom;
+				GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type d_source_rfg;
+
 				//! The optional start intersection - only topological line sections can have this.
 				boost::optional<Intersection> d_start_intersection;
+
 				//! The optional end intersection - only topological line sections can have this.
 				boost::optional<Intersection> d_end_intersection;
-				//! Should the subsegment geometry be reversed when creating polygon boundary.
+
+				/**
+				 * Should the subsegment geometry be reversed when creating polygon boundary.
+				 */
 				bool d_use_reverse;
+
+
+				/**
+				 * The final possibly clipped boundary segment geometry.
+				 *
+				 * This is empty until it this section been tested against both its
+				 * neighbours and the appropriate possibly clipped subsegment is chosen
+				 * to be part of the plate polygon boundary.
+				 */
+				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+						d_final_boundary_segment_unreversed_geom;
+
+
+				/**
+				 * Keeps track of temporary results from intersections of this section
+				 * with its neighbours.
+				 */
+				TopologicalBoundaryIntersections d_intersection_results;
 			};
 
 			//! Typedef for a sequence of sections.
@@ -181,7 +208,7 @@ namespace GPlatesAppLogic
 		};
 
 
-		GPlatesModel::Reconstruction *d_recon_ptr;
+		GPlatesModel::Reconstruction &d_reconstruction;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;
@@ -209,9 +236,9 @@ namespace GPlatesAppLogic
 				std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &
 						sections);
 
-		void
+		boost::optional<ResolvedBoundary::Section>
 		record_topological_section_reconstructed_geometry(
-				ResolvedBoundary::Section &section,
+				const GPlatesModel::FeatureId &source_feature_id,
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate);
 
 		void
@@ -226,7 +253,15 @@ namespace GPlatesAppLogic
 
 		void
 		process_topological_section_intersection(
-				const std::size_t current_section_index);
+				const std::size_t current_section_index,
+				const bool two_sections = false);
+
+		void
+		assign_boundary_segments();
+
+		void
+		assign_boundary_segment(
+				const std::size_t section_index);
 
 		void
 		debug_output_topological_section_feature_id(

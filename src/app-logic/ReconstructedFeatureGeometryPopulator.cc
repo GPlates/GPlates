@@ -59,8 +59,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeom
 		bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
-	d_recon_ptr(&recon),
-	d_recon_tree_ptr(&recon_tree),
+	d_reconstruction(recon),
+	d_reconstruction_tree(recon_tree),
 	d_reconstruction_params(recon_time),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  }
@@ -108,7 +108,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 	{
 		// We obtained the reconstruction plate ID.  We now have all the information we
 		// need to reconstruct according to the reconstruction plate ID.
-		d_recon_rotation = d_recon_tree_ptr->get_composed_absolute_rotation(
+		d_recon_rotation = d_reconstruction_tree.get_composed_absolute_rotation(
 				*d_reconstruction_params.get_recon_plate_id()).first;
 	}
 
@@ -138,7 +138,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 						d_reconstruction_params.get_recon_plate_id(),
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rfg_ptr, d_recon_ptr);
+				rfg_ptr, d_reconstruction);
 	} else {
 		// We must be reconstructing using the identity rotation.
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
@@ -149,7 +149,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 						boost::none,
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rfg_ptr, d_recon_ptr);
+				rfg_ptr, d_reconstruction);
 	}
 }
 
@@ -175,7 +175,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 						d_reconstruction_params.get_recon_plate_id(),
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rfg_ptr, d_recon_ptr);
+				rfg_ptr, d_reconstruction);
 	} else {
 		// We must be reconstructing using the identity rotation.
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
@@ -186,7 +186,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 						boost::none,
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rfg_ptr, d_recon_ptr);
+				rfg_ptr, d_reconstruction);
 	}
 }
 
@@ -220,7 +220,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 						d_reconstruction_params.get_recon_plate_id(),
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rfg_ptr, d_recon_ptr);
+				rfg_ptr, d_reconstruction);
 	} else {
 		// We must be reconstructing using the identity rotation.
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
@@ -231,7 +231,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 						boost::none,
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rfg_ptr, d_recon_ptr);
+				rfg_ptr, d_reconstruction);
 	}
 }
 
@@ -259,7 +259,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 						d_reconstruction_params.get_recon_plate_id(),
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rfg_ptr, d_recon_ptr);
+				rfg_ptr, d_reconstruction);
 		
 		// Repeat the same procedure for each of the interior rings, if any.
 		GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
@@ -276,7 +276,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 							d_reconstruction_params.get_recon_plate_id(),
 							d_reconstruction_params.get_time_of_appearance());
 			ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-					interior_rfg_ptr, d_recon_ptr);
+					interior_rfg_ptr, d_reconstruction);
 		}
 	} else {
 		// We must be reconstructing using the identity rotation.
@@ -289,7 +289,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 						boost::none,
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rfg_ptr, d_recon_ptr);
+				rfg_ptr, d_reconstruction);
 
 		// Repeat the same procedure for each of the interior rings, if any.
 		GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
@@ -303,7 +303,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 							boost::none,
 							d_reconstruction_params.get_time_of_appearance());
 			ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-					interior_rfg_ptr, d_recon_ptr);
+					interior_rfg_ptr, d_reconstruction);
 		}
 	}
 }

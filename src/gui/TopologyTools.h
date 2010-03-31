@@ -31,13 +31,15 @@
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 
-#include <cstddef>
+#include <cstddef> // For std::size_t
 #include <utility>
 #include <vector>
 
 #include "global/types.h"
 
 #include "TopologySectionsContainer.h"
+
+#include "app-logic/TopologyBoundaryIntersections.h"
 
 #include "feature-visitors/TopologySectionsFinder.h"
 
@@ -229,43 +231,22 @@ namespace GPlatesGui
 
 	private:
 		/**
-		 * Keeps track of topological section data.
-		 *
-		 * The information stored here is extra information not contained in the table rows
-		 * of @a TopologySectionsContainer and is information specific to us.
-		 * It's information that other clients of @a TopologySectionsContainer don't need
-		 * to know about and hence don't need to be notified
-		 * (via @a TopologySectionsContainer signals) whenever it's modified.
+		 * Keeps track of geometry/intersection/rendering information for all currently visible sections.
 		 */
-		class SectionInfo
+		class VisibleSection
 		{
 		public:
-			explicit
-			SectionInfo(
-					const GPlatesGui::TopologySectionsContainer::TableRow &table_row) :
-				d_table_row(table_row)
-			{  }
+			VisibleSection(
+					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
+							section_geometry_unreversed,
+					const GPlatesGui::TopologySectionsContainer::TableRow &table_row,
+					const std::size_t section_info_index,
+					const GPlatesModel::Reconstruction &reconstruction);
 
 			/**
-			 * Resets all variables except the TableRow in @a d_table_row.
+			 * Index of the @a SectionInfo that 'this' object was created from.
 			 */
-			void
-			reset();
-
-			/**
-			 * Initialises those data members that deal with reconstructions.
-			 */
-			void
-			reconstruct_section_info_from_table_row(
-					GPlatesModel::Reconstruction &reconstruction);
-
-
-			/**
-			 * Keep a copy of the @a TopologySectionsContainer table row.
-			 * We will update this each time @a TopologySectionsContainer signals
-			 * us that the table row has been modified - so it will always be in sync.
-			 */
-			GPlatesGui::TopologySectionsContainer::TableRow d_table_row;
+			std::size_t d_section_info_index;
 
 			/**
 			 * The unclipped, un-intersected section geometry - this is the full geometry
@@ -277,15 +258,19 @@ namespace GPlatesGui
 					d_section_geometry_unreversed;
 
 			/**
-			 * The potentially clipped section geometry - the part of geometry of the topological
-			 * section that represents the resolved topological polygon boundary.
+			 * The final possibly clipped boundary segment geometry - the part of geometry of
+			 * the topological section that represents the resolved topological polygon boundary.
+			 *
+			 * This is empty until it this section been tested against both its
+			 * neighbours and the appropriate possibly clipped subsegment is chosen
+			 * to be part of the plate polygon boundary.
 			 *
 			 * NOTE: This does not take into account the reverse flag for this section.
 			 * It is designed this way to make the polyline clipping faster (which accounts
 			 * for most of the CPU for resolving topology polygons).
 			 */
 			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-					d_subsegment_geometry_unreversed;
+					d_final_boundary_segment_unreversed_geom;
 
 			/**
 			 * The start of the section (takes into account whether section is reversed).
@@ -315,6 +300,57 @@ namespace GPlatesGui
 
 			//! The optional intersection point with next section.
 			boost::optional<GPlatesMaths::PointOnSphere> d_intersection_point_with_next;
+
+			/**
+			 * Keeps track of temporary results from intersections of this section
+			 * with its neighbours.
+			 */
+			GPlatesAppLogic::TopologicalBoundaryIntersections d_intersection_results;
+		};
+
+		//! Typedef for a sequence of @a VisibleSection objects.
+		typedef std::vector<VisibleSection> visible_section_seq_type;
+
+
+		/**
+		 * Keeps track of topological section data for all current sections even if they
+		 * are not currently visible because their age range does not contain the current
+		 * reconstruction time.
+		 *
+		 * The information stored here is extra information not contained in the table rows
+		 * of @a TopologySectionsContainer and is information specific to us.
+		 * It's information that other clients of @a TopologySectionsContainer don't need
+		 * to know about and hence don't need to be notified
+		 * (via @a TopologySectionsContainer signals) whenever it's modified.
+		 */
+		class SectionInfo
+		{
+		public:
+			explicit
+			SectionInfo(
+					const GPlatesGui::TopologySectionsContainer::TableRow &table_row) :
+				d_table_row(table_row)
+			{  }
+
+
+			/**
+			 * Reconstruct this section and return a data structure to be used
+			 * for intersection processing and rendering.
+			 *
+			 * Returns false if no RFG could be found in @a reconstruction meaning
+			 * the current section's age range does not contain the current recon time.
+			 */
+			boost::optional<VisibleSection>
+			reconstruct_section_info_from_table_row(
+					std::size_t section_index,
+					GPlatesModel::Reconstruction &reconstruction) const;
+
+			/**
+			 * Keep a copy of the @a TopologySectionsContainer table row.
+			 * We will update this each time @a TopologySectionsContainer signals
+			 * us that the table row has been modified - so it will always be in sync.
+			 */
+			GPlatesGui::TopologySectionsContainer::TableRow d_table_row;
 		};
 
 		//! Typedef for a sequence of @a SectionInfo objects.
@@ -445,6 +481,11 @@ namespace GPlatesGui
 		section_info_seq_type d_section_info_seq;
 
 		/**
+		 * Contains the intersection/rendering information of the current visible sections.
+		 */
+		visible_section_seq_type d_visible_section_seq;
+
+		/**
 		 * An ordered collection of all the vertices in the topology.
 		 */
 		std::vector<GPlatesMaths::PointOnSphere> d_topology_vertices;
@@ -479,9 +520,7 @@ namespace GPlatesGui
 		activate_edit_mode();
 
 		void
-		display_feature(
-			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-			const GPlatesModel::FeatureHandle::children_iterator &properties_iter);
+		display_focused_feature();
 
 		/**
 		 * Initialise the topology from the currently focused feature.
@@ -490,44 +529,129 @@ namespace GPlatesGui
 		initialise_focused_topology();
 
 		/**
-		 * Updates the topology from modified sections and
-		 * redraws the screen.
+		 * Clears all sections from the topology if any sections are unloaded
+		 * (ie, if any features referenced by the topology are deleted).
 		 */
 		void
-		update_and_redraw_topology(
-				const section_info_seq_type::size_type first_modified_section_index,
-				const section_info_seq_type::size_type num_sections);
+		handle_unloaded_sections();
 
 		/**
-		 * Processes intersection between two adjacent sections.
+		 * Updates the topology and redraws the screen.
+		 */
+		void
+		update_and_redraw_topology();
+
+		/**
+		 * Returns true if in build mode (ie, topology not yet created so assumed
+		 * exists for all time) or if in edit mode and topology feature exists at
+		 * the current reconstruction time.
+		 */
+		bool
+		does_topology_exist_at_current_recon_time() const;
+
+		//! Reconstruct all sections.
+		void
+		reconstruct_sections();
+
+		//! Process all intersections.
+		void
+		process_intersections();
+
+		//! Special case intersection processing when there are exactly two sections.
+		void
+		process_two_section_intersections();
+
+		//! Find section reversal flags to minimise any rubber banding distance.
+		void
+		determine_segment_reversals();
+
+		/**
+		 * Find any contiguous sequences of sections that require rubber-banding
+		 * (ie, don't intersect each other) and that are anchored at the start and end
+		 * of each sequence by an intersection.
+		 */
+		const std::vector< std::vector<section_info_seq_type::size_type> > 
+		find_reverse_section_subsets();
+
+		/**
+		 * Find section reversal flags to minimise any rubber banding distance for a
+		 * subset of contiguous sections that are anchored either end by an intersection.
+		 */
+		std::vector<bool>
+		find_flip_reverse_order_flags(
+				const std::vector<visible_section_seq_type::size_type> &reverse_section_subset);
+
+		/**
+		 * Recursive function to find section reversal flags that minimise rubber banding distance.
+		 */
+		std::vector<bool>
+		find_reverse_order_subset_to_minimize_rubber_banding(
+				double &length,
+				const std::vector<visible_section_seq_type::size_type> &reverse_section_subset,
+				const bool flip_reversal_flag,
+				const GPlatesMaths::PointOnSphere &start_section_head,
+				const GPlatesMaths::PointOnSphere &previous_section_tail,
+				visible_section_seq_type::size_type current_depth,
+				visible_section_seq_type::size_type total_depth);
+
+		//! Assign the boundary subsegments.
+		void
+		assign_boundary_segments();
+
+		/**
+		 * Processes intersection between two adjacent visible sections.
 		 *
 		 * NOTE: The second section must follow the first section.
 		 */
 		void
 		process_intersection(
-				const section_info_seq_type::size_type first_section_index,
-				const section_info_seq_type::size_type second_section_index,
-				bool first_section_already_clipped,
-				bool second_section_already_clipped);
+				const visible_section_seq_type::size_type first_visible_section_index,
+				const visible_section_seq_type::size_type second_visible_section_index);
 
-		//! Returns the index of the previous section.
-		section_info_seq_type::size_type
-		get_prev_section_index(
-				section_info_seq_type::size_type section_index) const;
+		void
+		assign_boundary_segment(
+				const visible_section_seq_type::size_type visible_section_index);
 
-		//! Returns the index of the next section.
-		section_info_seq_type::size_type
-		get_next_section_index(
-				section_info_seq_type::size_type section_index) const;
+		const SectionInfo &
+		get_section_info(
+				const VisibleSection &visible_section) const;
+
+		SectionInfo &
+		get_section_info(
+				const VisibleSection &visible_section);
+
+		boost::optional<visible_section_seq_type::const_iterator>
+		is_section_visible(
+				const section_info_seq_type::size_type section_index) const;
+
+		void
+		set_reverse_flag(
+				const section_info_seq_type::size_type section_index,
+				const bool new_reverse_flag);
+
+		void
+		flip_reverse_flag(
+				const section_info_seq_type::size_type section_index);
+
+		std::pair<
+				GPlatesMaths::PointOnSphere/*start point*/,
+				GPlatesMaths::PointOnSphere/*end point*/>
+		get_boundary_geometry_end_points(
+				const visible_section_seq_type::size_type visible_section_index,
+				const bool flip_reversal_flag);
 
 		/**
-		 * Find the matching topological section given a feature reference and
+		 * Find the matching topological sections given a feature reference and
 		 * a geometry feature property iterator.
 		 */
-		int
-		find_topological_section_index(
+		std::vector<int>
+		find_topological_section_indices(
 				const GPlatesModel::FeatureHandle::weak_ref &feature,
-				const GPlatesModel::FeatureHandle::children_iterator &properties_iter);
+				const GPlatesModel::FeatureHandle::children_iterator &properties_iter) const;
+		
+		//! Returns true if the focused feature can be added to the topology.
+		bool
+		can_insert_focused_feature_into_topology() const;
 
 		void
 		create_child_rendered_layers();
@@ -540,14 +664,6 @@ namespace GPlatesGui
 		 */
 		void
 		update_topology_vertices();
-
-		/**
-		 * Returns true if the topological section at index @a section_index should
-		 * be reversed.
-		 */
-		bool
-		should_reverse_section(
-				const section_info_seq_type::size_type section_index);
 
 		/**
 		 * Creates the 'gpml:boundary' property value from the current topology state
@@ -583,7 +699,8 @@ namespace GPlatesGui
 		draw_topology_geometry();
 
 		void 
-		draw_focused_geometry();
+		draw_focused_geometry(
+				bool draw);
 
 		void 
 		draw_focused_geometry_end_points(

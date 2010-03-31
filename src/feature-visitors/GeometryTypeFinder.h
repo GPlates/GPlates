@@ -48,10 +48,10 @@ namespace GPlatesFeatureVisitors
 	public:
 
 		GeometryTypeFinder():
-			d_found_point_geometries(false),
-			d_found_multi_point_geometries(false),
-			d_found_polyline_geometries(false),
-			d_found_polygon_geometries(false)
+			d_num_point_geometries_found(0),
+			d_num_multi_point_geometries_found(0),
+			d_num_polyline_geometries_found(0),
+			d_num_polygon_geometries_found(0)
 		{  }
 
 		virtual
@@ -115,55 +115,89 @@ namespace GPlatesFeatureVisitors
 		bool
 		found_point_geometries() const
 		{
-			return d_found_point_geometries;
+			return d_num_point_geometries_found != 0;
 		}
 
 		bool
 		found_multi_point_geometries() const
 		{
-			return d_found_multi_point_geometries;
+			return d_num_multi_point_geometries_found != 0;
 		}
 
 		bool
 		found_polyline_geometries() const
 		{
-			return d_found_polyline_geometries;
+			return d_num_polyline_geometries_found != 0;
 		}
 
 		bool
 		found_polygon_geometries() const
 		{
-			return d_found_polygon_geometries;
+			return d_num_polygon_geometries_found != 0;
+		}
+
+		int
+		num_point_geometries_found() const
+		{
+			return d_num_point_geometries_found;
+		}
+
+		int
+		num_multi_point_geometries_found() const
+		{
+			return d_num_multi_point_geometries_found;
+		}
+
+		int
+		num_polyline_geometries_found() const
+		{
+			return d_num_polyline_geometries_found;
+		}
+
+		int
+		num_polygon_geometries_found() const
+		{
+			return d_num_polygon_geometries_found;
 		}
 
 		bool
 		has_found_geometries() const
 		{
-			return (d_found_point_geometries ||
-					d_found_multi_point_geometries ||
-					d_found_polyline_geometries ||
-					d_found_polygon_geometries);
+			return found_point_geometries() ||
+					found_multi_point_geometries() ||
+					found_polyline_geometries() ||
+					found_polygon_geometries();
 		}
 
+		/**
+		 * Returns true if different types of geometry were found.
+		 * For example, a point and a polyline.
+		 */
 		bool
-		has_found_multiple_geometries() const;
+		has_found_multiple_geometry_types() const;
+
+		/**
+		 * Returns true if found more than one geometry of the same type.
+		 */
+		bool
+		has_found_multiple_geometries_of_the_same_type() const;
 
 
 		void
 		clear_found_geometries()
 		{
-			d_found_point_geometries = false;
-			d_found_multi_point_geometries = false;
-			d_found_polyline_geometries = false;
-			d_found_polygon_geometries = false;
+			d_num_point_geometries_found = 0;
+			d_num_multi_point_geometries_found = 0;
+			d_num_polyline_geometries_found = 0;
+			d_num_polygon_geometries_found = 0;
 		}
 
 	private:
 
-		bool d_found_point_geometries;
-		bool d_found_multi_point_geometries;
-		bool d_found_polyline_geometries;
-		bool d_found_polygon_geometries;
+		int d_num_point_geometries_found;
+		int d_num_multi_point_geometries_found;
+		int d_num_polyline_geometries_found;
+		int d_num_polygon_geometries_found;
 	};
 	/**
 	 * Find the first geometry property from a feature.

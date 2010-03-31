@@ -298,6 +298,8 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER);
+	orthogonal_main_layers.set(
+			GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
 	d_rendered_geometry_collection->set_orthogonal_main_layers(orthogonal_main_layers);
 }

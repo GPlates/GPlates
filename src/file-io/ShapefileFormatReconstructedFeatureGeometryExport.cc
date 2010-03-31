@@ -204,7 +204,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 	QString file_path = file_info.filePath();
 	GPlatesFileIO::ShapefileGeometryExporter geom_exporter(
 		file_path,
-		finder.has_found_multiple_geometries());
+		finder.has_found_multiple_geometry_types());
 
 
 	// Iterate through the reconstructed geometries and write to output.

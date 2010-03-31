@@ -92,7 +92,7 @@ GPlatesGui::TopologySectionsContainer::remove_at(
 	d_container.erase(d_container.begin() + index);
 	
 	// Adjust Insertion Point if necessary.
-	if (insertion_point() > index) {
+	if (insertion_point() >= index) {
 		move_insertion_point(insertion_point() - 1);
 	}
 	// Emit signals

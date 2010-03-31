@@ -155,7 +155,7 @@ namespace GPlatesAppLogic
 		void
 		add_reconstruction_geometry_to_reconstruction(
 				GPlatesModel::ReconstructionGeometry::non_null_ptr_type recon_geom,
-				GPlatesModel::Reconstruction *reconstruction);
+				GPlatesModel::Reconstruction &reconstruction);
 
 
 		////////////////////

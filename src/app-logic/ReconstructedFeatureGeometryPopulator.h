@@ -108,8 +108,8 @@ namespace GPlatesAppLogic
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
-		GPlatesModel::Reconstruction *d_recon_ptr;
-		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
+		GPlatesModel::Reconstruction &d_reconstruction;
+		GPlatesModel::ReconstructionTree &d_reconstruction_tree;
 
 		ReconstructionFeatureProperties d_reconstruction_params;
 		boost::optional<GPlatesMaths::FiniteRotation> d_recon_rotation;

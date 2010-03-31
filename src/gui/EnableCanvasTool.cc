@@ -452,6 +452,12 @@ GPlatesGui::EnableCanvasTool::update_edit_topology_tool()
 		if (d_feature_focus->is_valid())
 		{
 			// Check feature type via qstrings
+			//
+			// FIXME: Do this check based on feature properties rather than feature type.
+			// So if something looks like a TCPB (because it has a topology polygon property)
+			// then treat it like one. For this to happen we first need TopologicalNetwork to
+			// use a property type different than TopologicalPolygon.
+			//
 			static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
 			static const QString topology_network_type_name ("TopologicalNetwork");
 			QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(

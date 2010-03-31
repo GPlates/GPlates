@@ -37,6 +37,7 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/GMTFormatGeometryExporter.h"
 #include "file-io/GMTFormatHeader.h"
+#include "file-io/PlatesLineFormatHeaderVisitor.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
@@ -238,26 +239,26 @@ namespace
 		GMTOldFeatureIdStyleHeader(
 				const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 		{
-			static const GPlatesModel::PropertyName old_plates_header_property_name =
-				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
-			const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header = NULL;
-			if (!GPlatesFeatureVisitors::get_property_value(
+			// Get an OldPlatesHeader that contains attributes that are updated
+			// with GPlates properties where available.
+			GPlatesFileIO::OldPlatesHeader old_plates_header;
+			GPlatesFileIO::PlatesLineFormatHeaderVisitor plates_header_visitor;
+			plates_header_visitor.get_old_plates_header(
 					feature,
-					old_plates_header_property_name,
-					old_plates_header))
-			{
-				// We only generate a header if the feature has an GpmlOldPlatesHeader property.
-				return;
-			}
+					old_plates_header,
+					false/*append_feature_id_to_geographic_description*/);
+
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type gpml_old_plates_header =
+					old_plates_header.create_gpml_old_plates_header();
 
 			QString name;
-			if (!get_feature_name(name, feature, old_plates_header))
+			if (!get_feature_name(name, feature, gpml_old_plates_header.get()))
 			{
 				return;
 			}
 
 			const QString old_feature_id =
-					QString(old_plates_header->old_feature_id().c_str());
+					QString(gpml_old_plates_header->old_feature_id().c_str());
 
 			d_header_line = ' ' + name + ';' + old_feature_id;
 		}

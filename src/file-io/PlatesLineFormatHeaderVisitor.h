@@ -92,6 +92,13 @@ namespace GPlatesFileIO
 			colour_code(1),
 			number_of_points(1)
 		{ }
+
+
+		/**
+		 * Creates a GpmlOldPlatesHeader property value from 'this'.
+		 */
+		GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
+		create_gpml_old_plates_header();
 	};
 
 	/**
@@ -114,8 +121,9 @@ namespace GPlatesFileIO
 		virtual
 			bool
 			get_old_plates_header(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			OldPlatesHeader& old_plates_header);
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+					OldPlatesHeader& old_plates_header,
+					bool append_feature_id_to_geographic_description = true);
 
 	private:
 		virtual

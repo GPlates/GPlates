@@ -1221,7 +1221,7 @@ GPlatesFileIO::ShapefileWriter::ShapefileWriter(
 	}
 
 	// Set up an appropriate OgrWriter.
-	d_ogr_writer.reset(new OgrWriter(file_info.get_qfileinfo().filePath(),finder.has_found_multiple_geometries()));
+	d_ogr_writer.reset(new OgrWriter(file_info.get_qfileinfo().filePath(),finder.has_found_multiple_geometry_types()));
 
 	// The file_info might not have a model_to_shapefile_map - the feature collection
 	// might have originated from a plates file, for example. If we don't have one,

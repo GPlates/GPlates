@@ -165,7 +165,7 @@ namespace GPlatesAppLogic
 		};
 
 
-		GPlatesModel::Reconstruction *d_recon_ptr;
+		GPlatesModel::Reconstruction &d_reconstruction;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;

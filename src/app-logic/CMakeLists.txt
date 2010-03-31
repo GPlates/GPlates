@@ -55,6 +55,8 @@ set(srcs
     ReconstructionGeometryUtils.h
     ReconstructUtils.cc
     ReconstructUtils.h
+    TopologyBoundaryIntersections.cc
+    TopologyBoundaryIntersections.h
     TopologyBoundaryResolver.cc
     TopologyBoundaryResolver.h
     TopologyInternalUtils.cc

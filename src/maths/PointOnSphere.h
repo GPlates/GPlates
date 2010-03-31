@@ -389,11 +389,11 @@ namespace GPlatesMaths
 	 * the range @a point_seq_begin / @a point_seq_end
 	 * (which is assumed to be a sequence of PointOnSphere).
 	 */
-	template<typename ForwardIter>
+	template<typename PointForwardIter>
 	unsigned
 	count_distinct_adjacent_points(
-			ForwardIter point_seq_begin,
-			ForwardIter point_seq_end);
+			PointForwardIter point_seq_begin,
+			PointForwardIter point_seq_end);
 
 	/**
 	 * Count the number of distinct adjacent points in the sequence @a point_seq of type S
@@ -426,12 +426,12 @@ namespace GPlatesMaths
 	 *
 	 * This function is strongly exception-safe and exception-neutral.
 	 */
-	template<typename ForwardIter, typename D>
+	template<typename PointForwardIter, typename D>
 	void
 	populate_point_on_sphere_sequence(
 			D &dest_seq,
-			ForwardIter source_seq_begin,
-			ForwardIter source_seq_end);
+			PointForwardIter source_seq_begin,
+			PointForwardIter source_seq_end);
 
 	/**
 	 * Populate the supplied (presumably empty) destination sequence @a dest_seq of type D
@@ -475,14 +475,14 @@ namespace GPlatesMaths
 }
 
 
-template<typename ForwardIter>
+template<typename PointForwardIter>
 unsigned
 GPlatesMaths::count_distinct_adjacent_points(
-		ForwardIter point_seq_begin,
-		ForwardIter point_seq_end)
+		PointForwardIter point_seq_begin,
+		PointForwardIter point_seq_end)
 {
-	ForwardIter iter = point_seq_begin;
-	ForwardIter end = point_seq_end;
+	PointForwardIter iter = point_seq_begin;
+	PointForwardIter end = point_seq_end;
 
 	if (iter == end) {
 		// The container is empty.
@@ -501,12 +501,12 @@ GPlatesMaths::count_distinct_adjacent_points(
 }
 
 
-template<typename ForwardIter, typename D>
+template<typename PointForwardIter, typename D>
 void
 GPlatesMaths::populate_point_on_sphere_sequence(
 		D &dest_seq,
-		ForwardIter source_seq_begin,
-		ForwardIter source_seq_end)
+		PointForwardIter source_seq_begin,
+		PointForwardIter source_seq_end)
 {
 	D tmp_seq;
 
@@ -516,14 +516,14 @@ GPlatesMaths::populate_point_on_sphere_sequence(
 		// Uh oh, it's an odd-length collection.
 		// Note that, since the length of the sequence is odd, the length must be
 		// greater than zero, so there must be at least one element.
-		ForwardIter back_iter = source_seq_end;
+		PointForwardIter back_iter = source_seq_end;
 		--back_iter;
 		throw TrailingLatLonCoordinateException(GPLATES_EXCEPTION_SOURCE,
 				*back_iter,
 				std::distance(source_seq_begin, source_seq_end));
 	}
-	ForwardIter iter = source_seq_begin;
-	ForwardIter end = source_seq_end;
+	PointForwardIter iter = source_seq_begin;
+	PointForwardIter end = source_seq_end;
 	for (unsigned coord_index = 0; iter != end; ++iter, ++coord_index) {
 		double lon = *iter;
 		if ( ! LatLonPoint::is_valid_longitude(lon)) {

@@ -126,6 +126,26 @@ number_of_points(number_of_points_)
 }
 
 
+GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
+GPlatesFileIO::OldPlatesHeader::create_gpml_old_plates_header()
+{
+	return GPlatesPropertyValues::GpmlOldPlatesHeader::create(
+			region_number,
+			reference_number,
+			string_number,
+			geographic_description,
+			plate_id_number,
+			age_of_appearance,
+			age_of_disappearance,
+			data_type_code,
+			data_type_code_number,
+			data_type_code_number_additional,
+			conjugate_plate_id_number,
+			colour_code,
+			number_of_points);
+}
+
+
 GPlatesFileIO::PlatesLineFormatHeaderVisitor::PlatesLineFormatHeaderVisitor()
 {
 }
@@ -133,7 +153,8 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::PlatesLineFormatHeaderVisitor()
 bool
 GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-		OldPlatesHeader& old_plates_header)
+		OldPlatesHeader& old_plates_header,
+		bool append_feature_id_to_geographic_description)
 {
 	d_accum = PlatesHeaderAccumulator();
 
@@ -175,8 +196,11 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 	// Regardless of whether there's a gpml:oldPlatesHeader property we need to
 	// add the feature id somewhere. The end of the geographic description seems
 	// like a good place.
-	append_feature_id_to_geog_description(feature->handle_data().feature_id(),
-			old_plates_header.geographic_description);
+	if (append_feature_id_to_geographic_description)
+	{
+		append_feature_id_to_geog_description(feature->handle_data().feature_id(),
+				old_plates_header.geographic_description);
+	}
 
 	/*
 	* Override the old plates header values with any that GPlates has added.
