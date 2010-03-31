@@ -54,6 +54,9 @@ namespace GPlatesModel
 {
 	namespace ModelUtils
 	{
+		/**
+		 * Typedef for a function that accepts a feature property and returns a boolean.
+		 */
 		typedef boost::function<bool (const GPlatesModel::FeatureHandle::children_iterator &)>
 			property_predicate_type;
 
@@ -79,6 +82,31 @@ namespace GPlatesModel
 		FeatureHandle::non_null_ptr_type
 		deep_clone_feature(
 				const FeatureHandle::weak_ref &feature);
+	
+		/**
+		 * The default clone properties predicate always returns true.
+		 */
+		inline
+		bool
+		default_clone_properties_predicate(
+				const GPlatesModel::FeatureHandle::children_iterator &)
+		{
+			return true;
+		}
+
+		/**
+		 * Makes a deep clone of a feature (but only the property values that returns true
+		 * when passed to @a clone_properties_predicate).
+		 *
+		 * The cloned feature is also added to @a feature_collection_ref.
+		 */
+		GPlatesModel::FeatureHandle::weak_ref
+		deep_clone_feature(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+				GPlatesModel::ModelInterface &model,
+				const property_predicate_type &clone_properties_predicate =
+						&default_clone_properties_predicate);
 
 
 		const TopLevelPropertyInline::non_null_ptr_type
@@ -168,24 +196,6 @@ namespace GPlatesModel
 				unsigned long fixed_plate_id,
 				unsigned long moving_plate_id,
 				const std::vector<TotalReconstructionPoleData> &five_tuples);
-	
-		/**
-		 * The default clone properties predicate always returns true.
-		 */
-		inline
-		bool
-		default_clone_properties_predicate(
-		const GPlatesModel::FeatureHandle::children_iterator&)
-		{
-			return true;
-		}
-
-		GPlatesModel::FeatureHandle::weak_ref
-			clone_feature(
-			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-			GPlatesModel::ModelInterface &model,
-			property_predicate_type predicate = &default_clone_properties_predicate);
 
 		
 		bool

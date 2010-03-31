@@ -512,53 +512,16 @@ namespace
 
 
 	/**
-	 * Creates a clone of @a old_feature_ref in @a feature_collection_ref.
-	 *
-	 * NOTE: Does not clone geometry properties and 'gpml:reconstructionPlateId' property(s).
+	 * Don't clone geometry properties or 'gpml:reconstructionPlateId' properties.
 	 */
-	GPlatesModel::FeatureHandle::weak_ref
-	clone_feature(
-			const GPlatesModel::FeatureHandle::weak_ref &old_feature_ref,
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-			GPlatesModel::ModelInterface &model)
+	bool
+	clone_feature_properties_except_geometry_and_plate_id(
+			const GPlatesModel::FeatureHandle::children_iterator &properties_iterator)
 	{
-		// Create a new feature.
-		const GPlatesModel::FeatureHandle::weak_ref new_feature_ref =
-				model->create_feature(
-						old_feature_ref->handle_data().feature_type(),
-						feature_collection_ref);
-
-		// Iterate over the feature properties of the original feature
-		// and clone them and append the cloned versions to the new feature.
-		GPlatesModel::FeatureHandle::children_iterator old_feature_properties_iter =
-				old_feature_ref->children_begin();
-		GPlatesModel::FeatureHandle::children_iterator old_feature_properties_end =
-				old_feature_ref->children_end();
-		for ( ; old_feature_properties_iter != old_feature_properties_end;
-			++old_feature_properties_iter)
-		{
-			if(!old_feature_properties_iter.is_valid())
-			{
-				continue;
-			}
-
-			// Don't clone geometry properties or 'gpml:reconstructionPlateId' properties.
-			if (is_geometry_property(old_feature_properties_iter) ||
-				is_reconstruction_plate_id_property(old_feature_properties_iter))
-			{
-				continue;
-			}
-
-			// Clone the current property value.
-			const GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_property =
-					(*old_feature_properties_iter)->clone();
-
-			// Add the cloned property value to the new feature.
-			GPlatesModel::ModelUtils::append_property_to_feature(
-					cloned_property, new_feature_ref);
-		}
-
-		return new_feature_ref;
+		return !(
+			is_geometry_property(properties_iterator) ||
+			is_reconstruction_plate_id_property(properties_iterator)
+			);
 	}
 
 
@@ -1454,10 +1417,11 @@ namespace
 					}
 					else
 					{
-						no_plate_id_feature_ref = clone_feature(
+						no_plate_id_feature_ref = GPlatesModel::ModelUtils::deep_clone_feature(
 								feature_ref,
 								feature_collection,
-								model);
+								model,
+								&clone_feature_properties_except_geometry_and_plate_id);
 					}
 				}
 
@@ -1528,10 +1492,11 @@ namespace
 			}
 			else
 			{
-				recon_plate_id_feature_ref = clone_feature(
+				recon_plate_id_feature_ref = GPlatesModel::ModelUtils::deep_clone_feature(
 						feature_ref,
 						feature_collection,
-						model);
+						model,
+						&clone_feature_properties_except_geometry_and_plate_id);
 			}
 			// Make sure we register the feature in the map (if isn't already).
 			recon_plate_id_to_feature_map[reconstruction_plate_id] =
@@ -1646,10 +1611,11 @@ namespace
 			}
 			else
 			{
-				new_feature_ref = clone_feature(
+				new_feature_ref = GPlatesModel::ModelUtils::deep_clone_feature(
 						feature_ref,
 						feature_collection,
-						model);
+						model,
+						&clone_feature_properties_except_geometry_and_plate_id);
 			}
 
 			// Iterate over the geometry properties that have partitioned geometries

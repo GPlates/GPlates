@@ -48,18 +48,17 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 		return;
 	}
 
-	//Since the clone_feature function only does a "shallow copy" of geometry property,
-	//we exclude geometry property when cloning the feature.
-	//The geometry property will be appended to the feature later
+	// We exclude geometry property when cloning the feature because the new
+	// split geometry property will be appended to the cloned feature later.
 	d_new_feature_1 = 
-		GPlatesModel::ModelUtils::clone_feature(
+		GPlatesModel::ModelUtils::deep_clone_feature(
 				feature_ref,
 				d_feature_collection_ref,
 				d_view_state->get_application_state().get_model_interface(),
 				&GPlatesFeatureVisitors::is_not_geometry_property);
 
 	d_new_feature_2 = 
-		GPlatesModel::ModelUtils::clone_feature(
+		GPlatesModel::ModelUtils::deep_clone_feature(
 				feature_ref,
 				d_feature_collection_ref,
 				d_view_state->get_application_state().get_model_interface(),
@@ -77,7 +76,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 			points);
 
 	GeometryBuilder::PointIndex point_index_to_split;
-	if(d_oriented_pos_on_globe)
+	if (d_oriented_pos_on_globe)
 	{
 		points.insert(
 				points.begin()+ d_point_index_to_insert_at, 
@@ -87,7 +86,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	point_index_to_split = d_point_index_to_insert_at + 1;
 	
 	//if the point is at the beginning or the end of the ployline, we do nothing but return
-	if(d_point_index_to_insert_at == 0 ||
+	if (d_point_index_to_insert_at == 0 ||
 		(points.begin() + d_point_index_to_insert_at + 1) == points.end())
 	{
 		return;
@@ -96,8 +95,8 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	GPlatesModel::PropertyName property_name = 
 		(*property_iter)->property_name(); 
 
-	//TODO: currently the ployline type has been hardcoded here, 
-	//we need to support other geometry type in the future
+	// TODO: currently the ployline type has been hardcoded here, 
+	// we need to support other geometry type in the future
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
 			*GPlatesUtils::GeometryUtil::create_geometry_property_value(
 					points.begin(), 
@@ -119,7 +118,6 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 			*GPlatesFeatureVisitors::find_first_geometry_property(
 					*d_new_feature_1));
 	d_feature_focus->announce_modification_of_focused_feature();
-	return;
 }
 
 void

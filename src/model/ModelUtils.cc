@@ -98,6 +98,45 @@ GPlatesModel::ModelUtils::deep_clone_feature(
 }
 
 
+GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::ModelUtils::deep_clone_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+		GPlatesModel::ModelInterface &model,
+		const property_predicate_type &clone_properties_predicate)
+{
+	//Create a new feature.
+	const GPlatesModel::FeatureHandle::weak_ref new_feature_ref =
+			model->create_feature(
+					feature_ref->handle_data().feature_type(),
+					feature_collection_ref);
+		
+	GPlatesModel::FeatureHandle::children_iterator old_feature_properties_iter =
+		feature_ref->children_begin();
+
+	GPlatesModel::FeatureHandle::children_iterator old_feature_properties_end =
+		feature_ref->children_end();
+
+	for ( ; old_feature_properties_iter != old_feature_properties_end;
+		++old_feature_properties_iter)
+	{
+		if(!old_feature_properties_iter.is_valid() ||
+		   !clone_properties_predicate(old_feature_properties_iter))
+		{
+			continue;
+		}
+		
+		const GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_property_value =
+			(*old_feature_properties_iter)->deep_clone();
+
+		GPlatesModel::ModelUtils::append_property_to_feature(
+			cloned_property_value, new_feature_ref);
+	}
+
+	return new_feature_ref;
+}
+
+
 const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
 GPlatesModel::ModelUtils::append_property_value_to_feature(
 		PropertyValue::non_null_ptr_type property_value,
@@ -333,44 +372,6 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 			feature);
 
 	return feature;
-}
-
-GPlatesModel::FeatureHandle::weak_ref
-GPlatesModel::ModelUtils::clone_feature(
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		GPlatesModel::ModelInterface &model,
-		property_predicate_type predicate)
-{
-	//Create a new feature.
-	const GPlatesModel::FeatureHandle::weak_ref new_feature_ref =
-			model->create_feature(
-					feature_ref->handle_data().feature_type(),
-					feature_collection_ref);
-		
-	GPlatesModel::FeatureHandle::children_iterator old_feature_properties_iter =
-		feature_ref->children_begin();
-
-	GPlatesModel::FeatureHandle::children_iterator old_feature_properties_end =
-		feature_ref->children_end();
-
-	for ( ; old_feature_properties_iter != old_feature_properties_end;
-		++old_feature_properties_iter)
-	{
-		if(!old_feature_properties_iter.is_valid() ||
-		   !predicate(old_feature_properties_iter))
-		{
-			continue;
-		}
-		
-		const GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_property_value =
-			(*old_feature_properties_iter)->clone();
-
-		GPlatesModel::ModelUtils::append_property_to_feature(
-			cloned_property_value, new_feature_ref);
-	}
-
-	return new_feature_ref;
 }
 
 bool
