@@ -487,6 +487,11 @@ GPlatesAppLogic::TopologyBoundaryResolver::assign_boundary_segment(
 {
 	ResolvedBoundary::Section &section = d_resolved_boundary.d_sections[section_index];
 
+	// See if the reverse flag has been set by intersection processing - this
+	// happens if the visible section intersected both its neighbours otherwise it just
+	// returns the flag we passed it.
+	section.d_use_reverse = section.d_intersection_results.get_reverse_flag(section.d_use_reverse);
+
 	section.d_final_boundary_segment_unreversed_geom =
 			section.d_intersection_results.get_unreversed_boundary_segment(section.d_use_reverse);
 }
