@@ -204,10 +204,9 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 	}
 	progress_dlg->disable_cancel_button(true);
 	progress_dlg->update_progress(12, tr("Saving feature files..."));
+
 	static const GPlatesModel::FeatureType mesh_node_feature_type = 
 		GPlatesModel::FeatureType::create_gpml("MeshNode");
-
-	GPlatesModel::FeatureHandle::weak_ref feature;
 
 	std::stringstream resolution;
 	resolution<<d_node_x+1;
@@ -215,16 +214,14 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 
 	for(int i=geometries.size()-1; i>=0; i--)
 	{
-		//create MeshNode Feature
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file = 
-			d_view_state.get_application_state().get_feature_collection_file_io().
-			create_empty_file();
-		GPlatesModel::FeatureCollectionHandle::weak_ref collection = 
-			file->get_feature_collection();
+		GPlatesModel::ModelInterface model =
+				d_view_state.get_application_state().get_model_interface();
 
-		feature = 
-			d_view_state.get_application_state().get_model_interface()->create_feature(
-					mesh_node_feature_type, collection);
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = 
+				model->create_feature_collection();
+
+		GPlatesModel::FeatureHandle::weak_ref feature = model->create_feature(
+				mesh_node_feature_type, feature_collection);
 
 		//create the geometry property and append to feature
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
@@ -243,58 +240,19 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 		file_name.replace(file_name.find(DENSITY_PLACE_HOLDER), 2, res_str);
 		file_name.replace(file_name.find(CAP_NUM_PLACE_HOLDER), 2, cap_num);
 		file_name=d_path.toStdString()+file_name;
-		GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
-				file_name.c_str(), file->get_file_info());
 
-		// Save the feature collection.
-		d_view_state.get_application_state().get_feature_collection_file_io().save_file(
-				new_fileinfo,
-				file->get_const_feature_collection(),
-				GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+		GPlatesFileIO::FileInfo new_fileinfo(file_name.c_str());
 
-		// Wrap the same feature collection up with the new FileInfo.
-		const GPlatesFileIO::File::shared_ref new_file = GPlatesFileIO::File::create_save_file(
-				*file, new_fileinfo);
-
-		// Update the name of the file by replacing with the new File object.
-		// NOTE: this also removes the old file object thus making 'file'
-		// a dangling reference.
-		d_view_state.get_application_state().get_feature_collection_file_state().reset_file(file, new_file);
+		// Save the feature collection to a file that is registered with
+		// FeatureCollectionFileState (maintains list of all loaded files).
+		d_view_state.get_application_state().get_feature_collection_file_io().create_file(
+				new_fileinfo, feature_collection);
 
 	}
-	d_manage_feature_collections_dialog.update();
-	//set focus to the new feature 
-	if(!feature.is_valid())
-		return;
 
-	GPlatesModel::FeatureHandle::children_iterator iter =
-		feature->children_begin();
-	GPlatesModel::FeatureHandle::children_iterator iter_end =
-		feature->children_end();
-
-	GPlatesFeatureVisitors::GeometryFinder geometry_finder;
-	for(; iter != iter_end; iter++)
-	{
-		if(!iter.is_valid())
-		{
-			continue;
-		}
-		(*iter)->accept_visitor(geometry_finder);
-		if (geometry_finder.has_found_geometries())
-		{
-			break;
-		}
-	}
-	
-	if(iter == iter_end)
-		return;
-
-	d_view_state.get_feature_focus().set_focus(feature, iter);
-	d_view_state.get_feature_focus().announce_modification_of_focused_feature();
 	button_gen->setDisabled(false);
 	button_cancel->setDisabled(false);
 	progress_dlg->close();
 	close();
-	return;
 }
 

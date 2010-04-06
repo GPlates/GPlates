@@ -186,6 +186,30 @@ GPlatesAppLogic::FeatureCollectionFileIO::create_empty_file()
 }
 
 
+GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+GPlatesAppLogic::FeatureCollectionFileIO::create_file(
+		const GPlatesFileIO::FileInfo &file_info,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		GPlatesFileIO::FeatureCollectionWriteFormat::Format format)
+{
+	// Make sure feature collection gets unloaded when it's no longer needed.
+	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref feature_collection_unloader =
+			GPlatesModel::FeatureCollectionHandleUnloader::create(feature_collection);
+
+	GPlatesFileIO::File::shared_ref file = GPlatesFileIO::File::create_loaded_file(
+			feature_collection_unloader, file_info);
+
+	const GPlatesModel::FeatureCollectionHandle::const_weak_ref const_feature_collection =
+			GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(feature_collection);
+	save_file(file_info, const_feature_collection, format);
+
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_file_it =
+			d_file_state.add_file(file);
+
+	return new_file_it;
+}
+
+
 void
 GPlatesAppLogic::FeatureCollectionFileIO::remap_shapefile_attributes(
 		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it)

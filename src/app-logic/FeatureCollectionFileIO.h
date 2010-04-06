@@ -177,7 +177,26 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Creates a file named @a file_info, saves @a feature_collection to the file and
+		 * registers the file with FeatureCollectionFileState.
+		 *
+		 * This method is useful when you want to save a feature collection that was not
+		 * originally loaded from a file - and you want the new file to appear in the
+		 * list of loaded files maintained by FeatureCollectionFileState.
+		 */
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+		create_file(
+				const GPlatesFileIO::FileInfo &file_info,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
+					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+
+
+		/**
 		 * Write the feature collection associated to a file described by @a file_info.
+		 *
+		 * NOTE: this differs from @a create_file in that it only saves the feature collection
+		 * to the file and doesn't register with FeatureCollectionFileState.
 		 */
 		static
 		void
