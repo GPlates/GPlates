@@ -85,15 +85,29 @@ GPlatesQtWidgets::MeshDialog::MeshDialog(
 		GPlatesPresentation::ViewState & view_state,
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog& manage_feature_collections_dialog,
 		QWidget *parent_ )
-	:QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
+	:QDialog(
+			parent_, 
+			Qt::CustomizeWindowHint | 
+			Qt::WindowTitleHint | 
+			Qt::WindowSystemMenuHint | 
+			Qt::MSWindowsFixedSizeDialogHint),
 	d_node_x(1),
-	d_view_state(view_state),
+	d_view_state(
+			view_state),
 	d_help_dialog_resolution(
-			new InformationDialog(s_help_dialog_text_resolution, s_help_dialog_title_resolution, this)),
+			new InformationDialog(
+					s_help_dialog_text_resolution, 
+					s_help_dialog_title_resolution, 
+					this)),
 	d_help_dialog_output(
-			new InformationDialog(s_help_dialog_text_output, s_help_dialog_title_output, this)),
-	d_file_name_template(DENSITY_PLACE_HOLDER+".mesh."+CAP_NUM_PLACE_HOLDER),
-	d_manage_feature_collections_dialog(manage_feature_collections_dialog)
+			new InformationDialog(
+					s_help_dialog_text_output, 
+					s_help_dialog_title_output, 
+					this)),
+	d_file_name_template(
+			DENSITY_PLACE_HOLDER+".mesh."+CAP_NUM_PLACE_HOLDER),
+	d_manage_feature_collections_dialog(
+			manage_feature_collections_dialog)
 {
 	setupUi(this);
 	
@@ -111,7 +125,7 @@ GPlatesQtWidgets::MeshDialog::MeshDialog(
 	QObject::connect(lineEdit_file_template, SIGNAL(editingFinished()),
 		this, SLOT(set_file_name_template()));
 	QObject::connect(node_X, SIGNAL(valueChanged(int)), 
-	   this, SLOT(set_node_x(int)));
+	    this, SLOT(set_node_x(int)));
 	QObject::connect(pushButton_info_output, SIGNAL(clicked()),
 		d_help_dialog_output, SLOT(show()));
 	QObject::connect(pushButton_info_resolution, SIGNAL(clicked()),
@@ -121,21 +135,50 @@ GPlatesQtWidgets::MeshDialog::MeshDialog(
 void
 GPlatesQtWidgets::MeshDialog::set_path()
 {
-	d_path = lineEdit_path->text();
+	QString new_path=lineEdit_path->text();
+	
+	QFileInfo new_path_info(new_path);
+
+	if (new_path_info.exists() && 
+		new_path_info.isDir() && 
+		new_path_info.isWritable()) 
+	{
+		d_path = new_path;
+		
+		//make sure the path ends with a directory separator
+		if(!d_path.endsWith(QDir::separator()))
+		{
+			d_path = d_path+QDir::separator();
+		}
+	}
+	else
+	{
+		//if the new path is invalid, we don't allow the path change.
+		lineEdit_path->setText(d_path);
+	}
+	return;
 }
 
 void
 GPlatesQtWidgets::MeshDialog::select_path()
 {
-	QString pathname = QFileDialog::getExistingDirectory(parentWidget(), tr("Select Path"), lineEdit_path->text());
+	QString pathname = 
+		QFileDialog::getExistingDirectory(
+				parentWidget(), 
+				tr("Select Path"), 
+				lineEdit_path->text());
+	
 	if(!pathname.isEmpty())
 	{
 		lineEdit_path->setText(pathname);
+		set_path();
 	}
+	return;
 }
 
 void
-GPlatesQtWidgets::MeshDialog::set_node_x(int val)
+GPlatesQtWidgets::MeshDialog::set_node_x(
+		int val)
 {
 	if(val<=0)
 	{
@@ -252,7 +295,7 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 
 	button_gen->setDisabled(false);
 	button_cancel->setDisabled(false);
-	progress_dlg->close();
-	close();
+	progress_dlg->reject();
+	reject();
 }
 
