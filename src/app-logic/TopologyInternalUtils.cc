@@ -554,15 +554,15 @@ namespace
 	 */
 	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
 	concatenate_partitioned_polylines_starting_at_intersection(
-			GPlatesMaths::PolylineIntersections::Graph::intersection_ptr_to_const_type intersection,
+			const GPlatesMaths::PolylineIntersections::Graph::Intersection *intersection,
 			const IntersectionGraphTraversal intersection_graph_traversal)
 	{
 		// Data member pointers to the data members of Graph::Intersection and
 		// Graph::PartitionedPolyline that we will follow to traverse the intersection
 		// graph as requested by the caller.
-		GPlatesMaths::PolylineIntersections::Graph::partitioned_polyline_weak_ptr_to_const_type
+		const GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline *
 			GPlatesMaths::PolylineIntersections::Graph::Intersection::*next_partitioned_polyline_ptr = NULL;
-		GPlatesMaths::PolylineIntersections::Graph::intersection_weak_ptr_to_const_type
+		const GPlatesMaths::PolylineIntersections::Graph::Intersection *
 			GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::*next_intersection_ptr = NULL;
 
 		switch (intersection_graph_traversal)
@@ -598,8 +598,8 @@ namespace
 		do
 		{
 			// Get the polyline following the current intersection in the graph.
-			GPlatesMaths::PolylineIntersections::Graph::partitioned_polyline_ptr_to_const_type
-					next_partitioned_polyline = (intersection.get()->*next_partitioned_polyline_ptr).lock();
+			const GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline *
+					next_partitioned_polyline = (intersection->*next_partitioned_polyline_ptr);
 
 			if (!next_partitioned_polyline)
 			{
@@ -619,7 +619,7 @@ namespace
 			}
 
 			// Move to the following intersection in the graph.
-			intersection = (next_partitioned_polyline.get()->*next_intersection_ptr).lock();
+			intersection = (next_partitioned_polyline->*next_intersection_ptr);
 		}
 		while (intersection);
 
@@ -1117,17 +1117,17 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 
 	// If even there is more than one intersection we'll just consider the first
 	// intersection.
-	const GPlatesMaths::PolylineIntersections::Graph::intersection_ptr_to_const_type intersection =
-			intersection_graph->intersections[0];
+	const GPlatesMaths::PolylineIntersections::Graph::Intersection *intersection =
+			intersection_graph->intersections[0].get();
 
 	// If we have an intersection then we should have at least one segment from each polyline.
 	// This is our guarantee to the caller.
 	// Usually will have two for each but one can happen if intersection is a T or V junction.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			intersection->get_prev_partitioned_polyline1() || intersection->get_next_partitioned_polyline1(),
+			intersection->prev_partitioned_polyline1 || intersection->next_partitioned_polyline1,
 			GPLATES_ASSERTION_SOURCE);
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			intersection->get_prev_partitioned_polyline2() || intersection->get_next_partitioned_polyline2(),
+			intersection->prev_partitioned_polyline2 || intersection->next_partitioned_polyline2,
 			GPLATES_ASSERTION_SOURCE);
 
 	// See comment in header file about T-junctions and V-junctions to see why
@@ -1145,28 +1145,28 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 	// the intersection point into a single segment.
 	//
 
-	if (intersection->get_prev_partitioned_polyline1())
+	if (intersection->prev_partitioned_polyline1)
 	{
 		// Concatenate any polylines (from the first section) before the intersection.
 		head_first_section = concatenate_partitioned_polylines_starting_at_intersection(
 				intersection, PREVIOUS_POLYLINE1);
 	}
 
-	if (intersection->get_prev_partitioned_polyline2())
+	if (intersection->prev_partitioned_polyline2)
 	{
 		// Concatenate any polylines (from the second section) before the intersection.
 		head_second_section = concatenate_partitioned_polylines_starting_at_intersection(
 				intersection, PREVIOUS_POLYLINE2);
 	}
 
-	if (intersection->get_next_partitioned_polyline1())
+	if (intersection->next_partitioned_polyline1)
 	{
 		// Concatenate any polylines (from the first section) after the intersection.
 		tail_first_section = concatenate_partitioned_polylines_starting_at_intersection(
 				intersection, NEXT_POLYLINE1);
 	}
 
-	if (intersection->get_next_partitioned_polyline2())
+	if (intersection->next_partitioned_polyline2)
 	{
 		// Concatenate any polylines (from the second section) after the intersection.
 		tail_second_section = concatenate_partitioned_polylines_starting_at_intersection(
@@ -1348,19 +1348,19 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 			!intersection_graph->intersections.empty(),
 			GPLATES_ASSERTION_SOURCE);
 
-	const GPlatesMaths::PolylineIntersections::Graph::Intersection &first_intersection =
-			*intersection_graph->intersections[0];
+	const GPlatesMaths::PolylineIntersections::Graph::Intersection *first_intersection =
+			intersection_graph->intersections[0].get();
 
 	// If we have an intersection then we should have at least one segment from each polyline.
 	// This is our guarantee to the caller.
 	// Usually will have two for each but one can happen if intersection is a T or V junction.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			first_intersection.get_prev_partitioned_polyline1() ||
-					first_intersection.get_next_partitioned_polyline1(),
+			first_intersection->prev_partitioned_polyline1 ||
+					first_intersection->next_partitioned_polyline1,
 			GPLATES_ASSERTION_SOURCE);
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			first_intersection.get_prev_partitioned_polyline2() ||
-					first_intersection.get_next_partitioned_polyline2(),
+			first_intersection->prev_partitioned_polyline2 ||
+					first_intersection->next_partitioned_polyline2,
 			GPLATES_ASSERTION_SOURCE);
 
 	// See comment in header file about T-junctions and V-junctions to see why
@@ -1376,26 +1376,26 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 	// no middle segments.
 	if (intersection_graph->intersections.size() == 1)
 	{
-		if (first_intersection.get_prev_partitioned_polyline1())
+		if (first_intersection->prev_partitioned_polyline1)
 		{
-			head_first_section = first_intersection.get_prev_partitioned_polyline1()->polyline;
+			head_first_section = first_intersection->prev_partitioned_polyline1->polyline;
 		}
-		if (first_intersection.get_prev_partitioned_polyline2())
+		if (first_intersection->prev_partitioned_polyline2)
 		{
-			head_second_section = first_intersection.get_prev_partitioned_polyline2()->polyline;
+			head_second_section = first_intersection->prev_partitioned_polyline2->polyline;
 		}
-		if (first_intersection.get_next_partitioned_polyline1())
+		if (first_intersection->next_partitioned_polyline1)
 		{
-			tail_first_section = first_intersection.get_next_partitioned_polyline1()->polyline;
+			tail_first_section = first_intersection->next_partitioned_polyline1->polyline;
 		}
-		if (first_intersection.get_next_partitioned_polyline2())
+		if (first_intersection->next_partitioned_polyline2)
 		{
-			tail_second_section = first_intersection.get_next_partitioned_polyline2()->polyline;
+			tail_second_section = first_intersection->next_partitioned_polyline2->polyline;
 		}
 
 		return boost::make_tuple(
 				// The single intersection point...
-				first_intersection.intersection_point,
+				first_intersection->intersection_point,
 				boost::optional<GPlatesMaths::PointOnSphere>(), // no second intersection point
 				boost::optional<bool>(), // no info about middle segments forming a cycle
 				head_first_section,
@@ -1412,8 +1412,8 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 
 	// If even there is more than two intersections we'll just consider the first two
 	// intersections.
-	const GPlatesMaths::PolylineIntersections::Graph::intersection_ptr_to_const_type
-			second_intersection = intersection_graph->intersections[1];
+	const GPlatesMaths::PolylineIntersections::Graph::Intersection *
+			second_intersection = intersection_graph->intersections[1].get();
 
 	//
 	// If there are more than two intersections then only the first two intersections are
@@ -1434,11 +1434,11 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 	// The head of a section ends at the first intersection if it has no previous
 	// intersection when following that section's path through the intersection graph.
 	const bool head_first_section_ends_at_first_intersection =
-			!(first_intersection.get_prev_partitioned_polyline1() &&
-					first_intersection.get_prev_partitioned_polyline1()->get_prev_intersection());
+			!(first_intersection->prev_partitioned_polyline1 &&
+					first_intersection->prev_partitioned_polyline1->prev_intersection);
 	const bool head_second_section_ends_at_first_intersection =
-			!(first_intersection.get_prev_partitioned_polyline2() &&
-					first_intersection.get_prev_partitioned_polyline2()->get_prev_intersection());
+			!(first_intersection->prev_partitioned_polyline2 &&
+					first_intersection->prev_partitioned_polyline2->prev_intersection);
 
 	// The middle segments form a cycle if the section directions oppose each other.
 	const bool middle_segments_form_a_cycle =
@@ -1447,15 +1447,15 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 
 	if (head_first_section_ends_at_first_intersection)
 	{
-		if (first_intersection.get_prev_partitioned_polyline1())
+		if (first_intersection->prev_partitioned_polyline1)
 		{
-			head_first_section = first_intersection.get_prev_partitioned_polyline1()->polyline;
+			head_first_section = first_intersection->prev_partitioned_polyline1->polyline;
 		}
 
 		// Since we have two intersections the middle segment should always exist.
-		middle_first_section = first_intersection.get_next_partitioned_polyline1()->polyline;
+		middle_first_section = first_intersection->next_partitioned_polyline1->polyline;
 
-		if (second_intersection->get_next_partitioned_polyline1())
+		if (second_intersection->next_partitioned_polyline1)
 		{
 			// Concatenate any polylines (from the first section) after the second intersection.
 			tail_first_section = concatenate_partitioned_polylines_starting_at_intersection(
@@ -1464,7 +1464,7 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 	}
 	else
 	{
-		if (second_intersection->get_prev_partitioned_polyline1())
+		if (second_intersection->prev_partitioned_polyline1)
 		{
 			// Concatenate any polylines (from the first section) before the second intersection.
 			head_first_section = concatenate_partitioned_polylines_starting_at_intersection(
@@ -1472,25 +1472,25 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 		}
 
 		// Since we have two intersections the middle segment should always exist.
-		middle_first_section = second_intersection->get_next_partitioned_polyline1()->polyline;
+		middle_first_section = second_intersection->next_partitioned_polyline1->polyline;
 
-		if (first_intersection.get_next_partitioned_polyline1())
+		if (first_intersection->next_partitioned_polyline1)
 		{
-			tail_first_section = first_intersection.get_next_partitioned_polyline1()->polyline;
+			tail_first_section = first_intersection->next_partitioned_polyline1->polyline;
 		}
 	}
 
 	if (head_second_section_ends_at_first_intersection)
 	{
-		if (first_intersection.get_prev_partitioned_polyline2())
+		if (first_intersection->prev_partitioned_polyline2)
 		{
-			head_second_section = first_intersection.get_prev_partitioned_polyline2()->polyline;
+			head_second_section = first_intersection->prev_partitioned_polyline2->polyline;
 		}
 
 		// Since we have two intersections the middle segment should always exist.
-		middle_second_section = first_intersection.get_next_partitioned_polyline2()->polyline;
+		middle_second_section = first_intersection->next_partitioned_polyline2->polyline;
 
-		if (second_intersection->get_next_partitioned_polyline2())
+		if (second_intersection->next_partitioned_polyline2)
 		{
 			// Concatenate any polylines (from the second section) after the second intersection.
 			tail_second_section = concatenate_partitioned_polylines_starting_at_intersection(
@@ -1499,7 +1499,7 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 	}
 	else
 	{
-		if (second_intersection->get_prev_partitioned_polyline2())
+		if (second_intersection->prev_partitioned_polyline2)
 		{
 			// Concatenate any polylines (from the first section) before the second intersection.
 			head_second_section = concatenate_partitioned_polylines_starting_at_intersection(
@@ -1507,17 +1507,17 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 		}
 
 		// Since we have two intersections the middle segment should always exist.
-		middle_second_section = second_intersection->get_next_partitioned_polyline2()->polyline;
+		middle_second_section = second_intersection->next_partitioned_polyline2->polyline;
 
-		if (first_intersection.get_next_partitioned_polyline2())
+		if (first_intersection->next_partitioned_polyline2)
 		{
-			tail_second_section = first_intersection.get_next_partitioned_polyline2()->polyline;
+			tail_second_section = first_intersection->next_partitioned_polyline2->polyline;
 		}
 	}
 
 	return boost::make_tuple(
 			// First intersection point
-			first_intersection.intersection_point,
+			first_intersection->intersection_point,
 			// Second intersection point
 			boost::optional<GPlatesMaths::PointOnSphere>(second_intersection->intersection_point),
 			boost::optional<bool>(middle_segments_form_a_cycle),

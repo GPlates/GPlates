@@ -557,8 +557,8 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 		const GreatCircleArc *polyline_gca = NULL;
 		bool reverse_inside_outside = false;
 
-		PolylineIntersections::Graph::intersection_ptr_to_const_type intersection =
-				partitioned_poly->get_prev_intersection();
+		const PolylineIntersections::Graph::Intersection *intersection =
+				partitioned_poly->prev_intersection;
 		if (intersection)
 		{
 			// Get the first GCA of the current partitioned polyline - the GCA
@@ -570,12 +570,12 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 			// We must be the first polyline of the sequence and
 			// it doesn't start at a T-junction.
 			// Use the intersection at the end of the partitioned polyline instead.
-			intersection = partitioned_poly->get_next_intersection();
+			intersection = partitioned_poly->next_intersection;
 
 			// It's not possible for a partitioned polyline to
 			// have no intersections at either end.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					intersection, GPLATES_ASSERTION_SOURCE);
+					intersection != NULL, GPLATES_ASSERTION_SOURCE);
 
 			// Get the last GCA of the current partitioned polyline - the GCA
 			// that touches the intersection point.
@@ -589,10 +589,10 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 
 		// Get the partitioning polyline just prior to the intersection point.
 		// NOTE: The partitioning polygon is the first sequence in the graph.
-		const GreatCircleArc &polygon_prev_gca = intersection->get_prev_partitioned_polyline1()
+		const GreatCircleArc &polygon_prev_gca = intersection->prev_partitioned_polyline1
 				// Get the last GCA of the polyline (of the partitioning polygon) just
 				// prior to the intersection point - this GCA touches the intersection point.
-				? *--intersection->get_prev_partitioned_polyline1()->polyline->end()
+				? *--intersection->prev_partitioned_polyline1->polyline->end()
 				// There's no previous polyline in the partitioning polygon so the
 				// intersection point must coincide with the polygon's start point.
 				// Use the last GCA of the last polyline in the partitioning polygon instead.
@@ -600,10 +600,10 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 
 		// Get the partitioning polyline just after the intersection point.
 		// NOTE: The partitioning polygon is the first sequence in the graph.
-		const GreatCircleArc &polygon_next_gca = intersection->get_next_partitioned_polyline1()
+		const GreatCircleArc &polygon_next_gca = intersection->next_partitioned_polyline1
 				// Get the first GCA of the polyline (of the partitioning polygon) just
 				// after the intersection point - this GCA touches the intersection point.
-				? *intersection->get_next_partitioned_polyline1()->polyline->begin()
+				? *intersection->next_partitioned_polyline1->polyline->begin()
 				// There's no next polyline in the partitioning polygon so the
 				// intersection point must coincide with the polygon's end point.
 				// Use the first GCA of the first polyline in the partitioning polygon instead.

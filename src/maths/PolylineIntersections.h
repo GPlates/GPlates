@@ -60,9 +60,6 @@ namespace GPlatesMaths {
 			//! Typedef for pointer to non-const @a Intersection.
 			typedef boost::shared_ptr<Intersection>
 					intersection_ptr_type;
-			//! Typedef for weak pointer to const @a Intersection.
-			typedef boost::weak_ptr<const Intersection>
-					intersection_weak_ptr_to_const_type;
 
 			//! Typedef for sequence of pointers to const @a Intersection.
 			typedef std::vector< intersection_ptr_to_const_type >
@@ -79,9 +76,6 @@ namespace GPlatesMaths {
 			//! Typedef for pointer to non-const @a PartitionedPolyline.
 			typedef boost::shared_ptr<PartitionedPolyline>
 					partitioned_polyline_ptr_type;
-			//! Typedef for weak pointer to const @a PartitionedPolyline.
-			typedef boost::weak_ptr<const PartitionedPolyline>
-					partitioned_polyline_weak_ptr_to_const_type;
 
 			//! Typedef for sequence of pointers to const @a PartitionedPolyline.
 			typedef std::vector< partitioned_polyline_ptr_to_const_type >
@@ -132,17 +126,8 @@ namespace GPlatesMaths {
 				 * in one of the original geometries; although it's still
 				 * possible for the first polyline to start with a non-NULL
 				 * intersection (for example a T-junction).
-				 *
-				 * The weak_ptr is to avoid memory leaks caused by shared_ptr cycles.
 				 */
-				intersection_weak_ptr_to_const_type prev_intersection;
-
-				//! A convenience function for returning a shared_ptr instead of a weak_ptr.
-				intersection_ptr_to_const_type
-				get_prev_intersection() const
-				{
-					return prev_intersection.lock();
-				}
+				const Intersection *prev_intersection;
 
 				/**
 				 * The next intersection if there is one.
@@ -152,17 +137,8 @@ namespace GPlatesMaths {
 				 * in one of the original geometries; although it's still
 				 * possible for the last polyline to end with a non-NULL
 				 * intersection (for example a T-junction).
-				 *
-				 * The weak_ptr is to avoid memory leaks caused by shared_ptr cycles.
 				 */
-				intersection_weak_ptr_to_const_type next_intersection;
-
-				//! A convenience function for returning a shared_ptr instead of a weak_ptr.
-				intersection_ptr_to_const_type
-				get_next_intersection() const
-				{
-					return next_intersection.lock();
-				}
+				const Intersection *next_intersection;
 			};
 
 			/**
@@ -183,62 +159,26 @@ namespace GPlatesMaths {
 				/**
 				 * The previous partitioned polyline from the first original geometry.
 				 * If NULL or false then this intersection is a T-junction.
-				 *
-				 * The weak_ptr is to avoid memory leaks caused by shared_ptr cycles.
 				 */
-				partitioned_polyline_weak_ptr_to_const_type prev_partitioned_polyline1;
-
-				//! A convenience function for returning a shared_ptr instead of a weak_ptr.
-				partitioned_polyline_ptr_to_const_type
-				get_prev_partitioned_polyline1() const
-				{
-					return prev_partitioned_polyline1.lock();
-				}
+				const PartitionedPolyline *prev_partitioned_polyline1;
 
 				/**
 				 * The next partitioned polyline from the first original geometry.
 				 * If NULL or false then this intersection is a T-junction.
-				 *
-				 * The weak_ptr is to avoid memory leaks caused by shared_ptr cycles.
 				 */
-				partitioned_polyline_weak_ptr_to_const_type next_partitioned_polyline1;
-
-				//! A convenience function for returning a shared_ptr instead of a weak_ptr.
-				partitioned_polyline_ptr_to_const_type
-				get_next_partitioned_polyline1() const
-				{
-					return next_partitioned_polyline1.lock();
-				}
+				const PartitionedPolyline *next_partitioned_polyline1;
 
 				/**
 				 * The previous partitioned polyline from the second original geometry.
 				 * If NULL or false then this intersection is a T-junction.
-				 *
-				 * The weak_ptr is to avoid memory leaks caused by shared_ptr cycles.
 				 */
-				partitioned_polyline_weak_ptr_to_const_type prev_partitioned_polyline2;
-
-				//! A convenience function for returning a shared_ptr instead of a weak_ptr.
-				partitioned_polyline_ptr_to_const_type
-				get_prev_partitioned_polyline2() const
-				{
-					return prev_partitioned_polyline2.lock();
-				}
+				const PartitionedPolyline *prev_partitioned_polyline2;
 
 				/**
 				 * The next partitioned polyline from the second original geometry.
 				 * If NULL or false then this intersection is a T-junction.
-				 *
-				 * The weak_ptr is to avoid memory leaks caused by shared_ptr cycles.
 				 */
-				partitioned_polyline_weak_ptr_to_const_type next_partitioned_polyline2;
-
-				//! A convenience function for returning a shared_ptr instead of a weak_ptr.
-				partitioned_polyline_ptr_to_const_type
-				get_next_partitioned_polyline2() const
-				{
-					return next_partitioned_polyline2.lock();
-				}
+				const PartitionedPolyline *next_partitioned_polyline2;
 			};
 
 
