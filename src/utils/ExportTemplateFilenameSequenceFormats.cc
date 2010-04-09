@@ -32,35 +32,29 @@
 #include "global/GPlatesAssert.h"
 
 
-bool
+boost::optional<int>
 GPlatesUtils::ExportTemplateFilename::PercentCharacterFormat::match_format(
-		const QString &rest_of_filename_template,
-		int &length_format_string)
+		const QString &rest_of_filename_template)
 {
 	if (rest_of_filename_template.startsWith("%%"))
 	{
-		length_format_string = 2;
-
-		return true;
+		return 2;
 	}
 
-	return false;
+	return boost::none;
 }
 
 
-bool
+boost::optional<int>
 GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::match_format(
-		const QString &rest_of_filename_template,
-		int &length_format_string)
+		const QString &rest_of_filename_template)
 {
 	if (rest_of_filename_template.startsWith("%A"))
 	{
-		length_format_string = 2;
-
-		return true;
+		return 2;
 	}
 
-	return false;
+	return boost::none;
 }
 
 
@@ -74,19 +68,17 @@ GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::expand_
 }
 
 
-bool
+boost::optional<int>
 GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::match_format(
-		const QString &rest_of_filename_template,
-		int &length_format_string)
+		const QString &rest_of_filename_template)
 {
 	if (rest_of_filename_template.startsWith("%n") ||
 			rest_of_filename_template.startsWith("%u"))
 	{
-		length_format_string = 2;
-		return true;
+		return 2;
 	}
 
-	return false;
+	return boost::none;
 }
 
 
@@ -140,24 +132,21 @@ GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::calc_max_digits(
 }
 
 
-bool
+boost::optional<int>
 GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::match_format(
-		const QString &rest_of_filename_template,
-		int &length_format_string)
+		const QString &rest_of_filename_template)
 {
 	QRegExp regex = get_full_regular_expression();
 
 	if (regex.indexIn(rest_of_filename_template) == -1)
 	{
 		// Regular expression didn't match so this is not our format string.
-		return false;
+		return boost::none;
 	}
 
 	// Get the entire matched string.
 	const QString format_string = regex.cap(0);
-	length_format_string = format_string.size();
-
-	return true;
+	return format_string.size();
 }
 
 
@@ -227,30 +216,26 @@ const QString GPlatesUtils::ExportTemplateFilename::DateTimeFormat::HOURS_MINS_S
 const QString GPlatesUtils::ExportTemplateFilename::DateTimeFormat::YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER = "%D";
 
 
-bool
+boost::optional<int>
 GPlatesUtils::ExportTemplateFilename::DateTimeFormat::match_format(
-		const QString &rest_of_filename_template,
-		int &length_format_string)
+		const QString &rest_of_filename_template)
 {
 	if (rest_of_filename_template.startsWith(HOURS_MINS_SECS_WITH_DASHES_SPECIFIER))
 	{
-		length_format_string = HOURS_MINS_SECS_WITH_DASHES_SPECIFIER.size();
-		return true;
+		return HOURS_MINS_SECS_WITH_DASHES_SPECIFIER.size();
 	}
 
 	if (rest_of_filename_template.startsWith(HOURS_MINS_SECS_WITH_COLONS_SPECIFIER))
 	{
-		length_format_string = HOURS_MINS_SECS_WITH_COLONS_SPECIFIER.size();
-		return true;
+		return HOURS_MINS_SECS_WITH_COLONS_SPECIFIER.size();
 	}
 
 	if (rest_of_filename_template.startsWith(YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER))
 	{
-		length_format_string = YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER.size();
-		return true;
+		return YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER.size();
 	}
 
-	return false;
+	return boost::none;
 }
 
 

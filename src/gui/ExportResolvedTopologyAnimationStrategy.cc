@@ -935,7 +935,7 @@ void
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
-	// We want "Polygons" to look like "Polygons.<placeholder>.<age>" as that
+	// We want "Polygons" to look like "Polygons.<placeholder>.%d" as that
 	// is what is expected by the workflow (external to GPlates) that uses
 	// this export.
 	// The 's_placeholder_string' string will get replaced for each type of export

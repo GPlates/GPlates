@@ -25,6 +25,8 @@
 
 #include <memory>
 #include <string>
+#include <boost/mpl/for_each.hpp>
+#include <boost/mpl/lambda.hpp>
 #include <QLatin1Char>
 
 #include "ExportTemplateFilenameSequenceImpl.h"
@@ -33,7 +35,6 @@
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
-
 
 
 GPlatesUtils::ExportTemplateFilenameSequenceImpl::ExportTemplateFilenameSequenceImpl(
@@ -54,6 +55,14 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::ExportTemplateFilenameSequence
 			sequence_info);
 
 	format_extractor.extract_formats_from_filename_template();
+}
+
+
+void
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::validate_filename_template(
+		const QString &filename_template)
+{
+	FormatExtractor::validate_filename_template(filename_template);
 }
 
 
@@ -100,6 +109,108 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::get_filename(
 }
 
 
+template <class FormatType>
+void
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::CreateFormat::operator()(
+		Wrap<FormatType>)
+{
+	// Return if we've already found a matching format.
+	if (d_format_info)
+	{
+		return;
+	}
+
+	// The filename template string starting from the current position.
+	const QString rest_of_filename_template =
+			d_format_extractor->d_filename_template.mid(
+					d_format_extractor->d_filename_current_pos);
+
+	const boost::optional<QString> format_string =
+			match_format<FormatType>(rest_of_filename_template);
+
+	// If format doesn't match then return early.
+	if (!format_string)
+	{
+		return;
+	}
+
+	// Create the format object.
+	const format_ptr_type format = d_format_extractor->create_format<FormatType>(*format_string);
+
+	// Store format object and matched format string internally.
+	d_format_info = std::make_pair(format, *format_string);
+}
+
+
+template <class FormatType>
+void
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::ValidateFormat::operator()(
+		Wrap<FormatType>)
+{
+	// Return if we've already found a matching format.
+	if (d_format_info)
+	{
+		return;
+	}
+
+	const boost::optional<QString> format_string =
+			match_format<FormatType>(d_rest_of_filename_template);
+
+	// Return early if no matching format was found.
+	if (!format_string)
+	{
+		return;
+	}
+
+	d_format_info = std::make_pair(*format_string, typename FormatType::VARIATION_TYPE);
+}
+
+
+void
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_filename_template(
+		const QString &filename_template)
+{
+	const QChar percent_char = QLatin1Char('%');
+	bool filename_varies_with_reconstruction_time_or_frame = false;
+
+	for (int filename_current_pos = 0; filename_current_pos < filename_template.size(); )
+	{
+		// See if current character is '%'.
+		if (filename_template[filename_current_pos] != percent_char)
+		{
+			// Keep looking for '%' char.
+			++filename_current_pos;
+			continue;
+		}
+
+		// The filename template string starting from the current position.
+		const QString rest_of_filename_template = filename_template.mid(filename_current_pos);
+
+		// Search for a matching format.
+		const validate_format_info_type format_info = validate_format(rest_of_filename_template);
+
+		// We only need one matching format to vary with reconstruction time or frame
+		// in order for the filename template to also.
+		if (format_info.second == ExportTemplateFilename::Format::VARIES_WITH_RECONSTRUCTION_TIME_OR_FRAME)
+		{
+			filename_varies_with_reconstruction_time_or_frame = true;
+		}
+
+		// Advance the filename position by the size of the matching format string.
+		filename_current_pos += format_info.first.size();
+
+		// Continue looking for the next format pattern.
+	}
+
+	if (!filename_varies_with_reconstruction_time_or_frame)
+	{
+		// There are no format specifiers, in the filename template, that have filename variation
+		// so there's no filename variation at all and this is an error.
+		throw ExportTemplateFilename::NoFilenameVariation(GPLATES_EXCEPTION_SOURCE);
+	}
+}
+
+
 void
 GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::extract_formats_from_filename_template()
 {
@@ -118,14 +229,13 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::extract_forma
 		}
 
 		// Search for a matching format and create matching format object.
-		QString format_string;
-		format_ptr_type format = create_format(format_string);
+		const create_format_info_type format_info = create_format();
 
 		// Determine whether what to do with format object based on whether it
 		// varies with reconstruction time, is constant over filename sequence or
 		// varies across sequence iterators (but is constant across the sequence for
 		// a specific iterator).
-		handle_format(format, format_string);
+		handle_format(format_info.first, format_info.second);
 
 		// Continue looking for the next format pattern.
 	}
@@ -232,69 +342,117 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::check_filenam
 }
 
 
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format(
-		QString &format_string)
+template <class FormatType>
+boost::optional<QString>
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::match_format(
+		const QString &rest_of_filename_template)
 {
-	// The filename template string starting from the current position.
-	const QString rest_of_filename_template = d_filename_template.mid(d_filename_current_pos);
+	boost::optional<int> length_format_string = FormatType::match_format(rest_of_filename_template);
 
-	if (match_format<ExportTemplateFilename::PercentCharacterFormat>(
-			rest_of_filename_template, format_string))
+	if (!length_format_string)
 	{
-		return format_ptr_type(new ExportTemplateFilename::PercentCharacterFormat());
+		return boost::none;
 	}
 
-	if (match_format<ExportTemplateFilename::ReconstructionAnchorPlateIdFormat>(
-			rest_of_filename_template, format_string))
-	{
-		return format_ptr_type(new ExportTemplateFilename::ReconstructionAnchorPlateIdFormat(
-				d_reconstruction_anchor_plate_id));
-	}
+	// Extract the format string matched by the format pattern.
+	const QString format_string = rest_of_filename_template.left(*length_format_string);
 
-	if (match_format<ExportTemplateFilename::FrameNumberFormat>(
-			rest_of_filename_template, format_string))
-	{
-		return format_ptr_type(new ExportTemplateFilename::FrameNumberFormat(
-				format_string, d_sequence_info.duration_in_frames));
-	}
-
-	if (match_format<ExportTemplateFilename::DateTimeFormat>(
-			rest_of_filename_template, format_string))
-	{
-		return format_ptr_type(new ExportTemplateFilename::DateTimeFormat(format_string));
-	}
-
-	// NOTE: Extract the printf-style format last in case we mistakenly add
-	// a new format that overlaps with printf-style formatting.
-	if (match_format<ExportTemplateFilename::ReconstructionTimePrintfFormat>(
-			rest_of_filename_template, format_string))
-	{
-		return format_ptr_type(
-				new ExportTemplateFilename::ReconstructionTimePrintfFormat(format_string));
-	}
-
-	// No formats matched so we've got a substring starting with '%' that
-	// we cannot match - this is an error.
-	throw ExportTemplateFilename::UnrecognisedFormatString(GPLATES_EXCEPTION_SOURCE,
-			rest_of_filename_template);
+	return format_string;
 }
 
 
 template <class FormatType>
-bool
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::match_format(
-		const QString &rest_of_filename_template,
-		QString &format_string)
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format(
+		const QString &format_string)
 {
-	int length_format_string;
-	if (!FormatType::match_format(rest_of_filename_template, length_format_string))
+	return format_ptr_type(new FormatType(format_string));
+}
+
+
+template <>
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
+		GPlatesUtils::ExportTemplateFilename::PercentCharacterFormat>(
+				const QString &/*format_string*/)
+{
+	return format_ptr_type(new ExportTemplateFilename::PercentCharacterFormat());
+}
+
+
+template <>
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
+		GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat>(
+				const QString &/*format_string*/)
+{
+	return format_ptr_type(new ExportTemplateFilename::ReconstructionAnchorPlateIdFormat(
+			d_reconstruction_anchor_plate_id));
+}
+
+
+template <>
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
+		GPlatesUtils::ExportTemplateFilename::FrameNumberFormat>(
+				const QString &format_string)
+{
+	return format_ptr_type(new ExportTemplateFilename::FrameNumberFormat(
+			format_string, d_sequence_info.duration_in_frames));
+}
+
+
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format_info_type
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format()
+{
+	// Object to finding matching format and create it.
+	CreateFormat create_format_object(this);
+
+	// Iterate over all the format types and attempt to match/create a format.
+	boost::mpl::for_each< ExportTemplateFilename::format_types, Wrap<boost::mpl::_1> >(
+			boost::ref(create_format_object));
+
+	const boost::optional<create_format_info_type> &format_info =
+			create_format_object.get_format_info();
+
+	// If there was no matching format then return an error.
+	if (!format_info)
 	{
-		return false;
+		// The filename template string starting from the current position.
+		const QString rest_of_filename_template = d_filename_template.mid(d_filename_current_pos);
+
+		// No formats matched so we've got a substring starting with '%' that
+		// we cannot match - this is an error.
+		throw ExportTemplateFilename::UnrecognisedFormatString(GPLATES_EXCEPTION_SOURCE,
+				rest_of_filename_template);
 	}
 
-	// Extract the format string matched by the format pattern.
-	format_string = rest_of_filename_template.left(length_format_string);
+	return *format_info;
+}
 
-	return true;
+
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_format_info_type
+GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_format(
+		const QString &rest_of_filename_template)
+{
+	// Object to find matching format.
+	ValidateFormat validate_format_object(rest_of_filename_template);
+
+	// Iterate over all the format types and attempt to match a format.
+	boost::mpl::for_each< ExportTemplateFilename::format_types, Wrap<boost::mpl::_1> >(
+			boost::ref(validate_format_object));
+
+	const boost::optional<validate_format_info_type> &format_info =
+			validate_format_object.get_format_info();
+
+	// If there was no matching format then return an error.
+	if (!format_info)
+	{
+		// No formats matched so we've got a substring starting with '%' that
+		// we cannot match - this is an error.
+		throw ExportTemplateFilename::UnrecognisedFormatString(GPLATES_EXCEPTION_SOURCE,
+				rest_of_filename_template);
+	}
+
+	return *format_info;
 }

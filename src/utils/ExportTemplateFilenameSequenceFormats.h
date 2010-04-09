@@ -27,6 +27,8 @@
 #define GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCEFORMATS_H
 
 #include <cstddef>
+#include <boost/mpl/vector.hpp>
+#include <boost/optional.hpp>
 #include <QDateTime>
 #include <QString>
 #include <QRegExp>
@@ -39,6 +41,30 @@ namespace GPlatesUtils
 {
 	namespace ExportTemplateFilename
 	{
+		// Forward declarations of all @a Format types.
+		class DateTimeFormat;
+		class FrameNumberFormat;
+		class PercentCharacterFormat;
+		class ReconstructionAnchorPlateIdFormat;
+		class ReconstructionTimePrintfFormat;
+
+		/**
+		 * Add all @a Format types here.
+		 *
+		 * When searching for a matching format the sequence order below is followed
+		 * until a match is found.
+		 */
+		typedef boost::mpl::vector<
+				PercentCharacterFormat,
+				ReconstructionAnchorPlateIdFormat,
+				FrameNumberFormat,
+				DateTimeFormat,
+				// NOTE: Extract the printf-style format last in case we mistakenly add
+				// a new format that overlaps with printf-style formatting.
+				ReconstructionTimePrintfFormat
+		> format_types;
+
+
 		/**
 		 * Abstract base class for different types of format used in the
 		 * template filename.
@@ -50,13 +76,14 @@ namespace GPlatesUtils
 			 * NOTE: each derived class must have a static method that matches the following
 			 * signature:
 			 *
-			 *  Returns true if the start of @a rest_of_filename_template matches the format specifier for this class.
-			 *  If so then also returns length of matched format string in @a length_format_string.
+			 *   Returns true if the start of @a rest_of_filename_template matches
+			 *   the format specifier for this class.
+			 *   If so then also returns length of matched format string.
+			 *
 			 *     static
-			 *     bool
+			 *     boost::optional<int>
 			 *     match_format(
-			 *         const QString &rest_of_filename_template,
-			 *         int &length_format_string)
+			 *         const QString &rest_of_filename_template)
 			 *     {
 			 *     }
 			 */
@@ -108,22 +135,27 @@ namespace GPlatesUtils
 				public Format
 		{
 		public:
+			//! How this format varies.
+			static const Variation VARIATION_TYPE = IS_CONSTANT;
+
 			/**
-			 * Returns true if the start of @a rest_of_filename_template matches the format specifier for this class.
-			 * If so then also returns length of matched format string in @a length_format_string.
+			 * Returns true if the start of @a rest_of_filename_template matches
+			 * the format specifier for this class.
+			 *
+			 * If so then also returns length of matched format string.
 			 */
 			static
-			bool
+			boost::optional<int>
 			match_format(
-					const QString &rest_of_filename_template,
-					int &length_format_string);
+					const QString &rest_of_filename_template);
+
 
 			//! This format is constant always.
 			virtual
 			Variation
 			get_variation_type() const
 			{
-				return IS_CONSTANT;
+				return VARIATION_TYPE;
 			}
 
 			virtual
@@ -145,15 +177,21 @@ namespace GPlatesUtils
 				public Format
 		{
 		public:
+			//! How this format varies.
+			static const Variation VARIATION_TYPE = IS_CONSTANT;
+
+
 			/**
-			 * Returns true if the start of @a rest_of_filename_template matches the format specifier for this class.
-			 * If so then also returns length of matched format string in @a length_format_string.
+			 * Returns true if the start of @a rest_of_filename_template matches
+			 * the format specifier for this class.
+			 *
+			 * If so then also returns length of matched format string.
 			 */
 			static
-			bool
+			boost::optional<int>
 			match_format(
-					const QString &rest_of_filename_template,
-					int &length_format_string);
+					const QString &rest_of_filename_template);
+
 
 			ReconstructionAnchorPlateIdFormat(
 					const GPlatesModel::integer_plate_id_type &anchor_plate_id) :
@@ -165,7 +203,7 @@ namespace GPlatesUtils
 			Variation
 			get_variation_type() const
 			{
-				return IS_CONSTANT;
+				return VARIATION_TYPE;
 			}
 
 			virtual
@@ -187,15 +225,20 @@ namespace GPlatesUtils
 				public Format
 		{
 		public:
+			//! How this format varies.
+			static const Variation VARIATION_TYPE = VARIES_WITH_RECONSTRUCTION_TIME_OR_FRAME;
+
 			/**
-			 * Returns true if the start of @a rest_of_filename_template matches the format specifier for this class.
-			 * If so then also returns length of matched format string in @a length_format_string.
+			 * Returns true if the start of @a rest_of_filename_template matches
+			 * the format specifier for this class.
+			 *
+			 * If so then also returns length of matched format string.
 			 */
 			static
-			bool
+			boost::optional<int>
 			match_format(
-					const QString &rest_of_filename_template,
-					int &length_format_string);
+					const QString &rest_of_filename_template);
+
 
 			FrameNumberFormat(
 					const QString &format_string,
@@ -206,7 +249,7 @@ namespace GPlatesUtils
 			Variation
 			get_variation_type() const
 			{
-				return VARIES_WITH_RECONSTRUCTION_TIME_OR_FRAME;
+				return VARIATION_TYPE;
 			}
 
 			virtual
@@ -239,15 +282,19 @@ namespace GPlatesUtils
 				public Format
 		{
 		public:
+			//! How this format varies.
+			static const Variation VARIATION_TYPE = VARIES_WITH_RECONSTRUCTION_TIME_OR_FRAME;
+
 			/**
-			 * Returns true if the start of @a rest_of_filename_template matches the format specifier for this class.
-			 * If so then also returns length of matched format string in @a length_format_string.
+			 * Returns true if the start of @a rest_of_filename_template matches
+			 * the format specifier for this class.
+			 *
+			 * If so then also returns length of matched format string.
 			 */
 			static
-			bool
+			boost::optional<int>
 			match_format(
-					const QString &rest_of_filename_template,
-					int &length_format_string);
+					const QString &rest_of_filename_template);
 
 
 			/**
@@ -262,7 +309,7 @@ namespace GPlatesUtils
 			Variation
 			get_variation_type() const
 			{
-				return VARIES_WITH_RECONSTRUCTION_TIME_OR_FRAME;
+				return VARIATION_TYPE;
 			}
 
 			virtual
@@ -295,15 +342,19 @@ namespace GPlatesUtils
 				public Format
 		{
 		public:
+			//! How this format varies.
+			static const Variation VARIATION_TYPE = VARIES_WITH_SEQUENCE_ITERATOR;
+
 			/**
-			 * Returns true if the start of @a rest_of_filename_template matches the format specifier for this class.
-			 * If so then also returns length of matched format string in @a length_format_string.
+			 * Returns true if the start of @a rest_of_filename_template matches
+			 * the format specifier for this class.
+			 *
+			 * If so then also returns length of matched format string.
 			 */
 			static
-			bool
+			boost::optional<int>
 			match_format(
-					const QString &rest_of_filename_template,
-					int &length_format_string);
+					const QString &rest_of_filename_template);
 
 
 			/**
@@ -318,7 +369,7 @@ namespace GPlatesUtils
 			Variation
 			get_variation_type() const
 			{
-				return VARIES_WITH_SEQUENCE_ITERATOR;
+				return VARIATION_TYPE;
 			}
 
 			virtual
