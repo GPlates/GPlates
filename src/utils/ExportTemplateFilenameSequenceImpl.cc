@@ -162,7 +162,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::ValidateForma
 		return;
 	}
 
-	d_format_info = std::make_pair(*format_string, typename FormatType::VARIATION_TYPE);
+	d_format_info = std::make_pair(*format_string, FormatType::VARIATION_TYPE);
 }
 
 
@@ -370,35 +370,43 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format
 }
 
 
-template <>
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
-		GPlatesUtils::ExportTemplateFilename::PercentCharacterFormat>(
-				const QString &/*format_string*/)
+namespace GPlatesUtils
 {
-	return format_ptr_type(new ExportTemplateFilename::PercentCharacterFormat());
-}
+	//
+	// Template member function specialisations have to be defined in the same
+	// namespace as they were declared.
+	//
+
+	template <>
+	ExportTemplateFilenameSequenceImpl::format_ptr_type
+	ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
+			GPlatesUtils::ExportTemplateFilename::PercentCharacterFormat>(
+					const QString &/*format_string*/)
+	{
+		return format_ptr_type(new ExportTemplateFilename::PercentCharacterFormat());
+	}
 
 
-template <>
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
-		GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat>(
-				const QString &/*format_string*/)
-{
-	return format_ptr_type(new ExportTemplateFilename::ReconstructionAnchorPlateIdFormat(
-			d_reconstruction_anchor_plate_id));
-}
+	template <>
+	GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
+	GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
+			GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat>(
+					const QString &/*format_string*/)
+	{
+		return format_ptr_type(new ExportTemplateFilename::ReconstructionAnchorPlateIdFormat(
+				d_reconstruction_anchor_plate_id));
+	}
 
 
-template <>
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
-		GPlatesUtils::ExportTemplateFilename::FrameNumberFormat>(
-				const QString &format_string)
-{
-	return format_ptr_type(new ExportTemplateFilename::FrameNumberFormat(
-			format_string, d_sequence_info.duration_in_frames));
+	template <>
+	GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
+	GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
+			GPlatesUtils::ExportTemplateFilename::FrameNumberFormat>(
+					const QString &format_string)
+	{
+		return format_ptr_type(new ExportTemplateFilename::FrameNumberFormat(
+				format_string, d_sequence_info.duration_in_frames));
+	}
 }
 
 
