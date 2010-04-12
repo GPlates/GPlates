@@ -55,7 +55,7 @@
 #include "utils/GeometryCreationUtils.h"
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
-#include "utils/GeometryUtil.h"
+#include "utils/GeometryUtils.h"
 
 
 // Create a ReconstructedFeatureGeometry for the rotated reference points in each
@@ -91,7 +91,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::initialise_pre_feature_properties(
 	//
 	static QString type("TopologicalClosedPlateBoundary");
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.handle_data().feature_type().get_name() ) ) 
+			feature_handle.feature_type().get_name() ) ) 
 	{ 
 		// Quick-out: No need to continue.
 		return false; 
@@ -535,8 +535,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 		// Get the subsegment feature reference.
 		const GPlatesModel::FeatureHandle::weak_ref subsegment_feature_ref =
 				section.d_source_rfg->get_feature_ref();
-		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(
-				GPlatesModel::FeatureHandle::get_const_weak_ref(subsegment_feature_ref));
+		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(subsegment_feature_ref);
 
 		// Create a subsegment structure that'll get used when
 		// creating the resolved topological geometry.
@@ -547,7 +546,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the plate polygon points.
-		GPlatesUtils::GeometryUtil::get_geometry_points(
+		GPlatesUtils::GeometryUtils::get_geometry_points(
 				*section.d_final_boundary_segment_unreversed_geom.get(),
 				polygon_points,
 				section.d_use_reverse);
@@ -584,7 +583,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 				"insufficient points for a polygon.";
 		qDebug() << "Skipping creation for topological polygon feature_id=";
 		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-				d_currently_visited_feature->handle_data().feature_id().get());
+				d_currently_visited_feature->feature_id().get());
 		return;
 	}
 
@@ -594,8 +593,8 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 	GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_type rtg_ptr =
 		GPlatesModel::ResolvedTopologicalBoundary::create(
 			*plate_polygon,
-			*current_top_level_propiter()->collection_handle_ptr(),
-			*current_top_level_propiter(),
+			*(current_top_level_propiter()->handle_weak_ref()),
+			*(current_top_level_propiter()),
 			output_subsegments.begin(),
 			output_subsegments.end(),
 			d_reconstruction_params.get_recon_plate_id(),
@@ -616,8 +615,8 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rotated_reference_points_rfg =
 			GPlatesModel::ReconstructedFeatureGeometry::create(
 				rotated_reference_points_geom,
-				*current_top_level_propiter()->collection_handle_ptr(),
-				*current_top_level_propiter());
+				*(current_top_level_propiter()->handle_weak_ref()),
+				*(current_top_level_propiter()));
 
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
 				rotated_reference_points_rfg, d_reconstruction);
@@ -632,7 +631,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::debug_output_topological_section_feat
 {
 	qDebug() << "Topological polygon feature_id=";
 	qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-			d_currently_visited_feature->handle_data().feature_id().get());
+			d_currently_visited_feature->feature_id().get());
 	qDebug() << "Topological section referencing feature_id=";
 	qDebug() << GPlatesUtils::make_qstring_from_icu_string(section_feature_id.get());
 }

@@ -25,11 +25,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
 #include <QDebug>
 #include <QFile>
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"

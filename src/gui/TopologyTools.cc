@@ -86,7 +86,6 @@
 #include "model/ModelUtils.h"
 #include "model/ReconstructedFeatureGeometryFinder.h"
 #include "model/ReconstructionGeometry.h"
-#include "model/DummyTransactionHandle.h"
 
 #include "presentation/ViewState.h"
 
@@ -122,7 +121,7 @@
 #include "utils/GeometryCreationUtils.h"
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
-#include "utils/GeometryUtil.h"
+#include "utils/GeometryUtils.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
@@ -296,7 +295,7 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
 	static const QString topology_network_type_name("TopologicalNetwork");
 	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		(d_feature_focus_ptr->focused_feature())->handle_data().feature_type().get_name() );
+		(d_feature_focus_ptr->focused_feature())->feature_type().get_name() );
 
 	if ( feature_type_name == topology_boundary_type_name )
 	{ 
@@ -755,11 +754,11 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 std::vector<int>
 GPlatesGui::TopologyTools::find_topological_section_indices(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-		const GPlatesModel::FeatureHandle::children_iterator &properties_iter) const
+		const GPlatesModel::FeatureHandle::iterator &properties_iter) const
 {
 	std::vector<int> topological_section_indices;
 
-	if ( !(feature_ref.is_valid() && properties_iter.is_valid()) )
+	if ( !(feature_ref.is_valid() /* && properties_iter.is_valid() */) )
 	{
 		// Return not found if either feature reference or property iterator is invalid.
 		return topological_section_indices;
@@ -813,7 +812,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
  	static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
  	static const QString topology_network_type_name ("TopologicalNetwork");
 	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		d_feature_focus_ptr->focused_feature()->handle_data().feature_type().get_name() );
+		d_feature_focus_ptr->focused_feature()->feature_type().get_name() );
 	if ( ( feature_type_name == topology_boundary_type_name ) ||
 		( feature_type_name == topology_network_type_name ) )
 	{
@@ -847,7 +846,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 			<< "Cannot add feature to topology because it has multiple geometries - "
 			<< "feature_id=";
 		qWarning() << GPlatesUtils::make_qstring_from_icu_string(
-				d_feature_focus_ptr->focused_feature()->handle_data().feature_id().get());
+				d_feature_focus_ptr->focused_feature()->feature_id().get());
 
 		return false;
 	}
@@ -989,7 +988,7 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
 	static const QString topology_network_type_name("TopologicalNetwork");
 	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		(d_feature_focus_ptr->focused_feature())->handle_data().feature_type().get_name() );
+		(d_feature_focus_ptr->focused_feature())->feature_type().get_name() );
 	if ( feature_type_name == topology_boundary_type_name ||
 		feature_type_name == topology_network_type_name ) 
 	{
@@ -1480,7 +1479,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
 				focus_feature_end_points =
-					GPlatesUtils::GeometryUtil::get_geometry_end_points(
+					GPlatesUtils::GeometryUtils::get_geometry_end_points(
 							*d_feature_focus_ptr->associated_reconstruction_geometry()->geometry());
 
 		// draw the focused end_points
@@ -2307,7 +2306,7 @@ GPlatesGui::TopologyTools::assign_boundary_segment(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			section_geometry_end_points =
-				GPlatesUtils::GeometryUtil::get_geometry_end_points(
+				GPlatesUtils::GeometryUtils::get_geometry_end_points(
 						**visible_section.d_section_geometry_unreversed,
 						get_section_info(visible_section).d_table_row.get_reverse());
 	// Set the section start and end points.
@@ -2427,7 +2426,7 @@ GPlatesGui::TopologyTools::get_boundary_geometry_end_points(
 					get_unreversed_boundary_segment(reverse_order);
 
 	// Return the start and end points of the current boundary subsegment.
-	return GPlatesUtils::GeometryUtil::get_geometry_end_points(
+	return GPlatesUtils::GeometryUtils::get_geometry_end_points(
 			*geometry, reverse_order);
 }
 
@@ -2453,14 +2452,16 @@ namespace
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 			const GPlatesModel::PropertyName &property_name)
 	{
-		GPlatesModel::FeatureHandle::children_iterator iter = feature_ref->children_begin();
-		GPlatesModel::FeatureHandle::children_iterator end = feature_ref->children_end();
+		GPlatesModel::FeatureHandle::iterator iter = feature_ref->begin();
+		GPlatesModel::FeatureHandle::iterator end = feature_ref->end();
 		// loop over properties
 		for ( ; iter != end; ++iter) 
 		{
+			/*
 			// double check for validity and nullness
 			if(! iter.is_valid() ){ continue; }
 			if( *iter == NULL )   { continue; }  
+			*/
 			// FIXME: previous edits to the feature leave property pointers NULL
 
 			// passed all checks, make the name and test
@@ -2469,9 +2470,9 @@ namespace
 			if ( test_name == property_name )
 			{
 				// Delete the old boundary 
-				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-				feature_ref->remove_child(iter, transaction);
-				transaction.commit();
+				// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+				feature_ref->remove(iter);
+				// transaction.commit();
 				// FIXME: this seems to create NULL pointers in the properties collection
 				// see FIXME note above to check for NULL? 
 				// Or is this to be expected?
@@ -2574,10 +2575,10 @@ GPlatesGui::TopologyTools::convert_topology_to_boundary_feature_property(
 	// Add the gpml:boundary property to the topology feature.
 	//
 	
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-		boundary_property_value,
-		boundary_prop_name,
-		feature_ref);
+	feature_ref->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				boundary_prop_name,
+				boundary_property_value));
 
 	// Set the ball rolling again ...
 	d_reconstruct_ptr->reconstruct(); 
@@ -2611,13 +2612,13 @@ GPlatesGui::TopologyTools::create_topological_sections(
 
 		// Is there an intersection with the previous section?
 		// We say yes always even if not intersecting at current reconstruction time.
-		const boost::optional<GPlatesModel::FeatureHandle::children_iterator> prev_intersection =
+		const boost::optional<GPlatesModel::FeatureHandle::iterator> prev_intersection =
 				d_section_info_seq[get_prev_index(section_index, d_section_info_seq)]
 						.d_table_row.get_geometry_property();
 
 		// Is there an intersection with the next section?
 		// We say yes always even if not intersecting at current reconstruction time.
-		const boost::optional<GPlatesModel::FeatureHandle::children_iterator> next_intersection =
+		const boost::optional<GPlatesModel::FeatureHandle::iterator> next_intersection =
 				d_section_info_seq[get_next_index(section_index, d_section_info_seq)]
 						.d_table_row.get_geometry_property();
 
@@ -2659,7 +2660,7 @@ GPlatesGui::TopologyTools::show_numbers()
 	if ( d_feature_focus_ptr->is_valid() ) 
 	{
 		qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string( 
-			d_feature_focus_ptr->focused_feature()->handle_data().feature_id().get() );
+			d_feature_focus_ptr->focused_feature()->feature_id().get() );
 
 		static const GPlatesModel::PropertyName name_property_name = 
 			GPlatesModel::PropertyName::create_gml("name");
@@ -2681,7 +2682,7 @@ GPlatesGui::TopologyTools::show_numbers()
 	//
 	if ( d_topology_feature_ref.is_valid() ) 
 	{
-		qDebug() << "d_topology_feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( d_topology_feature_ref->handle_data().feature_id().get() );
+		qDebug() << "d_topology_feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( d_topology_feature_ref->feature_id().get() );
 		static const GPlatesModel::PropertyName name_property_name = 
 			GPlatesModel::PropertyName::create_gml("name");
 
@@ -2719,7 +2720,7 @@ GPlatesGui::TopologyTools::update_topology_vertices()
 
 		// Get the vertices from the possibly clipped section geometry
 		// and add them to the list of topology vertices.
-		GPlatesUtils::GeometryUtil::get_geometry_points(
+		GPlatesUtils::GeometryUtils::get_geometry_points(
 				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
 				d_topology_vertices,
 				get_section_info(visible_section).d_table_row.get_reverse());

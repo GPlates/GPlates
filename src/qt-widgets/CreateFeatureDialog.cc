@@ -946,46 +946,45 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	collection = collection_item->get_file_iterator()->get_feature_collection();
 
 	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = d_model_ptr->create_feature(type, collection);
-	
+	GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
 
 	// Add a (possibly ConstantValue-wrapped, see GeometricPropertyValueConstructor)
 	// Geometry Property using present-day geometry.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			*geometry_value_opt,
-			geom_prop_name,
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				geom_prop_name,
+				*geometry_value_opt));
 
 	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
 	GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
 			d_plate_id_widget->create_property_value_from_widget();
 	GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type),
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+				GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
 
 	// Add a gpml:conjugatePlateId Property.
 	if ( ! d_conjugate_plate_id_widget->is_null() &&
 			should_offer_conjugate_plate_id_prop(listwidget_feature_types)) {
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				d_conjugate_plate_id_widget->create_property_value_from_widget(),
-				GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
-				feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+					d_conjugate_plate_id_widget->create_property_value_from_widget()));
 	}
 
 	// Add a gml:validTime Property.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			d_time_period_widget->create_property_value_from_widget(),
-			GPlatesModel::PropertyName::create_gml("validTime"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("validTime"),
+				d_time_period_widget->create_property_value_from_widget()));
 
 	// Add a gml:name Property.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			d_name_widget->create_property_value_from_widget(),
-			GPlatesModel::PropertyName::create_gml("name"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("name"),
+				d_name_widget->create_property_value_from_widget()));
 
 	// We've just modified the feature collection so let the feature collection file state
 	// know this so it can reclassify it.
@@ -1053,9 +1052,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 	collection = collection_item->get_file_iterator()->get_feature_collection();
 	
 	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = 
-		d_model_ptr->create_feature(type, collection);
-	
+	GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
 
 	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
 	GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
@@ -1064,24 +1061,24 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 	GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
 
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			GPlatesPropertyValues::GpmlConstantValue::create(
-				plate_id_value, 
-				plate_id_value_type),
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+				GPlatesPropertyValues::GpmlConstantValue::create(
+					plate_id_value, 
+					plate_id_value_type)));
 
 	// Add a gml:validTime Property.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			d_time_period_widget->create_property_value_from_widget(),
-			GPlatesModel::PropertyName::create_gml("validTime"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("validTime"),
+				d_time_period_widget->create_property_value_from_widget()));
 
 	// Add a gml:name Property.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			d_name_widget->create_property_value_from_widget(),
-			GPlatesModel::PropertyName::create_gml("name"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("name"),
+				d_name_widget->create_property_value_from_widget()));
 
 	// We've just modified the feature collection so let the feature collection file state
 	// know this so it can reclassify it.

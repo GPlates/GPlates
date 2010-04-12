@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QDebug>
 #include <boost/none.hpp>
 #include <QHeaderView>
 #include <QGridLayout>
@@ -33,7 +32,6 @@
 #include "model/FeatureHandle.h"
 #include "model/PropertyName.h"
 #include "model/ModelUtils.h"
-#include "model/DummyTransactionHandle.h"
 #include "qt-widgets/EditTimePeriodWidget.h"
 #include "utils/UnicodeStringUtils.h"
 #include "presentation/ViewState.h"
@@ -189,7 +187,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::handle_selection_change(
 	}
 
 	// We have a valid selection. Find out what it is!
-	GPlatesModel::FeatureHandle::children_iterator it = 
+	GPlatesModel::FeatureHandle::iterator it = 
 			d_property_model_ptr->get_property_iterator_for_row(idx.row());
 	
 	// Enable things which depend on an item being selected.
@@ -223,7 +221,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 	}
 	
 	// We have a valid selection. Find out what it is!
-	GPlatesModel::FeatureHandle::children_iterator it = 
+	GPlatesModel::FeatureHandle::iterator it = 
 			d_property_model_ptr->get_property_iterator_for_row(idx.row());
 
 	// Clear the selection beforehand, or we could end up in trouble.
@@ -237,9 +235,9 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 
 	// FIXME: UNDO
 	// Delete the property container for the given iterator.
-	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-	d_feature_ref->remove_child(it, transaction);
-	transaction.commit();
+	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+	d_feature_ref->remove(it);
+	// transaction.commit();
 
 	// We have just changed the model. Tell anyone who cares to know.
 	// This will cause FeaturePropertyTableModel to refresh_data(), amongst other things.
@@ -257,12 +255,10 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::append_property_value_to_feature(
 		return;
 	}
 
-	// FIXME: UNDO
-	const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type top_level_property =
-			GPlatesModel::ModelUtils::append_property_value_to_feature(
-					property_value,
-					property_name,
-					d_feature_ref);
+	d_feature_ref->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				property_name,
+				property_value));
 
 	// We have just changed the model. Tell anyone who cares to know.
 	d_feature_focus_ptr->announce_modification_of_focused_feature();

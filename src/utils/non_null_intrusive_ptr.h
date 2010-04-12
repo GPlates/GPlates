@@ -64,7 +64,7 @@ public:
     typedef T element_type;
     typedef H null_handler_type;
 
-    non_null_intrusive_ptr(T * p, H const & handle_null, bool add_ref = true): p_(p)
+    non_null_intrusive_ptr(T * p, H const & handle_null = H(), bool add_ref = true): p_(p)
     {
         if(p_ == 0) {
             // Give 'handle_null' a chance to handle the situation.

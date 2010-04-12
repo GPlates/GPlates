@@ -157,8 +157,8 @@ set(srcs
     NoActiveEditWidgetException.h
     PaletteSelectionWidget.cc
     PaletteSelectionWidget.h
-	ProgressDialog.h
-	ProgressDialogUi.ui
+    ProgressDialog.h
+    ProgressDialogUi.ui
     ProjectionControlWidget.cc
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui

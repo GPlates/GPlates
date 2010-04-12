@@ -25,7 +25,6 @@
 
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
-#include <QDebug>
 #include <vector>
 #include <QHeaderView>
 #include <QTableWidgetItem>

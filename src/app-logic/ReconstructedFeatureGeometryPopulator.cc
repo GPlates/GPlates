@@ -123,7 +123,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 {
 	using namespace GPlatesMaths;
 
-	GPlatesModel::FeatureHandle::children_iterator property = *current_top_level_propiter();
+	GPlatesModel::FeatureHandle::iterator property = *current_top_level_propiter();
 
 	if (d_reconstruction_params.get_recon_plate_id()) {
 		const FiniteRotation &r = *d_recon_rotation;
@@ -133,8 +133,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 				GPlatesModel::ReconstructedFeatureGeometry::create(
 						reconstructed_polyline,
-						*current_top_level_propiter()->collection_handle_ptr(),
-						*current_top_level_propiter(),
+						*(current_top_level_propiter()->handle_weak_ref()),
+						*(current_top_level_propiter()),
 						d_reconstruction_params.get_recon_plate_id(),
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -144,8 +144,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 				GPlatesModel::ReconstructedFeatureGeometry::create(
 						gml_line_string.polyline(),
-						*current_top_level_propiter()->collection_handle_ptr(),
-						*current_top_level_propiter(),
+						*(current_top_level_propiter()->handle_weak_ref()),
+						*(current_top_level_propiter()),
 						boost::none,
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -160,7 +160,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 {
 	using namespace GPlatesMaths;
 
-	GPlatesModel::FeatureHandle::children_iterator property = *(current_top_level_propiter());
+	GPlatesModel::FeatureHandle::iterator property = *(current_top_level_propiter());
 
 	if (d_reconstruction_params.get_recon_plate_id()) {
 		const FiniteRotation &r = *d_recon_rotation;
@@ -170,8 +170,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 				GPlatesModel::ReconstructedFeatureGeometry::create(
 						reconstructed_multipoint,
-						*current_top_level_propiter()->collection_handle_ptr(),
-						*current_top_level_propiter(),
+						*(current_top_level_propiter()->handle_weak_ref()),
+						*(current_top_level_propiter()),
 						d_reconstruction_params.get_recon_plate_id(),
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -181,8 +181,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 				GPlatesModel::ReconstructedFeatureGeometry::create(
 						gml_multi_point.multipoint(),
-						*current_top_level_propiter()->collection_handle_ptr(),
-						*current_top_level_propiter(),
+						*(current_top_level_propiter()->handle_weak_ref()),
+						*(current_top_level_propiter()),
 						boost::none,
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -205,7 +205,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 {
 	using namespace GPlatesMaths;
 
-	GPlatesModel::FeatureHandle::children_iterator property = *(current_top_level_propiter());
+	GPlatesModel::FeatureHandle::iterator property = *(current_top_level_propiter());
 
 	if (d_reconstruction_params.get_recon_plate_id()) {
 		const FiniteRotation &r = *d_recon_rotation;
@@ -215,8 +215,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 				GPlatesModel::ReconstructedFeatureGeometry::create(
 						reconstructed_point,
-						*current_top_level_propiter()->collection_handle_ptr(),
-						*current_top_level_propiter(),
+						*(current_top_level_propiter()->handle_weak_ref()),
+						*(current_top_level_propiter()),
 						d_reconstruction_params.get_recon_plate_id(),
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -226,8 +226,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 				GPlatesModel::ReconstructedFeatureGeometry::create(
 						gml_point.point(),
-						*current_top_level_propiter()->collection_handle_ptr(),
-						*current_top_level_propiter(),
+						*(current_top_level_propiter()->handle_weak_ref()),
+						*(current_top_level_propiter()),
 						boost::none,
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -242,7 +242,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 {
 	using namespace GPlatesMaths;
 
-	GPlatesModel::FeatureHandle::children_iterator property = *(current_top_level_propiter());
+	GPlatesModel::FeatureHandle::iterator property = *(current_top_level_propiter());
 
 	if (d_reconstruction_params.get_recon_plate_id()) {
 		// Reconstruct the exterior PolygonOnSphere,
@@ -254,8 +254,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 				GPlatesModel::ReconstructedFeatureGeometry::create(
 						reconstructed_exterior,
-						*current_top_level_propiter()->collection_handle_ptr(),
-						*current_top_level_propiter(),
+						*(current_top_level_propiter()->handle_weak_ref()),
+						*(current_top_level_propiter()),
 						d_reconstruction_params.get_recon_plate_id(),
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -271,8 +271,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 			GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type interior_rfg_ptr =
 					GPlatesModel::ReconstructedFeatureGeometry::create(
 							reconstructed_interior,
-							*current_top_level_propiter()->collection_handle_ptr(),
-							*current_top_level_propiter(),
+							*(current_top_level_propiter()->handle_weak_ref()),
+							*(current_top_level_propiter()),
 							d_reconstruction_params.get_recon_plate_id(),
 							d_reconstruction_params.get_time_of_appearance());
 			ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -284,8 +284,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 				GPlatesModel::ReconstructedFeatureGeometry::create(
 						gml_polygon.exterior(),
-						*current_top_level_propiter()->collection_handle_ptr(),
-						*current_top_level_propiter(),
+						*(current_top_level_propiter()->handle_weak_ref()),
+						*(current_top_level_propiter()),
 						boost::none,
 						d_reconstruction_params.get_time_of_appearance());
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -298,8 +298,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 			GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type interior_rfg_ptr =
 					GPlatesModel::ReconstructedFeatureGeometry::create(
 							*it,
-							*current_top_level_propiter()->collection_handle_ptr(),
-							*current_top_level_propiter(),
+							*(current_top_level_propiter()->handle_weak_ref()),
+							*(current_top_level_propiter()),
 							boost::none,
 							d_reconstruction_params.get_time_of_appearance());
 			ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(

@@ -47,7 +47,7 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PointOnSphere.h"
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "model/ModelUtils.h"
 #include "property-values/GeoTimeInstant.h"
@@ -523,37 +523,38 @@ namespace
 		GPlatesModel::FeatureHandle &non_const_feature_handle = 
 			const_cast<GPlatesModel::FeatureHandle&>(feature_handle);
 			
-		GPlatesModel::FeatureHandle::children_iterator p_iter = non_const_feature_handle.children_begin();
-		GPlatesModel::FeatureHandle::children_iterator p_iter_end = non_const_feature_handle.children_end();
+		GPlatesModel::FeatureHandle::iterator p_iter = non_const_feature_handle.begin();
+		GPlatesModel::FeatureHandle::iterator p_iter_end = non_const_feature_handle.end();
 
 		for ( ; p_iter != p_iter_end ; ++p_iter)
 		{
+			/*
 			if (!p_iter.is_valid())
 			{
 				continue;
 			}
-			if (*p_iter == NULL){
+			if (!(*p_iter)){
 				continue;
 			}
+			*/
 			GPlatesModel::PropertyName property_name = (*p_iter)->property_name();
 			QString q_prop_name = GPlatesUtils::make_qstring_from_icu_string(property_name.get_name());
 			if (q_prop_name == "shapefileAttributes")
 			{
 				//qDebug() << "Removing old kvd...";
-				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-				non_const_feature_handle.remove_child(p_iter, transaction);
-				transaction.commit();
+				// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+				non_const_feature_handle.remove(p_iter);
+				// transaction.commit();
 			}
 
 		} // loop over properties in feature. 	
 	
 		//qDebug() << "Adding new kvd...";
 		GPlatesModel::WeakReference<GPlatesModel::FeatureHandle> feature_weak_ref(non_const_feature_handle);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			kvd,
-			GPlatesModel::PropertyName::create_gpml("shapefileAttributes"),
-			feature_weak_ref);	
-	
+		feature_weak_ref->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("shapefileAttributes"),
+					kvd));
 	}
 
 	QVariant
@@ -727,7 +728,7 @@ namespace
 		}
 
 		QString feature_type_model_qstring = GPlatesUtils::make_qstring_from_icu_string(
-			feature->handle_data().feature_type().get_name());
+			feature->feature_type().get_name());
 
 
 		QString feature_type_key;
@@ -919,7 +920,7 @@ namespace
 	{
 
 		GPlatesModel::PropertyValue::non_null_ptr_type feature_id_value =
-			GPlatesPropertyValues::XsString::create(feature->handle_data().feature_id().get());
+			GPlatesPropertyValues::XsString::create(feature->feature_id().get());
 
 		QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 			ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID]);
@@ -1117,9 +1118,9 @@ namespace
 	{
 		if (feature_collection.is_valid())
 		{
-			GPlatesModel::FeatureCollectionHandle::children_const_iterator
-				iter = feature_collection->children_begin(), 
-				end = feature_collection->children_end();
+			GPlatesModel::FeatureCollectionHandle::const_iterator
+				iter = feature_collection->begin(), 
+				end = feature_collection->end();
 
 			while ((iter != end) && !default_key_value_dictionary)
 			{
@@ -1211,9 +1212,9 @@ GPlatesFileIO::ShapefileWriter::ShapefileWriter(
 
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
 
-	GPlatesModel::FeatureCollectionHandle::children_const_iterator 
-		iter = feature_collection_ref->children_begin(),
-		end = feature_collection_ref->children_end();
+	GPlatesModel::FeatureCollectionHandle::const_iterator 
+		iter = feature_collection_ref->begin(),
+		end = feature_collection_ref->end();
 
 	for ( ; iter != end ; ++iter)
 	{
@@ -1346,11 +1347,10 @@ GPlatesFileIO::ShapefileWriter::finalise_post_feature_properties(
 			(*d_default_key_value_dictionary)->elements());
 
 		GPlatesModel::WeakReference<GPlatesModel::FeatureHandle>  feature_weak_ref(non_const_feature_handle);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			kvd,
-			GPlatesModel::PropertyName::create_gpml("shapefileAttributes"),
-			feature_weak_ref);	
-
+		feature_weak_ref->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("shapefileAttributes"),
+					kvd));
 	}
 	else
 	{	

@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the FeatureVisitor and ConstFeatureVisitor classes.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,9 +28,15 @@
 #ifndef GPLATES_MODEL_FEATUREVISITOR_H
 #define GPLATES_MODEL_FEATUREVISITOR_H
 
+#include <iostream>
+#include <boost/optional.hpp>
+
 #include "FeatureHandle.h"
 #include "FeatureCollectionHandle.h"
-
+#include "HandleTraits.h"
+#include "PropertyName.h"
+#include "RevisionAwareIterator.h"
+#include "TopLevelPropertyInline.h"
 
 namespace GPlatesPropertyValues
 {
@@ -73,11 +79,59 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesModel
 {
-	// Forward declarations for the member functions.
-	class TopLevelPropertyInline;
+	namespace FeatureVisitorInternals
+	{
+		/**
+		 * A helper traits class to differentiate between const and non-const FeatureHandles.
+		 */
+		template<class FeatureHandleType>
+		struct Traits
+		{
+			typedef typename HandleTraits<FeatureHandle>::weak_ref feature_weak_ref_type;
+			typedef typename HandleTraits<FeatureHandle>::iterator feature_iterator_type;
+			typedef typename HandleTraits<FeatureCollectionHandle>::iterator feature_collection_iterator_type;
+			typedef TopLevelPropertyInline top_level_property_inline_type;
+			typedef TopLevelPropertyInline::iterator top_level_property_inline_iterator_type;
+		};
+
+		template<class FeatureHandleType>
+		struct Traits<const FeatureHandleType>
+		{
+			typedef typename HandleTraits<FeatureHandle>::const_weak_ref feature_weak_ref_type;
+			typedef typename HandleTraits<FeatureHandle>::const_iterator feature_iterator_type;
+			typedef typename HandleTraits<FeatureCollectionHandle>::const_iterator feature_collection_iterator_type;
+			typedef const TopLevelPropertyInline top_level_property_inline_type;
+			typedef TopLevelPropertyInline::const_iterator top_level_property_inline_iterator_type;
+		};
+
+		/**
+		 * CopyConst takes the const-ness of FeatureHandleType and applies it to T.
+		 */
+		template<class FeatureHandleType, class T>
+		struct CopyConst
+		{
+			typedef T type;
+		};
+
+		template<class FeatureHandleType, class T>
+		struct CopyConst<const FeatureHandleType, T>
+		{
+			typedef const T type;
+		};
+
+	}
 
 	/**
-	 * This class defines an abstract interface for a Visitor to visit non-const features.
+	 * This class defines an abstract interface for a Visitor to visit features.
+	 * The visitor is non-const if the template parameter FeatureHandleType is
+	 * (non-const) FeatureHandle, and the visitor is const if the template parameter
+	 * is const FeatureHandle.
+	 *
+	 * For convenience, FeatureVisitor and ConstFeatureVisitor typedefs are defined
+	 * at the bottom of this header file.
+	 *
+	 * IMPORTANT: For performance reasons, you are strongly advised to inherit from
+	 * ConstFeatureVisitor if you do not need to modify the objects you are visiting.
 	 *
 	 * See the Visitor pattern (p.331) in Gamma95 for more information on the design and
 	 * operation of this class.  This class corresponds to the abstract Visitor class in the
@@ -94,15 +148,82 @@ namespace GPlatesModel
 	 *    and you wanted to override *any* of them in a derived class, you would have to
 	 *    override them all.)
 	 */
-	class FeatureVisitor
+	template<class FeatureHandleType> // Could be either const or non-const FeatureHandle.
+	class FeatureVisitorBase
 	{
+
 	public:
 
-		// We'll make this function pure virtual so that the class is abstract.  The class
-		// *should* be abstract, but wouldn't be unless we did this, since all the virtual
-		// member functions have (empty) definitions.
+		/**
+		 * Convenience typedef for the template parameter, which is either const or non-const FeatureHandle.
+		 */
+		typedef FeatureHandleType feature_handle_type;
+
+		/**
+		 * Convenience typedef for a weak-ref to a feature, with appropriate const-ness.
+		 */
+		typedef typename FeatureVisitorInternals::Traits<feature_handle_type>::feature_weak_ref_type feature_weak_ref_type;
+
+		/**
+		 * Convenience typedef for a feature's children iterator, with appropriate const-ness.
+		 */
+		typedef typename FeatureVisitorInternals::Traits<feature_handle_type>::feature_iterator_type feature_iterator_type;
+
+		/**
+		 * Convenience typedef for a feature collection's children iterator (which points to a feature), with appropriate const-ness.
+		 */
+		typedef typename FeatureVisitorInternals::Traits<feature_handle_type>::feature_collection_iterator_type feature_collection_iterator_type;
+
+		/**
+		 * Convenience typedef for a feature's child type, with appropriate const-ness.
+		 */
+		typedef typename FeatureVisitorInternals::Traits<feature_handle_type>::top_level_property_inline_type top_level_property_inline_type;
+
+		/**
+		 * Convenience typedef for a TopLevelProperty's iterator type, with appropriate const-ness.
+		 */
+		typedef typename FeatureVisitorInternals::Traits<feature_handle_type>::top_level_property_inline_iterator_type top_level_property_inline_iterator_type;
+
+		// Typedefs to give the property values appropriate const-ness.
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::Enumeration>::type enumeration_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlDataBlock>::type gml_data_block_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlLineString>::type gml_line_string_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlMultiPoint>::type gml_multi_point_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlOrientableCurve>::type gml_orientable_curve_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlPoint>::type gml_point_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlPolygon>::type gml_polygon_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimeInstant>::type gml_time_instant_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimePeriod>::type gml_time_period_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlConstantValue>::type gpml_constant_value_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureReference>::type gpml_feature_reference_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureSnapshotReference>::type gpml_feature_snapshot_reference_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFiniteRotation>::type gpml_finite_rotation_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFiniteRotationSlerp>::type gpml_finite_rotation_slerp_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlHotSpotTrailMark>::type gpml_hot_spot_trail_mark_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlIrregularSampling>::type gpml_irregular_sampling_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlKeyValueDictionary>::type gpml_key_value_dictionary_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlMeasure>::type gpml_measure_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlOldPlatesHeader>::type gpml_old_plates_header_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPiecewiseAggregation>::type gpml_piecewise_aggregation_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPlateId>::type gpml_plate_id_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPolarityChronId>::type gpml_polarity_chron_id_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPropertyDelegate>::type gpml_property_delegate_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRevisionId>::type gpml_revision_id_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPolygon>::type gpml_topological_polygon_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLineSection>::type gpml_topological_line_section_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalIntersection>::type gpml_topological_intersection_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPoint>::type gpml_topological_point_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::UninterpretedPropertyValue>::type uninterpreted_property_value_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::XsBoolean>::type xs_boolean_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::XsDouble>::type xs_double_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::XsInteger>::type xs_integer_type;
+		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::XsString>::type xs_string_type;
+
+		/**
+		 * Destructor.
+		 */
 		virtual
-		~FeatureVisitor() = 0;
+		~FeatureVisitorBase();
 
 		/**
 		 * Visit the feature referenced by @a feature_weak_ref.
@@ -112,16 +233,7 @@ namespace GPlatesModel
 		 */
 		bool
 		visit_feature(
-				const FeatureHandle::weak_ref &feature_weak_ref)
-		{
-			if (feature_weak_ref.is_valid()) {
-				visit_feature_handle(*feature_weak_ref);
-				return true;
-			} else {
-				log_invalid_weak_ref(feature_weak_ref);
-				return false;
-			}
-		}
+				const feature_weak_ref_type &feature_weak_ref);
 
 		/**
 		 * Visit the feature indicated by @a iterator.
@@ -131,16 +243,7 @@ namespace GPlatesModel
 		 */
 		bool
 		visit_feature(
-				const FeatureCollectionHandle::children_iterator &iterator)
-		{
-			if (iterator.is_valid()) {
-				visit_feature_handle(**iterator);
-				return true;
-			} else {
-				log_invalid_iterator(iterator);
-				return false;
-			}
-		}
+				const feature_collection_iterator_type &iterator);
 
 	protected:
 
@@ -158,17 +261,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_feature_handle(
-				FeatureHandle &feature_handle)
-		{
-			if ( ! initialise_pre_feature_properties(feature_handle)) {
-				return;
-			}
-
-			// Visit each of the properties in turn.
-			visit_feature_properties(feature_handle);
-
-			finalise_post_feature_properties(feature_handle);
-		}
+				feature_handle_type &feature_handle);
 
 		/**
 		 * Initialise the visitor before visiting the feature properties.
@@ -183,10 +276,7 @@ namespace GPlatesModel
 		virtual
 		bool
 		initialise_pre_feature_properties(
-				FeatureHandle &feature_handle)
-		{
-			return true;
-		}
+				feature_handle_type &feature_handle);
 
 		/**
 		 * Finalise the visitor after visiting the feature properties.
@@ -197,8 +287,7 @@ namespace GPlatesModel
 		virtual
 		void
 		finalise_post_feature_properties(
-				FeatureHandle &feature_handle)
-		{  }
+				feature_handle_type &feature_handle);
 
 		/**
 		 * Invoke this function in @a visit_feature_handle to visit each of the the feature
@@ -211,25 +300,19 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_feature_properties(
-				FeatureHandle &feature_handle);
+				feature_handle_type &feature_handle);
 
 		/**
 		 * Access the iterator of the top-level property which we're currently visiting.
 		 */
-		const boost::optional<FeatureHandle::children_iterator> &
-		current_top_level_propiter() const
-		{
-			return d_current_top_level_propiter;
-		}
+		const boost::optional<feature_iterator_type> &
+		current_top_level_propiter() const;
 
 		/**
 		 * Access the name of the top-level property which we're currently visiting.
 		 */
 		const boost::optional<PropertyName> &
-		current_top_level_propname() const
-		{
-			return d_current_top_level_propname;
-		}
+		current_top_level_propname() const;
 
 	// These need to be public so that the TopLevelProperty derivations can access them.
 	public:
@@ -248,17 +331,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_top_level_property_inline(
-				TopLevelPropertyInline &top_level_property_inline)
-		{
-			if ( ! initialise_pre_property_values(top_level_property_inline)) {
-				return;
-			}
-
-			// Visit each of the properties in turn.
-			visit_property_values(top_level_property_inline);
-
-			finalise_post_property_values(top_level_property_inline);
-		}
+				top_level_property_inline_type &top_level_property_inline);
 
 	protected:
 
@@ -276,10 +349,7 @@ namespace GPlatesModel
 		virtual
 		bool
 		initialise_pre_property_values(
-				TopLevelPropertyInline &top_level_property_inline)
-		{
-			return true;
-		}
+				top_level_property_inline_type &top_level_property_inline);
 
 		/**
 		 * Finalise the visitor after visiting the property values.
@@ -290,8 +360,7 @@ namespace GPlatesModel
 		virtual
 		void
 		finalise_post_property_values(
-				TopLevelPropertyInline &top_level_property_inline)
-		{  }
+				top_level_property_inline_type &top_level_property_inline);
 
 		/**
 		 * Invoke this function in @a visit_top_level_property_inline to visit each of the
@@ -301,7 +370,7 @@ namespace GPlatesModel
 		 */
 		void
 		visit_property_values(
-				TopLevelPropertyInline &top_level_property_inline);
+				top_level_property_inline_type &top_level_property_inline);
 
 	// These need to be public so that the PropertyValue derivations can access them.
 	public:
@@ -311,215 +380,211 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_enumeration(
-				GPlatesPropertyValues::Enumeration &enumeration)
+				enumeration_type &enumeration)
 		{  }
 
 		virtual
 		void
 		visit_gml_data_block(
-				GPlatesPropertyValues::GmlDataBlock &gml_data_block)
+				gml_data_block_type &gml_data_block)
 		{  }
 
 		virtual
 		void
 		visit_gml_line_string(
-				GPlatesPropertyValues::GmlLineString &gml_line_string)
+				gml_line_string_type &gml_line_string)
 		{  }
 
 		virtual
 		void
 		visit_gml_multi_point(
-				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+				gml_multi_point_type &gml_multi_point)
 		{  }
 
 		virtual
 		void
 		visit_gml_orientable_curve(
-				GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+				gml_orientable_curve_type &gml_orientable_curve)
 		{  }
 
 		virtual
 		void
 		visit_gml_point(
-				GPlatesPropertyValues::GmlPoint &gml_point)
+				gml_point_type &gml_point)
 		{  }
 
 		virtual
 		void
 		visit_gml_polygon(
-				GPlatesPropertyValues::GmlPolygon &gml_polygon)
+				gml_polygon_type &gml_polygon)
 		{  }
 
 		virtual
 		void
 		visit_gml_time_instant(
-				GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
+				gml_time_instant_type &gml_time_instant)
 		{  }
 
 		virtual
 		void
 		visit_gml_time_period(
-				GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
+				gml_time_period_type &gml_time_period)
 		{  }
 
 		virtual
 		void
 		visit_gpml_constant_value(
-				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+				gpml_constant_value_type &gpml_constant_value)
 		{  }
 
 		virtual
 		void
 		visit_gpml_feature_reference(
-				GPlatesPropertyValues::GpmlFeatureReference &gpml_feature_reference)
+				gpml_feature_reference_type &gpml_feature_reference)
 		{  }
 
 		virtual
 		void
 		visit_gpml_feature_snapshot_reference(
-				GPlatesPropertyValues::GpmlFeatureSnapshotReference &gpml_feature_snapshot_reference)
+				gpml_feature_snapshot_reference_type &gpml_feature_snapshot_reference)
 		{  }
 
 		virtual
 		void
 		visit_gpml_finite_rotation(
-				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+				gpml_finite_rotation_type &gpml_finite_rotation)
 		{  }
 
 		virtual
 		void
 		visit_gpml_finite_rotation_slerp(
-				GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
+				gpml_finite_rotation_slerp_type &gpml_finite_rotation_slerp)
 		{  }
 
 		virtual
 		void
 		visit_gpml_hot_spot_trail_mark(
-				GPlatesPropertyValues::GpmlHotSpotTrailMark &gpml_hot_spot_trail_mark)
+				gpml_hot_spot_trail_mark_type &gpml_hot_spot_trail_mark)
 		{  }
 
 		virtual
 		void
 		visit_gpml_irregular_sampling(
-				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+				gpml_irregular_sampling_type &gpml_irregular_sampling)
 		{  }
 
 		virtual
 		void
 		visit_gpml_key_value_dictionary(
-			GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+				gpml_key_value_dictionary_type &gpml_key_value_dictionary)
 		{  }
 
 		virtual
 		void
 		visit_gpml_measure(
-				GPlatesPropertyValues::GpmlMeasure &gpml_measure)
+				gpml_measure_type &gpml_measure)
 		{  }
 
 		virtual
 		void
 		visit_gpml_old_plates_header(
-				GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header) 
+				gpml_old_plates_header_type &gpml_old_plates_header) 
 		{  }
 
 		virtual
 		void
 		visit_gpml_piecewise_aggregation(
-				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+				gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
 		{  }
 
 		virtual
 		void
 		visit_gpml_plate_id(
-				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+				gpml_plate_id_type &gpml_plate_id)
 		{  }
 
 		virtual
 		void
 		visit_gpml_polarity_chron_id(
-				GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
+				gpml_polarity_chron_id_type &gpml_polarity_chron_id)
 		{  }
 
 		virtual
 		void
 		visit_gpml_property_delegate(
-				GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate)
+				gpml_property_delegate_type &gpml_property_delegate)
 		{  }
 
 		virtual
 		void
 		visit_gpml_revision_id(
-				GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id) 
+				gpml_revision_id_type &gpml_revision_id) 
 		{  }
 
 		virtual
 		void
 		visit_gpml_topological_polygon(
-				GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+				gpml_topological_polygon_type &gpml_toplogical_polygon)
 		{  }
 
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+				gpml_topological_line_section_type &gpml_toplogical_line_section)
 		{  }
 
 		virtual
 		void
 		visit_gpml_topological_intersection(
-				GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection)
+				gpml_topological_intersection_type &gpml_toplogical_intersection)
 		{  }
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+				gpml_topological_point_type &gpml_toplogical_point)
 		{  }
 
 		virtual
 		void
 		visit_uninterpreted_property_value(
-				GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val) 
+				uninterpreted_property_value_type &uninterpreted_prop_val) 
 		{  }
 
 		virtual
 		void
 		visit_xs_boolean(
-				GPlatesPropertyValues::XsBoolean &xs_boolean)
+				xs_boolean_type &xs_boolean)
 		{  }
 
 		virtual
 		void
 		visit_xs_double(
-				GPlatesPropertyValues::XsDouble &xs_double)
+				xs_double_type &xs_double)
 		{  }
 
 		virtual
 		void
 		visit_xs_integer(
-				GPlatesPropertyValues::XsInteger &xs_integer)
+				xs_integer_type &xs_integer)
 		{  }
 
 		virtual
 		void
 		visit_xs_string(
-				GPlatesPropertyValues::XsString &xs_string)
+				xs_string_type &xs_string)
 		{  }
 
 	private:
 
 		void
 		log_invalid_weak_ref(
-				const FeatureHandle::weak_ref &feature_weak_ref);
-
-		void
-		log_invalid_iterator(
-				const FeatureCollectionHandle::children_iterator &iterator);
+				const feature_weak_ref_type &feature_weak_ref);
 
 		/**
 		 * Tracks the iterator of the most-recently read top-level property.
 		 */
-		boost::optional<FeatureHandle::children_iterator> d_current_top_level_propiter;
+		boost::optional<feature_iterator_type> d_current_top_level_propiter;
 
 		/**
 		 * Tracks the name of the most-recently read top-level property.
@@ -528,10 +593,175 @@ namespace GPlatesModel
 
 		// This operator should never be defined, because we don't want to allow
 		// copy-assignment.
-		FeatureVisitor &
+		FeatureVisitorBase &
 		operator=(
-				const FeatureVisitor &);
+				const FeatureVisitorBase &);
 	};
+
+
+	// Public methods ////////////////////////////////////////////////////////////
+
+	template<class FeatureHandleType>
+	FeatureVisitorBase<FeatureHandleType>::~FeatureVisitorBase()
+	{
+	};
+
+
+	template<class FeatureHandleType>
+	bool
+	FeatureVisitorBase<FeatureHandleType>::visit_feature(
+			const feature_weak_ref_type &feature_weak_ref)
+	{
+		if (feature_weak_ref.is_valid())
+		{
+			visit_feature_handle(*feature_weak_ref);
+			return true;
+		}
+		else
+		{
+			log_invalid_weak_ref(feature_weak_ref);
+			return false;
+		}
+	}
+
+
+	template<class FeatureHandleType>
+	bool
+	FeatureVisitorBase<FeatureHandleType>::visit_feature(
+			const feature_collection_iterator_type &iterator)
+	{
+		visit_feature_handle(**iterator);
+		return true;
+	}
+
+
+	template<class FeatureHandleType>
+	void
+	FeatureVisitorBase<FeatureHandleType>::visit_top_level_property_inline(
+			top_level_property_inline_type &top_level_property_inline)
+	{
+		if (!initialise_pre_property_values(top_level_property_inline))
+		{
+			return;
+		}
+
+		// Visit each of the properties in turn.
+		visit_property_values(top_level_property_inline);
+
+		finalise_post_property_values(top_level_property_inline);
+	}
+
+
+	// Protected methods /////////////////////////////////////////////////////////
+	
+	template<class FeatureHandleType>
+	void
+	FeatureVisitorBase<FeatureHandleType>::visit_feature_handle(
+			feature_handle_type &feature_handle)
+	{
+		if (!initialise_pre_feature_properties(feature_handle))
+		{
+			return;
+		}
+
+		// Visit each of the properties in turn.
+		visit_feature_properties(feature_handle);
+
+		finalise_post_feature_properties(feature_handle);
+	}
+
+
+	template<class FeatureHandleType>
+	bool
+	FeatureVisitorBase<FeatureHandleType>::initialise_pre_feature_properties(
+			feature_handle_type &feature_handle)
+	{
+		return true;
+	}
+
+
+	template<class FeatureHandleType>
+	void
+	FeatureVisitorBase<FeatureHandleType>::finalise_post_feature_properties(
+			feature_handle_type &feature_handle)
+	{
+	}
+
+
+	// Template specialisations are in .cc file.
+	template<>
+	void
+	FeatureVisitorBase<FeatureHandle>::visit_feature_properties(
+			feature_handle_type &feature_handle);
+
+
+	// Template specialisations are in .cc file.
+	template<>
+	void
+	FeatureVisitorBase<const FeatureHandle>::visit_feature_properties(
+			feature_handle_type &feature_handle);
+
+
+	template<class FeatureHandleType>
+	const boost::optional<typename FeatureVisitorBase<FeatureHandleType>::feature_iterator_type> &
+	FeatureVisitorBase<FeatureHandleType>::current_top_level_propiter() const
+	{
+		return d_current_top_level_propiter;
+	}
+
+
+	template<class FeatureHandleType>
+	const boost::optional<PropertyName> &
+	FeatureVisitorBase<FeatureHandleType>::current_top_level_propname() const
+	{
+		return d_current_top_level_propname;
+	}
+
+
+	template<class FeatureHandleType>
+	bool
+	FeatureVisitorBase<FeatureHandleType>::initialise_pre_property_values(
+			top_level_property_inline_type &top_level_property_inline)
+	{
+		return true;
+	}
+
+
+	template<class FeatureHandleType>
+	void
+	FeatureVisitorBase<FeatureHandleType>::finalise_post_property_values(
+			top_level_property_inline_type &top_level_property_inline)
+	{
+	}
+
+
+	template<class FeatureHandleType>
+	void
+	FeatureVisitorBase<FeatureHandleType>::visit_property_values(
+			top_level_property_inline_type &top_level_property_inline)
+	{
+		top_level_property_inline_iterator_type iter = top_level_property_inline.begin();
+		top_level_property_inline_iterator_type end = top_level_property_inline.end();
+		for ( ; iter != end; ++iter)
+		{
+			(*iter)->accept_visitor(*this);
+		}
+	}
+
+
+	// Private methods ///////////////////////////////////////////////////////////
+	
+	template<class FeatureHandleType>
+	void
+	FeatureVisitorBase<FeatureHandleType>::log_invalid_weak_ref(
+			const feature_weak_ref_type &feature_weak_ref)
+	{
+		std::cerr << "invalid weak-ref not dereferenced." << std::endl;
+	}
+
+
+	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
+	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 
 }
 

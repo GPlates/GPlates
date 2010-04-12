@@ -151,7 +151,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 	
 	// Update our text fields at the top.
 	lineedit_feature_id->setText(
-			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->handle_data().feature_id().get()));
+			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->feature_id().get()));
 	lineedit_revision_id->setText(
 			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->revision_id().get()));
 
@@ -222,7 +222,8 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 	if(this->isVisible())
 	{
-		populator.populate(d_feature_ref, d_focused_rg);
+		GPlatesModel::FeatureHandle::const_weak_ref const_feature = d_feature_ref;
+		populator.populate(const_feature, d_focused_rg);
 		d_need_load_data = false;
 	}
 	else
@@ -238,7 +239,8 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::load_data_if_necessary()
 	{
 		GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator 
 			populator(property_tree());
-		populator.populate(d_feature_ref, d_focused_rg);
+		GPlatesModel::FeatureHandle::const_weak_ref const_feature = d_feature_ref;
+		populator.populate(const_feature, d_focused_rg);
 		d_need_load_data = false;
 	}
 	return;

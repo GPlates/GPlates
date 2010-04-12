@@ -28,103 +28,41 @@
 #ifndef GPLATES_MODEL_WEAKREFERENCEVISITOR_H
 #define GPLATES_MODEL_WEAKREFERENCEVISITOR_H
 
-#include <boost/scoped_ptr.hpp>
-#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "WeakObserverVisitor.h"
 #include "WeakReference.h"
+#include "WeakReferenceCallback.h"
 
 namespace GPlatesModel
 {
-	template<typename H>
-	class WeakReferenceVisitorImpl;
-
-	/**
-	 * A visitor that visits WeakReference<H> instances. Its behaviour is
-	 * determined at run-time by the WeakReferenceVisitorImpl instance passed into
-	 * the constructor, following the Strategy design pattern.
-	 */
-	template<typename H>
-	class WeakReferenceVisitor :
-		public WeakObserverVisitor<H>,
-		public boost::noncopyable
-	{
-		
-	public:
-
-		/**
-		 * Constructs a WeakReferenceVisitor with a WeakReferenceVisitorImpl instance.
-		 * @param impl A pointer to a WeakReferenceVisitorImpl; the WeakReferenceVisitor
-		 * takes ownership of the pointer.
-		 */
-		WeakReferenceVisitor(
-				WeakReferenceVisitorImpl<H> *impl) :
-			d_impl(impl)
-		{
-		}
-
-		virtual
-		~WeakReferenceVisitor()
-		{
-		}
-
-		virtual
-		void
-		visit_weak_reference(
-				WeakReference<H> &weak_reference);
-
-	private:
-
-		boost::scoped_ptr<WeakReferenceVisitorImpl<H> > d_impl;
-
-	};
-
-	/**
-	 * Impl base class for WeakReferenceVisitor.
-	 */
-	template<typename H>
-	class WeakReferenceVisitorImpl
-	{
-	
-	public:
-
-		virtual
-		~WeakReferenceVisitorImpl()
-		{
-		}
-
-		virtual
-		void
-		visit_weak_reference(
-				WeakReference<H> &weak_reference) = 0;
-
-	};
-
-	template<typename H>
-	void
-	WeakReferenceVisitor<H>::visit_weak_reference(
-			WeakReference<H> &weak_reference)
-	{
-		d_impl->visit_weak_reference(weak_reference);
-	}
-
 	/**
 	 * Notifies the WeakReference that its publisher has been modified.
 	 */
 	template<typename H>
 	class WeakReferencePublisherModifiedVisitor :
-		public WeakReferenceVisitorImpl<H>
+		public WeakObserverVisitor<H>
 	{
 
 	public:
+
+		WeakReferencePublisherModifiedVisitor(
+				typename WeakReferencePublisherModifiedEvent<H>::Type type) :
+			d_type(type)
+		{
+		}
 
 		virtual
 		void
 		visit_weak_reference(
 				WeakReference<H> &weak_reference)
 		{
-			weak_reference.publisher_modified();
+			weak_reference.publisher_modified(d_type);
 		}
+
+	private:
+
+		typename WeakReferencePublisherModifiedEvent<H>::Type d_type;
 
 	};
 
@@ -133,7 +71,7 @@ namespace GPlatesModel
 	 */
 	template<typename H>
 	class WeakReferencePublisherDeactivatedVisitor :
-		public WeakReferenceVisitorImpl<H>
+		public WeakObserverVisitor<H>
 	{
 	
 	public:
@@ -153,7 +91,7 @@ namespace GPlatesModel
 	 */
 	template<typename H>
 	class WeakReferencePublisherReactivatedVisitor :
-		public WeakReferenceVisitorImpl<H>
+		public WeakObserverVisitor<H>
 	{
 	
 	public:
@@ -173,7 +111,7 @@ namespace GPlatesModel
 	 */
 	template<typename H>
 	class WeakReferencePublisherDestroyedVisitor :
-		public WeakReferenceVisitorImpl<H>
+		public WeakObserverVisitor<H>
 	{
 	
 	public:

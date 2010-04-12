@@ -32,7 +32,7 @@
 #include <utility>
 #include <boost/bind.hpp>
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/TopLevelPropertyInline.h"
 #include "model/PropertyName.h"
 #include "model/types.h"
@@ -179,7 +179,7 @@ namespace GPlatesFeatureVisitors
 		virtual
 		bool
 		initialise_pre_property_values(
-				TopLevelPropertyInlineType &top_level_property_inline)
+				typename FeatureVisitorType::top_level_property_inline_type &top_level_property_inline)
 		{
 			const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 
@@ -199,7 +199,7 @@ namespace GPlatesFeatureVisitors
 		virtual
 		void
 		visit_gpml_constant_value(
-				GpmlConstantValueType &gpml_constant_value)
+				typename FeatureVisitorType::gpml_constant_value_type &gpml_constant_value)
 		{
 			gpml_constant_value.value()->accept_visitor(*this);
 		}
@@ -327,7 +327,7 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::ConstFeatureVisitor, \
 				GPlatesModel::FeatureHandle::const_weak_ref, \
-				GPlatesModel::FeatureCollectionHandle::children_const_iterator, \
+				GPlatesModel::FeatureCollectionHandle::const_iterator, \
 				const GPlatesModel::TopLevelPropertyInline, \
 				const GPlatesPropertyValues::GpmlConstantValue) \
 		/* non-const weak_ref/features_iterator for const property-value */ \
@@ -336,7 +336,7 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::ConstFeatureVisitor, \
 				GPlatesModel::FeatureHandle::weak_ref, \
-				GPlatesModel::FeatureCollectionHandle::children_iterator, \
+				GPlatesModel::FeatureCollectionHandle::iterator, \
 				const GPlatesModel::TopLevelPropertyInline, \
 				const GPlatesPropertyValues::GpmlConstantValue) \
 		/* non-const weak_ref/features_iterator for non-const property-value */ \
@@ -345,7 +345,7 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::FeatureVisitor, \
 				GPlatesModel::FeatureHandle::weak_ref, \
-				GPlatesModel::FeatureCollectionHandle::children_iterator, \
+				GPlatesModel::FeatureCollectionHandle::iterator, \
 				GPlatesModel::TopLevelPropertyInline, \
 				GPlatesPropertyValues::GpmlConstantValue) \
 

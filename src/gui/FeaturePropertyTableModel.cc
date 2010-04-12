@@ -33,7 +33,6 @@
 #include "model/FeatureHandle.h"
 #include "model/PropertyName.h"
 #include "model/ModelUtils.h"
-#include "model/DummyTransactionHandle.h"
 #include "utils/UnicodeStringUtils.h"
 #include "feature-visitors/ToQvariantConverter.h"
 #include "feature-visitors/FromQvariantConverter.h"
@@ -128,13 +127,11 @@ namespace
 			// Nothing can be done.
 			return 0;
 		}
-		GPlatesModel::FeatureHandle::children_iterator it = feature_ref->children_begin();
-		GPlatesModel::FeatureHandle::children_iterator end = feature_ref->children_end();
+		GPlatesModel::FeatureHandle::iterator it = feature_ref->begin();
+		GPlatesModel::FeatureHandle::iterator end = feature_ref->end();
 		for (; it != end; ++it)
 		{
-			if (it.is_valid()) {
-				++count;
-			}
+			++count;
 		}
 		return count;
 	}
@@ -252,15 +249,19 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 		return false;
 	}
 	
-	GPlatesModel::FeatureHandle::children_iterator it = get_property_iterator_for_row(idx.row());
+	GPlatesModel::FeatureHandle::iterator it = get_property_iterator_for_row(idx.row());
+	/*
 	if ( ! it.is_valid()) {
 		// Always check your property iterators.
 		return false;
 	}
+	*/
 	
 	// Convert the supplied QVariant to a PropertyValue.
 	GPlatesFeatureVisitors::FromQvariantConverter fromqv_converter(value);
-	(*it)->accept_visitor(fromqv_converter);
+	GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*it)->deep_clone();
+	top_level_prop_clone->accept_visitor(fromqv_converter);
+	*it = top_level_prop_clone;
 	
 	if (fromqv_converter.get_property_value()) {
 		// Successful conversion. Now, assign the new value.
@@ -298,7 +299,7 @@ GPlatesGui::FeaturePropertyTableModel::set_feature_reference(
 	// If we are given an invalid feature reference,
 	// or the new feature reference is different to the previous one,
 	// then we definitely want a clean slate before we refresh_data(), for consistency.
-	if ( ! feature_ref.is_valid() || d_feature_ref != feature_ref) {
+	if ( /*! feature_ref.is_valid() ||*/ d_feature_ref != feature_ref) {
 		clear_table();
 	}
 	d_feature_ref = feature_ref;
@@ -336,7 +337,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 		bool element_was_erased = false;
 
 		// Check the properties_iterator and the intrusive_ptr it refers to.
-		if ( ! remove_it->property_iterator.is_valid()) {
+		if ( ! remove_it->property_iterator.is_still_valid()) {
 			int row = get_row_for_property_iterator(remove_it->property_iterator);
 
 			// Found an invalid property iterator.  Remove it from the table.
@@ -354,7 +355,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 
 			endRemoveRows();
 			element_was_erased = true;
-		} else if (*remove_it->property_iterator == NULL) {
+		} /*else if (*remove_it->property_iterator == NULL) {
 			// FIXME:  The above if-test NULL-check is not necessary.
 			// The properties_iterator 'is_valid' test already checks for NULL.
 
@@ -375,7 +376,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 
 			endRemoveRows();
 			element_was_erased = true;
-		}
+		}*/
 
 		// Only increment the iterator if it hasn't already been advanced as a result of
 		// erasing an element.
@@ -386,12 +387,12 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 
 	// Go through every actual property iterator in the feature, and see if it needs
 	// to be added to the table.
-	GPlatesModel::FeatureHandle::children_iterator add_it = d_feature_ref->children_begin();
-	GPlatesModel::FeatureHandle::children_iterator add_end = d_feature_ref->children_end();
+	GPlatesModel::FeatureHandle::iterator add_it = d_feature_ref->begin();
+	GPlatesModel::FeatureHandle::iterator add_end = d_feature_ref->end();
 	for (; add_it != add_end; ++add_it)
 	{
 		// Check the properties_iterator and the intrusive_ptr it refers to.
-		if (add_it.is_valid()) {
+		// if (add_it.is_valid()) {
 			int test_row = get_row_for_property_iterator(add_it);
 			if (test_row == -1) {
 				// We've found something not in the cache.
@@ -403,7 +404,9 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 				// To work out if property is editable inline, we do a dry-run of the FromQvariantConverter.
 				QVariant dummy;
 				GPlatesFeatureVisitors::FromQvariantConverter qvariant_converter(dummy);
-				(*add_it)->accept_visitor(qvariant_converter);
+				GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*add_it)->deep_clone();
+				top_level_prop_clone->accept_visitor(qvariant_converter);
+				*add_it = top_level_prop_clone;
 				bool can_convert_inline = qvariant_converter.get_property_value();
 		
 				FeaturePropertyTableInfo info = { property_name, add_it, can_convert_inline };
@@ -411,7 +414,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 				
 				endInsertRows();
 			}
-		}
+		// }
 	}
 
 	// Update every single data cell because we just don't know what's changed and what hasn't.
@@ -429,18 +432,18 @@ GPlatesGui::FeaturePropertyTableModel::get_property_name(
 }
 
 
-GPlatesModel::FeatureHandle::children_iterator
+GPlatesModel::FeatureHandle::iterator
 GPlatesGui::FeaturePropertyTableModel::get_property_iterator_for_row(
 		int row) const
 {
-	GPlatesModel::FeatureHandle::children_iterator it = d_property_info_cache.at(row).property_iterator;
+	GPlatesModel::FeatureHandle::iterator it = d_property_info_cache.at(row).property_iterator;
 	return it;
 }
 
 
 int
 GPlatesGui::FeaturePropertyTableModel::get_row_for_property_iterator(
-		GPlatesModel::FeatureHandle::children_iterator property_iterator) const
+		GPlatesModel::FeatureHandle::iterator property_iterator) const
 {
 	int row = 0;
 	// Figure out which row of the table (if any) contains the property iterator.
@@ -490,11 +493,13 @@ GPlatesGui::FeaturePropertyTableModel::get_property_value_as_qvariant(
 		int row,
 		int role) const
 {
-	GPlatesModel::FeatureHandle::children_iterator it = get_property_iterator_for_row(row);
+	GPlatesModel::FeatureHandle::iterator it = get_property_iterator_for_row(row);
+	/*
 	if ( ! it.is_valid()) {
 		// Always check your property iterators.
 		return QVariant("< NULL >");
 	}
+	*/
 
 	return top_level_property_to_simple_qvariant(**it, role);
 }

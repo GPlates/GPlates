@@ -102,10 +102,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsString::non_null_ptr_type gml_name = 
 			GPlatesPropertyValues::XsString::create(UnicodeString(description.toStdString().c_str()));
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gml_name, 
-			GPlatesModel::PropertyName::create_gml("name"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gml("name"),
+					gml_name));
 	}	
 	
 	void
@@ -125,8 +125,10 @@ namespace
 			gml_point, 
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
 
-		GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-			GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition"), feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition"),
+					property_value));
 	}
 	
 	void
@@ -136,10 +138,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_inclination = 
 			GPlatesPropertyValues::XsDouble::create(inclination);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_inclination, 
-			GPlatesModel::PropertyName::create_gpml("averageInclination"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("averageInclination"),
+					gpml_inclination));
 	}	
 	
 	void
@@ -149,10 +151,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_declination = 
 			GPlatesPropertyValues::XsDouble::create(declination);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_declination, 
-			GPlatesModel::PropertyName::create_gpml("averageDeclination"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("averageDeclination"),
+					gpml_declination));
 	}	
 	
 	void
@@ -162,11 +164,11 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_a95 = 
 			GPlatesPropertyValues::XsDouble::create(a95);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_a95, 
-			//FIXME: Temporary name until role of a95/alpha95 is clarified.
-			GPlatesModel::PropertyName::create_gpml("poleA95"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					//FIXME: Temporary name until role of a95/alpha95 is clarified.
+					GPlatesModel::PropertyName::create_gpml("poleA95"),
+					gpml_a95));
 	}
 	
 	void
@@ -176,11 +178,11 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_age = 
 			GPlatesPropertyValues::XsDouble::create(age);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_age, 
-			GPlatesModel::PropertyName::create_gpml("averageAge"), 
-			feature);
-			
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("averageAge"),
+					gpml_age));
+
 		// In addition to setting the paleomag-specific age, we will set 
 		// time of appearance and disappearance based on an interval around 
 		// the sample age. Here I'm setting it to +/- 10My around the sample
@@ -194,10 +196,10 @@ namespace
 		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time = 
 			GPlatesModel::ModelUtils::create_gml_time_period(geo_time_instant_begin,
 			geo_time_instant_end);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(gml_valid_time, 
-			GPlatesModel::PropertyName::create_gml("validTime"),
-			feature);			
-		
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gml("validTime"),
+					gml_valid_time));
 	}
 	
 	void
@@ -216,13 +218,12 @@ namespace
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
 			GPlatesModel::ModelUtils::create_gpml_constant_value(
 				gml_point, 
-				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));			
-			
-	
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			property_value, 
-			GPlatesModel::PropertyName::create_gpml("polePosition"), 
-			feature);		
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
+
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("polePosition"),
+					property_value));
 	}
  
 	void
@@ -232,11 +233,12 @@ namespace
 	{
 		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_plate_id = 
 			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId")),
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-			feature);	
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					GPlatesModel::ModelUtils::create_gpml_constant_value(
+						gpml_plate_id,
+						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));
 	}
 	
 	void
@@ -246,10 +248,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_dm = 
 			GPlatesPropertyValues::XsDouble::create(dm);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_dm, 
-			GPlatesModel::PropertyName::create_gpml("poleDm"), 
-			feature);	
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("poleDm"),
+					gpml_dm));
 	}
 	
 	void
@@ -259,10 +261,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_dp = 
 			GPlatesPropertyValues::XsDouble::create(dp);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_dp, 
-			GPlatesModel::PropertyName::create_gpml("poleDp"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("poleDp"),
+					gpml_dp));
 	}	
  
 	void
@@ -275,7 +277,7 @@ namespace
 			GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
 
 		GPlatesModel::FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type,collection);
+			GPlatesModel::FeatureHandle::create(collection, feature_type);
 			
 		append_name_to_feature(feature,vgp.header);
 		
@@ -533,7 +535,7 @@ GPlatesFileIO::GmapReader::read_file(
 	boost::shared_ptr<DataSource> source( 
 		new GPlatesFileIO::LocalFileDataSource(filename, DataFormats::Gmap));
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-		= model->create_feature_collection();
+		= GPlatesModel::FeatureCollectionHandle::create(model->root());
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
@@ -560,7 +562,7 @@ GPlatesFileIO::GmapReader::read_file(
 		}
 		line_number++;
 	}
-	if (collection->children_begin() == collection->children_end())
+	if (collection->begin() == collection->end())
 	{
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
 			new GPlatesFileIO::LineNumberInFile(0));

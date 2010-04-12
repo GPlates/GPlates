@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <typeinfo>
+
 #include "GpmlTopologicalLineSection.h"
 
 
@@ -47,3 +49,22 @@ GPlatesPropertyValues::GpmlTopologicalLineSection::deep_clone() const
 
 	return dup;
 }
+
+
+bool
+GPlatesPropertyValues::GpmlTopologicalLineSection::directly_modifiable_fields_equal(
+		const PropertyValue &other) const
+{
+	try
+	{
+		const GpmlTopologicalLineSection &other_casted =
+			dynamic_cast<const GpmlTopologicalLineSection &>(other);
+		return *d_source_geometry == *other_casted.d_source_geometry;
+	}
+	catch (const std::bad_cast &)
+	{
+		// Should never get here, but doesn't hurt to check.
+		return false;
+	}
+}
+

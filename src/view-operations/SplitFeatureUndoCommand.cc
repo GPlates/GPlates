@@ -23,7 +23,10 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #include "SplitFeatureUndoCommand.h"
+
+#include "utils/GeometryUtils.h"
 
 void
 GPlatesViewOperations::SplitFeatureUndoCommand::redo()
@@ -50,28 +53,21 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 	// We exclude geometry property when cloning the feature because the new
 	// split geometry property will be appended to the cloned feature later.
-	d_new_feature_1 = 
-		GPlatesModel::ModelUtils::deep_clone_feature(
-				feature_ref,
-				d_feature_collection_ref,
-				d_view_state->get_application_state().get_model_interface(),
-				&GPlatesFeatureVisitors::is_not_geometry_property);
+	d_new_feature_1 = feature_ref->clone(
+			d_feature_collection_ref,
+			&GPlatesFeatureVisitors::is_not_geometry_property);
+	d_new_feature_2 = feature_ref->clone(
+			d_feature_collection_ref,
+			&GPlatesFeatureVisitors::is_not_geometry_property);
 
-	d_new_feature_2 = 
-		GPlatesModel::ModelUtils::deep_clone_feature(
-				feature_ref,
-				d_feature_collection_ref,
-				d_view_state->get_application_state().get_model_interface(),
-				&GPlatesFeatureVisitors::is_not_geometry_property);
-
-	GPlatesModel::FeatureHandle::children_iterator property_iter = 
+	GPlatesModel::FeatureHandle::iterator property_iter = 
 		*GPlatesFeatureVisitors::find_first_geometry_property(feature_ref);
 
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere =
 		GPlatesFeatureVisitors::find_first_geometry(property_iter);
 
 	std::vector<GPlatesMaths::PointOnSphere> points;
-	GPlatesUtils::GeometryUtil::get_geometry_points(
+	GPlatesUtils::GeometryUtils::get_geometry_points(
 			*geometry_on_sphere,
 			points);
 
@@ -97,21 +93,21 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 	// TODO: currently the ployline type has been hardcoded here, 
 	// we need to support other geometry type in the future
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			*GPlatesUtils::GeometryUtil::create_geometry_property_value(
-					points.begin(), 
-					points.begin() + point_index_to_split,
-					GPlatesViewOperations::GeometryType::POLYLINE),  
-			property_name,
-			*d_new_feature_1);
+	(*d_new_feature_1)->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				property_name,
+				*GPlatesUtils::GeometryUtils::create_geometry_property_value(
+						points.begin(), 
+						points.begin() + point_index_to_split,
+						GPlatesViewOperations::GeometryType::POLYLINE)));
 	
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			*GPlatesUtils::GeometryUtil::create_geometry_property_value(
-					points.begin() + point_index_to_split -1, 
-					points.end(),
-					GPlatesViewOperations::GeometryType::POLYLINE),  
-			property_name,
-			*d_new_feature_2);
+	(*d_new_feature_2)->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				property_name,
+				*GPlatesUtils::GeometryUtils::create_geometry_property_value(
+						points.begin() + point_index_to_split -1, 
+						points.end(),
+						GPlatesViewOperations::GeometryType::POLYLINE)));
 
 	d_feature_focus->set_focus(
 			*d_new_feature_1,

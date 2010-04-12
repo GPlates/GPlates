@@ -367,3 +367,15 @@ GPlatesModel::XmlElementNode::accept_visitor(
 	visitor.visit_element_node(non_null_ptr_type(this,
 			GPlatesUtils::NullIntrusivePointerHandler()));
 }
+
+
+bool
+GPlatesModel::XmlElementNode::operator==(
+		const XmlElementNode &other) const
+{
+	return d_name == other.d_name &&
+		d_attributes == other.d_attributes &&
+		d_children == other.d_children &&
+		d_alias_map == other.d_alias_map;
+}
+

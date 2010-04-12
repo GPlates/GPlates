@@ -33,7 +33,7 @@
 #include <vector>
 #include "model/PropertyName.h"
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
 
 

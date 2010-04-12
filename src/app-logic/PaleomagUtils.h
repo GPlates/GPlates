@@ -82,7 +82,7 @@ namespace GPlatesAppLogic
 				static const GPlatesModel::FeatureType paleomag_feature_type = 
 					GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
 
-				if (feature_handle.handle_data().feature_type() == paleomag_feature_type)
+				if (feature_handle.feature_type() == paleomag_feature_type)
 				{
 					d_found_paleomag_features = true;
 				}
@@ -102,7 +102,7 @@ namespace GPlatesAppLogic
 			
 	
 		class VgpRenderer:
-			public GPlatesModel::FeatureVisitor
+			public GPlatesModel::ConstFeatureVisitor
 		{
 		public:
 			
@@ -125,34 +125,34 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			finalise_post_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
+				const GPlatesModel::FeatureHandle &feature_handle);
 			
 				
 			virtual
 			void
 			visit_gpml_constant_value(
-				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);	
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);	
 				
 				
 			virtual
 			void
 			visit_gpml_plate_id(
-				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 				
 			virtual
 			void
 			visit_gml_point(
-				GPlatesPropertyValues::GmlPoint &gml_point);
+				const GPlatesPropertyValues::GmlPoint &gml_point);
 				
 			virtual
 			void
 			visit_gml_time_period(
-				GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
+				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 				
 			virtual
 			void
 			visit_xs_double(
-				GPlatesPropertyValues::XsDouble &xs_double);
+				const GPlatesPropertyValues::XsDouble &xs_double);
 				
 		private:
 		

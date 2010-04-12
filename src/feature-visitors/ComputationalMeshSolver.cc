@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
@@ -138,7 +138,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 
 
 	QString type_name( GPlatesUtils::make_qstring_from_icu_string(
-		feature_handle.handle_data().feature_type().get_name() ) );
+		feature_handle.feature_type().get_name() ) );
 
 	//
 	// super short-cut for non-mesh features
@@ -287,15 +287,17 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	GPlatesModel::PropertyName range_set_prop_name =
 		GPlatesModel::PropertyName::create_gml("rangeSet");
 
-	GPlatesModel::FeatureHandle::children_iterator iter = feature_handle.children_begin();
-	GPlatesModel::FeatureHandle::children_iterator end = feature_handle.children_end();
+	GPlatesModel::FeatureHandle::const_iterator iter = feature_handle.begin();
+	GPlatesModel::FeatureHandle::const_iterator end = feature_handle.end();
 
 	// loop over properties
 	for ( ; iter != end; ++iter)
 	{
+		/*
 		// double check for validity and nullness
 		if(! iter.is_valid() ){ continue; }
-		if( *iter == NULL )   { continue; }
+		if(! (*iter) )   { continue; }
+		*/
 
 		// passed all checks, make the name and test
 		GPlatesModel::PropertyName test_name = (*iter)->property_name();
@@ -303,9 +305,9 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 		if ( test_name == range_set_prop_name )
 		{
 			// Delete the old boundary 
-			GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-			feature_handle.remove_child(iter, transaction);
-			transaction.commit();
+			// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+			feature_handle.remove(iter);
+			// transaction.commit();
 			// FIXME: this seems to create NULL pointers in the properties collection
 			// see FIXME note above to check for NULL? 
 			// Or is this to be expected?
@@ -313,14 +315,14 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 		}
 	} // loop over properties
 
-	// create a weak ref to make next funciton happy:
+	// create a weak ref to make next function happy:
 	GPlatesModel::FeatureHandle::weak_ref feature_ref = feature_handle.reference();
 
 	// add the new gml::rangeSet property
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-		gml_data_block,
-		range_set_prop_name,
-		feature_ref);
+	feature_ref->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				range_set_prop_name,
+				gml_data_block));
 
 	// disable the accumulator
 	d_accumulator = boost::none;
@@ -330,7 +332,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
-	GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	if ( ! d_accumulator->d_perform_reconstructions) {
 		return;
@@ -350,7 +352,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
-	const GPlatesMaths::PointOnSphere &point )
+		const GPlatesMaths::PointOnSphere &point )
 {
 	//
 	// First see if point is inside any topological networks.

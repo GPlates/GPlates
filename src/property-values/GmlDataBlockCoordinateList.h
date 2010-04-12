@@ -1,4 +1,3 @@
-
 /**
  * \file 
  * File specific comments.
@@ -34,7 +33,6 @@
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 #include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -73,20 +71,15 @@ namespace GPlatesPropertyValues
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList,
-				GPlatesUtils::NullIntrusivePointerHandler>
-						non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList> non_null_ptr_to_const_type;
 
 		/**
 		 * The type which contains XML attribute names and values.
@@ -118,8 +111,7 @@ namespace GPlatesPropertyValues
 					new GmlDataBlockCoordinateList(
 							value_object_type_,
 							value_object_xml_attributes_,
-							list_len),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							list_len));
 			return ptr;
 		}
 
@@ -142,8 +134,7 @@ namespace GPlatesPropertyValues
 							value_object_type_,
 							value_object_xml_attributes_,
 							coordinates_begin_,
-							coordinates_end_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							coordinates_end_));
 			return ptr;
 		}
 
@@ -162,8 +153,7 @@ namespace GPlatesPropertyValues
 			non_null_ptr_type ptr(
 					new GmlDataBlockCoordinateList(
 							value_object_type_,
-							value_object_xml_attributes_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							value_object_xml_attributes_));
 			ptr->d_coordinates.swap(coordinates_to_swap);
 			return ptr;
 		}
@@ -171,8 +161,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GmlDataBlockCoordinateList(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			non_null_ptr_type dup(new GmlDataBlockCoordinateList(*this));
 			return dup;
 		}
 
@@ -238,6 +227,10 @@ namespace GPlatesPropertyValues
 		{
 			d_coordinates.assign(begin, end);
 		}
+
+		bool
+		operator==(
+				const GmlDataBlockCoordinateList &other) const;
 
 	protected:
 

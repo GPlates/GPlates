@@ -1,0 +1,61 @@
+GPlates 0.9.8
+=============
+
+Changes since 0.9.7.1:
+
+ * The new 0.9.8 release of GPlates can use a loaded topological plate polygon
+   data set to "cookie-cut" a feature collection and assign Plate IDs to the
+   data based on which plate polygon intersects them. This enables users to load
+   data files that do not have Plate ID or reconstruction time information, and
+   then manipulate that data with the loaded reconstruction model.
+   
+ * Support for virtual geomagnetic pole data is ongoing. As a special preview of
+   GPlates paleo-mag functionality, GPlates is now able to import data from the
+   IAGA Global Paleomagnetic Database created by Mike McElhinny and Jo Lock,
+   later maintained by Sergei Pisarevsky. GPlates can then assign Plate IDs from
+   a topological plate polygon data set and then display the reconstructed
+   virtual geomagnetic pole locations on the globe. The database is available
+   online here: http://www.ngu.no/geodynamics/gpmdb/ . In future releases, full
+   editing capabilities and support for a wide range of data (such as the MagIC
+   database) will be forthcoming.
+   
+ * Small circle arcs can be rendered by GPlates to indicate the error bounds of
+   virtual geomagnetic poles.
+   
+ * Development on new colouring options has started. GPlates' default Plate ID
+   colouring scheme has been tweaked, and a new colour by Plate ID region
+   colouring scheme has been created.
+   
+ * The Modify Reconstruction Pole tool can now constrain the latitude of the
+   pole manipulation while interactively making adjustments.
+   
+ * The topological capabilities of GPlates are undergoing constant improvement
+   and expansion. As a consequence of these ongoing developments, GPlates now
+   links with CGAL, the Computational Geometry Algorithms Library. This will
+   enable many impressive extensions to the topology tools in the future.
+
+
+GPlates 0.9.7.1
+===============
+
+Changes since 0.9.5:
+
+ * GPlates can now utilise a full screen mode, which is available by pressing
+   F11. This mode is ideal for presenting data and animations using GPlates. It
+   makes the user interface more minimalistic, granting a greater amount of
+   screen space to the main view. This is especially useful on low-resolution
+   devices such as projectors.
+   
+ * A new Measure Distance Tool has been implemented, allowing precise
+   measurement of the distance between any two chosen points. It also interacts
+   with the digitisation and feature-selecting tools, to enable easy inspection
+   of the distances along polyline geometries and polyline segments.
+   
+ * Exporting the Total Reconstruction Poles table to CSV can now be done with a
+   choice of delimiters, and more closely adheres to the CSV specifications.
+   
+ * The previous 0.9.6 release involved the integration of the plate polygon
+   closure workflow into the main stable branch of GPlates. With 0.9.7.1,
+   additional work has gone into improving the user experience and making the
+   topology algorithms more intelligent, and enables the export of geometry
+   sub-segments involved in topologies.

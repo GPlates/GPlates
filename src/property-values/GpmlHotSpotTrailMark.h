@@ -37,7 +37,6 @@
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "model/FeatureVisitor.h"
-#include "model/ConstFeatureVisitor.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -45,31 +44,30 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlHotSpotTrailMark, visit_gpml_hot_spot_trail_mark)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlHotSpotTrailMark:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark> non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlHotSpotTrailMark() {  }
+		~GpmlHotSpotTrailMark()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -82,18 +80,18 @@ namespace GPlatesPropertyValues {
 				const GmlPoint::non_null_ptr_type &position_,
 				const boost::optional<GpmlMeasure::non_null_ptr_type> &trail_width_,
 				const boost::optional<GmlTimeInstant::non_null_ptr_type> &measured_age_,
-				const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_) {
+				const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_)
+		{
 			non_null_ptr_type ptr(
 					new GpmlHotSpotTrailMark( position_, trail_width_,
-							measured_age_, measured_age_range_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							measured_age_, measured_age_range_));
 			return ptr;
 		}
 
 		const GpmlHotSpotTrailMark::non_null_ptr_type
-		clone() const {
-			GpmlHotSpotTrailMark::non_null_ptr_type dup(new GpmlHotSpotTrailMark(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GpmlHotSpotTrailMark::non_null_ptr_type dup(new GpmlHotSpotTrailMark(*this));
 			return dup;
 		}
 
@@ -103,7 +101,8 @@ namespace GPlatesPropertyValues {
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GmlPoint::non_null_ptr_to_const_type
-		position() const {
+		position() const
+		{
 			return d_position;
 		}
 
@@ -119,18 +118,22 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced GmlPoint instance to
 		// accept a FeatureVisitor instance.)
 		const GmlPoint::non_null_ptr_type
-		position() {
+		position()
+		{
 			return d_position;
 		}
 
 		void
 		set_position(
-				GmlPoint::non_null_ptr_type pos) {
+				GmlPoint::non_null_ptr_type pos)
+		{
 			d_position = pos;
+			update_instance_id();
 		}
 
 		const boost::optional<GpmlMeasure::non_null_ptr_type>
-		trail_width() const {
+		trail_width() const
+		{
 			return d_trail_width;
 		}
 
@@ -146,18 +149,22 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced GpmlMeasure instance to
 		// accept a FeatureVisitor instance.)
 		const boost::optional<GpmlMeasure::non_null_ptr_type>
-		trail_width() {
+		trail_width()
+		{
 			return d_trail_width;
 		}
 
 		void
 		set_trail_width(
-				GpmlMeasure::non_null_ptr_type tw) {
+				GpmlMeasure::non_null_ptr_type tw)
+		{
 			d_trail_width = tw;
+			update_instance_id();
 		}
 
 		const boost::optional<GmlTimeInstant::non_null_ptr_type>
-		measured_age() const {
+		measured_age() const
+		{
 			return d_measured_age;
 		}
 
@@ -173,30 +180,37 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced GmlTimeInstant instance to accept a
 		// FeatureVisitor instance.)
 		const boost::optional<GmlTimeInstant::non_null_ptr_type>
-		measured_age() {
+		measured_age()
+		{
 			return d_measured_age;
 		}
 
 		void
 		set_measured_age(
-				GmlTimeInstant::non_null_ptr_type ti) {
+				GmlTimeInstant::non_null_ptr_type ti)
+		{
 			d_measured_age = ti;
+			update_instance_id();
 		}
 
 		const boost::optional<GmlTimePeriod::non_null_ptr_type>
-		measured_age_range() const {
+		measured_age_range() const
+		{
 			return d_measured_age_range;
 		}
 
 		const boost::optional<GmlTimePeriod::non_null_ptr_type>
-		measured_age_range() {
+		measured_age_range()
+		{
 			return d_measured_age_range;
 		}
 
 		void
 		set_measured_age_range(
-				GmlTimePeriod::non_null_ptr_type tp) {
+				GmlTimePeriod::non_null_ptr_type tp)
+		{
 			d_measured_age_range = tp;
+			update_instance_id();
 		}
 
 		/**
@@ -207,7 +221,8 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_hot_spot_trail_mark(*this);
 		}
 
@@ -219,11 +234,23 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_hot_spot_trail_mark(*this);
 		}
 
-	private:
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
+
+	protected:
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
+
 		GpmlHotSpotTrailMark(
 				const GmlPoint::non_null_ptr_type &position_,
 				const boost::optional<GpmlMeasure::non_null_ptr_type> &trail_width_,
@@ -238,13 +265,14 @@ namespace GPlatesPropertyValues {
 
 		GpmlHotSpotTrailMark(
 				const GpmlHotSpotTrailMark &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_position(other.d_position),
 			d_trail_width(other.d_trail_width),
 			d_measured_age(other.d_measured_age),
 			d_measured_age_range(other.d_measured_age_range)
 		{  }
 
+	private:
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
@@ -255,12 +283,10 @@ namespace GPlatesPropertyValues {
 
 
 		GmlPoint::non_null_ptr_type d_position;
-
 		boost::optional<GpmlMeasure::non_null_ptr_type> d_trail_width;
-
 		boost::optional<GmlTimeInstant::non_null_ptr_type> d_measured_age;
-
 		boost::optional<GmlTimePeriod::non_null_ptr_type> d_measured_age_range;
+
 	};
 
 }

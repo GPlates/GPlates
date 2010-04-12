@@ -28,20 +28,23 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLTIMEWINDOW_H
 #define GPLATES_PROPERTYVALUES_GPMLTIMEWINDOW_H
 
+#include <iosfwd>
+
 #include "GmlTimePeriod.h"
 #include "model/PropertyValue.h"
 #include "TemplateTypeParameterType.h"
 #include "model/FeatureVisitor.h"
-#include "model/ConstFeatureVisitor.h"
 
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	// Since all the members of this class are of type boost::intrusive_ptr or
 	// TemplateTypeParameterType (which wraps an StringSet::SharedIterator instance which
 	// points to a pre-allocated node in a StringSet), none of the construction,
 	// copy-construction or copy-assignment operations for this class should throw.
-	class GpmlTimeWindow {
+	class GpmlTimeWindow
+	{
 
 	public:
 
@@ -65,7 +68,8 @@ namespace GPlatesPropertyValues {
 		deep_clone() const;
 
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		time_dependent_value() const {
+		time_dependent_value() const
+		{
 			return d_time_dependent_value;
 		}
 
@@ -81,18 +85,21 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced PropertyValue instance to
 		// accept a FeatureVisitor instance.)
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		time_dependent_value() {
+		time_dependent_value()
+		{
 			return d_time_dependent_value;
 		}
 
 		void
 		set_time_dependent_value(
-				GPlatesModel::PropertyValue::non_null_ptr_type v) {
+				GPlatesModel::PropertyValue::non_null_ptr_type v)
+		{
 			d_time_dependent_value = v;
 		}
 
 		const GmlTimePeriod::non_null_ptr_to_const_type
-		valid_time() const {
+		valid_time() const
+		{
 			return d_valid_time;
 		}
 
@@ -108,22 +115,29 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced GmlTimePeriod instance to
 		// accept a FeatureVisitor instance.)
 		const GmlTimePeriod::non_null_ptr_type
-		valid_time() {
+		valid_time()
+		{
 			return d_valid_time;
 		}
 
 		void
 		set_valid_time(
-				GmlTimePeriod::non_null_ptr_type vt) {
+				GmlTimePeriod::non_null_ptr_type vt)
+		{
 			d_valid_time = vt;
 		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlTimeWindow instance
 		// should never be changed.
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;
 		}
+
+		bool
+		operator==(
+				const GpmlTimeWindow &other) const;
 
 	private:
 
@@ -133,6 +147,12 @@ namespace GPlatesPropertyValues {
 
 		TemplateTypeParameterType d_value_type;
 	};
+
+	// operator<< for GpmlTimeWindow.
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const GpmlTimeWindow &time_window);
 
 }
 

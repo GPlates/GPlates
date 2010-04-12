@@ -34,7 +34,7 @@
 #include <fstream>
 #include "ErrorOpeningFileForWritingException.h"
 #include "FileInfo.h"
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlOldPlatesHeader.h"

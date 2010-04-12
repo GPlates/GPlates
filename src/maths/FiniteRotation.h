@@ -71,76 +71,81 @@ namespace GPlatesMaths
 	 * angle represents an anti-clockwise rotation around the rotation vector; a negative angle
 	 * corresponds to a clockwise rotation.
 	 */
-	class FiniteRotation {
+	class FiniteRotation
+	{
 
-		public:
+	public:
 
-			/**
-			 * Create a finite rotation with the Euler pole @a pole and rotation angle
-			 * @a angle.
-			 */
-			static
-			const FiniteRotation
-			create(
-					const PointOnSphere &pole,
-					const real_t &angle);
+		/**
+		 * Create a finite rotation with the Euler pole @a pole and rotation angle
+		 * @a angle.
+		 */
+		static
+		const FiniteRotation
+		create(
+				const PointOnSphere &pole,
+				const real_t &angle);
 
-			/**
-			 * Create a finite rotation corresponding to the rotation effected by the
-			 * unit quaternion @a uq.
-			 */
-			static
-			const FiniteRotation
-			create(
-					const UnitQuaternion3D &uq,
-					const boost::optional<UnitVector3D> &axis_hint_);
+		/**
+		 * Create a finite rotation corresponding to the rotation effected by the
+		 * unit quaternion @a uq.
+		 */
+		static
+		const FiniteRotation
+		create(
+				const UnitQuaternion3D &uq,
+				const boost::optional<UnitVector3D> &axis_hint_);
 
-			/**
-			 * Return a unit quaternion which would effect the rotation of this finite
-			 * rotation.
-			 */
-			const UnitQuaternion3D &
-			unit_quat() const
-			{
-				return d_unit_quat;
-			}
+		/**
+		 * Return a unit quaternion which would effect the rotation of this finite
+		 * rotation.
+		 */
+		const UnitQuaternion3D &
+		unit_quat() const
+		{
+			return d_unit_quat;
+		}
 
-			/**
-			 * Return the axis hint.
-			 */
-			const boost::optional<UnitVector3D> &
-			axis_hint() const
-			{
-				return d_axis_hint;
-			}
+		/**
+		 * Return the axis hint.
+		 */
+		const boost::optional<UnitVector3D> &
+		axis_hint() const
+		{
+			return d_axis_hint;
+		}
 
-			/**
-			 * Apply this rotation to a unit vector @a unit_vect.
-			 *
-			 * This operation is not supposed to be symmetrical.
-			 */
-			const UnitVector3D
-			operator*(
-					const UnitVector3D &unit_vect) const;
+		/**
+		 * Apply this rotation to a unit vector @a unit_vect.
+		 *
+		 * This operation is not supposed to be symmetrical.
+		 */
+		const UnitVector3D
+		operator*(
+				const UnitVector3D &unit_vect) const;
 
-		protected:
+		bool
+		operator==(
+				const FiniteRotation &other) const;
 
-			explicit
-			FiniteRotation(
-					const UnitQuaternion3D &unit_quat_,
-					const boost::optional<UnitVector3D> &axis_hint_);
+	protected:
 
-		private:
+		explicit
+		FiniteRotation(
+				const UnitQuaternion3D &unit_quat_,
+				const boost::optional<UnitVector3D> &axis_hint_);
 
-			// This unit-quaternion is used to effect the rotation operation.
-			UnitQuaternion3D d_unit_quat;
+	private:
 
-			// This provides a hint as to what the rotation axis might approx be.
-			boost::optional<UnitVector3D> d_axis_hint;
+		// This unit-quaternion is used to effect the rotation operation.
+		UnitQuaternion3D d_unit_quat;
 
-			// These values are used to optimise rotation operations.
-			real_t   d_d;
-			Vector3D d_e;
+		// This provides a hint as to what the rotation axis might approx be.
+		boost::optional<UnitVector3D> d_axis_hint;
+
+		// These values are used to optimise rotation operations.
+		real_t   d_d;
+		Vector3D d_e;
 
 	};
 

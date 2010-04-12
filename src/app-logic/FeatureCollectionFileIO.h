@@ -202,7 +202,7 @@ namespace GPlatesAppLogic
 		void
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
 					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 

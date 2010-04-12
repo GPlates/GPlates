@@ -32,7 +32,6 @@
 #include "gui/OpenGLBadAllocException.h"
 #include "gui/OpenGLException.h"
 #include "gui/Texture.h"
-#include "utils/MathUtils.h"
 
 #include "ErrorOpeningFileForReadingException.h"
 #include "GdalReader.h"

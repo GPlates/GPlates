@@ -27,7 +27,7 @@
 
 #include "maths/types.h"
 #include "maths/Real.h"
-#include "utils/MathUtils.h"
+#include "maths/MathsUtils.h"
 #include "MapCanvasTool.h"
 
 namespace
@@ -50,12 +50,12 @@ namespace
 		if (!is_strictly_negative(cross))
 		{
 			//qDebug() << "Cross greater-than or equal to 0";
-			return GPlatesUtils::convert_rad_to_deg(acos(cosangle.dval()));
+			return GPlatesMaths::convert_rad_to_deg(acos(cosangle.dval()));
 		}
 		else
 		{
 			//qDebug() << "Cross less than 0";
-			return (-1.0 * GPlatesUtils::convert_rad_to_deg(acos(cosangle.dval())));
+			return (-1.0 * GPlatesMaths::convert_rad_to_deg(acos(cosangle.dval())));
 		}
 
 	}

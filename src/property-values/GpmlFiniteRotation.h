@@ -50,24 +50,20 @@ namespace GPlatesPropertyValues
 	class GpmlFiniteRotation:
 			public GPlatesModel::PropertyValue
 	{
+
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation> non_null_ptr_to_const_type;
 
 		virtual
 		~GpmlFiniteRotation()
@@ -140,8 +136,7 @@ namespace GPlatesPropertyValues
 		const GpmlFiniteRotation::non_null_ptr_type
 		clone() const
 		{
-			GpmlFiniteRotation::non_null_ptr_type dup(new GpmlFiniteRotation(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GpmlFiniteRotation::non_null_ptr_type dup(new GpmlFiniteRotation(*this));
 			return dup;
 		}
 
@@ -186,6 +181,7 @@ namespace GPlatesPropertyValues
 				const GPlatesMaths::FiniteRotation &fr)
 		{
 			d_finite_rotation = fr;
+			update_instance_id();
 		}
 
 		/**
@@ -216,6 +212,11 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_finite_rotation(*this);
 		}
 
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
@@ -235,7 +236,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlFiniteRotation(
 				const GpmlFiniteRotation &other):
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_finite_rotation(other.d_finite_rotation)
 		{  }
 

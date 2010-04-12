@@ -106,7 +106,7 @@ GPlatesGui::FeatureFocus::set_focus(
 	d_associated_reconstruction_geometry = new_associated_rg;
 
 	// See if the new_associated_rg has a geometry property.
-	GPlatesModel::FeatureHandle::children_iterator new_geometry_property;
+	GPlatesModel::FeatureHandle::iterator new_geometry_property;
 	if (new_associated_rg)
 	{
 		GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
@@ -124,7 +124,7 @@ GPlatesGui::FeatureFocus::set_focus(
 void
 GPlatesGui::FeatureFocus::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
-		GPlatesModel::FeatureHandle::children_iterator new_associated_property)
+		GPlatesModel::FeatureHandle::iterator new_associated_property)
 {
 	if ( ! new_feature_ref.is_valid()) {
 		unset_focus();
@@ -154,7 +154,7 @@ GPlatesGui::FeatureFocus::unset_focus()
 {
 	d_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
 	d_associated_reconstruction_geometry = NULL;
-	d_associated_geometry_property = GPlatesModel::FeatureHandle::children_iterator();
+	d_associated_geometry_property = GPlatesModel::FeatureHandle::iterator();
 
 	emit focus_changed(*this);
 }
@@ -164,7 +164,7 @@ void
 GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry(
 		GPlatesModel::Reconstruction &reconstruction)
 {
-	if (( ! is_valid()) || ( ! associated_geometry_property().is_valid())) {
+	if (( ! is_valid())) {
 		// There is either no focused feature, or no geometry property associated with the
 		// most recent RFG of the focused feature.
 		// Either way, there's nothing for us to do here.
@@ -186,7 +186,7 @@ GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry(
 		GPlatesModel::ReconstructionGeometry *new_rg = rgIter->get();
 
 		// See if the new ReconstructionGeometry has a geometry property.
-		GPlatesModel::FeatureHandle::children_iterator new_geometry_property;
+		GPlatesModel::FeatureHandle::iterator new_geometry_property;
 		if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
 				new_rg, new_geometry_property))
 		{
@@ -227,7 +227,7 @@ GPlatesGui::FeatureFocus::announce_modification_of_focused_feature()
 		return;
 	}
 
-	if (!associated_geometry_property().is_valid()) {
+	if (!associated_geometry_property().is_still_valid()) {
 		// There is no geometry property - it must have been removed
 		// during the feature modification.
 		// We'll need to unset the focused feature.
@@ -278,13 +278,12 @@ GPlatesGui::FeatureFocus::modifying_feature_collection(
 	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 			file->get_feature_collection();
 
-	GPlatesModel::FeatureCollectionHandle::children_iterator feature_iter;
-	for (feature_iter = feature_collection->children_begin();
-		feature_iter != feature_collection->children_end();
+	GPlatesModel::FeatureCollectionHandle::iterator feature_iter;
+	for (feature_iter = feature_collection->begin();
+		feature_iter != feature_collection->end();
 		++feature_iter)
 	{
-		if (feature_iter.is_valid() &&
-			(*feature_iter).get() == d_focused_feature.handle_ptr())
+		if ((*feature_iter).get() == d_focused_feature.handle_ptr())
 		{
 			unset_focus();
 			break;

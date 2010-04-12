@@ -96,6 +96,13 @@ namespace GPlatesUtils
 			}
 			return *s_instance_ptr;
 		}
+
+	protected:
+
+		// It should not be possible to create an instance of Singleton directly.
+		Singleton()
+		{
+		}
 	
 	private:
 		static boost::scoped_ptr<T> s_instance_ptr;

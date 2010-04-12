@@ -27,7 +27,9 @@
 #include <QDebug>
 
 #include "unit-test/RealTest.h"
-#include "utils/MathUtils.h"
+#include "maths/MathsUtils.h"
+
+using GPlatesMaths::are_almost_exactly_equal;
 
 GPlatesUnitTest::RealTestSuite::RealTestSuite(
 		unsigned level) :
@@ -53,9 +55,9 @@ GPlatesUnitTest::RealTestSuite::construct_maps()
 void
 GPlatesUnitTest::RealTest::test_positive_infinity()
 {
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(
+	BOOST_CHECK(are_almost_exactly_equal<float>(
 		GPlatesMaths::positive_infinity(), GPlatesMaths::Real::positive_infinity().dval()));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(
+	BOOST_CHECK(are_almost_exactly_equal<float>(
 		GPlatesMaths::positive_infinity(), (1.0 / zero)));
 	BOOST_CHECK(GPlatesMaths::is_infinity(GPlatesMaths::positive_infinity()));
 	BOOST_CHECK(GPlatesMaths::is_positive_infinity(GPlatesMaths::positive_infinity()));
@@ -67,9 +69,9 @@ GPlatesUnitTest::RealTest::test_positive_infinity()
 void
 GPlatesUnitTest::RealTest::test_negative_infinity()
 {
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(
+	BOOST_CHECK(are_almost_exactly_equal<float>(
 		GPlatesMaths::negative_infinity(), GPlatesMaths::Real::negative_infinity().dval()));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(
+	BOOST_CHECK(are_almost_exactly_equal<float>(
 		GPlatesMaths::negative_infinity(), (-1.0 / zero)));
 	BOOST_CHECK(GPlatesMaths::is_infinity(GPlatesMaths::negative_infinity()));
 	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(GPlatesMaths::negative_infinity()));
@@ -81,9 +83,9 @@ GPlatesUnitTest::RealTest::test_negative_infinity()
 void 
 GPlatesUnitTest::RealTest::test_nan()
 {
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(
+	BOOST_CHECK(are_almost_exactly_equal<float>(
 		GPlatesMaths::nan(), GPlatesMaths::Real::nan().dval()) == false);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(
+	BOOST_CHECK(are_almost_exactly_equal<float>(
 		GPlatesMaths::nan(), (zero / zero)) == false);
 	BOOST_CHECK(!GPlatesMaths::is_infinity(GPlatesMaths::nan()));
 	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(GPlatesMaths::nan()));

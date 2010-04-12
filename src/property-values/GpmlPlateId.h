@@ -38,31 +38,29 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPlateId, visit_gpml_plate_id)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlPlateId :
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId> non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlPlateId() {  }
+		~GpmlPlateId()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -72,16 +70,16 @@ namespace GPlatesPropertyValues {
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesModel::integer_plate_id_type &value_) {
-			non_null_ptr_type ptr(new GpmlPlateId(value_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				const GPlatesModel::integer_plate_id_type &value_)
+		{
+			non_null_ptr_type ptr(new GpmlPlateId(value_));
 			return ptr;
 		}
 
 		const GpmlPlateId::non_null_ptr_type
-		clone() const {
-			GpmlPlateId::non_null_ptr_type dup(new GpmlPlateId(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GpmlPlateId::non_null_ptr_type dup(new GpmlPlateId(*this));
 			return dup;
 		}
 
@@ -102,7 +100,8 @@ namespace GPlatesPropertyValues {
 		 * inside this GpmlPlateId. For that, you should use @a set_value.
 		 */
 		const GPlatesModel::integer_plate_id_type &
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 		
@@ -118,6 +117,7 @@ namespace GPlatesPropertyValues {
 				const GPlatesModel::integer_plate_id_type &p)
 		{
 			d_value = p;
+			update_instance_id();
 		}
 
 
@@ -130,7 +130,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_plate_id(*this);
 		}
 
@@ -143,9 +144,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_plate_id(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -165,7 +172,7 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlPlateId(
 				const GpmlPlateId &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_value(other.d_value)
 		{  }
 

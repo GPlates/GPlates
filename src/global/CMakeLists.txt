@@ -35,6 +35,7 @@ set(srcs
     InvalidParametersException.h
     NotYetImplementedException.h
     NullParameterException.h
+    PointerTraits.h
     PreconditionViolationError.h
     RetrievalFromEmptyContainerException.h
     types.h

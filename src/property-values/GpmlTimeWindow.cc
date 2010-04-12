@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+
 #include "GpmlTimeWindow.h"
 
 
@@ -42,3 +44,23 @@ GPlatesPropertyValues::GpmlTimeWindow::deep_clone() const
 
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::operator<<(
+		std::ostream &os,
+		const GpmlTimeWindow &time_window)
+{
+	return os << *time_window.time_dependent_value();
+}
+
+
+bool
+GPlatesPropertyValues::GpmlTimeWindow::operator==(
+		const GpmlTimeWindow &other) const
+{
+	return *d_time_dependent_value == *other.d_time_dependent_value &&
+		*d_valid_time == *other.d_valid_time &&
+		d_value_type == other.d_value_type;
+}
+

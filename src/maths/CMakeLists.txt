@@ -46,6 +46,7 @@ set(srcs
     LatLonPoint.cc
     LatLonPoint.h
     MathematicalException.h
+    MathsUtils.h
     MultiPointOnSphere.cc
     MultiPointOnSphere.h
     MultiPointProximityHitDetail.h

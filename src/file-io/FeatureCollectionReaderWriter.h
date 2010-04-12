@@ -37,7 +37,9 @@
 
 namespace GPlatesModel
 {
-	class ConstFeatureVisitor;
+	class FeatureHandle;
+	template<class FeatureHandleType> class FeatureVisitorBase;
+	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 	class ModelInterface;
 }
 

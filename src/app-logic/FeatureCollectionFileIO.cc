@@ -129,7 +129,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
 void
 GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
 {
 	// The following check is commented out because it fails in certain circumstances
@@ -159,7 +159,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 			feature_collection, *feature_collection_writer);
 
-	feature_collection->set_contains_unsaved_changes(false);
+	feature_collection->clear_unsaved_changes();
 }
 
 
@@ -167,7 +167,7 @@ GPlatesAppLogic::FeatureCollectionFileState::file_iterator
 GPlatesAppLogic::FeatureCollectionFileIO::create_empty_file()
 {
 	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-			d_model->create_feature_collection();
+			GPlatesModel::FeatureCollectionHandle::create(d_model->root());
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref feature_collection_unloader =
@@ -199,9 +199,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::create_file(
 	GPlatesFileIO::File::shared_ref file = GPlatesFileIO::File::create_loaded_file(
 			feature_collection_unloader, file_info);
 
-	const GPlatesModel::FeatureCollectionHandle::const_weak_ref const_feature_collection =
-			GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(feature_collection);
-	save_file(file_info, const_feature_collection, format);
+	save_file(file_info, feature_collection, format);
 
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_file_it =
 			d_file_state.add_file(file);

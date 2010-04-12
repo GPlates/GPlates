@@ -150,8 +150,8 @@ namespace GPlatesFileIO
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref
 		get_feature_collection() const
 		{
-			return GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-					d_feature_collection->get_feature_collection());
+			// There is a conversion from weak_ref to const_weak_ref.
+			return d_feature_collection->get_feature_collection();
 		}
 
 
@@ -177,8 +177,8 @@ namespace GPlatesFileIO
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref
 		get_const_feature_collection() const
 		{
-			return GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-					d_feature_collection->get_feature_collection());
+			// There is a converseion from weak_ref to const_weak_ref.
+			return d_feature_collection->get_feature_collection();
 		}
 
 

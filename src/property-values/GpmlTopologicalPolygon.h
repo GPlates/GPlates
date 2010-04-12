@@ -28,43 +28,42 @@
 
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
+
 #include "model/PropertyValue.h"
 #include "GpmlTopologicalLineSection.h"
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlTopologicalPolygon:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPolygon,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPolygon>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPolygon,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPolygon> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPolygon,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPolygon>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPolygon,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPolygon> non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlTopologicalPolygon() {  }
+		~GpmlTopologicalPolygon()
+		{  }
 
 		static
 		const non_null_ptr_type
 		create( 
-			const GpmlTopologicalSection::non_null_ptr_type &first_section) {
+			const GpmlTopologicalSection::non_null_ptr_type &first_section)
+		{
 			non_null_ptr_type ptr(
-					new GpmlTopologicalPolygon( first_section ),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlTopologicalPolygon( first_section ));
 			return ptr;
 		}
 
@@ -78,16 +77,15 @@ namespace GPlatesPropertyValues {
 		create( const std::vector<GpmlTopologicalSection::non_null_ptr_type> &sections_ )
 		{
 			non_null_ptr_type ptr(
-					new GpmlTopologicalPolygon( sections_ ),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlTopologicalPolygon( sections_ ));
 			return ptr;
 		}
 
 		const GpmlTopologicalPolygon::non_null_ptr_type
-		clone() const {
+		clone() const
+		{
 			GpmlTopologicalPolygon::non_null_ptr_type dup(
-					new GpmlTopologicalPolygon(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlTopologicalPolygon(*this));
 			return dup;
 		}
 
@@ -100,7 +98,8 @@ namespace GPlatesPropertyValues {
 		// elements of the time sample vector?  (For consistency with the non-const
 		// overload...)
 		const std::vector<GpmlTopologicalSection::non_null_ptr_type> &
-		sections() const {
+		sections() const
+		{
 			return d_sections;
 		}
 
@@ -108,7 +107,8 @@ namespace GPlatesPropertyValues {
 		// elements of the time sample vector, well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
 		std::vector<GpmlTopologicalSection::non_null_ptr_type> &
-		sections() {
+		sections()
+		{
 			return d_sections;
 		}
 
@@ -122,7 +122,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_topological_polygon(*this);
 		}
 
@@ -135,9 +136,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_topological_polygon(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -166,9 +173,14 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlTopologicalPolygon(
 				const GpmlTopologicalPolygon &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_sections(other.d_sections)
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 

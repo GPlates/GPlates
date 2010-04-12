@@ -70,7 +70,7 @@
 
 namespace GPlatesUtils
 {
-	namespace GeometryUtil
+	namespace GeometryUtils
 	{
 
 		typedef std::vector<GPlatesMaths::PointOnSphere> point_seq_type;

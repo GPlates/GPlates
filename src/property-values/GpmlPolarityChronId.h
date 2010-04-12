@@ -48,23 +48,20 @@ namespace GPlatesPropertyValues
 	class GpmlPolarityChronId:
 			public GPlatesModel::PropertyValue
 	{
+
 	public:
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId> non_null_ptr_to_const_type;
 
 		virtual
 		~GpmlPolarityChronId()
@@ -84,17 +81,17 @@ namespace GPlatesPropertyValues
 		create(
 				boost::optional<QString> era,
 				boost::optional<unsigned int> major_region,
-				boost::optional<QString> minor_region) {
+				boost::optional<QString> minor_region)
+		{
 			GpmlPolarityChronId::non_null_ptr_type ptr(
-					new GpmlPolarityChronId(era, major_region, minor_region),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlPolarityChronId(era, major_region, minor_region));
 			return ptr;
 		}
 
 		const GpmlPolarityChronId::non_null_ptr_type
-		clone() const {
-			GpmlPolarityChronId::non_null_ptr_type dup(new GpmlPolarityChronId(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GpmlPolarityChronId::non_null_ptr_type dup(new GpmlPolarityChronId(*this));
 			return dup;
 		}
 
@@ -112,7 +109,8 @@ namespace GPlatesPropertyValues
 		 * Return the "era" attribute of this GpmlPolarityChronId instance.
 		 */
 		const boost::optional<QString> &
-		get_era() const {
+		get_era() const
+		{
 			return d_era;
 		}
 
@@ -125,15 +123,18 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_era(
-				const QString &era) {
+				const QString &era)
+		{
 			d_era = era;
+			update_instance_id();
 		}
 
 		/**
 		 * Return the "major region" attribute of this GpmlPolarityChronId instance.
 		 */
 		const boost::optional<unsigned int> &
-		get_major_region() const {
+		get_major_region() const
+		{
 			return d_major_region;
 		}
 
@@ -146,15 +147,18 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_major_region(
-				unsigned int major_region) {
+				unsigned int major_region)
+		{
 			d_major_region = major_region;
+			update_instance_id();
 		}
 
 		/**
 		 * Return the "minor region" attribute of this GpmlPolarityChronId instance.
 		 */
 		const boost::optional<QString> &
-		get_minor_region() const {
+		get_minor_region() const
+		{
 			return d_minor_region;
 		}
 
@@ -167,8 +171,10 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_minor_region(
-				const QString &minor_region) {
+				const QString &minor_region)
+		{
 			d_minor_region = minor_region;
+			update_instance_id();
 		}
 
 		/**
@@ -180,7 +186,8 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_polarity_chron_id(*this);
 		}
 
@@ -193,9 +200,15 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_polarity_chron_id(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -218,7 +231,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlPolarityChronId(
 				const GpmlPolarityChronId &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_era(other.d_era),
 			d_major_region(other.d_major_region),
 			d_minor_region(other.d_minor_region)

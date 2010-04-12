@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * Contains the definition of the class FeatureCollectionHandle.
+ * Contains the definition of the FeatureCollectionHandle class.
  *
  * Most recent change:
  *   $Date$
@@ -28,23 +28,21 @@
 #ifndef GPLATES_MODEL_FEATURECOLLECTIONHANDLE_H
 #define GPLATES_MODEL_FEATURECOLLECTIONHANDLE_H
 
+#include <string>
 #include <map>
 #include <boost/any.hpp>
+#include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <unicode/unistr.h>
 
+#include "BasicHandle.h"
 #include "FeatureCollectionRevision.h"
-#include "RevisionAwareIterator.h"
-#include "WeakObserverPublisher.h"
-#include "WeakReference.h"
 
-#include "utils/non_null_intrusive_ptr.h"
+#include "global/PointerTraits.h"
 #include "utils/ReferenceCount.h"
-#include "utils/StringSet.h"
 
 namespace GPlatesModel
 {
-	class DummyTransactionHandle;
-	class FeatureStoreRootHandle;
-
 	/**
 	 * A feature collection handle acts as a persistent handle to the revisioned content of a
 	 * conceptual feature collection.
@@ -77,396 +75,142 @@ namespace GPlatesModel
 	 * saved on disk.
 	 */
 	class FeatureCollectionHandle :
-			public WeakObserverPublisher<FeatureCollectionHandle>,
+			public BasicHandle<FeatureCollectionHandle>,
 			public GPlatesUtils::ReferenceCount<FeatureCollectionHandle>
 	{
 
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<FeatureCollectionHandle>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureCollectionHandle> non_null_ptr_type;
-
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureCollectionHandle>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureCollectionHandle> non_null_ptr_to_const_type;
-
-		/**
 		 * The type of this class.
-		 *
-		 * This definition is used for template magic.
 		 */
 		typedef FeatureCollectionHandle this_type;
 
 		/**
-		 * The type which contains the revisioning component of a feature collection.
+		 * The type of the collection of metadata.
+		 */
+		typedef std::map<std::string, boost::any> tags_type;
+
+		/**
+		 * Creates a new FeatureCollectionHandle instance with optional filename.
 		 *
-		 * This typedef is used by the RevisionAwareIterator.
-		 */
-		typedef FeatureCollectionRevision revision_component_type;
-
-		/**
-		 * The type used for const-iterating over the collection of feature handles.
-		 */
-		typedef RevisionAwareIterator<const FeatureCollectionHandle> children_const_iterator;
-
-		/**
-		 * The type used for (non-const) iterating over the collection of feature handles.
-		 */
-		typedef RevisionAwareIterator<FeatureCollectionHandle> children_iterator;
-
-		/**
-		 * The type used for a weak-ref to a const collection of feature handles.
-		 */
-		typedef WeakReference<const FeatureCollectionHandle> const_weak_ref;
-
-		/**
-		 * The type used for a weak-ref to a (non-const) collection of feature handles.
-		 */
-		typedef WeakReference<FeatureCollectionHandle> weak_ref;
-
-		/**
-		 * The type of the miscellaneous tags collection.
-		 */
-		typedef std::map<GPlatesUtils::StringSet::SharedIterator, boost::any> tags_collection_type;
-
-		/**
-		 * Translate the non-const iterator @a iter to the equivalent const-iterator.
-		 */
-		static
-		const children_const_iterator
-		get_const_iterator(
-				const children_iterator &iter);
-
-		/**
-		 * Translate the non-const weak-ref @a ref to the equivalent const-weak-ref.
-		 */
-		static
-		const const_weak_ref
-		get_const_weak_ref(
-				const weak_ref &ref);
-
-		/**
-		 * Create a new FeatureCollectionHandle instance.
+		 * This new FeatureCollectionHandle instance is not in the model. It is the
+		 * responsibility of the caller to add it into a FeatureStoreRootHandle if
+		 * that is desired.
 		 */
 		static
 		const non_null_ptr_type
-		create();
+		create(
+				const boost::optional<UnicodeString> &filename_ = boost::none);
 
 		/**
-		 * Destructor.
-		 */
-		~FeatureCollectionHandle();
-
-		/**
-		 * Create a duplicate of this FeatureCollectionHandle instance.
+		 * Creates a new FeatureCollectionHandle instance with optional filename.
 		 *
-		 * Note that this will perform a "shallow copy".
+		 * This new FeatureCollectionHandle instance is added to
+		 * @a feature_store_root and a weak-ref is to the new instance is returned.
 		 */
-		const non_null_ptr_type
-		clone() const;
-
-		/**
-		 * Return a const-weak-ref to this FeatureCollectionHandle instance.
-		 */
-		const const_weak_ref
-		reference() const;
-
-		/**
-		 * Unload this feature collection.
-		 *
-		 * Neither this feature collection, nor the features it contains, will be
-		 * accessible after this.  All weak-refs and iterators which reference either this
-		 * feature collection, or the features it contains, will be invalid.
-		 */
-		void
-		unload();
-
-		/**
-		 * Return a (non-const) weak-ref to this FeatureCollectionHandle instance.
-		 */
+		static
 		const weak_ref
-		reference();
+		create(
+				const WeakReference<FeatureStoreRootHandle> &feature_store_root,
+				const boost::optional<UnicodeString> &filename_ = boost::none);
 
 		/**
-		 * Return the "begin" const-iterator to iterate over the collection of features.
+		 * Returns a non-const reference to the feature collection's filename.
 		 */
-		const children_const_iterator
-		children_begin() const;
+		boost::optional<UnicodeString> &
+		filename();
 
 		/**
-		 * Return the "begin" iterator to iterate over the collection of features.
+		 * Returns a const reference to the feature collection's filename.
 		 */
-		const children_iterator
-		children_begin();
+		const boost::optional<UnicodeString> &
+		filename() const;
 
 		/**
-		 * Return the "end" const-iterator used during iteration over the collection of
-		 * features.
-		 */
-		const children_const_iterator
-		children_end() const;
-
-		/**
-		 * Return the "end" iterator used during iteration over the collection of features.
-		 */
-		const children_iterator
-		children_end();
-
-		/**
-		 * Append @a new_feature to the feature collection.
-		 *
-		 * An iterator is returned which points to the new element in the collection.
-		 *
-		 * After the FeatureHandle has been appended, the "end" iterator will have advanced
-		 * -- the length of the sequence will have increased by 1, so what was the iterator
-		 * to the last element of the sequence (the "back" of the container), will now be
-		 * the iterator to the second-last element of the sequence; what was the "end"
-		 * iterator will now be the iterator to the last element of the sequence.
-		 */
-		const children_iterator
-		append_child(
-				FeatureHandle::non_null_ptr_type new_feature,
-				DummyTransactionHandle &transaction);
-
-		/**
-		 * Remove the feature indicated by @a iter in the feature collection.
-		 *
-		 * The results of this operation are only defined if @a iter is before @a end.
-		 *
-		 * The "end" iterator will not be changed by this operation -- the length of the
-		 * sequence will not change, only a feature-slot will become NULL.
-		 */
-		void
-		remove_child(
-				children_const_iterator iter,
-				DummyTransactionHandle &transaction);
-
-		/**
-		 * Remove the feature indicated by @a iter in the feature collection.
-		 *
-		 * The results of this operation are only defined if @a iter is before @a end.
-		 *
-		 * The "end" iterator will not be changed by this operation -- the length of the
-		 * sequence will not change, only a feature-slot will become NULL.
-		 */
-		void
-		remove_child(
-				children_iterator iter,
-				DummyTransactionHandle &transaction);
-
-		/**
-		 * Return whether this feature collection contains unsaved changes.
-		 *
-		 * Note that this member function should be replaced when the revision mechanism is
-		 * complete.
+		 * Returns true iff this feature collection contains unsaved changes.
 		 */
 		bool
 		contains_unsaved_changes() const;
 
 		/**
-		 * Set whether this feature collection contains unsaved changes.
-		 *
-		 * It needs to be a const member function because it will be necessary to set the
-		 * status (to @a false) after writing the contents of the feature collection to
-		 * disk, but since the operation is not logically changing the contents of the
-		 * feature collection, the reference to the feature collection should be a
-		 * reference to a const feature collection.  Since the member is mutable, this is
-		 * able to be a const member function.
-		 *
-		 * Note that this member function should be replaced when the revision mechanism is
-		 * complete.
+		 * Clears the unsaved changes flag to mark this feature collection as having
+		 * no unsaved changes.
 		 */
 		void
-		set_contains_unsaved_changes(
-				bool new_status) const;
+		clear_unsaved_changes();
 
 		/**
-		 * Access the current revision of this feature collection.
-		 *
-		 * Client code should not need to access the revision directly!
-		 *
-		 * This is the overloading of this function for const FeatureCollectionHandle
-		 * instances; it returns a pointer to a const FeatureCollectionRevision instance.
+		 * Returns the collection of miscellaneous metadata associated with this
+		 * feature collection.
 		 */
-		const FeatureCollectionRevision::non_null_ptr_to_const_type
-		current_revision() const;
-
-		/**
-		 * Access the current revision of this feature collection.
-		 *
-		 * Client code should not need to access the revision directly!
-		 *
-		 * This is the overloading of this function for non-const FeatureCollectionHandle
-		 * instances; it returns a C++ reference to a pointer to a non-const
-		 * FeatureCollectionRevision instance.
-		 *
-		 * Note that, because the copy-assignment operator of FeatureCollectionRevision is
-		 * private, the FeatureCollectionRevision referenced by the return-value of this
-		 * function cannot be assigned-to, which means that this function does not provide
-		 * a means to directly switch the FeatureCollectionRevision within this
-		 * FeatureCollectionHandle instance.  (This restriction is intentional.)
-		 *
-		 * To switch the FeatureCollectionRevision within this FeatureCollectionHandle
-		 * instance, use the function @a set_current_revision below.
-		 */
-		const FeatureCollectionRevision::non_null_ptr_type
-		current_revision();
-
-		/**
-		 * Set the current revision of this feature collection to @a rev.
-		 *
-		 * Client code should not need to access the revision directly!
-		 */
-		void
-		set_current_revision(
-				FeatureCollectionRevision::non_null_ptr_type rev);
-
-		/**
-		 * Access the handle of the container which contains this FeatureCollectionHandle.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * Note that the return value may be a NULL pointer, which signifies that this
-		 * feature collection is not contained within a container.
-		 */
-		FeatureStoreRootHandle *
-		parent_ptr() const;
-
-		/**
-		 * Access the index of this feature collection within its container.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * Note that the return value may be the invalid index INVALID_INDEX, which
-		 * signifies that this feature collection is not contained within a container.
-		 */
-		container_size_type
-		index_in_container() const;
-
-		/**
-		 * Set the handle of the container which contains this FeatureCollectionHandle, and
-		 * the index of this feature collection within its container.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * Note that @a new_handle may be a NULL pointer, and @a new_index may have the
-		 * value @a INVALID_INDEX ... but only if this FeatureCollectionHandle instance
-		 * will not be contained within a FeatureStoreRootHandle.
-		 */
-		void
-		set_parent_ptr(
-				FeatureStoreRootHandle *new_handle,
-				container_size_type new_index);
-
-		/**
-		 * Get the collection of miscellaneous data associated with this feature collection.
-		 */
-		tags_collection_type &
+		tags_type &
 		tags();
 
 		/**
-		 * Get a const reference to the collection of miscellaneous data associated with this feature collection
+		 * Returns the collectino of miscellaneous metadata associated with this
+		 * feature collection.
 		 */
-		const tags_collection_type &
+		const tags_type &
 		tags() const;
 
 	private:
 
 		/**
-		 * The current revision of this feature collection.
-		 */
-		FeatureCollectionRevision::non_null_ptr_type d_current_revision;
-
-		/**
-		 * The FeatureStoreRootHandle whose FeatureStoreRootRevision contains this
-		 * FeatureCollectionHandle instance.
-		 *
-		 * Note that this should be held via a (regular, raw) pointer rather than a
-		 * ref-counting pointer (or any other type of smart pointer) because:
-		 *  -# The FeatureStoreRootHandle instance conceptually manages the instance of
-		 * this class, not the other way around.
-		 *  -# A FeatureStoreRootHandle instance will outlive the FeatureCollectionHandle
-		 * instances it contains; thus, it doesn't make sense for a FeatureStoreRootHandle
-		 * to have its memory managed by its contained FeatureCollectionHandle.
-		 *  -# Each FeatureStoreRootHandle will contain a ref-counting pointer to class
-		 * FeatureStoreRootRevision, which will contain a ref-counting pointer to class
-		 * FeatureCollectionHandle, and we don't want to set up a ref-counting loop (which
-		 * would lead to memory leaks).
-		 *
-		 * This pointer may be NULL.  It will be NULL when this FeatureCollectionHandle is
-		 * not contained.
-		 */
-		FeatureStoreRootHandle *d_container_handle;
-
-		/**
-		 * The index of this feature collection within its container.
-		 *
-		 * When this feature collection is not contained within a container (indicated by
-		 * @a d_container_handle being a NULL pointer), this index will be reset to the
-		 * value INVALID_INDEX.
-		 */
-		container_size_type d_index_in_container;
-
-		/**
-		 * Whether this feature collection contains unsaved changes.
-		 *
-		 * This member should be replaced when the revision mechanism is complete.
-		 */
-		mutable bool d_contains_unsaved_changes;
-
-		/**
-		 * A collection of miscellaneous data related to this feature collection,
-		 * accessed by Unicode string keys.
-		 */
-		tags_collection_type d_tags;
-
-		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
-		 */
-		FeatureCollectionHandle();
-
-		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 *
-		 * This ctor should only be invoked by the 'clone' member function, which will
-		 * create a duplicate instance and return a new non_null_intrusive_ptr reference to
-		 * the new duplicate.  Since initially the only reference to the new duplicate will
-		 * be the one returned by the 'clone' function, *before* the new intrusive-pointer
-		 * is created, the ref-count of the new FeatureCollectionHandle instance should be
-		 * zero.
-		 *
-		 * Note that this ctor should act exactly the same as the default (auto-generated)
-		 * copy-ctor, except that it should initialise the ref-count to zero.
 		 */
 		FeatureCollectionHandle(
-				const FeatureCollectionHandle &other);
+				const boost::optional<UnicodeString> &filename_);
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		FeatureCollectionHandle &
+		/**
+		 * This constructor should not be defined, because we don't want to be able
+		 * to copy construct one of these objects.
+		 */
+		FeatureCollectionHandle(
+				const this_type &other);
+		
+		/**
+		 * This should not be defined, because we don't want to be able to copy
+		 * one of these objects.
+		 */
+		this_type &
 		operator=(
-				const FeatureCollectionHandle &);
+				const this_type &);
+
+		/**
+		 * If set, the filename of the file that contains the persistent storage
+		 * representation of the contents of this feature collection.
+		 */
+		boost::optional<UnicodeString> d_filename;
+
+		/**
+		 * True iff the feature collection contains unsaved changes.
+		 */
+		bool d_contains_unsaved_changes;
+		
+		/**
+		 * We hold a weak-ref to ourselves so that we can set the unsaved changes
+		 * flag when there are any modifications.
+		 */
+		weak_ref d_weak_ref_to_self;
+
+		/**
+		 * A miscellaneous collection of metadata associated with this feature collection.
+		 * It may be worthwhile promoting a tag to an instance variable in this class
+		 * if most feature collection handles have such a tag.
+		 */
+		tags_type d_tags;
 
 	};
 
-	/**
-	 * Return true if the feature  collection contains the given feature
-	 * Otherwise, return false.
-	 */
-	bool
-	feature_collection_contains_feature(
-			GPlatesModel::FeatureCollectionHandle::weak_ref collection_ref,
-			GPlatesModel::FeatureHandle::weak_ref feature_ref);
-
 }
+
+// This include is not necessary for this header to function, but it would be
+// convenient if client code could include this header and be able to use
+// iterator or const_iterator without having to separately include the
+// following header. It isn't placed above with the other includes because of
+// cyclic dependencies.
+#include "RevisionAwareIterator.h"
 
 #endif  // GPLATES_MODEL_FEATURECOLLECTIONHANDLE_H

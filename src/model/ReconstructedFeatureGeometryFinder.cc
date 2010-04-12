@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFeatureGeometryFinder.h"
 
 
@@ -36,10 +37,6 @@ namespace
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		if ( ! rfg.property().is_valid()) {
-			// Nothing we can do here.
-			return false;
-		}
 		return ((*rfg.property())->property_name() == property_name_to_match);
 	}
 
@@ -48,12 +45,8 @@ namespace
 	bool
 	properties_iterator_matches(
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
-			const GPlatesModel::FeatureHandle::children_iterator &properties_iterator_to_match)
+			const GPlatesModel::FeatureHandle::iterator &properties_iterator_to_match)
 	{
-		if ( ! rfg.property().is_valid()) {
-			// Nothing we can do here.
-			return false;
-		}
 		return (rfg.property() == properties_iterator_to_match);
 	}
 

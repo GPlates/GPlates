@@ -28,21 +28,18 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLOLDPLATESHEADER_H
 #define GPLATES_PROPERTYVALUES_GPMLOLDPLATESHEADER_H
 
-#include "TextContent.h"
-#include "feature-visitors/PropertyValueFinder.h"
-#include "model/PropertyValue.h"
-#include "model/types.h"
-#include "model/DummyTransactionHandle.h"
-#include "model/PropertyValueContainer.h"
-
-#include "utils/UnicodeStringUtils.h"
-
 #include <cstdlib>
 #include <ctime>
 #include <string>
 #include <sstream>
 #include <unicode/unistr.h>
 
+#include "TextContent.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValue.h"
+#include "model/types.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -56,25 +53,20 @@ namespace GPlatesPropertyValues
 	class GpmlOldPlatesHeader:
 			public GPlatesModel::PropertyValue
 	{
+
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader> non_null_ptr_to_const_type;
 
 		virtual
 		~GpmlOldPlatesHeader() 
@@ -102,8 +94,7 @@ namespace GPlatesPropertyValues
 					string_number, geographic_description, plate_id_number, 
 					age_of_appearance, age_of_disappearance, data_type_code,
 					data_type_code_number, data_type_code_number_additional,
-					conjugate_plate_id_number, colour_code, number_of_points),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					conjugate_plate_id_number, colour_code, number_of_points));
 					
 			return ptr;
 		}
@@ -111,8 +102,7 @@ namespace GPlatesPropertyValues
 		const GpmlOldPlatesHeader::non_null_ptr_type
 		clone() const 
 		{
-			GpmlOldPlatesHeader::non_null_ptr_type dup(new GpmlOldPlatesHeader(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GpmlOldPlatesHeader::non_null_ptr_type dup(new GpmlOldPlatesHeader(*this));
 			return dup;
 		}
 
@@ -139,7 +129,8 @@ namespace GPlatesPropertyValues
 		set_region_number(
 				const unsigned int &i)
 		{
-			assign_member(&GpmlOldPlatesHeader::d_region_number, i);
+			d_region_number = i;
+			update_instance_id();
 		}
 
 
@@ -161,6 +152,7 @@ namespace GPlatesPropertyValues
 				const unsigned int &i)
 		{
 			d_reference_number = i;
+			update_instance_id();
 		}
 
 		
@@ -182,6 +174,7 @@ namespace GPlatesPropertyValues
 				const unsigned int &i)
 		{
 			d_string_number = i;
+			update_instance_id();
 		}
 
 		
@@ -203,6 +196,7 @@ namespace GPlatesPropertyValues
 				const UnicodeString &us)
 		{
 			d_geographic_description = TextContent(us);
+			update_instance_id();
 		}
 
 		
@@ -224,6 +218,7 @@ namespace GPlatesPropertyValues
 				const GPlatesModel::integer_plate_id_type &i)
 		{
 			d_plate_id_number = i;
+			update_instance_id();
 		}
 
 		
@@ -245,6 +240,7 @@ namespace GPlatesPropertyValues
 				const double &d)
 		{
 			d_age_of_appearance = d;
+			update_instance_id();
 		}
 
 		
@@ -266,6 +262,7 @@ namespace GPlatesPropertyValues
 				const double &d)
 		{
 			d_age_of_disappearance = d;
+			update_instance_id();
 		}
 
 		
@@ -287,6 +284,7 @@ namespace GPlatesPropertyValues
 				const UnicodeString &us)
 		{
 			d_data_type_code = TextContent(us);
+			update_instance_id();
 		}
 
 		
@@ -308,6 +306,7 @@ namespace GPlatesPropertyValues
 				const unsigned int &i)
 		{
 			d_data_type_code_number = i;
+			update_instance_id();
 		}
 
 		
@@ -329,6 +328,7 @@ namespace GPlatesPropertyValues
 				const UnicodeString &us)
 		{
 			d_data_type_code_number_additional = TextContent(us);
+			update_instance_id();
 		}
 
 		
@@ -350,6 +350,7 @@ namespace GPlatesPropertyValues
 				const GPlatesModel::integer_plate_id_type &i)
 		{
 			d_conjugate_plate_id_number = i;
+			update_instance_id();
 		}
 		
 		
@@ -371,6 +372,7 @@ namespace GPlatesPropertyValues
 				const unsigned int &i)
 		{
 			d_colour_code = i;
+			update_instance_id();
 		}
 
 			
@@ -392,6 +394,7 @@ namespace GPlatesPropertyValues
 				const unsigned int &i)
 		{
 			d_number_of_points = i;
+			update_instance_id();
 		}
 
 		
@@ -404,7 +407,8 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_old_plates_header(*this);
 		}
 
@@ -417,7 +421,8 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_old_plates_header(*this);
 		}
 
@@ -426,72 +431,14 @@ namespace GPlatesPropertyValues
 		* for example: 
 		# "gplates_00_00_0000_Front_Polygon_Rotates_About_X_BOUNDARY_LINE_101_ 999.0_-999.0_RI_0000_000_"
 		*/
-		// FIXME:  This function is WAY too huge to be in the header.  Move it to the .cc.
-		// FIXME:  Also, make it return 'const UnicodeString' rather than 'std::string'.
+		// FIXME:  Make it return 'const UnicodeString' rather than 'std::string'.
 		std::string
-		old_feature_id() const
-		{
-			std::ostringstream oss;
-			oss << "gplates";
-			oss << "_";
+		old_feature_id() const;
 
-			oss.width(2);
-			oss.fill('0'); // NOTE: pad the field with ZERO
-			oss << d_region_number;
-			oss << "_";
-
-			oss.width(2);
-			oss.fill('0'); // NOTE: pad the field with ZERO
-			oss << d_reference_number;
-			oss << "_";
-
-			oss.width(4);
-			oss.fill('0'); // NOTE: pad the field with ZERO
-			oss << d_string_number;
-			oss << "_";
-
-			// NOTE: this string may have spaces in it; that's acceptable 
-			oss << GPlatesUtils::make_qstring( d_geographic_description ).toStdString();
-			oss << "_";
-
-			oss.width(3);
-			oss.fill('0'); // NOTE: pad the field with ZERO in case the plate id is single digit
-			oss << d_plate_id_number;
-			oss << "_";
-
-			oss.setf(std::ios::showpoint);
-			oss.setf(std::ios::fixed);
-			oss.precision(1); // old_id's only have 1 decimal of precision
-			oss.width(6);
-			oss.fill(' '); // NOTE: DO NOT pad the field ; old_id's have spaces around ages
-			oss << d_age_of_appearance;
-			oss << "_";
-
-			oss.setf(std::ios::fixed);
-			oss.setf(std::ios::showpoint);
-			oss.precision(1); // old_id's only have 1 decimal of precision
-			oss.width(6);
-			oss.fill(' '); // NOTE: pad the field with SPACE ; old_id's have spaces around ages
-			oss << d_age_of_disappearance;
-			oss << "_";
-
-			oss << GPlatesUtils::make_qstring( d_data_type_code ).toStdString();
-			oss << "_";
-
-			oss.width(4);
-			oss.fill('0'); // NOTE: pad the field with ZERO
-			oss << d_data_type_code_number;
-			oss << "_";
-
-			oss.width(3);
-			oss.fill('0'); // NOTE: pad the field with ZERO in case the plate id is single digit
-			oss << d_conjugate_plate_id_number;
-
-			oss << "_";
-
-			return oss.str();
-		}
-	
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 		// This constructor should not be public, because we don't want to allow
@@ -533,7 +480,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlOldPlatesHeader(
 				const GpmlOldPlatesHeader &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_region_number(other.d_region_number),
 			d_reference_number(other.d_reference_number),
 			d_string_number(other.d_string_number),
@@ -548,8 +495,6 @@ namespace GPlatesPropertyValues
 			d_colour_code(other.d_colour_code),
 			d_number_of_points(other.d_number_of_points)
 		{ }
-
-		DEFINE_FUNCTION_ASSIGN_MEMBER(GpmlOldPlatesHeader)
 
 	private:
 		unsigned int d_region_number;
@@ -576,4 +521,4 @@ namespace GPlatesPropertyValues
 	};
 }
 
-#endif
+#endif // GPLATES_PROPERTYVALUES_GPMLOLDPLATESHEADER_H

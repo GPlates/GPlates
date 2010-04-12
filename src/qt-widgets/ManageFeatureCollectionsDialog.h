@@ -266,7 +266,7 @@ namespace GPlatesQtWidgets
 		void
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 				GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format);
 
 	private:

@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the class TopLevelProperty.
  *
  * Most recent change:
  *   $Date$
@@ -32,10 +32,13 @@
 #define GPLATES_MODEL_TOPLEVELPROPERTY_H
 
 #include <map>
+#include <iosfwd>
 
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
+#include "types.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -43,8 +46,11 @@
 
 namespace GPlatesModel
 {
-	class ConstFeatureVisitor;
-	class FeatureVisitor;
+	// Forward declarations.
+	class FeatureHandle;
+	template<class H> class FeatureVisitorBase;
+	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
+	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 
 	/**
 	 * This abstract base class (ABC) represents the top-level property of a feature.
@@ -74,6 +80,11 @@ namespace GPlatesModel
 				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
+		/**
+		 * The type of the container of XML attributes.
+		 */
+		typedef std::map<XmlAttributeName, XmlAttributeValue> xml_attributes_type;
+
 		virtual
 		~TopLevelProperty()
 		{  }
@@ -88,7 +99,7 @@ namespace GPlatesModel
 		 */
 		TopLevelProperty(
 				const PropertyName &property_name_,
-				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_):
+				const xml_attributes_type &xml_attributes_):
 			d_property_name(property_name_),
 			d_xml_attributes(xml_attributes_)
 		{  }
@@ -158,7 +169,7 @@ namespace GPlatesModel
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
-		const std::map<XmlAttributeName, XmlAttributeValue> &
+		const xml_attributes_type &
 		xml_attributes() const
 		{
 			return d_xml_attributes;
@@ -167,7 +178,7 @@ namespace GPlatesModel
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
-		std::map<XmlAttributeName, XmlAttributeValue> &
+		xml_attributes_type &
 		xml_attributes()
 		{
 			return d_xml_attributes;
@@ -195,9 +206,25 @@ namespace GPlatesModel
 		accept_visitor(
 				FeatureVisitor &visitor) = 0;
 
+		/**
+		 * Prints the contents of this TopLevelProperty to the stream @a os.
+		 *
+		 * Note: This function is not called operator<< because operator<< needs to
+		 * be a non-member operator, but we would like polymorphic behaviour.
+		 */
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const = 0;
+
+		virtual
+		bool
+		operator==(
+				const TopLevelProperty &other) const = 0;
+
 	private:
 		PropertyName d_property_name;
-		std::map<XmlAttributeName, XmlAttributeValue> d_xml_attributes;
+		xml_attributes_type d_xml_attributes;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
@@ -208,6 +235,11 @@ namespace GPlatesModel
 				const TopLevelProperty &);
 
 	};
+
+	std::ostream &
+	operator<<(
+			std::ostream & os,
+			const TopLevelProperty &top_level_prop);
 
 }
 

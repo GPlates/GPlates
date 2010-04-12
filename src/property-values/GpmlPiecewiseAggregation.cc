@@ -25,6 +25,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <typeinfo>
+
 #include "GpmlPiecewiseAggregation.h"
 
 
@@ -43,3 +46,38 @@ GPlatesPropertyValues::GpmlPiecewiseAggregation::deep_clone() const
 
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GpmlPiecewiseAggregation::print_to(
+		std::ostream &os) const
+{
+	os << "[ ";
+
+	typedef std::vector<GpmlTimeWindow>::const_iterator iterator_type;
+	for (iterator_type iter = d_time_windows.begin(); iter != d_time_windows.end(); ++iter)
+	{
+		os << *iter;
+	}
+
+	return os << " ]";
+}
+
+
+bool
+GPlatesPropertyValues::GpmlPiecewiseAggregation::directly_modifiable_fields_equal(
+		const GPlatesModel::PropertyValue &other) const
+{
+	try
+	{
+		const GpmlPiecewiseAggregation &other_casted =
+			dynamic_cast<const GpmlPiecewiseAggregation &>(other);
+		return d_time_windows == other_casted.d_time_windows;
+	}
+	catch (const std::bad_cast &)
+	{
+		// Should never get here, but doesn't hurt to check.
+		return false;
+	}
+}
+

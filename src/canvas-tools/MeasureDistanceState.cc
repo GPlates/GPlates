@@ -26,11 +26,14 @@
  */
 
 #include "MeasureDistanceState.h"
+
+#include "maths/MathsUtils.h"
+
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/GeometryType.h"
 #include "view-operations/RenderedGeometryLayer.h"
-#include "utils/MathUtils.h"
+
 
 namespace
 {
@@ -314,7 +317,7 @@ void
 GPlatesCanvasTools::MeasureDistanceState::set_radius(
 		real_t radius)
 {
-	if (!GPlatesUtils::are_almost_exactly_equal(radius.dval(), d_radius.dval()))
+	if (!GPlatesMaths::are_almost_exactly_equal(radius.dval(), d_radius.dval()))
 	{
 		d_radius = radius;
 		emit_quick_measure_updated();

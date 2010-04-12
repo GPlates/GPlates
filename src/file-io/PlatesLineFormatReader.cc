@@ -41,9 +41,9 @@
 #include "LineReader.h"
 
 #include "utils/StringUtils.h"
-#include "utils/MathUtils.h"
 
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -51,7 +51,6 @@
 #include "model/Model.h"
 #include "model/FeatureRevision.h"
 #include "model/TopLevelPropertyInline.h"
-#include "model/DummyTransactionHandle.h"
 #include "model/ModelUtils.h"
 
 #include "property-values/GmlLineString.h"
@@ -658,10 +657,15 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		UnicodeString feature_id;
 		if (extract_feature_id_from_header(header, feature_id))
 		{
-			return model->create_feature(feature_type, GPlatesModel::FeatureId(feature_id), collection);
+			return GPlatesModel::FeatureHandle::create(
+					collection,
+					feature_type,
+					GPlatesModel::FeatureId(feature_id));
 		}
 
-		return model->create_feature(feature_type, collection);
+		return GPlatesModel::FeatureHandle::create(
+				collection,
+				feature_type);
 	}
 
 	/**
@@ -701,8 +705,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					GPlatesModel::ModelUtils::create_gpml_constant_value(
 							gml_orientable_curve, 
 							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
-			GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-					property_name, feature);
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						property_name,
+						property_value));
 		} else if (num_distinct_adj_points == 1) {
 			// It's a point.
 			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
@@ -716,8 +722,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			if (property_name == gpml_position)
 			{
 				// Don't wrap it in a constant value, just add it directly.
-				GPlatesModel::ModelUtils::append_property_value_to_feature(gml_point,
-					property_name, feature);
+				feature->add(
+						GPlatesModel::TopLevelPropertyInline::create(
+							property_name,
+							gml_point));
 			}
 			else
 			{
@@ -726,8 +734,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					GPlatesModel::ModelUtils::create_gpml_constant_value(
 							gml_point, 
 							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
-				GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-					property_name, feature);
+				feature->add(
+						GPlatesModel::TopLevelPropertyInline::create(
+							property_name,
+							property_value));
 			}
 
 		} else {
@@ -779,11 +789,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		// Wrap a "gpml:plateId" in a "gpml:ConstantValue" and append it as the
 		// "gpml:reconstructionPlateId" property.
 		GpmlPlateId::non_null_ptr_type recon_plate_id = GpmlPlateId::create(plate_id);
-		ModelUtils::append_property_value_to_feature(
-				ModelUtils::create_gpml_constant_value(recon_plate_id, 
-					TemplateTypeParameterType::create_gpml("plateId")),
-				PropertyName::create_gpml("reconstructionPlateId"),
-				feature_handle);
+		feature_handle->add(
+				TopLevelPropertyInline::create(
+					PropertyName::create_gpml("reconstructionPlateId"),
+					ModelUtils::create_gpml_constant_value(recon_plate_id, 
+						TemplateTypeParameterType::create_gpml("plateId"))));
 
 		// For each geometry in the feature append the appropriate geometry property value
 		// to the current feature.
@@ -793,27 +803,27 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		GmlTimePeriod::non_null_ptr_type gml_valid_time =
 				ModelUtils::create_gml_time_period(geo_time_instant_begin, geo_time_instant_end);
-		ModelUtils::append_property_value_to_feature(
-				gml_valid_time, 
-				PropertyName::create_gml("validTime"), 
-				feature_handle);
+		feature_handle->add(
+				TopLevelPropertyInline::create(
+					PropertyName::create_gml("validTime"),
+					gml_valid_time));
 
 		// Use the PLATES4 geographic description as the "gml:name" property.
 		XsString::non_null_ptr_type gml_name = 
 				XsString::create(header->geographic_description());
-		ModelUtils::append_property_value_to_feature(
-				gml_name, 
-				PropertyName::create_gml("name"), 
-				feature_handle);
+		feature_handle->add(
+				TopLevelPropertyInline::create(
+					PropertyName::create_gml("name"),
+					gml_name));
 
-		ModelUtils::append_property_value_to_feature(
-				header->clone(), 
-				PropertyName::create_gpml("oldPlatesHeader"), 
-				feature_handle);
+		feature_handle->add(
+				TopLevelPropertyInline::create(
+					PropertyName::create_gpml("oldPlatesHeader"),
+					header->clone()));
 
 		// file the map with id data 
 		std::string s = header->old_feature_id(); // GP8 
-		const GPlatesModel::FeatureId &fid = feature_handle->handle_data().feature_id();
+		const GPlatesModel::FeatureId &fid = feature_handle->feature_id();
 		id_map.insert( std::make_pair(s, fid) );
 
 
@@ -899,10 +909,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
 				GPlatesPropertyValues::Enumeration::create("gpml:DipSlipEnumeration", "Compression");
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				dip_slip_property_value, 
-				GPlatesModel::PropertyName::create_gpml("dipSlip"), 
-				feature_handle);
+		feature_handle->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("dipSlip"),
+					dip_slip_property_value));
 
 		return feature_handle;
 	}
@@ -920,10 +930,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
 				GPlatesPropertyValues::Enumeration::create("gpml:DipSlipEnumeration", "Extension");
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				dip_slip_property_value, 
-				GPlatesModel::PropertyName::create_gpml("dipSlip"), 
-				feature_handle);
+		feature_handle->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("dipSlip"),
+					dip_slip_property_value));
 
 		return feature_handle;
 	}
@@ -941,10 +951,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		const GPlatesPropertyValues::XsString::non_null_ptr_type subcategory_property_value =
 				GPlatesPropertyValues::XsString::create("Thrust");
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				subcategory_property_value, 
-				GPlatesModel::PropertyName::create_gpml("subcategory"), 
-				feature_handle);
+		feature_handle->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("subcategory"),
+					subcategory_property_value));
 
 		return feature_handle;
 	}
@@ -962,10 +972,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type strike_slip_property_value =
 				GPlatesPropertyValues::Enumeration::create("gpml:StrikeSlipEnumeration", "Unknown");
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				strike_slip_property_value, 
-				GPlatesModel::PropertyName::create_gpml("strikeSlip"), 
-				feature_handle);
+		feature_handle->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("strikeSlip"),
+					strike_slip_property_value));
 
 		return feature_handle;
 	}
@@ -1223,10 +1233,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		
 		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
 				GPlatesPropertyValues::XsBoolean::create(is_active);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				is_active_property_value, 
-				GPlatesModel::PropertyName::create_gpml("isActive"), 
-				feature_handle);
+		feature_handle->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("isActive"),
+					is_active_property_value));
 
 		return feature_handle;
 	}
@@ -1267,10 +1277,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 		const GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conj_plate_id =
 				GPlatesPropertyValues::GpmlPlateId::create(header->conjugate_plate_id_number());
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				conj_plate_id, 
-				GPlatesModel::PropertyName::create_gpml("conjugatePlateId"), 
-				feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+					conj_plate_id));
 		return feature;
 	}
 
@@ -1376,9 +1386,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 						is_active_property_value, 
 						GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("boolean"));
 
-		GPlatesModel::ModelUtils::append_property_value_to_feature(constant_value_property_value,
-				GPlatesModel::PropertyName::create_gpml("isActive"),
-				feature_handle);
+		feature_handle->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("isActive"),
+					constant_value_property_value));
 
 		return feature_handle;
 	}
@@ -1420,10 +1431,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		const GPlatesPropertyValues::XsString::non_null_ptr_type subcategory_property_value =
 				GPlatesPropertyValues::XsString::create("Ophiolite");
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				subcategory_property_value, 
-				GPlatesModel::PropertyName::create_gpml("subcategory"), 
-				feature_handle);
+		feature_handle->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("subcategory"),
+					subcategory_property_value));
 		
 		return feature_handle;
 	}
@@ -1482,17 +1493,17 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				subduction_side_property_value, 
 				subduction_side_property_type);
 
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				subducting_slab_constant_value, 
-				GPlatesModel::PropertyName::create_gpml("subductingSlab"), 
-				feature_handle);
+		feature_handle->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("subductingSlab"),
+					subducting_slab_constant_value));
 
 		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
 				GPlatesPropertyValues::XsBoolean::create(is_active);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				is_active_property_value, 
-				GPlatesModel::PropertyName::create_gpml("isActive"), 
-				feature_handle);
+		feature_handle->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("isActive"),
+					is_active_property_value));
 
 		return feature_handle;
 	}
@@ -1861,8 +1872,8 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		// First:  If we've encountered (lat = 99.0; lon = 99.0; plotter code = SKIP TO),
 		// that's the end-of-polyline marker.
 		if (plotter == PlotterCodes::PEN_SKIP_TO &&
-				GPlatesUtils::are_almost_exactly_equal(latitude, 99.0) && 
-				GPlatesUtils::are_almost_exactly_equal(longitude, 99.0))
+				GPlatesMaths::are_almost_exactly_equal(latitude, 99.0) && 
+				GPlatesMaths::are_almost_exactly_equal(longitude, 99.0))
 		{
 			// Note that we return without appending the point.
 			return PlotterCodes::PEN_TERMINATING_POINT;
@@ -2144,10 +2155,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 							boundary_strings);
 		
 					// Add a gpml:boundary Property.
-					GPlatesModel::ModelUtils::append_property_value_to_feature(
-						agg,
-						GPlatesModel::PropertyName::create_gpml("boundary"),
-						feature_ref);
+					feature_ref->add(
+							GPlatesModel::TopLevelPropertyInline::create(
+								GPlatesModel::PropertyName::create_gpml("boundary"),
+								agg));
 				}
 
 			} while (code != "NULL");
@@ -2217,7 +2228,7 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 	boost::shared_ptr<DataSource> source( 
 			new GPlatesFileIO::LocalFileDataSource(filename, DataFormats::PlatesLine));
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-			= model->create_feature_collection();
+			= GPlatesModel::FeatureCollectionHandle::create(model->root());
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =

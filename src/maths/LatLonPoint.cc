@@ -35,8 +35,8 @@
 #include "LatLonPoint.h"
 #include "InvalidLatLonException.h"
 #include "IndeterminateResultException.h"
+#include "MathsUtils.h"
 #include "PointOnSphere.h"
-#include "utils/MathUtils.h"
 
 
 GPlatesMaths::LatLonPoint::LatLonPoint(
@@ -64,7 +64,7 @@ bool
 GPlatesMaths::LatLonPoint::is_valid_latitude(
 		const double &val)
 {
-	return GPlatesUtils::is_in_range(val, -90.0, 90.0);
+	return is_in_range(val, -90.0, 90.0);
 }
 
 
@@ -72,7 +72,7 @@ bool
 GPlatesMaths::LatLonPoint::is_valid_longitude(
 		const double &val)
 {
-	return GPlatesUtils::is_in_range(val, -360.0, 360.0);
+	return is_in_range(val, -360.0, 360.0);
 }
 
 
@@ -91,8 +91,8 @@ const GPlatesMaths::PointOnSphere
 GPlatesMaths::make_point_on_sphere(
 		const LatLonPoint &llp)
 {
-	double lat_angle = GPlatesUtils::convert_deg_to_rad(llp.latitude());
-	double lon_angle = GPlatesUtils::convert_deg_to_rad(llp.longitude());
+	double lat_angle = convert_deg_to_rad(llp.latitude());
+	double lon_angle = convert_deg_to_rad(llp.longitude());
 
 	double radius_of_small_circle_of_latitude = std::cos(lat_angle);
 
@@ -120,12 +120,12 @@ GPlatesMaths::make_lat_lon_point(
 	//std::cerr << "--\nx: " << x << ", y: " << y << ", z: " << z << std::endl;
 	double lat = asin(z).dval();
 	double lon = atan2(y, x).dval();
-	if (lon < -GPlatesUtils::Pi) {
-		lon = GPlatesUtils::Pi;
+	if (lon < -Pi) {
+		lon = Pi;
 	}
 	//std::cerr << "lat: " << lat << ", lon: " << lon << std::endl;
 
 	return LatLonPoint::LatLonPoint(
-			GPlatesUtils::convert_rad_to_deg(lat),
-			GPlatesUtils::convert_rad_to_deg(lon));
+			convert_rad_to_deg(lat),
+			convert_rad_to_deg(lon));
 }

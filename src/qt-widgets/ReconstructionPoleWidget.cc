@@ -36,7 +36,6 @@
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "gui/FeatureFocus.h"
 #include "presentation/ViewState.h"
-#include "utils/MathUtils.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
 
@@ -306,14 +305,9 @@ namespace
 			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
 			const double &reconstruction_time,
-			GPlatesModel::FeatureCollectionHandle::children_iterator &current_feature)
+			GPlatesModel::FeatureCollectionHandle::iterator &current_feature)
 	{
 		using namespace GPlatesQtWidgets;
-
-		if ( ! current_feature.is_valid()) {
-			// There was a feature here, but it's been deleted.
-			return;
-		}
 
 		trs_plate_id_finder.reset();
 		trs_plate_id_finder.visit_feature(current_feature);
@@ -425,10 +419,10 @@ namespace
 				continue;
 			}
 
-			FeatureCollectionHandle::children_iterator features_iter =
-					current_collection->children_begin();
-			FeatureCollectionHandle::children_iterator features_end =
-					current_collection->children_end();
+			FeatureCollectionHandle::iterator features_iter =
+					current_collection->begin();
+			FeatureCollectionHandle::iterator features_end =
+					current_collection->end();
 			for ( ; features_iter != features_end; ++features_iter) {
 				examine_trs(sequence_choices, trs_plate_id_finder,
 						trs_time_period_finder, plate_id_of_interest,

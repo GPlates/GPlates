@@ -550,3 +550,37 @@ GPlatesMaths::operator<<(
 
 	return os;
 }
+
+
+namespace
+{
+	template<class T>
+	bool
+	opt_eq(
+			const boost::optional<T> &opt1,
+			const boost::optional<T> &opt2)
+	{
+		if (opt1)
+		{
+			if (!opt2)
+			{
+				return false;
+			}
+			return *opt1 == *opt2;
+		}
+		else
+		{
+			return !opt2;
+		}
+	}
+}
+
+
+bool
+GPlatesMaths::FiniteRotation::operator==(
+		const FiniteRotation &other) const
+{
+	return d_unit_quat == other.d_unit_quat &&
+		opt_eq(d_axis_hint, other.d_axis_hint);
+}
+

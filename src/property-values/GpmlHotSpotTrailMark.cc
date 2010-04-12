@@ -25,7 +25,34 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <typeinfo>
+
 #include "GpmlHotSpotTrailMark.h"
+
+
+namespace
+{
+	template<class T>
+	bool
+	opt_eq(
+			const boost::optional<T> &opt1,
+			const boost::optional<T> &opt2)
+	{
+		if (opt1)
+		{
+			if (!opt2)
+			{
+				return false;
+			}
+			return **opt1 == **opt2;
+		}
+		else
+		{
+			return !opt2;
+		}
+	}
+}
 
 
 const GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_type
@@ -56,3 +83,47 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::deep_clone() const
 
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GpmlHotSpotTrailMark::print_to(
+		std::ostream &os) const
+{
+	os << "[ " << *d_position << " , ";
+	if (d_trail_width)
+	{
+		os << **d_trail_width;
+	}
+	os << " , ";
+	if (d_measured_age)
+	{
+		os << **d_measured_age;
+	}
+	os << " , ";
+	if (d_measured_age_range)
+	{
+		os << **d_measured_age_range;
+	}
+	return os << " ]";
+}
+
+
+bool
+GPlatesPropertyValues::GpmlHotSpotTrailMark::directly_modifiable_fields_equal(
+		const GPlatesModel::PropertyValue &other) const
+{
+	try
+	{
+		const GpmlHotSpotTrailMark &other_casted =
+			dynamic_cast<const GpmlHotSpotTrailMark &>(other);
+		return *d_position == *other_casted.d_position &&
+			opt_eq(d_trail_width, other_casted.d_trail_width) &&
+			opt_eq(d_measured_age, other_casted.d_measured_age) &&
+			opt_eq(d_measured_age_range, other_casted.d_measured_age_range);
+	}
+	catch (const std::bad_cast &)
+	{
+		return false;
+	}
+}
+

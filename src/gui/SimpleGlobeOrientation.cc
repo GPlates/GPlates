@@ -26,7 +26,8 @@
  */
 
 #include "SimpleGlobeOrientation.h"
-#include "utils/MathUtils.h"
+
+#include "maths/MathsUtils.h"
 
 const double GPlatesGui::SimpleGlobeOrientation::s_nudge_camera_amount = 5.0;
 
@@ -52,7 +53,7 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_up()
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::yBasis(), 
-			GPlatesUtils::convert_deg_to_rad(s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(s_nudge_camera_amount));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
@@ -65,7 +66,7 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_down()
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::yBasis(), 
-			GPlatesUtils::convert_deg_to_rad(0 - s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(0 - s_nudge_camera_amount));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
@@ -78,7 +79,7 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_left()
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::zBasis(),
-			GPlatesUtils::convert_deg_to_rad(s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(s_nudge_camera_amount));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
@@ -91,7 +92,7 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_right()
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::zBasis(),
-			GPlatesUtils::convert_deg_to_rad(0 - s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(0 - s_nudge_camera_amount));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
@@ -104,7 +105,7 @@ GPlatesGui::SimpleGlobeOrientation::rotate_camera_clockwise()
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::xBasis(), 
-			GPlatesUtils::convert_deg_to_rad(0 - s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(0 - s_nudge_camera_amount));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
@@ -117,7 +118,7 @@ GPlatesGui::SimpleGlobeOrientation::rotate_camera_anticlockwise()
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::xBasis(), 
-			GPlatesUtils::convert_deg_to_rad(s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(s_nudge_camera_amount));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();

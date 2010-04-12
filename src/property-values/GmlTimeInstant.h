@@ -43,31 +43,29 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlTimeInstant, visit_gml_time_instant)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GmlTimeInstant :
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant> non_null_ptr_to_const_type;
 
 		virtual
-		~GmlTimeInstant() {  }
+		~GmlTimeInstant()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -79,17 +77,17 @@ namespace GPlatesPropertyValues {
 		create(
 				const GeoTimeInstant &time_position_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						time_position_xml_attributes_) {
+						time_position_xml_attributes_)
+		{
 			non_null_ptr_type ptr(
-					new GmlTimeInstant(time_position_, time_position_xml_attributes_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GmlTimeInstant(time_position_, time_position_xml_attributes_));
 			return ptr;
 		}
 
 		const GmlTimeInstant::non_null_ptr_type
-		clone() const {
-			GmlTimeInstant::non_null_ptr_type dup(new GmlTimeInstant(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GmlTimeInstant::non_null_ptr_type dup(new GmlTimeInstant(*this));
 			return dup;
 		}
 
@@ -112,7 +110,8 @@ namespace GPlatesPropertyValues {
 		 * set a new GeoTimeInstant using the method @a set_time_position()
 		 */
 		const GeoTimeInstant &
-		time_position() const {
+		time_position() const
+		{
 			return d_time_position;
 		}
 
@@ -125,15 +124,18 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		set_time_position(
-				const GeoTimeInstant &tp) {
+				const GeoTimeInstant &tp)
+		{
 			d_time_position = tp;
+			update_instance_id();
 		}
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
 		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		time_position_xml_attributes() const {
+		time_position_xml_attributes() const
+		{
 			return d_time_position_xml_attributes;
 		}
 
@@ -141,7 +143,8 @@ namespace GPlatesPropertyValues {
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
 		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		time_position_xml_attributes() {
+		time_position_xml_attributes()
+		{
 			return d_time_position_xml_attributes;
 		}
 
@@ -154,7 +157,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gml_time_instant(*this);
 		}
 
@@ -167,9 +171,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gml_time_instant(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -191,10 +201,15 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GmlTimeInstant(
 				const GmlTimeInstant &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_time_position(other.d_time_position),
 			d_time_position_xml_attributes(other.d_time_position_xml_attributes)
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 

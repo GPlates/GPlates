@@ -46,7 +46,7 @@ namespace GPlatesFeatureVisitors
 	 * This class is based very strongly on 'GPlatesModel::ReconstructionTreePopulator'.
 	 */
 	class TotalReconstructionSequenceRotationInterpolater:
-			public GPlatesModel::FeatureVisitor
+			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 		TotalReconstructionSequenceRotationInterpolater(
@@ -67,22 +67,22 @@ namespace GPlatesFeatureVisitors
 		virtual
 		bool
 		initialise_pre_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
+				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
 		visit_gpml_finite_rotation(
-				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
+				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
 
 		virtual
 		void
 		visit_gpml_finite_rotation_slerp(
-				GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
+				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
 
 		virtual
 		void
 		visit_gpml_irregular_sampling(
-				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
 	private:
 

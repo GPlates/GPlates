@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -188,6 +188,10 @@ namespace GPlatesMaths
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
 		get_closest_point(
 				const PointOnSphere &test_point) const;
+
+		bool
+		operator==(
+				const GreatCircleArc &other) const;
 
 	protected:
 

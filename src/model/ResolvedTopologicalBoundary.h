@@ -34,13 +34,12 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
+#include "FeatureHandle.h"
 #include "ReconstructionGeometry.h"
 #include "WeakObserver.h"
 #include "types.h"
-#include "FeatureHandle.h"
 
 #include "maths/PolygonOnSphere.h"
-
 #include "property-values/GeoTimeInstant.h"
 
 
@@ -258,7 +257,7 @@ namespace GPlatesModel
 		create(
 				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::children_iterator property_iterator_,
+				FeatureHandle::iterator property_iterator_,
 				SubSegmentForwardIter sub_segment_sequence_begin,
 				SubSegmentForwardIter sub_segment_sequence_end,
 				boost::optional<integer_plate_id_type> plate_id_,
@@ -287,7 +286,7 @@ namespace GPlatesModel
 		create(
 				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::children_iterator property_iterator_,
+				FeatureHandle::iterator property_iterator_,
 				SubSegmentForwardIter sub_segment_sequence_begin,
 				SubSegmentForwardIter sub_segment_sequence_end)
 		{
@@ -374,7 +373,7 @@ namespace GPlatesModel
 		 * Access the topological polygon feature property used to generate
 		 * the resolved topological geometry.
 		 */
-		const FeatureHandle::children_iterator
+		const FeatureHandle::iterator
 		property() const
 		{
 			return d_property_iterator;
@@ -462,7 +461,7 @@ namespace GPlatesModel
 		 * This is an iterator to the (topological-geometry-valued) property from which
 		 * this RTB was derived.
 		 */
-		FeatureHandle::children_iterator d_property_iterator;
+		FeatureHandle::iterator d_property_iterator;
 
 		/**
 		 * The cached plate ID, if it exists.
@@ -505,7 +504,7 @@ namespace GPlatesModel
 		ResolvedTopologicalBoundary(
 				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::children_iterator property_iterator_,
+				FeatureHandle::iterator property_iterator_,
 				SubSegmentForwardIter sub_segment_sequence_begin,
 				SubSegmentForwardIter sub_segment_sequence_end,
 				boost::optional<integer_plate_id_type> plate_id_,
@@ -529,7 +528,7 @@ namespace GPlatesModel
 		ResolvedTopologicalBoundary(
 				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::children_iterator property_iterator_,
+				FeatureHandle::iterator property_iterator_,
 				SubSegmentForwardIter sub_segment_sequence_begin,
 				SubSegmentForwardIter sub_segment_sequence_end):
 			ReconstructionGeometry(resolved_topology_geometry_ptr),

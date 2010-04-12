@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,11 +25,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "WeakObserverVisitor.h"
+#include <iostream>
 
-// This definition can't be in the header file, or we get multiple definitions at link time.
-// Because it's a virtual function, it's meaningless to declare it 'inline' (and that doesn't
-// solve the problem anyway).
-GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::
-		~WeakObserverVisitor()
-{  }
+#include "GmlPolygon.h"
+
+
+std::ostream &
+GPlatesPropertyValues::GmlPolygon::print_to(
+		std::ostream &os) const
+{
+	// FIXME: Implement properly when actually needed for debugging.
+	return os << "{ GmlPolygon }";
+}
+

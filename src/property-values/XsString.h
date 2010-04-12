@@ -29,8 +29,10 @@
 #define GPLATES_PROPERTYVALUES_XSSTRING_H
 
 #include "TextContent.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -38,45 +40,43 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::XsString, visit_xs_string)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class XsString :
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsString,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsString>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<XsString,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsString> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsString,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsString>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XsString,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsString> non_null_ptr_to_const_type;
 
 		virtual
-		~XsString() {  }
+		~XsString()
+		{  }
 
 		static
 		const non_null_ptr_type
 		create(
-				const UnicodeString &s) {
-			XsString::non_null_ptr_type ptr(new XsString(s),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				const UnicodeString &s)
+		{
+			XsString::non_null_ptr_type ptr(new XsString(s));
 			return ptr;
 		}
 
 		const XsString::non_null_ptr_type
-		clone() const {
-			XsString::non_null_ptr_type dup(new XsString(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			XsString::non_null_ptr_type dup(new XsString(*this));
 			return dup;
 		}
 
@@ -98,7 +98,8 @@ namespace GPlatesPropertyValues {
 		 * TextContent using the @a set_value function below.
 		 */
 		const TextContent &
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 
@@ -113,8 +114,10 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		set_value(
-				const TextContent &tc) {
+				const TextContent &tc)
+		{
 			d_value = tc;
+			update_instance_id();
 		}
 
 
@@ -127,7 +130,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_xs_string(*this);
 		}
 
@@ -140,9 +144,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_xs_string(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -162,7 +172,7 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		XsString(
 				const XsString &other) :
-			PropertyValue(other),
+			PropertyValue(other), /* share instance id */
 			d_value(other.d_value)
 		{  }
 

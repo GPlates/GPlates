@@ -34,13 +34,15 @@
 #include "model/PropertyValue.h"
 
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	// Since all the members of this class are of type boost::intrusive_ptr or
 	// TemplateTypeParameterType (which wraps an StringSet::SharedIterator instance which
 	// points to a pre-allocated node in a StringSet), none of the construction,
 	// copy-construction or copy-assignment operations for this class should throw.
-	class GpmlTopologicalIntersection {
+	class GpmlTopologicalIntersection
+	{
 
 	public:
 
@@ -61,7 +63,8 @@ namespace GPlatesPropertyValues {
 		{  }
 
 		virtual
-		~GpmlTopologicalIntersection() { }
+		~GpmlTopologicalIntersection()
+		{ }
 
 		const GpmlTopologicalIntersection
 		deep_clone() const;
@@ -75,7 +78,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_topological_intersection(*this);
 		}
 
@@ -88,54 +92,66 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_topological_intersection(*this);
 		}
 
 
 		// access to d_intersection_geometry
 		GpmlPropertyDelegate::non_null_ptr_type
-		intersection_geometry() const {
+		intersection_geometry() const
+		{
 			return d_intersection_geometry;
 		}
 
 		void
 		set_d_intersection_geometry(
-				GpmlPropertyDelegate::non_null_ptr_type intersection_geom) {
+				GpmlPropertyDelegate::non_null_ptr_type intersection_geom)
+		{
 			d_intersection_geometry = intersection_geom;
 		} 
 
 
 		// access to reference point
 		GmlPoint::non_null_ptr_type
-		reference_point() const {
+		reference_point() const
+		{
 			return d_reference_point;
 		}
 
 		void
 		set_reference_point(
-				GmlPoint::non_null_ptr_type point) {
+				GmlPoint::non_null_ptr_type point)
+		{
 			d_reference_point = point;
 		}
 
 
 		// access to d_reference_point_plate_id
 		GpmlPropertyDelegate::non_null_ptr_type
-		reference_point_plate_id() const {
+		reference_point_plate_id() const
+		{
 			return d_reference_point_plate_id;
 		}
 
 		void
 		set_reference_point_plate_id(
-				GpmlPropertyDelegate::non_null_ptr_type ref_point_plate_id) {
+				GpmlPropertyDelegate::non_null_ptr_type ref_point_plate_id)
+		{
 			d_reference_point_plate_id = ref_point_plate_id;
-		} 
+		}
+
+		bool
+		operator==(
+				const GpmlTopologicalIntersection &other) const;
 
 	private:
 
 		GpmlPropertyDelegate::non_null_ptr_type d_intersection_geometry;
 		GmlPoint::non_null_ptr_type d_reference_point;
 		GpmlPropertyDelegate::non_null_ptr_type d_reference_point_plate_id;
+		
 	};
 
 }

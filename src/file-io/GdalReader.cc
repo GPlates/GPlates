@@ -51,7 +51,7 @@
 #include <QDir>
 #include <QRgb>
 
-#include "utils/MathUtils.h"
+#include "maths/MathsUtils.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "GdalReader.h"
 
@@ -149,7 +149,7 @@ namespace{
 					std::cerr << "NaN detected" << std::endl;
 					colour = Qt::black;
 				}
-				else if (no_data_value_success && (GPlatesUtils::are_almost_exactly_equal(static_cast<double>(data),no_data_value))){
+				else if (no_data_value_success && (GPlatesMaths::are_almost_exactly_equal(static_cast<double>(data),no_data_value))){
 			//		std::cerr << "no_data_value detected" << std::endl;
 					colour = Qt::black;
 				}

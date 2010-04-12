@@ -34,7 +34,7 @@
 
 #include "feature-visitors/GeometryFinder.h"
 #include "gui/ColourProxy.h"
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/ModelInterface.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "property-values/GpmlPlateId.h"
@@ -43,7 +43,7 @@ namespace
 {
 	const GPlatesGui::ColourProxy
 	get_colour_from_feature(
-		const GPlatesModel::FeatureCollectionHandle::children_iterator feature_iterator)
+		const GPlatesModel::FeatureCollectionHandle::iterator feature_iterator)
 	{
 		GPlatesModel::PropertyName vgp_name = 
 			GPlatesModel::PropertyName::create_gpml("polePosition");
@@ -82,7 +82,7 @@ namespace
 			GPlatesModel::ReconstructedFeatureGeometry::create(
 				geometry,
 				**feature_iterator,
-				(*feature_iterator)->children_begin(),
+				(*feature_iterator)->begin(),
 				optional_plate_id,
 				boost::none);
 
@@ -213,36 +213,32 @@ GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 		if (paleomag_feature_collection.is_valid())
 		{
 
-			GPlatesModel::FeatureCollectionHandle::children_iterator iter =
-				paleomag_feature_collection->children_begin();	
+			GPlatesModel::FeatureCollectionHandle::iterator iter =
+				paleomag_feature_collection->begin();	
 
-			GPlatesModel::FeatureCollectionHandle::children_iterator end =
-				paleomag_feature_collection->children_end();								
+			GPlatesModel::FeatureCollectionHandle::iterator end =
+				paleomag_feature_collection->end();								
 
 
 
 
 			for ( ; iter != end; ++iter)
 			{
-				// Check that it's ok to dereference the iterators.
-				if (iter.is_valid())
-				{
-					boost::optional<const double> optional_time =
-						boost::optional<const double>(reconstruction_time);
-					boost::optional<GPlatesMaths::Rotation> additional_rotation;
+				boost::optional<const double> optional_time =
+					boost::optional<const double>(reconstruction_time);
+				boost::optional<GPlatesMaths::Rotation> additional_rotation;
 
-					const GPlatesGui::ColourProxy colour = get_colour_from_feature(iter);
+				const GPlatesGui::ColourProxy colour = get_colour_from_feature(iter);
 
-					PaleomagUtils::VgpRenderer vgp_renderer(
-						reconstruction,
-						optional_time,
-						additional_rotation, 
-						d_paleomag_layer,
-						colour,
-						false /* render_as_ellipse = false */);
+				PaleomagUtils::VgpRenderer vgp_renderer(
+					reconstruction,
+					optional_time,
+					additional_rotation, 
+					d_paleomag_layer,
+					colour,
+					false /* render_as_ellipse = false */);
 
-					vgp_renderer.visit_feature(iter);
-				}
+				vgp_renderer.visit_feature(iter);
 			}
 		}
 		

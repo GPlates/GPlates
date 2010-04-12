@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -192,7 +192,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types_list() const
 	
 	widget_map_const_iterator it = map.begin();
 	widget_map_const_iterator end = map.end();
-	for ( ; it != end; ++it) {
+	for ( ; it != end; ++it)
+	{
 		list.push_back(it->first);
 	}
 	
@@ -203,43 +204,61 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types_list() const
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::FeatureHandle::children_iterator it)
+		GPlatesModel::FeatureHandle::iterator it)
 {
-	if ( ! feature_ref.is_valid()) {
+	if ( ! feature_ref.is_valid())
+	{
 		// Although in principle we only need the properties_iterator here,
 		// not having a valid feature ref is still worth checking for.
 		deactivate_edit_widgets();
 		return;
 	}
-	if (*it == NULL) {
+
+	if (!(*it))
+	{
 		// Always check your property iterators.
 		deactivate_edit_widgets();
 		return;
 	}
+
 	// Get EditWidgetChooser to tell us what widgets to show.
+	// Note that we have to make a clone of the property in order to edit it.
+	// We also save the iterator so we can save the modified property back into the model.
 	deactivate_edit_widgets();
 	GPlatesQtWidgets::EditWidgetChooser chooser(*this, feature_ref);
-	(*it)->accept_visitor(chooser);
+	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->deep_clone();
+	d_current_property_clone = property_clone;
+	d_current_property_iterator = it;
+	property_clone->accept_visitor(chooser);
 }
 
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::FeatureHandle::children_iterator it)
+		GPlatesModel::FeatureHandle::iterator it)
 {
-	if ( ! feature_ref.is_valid()) {
+	if ( ! feature_ref.is_valid())
+	{
 		// Although in principle we only need the properties_iterator here,
 		// not having a valid feature ref is still worth checking for.
 		return;
 	}
-	if (*it == NULL) {
+
+	if (!(*it))
+	{
 		// Always check your property iterators.
 		return;
 	}
+
 	// Get EditWidgetChooser to tell us what widgets to update.
+	// Note that we have to make a clone of the property in order to edit it.
+	// We also save the iterator so we can save the modified property back into the model.
 	GPlatesQtWidgets::EditWidgetChooser chooser(*this, feature_ref);
-	(*it)->accept_visitor(chooser);
+	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->deep_clone();
+	d_current_property_clone = property_clone;
+	d_current_property_iterator = it;
+	property_clone->accept_visitor(chooser);
 }
 
 
@@ -250,7 +269,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_widget_by_property_value_name(
 	deactivate_edit_widgets();
 	AbstractEditWidget *widget_ptr = get_widget_by_name(property_value_name);
 	
-	if (widget_ptr != NULL) {
+	if (widget_ptr != NULL)
+	{
 		// FIXME: Human readable property value name?
 		setTitle(tr("%1 %2").arg(d_edit_verb).arg(property_value_name));
 		show();
@@ -265,9 +285,12 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_widget_by_property_value_name(
 bool
 GPlatesQtWidgets::EditWidgetGroupBox::is_edit_widget_active()
 {
-	if (isVisible() && d_active_widget_ptr != NULL) {
+	if (isVisible() && d_active_widget_ptr != NULL)
+	{
 		return true;
-	} else {
+	}
+	else
+	{
 		return false;
 	}
 }
@@ -276,9 +299,12 @@ GPlatesQtWidgets::EditWidgetGroupBox::is_edit_widget_active()
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesQtWidgets::EditWidgetGroupBox::create_property_value_from_widget()
 {
-	if (d_active_widget_ptr != NULL) {
+	if (d_active_widget_ptr != NULL)
+	{
 		return d_active_widget_ptr->create_property_value_from_widget();
-	} else {
+	}
+	else
+	{
 		throw NoActiveEditWidgetException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
@@ -287,9 +313,18 @@ GPlatesQtWidgets::EditWidgetGroupBox::create_property_value_from_widget()
 bool
 GPlatesQtWidgets::EditWidgetGroupBox::update_property_value_from_widget()
 {
-	if (d_active_widget_ptr != NULL) {
-		return d_active_widget_ptr->update_property_value_from_widget();
-	} else {
+	if (d_active_widget_ptr != NULL)
+	{
+		bool result = d_active_widget_ptr->update_property_value_from_widget();
+
+		// Because the above call just updated the clone of the property value
+		// we must now commit the changed property back into the model.
+		commit_property_to_model();
+
+		return result;
+	}
+	else
+	{
 		throw NoActiveEditWidgetException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
@@ -298,9 +333,12 @@ GPlatesQtWidgets::EditWidgetGroupBox::update_property_value_from_widget()
 bool
 GPlatesQtWidgets::EditWidgetGroupBox::is_dirty()
 {
-	if (d_active_widget_ptr != NULL) {
+	if (d_active_widget_ptr != NULL)
+	{
 		return d_active_widget_ptr->is_dirty();
-	} else {
+	}
+	else
+	{
 		return false;
 	}
 }
@@ -308,7 +346,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::is_dirty()
 void
 GPlatesQtWidgets::EditWidgetGroupBox::set_clean()
 {
-	if (d_active_widget_ptr != NULL) {
+	if (d_active_widget_ptr != NULL)
+	{
 		d_active_widget_ptr->set_clean();
 	}
 }
@@ -317,7 +356,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::set_clean()
 void
 GPlatesQtWidgets::EditWidgetGroupBox::set_dirty()
 {
-	if (d_active_widget_ptr != NULL) {
+	if (d_active_widget_ptr != NULL)
+	{
 		d_active_widget_ptr->set_dirty();
 	}
 }
@@ -576,11 +616,28 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_widget_by_name(
 {
 	static const widget_map_type &map = build_widget_map();
 	widget_map_const_iterator result = map.find(property_value_type_name);
-	if (result != map.end()) {
+
+	if (result != map.end())
+	{
 		return result->second;
-	} else {
+	}
+	else
+	{
 		// FIXME: Exception? When this is finished, we shouldn't really have a situation with
 		// an unhandled property-value type in the Add Property dialog.
 		return NULL;
 	}
 }
+
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::commit_property_to_model()
+{
+	if (d_current_property_iterator && d_current_property_clone)
+	{
+		GPlatesModel::FeatureHandle::iterator &it = *d_current_property_iterator;
+		GPlatesModel::TopLevelProperty::non_null_ptr_type &property_clone = *d_current_property_clone;
+		*it = property_clone;
+	}
+}
+

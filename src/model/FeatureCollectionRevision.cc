@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * Contains the definitions of the member functions of the class FeatureCollectionRevision.
+ * Contains the implementation of the FeatureCollectionRevision class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,37 +26,17 @@
  */
 
 #include "FeatureCollectionRevision.h"
-#include "DummyTransactionHandle.h"
 
 
-GPlatesModel::FeatureCollectionRevision::collection_type::size_type
-GPlatesModel::FeatureCollectionRevision::append_child(
-		FeatureHandle::non_null_ptr_type new_feature,
-		DummyTransactionHandle &transaction)
+const GPlatesModel::FeatureCollectionRevision::non_null_ptr_type
+GPlatesModel::FeatureCollectionRevision::create()
 {
-	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	d_features.push_back(get_intrusive_ptr(new_feature));
-	new_feature->set_parent_ptr(d_handle_ptr);
-	return (size() - 1);
+	return non_null_ptr_type(
+			new FeatureCollectionRevision());
 }
 
 
-void
-GPlatesModel::FeatureCollectionRevision::remove_child(
-		container_size_type index,
-		DummyTransactionHandle &transaction)
+GPlatesModel::FeatureCollectionRevision::FeatureCollectionRevision()
 {
-	if (d_features[index] == NULL) {
-		// That's strange, it appears that the feature at this index has already been
-		// removed.  (Note that this should not occur.)  Since this has happened, we should
-		// log a warning about this strange behaviour, so we can work out why.
-		// FIXME: Log a warning.
-		return;  // Nothing to do.
-	}
-	d_features[index]->set_parent_ptr(NULL);
-
-	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	if (index < size()) {
-		d_features[index] = NULL;
-	}
 }
+

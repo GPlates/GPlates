@@ -156,8 +156,7 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		// Output the velocity feature collection
 		//
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref velocity_feature_collection =
-				GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-						plate_velocity_workflow.get_velocity_feature_collection(velocity_index));
+				plate_velocity_workflow.get_velocity_feature_collection(velocity_index);
 		GPlatesFileIO::FileInfo export_file_info(full_output_filename);
 		GPlatesFileIO::GpmlOnePointSixOutputVisitor gpml_writer(export_file_info, false);
 		GPlatesAppLogic::AppLogicUtils::visit_feature_collection(

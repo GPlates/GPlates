@@ -724,13 +724,12 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::assign_plate_ids(
 			assigned_any_plate_ids |= assigned_plate_id;
 
 			// See if any of the features are the focused feature.
-			GPlatesModel::FeatureCollectionHandle::children_iterator feature_iter;
-			for (feature_iter = feature_collection_ref->children_begin();
-				feature_iter != feature_collection_ref->children_end();
+			GPlatesModel::FeatureCollectionHandle::iterator feature_iter;
+			for (feature_iter = feature_collection_ref->begin();
+				feature_iter != feature_collection_ref->end();
 				++feature_iter)
 			{
-				if (feature_iter.is_valid() &&
-					(*feature_iter).get() == d_feature_focus.focused_feature().handle_ptr())
+				if ((*feature_iter).get() == d_feature_focus.focused_feature().handle_ptr())
 				{
 					d_feature_focus.announce_modification_of_focused_feature();
 					break;

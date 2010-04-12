@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the class Enumeration.
  *
  * Most recent change:
  *   $Date$
@@ -28,10 +28,12 @@
 #ifndef GPLATES_PROPERTYVALUES_ENUMERATION_H
 #define GPLATES_PROPERTYVALUES_ENUMERATION_H
 
-#include "feature-visitors/PropertyValueFinder.h"
-#include "model/PropertyValue.h"
 #include "EnumerationContent.h"
 #include "EnumerationType.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValue.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -39,39 +41,38 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::Enumeration, visit_enumeration)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class Enumeration :
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<Enumeration,
-				GPlatesUtils::NullIntrusivePointerHandler> 
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<Enumeration> non_null_ptr_type;
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<const Enumeration,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const Enumeration> non_null_ptr_to_const_type;
 
 		virtual
-		~Enumeration() {  }
+		~Enumeration()
+		{  }
 
 		// FIXME: enum_type should probably be a PropertyName.
 		static
 		const non_null_ptr_type
 		create(
 				const UnicodeString &enum_type,
-				const UnicodeString &enum_content) {
-			Enumeration::non_null_ptr_type ptr(new Enumeration(enum_type, enum_content),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				const UnicodeString &enum_content)
+		{
+			Enumeration::non_null_ptr_type ptr(new Enumeration(enum_type, enum_content));
 			return ptr;
 		}
 
 		const Enumeration::non_null_ptr_type
-		clone() const {
-			Enumeration::non_null_ptr_type dup(new Enumeration(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			Enumeration::non_null_ptr_type dup(new Enumeration(*this));
 			return dup;
 		}
 
@@ -86,7 +87,8 @@ namespace GPlatesPropertyValues {
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const EnumerationContent &
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 		
@@ -101,28 +103,38 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		set_value(
-				const EnumerationContent &new_value) {
+				const EnumerationContent &new_value)
+		{
 			d_value = new_value;
+			update_instance_id();
 		}
 
 		const EnumerationType &
-		type() const {
+		type() const
+		{
 			return d_type;
 		}
 
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_enumeration(*this);
 		}
 
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_enumeration(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -137,7 +149,7 @@ namespace GPlatesPropertyValues {
 
 		Enumeration(
 				const Enumeration &other) :
-			PropertyValue(other),
+			PropertyValue(other), /* share instance id */
 			d_type(other.d_type),
 			d_value(other.d_value)
 		{  }

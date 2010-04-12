@@ -135,9 +135,8 @@ GPlatesCli::ConvertFileFormatCommand::run(
 		++file_index)
 	{
 		const GPlatesFileIO::File &input_file = *files[file_index];
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
-				GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-						feature_collections[file_index]);
+		const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
+				feature_collections[file_index];
 
 		// Get the save filename.
 		const GPlatesFileIO::FileInfo save_file_info =

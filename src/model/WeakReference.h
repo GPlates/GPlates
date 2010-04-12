@@ -121,13 +121,30 @@ namespace GPlatesModel
 		 */
 		explicit
 		WeakReference(
-				handle_type &handle):
+				handle_type &handle) :
 			WeakObserver<H>(handle)
 		{  }
 
 		virtual
 		~WeakReference()
 		{  }
+
+		/**
+		 * Converts this WeakReference<H> into a WeakReference<const H>.
+		 *
+		 * If H is already const, this effectively does nothing useful and returns WeakReference<H>.
+		 */
+		operator WeakReference<const H>() const
+		{
+			if (WeakObserver<H>::publisher_ptr())
+			{
+				return WeakReference<const H>(*WeakObserver<H>::publisher_ptr());
+			}
+			else
+			{
+				return WeakReference<const H>();
+			}
+		}
 
 		/**
 		 * Return the pointer to the handle.
@@ -151,7 +168,8 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return whether this pointer is valid to be dereferenced.
+		 * Return whether this pointer is valid to be dereferenced, and also whether
+		 * the handle is active (i.e. not conceptually deleted).
 		 *
 		 * You should @strong always check this before @em ever dereferencing a weak-ref.
 		 * Do not dereference the weak-ref if this function returns false.
@@ -161,7 +179,19 @@ namespace GPlatesModel
 		bool
 		is_valid() const
 		{
-			return (handle_ptr() != NULL);
+			return handle_ptr() != NULL && handle_ptr()->is_active();
+		}
+
+		/**
+		 * Return whether this pointer is valid to be deferenced.
+		 *
+		 * This is equivalent to calling is_valid() on the WeakReference.
+		 *
+		 * This function will not throw.
+		 */
+		operator bool() const
+		{
+			return is_valid();
 		}
 
 		/**
@@ -279,7 +309,7 @@ namespace GPlatesModel
 		 */
 		void
 		attach_callback(
-				typename WeakReferenceCallback<H>::shared_ptr_type callback)
+				typename WeakReferenceCallback<H>::maybe_null_ptr_type callback)
 		{
 			d_callback = callback;
 		}
@@ -290,69 +320,76 @@ namespace GPlatesModel
 		void
 		unattach_callback()
 		{
-			d_callback = WeakReferenceCallback<H>::shared_ptr_type();
+			d_callback = WeakReferenceCallback<H>::maybe_null_ptr_type();
 		}
 
 		/**
 		 * Notify the callback that the publisher has been modified.
 		 *
-		 * Used by WeakReferenceVisitor.
+		 * Used by WeakReferencePublisherModifiedVisitor.
 		 */
 		void
-		publisher_modified()
+		publisher_modified(
+				typename WeakReferencePublisherModifiedEvent<H>::Type type) const
 		{
 			if (d_callback)
 			{
-				d_callback->publisher_modified(this->publisher_ptr());
+				d_callback->publisher_modified(
+						WeakReferencePublisherModifiedEvent<H>(*this, type));
 			}
 		}
 
 		/**
 		 * Notify the callback that the publisher has been deactivated (conceptually deleted).
 		 *
-		 * Used by WeakReferenceVisitor.
+		 * Used by WeakReferencePublisherDeactivatedVisitor.
 		 */
 		void
-		published_deactivated()
+		publisher_deactivated() const
 		{
 			if (d_callback)
 			{
-				d_callback->publisher_deactivated(this->publisher_ptr());
+				d_callback->publisher_deactivated(
+						WeakReferencePublisherDeactivatedEvent<H>(*this));
 			}
 		}
 
 		/**
 		 * Notify the callback that the publisher has been reactivated (conceptually undeleted).
 		 *
-		 * Used by WeakReferenceVisitor.
+		 * Used by WeakReferencePublisherDeactivatedVisitor.
 		 */
 		void
-		published_reactivated()
+		publisher_reactivated() const
 		{
 			if (d_callback)
 			{
-				d_callback->publisher_reactivated(this->publisher_ptr());
+				d_callback->publisher_reactivated(
+						WeakReferencePublisherReactivatedEvent<H>(*this));
 			}
 		}
 
 		/**
 		 * Notify the callback that the publisher is about to be destroyed (in the C++ sense).
 		 *
-		 * Used by WeakReferenceVisitor.
+		 * Used by WeakReferencePublisherAboutToBeDestroyedVisitor.
 		 */
 		void
-		published_about_to_be_destroyed()
+		publisher_about_to_be_destroyed() const
 		{
 			if (d_callback)
 			{
-				d_callback->publisher_about_to_be_destroyed(this->publisher_ptr());
+				d_callback->publisher_about_to_be_destroyed(
+						WeakReferencePublisherAboutToBeDestroyedEvent<H>(*this));
 			}
 		}
 
 	private:
 
-		//! An optional callback to use when publisher is modified or about to be deleted.
-		typename WeakReferenceCallback<H>::shared_ptr_type d_callback;
+		/**
+		 * An optional callback to use when publisher is modified or about to be deleted.
+		 */
+		typename WeakReferenceCallback<H>::maybe_null_ptr_type d_callback;
 
 	};
 

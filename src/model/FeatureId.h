@@ -61,8 +61,6 @@ namespace GPlatesModel
 		FeatureIdFactory();
 	};
 
-	class FeatureHandle;
-
 	typedef IdTypeGenerator<FeatureIdFactory, FeatureHandle> FeatureId;
 }
 

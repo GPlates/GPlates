@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+
 #include "GpmlKeyValueDictionaryElement.h"
 
 
@@ -42,3 +44,23 @@ GPlatesPropertyValues::GpmlKeyValueDictionaryElement::deep_clone() const
 
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::operator<<(
+		std::ostream &os,
+		const GpmlKeyValueDictionaryElement &element)
+{
+	return os << *(element.key()) << ":" << *(element.value());
+}
+
+
+bool
+GPlatesPropertyValues::GpmlKeyValueDictionaryElement::operator==(
+		const GpmlKeyValueDictionaryElement &other) const
+{
+	return *d_key == *other.d_key &&
+		*d_value == *other.d_value &&
+		d_value_type == other.d_value_type;
+}
+

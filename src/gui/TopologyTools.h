@@ -647,7 +647,7 @@ namespace GPlatesGui
 		std::vector<int>
 		find_topological_section_indices(
 				const GPlatesModel::FeatureHandle::weak_ref &feature,
-				const GPlatesModel::FeatureHandle::children_iterator &properties_iter) const;
+				const GPlatesModel::FeatureHandle::iterator &properties_iter) const;
 		
 		//! Returns true if the focused feature can be added to the topology.
 		bool

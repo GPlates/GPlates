@@ -39,7 +39,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 
-
+/*
 namespace
 {
 	// This useful little function is used to obtain the iterator before the supplied iterator.
@@ -54,7 +54,7 @@ namespace
 		return --t;
 	}
 }
-
+*/
 
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::TotalReconstructionSequenceRotationInserter(
 		const double &recon_time,

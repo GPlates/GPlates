@@ -26,12 +26,11 @@ set(srcs
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
     GeometryCreationUtils.h
-    GeometryUtil.cc
-    GeometryUtil.h
+    GeometryUtils.cc
+    GeometryUtils.h
     IdStringSet.cc
     IdStringSet.h
     LatLonAreaSampling.h
-    MathUtils.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h

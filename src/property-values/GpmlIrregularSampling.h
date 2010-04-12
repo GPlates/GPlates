@@ -43,43 +43,41 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlIrregularSampling, visit_gpml_irregular_sampling)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlIrregularSampling:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling> non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlIrregularSampling() {  }
+		~GpmlIrregularSampling()
+		{  }
 
 		static
 		const non_null_ptr_type
 		create(
 				const GpmlTimeSample &first_time_sample,
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
-				const TemplateTypeParameterType &value_type_) {
+				const TemplateTypeParameterType &value_type_)
+		{
 			non_null_ptr_type ptr(
 					new GpmlIrregularSampling(first_time_sample, interp_func,
-							value_type_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							value_type_));
 			return ptr;
 		}
 
@@ -93,17 +91,17 @@ namespace GPlatesPropertyValues {
 		create(
 				const std::vector<GpmlTimeSample> &time_samples_,
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
-				const TemplateTypeParameterType &value_type_) {
+				const TemplateTypeParameterType &value_type_)
+		{
 			non_null_ptr_type ptr(
-					new GpmlIrregularSampling(time_samples_, interp_func, value_type_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlIrregularSampling(time_samples_, interp_func, value_type_));
 			return ptr;
 		}
 
 		const GpmlIrregularSampling::non_null_ptr_type
-		clone() const {
-			GpmlIrregularSampling::non_null_ptr_type dup(new GpmlIrregularSampling(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GpmlIrregularSampling::non_null_ptr_type dup(new GpmlIrregularSampling(*this));
 			return dup;
 		}
 
@@ -116,7 +114,8 @@ namespace GPlatesPropertyValues {
 		// elements of the time sample vector?  (For consistency with the non-const
 		// overload...)
 		const std::vector<GpmlTimeSample> &
-		time_samples() const {
+		time_samples() const
+		{
 			return d_time_samples;
 		}
 
@@ -124,12 +123,14 @@ namespace GPlatesPropertyValues {
 		// elements of the time sample vector, well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
 		std::vector<GpmlTimeSample> &
-		time_samples() {
+		time_samples()
+		{
 			return d_time_samples;
 		}
 
 		const GpmlInterpolationFunction::maybe_null_ptr_to_const_type
-		interpolation_function() const {
+		interpolation_function() const
+		{
 			return d_interpolation_function;
 		}
 
@@ -145,20 +146,24 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced GpmlInterpolationFunction
 		// instance to accept a FeatureVisitor instance.)
 		const GpmlInterpolationFunction::maybe_null_ptr_type
-		interpolation_function() {
+		interpolation_function()
+		{
 			return d_interpolation_function;
 		}
 
 		void
 		set_interpolation_function(
-				GpmlInterpolationFunction::maybe_null_ptr_type i) {
+				GpmlInterpolationFunction::maybe_null_ptr_type i)
+		{
 			d_interpolation_function = i;
+			update_instance_id();
 		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlIrregularSampling
 		// instance should never be changed.
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;
 		}
 
@@ -171,7 +176,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_irregular_sampling(*this);
 		}
 
@@ -184,9 +190,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_irregular_sampling(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -223,11 +235,16 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlIrregularSampling(
 				const GpmlIrregularSampling &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_time_samples(other.d_time_samples),
 			d_interpolation_function(other.d_interpolation_function),
 			d_value_type(other.d_value_type)
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 

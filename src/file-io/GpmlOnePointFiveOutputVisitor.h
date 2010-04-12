@@ -29,7 +29,7 @@
 #define GPLATES_FILEIO_GPMLONEPOINTFIVEOUTPUTVISITOR_H
 
 #include "XmlOutputInterface.h"
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 
 
 namespace GPlatesPropertyValues

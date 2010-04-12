@@ -53,10 +53,10 @@ void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 		const GPlatesModel::FeatureHandle &feature_handle) {
 
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, feature_handle.handle_data().feature_type().get_name());
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, feature_handle.feature_type().get_name());
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:identity");
-		d_output.write_line_of_string_content(feature_handle.handle_data().feature_id().get());
+		d_output.write_line_of_string_content(feature_handle.feature_id().get());
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f3(d_output, "gpml:revision");

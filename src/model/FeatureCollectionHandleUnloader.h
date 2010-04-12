@@ -30,7 +30,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "FeatureCollectionHandle.h"
-
+#include "FeatureStoreRootHandle.h"
 
 namespace GPlatesModel
 {
@@ -102,7 +102,12 @@ namespace GPlatesModel
 			// or if the model that contains it has been destroyed (effectively unloading it).
 			if (d_feature_collection.is_valid())
 			{
-				d_feature_collection->unload();
+				FeatureStoreRootHandle *parent = d_feature_collection->parent_ptr();
+				FeatureStoreRootHandle::iterator iter =
+					FeatureStoreRootHandle::iterator(*parent, d_feature_collection->index_in_container());
+				// DummyTransactionHandle transaction(__FILE__, __LINE__);
+				parent->remove(iter);
+				// transaction.commit();
 			}
 		}
 	};

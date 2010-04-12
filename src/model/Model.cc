@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,97 +25,60 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/intrusive_ptr.hpp>
-#ifdef HAVE_PYTHON
-# include <boost/python.hpp>
-#endif
-
 #include "Model.h"
-#include "DummyTransactionHandle.h"
-#include "FeatureHandle.h"
-#include "FeatureRevision.h"
-#include "FeatureVisitor.h"
 
-#include "maths/PointOnSphere.h"
-#include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPoint.h"
+#include "FeatureStoreRootHandle.h"
 
 
 GPlatesModel::Model::Model():
-	d_feature_store(FeatureStore::create())
-{  }
-
-
-const GPlatesModel::FeatureCollectionHandle::weak_ref
-GPlatesModel::Model::create_feature_collection()
+	d_root(FeatureStoreRootHandle::create()),
+	d_notification_guard_count(0)
 {
-	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-			GPlatesModel::FeatureCollectionHandle::create();
-	GPlatesModel::FeatureStoreRootHandle::children_iterator iter =
-			d_feature_store->root()->append_child(feature_collection,
-			transaction);
-	transaction.commit();
-	return (*iter)->reference();
+	d_root->set_parent_ptr(this, 0);
 }
 
 
-const GPlatesModel::FeatureHandle::weak_ref
-GPlatesModel::Model::create_feature(
-		const FeatureType &feature_type,
-		const FeatureCollectionHandle::weak_ref &target_collection)
+GPlatesModel::Model::~Model()
 {
-	FeatureId feature_id;
-	return create_feature(feature_type, feature_id, target_collection);
 }
 
 
-const GPlatesModel::FeatureHandle::weak_ref
-GPlatesModel::Model::create_feature(
-		const FeatureType &feature_type,
-		const FeatureId &feature_id,
-		const FeatureCollectionHandle::weak_ref &target_collection)
+const GPlatesModel::WeakReference<GPlatesModel::FeatureStoreRootHandle>
+GPlatesModel::Model::root()
 {
-	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
-			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
-	
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	target_collection->append_child(feature_handle, transaction);
-	transaction.commit();
-
-	return feature_handle->reference();
+	return d_root->reference();
 }
 
 
-const GPlatesModel::FeatureHandle::weak_ref
-GPlatesModel::Model::create_feature(
-		const FeatureType &feature_type,
-		const FeatureId &feature_id,
-		const RevisionId &revision_id,
-		const FeatureCollectionHandle::weak_ref &target_collection)
+const GPlatesModel::WeakReference<const GPlatesModel::FeatureStoreRootHandle>
+GPlatesModel::Model::root() const
 {
-	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
-			GPlatesModel::FeatureHandle::create(feature_type, feature_id, revision_id);
-	
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	target_collection->append_child(feature_handle, transaction);
-	transaction.commit();
-
-	return feature_handle->reference();
+	return d_root->reference();
 }
 
 
-#ifdef HAVE_PYTHON
-using namespace boost::python;
+bool
+GPlatesModel::Model::has_notification_guard() const
+{
+	return d_notification_guard_count;
+}
+
 
 void
-GPlatesModel::export_Model()
+GPlatesModel::Model::increment_notification_guard_count()
 {
-	// FIXME: I moved create_reconstruction() over to GPlatesAppLogic::Reconstruct so
-	// this needs fixing.
-	class_<GPlatesModel::Model>("Model", init<>())
-		.def("create_reconstruction", &GPlatesModel::Model::create_reconstruction_py)
-	;
+	++d_notification_guard_count;
 }
-#endif
+
+
+void
+GPlatesModel::Model::decrement_notification_guard_count()
+{
+	--d_notification_guard_count;
+
+	if (d_notification_guard_count == 0)
+	{
+		d_root->flush_pending_notifications();
+	}
+}
 

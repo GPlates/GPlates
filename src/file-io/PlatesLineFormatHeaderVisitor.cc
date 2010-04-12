@@ -198,7 +198,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 	// like a good place.
 	if (append_feature_id_to_geographic_description)
 	{
-		append_feature_id_to_geog_description(feature->handle_data().feature_id(),
+		append_feature_id_to_geog_description(feature->feature_id(),
 				old_plates_header.geographic_description);
 	}
 

@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains template specialisations for the templated FeatureVisitor class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,25 +25,46 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-#include <boost/none.hpp>
-
 #include "FeatureVisitor.h"
-#include "TopLevelPropertyInline.h"
 
-
-GPlatesModel::FeatureVisitor::~FeatureVisitor()
-{  }
-
-
-void
-GPlatesModel::FeatureVisitor::visit_feature_properties(
-		FeatureHandle &feature_handle)
+namespace GPlatesModel
 {
-	FeatureHandle::children_iterator iter = feature_handle.children_begin();
-	FeatureHandle::children_iterator end = feature_handle.children_end();
-	for ( ; iter != end; ++iter) {
-		if (iter.is_valid()) {
+
+	template<>
+	void
+	FeatureVisitorBase<FeatureHandle>::visit_feature_properties(
+			feature_handle_type &feature_handle)
+	{
+		feature_iterator_type iter = feature_handle.begin();
+		feature_iterator_type end = feature_handle.end();
+		for ( ; iter != end; ++iter)
+		{
+			d_current_top_level_propiter = iter;
+			d_current_top_level_propname = (*iter)->property_name();
+
+			// Note that if you dereference a feature children iterator, you get a
+			// TopLevelProperty::non_null_ptr_to_const_type. To modify properties in a
+			// feature, you need to make a deep clone of the property, modify the clone
+			// and then call set on the feature.
+			TopLevelProperty::non_null_ptr_type prop_clone = (*iter)->deep_clone();
+			prop_clone->accept_visitor(*this);
+			feature_handle.set(iter, prop_clone);
+
+			d_current_top_level_propiter = boost::none;
+			d_current_top_level_propname = boost::none;
+		}
+	}
+
+
+	template<>
+	void
+	FeatureVisitorBase<const FeatureHandle>::visit_feature_properties(
+			feature_handle_type &feature_handle)
+	{
+		feature_iterator_type iter = feature_handle.begin();
+		feature_iterator_type end = feature_handle.end();
+		for ( ; iter != end; ++iter)
+		{
 			d_current_top_level_propiter = iter;
 			d_current_top_level_propname = (*iter)->property_name();
 			(*iter)->accept_visitor(*this);
@@ -51,32 +72,6 @@ GPlatesModel::FeatureVisitor::visit_feature_properties(
 			d_current_top_level_propname = boost::none;
 		}
 	}
+
 }
 
-
-void
-GPlatesModel::FeatureVisitor::visit_property_values(
-		TopLevelPropertyInline &top_level_property_inline)
-{
-	TopLevelPropertyInline::const_iterator iter = top_level_property_inline.begin();
-	TopLevelPropertyInline::const_iterator end = top_level_property_inline.end();
-	for ( ; iter != end; ++iter) {
-		(*iter)->accept_visitor(*this);
-	}
-}
-
-
-void
-GPlatesModel::FeatureVisitor::log_invalid_weak_ref(
-		const FeatureHandle::weak_ref &feature_weak_ref)
-{
-	std::cerr << "invalid weak-ref not dereferenced." << std::endl;
-}
-
-
-void
-GPlatesModel::FeatureVisitor::log_invalid_iterator(
-		const FeatureCollectionHandle::children_iterator &iterator)
-{
-	std::cerr << "invalid iterator not dereferenced." << std::endl;
-}

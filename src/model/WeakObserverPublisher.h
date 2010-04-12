@@ -28,6 +28,7 @@
 #ifndef GPLATES_MODEL_WEAKOBSERVERPUBLISHER_H
 #define GPLATES_MODEL_WEAKOBSERVERPUBLISHER_H
 
+#include "WeakObserver.h"
 #include "WeakObserverVisitor.h"
 
 namespace GPlatesModel
@@ -138,8 +139,97 @@ namespace GPlatesModel
 
 	};
 
+	/**
+	 * Get the first weak observer of the publisher pointed-to by @a publisher_ptr.
+	 *
+	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
+	 *
+	 * This function is used by the WeakObserver template class when subscribing and
+	 * unsubscribing weak observers from the publisher.  This function mimics the Boost
+	 * intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
+	 *
+	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
+	 * WeakObserver<const T> (since those two template instantiations are considered completely
+	 * different types in C++, which, for the first time ever, is actually what we want).  The
+	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
+	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
+	 * will not.
+	 */
 	template<class H>
-	WeakObserverPublisher<H>::WeakObserverPublisher() :
+	WeakObserver<const H> *&
+	weak_observer_get_first(
+			const H *publisher_ptr,
+			const WeakObserver<const H> *);
+
+	/**
+	 * Get the last weak observer of the publisher pointed-to by @a publisher_ptr.
+	 *
+	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
+	 *
+	 * This function is used by the WeakObserver template class when subscribing and
+	 * unsubscribing weak observers from the publisher.  This style of function mimics the
+	 * Boost intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
+	 *
+	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
+	 * WeakObserver<const T> (since those two template instantiations are considered completely
+	 * different types in C++, which, for the first time ever, is actually what we want).  The
+	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
+	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
+	 * will not.
+	 */
+	template<class H>
+	WeakObserver<const H> *&
+	weak_observer_get_last(
+			const H *publisher_ptr,
+			const WeakObserver<const H> *);
+
+	/**
+	 * Get the first weak observer of the publisher pointed-to by @a publisher_ptr.
+	 *
+	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
+	 *
+	 * This function is used by the WeakObserver template class when subscribing and
+	 * unsubscribing weak observers from the publisher.  This function mimics the Boost
+	 * intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
+	 *
+	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
+	 * WeakObserver<const T> (since those two template instantiations are considered completely
+	 * different types in C++, which, for the first time ever, is actually what we want).  The
+	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
+	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
+	 * will not.
+	 */
+	template<class H>
+	WeakObserver<H> *&
+	weak_observer_get_first(
+			H *publisher_ptr,
+			const WeakObserver<H> *);
+
+	/**
+	 * Get the last weak observer of the publisher pointed-to by @a publisher_ptr.
+	 *
+	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
+	 *
+	 * This function is used by the WeakObserver template class when subscribing and
+	 * unsubscribing weak observers from the publisher.  This style of function mimics the
+	 * Boost intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
+	 *
+	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
+	 * WeakObserver<const T> (since those two template instantiations are considered completely
+	 * different types in C++, which, for the first time ever, is actually what we want).  The
+	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
+	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
+	 * will not.
+	 */
+	template<class H>
+	WeakObserver<H> *&
+	weak_observer_get_last(
+			H *publisher_ptr,
+			const WeakObserver<H> *);
+
+
+	template<class H>
+	GPlatesModel::WeakObserverPublisher<H>::WeakObserverPublisher() :
 		d_first_const_weak_observer(NULL),
 		d_first_weak_observer(NULL),
 		d_last_const_weak_observer(NULL),
@@ -147,12 +237,14 @@ namespace GPlatesModel
 	{
 	}
 
+
 	template<class H>
 	WeakObserverPublisher<H>::~WeakObserverPublisher()
 	{
 		weak_observer_unsubscribe_forward(d_first_const_weak_observer);
 		weak_observer_unsubscribe_forward(d_first_weak_observer);
 	}
+
 
 	template<class H>
 	void
@@ -167,12 +259,14 @@ namespace GPlatesModel
 		}
 	}
 
+
 	template<class H>
 	typename WeakObserverPublisher<H>::const_weak_observer_type *&
 	WeakObserverPublisher<H>::first_const_weak_observer() const
 	{
 		return d_first_const_weak_observer;
 	}
+
 
 	template<class H>
 	typename WeakObserverPublisher<H>::weak_observer_type *&
@@ -181,12 +275,14 @@ namespace GPlatesModel
 		return d_first_weak_observer;
 	}
 
+
 	template<class H>
 	typename WeakObserverPublisher<H>::const_weak_observer_type *&
 	WeakObserverPublisher<H>::last_const_weak_observer() const
 	{
 		return d_last_const_weak_observer;
 	}
+
 
 	template<class H>
 	typename WeakObserverPublisher<H>::weak_observer_type *&
@@ -195,22 +291,7 @@ namespace GPlatesModel
 		return d_last_weak_observer;
 	}
 
-	/**
-	 * Get the first weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This function mimics the Boost
-	 * intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
+
 	template<class H>
 	WeakObserver<const H> *&
 	weak_observer_get_first(
@@ -220,22 +301,7 @@ namespace GPlatesModel
 		return publisher_ptr->first_const_weak_observer();
 	}
 
-	/**
-	 * Get the last weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This style of function mimics the
-	 * Boost intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
+
 	template<class H>
 	WeakObserver<const H> *&
 	weak_observer_get_last(
@@ -246,22 +312,6 @@ namespace GPlatesModel
 	}
 
 
-	/**
-	 * Get the first weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This function mimics the Boost
-	 * intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
 	template<class H>
 	WeakObserver<H> *&
 	weak_observer_get_first(
@@ -272,22 +322,6 @@ namespace GPlatesModel
 	}
 
 
-	/**
-	 * Get the last weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This style of function mimics the
-	 * Boost intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
 	template<class H>
 	WeakObserver<H> *&
 	weak_observer_get_last(
@@ -298,5 +332,6 @@ namespace GPlatesModel
 	}
 
 }
+
 
 #endif  // GPLATES_MODEL_WEAKOBSERVERPUBLISHER_H

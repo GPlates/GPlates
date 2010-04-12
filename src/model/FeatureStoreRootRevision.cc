@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * Contains the definitions of the member functions of the class FeatureStoreRootRevision.
+ * Contains the implementation of the FeatureStoreRootRevision class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,27 +26,17 @@
  */
 
 #include "FeatureStoreRootRevision.h"
-#include "DummyTransactionHandle.h"
 
 
-GPlatesModel::FeatureStoreRootRevision::collection_type::size_type
-GPlatesModel::FeatureStoreRootRevision::append_child(
-		FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
-		DummyTransactionHandle &transaction)
+const GPlatesModel::FeatureStoreRootRevision::non_null_ptr_type
+GPlatesModel::FeatureStoreRootRevision::create()
 {
-	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	d_feature_collections.push_back(get_intrusive_ptr(new_feature_collection));
-	return (size() - 1);
+	return non_null_ptr_type(
+			new FeatureStoreRootRevision());
 }
 
 
-void
-GPlatesModel::FeatureStoreRootRevision::remove_child(
-		container_size_type index,
-		DummyTransactionHandle &transaction)
+GPlatesModel::FeatureStoreRootRevision::FeatureStoreRootRevision()
 {
-	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	if (index < size()) {
-		d_feature_collections[index] = NULL;
-	}
 }
+

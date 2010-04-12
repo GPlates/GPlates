@@ -25,9 +25,7 @@
 #include "feature-visitors/GeometryFinder.h"
 #include "feature-visitors/GeometryTypeFinder.h"
 
-#include "model/DummyTransactionHandle.h"
-
-#include "utils/GeometryUtil.h"
+#include "utils/GeometryUtils.h"
 
 namespace{
 	/**
@@ -278,7 +276,7 @@ namespace{
 }
 
 void
-GPlatesUtils::GeometryUtil::get_geometry_points(
+GPlatesUtils::GeometryUtils::get_geometry_points(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 		std::vector<GPlatesMaths::PointOnSphere> &points,
 		bool reverse_points)
@@ -292,7 +290,7 @@ std::pair<
 GPlatesMaths::PointOnSphere/*start point*/,
 GPlatesMaths::PointOnSphere/*end point*/
 >
-GPlatesUtils::GeometryUtil::get_geometry_end_points(
+GPlatesUtils::GeometryUtils::get_geometry_end_points(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 		bool reverse_points)
 {
@@ -303,7 +301,7 @@ GPlatesUtils::GeometryUtil::get_geometry_end_points(
 }
 
 boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
-GPlatesUtils::GeometryUtil::create_geometry_property_value(
+GPlatesUtils::GeometryUtils::create_geometry_property_value(
 		point_seq_type::const_iterator begin, 
 		point_seq_type::const_iterator end,
 		GPlatesViewOperations::GeometryType::Value type)
@@ -344,7 +342,4 @@ GPlatesUtils::GeometryUtil::create_geometry_property_value(
 			break;
 	}
 }
-
-
-
 

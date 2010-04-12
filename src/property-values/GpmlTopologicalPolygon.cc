@@ -25,7 +25,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <typeinfo>
+#include <algorithm>
+
 #include "GpmlTopologicalPolygon.h"
+
+
+namespace
+{
+	bool
+	section_eq(
+			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p1,
+			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p2)
+	{
+		return *p1 == *p2;
+	}
+}
 
 
 const GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type
@@ -46,3 +62,49 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::deep_clone() const
 
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GpmlTopologicalPolygon::print_to(
+		std::ostream &os) const
+{
+	os << "[ ";
+
+	typedef std::vector<GpmlTopologicalSection::non_null_ptr_type>::const_iterator iterator_type;
+	for (iterator_type iter = d_sections.begin(); iter != d_sections.end(); ++iter)
+	{
+		os << **iter;
+	}
+
+	return os << " ]";
+}
+
+
+bool
+GPlatesPropertyValues::GpmlTopologicalPolygon::directly_modifiable_fields_equal(
+		const GPlatesModel::PropertyValue &other) const
+{
+	try
+	{
+		const GpmlTopologicalPolygon &other_casted =
+			dynamic_cast<const GpmlTopologicalPolygon &>(other);
+		if (d_sections.size() == other_casted.d_sections.size())
+		{
+			return std::equal(
+					d_sections.begin(),
+					d_sections.end(),
+					other_casted.d_sections.begin(),
+					&section_eq);
+		}
+		else
+		{
+			return false;
+		}
+	}
+	catch (const std::bad_cast &)
+	{
+		// Should never get here, but doesn't hurt to check.
+		return false;
+	}
+}
+

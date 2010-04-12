@@ -389,6 +389,13 @@ namespace GPlatesMaths
 				const real_t &closeness_inclusion_threshold,
 				real_t &closeness) const;
 
+		bool
+		operator==(
+				const MultiPointOnSphere &other) const
+		{
+			return d_points == other.d_points;
+		}
+
 	private:
 
 		/**

@@ -33,6 +33,135 @@
 
 namespace GPlatesModel
 {
+	template<typename H> class WeakReference;
+
+	/**
+	 * Base class of event objects emitted by WeakReference to attached callback.
+	 */
+	template<typename H>
+	class WeakReferenceEvent
+	{
+	public:
+		WeakReferenceEvent(
+				const WeakReference<H> &reference_) :
+			d_reference(reference_)
+		{
+		}
+
+		const WeakReference<H> &
+		reference() const
+		{
+			return d_reference;
+		}
+
+	private:
+		//! The WeakReference that is emitting the event.
+		const WeakReference<H> &d_reference;
+	};
+
+	/**
+	 * Parameter of publisher_modified() function in WeakReferenceCallback<H>.
+	 */
+	template<typename H>
+	class WeakReferencePublisherModifiedEvent :
+			public WeakReferenceEvent<H>
+	{
+	public:
+		enum Type
+		{
+			NONE = 0,
+
+			/**
+			 * Signifies that the publisher itself was modified, e.g. WeakReference to
+			 * feature collection, feature added to that feature collection.
+			 */
+			PUBLISHER_MODIFIED = 1,
+
+			/**
+			 * Signifies that a child of the publisher was modified, e.g. WeakReference
+			 * to feature collection, property of feature in that feature collection modified.
+			 */
+			CHILD_MODIFIED = 2,
+
+			/**
+			 * Signifies that both the publisher and a child of the publisher was
+			 * modified. Normally, in one transaction, either the publisher or a child
+			 * (but not both) is modified. Such an event, however, could be emitted
+			 * after the lifting of a NotificationGuard that suppressed two separate
+			 * events, one where the publisher was modified and another where a child
+			 * was modified.
+			 */
+			PUBLISHER_AND_CHILD_MODIFIED = (PUBLISHER_MODIFIED | CHILD_MODIFIED)
+		};
+
+		explicit
+		WeakReferencePublisherModifiedEvent(
+				const WeakReference<H> &reference_,
+				Type type_) :
+			WeakReferenceEvent<H>(reference_),
+			d_type(type_)
+		{
+		}
+
+		Type
+		type() const
+		{
+			return d_type;
+		}
+
+	private:
+
+		Type d_type;
+	};
+
+	/**
+	 * Parameter of publisher_deactivated() function in WeakReferenceCallback<H>.
+	 */
+	template<typename H>
+	class WeakReferencePublisherDeactivatedEvent :
+			public WeakReferenceEvent<H>
+	{
+	public:
+		explicit
+		WeakReferencePublisherDeactivatedEvent(
+				const WeakReference<H> &reference_) :
+			WeakReferenceEvent<H>(reference_)
+		{
+		}
+	};
+
+	/**
+	 * Parameter of publisher_reactivated() function in WeakReferenceCallback<H>.
+	 */
+	template<typename H>
+	class WeakReferencePublisherReactivatedEvent :
+			public WeakReferenceEvent<H>
+	{
+	public:
+		explicit
+		WeakReferencePublisherReactivatedEvent(
+				const WeakReference<H> &reference_) :
+			WeakReferenceEvent<H>(reference_)
+		{
+		}
+	};
+
+	/**
+	 * Parameter of publisher_about_to_be_destroyed() function in WeakReferenceCallback<H>.
+	 */
+	template<typename H>
+	class WeakReferencePublisherAboutToBeDestroyedEvent :
+			public WeakReferenceEvent<H>
+	{
+	public:
+		explicit
+		WeakReferencePublisherAboutToBeDestroyedEvent(
+				const WeakReference<H> &reference_) :
+			WeakReferenceEvent<H>(reference_)
+		{
+		}
+	};
+
 	/**
 	 * WeakReferenceCallback instances can be attached to WeakReference instances
 	 * to enable the owner of a WeakReference to receive callbacks when the
@@ -41,13 +170,15 @@ namespace GPlatesModel
 	 */
 	template<typename H>
 	class WeakReferenceCallback :
-		public GPlatesUtils::ReferenceCount<WeakReferenceCallback<H> >
+			public GPlatesUtils::ReferenceCount<WeakReferenceCallback<H> >
 	{
 	
 	public:
 
-		//! A convenience typedef for boost::intrusive_ptr<WeakReferenceCallback<H> >.
-		typedef boost::intrusive_ptr<WeakReferenceCallback<H> > shared_ptr_type;
+		/**
+		 * A convenience typedef for boost::intrusive_ptr<WeakReferenceCallback<H> >.
+		 */
+		typedef boost::intrusive_ptr<WeakReferenceCallback<H> > maybe_null_ptr_type;
 
 		//! Virtual destructor.
 		virtual
@@ -58,12 +189,11 @@ namespace GPlatesModel
 		/**
 		 * Called by WeakReference when its publisher is modified.
 		 * Reimplement in a subclass to customise behaviour on publisher modification.
-		 * @param publisher_ptr A pointer to the publisher that was modified.
 		 */
 		virtual
 		void
 		publisher_modified(
-				H *publisher_ptr)
+				const WeakReferencePublisherModifiedEvent<H> &event)
 		{
 		}
 
@@ -72,12 +202,11 @@ namespace GPlatesModel
 		 * deactivated when it is conceptually deleted from the model, but the object
 		 * still exists for undo purposes.
 		 * Reimplement in a subclass to customise behaviour on publisher deactivation.
-		 * @param publisher_ptr A pointer to the publisher that was deactivated.
 		 */
 		virtual
 		void
 		publisher_deactivated(
-				H *publisher_ptr)
+				const WeakReferencePublisherDeactivatedEvent<H> &event)
 		{
 		}
 
@@ -86,12 +215,11 @@ namespace GPlatesModel
 		 * reactivated when it was conceptually deleted from the model, but the user
 		 * requested that the deletion be undone.
 		 * Reimplement in a subclass to customise behaviour on publisher reactivation.
-		 * @param publisher_ptr A pointer to the publisher that was reactivated.
 		 */
 		virtual
 		void
 		publisher_reactivated(
-				H *publisher_ptr)
+				const WeakReferencePublisherReactivatedEvent<H> &event)
 		{
 		}
 
@@ -101,12 +229,11 @@ namespace GPlatesModel
 		 * deleted from the model, and the user requested that the undo history stack
 		 * be purged.
 		 * Reimplement in a subclass to customise behaviour on publisher destruction.
-		 * @param publisher_ptr A pointer to the publisher that will be destroyed.
 		 */
 		virtual
 		void
 		publisher_about_to_be_destroyed(
-				H *publisher_ptr)
+				const WeakReferencePublisherAboutToBeDestroyedEvent<H> &event)
 		{
 		}
 

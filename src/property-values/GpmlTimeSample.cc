@@ -28,6 +28,29 @@
 #include "GpmlTimeSample.h"
 
 
+namespace
+{
+	bool
+	intrusive_ptr_eq(
+			const boost::intrusive_ptr<GPlatesPropertyValues::XsString> &p1,
+			const boost::intrusive_ptr<GPlatesPropertyValues::XsString> &p2)
+	{
+		if (p1)
+		{
+			if (!p2)
+			{
+				return false;
+			}
+			return *p1 == *p2;
+		}
+		else
+		{
+			return !p2;
+		}
+	}
+}
+
+
 const GPlatesPropertyValues::GpmlTimeSample
 GPlatesPropertyValues::GpmlTimeSample::deep_clone() const
 {
@@ -47,3 +70,16 @@ GPlatesPropertyValues::GpmlTimeSample::deep_clone() const
 
 	return dup;
 }
+
+
+bool
+GPlatesPropertyValues::GpmlTimeSample::operator==(
+		const GpmlTimeSample &other) const
+{
+	return *d_value == *other.d_value &&
+		*d_valid_time == *other.d_valid_time &&
+		intrusive_ptr_eq(d_description, other.d_description) &&
+		d_value_type == other.d_value_type &&
+		d_is_disabled == other.d_is_disabled;
+}
+

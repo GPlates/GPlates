@@ -1,3 +1,5 @@
+/* $Id: GpmlTopologicalLineSection.cc 7836 2010-03-22 00:53:03Z elau $ */
+
 /**
  * \file 
  * File specific comments.
@@ -31,32 +33,30 @@
 #include "GpmlPropertyDelegate.h"
 
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlTopologicalLineSection:
-			public GpmlTopologicalSection {
+			public GpmlTopologicalSection
+	{
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalLineSection,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalLineSection>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalLineSection,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalLineSection> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLineSection,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLineSection>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLineSection,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLineSection> non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlTopologicalLineSection() {  }
+		~GpmlTopologicalLineSection()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -76,16 +76,15 @@ namespace GPlatesPropertyValues {
 					source_geometry, 
 					start_intersection, 
 					end_intersection, 
-					reverse_order),
-				GPlatesUtils::NullIntrusivePointerHandler());
+					reverse_order));
 			return ptr;
 		}
 
 		const GpmlTopologicalLineSection::non_null_ptr_type
-		clone() const {
+		clone() const
+		{
 			GpmlTopologicalLineSection::non_null_ptr_type dup(
-					new GpmlTopologicalLineSection(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlTopologicalLineSection(*this));
 			return dup;
 		}
 
@@ -105,7 +104,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_topological_line_section(*this);
 		}
 
@@ -118,7 +118,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_topological_line_section(*this);
 		}
 
@@ -126,50 +127,62 @@ namespace GPlatesPropertyValues {
 
 		// access to d_source_geometry
 		GpmlPropertyDelegate::non_null_ptr_type
-		get_source_geometry() const {
+		get_source_geometry() const
+		{
 			return d_source_geometry;
 		}
 
 		void
 		set_source_geometry(
-				GpmlPropertyDelegate::non_null_ptr_type intersection_geom) {
+				GpmlPropertyDelegate::non_null_ptr_type intersection_geom)
+		{
 			d_source_geometry = intersection_geom;
+			update_instance_id();
 		} 
 
 
 		// access to start intersection
 		boost::optional<GpmlTopologicalIntersection>
-		get_start_intersection() const {
+		get_start_intersection() const
+		{
 			return d_start_intersection;
 		}
 
 		void
 		set_start_intersection(
-				boost::optional<GpmlTopologicalIntersection> start) {
+				boost::optional<GpmlTopologicalIntersection> start)
+		{
 			d_start_intersection = start;
+			update_instance_id();
 		}
 
 		// access to end intersection
 		boost::optional<GpmlTopologicalIntersection>
-		get_end_intersection() const {
+		get_end_intersection() const
+		{
 			return d_end_intersection;
 		}
 
 		void
 		set_end_intersection(
-				boost::optional<GpmlTopologicalIntersection> end) {
+				boost::optional<GpmlTopologicalIntersection> end)
+		{
 			d_end_intersection = end;
+			update_instance_id();
 		}
 
 		// access to d_reverse_order
 		bool
-		get_reverse_order() const {
+		get_reverse_order() const
+		{
 			return d_reverse_order;
 		}
 
 		void
-		set_reverse_order( bool order) {
+		set_reverse_order( bool order)
+		{
 			d_reverse_order = order;
+			update_instance_id();
 		}
 
 	protected:
@@ -196,9 +209,15 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlTopologicalLineSection(
 				const GpmlTopologicalLineSection &other) :
-			GpmlTopologicalSection(other)
+			GpmlTopologicalSection(other),
+			d_source_geometry(other.d_source_geometry) // will get overwritten in deep_clone() later.
 		{  }
 #endif
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 
@@ -210,11 +229,8 @@ namespace GPlatesPropertyValues {
 		operator=(const GpmlTopologicalLineSection &);
 
 		GpmlPropertyDelegate::non_null_ptr_type d_source_geometry;
-
 		boost::optional<GpmlTopologicalIntersection> d_start_intersection;
-
 		boost::optional<GpmlTopologicalIntersection> d_end_intersection;
-
 		bool d_reverse_order;
 
 	};

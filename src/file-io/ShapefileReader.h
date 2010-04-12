@@ -52,7 +52,6 @@
 #include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
-#include "model/DummyTransactionHandle.h"
 
 
 namespace GPlatesFileIO

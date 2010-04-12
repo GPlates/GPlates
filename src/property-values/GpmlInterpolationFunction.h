@@ -28,8 +28,10 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLINTERPOLATIONFUNCTION_H
 #define GPLATES_PROPERTYVALUES_GPMLINTERPOLATIONFUNCTION_H
 
-#include "model/PropertyValue.h"
 #include "TemplateTypeParameterType.h"
+
+#include "model/PropertyValue.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 // This macro is used to define the virtual function 'deep_clone_as_interp_func' inside a class
@@ -50,7 +52,8 @@
 		}
 
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	/**
 	 * This is an abstract class, because it derives from class PropertyValue, which contains
@@ -58,7 +61,8 @@ namespace GPlatesPropertyValues {
 	 * not override with non-pure-virtual definitions.
 	 */
 	class GpmlInterpolationFunction:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
@@ -76,20 +80,15 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction> non_null_ptr_to_const_type;
 
 		/**
 		 * Construct a GpmlInterpolationFunction instance.
@@ -116,12 +115,13 @@ namespace GPlatesPropertyValues {
 		 */
 		GpmlInterpolationFunction(
 				const GpmlInterpolationFunction &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_value_type(other.d_value_type)
 		{  }
 
 		virtual
-		~GpmlInterpolationFunction() {  }
+		~GpmlInterpolationFunction()
+		{  }
 
 		virtual
 		const GpmlInterpolationFunction::non_null_ptr_type
@@ -130,9 +130,15 @@ namespace GPlatesPropertyValues {
 		// Note that no "setter" is provided:  The value type of a
 		// GpmlInterpolationFunction instance should never be changed.
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	private:
 

@@ -40,34 +40,32 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlKeyValueDictionary, visit_gpml_key_value_dictionary)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlKeyValueDictionaryElement;
 
 	class GpmlKeyValueDictionary :
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary> non_null_ptr_to_const_type;
 
 
 		virtual
-		~GpmlKeyValueDictionary() {  }
+		~GpmlKeyValueDictionary()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -76,9 +74,9 @@ namespace GPlatesPropertyValues {
 		// reason..."
 		static
 		const non_null_ptr_type
-		create() {
-			non_null_ptr_type ptr(new GpmlKeyValueDictionary(),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		create()
+		{
+			non_null_ptr_type ptr(new GpmlKeyValueDictionary());
 			return ptr;
 		}
 
@@ -90,17 +88,17 @@ namespace GPlatesPropertyValues {
 		static
 		const non_null_ptr_type
 		create(
-			const std::vector<GpmlKeyValueDictionaryElement> &elements) {
+			const std::vector<GpmlKeyValueDictionaryElement> &elements)
+		{
 			non_null_ptr_type ptr(new GpmlKeyValueDictionary(
-					elements),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					elements));
 			return ptr;
 		}
 
 		const GpmlKeyValueDictionary::non_null_ptr_type
-		clone() const {
-			GpmlKeyValueDictionary::non_null_ptr_type dup(new GpmlKeyValueDictionary(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GpmlKeyValueDictionary::non_null_ptr_type dup(new GpmlKeyValueDictionary(*this));
 			return dup;
 		}
 
@@ -110,12 +108,14 @@ namespace GPlatesPropertyValues {
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const std::vector<GpmlKeyValueDictionaryElement> &
-		elements() const {
+		elements() const
+		{
 				return d_elements;
 		}
 
 		std::vector<GpmlKeyValueDictionaryElement> &
-		elements() {
+		elements()
+		{
 				return d_elements;
 		}
 
@@ -128,7 +128,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_key_value_dictionary(*this);
 		}
 
@@ -141,7 +142,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_key_value_dictionary(*this);
 		}
 
@@ -157,6 +159,11 @@ namespace GPlatesPropertyValues {
 		{
 			return d_elements.size();
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -181,8 +188,13 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlKeyValueDictionary(
 				const GpmlKeyValueDictionary &other) :
-			PropertyValue()
+			PropertyValue(other) /* share instance id */
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 

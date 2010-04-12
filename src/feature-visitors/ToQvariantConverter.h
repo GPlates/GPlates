@@ -31,7 +31,8 @@
 #include <vector>
 #include <QVariant>
 #include <Qt>
-#include "model/ConstFeatureVisitor.h"
+
+#include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"
 

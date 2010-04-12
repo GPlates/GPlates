@@ -213,6 +213,19 @@ namespace GPlatesAppLogic
 }
 
 
+namespace
+{
+	inline
+	bool
+	feature_collection_contains_feature(
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+	{
+		return feature_ref->parent_ptr() == feature_collection_ref.handle_ptr();
+	}
+}
+
+
 GPlatesAppLogic::FeatureCollectionFileState::FeatureCollectionFileState() :
 	d_active_lists_manager(new Impl::ActiveListsManager()),
 	d_workflow_manager(new Impl::WorkflowManager()),
@@ -833,6 +846,7 @@ GPlatesAppLogic::FeatureCollectionFileState::emit_activation_signal(
 	}
 }
 
+
 boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref>
 GPlatesAppLogic::get_feature_collection_containing_feature(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state_ref,
@@ -849,7 +863,7 @@ GPlatesAppLogic::get_feature_collection_containing_feature(
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
 			it->get_feature_collection();
 
-		if (GPlatesModel::feature_collection_contains_feature(feature_collection_ref, feature_ref)) 
+		if (feature_collection_contains_feature(feature_collection_ref, feature_ref)) 
 		{
 			return feature_collection_ref;
 		}

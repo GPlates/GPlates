@@ -6,6 +6,7 @@
  *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
  * 
  * Copyright (C) 2008, 2009 California Institute of Technology
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -99,7 +100,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder()
 
 bool
 GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_properties(
-		GPlatesModel::FeatureHandle &feature_handle)
+		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// super short-cut for features without boundary list properties
 	//
@@ -110,7 +111,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_propertie
 	//
 	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
 	static const QString topology_network_type_name("TopologicalNetwork");
-	const QString feature_type = GPlatesUtils::make_qstring_from_icu_string( feature_handle.handle_data().feature_type().get_name() );
+	const QString feature_type = GPlatesUtils::make_qstring_from_icu_string( feature_handle.feature_type().get_name() );
 
 	// Quick-out: No need to continue.
 	if ( ( feature_type != topology_boundary_type_name ) &&
@@ -129,7 +130,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_propertie
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_constant_value(
-		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
@@ -138,12 +139,12 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_constant_value(
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_piecewise_aggregation(
-		GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
 			gpml_piecewise_aggregation.time_windows().begin();
 
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end =
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
 			gpml_piecewise_aggregation.time_windows().end();
 
 	for ( ; iter != end; ++iter) 
@@ -155,7 +156,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_piecewise_aggregation
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::process_gpml_time_window(
-	GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
+		const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
 #ifdef DEBUG
 std::cout << "TopologySectionsFinder::process_gpml_time_window()" << std::endl;
@@ -167,12 +168,12 @@ std::cout << "TopologySectionsFinder::process_gpml_time_window()" << std::endl;
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_polygon(
-	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
 {
 #ifdef DEBUG
 std::cout << "TopologySectionsFinder::visit_gpml_topological_polygon" << std::endl;
 #endif
-	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::iterator 
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator 
 		iter, end;
 	iter = gpml_toplogical_polygon.sections().begin();
 	end = gpml_toplogical_polygon.sections().end();
@@ -186,7 +187,7 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_polygon" << std::en
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line_section(
-	GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+		const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
 {  
 #ifdef DEBUG
 std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << std::endl;
@@ -248,7 +249,7 @@ qDebug() << "  use_reverse = " << use_reverse;
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
-	GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+		const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
 {  
 #ifdef DEBUG
 std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl;

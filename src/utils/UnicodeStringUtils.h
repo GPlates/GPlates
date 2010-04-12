@@ -29,7 +29,10 @@
 #define GPLATES_UTILS_UNICODESTRINGUTILS_H
 
 #include <unicode/unistr.h>  // ICU's UnicodeString
+#include <unicode/ustream.h> // operator<<
 #include <functional>
+#include <string>
+#include <iosfwd>
 #include <QString>
 
 
@@ -49,6 +52,12 @@ namespace GPlatesUtils
 	make_qstring_from_icu_string(
 			const UnicodeString &icu_string);
 
+	/**
+	 * Make a std::string from an ICU UnicodeString.
+	 */
+	const std::string
+	make_std_string_from_icu_string(
+			const UnicodeString &icu_string);
 
 	/**
 	 * Make a QString from a Unicode string container in the Model.
@@ -74,7 +83,9 @@ namespace GPlatesUtils
 	const UnicodeString
 	make_icu_string_from_qstring(
 			const QString &qstring);
+
 }
+
 
 namespace std
 {

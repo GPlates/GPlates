@@ -30,12 +30,16 @@
 
 #include <vector>
 #include <boost/optional.hpp>
-#include "WeakObserverVisitor.h"
-#include "ReconstructedFeatureGeometry.h"
 
+#include "ReconstructedFeatureGeometry.h"
+#include "Reconstruction.h"
+#include "WeakObserverVisitor.h"
+#include "global/PointerTraits.h"
 
 namespace GPlatesModel
 {
+	class ReconstructedFeatureGeometry;
+
 	/**
 	 * This weak observer visitor finds all the reconstructed feature geometries (RFGs) which
 	 * are observing a given feature.
@@ -48,7 +52,7 @@ namespace GPlatesModel
 			public WeakObserverVisitor<FeatureHandle>
 	{
 	public:
-		typedef std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> rfg_container_type;
+		typedef std::vector<GPlatesGlobal::PointerTraits<ReconstructedFeatureGeometry>::non_null_ptr_type> rfg_container_type;
 
 		/**
 		 * Constructor.
@@ -97,7 +101,7 @@ namespace GPlatesModel
 		 */
 		explicit
 		ReconstructedFeatureGeometryFinder(
-				const GPlatesModel::FeatureHandle::children_iterator &properties_iterator_to_match,
+				const GPlatesModel::FeatureHandle::iterator &properties_iterator_to_match,
 				const Reconstruction *reconstruction_to_match = NULL):
 			d_properties_iterator_to_match(properties_iterator_to_match),
 			d_reconstruction_to_match(reconstruction_to_match)
@@ -170,7 +174,7 @@ namespace GPlatesModel
 
 	private:
 		boost::optional<GPlatesModel::PropertyName> d_property_name_to_match;
-		boost::optional<GPlatesModel::FeatureHandle::children_iterator> d_properties_iterator_to_match;
+		boost::optional<GPlatesModel::FeatureHandle::iterator> d_properties_iterator_to_match;
 		const Reconstruction *d_reconstruction_to_match;
 		rfg_container_type d_found_rfgs;
 	};

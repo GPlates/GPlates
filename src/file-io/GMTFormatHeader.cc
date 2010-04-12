@@ -118,12 +118,12 @@ GPlatesFileIO::GMTFormatVerboseHeader::initialise_pre_feature_properties(
 
 	d_line_stream
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.handle_data().feature_type().get_name());
+			feature_handle.feature_type().get_name());
 
 	d_line_stream
 		<< " <identity>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.handle_data().feature_id().get())
+			feature_handle.feature_id().get())
 		<< "</identity>";
 	
 	d_line_stream

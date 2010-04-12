@@ -41,31 +41,29 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlMeasure, visit_gpml_measure)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlMeasure :
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlMeasure,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlMeasure>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlMeasure,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlMeasure> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure> non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlMeasure() {  }
+		~GpmlMeasure()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -77,17 +75,17 @@ namespace GPlatesPropertyValues {
 		create(
 				const double &quantity,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						quantity_xml_attributes_) {
+						quantity_xml_attributes_)
+		{
 			non_null_ptr_type ptr(
-					new GpmlMeasure(quantity, quantity_xml_attributes_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlMeasure(quantity, quantity_xml_attributes_));
 			return ptr;
 		}
 
 		const GpmlMeasure::non_null_ptr_type
-		clone() const {
-			GpmlMeasure::non_null_ptr_type dup(new GpmlMeasure(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GpmlMeasure::non_null_ptr_type dup(new GpmlMeasure(*this));
 			return dup;
 		}
 
@@ -110,7 +108,8 @@ namespace GPlatesPropertyValues {
 		 * below.
 		 */
 		const double &
-		quantity() const {
+		quantity() const
+		{
 			return d_quantity;
 		}
 
@@ -123,15 +122,18 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		set_quantity(
-				const double &q) {
+				const double &q)
+		{
 			d_quantity = q;
+			update_instance_id();
 		}
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
 		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		quantity_xml_attributes() const {
+		quantity_xml_attributes() const
+		{
 			return d_quantity_xml_attributes;
 		}
 
@@ -139,7 +141,8 @@ namespace GPlatesPropertyValues {
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
 		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		quantity_xml_attributes() {
+		quantity_xml_attributes()
+		{
 			return d_quantity_xml_attributes;
 		}
 
@@ -152,7 +155,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_measure(*this);
 		}
 
@@ -165,9 +169,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_measure(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -189,10 +199,15 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlMeasure(
 				const GpmlMeasure &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_quantity(other.d_quantity),
 			d_quantity_xml_attributes(other.d_quantity_xml_attributes)
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 

@@ -35,11 +35,10 @@
 #include "FeatureHandle.h"
 #include "ReconstructionGeometry.h"
 #include "ResolvedTopologicalNetworkImpl.h"
-#include "types.h"
 #include "WeakObserver.h"
+#include "types.h"
 
 #include "maths/PolygonOnSphere.h"
-
 #include "property-values/GeoTimeInstant.h"
 
 
@@ -200,7 +199,7 @@ namespace GPlatesModel
 		 * Access the topological polygon feature property used to generate
 		 * the resolved topological geometry.
 		 */
-		const FeatureHandle::children_iterator
+		const FeatureHandle::iterator
 		property() const
 		{
 			return d_network_impl->property();

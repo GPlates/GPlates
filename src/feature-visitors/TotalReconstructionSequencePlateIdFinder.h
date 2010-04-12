@@ -31,7 +31,7 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "model/types.h"
 #include "model/FeatureHandle.h"

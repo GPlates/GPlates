@@ -31,6 +31,7 @@
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "model/RevisionId.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -38,31 +39,29 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlRevisionId, visit_gpml_revision_id)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlRevisionId:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlRevisionId,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlRevisionId>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlRevisionId,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlRevisionId> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId> non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlRevisionId() {  }
+		~GpmlRevisionId()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -72,17 +71,17 @@ namespace GPlatesPropertyValues {
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesModel::RevisionId &value_) {
+				const GPlatesModel::RevisionId &value_)
+		{
 			non_null_ptr_type ptr(
-					new GpmlRevisionId(value_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlRevisionId(value_));
 			return ptr;
 		}
 
 		const GpmlRevisionId::non_null_ptr_type
-		clone() const {
-			GpmlRevisionId::non_null_ptr_type dup(new GpmlRevisionId(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GpmlRevisionId::non_null_ptr_type dup(new GpmlRevisionId(*this));
 			return dup;
 		}
 
@@ -97,7 +96,8 @@ namespace GPlatesPropertyValues {
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GPlatesModel::RevisionId &
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 
@@ -110,7 +110,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_revision_id(*this);
 		}
 
@@ -123,9 +124,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_revision_id(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -145,7 +152,7 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlRevisionId(
 				const GpmlRevisionId &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_value(other.d_value)
 		{  }
 

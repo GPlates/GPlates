@@ -157,25 +157,27 @@ GPlatesFeatureVisitors::GeometryTypeFinder::has_found_multiple_geometries_of_the
 }
 
 
-boost::optional<GPlatesModel::FeatureHandle::children_iterator>
+boost::optional<GPlatesModel::FeatureHandle::iterator>
 GPlatesFeatureVisitors::find_first_geometry_property(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
 		if(!feature_ref.is_valid())
 			return boost::none;
 
-		GPlatesModel::FeatureHandle::children_iterator iter =
-			feature_ref->children_begin();
-		GPlatesModel::FeatureHandle::children_iterator iter_end =
-			feature_ref->children_end();
+		GPlatesModel::FeatureHandle::iterator iter =
+			feature_ref->begin();
+		GPlatesModel::FeatureHandle::iterator iter_end =
+			feature_ref->end();
 
 		GPlatesFeatureVisitors::GeometryFinder geometry_finder;
 		for(; iter != iter_end; iter++)
 		{
+#if 0
 			if(!iter.is_valid())
 			{
 				continue;
 			}
+#endif
 			(*iter)->accept_visitor(geometry_finder);
 			if (geometry_finder.has_found_geometries()) 
 			{
@@ -192,16 +194,16 @@ GPlatesFeatureVisitors::find_first_geometry_property(
 
 bool
 GPlatesFeatureVisitors::is_not_geometry_property(
-	const GPlatesModel::FeatureHandle::children_iterator &feature_properties_iter)
+	const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &top_level_prop_ptr)
 {
 	GPlatesFeatureVisitors::GeometryTypeFinder geom_type_finder;
-	(*feature_properties_iter)->accept_visitor(geom_type_finder);
+	top_level_prop_ptr->accept_visitor(geom_type_finder);
 	return !geom_type_finder.has_found_geometries();
 }
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type 
 GPlatesFeatureVisitors::find_first_geometry(
-	GPlatesModel::FeatureHandle::children_iterator iter)
+	GPlatesModel::FeatureHandle::iterator iter)
 {
 	GPlatesFeatureVisitors::GeometryFinder geometry_finder;
 	(*iter)->accept_visitor(geometry_finder);

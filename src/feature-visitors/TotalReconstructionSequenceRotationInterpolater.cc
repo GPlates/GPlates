@@ -39,7 +39,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 
-
+/*
 namespace
 {
 	// This useful little function is used to obtain the iterator before the supplied iterator.
@@ -54,7 +54,7 @@ namespace
 		return --t;
 	}
 }
-
+*/
 
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::TotalReconstructionSequenceRotationInterpolater(
 		const double &recon_time):
@@ -66,7 +66,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::TotalRe
 
 bool
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::initialise_pre_feature_properties(
-		GPlatesModel::FeatureHandle &feature_handle)
+		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	d_is_expecting_a_finite_rotation = false;
 	d_trp_time_matches_exactly = false;
@@ -79,7 +79,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::initial
 
 void
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_gpml_finite_rotation(
-		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
 	if (d_is_expecting_a_finite_rotation) {
 		// The visitor was expecting a FiniteRotation, which means the structure of the
@@ -109,7 +109,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 
 void
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_gpml_finite_rotation_slerp(
-		GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
+		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
 {
 	// FIXME:  We should use this for something... (Currently, FiniteRotation SLERP is the only
 	// option, so the code below is hard-coded to perform a FiniteRotation SLERP.  But still,
@@ -119,7 +119,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 
 void
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_gpml_irregular_sampling(
-		GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
 	using namespace GPlatesPropertyValues;
 	using namespace GPlatesModel;
@@ -144,8 +144,8 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 	// (non-disabled) time sample.
 
 	// So, let's get to the most-recent non-disabled time sample.
-	std::vector<GpmlTimeSample>::iterator iter = gpml_irregular_sampling.time_samples().begin();
-	std::vector<GpmlTimeSample>::iterator end = gpml_irregular_sampling.time_samples().end();
+	std::vector<GpmlTimeSample>::const_iterator iter = gpml_irregular_sampling.time_samples().begin();
+	std::vector<GpmlTimeSample>::const_iterator end = gpml_irregular_sampling.time_samples().end();
 	while (iter != end && iter->is_disabled()) {
 		// This time-sample is disabled.  Let's move to the next one.
 		++iter;
@@ -199,7 +199,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 	// remaining rails and posts.
 
 	// 'prev' is the previous non-disabled time sample.
-	std::vector<GpmlTimeSample>::iterator prev = iter;
+	std::vector<GpmlTimeSample>::const_iterator prev = iter;
 	for (++iter; iter != end; ++iter) {
 		if (iter->is_disabled()) {
 			// This time-sample is disabled.  Let's move to the next one.

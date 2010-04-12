@@ -76,17 +76,19 @@ namespace
 	public:
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 		create_gpml_topological_section(
-				const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
+				const GPlatesModel::FeatureHandle::iterator &geometry_property,
 				bool reverse_order,
-				const boost::optional<GPlatesModel::FeatureHandle::children_iterator> &start_geometry_property,
-				const boost::optional<GPlatesModel::FeatureHandle::children_iterator> &end_geometry_property,
+				const boost::optional<GPlatesModel::FeatureHandle::iterator> &start_geometry_property,
+				const boost::optional<GPlatesModel::FeatureHandle::iterator> &end_geometry_property,
 				const boost::optional<GPlatesMaths::PointOnSphere> &present_day_reference_point)
 		{
+			/*
 			if (!geometry_property.is_valid())
 			{
 				// Return invalid iterator.
 				return boost::none;
 			}
+			*/
 
 			// Initialise data members.
 			d_geometry_property = geometry_property;
@@ -103,10 +105,10 @@ namespace
 		}
 
 	private:
-		GPlatesModel::FeatureHandle::children_iterator d_geometry_property;
+		GPlatesModel::FeatureHandle::iterator d_geometry_property;
 		bool d_reverse_order;
-		boost::optional<GPlatesModel::FeatureHandle::children_iterator> d_start_geometry_property;
-		boost::optional<GPlatesModel::FeatureHandle::children_iterator> d_end_geometry_property;
+		boost::optional<GPlatesModel::FeatureHandle::iterator> d_start_geometry_property;
+		boost::optional<GPlatesModel::FeatureHandle::iterator> d_end_geometry_property;
 		boost::optional<GPlatesMaths::PointOnSphere> d_present_day_reference_point;
 
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_topological_section;
@@ -129,7 +131,7 @@ namespace
 		{
 			qDebug() << "WARNING: GpmlTopologicalSection not created for gml:MultiPoint.";
 			qDebug() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
-					d_geometry_property.collection_handle_ptr()->handle_data().feature_id().get());
+					d_geometry_property.handle_weak_ref()->feature_id().get());
 			qDebug() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
 					(*d_geometry_property)->property_name().get_name());
 		}
@@ -250,13 +252,15 @@ namespace
 
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection>
 		create_gpml_topological_intersection(
-				const GPlatesModel::FeatureHandle::children_iterator &adjacent_geometry_property)
+				const GPlatesModel::FeatureHandle::iterator &adjacent_geometry_property)
 		{
+			/*
 			if (!adjacent_geometry_property.is_valid())
 			{
 				// Return false.
 				return boost::none;
 			}
+			*/
 
 			// Initialise data members.
 			d_adjacent_geometry_property = adjacent_geometry_property;
@@ -269,7 +273,7 @@ namespace
 		}
 
 	private:
-		GPlatesModel::FeatureHandle::children_iterator d_adjacent_geometry_property;
+		GPlatesModel::FeatureHandle::iterator d_adjacent_geometry_property;
 		GPlatesMaths::PointOnSphere d_reference_point;
 
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection> d_topological_intersection;
@@ -292,7 +296,7 @@ namespace
 		{
 			qDebug() << "WARNING: GpmlTopologicalIntersection not created for gml:Point.";
 			qDebug() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
-					d_adjacent_geometry_property.collection_handle_ptr()->handle_data().feature_id().get());
+					d_adjacent_geometry_property.handle_weak_ref()->feature_id().get());
 			qDebug() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
 					(*d_adjacent_geometry_property)->property_name().get_name());
 		}
@@ -314,7 +318,7 @@ namespace
 		{
 			qDebug() << "WARNING: GpmlTopologicalIntersection not created for gml:MultiPoint.";
 			qDebug() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
-					d_adjacent_geometry_property.collection_handle_ptr()->handle_data().feature_id().get());
+					d_adjacent_geometry_property.handle_weak_ref()->feature_id().get());
 			qDebug() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
 					(*d_adjacent_geometry_property)->property_name().get_name());
 		}
@@ -375,7 +379,7 @@ namespace
 			// Feature id of feature used to lookup plate id for reconstructing reference point.
 			// This is the feature that contains the adjacent geometry properties iterator.
 			const GPlatesModel::FeatureId &reference_point_feature_id =
-					d_adjacent_geometry_property.collection_handle_ptr()->handle_data().feature_id();
+					d_adjacent_geometry_property.handle_weak_ref()->feature_id();
 
 			GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
 					GPlatesPropertyValues::GpmlPropertyDelegate::create( 
@@ -641,10 +645,10 @@ namespace
 
 boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_section(
-		const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
+		const GPlatesModel::FeatureHandle::iterator &geometry_property,
 		bool reverse_order,
-		const boost::optional<GPlatesModel::FeatureHandle::children_iterator> &start_geometry_property,
-		const boost::optional<GPlatesModel::FeatureHandle::children_iterator> &end_geometry_property,
+		const boost::optional<GPlatesModel::FeatureHandle::iterator> &start_geometry_property,
+		const boost::optional<GPlatesModel::FeatureHandle::iterator> &end_geometry_property,
 		const boost::optional<GPlatesMaths::PointOnSphere> &present_day_reference_point)
 
 {
@@ -661,7 +665,7 @@ GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_section(
 
 boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection>
 GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_intersection(
-		const GPlatesModel::FeatureHandle::children_iterator &adjacent_geometry_property,
+		const GPlatesModel::FeatureHandle::iterator &adjacent_geometry_property,
 		const GPlatesMaths::PointOnSphere &present_day_reference_point)
 {
 	CreateTopologicalIntersectionPropertyValue create_topological_intersection_property_value(
@@ -674,18 +678,20 @@ GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_intersection(
 
 boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
-		const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
+		const GPlatesModel::FeatureHandle::iterator &geometry_property,
 		const QString &property_value_type)
 {
+	/*
 	if (!geometry_property.is_valid())
 	{
 		// Return invalid iterator.
 		return boost::none;
 	}
+	*/
 
 	// Feature id obtained from geometry property iterator.
 	const GPlatesModel::FeatureId &feature_id =
-			geometry_property.collection_handle_ptr()->handle_data().feature_id();
+			geometry_property.handle_weak_ref()->feature_id();
 
 	// Property name obtained from geometry property iterator.
 	const QString property_name = GPlatesUtils::make_qstring_from_icu_string(
@@ -748,10 +754,12 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
 			geometry_delegate.feature_id());
 
+	/*
 	if (!feature_ref.is_valid())
 	{
 		return boost::none;
 	}
+	*/
 
 	// Create a property name from the target_propery.
 	const QString property_name_qstring = GPlatesUtils::make_qstring_from_icu_string(
@@ -797,17 +805,19 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 
 boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
-		const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
+		const GPlatesModel::FeatureHandle::iterator &geometry_property,
 		GPlatesModel::Reconstruction &reconstruction)
 {
+	/*
 	if (!geometry_property.is_valid())
 	{
 		return boost::none;
 	}
+	*/
 
 	// Get a reference to the feature containing the geometry property.
 	const GPlatesModel::FeatureHandle::weak_ref &feature_ref =
-			geometry_property.collection_handle_ptr()->reference();
+			geometry_property.handle_weak_ref();
 
 	// Find the RFGs, in the reconstruction, for the feature ref and geometry property.
 	GPlatesModel::ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, &reconstruction); 

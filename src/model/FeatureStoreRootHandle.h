@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * Contains the definition of the class FeatureStoreRootHandle.
+ * Contains the definition of the FeatureStoreRootHandle class.
  *
  * Most recent change:
  *   $Date$
@@ -28,17 +28,16 @@
 #ifndef GPLATES_MODEL_FEATURESTOREROOTHANDLE_H
 #define GPLATES_MODEL_FEATURESTOREROOTHANDLE_H
 
-#include "FeatureStoreRootRevision.h"
-#include "RevisionAwareIterator.h"
-#include "WeakObserverPublisher.h"
+#include <boost/scoped_ptr.hpp>
 
-#include "utils/non_null_intrusive_ptr.h"
+#include "BasicHandle.h"
+#include "FeatureStoreRootRevision.h"
+
+#include "global/PointerTraits.h"
 #include "utils/ReferenceCount.h"
 
 namespace GPlatesModel
 {
-	class DummyTransactionHandle;
-
 	/**
 	 * A feature store root handle acts as a persistent handle to the revisioned content of a
 	 * conceptual feature store root.
@@ -65,156 +64,25 @@ namespace GPlatesModel
 	 * the content within it.
 	 */
 	class FeatureStoreRootHandle :
-			public WeakObserverPublisher<FeatureStoreRootHandle>,
+			public BasicHandle<FeatureStoreRootHandle>,
 			public GPlatesUtils::ReferenceCount<FeatureStoreRootHandle>
 	{
 
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle> non_null_ptr_type;
-
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle> non_null_ptr_to_const_type;
-
-		/**
 		 * The type of this class.
-		 *
-		 * This definition is used for template magic.
 		 */
 		typedef FeatureStoreRootHandle this_type;
 
 		/**
-		 * The type which contains the revisioning component of a feature store root.
-		 *
-		 * This typedef is used by the RevisionAwareIterator.
-		 */
-		typedef FeatureStoreRootRevision revision_component_type;
-
-		/**
-		 * The type used for (non-const) iteration over the feature collections contained
-		 * within this feature store root.
-		 */
-		typedef RevisionAwareIterator<FeatureStoreRootHandle> children_iterator;
-
-		/**
-		 * Create a new FeatureStoreRootHandle instance.
+		 * Creates a new FeatureStoreRootHandle instance.
 		 */
 		static
 		const non_null_ptr_type
 		create();
 
-		/**
-		 * Destructor.
-		 */
-		~FeatureStoreRootHandle();
-
-		/**
-		 * Create a duplicate of this FeatureStoreRootHandle instance.
-		 *
-		 * Note that this will perform a "shallow copy".
-		 */
-		const non_null_ptr_type
-		clone() const;
-
-		/**
-		 * Return the "begin" iterator to iterate over the feature collections contained
-		 * within this feature store root.
-		 */
-		const children_iterator
-		children_begin();
-
-		/**
-		 * Return the "end" iterator used during iteration over the feature collections
-		 * contained within this feature store root.
-		 */
-		const children_iterator
-		children_end();
-
-		/**
-		 * Append @a new_feature_collection to the container of feature collections.
-		 *
-		 * An iterator is returned which points to the new element in the container.
-		 *
-		 * After the FeatureCollectionHandle has been appended, the "end" iterator will
-		 * have advanced -- the length of the sequence will have increased by 1, so what
-		 * was the iterator to the last element of the sequence (the "back" of the
-		 * container), will now be the iterator to the second-last element of the sequence;
-		 * what was the "end" iterator will now be the iterator to the last element of the
-		 * sequence.
-		 */
-		const children_iterator
-		append_child(
-				FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
-				DummyTransactionHandle &transaction);
-
-		/**
-		 * Remove the feature collection indicated by @a iter in the feature-collection
-		 * container.
-		 *
-		 * The results of this operation are only defined if @a iter is before @a end.
-		 *
-		 * The "end" iterator will not be changed by this operation -- the length of the
-		 * sequence will not change, only a feature-collection-slot will become NULL.
-		 */
-		void
-		remove_child(
-				children_iterator iter,
-				DummyTransactionHandle &transaction);
-
-		/**
-		 * Access the current revision of this feature store root.
-		 *
-		 * Client code should not need to access the revision directly!
-		 *
-		 * This is the overloading of this function for const FeatureStoreRootHandle
-		 * instances; it returns a pointer to a const FeatureStoreRootRevision instance.
-		 */
-		const FeatureStoreRootRevision::non_null_ptr_to_const_type
-		current_revision() const;
-
-		/**
-		 * Access the current revision of this feature collection.
-		 *
-		 * Client code should not need to access the revision directly!
-		 *
-		 * This is the overloading of this function for non-const FeatureStoreRootHandle
-		 * instances; it returns a C++ reference to a pointer to a non-const
-		 * FeatureStoreRootRevision instance.
-		 *
-		 * Note that, because the copy-assignment operator of FeatureStoreRootRevision is
-		 * private, the FeatureStoreRootRevision instance referenced by the return-value of
-		 * this function cannot be assigned-to, which means that this function does not
-		 * provide a means to directly switch the FeatureStoreRootRevision instance within
-		 * this FeatureStoreRootHandle instance.  (This restriction is intentional.)
-		 *
-		 * To switch the FeatureStoreRootRevision within this FeatureStoreRootHandle
-		 * instance, use the function @a set_current_revision below.
-		 */
-		const FeatureStoreRootRevision::non_null_ptr_type
-		current_revision();
-
-		/**
-		 * Set the current revision of this feature collection to @a rev.
-		 *
-		 * Client code should not need to access the revision directly!
-		 */
-		void
-		set_current_revision(
-				FeatureStoreRootRevision::non_null_ptr_type rev);
-
 	private:
-
-		/**
-		 * The current revision of this feature store root.
-		 */
-		FeatureStoreRootRevision::non_null_ptr_type d_current_revision;
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
@@ -223,36 +91,31 @@ namespace GPlatesModel
 		FeatureStoreRootHandle();
 
 		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 *
-		 * This ctor should only be invoked by the 'clone' member function, which will
-		 * create a duplicate instance and return a new non_null_intrusive_ptr reference to
-		 * the new duplicate.  Since initially the only reference to the new duplicate will
-		 * be the one returned by the 'clone' function, *before* the new intrusive-pointer
-		 * is created, the ref-count of the new FeatureStoreRootHandle instance should be
-		 * zero.
-		 *
-		 * Note that this ctor should act exactly the same as the default (auto-generated)
-		 * copy-ctor, except that it should initialise the ref-count to zero.
+		 * This constructor should not be defined, because we don't want to be able
+		 * to copy construct one of these objects.
 		 */
 		FeatureStoreRootHandle(
-				const FeatureStoreRootHandle &other);
+				const this_type &other);
 
 		/**
-		 * This operator should never be defined, because we don't want to allow
-		 * copy-assignment.
-		 * 
-		 * All copying should use the virtual copy-constructor @a clone (which will in turn
-		 * use the copy-constructor); all "copy-assignment" should really only be the
-		 * assignment of one intrusive_ptr to another.
+		 * This should not be defined, because we don't want to be able to copy
+		 * one of these objects.
 		 */
-		FeatureStoreRootHandle &
+		this_type &
 		operator=(
-				const FeatureStoreRootHandle &);
-		
+				const this_type &);
+
+		friend class Model;
+
 	};
 
 }
+
+// This include is not necessary for this header to function, but it would be
+// convenient if client code could include this header and be able to use
+// iterator or const_iterator without having to separately include the
+// following header. It isn't placed above with the other includes because of
+// cyclic dependencies.
+#include "RevisionAwareIterator.h"
 
 #endif  // GPLATES_MODEL_FEATURESTOREROOTHANDLE_H

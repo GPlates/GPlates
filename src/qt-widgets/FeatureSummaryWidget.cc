@@ -110,17 +110,15 @@ namespace
 		// Search through FeatureCollection, comparing weakrefs until we find one that points
 		// to the same FeatureHandle. I was going to use STL find but it bitched to me about
 		// operator== not matching up quite right, presumably due to const weakref fun.
-		GPlatesModel::FeatureCollectionHandle::children_const_iterator it = collection_ref->children_begin();
-		GPlatesModel::FeatureCollectionHandle::children_const_iterator end = collection_ref->children_end();
+		GPlatesModel::FeatureCollectionHandle::const_iterator it = collection_ref->begin();
+		GPlatesModel::FeatureCollectionHandle::const_iterator end = collection_ref->end();
 		for (; it != end; ++it) {
 			// 'it' is a revision aware iterator (intrusive ptr to FeatureHandle),
-			if (it.is_valid()) {
-				const GPlatesModel::FeatureHandle &it_handle = **it;
-				// Whereas we have a weakref to the FeatureHandle. We'll compare addresses
-				// to determine if this is the feature handle we are looking for.
-				if (feature_ref.handle_ptr() == &it_handle) {
-					return true;
-				}
+			const GPlatesModel::FeatureHandle &it_handle = **it;
+			// Whereas we have a weakref to the FeatureHandle. We'll compare addresses
+			// to determine if this is the feature handle we are looking for.
+			if (feature_ref.handle_ptr() == &it_handle) {
+				return true;
 			}
 		}
 		// These aren't the feature handles we are looking for. Move along.
@@ -254,7 +252,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	
 	// Feature Type.
 	lineedit_type->setText(GPlatesUtils::make_qstring_from_icu_string(
-			feature_ref->handle_data().feature_type().build_aliased_name()));
+			feature_ref->feature_type().build_aliased_name()));
 	
 	// Feature Name.
 	// FIXME: Need to adapt according to user's current codeSpace setting.
@@ -312,7 +310,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	{
 		// There was an associated ReconstructionGeometry, which means there
 		// was a clicked geometry.
-		GPlatesModel::FeatureHandle::children_iterator geometry_property;
+		GPlatesModel::FeatureHandle::iterator geometry_property;
 		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
 				associated_rg, geometry_property))
 		{
@@ -327,8 +325,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	}
 
 	// Feature Collection's file name
-	GPlatesModel::FeatureHandle::const_weak_ref const_feature_ref = 
-			GPlatesModel::FeatureHandle::get_const_weak_ref(feature_ref);
+	GPlatesModel::FeatureHandle::const_weak_ref const_feature_ref = feature_ref;
 	QString feature_collection_name = get_feature_collection_name_for_feature(
 			d_file_state, const_feature_ref);
 	lineedit_feature_collection->setText(feature_collection_name);

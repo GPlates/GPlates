@@ -316,8 +316,10 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 
 		// Since we can have multiple geometry properties per feature we make sure we
 		// set the geometry that the user actually clicked on.
-		GPlatesModel::TopLevelProperty &geom_top_level_prop = **d_focused_geometry->property();
-		geometry_setter.set_geometry(&geom_top_level_prop);
+		GPlatesModel::FeatureHandle::iterator iter = d_focused_geometry->property();
+		GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->deep_clone();
+		geometry_setter.set_geometry(geom_top_level_prop_clone.get());
+		*iter = geom_top_level_prop_clone;
 
 		// Announce that we've modified the focused feature.
 		d_feature_focus->announce_modification_of_focused_feature();

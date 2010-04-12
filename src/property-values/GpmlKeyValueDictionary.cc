@@ -25,6 +25,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <typeinfo>
+
 #include "GpmlKeyValueDictionary.h"
 
 
@@ -43,3 +46,38 @@ GPlatesPropertyValues::GpmlKeyValueDictionary::deep_clone() const
 
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GpmlKeyValueDictionary::print_to(
+		std::ostream &os) const
+{
+	os << "[ ";
+
+	typedef std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator iterator_type;
+	for (iterator_type iter = d_elements.begin(); iter != d_elements.end(); ++iter)
+	{
+		os << *iter;
+	}
+
+	return os << " ]";
+}
+
+
+bool
+GPlatesPropertyValues::GpmlKeyValueDictionary::directly_modifiable_fields_equal(
+		const GPlatesModel::PropertyValue &other) const
+{
+	try
+	{
+		const GpmlKeyValueDictionary &other_casted =
+			dynamic_cast<const GpmlKeyValueDictionary &>(other);
+		return d_elements == other_casted.d_elements;
+	}
+	catch (const std::bad_cast &)
+	{
+		// Should never get here, but doesn't hurt to check.
+		return false;
+	}
+}
+

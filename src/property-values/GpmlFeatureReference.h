@@ -29,9 +29,11 @@
 #define GPLATES_PROPERTYVALUES_GPMLFEATUREREFERENCE_H
 
 #include "TemplateTypeParameterType.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "model/FeatureId.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -39,32 +41,31 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFeatureReference, visit_gpml_feature_reference)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlFeatureReference:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference> non_null_ptr_to_const_type;
 
 
 		virtual
-		~GpmlFeatureReference() {  }
+		~GpmlFeatureReference()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -75,16 +76,16 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				const GPlatesModel::FeatureId &feature_,
-				const TemplateTypeParameterType &value_type_) {
-			non_null_ptr_type ptr(new GpmlFeatureReference(feature_, value_type_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				const TemplateTypeParameterType &value_type_)
+		{
+			non_null_ptr_type ptr(new GpmlFeatureReference(feature_, value_type_));
 			return ptr;
 		}
 
 		const GpmlFeatureReference::non_null_ptr_type
-		clone() const {
-			GpmlFeatureReference::non_null_ptr_type dup(new GpmlFeatureReference(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GpmlFeatureReference::non_null_ptr_type dup(new GpmlFeatureReference(*this));
 			return dup;
 		}
 
@@ -99,7 +100,8 @@ namespace GPlatesPropertyValues {
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GPlatesModel::FeatureId
-		feature_id() const {
+		feature_id() const
+		{
 			return d_feature;
 		}
 
@@ -115,7 +117,8 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced PropertyValue instance to
 		// accept a FeatureVisitor instance.)
 		const GPlatesModel::FeatureId
-		feature_id() {
+		feature_id()
+		{
 			return d_feature;
 		}
 
@@ -123,7 +126,8 @@ namespace GPlatesPropertyValues {
 		// Note that no "setter" is provided:  The value type of a GpmlFeatureReference
 		// instance should never be changed.
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;
 		}
 
@@ -136,7 +140,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_feature_reference(*this);
 		}
 
@@ -149,9 +154,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_feature_reference(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -183,7 +194,7 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlFeatureReference(
 				const GpmlFeatureReference &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_feature(other.d_feature),
 			d_value_type(other.d_value_type)
 		{  }

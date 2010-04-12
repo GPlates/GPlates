@@ -54,7 +54,7 @@
 
 #include "utils/GeometryCreationUtils.h"
 #include "utils/UnicodeStringUtils.h"
-#include "utils/GeometryUtil.h"
+#include "utils/GeometryUtils.h"
 
 
 GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
@@ -80,7 +80,7 @@ GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 	//
 	static QString type("TopologicalNetwork");
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.handle_data().feature_type().get_name() ) ) 
+			feature_handle.feature_type().get_name() ) ) 
 	{ 
 		// Quick-out: No need to continue.
 		return false; 
@@ -269,12 +269,11 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		// Get the node feature reference.
 		const GPlatesModel::FeatureHandle::weak_ref node_feature_ref =
 				(*section.d_source_rfg)->get_feature_ref();
-		const GPlatesModel::FeatureHandle::const_weak_ref node_feature_const_ref(
-				GPlatesModel::FeatureHandle::get_const_weak_ref(node_feature_ref));
+		const GPlatesModel::FeatureHandle::const_weak_ref node_feature_const_ref(node_feature_ref);
 
 		// Get the section geometry.
 		std::vector<GPlatesMaths::PointOnSphere> node_points;
-		GPlatesUtils::GeometryUtil::get_geometry_points(
+		GPlatesUtils::GeometryUtils::get_geometry_points(
 				*section.d_geometry.get(), node_points);
 
 		// Create a subsegment structure that'll get used when
@@ -293,8 +292,8 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 	const GPlatesModel::ResolvedTopologicalNetworkImpl::non_null_ptr_type network =
 			GPlatesModel::ResolvedTopologicalNetworkImpl::create(
 					delaunay_triangulation,
-					*current_top_level_propiter()->collection_handle_ptr(),
-					*current_top_level_propiter(),
+					*(current_top_level_propiter()->handle_weak_ref()),
+					*(current_top_level_propiter()),
 					output_nodes.begin(),
 					output_nodes.end(),
 					d_reconstruction_params.get_recon_plate_id(),
@@ -333,7 +332,7 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_type rtn_ptr =
 			GPlatesModel::ResolvedTopologicalNetwork::create(
 				resolved_topology_network_triangle,
-				*current_top_level_propiter()->collection_handle_ptr()->reference(),
+				*current_top_level_propiter()->handle_weak_ref(),
 				network);
 
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
@@ -348,7 +347,7 @@ GPlatesAppLogic::TopologyNetworkResolver::debug_output_topological_section_featu
 {
 	qDebug() << "Topological network feature_id=";
 	qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-			d_currently_visited_feature->handle_data().feature_id().get());
+			d_currently_visited_feature->feature_id().get());
 	qDebug() << "Topological section referencing feature_id=";
 	qDebug() << GPlatesUtils::make_qstring_from_icu_string(section_feature_id.get());
 }

@@ -11,6 +11,7 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    Enumeration.cc
     Enumeration.h
     EnumerationContent.h
     EnumerationType.h
@@ -18,6 +19,7 @@ set(srcs
     GeoTimeInstant.h
     GmlDataBlock.cc
     GmlDataBlock.h
+    GmlDataBlockCoordinateList.cc
     GmlDataBlockCoordinateList.h
     GmlLineString.cc
     GmlLineString.h
@@ -27,19 +29,24 @@ set(srcs
     GmlOrientableCurve.h
     GmlPoint.cc
     GmlPoint.h
+    GmlPolygon.cc
     GmlPolygon.h
+    GmlTimeInstant.cc
     GmlTimeInstant.h
     GmlTimePeriod.cc
     GmlTimePeriod.h
     GpmlConstantValue.cc
     GpmlConstantValue.h
+    GpmlFeatureReference.cc
     GpmlFeatureReference.h
+    GpmlFeatureSnapshotReference.cc
     GpmlFeatureSnapshotReference.h
     GpmlFiniteRotation.cc
     GpmlFiniteRotation.h
     GpmlFiniteRotationSlerp.h
     GpmlHotSpotTrailMark.cc
     GpmlHotSpotTrailMark.h
+    GpmlInterpolationFunction.cc
     GpmlInterpolationFunction.h
     GpmlIrregularSampling.cc
     GpmlIrregularSampling.h
@@ -47,13 +54,19 @@ set(srcs
     GpmlKeyValueDictionary.h
     GpmlKeyValueDictionaryElement.cc
     GpmlKeyValueDictionaryElement.h
+    GpmlMeasure.cc
     GpmlMeasure.h
+    GpmlOldPlatesHeader.cc
     GpmlOldPlatesHeader.h
     GpmlPiecewiseAggregation.cc
     GpmlPiecewiseAggregation.h
+    GpmlPlateId.cc
     GpmlPlateId.h
+    GpmlPolarityChronId.cc
     GpmlPolarityChronId.h
+    GpmlPropertyDelegate.cc
     GpmlPropertyDelegate.h
+    GpmlRevisionId.cc
     GpmlRevisionId.h
     GpmlTimeSample.cc
     GpmlTimeSample.h
@@ -67,16 +80,23 @@ set(srcs
     GpmlTopologicalPoint.h
     GpmlTopologicalPolygon.cc
     GpmlTopologicalPolygon.h
+    GpmlTopologicalSection.cc
     GpmlTopologicalSection.h
     InMemoryRaster.h
+    PropertyValues.cc
+    PropertyValues.h
     TemplateTypeParameterType.h
     TextContent.h
     UninterpretedPropertyValue.cc
     UninterpretedPropertyValue.h
     ValueObjectType.h
+    XsBoolean.cc
     XsBoolean.h
+    XsDouble.cc
     XsDouble.h
+    XsInteger.cc
     XsInteger.h
+    XsString.cc
     XsString.h
 )
 

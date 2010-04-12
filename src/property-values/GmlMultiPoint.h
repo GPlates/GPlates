@@ -49,29 +49,24 @@ namespace GPlatesPropertyValues
 	class GmlMultiPoint:
 			public GPlatesModel::PropertyValue
 	{
+
 	public:
+
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlMultiPoint,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlMultiPoint>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlMultiPoint,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlMultiPoint> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint> non_null_ptr_to_const_type;
 
 		/**
 		 * A convenience typedef for the internal multipoint representation.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				internal_multipoint_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere> internal_multipoint_type;
 
 		virtual
 		~GmlMultiPoint()
@@ -88,8 +83,7 @@ namespace GPlatesPropertyValues
 		const GmlMultiPoint::non_null_ptr_type
 		clone() const
 		{
-			GmlMultiPoint::non_null_ptr_type dup(new GmlMultiPoint(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GmlMultiPoint::non_null_ptr_type dup(new GmlMultiPoint(*this));
 			return dup;
 		}
 
@@ -131,6 +125,7 @@ namespace GPlatesPropertyValues
 				const internal_multipoint_type &p)
 		{
 			d_multipoint = p;
+			update_instance_id();
 		}
 
 		/**
@@ -161,6 +156,11 @@ namespace GPlatesPropertyValues
 			visitor.visit_gml_multi_point(*this);
 		}
 
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
@@ -180,7 +180,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlMultiPoint(
 				const GmlMultiPoint &other):
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_multipoint(other.d_multipoint)
 		{  }
 

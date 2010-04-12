@@ -30,7 +30,7 @@
 #include <boost/optional.hpp>
 #include <unicode/unistr.h>
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"

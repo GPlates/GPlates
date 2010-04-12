@@ -31,6 +31,7 @@
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "model/XmlNode.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -38,32 +39,30 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::UninterpretedPropertyValue, visit_uninterpreted_property_value)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class UninterpretedPropertyValue:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue> non_null_ptr_to_const_type;
 
 		virtual
-		~UninterpretedPropertyValue() {  }
+		~UninterpretedPropertyValue()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -73,17 +72,17 @@ namespace GPlatesPropertyValues {
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &value_) {
-			non_null_ptr_type ptr(new UninterpretedPropertyValue(value_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &value_)
+		{
+			non_null_ptr_type ptr(new UninterpretedPropertyValue(value_));
 			return ptr;
 		}
 
 		const UninterpretedPropertyValue::non_null_ptr_type
-		clone() const {
+		clone() const
+		{
 			UninterpretedPropertyValue::non_null_ptr_type dup(
-					new UninterpretedPropertyValue(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new UninterpretedPropertyValue(*this));
 			return dup;
 		}
 
@@ -93,7 +92,8 @@ namespace GPlatesPropertyValues {
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 
@@ -106,7 +106,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_uninterpreted_property_value(*this);
 		}
 
@@ -119,9 +120,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_uninterpreted_property_value(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -141,9 +148,14 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		UninterpretedPropertyValue(
 				const UninterpretedPropertyValue &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_value(other.d_value)
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 

@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * Contains the definitions of the member functions of the class FeatureRevision.
+ * Contains the implementation of the FeatureRevision class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,27 +26,107 @@
  */
 
 #include "FeatureRevision.h"
-#include "DummyTransactionHandle.h"
 
 
-GPlatesModel::container_size_type
-GPlatesModel::FeatureRevision::append_child(
-		TopLevelProperty::non_null_ptr_type new_top_level_property,
-		DummyTransactionHandle &transaction)
+const GPlatesModel::FeatureRevision::non_null_ptr_type
+GPlatesModel::FeatureRevision::create(
+		const RevisionId &revision_id_)
 {
-	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	d_properties.push_back(get_intrusive_ptr(new_top_level_property));
-	return (size() - 1);
+	return non_null_ptr_type(
+			new FeatureRevision(
+				revision_id_));
+}
+
+
+const GPlatesModel::FeatureRevision::non_null_ptr_type
+GPlatesModel::FeatureRevision::clone() const
+{
+	return non_null_ptr_type(
+			new FeatureRevision(
+				*this));
+}
+
+
+const GPlatesModel::FeatureRevision::non_null_ptr_type
+GPlatesModel::FeatureRevision::clone(
+		const property_predicate_type &clone_properties_predicate) const
+{
+	return non_null_ptr_type(
+			new FeatureRevision(
+				*this,
+				clone_properties_predicate));
+}
+
+
+const GPlatesModel::RevisionId &
+GPlatesModel::FeatureRevision::revision_id() const
+{
+	// Regenerate if necessary.
+	if (d_revision_id_dirty)
+	{
+		d_revision_id = RevisionId();
+		d_revision_id_dirty = false;
+	}
+
+	return d_revision_id;
+}
+
+
+const GPlatesModel::container_size_type
+GPlatesModel::FeatureRevision::add(
+		TopLevelProperty::non_null_ptr_type new_child)
+{
+	container_size_type result = BasicRevision<FeatureHandle>::add(new_child);
+	d_revision_id_dirty = true;
+	return result;
+}
+
+
+bool
+GPlatesModel::FeatureRevision::remove(
+		container_size_type index)
+{
+	bool result = BasicRevision<FeatureHandle>::remove(index);
+	if (result)
+	{
+		d_revision_id_dirty = true;
+	}
+	return result;
 }
 
 
 void
-GPlatesModel::FeatureRevision::remove_child(
+GPlatesModel::FeatureRevision::set(
 		container_size_type index,
-		DummyTransactionHandle &transaction)
+		TopLevelProperty::non_null_ptr_type new_child)
 {
-	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	if (index < size()) {
-		d_properties[index] = NULL;
-	}
+	BasicRevision<FeatureHandle>::set(index, new_child);
+	d_revision_id_dirty = true;
 }
+
+
+GPlatesModel::FeatureRevision::FeatureRevision(
+		const RevisionId &revision_id_) :
+	d_revision_id(revision_id_)
+{
+}
+
+
+GPlatesModel::FeatureRevision::FeatureRevision(
+		const this_type &other) :
+	BasicRevision<FeatureHandle>(other),
+	GPlatesUtils::ReferenceCount<FeatureRevision>()
+{
+}
+
+
+GPlatesModel::FeatureRevision::FeatureRevision(
+		const this_type &other,
+		const property_predicate_type &clone_properties_predicate) :
+	BasicRevision<FeatureHandle>(
+			other,
+			clone_properties_predicate),
+	GPlatesUtils::ReferenceCount<FeatureRevision>()
+{
+}
+

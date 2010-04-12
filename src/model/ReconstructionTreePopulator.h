@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -53,7 +53,7 @@ namespace GPlatesModel
 	 * implementation.
 	 */
 	class ReconstructionTreePopulator:
-			public FeatureVisitor
+			public ConstFeatureVisitor
 	{
 	public:
 
@@ -84,32 +84,32 @@ namespace GPlatesModel
 		virtual
 		bool
 		initialise_pre_feature_properties(
-				FeatureHandle &feature_handle);
+				const FeatureHandle &feature_handle);
 
 		virtual
 		void
 		finalise_post_feature_properties(
-				FeatureHandle &feature_handle);
+				const FeatureHandle &feature_handle);
 
 		virtual
 		void
 		visit_gpml_finite_rotation(
-				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
+				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
 
 		virtual
 		void
 		visit_gpml_finite_rotation_slerp(
-				GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
+				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
 
 		virtual
 		void
 		visit_gpml_irregular_sampling(
-				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
 		virtual
 		void
 		visit_gpml_plate_id(
-				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
 	private:
 

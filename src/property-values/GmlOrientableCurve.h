@@ -41,35 +41,33 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlOrientableCurve, visit_gml_orientable_curve)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	/**
 	 * This class implements the PropertyValue which corresponds to "gml:OrientableCurve".
 	 */
 	class GmlOrientableCurve:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve> non_null_ptr_to_const_type;
 
 		virtual
-		~GmlOrientableCurve() {  }
+		~GmlOrientableCurve()
+		{  }
 
 		/**
 		 * Create a GmlOrientableCurve instance which contains a "base curve".
@@ -90,17 +88,17 @@ namespace GPlatesPropertyValues {
 		create(
 				GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						xml_attributes_) {
+						xml_attributes_)
+		{
 			non_null_ptr_type ptr(
-					new GmlOrientableCurve(base_curve_, xml_attributes_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GmlOrientableCurve(base_curve_, xml_attributes_));
 			return ptr;
 		}
 
 		const GmlOrientableCurve::non_null_ptr_type
-		clone() const {
-			GmlOrientableCurve::non_null_ptr_type dup(new GmlOrientableCurve(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GmlOrientableCurve::non_null_ptr_type dup(new GmlOrientableCurve(*this));
 			return dup;
 		}
 
@@ -116,7 +114,8 @@ namespace GPlatesPropertyValues {
 		 * it returns a pointer to a const PropertyValue instance.
 		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		base_curve() const {
+		base_curve() const
+		{
 			return d_base_curve;
 		}
 
@@ -139,7 +138,8 @@ namespace GPlatesPropertyValues {
 		 * accept a FeatureVisitor instance.)
 		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		base_curve() {
+		base_curve()
+		{
 			return d_base_curve;
 		}
 
@@ -152,8 +152,10 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		set_base_curve(
-				GPlatesModel::PropertyValue::non_null_ptr_type bc) {
+				GPlatesModel::PropertyValue::non_null_ptr_type bc)
+		{
 			d_base_curve = bc;
+			update_instance_id();
 		}
 
 		/**
@@ -168,7 +170,8 @@ namespace GPlatesPropertyValues {
 		 * overload...)
 		 */
 		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		xml_attributes() const {
+		xml_attributes() const
+		{
 			return d_xml_attributes;
 		}
 
@@ -184,7 +187,8 @@ namespace GPlatesPropertyValues {
 		 * removal operations?  This would ensure that revisioning is correctly handled...
 		 */
 		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		xml_attributes() {
+		xml_attributes()
+		{
 			return d_xml_attributes;
 		}
 
@@ -197,7 +201,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gml_orientable_curve(*this);
 		}
 
@@ -210,9 +215,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gml_orientable_curve(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -234,10 +245,15 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GmlOrientableCurve(
 				const GmlOrientableCurve &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_base_curve(other.d_base_curve),
 			d_xml_attributes(d_xml_attributes)
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const GPlatesModel::PropertyValue &other) const;
 
 	private:
 

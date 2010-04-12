@@ -42,32 +42,30 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPiecewiseAggregation, visit_gpml_piecewise_aggregation)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlPiecewiseAggregation:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation> non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlPiecewiseAggregation() {  }
+		~GpmlPiecewiseAggregation()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -78,18 +76,18 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				const std::vector<GpmlTimeWindow> &time_windows_,
-				const TemplateTypeParameterType &value_type_) {
+				const TemplateTypeParameterType &value_type_)
+		{
 			non_null_ptr_type ptr(
-					new GpmlPiecewiseAggregation(time_windows_, value_type_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlPiecewiseAggregation(time_windows_, value_type_));
 			return ptr;
 		}
 
 		const GpmlPiecewiseAggregation::non_null_ptr_type
-		clone() const {
+		clone() const
+		{
 			GpmlPiecewiseAggregation::non_null_ptr_type dup(
-					new GpmlPiecewiseAggregation(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlPiecewiseAggregation(*this));
 			return dup;
 		}
 
@@ -102,7 +100,8 @@ namespace GPlatesPropertyValues {
 		// elements of the time sample vector?  (For consistency with the non-const
 		// overload...)
 		const std::vector<GpmlTimeWindow> &
-		time_windows() const {
+		time_windows() const
+		{
 			return d_time_windows;
 		}
 
@@ -110,14 +109,16 @@ namespace GPlatesPropertyValues {
 		// elements of the time sample vector, well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
 		std::vector<GpmlTimeWindow> &
-		time_windows() {
+		time_windows()
+		{
 			return d_time_windows;
 		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlPiecewiseAggregation
 		// instance should never be changed.
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;
 		}
 
@@ -130,7 +131,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_piecewise_aggregation(*this);
 		}
 
@@ -143,9 +145,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_piecewise_aggregation(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -166,10 +174,15 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlPiecewiseAggregation(
 				const GpmlPiecewiseAggregation &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_time_windows(other.d_time_windows),
 			d_value_type(other.d_value_type)
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 

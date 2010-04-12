@@ -25,9 +25,86 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <typeinfo>
+#include <algorithm>
+
 #include "TopLevelPropertyInline.h"
-#include "ConstFeatureVisitor.h"
 #include "FeatureVisitor.h"
+#include "utils/UnicodeStringUtils.h"
+
+
+namespace
+{
+	bool
+	prop_eq(
+			const GPlatesModel::PropertyValue::non_null_ptr_type &p1,
+			const GPlatesModel::PropertyValue::non_null_ptr_type &p2)
+	{
+		return *p1 == *p2;
+	}
+}
+
+
+const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
+GPlatesModel::TopLevelPropertyInline::create(
+		const PropertyName &property_name_,
+		const container_type &values_,
+		const xml_attributes_type &xml_attributes_)
+{
+	non_null_ptr_type ptr(
+			new TopLevelPropertyInline(
+				property_name_,
+				values_,
+				xml_attributes_));
+	return ptr;
+}
+
+
+const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
+GPlatesModel::TopLevelPropertyInline::create(
+		const PropertyName &property_name_,
+		PropertyValue::non_null_ptr_type value_,
+		const xml_attributes_type &xml_attributes_)
+{
+	non_null_ptr_type ptr(
+			new TopLevelPropertyInline(
+				property_name_,
+				value_,
+				xml_attributes_));
+	return ptr;
+}
+
+
+const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
+GPlatesModel::TopLevelPropertyInline::create(
+		const PropertyName &property_name_,
+		PropertyValue::non_null_ptr_type value_,
+		const UnicodeString &attribute_name_string,
+		const UnicodeString &attribute_value_string)
+{
+	xml_attributes_type xml_attributes_;
+
+	XmlAttributeName xml_attribute_name =
+		XmlAttributeName::create_gpml(
+				GPlatesUtils::make_qstring_from_icu_string(attribute_name_string));
+	XmlAttributeValue xml_attribute_value(attribute_value_string);
+	xml_attributes_.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
+
+	return create(
+			property_name_,
+			value_,
+			xml_attributes_);
+}
+
+
+const GPlatesModel::TopLevelProperty::non_null_ptr_type
+GPlatesModel::TopLevelPropertyInline::clone() const
+{
+	TopLevelProperty::non_null_ptr_type dup(
+			new TopLevelPropertyInline(*this));
+	return dup;
+}
 
 
 const GPlatesModel::TopLevelProperty::non_null_ptr_type
@@ -38,21 +115,13 @@ GPlatesModel::TopLevelPropertyInline::deep_clone() const
 			container_type(),
 			xml_attributes());
 
-	const_iterator iter, end_ = d_values.end();
-	for (iter = d_values.begin(); iter != end_; ++iter) {
+	const_iterator iter = d_values.begin(), end_ = d_values.end();
+	for ( ; iter != end_; ++iter)
+	{
 		PropertyValue::non_null_ptr_type cloned_pval = (*iter)->deep_clone_as_prop_val();
 		dup->d_values.push_back(cloned_pval);
 	}
 	return TopLevelProperty::non_null_ptr_type(dup);
-}
-
-
-void
-GPlatesModel::TopLevelPropertyInline::bubble_up_change(
-		const PropertyValue *old_value,
-		PropertyValue::non_null_ptr_type new_value,
-		DummyTransactionHandle &transaction)
-{
 }
 
 
@@ -66,7 +135,62 @@ GPlatesModel::TopLevelPropertyInline::accept_visitor(
 
 void
 GPlatesModel::TopLevelPropertyInline::accept_visitor(
-		FeatureVisitor &visitor) 
+		FeatureVisitor &visitor)
 {
 	visitor.visit_top_level_property_inline(*this);
 }
+
+
+std::ostream &
+GPlatesModel::TopLevelPropertyInline::print_to(
+		std::ostream &os) const
+{
+	os << property_name().build_aliased_name() << " [ ";
+
+	bool first = true;
+	for (container_type::const_iterator iter = d_values.begin(); iter != d_values.end(); ++iter)
+	{
+		if (first)
+		{
+			first = false;
+		}
+		else
+		{
+			os << " , ";
+		}
+		os << **iter;
+	}
+	os << " ]";
+
+	return os;
+}
+
+
+bool
+GPlatesModel::TopLevelPropertyInline::operator==(
+		const TopLevelProperty &other) const
+{
+	if (typeid(*this) == typeid(other) &&
+			property_name() == other.property_name() &&
+			xml_attributes() == other.xml_attributes())
+	{
+		const TopLevelPropertyInline &other_inline = dynamic_cast<const TopLevelPropertyInline &>(other);
+		if (d_values.size() == other_inline.d_values.size())
+		{
+			return std::equal(
+					d_values.begin(),
+					d_values.end(),
+					other_inline.d_values.begin(),
+					&prop_eq);
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+

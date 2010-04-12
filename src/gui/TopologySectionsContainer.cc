@@ -175,7 +175,7 @@ namespace
 	 *
 	 * It returns an invalid iterator if no match is found.
 	 */
-	GPlatesModel::FeatureHandle::children_iterator
+	GPlatesModel::FeatureHandle::iterator
 	find_properties_iterator(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 			const GPlatesModel::PropertyName &property_name)
@@ -183,17 +183,17 @@ namespace
 		if ( ! feature_ref.is_valid())
 		{
 			// Return invalid properties iterator.
-			return GPlatesModel::FeatureHandle::children_iterator();
+			return GPlatesModel::FeatureHandle::iterator();
 		}
 
 		// Iterate through the top level properties; look for the first name that matches.
-		GPlatesModel::FeatureHandle::children_iterator it = feature_ref->children_begin();
-		GPlatesModel::FeatureHandle::children_iterator end = feature_ref->children_end();
+		GPlatesModel::FeatureHandle::iterator it = feature_ref->begin();
+		GPlatesModel::FeatureHandle::iterator end = feature_ref->end();
 		for ( ; it != end; ++it)
 		{
 			// Elements of this properties vector can be NULL pointers.  (See the comment in
 			// "model/FeatureRevision.h" for more details.)
-			if (it.is_valid() && (*it)->property_name() == property_name)
+			if (/*it.is_valid() &&*/ (*it)->property_name() == property_name)
 			{
 				return it;
 			}
@@ -201,7 +201,7 @@ namespace
 
 		// No match.
 		// Return invalid properties iterator.
-		return GPlatesModel::FeatureHandle::children_iterator();
+		return GPlatesModel::FeatureHandle::iterator();
 	}
 }
 
@@ -224,16 +224,16 @@ GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
 }
 
 GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
-		const GPlatesModel::FeatureHandle::children_iterator &geometry_property,
+		const GPlatesModel::FeatureHandle::iterator &geometry_property,
 		const boost::optional<GPlatesMaths::PointOnSphere> &click_point,
 		bool reverse_order) :
 	d_feature_id(
-			geometry_property.is_valid()
-					? geometry_property.collection_handle_ptr()->handle_data().feature_id()
+			geometry_property.is_still_valid()
+					? geometry_property.handle_weak_ref()->feature_id()
 					: GPlatesModel::FeatureId()),
 	d_feature_ref(
-			geometry_property.is_valid()
-					? geometry_property.collection_handle_ptr()->reference()
+			geometry_property.is_still_valid()
+					? geometry_property.handle_weak_ref()
 					: GPlatesModel::FeatureHandle::weak_ref()),
 	d_geometry_property(geometry_property),
 	d_present_day_click_point(click_point),

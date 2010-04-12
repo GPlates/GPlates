@@ -50,7 +50,7 @@
 #include "model/ResolvedTopologicalBoundary.h"
 #include "model/ResolvedTopologicalNetwork.h"
 
-#include "utils/GeometryUtil.h"
+#include "utils/GeometryUtils.h"
 
 #if 0
 	#define DEBUG_POINT_IN_POLYGON
@@ -520,7 +520,7 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 
 			// Get the node's geometry points.
 			std::vector<GPlatesMaths::PointOnSphere> node_points;
-			GPlatesUtils::GeometryUtil::get_geometry_points(
+			GPlatesUtils::GeometryUtils::get_geometry_points(
 					*node.get_geometry(), node_points);
 
 			// Get the feature referenced by the node.

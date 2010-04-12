@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * Contains the definition of the class FeatureStoreRootRevision.
+ * Contains the definition of the FeatureStoreRootRevision class.
  *
  * Most recent change:
  *   $Date$
- * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ *
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,18 +28,15 @@
 #ifndef GPLATES_MODEL_FEATURESTOREROOTREVISION_H
 #define GPLATES_MODEL_FEATURESTOREROOTREVISION_H
 
-#include <vector>
-#include <boost/intrusive_ptr.hpp>
-
+#include "BasicRevision.h"
 #include "FeatureCollectionHandle.h"
 
-#include "utils/non_null_intrusive_ptr.h"
+#include "global/PointerTraits.h"
 #include "utils/ReferenceCount.h"
-
 
 namespace GPlatesModel
 {
-	class DummyTransactionHandle;
+	class FeatureStoreRootHandle;
 
 	/**
 	 * A feature store root revision contains the revisioned content of a conceptual feature
@@ -74,228 +71,49 @@ namespace GPlatesModel
 	 * it may be) through the feature store root handle.
 	 */
 	class FeatureStoreRootRevision :
+			public BasicRevision<FeatureStoreRootHandle>,
 			public GPlatesUtils::ReferenceCount<FeatureStoreRootRevision>
 	{
+
 	public:
+
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootRevision>.
+		 * The type of this class.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootRevision> non_null_ptr_type;
+		typedef FeatureStoreRootRevision this_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootRevision>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootRevision> non_null_ptr_to_const_type;
-
-		/**
-		 * The type used to contain the feature collections.
-		 */
-		typedef std::vector<boost::intrusive_ptr<FeatureCollectionHandle> > collection_type;
-
-		~FeatureStoreRootRevision()
-		{  }
-
-		/**
-		 * Create a new FeatureStoreRootRevision instance.
-		 *
-		 * This collection contains no features.
+		 * Creates a new FeatureStoreRootRevision instance.
 		 */
 		static
 		const non_null_ptr_type
-		create() {
-			non_null_ptr_type ptr(new FeatureStoreRootRevision(),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
-
-		/**
-		 * Create a duplicate of this FeatureStoreRootRevision instance.
-		 */
-		const non_null_ptr_type
-		clone() const {
-			non_null_ptr_type dup(new FeatureStoreRootRevision(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
-		}
-
-		/**
-		 * Return the number of feature-collection slots currently contained within the
-		 * container.
-		 *
-		 * Note that feature-collection slots may be empty (ie, the pointer at that
-		 * position may be NULL).  Thus, the number of feature collections actually
-		 * contained within this feature store root may be less than the number of
-		 * feature-collection slots.
-		 * 
-		 * This value is intended to be used as an upper (open range) limit on the values
-		 * of the index used to access the feature collections within the container. 
-		 * Attempting to access a feature collection at an index which is greater-than or
-		 * equal-to the number of feature-collection slots will always result in a NULL
-		 * pointer.
-		 */
-		container_size_type
-		size() const
-		{
-			return d_feature_collections.size();
-		}
-
-		/**
-		 * Access the feature collection at @a index in the feature-collection container.
-		 *
-		 * The value of @a index is expected to be non-negative.  If the value of @a index
-		 * is greater-than or equal-to the return value of the @a size function, a NULL
-		 * pointer will be returned.  If the value of @a index is less-than the return
-		 * value of the @a size function, a NULL pointer @em may be returned (depending
-		 * upon whether that feature-collection slot is still being used or not).
-		 *
-		 * This is the overloading of this function for const FeatureStoreRootRevision
-		 * instances; it returns a pointer to a const FeatureCollectionHandle instance.
-		 */
-		const boost::intrusive_ptr<const FeatureCollectionHandle>
-		operator[](
-				container_size_type index) const
-		{
-			return access_child(index);
-		}
-
-		/**
-		 * Access the feature collection at @a index in the feature-collection container.
-		 *
-		 * The value of @a index is expected to be non-negative.  If the value of @a index
-		 * is greater-than or equal-to the return value of the @a size function, a NULL
-		 * pointer will be returned.  If the value of @a index is less-than the return
-		 * value of the @a size function, a NULL pointer @em may be returned (depending
-		 * upon whether that feature-collection slot is still being used or not).
-		 *
-		 * This is the overloading of this function for non-const FeatureStoreRootRevision
-		 * instances; it returns a pointer to a non-const FeatureCollectionHandle instance.
-		 */
-		const boost::intrusive_ptr<FeatureCollectionHandle>
-		operator[](
-				container_size_type index)
-		{
-			return access_child(index);
-		}
-
-		/**
-		 * Access the feature collection at @a index in the feature-collection container.
-		 *
-		 * The value of @a index is expected to be non-negative.  If the value of @a index
-		 * is greater-than or equal-to the return value of the @a size function, a NULL
-		 * pointer will be returned.  If the value of @a index is less-than the return
-		 * value of the @a size function, a NULL pointer @em may be returned (depending
-		 * upon whether that feature-collection slot is still being used or not).
-		 *
-		 * This is the overloading of this function for const FeatureStoreRootRevision
-		 * instances; it returns a pointer to a const FeatureCollectionHandle instance.
-		 */
-		const boost::intrusive_ptr<const FeatureCollectionHandle>
-		access_child(
-				container_size_type index) const
-		{
-			boost::intrusive_ptr<const FeatureCollectionHandle> ptr = NULL;
-			if (index < size()) {
-				ptr = d_feature_collections[index];
-			}
-			return ptr;
-		}
-
-		/**
-		 * Access the feature at @a index in the feature-collection container.
-		 *
-		 * The value of @a index is expected to be non-negative.  If the value of @a index
-		 * is greater-than or equal-to the return value of the @a size function, a NULL
-		 * pointer will be returned.  If the value of @a index is less-than the return
-		 * value of the @a size function, a NULL pointer @em may be returned (depending
-		 * upon whether that feature-collection slot is still being used or not).
-		 *
-		 * This is the overloading of this function for non-const FeatureStoreRootRevision
-		 * instances; it returns a pointer to a non-const FeatureCollectionHandle instance.
-		 */
-		const boost::intrusive_ptr<FeatureCollectionHandle>
-		access_child(
-				container_size_type index)
-		{
-			boost::intrusive_ptr<FeatureCollectionHandle> ptr = NULL;
-			if (index < size()) {
-				ptr = d_feature_collections[index];
-			}
-			return ptr;
-		}
-
-		/**
-		 * Append @a new_feature_collection to the container of feature collections.
-		 *
-		 * The return-value is the index of the new element in the container.
-		 */
-		container_size_type
-		append_child(
-				FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
-				DummyTransactionHandle &transaction);
-
-		/**
-		 * Remove the feature collection at @a index in the feature-collection container.
-		 *
-		 * The value of @a index is expected to be non-negative.  If the value of @a index
-		 * is greater-than or equal-to the return value of the @a size function, this
-		 * function will be a no-op.
-		 */
-		void
-		remove_child(
-				container_size_type index,
-				DummyTransactionHandle &transaction);
+		create();
 
 	private:
 
 		/**
-		 * The container of feature collections contained within this feature store root.
-		 *
-		 * Any of the pointers in this container might be NULL.
-		 */
-		collection_type d_feature_collections;
-
-		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		FeatureStoreRootRevision()
-		{  }
+		FeatureStoreRootRevision();
 
 		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 *
-		 * This ctor should only be invoked by the 'clone' member function, which will
-		 * create a duplicate instance and return a new non_null_intrusive_ptr reference to
-		 * the new duplicate.  Since initially the only reference to the new duplicate will
-		 * be the one returned by the 'clone' function, *before* the new intrusive-pointer
-		 * is created, the ref-count of the new FeatureStoreRootRevision instance should be
-		 * zero.
-		 *
-		 * Note that this ctor should act exactly the same as the default (auto-generated)
-		 * copy-ctor, except that it should initialise the ref-count to zero.
+		 * This constructor should not be defined, because we don't want to be able
+		 * to copy construct one of these objects.
 		 */
 		FeatureStoreRootRevision(
-				const FeatureStoreRootRevision &other) :
-			GPlatesUtils::ReferenceCount<FeatureStoreRootRevision>(),
-			d_feature_collections(other.d_feature_collections)
-		{  }
+				const this_type &other);
 
 		/**
-		 * This operator should never be defined, because we don't want to allow
-		 * copy-assignment.
-		 *
-		 * All copying should use the virtual copy-constructor @a clone (which will in turn
-		 * use the copy-constructor); all "copy-assignment" should really only be the
-		 * assignment of one intrusive_ptr to another.
+		 * This should not be defined, because we don't want to be able to copy
+		 * one of these objects.
 		 */
-		FeatureStoreRootRevision &
+		this_type &
 		operator=(
-				const FeatureStoreRootRevision &);
+				const this_type &);
 
 	};
+
 }
 
 #endif  // GPLATES_MODEL_FEATURESTOREROOTREVISION_H

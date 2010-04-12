@@ -37,7 +37,7 @@
 #include "FileInfo.h"
 #include "PlatesLineFormatHeaderVisitor.h"
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"

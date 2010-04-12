@@ -2,12 +2,15 @@
 
 /**
  * \file 
- * Contains the definition of class DummyTransactionHandle.
+ * Contains the implementation of the class TopLevelProperty.
  *
  * Most recent change:
  *   $Date$
  * 
  * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ *  (under the name "PropertyContainer.h")
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ *  (under the name "TopLevelProperty.h")
  *
  * This file is part of GPlates.
  *
@@ -25,43 +28,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_DUMMYTRANSACTIONHANDLE_H
-#define GPLATES_MODEL_DUMMYTRANSACTIONHANDLE_H
+#include "TopLevelProperty.h"
 
-namespace GPlatesModel
+
+std::ostream &
+GPlatesModel::operator<<(
+		std::ostream &os,
+		const TopLevelProperty &top_level_prop)
 {
-	/**
-	 * This struct is a place-holder for the soon-to-be-implemented class TransactionHandle.
-	 */
-	class DummyTransactionHandle
-	{
-	public:
-		DummyTransactionHandle(
-				const char *file,
-				int line):
-			d_file(file),
-			d_line(line),
-			d_has_been_committed_or_aborted(false)
-		{  }
-
-		~DummyTransactionHandle();
-
-		void
-		commit()
-		{
-			d_has_been_committed_or_aborted = true;
-		}
-
-		void
-		abort()
-		{
-			d_has_been_committed_or_aborted = true;
-		}
-	private:
-		const char *d_file;
-		int d_line;
-		bool d_has_been_committed_or_aborted;
-	};
+	return top_level_prop.print_to(os);
 }
 
-#endif  // GPLATES_MODEL_DUMMYTRANSACTIONHANDLE_H

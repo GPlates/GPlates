@@ -175,7 +175,7 @@ GPlatesCli::FeatureCollectionFileIO::extract_feature_collections(
 void
 GPlatesCli::FeatureCollectionFileIO::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// The write format is based on the file extension except for GMT where we choose
 	// to have the verbose header.

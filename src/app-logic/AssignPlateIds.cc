@@ -62,7 +62,7 @@
 #include "model/PropertyName.h"
 #include "model/ReconstructionTree.h"
 #include "model/ResolvedTopologicalBoundary.h"
-#include "model/TopLevelProperty.h"
+#include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
@@ -196,11 +196,11 @@ namespace
 		// Append a new property to the feature.
 		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_plate_id = 
 				GPlatesPropertyValues::GpmlPlateId::create(reconstruction_plate_id);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId")),
-				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
-				feature_ref);
+		feature_ref->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
+					GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id,
+							GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));
 	}
 
 
@@ -441,37 +441,39 @@ namespace
 
 		if (geometry_property)
 		{
-			GPlatesModel::ModelUtils::append_property_value_to_feature(
-					*geometry_property, geometry_property_name, feature_ref);
+			feature_ref->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						geometry_property_name,
+						*geometry_property));
 		}
 	}
 
 
 	/**
-	 * Returns true if @a feature_properties_iter is a geometry property.
+	 * Returns true if @a top_level_prop_ptr is a geometry property.
 	 */
 	bool
 	is_geometry_property(
-			const GPlatesModel::FeatureHandle::children_iterator &feature_properties_iter)
+			GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type top_level_prop_ptr)
 	{
 		GPlatesFeatureVisitors::GeometryTypeFinder geom_type_finder;
-		(*feature_properties_iter)->accept_visitor(geom_type_finder);
+		top_level_prop_ptr->accept_visitor(geom_type_finder);
 
 		return geom_type_finder.has_found_geometries();
 	}
 
 
 	/**
-	 * Returns true if @a feature_properties_iter is a 'gpml:reconstructionPlateId' property.
+	 * Returns true if @a top_level_prop_ptr is a 'gpml:reconstructionPlateId' property.
 	 */
 	bool
 	is_reconstruction_plate_id_property(
-			const GPlatesModel::FeatureHandle::children_iterator &feature_properties_iter)
+			GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type top_level_prop_ptr)
 	{
 		static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-		return (*feature_properties_iter)->property_name() ==
+		return top_level_prop_ptr->property_name() ==
 				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME;
 	}
 
@@ -484,24 +486,19 @@ namespace
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 	{
 		// Iterate over the feature properties of the feature.
-		GPlatesModel::FeatureHandle::children_iterator feature_properties_iter =
-				feature_ref->children_begin();
-		GPlatesModel::FeatureHandle::children_iterator feature_properties_end =
-				feature_ref->children_end();
+		GPlatesModel::FeatureHandle::iterator feature_properties_iter =
+				feature_ref->begin();
+		GPlatesModel::FeatureHandle::iterator feature_properties_end =
+				feature_ref->end();
 		while (feature_properties_iter != feature_properties_end)
 		{
 			// Increment iterator before we remove property.
 			// I don't think this is currently necessary but it doesn't hurt.
-			GPlatesModel::FeatureHandle::children_iterator current_feature_properties_iter =
+			GPlatesModel::FeatureHandle::iterator current_feature_properties_iter =
 					feature_properties_iter;
 			++feature_properties_iter;
 
-			if(!current_feature_properties_iter.is_valid())
-			{
-				continue;
-			}
-
-			if (is_geometry_property(current_feature_properties_iter))
+			if (is_geometry_property(*current_feature_properties_iter))
 			{
 				GPlatesModel::ModelUtils::remove_property_from_feature(
 						current_feature_properties_iter, feature_ref);
@@ -516,11 +513,11 @@ namespace
 	 */
 	bool
 	clone_feature_properties_except_geometry_and_plate_id(
-			const GPlatesModel::FeatureHandle::children_iterator &properties_iterator)
+			const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &top_level_prop_ptr)
 	{
 		return !(
-			is_geometry_property(properties_iterator) ||
-			is_reconstruction_plate_id_property(properties_iterator)
+			is_geometry_property(top_level_prop_ptr) ||
+			is_reconstruction_plate_id_property(top_level_prop_ptr)
 			);
 	}
 
@@ -532,7 +529,7 @@ namespace
 	{
 	public:
 		GeometryPropertiesIteratorRemover(
-				const GPlatesModel::FeatureHandle::children_iterator &geometry_properties_iterator) :
+				const GPlatesModel::FeatureHandle::iterator &geometry_properties_iterator) :
 			d_geometry_properties_iterator(geometry_properties_iterator)
 		{
 		}
@@ -542,12 +539,9 @@ namespace
 			// Destructor cannot throw exceptions.
 			try
 			{
-				if (d_geometry_properties_iterator.is_valid())
-				{
-					GPlatesModel::ModelUtils::remove_property_from_feature(
-							d_geometry_properties_iterator,
-							d_geometry_properties_iterator.collection_handle_ptr()->reference());
-				}
+				GPlatesModel::ModelUtils::remove_property_from_feature(
+						d_geometry_properties_iterator,
+						d_geometry_properties_iterator.handle_weak_ref());
 			}
 			catch (...)
 			{
@@ -555,7 +549,7 @@ namespace
 		}
 
 	private:
-		GPlatesModel::FeatureHandle::children_iterator d_geometry_properties_iterator;
+		GPlatesModel::FeatureHandle::iterator d_geometry_properties_iterator;
 	};
 
 
@@ -564,13 +558,13 @@ namespace
 	public:
 		GeometryPropertyAllPartitionedGeometries(
 				const GPlatesModel::PropertyName &geometry_property_name_,
-				const GPlatesModel::FeatureHandle::children_iterator &geometry_properties_iterator_) :
+				const GPlatesModel::FeatureHandle::iterator &geometry_properties_iterator_) :
 			geometry_property_name(geometry_property_name_),
 			geometry_properties_iterator(geometry_properties_iterator_)
 		{  }
 
 		GPlatesModel::PropertyName geometry_property_name;
-		GPlatesModel::FeatureHandle::children_iterator geometry_properties_iterator;
+		GPlatesModel::FeatureHandle::iterator geometry_properties_iterator;
 		GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_geometries_seq_type
 				partitioned_inside_geometries_seq;
 		GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type
@@ -1385,7 +1379,7 @@ namespace
 					geometry_property_all_partitioned_geometries = 
 							*geometry_property_all_partitioned_geometries_iter;
 
-			GPlatesModel::FeatureHandle::children_iterator geometry_properties_iterator =
+			GPlatesModel::FeatureHandle::iterator geometry_properties_iterator =
 					geometry_property_all_partitioned_geometries.geometry_properties_iterator;
 
 			// Make sure geometry property gets removed from the original feature
@@ -1417,10 +1411,8 @@ namespace
 					}
 					else
 					{
-						no_plate_id_feature_ref = GPlatesModel::ModelUtils::deep_clone_feature(
-								feature_ref,
+						no_plate_id_feature_ref = feature_ref->clone(
 								feature_collection,
-								model,
 								&clone_feature_properties_except_geometry_and_plate_id);
 					}
 				}
@@ -1492,10 +1484,8 @@ namespace
 			}
 			else
 			{
-				recon_plate_id_feature_ref = GPlatesModel::ModelUtils::deep_clone_feature(
-						feature_ref,
+				recon_plate_id_feature_ref = feature_ref->clone(
 						feature_collection,
-						model,
 						&clone_feature_properties_except_geometry_and_plate_id);
 			}
 			// Make sure we register the feature in the map (if isn't already).
@@ -1611,10 +1601,8 @@ namespace
 			}
 			else
 			{
-				new_feature_ref = GPlatesModel::ModelUtils::deep_clone_feature(
-						feature_ref,
+				new_feature_ref = feature_ref->clone(
 						feature_collection,
-						model,
 						&clone_feature_properties_except_geometry_and_plate_id);
 			}
 
@@ -1880,7 +1868,7 @@ namespace
 			static const GPlatesModel::FeatureType vgp_feature_type = 
 					GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
 
-			return feature_ref->handle_data().feature_type() == vgp_feature_type;
+			return feature_ref->feature_type() == vgp_feature_type;
 		}
 
 
@@ -1900,7 +1888,7 @@ namespace
 				qDebug() << "WARNING: Unable to find 'gpml:averageSampleSitePosition' property "
 						"in 'VirtualGeomagneticPole' with feature id = ";
 				qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-						feature_ref->handle_data().feature_id().get());
+						feature_ref->feature_id().get());
 				return false;
 			}
 			const GPlatesMaths::PointOnSphere &sample_site_point = *sample_site_gml_point->point();
@@ -1915,7 +1903,7 @@ namespace
 				qDebug() << "WARNING: Unable to assign 'reconstructionPlateId' to "
 						"'VirtualGeomagneticPole' with feature id = ";
 				qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-						feature_ref->handle_data().feature_id().get());
+						feature_ref->feature_id().get());
 				qDebug() << "because it's sample site is not inside any topological "
 						"closed plate boundaries.";
 				return false;
@@ -1931,7 +1919,7 @@ namespace
 				qDebug() << "WARNING: Unable to find 'gpml:reconstructionPlateId' property "
 						"in 'VirtualGeomagneticPole' with feature id = ";
 				qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-						feature_ref->handle_data().feature_id().get());
+						feature_ref->feature_id().get());
 				// This shouldn't really happen since all resolved boundaries should
 				// have a reconstruction plate id.
 				return false;
@@ -2075,19 +2063,16 @@ GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_ids(
 
 	bool assigned_any_plate_ids = false;
 
-	GPlatesModel::FeatureCollectionHandle::children_iterator feature_iter =
-			feature_collection_ref->children_begin();
-	GPlatesModel::FeatureCollectionHandle::children_iterator feature_end =
-			feature_collection_ref->children_end();
+	GPlatesModel::FeatureCollectionHandle::iterator feature_iter =
+			feature_collection_ref->begin();
+	GPlatesModel::FeatureCollectionHandle::iterator feature_end =
+			feature_collection_ref->end();
 	for ( ; feature_iter != feature_end; ++feature_iter)
 	{
-		if (feature_iter.is_valid())
-		{
-			const bool assigned_plate_id = assign_reconstruction_plate_id(
-					(*feature_iter)->reference(), feature_collection_ref);
+		const bool assigned_plate_id = assign_reconstruction_plate_id(
+				(*feature_iter)->reference(), feature_collection_ref);
 
-			assigned_any_plate_ids |= assigned_plate_id;
-		}
+		assigned_any_plate_ids |= assigned_plate_id;
 	}
 
 	return assigned_any_plate_ids;

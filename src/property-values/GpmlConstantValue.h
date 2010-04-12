@@ -28,36 +28,36 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLCONSTANTVALUE_H
 #define GPLATES_PROPERTYVALUES_GPMLCONSTANTVALUE_H
 
+#include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 #include "TemplateTypeParameterType.h"
 
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlConstantValue :
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue> non_null_ptr_to_const_type;
 
 
 		virtual
-		~GpmlConstantValue() {  }
+		~GpmlConstantValue()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -68,9 +68,9 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
-				const TemplateTypeParameterType &value_type_) {
-			non_null_ptr_type ptr(new GpmlConstantValue(value_, value_type_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				const TemplateTypeParameterType &value_type_)
+		{
+			non_null_ptr_type ptr(new GpmlConstantValue(value_, value_type_));
 			return ptr;
 		}
 
@@ -84,16 +84,16 @@ namespace GPlatesPropertyValues {
 		create(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				const TemplateTypeParameterType &value_type_,
-				const UnicodeString &description_) {
-			non_null_ptr_type ptr(new GpmlConstantValue(value_, value_type_, description_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				const UnicodeString &description_)
+		{
+			non_null_ptr_type ptr(new GpmlConstantValue(value_, value_type_, description_));
 			return ptr;
 		}
 
 		const GpmlConstantValue::non_null_ptr_type
-		clone() const {
-			GpmlConstantValue::non_null_ptr_type dup(new GpmlConstantValue(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			GpmlConstantValue::non_null_ptr_type dup(new GpmlConstantValue(*this));
 			return dup;
 		}
 
@@ -103,7 +103,8 @@ namespace GPlatesPropertyValues {
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 
@@ -119,34 +120,39 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced PropertyValue instance to
 		// accept a FeatureVisitor instance.)
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		value() {
+		value()
+		{
 			return d_value;
 		}
 
 		void
 		set_value(
-				GPlatesModel::PropertyValue::non_null_ptr_type v) {
+				GPlatesModel::PropertyValue::non_null_ptr_type v)
+		{
 			d_value = v;
 		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlConstantValue
 		// instance should never be changed.
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;
 		}
 
 		const UnicodeString &
-		description() const {
+		description() const
+		{
 			return d_description;
 		}
 
 		void
 		set_description(
-				const UnicodeString &new_description) {
+				const UnicodeString &new_description)
+		{
 			d_description = new_description;
+			update_instance_id();
 		}
-
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -157,7 +163,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_constant_value(*this);
 		}
 
@@ -170,9 +177,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_constant_value(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -206,11 +219,16 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlConstantValue(
 				const GpmlConstantValue &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_value(other.d_value),
 			d_value_type(other.d_value_type),
 			d_description(other.d_description)
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 

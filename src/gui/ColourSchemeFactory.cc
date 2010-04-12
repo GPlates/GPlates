@@ -133,7 +133,7 @@ namespace
 			}
 			else
 			{
-				return feature_ref->handle_data().feature_type();
+				return feature_ref->feature_type();
 			}
 		}
 	};

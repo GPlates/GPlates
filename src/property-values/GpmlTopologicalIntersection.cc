@@ -46,3 +46,14 @@ GPlatesPropertyValues::GpmlTopologicalIntersection::deep_clone() const
 
 	return dup;
 }
+
+
+bool
+GPlatesPropertyValues::GpmlTopologicalIntersection::operator==(
+		const GpmlTopologicalIntersection &other) const
+{
+	return *d_intersection_geometry == *other.d_intersection_geometry &&
+		*d_reference_point == *other.d_reference_point &&
+		*d_reference_point_plate_id == *other.d_reference_point_plate_id;
+}
+

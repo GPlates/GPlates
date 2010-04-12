@@ -1,3 +1,5 @@
+/* $Id: GmlPoint.h 7942 2010-04-07 07:47:09Z elau $ */
+
 /**
  * \file 
  * File specific comments.
@@ -27,6 +29,7 @@
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALSECTION_H
 
 #include "model/PropertyValue.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 // This macro is used to define the virtual function 'deep_clone_as_topo_section' inside a class
@@ -47,7 +50,8 @@
 		}
 
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	/**
 	 * This is an abstract class, because it derives from class PropertyValue, which contains
@@ -55,7 +59,8 @@ namespace GPlatesPropertyValues {
 	 * not override with non-pure-virtual definitions.
 	 */
 	class GpmlTopologicalSection:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
@@ -73,20 +78,15 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection> non_null_ptr_to_const_type;
 
 		/**
 		 * Construct a GpmlTopologicalSection instance.
@@ -111,11 +111,12 @@ namespace GPlatesPropertyValues {
 		 */
 		GpmlTopologicalSection(
 				const GpmlTopologicalSection &other) :
-			PropertyValue()
+			PropertyValue(other) /* share instance id */
 		{  }
 
 		virtual
-		~GpmlTopologicalSection() {  }
+		~GpmlTopologicalSection()
+		{  }
 
 		virtual
 		const GpmlTopologicalSection::non_null_ptr_type
@@ -130,7 +131,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const { }
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{ }
 
 		/**
 		 * Accept a FeatureVisitor instance.
@@ -141,10 +143,16 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) { }
+				GPlatesModel::FeatureVisitor &visitor)
+		{ }
 
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	private:
+
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really

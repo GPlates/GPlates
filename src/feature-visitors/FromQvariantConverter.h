@@ -30,7 +30,7 @@
 
 #include <QVariant>
 #include <boost/optional.hpp>
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"
 
@@ -52,7 +52,7 @@ namespace GPlatesFeatureVisitors
 	 * of PropertyValue::non_null_ptr_type.
 	 */
 	class FromQvariantConverter:
-			public GPlatesModel::FeatureVisitor
+			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
@@ -82,50 +82,50 @@ namespace GPlatesFeatureVisitors
 		virtual
 		void
 		visit_enumeration(
-				GPlatesPropertyValues::Enumeration &enumeration);
+				const GPlatesPropertyValues::Enumeration &enumeration);
 
 
 		void
 		visit_gml_time_instant(
-				GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
+				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
 
 
 		virtual
 		void
 		visit_gpml_constant_value(
-				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
 
 		virtual
 		void
 		visit_gpml_plate_id(
-				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
 
 		virtual
 		void
 		visit_gpml_old_plates_header(
-				GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
+				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
 
 		virtual
 		void
 		visit_xs_boolean(
-				GPlatesPropertyValues::XsBoolean &xs_boolean);
+				const GPlatesPropertyValues::XsBoolean &xs_boolean);
 
 		virtual
 		void
 		visit_xs_double(
-				GPlatesPropertyValues::XsDouble &xs_double);
+				const GPlatesPropertyValues::XsDouble &xs_double);
 
 		virtual
 		void
 		visit_xs_integer(
-				GPlatesPropertyValues::XsInteger& xs_integer);
+				const GPlatesPropertyValues::XsInteger& xs_integer);
 
 		virtual
 		void
 		visit_xs_string(
-				GPlatesPropertyValues::XsString &xs_string);
+				const GPlatesPropertyValues::XsString &xs_string);
 
 	private:
 	

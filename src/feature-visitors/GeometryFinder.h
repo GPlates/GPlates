@@ -30,7 +30,7 @@
 
 #include <vector>
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "maths/GeometryOnSphere.h"
 

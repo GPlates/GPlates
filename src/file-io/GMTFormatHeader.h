@@ -32,7 +32,8 @@
 
 #include "PlatesLineFormatHeaderVisitor.h"
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureHandle.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 
 #include "property-values/Enumeration.h"
@@ -63,11 +64,6 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
 
-
-namespace GPlatesModel
-{
-	class FeatureHandle;
-}
 
 namespace GPlatesFileIO
 {

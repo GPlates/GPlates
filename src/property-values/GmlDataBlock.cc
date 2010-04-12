@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+
 #include "GmlDataBlock.h"
 
 
@@ -45,3 +47,13 @@ GPlatesPropertyValues::GmlDataBlock::deep_clone() const
 	}
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GmlDataBlock::print_to(
+		std::ostream &os) const
+{
+	// FIXME: Implement properly when actually needed for debugging.
+	return os << "{ GmlDataBlock }";
+}
+

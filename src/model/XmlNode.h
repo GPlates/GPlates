@@ -312,6 +312,9 @@ namespace GPlatesModel {
 		accept_visitor(
 				XmlNodeVisitor &visitor);
 
+		bool
+		operator==(
+				const XmlElementNode &other) const;
 
 	private:
 		PropertyName d_name;

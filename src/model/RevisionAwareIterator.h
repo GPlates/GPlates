@@ -29,108 +29,35 @@
 #define GPLATES_MODEL_REVISIONAWAREITERATOR_H
 
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
-#include "WeakObserver.h"
-#include "types.h"
-//#include "WeakObserverVisitor.h"
 
+#include "FeatureCollectionHandle.h"
+#include "FeatureHandle.h"
+#include "FeatureStoreRootHandle.h"
+#include "HandleTraits.h"
+#include "TopLevelPropertyRef.h"
+#include "WeakReference.h"
+#include "types.h"
 
 namespace GPlatesModel
 {
 	namespace RevisionAwareIteratorInternals
 	{
 		/**
-		 * Helper traits classes to turn boost::intrusive_ptr<T> into
-		 *   - const boost::intrusive_ptr<T> for non-const Handles.
-		 *   - const boost::intrusive_ptr<const T> for const Handles.
-		 * 
-		 * If RevisionAwareIterator needs to return pointers other than boost::intrusive_ptr
-		 * you'll need to add a new template specialisation.
+		 * A helper traits class to differentiate between const and non-const Handles.
 		 */
-		template<class Handle, class Pointer>
-		struct pointer_traits
+		template<class HandleType>
+		struct Traits
 		{
+			typedef typename HandleTraits<HandleType>::iterator_value_type value_type;
+			typedef typename HandleTraits<HandleType>::weak_ref handle_weak_ref_type;
 		};
 
-		template<class Handle, class T>
-		struct pointer_traits<Handle, boost::intrusive_ptr<T> >
+		template<class HandleType>
+		struct Traits<const HandleType>
 		{
-			typedef const boost::intrusive_ptr<T> corrected_pointer_type;
+			typedef typename HandleTraits<HandleType>::const_iterator_value_type value_type;
+			typedef typename HandleTraits<HandleType>::const_weak_ref handle_weak_ref_type;
 		};
-
-		template<class Handle, class T>
-		struct pointer_traits<const Handle, boost::intrusive_ptr<T> >
-		{
-			typedef const boost::intrusive_ptr<const T> corrected_pointer_type;
-		};
-
-		/**
-		 * Resolves appropriate types for a Handle's collection type and collection type's value type
-		 * based on whether the Handle is const or not.
-		 */
-		template<class Handle>
-		struct handle_traits
-		{
-
-		private:
-
-			typedef typename Handle::revision_component_type revision_component_type;
-			typedef typename revision_component_type::collection_type non_const_collection_type;
-
-		public:
-
-			/**
-			 * The type of the collection inside the Handle that the RevisionAwareIterator will be
-			 * iterating through. It is always const because the collection cannot be modified through
-			 * the RevisionAwareIterator (so you cannot subvert the revisioning system).
-			 */
-			typedef const non_const_collection_type collection_type;
-
-			/**
-			 * The type of the elements of the collection_type that will be returned by
-			 * RevisionAwareIterator upon dereference. Note that the intrusive_ptr is always const
-			 * because its target pointer cannot be changed via RevisionAwareIterator.
-			 *
-			 * For example, for non-const FeatureCollectionHandle, this is const::intrusive_ptr<FeatureHandle>.
-			 * For const FeatureCollectionHandle, this is const::intrusive_ptr<const FeatureHandle>.
-			 */
-			typedef typename pointer_traits<Handle, typename collection_type::value_type>::corrected_pointer_type collection_value_type;
-
-		};
-
-		/**
-		 * Resolves appropriate types for a Handle's collection type and collection type's value type
-		 * based on whether the Handle is const or not.
-		 */
-		template<class Handle>
-		struct handle_traits<const Handle>
-		{
-
-		private:
-
-			typedef typename Handle::revision_component_type revision_component_type;
-			typedef typename revision_component_type::collection_type non_const_collection_type;
-
-		public:
-
-			/**
-			 * The type of the collection inside the Handle that the RevisionAwareIterator will be
-			 * iterating through. It is always const because the collection cannot be modified through
-			 * the RevisionAwareIterator (so you cannot subvert the revisioning system).
-			 */
-			typedef const non_const_collection_type collection_type;
-
-			/**
-			 * The type of the elements of the collection_type that will be returned by
-			 * RevisionAwareIterator upon dereference. Note that the intrusive_ptr is always const
-			 * because its target pointer cannot be changed via RevisionAwareIterator.
-			 *
-			 * For example, for non-const FeatureCollectionHandle, this is const::intrusive_ptr<FeatureHandle>.
-			 * For const FeatureCollectionHandle, this is const::intrusive_ptr<const FeatureHandle>.
-			 */
-			typedef typename pointer_traits<const Handle, typename collection_type::value_type>::corrected_pointer_type collection_value_type;
-
-		};
-
 	}
 
 	/**
@@ -147,120 +74,45 @@ namespace GPlatesModel
 	 * operation first obtains the current revision of the container, before accessing the
 	 * elements within that container.
 	 *
-	 * @par The WeakObserver base
-	 * The base class WeakObserver contains the pointer to the handle (which contains the
-	 * container over which this iterator is iterating).  The benefit of using WeakObserver to
-	 * contain the pointer-to-handle is that an instance of RevisionAwareIterator, which is
-	 * pointing to a particular collection-handle, will be informed if that collection-handle
-	 * is deactivated (ie, logically deleted) or deallocated (ie, deleted in the C++
-	 * memory-allocation sense).
-	 *
-	 * @par Validity for dereference
-	 * The member function @a is_valid is used to determine whether an iterator instance is
-	 * valid to be dereferenced @em and @em used.  Note that, in contrast to
-	 * @a WeakReference::is_valid, which merely checks whether the WeakReference instance is
-	 * valid to be dereferenced, RevisionAwareIterator::is_valid in this class additionally
-	 * checks whether the target value is non-NULL.
-	 *
-	 * @par Deleted features
-	 * When a feature is deleted from a feature-collection, the pointer to that feature-handle
-	 * in the container will be set to NULL.  There is nothing useful which can be done with
-	 * this NULL pointer -- nor should there be, since the feature has been logically deleted
-	 * in this revision, and thus should not be accessible for any reason (especially not by a
-	 * revision-aware iterator!)  Setting the deleted feature's pointer-to-feature-handle to
-	 * NULL is a central aspect of the revisioning mechanism, so it makes sense that it should
-	 * be handled in the revision-aware iterator.  This is why @a is_valid additionally checks
-	 * whether the target value is non-NULL.
-	 *
 	 * @par Important
 	 * @strong Always check that the iterator @a is_valid before every dereference operation!
-	 *
-	 * @par The template parameters
-	 * The template parameters are:
-	 *  - @em Handle: the type of the handle of the revisioning collection (for example,
-	 * '@c FeatureCollectionHandle ')
-	 *  - @em Collection: the type of the container over which this iterator will iterate (for example,
-	 * '@c std::vector@<boost::intrusive_ptr@<FeatureHandle@>@> ')
-	 *  - @em Value: the type of the container elements, the type to which the iterator will
-	 * dereference (for example,
-	 * '@c boost::intrusive_ptr@<FeatureHandle@> ')
 	 */
-	template<
-		typename Handle,
-		typename Collection = typename RevisionAwareIteratorInternals::handle_traits<Handle>::collection_type,
-		typename Value = typename RevisionAwareIteratorInternals::handle_traits<Handle>::collection_value_type>
+	template<class HandleType>
 	class RevisionAwareIterator :
-			public WeakObserver<Handle>,
-			public std::iterator<std::bidirectional_iterator_tag, Value>
+			public std::iterator<std::bidirectional_iterator_tag, typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type>
 	{
 
 	public:
 
 		/**
-		 * This is the type of the handle of the revisioning collection.
-		 *
-		 * (For example, '@c FeatureCollectionHandle ')
+		 * The type of Handle we are iterating over, e.g. FeatureHandle, const FeatureCollectionHandle.
 		 */
-		typedef Handle collection_handle_type;
+		typedef HandleType handle_type;
 
 		/**
-		 * This is the type of the container over which this iterator will iterate.
-		 *
-		 * (For example, '@c std::vector@<boost::intrusive_ptr@<FeatureHandle@>@> '.)
+		 * The type of this class.
 		 */
-		typedef Collection container_type;
+		typedef RevisionAwareIterator<handle_type> this_type;
 
 		/**
-		 * This is the type of the container elements, the type to which the iterator will
-		 * dereference.
-		 *
-		 * (For example, '@c boost::intrusive_ptr@<FeatureHandle@> ' or
-		 * '@c boost::intrusive_ptr@<const @c FeatureHandle@> '.)
+		 * The type of the Revision corresponding to the Handle.
 		 */
-		typedef Value value_type;
+		typedef typename HandleTraits<handle_type>::revision_type revision_type;
 
 		/**
-		 * This is the type used to index the elements of the container.
+		 * The type returned by this iterator on dereference, with appropriate const-ness.
+		 */
+		typedef typename RevisionAwareIteratorInternals::Traits<handle_type>::value_type value_type;
+
+		/**
+		 * The type of a weak-ref to the Handle we're iterating over, with appropriate const-ness.
+		 */
+		typedef typename RevisionAwareIteratorInternals::Traits<handle_type>::handle_weak_ref_type handle_weak_ref_type;
+
+		/**
+		 * The type used to index the elements of the container.
 		 */
 		typedef container_size_type index_type;
-
-		static
-		const RevisionAwareIterator
-		create_for_index(
-				collection_handle_type &collection_handle,
-				index_type index_)
-		{
-			return RevisionAwareIterator(collection_handle, index_);
-		}
-
-		/**
-		 * This factory function is used to instantiate "begin" iterators for a collection
-		 * handle.
-		 *
-		 * This function will not throw.
-		 */
-		static
-		const RevisionAwareIterator
-		create_begin(
-				collection_handle_type &collection_handle)
-		{
-			return RevisionAwareIterator(collection_handle, 0);
-		}
-
-		/**
-		 * This factory function is used to instantiate "end" iterators for a collection
-		 * handle.
-		 *
-		 * This function will not throw.
-		 */
-		static
-		const RevisionAwareIterator
-		create_end(
-				collection_handle_type &collection_handle)
-		{
-			return RevisionAwareIterator(collection_handle,
-					container_size(collection_handle));
-		}
 
 		/**
 		 * Default constructor.
@@ -268,13 +120,26 @@ namespace GPlatesModel
 		 * Iterator instances which are initialised using the default constructor are not
 		 * valid to be dereferenced.
 		 */
-		RevisionAwareIterator():
-			d_index(INVALID_INDEX)
-		{  }
+		RevisionAwareIterator();
 
-		virtual
-		~RevisionAwareIterator()
-		{  }
+		/**
+		 * Construct an iterator to iterate over the container inside @a handle,
+		 * beginning at @a index.
+		 *
+		 * Set @a index to be the size of the underlying container to create an "end" iterator.
+		 *
+		 * This constructor will not throw.
+		 */
+		RevisionAwareIterator(
+				handle_type &handle,
+				index_type index_ = 0);
+
+		/**
+		 * Converts this RevisionAwareIterator<HandleType> into a RevisionAwareIterator<const HandleType>.
+		 *
+		 * If HandleType is already const, this effectively does nothing useful and returns RevisionAwareIterator<HandleType>.
+		 */
+		operator RevisionAwareIterator<const HandleType>() const;
 
 		/**
 		 * Return the pointer to the collection handle.
@@ -288,11 +153,8 @@ namespace GPlatesModel
 		 * (or a pointer) rather than an STL const-iterator.  We're simply declaring the
 		 * member function "const" to ensure that it may be invoked on const instances too.
 		 */
-		collection_handle_type *
-		collection_handle_ptr() const
-		{
-			return WeakObserver<Handle>::publisher_ptr();
-		}
+		handle_weak_ref_type
+		handle_weak_ref() const;
 
 		/**
 		 * Return the current index.
@@ -300,112 +162,27 @@ namespace GPlatesModel
 		 * This function will not throw.
 		 */
 		index_type
-		index() const
-		{
-			return d_index;
-		}
-
-		/**
-		 * Return whether this iterator is valid to be dereferenced @em and @em used.
-		 *
-		 * You should @strong always check this before @em ever dereferencing an iterator.
-		 * Do not dereference the iterator if this function returns false.
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		is_valid() const
-		{
-			return (is_valid_for_deref() && deref_target_is_not_null());
-		}
-
-		/**
-		 * Return whether this iterator is valid to be dereferenced.
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		is_valid_for_deref() const
-		{
-			return (collection_handle_is_valid() && index_is_within_bounds());
-		}
-
-		/**
-		 * Copy-assignment operator.
-		 *
-		 * This function will not throw.
-		 */
-		RevisionAwareIterator &
-		operator=(
-				const RevisionAwareIterator &other)
-		{
-			WeakObserver<Handle>::operator=(other);
-			d_index = other.d_index;
-
-			return *this;
-		}
-
-		/**
-		 * Return whether this instance is equal to @a other.
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		operator==(
-				const RevisionAwareIterator &other) const
-		{
-			return (collection_handle_ptr() == other.collection_handle_ptr() &&
-					index() == other.index());
-		}
-
-		/**
-		 * Return whether this instance is not equal to @a other.
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		operator!=(
-				const RevisionAwareIterator &other) const
-		{
-			return (collection_handle_ptr() != other.collection_handle_ptr() ||
-					index() != other.index());
-		}
+		index() const;
 
 		/**
 		 * The dereference operator.
 		 *
-		 * This operator should only be invoked when the iterator is valid (i.e., when
-		 * @a is_valid would return true).
-		 *
-		 * Note that it is a deliberate limitation of this operator, that the return-value
-		 * is not an L-value (ie, it cannot be assigned-to).  This is to ensure that the
-		 * revisioning mechanism is not bypassed.
+		 * This operator should only be invoked when the iterator is valid.
 		 *
 		 * As long as the iterator is valid, this function will not throw.
 		 */
-		const value_type
-		operator*() const
-		{
-			return current_element();
-		}
+		value_type
+		operator*() const;
 
 		/**
 		 * The dereference operator.
 		 *
-		 * This operator should only be invoked when the iterator is valid (i.e., when
-		 * @a is_valid would return true).
-		 *
-		 * Note that it is a deliberate limitation of this operator, that the return-value
-		 * is not an L-value (ie, it cannot be assigned-to).  This is to ensure that the
-		 * revisioning mechanism is not bypassed.
+		 * This operator should only be invoked when the iterator is valid.
 		 *
 		 * As long as the iterator is valid, this function will not throw.
 		 */
-		const value_type
-		operator*()
-		{
-			return current_element();
-		}
+		value_type
+		operator*();
 
 		/**
 		 * The pre-increment operator.
@@ -413,11 +190,7 @@ namespace GPlatesModel
 		 * This function will not throw.
 		 */
 		RevisionAwareIterator &
-		operator++()
-		{
-			++d_index;
-			return *this;
-		}
+		operator++();
 
 		/**
 		 * The post-increment operator.
@@ -425,12 +198,7 @@ namespace GPlatesModel
 		 * This function will not throw.
 		 */
 		const RevisionAwareIterator
-		operator++(int)
-		{
-			RevisionAwareIterator original(*this);
-			++d_index;
-			return original;
-		}
+		operator++(int);
 
 		/**
 		 * The pre-decrement operator.
@@ -438,11 +206,7 @@ namespace GPlatesModel
 		 * This function will not throw.
 		 */
 		RevisionAwareIterator &
-		operator--()
-		{
-			--d_index;
-			return *this;
-		}
+		operator--();
 
 		/**
 		 * The post-decrement operator.
@@ -450,57 +214,44 @@ namespace GPlatesModel
 		 * This function will not throw.
 		 */
 		const RevisionAwareIterator
-		operator--(int)
-		{
-			RevisionAwareIterator original(*this);
-			--d_index;
-			return original;
-		}
+		operator--(int);
 
 		/**
-		 * Accept a WeakObserverVisitor instance.
+		 * Returns whether this instance is equal to @a other.
+		 *
+		 * This function will not throw.
 		 */
-		virtual
-		void
-		accept_weak_observer_visitor(
-				WeakObserverVisitor<Handle> &visitor)
-		{
-#if 0
-			// FIXME:  What I'm doing right now is very very bad.
-			// Class RevisionAwareIterator is not telling the WeakObserverVisitor to
-			// visit it.  I'm doing this because class RevisionAwareIterator has extra
-			// template parameters, and I can't work out an easy way to handle these in
-			// the function 'visit_revision_aware_iterator' in WeakObserverVisitor.
-			visitor.visit_revision_aware_iterator(*this);
-#endif
-		}
+		bool
+		operator==(
+				const this_type &other) const;
+
+		/**
+		 * Returns whether this instance is not equal to @a other.
+		 *
+		 * This function will not throw.
+		 */
+		bool
+		operator!=(
+				const this_type &other) const;
+
+		/**
+		 * Returns whether the underlying weak-ref to the Handle is valid, and if so
+		 * whether the child of the Handle being pointed to is still in existence.
+		 *
+		 * Note: You should not call this function if you are simply iterating over a
+		 * Handle's container of children, and you just obtained your iterator -
+		 * RevisionAwareIterator now skips over NULLs in the container. You should
+		 * only call this function if you have held onto your iterator for some time
+		 * and there is the possibility that in the intervening period since you got
+		 * your iterator, the whole Handle to which this is an interator has gone
+		 * away or perhaps just the child to which we are pointing has gone away.
+		 *
+		 * This function will not throw.
+		 */
+		bool
+		is_still_valid() const;
 
 	private:
-		/**
-		 * Return the size of the container in the supplied collection_handle_type.
-		 *
-		 * This function will not throw.
-		 */
-		static
-		index_type
-		container_size(
-				const collection_handle_type &collection_handle_ptr_)
-		{
-			return collection_handle_ptr_.current_revision()->size();
-		}
-
-		/**
-		 * Construct an iterator to iterate over the container inside @a collection_handle,
-		 * beginning at @a index.
-		 *
-		 * This constructor will not throw.
-		 */
-		RevisionAwareIterator(
-				collection_handle_type &collection_handle,
-				index_type index_):
-			WeakObserver<Handle>(collection_handle),
-			d_index(index_)
-		{  }
 
 		/**
 		 * Access the currently-indicated element.
@@ -508,72 +259,200 @@ namespace GPlatesModel
 		 * This function should only be invoked when the iterator is valid to be
 		 * dereferenced (i.e., when @a is_valid would return true).
 		 *
-		 * As long as the index is valid, this function will not throw.
+		 * As long as the handle and index are valid, this function will not throw.
 		 */
-		const value_type
-		current_element() const
-		{
-			return (*(collection_handle_ptr()->current_revision()))[index()];
-		}
+		value_type
+		current_element() const;
 
 		/**
-		 * Access the currently-indicated element.
-		 *
-		 * This function should only be invoked when the iterator is valid to be
-		 * dereferenced (i.e., when @a is_valid would return true).
-		 *
-		 * As long as the index is valid, this function will not throw.
+		 * A weak-ref to the Handle whose contents this Iterator iterates over.
 		 */
-		const value_type
-		current_element()
-		{
-			return (*(collection_handle_ptr()->current_revision()))[index()];
-		}
-
-		/**
-		 * Return whether the collection handle is valid (i.e., whether it is indicated by
-		 * a non-NULL pointer).
-		 */
-		bool
-		collection_handle_is_valid() const
-		{
-			return (collection_handle_ptr() != NULL);
-		}
-
-		/**
-		 * Return whether the index indicates an element which is within the bounds of the
-		 * container.
-		 *
-		 * This function should only be invoked when the collection handle is valid (i.e.,
-		 * when @a collection_handle_is_valid() would return true).
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		index_is_within_bounds() const
-		{
-			return (d_index < container_size(*collection_handle_ptr()));
-		}
-
-		/**
-		 * Return whether the collection handle is valid (i.e., whether it is indicated by
-		 * a non-NULL pointer).
-		 *
-		 * This function should only be invoked when the iterator is valid to be
-		 * dereferenced (ie, when @a is_valid_for_deref() would retrun true).
-		 */
-		bool
-		deref_target_is_not_null() const
-		{
-			return (current_element() != NULL);
-		}
+		handle_weak_ref_type d_handle_weak_ref;
 
 		/**
 		 * This is the current index in the container.
 		 */
 		index_type d_index;
+
 	};
 
+
+	template<class HandleType>
+	RevisionAwareIterator<HandleType>::RevisionAwareIterator() :
+		d_index(INVALID_INDEX)
+	{
+	}
+
+
+	template<class HandleType>
+	RevisionAwareIterator<HandleType>::RevisionAwareIterator(
+			handle_type &handle,
+			index_type index_) :
+		d_handle_weak_ref(handle.reference()),
+		d_index(index_)
+	{
+		// Sanity check.
+		const revision_type &revision = *(d_handle_weak_ref->current_revision());
+		if (d_index > revision.container_size())
+		{
+			d_index = revision.container_size();
+		}
+
+		// Move the iterator along until the first element that is not NULL.
+		if (d_index < revision.container_size() && !revision.has_element_at(d_index))
+		{
+			operator++();
+		}
+	}
+
+
+	template<class HandleType>
+	RevisionAwareIterator<HandleType>::operator RevisionAwareIterator<const HandleType>() const
+	{
+		const HandleType *handle_ptr = d_handle_weak_ref.handle_ptr();
+
+		if (handle_ptr)
+		{
+			return RevisionAwareIterator<const HandleType>(*handle_ptr, d_index);
+		}
+		else
+		{
+			return RevisionAwareIterator<const HandleType>();
+		}
+	}
+
+
+	template<class HandleType>
+	typename RevisionAwareIterator<HandleType>::handle_weak_ref_type
+	RevisionAwareIterator<HandleType>::handle_weak_ref() const
+	{
+		return d_handle_weak_ref;
+	}
+
+
+	template<class HandleType>
+	typename RevisionAwareIterator<HandleType>::index_type
+	RevisionAwareIterator<HandleType>::index() const
+	{
+		return d_index;
+	}
+
+
+	template<class HandleType>
+	typename RevisionAwareIterator<HandleType>::value_type
+	RevisionAwareIterator<HandleType>::operator*() const
+	{
+		return current_element();
+	}
+
+
+	template<class HandleType>
+	typename RevisionAwareIterator<HandleType>::value_type
+	RevisionAwareIterator<HandleType>::operator*()
+	{
+		return current_element();
+	}
+
+
+	template<class HandleType>
+	RevisionAwareIterator<HandleType> &
+	RevisionAwareIterator<HandleType>::operator++()
+	{
+		const revision_type &revision = *(d_handle_weak_ref->current_revision());
+		do
+		{
+			++d_index;
+		}
+		while (d_index < revision.container_size() && !revision.has_element_at(d_index));
+
+		return *this;
+	}
+
+
+	template<class HandleType>
+	const RevisionAwareIterator<HandleType>
+	RevisionAwareIterator<HandleType>::operator++(int)
+	{
+		this_type original(*this);
+		++(*this);
+		return original;
+	}
+
+
+	template<class HandleType>
+	RevisionAwareIterator<HandleType> &
+	RevisionAwareIterator<HandleType>::operator--()
+	{
+		const revision_type &revision = *(d_handle_weak_ref->current_revision());
+		while (!revision.has_element_at(--d_index))
+		{
+			if (d_index == 0)
+			{
+				// The child at index 0 has been deleted, so let's move forward until we
+				// find the first undeleted child (or end, if no children).
+				operator++();
+				break;
+			}
+		}
+
+		return *this;
+	}
+
+
+	template<class HandleType>
+	const RevisionAwareIterator<HandleType>
+	RevisionAwareIterator<HandleType>::operator--(int)
+	{
+		this_type original(*this);
+		--(*this);
+		return original;
+	}
+
+
+	template<class HandleType>
+	bool
+	RevisionAwareIterator<HandleType>::operator==(
+			const this_type &other) const
+	{
+		return d_handle_weak_ref == other.d_handle_weak_ref &&
+			d_index == other.d_index;
+	}
+
+
+	template<class HandleType>
+	bool
+	RevisionAwareIterator<HandleType>::operator!=(
+			const this_type &other) const
+	{
+		return !(*this == other);
+	}
+
+
+	template<class HandleType>
+	bool
+	RevisionAwareIterator<HandleType>::is_still_valid() const
+	{
+		return d_handle_weak_ref.is_valid() &&
+			d_handle_weak_ref->current_revision()->get(d_index);
+	}
+
+
+	// Private methods ////////////////////////////////////////////////////////////
+
+	template<class HandleType>
+	typename RevisionAwareIterator<HandleType>::value_type
+	RevisionAwareIterator<HandleType>::current_element() const
+	{
+		return d_handle_weak_ref->get(*this);
+	}
+
+
+	// Template specialisations are in .cc file.
+	template<>
+	RevisionAwareIterator<FeatureHandle>::value_type
+	RevisionAwareIterator<FeatureHandle>::current_element() const;
+
 }
+
 
 #endif  // GPLATES_MODEL_REVISIONAWAREITERATOR_H

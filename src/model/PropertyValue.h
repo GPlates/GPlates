@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the class PropertyValue.
  *
  * Most recent change:
  *   $Date$
@@ -28,36 +28,12 @@
 #ifndef GPLATES_MODEL_PROPERTYVALUE_H
 #define GPLATES_MODEL_PROPERTYVALUE_H
 
-// Even though we could make do with a forward declaration inside this header, every derived class
-// of 'PropertyValue' will need to #include "ConstFeatureVisitor.h" and "FeatureVisitor.h" anyway,
-// so we may as well include them here.
-#include "ConstFeatureVisitor.h"
-#include "FeatureVisitor.h"
+#include <iosfwd>
+#include <boost/cstdint.hpp>
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
-
-// This macro is used to define the template function 'assign_member' inside a class of type C.
-// To define the function, invoke the macro in the class definition, supplying the class type as
-// the argument to the macro.  The macro invocation will expand to a definition of the function.
-#define DEFINE_FUNCTION_ASSIGN_MEMBER(C)  \
-		template<typename MemberType>  \
-		void  \
-		assign_member(  \
-				MemberType C::*member_ptr_lvalue,  \
-				const MemberType &rvalue)  \
-		{  \
-			if (container() == NULL) {  \
-				/* This property value is not contained, so assign to 'this'. */  \
-				this->*member_ptr_lvalue = rvalue;  \
-			} else {  \
-				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);  \
-				C::non_null_ptr_type dup = clone();  \
-				dup.get()->*member_ptr_lvalue = rvalue;  \
-				container()->bubble_up_change(this, dup, transaction);  \
-				transaction.commit();  \
-			}  \
-		}
 
 
 // This macro is used to define the virtual function 'deep_clone_as_prop_val' inside a class which
@@ -79,8 +55,11 @@
 
 namespace GPlatesModel
 {
-	class PropertyValueContainer;
-
+	// Forward declarations.
+	class FeatureHandle;
+	template<class H> class FeatureVisitorBase;
+	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
+	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 
 	/**
 	 * This class is the abstract base of all property values.
@@ -118,8 +97,10 @@ namespace GPlatesModel
 		 */
 		PropertyValue() :
 			GPlatesUtils::ReferenceCount<PropertyValue>(),
-			d_container(NULL)
-		{  }
+			d_instance_id(s_next_instance_id)
+		{
+			++s_next_instance_id;
+		}
 
 		/**
 		 * Construct a PropertyValue instance which is a copy of @a other.
@@ -142,7 +123,7 @@ namespace GPlatesModel
 		PropertyValue(
 				const PropertyValue &other) :
 			GPlatesUtils::ReferenceCount<PropertyValue>(),
-			d_container(NULL)
+			d_instance_id(other.d_instance_id)
 		{  }
 
 		virtual
@@ -183,53 +164,54 @@ namespace GPlatesModel
 				FeatureVisitor &visitor) = 0;
 
 		/**
-		 * Access the PropertyValueContainer which contains this PropertyValue.
+		 * Prints the contents of this PropertyValue to the stream @a os.
 		 *
-		 * Client code should not use this function!
-		 *
-		 * Note that the return value may be a NULL pointer, which signifies that this
-		 * PropertyValue is not contained within a PropertyValueContainer.
+		 * Note: This function is not called operator<< because operator<< needs to
+		 * be a non-member operator, but we would like polymorphic behaviour.
 		 */
-		PropertyValueContainer *
-		container() const
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const = 0;
+
+		bool
+		operator==(
+				const PropertyValue &other) const;
+
+	protected:
+
+		/**
+		 * Give this PropertyValue instance a new instance id. If this shared
+		 * an instance id with another PropertyValue instance because this is a
+		 * clone of the other instance, the link between the instances is
+		 * thereby broken by getting a new instance id here.
+		 */
+		void
+		update_instance_id()
 		{
-			return d_container;
+			d_instance_id = s_next_instance_id;
+			++s_next_instance_id;
 		}
 
 		/**
-		 * Set the PropertyValueContainer which contains this PropertyValue.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * Note that @a new_container may be a NULL pointer... but only if this
-		 * PropertyValue instance will not be contained within a PropertyValueContainer.
+		 * Reimplement in derived classes where there are instance variables that can
+		 * be modified by client code without using a set_*() function.
+		 * For example, if a derived class has an XML attributes map that can be
+		 * retrieved by non-const reference by client code, or if a derived class has
+		 * nested PropertyValues returned to client code as a non_null_intrusive_ptr,
+		 * it is necessary to reimplement this function, because these instance
+		 * variables may have been modified without the clear_cloned_from() function
+		 * getting called.
 		 */
-		void
-		set_container(
-				PropertyValueContainer *new_container)
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const
 		{
-			d_container = new_container;
+			return true;
 		}
 
 	private:
-		/**
-		 * The property value container which contains this PropertyValue instance.
-		 *
-		 * Note that this should be held via a (regular, raw) pointer rather than a
-		 * ref-counting pointer (or any other type of smart pointer) because:
-		 *  -# The PropertyValueContainer instance conceptually manages the instance of
-		 * this class, not the other way around.
-		 *  -# A PropertyValueContainer instance will outlive the PropertyValue instances
-		 * it contains; thus, it doesn't make sense for a PropertyValueContainer to have
-		 * its memory managed by its contained PropertyValue.
-		 *  -# Each PropertyValueContainer derivation will contain a ref-counting pointer
-		 * to class PropertyValue, and we don't want to set up a ref-counting loop (which
-		 * would lead to memory leaks).
-		 *
-		 * This pointer may be NULL.  It will be NULL when this PropertyValue instance is
-		 * not contained.
-		 */
-		PropertyValueContainer *d_container;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
@@ -239,7 +221,58 @@ namespace GPlatesModel
 		operator=(
 				const PropertyValue &);
 
+#ifdef BOOST_NO_INT64_T
+		/**
+		 * Just in case we happen to run into a compiler without 64-bit integers.
+		 */
+		class instance_id_type
+		{
+		public:
+			instance_id_type() :
+				d_high(0),
+				d_low(0)
+			{
+			}
+
+			instance_id_type &
+			operator++()
+			{
+				++d_low;
+				if (d_low == 0) // integer overflow
+				{
+					++d_high;
+				}
+				return *this;
+			}
+
+			bool
+			operator==(
+					const instance_id_type &other) const
+			{
+				return d_low == other.d_low && d_high == other.d_high;
+			}
+
+		private:
+			boost::uint32_t d_high, d_low; // This should be portable.
+		};
+#else
+		// Use built-in 64-bit integers where available.
+		typedef boost::uint64_t instance_id_type;
+#endif
+
+		// Assists in speeding up operator==.
+		instance_id_type d_instance_id;
+
+		static instance_id_type s_next_instance_id;
+
 	};
+
+
+	// operator<< for PropertyValue.
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const PropertyValue &property_value);
 
 }
 

@@ -37,45 +37,43 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::XsDouble, visit_xs_double)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class XsDouble :
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsIntger,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsIntger>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<XsDouble,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsDouble> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsDouble,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsDouble>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XsDouble,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsDouble> non_null_ptr_to_const_type;
 
 		virtual
-		~XsDouble() {  }
+		~XsDouble()
+		{  }
 
 		static
 		const non_null_ptr_type
 		create(
-				double value) {
-			XsDouble::non_null_ptr_type ptr(new XsDouble(value),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				double value)
+		{
+			XsDouble::non_null_ptr_type ptr(new XsDouble(value));
 			return ptr;
 		}
 
 		const XsDouble::non_null_ptr_type
-		clone() const {
-			XsDouble::non_null_ptr_type dup(new XsDouble(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		clone() const
+		{
+			XsDouble::non_null_ptr_type dup(new XsDouble(*this));
 			return dup;
 		}
 
@@ -93,7 +91,8 @@ namespace GPlatesPropertyValues {
 		 * Accesses the double contained within this XsDouble.
 		 */
 		double
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 		
@@ -106,8 +105,10 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		set_value(
-				const double &d) {
+				const double &d)
+		{
 			d_value = d;
+			update_instance_id();
 		}
 
 
@@ -120,7 +121,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_xs_double(*this);
 		}
 
@@ -133,9 +135,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_xs_double(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -155,7 +163,7 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		XsDouble(
 				const XsDouble &other) :
-			PropertyValue(other),
+			PropertyValue(other), /* share instance id */
 			d_value(other.d_value)
 		{  }
 

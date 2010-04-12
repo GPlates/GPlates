@@ -76,12 +76,11 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature()
 					d_view_state.get_application_state().get_feature_collection_file_state(),
 					feature_ref);
 
-	GPlatesModel::FeatureHandle::non_null_ptr_type  new_feature_ptr = 
-			GPlatesModel::ModelUtils::deep_clone_feature(feature_ref);
+	GPlatesModel::FeatureHandle::non_null_ptr_type new_feature_ptr = feature_ref->clone();
 
-	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature_collection_ref->append_child(new_feature_ptr, transaction);
-	transaction.commit();
+	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+	feature_collection_ref->add(new_feature_ptr);
+	// transaction.commit();
 
 #if 0
 	//Since the clone_feature function only does a "shallow copy" of geometry property,
@@ -108,7 +107,7 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature()
 #endif
 
 	//set focus to the new feature 
-	GPlatesModel::FeatureHandle::children_iterator geo_property_iter =
+	GPlatesModel::FeatureHandle::iterator geo_property_iter =
 			*GPlatesFeatureVisitors::find_first_geometry_property(new_feature_ptr->reference());
 	d_view_state.get_feature_focus().set_focus(
 			new_feature_ptr->reference(),

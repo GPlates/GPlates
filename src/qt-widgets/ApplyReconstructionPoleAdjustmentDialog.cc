@@ -31,7 +31,7 @@
 #include "app-logic/Reconstruct.h"
 #include "feature-visitors/TotalReconstructionSequenceRotationInterpolater.h"
 #include "feature-visitors/TotalReconstructionSequenceRotationInserter.h"
-#include "utils/MathUtils.h"
+#include "maths/MathsUtils.h"
 #include "presentation/ViewState.h"
 
 
@@ -43,7 +43,7 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::fill_in_fields_for_ro
 		const GPlatesMaths::Rotation &r)
 {
 	double rot_angle_in_rads = r.angle().dval();
-	double rot_angle_in_degs = GPlatesUtils::convert_rad_to_deg(rot_angle_in_rads);
+	double rot_angle_in_degs = GPlatesMaths::convert_rad_to_deg(rot_angle_in_rads);
 	angle_ptr->setValue(rot_angle_in_degs);
 
 	if (r.angle() != 0.0) {
@@ -130,7 +130,7 @@ namespace
 			lon_field_ptr->setText(locale_.toString(llp.longitude(), 'f', 2));
 
 			double rot_angle_in_rads = params.angle.dval();
-			double rot_angle_in_degs = GPlatesUtils::convert_rad_to_deg(rot_angle_in_rads);
+			double rot_angle_in_degs = GPlatesMaths::convert_rad_to_deg(rot_angle_in_rads);
 			angle_ptr->setValue(rot_angle_in_degs);
 		}
 	}

@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <boost/optional.hpp>
+
 #include "FeatureHandle.h"
 #include "PropertyName.h"
 #include "WeakObserverVisitor.h"

@@ -29,7 +29,7 @@
 #define GPLATES_FEATUREVISITORS_KEYVALUEDICTIONARYFINDER_H
 
 #include <vector>
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 

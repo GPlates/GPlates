@@ -25,7 +25,33 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <typeinfo>
+
 #include "GpmlIrregularSampling.h"
+
+
+namespace
+{
+	bool
+	maybe_null_ptr_eq(
+			const GPlatesPropertyValues::GpmlInterpolationFunction::maybe_null_ptr_type &p1,
+			const GPlatesPropertyValues::GpmlInterpolationFunction::maybe_null_ptr_type &p2)
+	{
+		if (p1)
+		{
+			if (!p2)
+			{
+				return false;
+			}
+			return *p1 == *p2;
+		}
+		else
+		{
+			return !p2;
+		}
+	}
+}
 
 
 const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
@@ -51,3 +77,32 @@ GPlatesPropertyValues::GpmlIrregularSampling::deep_clone() const
 
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GpmlIrregularSampling::print_to(
+		std::ostream &os) const
+{
+	// FIXME: Implement properly when actually needed for debugging.
+	return os << "{ GpmlIrregularSampling }";
+}
+
+
+bool
+GPlatesPropertyValues::GpmlIrregularSampling::directly_modifiable_fields_equal(
+		const GPlatesModel::PropertyValue &other) const
+{
+	try
+	{
+		const GpmlIrregularSampling &other_casted =
+			dynamic_cast<const GpmlIrregularSampling &>(other);
+		return d_time_samples == other_casted.d_time_samples &&
+			maybe_null_ptr_eq(d_interpolation_function, other_casted.d_interpolation_function);
+	}
+	catch (const std::bad_cast &)
+	{
+		// Should never get here, but doesn't hurt to check.
+		return false;
+	}
+}
+

@@ -767,6 +767,13 @@ namespace GPlatesMaths
 				const real_t &latitude_exclusion_threshold,
 				real_t &closeness) const;
 
+		bool
+		operator==(
+				const PolygonOnSphere &other) const
+		{
+			return d_seq == other.d_seq;
+		}
+
 	private:
 
 		/**

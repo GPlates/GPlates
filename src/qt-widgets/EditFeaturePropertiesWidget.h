@@ -140,7 +140,7 @@ namespace GPlatesQtWidgets
 		 * Used to remember which property is being edited by the currently-active
 		 * Edit widget, so that data can be committed when editing is finished.
 		 */
-		boost::optional<GPlatesModel::FeatureHandle::children_iterator> d_selected_property_iterator;
+		boost::optional<GPlatesModel::FeatureHandle::iterator> d_selected_property_iterator;
 	};
 }
 

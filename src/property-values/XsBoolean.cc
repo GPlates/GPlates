@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,17 +26,14 @@
  */
 
 #include <iostream>
-#include "DummyTransactionHandle.h"
+
+#include "XsBoolean.h"
 
 
-GPlatesModel::DummyTransactionHandle::~DummyTransactionHandle()
+std::ostream &
+GPlatesPropertyValues::XsBoolean::print_to(
+		std::ostream &os) const
 {
-	if ( ! d_has_been_committed_or_aborted) {
-		std::cerr << "DummyTransactionHandle("
-				<< d_file
-				<< ", "
-				<< d_line
-				<< ") has been neither committed nor aborted."
-				<< std::endl;
-	}
+	return os << (d_value ? "true" : "false");
 }
+

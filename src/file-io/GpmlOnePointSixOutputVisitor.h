@@ -32,7 +32,7 @@
 #include <QProcess>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "XmlWriter.h"
 #include "FileInfo.h"

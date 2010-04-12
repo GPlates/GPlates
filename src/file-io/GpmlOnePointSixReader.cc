@@ -47,14 +47,12 @@
 
 #include "utils/StringUtils.h"
 #include "utils/UnicodeStringUtils.h"
-#include "utils/MathUtils.h"
 
 #include "maths/LatLonPoint.h"
 
 #include "model/Model.h"
 #include "model/FeatureRevision.h"
 #include "model/TopLevelPropertyInline.h"
-#include "model/DummyTransactionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
 #include "model/XmlNode.h"
@@ -246,7 +244,7 @@ namespace
 		Model::FeatureType feature_type(xml_elem->get_name());
 
 		Model::FeatureHandle::weak_ref feature = 
-			model->create_feature(feature_type, collection);
+			Model::FeatureHandle::create(collection, feature_type);
 
 		// Read properties of the feature.
 		PropertyList properties;
@@ -264,11 +262,12 @@ namespace
 			iter = properties.begin(),
 			end = properties.end();
 		for ( ; iter != end; ++iter) {
-			Model::ModelUtils::append_property_value_to_feature(
-				iter->second, iter->first->get_name(), 
-				iter->first->attributes_begin(), 
-				iter->first->attributes_end(),
-				feature);
+			feature->add(
+					Model::TopLevelPropertyInline::create(
+						iter->first->get_name(),
+						iter->second,
+						iter->first->attributes_begin(),
+						iter->first->attributes_end()));
 		}
 	}
 
@@ -299,13 +298,22 @@ namespace
 		Model::FeatureHandle::weak_ref feature;
 
 		if (feature_id && revision_id) {
-			feature = model->create_feature(feature_type, *feature_id, *revision_id, collection);
+			feature = Model::FeatureHandle::create(
+					collection,
+					feature_type,
+					*feature_id,
+					*revision_id);
 		} else if (feature_id) {
-			feature = model->create_feature(feature_type, *feature_id, collection);
+			feature = Model::FeatureHandle::create(
+					collection,
+					feature_type,
+					*feature_id);
 		} else {
 			// Without a feature ID, a revision ID is meaningless.  So, even if we have
 			// a revision ID, if we don't have a feature ID, regenerate both.
-			feature = model->create_feature(feature_type, collection);
+			feature = Model::FeatureHandle::create(
+					collection,
+					feature_type);
 		}
 
 		// Add properties to feature.
@@ -313,11 +321,12 @@ namespace
 			iter = properties.begin(),
 			end = properties.end();
 		for ( ; iter != end; ++iter) {
-			Model::ModelUtils::append_property_value_to_feature(
-				iter->second, iter->first->get_name(), 
-				iter->first->attributes_begin(), 
-				iter->first->attributes_end(),
-				feature);
+			feature->add(
+					Model::TopLevelPropertyInline::create(
+						iter->first->get_name(),
+						iter->second,
+						iter->first->attributes_begin(),
+						iter->first->attributes_end()));
 		}
 	}
 
@@ -486,7 +495,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 	boost::shared_ptr<DataSource> source( 
 			new LocalFileDataSource(filename, DataFormats::GpmlOnePointSix));
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection =
-			model->create_feature_collection();
+			GPlatesModel::FeatureCollectionHandle::create(model->root());
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =

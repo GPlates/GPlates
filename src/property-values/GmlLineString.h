@@ -48,29 +48,24 @@ namespace GPlatesPropertyValues
 	class GmlLineString:
 			public GPlatesModel::PropertyValue
 	{
+
 	public:
+
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlLineString,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlLineString>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlLineString,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlLineString> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlLineString,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString> non_null_ptr_to_const_type;
 
 		/**
 		 * A convenience typedef for the internal polyline representation.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				internal_polyline_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> internal_polyline_type;
 
 		virtual
 		~GmlLineString()
@@ -87,8 +82,7 @@ namespace GPlatesPropertyValues
 		const GmlLineString::non_null_ptr_type
 		clone() const
 		{
-			GmlLineString::non_null_ptr_type dup(new GmlLineString(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GmlLineString::non_null_ptr_type dup(new GmlLineString(*this));
 			return dup;
 		}
 
@@ -130,6 +124,7 @@ namespace GPlatesPropertyValues
 				const internal_polyline_type &p)
 		{
 			d_polyline = p;
+			update_instance_id();
 		}
 
 		/**
@@ -160,6 +155,11 @@ namespace GPlatesPropertyValues
 			visitor.visit_gml_line_string(*this);
 		}
 
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
@@ -179,7 +179,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlLineString(
 				const GmlLineString &other):
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_polyline(other.d_polyline)
 		{  }
 

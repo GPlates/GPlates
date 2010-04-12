@@ -26,15 +26,12 @@
 #ifndef GPLATES_MODEL_MODELUTILS_H
 #define GPLATES_MODEL_MODELUTILS_H
 
-#include <boost/function.hpp>
-
-#include "ModelInterface.h"
-#include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
-#include "TopLevelPropertyInline.h"
-#include "DummyTransactionHandle.h"
+#include "FeatureCollectionHandle.h"
+#include "ModelInterface.h"
 #include "PropertyName.h"
 #include "PropertyValue.h"
+#include "TopLevelPropertyInline.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlLineString.h"
@@ -54,11 +51,7 @@ namespace GPlatesModel
 {
 	namespace ModelUtils
 	{
-		/**
-		 * Typedef for a function that accepts a feature property and returns a boolean.
-		 */
-		typedef boost::function<bool (const GPlatesModel::FeatureHandle::children_iterator &)>
-			property_predicate_type;
+		// Note: Consider adding functions as member functions in one of the Handle classes instead.
 
 		struct TotalReconstructionPoleData
 		{
@@ -70,72 +63,7 @@ namespace GPlatesModel
 		};
 
 
-		/**
-		 * Makes a deep clone of a feature. The returned feature has a new feature ID
-		 * and revision; it also has the same properties, but its properties are
-		 * distinct objects from those of the original feature.
-		 *
-		 * The new feature is not in a feature collection. The caller of this function
-		 * is responsible for placing the feature in a feature collection, if that is
-		 * desired.
-		 */
-		FeatureHandle::non_null_ptr_type
-		deep_clone_feature(
-				const FeatureHandle::weak_ref &feature);
-	
-		/**
-		 * The default clone properties predicate always returns true.
-		 */
-		inline
-		bool
-		default_clone_properties_predicate(
-				const GPlatesModel::FeatureHandle::children_iterator &)
-		{
-			return true;
-		}
-
-		/**
-		 * Makes a deep clone of a feature (but only the property values that returns true
-		 * when passed to @a clone_properties_predicate).
-		 *
-		 * The cloned feature is also added to @a feature_collection_ref.
-		 */
-		GPlatesModel::FeatureHandle::weak_ref
-		deep_clone_feature(
-				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-				GPlatesModel::ModelInterface &model,
-				const property_predicate_type &clone_properties_predicate =
-						&default_clone_properties_predicate);
-
-
-		const TopLevelPropertyInline::non_null_ptr_type
-		append_property_value_to_feature(
-				PropertyValue::non_null_ptr_type property_value,
-				const PropertyName &property_name,
-				const FeatureHandle::weak_ref &feature);
-
-
-		const TopLevelPropertyInline::non_null_ptr_type
-		append_property_value_to_feature(
-				PropertyValue::non_null_ptr_type property_value,
-				const PropertyName &property_name,
-				const UnicodeString &attribute_name_string,
-				const UnicodeString &attribute_value_string,
-				const FeatureHandle::weak_ref &feature);
-
-
-		template< typename AttributeIterator >
-		const TopLevelPropertyInline::non_null_ptr_type
-		append_property_value_to_feature(
-				PropertyValue::non_null_ptr_type property_value,
-				const PropertyName &property_name,
-				const AttributeIterator &attributes_begin,
-				const AttributeIterator &attributes_end,
-				const FeatureHandle::weak_ref &feature);
-
-
-		const TopLevelProperty::non_null_ptr_type
+		const FeatureHandle::iterator
 		append_property_to_feature(
 				TopLevelProperty::non_null_ptr_type top_level_property,
 				const FeatureHandle::weak_ref &feature);
@@ -143,7 +71,7 @@ namespace GPlatesModel
 
 		void
 		remove_property_from_feature(
-				FeatureHandle::children_iterator properties_iterator,
+				FeatureHandle::iterator properties_iterator,
 				const FeatureHandle::weak_ref &feature);
 
 
@@ -204,28 +132,6 @@ namespace GPlatesModel
 				GPlatesModel::FeatureHandle::weak_ref feature_ref);
 	}
 
-
-	template< typename AttributeIterator >
-	const TopLevelPropertyInline::non_null_ptr_type
-	ModelUtils::append_property_value_to_feature(
-			PropertyValue::non_null_ptr_type property_value,
-			const PropertyName &property_name,
-			const AttributeIterator &attributes_begin,
-			const AttributeIterator &attributes_end,
-			const FeatureHandle::weak_ref &feature)
-	{
-		std::map<XmlAttributeName, XmlAttributeValue> xml_attributes(
-				attributes_begin, attributes_end);
-		
-		TopLevelPropertyInline::non_null_ptr_type top_level_property =
-				TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
-
-		DummyTransactionHandle transaction(__FILE__, __LINE__);
-		feature->append_child(top_level_property, transaction);
-		transaction.commit();
-
-		return top_level_property;
-	}
 }
 
 #endif  // GPLATES_MODEL_MODELUTILS_H

@@ -41,6 +41,7 @@
 #include "property-values/XsDouble.h"
 #include "view-operations/RenderedGeometryFactory.h"
 
+
 bool
 GPlatesAppLogic::PaleomagUtils::detect_paleomag_features(
 	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection)
@@ -64,7 +65,7 @@ GPlatesAppLogic::PaleomagUtils::detect_paleomag_features(
 
 void
 GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gml_point(
-	GPlatesPropertyValues::GmlPoint &gml_point)
+	const GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	static const GPlatesModel::PropertyName site_name = 
 		GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition");
@@ -83,9 +84,10 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gml_point(
 	}
 }
 
+
 void
 GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_xs_double(
-	GPlatesPropertyValues::XsDouble &xs_double)
+	const GPlatesPropertyValues::XsDouble &xs_double)
 {
 	static const GPlatesModel::PropertyName a95_name = 
 		GPlatesModel::PropertyName::create_gpml("poleA95");
@@ -111,9 +113,10 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_xs_double(
 	}
 }
 
+
 void
 GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gpml_plate_id(
-	GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+	const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	static const GPlatesModel::PropertyName plate_id_name = 
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
@@ -127,14 +130,15 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gpml_plate_id(
 
 void
 GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gpml_constant_value(
-	GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+	const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
+
 void
 GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gml_time_period(
-	GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
+	const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	static const GPlatesModel::PropertyName valid_time_name = 
 		GPlatesModel::PropertyName::create_gml("validTime");
@@ -147,10 +151,9 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gml_time_period(
 }
 
 
-
 void
 GPlatesAppLogic::PaleomagUtils::VgpRenderer::finalise_post_feature_properties(
-	GPlatesModel::FeatureHandle &feature_handle)
+	const GPlatesModel::FeatureHandle &feature_handle)
 {
 
 	if (!d_vgp_point || !d_site_point)

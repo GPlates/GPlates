@@ -49,7 +49,6 @@
 
 #include "feature-visitors/GeometryFinder.h"
 #include "feature-visitors/GeometryTypeFinder.h"
-#include "utils/GeometryUtil.h"
 
 
 namespace GPlatesViewOperations

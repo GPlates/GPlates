@@ -45,6 +45,8 @@
 #include "file-io/OgrException.h"
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
+#include "model/FeatureCollectionHandle.h"
+#include "model/WeakReferenceCallback.h"
 #include "ManageFeatureCollectionsActionWidget.h"
 #include "ManageFeatureCollectionsStateWidget.h"
 #include "GMTHeaderFormatDialog.h"
@@ -289,6 +291,80 @@ namespace
 		return dynamic_cast<GPlatesQtWidgets::ManageFeatureCollectionsActionWidget *>(
 				qtable_widget->cellWidget(row, ColumnNames::ACTIONS));
 	}
+
+	
+	/**
+	 * A test callback to receive notifications of changes to feature collections.
+	 */
+	class ExampleCallback :
+			public GPlatesModel::WeakReferenceCallback<GPlatesModel::FeatureCollectionHandle>
+	{
+	public:
+
+		typedef GPlatesModel::WeakReferencePublisherModifiedEvent<GPlatesModel::FeatureCollectionHandle> modified_event_type;
+		typedef GPlatesModel::WeakReferencePublisherDeactivatedEvent<GPlatesModel::FeatureCollectionHandle> deactivated_event_type;
+		typedef GPlatesModel::WeakReferencePublisherReactivatedEvent<GPlatesModel::FeatureCollectionHandle> reactivated_event_type;
+		typedef GPlatesModel::WeakReferencePublisherAboutToBeDestroyedEvent<GPlatesModel::FeatureCollectionHandle> about_to_be_destroyed_event_type;
+
+		void
+		publisher_modified(
+				const modified_event_type &event)
+		{
+#if 0
+			bool publisher = event.type() & modified_event_type::PUBLISHER_MODIFIED;
+			bool child = event.type() & modified_event_type::CHILD_MODIFIED;
+			qDebug() << "[MFCD] feature collection modified " <<
+				(publisher ? "publisher " : "") <<
+				(child ? "child " : "");
+
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = event.reference();
+			qDebug() << "    contains unsaved changes? " << feature_collection->contains_unsaved_changes();
+			feature_collection->clear_unsaved_changes();
+			qDebug() << "    unsaved changes cleared.";
+#endif
+		}
+
+		void
+		publisher_deactivated(
+				const deactivated_event_type &)
+		{
+#if 0
+			qDebug() << "[MFCD] feature collection deactivated";
+#endif
+		}
+
+		void
+		publisher_reactivated(
+				const reactivated_event_type &)
+		{
+#if 0
+			qDebug() << "[MFCD] feature collection reactivated";
+#endif
+		}
+
+		void
+		publisher_about_to_be_destroyed(
+				const about_to_be_destroyed_event_type &)
+		{
+#if 0
+			qDebug() << "[MFCD] feature collection about to be destroyed";
+#endif
+		}
+	};
+
+
+	void
+	register_example_callback(
+			GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file_iter)
+	{
+		// This isn't glorious code; it's just meant to demonstrate the workings of the callback system.
+		static std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> fc_weak_refs;
+		GPlatesFileIO::File &file = *file_iter;
+		fc_weak_refs.push_back(file.get_feature_collection());
+		GPlatesModel::FeatureCollectionHandle::weak_ref &fc_weak_ref = fc_weak_refs.back();
+		fc_weak_ref.attach_callback(new ExampleCallback());
+	}
+
 }
 
 
@@ -392,7 +468,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 	// Save the feature collection.
 	save_file(
 			file->get_file_info(),
-			file->get_const_feature_collection(),
+			file->get_feature_collection(),
 			feature_collection_write_format);
 }
 
@@ -437,7 +513,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 	// Save the feature collection.
 	save_file(
 			new_fileinfo,
-			file->get_const_feature_collection(),
+			file->get_feature_collection(),
 			feature_collection_write_format);
 
 	// Wrap the same feature collection up with the new FileInfo.
@@ -493,7 +569,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 	// Save the feature collection.
 	save_file(
 			new_fileinfo,
-			file->get_const_feature_collection(),
+			file->get_feature_collection(),
 			feature_collection_write_format);
 }
 
@@ -599,6 +675,9 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::end_add_feature_collections(
 	for ( ; new_file_iter != new_files_end; ++new_file_iter)
 	{
 		add_row(new_file_iter);
+
+		// FIXME: Testing code only; remove later
+		register_example_callback(new_file_iter);
 	}
 }
 
@@ -1037,7 +1116,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::try_catch_file_load(
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
 {
 	try

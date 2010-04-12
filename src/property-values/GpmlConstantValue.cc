@@ -25,6 +25,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <typeinfo>
+
 #include "GpmlConstantValue.h"
 
 
@@ -38,3 +41,30 @@ GPlatesPropertyValues::GpmlConstantValue::deep_clone() const
 
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GpmlConstantValue::print_to(
+		std::ostream &os) const
+{
+	return os << *d_value;
+}
+
+
+bool
+GPlatesPropertyValues::GpmlConstantValue::directly_modifiable_fields_equal(
+		const GPlatesModel::PropertyValue &other) const
+{
+	try
+	{
+		const GpmlConstantValue &other_casted =
+			dynamic_cast<const GpmlConstantValue &>(other);
+		return *d_value == *other_casted.d_value;
+	}
+	catch (const std::bad_cast &)
+	{
+		// Should never get here, but doesn't hurt to check.
+		return false;
+	}
+}
+

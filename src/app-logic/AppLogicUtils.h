@@ -31,7 +31,11 @@
 
 namespace GPlatesModel
 {
-	class FeatureVisitor;
+	// Forward declarations.
+	class FeatureHandle;
+	template<class FeatureHandleType> class FeatureVisitorBase;
+	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
+	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 }
 
 namespace GPlatesAppLogic

@@ -39,7 +39,6 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonIntersections.h"
 
-
 #include "model/FeatureCollectionHandle.h"
 
 

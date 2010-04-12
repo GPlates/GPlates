@@ -38,7 +38,6 @@
 #include "maths/GeometryOnSphere.h"
 
 #include "model/types.h"
-#include "model/ConstFeatureVisitor.h"
 #include "model/FeatureId.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"

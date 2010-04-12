@@ -37,11 +37,8 @@
 #include "app-logic/CgalUtils.h"
 #include "app-logic/PlateVelocityUtils.h"
 #include "app-logic/TopologyUtils.h"
-
 #include "maths/PolygonOnSphere.h"
-
 #include "property-values/GeoTimeInstant.h"
-
 #include "utils/ReferenceCount.h"
 
 
@@ -229,7 +226,7 @@ namespace GPlatesModel
 		create(
 				boost::shared_ptr<GPlatesAppLogic::CgalUtils::cgal_delaunay_triangulation_type> cgal_triangulation,
 				FeatureHandle &feature_handle,
-				FeatureHandle::children_iterator property_iterator_,
+				FeatureHandle::iterator property_iterator_,
 				NodeForwardIter node_sequence_begin,
 				NodeForwardIter node_sequence_end,
 				boost::optional<integer_plate_id_type> plate_id_ = boost::none,
@@ -303,7 +300,7 @@ namespace GPlatesModel
 			return d_feature_ref;
 		}
 
-		const FeatureHandle::children_iterator
+		const FeatureHandle::iterator
 		property() const
 		{
 			return d_property_iterator;
@@ -332,7 +329,7 @@ namespace GPlatesModel
 		 * This is an iterator to the (topological-geometry-valued) property from which
 		 * this RTN was derived.
 		 */
-		FeatureHandle::children_iterator d_property_iterator;
+		FeatureHandle::iterator d_property_iterator;
 
 		/**
 		 * The cached plate ID, if it exists.
@@ -383,7 +380,7 @@ namespace GPlatesModel
 		ResolvedTopologicalNetworkImpl(
 				boost::shared_ptr<GPlatesAppLogic::CgalUtils::cgal_delaunay_triangulation_type> cgal_triangulation,
 				FeatureHandle &feature_handle,
-				FeatureHandle::children_iterator property_iterator_,
+				FeatureHandle::iterator property_iterator_,
 				NodeForwardIter node_sequence_begin,
 				NodeForwardIter node_sequence_end,
 				boost::optional<integer_plate_id_type> plate_id_ = boost::none,

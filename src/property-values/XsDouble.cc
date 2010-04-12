@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * Contains the definition of the class HandleData.
+ * File specific comments.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,21 +25,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_HANDLEDATA_H
-#define GPLATES_MODEL_HANDLEDATA_H
+#include <iostream>
 
-namespace GPlatesModel
+#include "XsDouble.h"
+
+
+std::ostream &
+GPlatesPropertyValues::XsDouble::print_to(
+		std::ostream &os) const
 {
-
-	/**
-	 * HandleData holds additional data that each Handle type needs to store.
-	 * There is a template specialisation for each type of Handle.
-	 */
-	template<class Handle>
-	class HandleData
-	{
-	};
-
+	return os << d_value;
 }
 
-#endif  // GPLATES_MODEL_HANDLEDATA_H

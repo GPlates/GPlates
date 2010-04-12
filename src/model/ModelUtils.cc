@@ -27,11 +27,8 @@
 
 #include <algorithm>
 
-#include "ModelUtils.h"
 #include "Model.h"
-#include "DummyTransactionHandle.h"
-#include "FeatureHandle.h"
-#include "FeatureRevision.h"
+#include "ModelUtils.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -46,162 +43,27 @@
 #include "property-values/GpmlTimeSample.h"
 
 
-namespace
-{
-	//! Helper functor for deep_clone_feature.
-	class FeaturePropertyAccumulator
-	{
-
-	public:
-		
-		FeaturePropertyAccumulator(
-				GPlatesModel::FeatureHandle::non_null_ptr_type feature) :
-			d_feature(feature)
-		{
-		}
-
-		void
-		operator()(
-				const boost::intrusive_ptr<const GPlatesModel::TopLevelProperty> &top_level_property)
-		{
-			if (top_level_property)
-			{
-				GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = top_level_property->deep_clone();
-				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-				d_feature->append_child(property_clone, transaction);
-				transaction.commit();
-			}
-		}
-
-	private:
-
-		GPlatesModel::FeatureHandle::non_null_ptr_type d_feature;
-	};
-}
-
-
-GPlatesModel::FeatureHandle::non_null_ptr_type
-GPlatesModel::ModelUtils::deep_clone_feature(
-		const FeatureHandle::weak_ref &feature)
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			feature.is_valid(),
-			GPLATES_ASSERTION_SOURCE);
-	FeatureHandle::non_null_ptr_type feature_clone = FeatureHandle::create(
-		feature->handle_data().feature_type(),
-		FeatureId());
-	std::for_each(
-			feature->children_begin(),
-			feature->children_end(),
-			FeaturePropertyAccumulator(feature_clone));
-	return feature_clone;
-}
-
-
-GPlatesModel::FeatureHandle::weak_ref
-GPlatesModel::ModelUtils::deep_clone_feature(
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		GPlatesModel::ModelInterface &model,
-		const property_predicate_type &clone_properties_predicate)
-{
-	//Create a new feature.
-	const GPlatesModel::FeatureHandle::weak_ref new_feature_ref =
-			model->create_feature(
-					feature_ref->handle_data().feature_type(),
-					feature_collection_ref);
-		
-	GPlatesModel::FeatureHandle::children_iterator old_feature_properties_iter =
-		feature_ref->children_begin();
-
-	GPlatesModel::FeatureHandle::children_iterator old_feature_properties_end =
-		feature_ref->children_end();
-
-	for ( ; old_feature_properties_iter != old_feature_properties_end;
-		++old_feature_properties_iter)
-	{
-		if(!old_feature_properties_iter.is_valid() ||
-		   !clone_properties_predicate(old_feature_properties_iter))
-		{
-			continue;
-		}
-		
-		const GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_property_value =
-			(*old_feature_properties_iter)->deep_clone();
-
-		GPlatesModel::ModelUtils::append_property_to_feature(
-			cloned_property_value, new_feature_ref);
-	}
-
-	return new_feature_ref;
-}
-
-
-const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
-GPlatesModel::ModelUtils::append_property_value_to_feature(
-		PropertyValue::non_null_ptr_type property_value,
-		const PropertyName &property_name,
-		const FeatureHandle::weak_ref &feature)
-{
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	TopLevelPropertyInline::non_null_ptr_type top_level_property =
-			TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
-
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->append_child(top_level_property, transaction);
-	transaction.commit();
-
-	return top_level_property;
-}
-
-
-const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
-GPlatesModel::ModelUtils::append_property_value_to_feature(
-		PropertyValue::non_null_ptr_type property_value,
-		const PropertyName &property_name,
-		const UnicodeString &attribute_name_string,
-		const UnicodeString &attribute_value_string,
-		const FeatureHandle::weak_ref &feature)
-{
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	// FIXME: xml_attribute_name is not always GPML!
-	XmlAttributeName xml_attribute_name =
-		XmlAttributeName::create_gpml(
-				GPlatesUtils::make_qstring_from_icu_string(attribute_name_string));
-	XmlAttributeValue xml_attribute_value(attribute_value_string);
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	TopLevelPropertyInline::non_null_ptr_type top_level_property =
-			TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
-
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->append_child(top_level_property, transaction);
-	transaction.commit();
-
-	return top_level_property;
-}
-
-
-const GPlatesModel::TopLevelProperty::non_null_ptr_type
+const GPlatesModel::FeatureHandle::iterator
 GPlatesModel::ModelUtils::append_property_to_feature(
 		TopLevelProperty::non_null_ptr_type top_level_property,
 		const FeatureHandle::weak_ref &feature)
 {
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->append_child(top_level_property, transaction);
-	transaction.commit();
+	// DummyTransactionHandle transaction(__FILE__, __LINE__);
+	FeatureHandle::iterator result = feature->add(top_level_property);
+	// transaction.commit();
 
-	return top_level_property;
+	return result;
 }
 
 
 void
 GPlatesModel::ModelUtils::remove_property_from_feature(
-		FeatureHandle::children_iterator properties_iterator,
+		FeatureHandle::iterator properties_iterator,
 		const FeatureHandle::weak_ref &feature)
 {
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->remove_child(properties_iterator, transaction);
-	transaction.commit();
+	// DummyTransactionHandle transaction(__FILE__, __LINE__);
+	feature->remove(properties_iterator);
+	// transaction.commit();
 }
 
 
@@ -210,18 +72,17 @@ GPlatesModel::ModelUtils::remove_properties_from_feature_by_name(
 		const PropertyName &property_name,
 		const FeatureHandle::weak_ref &feature)
 {
-	FeatureHandle::children_iterator feature_properties_iter = feature->children_begin();
-	FeatureHandle::children_iterator feature_properties_end = feature->children_end();
+	FeatureHandle::iterator feature_properties_iter = feature->begin();
+	FeatureHandle::iterator feature_properties_end = feature->end();
 	while (feature_properties_iter != feature_properties_end)
 	{
 		// Increment iterator before we remove property.
 		// I don't think this is currently necessary but it doesn't hurt.
-		FeatureHandle::children_iterator current_feature_properties_iter =
+		FeatureHandle::iterator current_feature_properties_iter =
 				feature_properties_iter;
 		++feature_properties_iter;
 
-		if (current_feature_properties_iter.is_valid() &&
-			(*current_feature_properties_iter)->property_name() == property_name)
+		if ((*current_feature_properties_iter)->property_name() == property_name)
 		{
 			remove_property_from_feature(
 					current_feature_properties_iter, feature);
@@ -347,29 +208,28 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 		const std::vector<TotalReconstructionPoleData> &five_tuples)
 {
 	FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
-	FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type, target_collection);
+	FeatureHandle::weak_ref feature = FeatureHandle::create(target_collection, feature_type);
 
 	TopLevelProperty::non_null_ptr_type total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples);
 
-	DummyTransactionHandle pc1(__FILE__, __LINE__);
-	feature->append_child(total_reconstruction_pole_container, pc1);
-	pc1.commit();
+	// DummyTransactionHandle pc1(__FILE__, __LINE__);
+	feature->add(total_reconstruction_pole_container);
+	// pc1.commit();
 
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type fixed_ref_frame(
 			GPlatesPropertyValues::GpmlPlateId::create(fixed_plate_id));
-	ModelUtils::append_property_value_to_feature(
-			fixed_ref_frame,
-			PropertyName::create_gpml("fixedReferenceFrame"), 
-			feature);
+	feature->add(
+			TopLevelPropertyInline::create(
+				PropertyName::create_gpml("fixedReferenceFrame"),
+				fixed_ref_frame));
 
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type moving_ref_frame(
 			GPlatesPropertyValues::GpmlPlateId::create(moving_plate_id));
-	ModelUtils::append_property_value_to_feature(
-			moving_ref_frame,
-			PropertyName::create_gpml("movingReferenceFrame"), 
-			feature);
+	feature->add(
+			TopLevelPropertyInline::create(
+				PropertyName::create_gpml("movingReferenceFrame"),
+				moving_ref_frame));
 
 	return feature;
 }
@@ -380,23 +240,21 @@ GPlatesModel::ModelUtils::remove_feature(
 	GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
 
-	GPlatesModel::FeatureCollectionHandle::children_iterator
-		feature_iter = feature_collection_ref->children_begin();
-	GPlatesModel::FeatureCollectionHandle::children_iterator 
-		feature_end = feature_collection_ref->children_end();
+	GPlatesModel::FeatureCollectionHandle::iterator
+		feature_iter = feature_collection_ref->begin();
+	GPlatesModel::FeatureCollectionHandle::iterator 
+		feature_end = feature_collection_ref->end();
 
 	for (; feature_iter != feature_end; ++feature_iter) 
 	{
-		if (feature_iter.is_valid()) 
+		if(feature_ref.handle_ptr() == (*feature_iter).get()) 
 		{
-			if(feature_ref.handle_ptr() == (*feature_iter).get()) 
-			{
-				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-				feature_collection_ref->remove_child(feature_iter,transaction);
-				transaction.commit();
-				return true;
-			}
+			// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+			feature_collection_ref->remove(feature_iter);
+			// transaction.commit();
+			return true;
 		}
 	}
 	return false;
 }
+

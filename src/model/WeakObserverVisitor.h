@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,13 +31,11 @@
 
 namespace GPlatesModel
 {
-	// Forward declaration to avoid circularity of headers.
 	class FeatureHandle;
 	class ReconstructedFeatureGeometry;
 	class ResolvedTopologicalBoundary;
 	class ResolvedTopologicalNetwork;
 	template<class H> class WeakReference;
-
 
 	/**
 	 * This class defines an abstract interface for a Visitor to visit weak observers.
@@ -62,11 +60,10 @@ namespace GPlatesModel
 	{
 	public:
 
-		// We'll make this function pure virtual so that the class is abstract.  The class
-		// *should* be abstract, but wouldn't be unless we did this, since all the virtual
-		// member functions have (empty) definitions.
 		virtual
-		~WeakObserverVisitor() = 0;
+		~WeakObserverVisitor()
+		{
+		}
 
 		// Please keep these reconstruction geometry derivations ordered alphabetically.
 
@@ -112,11 +109,6 @@ namespace GPlatesModel
 	};
 
 
-	template<typename H>
-	WeakObserverVisitor<H>::~WeakObserverVisitor()
-	{  }
-
-
 	/**
 	 * This class defines an abstract interface for a Visitor to visit weak observers.
 	 *
@@ -128,11 +120,10 @@ namespace GPlatesModel
 	{
 	public:
 
-		// We'll make this function pure virtual so that the class is abstract.  The class
-		// *should* be abstract, but wouldn't be unless we did this, since all the virtual
-		// member functions have (empty) definitions.
 		virtual
-		~WeakObserverVisitor() = 0;
+		~WeakObserverVisitor()
+		{
+		}
 
 		// Please keep these reconstruction geometry derivations ordered alphabetically.
 

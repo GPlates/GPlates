@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <typeinfo>
+
 #include "GmlOrientableCurve.h"
 
 
@@ -38,3 +40,31 @@ GPlatesPropertyValues::GmlOrientableCurve::deep_clone() const
 
 	return dup;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GmlOrientableCurve::print_to(
+		std::ostream &os) const
+{
+	return d_base_curve->print_to(os);
+}
+
+
+bool
+GPlatesPropertyValues::GmlOrientableCurve::directly_modifiable_fields_equal(
+		const GPlatesModel::PropertyValue &other) const
+{
+	try
+	{
+		const GmlOrientableCurve &other_casted =
+			dynamic_cast<const GmlOrientableCurve &>(other);
+		return *d_base_curve == *other_casted.d_base_curve &&
+			d_xml_attributes == other_casted.d_xml_attributes;
+	}
+	catch (const std::bad_cast &)
+	{
+		// Should never get here, but doesn't hurt to check.
+		return false;
+	}
+}
+

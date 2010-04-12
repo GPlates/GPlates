@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,14 +25,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_UTILS_MATHUTILS_H
-#define GPLATES_UTILS_MATHUTILS_H
+#ifndef GPLATES_MATHS_MATHUTILS_H
+#define GPLATES_MATHS_MATHUTILS_H
 
 #include <limits>
 #include <cmath>
 
 
-namespace GPlatesUtils
+namespace GPlatesMaths
 {
 	template<class T>
 	inline
@@ -83,4 +83,4 @@ namespace GPlatesUtils
 	}
 }
 
-#endif  // GPLATES_UTILS_MATHUTILS_H
+#endif  // GPLATES_MATHS_MATHUTILS_H

@@ -119,7 +119,6 @@
 
 #include "model/Model.h"
 #include "model/types.h"
-#include "model/DummyTransactionHandle.h"
 
 #include "gui/ViewportProjection.h"
 
@@ -131,8 +130,6 @@
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ShapefilePropertyMapper.h"
 
-//#include "utils/GeometryUtil.h"
-#include "utils/GeometryUtil.h"
 #include "utils/Profile.h"
 
 

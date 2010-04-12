@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,15 +29,36 @@
 #define GPLATES_QTWIDGETS_EDITWIDGETGROUPBOX_H
 
 #include <QGroupBox>
+#include <boost/optional.hpp>
 
-#include "model/PropertyValue.h"
 #include "model/FeatureHandle.h"
+#include "model/PropertyValue.h"
 #include "qt-widgets/AbstractEditWidget.h"
 
 
 namespace GPlatesPresentation
 {
 	class ViewState;
+}
+
+namespace GPlatesPropertyValues
+{
+	class Enumeration;
+	class GmlLineString;
+	class GmlMultiPoint;
+	class GmlPoint;
+	class GmlPolygon;
+	class GmlTimeInstant;
+	class GmlTimePeriod;
+	class GpmlKeyValueDictionary;
+	class GpmlMeasure;
+	class GpmlOldPlatesHeader;
+	class GpmlPlateId;
+	class GpmlPolarityChronId;
+	class XsBoolean;
+	class XsDouble;
+	class XsInteger;
+	class XsString;
 }
 
 namespace GPlatesQtWidgets
@@ -121,7 +142,7 @@ namespace GPlatesQtWidgets
 		void
 		activate_appropriate_edit_widget(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::FeatureHandle::children_iterator it);
+				GPlatesModel::FeatureHandle::iterator it);
 
 		/**
 		 * Uses EditWidgetChooser to update the editing widget to the latest value of
@@ -138,7 +159,7 @@ namespace GPlatesQtWidgets
 		void
 		refresh_edit_widget(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::FeatureHandle::children_iterator it);
+				GPlatesModel::FeatureHandle::iterator it);
 		 
 		/**
 		 * Uses a dispatch table to activate the editing widget for a given
@@ -364,7 +385,13 @@ namespace GPlatesQtWidgets
 		{
 			return *d_edit_time_period_widget_ptr;
 		}
-		
+
+		/**
+		 * The various edit widgets make changes to what is just a clone of the property.
+		 * This method commits those changes back into the model.
+		 */
+		void
+		commit_property_to_model();
 	
 	signals:
 		
@@ -423,6 +450,21 @@ namespace GPlatesQtWidgets
 		 * "Add".
 		 */
 		QString d_edit_verb;
+
+		/**
+		 * The clone of the TopLevelProperty that we're currently editing using an edit widget.
+		 * Because we cannot directly edit the TopLevelProperty object stored in the model,
+		 * the edit widgets must work with a clone, which is later committed back into the model.
+		 */
+		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_current_property_clone;
+
+		/**
+		 * The iterator to the TopLevelProperty that we're currently editing using an edit widget.
+		 * We need to keep the iterator so that we can commit the clone back into the model
+		 * after the edit widget is done with it.
+		 */
+		boost::optional<GPlatesModel::FeatureHandle::iterator> d_current_property_iterator;
+
 	};
 }
 

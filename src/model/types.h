@@ -28,6 +28,8 @@
 #ifndef GPLATES_MODEL_TYPES_H
 #define GPLATES_MODEL_TYPES_H
 
+#include <boost/type_traits.hpp>
+
 namespace GPlatesModel
 {
 	/**
@@ -48,6 +50,16 @@ namespace GPlatesModel
 	 * to avoid circular header includes and to simplify code in general.
 	 */
 	static const container_size_type INVALID_INDEX = -1;
+
+	/**
+	 * Useful for type traits.
+	 */
+	typedef boost::true_type true_type;
+
+	/**
+	 * Useful for type traits.
+	 */
+	typedef boost::false_type false_type;
 }
 
 #endif  // GPLATES_MODEL_TYPES_H

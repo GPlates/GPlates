@@ -29,7 +29,7 @@
 
 #include <boost/optional.hpp>
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"

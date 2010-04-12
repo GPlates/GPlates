@@ -41,7 +41,7 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PointOnSphere.h"
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/PropertyName.h"
 

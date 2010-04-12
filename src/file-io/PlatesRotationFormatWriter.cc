@@ -26,8 +26,11 @@
  */
 
 #include "PlatesRotationFormatWriter.h"
+
 #include <ostream>
 #include <vector>
+#include <unicode/ustream.h>
+#include <boost/none.hpp>
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
@@ -41,14 +44,13 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsString.h"
 
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPoint.h"
 #include "maths/UnitQuaternion3D.h"
+
 #include "utils/StringFormattingUtils.h"
-#include "utils/MathUtils.h"
-#include <unicode/ustream.h>
-#include <boost/none.hpp>
 
 
 namespace
@@ -139,7 +141,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 				GPlatesMaths::make_lat_lon_point(GPlatesMaths::PointOnSphere(rot_params.axis));
 
 			print_rotation_line_details(os, moving_plate_id_or_comment, *(iter->time),
-					pole.latitude(), pole.longitude(), GPlatesUtils::convert_rad_to_deg(rot_params.angle.dval()),
+					pole.latitude(), pole.longitude(), GPlatesMaths::convert_rad_to_deg(rot_params.angle.dval()),
 					*fixed_plate_id, str_comment);
 		}
 	}
@@ -164,8 +166,8 @@ GPlatesFileIO::PlatesRotationFormatWriter::initialise_pre_feature_properties(
 		gpmlAbsoluteReferenceFrame =
 			GPlatesModel::FeatureType::create_gpml("AbsoluteReferenceFrame");
 
-	if ((feature_handle.handle_data().feature_type() != gpmlTotalReconstructionSequence)
-			&& (feature_handle.handle_data().feature_type() != gpmlAbsoluteReferenceFrame)) {
+	if ((feature_handle.feature_type() != gpmlTotalReconstructionSequence)
+			&& (feature_handle.feature_type() != gpmlAbsoluteReferenceFrame)) {
 		// These are not the features you're looking for.
 		return false;
 	}

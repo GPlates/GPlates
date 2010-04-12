@@ -118,7 +118,7 @@ namespace GPlatesAppLogic
 		bool
 		get_geometry_property_iterator(
 				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::FeatureHandle::children_iterator &properties_iterator);
+				GPlatesModel::FeatureHandle::iterator &properties_iterator);
 
 
 		/**
@@ -414,7 +414,7 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 				public GPlatesModel::ConstReconstructionGeometryVisitor
 		{
 		public:
-			const boost::optional<GPlatesModel::FeatureHandle::children_iterator> &
+			const boost::optional<GPlatesModel::FeatureHandle::iterator> &
 			get_property() const
 			{
 				return d_property;
@@ -445,7 +445,7 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 			}
 
 		private:
-			boost::optional<GPlatesModel::FeatureHandle::children_iterator> d_property;
+			boost::optional<GPlatesModel::FeatureHandle::iterator> d_property;
 		};
 
 
@@ -453,14 +453,14 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 		bool
 		get_geometry_property_iterator(
 				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::FeatureHandle::children_iterator &properties_iterator)
+				GPlatesModel::FeatureHandle::iterator &properties_iterator)
 		{
 			GetGeometryProperty get_geometry_property_visitor;
 			reconstruction_geom_ptr->accept_visitor(get_geometry_property_visitor);
 
-			const boost::optional<GPlatesModel::FeatureHandle::children_iterator> &property_opt =
+			const boost::optional<GPlatesModel::FeatureHandle::iterator> &property_opt =
 					get_geometry_property_visitor.get_property();
-			if (!property_opt || !property_opt->is_valid())
+			if (!property_opt)
 			{
 				return false;
 			}

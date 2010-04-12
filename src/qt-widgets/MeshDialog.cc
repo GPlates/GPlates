@@ -261,16 +261,17 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 				d_view_state.get_application_state().get_model_interface();
 
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = 
-				model->create_feature_collection();
+				GPlatesModel::FeatureCollectionHandle::create(model->root());
 
-		GPlatesModel::FeatureHandle::weak_ref feature = model->create_feature(
-				mesh_node_feature_type, feature_collection);
+		GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(
+				feature_collection,
+				mesh_node_feature_type);
 
 		//create the geometry property and append to feature
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				GPlatesPropertyValues::GmlMultiPoint::create(geometries[i]), 
-				GPlatesModel::PropertyName::create_gpml("meshPoints"),
-				feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("meshPoints"),
+					GPlatesPropertyValues::GmlMultiPoint::create(geometries[i])));
 
 		// Make a new FileInfo object to tell save_file() what the new name should be.
 		// This also copies any other info stored in the FileInfo.

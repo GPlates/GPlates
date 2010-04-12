@@ -27,9 +27,11 @@
 #include <QDebug>
 
 #include "unit-test/GenericContinuousColourPaletteTest.h"
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
 #include "gui/Colour.h"
-#include "utils/MathUtils.h"
+
+using GPlatesMaths::are_almost_exactly_equal;
 
 GPlatesUnitTest::GenericContinuousColourPaletteTestSuite::GenericContinuousColourPaletteTestSuite(
 		unsigned level) :
@@ -51,24 +53,24 @@ GPlatesUnitTest::GenericContinuousColourPaletteTest::test_control_points_1()
 	
 	colour = palette.get_colour(-1);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red(), 1));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red(), 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(0);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 1));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(1);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 1));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 }
 
 void
@@ -85,38 +87,38 @@ GPlatesUnitTest::GenericContinuousColourPaletteTest::test_control_points_2()
 
 	colour = palette.get_colour(-1);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 1));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(0);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 1));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(0.5);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 0.5));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0.25));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 0.5));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0.25));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(1);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0.5));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0.5));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(2);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0.5));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0.5));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 }
 
 void
@@ -135,52 +137,52 @@ GPlatesUnitTest::GenericContinuousColourPaletteTest::test_control_points_3()
 
 	colour = palette.get_colour(-1);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 1));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(0);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 1));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(0.5);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 0.5));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0.25));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 0.5));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0.25));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(1);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0.5));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0.5));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(2);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0.25));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 0.5));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0.25));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0.5));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(3);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 1));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 
 	colour = palette.get_colour(4);
 	BOOST_CHECK(colour);
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->red() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->green() , 0));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->blue() , 1));
-	BOOST_CHECK(GPlatesUtils::are_almost_exactly_equal<float>(colour->alpha() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->red() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 1));
+	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
 }
 
 void
@@ -193,6 +195,4 @@ GPlatesUnitTest::GenericContinuousColourPaletteTestSuite::construct_maps()
 	ADD_TESTCASE(GenericContinuousColourPaletteTest,test_control_points_2);
 	ADD_TESTCASE(GenericContinuousColourPaletteTest,test_control_points_3);
 }
-
-
 
