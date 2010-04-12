@@ -386,6 +386,15 @@ namespace GPlatesUtils
 		return format_ptr_type(new ExportTemplateFilename::PercentCharacterFormat());
 	}
 
+	template <>
+	ExportTemplateFilenameSequenceImpl::format_ptr_type
+	ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
+			GPlatesUtils::ExportTemplateFilename::PlaceholderFormat>(
+					const QString &/*format_string*/)
+	{
+		return format_ptr_type(new ExportTemplateFilename::PlaceholderFormat());
+	}
+
 
 	template <>
 	GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type

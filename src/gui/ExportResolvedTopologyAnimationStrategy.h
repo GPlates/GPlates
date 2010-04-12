@@ -126,12 +126,6 @@ namespace GPlatesGui
 				GPlatesGui::ExportAnimationContext &export_animation_context);
 		
 	private:
-		/**
-		 * This string gets inserted into template filename sequence and later replaced
-		 * with the different strings used to differentiate the types of export.
-		 */
-		static const QString s_placeholder_string;
-
 		//! Replaces placeholder string when exporting all platepolygons to a single file.
 		static const QString s_placeholder_platepolygons;
 

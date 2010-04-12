@@ -28,6 +28,8 @@
 
 #include "ExportTemplateFilenameSequenceFormats.h"
 
+#include "ExportTemplateFilenameSequence.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -42,6 +44,32 @@ GPlatesUtils::ExportTemplateFilename::PercentCharacterFormat::match_format(
 	}
 
 	return boost::none;
+}
+
+
+boost::optional<int>
+GPlatesUtils::ExportTemplateFilename::PlaceholderFormat::match_format(
+		const QString &rest_of_filename_template)
+{
+	if (rest_of_filename_template.startsWith(
+			ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING))
+	{
+		return ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING.size();
+	}
+
+	return boost::none;
+}
+
+
+QString
+GPlatesUtils::ExportTemplateFilename::PlaceholderFormat::expand_format_string(
+		std::size_t sequence_index,
+		const double &reconstruction_time,
+		const QDateTime &date_time) const
+{
+	// Simply return the format string unmodified.
+	// The client will be searching for this and expanding it themselves.
+	return ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING;
 }
 
 

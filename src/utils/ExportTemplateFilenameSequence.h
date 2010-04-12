@@ -75,6 +75,22 @@ namespace GPlatesUtils
 		void
 		validate_filename_template(
 				const QString &filename_template);
+
+
+		/**
+		 * Format string reserved for use by the client.
+		 *
+		 * If this format string is found in the filename template it will not
+		 * be expanded. It is then up to the client to expand this *after*
+		 * the export template filename iterator is dereferenced (dereferencing
+		 * is when the various format strings are expanded). The client is free
+		 * to use and interpret this format string for their own purpose.
+		 *
+		 * An example is exporting resolved plate polygon boundaries where
+		 * this format string is replaced with several different strings for the
+		 * various boundary types being exported.
+		 */
+		const QString PLACEHOLDER_FORMAT_STRING = "%P";
 	}
 
 

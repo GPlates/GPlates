@@ -55,6 +55,7 @@
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/XsString.h"
 
+#include "utils/ExportTemplateFilenameSequence.h"
 #include "utils/FloatingPointComparisons.h"
 #include "utils/UnicodeStringUtils.h"
 
@@ -877,17 +878,6 @@ namespace
 }
 
 
-/**
- * This string gets inserted into template filename sequence and later replaced
- * with the different strings used to differentiate the types of export.
- *
- * NOTE: we cannot use "%1", etc as a placeholder since the class
- * ExportTemplateFilenameSequence uses that in its implementation when
- * it expands the various modifiers (like "%d").
- */
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_string("<placeholder>");
-
 const QString
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_platepolygons("platepolygons");
 
@@ -935,13 +925,16 @@ void
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
-	// We want "Polygons" to look like "Polygons.<placeholder>.%d" as that
+	// We want "Polygons" to look like "Polygons.%P.%d" as that
 	// is what is expected by the workflow (external to GPlates) that uses
 	// this export.
-	// The 's_placeholder_string' string will get replaced for each type of export
+	// The '%P' placeholder string will get replaced for each type of export
 	// in 'do_export_iteration()'.
 	// The "%d" tells ExportTemplateFilenameSequence to insert the reconstruction time.
-	const QString suffix = "." + s_placeholder_string + ".%d";
+	const QString suffix =
+			"." +
+			GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING +
+			".%d";
 
 	const QString modified_template_filename =
 			append_suffix_to_template_filebasename(filename, suffix);
@@ -1025,32 +1018,50 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 	// For exporting all platepolygons to a single file.
 	GMTFeatureExporter all_platepolygons_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_platepolygons));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_platepolygons));
 
 	// For exporting all subsegments of all platepolygons to a single file.
 	GMTFeatureExporter all_sub_segments_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_lines));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_lines));
 
 	// For exporting all ridge/transform subsegments of all platepolygons to a single file.
 	GMTFeatureExporter ridge_transform_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_ridge_transforms));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_ridge_transforms));
 
 	// For exporting all subduction zone subsegments of all platepolygons to a single file.
 	GMTFeatureExporter subduction_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_subductions));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_subductions));
 
 	// For exporting all left subduction zone subsegments of all platepolygons to a single file.
 	GMTFeatureExporter subduction_left_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_left_subductions));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_left_subductions));
 
 	// For exporting all right subduction zone subsegments of all platepolygons to a single file.
 	GMTFeatureExporter subduction_right_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_right_subductions));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_right_subductions));
 
 	// Iterate over the RTGs.
 	resolved_geom_seq_type::const_iterator resolved_seq_iter = resolved_geom_seq.begin();
@@ -1066,7 +1077,8 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 
 		export_platepolygon(
 				*resolved_geom, platepolygon_feature_ref, all_platepolygons_exporter,
-				target_dir, filebasename, s_placeholder_string);
+				target_dir, filebasename,
+				GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING);
 
 		export_sub_segments(
 				*resolved_geom, platepolygon_feature_ref, recon_time,

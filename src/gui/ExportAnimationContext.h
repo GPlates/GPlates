@@ -145,9 +145,7 @@ namespace GPlatesGui
 		const QString
 		velocity_exporter_filename_template()
 		{
-			// FIXME: the "<cap filename>" part is probably not meant to be there - currently
-			// it works because it's only used for display and not filename generation.
-			return "velocity_colat+lon_at_%u_%0.2fMa_on_mesh-<cap filename>.gpml";
+			return "velocity_colat+lon_at_%u_%0.2fMa_on_mesh-%P.gpml";
 		}
 
 		bool
@@ -204,9 +202,7 @@ namespace GPlatesGui
 		const QString
 		resolved_topology_exporter_filename_template()
 		{
-			// FIXME: the "<resolved boundary type>" part is probably not meant to be there -
-			// currently it works because it's only used for display and not filename generation.
-			return "Polygons.<placeholder>.%d.xy";
+			return "Polygons.%P.%d.xy";
 		}
 
 

@@ -44,11 +44,26 @@
 namespace
 {
 	QString
+	substitute_placeholder(
+			const QString &output_filebasename,
+			const QString &placeholder,
+			const QString &placeholder_replacement)
+	{
+		return QString(output_filebasename).replace(placeholder, placeholder_replacement);
+	}
+
+
+	QString
 	calculate_output_basename(
 			const QString &output_filename_prefix,
 			const QFileInfo &cap_qfileinfo)
 	{
-		return output_filename_prefix + cap_qfileinfo.fileName();
+		const QString output_basename = substitute_placeholder(
+				output_filename_prefix,
+				GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+				cap_qfileinfo.fileName());
+
+		return output_basename;
 	}
 }
 
@@ -70,7 +85,7 @@ GPlatesGui::ExportVelocityAnimationStrategy::ExportVelocityAnimationStrategy(
 	// Set the ExportTemplateFilenameSequence name once here, to a sane default.
 	// Later, we will let the user configure this.
 	// This also sets the iterator to the first filename template.
-	set_template_filename(QString("velocity_colat+lon_at_%u_%0.2fMa_on_mesh-"));
+	set_template_filename(QString("velocity_colat+lon_at_%u_%0.2fMa_on_mesh-%P"));
 	
 	// Do anything else that we need to do in order to initialise
 	// our velocity export here...
