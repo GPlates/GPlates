@@ -29,6 +29,7 @@
 #include "PaleomagUtils.h"
 
 #include "maths/PolylineOnSphere.h" // FIXME: for testing
+#include "maths/MathsUtils.h"
 
 #include "gui/ColourProxy.h"
 #include "model/PropertyName.h"
@@ -205,7 +206,7 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::finalise_post_feature_properties(
 		GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
 			GPlatesViewOperations::create_rendered_small_circle(
 			*d_vgp_point,
-			GPlatesMaths::degreesToRadians(*d_a95),
+			GPlatesMaths::convert_deg_to_rad(*d_a95),
 			d_colour);
 
 		d_target_layer->add_rendered_geometry(rendered_small_circle);		
@@ -217,8 +218,8 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::finalise_post_feature_properties(
 		GPlatesViewOperations::RenderedGeometry rendered_ellipse = 
 			GPlatesViewOperations::create_rendered_ellipse(
 			*d_vgp_point,
-			GPlatesMaths::degreesToRadians(*d_dp),
-			GPlatesMaths::degreesToRadians(*d_dm),
+			GPlatesMaths::convert_deg_to_rad(*d_dp),
+			GPlatesMaths::convert_deg_to_rad(*d_dm),
 			great_circle,
 			d_colour);
 

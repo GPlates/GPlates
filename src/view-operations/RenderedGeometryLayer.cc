@@ -41,6 +41,7 @@
 #include "global/AssertionFailureException.h"
 
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/types.h"
 
 #include "utils/LatLonAreaSampling.h"

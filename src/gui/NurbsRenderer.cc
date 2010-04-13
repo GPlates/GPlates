@@ -37,6 +37,7 @@
 #include "maths/GenericVectorOps3D.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
@@ -309,19 +310,19 @@ GPlatesGui::NurbsRenderer::draw_small_circle_arc(
 	GPlatesMaths::UnitVector3D uv_point_on_arc = first_point_on_arc.position_vector();
 
 	double remaining_radians = arc_length_in_radians.dval();
-	while (remaining_radians > GPlatesMaths::PI_2)
+	while (remaining_radians > GPlatesMaths::HALF_PI)
 	{
 		draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(uv_centre,
 																	uv_point_on_arc,
-																	GPlatesMaths::PI_2);
+																	GPlatesMaths::HALF_PI);
 		
 		GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			uv_centre,
-			GPlatesMaths::PI_2);
+			GPlatesMaths::HALF_PI);
 			
 		uv_point_on_arc = rot*uv_point_on_arc;
 		
-		remaining_radians -= GPlatesMaths::PI_2;		
+		remaining_radians -= GPlatesMaths::HALF_PI;		
 	}
 
 	draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(

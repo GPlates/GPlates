@@ -25,26 +25,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_MATHS_REAL_H_
-#define _GPLATES_MATHS_REAL_H_
+#ifndef GPLATES_MATHS_REAL_H
+#define GPLATES_MATHS_REAL_H
 
 #include <iostream>
 #include <cmath>
-#ifdef HAVE_PYTHON
-# include <boost/python.hpp>
-#endif
-
-#include "global/types.h"
 
 
 namespace GPlatesMaths
 {
-	using namespace GPlatesGlobal;
-
-	//! \f$ \pi \f$, the ratio of the circumference to the diameter of a circle
-	static const double PI = 3.14159265358979323846264338;
-	//! \f$ \frac{\pi}{2} \f$
-	static const double PI_2 = 1.57079632679489661923;
+	// Note: PI and HALF_PI are defined in MathsUtils.h.
 
 	/**
 	 * An instance of this class is a floating-point approximation
@@ -168,17 +158,6 @@ namespace GPlatesMaths
 		Real
 		negative_infinity();
 
-#ifdef HAVE_PYTHON
-		/**
-		 * Convert a Real into a Python object
-		 */
-		static
-		PyObject *
-		convert(const Real &r)
-		{
-			return boost::python::incref(boost::python::object(r._dval).ptr());
-		}
-#endif
 	};
 
 
@@ -422,20 +401,6 @@ namespace GPlatesMaths
 	}
 
 	inline
-	Real
-	degreesToRadians(Real rdeg)
-	{
-		return Real((PI / 180.0) * rdeg);
-	}
-
-	inline
-	Real
-	radiansToDegrees(Real drad)
-	{
-		return Real((180.0 / PI) * drad);
-	}
-
-	inline
 	std::ostream &
 	operator<<(std::ostream &os, Real r)
 	{
@@ -538,12 +503,6 @@ namespace GPlatesMaths
 	double
 	negative_infinity();
 
-#ifdef HAVE_PYTHON
-	/**
-	 * This routine exports the Python wrapper class and associated functionality
-	 */
-	void export_Real();
-#endif
 }
 
-#endif  // _GPLATES_MATHS_REAL_H_
+#endif  // GPLATES_MATHS_REAL_H

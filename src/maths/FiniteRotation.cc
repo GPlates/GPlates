@@ -33,6 +33,7 @@
 #include "HighPrecision.h"
 #include "UnitVector3D.h"
 #include "Vector3D.h"
+#include "MathsUtils.h"
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
 #include "PolylineOnSphere.h"
@@ -543,7 +544,7 @@ GPlatesMaths::operator<<(
 		 << " (which is antipodal to "
 		 << make_lat_lon_point(antip)
 		 << "); angle = "
-		 << radiansToDegrees(params.angle)
+		 << convert_rad_to_deg(params.angle)
 		 << " deg)";
 	}
 	os << ")";

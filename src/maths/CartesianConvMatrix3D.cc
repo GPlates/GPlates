@@ -32,6 +32,7 @@
 
 #include "CartesianConvMatrix3D.h"
 #include "LatLonPoint.h"
+#include "MathsUtils.h"
 
 
 GPlatesMaths::CartesianConvMatrix3D::CartesianConvMatrix3D(const PointOnSphere
@@ -39,8 +40,8 @@ GPlatesMaths::CartesianConvMatrix3D::CartesianConvMatrix3D(const PointOnSphere
 {
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
 
-	real_t lam = degreesToRadians(llp.latitude()),
-	       phi = degreesToRadians(llp.longitude());
+	real_t lam = convert_deg_to_rad(llp.latitude()),
+	       phi = convert_deg_to_rad(llp.longitude());
 
 	_nx = -sin(lam) * cos(phi);
 	_ny = -sin(lam) * sin(phi);

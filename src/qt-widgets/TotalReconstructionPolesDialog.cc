@@ -38,6 +38,7 @@
 #include "gui/CsvExport.h"
 #include "model/ReconstructionTreeEdge.h"
 #include "presentation/ViewState.h"
+#include "maths/MathsUtils.h"
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -148,7 +149,7 @@ namespace {
 			QString lat_string = locale_.toString(llp.latitude(),'f',2);
 			QString lon_string = locale_.toString(llp.longitude(),'f',2);
 
-			const double &angle = radiansToDegrees(params.angle).dval();
+			const double &angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
 			
 			QString angle_string = locale_.toString(angle,'f',2);
 	
@@ -363,7 +364,7 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table()
 			longitude_item->setFlags(Qt::ItemIsEnabled);
 			table_equivalent->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
 
-			const double &angle = radiansToDegrees(params.angle).dval();
+			const double &angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
 			
 			QString angle_string = locale_.toString(angle);
 			QTableWidgetItem* angle_item = new QTableWidgetItem(angle_string);
@@ -438,7 +439,7 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table()
 			longitude_item->setFlags(Qt::ItemIsEnabled);
 			table_relative->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
 
-			const double &angle = radiansToDegrees(params.angle).dval();
+			const double &angle = convert_rad_to_deg(params.angle).dval();
 			
 			QString angle_string = locale_.toString(angle);
 			QTableWidgetItem* angle_item = new QTableWidgetItem(angle_string);

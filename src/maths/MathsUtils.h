@@ -58,9 +58,14 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Pi, the ratio of the circumference to the diameter of a circle.
+	 * \f$ \pi \f$, the ratio of the circumference to the diameter of a circle.
 	 */
-	static const double Pi = 3.14159265358979323846264338;
+	static const double PI = 3.14159265358979323846264338;
+
+	/**
+	 * \f$ \frac{\pi}{2} \f$.
+	 */
+	static const double HALF_PI = 1.57079632679489661923;
 
 
 	template<typename T>
@@ -69,7 +74,7 @@ namespace GPlatesMaths
 	convert_deg_to_rad(
 			const T &value_in_degrees)
 	{
-		return T((Pi / 180.0) * value_in_degrees);
+		return T((PI / 180.0) * value_in_degrees);
 	}
 
 
@@ -79,7 +84,7 @@ namespace GPlatesMaths
 	convert_rad_to_deg(
 			const T &value_in_radians)
 	{
-		return T((180.0 / Pi) * value_in_radians);
+		return T((180.0 / PI) * value_in_radians);
 	}
 }
 

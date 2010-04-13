@@ -40,6 +40,8 @@
 #include "ReadErrors.h"
 #include "LineReader.h"
 
+#include "global/types.h"
+
 #include "utils/StringUtils.h"
 
 #include "maths/LatLonPoint.h"

@@ -30,6 +30,7 @@
 #include "Globe.h"
 #include "Texture.h"
 
+#include "maths/MathsUtils.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -118,7 +119,7 @@ GPlatesGui::Globe::paint(
 
 	GPlatesMaths::UnitVector3D axis = d_globe_orientation_ptr->rotation_axis();
 	GPlatesMaths::real_t angle_in_deg =
-			GPlatesMaths::radiansToDegrees(d_globe_orientation_ptr->rotation_angle());
+			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle());
 	glRotatef(angle_in_deg.dval(),
 			   axis.x().dval(), axis.y().dval(), axis.z().dval());
 	
@@ -161,7 +162,7 @@ GPlatesGui::Globe::paint_vector_output(
 
 	GPlatesMaths::UnitVector3D axis = d_globe_orientation_ptr->rotation_axis();
 	GPlatesMaths::real_t angle_in_deg =
-			GPlatesMaths::radiansToDegrees(d_globe_orientation_ptr->rotation_angle());
+			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle());
 	glRotatef(angle_in_deg.dval(),
 			   axis.x().dval(), axis.y().dval(), axis.z().dval());
 

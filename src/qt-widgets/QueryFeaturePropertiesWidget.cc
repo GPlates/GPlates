@@ -33,6 +33,7 @@
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "property-values/GpmlPlateId.h"
 #include "utils/UnicodeStringUtils.h"
 #include "presentation/ViewState.h"
@@ -210,7 +211,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 			set_euler_pole(euler_pole_as_string);
 
-			const double &angle = radiansToDegrees(params.angle).dval();
+			const double &angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
 			set_angle(angle);
 		}
 	}

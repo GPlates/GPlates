@@ -40,6 +40,7 @@
 #include "global/AssertionFailureException.h"
 
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/UnitVector3D.h"
 #include "maths/types.h"
 
@@ -848,7 +849,7 @@ namespace GPlatesUtils
 					// Because we've potentially allocated an extra bin due to 'EPSILON'
 					// we need to check if our latitude is greater than 90 degrees.
 					const double longitude_spacing_radians =
-							(latitude_radians < GPlatesMaths::PI_2 - EPSILON)
+							(latitude_radians < GPlatesMaths::HALF_PI - EPSILON)
 							? latitude_spacing_radians /
 									std::cos(latitude_index * latitude_spacing_radians)
 							: 2 * GPlatesMaths::PI /* arbitrary value gives us one or two longitude bins */;

@@ -40,6 +40,7 @@
 #include "maths/EllipseGenerator.h"
 #include "maths/GreatCircle.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"

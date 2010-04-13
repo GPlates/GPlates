@@ -382,8 +382,8 @@ GPlatesGui::MapProjection::forward_transform(
 	//std::cerr << "--\nx: " << x << ", y: " << y << ", z: " << z << std::endl;
 	y_coordinate = asin(z).dval();
 	x_coordinate = atan2(y, x).dval();
-	if (x_coordinate < -GPlatesMaths::Pi) {
-		x_coordinate = GPlatesMaths::Pi;
+	if (x_coordinate < -GPlatesMaths::PI) {
+		x_coordinate = GPlatesMaths::PI;
 	}
 
 	int result = pj_transform(d_latlon_projection,d_projection,1,0,&x_coordinate,&y_coordinate,NULL);

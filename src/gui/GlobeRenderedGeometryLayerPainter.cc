@@ -35,6 +35,7 @@
 #include "maths/Real.h"
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
+#include "maths/MathsUtils.h"
 
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"

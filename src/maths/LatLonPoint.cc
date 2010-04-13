@@ -118,8 +118,8 @@ GPlatesMaths::make_lat_lon_point(
 	//std::cerr << "--\nx: " << x << ", y: " << y << ", z: " << z << std::endl;
 	double lat = asin(z).dval();
 	double lon = atan2(y, x).dval();
-	if (lon < -Pi) {
-		lon = Pi;
+	if (lon < -PI) {
+		lon = PI;
 	}
 	//std::cerr << "lat: " << lat << ", lon: " << lon << std::endl;
 

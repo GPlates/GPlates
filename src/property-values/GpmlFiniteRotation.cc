@@ -31,6 +31,7 @@
 #include "GpmlFiniteRotation.h"
 #include "GmlPoint.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
 
@@ -60,7 +61,7 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
 					p,
-					GPlatesMaths::degreesToRadians(gml_angle_in_degrees));
+					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees));
 
 	return create(fr);
 }
@@ -74,7 +75,7 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
 					*gpml_euler_pole->point(),
-					GPlatesMaths::degreesToRadians(gml_angle_in_degrees->quantity()));
+					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees->quantity()));
 
 	return create(fr);
 }
@@ -127,7 +128,7 @@ GPlatesPropertyValues::calculate_angle(
 	UnitQuaternion3D::RotationParams rp =
 			fr.finite_rotation().unit_quat().get_rotation_params(
 					fr.finite_rotation().axis_hint());
-	return GPlatesMaths::radiansToDegrees(rp.angle);
+	return GPlatesMaths::convert_rad_to_deg(rp.angle);
 }
 
 
