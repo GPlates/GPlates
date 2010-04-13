@@ -40,6 +40,7 @@
 #include "RenderedGeometryUtils.h"
 #include "UndoRedo.h"
 #include "SplitFeatureUndoCommand.h"
+#include "app-logic/Reconstruct.h"
 #include "gui/ChooseCanvasTool.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/PointOnSphere.h"
@@ -174,6 +175,10 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::left_click(
 		// We are not close enough to any line segments. We do nothing but return.
 		return;
 	}
+
+	// Force a reconstruction because the geometry of the deleted feature is
+	// lingering around like a ghost.
+	d_view_state->get_reconstruct().reconstruct();
 
 	// Render the highlight line segments to show user where the next mouse click will
 	// insert the next vertex.

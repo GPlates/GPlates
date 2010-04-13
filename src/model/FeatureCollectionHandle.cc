@@ -39,6 +39,7 @@ namespace GPlatesModel
 	{
 	public:
 
+		explicit
 		FeatureCollectionHandleUnsavedChangesCallback(
 				bool &contains_unsaved_changes) :
 			d_contains_unsaved_changes(contains_unsaved_changes)

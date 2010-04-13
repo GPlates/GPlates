@@ -86,13 +86,13 @@ GPlatesCanvasTools::SplitFeature::handle_activation()
 	{
 		case GLOBE_VIEW:
 			set_status_bar_message(QObject::tr(
-				"Click to insert a vertex into the current geometry."
+				"Click to split the current feature into two."
 				" Ctrl+drag to re-orient the globe."));
 			break;
 
 		case MAP_VIEW:
 			set_status_bar_message(QObject::tr(
-				"Click to insert a vertex into the current geometry."
+				"Click to split the current feature into two."
 				" Ctrl+drag to pan the map."));
 			break;
 

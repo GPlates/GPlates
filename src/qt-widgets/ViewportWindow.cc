@@ -100,7 +100,6 @@
 #include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
-#include "gui/FeatureWeakRefSequence.h"
 #include "gui/GlobeCanvasToolAdapter.h"
 #include "gui/GlobeCanvasToolChoice.h"
 #include "gui/MapCanvasToolAdapter.h"
