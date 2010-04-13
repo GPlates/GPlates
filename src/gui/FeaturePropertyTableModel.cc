@@ -494,12 +494,11 @@ GPlatesGui::FeaturePropertyTableModel::get_property_value_as_qvariant(
 		int role) const
 {
 	GPlatesModel::FeatureHandle::iterator it = get_property_iterator_for_row(row);
-	/*
-	if ( ! it.is_valid()) {
+	
+	if ( ! it.is_still_valid()) {
 		// Always check your property iterators.
 		return QVariant("< NULL >");
 	}
-	*/
 
 	return top_level_property_to_simple_qvariant(**it, role);
 }

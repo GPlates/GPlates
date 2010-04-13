@@ -460,7 +460,7 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 			const boost::optional<GPlatesModel::FeatureHandle::iterator> &property_opt =
 					get_geometry_property_visitor.get_property();
-			if (!property_opt)
+			if (!property_opt || !property_opt->is_still_valid())
 			{
 				return false;
 			}
