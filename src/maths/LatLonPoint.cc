@@ -7,10 +7,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004 The University of Sydney, Australia
- *  (under the name "OperationsOnSphere.cc")
- * Copyright (C) 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
- *  (under the name "LatLonPointConversions.cc")
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2010 The University of Sydney, Australia
+ *  (also under the names "OperationsOnSphere.cc" and "LatLonPointConversions.cc")
  *
  * This file is part of GPlates.
  *

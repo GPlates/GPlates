@@ -3,8 +3,8 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
- * Copyright (C) 2008 , 2009 California Institute of Technology 
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
  *

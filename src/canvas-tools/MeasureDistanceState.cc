@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Contains implementation of MeasureDistanceState
+ * Contains the implementation of the MeasureDistanceState class.
  *
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *

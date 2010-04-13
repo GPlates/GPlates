@@ -8,11 +8,8 @@
  *   $Date$
  * 
  * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
- * (as "FeatureHandle.h", "FeatureHandle.cc", "FeatureCollectionHandle.h",
+ * (also incorporating code from "FeatureHandle.h", "FeatureHandle.cc", "FeatureCollectionHandle.h",
  * "FeatureCollectionHandle.cc", "FeatureStoreRootHandle.h" and "FeatureStoreRootHandle.cc")
- *
- * Copyright (C) 2010 The University of Sydney, Australia
- * (as "Handle.h")
  *
  * This file is part of GPlates.
  *

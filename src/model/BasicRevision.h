@@ -7,12 +7,9 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
- * (as "FeatureRevision.h", "FeatureRevision.cc", "FeatureCollectionRevision.h",
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
+ * (also incorporating code from "FeatureRevision.h", "FeatureRevision.cc", "FeatureCollectionRevision.h",
  * "FeatureCollectionRevision.cc", "FeatureStoreRootRevision.h" and "FeatureStoreRootRevision.cc")
- *
- * Copyright (C) 2010 The University of Sydney, Australia
- * (as "Revision.h")
  *
  * This file is part of GPlates.
  *

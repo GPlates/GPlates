@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date: 2009-11-19 14:54:25 +1100 (Thu, 19 Nov 2009) $
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *

@@ -7,6 +7,7 @@
  *   $Date: 2008-07-11 19:36:59 -0700 (Fri, 11 Jul 2008) $
  * 
  * Copyright (C) 2008, 2009, 2010 California Institute of Technology
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *

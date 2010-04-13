@@ -7,10 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
- *  (under the name "PropertyContainer.h")
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
- *  (under the name "TopLevelProperty.h")
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
