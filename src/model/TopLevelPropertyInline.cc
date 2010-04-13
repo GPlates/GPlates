@@ -170,12 +170,12 @@ bool
 GPlatesModel::TopLevelPropertyInline::operator==(
 		const TopLevelProperty &other) const
 {
-	if (typeid(*this) == typeid(other) &&
-			property_name() == other.property_name() &&
-			xml_attributes() == other.xml_attributes())
+	try
 	{
 		const TopLevelPropertyInline &other_inline = dynamic_cast<const TopLevelPropertyInline &>(other);
-		if (d_values.size() == other_inline.d_values.size())
+		if (property_name() == other.property_name() &&
+			xml_attributes() == other.xml_attributes() &&
+			d_values.size() == other_inline.d_values.size())
 		{
 			return std::equal(
 					d_values.begin(),
@@ -188,7 +188,7 @@ GPlatesModel::TopLevelPropertyInline::operator==(
 			return false;
 		}
 	}
-	else
+	catch (const std::bad_cast &)
 	{
 		return false;
 	}

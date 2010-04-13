@@ -48,7 +48,7 @@ namespace GPlatesModel
 			// and then call set on the feature.
 			TopLevelProperty::non_null_ptr_type prop_clone = (*iter)->deep_clone();
 			prop_clone->accept_visitor(*this);
-			feature_handle.set(iter, prop_clone);
+			*iter = prop_clone;
 
 			d_current_top_level_propiter = boost::none;
 			d_current_top_level_propname = boost::none;

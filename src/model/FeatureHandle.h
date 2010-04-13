@@ -201,6 +201,13 @@ namespace GPlatesModel
 				child_type::non_null_ptr_to_const_type new_child);
 
 		/**
+		 * Removes all children properties that have the given @a property_name.
+		 */
+		void
+		remove_properties_by_name(
+				const PropertyName &property_name);
+
+		/**
 		 * Returns the feature type of this feature.
 		 *
 		 * No "setter" method is provided because the feature type of a feature

@@ -190,8 +190,8 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		// First remove any that might already exist.
-		GPlatesModel::ModelUtils::remove_properties_from_feature_by_name(
-				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME, feature_ref);
+		feature_ref->remove_properties_by_name(
+				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME);
 
 		// Append a new property to the feature.
 		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_plate_id = 
@@ -500,8 +500,7 @@ namespace
 
 			if (is_geometry_property(*current_feature_properties_iter))
 			{
-				GPlatesModel::ModelUtils::remove_property_from_feature(
-						current_feature_properties_iter, feature_ref);
+				feature_ref->remove(current_feature_properties_iter);
 				continue;
 			}
 		}
@@ -539,9 +538,8 @@ namespace
 			// Destructor cannot throw exceptions.
 			try
 			{
-				GPlatesModel::ModelUtils::remove_property_from_feature(
-						d_geometry_properties_iterator,
-						d_geometry_properties_iterator.handle_weak_ref());
+				d_geometry_properties_iterator.handle_weak_ref()->remove(
+						d_geometry_properties_iterator);
 			}
 			catch (...)
 			{
@@ -1258,8 +1256,8 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		// Start out by removing the 'gpml:reconstructionPlateId' property.
-		GPlatesModel::ModelUtils::remove_properties_from_feature_by_name(
-				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME, feature_ref);
+		feature_ref->remove_properties_by_name(
+				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME);
 
 		// If no geometry is partitioned into any plates then simply return.
 		// Note: We don't have to reverse reconstruct its geometry because
@@ -1344,8 +1342,8 @@ namespace
 		// Start out by removing the 'gpml:reconstructionPlateId' property.
 		// But don't remove any geometry properties because we are going to clone
 		// them as we go and put them in new cloned features.
-		GPlatesModel::ModelUtils::remove_properties_from_feature_by_name(
-				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME, feature_ref);
+		feature_ref->remove_properties_by_name(
+				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME);
 
 		bool assigned_any_plate_ids = false;
 		bool has_original_feature_been_assigned_to = false;
@@ -1418,8 +1416,7 @@ namespace
 				}
 
 				// Add the cloned geometry property value to the feature that has no plate id.
-				GPlatesModel::ModelUtils::append_property_to_feature(
-						cloned_geometry_property, no_plate_id_feature_ref);
+				no_plate_id_feature_ref->add(cloned_geometry_property);
 
 				continue;
 			}
@@ -1494,8 +1491,8 @@ namespace
 
 			// Add the cloned and rotated geometry property value to the feature
 			// that has the reconstruction plate id we are assigning.
-			GPlatesModel::ModelUtils::append_property_to_feature(
-					cloned_geometry_property, recon_plate_id_feature_ref);
+			recon_plate_id_feature_ref->add(
+					cloned_geometry_property);
 
 			// Assign the plate id to the new feature.
 			assign_reconstruction_plate_id_to_feature(
@@ -1539,8 +1536,8 @@ namespace
 		// This is so we can add new geometry properties and possibly
 		// add a plate id (if inside a resolved boundary) later.
 		remove_geometry_properties_from_feature(feature_ref);
-		GPlatesModel::ModelUtils::remove_properties_from_feature_by_name(
-				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME, feature_ref);
+		feature_ref->remove_properties_by_name(
+				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME);
 
 		// Append any geometries that are partitioned outside all resolved boundaries.
 		bool has_original_feature_been_assigned_to =

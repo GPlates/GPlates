@@ -63,28 +63,6 @@ namespace GPlatesModel
 		};
 
 
-		const FeatureHandle::iterator
-		append_property_to_feature(
-				TopLevelProperty::non_null_ptr_type top_level_property,
-				const FeatureHandle::weak_ref &feature);
-
-
-		void
-		remove_property_from_feature(
-				FeatureHandle::iterator properties_iterator,
-				const FeatureHandle::weak_ref &feature);
-
-
-		/**
-		 * Removes all properties from @a feature that have
-		 * the property name @a property_name.
-		 */
-		void
-		remove_properties_from_feature_by_name(
-				const PropertyName &property_name,
-				const FeatureHandle::weak_ref &feature);
-
-
 		const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
 		create_gml_orientable_curve(
 				const GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string,

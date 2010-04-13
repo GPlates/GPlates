@@ -43,54 +43,6 @@
 #include "property-values/GpmlTimeSample.h"
 
 
-const GPlatesModel::FeatureHandle::iterator
-GPlatesModel::ModelUtils::append_property_to_feature(
-		TopLevelProperty::non_null_ptr_type top_level_property,
-		const FeatureHandle::weak_ref &feature)
-{
-	// DummyTransactionHandle transaction(__FILE__, __LINE__);
-	FeatureHandle::iterator result = feature->add(top_level_property);
-	// transaction.commit();
-
-	return result;
-}
-
-
-void
-GPlatesModel::ModelUtils::remove_property_from_feature(
-		FeatureHandle::iterator properties_iterator,
-		const FeatureHandle::weak_ref &feature)
-{
-	// DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->remove(properties_iterator);
-	// transaction.commit();
-}
-
-
-void
-GPlatesModel::ModelUtils::remove_properties_from_feature_by_name(
-		const PropertyName &property_name,
-		const FeatureHandle::weak_ref &feature)
-{
-	FeatureHandle::iterator feature_properties_iter = feature->begin();
-	FeatureHandle::iterator feature_properties_end = feature->end();
-	while (feature_properties_iter != feature_properties_end)
-	{
-		// Increment iterator before we remove property.
-		// I don't think this is currently necessary but it doesn't hurt.
-		FeatureHandle::iterator current_feature_properties_iter =
-				feature_properties_iter;
-		++feature_properties_iter;
-
-		if ((*current_feature_properties_iter)->property_name() == property_name)
-		{
-			remove_property_from_feature(
-					current_feature_properties_iter, feature);
-		}
-	}
-}
-
-
 const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
 GPlatesModel::ModelUtils::create_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string,

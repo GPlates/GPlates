@@ -139,6 +139,20 @@ GPlatesModel::FeatureHandle::set(
 }
 
 
+void
+GPlatesModel::FeatureHandle::remove_properties_by_name(
+		const PropertyName &property_name)
+{
+	for (iterator iter = begin(); iter != end(); ++iter)
+	{
+		if ((*iter)->property_name() == property_name)
+		{
+			remove(iter);
+		}
+	}
+}
+
+
 const GPlatesModel::FeatureType &
 GPlatesModel::FeatureHandle::feature_type() const
 {
