@@ -35,7 +35,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 	GPlatesModel::FeatureHandle::weak_ref feature_ref = 
 		d_feature_focus->focused_feature();
-
+	
 	if(!feature_ref.is_valid())
 	{
 		return;
@@ -114,6 +114,13 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 			*GPlatesFeatureVisitors::find_first_geometry_property(
 					*d_new_feature_1));
 	d_feature_focus->announce_modification_of_focused_feature();
+
+	if(d_feature_collection_ref.is_valid() && feature_ref.is_valid())
+	{
+		GPlatesModel::ModelUtils::remove_feature(
+				d_feature_collection_ref,
+				feature_ref);
+	}
 }
 
 void
