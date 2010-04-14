@@ -176,9 +176,13 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::left_click(
 		return;
 	}
 
+#if 0 //dont't do this. this will disable undo
+
 	// Force a reconstruction because the geometry of the deleted feature is
 	// lingering around like a ghost.
 	d_view_state->get_reconstruct().reconstruct();
+
+#endif
 
 	// Render the highlight line segments to show user where the next mouse click will
 	// insert the next vertex.
