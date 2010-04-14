@@ -27,6 +27,9 @@
 #include "SplitFeatureUndoCommand.h"
 
 #include "utils/GeometryUtils.h"
+#include "app-logic/Reconstruct.h"
+#include "app-logic/ReconstructUtils.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 
 void
 GPlatesViewOperations::SplitFeatureUndoCommand::redo()
@@ -70,15 +73,33 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	GPlatesUtils::GeometryUtils::get_geometry_points(
 			*geometry_on_sphere,
 			points);
-
-	GeometryBuilder::PointIndex point_index_to_split;
+	
+	//we need to reverse reconstruct the inserted point to present day first
 	if (d_oriented_pos_on_globe)
 	{
-		points.insert(
-				points.begin()+ d_point_index_to_insert_at, 
-				*d_oriented_pos_on_globe);
+		const GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
+		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
+				d_feature_focus->associated_reconstruction_geometry(), rfg))
+		{
+			GPlatesMaths::PointOnSphere reconstructed_point =
+			GPlatesAppLogic::ReconstructUtils::reconstruct(
+					*d_oriented_pos_on_globe,
+					*rfg->reconstruction_plate_id(),
+					d_view_state->get_reconstruct().get_current_reconstruction().reconstruction_tree(),
+					true);
+		
+			points.insert(
+					points.begin()+ d_point_index_to_insert_at, 
+					reconstructed_point);
+		}
+		else
+		{
+			points.insert(
+					points.begin()+ d_point_index_to_insert_at, 
+					*d_oriented_pos_on_globe);
+		}
 	}
-	
+	GeometryBuilder::PointIndex point_index_to_split;
 	point_index_to_split = d_point_index_to_insert_at + 1;
 	
 	//if the point is at the beginning or the end of the ployline, we do nothing but return
