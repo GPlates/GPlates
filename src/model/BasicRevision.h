@@ -148,7 +148,7 @@ namespace GPlatesModel
 		 * equal-to the number of children-slots will always result in a NULL
 		 * pointer.
 		 */
-		const container_size_type
+		container_size_type
 		container_size() const;
 
 		/**
@@ -158,7 +158,7 @@ namespace GPlatesModel
 		 * Instead, this value represents the logical number of children in this
 		 * container at this point in time.
 		 */
-		const container_size_type
+		container_size_type
 		size() const;
 
 		/**
@@ -238,7 +238,7 @@ namespace GPlatesModel
 		 * Returns the index of @a new_child in the collection.
 		 */
 		virtual
-		const container_size_type
+		container_size_type
 		add(
 				typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type new_child);
 
@@ -334,7 +334,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	const container_size_type
+	container_size_type
 	BasicRevision<HandleType>::container_size() const
 	{
 		return d_children.size();
@@ -342,7 +342,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	const container_size_type
+	container_size_type
 	BasicRevision<HandleType>::size() const
 	{
 		return d_num_children;
@@ -416,7 +416,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	const container_size_type
+	container_size_type
 	BasicRevision<HandleType>::add(
 			typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type new_child)
 	{

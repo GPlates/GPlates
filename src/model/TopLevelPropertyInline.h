@@ -73,7 +73,7 @@ namespace GPlatesModel
 			return *d_temp_value;
 		}
 
-		const PropertyValue::non_null_ptr_to_const_type * const
+		const PropertyValue::non_null_ptr_to_const_type *
 		operator->() const
 		{
 			d_temp_value = *d_iterator;

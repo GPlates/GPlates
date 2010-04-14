@@ -132,7 +132,7 @@ namespace GPlatesModel
 		 * @see BasicRevision::add()
 		 */
 		virtual
-		const container_size_type
+		container_size_type
 		add(
 				TopLevelProperty::non_null_ptr_type new_child);
 

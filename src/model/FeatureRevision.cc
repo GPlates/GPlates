@@ -72,7 +72,7 @@ GPlatesModel::FeatureRevision::revision_id() const
 }
 
 
-const GPlatesModel::container_size_type
+GPlatesModel::container_size_type
 GPlatesModel::FeatureRevision::add(
 		TopLevelProperty::non_null_ptr_type new_child)
 {

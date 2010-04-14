@@ -124,7 +124,7 @@ namespace GPlatesModel
 		 * Returns the number of children elements this Handle contains as of the
 		 * current revision.
 		 */
-		const container_size_type
+		container_size_type
 		size() const;
 
 		/**
@@ -469,7 +469,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	const container_size_type
+	container_size_type
 	BasicHandle<HandleType>::size() const
 	{
 		return current_revision()->size();
