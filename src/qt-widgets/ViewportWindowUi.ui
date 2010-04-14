@@ -1031,7 +1031,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/clone_geometry_22.png</iconset>
    </property>
    <property name="text" >
-    <string>C&amp;lone Gometry</string>
+    <string>C&amp;lone Geometry</string>
    </property>
   </action>
   <action name="action_Clone_Feature" >
