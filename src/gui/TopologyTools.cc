@@ -1167,15 +1167,8 @@ GPlatesGui::TopologyTools::handle_add_feature()
 	// Flip to Topology Sections Table
 	d_viewport_window_ptr->change_tab( 2 );
 
-	// Pointer to the Clicked Features table
-	GPlatesGui::FeatureTableModel &clicked_table = d_viewport_window_ptr->feature_table_model();
-
-	// Table index of clicked feature
-	const int click_index = clicked_table.current_index().row();
-
-	// Get the feature id from the RG
-	const GPlatesModel::ReconstructionGeometry *rg_ptr = 
-		( clicked_table.geometry_sequence().begin() + click_index )->get();
+	const GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type rg_ptr =
+			d_feature_focus_ptr->associated_reconstruction_geometry();
 
 	// only insert features with a valid RG
 	if (! rg_ptr ) { return ; }
