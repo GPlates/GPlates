@@ -210,3 +210,10 @@ GPlatesFeatureVisitors::find_first_geometry(
 	(*iter)->accept_visitor(geometry_finder);
 	return *geometry_finder.found_geometries_begin();
 }
+
+bool
+GPlatesFeatureVisitors::is_geometry_property(
+		const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &top_level_prop_ptr)
+{
+	return !is_not_geometry_property(top_level_prop_ptr);
+}

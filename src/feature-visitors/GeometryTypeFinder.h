@@ -220,6 +220,15 @@ namespace GPlatesFeatureVisitors
 			const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &top_level_prop_ptr);
 
 	/**
+	 * Determine if the given property contains a geometry.
+	 *
+	 * Return true if the property is a geometry, otherwise false.
+	 */
+	bool
+	is_geometry_property(
+			const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &top_level_prop_ptr);
+
+	/**
 	 * Find the first geometry from a property.
 	 *
 	 * A const pointer of GeometryOnSphere will be returned.

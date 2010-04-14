@@ -94,10 +94,10 @@ namespace GPlatesViewOperations
 		GeometryBuilder::PointIndex d_point_index_to_insert_at;
 		boost::optional<GPlatesMaths::PointOnSphere> d_oriented_pos_on_globe;
 		GeometryBuilder::UndoOperation d_undo_operation;
+		boost::optional<GPlatesModel::TopLevelPropertyInline::non_null_ptr_type> d_old_geometry_property;
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_feature_collection_ref;
-		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_new_feature_1;
-		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_new_feature_2;
-		
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_new_feature;
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_old_feature;
 	};
 }
 #endif	// GPLATES_VIEWOPERATIONS_SPLITFEATUREUNDOCOMMANDS_H

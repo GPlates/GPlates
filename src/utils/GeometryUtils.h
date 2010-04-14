@@ -116,6 +116,13 @@ namespace GPlatesUtils
 				point_seq_type::const_iterator begin, 
 				point_seq_type::const_iterator end,
 				GPlatesViewOperations::GeometryType::Value type);
+		
+		/**
+		* Removes any properties that contain geometry from @a feature_ref.
+		*/
+		void
+		remove_geometry_properties_from_feature(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
 	
 	}
 

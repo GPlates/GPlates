@@ -25,6 +25,8 @@
 #include "feature-visitors/GeometryFinder.h"
 #include "feature-visitors/GeometryTypeFinder.h"
 
+#include "model/ModelUtils.h"
+
 #include "utils/GeometryUtils.h"
 
 namespace{
@@ -340,6 +342,33 @@ GPlatesUtils::GeometryUtils::create_geometry_property_value(
 		default:
 			return boost::none;
 			break;
+	}
+}
+
+
+void
+GPlatesUtils::GeometryUtils::remove_geometry_properties_from_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+{
+	// Iterate over the feature properties of the feature.
+	GPlatesModel::FeatureHandle::iterator feature_properties_iter =
+			feature_ref->begin();
+	GPlatesModel::FeatureHandle::iterator feature_properties_end =
+			feature_ref->end();
+	while (feature_properties_iter != feature_properties_end)
+	{
+		// Increment iterator before we remove property.
+		// I don't think this is currently necessary but it doesn't hurt.
+		GPlatesModel::FeatureHandle::iterator current_feature_properties_iter =
+				feature_properties_iter;
+		++feature_properties_iter;
+
+		if (GPlatesFeatureVisitors::is_geometry_property(
+					*current_feature_properties_iter))
+		{
+			feature_ref->remove(current_feature_properties_iter);
+			continue;
+		}
 	}
 }
 

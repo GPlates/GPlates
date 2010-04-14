@@ -73,6 +73,7 @@
 #include "property-values/GmlPolygon.h"
 
 #include "utils/UnicodeStringUtils.h"
+#include "utils/GeometryUtils.h"
 
 
 namespace
@@ -448,21 +449,6 @@ namespace
 		}
 	}
 
-
-	/**
-	 * Returns true if @a top_level_prop_ptr is a geometry property.
-	 */
-	bool
-	is_geometry_property(
-			GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type top_level_prop_ptr)
-	{
-		GPlatesFeatureVisitors::GeometryTypeFinder geom_type_finder;
-		top_level_prop_ptr->accept_visitor(geom_type_finder);
-
-		return geom_type_finder.has_found_geometries();
-	}
-
-
 	/**
 	 * Returns true if @a top_level_prop_ptr is a 'gpml:reconstructionPlateId' property.
 	 */
@@ -477,36 +463,6 @@ namespace
 				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME;
 	}
 
-
-	/**
-	 * Removes any properties that contain geometry from @a feature_ref.
-	 */
-	void
-	remove_geometry_properties_from_feature(
-			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
-	{
-		// Iterate over the feature properties of the feature.
-		GPlatesModel::FeatureHandle::iterator feature_properties_iter =
-				feature_ref->begin();
-		GPlatesModel::FeatureHandle::iterator feature_properties_end =
-				feature_ref->end();
-		while (feature_properties_iter != feature_properties_end)
-		{
-			// Increment iterator before we remove property.
-			// I don't think this is currently necessary but it doesn't hurt.
-			GPlatesModel::FeatureHandle::iterator current_feature_properties_iter =
-					feature_properties_iter;
-			++feature_properties_iter;
-
-			if (is_geometry_property(*current_feature_properties_iter))
-			{
-				feature_ref->remove(current_feature_properties_iter);
-				continue;
-			}
-		}
-	}
-
-
 	/**
 	 * Don't clone geometry properties or 'gpml:reconstructionPlateId' properties.
 	 */
@@ -515,7 +471,7 @@ namespace
 			const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &top_level_prop_ptr)
 	{
 		return !(
-			is_geometry_property(top_level_prop_ptr) ||
+			GPlatesFeatureVisitors::is_geometry_property(top_level_prop_ptr) ||
 			is_reconstruction_plate_id_property(top_level_prop_ptr)
 			);
 	}
@@ -1535,7 +1491,7 @@ namespace
 		// Also remove any 'gpml:reconstructionPlateId' property(s).
 		// This is so we can add new geometry properties and possibly
 		// add a plate id (if inside a resolved boundary) later.
-		remove_geometry_properties_from_feature(feature_ref);
+		GPlatesUtils::GeometryUtils::remove_geometry_properties_from_feature(feature_ref);
 		feature_ref->remove_properties_by_name(
 				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME);
 
