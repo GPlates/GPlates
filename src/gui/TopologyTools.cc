@@ -2505,22 +2505,17 @@ namespace
 		static const GPlatesModel::PropertyName valid_time_property_name =
 			GPlatesModel::PropertyName::create_gml("validTime");
 
-		GPlatesPropertyValues::GmlTimePeriod *time_period;
-
+		const GPlatesPropertyValues::GmlTimePeriod *time_period_ptr;
 		GPlatesFeatureVisitors::get_property_value(
-			topology_feature_ref, valid_time_property_name, time_period);
+			topology_feature_ref, valid_time_property_name, time_period_ptr);
 
-		GPlatesUtils::non_null_intrusive_ptr<
-			GPlatesPropertyValues::GmlTimePeriod, 
-			GPlatesUtils::NullIntrusivePointerHandler> ttpp(
-				time_period,
-				GPlatesUtils::NullIntrusivePointerHandler()
-			);
+		const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type time_period =
+				time_period_ptr->deep_clone();
 
 		// Create the TimeWindow
 		GPlatesPropertyValues::GpmlTimeWindow tw = GPlatesPropertyValues::GpmlTimeWindow(
 				constant_value, 
-				ttpp,
+				time_period,
 				topo_poly_type);
 
 		// Use the time window

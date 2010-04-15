@@ -339,6 +339,30 @@ namespace GPlatesFeatureVisitors
 				GPlatesModel::FeatureCollectionHandle::iterator, \
 				const GPlatesModel::TopLevelPropertyInline, \
 				const GPlatesPropertyValues::GpmlConstantValue) \
+
+// FIXME: Currently removing the version that returns a non-const property-value.
+//
+// When using a non-const feature visitor the top-level properties are currently deep cloned in
+// visit_feature_properties() so that changes to the model can be tracked (for JC's unsaved changes).
+// The result is references cannot be kept to the property values because they are released when
+// committed back the model inside visit_feature_properties().
+// The function 'get_property_value()' uses both non-const and const visitors internally to
+// retrieve property values and return them to the caller.
+// And for the non-const visitor the property value raw pointer that 'get_property_value()'
+// returns to its caller is pointing to an object that has been deallocated.
+// The design of 'get_property_value()' itself is ok in that it's returning a raw pointer to
+// the caller with the understanding that the pointer only be used locally by the caller.
+// However the new way of keeping track of changes to the model means that property value
+// references now become invalid immediately after visiting that property value with a
+// non-const visitor which is necessary to track changes to the model.
+// The const visitor does not clone because const property values cannot be modified and
+// so it doesn't exhibit this problem.
+//
+// So this only breaks for the non-const version of 'get_property_value()' so
+// it is disabled to prevent caller's using it.
+// There's currently no code that uses the non-const version.
+//
+#if 0
 		/* non-const weak_ref/features_iterator for non-const property-value */ \
 		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
 				property_value_type, \
@@ -348,6 +372,8 @@ namespace GPlatesFeatureVisitors
 				GPlatesModel::FeatureCollectionHandle::iterator, \
 				GPlatesModel::TopLevelPropertyInline, \
 				GPlatesPropertyValues::GpmlConstantValue) \
+
+#endif
 
 
 	template <class PropertyValueType, class FeatureWeakRefType>
