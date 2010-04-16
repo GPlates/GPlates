@@ -28,8 +28,10 @@
 #ifndef GPLATES_MODEL_WEAKREFERENCEVISITOR_H
 #define GPLATES_MODEL_WEAKREFERENCEVISITOR_H
 
+#include <vector>
 #include <boost/shared_ptr.hpp>
 
+#include "HandleTraits.h"
 #include "WeakObserverVisitor.h"
 #include "WeakReference.h"
 #include "WeakReferenceCallback.h"
@@ -41,7 +43,7 @@ namespace GPlatesModel
 	 */
 	template<typename H>
 	class WeakReferencePublisherModifiedVisitor :
-		public WeakObserverVisitor<H>
+			public WeakObserverVisitor<H>
 	{
 
 	public:
@@ -66,12 +68,39 @@ namespace GPlatesModel
 
 	};
 
+	template<typename H>
+	class WeakReferencePublisherAddedVisitor :
+			public WeakObserverVisitor<H>
+	{
+	
+	public:
+
+		WeakReferencePublisherAddedVisitor(
+				const typename WeakReferencePublisherAddedEvent<H>::new_children_container_type &new_children) :
+			d_new_children(new_children)
+		{
+		}
+
+		virtual
+		void
+		visit_weak_reference(
+				WeakReference<H> &weak_reference)
+		{
+			weak_reference.publisher_added(d_new_children);
+		}
+
+	private:
+
+		const typename WeakReferencePublisherAddedEvent<H>::new_children_container_type &d_new_children;
+
+	};
+
 	/**
 	 * Notifies the WeakReference that its publisher has been deactivated (conceptually deleted).
 	 */
 	template<typename H>
 	class WeakReferencePublisherDeactivatedVisitor :
-		public WeakObserverVisitor<H>
+			public WeakObserverVisitor<H>
 	{
 	
 	public:
@@ -91,7 +120,7 @@ namespace GPlatesModel
 	 */
 	template<typename H>
 	class WeakReferencePublisherReactivatedVisitor :
-		public WeakObserverVisitor<H>
+			public WeakObserverVisitor<H>
 	{
 	
 	public:
@@ -111,7 +140,7 @@ namespace GPlatesModel
 	 */
 	template<typename H>
 	class WeakReferencePublisherDestroyedVisitor :
-		public WeakObserverVisitor<H>
+			public WeakObserverVisitor<H>
 	{
 	
 	public:

@@ -26,14 +26,22 @@
 #ifndef GPLATES_QTWIDGETS_COLOURINGDIALOG_H
 #define GPLATES_QTWIDGETS_COLOURINGDIALOG_H
 
-#include <boost/scoped_ptr.hpp>
+#include <vector>
+#include <map>
+#include <boost/shared_ptr.hpp>
+#include <QString>
 
 #include "ColouringDialogUi.h"
+#include "ColourSchemeInfo.h"
 #include "GlobeCanvas.h"
 #include "MapView.h"
 #include "MapCanvas.h"
 
+#include "gui/ColourScheme.h"
+#include "model/FeatureStoreRootHandle.h"
+
 #include "presentation/ViewState.h" // FIXME: remove later
+#include <QLabel>
 
 namespace GPlatesPresentation
 {
@@ -67,14 +75,39 @@ namespace GPlatesQtWidgets
 		void
 		close_button_pressed();
 
+		void
+		handle_globe_repainted(bool);
+
 	private:
+
+		typedef std::map<QString, std::vector<ColourSchemeInfo> > colour_schemes_map_type;
 
 		void
 		make_signal_slot_connections();
 
+		void
+		create_colour_schemes();
+
+		void
+		populate_feature_collections();
+
 		GPlatesPresentation::ViewState &d_view_state;
 
 		PaletteSelectionWidget *d_palette_selection_widget_ptr;
+
+		/**
+		 * Stores the colour schemes loaded and selectable in the colouring dialog.
+		 */
+		colour_schemes_map_type d_colour_schemes;
+
+		/**
+		 * A weak-ref to the feature store root, so we can find out about new feature collections.
+		 */
+		GPlatesModel::FeatureStoreRootHandle::const_weak_ref d_feature_store_root;
+
+		// For testing
+		GlobeAndMapWidget *d_globe;
+		QLabel *d_label;
 		
 	};
 }

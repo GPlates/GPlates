@@ -34,6 +34,7 @@
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QLabel>
+#include <QResizeEvent>
 
 namespace
 {
@@ -64,16 +65,17 @@ GPlatesQtWidgets::PaletteSelectionWidget::PaletteSelectionWidget(
 
 void
 GPlatesQtWidgets::PaletteSelectionWidget::set_colour_schemes(
-		boost::shared_ptr<colour_scheme_collection_type> colour_schemes,
+		const std::vector<ColourSchemeInfo> &colour_schemes,
 		int selected)
 {
-	d_colour_schemes = colour_schemes;
+	// d_colour_schemes = colour_schemes;
 	create_layout();
 }
 
 void
 GPlatesQtWidgets::PaletteSelectionWidget::create_layout()
 {
+#if 0
 	if (d_widget->layout())
 	{
 		// Remove all existing widgets
@@ -131,5 +133,14 @@ GPlatesQtWidgets::PaletteSelectionWidget::create_layout()
 	d_widget->setMinimumSize(s, 200);
 	d_widget->setMaximumSize(s, 400);
 	d_widget->resize(s, s);
+#endif
+}
+
+void
+GPlatesQtWidgets::PaletteSelectionWidget::resizeEvent(
+		QResizeEvent *resize_event)
+{
+	// Call base class resizeEvent otherwise the scroll bars don't show up.
+	QScrollArea::resizeEvent(resize_event);
 }
 

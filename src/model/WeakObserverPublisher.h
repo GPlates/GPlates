@@ -69,11 +69,22 @@ namespace GPlatesModel
 		~WeakObserverPublisher();
 
 		/**
-		 * Apply the supplied WeakObserverVisitor to all weak observers of this instance.
+		 * Apply the supplied WeakObserverVisitor to all (non-const) weak observers
+		 * of this instance.
+		 *
+		 * Note that the visitor does not visit const weak observers.
 		 */
 		void
 		apply_weak_observer_visitor(
 				WeakObserverVisitor<H> &visitor);
+
+		/**
+		 * Apply the supplied WeakObserverVisitor to all const and non-const weak
+		 * observers of this instance.
+		 */
+		void
+		apply_const_weak_observer_visitor(
+				WeakObserverVisitor<const H> &visitor);
 
 		/**
 		 * Access the first const weak observer of this instance.
@@ -252,6 +263,20 @@ namespace GPlatesModel
 			WeakObserverVisitor<H> &visitor)
 	{
 		weak_observer_type *curr = first_weak_observer();
+		while (curr != NULL)
+		{
+			curr->accept_weak_observer_visitor(visitor);
+			curr = curr->next_link_ptr();
+		}
+	}
+
+
+	template<class H>
+	void
+	WeakObserverPublisher<H>::apply_const_weak_observer_visitor(
+			WeakObserverVisitor<const H> &visitor)
+	{
+		const_weak_observer_type *curr = first_const_weak_observer();
 		while (curr != NULL)
 		{
 			curr->accept_weak_observer_visitor(visitor);

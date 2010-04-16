@@ -41,7 +41,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::RenderSettings &render_settings,
 		GPlatesGui::ViewportZoom &viewport_zoom,
-		boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QGraphicsScene(parent_),
@@ -90,6 +90,7 @@ GPlatesQtWidgets::MapCanvas::drawItems(
 	QWidget *widget)
 {
 	d_map.paint(calculate_scale());
+	emit repainted();
 }
 
 void

@@ -30,6 +30,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
+#include "ColourScheme.h"
 #include "GlobeVisibilityTester.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
@@ -45,7 +46,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	class ColourScheme;
 	class NurbsRenderer;
 
 	/**
@@ -64,7 +64,7 @@ namespace GPlatesGui
 				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
-				boost::shared_ptr<ColourScheme> colour_scheme) :
+				ColourScheme::non_null_ptr_type colour_scheme) :
 			d_rendered_geometry_layer(rendered_geometry_layer),
 			d_nurbs_renderer(&nurbs_renderer),
 			d_inverse_zoom_factor(inverse_viewport_zoom_factor),
@@ -156,7 +156,7 @@ namespace GPlatesGui
 		GlobeVisibilityTester d_visibility_tester;
 
 		//! For assigning colours to RenderedGeometry
-		boost::shared_ptr<ColourScheme> d_colour_scheme;
+		ColourScheme::non_null_ptr_type d_colour_scheme;
 
 		//! When rendering scaled globes that are meant to be a scaled version of another
 		float d_scale;

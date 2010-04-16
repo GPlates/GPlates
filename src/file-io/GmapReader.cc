@@ -49,6 +49,9 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
 
+#include "utils/UnicodeStringUtils.h"
+
+
 namespace
 {
 	// The initial time-of-apperance, time-of-disappearance will be set to be the
@@ -535,8 +538,10 @@ GPlatesFileIO::GmapReader::read_file(
 
 	boost::shared_ptr<DataSource> source( 
 		new GPlatesFileIO::LocalFileDataSource(filename, DataFormats::Gmap));
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-		= GPlatesModel::FeatureCollectionHandle::create(model->root());
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection =
+		GPlatesModel::FeatureCollectionHandle::create(
+				model->root(),
+				GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =

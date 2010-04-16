@@ -42,6 +42,9 @@
      </item>
      <item>
       <widget class="QCheckBox" name="checkbox_Use_Global" >
+       <property name="enabled" >
+        <bool>false</bool>
+       </property>
        <property name="text" >
         <string>Use global colour scheme</string>
        </property>

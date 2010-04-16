@@ -42,6 +42,7 @@ GPlatesGui::MapTransform::translate_maps(
 	d_total_translation_x += dx;
 	d_total_translation_y += dy;
 	emit translate(dx, dy);
+	emit view_changed();
 }
 
 void
@@ -50,6 +51,7 @@ GPlatesGui::MapTransform::rotate_maps(
 {
 	d_total_rotation += angle;
 	emit rotate(angle);
+	emit view_changed();
 }
 
 void
@@ -58,6 +60,7 @@ GPlatesGui::MapTransform::reset_rotation()
 	double old_rotation = d_total_rotation;
 	d_total_rotation = 0.0;
 	emit rotate(-old_rotation);
+	emit view_changed();
 }
 
 qreal
@@ -83,6 +86,7 @@ GPlatesGui::MapTransform::set_centre_of_viewport(
 		const QPointF &centre_of_viewport)
 {
 	d_centre_of_viewport = centre_of_viewport;
+	emit view_changed();
 }
 
 const QPointF &

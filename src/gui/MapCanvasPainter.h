@@ -32,6 +32,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
+#include "ColourScheme.h"
 #include "RenderSettings.h"
 #include "TextRenderer.h"
 #include "view-operations/RenderedGeometry.h"
@@ -42,7 +43,6 @@
 namespace GPlatesGui
 {
 	class Colour;
-	class ColourScheme;
 	class Map;
 
 	/**
@@ -53,6 +53,7 @@ namespace GPlatesGui
 			public boost::noncopyable
 	{
 	public:
+
 		explicit
 		MapCanvasPainter(
 				Map &map,
@@ -60,15 +61,7 @@ namespace GPlatesGui
 				GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
 				const double &inverse_zoom_factor,
-				boost::shared_ptr<ColourScheme> colour_scheme):
-			d_map(map),
-			d_render_settings(render_settings),
-			d_text_renderer_ptr(text_renderer_ptr),
-			d_main_rendered_layers_to_visit(layers_to_visit),
-			d_inverse_zoom_factor(inverse_zoom_factor),
-			d_colour_scheme(colour_scheme),
-			d_scale(1.0f)
-		{  }
+				ColourScheme::non_null_ptr_type colour_scheme);
 		
 		virtual
 		~MapCanvasPainter()
@@ -153,7 +146,7 @@ namespace GPlatesGui
 		const double d_inverse_zoom_factor;
 
 		//! For assigning colours to RenderedGeometry
-		boost::shared_ptr<ColourScheme> d_colour_scheme;
+		ColourScheme::non_null_ptr_type d_colour_scheme;
 
 		//! When rendering maps that are meant to be a scaled version of another
 		float d_scale;

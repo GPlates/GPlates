@@ -31,6 +31,8 @@
 #include <boost/optional.hpp>
 
 #include "Colour.h"
+#include "utils/ReferenceCount.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
 {
@@ -42,9 +44,20 @@ namespace GPlatesGui
 	/**
 	 * This class assigns colours to ReconstructionGeometry instances.
 	 */
-	class ColourScheme
+	class ColourScheme :
+			public GPlatesUtils::ReferenceCount<ColourScheme>
 	{
 	public:
+
+		/**
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ColourScheme>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<ColourScheme> non_null_ptr_type;
+
+		/**
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const ColourScheme>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const ColourScheme> non_null_ptr_to_const_type;
 
 		//! Destructor
 		virtual

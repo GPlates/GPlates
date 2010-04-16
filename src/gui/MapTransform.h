@@ -76,13 +76,28 @@ namespace GPlatesGui
 
 	signals:
 
+		/**
+		 * Emitted when all MapView instances using this MapTransform should
+		 * translate their viewports.
+		 */
 		void
 		translate(
 				qreal dx, qreal dy);
 
+		/**
+		 * Emitted when all MapView instances using this MapTransform should
+		 * rotate their viewports.
+		 */
 		void
 		rotate(
 				double angle);
+
+		/**
+		 * Emitted when MapView instances are translated or rotated, and when the
+		 * centre of viewport is recalculated.
+		 */
+		void
+		view_changed();
 
 	private:
 

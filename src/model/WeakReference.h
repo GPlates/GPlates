@@ -28,11 +28,13 @@
 #ifndef GPLATES_MODEL_WEAKREFERENCE_H
 #define GPLATES_MODEL_WEAKREFERENCE_H
 
+#include <vector>
+#include <boost/shared_ptr.hpp>
+
+#include "HandleTraits.h"
 #include "WeakObserver.h"
 #include "WeakObserverVisitor.h"
 #include "WeakReferenceCallback.h"
-
-#include <boost/shared_ptr.hpp>
 
 namespace GPlatesModel
 {
@@ -309,16 +311,25 @@ namespace GPlatesModel
 		 */
 		void
 		attach_callback(
-				typename WeakReferenceCallback<H>::maybe_null_ptr_type callback)
+				typename WeakReferenceCallback<H>::maybe_null_ptr_type callback_) const
 		{
-			d_callback = callback;
+			d_callback = callback_;
+		}
+
+		/**
+		 * Gets the callback attached to this WeakReference, if any.
+		 */
+		typename WeakReferenceCallback<H>::maybe_null_ptr_type
+		callback() const
+		{
+			return d_callback;
 		}
 
 		/**
 		 * Unattaches the callback, if any, from this WeakReference.
 		 */
 		void
-		unattach_callback()
+		unattach_callback() const
 		{
 			d_callback = WeakReferenceCallback<H>::maybe_null_ptr_type();
 		}
@@ -336,6 +347,22 @@ namespace GPlatesModel
 			{
 				d_callback->publisher_modified(
 						WeakReferencePublisherModifiedEvent<H>(*this, type));
+			}
+		}
+
+		/**
+		 * Notify the callback that the publisher has added new children.
+		 *
+		 * Used by WeakReferencePublisherAddedVisitor.
+		 */
+		void
+		publisher_added(
+				const typename WeakReferencePublisherAddedEvent<H>::new_children_container_type &new_children) const
+		{
+			if (d_callback)
+			{
+				d_callback->publisher_added(
+						WeakReferencePublisherAddedEvent<H>(*this, new_children));
 			}
 		}
 
@@ -384,12 +411,23 @@ namespace GPlatesModel
 			}
 		}
 
+		bool
+		operator<(
+				const WeakReference<H> &other) const
+		{
+			return handle_ptr() < other.handle_ptr();
+		}
+
 	private:
 
 		/**
 		 * An optional callback to use when publisher is modified or about to be deleted.
+		 *
+		 * Note that it's mutable because we want to be able to attach a callback to
+		 * a WeakReference that is being used as a key in a std::map. This is fine
+		 * because the callback is not used to compare two WeakReferences.
 		 */
-		typename WeakReferenceCallback<H>::maybe_null_ptr_type d_callback;
+		mutable typename WeakReferenceCallback<H>::maybe_null_ptr_type d_callback;
 
 	};
 

@@ -26,10 +26,14 @@
 #ifndef GPLATES_GUI_COLOURSCHEMEDELEGATOR_H
 #define GPLATES_GUI_COLOURSCHEMEDELEGATOR_H
 
+#include <map>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 
 #include "ColourScheme.h"
+
+#include "model/FeatureCollectionHandle.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
 {
@@ -44,36 +48,57 @@ namespace GPlatesGui
 	 * reference(s) to it (just refer to @a ColourTableDelegator instead).
 	 */
 	class ColourSchemeDelegator :
-		public ColourScheme
+			public ColourScheme
 	{
 	public:
 
-		explicit
-		ColourSchemeDelegator(
-				boost::shared_ptr<ColourScheme> colour_scheme) :
-			d_colour_scheme(colour_scheme)
-		{
-		}
+		/**
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ColourSchemeDelegator>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<ColourSchemeDelegator> non_null_ptr_type;
 
 		/**
-		 * Change the target colour scheme.
-		 * @param colour_scheme A pointer to the new colour scheme.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const ColourSchemeDelegator>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const ColourSchemeDelegator> non_null_ptr_to_const_type;
+
+		/**
+		 * The type of the map from feature collection to colour scheme.
+		 */
+		typedef std::map<
+				GPlatesModel::FeatureCollectionHandle::const_weak_ref,
+				ColourScheme::non_null_ptr_type>
+			colour_schemes_map_type;
+
+		/**
+		 * Constructs the ColourSchemeDelegator with an initial @a global_colour_scheme.
+		 */
+		explicit
+		ColourSchemeDelegator(
+				ColourScheme::non_null_ptr_type global_colour_scheme);
+
+		/**
+		 * Changes the colour scheme for the given @a feature_collection to
+		 * @a colour_scheme. If the @a feature_collection argument is not provided,
+		 * or if it is an invalid weak-ref, the global colour scheme is changed instead.
 		 */
 		void
 		set_colour_scheme(
-				boost::shared_ptr<ColourScheme> colour_scheme)
-		{
-			d_colour_scheme = colour_scheme;
-		}
+				ColourScheme::non_null_ptr_type colour_scheme,
+				GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
+					GPlatesModel::FeatureCollectionHandle::const_weak_ref());
 
 		/**
-		 * Gets the target colour scheme.
+		 * Gets the colour scheme for @a feature_collection. If the
+		 * @a feature_collection argument is not provided, or if it is an invalid
+		 * weak-ref, the global colour scheme is returned instead. The global colour
+		 * scheme is also returned for feature collections that don't have a special
+		 * colour scheme.
 		 */
-		boost::shared_ptr<ColourScheme>
-		get_colour_scheme() const
-		{
-			return d_colour_scheme;
-		}
+		ColourScheme::non_null_ptr_type
+		get_colour_scheme(
+				GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
+					GPlatesModel::FeatureCollectionHandle::const_weak_ref()) const;
 
 		/**
 		 * Retrieves a colour for a @a reconstruction_geometry from the current
@@ -86,7 +111,18 @@ namespace GPlatesGui
 
 	private:
 
-		boost::shared_ptr<ColourScheme> d_colour_scheme;
+		/**
+		 * The global colour scheme, which is used to colour a geometry in a feature
+		 * collection without a special rule.
+		 */
+		ColourScheme::non_null_ptr_type d_global_colour_scheme;
+
+		/**
+		 * A map of feature collection to colour scheme, for those feature collections
+		 * that have a special colour scheme.
+		 */
+		colour_schemes_map_type d_special_colour_schemes;
+
 	};
 }
 

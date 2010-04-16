@@ -33,7 +33,7 @@ namespace GPlatesModel
 {
 
 	template<>
-	const BasicHandle<FeatureHandle>::iterator
+	BasicHandle<FeatureHandle>::iterator
 	BasicHandle<FeatureHandle>::add(
 			GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type new_child)
 	{
@@ -82,6 +82,15 @@ namespace GPlatesModel
 
 	template<>
 	Model *
+	BasicHandle<FeatureStoreRootHandle>::model_ptr()
+	{
+		// The parent of the feature store root is the model itself.
+		return d_parent_ptr;
+	}
+
+
+	template<>
+	const Model *
 	BasicHandle<FeatureStoreRootHandle>::model_ptr() const
 	{
 		// The parent of the feature store root is the model itself.

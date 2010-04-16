@@ -340,12 +340,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	connect_feature_collection_file_io_signals();
 
-	QObject::connect(d_globe_canvas_ptr, SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
-			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
-	QObject::connect(&(d_reconstruction_view_widget.map_view()), SIGNAL(mouse_pointer_position_changed(const boost::optional<GPlatesMaths::LatLonPoint>&, bool)),
-			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const boost::optional<GPlatesMaths::LatLonPoint>&, bool)));
-
-
 	// Set up the Clicked table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
 	table_view_clicked_geometries->setModel(d_feature_table_model_ptr.get());
@@ -964,7 +958,8 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
 		d_set_camera_viewpoint_dialog_ptr.reset(new SetCameraViewpointDialog(*this, this));
 	}
 
-	GPlatesMaths::LatLonPoint cur_llp = d_reconstruction_view_widget.camera_llp();
+	boost::optional<GPlatesMaths::LatLonPoint> cur_llp_opt = d_reconstruction_view_widget.camera_llp();
+	GPlatesMaths::LatLonPoint cur_llp = cur_llp_opt ? *cur_llp_opt : GPlatesMaths::LatLonPoint(0.0, 0.0);
 
 	d_set_camera_viewpoint_dialog_ptr->set_lat_lon(cur_llp.latitude(), cur_llp.longitude());
 	if (d_set_camera_viewpoint_dialog_ptr->exec())

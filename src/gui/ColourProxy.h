@@ -28,17 +28,16 @@
 #ifndef GPLATES_GUI_COLOURPROXY_H
 #define GPLATES_GUI_COLOURPROXY_H
 
-#include "Colour.h"
-#include "ColourFilter.h"
-#include "model/ReconstructionGeometry.h"
-
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "Colour.h"
+#include "ColourFilter.h"
+#include "ColourScheme.h"
+#include "model/ReconstructionGeometry.h"
+
 namespace GPlatesGui
 {
-	class ColourScheme;
-
 	class ColourProxyImpl;
 	class DeferredColourProxyImpl;
 	class FixedColourProxyImpl;
@@ -77,7 +76,7 @@ namespace GPlatesGui
 		ColourProxy(
 				GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geometry_ptr,
 				boost::shared_ptr<ColourFilter> colour_filter_ptr =
-					boost::shared_ptr<ColourFilter>(new IdentityColourFilter()));
+					boost::shared_ptr<ColourFilter>());
 
 		/**
 		 * Constructs a ColourProxy without deferred colour assignment.
@@ -109,7 +108,7 @@ namespace GPlatesGui
 		 */
 		boost::optional<Colour>
 		get_colour(
-				const boost::shared_ptr<ColourScheme> colour_scheme) const;
+				ColourScheme::non_null_ptr_type colour_scheme) const;
 
 	private:
 		
@@ -132,7 +131,7 @@ namespace GPlatesGui
 		virtual
 		boost::optional<Colour>
 		get_colour(
-				const boost::shared_ptr<ColourScheme> colour_scheme) const = 0;
+				ColourScheme::non_null_ptr_type colour_scheme) const = 0;
 	};
 
 	/**
@@ -151,7 +150,7 @@ namespace GPlatesGui
 		virtual
 		boost::optional<Colour>
 		get_colour(
-				const boost::shared_ptr<ColourScheme> colour_scheme) const;
+				ColourScheme::non_null_ptr_type colour_scheme) const;
 
 	private:
 
@@ -170,18 +169,12 @@ namespace GPlatesGui
 
 		explicit
 		FixedColourProxyImpl(
-				boost::optional<Colour> colour) :
-			d_colour(colour)
-		{
-		}
+				boost::optional<Colour> colour);
 
 		virtual
 		boost::optional<Colour>
 		get_colour(
-				const boost::shared_ptr<ColourScheme> colour_scheme) const
-		{
-			return d_colour;
-		}
+				ColourScheme::non_null_ptr_type colour_scheme) const;
 
 	private:
 

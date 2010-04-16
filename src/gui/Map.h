@@ -30,6 +30,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "ColourScheme.h"
 #include "MapProjection.h"
 #include "TextRenderer.h"
 #include "gui/ViewportZoom.h"
@@ -37,7 +38,6 @@
 
 namespace GPlatesGui
 {
-	class ColourScheme;
 	class RenderSettings;
 
 	/**
@@ -51,7 +51,7 @@ namespace GPlatesGui
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				RenderSettings &render_settings,
 				ViewportZoom &viewport_zoom,
-				boost::shared_ptr<ColourScheme> colour_scheme);
+				ColourScheme::non_null_ptr_type colour_scheme);
 
 		MapProjection &
 		projection();
@@ -110,7 +110,7 @@ namespace GPlatesGui
 		GPlatesGui::ViewportZoom &d_viewport_zoom;		
 		
 		//! For giving colour to RenderedGeometry
-		boost::shared_ptr<GPlatesGui::ColourScheme> d_colour_scheme;
+		GPlatesGui::ColourScheme::non_null_ptr_type d_colour_scheme;
 	};
 }
 

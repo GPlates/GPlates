@@ -21,7 +21,6 @@ set(srcs
     ChooseCanvasTool.h
     Colour.cc
     Colour.h
-    ColourFilter.cc
     ColourFilter.h
     ColourNameSet.cc
     ColourNameSet.h

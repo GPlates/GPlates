@@ -32,17 +32,22 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+
 #include "PlatesRotationFormatReader.h"
 #include "LineReader.h"
+
 #include "model/Model.h"
 #include "model/ModelUtils.h"
+
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/TemplateTypeParameterType.h"
+
 #include "utils/FloatingPointComparisons.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 namespace
@@ -640,7 +645,9 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 	boost::shared_ptr<DataSource> data_source(
 			new LocalFileDataSource(filename, DataFormats::PlatesRotation));
 	GPlatesModel::FeatureCollectionHandle::weak_ref rotations =
-			GPlatesModel::FeatureCollectionHandle::create(model->root());
+			GPlatesModel::FeatureCollectionHandle::create(
+					model->root(),
+					GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref rotations_unloader =

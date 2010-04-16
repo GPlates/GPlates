@@ -301,11 +301,6 @@ namespace
 	{
 	public:
 
-		typedef GPlatesModel::WeakReferencePublisherModifiedEvent<GPlatesModel::FeatureCollectionHandle> modified_event_type;
-		typedef GPlatesModel::WeakReferencePublisherDeactivatedEvent<GPlatesModel::FeatureCollectionHandle> deactivated_event_type;
-		typedef GPlatesModel::WeakReferencePublisherReactivatedEvent<GPlatesModel::FeatureCollectionHandle> reactivated_event_type;
-		typedef GPlatesModel::WeakReferencePublisherAboutToBeDestroyedEvent<GPlatesModel::FeatureCollectionHandle> about_to_be_destroyed_event_type;
-
 		void
 		publisher_modified(
 				const modified_event_type &event)
@@ -321,6 +316,15 @@ namespace
 			qDebug() << "    contains unsaved changes? " << feature_collection->contains_unsaved_changes();
 			feature_collection->clear_unsaved_changes();
 			qDebug() << "    unsaved changes cleared.";
+#endif
+		}
+
+		void
+		publisher_added(
+				const added_event_type &event)
+		{
+#if 0
+			qDebug() << "[MFCD] feature collection added " << event.new_children().size() << " children";
 #endif
 		}
 

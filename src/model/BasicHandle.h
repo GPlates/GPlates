@@ -30,7 +30,9 @@
 #ifndef GPLATES_MODEL_BASICHANDLE_H
 #define GPLATES_MODEL_BASICHANDLE_H
 
-#include <boost/optional.hpp>
+#include <algorithm>
+#include <vector>
+#include <boost/scoped_ptr.hpp>
 
 #include "ChangesetHandle.h"
 #include "HandleTraits.h"
@@ -99,25 +101,25 @@ namespace GPlatesModel
 		/**
 		 * Returns the "begin" const-iterator to iterate over the collection of children.
 		 */
-		const const_iterator
+		const_iterator
 		begin() const;
 
 		/**
 		 * Returns the "begin" iterator to iterate over the collection of children.
 		 */
-		const iterator
+		iterator
 		begin();
 
 		/**
 		 * Returns the "end" const-iterator used during iteration over the collection of children.
 		 */
-		const const_iterator
+		const_iterator
 		end() const;
 
 		/**
 		 * Returns the "end" iterator used during iteration over the collection of children.
 		 */
-		const iterator
+		iterator
 		end();
 
 		/**
@@ -146,7 +148,7 @@ namespace GPlatesModel
 		 * now be the iterator to the second-last element of the sequence; what was the
 		 * "end" iterator will now be the iterator to the last element of the sequence.
 		 */
-		const iterator
+		iterator
 		add(
 				typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type new_child);
 
@@ -198,10 +200,16 @@ namespace GPlatesModel
 				container_size_type new_index);
 
 		/**
-		 * Gets a pointer to the parent object that contains this feature.
+		 * Gets a (non-const) pointer to the parent object that contains this feature.
 		 */
 		parent_type *
 		parent_ptr();
+
+		/**
+		 * Gets a const pointer to the parent object that contains this feature.
+		 */
+		const parent_type *
+		parent_ptr() const;
 
 		/**
 		 * Returns the index of this Handle in its parent container.
@@ -210,10 +218,17 @@ namespace GPlatesModel
 		index_in_container();
 
 		/**
-		 * Returns a pointer to the Model to which this Handle belongs. Returns NULL
+		 * Returns a (non-const) pointer to the Model to which this Handle belongs. Returns NULL
 		 * if this Handle has no parent set.
 		 */
 		Model *
+		model_ptr();
+
+		/**
+		 * Returns a const pointer to the Model to which this handle belongs. Returns NULL
+		 * if this Handle has no parent set.
+		 */
+		const Model *
 		model_ptr() const;
 
 		/**
@@ -280,8 +295,11 @@ namespace GPlatesModel
 		/**
 		 * Notify our listeners of the modification of this Handle.
 		 *
+		 * This function respects the existence of an active NotificationGuard and
+		 * will enqueue the notification if one is present.
+		 *
 		 * If @a publisher_modified is true, this means that something in this Handle
-		 * itself was modified
+		 * itself was modified.
 		 *
 		 * If @a child_modified is true, this means that one of this Handle's
 		 * children was modified instead.
@@ -290,24 +308,6 @@ namespace GPlatesModel
 		notify_listeners_of_modification(
 				bool publisher_modified,
 				bool child_modified);
-
-		/**
-		 * Notify our listeners of deactivation (conceptual deletion) of this Handle.
-		 */
-		void
-		notify_listeners_of_deactivation();
-
-		/**
-		 * Notify our listeners of reactivation (conceptual undeletion) of this Handle.
-		 */
-		void
-		notify_listeners_of_reactivation();
-
-		/**
-		 * Notify our listeners of the impending destruction of this Handle in the C++ sense.
-		 */
-		void
-		notify_listeners_of_impending_destruction();
 
 	private:
 
@@ -342,16 +342,58 @@ namespace GPlatesModel
 				bool child_modified);
 
 		/**
+		 * Notify our listeners of the addition of a new child.
+		 */
+		void
+		notify_listeners_of_addition(
+				iterator new_child);
+
+		/**
+		 * Does the job of notify_listeners_of_addition() without the guard checks.
+		 */
+		void
+		actual_notify_listeners_of_addition(
+				const std::vector<iterator> &new_children);
+
+		/**
+		 * Removes @a removed_child from d_pending_addition_notifications if it is there.
+		 * This handles the situations where a NotificationGuard is active, and a
+		 * child was added and then removed. Listeners need not know about this
+		 * child's flitting existence.
+		 */
+		void
+		remove_child_from_pending_notification(
+				iterator removed_child);
+
+		/**
+		 * Notify our listeners of deactivation (conceptual deletion) of this Handle.
+		 */
+		void
+		notify_listeners_of_deactivation();
+
+		/**
 		 * Does the job of notify_listeners_of_deactivation() without the guard checks.
 		 */
 		void
 		actual_notify_listeners_of_deactivation();
 
 		/**
+		 * Notify our listeners of reactivation (conceptual undeletion) of this Handle.
+		 */
+		void
+		notify_listeners_of_reactivation();
+
+		/**
 		 * Does the job of notify_listeners_of_reactivation() without the guard checks.
 		 */
 		void
 		actual_notify_listeners_of_reactivation();
+
+		/**
+		 * Notify our listeners of the impending destruction of this Handle in the C++ sense.
+		 */
+		void
+		notify_listeners_of_impending_destruction();
 
 		/**
 		 * Calls flush_pending_notifications() in children objects.
@@ -404,8 +446,8 @@ namespace GPlatesModel
 		// Used for holding notifications while a NotificationGuard is active.
 		bool d_has_pending_publisher_modification_notification;
 		bool d_has_pending_child_modification_notification;
-		bool d_has_pending_activation_notification; // either deactivation/reactivation
-		boost::optional<bool> d_is_active_before_pending_notifications;
+		bool d_was_active_before_pending_notifications;
+		boost::scoped_ptr<std::vector<iterator> > d_pending_addition_notifications;
 
 		friend class RevisionAwareIterator<HandleType>;
 		friend class RevisionAwareIterator<const HandleType>;
@@ -437,7 +479,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	const typename BasicHandle<HandleType>::const_iterator
+	typename BasicHandle<HandleType>::const_iterator
 	BasicHandle<HandleType>::begin() const
 	{
 		return const_iterator(*d_handle_ptr, 0);
@@ -445,7 +487,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	const typename BasicHandle<HandleType>::iterator
+	typename BasicHandle<HandleType>::iterator
 	BasicHandle<HandleType>::begin()
 	{
 		return iterator(*d_handle_ptr, 0);
@@ -453,7 +495,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	const typename BasicHandle<HandleType>::const_iterator
+	typename BasicHandle<HandleType>::const_iterator
 	BasicHandle<HandleType>::end() const
 	{
 		return const_iterator(*d_handle_ptr, current_revision()->container_size());
@@ -461,7 +503,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	const typename BasicHandle<HandleType>::iterator
+	typename BasicHandle<HandleType>::iterator
 	BasicHandle<HandleType>::end()
 	{
 		return iterator(*d_handle_ptr, current_revision()->container_size());
@@ -477,7 +519,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	const typename BasicHandle<HandleType>::iterator
+	typename BasicHandle<HandleType>::iterator
 	BasicHandle<HandleType>::add(
 			typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type new_child)
 	{
@@ -487,15 +529,17 @@ namespace GPlatesModel
 			current_revision()->add(new_child);
 		new_child->set_parent_ptr(d_handle_ptr, new_index);
 
+		iterator new_child_iter(*d_handle_ptr, new_index);
 		notify_listeners_of_modification(true, false);
+		notify_listeners_of_addition(new_child_iter);
 
-		return iterator(*d_handle_ptr, new_index);
+		return new_child_iter;
 	}
 
 
 	// Template specialisations are in the .cc file.
 	template<>
-	const BasicHandle<FeatureHandle>::iterator
+	BasicHandle<FeatureHandle>::iterator
 	BasicHandle<FeatureHandle>::add(
 			GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type new_child);
 
@@ -573,6 +617,14 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
+	const typename BasicHandle<HandleType>::parent_type *
+	BasicHandle<HandleType>::parent_ptr() const
+	{
+		return d_parent_ptr;
+	}
+
+
+	template<class HandleType>
 	container_size_type
 	BasicHandle<HandleType>::index_in_container()
 	{
@@ -582,7 +634,7 @@ namespace GPlatesModel
 
 	template<class HandleType>
 	Model *
-	BasicHandle<HandleType>::model_ptr() const
+	BasicHandle<HandleType>::model_ptr()
 	{
 		if (d_parent_ptr)
 		{
@@ -598,6 +650,27 @@ namespace GPlatesModel
 	// Template specialisations are in the .cc file.
 	template<>
 	Model *
+	BasicHandle<FeatureStoreRootHandle>::model_ptr();
+
+
+	template<class HandleType>
+	const Model *
+	BasicHandle<HandleType>::model_ptr() const
+	{
+		if (d_parent_ptr)
+		{
+			return d_parent_ptr->model_ptr();
+		}
+		else
+		{
+			return NULL;
+		}
+	}
+
+
+	// Template specialisations are in the .cc file.
+	template<>
+	const Model *
 	BasicHandle<FeatureStoreRootHandle>::model_ptr() const;
 
 
@@ -681,8 +754,7 @@ namespace GPlatesModel
 		d_index_in_container(INVALID_INDEX),
 		d_is_active(true),
 		d_has_pending_publisher_modification_notification(false),
-		d_has_pending_child_modification_notification(false),
-		d_has_pending_activation_notification(false)
+		d_has_pending_child_modification_notification(false)
 	{
 	}
 
@@ -746,6 +818,66 @@ namespace GPlatesModel
 
 		WeakReferencePublisherModifiedVisitor<HandleType> visitor(type);
 		apply_weak_observer_visitor(visitor);
+		WeakReferencePublisherModifiedVisitor<const HandleType> const_visitor(
+				static_cast<typename WeakReferencePublisherModifiedEvent<const HandleType>::Type>(type));
+		apply_const_weak_observer_visitor(const_visitor);
+	}
+
+
+	template<class HandleType>
+	void
+	BasicHandle<HandleType>::notify_listeners_of_addition(
+			iterator new_child)
+	{
+		Model *model = model_ptr();
+
+		if (model && model->has_notification_guard())
+		{
+			// Just remember what notifications we need to send later.
+			if (!d_pending_addition_notifications)
+			{
+				d_pending_addition_notifications.reset(new std::vector<iterator>());
+			}
+			d_pending_addition_notifications->push_back(new_child);
+		}
+		else
+		{
+			std::vector<iterator> new_children;
+			new_children.push_back(new_child);
+			actual_notify_listeners_of_addition(new_children);
+		}
+	}
+
+
+	template<class HandleType>
+	void
+	BasicHandle<HandleType>::actual_notify_listeners_of_addition(
+			const std::vector<iterator> &new_children)
+	{
+		WeakReferencePublisherAddedVisitor<HandleType> visitor(new_children);
+		apply_weak_observer_visitor(visitor);
+
+		std::vector<const_iterator> const_new_children(new_children.begin(), new_children.end());
+		WeakReferencePublisherAddedVisitor<const HandleType> const_visitor(const_new_children);
+		apply_const_weak_observer_visitor(const_visitor);
+	}
+
+
+	template<class HandleType>
+	void
+	BasicHandle<HandleType>::remove_child_from_pending_notification(
+			iterator removed_child)
+	{
+		if (d_pending_addition_notifications)
+		{
+			typename std::vector<iterator>::iterator removed_child_iter = std::find(
+					d_pending_addition_notifications->begin(),
+					d_pending_addition_notifications->end());
+			if (removed_child_iter != d_pending_addition_notifications->end())
+			{
+				d_pending_addition_notifications->erase(removed_child_iter);
+			}
+		}
 	}
 
 
@@ -755,28 +887,23 @@ namespace GPlatesModel
 	{
 		Model *model = model_ptr();
 
-		if (model && model->has_notification_guard())
+		if (!(model && model->has_notification_guard()))
 		{
-			// Just remember what notifications we need to send later.
-			d_has_pending_activation_notification = true;
-			if (!d_is_active_before_pending_notifications)
-			{
-				d_is_active_before_pending_notifications = d_is_active;
-			}
-		}
-		else
-		{
+			d_was_active_before_pending_notifications = d_is_active;
 			actual_notify_listeners_of_deactivation();
 		}
 	}
 
-	
+
 	template<class HandleType>
 	void
 	BasicHandle<HandleType>::actual_notify_listeners_of_deactivation()
 	{
 		WeakReferencePublisherDeactivatedVisitor<HandleType> visitor;
 		apply_weak_observer_visitor(visitor);
+
+		WeakReferencePublisherDeactivatedVisitor<const HandleType> const_visitor;
+		apply_const_weak_observer_visitor(const_visitor);
 	}
 
 
@@ -786,17 +913,9 @@ namespace GPlatesModel
 	{
 		Model *model = model_ptr();
 
-		if (model && model->has_notification_guard())
+		if (!(model && model->has_notification_guard()))
 		{
-			// Just remember what notifications we need to send later.
-			d_has_pending_activation_notification = true;
-			if (!d_is_active_before_pending_notifications)
-			{
-				d_is_active_before_pending_notifications = d_is_active;
-			}
-		}
-		else
-		{
+			d_was_active_before_pending_notifications = d_is_active;
 			actual_notify_listeners_of_reactivation();
 		}
 	}
@@ -808,6 +927,9 @@ namespace GPlatesModel
 	{
 		WeakReferencePublisherReactivatedVisitor<HandleType> visitor;
 		apply_weak_observer_visitor(visitor);
+
+		WeakReferencePublisherReactivatedVisitor<const HandleType> const_visitor;
+		apply_const_weak_observer_visitor(const_visitor);
 	}
 
 
@@ -819,6 +941,9 @@ namespace GPlatesModel
 		// a NotificationGuard active.
 		WeakReferencePublisherDestroyedVisitor<HandleType> visitor;
 		apply_weak_observer_visitor(visitor);
+
+		WeakReferencePublisherDestroyedVisitor<const HandleType> const_visitor;
+		apply_const_weak_observer_visitor(const_visitor);
 	}
 
 
@@ -846,6 +971,7 @@ namespace GPlatesModel
 	{
 		flush_children_pending_notifications();
 
+		// Modification notifications:
 		if (d_has_pending_publisher_modification_notification ||
 				d_has_pending_child_modification_notification)
 		{
@@ -856,22 +982,32 @@ namespace GPlatesModel
 			d_has_pending_child_modification_notification = false;
 		}
 
-		if (d_has_pending_activation_notification)
+		// Addition notifications:
+		if (d_pending_addition_notifications &&
+				!d_pending_addition_notifications->empty())
+		{
+			actual_notify_listeners_of_addition(
+					*d_pending_addition_notifications);
+			d_pending_addition_notifications.reset(NULL);
+		}
+
+		// Deactivation and/or reactivation notifications:
+		if (d_was_active_before_pending_notifications)
 		{
 			// We were deactivated and/or reactivated, possibly multiple times.
 			// Our listeners need not be bothered with such trivialities, so we will
 			// only send a notification if d_is_active has changed.
-			bool was_active = *d_is_active_before_pending_notifications;
-			if (d_is_active && !was_active)
+			if (d_is_active && !d_was_active_before_pending_notifications)
 			{
-				actual_notify_listeners_of_reactivation();
+				notify_listeners_of_reactivation();
 			}
-			else if (!d_is_active && was_active)
+			else if (!d_is_active && d_was_active_before_pending_notifications)
 			{
-				actual_notify_listeners_of_deactivation();
+				notify_listeners_of_deactivation();
 			}
 
-			d_has_pending_activation_notification = false;
+			// Reset them to be the same again.
+			d_was_active_before_pending_notifications = d_is_active;
 		}
 	}
 

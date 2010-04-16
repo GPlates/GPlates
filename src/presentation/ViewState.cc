@@ -226,7 +226,7 @@ GPlatesPresentation::ViewState::get_last_single_colour() const
 }
 
 
-boost::shared_ptr<GPlatesGui::ColourScheme>
+GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
 GPlatesPresentation::ViewState::get_colour_scheme()
 {
 	return d_colour_scheme;

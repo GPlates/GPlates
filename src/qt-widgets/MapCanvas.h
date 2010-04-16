@@ -32,11 +32,11 @@
 #include <boost/noncopyable.hpp>
 #include <QGraphicsScene>
 
+#include "gui/ColourScheme.h"
 #include "gui/Map.h"
 
 namespace GPlatesGui
 {
-	class ColourScheme;
 	class RenderSettings;
 	class ViewportZoom;
 }
@@ -68,7 +68,7 @@ namespace GPlatesQtWidgets
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 			GPlatesGui::RenderSettings &render_settings,
 			GPlatesGui::ViewportZoom &viewport_zoom,
-			boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 			GPlatesPresentation::ViewState &view_state,
 			QWidget *parent_ = NULL);
 
@@ -87,6 +87,11 @@ namespace GPlatesQtWidgets
 		{
 			d_map_view_ptr = map_view_ptr;
 		}
+
+	signals:
+
+		void
+		repainted();
 
 	public slots:
 		

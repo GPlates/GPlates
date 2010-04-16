@@ -251,6 +251,10 @@ namespace GPlatesModel
 		bool
 		is_still_valid() const;
 
+		bool
+		operator<(
+				const RevisionAwareIterator<HandleType> &other) const;
+
 	private:
 
 		/**
@@ -434,6 +438,22 @@ namespace GPlatesModel
 	{
 		return d_handle_weak_ref.is_valid() &&
 			d_handle_weak_ref->current_revision()->get(d_index);
+	}
+
+
+	template<class HandleType>
+	bool
+	RevisionAwareIterator<HandleType>::operator<(
+			const RevisionAwareIterator<HandleType> &other) const
+	{
+		if (d_handle_weak_ref == other.d_handle_weak_ref)
+		{
+			return d_index < other.d_index;
+		}
+		else
+		{
+			return d_handle_weak_ref < other.d_handle_weak_ref;
+		}
 	}
 
 

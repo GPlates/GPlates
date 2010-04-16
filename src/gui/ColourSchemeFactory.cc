@@ -139,45 +139,40 @@ namespace
 	};
 }
 
-boost::shared_ptr<GPlatesGui::ColourScheme>
+GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_single_colour_scheme(
-		const QColor &qcolor)
+		const Colour &colour)
 {
-	return boost::shared_ptr<ColourScheme>(
-			new SingleColourScheme(qcolor));
+	return new SingleColourScheme(colour);
 }
 
-boost::shared_ptr<GPlatesGui::ColourScheme>
+GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme()
 {
-	return boost::shared_ptr<ColourScheme>(
-			new GenericColourScheme<PlateIdPropertyExtractor>(
-				new DefaultPlateIdColourPalette()));
+	return new GenericColourScheme<PlateIdPropertyExtractor>(
+			new DefaultPlateIdColourPalette());
 }
 
-boost::shared_ptr<GPlatesGui::ColourScheme>
+GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_regional_plate_id_colour_scheme()
 {
-	return boost::shared_ptr<ColourScheme>(
-			new GenericColourScheme<PlateIdPropertyExtractor>(
-				new RegionalPlateIdColourPalette()));
+	return new GenericColourScheme<PlateIdPropertyExtractor>(
+			new RegionalPlateIdColourPalette());
 }
 
-boost::shared_ptr<GPlatesGui::ColourScheme>
+GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_default_age_colour_scheme(
 		const GPlatesAppLogic::Reconstruct &reconstruct)
 {
-	return boost::shared_ptr<ColourScheme>(
-			new GenericColourScheme<AgePropertyExtractor>(
-				new AgeColourPalette(),
-				AgePropertyExtractor(reconstruct)));
+	return new GenericColourScheme<AgePropertyExtractor>(
+			new AgeColourPalette(),
+			AgePropertyExtractor(reconstruct));
 }
 
-boost::shared_ptr<GPlatesGui::ColourScheme>
+GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_default_feature_colour_scheme()
 {
-	return boost::shared_ptr<ColourScheme>(
-			new GenericColourScheme<FeaturePropertyExtractor>(
-				new FeatureColourPalette()));
+	return new GenericColourScheme<FeaturePropertyExtractor>(
+			new FeatureColourPalette());
 }
 

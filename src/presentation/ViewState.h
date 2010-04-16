@@ -32,6 +32,8 @@
 #include <QObject>
 #include <QColor>
 
+#include "global/PointerTraits.h"
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // NOTE: Please use forward declarations (and boost::scoped_ptr) instead of including headers
@@ -188,7 +190,7 @@ namespace GPlatesPresentation
 		 * actual colour scheme implementation which itself can be switched inside the
 		 * delegate.
 		 */
-		boost::shared_ptr<GPlatesGui::ColourScheme>
+		GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
 		get_colour_scheme();
 
 		GPlatesGui::RenderSettings &
@@ -226,7 +228,7 @@ namespace GPlatesPresentation
 		boost::scoped_ptr<GPlatesViewOperations::RenderedGeometryCollection> d_rendered_geometry_collection;
 
 		//! Keeps track of the currently selected colour scheme.
-		boost::shared_ptr<GPlatesGui::ColourSchemeDelegator> d_colour_scheme;
+		GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type d_colour_scheme;
 
 		//! The viewport zoom state.
 		boost::scoped_ptr<GPlatesGui::ViewportZoom> d_viewport_zoom;

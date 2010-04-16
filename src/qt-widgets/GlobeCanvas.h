@@ -43,6 +43,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 
+#include "gui/ColourScheme.h"
 #include "gui/Globe.h"
 #include "gui/Texture.h"
 #include "gui/ViewportZoom.h"
@@ -55,10 +56,6 @@
 #include "view-operations/QueryProximityThreshold.h"
 #include "view-operations/RenderedGeometryFactory.h"
 
-namespace GPlatesGui
-{
-	class ColourScheme;
-}
 
 namespace GPlatesPresentation
 {
@@ -125,7 +122,7 @@ namespace GPlatesQtWidgets
 		explicit
 		GlobeCanvas(
 				GPlatesPresentation::ViewState &view_state,
-				boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = 0);
 
 	private:
@@ -139,7 +136,7 @@ namespace GPlatesQtWidgets
 				bool mouse_pointer_is_on_globe_,
 				GPlatesGui::Globe &existing_globe_,
 				bool mouse_wheel_enabled_,
-				boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme_,
+				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 				QWidget *parent_ = 0);
 
 		//! Common code for both constructors
@@ -150,7 +147,7 @@ namespace GPlatesQtWidgets
 
 		GlobeCanvas *
 		clone(
-				boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = 0);
 
 		/**
@@ -252,12 +249,10 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesMaths::LatLonPoint>
 		camera_llp() const;
 
-
 		virtual
 		void
 		set_camera_viewpoint(
 			const GPlatesMaths::LatLonPoint &llp);
-
 
 		void
 		set_mouse_wheel_enabled(
@@ -265,6 +260,9 @@ namespace GPlatesQtWidgets
 		{
 			d_mouse_wheel_enabled = enabled;
 		}
+
+		QImage
+		grab_frame_buffer();
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -410,9 +408,6 @@ namespace GPlatesQtWidgets
 		wheelEvent(
 				QWheelEvent *event);
 
-
-
-
 		virtual
 		void
 		move_camera_up();
@@ -496,6 +491,10 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+
+		void
+		repainted(
+				bool mouse_down);
 
 	public slots:
 

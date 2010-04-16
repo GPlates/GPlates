@@ -32,11 +32,11 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "gui/ColourScheme.h"
 #include "maths/LatLonPoint.h"
 
 namespace GPlatesGui
 {
-	class ColourScheme;
 	class ViewportProjection;
 }
 
@@ -57,7 +57,7 @@ namespace GPlatesQtWidgets
 	 * and for switching between them as appropriate.
 	 */
 	class GlobeAndMapWidget :
-		public QWidget
+			public QWidget
 	{
 
 		Q_OBJECT
@@ -72,7 +72,7 @@ namespace GPlatesQtWidgets
 		//! Use this constructor if you want to make a clone of an existing GlobeAndMapWidget.
 		GlobeAndMapWidget(
 				GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
-				boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = NULL);
 
 		~GlobeAndMapWidget();
@@ -89,10 +89,13 @@ namespace GPlatesQtWidgets
 		SceneView &
 		get_active_view() const;
 
-		boost::optional<GPlatesMaths::LatLonPoint> &
-		get_camera_llp();
+		bool
+		is_globe_active() const;
 
-		const boost::optional<GPlatesMaths::LatLonPoint> &
+		bool
+		is_map_active() const;
+
+		boost::optional<GPlatesMaths::LatLonPoint>
 		get_camera_llp() const;
 
 		void
@@ -103,10 +106,9 @@ namespace GPlatesQtWidgets
 		QSize
 		sizeHint() const;
 
-		virtual
-		void
-		resizeEvent(
-				QResizeEvent *resize_event);
+		//! Gets the framebuffer for the active view.
+		QImage
+		grab_frame_buffer();
 
 	signals:
 
@@ -116,6 +118,16 @@ namespace GPlatesQtWidgets
 		void
 		resized(
 				int new_width, int new_height);
+
+		void
+		repainted(bool mouse_down);
+
+	protected:
+
+		virtual
+		void
+		resizeEvent(
+				QResizeEvent *resize_event);
 
 	private slots:
 
@@ -129,6 +141,10 @@ namespace GPlatesQtWidgets
 		change_projection(
 			const GPlatesGui::ViewportProjection &view_projection);
 
+		void
+		handle_globe_or_map_repainted(
+				bool mouse_down);
+
 	private:
 
 		void
@@ -140,10 +156,8 @@ namespace GPlatesQtWidgets
 		MapCanvas *d_map_canvas_ptr;
 		MapView *d_map_view_ptr;
 
-		//! Which of globe and map is currently active
+		//! Which of globe and map is currently active.
 		SceneView *d_active_view_ptr;
-
-		boost::optional<GPlatesMaths::LatLonPoint> d_camera_llp;
 
 	};
 }

@@ -45,6 +45,8 @@
 #include "LeaveFullScreenButton.h"
 #include "GlobeAndMapWidget.h"
 
+#include "gui/MapProjection.h"
+#include "gui/MapTransform.h"
 #include "gui/ViewportProjection.h"
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPoint.h"
@@ -55,6 +57,15 @@
 
 namespace
 {
+	const QString
+	DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE = QObject::tr("(lat: ---.-- ; lon: ---.-- ) (off globe)");
+
+	const QString
+	DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_MAP = QObject::tr("(lat: ---.-- ; lon: ---.-- ) (off map)");
+
+	const QString
+	DEFAULT_CAMERA_COORDS_LABEL_TEXT = QObject::tr("(lat: ---.-- ; lon: ---.-- )");
+
 	/**
 	 * Wraps Qt widget up inside a frame suitably styled for ReconstructionViewWidget.
 	 * Frame takes ownership of your widget, but you need to add the returned Frame
@@ -130,7 +141,7 @@ namespace
 	QLabel *
 	new_camera_coords_label()
 	{
-		QLabel *label_ptr = new QLabel(QObject::tr("(lat: ---.-- ; lon: ---.-- )"));
+		QLabel *label_ptr = new QLabel(DEFAULT_CAMERA_COORDS_LABEL_TEXT);
 		
 		QSizePolicy size(QSizePolicy::Preferred, QSizePolicy::Preferred);
 		size.setHorizontalStretch(0);
@@ -148,7 +159,7 @@ namespace
 	QLabel *
 	new_mouse_coords_label()
 	{
-		QLabel *label_ptr = new QLabel(QObject::tr("(lat: ---.-- ; lon: ---.-- ) (off globe)"));
+		QLabel *label_ptr = new QLabel(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE);
 		
 		QSizePolicy size(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
 		size.setHorizontalStretch(0);
@@ -160,7 +171,6 @@ namespace
 		return label_ptr;
 	}
 }
-
 
 
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
@@ -250,10 +260,27 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			this,
 			SLOT(recalc_camera_position()));
 	QObject::connect(
-			&(d_globe_and_map_widget_ptr->get_map_view()),
+			&(view_state.get_map_transform()),
 			SIGNAL(view_changed()),
 			this,
 			SLOT(recalc_camera_position()));
+
+	// Handle signals to update mouse pointer position
+	QObject::connect(
+			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
+			SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
+			this,
+			SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
+	QObject::connect(
+			&(d_globe_and_map_widget_ptr->get_map_view()),
+			SIGNAL(mouse_pointer_position_changed(const boost::optional<GPlatesMaths::LatLonPoint> &, bool)),
+			this,
+			SLOT(update_mouse_pointer_position(const boost::optional<GPlatesMaths::LatLonPoint> &, bool)));
+	QObject::connect(
+			&(view_state.get_viewport_projection()),
+			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
+			this,
+			SLOT(handle_projection_type_changed(const GPlatesGui::ViewportProjection &)));
 
 	// Propagate messages up to ViewportWindow
 	QObject::connect(
@@ -283,6 +310,22 @@ GPlatesQtWidgets::ReconstructionViewWidget::handle_globe_and_map_widget_resized(
 		int new_width, int new_height)
 {
 	d_view_state.set_main_viewport_min_dimension((std::min)(new_width, new_height));
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::handle_projection_type_changed(
+		const GPlatesGui::ViewportProjection &viewport_projection)
+{
+	// Reset the mouse coords label if projection changed.
+	if (viewport_projection.get_projection_type() == GPlatesGui::ORTHOGRAPHIC)
+	{
+		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE);
+	}
+	else
+	{
+		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_MAP);
+	}
 }
 
 
@@ -524,10 +567,10 @@ GPlatesQtWidgets::ReconstructionViewWidget::activate_time_spinbox()
 }
 
 
-GPlatesMaths::LatLonPoint &
+boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::ReconstructionViewWidget::camera_llp()
 {
-	return *(d_globe_and_map_widget_ptr->get_camera_llp());
+	return d_globe_and_map_widget_ptr->get_camera_llp();
 }
 
 
@@ -535,9 +578,7 @@ void
 GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 {
 	// FIXME: This is a bit convoluted.
-	boost::optional<GPlatesMaths::LatLonPoint> llp =
-		d_globe_and_map_widget_ptr->get_active_view().camera_llp();
-	d_globe_and_map_widget_ptr->get_camera_llp() = llp;
+	boost::optional<GPlatesMaths::LatLonPoint> llp = d_globe_and_map_widget_ptr->get_camera_llp();
 
 	QString lat_label(QObject::tr("(lat: "));
 	QString lon_label(QObject::tr(" ; lon: "));
@@ -588,6 +629,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 
 	d_label_mouse_coords->setText(position_as_string);
 }
+
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(

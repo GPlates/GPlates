@@ -495,7 +495,9 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 	boost::shared_ptr<DataSource> source( 
 			new LocalFileDataSource(filename, DataFormats::GpmlOnePointSix));
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection =
-			GPlatesModel::FeatureCollectionHandle::create(model->root());
+			GPlatesModel::FeatureCollectionHandle::create(
+					model->root(),
+					GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =

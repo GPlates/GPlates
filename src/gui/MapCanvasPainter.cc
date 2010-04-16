@@ -97,7 +97,7 @@ namespace
 	boost::optional<GPlatesGui::Colour>
 	get_colour_of_rendered_geometry(
 			const T &geom,
-			boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme)
+			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme)
 	{
 		return geom.get_colour().get_colour(colour_scheme);
 	}
@@ -382,7 +382,7 @@ namespace
 		const GPlatesViewOperations::RenderedString &rendered_string,
 		const GPlatesGui::MapProjection &projection,
 		const GPlatesGui::TextRenderer &text_renderer,
-		boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		float scale)
 	{
 		QPointF point = get_scene_coords_from_pos(
@@ -956,6 +956,23 @@ namespace
 
 
 }
+
+
+GPlatesGui::MapCanvasPainter::MapCanvasPainter(
+		Map &map,
+		GPlatesGui::RenderSettings &render_settings,
+		GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
+		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
+		const double &inverse_zoom_factor,
+		ColourScheme::non_null_ptr_type colour_scheme):
+	d_map(map),
+	d_render_settings(render_settings),
+	d_text_renderer_ptr(text_renderer_ptr),
+	d_main_rendered_layers_to_visit(layers_to_visit),
+	d_inverse_zoom_factor(inverse_zoom_factor),
+	d_colour_scheme(colour_scheme),
+	d_scale(1.0f)
+{  }
 
 
 void

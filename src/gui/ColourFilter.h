@@ -28,6 +28,8 @@
 #ifndef GPLATES_GUI_COLOURFILTER_H
 #define GPLATES_GUI_COLOURFILTER_H
 
+#include <boost/optional.hpp>
+
 #include "Colour.h"
 
 namespace GPlatesGui
@@ -46,28 +48,14 @@ namespace GPlatesGui
 		{
 		}
 
-		//! Takes @a input_colour and spits out another colour.
+		//! Maps @a input_colour to another colour.
 		virtual
-		Colour
+		const boost::optional<Colour> &
 		change_colour(
-				const Colour &input_colour) = 0;
+				const boost::optional<Colour> &input_colour) = 0;
 
 	};
 
-	/**
-	 * A ColourFilter that does nothing.
-	 */
-	class IdentityColourFilter :
-		public ColourFilter
-	{
-	public:
-
-		virtual
-		Colour
-		change_colour(
-				const Colour &input_colour);
-		
-	};
 }
 
 #endif  // GPLATES_GUI_COLOURFILTER_H

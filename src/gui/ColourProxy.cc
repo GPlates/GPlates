@@ -40,6 +40,7 @@ GPlatesGui::ColourProxy::ColourProxy(
 {
 }
 
+
 GPlatesGui::ColourProxy::ColourProxy(
 		const Colour &colour) :
 	d_impl_ptr(
@@ -47,6 +48,7 @@ GPlatesGui::ColourProxy::ColourProxy(
 				boost::optional<Colour>(colour)))
 {
 }
+
 
 GPlatesGui::ColourProxy::ColourProxy(
 		boost::optional<Colour> colour) :
@@ -56,12 +58,14 @@ GPlatesGui::ColourProxy::ColourProxy(
 {
 }
 
+
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::ColourProxy::get_colour(
-		const boost::shared_ptr<ColourScheme> colour_scheme) const
+		ColourScheme::non_null_ptr_type colour_scheme) const
 {
 	return d_impl_ptr->get_colour(colour_scheme);
 }
+
 
 // DeferredColourProxyImpl ////////////////////////////////////////////////////
 
@@ -73,22 +77,44 @@ GPlatesGui::DeferredColourProxyImpl::DeferredColourProxyImpl(
 {
 }
 
+
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::DeferredColourProxyImpl::get_colour(
-		const boost::shared_ptr<ColourScheme> colour_scheme) const
+		ColourScheme::non_null_ptr_type colour_scheme) const
 {
 	boost::optional<Colour> colour =
 		colour_scheme->get_colour(*d_reconstruction_geometry_ptr);
 
 	// Change to olive if boost::none (see comments for ColourProxy::get_colour()).
-	// ColourScheme::get_colour() will return boost::none if, e.g., property does not exist.
-	if (colour)
+	// Note ColourScheme::get_colour() returns boost::none if, e.g., property does not exist.
+	if (!colour)
 	{
-		return d_colour_filter_ptr->change_colour(*colour);
+		colour = Colour::get_olive();
 	}
-	else
+
+	// Run it through the colour filter, if one is installed.
+	if (d_colour_filter_ptr)
 	{
-		return boost::optional<Colour>(
-				d_colour_filter_ptr->change_colour(Colour::get_olive()));
+		colour = d_colour_filter_ptr->change_colour(colour);
 	}
+
+	return colour;
 }
+
+
+// FixedColourProxyImpl ///////////////////////////////////////////////////////
+
+GPlatesGui::FixedColourProxyImpl::FixedColourProxyImpl(
+		boost::optional<Colour> colour) :
+	d_colour(colour)
+{
+}
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::FixedColourProxyImpl::get_colour(
+		ColourScheme::non_null_ptr_type colour_scheme) const
+{
+	return d_colour;
+}
+

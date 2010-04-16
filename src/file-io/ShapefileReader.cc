@@ -67,6 +67,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 
+#include "utils/UnicodeStringUtils.h"
 
 
 boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::ShapefileReader::s_property_mapper;
@@ -1214,7 +1215,9 @@ GPlatesFileIO::ShapefileReader::read_file(
 	fileinfo.set_model_to_shapefile_map(s_model_to_attribute_map);
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-		= GPlatesModel::FeatureCollectionHandle::create(model->root());
+		= GPlatesModel::FeatureCollectionHandle::create(
+				model->root(),
+				GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =

@@ -40,7 +40,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 		RenderSettings &render_settings,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
-		boost::shared_ptr<ColourScheme> colour_scheme) :
+		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_current_layer_far_depth(0),
 	d_depth_range_per_layer(0),

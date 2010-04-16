@@ -39,7 +39,7 @@ GPlatesGui::Globe::Globe(
 		RenderSettings &render_settings,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
-		boost::shared_ptr<ColourScheme> colour_scheme) :
+		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_render_settings(render_settings),
 	d_rendered_geom_collection(rendered_geom_collection),
 	d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
@@ -58,7 +58,7 @@ GPlatesGui::Globe::Globe(
 		Globe &existing_globe,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
-		boost::shared_ptr<ColourScheme> colour_scheme) :
+		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_render_settings(existing_globe.d_render_settings),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
 	d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),

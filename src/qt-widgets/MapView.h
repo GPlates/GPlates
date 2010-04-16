@@ -219,6 +219,9 @@ namespace GPlatesQtWidgets
 			d_mouse_wheel_enabled = enabled;
 		}
 
+		QImage
+		grab_frame_buffer();
+
 	public slots:
 
 		void
@@ -294,9 +297,9 @@ namespace GPlatesQtWidgets
 				bool is_on_surface,
 				const QPointF &translation);
 
-
 		void
-		view_changed();
+		repainted(
+				bool mouse_down);
 
 	private slots:
 
@@ -307,6 +310,9 @@ namespace GPlatesQtWidgets
 		void
 		handle_rotate(
 				double angle);
+
+		void
+		handle_map_canvas_repainted();
 
 	private:
 
@@ -339,6 +345,8 @@ namespace GPlatesQtWidgets
 		bool
 		mouse_pointer_is_on_surface();
 
+		void
+		make_signal_slot_connections();
 
 		/**
 		 * A pointer to the GlobeCanvas' ViewportZoom. 

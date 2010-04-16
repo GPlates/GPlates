@@ -37,6 +37,7 @@ set(srcs
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
+    ColourSchemeInfo.h
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui

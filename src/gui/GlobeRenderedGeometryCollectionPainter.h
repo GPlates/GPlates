@@ -30,6 +30,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "RenderSettings.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
@@ -62,7 +63,7 @@ namespace GPlatesGui
 				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
-				boost::shared_ptr<ColourScheme> colour_scheme);
+				ColourScheme::non_null_ptr_type colour_scheme);
 
 		/**
 		 * Draw the rendered geometries into the depth range specified by
@@ -124,7 +125,7 @@ namespace GPlatesGui
 		move_to_next_rendered_layer_depth_range_and_set();
 
 		//! For assigning colours to RenderedGeometry
-		boost::shared_ptr<ColourScheme> d_colour_scheme;
+		ColourScheme::non_null_ptr_type d_colour_scheme;
 
 		//! When rendering globes that are meant to be a scale copy of another
 		float d_scale;

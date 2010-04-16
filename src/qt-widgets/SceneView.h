@@ -29,6 +29,7 @@
 #define GPLATES_QTWIDGETS_SCENEVIEW_H
 
 #include "boost/optional.hpp"
+#include <QImage>
 
 namespace GPlatesMaths
 {
@@ -38,7 +39,9 @@ namespace GPlatesMaths
 namespace GPlatesQtWidgets
 {
 
-
+	/**
+	 * Base class of GlobeCanvas and MapView.
+	 */
 	class SceneView
 	{
 
@@ -116,6 +119,9 @@ namespace GPlatesQtWidgets
 		void
 		reset_camera_orientation() = 0;
 
+		virtual
+		QImage
+		grab_frame_buffer() = 0;
 
 	private:
 		// Make copy and assignment private to prevent copying/assignment

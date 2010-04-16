@@ -152,7 +152,7 @@ namespace GPlatesModel
 		container_size() const;
 
 		/**
-		 * Returns the number of children currently container within this revision.
+		 * Returns the number of children currently contained within this revision.
 		 *
 		 * This number does not include empty children-slots (as container_size() returns).
 		 * Instead, this value represents the logical number of children in this

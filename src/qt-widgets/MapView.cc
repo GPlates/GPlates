@@ -26,7 +26,6 @@
  */
 
 #include <cmath>
-#include <QDebug>
 #include <QGraphicsView>
 #include <boost/shared_ptr.hpp>
 
@@ -97,17 +96,23 @@ GPlatesQtWidgets::MapView::MapView(
 	scale(1.,-1.);
 	fitInView(d_scene_rect, Qt::KeepAspectRatio);
 
-	// Get rid of the border
+	// Get rid of the border.
 	setFrameShape(QFrame::NoFrame);
 
-	// Set initial rotation and translation
+	// Set initial rotation and translation.
 	handle_translate(
 			d_map_transform.get_total_translation_x(),
 			d_map_transform.get_total_translation_y());
 	handle_rotate(
 			d_map_transform.get_total_rotation());
 
-	// Handle map transforms
+	make_signal_slot_connections();
+}
+
+void
+GPlatesQtWidgets::MapView::make_signal_slot_connections()
+{
+	// Handle map transforms.
 	QObject::connect(
 			&d_map_transform,
 			SIGNAL(translate(qreal, qreal)),
@@ -118,6 +123,13 @@ GPlatesQtWidgets::MapView::MapView(
 			SIGNAL(rotate(double)),
 			this,
 			SLOT(handle_rotate(double)));
+
+	// Pass up repainted signals from MapCanvas.
+	QObject::connect(
+			d_map_canvas_ptr,
+			SIGNAL(repainted()),
+			this,
+			SLOT(handle_map_canvas_repainted()));
 }
 
 void
@@ -137,6 +149,13 @@ GPlatesQtWidgets::MapView::handle_rotate(
 }
 
 void
+GPlatesQtWidgets::MapView::handle_map_canvas_repainted()
+{
+	// If d_mouse_press_info is not boost::none, then mouse is down.
+	emit repainted(d_mouse_press_info);
+}
+
+void
 GPlatesQtWidgets::MapView::handle_zoom_change()
 {
 	// Record the camera position so we can reset it after the zoom. 
@@ -153,8 +172,6 @@ GPlatesQtWidgets::MapView::handle_zoom_change()
 	handle_mouse_pointer_pos_change();
 
 	update_centre_of_viewport();
-	emit view_changed();
-	
 }
 
 void
@@ -274,6 +291,10 @@ GPlatesQtWidgets::MapView::mouseReleaseEvent(
 				d_mouse_press_info->d_modifiers);
 	}
 	d_mouse_press_info = boost::none;
+
+	// Emit repainted signal with mouse_down = false so that those listeners who
+	// didn't care about intermediate repaints can now deal with the repaint.
+	emit repainted(false);
 }
 
 
@@ -309,9 +330,6 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 				translation);
 
 			update_centre_of_viewport();
-
-			//	Signal the ReconstructionViewWidget to update the camera llp display.
-			emit view_changed();
 		}
 
 	}
@@ -465,9 +483,6 @@ GPlatesQtWidgets::MapView::set_camera_viewpoint(
 	const QPointF &current_centre = d_map_transform.get_centre_of_viewport();
 	d_map_transform.translate_maps(current_centre.x() - x_pos, current_centre.y() - y_pos);
 	d_map_transform.set_centre_of_viewport(QPointF(x_pos,y_pos));
-
-	// Tell the ReconstructionView that the camera llp has changed. 
-	emit view_changed();
 }
 
 boost::optional<GPlatesMaths::LatLonPoint>
@@ -516,13 +531,13 @@ GPlatesQtWidgets::MapView::resizeEvent(
 void
 GPlatesQtWidgets::MapView::enable_raster_display()
 {
-
+	// Do nothing because we can't draw rasters in map view yet.
 }
 
 void
 GPlatesQtWidgets::MapView::disable_raster_display()
 {
-
+	// Do nothing because we can't draw rasters in map view yet.
 }
 
 QPointF
@@ -537,13 +552,11 @@ GPlatesQtWidgets::MapView::mouse_pointer_is_on_surface()
 	return mouse_pointer_llp();
 }
 
-
 void
 GPlatesQtWidgets::MapView::update_canvas()
 {
 	map_canvas().update();
 }
-
 
 void
 GPlatesQtWidgets::MapView::move_camera_up()
@@ -555,7 +568,6 @@ GPlatesQtWidgets::MapView::move_camera_up()
 	d_map_transform.translate_maps(translation.x(), translation.y());
 
 	update_centre_of_viewport();
-	emit view_changed();
 	handle_mouse_pointer_pos_change();
 }
 
@@ -567,7 +579,6 @@ GPlatesQtWidgets::MapView::move_camera_down()
 	d_map_transform.translate_maps(translation.x(), translation.y());
 
 	update_centre_of_viewport();
-	emit view_changed();
 	handle_mouse_pointer_pos_change();
 }
 
@@ -579,7 +590,6 @@ GPlatesQtWidgets::MapView::move_camera_left()
 	d_map_transform.translate_maps(translation.x(), translation.y());
 
 	update_centre_of_viewport();
-	emit view_changed();
 	handle_mouse_pointer_pos_change();
 }
 
@@ -591,7 +601,6 @@ GPlatesQtWidgets::MapView::move_camera_right()
 	d_map_transform.translate_maps(translation.x(), translation.y());
 
 	update_centre_of_viewport();
-	emit view_changed();
 	handle_mouse_pointer_pos_change();
 }
 
@@ -601,7 +610,6 @@ GPlatesQtWidgets::MapView::rotate_camera_clockwise()
 	d_map_transform.rotate_maps(-5.0);
 
 	update_centre_of_viewport();
-	emit view_changed();
 	handle_mouse_pointer_pos_change();
 }
 
@@ -611,7 +619,6 @@ GPlatesQtWidgets::MapView::rotate_camera_anticlockwise()
 	d_map_transform.rotate_maps(5.0);
 
 	update_centre_of_viewport();
-	emit view_changed();
 	handle_mouse_pointer_pos_change();
 }
 
@@ -630,7 +637,6 @@ GPlatesQtWidgets::MapView::reset_camera_orientation()
 	d_map_transform.reset_rotation();
 	
 	update_centre_of_viewport();
-	emit view_changed();
 	handle_mouse_pointer_pos_change();
 }
 
@@ -717,5 +723,11 @@ GPlatesQtWidgets::MapView::current_proximity_inclusion_threshold(
 #endif
 
 	return proximity_inclusion_threshold;
+}
+
+QImage
+GPlatesQtWidgets::MapView::grab_frame_buffer()
+{
+	return d_gl_widget_ptr->grabFrameBuffer();
 }
 

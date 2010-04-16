@@ -52,7 +52,7 @@ GPlatesGui::Map::Map(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		RenderSettings &render_settings,
 		ViewportZoom &viewport_zoom,
-		boost::shared_ptr<ColourScheme> colour_scheme) :
+		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_render_settings(render_settings),
 	d_viewport_zoom(viewport_zoom),

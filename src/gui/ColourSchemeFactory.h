@@ -28,8 +28,8 @@
 #ifndef GPLATES_GUI_COLOURSCHEMEFACTORY_H
 #define GPLATES_GUI_COLOURSCHEMEFACTORY_H
 
-#include <boost/shared_ptr.hpp>
-#include <QColor>
+#include "Colour.h"
+#include "ColourScheme.h"
 
 namespace GPlatesAppLogic
 {
@@ -38,38 +38,45 @@ namespace GPlatesAppLogic
 
 namespace GPlatesGui
 {
-	class ColourScheme;
-
-	/**
-	 * Contains static helper functions to create ColourSchemes.
-	 */
-	class ColourSchemeFactory
+	namespace ColourSchemeFactory
 	{
-	public:
-
-		static
-		boost::shared_ptr<ColourScheme>
+		/**
+		 * Creates a colour scheme that colours all geometries with the given @a colour.
+		 */
+		ColourScheme::non_null_ptr_type
 		create_single_colour_scheme(
-				const QColor &qcolor);
+				const Colour &colour);
 
-		static
-		boost::shared_ptr<ColourScheme>
+		/**
+		 * Creates the default plate id colour scheme; this colour scheme aims to
+		 * give nearby plates vastly different colours.
+		 */
+		ColourScheme::non_null_ptr_type
 		create_default_plate_id_colour_scheme();
 
-		static
-		boost::shared_ptr<ColourScheme>
+		/**
+		 * Creates the regional plate id colour scheme; this colour scheme aims to
+		 * give plates in the same region (i.e. sharing the same leading digit) a
+		 * different shade of the same colour.
+		 */
+		ColourScheme::non_null_ptr_type
 		create_regional_plate_id_colour_scheme();
 
-		static
-		boost::shared_ptr<ColourScheme>
+		/**
+		 * Creates a colour scheme that colours geometries by their age based on the
+		 * current reconstruction time.
+		 */
+		ColourScheme::non_null_ptr_type
 		create_default_age_colour_scheme(
 				const GPlatesAppLogic::Reconstruct &reconstruct);
 
-		static
-		boost::shared_ptr<ColourScheme>
+		/**
+		 * Creates a colour scheme that colours geometries by their underlying feature type.
+		 */
+		ColourScheme::non_null_ptr_type
 		create_default_feature_colour_scheme();
 		
-	};
+	}
 }
 
 #endif  /* GPLATES_GUI_COLOURSCHEMEFACTORY_H */

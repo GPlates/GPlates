@@ -29,6 +29,7 @@
 #define GPLATES_GUI_GLOBE_H
 
 #include "Colour.h"
+#include "ColourScheme.h"
 #include "GlobeRenderedGeometryCollectionPainter.h"
 #include "NurbsRenderer.h"
 #include "OpaqueSphere.h"
@@ -37,6 +38,7 @@
 #include "SimpleGlobeOrientation.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
+
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
@@ -62,14 +64,14 @@ namespace GPlatesGui
 				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
-				boost::shared_ptr<ColourScheme> colour_scheme);
+				ColourScheme::non_null_ptr_type colour_scheme);
 
 		//! To clone a Globe
 		Globe(
 				Globe &existing_globe,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
-				boost::shared_ptr<ColourScheme> colour_scheme);
+				ColourScheme::non_null_ptr_type colour_scheme);
 
 		~Globe()
 		{  }

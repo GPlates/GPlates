@@ -134,7 +134,7 @@ namespace GPlatesQtWidgets
 		bool
 		map_is_active();
 
-		GPlatesMaths::LatLonPoint &
+		boost::optional<GPlatesMaths::LatLonPoint>
 		camera_llp();
 
 		void
@@ -177,6 +177,10 @@ namespace GPlatesQtWidgets
 		void
 		handle_globe_and_map_widget_resized(
 				int new_width, int new_height);
+
+		void
+		handle_projection_type_changed(
+				const GPlatesGui::ViewportProjection &viewport_projection);
 
 	private:
 		

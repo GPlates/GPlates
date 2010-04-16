@@ -28,7 +28,10 @@
 #ifndef GPLATES_MODEL_WEAKREFERENCECALLBACK_H
 #define GPLATES_MODEL_WEAKREFERENCECALLBACK_H
 
+#include <vector>
 #include <boost/intrusive_ptr.hpp>
+
+#include "HandleTraits.h"
 #include "utils/ReferenceCount.h"
 
 namespace GPlatesModel
@@ -115,6 +118,52 @@ namespace GPlatesModel
 	};
 
 	/**
+	 * Parameter of publisher_added() function in WeakReferenceCallback<H>.
+	 */
+	template<typename H>
+	class WeakReferencePublisherAddedEvent :
+			public WeakReferenceEvent<H>
+	{
+	private:
+
+		// Helper traits class to choose appropriate const-ness for added children.
+		template<class T>
+		struct Traits
+		{
+			typedef typename HandleTraits<T>::iterator iterator;
+		};
+
+		template<class T>
+		struct Traits<const T>
+		{
+			typedef typename HandleTraits<T>::const_iterator iterator;
+		};
+
+	public:
+
+		typedef std::vector<typename Traits<H>::iterator> new_children_container_type;
+
+		explicit
+		WeakReferencePublisherAddedEvent(
+				const WeakReference<H> &reference_,
+				const new_children_container_type &new_children_) :
+			WeakReferenceEvent<H>(reference_),
+			d_new_children(new_children_)
+		{
+		}
+
+		const new_children_container_type &
+		new_children() const
+		{
+			return d_new_children;
+		}
+
+	private:
+
+		const new_children_container_type &d_new_children;
+	};
+
+	/**
 	 * Parameter of publisher_deactivated() function in WeakReferenceCallback<H>.
 	 */
 	template<typename H>
@@ -180,6 +229,12 @@ namespace GPlatesModel
 		 */
 		typedef boost::intrusive_ptr<WeakReferenceCallback<H> > maybe_null_ptr_type;
 
+		typedef WeakReferencePublisherModifiedEvent<H> modified_event_type;
+		typedef WeakReferencePublisherAddedEvent<H> added_event_type;
+		typedef WeakReferencePublisherDeactivatedEvent<H> deactivated_event_type;
+		typedef WeakReferencePublisherReactivatedEvent<H> reactivated_event_type;
+		typedef WeakReferencePublisherAboutToBeDestroyedEvent<H> about_to_be_destroyed_event_type;
+
 		//! Virtual destructor.
 		virtual
 		~WeakReferenceCallback()
@@ -193,7 +248,18 @@ namespace GPlatesModel
 		virtual
 		void
 		publisher_modified(
-				const WeakReferencePublisherModifiedEvent<H> &event)
+				const modified_event_type &event)
+		{
+		}
+
+		/**
+		 * Called by WeakReference when its publisher has added new children.
+		 * Reimplement in a subclass to customise behaviour on publisher addition.
+		 */
+		virtual
+		void
+		publisher_added(
+				const added_event_type &event)
 		{
 		}
 
@@ -206,7 +272,7 @@ namespace GPlatesModel
 		virtual
 		void
 		publisher_deactivated(
-				const WeakReferencePublisherDeactivatedEvent<H> &event)
+				const deactivated_event_type &event)
 		{
 		}
 
@@ -219,7 +285,7 @@ namespace GPlatesModel
 		virtual
 		void
 		publisher_reactivated(
-				const WeakReferencePublisherReactivatedEvent<H> &event)
+				const reactivated_event_type &event)
 		{
 		}
 
@@ -233,7 +299,7 @@ namespace GPlatesModel
 		virtual
 		void
 		publisher_about_to_be_destroyed(
-				const WeakReferencePublisherAboutToBeDestroyedEvent<H> &event)
+				const about_to_be_destroyed_event_type &event)
 		{
 		}
 

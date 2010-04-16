@@ -187,7 +187,7 @@ GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
 // Public constructor
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
-		boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	QGLWidget(parent_),
 	d_view_state(view_state),
@@ -215,7 +215,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		bool mouse_pointer_is_on_globe_,
 		GPlatesGui::Globe &existing_globe_,
 		bool mouse_wheel_enabled_,
-		boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme_,
+		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
 	QGLWidget(parent_, existing_globe_canvas /* share display lists and texture objects */),
 	d_view_state(view_state_),
@@ -291,7 +291,7 @@ GPlatesQtWidgets::GlobeCanvas::init()
 
 GPlatesQtWidgets::GlobeCanvas *
 GPlatesQtWidgets::GlobeCanvas::clone(
-		boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme,
+		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_)
 {
 	return new GlobeCanvas(
@@ -432,7 +432,6 @@ GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 	double z_pos = get_universe_coord_z_of_mouse();
 	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
 
-	// FIXME: Globe uses wrong naming convention for methods.
 	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
 
 	if (new_pos != d_virtual_mouse_pointer_pos_on_globe ||
@@ -454,7 +453,6 @@ GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 	double z_pos = get_universe_coord_z_of_mouse();
 	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
 
-	// FIXME: Globe uses wrong naming convention for methods.
 	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
 
 	d_virtual_mouse_pointer_pos_on_globe = new_pos;
@@ -526,6 +524,8 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 			std::cerr << e << std::endl;
 	}
 
+	// If d_mouse_press_info is not boost::none, then mouse is down.
+	emit repainted(d_mouse_press_info);
 }
 
 
@@ -647,6 +647,10 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 				d_mouse_press_info->d_modifiers);
 	}
 	d_mouse_press_info = boost::none;
+
+	// Emit repainted signal with mouse_down = false so that those listeners who
+	// didn't care about intermediate repaints can now deal with the repaint.
+	emit repainted(false);
 }
 
 
@@ -964,16 +968,13 @@ void
 GPlatesQtWidgets::GlobeCanvas::create_svg_output(
 	QString filename)
 {
-
 	GPlatesGui::SvgExport::create_svg_output(filename,this);
-
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
 	const GPlatesMaths::LatLonPoint &desired_centre)
 {
-
 	static const GPlatesMaths::PointOnSphere centre_of_canvas =
 			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
 
@@ -982,11 +983,8 @@ GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
 		GPlatesMaths::make_point_on_sphere(desired_centre));
 	d_globe.set_new_handle_pos(oriented_desired_centre);
 	d_globe.update_handle_pos(centre_of_canvas);
-			
-	d_globe.orientation().orient_poles_vertically();
-	
-	update_canvas();
 
+	update_canvas();
 }
 
 boost::optional<GPlatesMaths::LatLonPoint>
@@ -1051,3 +1049,8 @@ GPlatesQtWidgets::GlobeCanvas::calculate_scale()
 		static_cast<float>(d_view_state.get_main_viewport_min_dimension());
 }
 
+QImage
+GPlatesQtWidgets::GlobeCanvas::grab_frame_buffer()
+{
+	return grabFrameBuffer();
+}

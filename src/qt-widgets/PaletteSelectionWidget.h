@@ -34,6 +34,9 @@
 #include <vector>
 #include <utility>
 
+#include "ColourSchemeInfo.h"
+
+
 namespace GPlatesGui
 {
 	class ColourScheme;
@@ -65,18 +68,21 @@ namespace GPlatesQtWidgets
 				GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
 				QWidget *parent_ = NULL);
 
-		typedef std::vector<std::pair<QString, boost::shared_ptr<GPlatesGui::ColourScheme> > > colour_scheme_collection_type;
-
 		void
 		set_colour_schemes(
-				boost::shared_ptr<colour_scheme_collection_type> colour_schemes,
+				const std::vector<ColourSchemeInfo> &colour_schemes,
 				int selected);
+
+		virtual
+		void
+		resizeEvent(
+				QResizeEvent *resize_event);
 
 	signals:
 
 		void
 		selection_changed(
-				boost::shared_ptr<GPlatesGui::ColourScheme> selected);
+				int index);
 
 	private:
 
@@ -87,9 +93,10 @@ namespace GPlatesQtWidgets
 
 		GlobeAndMapWidget *d_existing_globe_and_map_widget_ptr;
 
+		/**
+		 * The widget that contains the contents of the scroll area.
+		 */
 		QWidget *d_widget;
-
-		boost::shared_ptr<colour_scheme_collection_type> d_colour_schemes;
 		
 	};
 }
