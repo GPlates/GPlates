@@ -164,7 +164,7 @@ void
 GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry(
 		GPlatesModel::Reconstruction &reconstruction)
 {
-	if (( ! is_valid())) {
+	if ( !is_valid() || !associated_geometry_property().is_still_valid() ) {
 		// There is either no focused feature, or no geometry property associated with the
 		// most recent RFG of the focused feature.
 		// Either way, there's nothing for us to do here.

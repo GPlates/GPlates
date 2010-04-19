@@ -250,12 +250,10 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 	}
 	
 	GPlatesModel::FeatureHandle::iterator it = get_property_iterator_for_row(idx.row());
-	/*
-	if ( ! it.is_valid()) {
+	if ( ! it.is_still_valid()) {
 		// Always check your property iterators.
 		return false;
 	}
-	*/
 	
 	// Convert the supplied QVariant to a PropertyValue.
 	GPlatesFeatureVisitors::FromQvariantConverter fromqv_converter(value);
@@ -299,7 +297,7 @@ GPlatesGui::FeaturePropertyTableModel::set_feature_reference(
 	// If we are given an invalid feature reference,
 	// or the new feature reference is different to the previous one,
 	// then we definitely want a clean slate before we refresh_data(), for consistency.
-	if ( /*! feature_ref.is_valid() ||*/ d_feature_ref != feature_ref) {
+	if ( ! feature_ref.is_valid() || d_feature_ref != feature_ref) {
 		clear_table();
 	}
 	d_feature_ref = feature_ref;
@@ -357,7 +355,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 			element_was_erased = true;
 		} /*else if (*remove_it->property_iterator == NULL) {
 			// FIXME:  The above if-test NULL-check is not necessary.
-			// The properties_iterator 'is_valid' test already checks for NULL.
+			// The properties_iterator 'is_still_valid' test already checks for NULL.
 
 			int row = get_row_for_property_iterator(remove_it->property_iterator);
 

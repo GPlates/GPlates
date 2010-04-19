@@ -494,8 +494,11 @@ namespace
 			// Destructor cannot throw exceptions.
 			try
 			{
-				d_geometry_properties_iterator.handle_weak_ref()->remove(
-						d_geometry_properties_iterator);
+				if (d_geometry_properties_iterator.is_still_valid())
+				{
+					d_geometry_properties_iterator.handle_weak_ref()->remove(
+							d_geometry_properties_iterator);
+				}
 			}
 			catch (...)
 			{

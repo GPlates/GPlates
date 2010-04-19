@@ -40,7 +40,8 @@ namespace
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		return ((*rfg.property())->property_name() == property_name_to_match);
+		return rfg.property().is_still_valid() &&
+			((*rfg.property())->property_name() == property_name_to_match);
 	}
 
 
@@ -50,7 +51,8 @@ namespace
 			const GPlatesModel::ResolvedTopologicalBoundary &rtb,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		return ((*rtb.property())->property_name() == property_name_to_match);
+		return rtb.property().is_still_valid() &&
+			((*rtb.property())->property_name() == property_name_to_match);
 	}
 
 
@@ -60,7 +62,8 @@ namespace
 			const GPlatesModel::ResolvedTopologicalNetwork &rtn,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		return ((*rtn.property())->property_name() == property_name_to_match);
+		return rtn.property().is_still_valid() &&
+			((*rtn.property())->property_name() == property_name_to_match);
 	}
 
 

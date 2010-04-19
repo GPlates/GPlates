@@ -581,6 +581,10 @@ namespace GPlatesModel
 		log_invalid_weak_ref(
 				const feature_weak_ref_type &feature_weak_ref);
 
+		void
+		log_invalid_iterator(
+				const feature_collection_iterator_type &iterator);
+
 		/**
 		 * Tracks the iterator of the most-recently read top-level property.
 		 */
@@ -630,8 +634,16 @@ namespace GPlatesModel
 	FeatureVisitorBase<FeatureHandleType>::visit_feature(
 			const feature_collection_iterator_type &iterator)
 	{
-		visit_feature_handle(**iterator);
-		return true;
+		if (iterator.is_still_valid())
+		{
+			visit_feature_handle(**iterator);
+			return true;
+		}
+		else
+		{
+			log_invalid_iterator(iterator);
+			return false;
+		}
 	}
 
 
@@ -756,7 +768,16 @@ namespace GPlatesModel
 	FeatureVisitorBase<FeatureHandleType>::log_invalid_weak_ref(
 			const feature_weak_ref_type &feature_weak_ref)
 	{
-		std::cerr << "invalid weak-ref not dereferenced." << std::endl;
+		std::cerr << "Invalid weak-ref not dereferenced." << std::endl;
+	}
+
+
+	template<class FeatureHandleType>
+	void
+	FeatureVisitorBase<FeatureHandleType>::log_invalid_iterator(
+			const feature_collection_iterator_type &iterator)
+	{
+		std::cerr << "Invalid iterator not dereferenced." << std::endl;
 	}
 
 

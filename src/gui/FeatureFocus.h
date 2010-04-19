@@ -99,7 +99,7 @@ namespace GPlatesGui
 		 * Accessor for the geometry property used by the most recent RFG associated with the
 		 * currently-focused feature (if there is one).
 		 *
-		 * NOTE: Remember to check 'is_valid()' on returned properties iterator.
+		 * NOTE: Remember to check 'is_still_valid()' on returned properties iterator.
 		 */
 		const GPlatesModel::FeatureHandle::iterator &
 		associated_geometry_property() const

@@ -37,15 +37,9 @@ namespace
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		const GPlatesModel::FeatureHandle::iterator iter = rfg.property();
-		if (iter.is_still_valid())
-		{
-			return ((*iter)->property_name() == property_name_to_match);
-		}
-		else
-		{
-			return false;
-		}
+		const GPlatesModel::FeatureHandle::iterator &iter = rfg.property();
+		return iter.is_still_valid() &&
+			((*iter)->property_name() == property_name_to_match);
 	}
 
 
@@ -55,7 +49,9 @@ namespace
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
 			const GPlatesModel::FeatureHandle::iterator &properties_iterator_to_match)
 	{
-		return (rfg.property() == properties_iterator_to_match);
+		const GPlatesModel::FeatureHandle::iterator &iter = rfg.property();
+		return iter.is_still_valid() &&
+			(iter == properties_iterator_to_match);
 	}
 
 

@@ -309,6 +309,12 @@ namespace
 	{
 		using namespace GPlatesQtWidgets;
 
+		if ( ! current_feature.is_still_valid() )
+		{
+			// There was a feature here, but it's been deleted.
+			return;
+		}
+
 		trs_plate_id_finder.reset();
 		trs_plate_id_finder.visit_feature(current_feature);
 

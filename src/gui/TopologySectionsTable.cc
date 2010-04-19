@@ -238,8 +238,7 @@ namespace
 	check_row_validity_geom(
 			const GPlatesGui::TopologySectionsContainer::TableRow &entry)
 	{
-		return true;
-//		return entry.get_geometry_property().is_valid();
+		return entry.get_geometry_property().is_still_valid();
 	}
 	
 	
@@ -933,7 +932,7 @@ GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 	const TopologySectionsContainer::TableRow &trow = d_container_ptr->at(index);
 
 	// Do we have enough information?
-	if (trow.get_feature_ref().is_valid() /*&& trow.get_geometry_property().is_valid()*/) {
+	if (trow.get_feature_ref().is_valid() && trow.get_geometry_property().is_still_valid()) {
 		// Then adjust the focus.
 		d_feature_focus_ptr->set_focus(trow.get_feature_ref(), trow.get_geometry_property());
 	

@@ -758,7 +758,7 @@ GPlatesGui::TopologyTools::find_topological_section_indices(
 {
 	std::vector<int> topological_section_indices;
 
-	if ( !(feature_ref.is_valid() /* && properties_iter.is_valid() */) )
+	if ( !(feature_ref.is_valid() && properties_iter.is_still_valid() ) )
 	{
 		// Return not found if either feature reference or property iterator is invalid.
 		return topological_section_indices;

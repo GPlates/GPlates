@@ -82,13 +82,11 @@ namespace
 				const boost::optional<GPlatesModel::FeatureHandle::iterator> &end_geometry_property,
 				const boost::optional<GPlatesMaths::PointOnSphere> &present_day_reference_point)
 		{
-			/*
-			if (!geometry_property.is_valid())
+			if (!geometry_property.is_still_valid())
 			{
 				// Return invalid iterator.
 				return boost::none;
 			}
-			*/
 
 			// Initialise data members.
 			d_geometry_property = geometry_property;
@@ -254,13 +252,11 @@ namespace
 		create_gpml_topological_intersection(
 				const GPlatesModel::FeatureHandle::iterator &adjacent_geometry_property)
 		{
-			/*
-			if (!adjacent_geometry_property.is_valid())
+			if (!adjacent_geometry_property.is_still_valid())
 			{
 				// Return false.
 				return boost::none;
 			}
-			*/
 
 			// Initialise data members.
 			d_adjacent_geometry_property = adjacent_geometry_property;
@@ -681,13 +677,11 @@ GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
 		const QString &property_value_type)
 {
-	/*
-	if (!geometry_property.is_valid())
+	if (!geometry_property.is_still_valid())
 	{
 		// Return invalid iterator.
 		return boost::none;
 	}
-	*/
 
 	// Feature id obtained from geometry property iterator.
 	const GPlatesModel::FeatureId &feature_id =
@@ -754,12 +748,10 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
 			geometry_delegate.feature_id());
 
-	/*
 	if (!feature_ref.is_valid())
 	{
 		return boost::none;
 	}
-	*/
 
 	// Create a property name from the target_propery.
 	const QString property_name_qstring = GPlatesUtils::make_qstring_from_icu_string(
