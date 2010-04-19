@@ -31,6 +31,8 @@
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
+#include "feature-visitors/GeometrySetter.h"
+#include "feature-visitors/PropertyValueFinder.h"
 void
 GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 {
@@ -75,8 +77,10 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	GPlatesModel::PropertyName property_name = 
 		(*property_iter)->property_name(); 
 
+#if 0
 	//we remove the geometry from the feature and then add the new one into it
 	GPlatesUtils::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
+#endif
 
 	//keep the old geometry property for "Undo"
 	d_old_geometry_property = 
@@ -121,8 +125,27 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	{
 		return;
 	}
+
+	GPlatesFeatureVisitors::GeometrySetter geometry_setter(
+			GPlatesMaths::PolylineOnSphere::create_on_heap(
+					points.begin(), 
+					points.begin() + point_index_to_split));
+
+	//FIXME:
+	//since the non-const value finder has been disabled, 
+	//use const_cast as workaround for now
+	const GPlatesPropertyValues::GmlLineString* const_val;
+	GPlatesFeatureVisitors::get_property_value(
+			*d_old_feature,	
+			property_name,
+			const_val);
+	GPlatesPropertyValues::GmlLineString* val=
+		const_cast<GPlatesPropertyValues::GmlLineString*>(const_val);
+	geometry_setter.set_geometry(val);
+
 	// TODO: currently the ploy line type has been hard-coded here, 
 	// we need to support other geometry type in the future
+#if 0
 	(*d_old_feature)->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				property_name,
@@ -130,6 +153,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 						points.begin(), 
 						points.begin() + point_index_to_split,
 						GPlatesViewOperations::GeometryType::POLYLINE)));
+#endif
 	
 	(*d_new_feature)->add(
 			GPlatesModel::TopLevelPropertyInline::create(
