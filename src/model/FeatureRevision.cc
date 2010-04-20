@@ -107,7 +107,8 @@ GPlatesModel::FeatureRevision::set(
 
 GPlatesModel::FeatureRevision::FeatureRevision(
 		const RevisionId &revision_id_) :
-	d_revision_id(revision_id_)
+	d_revision_id(revision_id_),
+	d_revision_id_dirty(false)
 {
 }
 
@@ -115,7 +116,9 @@ GPlatesModel::FeatureRevision::FeatureRevision(
 GPlatesModel::FeatureRevision::FeatureRevision(
 		const this_type &other) :
 	BasicRevision<FeatureHandle>(other),
-	GPlatesUtils::ReferenceCount<FeatureRevision>()
+	GPlatesUtils::ReferenceCount<FeatureRevision>(),
+	d_revision_id(other.d_revision_id),
+	d_revision_id_dirty(other.d_revision_id_dirty)
 {
 }
 
@@ -126,7 +129,9 @@ GPlatesModel::FeatureRevision::FeatureRevision(
 	BasicRevision<FeatureHandle>(
 			other,
 			clone_properties_predicate),
-	GPlatesUtils::ReferenceCount<FeatureRevision>()
+	GPlatesUtils::ReferenceCount<FeatureRevision>(),
+	d_revision_id(other.d_revision_id),
+	d_revision_id_dirty(other.d_revision_id_dirty)
 {
 }
 

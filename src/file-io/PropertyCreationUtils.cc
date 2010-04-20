@@ -96,6 +96,27 @@ namespace
 	}
 
 
+	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
+	get_xml_attributes_from_child(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			const GPlatesModel::PropertyName &prop_name)
+	{
+		GPlatesModel::XmlElementNode::named_child_const_iterator
+			iter = elem->get_next_child_by_name(prop_name, elem->children_begin());
+
+		if (iter.first == elem->children_end())
+		{
+			// We didn't find the property, return empty map.
+			return std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>();
+		}
+
+		GPlatesModel::XmlElementNode::non_null_ptr_type target = *iter.second;
+		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> result(
+				target->attributes_begin(), target->attributes_end());
+		return result;
+	}
+
+
 	template< typename T >
 	boost::optional<T>
 	find_and_create_optional(
@@ -904,10 +925,10 @@ GPlatesFileIO::PropertyCreationUtils::create_time_instant(
 	GPlatesPropertyValues::GeoTimeInstant
 		time = find_and_create_one(elem, &create_geo_time_instant, TIME_POSITION);
 
-	// FIXME: The xml_attrs should be read from the timePosition property.
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-		xml_attrs(elem->attributes_begin(), elem->attributes_end());
-	return GPlatesPropertyValues::GmlTimeInstant::create(time, xml_attrs);
+	// The XML attributes are read from the timePosition property, not the TimeInstant property.
+	return GPlatesPropertyValues::GmlTimeInstant::create(
+			time,
+			get_xml_attributes_from_child(elem, TIME_POSITION));
 }
 
 

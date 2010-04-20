@@ -188,11 +188,7 @@ namespace GPlatesPropertyValues
 		GmlTimeInstant(
 				const GeoTimeInstant &time_position_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						time_position_xml_attributes_):
-			PropertyValue(),
-			d_time_position(time_position_),
-			d_time_position_xml_attributes(time_position_xml_attributes_)
-		{  }
+						time_position_xml_attributes_);
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -200,11 +196,7 @@ namespace GPlatesPropertyValues
 		// Note that this should act exactly the same as the default (auto-generated)
 		// copy-constructor, except it should not be public.
 		GmlTimeInstant(
-				const GmlTimeInstant &other) :
-			PropertyValue(other), /* share instance id */
-			d_time_position(other.d_time_position),
-			d_time_position_xml_attributes(other.d_time_position_xml_attributes)
-		{  }
+				const GmlTimeInstant &other);
 
 		virtual
 		bool
