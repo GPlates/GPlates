@@ -280,7 +280,8 @@ namespace
 		{  }
 
 		boost::intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling> d_irregular_sampling;
-		GPlatesModel::FeatureHandle::weak_ref d_irregular_sampling_feature_weak_ref;
+		// GPlatesModel::FeatureHandle::weak_ref d_irregular_sampling_feature_weak_ref;
+		GPlatesModel::FeatureHandle::iterator d_irregular_sampling_iter;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
 	};
@@ -314,8 +315,12 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"), 
 				current_total_recon_seq);
 #endif
+		props_in_current_trs.d_irregular_sampling_iter = current_total_recon_seq->add(
+				TopLevelPropertyInline::create(
+					PropertyName::create_gpml("totalReconstructionPole"),
+					gpml_irregular_sampling));
 		props_in_current_trs.d_irregular_sampling = gpml_irregular_sampling.get();
-		props_in_current_trs.d_irregular_sampling_feature_weak_ref = current_total_recon_seq;
+		// props_in_current_trs.d_irregular_sampling_feature_weak_ref = current_total_recon_seq;
 
 		GpmlPlateId::non_null_ptr_type fixed_ref_frame =
 				GpmlPlateId::create(fixed_plate_id);
@@ -545,11 +550,17 @@ namespace
 			}
 		}
 
+#if 0
 		// Now put the property value into the feature.
 		props_in_current_trs.d_irregular_sampling_feature_weak_ref->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
 					props_in_current_trs.d_irregular_sampling.get()));
+#endif
+		*(props_in_current_trs.d_irregular_sampling_iter) =
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
+					props_in_current_trs.d_irregular_sampling.get());
 	}
 
 
