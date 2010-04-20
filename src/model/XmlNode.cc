@@ -93,7 +93,10 @@ const GPlatesModel::XmlTextNode::non_null_ptr_type
 GPlatesModel::XmlTextNode::create(
 		QXmlStreamReader &reader)
 {
-	QString text = reader.text().toString().trimmed();
+	// We don't trim here because a string that contains an ampersand is broken up
+	// into two nodes for some reason, and if we trim here, the spacing around the
+	// ampersand will not be read in correctly.
+	QString text = reader.text().toString();
 	return non_null_ptr_type(
 			new XmlTextNode(reader.lineNumber(), reader.columnNumber(), text),
 			GPlatesUtils::NullIntrusivePointerHandler());

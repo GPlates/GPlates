@@ -298,7 +298,7 @@ namespace
 
 
 	QString
-	create_string(
+	create_string_without_trimming(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
 	{
 		TextExtractionVisitor visitor;
@@ -311,8 +311,16 @@ namespace
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidString,
 					EXCEPTION_SOURCE);
 		}
-		// Trim everything:
-		return visitor.get_text().trimmed();
+
+		return visitor.get_text();
+	}
+
+
+	QString
+	create_string(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+	{
+		return create_string_without_trimming(elem).trimmed();
 	}
 
 
@@ -989,7 +997,7 @@ GPlatesFileIO::PropertyCreationUtils::create_time_sample(
 		VALUE_TYPE = GPlatesModel::PropertyName::create_gpml("valueType"),
 		VALUE = GPlatesModel::PropertyName::create_gpml("value"),
 		VALID_TIME = GPlatesModel::PropertyName::create_gpml("validTime"),
-		DESCRIPTION = GPlatesModel::PropertyName::create_gpml("description"),
+		DESCRIPTION = GPlatesModel::PropertyName::create_gml("description"),
 		IS_DISABLED = GPlatesModel::PropertyName::create_gpml("isDisabled");
 
 	GPlatesModel::XmlElementNode::non_null_ptr_type 
@@ -1002,7 +1010,7 @@ GPlatesFileIO::PropertyCreationUtils::create_time_sample(
 	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
 		valid_time = find_and_create_one(elem, &create_time_instant, VALID_TIME);
 	boost::optional<QString>
-		description = find_and_create_optional(elem, &create_string, DESCRIPTION);
+		description = find_and_create_optional(elem, &create_string_without_trimming, DESCRIPTION);
 	boost::optional<bool>
 		is_disabled = find_and_create_optional(elem, &create_boolean, IS_DISABLED);
 
