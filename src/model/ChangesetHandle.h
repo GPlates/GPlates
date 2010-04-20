@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_CHANGESETHANDLE_H
 
 #include <string>
+#include <set>
 #include <boost/noncopyable.hpp>
 
 
@@ -91,13 +92,49 @@ namespace GPlatesModel
 		 * Constructs a ChangesetHandle that will construct a changeset belonging to
 		 * @a model upon destruction.
 		 *
+		 * @a model may be NULL. In that case, this ChangesetHandle has no effect.
+		 *
 		 * The @a description is used in the user interface.
 		 */
 		ChangesetHandle(
 				Model *model_ptr,
-				const std::string &description = std::string())
-		{
-		}
+				const std::string &description_ = std::string());
+
+		/**
+		 * Destructor.
+		 */
+		~ChangesetHandle();
+
+		/**
+		 * Returns the human-readable description of the changeset.
+		 */
+		const std::string &
+		description() const;
+
+		/**
+		 * Registers @a handle as having been modified or added in this changeset.
+		 */
+		void
+		add_handle(
+				const void *handle);
+
+		/**
+		 * Returns true if @a handle has already been registered in this changeset.
+		 */
+		bool
+		has_handle(
+				const void *handle);
+
+	private:
+
+		Model *d_model_ptr;
+		std::string d_description;
+
+		/**
+		 * This is a collection of raw pointers to Handles that have been modified or
+		 * added in this changeset.
+		 */
+		std::set<const void *> d_modified_handles;
 
 	};
 }

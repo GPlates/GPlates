@@ -14,6 +14,7 @@ set(srcs
     BasicHandle.cc
     BasicHandle.h
     BasicRevision.h
+    ChangesetHandle.cc
     ChangesetHandle.h
     ConstReconstructionGeometryVisitor.h
     FeatureCollectionHandle.cc

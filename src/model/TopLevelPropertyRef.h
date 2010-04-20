@@ -105,6 +105,10 @@ namespace GPlatesModel
 		const TopLevelProperty *
 		operator->() const;
 
+		// The same as operator->().
+		const TopLevelProperty *
+		get() const;
+
 		// Undefined behaviour if index is invalid.
 		const TopLevelProperty &
 		operator*() const;

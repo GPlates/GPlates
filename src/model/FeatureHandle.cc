@@ -122,6 +122,42 @@ GPlatesModel::FeatureHandle::clone(
 }
 
 
+GPlatesModel::FeatureHandle::iterator
+GPlatesModel::FeatureHandle::add(
+		GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type new_child)
+{
+	ChangesetHandle changeset(model_ptr());
+
+	ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
+	// changeset_ptr must be non-NULL because we created one at the top of the
+	// function. But changeset_ptr might not point to our changeset.
+	if (!changeset_ptr->has_handle(this))
+	{
+		current_revision()->update_revision_id();
+	}
+
+	return BasicHandle<FeatureHandle>::add(new_child);
+}
+
+
+void
+GPlatesModel::FeatureHandle::remove(
+		const_iterator iter)
+{
+	ChangesetHandle changeset(model_ptr());
+
+	ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
+	// changeset_ptr must be non-NULL because we created one at the top of the
+	// function. But changeset_ptr might not point to our changeset.
+	if (!changeset_ptr->has_handle(this))
+	{
+		current_revision()->update_revision_id();
+	}
+
+	BasicHandle<FeatureHandle>::remove(iter);
+}
+
+
 void
 GPlatesModel::FeatureHandle::set(
 		iterator iter,
@@ -135,6 +171,16 @@ GPlatesModel::FeatureHandle::set(
 		current_revision()->set(iter.index(), new_child->deep_clone());
 
 		notify_listeners_of_modification(false, true);
+
+		ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
+		if (changeset_ptr)
+		{
+			if (!changeset_ptr->has_handle(this))
+			{
+				current_revision()->update_revision_id();
+			}
+			changeset_ptr->add_handle(this);
+		}
 	}
 }
 

@@ -309,7 +309,24 @@ namespace GPlatesModel
 				bool publisher_modified,
 				bool child_modified);
 
+		/**
+		 * If model_ptr() does not return NULL and there is a current ChangesetHandle
+		 * registered with our model, returns a pointer to that current
+		 * ChangesetHandle; otherwise, returns NULL.
+		 */
+		ChangesetHandle *
+		current_changeset_handle_ptr();
+
 	private:
+
+		/**
+		 * Does the actual job of adding the child to the revision's container.
+		 *
+		 * Called by add(), in the style of the Template Method design pattern.
+		 */
+		container_size_type
+		actual_add(
+				typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type new_child);
 
 		/**
 		 * Sets the active flag in a particular child of this Handle.
@@ -525,22 +542,38 @@ namespace GPlatesModel
 	{
 		ChangesetHandle changeset(model_ptr());
 
-		container_size_type new_index =
-			current_revision()->add(new_child);
-		new_child->set_parent_ptr(d_handle_ptr, new_index);
+		container_size_type new_index = actual_add(new_child);
 
 		iterator new_child_iter(*d_handle_ptr, new_index);
 		notify_listeners_of_modification(true, false);
 		notify_listeners_of_addition(new_child_iter);
 
+		ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
+		// changeset_ptr must be non-NULL because we created one at the top of the
+		// function. But changeset_ptr might not point to our changeset.
+		changeset_ptr->add_handle(d_handle_ptr);
+		changeset_ptr->add_handle((*new_child_iter).get());
+
 		return new_child_iter;
+	}
+
+
+	template<class HandleType>
+	container_size_type
+	BasicHandle<HandleType>::actual_add(
+			typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type new_child)
+	{
+		container_size_type new_index =
+			current_revision()->add(new_child);
+		new_child->set_parent_ptr(d_handle_ptr, new_index);
+		return new_index;
 	}
 
 
 	// Template specialisations are in the .cc file.
 	template<>
-	BasicHandle<FeatureHandle>::iterator
-	BasicHandle<FeatureHandle>::add(
+	container_size_type
+	BasicHandle<FeatureHandle>::actual_add(
 			GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type new_child);
 
 
@@ -556,6 +589,11 @@ namespace GPlatesModel
 
 		// Remove from Revision object (currently, this would destroy it in the C++ sense).
 		current_revision()->remove(iter.index());
+
+		ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
+		// changeset_ptr must be non-NULL because we created one at the top of the
+		// function. But changeset_ptr might not point our changeset.
+		changeset_ptr->add_handle(d_handle_ptr);
 
 		notify_listeners_of_modification(true, false);
 	}
@@ -1028,6 +1066,22 @@ namespace GPlatesModel
 	template<>
 	void
 	BasicHandle<FeatureHandle>::flush_children_pending_notifications();
+
+
+	template<class HandleType>
+	ChangesetHandle *
+	BasicHandle<HandleType>::current_changeset_handle_ptr()
+	{
+		Model *model = model_ptr();
+		if (model)
+		{
+			return model->current_changeset_handle();
+		}
+		else
+		{
+			return NULL;
+		}
+	}
 
 }
 

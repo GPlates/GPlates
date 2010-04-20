@@ -62,6 +62,13 @@ GPlatesModel::TopLevelPropertyRef::operator->() const
 }
 
 
+const GPlatesModel::TopLevelProperty *
+GPlatesModel::TopLevelPropertyRef::get() const
+{
+	return pointer().get();
+}
+
+
 const GPlatesModel::TopLevelProperty &
 GPlatesModel::TopLevelPropertyRef::operator*() const
 {

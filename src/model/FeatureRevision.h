@@ -121,37 +121,18 @@ namespace GPlatesModel
 
 		/**
 		 * The unique revision ID for this feature revision.
-		 *
-		 * Note that there is no "setter" method because the revision ID of a feature
-		 * revision should not be changed.
 		 */
 		const RevisionId &
 		revision_id() const;
 
 		/**
-		 * @see BasicRevision::add()
+		 * Changes the revision ID of this feature revision to a new ID.
+		 *
+		 * FIXME: Remove this function once we actually create new a revision object
+		 * when we modify a feature.
 		 */
-		virtual
-		container_size_type
-		add(
-				TopLevelProperty::non_null_ptr_type new_child);
-
-		/**
-		 * @see BasicRevision::remove()
-		 */
-		virtual
-		bool
-		remove(
-				container_size_type index);
-
-		/**
-		 * @see BasicRevision::set()
-		 */
-		virtual
 		void
-		set(
-				container_size_type index,
-				TopLevelProperty::non_null_ptr_type new_child);
+		update_revision_id();
 
 	private:
 
@@ -197,12 +178,7 @@ namespace GPlatesModel
 		 * FIXME: This need not be mutable once we actually create a new
 		 * FeatureRevision object for every revision.
 		 */
-		mutable RevisionId d_revision_id;
-
-		/**
-		 * True if d_revision_id needs to be regenerated.
-		 */
-		mutable bool d_revision_id_dirty;
+		RevisionId d_revision_id;
 
 	};
 

@@ -27,11 +27,13 @@
 
 #include "Model.h"
 
+#include "ChangesetHandle.h"
 #include "FeatureStoreRootHandle.h"
 
 
 GPlatesModel::Model::Model():
 	d_root(FeatureStoreRootHandle::create()),
+	d_current_changeset_handle(NULL),
 	d_notification_guard_count(0)
 {
 	d_root->set_parent_ptr(this, 0);
@@ -57,6 +59,20 @@ GPlatesModel::Model::root() const
 }
 
 
+GPlatesModel::ChangesetHandle *
+GPlatesModel::Model::current_changeset_handle()
+{
+	return d_current_changeset_handle;
+}
+
+
+const GPlatesModel::ChangesetHandle *
+GPlatesModel::Model::current_changeset_handle() const
+{
+	return d_current_changeset_handle;
+}
+
+
 bool
 GPlatesModel::Model::has_notification_guard() const
 {
@@ -79,6 +95,28 @@ GPlatesModel::Model::decrement_notification_guard_count()
 	if (d_notification_guard_count == 0)
 	{
 		d_root->flush_pending_notifications();
+	}
+}
+
+
+void
+GPlatesModel::Model::register_changeset_handle(
+		ChangesetHandle *changeset_handle)
+{
+	if (!d_current_changeset_handle)
+	{
+		d_current_changeset_handle = changeset_handle;
+	}
+}
+
+
+void
+GPlatesModel::Model::unregister_changeset_handle(
+		ChangesetHandle *changeset_handle)
+{
+	if (d_current_changeset_handle == changeset_handle)
+	{
+		d_current_changeset_handle = NULL;
 	}
 }
 

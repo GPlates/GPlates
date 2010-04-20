@@ -237,7 +237,6 @@ namespace GPlatesModel
 		 * 
 		 * Returns the index of @a new_child in the collection.
 		 */
-		virtual
 		container_size_type
 		add(
 				typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type new_child);
@@ -251,7 +250,6 @@ namespace GPlatesModel
 		 * is greater-than or equal-to the return value of the @a size function, this
 		 * function will be a no-op.
 		 */
-		virtual
 		bool
 		remove(
 				container_size_type index);
@@ -259,7 +257,6 @@ namespace GPlatesModel
 		/**
 		 * Changes a child at a particular @a index into @a new_child.
 		 */
-		virtual
 		void
 		set(
 				container_size_type index,

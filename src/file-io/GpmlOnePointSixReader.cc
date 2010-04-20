@@ -50,6 +50,7 @@
 
 #include "maths/LatLonPoint.h"
 
+#include "model/ChangesetHandle.h"
 #include "model/Model.h"
 #include "model/FeatureRevision.h"
 #include "model/TopLevelPropertyInline.h"
@@ -463,6 +464,13 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		ReadErrorAccumulation &read_errors,
 		bool use_gzip)
 {
+	// By placing all changes to the model under the one changeset, we ensure that
+	// feature revision ids don't get changed from what was loaded from file no
+	// matter what we do to the features.
+	GPlatesModel::ChangesetHandle changeset(
+			model.access_model(),
+			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
+
 	QString filename(fileinfo.get_qfileinfo().filePath());
 	QXmlStreamReader reader;
 
@@ -550,3 +558,4 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 
 	return File::create_loaded_file(collection_unloader, fileinfo);
 }
+

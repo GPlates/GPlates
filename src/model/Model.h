@@ -33,6 +33,7 @@
 
 namespace GPlatesModel
 {
+	class ChangesetHandle;
 	class FeatureStoreRootHandle;
 	class NotificationGuard;
 
@@ -89,6 +90,20 @@ namespace GPlatesModel
 		bool
 		has_notification_guard() const;
 
+		/**
+		 * Returns the current ChangesetHandle registered with this model, or NULL if
+		 * there is no current ChangesetHandle.
+		 */
+		ChangesetHandle *
+		current_changeset_handle();
+
+		/**
+		 * Returns the current ChangesetHandle registered with this model, or NULL if
+		 * there is no current ChangesetHandle.
+		 */
+		const ChangesetHandle *
+		current_changeset_handle() const;
+
 	private:
 
 		/**
@@ -104,10 +119,35 @@ namespace GPlatesModel
 		decrement_notification_guard_count();
 
 		/**
+		 * Registers the ChangesetHandle with this model. If there is already a
+		 * ChangesetHandle registered with this model, this call has no effect.
+		 */
+		void
+		register_changeset_handle(
+				ChangesetHandle *changeset_handle);
+
+		/**
+		 * Unregisters the ChangesetHandle with this model. This call has no effect
+		 * unless the provided ChangesetHandle is the current ChangesetHandle.
+		 */
+		void
+		unregister_changeset_handle(
+				ChangesetHandle *changeset_handle);
+
+		/**
 		 * A persistent handle to the root of the feature store, which contains all
 		 * loaded feature collections and their features.
 		 */
 		GPlatesGlobal::PointerTraits<FeatureStoreRootHandle>::non_null_ptr_type d_root;
+
+		/**
+		 * The current ChangesetHandle registered with this model. If more than one
+		 * ChangesetHandle tries to register with this model, only the first one is
+		 * considered the current ChangesetHandle.
+		 *
+		 * If there is no current ChangesetHandle, this is a pointer to NULL.
+		 */
+		ChangesetHandle *d_current_changeset_handle;
 
 		/**
 		 * A count of the number of NotificationGuard instances attached to this
@@ -130,6 +170,7 @@ namespace GPlatesModel
 		 */
 		unsigned int d_notification_guard_count;
 
+		friend class ChangesetHandle;
 		friend class NotificationGuard;
 
 	};

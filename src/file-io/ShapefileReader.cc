@@ -44,6 +44,7 @@
 #include "feature-visitors/PropertyValueFinder.h" 
 #include "feature-visitors/ShapefileAttributeFinder.h"
 
+#include "model/ChangesetHandle.h"
 #include "model/Model.h"
 #include "model/ModelUtils.h"
 #include "model/QualifiedXmlName.h"
@@ -1183,6 +1184,13 @@ GPlatesFileIO::ShapefileReader::read_file(
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	// By placing all changes to the model under the one changeset, we ensure that
+	// feature revision ids don't get changed from what was loaded from file no
+	// matter what we do to the features.
+	GPlatesModel::ChangesetHandle changeset(
+			model.access_model(),
+			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
+
 	QString absolute_path_filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
@@ -1701,3 +1709,4 @@ GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
 							s_model_to_attribute_map,
 							read_errors);
 }
+

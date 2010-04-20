@@ -61,54 +61,20 @@ GPlatesModel::FeatureRevision::clone(
 const GPlatesModel::RevisionId &
 GPlatesModel::FeatureRevision::revision_id() const
 {
-	// Regenerate if necessary.
-	if (d_revision_id_dirty)
-	{
-		d_revision_id = RevisionId();
-		d_revision_id_dirty = false;
-	}
-
 	return d_revision_id;
 }
 
 
-GPlatesModel::container_size_type
-GPlatesModel::FeatureRevision::add(
-		TopLevelProperty::non_null_ptr_type new_child)
-{
-	container_size_type result = BasicRevision<FeatureHandle>::add(new_child);
-	d_revision_id_dirty = true;
-	return result;
-}
-
-
-bool
-GPlatesModel::FeatureRevision::remove(
-		container_size_type index)
-{
-	bool result = BasicRevision<FeatureHandle>::remove(index);
-	if (result)
-	{
-		d_revision_id_dirty = true;
-	}
-	return result;
-}
-
-
 void
-GPlatesModel::FeatureRevision::set(
-		container_size_type index,
-		TopLevelProperty::non_null_ptr_type new_child)
+GPlatesModel::FeatureRevision::update_revision_id()
 {
-	BasicRevision<FeatureHandle>::set(index, new_child);
-	d_revision_id_dirty = true;
+	d_revision_id = RevisionId();
 }
 
 
 GPlatesModel::FeatureRevision::FeatureRevision(
 		const RevisionId &revision_id_) :
-	d_revision_id(revision_id_),
-	d_revision_id_dirty(false)
+	d_revision_id(revision_id_)
 {
 }
 
@@ -117,8 +83,7 @@ GPlatesModel::FeatureRevision::FeatureRevision(
 		const this_type &other) :
 	BasicRevision<FeatureHandle>(other),
 	GPlatesUtils::ReferenceCount<FeatureRevision>(),
-	d_revision_id(other.d_revision_id),
-	d_revision_id_dirty(other.d_revision_id_dirty)
+	d_revision_id() /* new revision ID if we clone a feature */
 {
 }
 
@@ -130,8 +95,7 @@ GPlatesModel::FeatureRevision::FeatureRevision(
 			other,
 			clone_properties_predicate),
 	GPlatesUtils::ReferenceCount<FeatureRevision>(),
-	d_revision_id(other.d_revision_id),
-	d_revision_id_dirty(other.d_revision_id_dirty)
+	d_revision_id() /* new revision ID if we clone a feature */
 {
 }
 

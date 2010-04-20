@@ -193,6 +193,26 @@ namespace GPlatesModel
 				const property_predicate_type &clone_properties_predicate) const;
 
 		/**
+		 * @see BasicHandle<FeatureHandle>::add.
+		 *
+		 * A new revision ID is generated if this Handle is not already present in the
+		 * current changeset.
+		 */
+		iterator
+		add(
+				GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type new_child);
+
+		/**
+		 * @see BasicHandle<FeatureHandle>::remove.
+		 *
+		 * A new revision ID is generated if this Handle is not already present in the
+		 * current changeset.
+		 */
+		void
+		remove(
+				const_iterator iter);
+
+		/**
 		 * Changes the child pointed to by iterator @a iter into @a new_child.
 		 */
 		void
