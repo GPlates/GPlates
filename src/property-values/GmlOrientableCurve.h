@@ -232,11 +232,7 @@ namespace GPlatesPropertyValues
 		GmlOrientableCurve(
 				GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						xml_attributes_):
-			PropertyValue(),
-			d_base_curve(base_curve_),
-			d_xml_attributes(xml_attributes_)
-		{  }
+						xml_attributes_);
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -244,11 +240,7 @@ namespace GPlatesPropertyValues
 		// Note that this should act exactly the same as the default (auto-generated)
 		// copy-constructor, except it should not be public.
 		GmlOrientableCurve(
-				const GmlOrientableCurve &other) :
-			PropertyValue(other), /* share instance id */
-			d_base_curve(other.d_base_curve),
-			d_xml_attributes(d_xml_attributes)
-		{  }
+				const GmlOrientableCurve &other);
 
 		virtual
 		bool
