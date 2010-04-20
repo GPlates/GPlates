@@ -280,7 +280,6 @@ namespace
 		{  }
 
 		boost::intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling> d_irregular_sampling;
-		// GPlatesModel::FeatureHandle::weak_ref d_irregular_sampling_feature_weak_ref;
 		GPlatesModel::FeatureHandle::iterator d_irregular_sampling_iter;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
@@ -310,17 +309,19 @@ namespace
 				GpmlIrregularSampling::create(time_sample,
 						GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp),
 						time_sample.value_type());
-#if 0 // We'll put it in later because we can't modify properties in the model in place anymore.
-		props_in_current_trs.d_irregular_sampling_iter = ModelUtils::append_property_value_to_feature(gpml_irregular_sampling,
-				GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"), 
-				current_total_recon_seq);
-#endif
+
+		// We retain an iterator that points to the property in the model. This is
+		// because we cannot modify the model's copy of the property directly and we
+		// need to modify a copy of the property outside the model. The iterator then
+		// allows us to "set" the property in the feature after we're done with
+		// modifying the property.
+		// Note that the "gpml:totalReconstructionPole" property has to come first
+		// otherwise the PlatesRotationFormatWriter barfs.
 		props_in_current_trs.d_irregular_sampling_iter = current_total_recon_seq->add(
 				TopLevelPropertyInline::create(
 					PropertyName::create_gpml("totalReconstructionPole"),
 					gpml_irregular_sampling));
 		props_in_current_trs.d_irregular_sampling = gpml_irregular_sampling.get();
-		// props_in_current_trs.d_irregular_sampling_feature_weak_ref = current_total_recon_seq;
 
 		GpmlPlateId::non_null_ptr_type fixed_ref_frame =
 				GpmlPlateId::create(fixed_plate_id);
@@ -550,13 +551,8 @@ namespace
 			}
 		}
 
-#if 0
-		// Now put the property value into the feature.
-		props_in_current_trs.d_irregular_sampling_feature_weak_ref->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
-					props_in_current_trs.d_irregular_sampling.get()));
-#endif
+		// Now that we've finished modifying the property, let's set the model's
+		// copy of the property to our modified copy.
 		*(props_in_current_trs.d_irregular_sampling_iter) =
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
