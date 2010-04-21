@@ -336,6 +336,9 @@ GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(
 					raster_map.insert(time,directory_path+QDir::separator()+*it);
 					have_found_suitable_file = true;
 				}
+#if 0				
+// This demands that all file roots are the same, and complains if different roots
+// exist in the folder.
 				else if(accepted_file_root.compare(potential_file_root) == 0)
 				// We already have a suitable file, make sure that our new file has the same root.
 				{
@@ -350,6 +353,19 @@ GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(
 							GPlatesFileIO::ReadErrors::MultipleRasterSetsFound,
 							GPlatesFileIO::ReadErrors::OnlyFirstRasterSetLoaded));
 				}
+#else
+// This accepts any file root, so that file roots in the same numerical sequence can be different.
+// For example, the files
+//	imageA-0.jpg
+//	imageB-1.jpg
+//	imageC-2.jpg
+// ...
+// would be accepted.
+				else
+				{
+					raster_map.insert(time,directory_path+QDir::separator()+*it);			
+				}
+#endif
 			}
 		}
 #if 0

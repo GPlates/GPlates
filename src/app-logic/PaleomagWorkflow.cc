@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2010 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -178,14 +178,14 @@ GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 		GPlatesModel::Reconstruction &reconstruction,
 		const double &reconstruction_time)
 {
-	//FIXME: make this extract the a95 and/or dm and dp properties from
-	// the paleomag feature(s), and render this on the globe as a circle/ellipse. 
 	
 	// Later we may also want to render the sample site and/or vgp in particular
 	// styles (e.g. stick an arrow on the sample site; stick a box around the vgp,
 	// make sites only visible, poles only visible etc.) 
 	// In that case we would override the default reconstructed geometry rendering.
 	
+	d_paleomag_layer->set_active();	
+	d_paleomag_layer->clear_rendered_geometries();	
 	
 	// Return if there are no paleomag feature collections.
 	if (d_paleomag_feature_collection_infos.empty())
@@ -193,9 +193,6 @@ GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 		return;
 	}
 
-	d_paleomag_layer->set_active();	
-	d_paleomag_layer->clear_rendered_geometries();
-	
 	// Iterate over all our velocity field feature collections and solve velocities.
 	paleomag_feature_collection_info_seq_type::iterator paleomag_feature_collection_iter;
 	for (paleomag_feature_collection_iter = d_paleomag_feature_collection_infos.begin();
@@ -225,24 +222,23 @@ GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 
 			for ( ; iter != end; ++iter)
 			{
-				boost::optional<const double> optional_time =
-					boost::optional<const double>(reconstruction_time);
 				boost::optional<GPlatesMaths::Rotation> additional_rotation;
 
 				const GPlatesGui::ColourProxy colour = get_colour_from_feature(iter);
 
 				PaleomagUtils::VgpRenderer vgp_renderer(
 					reconstruction,
-					optional_time,
 					additional_rotation, 
 					d_paleomag_layer,
 					colour,
-					false /* render_as_ellipse = false */);
+					d_view_state_ptr,
+					true /* should add geometries to reconstruction */
+					);
 
 				vgp_renderer.visit_feature(iter);
 			}
-		}
 		
+		}
 	}
 	
 }

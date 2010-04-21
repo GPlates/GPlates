@@ -53,8 +53,10 @@
 #include "AnimateDialog.h"
 #include "ActionButtonBox.h"
 #include "AssignReconstructionPlateIdsDialog.h"
+#include "CalculateReconstructionPoleDialog.h"
 #include "ColouringDialog.h"
 #include "CreateFeatureDialog.h"
+#include "CreateVGPDialog.h"
 #include "ExportAnimationDialog.h"
 #include "ExportReconstructedFeatureGeometryDialog.h"
 #include "FeaturePropertiesDialog.h"
@@ -66,6 +68,7 @@
 #include "SetCameraViewpointDialog.h"
 #include "SetProjectionDialog.h"
 #include "SetRasterSurfaceExtentDialog.h"
+#include "SetVGPVisibilityDialog.h"
 #include "ShapefileAttributeViewerDialog.h"
 #include "ShapefilePropertyMapper.h"
 #include "SpecifyAnchoredPlateIdDialog.h"
@@ -194,7 +197,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_assign_recon_plate_ids_dialog_ptr(
 			new AssignReconstructionPlateIdsDialog(
 					get_application_state(), get_view_state(), this)),
+
+	d_calculate_reconstruction_pole_dialog_ptr(NULL),
 	d_colouring_dialog_ptr(NULL),
+	d_create_vgp_dialog_ptr(NULL),
 	d_export_animation_dialog_ptr(NULL),
 	d_export_rfg_dialog_ptr(NULL),
 	d_feature_properties_dialog_ptr(
@@ -210,6 +216,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_set_camera_viewpoint_dialog_ptr(NULL),
 	d_set_projection_dialog_ptr(NULL),
 	d_set_raster_surface_extent_dialog_ptr(NULL),
+	d_set_vgp_visibility_dialog_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog_ptr(
 			new ShapefileAttributeViewerDialog(
 					get_application_state().get_feature_collection_file_state(),
@@ -382,7 +389,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 					*d_feature_table_model_ptr,
 					*d_feature_properties_dialog_ptr,
 					get_view_state().get_feature_focus(),
-					d_task_panel_ptr->reconstruction_pole_widget(),
+					d_task_panel_ptr->modify_reconstruction_pole_widget(),
 					*d_topology_sections_container_ptr,
 					d_task_panel_ptr->topology_tools_widget(),
 					*d_measure_distance_state_ptr,
@@ -405,7 +412,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 					*d_feature_table_model_ptr,
 					*d_feature_properties_dialog_ptr,
 					get_view_state().get_feature_focus(),
-					d_task_panel_ptr->reconstruction_pole_widget(),
+					d_task_panel_ptr->modify_reconstruction_pole_widget(),
 					*d_topology_sections_container_ptr,
 					d_task_panel_ptr->topology_tools_widget(),
 					*d_measure_distance_state_ptr));
@@ -704,6 +711,15 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// ----
 	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
+	
+	// Paleomagnetism menu	
+	QObject::connect(action_Create_VGP, SIGNAL(triggered()),
+		this, SLOT(pop_up_create_vgp_dialog()));
+	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
+		this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
+	QObject::connect(action_Set_VGP_Visibility, SIGNAL(triggered()),
+		this, SLOT(pop_up_set_vgp_visibility_dialog()));	
+	
 	
 	// Help Menu:
 	QObject::connect(action_About, SIGNAL(triggered()),
@@ -2139,4 +2155,50 @@ GPlatesQtWidgets::ViewportWindow::generate_mesh_cap()
 	d_mesh_dialog_ptr->raise();
 }
 
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_create_vgp_dialog()
+{
+	if (!d_create_vgp_dialog_ptr)
+	{
+		d_create_vgp_dialog_ptr.reset(new CreateVGPDialog(get_view_state(),this));
+	}
+
+	d_create_vgp_dialog_ptr->reset();
+	d_create_vgp_dialog_ptr->exec();
+
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_calculate_reconstruction_pole_dialog()
+{
+	if (!d_calculate_reconstruction_pole_dialog_ptr)
+	{
+		d_calculate_reconstruction_pole_dialog_ptr.reset(
+			new CalculateReconstructionPoleDialog(get_view_state(),this));
+	}
+
+	d_calculate_reconstruction_pole_dialog_ptr->show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_calculate_reconstruction_pole_dialog_ptr->activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_calculate_reconstruction_pole_dialog_ptr->raise();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_set_vgp_visibility_dialog()
+{
+
+	if (!d_set_vgp_visibility_dialog_ptr)
+	{
+		d_set_vgp_visibility_dialog_ptr.reset(new SetVGPVisibilityDialog(get_view_state(),this));
+	}
+
+	// SetVGPVisbilityDialog is modal. 
+	d_set_vgp_visibility_dialog_ptr->exec();
+}
 

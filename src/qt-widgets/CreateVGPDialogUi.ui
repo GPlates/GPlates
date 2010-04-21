@@ -1,0 +1,525 @@
+<ui version="4.0" >
+ <class>CreateVGPDialog</class>
+ <widget class="QDialog" name="CreateVGPDialog" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>467</width>
+    <height>305</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Create Virtual Geomagnetic Pole</string>
+  </property>
+  <layout class="QGridLayout" >
+   <item row="0" column="0" >
+    <widget class="QStackedWidget" name="stacked_widget" >
+     <property name="currentIndex" >
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="page_properties" >
+      <layout class="QGridLayout" >
+       <item row="0" column="0" >
+        <widget class="QGroupBox" name="groupBox" >
+         <property name="title" >
+          <string>Properties</string>
+         </property>
+         <layout class="QGridLayout" >
+          <item row="0" column="0" colspan="2" >
+           <layout class="QHBoxLayout" >
+            <item>
+             <widget class="QLabel" name="label_description" >
+              <property name="text" >
+               <string>Description</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="line_description" >
+              <property name="minimumSize" >
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="1" >
+           <spacer>
+            <property name="orientation" >
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" >
+             <size>
+              <width>20</width>
+              <height>16</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="2" column="0" colspan="2" >
+           <layout class="QHBoxLayout" >
+            <item>
+             <widget class="QLabel" name="label_pole" >
+              <property name="minimumSize" >
+               <size>
+                <width>115</width>
+                <height>22</height>
+               </size>
+              </property>
+              <property name="text" >
+               <string>Pole (present day): </string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="frame_2" >
+              <property name="frameShape" >
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow" >
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QHBoxLayout" >
+               <property name="topMargin" >
+                <number>2</number>
+               </property>
+               <property name="bottomMargin" >
+                <number>2</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_pole_lat" >
+                 <property name="sizePolicy" >
+                  <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize" >
+                  <size>
+                   <width>30</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="layoutDirection" >
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text" >
+                  <string>Lat</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="spinbox_pole_lat" >
+                 <property name="minimumSize" >
+                  <size>
+                   <width>78</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="minimum" >
+                  <double>-90.000000000000000</double>
+                 </property>
+                 <property name="maximum" >
+                  <double>90.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_pole_lon" >
+                 <property name="layoutDirection" >
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text" >
+                  <string>Lon</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="spinbox_pole_lon" >
+                 <property name="minimumSize" >
+                  <size>
+                   <width>78</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="minimum" >
+                  <double>-360.000000000000000</double>
+                 </property>
+                 <property name="maximum" >
+                  <double>360.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer>
+              <property name="orientation" >
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" >
+               <size>
+                <width>21</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item row="3" column="0" colspan="2" >
+           <layout class="QHBoxLayout" >
+            <item>
+             <widget class="QCheckBox" name="checkbox_site" >
+              <property name="minimumSize" >
+               <size>
+                <width>115</width>
+                <height>22</height>
+               </size>
+              </property>
+              <property name="text" >
+               <string>&amp;Site (present day):</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="frame_site_lat_lon" >
+              <property name="frameShape" >
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow" >
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QHBoxLayout" >
+               <property name="topMargin" >
+                <number>2</number>
+               </property>
+               <property name="bottomMargin" >
+                <number>2</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_pole_lat_2" >
+                 <property name="sizePolicy" >
+                  <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize" >
+                  <size>
+                   <width>30</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="layoutDirection" >
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text" >
+                  <string>Lat</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="spinbox_site_lat" >
+                 <property name="minimumSize" >
+                  <size>
+                   <width>78</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="minimum" >
+                  <double>-90.000000000000000</double>
+                 </property>
+                 <property name="maximum" >
+                  <double>90.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_pole_lon_2" >
+                 <property name="layoutDirection" >
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text" >
+                  <string>Lon</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="spinbox_site_lon" >
+                 <property name="minimumSize" >
+                  <size>
+                   <width>78</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="minimum" >
+                  <double>-360.000000000000000</double>
+                 </property>
+                 <property name="maximum" >
+                  <double>360.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer>
+              <property name="orientation" >
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" >
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item row="4" column="0" >
+           <spacer>
+            <property name="orientation" >
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" >
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="5" column="0" colspan="2" >
+           <layout class="QHBoxLayout" >
+            <item>
+             <widget class="QLabel" name="label_plate_id" >
+              <property name="minimumSize" >
+               <size>
+                <width>0</width>
+                <height>22</height>
+               </size>
+              </property>
+              <property name="layoutDirection" >
+               <enum>Qt::RightToLeft</enum>
+              </property>
+              <property name="text" >
+               <string>Plate id</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="spinbox_plate_id" >
+              <property name="minimumSize" >
+               <size>
+                <width>78</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximum" >
+               <number>1000000</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer>
+              <property name="orientation" >
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" >
+               <size>
+                <width>16</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_age" >
+              <property name="layoutDirection" >
+               <enum>Qt::LeftToRight</enum>
+              </property>
+              <property name="text" >
+               <string>Age (Ma)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="spinbox_age" >
+              <property name="minimumSize" >
+               <size>
+                <width>78</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximum" >
+               <double>1000000.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer>
+              <property name="orientation" >
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" >
+               <size>
+                <width>16</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_A95" >
+              <property name="sizePolicy" >
+               <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize" >
+               <size>
+                <width>35</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="layoutDirection" >
+               <enum>Qt::RightToLeft</enum>
+              </property>
+              <property name="text" >
+               <string>A95</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="spinbox_A95" >
+              <property name="minimumSize" >
+               <size>
+                <width>78</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximum" >
+               <double>180.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="6" column="0" colspan="2" >
+           <spacer>
+            <property name="orientation" >
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" >
+             <size>
+              <width>281</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="page_add_feature" >
+      <layout class="QGridLayout" >
+       <item row="0" column="0" >
+        <widget class="QGroupBox" name="groupBox_2" >
+         <property name="title" >
+          <string>Add feature to collection</string>
+         </property>
+         <layout class="QGridLayout" >
+          <item row="0" column="0" >
+           <widget class="QLabel" name="label_feature_collection" >
+            <property name="text" >
+             <string>Choose the feature collection to which the new feature should be added:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" >
+           <widget class="QListWidget" name="listwidget_feature_collections" />
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item row="2" column="0" >
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QPushButton" name="button_previous" >
+       <property name="text" >
+        <string>Pre&amp;vious</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_next" >
+       <property name="text" >
+        <string>Ne&amp;xt</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_create" >
+       <property name="text" >
+        <string>Create</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_cancel" >
+       <property name="text" >
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>line_description</tabstop>
+  <tabstop>spinbox_pole_lat</tabstop>
+  <tabstop>spinbox_pole_lon</tabstop>
+  <tabstop>checkbox_site</tabstop>
+  <tabstop>spinbox_site_lat</tabstop>
+  <tabstop>spinbox_site_lon</tabstop>
+  <tabstop>spinbox_plate_id</tabstop>
+  <tabstop>spinbox_age</tabstop>
+  <tabstop>spinbox_A95</tabstop>
+  <tabstop>button_previous</tabstop>
+  <tabstop>button_next</tabstop>
+  <tabstop>button_create</tabstop>
+  <tabstop>button_cancel</tabstop>
+  <tabstop>listwidget_feature_collections</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

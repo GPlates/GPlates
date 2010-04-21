@@ -1,0 +1,158 @@
+<ui version="4.0" >
+ <class>InsertVGPReconstructionPoleDialog</class>
+ <widget class="QDialog" name="InsertVGPReconstructionPoleDialog" >
+  <property name="windowModality" >
+   <enum>Qt::WindowModal</enum>
+  </property>
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>546</width>
+    <height>583</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Insert VGP Reconstruction Pole</string>
+  </property>
+  <layout class="QGridLayout" >
+   <item row="0" column="0" colspan="3" >
+    <widget class="QGroupBox" name="groupbox_pole_sequences" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Minimum" hsizetype="Minimum" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize" >
+      <size>
+       <width>528</width>
+       <height>264</height>
+      </size>
+     </property>
+     <property name="title" >
+      <string>Pole sequences</string>
+     </property>
+     <widget class="QWidget" native="1" name="widget_table_place_holder" >
+      <property name="geometry" >
+       <rect>
+        <x>10</x>
+        <y>24</y>
+        <width>508</width>
+        <height>230</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="3" >
+    <widget class="QGroupBox" name="group_new_pole" >
+     <property name="title" >
+      <string>New pole</string>
+     </property>
+     <layout class="QGridLayout" >
+      <item row="0" column="0" colspan="2" >
+       <widget class="QLabel" name="label_insert_pole" >
+        <property name="text" >
+         <string>Insert the reconstruction  pole</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="3" >
+       <widget class="QWidget" native="1" name="widget_place_holder" />
+      </item>
+      <item row="2" column="0" colspan="2" >
+       <widget class="QLabel" name="label_collection" >
+        <property name="text" >
+         <string>in the reconstruction feature collection</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="3" >
+       <widget class="QLineEdit" name="lineedit_collection" >
+        <property name="readOnly" >
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="2" >
+       <widget class="QLabel" name="label_crossovers" >
+        <property name="text" >
+         <string>generating crossovers at...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" >
+       <widget class="QLabel" name="label_comment" >
+        <property name="maximumSize" >
+         <size>
+          <width>60</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="layoutDirection" >
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="text" >
+         <string>Comment:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1" colspan="2" >
+       <widget class="QLineEdit" name="lineedit_comment" />
+      </item>
+      <item row="6" column="1" >
+       <spacer>
+        <property name="orientation" >
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" >
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="6" column="2" >
+       <widget class="QCheckBox" name="checkbox_preview" >
+        <property name="text" >
+         <string>Preview</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0" >
+    <spacer>
+     <property name="orientation" >
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" >
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="2" column="1" >
+    <widget class="QPushButton" name="pushButton" >
+     <property name="text" >
+      <string>OK</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2" >
+    <widget class="QPushButton" name="pushButton_2" >
+     <property name="text" >
+      <string>Cancel</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

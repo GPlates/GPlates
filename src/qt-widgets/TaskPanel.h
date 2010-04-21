@@ -31,7 +31,7 @@
 
 #include "DigitisationWidget.h"
 #include "ModifyGeometryWidget.h"
-#include "ReconstructionPoleWidget.h"
+#include "ModifyReconstructionPoleWidget.h"
 #include "ActionButtonBox.h"
 
 #include "model/ModelInterface.h"
@@ -135,12 +135,12 @@ namespace GPlatesQtWidgets
 		 * Accessor for the Reconstruction Pole Widget of the Modify Pole Tab.
 		 *
 		 * This lets the interactive manipulation of reconstructions canvas tool
-		 * interact with the ReconstructionPoleWidget.
+		 * interact with the ModifyReconstructionPoleWidget.
 		 */
-		ReconstructionPoleWidget &
-		reconstruction_pole_widget() const
+		ModifyReconstructionPoleWidget &
+		modify_reconstruction_pole_widget() const
 		{
-			return *d_reconstruction_pole_widget_ptr;
+			return *d_modify_reconstruction_pole_widget_ptr;
 		}
 
 		/**
@@ -274,7 +274,7 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Sets up the "Modify Pole" tab in the Extr3me Task Panel.
-		 * This adds the special ReconstructionPoleWidget.
+		 * This adds the special ModifyReconstructionPoleWidget.
 		 */
 		void
 		set_up_modify_pole_tab();
@@ -333,7 +333,8 @@ namespace GPlatesQtWidgets
 		 * Widget responsible for the controls in the Modify Pole Tab.
 		 * Memory managed by Qt.
 		 */
-		GPlatesQtWidgets::ReconstructionPoleWidget *d_reconstruction_pole_widget_ptr;
+		GPlatesQtWidgets::ModifyReconstructionPoleWidget 
+										*d_modify_reconstruction_pole_widget_ptr;
 
 		/**
 		 * Widget responsible for the controls in the Topology Tools Tab.

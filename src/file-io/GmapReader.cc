@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2010 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -55,7 +55,7 @@
 
 namespace
 {
-	// The initial time-of-apperance, time-of-disappearance will be set to be the
+	// The initial time-of-apperance, time-of-disappearance may be set to be the
 	// sample age +/- DELTA_AGE.
 	// 
 	// DELTA_AGE is in My.
@@ -72,9 +72,9 @@ namespace
 		float vgp_latitude;
 		float vgp_longitude;
 		float dp;
-		float dm;
-		float age;
 		boost::optional<GPlatesModel::integer_plate_id_type> plate_id;
+		float age;
+
 	};
 	
 	void
@@ -91,13 +91,14 @@ namespace
 		qDebug() << "	" << "Site longitude:	" << vgp.site_longitude;
 		qDebug() << "	" << "VGP latitude:		" << vgp.vgp_latitude;
 		qDebug() << "	" << "VGP longitude:	" << vgp.vgp_longitude;
-		qDebug() << "	" << "dp:				" << vgp.dp;
-		qDebug() << "	" << "dm:				" << vgp.dm;
-		qDebug() << "	" << "age:				" << vgp.age;
+		//qDebug() << "	" << "dp:				" << vgp.dp;
+		//qDebug() << "	" << "dm:				" << vgp.dm;
 		if (vgp.plate_id)
 		{
 			qDebug() << "	" << "plate id:			" << *vgp.plate_id;
-		}
+		}		
+		qDebug() << "	" << "age:				" << vgp.age;
+
 	}
 	
 	void
@@ -187,14 +188,10 @@ namespace
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("averageAge"),
 					gpml_age));
-
-		// In addition to setting the paleomag-specific age, we will set 
-		// time of appearance and disappearance based on an interval around 
-		// the sample age. Here I'm setting it to +/- 10My around the sample
-		// age. We may later want to control this globally (e.g. set all paleomag
-		// features to be visible for all times, or set them all to be visible
-		// +/- x years from their sample age. 
-		
+ 
+// VGP visibilty is now set via the UI, and we no longer need to
+// provide a begin/end time for the feature. 
+#if 0
 		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin(age+DELTA_AGE);
 		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end(age-DELTA_AGE);
 
@@ -205,6 +202,7 @@ namespace
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gml("validTime"),
 					gml_valid_time));
+#endif
 	}
 	
 	void
@@ -284,17 +282,16 @@ namespace
 		GPlatesModel::FeatureHandle::weak_ref feature =
 			GPlatesModel::FeatureHandle::create(collection, feature_type);
 			
-		append_name_to_feature(feature,vgp.header);
-		
-		append_site_geometry_to_feature(feature,vgp.site_latitude,vgp.site_longitude);
-			
+		// Many of the following "append_" functions don't save us so much space/code now,
+		// and could be directly replaced by their "feature->add(...)" functions. 
+		append_name_to_feature(feature,vgp.header);	
+		append_site_geometry_to_feature(feature,vgp.site_latitude,vgp.site_longitude);		
 		append_inclination_to_feature(feature,vgp.inclination);
 		append_declination_to_feature(feature,vgp.declination);
 		append_a95_to_feature(feature,vgp.a95);
 		append_vgp_position_to_feature(feature,vgp.vgp_latitude,vgp.vgp_longitude);
 		append_age_to_feature(feature,vgp.age);
-		append_dm_to_feature(feature,vgp.dm);
-		append_dp_to_feature(feature,vgp.dp);
+
 		if (vgp.plate_id)
 		{
 			append_plate_id_to_feature(feature,*vgp.plate_id);
@@ -449,7 +446,8 @@ namespace
 		next_line = input.readLine();
 		++line_number;
 
-		// Line 8, dp (semi-major axis), degrees.
+		// Line 8 was formerly interpreted as dp , the semi-major axis (degrees).
+		// Currently the content of this field is not used.
 		boost::optional<float> dp = check_format_and_return_value(next_line);
 		if (!dp)
 		{
@@ -460,13 +458,26 @@ namespace
 		next_line = input.readLine();
 		++line_number;
 
-		// Line 9, dm (semi-minor axis), degrees.
-		boost::optional<float> dm = check_format_and_return_value(next_line);
-		if (!dm)
+		// Line 9 (formerly dm) will now be interpreted as plate_id
+		boost::optional<float> plate_id = check_format_and_return_value(next_line);
+		if (!plate_id)
 		{
 			throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
-		}		
-		vgp.dm = *dm;
+		}
+		float plate_id_as_float = *plate_id;
+		if ((GPlatesMaths::Real(plate_id_as_float) !=
+			GPlatesMaths::Real(std::floor(plate_id_as_float))))
+		{
+			// We did find a plate id, but it's not an integer.
+			// Should we round it and use it, or complain?
+			// Let's complain.
+			throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
+		}
+		// The plate id is an integer.
+		// Now, we'll cast it to an integer type for the rest of GPlates.
+		GPlatesModel::integer_plate_id_type plate_id_as_integer =
+			static_cast<GPlatesModel::integer_plate_id_type>(plate_id_as_float);
+		vgp.plate_id = plate_id_as_integer;
 		
 		next_line = input.readLine();
 		++line_number;
@@ -479,37 +490,6 @@ namespace
 		}
 		vgp.age = *age;
 		last_good_position = input.pos();
-		
-		// Line 11, plate id. This is optional. 
-		next_line = input.readLine();
-		++line_number;
-		
-		boost::optional<float> plate_id = check_format_and_return_value(next_line);
-		if (!plate_id)
-		{
-			// No plate id field; that's ok, but to keep track of line numbers for
-			// error-reporting, reset the line number and text stream.
-			--line_number;
-			input.seek(last_good_position);
-			vgp.plate_id = boost::none;
-		}
-		else {
-			// We have a plate id field.
-			float plate_id_as_float = *plate_id;
-			if ((GPlatesMaths::Real(plate_id_as_float) !=
-					GPlatesMaths::Real(std::floor(plate_id_as_float))))
-			{
-				// We did find a plate id, but it's not an integer.
-				// Should we round it and use it, or complain?
-				// Let's complain.
-				throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
-			}
-			// The plate id is an integer.
-			// Now, we'll cast it to an integer type for the rest of GPlates.
-			GPlatesModel::integer_plate_id_type plate_id_as_integer =
-					static_cast<GPlatesModel::integer_plate_id_type>(plate_id_as_float);
-			vgp.plate_id = plate_id_as_integer;
-		}
 
 		// If we've come this far, we should have enough information to create the feature.
 

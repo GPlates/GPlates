@@ -102,7 +102,9 @@ namespace GPlatesQtWidgets
 	class AboutDialog;
 	class AnimateDialog;
 	class AssignReconstructionPlateIdsDialog;
+	class CalculateReconstructionPoleDialog;
 	class ColouringDialog;
+	class CreateVGPDialog;
 	class ExportAnimationDialog;
 	class ExportReconstructedFeatureGeometryDialog;
 	class FeaturePropertiesDialog;
@@ -113,6 +115,7 @@ namespace GPlatesQtWidgets
 	class SetCameraViewpointDialog;
 	class SetProjectionDialog;
 	class SetRasterSurfaceExtentDialog;
+	class SetVGPVisibilityDialog;
 	class ShapefileAttributeViewerDialog;
 	class SpecifyAnchoredPlateIdDialog;
 	class SpecifyTimeIncrementDialog;
@@ -453,7 +456,10 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
+
+		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
+		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<ExportReconstructedFeatureGeometryDialog> d_export_rfg_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
@@ -463,6 +469,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
 		boost::scoped_ptr<SetRasterSurfaceExtentDialog> d_set_raster_surface_extent_dialog_ptr;
+		boost::scoped_ptr<SetVGPVisibilityDialog> d_set_vgp_visibility_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<SpecifyTimeIncrementDialog> d_specify_time_increment_dialog_ptr;
@@ -668,9 +675,17 @@ namespace GPlatesQtWidgets
 		handle_gui_debug_action();
 		
 		void
+		pop_up_create_vgp_dialog();
+		
+		void
 		generate_mesh_cap();
 
-		
+		void
+		pop_up_calculate_reconstruction_pole_dialog();
+
+		void
+		pop_up_set_vgp_visibility_dialog();		
+
 	protected:
 	
 		/**

@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -44,6 +45,7 @@
 #include "view-operations/ReconstructView.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
+const double GPlatesPresentation::ViewState::INITIAL_VGP_DELTA_T = 5.;
 
 GPlatesPresentation::ViewState::ViewState(
 		GPlatesAppLogic::ApplicationState &application_state) :
@@ -87,7 +89,7 @@ GPlatesPresentation::ViewState::ViewState(
 					application_state.get_feature_collection_file_state())),
 	d_paleomag_workflow(
 			new GPlatesAppLogic::PaleomagWorkflow(
-					application_state, d_paleomag_layer)),
+					application_state, this, d_paleomag_layer)),
 	d_paleomag_unregister(
 			GPlatesAppLogic::FeatureCollectionWorkflow::register_and_create_auto_unregister_handle(
 					d_paleomag_workflow.get(),

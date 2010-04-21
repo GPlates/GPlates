@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -60,6 +60,11 @@ namespace GPlatesModel
 	class Reconstruction;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesAppLogic
 {
 	/**
@@ -75,9 +80,11 @@ namespace GPlatesAppLogic
 		 */
 		PaleomagWorkflow(
 				ApplicationState &application_state,
+				GPlatesPresentation::ViewState *view_state_ptr,
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type paleomag_layer) :
 			d_model(application_state.get_model_interface()),
 			d_paleomag_layer(paleomag_layer),
+			d_view_state_ptr(view_state_ptr),
 			d_instance_number(s_instance_number++)
 		{
 		}
@@ -201,6 +208,11 @@ namespace GPlatesAppLogic
 		 * Remove any rendered geometry code to the presentation tier.
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_paleomag_layer;
+		
+		/**
+		 * For accessing the VGPVisibilitySettings                                                                     
+		 */
+		GPlatesPresentation::ViewState *d_view_state_ptr;
 
 		// FIXME: Find a better way to uniquely identify workflow instances
 		static int s_instance_number;

@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -54,7 +55,8 @@ namespace GPlatesFeatureVisitors
 	public:
 		TotalReconstructionSequenceRotationInserter(
 				const double &recon_time,
-				const GPlatesMaths::Rotation &rotation_to_apply);
+				const GPlatesMaths::Rotation &rotation_to_apply,
+				const QString &comment);
 
 		virtual
 		~TotalReconstructionSequenceRotationInserter()
@@ -89,6 +91,7 @@ namespace GPlatesFeatureVisitors
 		bool d_is_expecting_a_finite_rotation;
 		bool d_trp_time_matches_exactly;
 		boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation;
+		QString d_comment;
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.

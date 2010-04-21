@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -31,7 +31,6 @@
 #include "RenderedGeometryVisitor.h"
 #include "gui/ColourProxy.h"
 
-//#include "maths/SmallCircle.h"
 
 namespace GPlatesViewOperations
 {

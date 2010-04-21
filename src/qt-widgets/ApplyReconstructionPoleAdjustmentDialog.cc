@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -372,7 +373,8 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 
 	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,
-			*d_adjustment_rel_fixed);
+			*d_adjustment_rel_fixed,
+			d_dialog_ptr->get_comment_line());
 	inserter.visit_feature(chosen_pole_seq);
 
 	d_reconstruct_ptr->reconstruct();

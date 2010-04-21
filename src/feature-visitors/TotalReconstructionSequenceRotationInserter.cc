@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -58,11 +59,13 @@ namespace
 
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::TotalReconstructionSequenceRotationInserter(
 		const double &recon_time,
-		const GPlatesMaths::Rotation &rotation_to_apply):
+		const GPlatesMaths::Rotation &rotation_to_apply,
+		const QString &comment):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_rotation_to_apply(rotation_to_apply),
 	d_is_expecting_a_finite_rotation(false),
-	d_trp_time_matches_exactly(false)
+	d_trp_time_matches_exactly(false),
+	d_comment(comment)
 {  }
 
 
@@ -283,7 +286,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			GmlTimeInstant::non_null_ptr_type valid_time =
 					ModelUtils::create_gml_time_instant(d_recon_time);
 			boost::intrusive_ptr<XsString> description =
-					XsString::create("Calculated interactively by GPlates").get();
+					XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
 			TemplateTypeParameterType value_type =
 					TemplateTypeParameterType::create_gpml("FiniteRotation");
 			GpmlTimeSample new_time_sample(value, valid_time, description, value_type);

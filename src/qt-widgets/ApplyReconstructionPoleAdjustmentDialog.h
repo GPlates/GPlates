@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -127,6 +128,12 @@ namespace GPlatesQtWidgets
 		void
 		set_adjustment(
 				const GPlatesMaths::Rotation &adjustment_);
+
+		QString
+		get_comment_line()
+		{
+			return line_comment->text();
+		}
 
 #if 0
 	public slots:

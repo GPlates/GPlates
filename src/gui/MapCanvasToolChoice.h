@@ -46,7 +46,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
-	class ReconstructionPoleWidget;
+	class ModifyReconstructionPoleWidget;
 	class TopologyToolsWidget;
 }
 
@@ -97,7 +97,7 @@ namespace GPlatesGui
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget,
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,

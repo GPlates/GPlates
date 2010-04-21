@@ -95,7 +95,8 @@ namespace GPlatesAppLogic
 					bool used_by_higher_priority_workflow)
 			{
 				// We're interested in a file if it contains features that are displayable.
-				return ClassifyFeatureCollection::found_geometry_feature(classification);
+				return ClassifyFeatureCollection::found_geometry_feature(classification) &&
+					!used_by_higher_priority_workflow;
 			}
 
 			virtual
