@@ -553,7 +553,7 @@
      <widget class="QWidget" name="page_2" >
       <layout class="QVBoxLayout" >
        <item>
-        <widget class="QGroupBox" name="groupBox" >
+        <widget class="QGroupBox" name="groupBox_time" >
          <property name="title" >
           <string>Time</string>
          </property>
@@ -620,7 +620,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupbox_parameters_2" >
+        <widget class="QGroupBox" name="groupbox_parameters_single" >
          <property name="title" >
           <string>Options</string>
          </property>

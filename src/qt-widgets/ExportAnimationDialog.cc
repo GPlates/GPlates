@@ -356,11 +356,13 @@ void
 GPlatesQtWidgets::ExportAnimationDialog::react_export_button_clicked()
 {
 	update_status_message(tr("Exporting..."));
+	
 	recalculate_progress_bar();
 	set_export_abort_button_state(true);
 	set_export_parameters();
 	d_export_animation_context_ptr->do_export();
-	set_export_abort_button_state(false);	
+	set_export_abort_button_state(false);
+	
 }
 
 void
@@ -508,6 +510,16 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_abort_button_state(
 	// are in the middle of an export.
 	groupbox_range->setDisabled(we_are_exporting);
 	groupbox_parameters->setDisabled(we_are_exporting);
+
+	groupBox_time->setDisabled(we_are_exporting);
+	groupbox_parameters_single->setDisabled(we_are_exporting);
+
+	radioButton_single->setDisabled(we_are_exporting);
+	radioButton_range->setDisabled(we_are_exporting);
+	pushButton_close->setDisabled(we_are_exporting);
+
+	button_export_single_frame->setDisabled(we_are_exporting);
+	pushButton_single_cancel->setDisabled(we_are_exporting);
 }
 
 void
