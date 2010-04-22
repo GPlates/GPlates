@@ -24,6 +24,7 @@
  */
 #include <boost/optional.hpp> 
 
+#include "app-logic/Reconstruct.h"
 #include "presentation/ViewState.h" 
 #include "SetVGPVisibilityDialog.h"
 
@@ -38,7 +39,7 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::SetVGPVisibilityDialog(
 	set_initial_state();
 	
 	setup_connections();
-	
+
 }	
 
 void
@@ -116,8 +117,8 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 		vgp_render_settings.set_vgp_delta_t(spinbox_delta->value());
 	}
 	accept();
-	// FIXME: tell GPlates to reconstruct now so that the updated render settings are used. 
-	
+	// Tell GPlates to reconstruct now so that the updated render settings are used. 
+	d_view_state_ptr->get_reconstruct().reconstruct();	
 }
 
 void
