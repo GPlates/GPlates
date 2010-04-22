@@ -42,7 +42,11 @@
 #include "gui/ExportSvgAnimationStrategy.h"
 #include "gui/ExportRasterAnimationStrategy.h"
 
-class GPlatesGui::ExportAnimationContext;
+
+namespace GPlatesGui
+{
+	class ExportAnimationContext;
+}
 
 namespace GPlatesUtils
 {	
