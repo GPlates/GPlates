@@ -17,6 +17,11 @@ set(srcs
     CallStackTracker.h
     CommandLineParser.cc
     CommandLineParser.h
+    ExportAnimationStrategyExporterID.h
+    ExportAnimationStrategyFactory.cc
+    ExportAnimationStrategyFactory.h
+    ExportFileNameTemplateValidator.cc
+    ExportFileNameTemplateValidator.h
     ExportTemplateFilenameSequence.cc
     ExportTemplateFilenameSequence.h
     ExportTemplateFilenameSequenceFormats.cc

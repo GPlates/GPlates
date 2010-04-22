@@ -475,13 +475,6 @@ void
 GPlatesAppLogic::FeatureCollectionFileStateImpl::WorkflowManager::unregister_workflow(
 		FeatureCollectionWorkflow *workflow)
 {
-	// Remove 'workflow' from our map.
-	workflow_map_type::iterator map_iter  = d_workflow_map.find(workflow->get_tag());
-	if (map_iter != d_workflow_map.end())
-	{
-		d_workflow_map.erase(map_iter);
-	}
-
 	using boost::lambda::_1;
 
 	// Remove 'workflow' from our priority sorted sequence.
@@ -492,6 +485,15 @@ GPlatesAppLogic::FeatureCollectionFileStateImpl::WorkflowManager::unregister_wor
 	if (sorted_iter != d_sorted_workflow_seq.end())
 	{
 		d_sorted_workflow_seq.erase(sorted_iter);
+	}
+
+	// Remove 'workflow' from our map.
+	// We need to do this after removing from "priority sorted sequence"
+	// because we store the actual object in the map but raw pointer in the squence
+	workflow_map_type::iterator map_iter  = d_workflow_map.find(workflow->get_tag());
+	if (map_iter != d_workflow_map.end())
+	{
+		d_workflow_map.erase(map_iter);
 	}
 }
 

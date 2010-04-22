@@ -95,4 +95,6 @@ namespace GPlatesQtWidgets
 }
 
 #endif // GPLATES_QTWIDGETS_SETVGPVISIBILITYDIALOG_H
+
+
  

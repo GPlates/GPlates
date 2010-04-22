@@ -65,8 +65,7 @@
     <addaction name="action_Specify_Anchored_Plate_ID" />
     <addaction name="action_View_Reconstruction_Poles" />
     <addaction name="separator" />
-    <addaction name="action_Export_Animation" />
-    <addaction name="action_Export_Reconstruction" />
+    <addaction name="action_Export" />
     <addaction name="separator" />
     <addaction name="action_Assign_Plate_IDs" />
     <addaction name="action_Generate_Mesh_Cap" />
@@ -171,8 +170,6 @@
     <addaction name="menu_Move_Camera" />
     <addaction name="menu_Rotate_Camera" />
     <addaction name="menu_Camera_Zoom" />
-    <addaction name="separator" />
-    <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
    <widget class="QMenu" name="menu_Tools" >
     <property name="title" >
@@ -1321,9 +1318,9 @@
     <string>E&amp;xport Reconstruction Geometries...</string>
    </property>
   </action>
-  <action name="action_Export_Animation" >
+  <action name="action_Export" >
    <property name="text" >
-    <string>&amp;Export Animation...</string>
+    <string>&amp;Export...</string>
    </property>
   </action>
   <action name="action_Set_Projection" >

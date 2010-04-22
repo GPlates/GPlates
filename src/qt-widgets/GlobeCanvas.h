@@ -234,6 +234,12 @@ namespace GPlatesQtWidgets
 		create_svg_output(
 			QString filename);
 
+		void
+		repaint_canvas()
+		{
+			paintGL();
+		}
+
 		/**
 		*   Draw the relevant objects for svg output. This is slightly different from 
 		*	the usual paintGL method, because we don't want to draw the sphere 

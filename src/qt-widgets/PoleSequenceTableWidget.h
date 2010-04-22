@@ -87,3 +87,4 @@ namespace GPlatesQtWidgets
 }
 
 #endif //GPLATES_QTWIDGETS_POLESEQUENCETABLEWIDGET_H 
+

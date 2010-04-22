@@ -29,6 +29,7 @@
 
 #include "utils/FloatingPointComparisons.h"
 #include "utils/ExportTemplateFilenameSequence.h"
+#include "utils/ExportAnimationStrategyFactory.h"
 
 #include "gui/AnimationController.h"
 #include "qt-widgets/ExportAnimationDialog.h"
@@ -37,7 +38,6 @@
 #include "gui/ExportVelocityAnimationStrategy.h"
 #include "gui/ExportReconstructedGeometryAnimationStrategy.h"
 #include "gui/ExportResolvedTopologyAnimationStrategy.h"
-
 
 
 GPlatesGui::ExportAnimationContext::ExportAnimationContext(
@@ -50,14 +50,9 @@ GPlatesGui::ExportAnimationContext::ExportAnimationContext(
 	d_view_state(&view_state_),
 	d_viewport_window(&viewport_window_),
 	d_abort_now(false),
-	d_export_running(false),
-	d_svg_exporter_enabled(true),
-	d_velocity_exporter_enabled(true),
-	d_gmt_exporter_enabled(true),
-	d_shp_exporter_enabled(true),
-	d_resolved_topology_exporter_enabled(true)
-{  }
+	d_export_running(false)	
 
+{ }
 
 const double &
 GPlatesGui::ExportAnimationContext::view_time() const
@@ -65,13 +60,11 @@ GPlatesGui::ExportAnimationContext::view_time() const
 	return d_animation_controller_ptr->view_time();
 }
 
-
 const GPlatesGui::AnimationController &
 GPlatesGui::ExportAnimationContext::animation_controller() const
 {
 	return *d_animation_controller_ptr;
 }
-
 
 GPlatesPresentation::ViewState &
 GPlatesGui::ExportAnimationContext::view_state()
@@ -79,14 +72,11 @@ GPlatesGui::ExportAnimationContext::view_state()
 	return *d_view_state;
 }
 
-
 GPlatesQtWidgets::ViewportWindow &
 GPlatesGui::ExportAnimationContext::viewport_window()
 {
 	return *d_viewport_window;
 }
-
-
 
 bool
 GPlatesGui::ExportAnimationContext::do_export()
@@ -94,29 +84,6 @@ GPlatesGui::ExportAnimationContext::do_export()
 	d_export_running = true;
 	// Setting this flag to 'true' while we are exporting will cause us to abort.
 	d_abort_now = false;
-	
-	// Prepare the exporters.
-	std::vector<ExportAnimationStrategy::non_null_ptr_type> exporters;
-	typedef std::vector<ExportAnimationStrategy::non_null_ptr_type>::iterator exporters_iterator_type;
-	if (d_svg_exporter_enabled) {
-		exporters.push_back(ExportSvgAnimationStrategy::create(*this));
-	}
-	if (d_velocity_exporter_enabled) {
-		exporters.push_back(ExportVelocityAnimationStrategy::create(*this));
-	}
-	if (d_gmt_exporter_enabled) {
-		exporters.push_back(ExportReconstructedGeometryAnimationStrategy::create(*this));
-	}
-	if (d_shp_exporter_enabled) {
-		exporters.push_back(ExportReconstructedGeometryAnimationStrategy::create(*this));
-		// The quickest way to get Shapefile export in there as an added bonus is to just
-		// override the ExportTemplateFilenameSequence right here.
-		exporters.back()->set_template_filename(shp_exporter_filename_template());
-		// This should be fine for now since we need to overhaul the filename parameter setup anyway.
-	}
-	if (d_resolved_topology_exporter_enabled) {
-		exporters.push_back(ExportResolvedTopologyAnimationStrategy::create(*this));
-	}
 	
 	// Determine how many frames we need to iterate through.
 	std::size_t length = d_animation_controller_ptr->duration_in_frames();
@@ -138,21 +105,29 @@ GPlatesGui::ExportAnimationContext::do_export()
 		update_status_message(QObject::tr("Reconstructing to %1 Ma...")
 				.arg(d_animation_controller_ptr->calculate_time_for_frame(frame_index), 0, 'f', 2 ));
 		d_animation_controller_ptr->set_view_frame(frame_index);
+		
 
 		// Run through each of the exporters for one iteration.
 		bool ok = true;
-		exporters_iterator_type export_it = exporters.begin();
-		exporters_iterator_type export_end = exporters.end();
-		for (; export_it != export_end; ++export_it) {
-			ok = ok && (*export_it)->do_export_iteration(frame_index);
-		}
+		ExportersMapType::iterator export_it = d_exporters_map.begin();
+		ExportersMapType::iterator export_end = d_exporters_map.end();
 
+		d_export_animation_dialog_ptr->update_single_frame_progress_bar(
+					0,d_exporters_map.size());
+		int count=0;
+		for (; export_it != export_end; ++export_it, count++) 
+		{
+			ok = ok && (*export_it).second->do_export_iteration(frame_index);
+			d_export_animation_dialog_ptr->update_single_frame_progress_bar(
+					count, d_exporters_map.size());
+		}
+		
 		if ( ! ok) {
 			// Failed. Just quit the whole thing.
-			exporters_iterator_type failed_it = exporters.begin();
-			exporters_iterator_type failed_end = exporters.end();
+			ExportersMapType::iterator failed_it = d_exporters_map.begin();
+			ExportersMapType::iterator failed_end = d_exporters_map.end();
 			for (; failed_it != failed_end; ++failed_it) {
-				(*failed_it)->wrap_up(false);
+				(*failed_it).second->wrap_up(false);
 			}
 			d_export_running = false;
 			d_abort_now = false;
@@ -161,28 +136,57 @@ GPlatesGui::ExportAnimationContext::do_export()
 
 		// Move the dialog's progress bar to indicate we have finished this frame number.
 		d_export_animation_dialog_ptr->update_progress_bar(length, frame_number);
+		d_export_animation_dialog_ptr->update_single_frame_progress_bar(
+			count, d_exporters_map.size());
 	}
 
 	// All finished! Allow exporters to do some clean-up, if they need to.
-	exporters_iterator_type done_it = exporters.begin();
-	exporters_iterator_type done_end = exporters.end();
+	ExportersMapType::iterator done_it = d_exporters_map.begin();
+	ExportersMapType::iterator done_end = d_exporters_map.end();
 	for (; done_it != done_end; ++done_it) {
-		(*done_it)->wrap_up(true);
+		(*done_it).second->wrap_up(true);
 	}
 
 	// Update dialog - successful finish.
 	d_export_running = false;
+	cleanup_exporters_map();
 	update_status_message(QObject::tr("Export Finished."));
-	
 	return true;
 }
 
-
 void
 GPlatesGui::ExportAnimationContext::update_status_message(
-		QString message)
+		const QString &message)
 {
 	d_export_animation_dialog_ptr->update_status_message(message);
 }
+
+void
+GPlatesGui::ExportAnimationContext::add_exporter(
+		GPlatesUtils::Exporter_ID id,
+		const ExportAnimationStrategy::Configuration& cfg)
+{
+	ExportersMapType::iterator it =
+		d_exporters_map.find(id);
+
+	if(it!=d_exporters_map.end())
+	{
+		d_exporters_map.erase(it);
+	}
+
+	d_exporters_map.insert(
+			std::pair<
+				GPlatesUtils::Exporter_ID, 
+				ExportAnimationStrategy::non_null_ptr_type>(
+						id,
+						GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
+								id,
+								*this,
+								cfg)));
+
+	return;
+}
+
+
 
 

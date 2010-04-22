@@ -34,6 +34,9 @@ set(srcs
     AssignReconstructionPlateIdsDialog.h
     AssignReconstructionPlateIdsDialogUi.ui
     BuildTopologyWidgetUi.ui
+    CalculateReconstructionPoleDialog.cc
+    CalculateReconstructionPoleDialog.h
+    CalculateReconstructionPoleDialogUi.ui
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
@@ -41,15 +44,12 @@ set(srcs
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
-	CalculateReconstructionPoleDialog.cc
-	CalculateReconstructionPoleDialog.h
-	CalculateReconstructionPoleDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
     CreateVGPDialog.cc
     CreateVGPDialog.h
-    CreateVGPDialogUi.ui	
+    CreateVGPDialogUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
@@ -132,9 +132,9 @@ set(srcs
     InformationDialogUi.ui
     InsertionPointWidget.h
     InsertionPointWidgetUi.ui
-	InsertVGPReconstructionPoleDialog.cc
-	InsertVGPReconstructionPoleDialog.h
-	InsertVGPReconstructionPoleDialogUi.ui
+    InsertVGPReconstructionPoleDialog.cc
+    InsertVGPReconstructionPoleDialog.h
+    InsertVGPReconstructionPoleDialogUi.ui
     InvalidPropertyValueException.h
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h
@@ -164,15 +164,17 @@ set(srcs
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
+    ModifyReconstructionPoleWidget.cc
+    ModifyReconstructionPoleWidget.h
+    ModifyReconstructionPoleWidgetUi.ui
     NoActiveEditWidgetException.h
-
     PaletteSelectionWidget.cc
     PaletteSelectionWidget.h
-	PoleSequenceTableWidget.cc
-	PoleSequenceTableWidget.h
-	PoleSequenceTableWidgetUi.ui
-	ProgressDialog.h
-	ProgressDialogUi.ui
+    PoleSequenceTableWidget.cc
+    PoleSequenceTableWidget.h
+    PoleSequenceTableWidgetUi.ui
+    ProgressDialog.h
+    ProgressDialogUi.ui
     ProjectionControlWidget.cc
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
@@ -183,9 +185,6 @@ set(srcs
     ReadErrorAccumulationDialog.cc
     ReadErrorAccumulationDialog.h
     ReadErrorAccumulationDialogUi.ui
-    ModifyReconstructionPoleWidget.cc
-    ModifyReconstructionPoleWidget.h
-    ModifyReconstructionPoleWidgetUi.ui
     ReconstructionPoleWidget.cc
     ReconstructionPoleWidget.h
     ReconstructionPoleWidgetUi.ui
@@ -204,9 +203,9 @@ set(srcs
     SetRasterSurfaceExtentDialog.cc
     SetRasterSurfaceExtentDialog.h
     SetRasterSurfaceExtentDialogUi.ui
-	SetVGPVisibilityDialog.cc
-	SetVGPVisibilityDialog.h
-	SetVGPVisibilityDialogUi.ui
+    SetVGPVisibilityDialog.cc
+    SetVGPVisibilityDialog.h
+    SetVGPVisibilityDialogUi.ui
     ShapefileAttributeMapperDialog.cc
     ShapefileAttributeMapperDialog.h
     ShapefileAttributeMapperDialogUi.ui

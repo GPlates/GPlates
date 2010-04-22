@@ -877,6 +877,18 @@ namespace
 	}
 }
 
+const QString 
+GPlatesGui::ExportResolvedTopologyAnimationStrategy::
+	DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE
+		="Polygons.%P.%d.xy";
+
+const QString 
+GPlatesGui::ExportResolvedTopologyAnimationStrategy::
+	RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC
+		=FORMAT_CODE_DESC;
+
+const QString GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLOVED_TOPOLOGIES_DESC 
+		="Export resolved topologies.";
 
 const QString
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_platepolygons("platepolygons");
@@ -899,27 +911,29 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_right_subduct
 
 const GPlatesGui::ExportResolvedTopologyAnimationStrategy::non_null_ptr_type
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context)
+		GPlatesGui::ExportAnimationContext &export_animation_context,
+		const ExportAnimationStrategy::Configuration& cfg)
 {
-	return non_null_ptr_type(new ExportResolvedTopologyAnimationStrategy(export_animation_context),
+	ExportResolvedTopologyAnimationStrategy * ptr = 
+			new ExportResolvedTopologyAnimationStrategy(
+					export_animation_context,
+					cfg.filename_template());
+		
+	ptr->d_class_id = "RESOLVED_TOPOLOGIES_GMT";
+
+	return non_null_ptr_type(
+			ptr,
 			GPlatesUtils::NullIntrusivePointerHandler());
 }
 
 
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnimationStrategy(
-		GPlatesGui::ExportAnimationContext &export_animation_context):
+		GPlatesGui::ExportAnimationContext &export_animation_context,
+		const QString &filename_template):
 	ExportAnimationStrategy(export_animation_context)
 {
-	// Set the ExportTemplateFilenameSequence name once here, to a sane default.
-	// Later, we will let the user configure this.
-	// This also sets the iterator to the first filename template.
-	set_template_filename(QString("Polygons.xy"));
-	
-	// Do anything else that we need to do in order to initialise
-	// our resolved topology export here...
-	
+		set_template_filename(filename_template);
 }
-
 
 void
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
@@ -948,20 +962,12 @@ bool
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-	// Get the iterator for the next filename.
-	if (!d_filename_iterator_opt || !d_filename_sequence_opt) {
-		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Error in export iteration - not properly initialised!"));
+	if(!check_filename_sequence())
+	{
 		return false;
 	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = *d_filename_iterator_opt;
-
-	// Doublecheck that the iterator is valid.
-	if (filename_it == d_filename_sequence_opt->end()) {
-		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Error in filename sequence - not enough filenames supplied!"));
-		return false;
-	}
+	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+		*d_filename_iterator_opt;
 
 	// Assemble parts of this iteration's filename from the template filename sequence.
 	QString output_filebasename = *filename_it++;
@@ -1085,3 +1091,11 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 				subduction_left_exporter, subduction_right_exporter);
 	}
 }
+
+
+const QString&
+GPlatesGui::ExportResolvedTopologyAnimationStrategy::get_default_filename_template()
+{
+	return DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE;
+}
+

@@ -63,11 +63,20 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportVelocityAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
+		static const QString 
+			DEFAULT_MESH_VILOCITIES_FILENAME_TEMPLATE;
+		static const QString 
+			MESH_VILOCITIES_FILENAME_TEMPLATE_DESC;
+		static const QString
+			MESH_VILOCITIES_DESC;
 
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::ExportAnimationContext &export_animation_context);
+				GPlatesGui::ExportAnimationContext &export_animation_context,
+				const ExportAnimationStrategy::Configuration& cfg=
+					ExportAnimationStrategy::Configuration(
+							DEFAULT_MESH_VILOCITIES_FILENAME_TEMPLATE));
 
 
 		virtual
@@ -83,6 +92,21 @@ namespace GPlatesGui
 		bool
 		do_export_iteration(
 				std::size_t frame_index);
+
+		virtual
+		const QString&
+		get_default_filename_template();
+		
+		virtual
+		const QString&
+		get_filename_template_desc();
+
+		virtual
+		const QString&
+		get_description()
+		{
+			return MESH_VILOCITIES_DESC;
+		}
 
 
 		/**
@@ -100,6 +124,10 @@ namespace GPlatesGui
 				bool export_successful);
 
 
+		void
+		set_template_filename(
+				const QString &);
+
 	protected:
 		/**
 		 * Protected constructor to prevent instantiation on the stack.
@@ -107,9 +135,11 @@ namespace GPlatesGui
 		 */
 		explicit
 		ExportVelocityAnimationStrategy(
-				GPlatesGui::ExportAnimationContext &export_animation_context);
+				GPlatesGui::ExportAnimationContext &export_animation_context,
+				const QString filename_template);
 		
 	private:
+		ExportVelocityAnimationStrategy();
 	};
 }
 

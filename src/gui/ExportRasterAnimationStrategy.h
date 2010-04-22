@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_EXPORTRECONSTRUCTEDGEOMETRYANIMATIONSTRATEGY_H
-#define GPLATES_GUI_EXPORTRECONSTRUCTEDGEOMETRYANIMATIONSTRATEGY_H
+#ifndef GPLATES_GUI_EXPORTRASTERSTRATEGY_H
+#define GPLATES_GUI_EXPORTRASTERSTRATEGY_H
 
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
@@ -36,8 +36,6 @@
 #include "utils/ReferenceCount.h"
 
 #include "utils/ExportTemplateFilenameSequence.h"
-
-#include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
 
 #include "gui/ExportAnimationStrategy.h"
 
@@ -54,45 +52,67 @@ namespace GPlatesGui
 	 * ExportReconstructedGeometryAnimationStrategy serves as the concrete Strategy role as
 	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
 	 */
-	class ExportReconstructedGeometryAnimationStrategy:
+	class ExportRasterAnimationStrategy:
 			public GPlatesGui::ExportAnimationStrategy
 	{
 	public:
+	//http://doc.qt.nokia.com/4.6/qimage.html#reading-and-writing-image-files
+	// 		Format	Description								Qt's support 
+	// 		BMP		Windows Bitmap							Read/write 
+	// 		GIF		Graphic Interchange Format (optional)	Read 
+	// 		JPG		Joint Photographic Experts Group		Read/write 
+	// 		JPEG	Joint Photographic Experts Group		Read/write 
+	// 		PNG		Portable Network Graphics				Read/write 
+	// 		PBM		Portable Bitmap							Read 
+	// 		PGM		Portable Graymap						Read 
+	// 		PPM		Portable Pixmap							Read/write 
+	// 		TIFF	Tagged Image File Format				Read/write 
+	// 		XBM		X11 Bitmap								Read/write 
+	// 		XPM		X11 Pixmap								Read/write 
+
+		enum ImageType
+		{
+			BMP,
+			JPG,
+			JPEG,
+			PNG,
+			PPM,
+			TIFF,
+			XBM,
+			XPM,
+			INVALID_TPYE=999
+		};
+
+ 		static const QString DEFAULT_RASTER_BMP_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RASTER_JPG_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RASTER_JPEG_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RASTER_PNG_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RASTER_PPM_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RASTER_TIFF_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RASTER_XBM_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RASTER_XPM_FILENAME_TEMPLATE;
+		static const QString RASTER_FILENAME_TEMPLATE_DESC;
+		static const QString RASTER_DESC;
+		
 		/**
 		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy,
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportRasterAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-		static const QString 
-				DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE;
-		static const QString 
-				DEFAULT_RECONSTRUCTED_GEOMETRIES_SHP_FILENAME_TEMPLATE;
-		static const QString
-				RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
-		static const QString 
-				RECONSTRUCTED_GEOMETRIES_DESC;
-			
-		enum FileFormat
-		{
-			SHAPEFILE,
-			GMT
-		};
-
+		
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				FileFormat format=GMT,
-				const ExportAnimationStrategy::Configuration& cfg=
+				ImageType,
+				const ExportAnimationStrategy::Configuration &cfg=
 					ExportAnimationStrategy::Configuration(
-							DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE));
-
+							DEFAULT_RASTER_BMP_FILENAME_TEMPLATE));
 
 		virtual
-		~ExportReconstructedGeometryAnimationStrategy()
+		~ExportRasterAnimationStrategy()
 		{  }
-
 
 		/**
 		 * Does one frame of export. Called by the ExportAnimationContext.
@@ -105,20 +125,17 @@ namespace GPlatesGui
 
 		virtual
 		const QString&
-				get_default_filename_template();
+		get_default_filename_template();
 
 		virtual
 		const QString&
-		get_filename_template_desc()
-		{
-			return RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
-		}
+		get_filename_template_desc();
 
 		virtual
 		const QString&
 		get_description()
 		{
-			return RECONSTRUCTED_GEOMETRIES_DESC;
+			return RASTER_DESC;
 		}
 
 	protected:
@@ -127,24 +144,19 @@ namespace GPlatesGui
 		 * Use the create() method on the individual Strategy subclasses.
 		 */
 		explicit
-		ExportReconstructedGeometryAnimationStrategy(
+		ExportRasterAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const QString &filename_template);
 		
 	private:
+		ExportRasterAnimationStrategy();
+		ImageType d_type;
 		
-		/**
-		 * The list of visible, reconstructable FeatureCollections to take
-		 * geometry from.
-		 */
-		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type
-				d_active_reconstructable_files;
-		ExportReconstructedGeometryAnimationStrategy();
-		FileFormat d_file_format;
+		
 	};
 }
 
 
-#endif //GPLATES_GUI_EXPORTRECONSTRUCTEDGEOMETRYANIMATIONSTRATEGY_H
+#endif //GPLATES_GUI_EXPORTRASTERSTRATEGY_H
 
 

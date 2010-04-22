@@ -42,10 +42,14 @@ set(srcs
     ExportAnimationContext.h
     ExportAnimationStrategy.cc
     ExportAnimationStrategy.h
+    ExportRasterAnimationStrategy.cc
+    ExportRasterAnimationStrategy.h
     ExportReconstructedGeometryAnimationStrategy.cc
     ExportReconstructedGeometryAnimationStrategy.h
     ExportResolvedTopologyAnimationStrategy.cc
     ExportResolvedTopologyAnimationStrategy.h
+    ExportRotationAnimationStrategy.cc
+    ExportRotationAnimationStrategy.h
     ExportSvgAnimationStrategy.cc
     ExportSvgAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc

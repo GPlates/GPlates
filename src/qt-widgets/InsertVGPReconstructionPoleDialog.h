@@ -93,4 +93,6 @@ namespace GPlatesQtWidgets
 
 #endif // GPLATES_QTWIDGETS_INSERTVGPRECONSTRUCTIONPOLEDIALOG_H
 
+
+
  

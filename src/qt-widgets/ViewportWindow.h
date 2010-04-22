@@ -386,19 +386,19 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_manage_feature_collections_dialog();
-
+#if 0
 		void
 		pop_up_export_geometry_snapshot_dialog();
-
+#endif
 		void
 		pop_up_export_animation_dialog();
 
 		void
 		pop_up_assign_reconstruction_plate_ids_dialog();
-
+#if 0
 		void
 		pop_up_export_reconstruction_dialog();
-
+#endif
 		void
 		pop_up_total_reconstruction_poles_dialog();
 	

@@ -24,8 +24,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <iostream>
-#include <fstream>
 
 #include <QFileInfo>
 #include <QMessageBox>
@@ -74,7 +72,6 @@ namespace {
 
 namespace GPlatesGui {
 	
-
 	void
 	GPlatesGui::CsvExport::export_table(
 		const QString &filename,
@@ -124,6 +121,60 @@ namespace GPlatesGui {
 
 		return;
 
+	}
+	
+
+	void
+	CsvExport::export_line(
+			std::ofstream &os,
+			const CsvExport::ExportOptions &options,
+			const LineDataType &line_data)
+	{
+		
+		std::vector<QString>::const_iterator it;
+
+		for(it=line_data.begin();it!=line_data.end();it++)
+		{
+			QString str = csv_quote_if_necessary(*it, options);
+			os << str.toStdString().c_str();
+
+			if (it!=(line_data.end() - 1))
+			{
+				os << options.delimiter;
+			}
+
+		}
+		os << std::endl;
+		return;
+	}
+
+	void
+	CsvExport::export_data(
+			const QString &filename,
+			const CsvExport::ExportOptions &options,
+			const std::vector<CsvExport::LineDataType> &data)
+	{
+		std::ofstream os;
+		QFileInfo file_info(filename);
+		try{	
+			os.exceptions(std::ios::badbit | std::ios::failbit);
+			os.open(filename.toStdString().c_str());
+			std::vector<CsvExport::LineDataType>::const_iterator it;
+			for(it=data.begin();it!=data.end();it++)
+			{
+				export_line(os,options,*it);
+			}
+
+		}catch(...)
+		{
+			os.close();
+			QString message = QObject::tr("An error occurred while writing to file '%1'")
+				.arg(file_info.filePath());
+			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);					
+		}
+		os.close();
+		return;
 	}
 
 

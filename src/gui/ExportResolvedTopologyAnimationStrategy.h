@@ -70,11 +70,17 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
-
+		static const QString DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE;
+		static const QString RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC;
+		static const QString RESOLOVED_TOPOLOGIES_DESC;
+		
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::ExportAnimationContext &export_animation_context);
+				GPlatesGui::ExportAnimationContext &export_animation_context,
+				const ExportAnimationStrategy::Configuration &cfg=
+					ExportAnimationStrategy::Configuration(
+							DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE));
 
 
 		virtual
@@ -100,6 +106,25 @@ namespace GPlatesGui
 		do_export_iteration(
 				std::size_t frame_index);
 
+		virtual
+		const QString&
+		get_default_filename_template();
+
+		virtual
+		const QString&
+		get_filename_template_desc()
+		{
+			return RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC;
+		}
+
+
+		virtual
+		const QString&
+				get_description()
+		{
+			return RESOLOVED_TOPOLOGIES_DESC;
+		}
+
 
 		/**
 		 * Allows Strategy objects to do any housekeeping that might be necessary
@@ -123,7 +148,8 @@ namespace GPlatesGui
 		 */
 		explicit
 		ExportResolvedTopologyAnimationStrategy(
-				GPlatesGui::ExportAnimationContext &export_animation_context);
+				GPlatesGui::ExportAnimationContext &export_animation_context,
+				const QString &filename_template);
 		
 	private:
 		//! Replaces placeholder string when exporting all platepolygons to a single file.
@@ -156,6 +182,10 @@ namespace GPlatesGui
 				const resolved_geom_seq_type &resolved_geom_seq,
 				const double &recon_time,
 				const QString &filebasename);
+
+		ExportResolvedTopologyAnimationStrategy();
+		ExportResolvedTopologyAnimationStrategy(
+				const ExportResolvedTopologyAnimationStrategy&);
 	};
 }
 

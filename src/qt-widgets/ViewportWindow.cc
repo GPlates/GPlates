@@ -620,10 +620,9 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
 			this, SLOT(pop_up_total_reconstruction_poles_dialog()));
 	// ----
-	QObject::connect(action_Export_Animation, SIGNAL(triggered()),
+	QObject::connect(action_Export, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_animation_dialog()));
-	QObject::connect(action_Export_Reconstruction, SIGNAL(triggered()),
-			this, SLOT(pop_up_export_reconstruction_dialog()));
+	
 	// ----
 	QObject::connect(action_Assign_Plate_IDs, SIGNAL(triggered()),
 			this, SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
@@ -709,8 +708,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
 			&get_view_state().get_viewport_zoom(), SLOT(reset_zoom()));
 	// ----
-	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
-			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
 	
 	// Paleomagnetism menu	
 	QObject::connect(action_Create_VGP, SIGNAL(triggered()),
@@ -719,6 +716,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 		this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
 	QObject::connect(action_Set_VGP_Visibility, SIGNAL(triggered()),
 		this, SLOT(pop_up_set_vgp_visibility_dialog()));	
+	
+	
 	
 	
 	// Help Menu:
@@ -1105,7 +1104,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_assign_reconstruction_plate_ids_dialog(
 			true/*pop_up_message_box_if_no_plate_boundaries*/);
 }
 
-
+#if 0
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_export_reconstruction_dialog()
 {
@@ -1139,7 +1138,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_export_reconstruction_dialog()
 			get_view_state().get_reconstruct().get_current_reconstruction_time());
 }
 
-
+#endif
 void
 GPlatesQtWidgets::ViewportWindow::enable_drag_globe_tool(
 		bool enable)
@@ -1645,7 +1644,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_manage_feature_collections_dialog()
 	d_manage_feature_collections_dialog_ptr->raise();
 }
 
-
+#if 0
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_export_geometry_snapshot_dialog()
 {
@@ -1665,7 +1664,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_export_geometry_snapshot_dialog()
 		create_svg_file(*filename);
 	}
 }
-
+#endif 
 void
 GPlatesQtWidgets::ViewportWindow::create_svg_file(
 		const QString &filename)

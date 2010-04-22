@@ -31,7 +31,7 @@
 #include <QDialog>
 #include "ExportAnimationDialogUi.h"
 
-#include "qt-widgets/ConfigureExportParametersDialog.h"
+#include "ConfigureExportParametersDialog.h"
 #include "gui/ExportAnimationContext.h"
 
 
@@ -49,7 +49,6 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
-
 
 	class ExportAnimationDialog: 
 			public QDialog,
@@ -72,6 +71,12 @@ namespace GPlatesQtWidgets
 		const double &
 		view_time() const;
 
+		void
+		insert_item(
+				ConfigureExportParametersDialog::ExportItemName item, 
+				ConfigureExportParametersDialog::ExportItemType type,
+				QString filebanme_template);
+	
 	public slots:
 		/**
 		 * Reset controls to their "Eagerly awaiting user input" state.
@@ -83,6 +88,11 @@ namespace GPlatesQtWidgets
 		update_progress_bar(
 				std::size_t length,
 				std::size_t frame);
+
+		void
+		update_single_frame_progress_bar(
+				std::size_t val,
+				std::size_t range);
 
 		void
 		update_status_message(
@@ -132,6 +142,41 @@ namespace GPlatesQtWidgets
 		handle_time_increment_changed(
 				double new_val);
 
+		void
+		set_path();
+		
+		void
+		select_single_snapshot(
+				bool checked)
+		{
+			if(checked)
+			{
+				stackedWidget->setCurrentIndex(1);
+				d_is_single_frame=true;
+				update_target_directory(d_single_path);
+				reset();
+			}
+		}
+
+		void 
+		select_range_snapshot(
+				bool checked)
+		{
+			if(checked)
+			{
+				stackedWidget->setCurrentIndex(0);
+				d_is_single_frame=false;
+				update_target_directory(d_range_path);
+				reset();
+			}
+		}
+
+		void
+		set_time_to_view_time()
+		{
+			spinBox_single_time->setValue(view_time());		
+		}
+
 		/**
 		 * (Re)sets checkboxes according to animation controller state.
 		 */
@@ -146,6 +191,21 @@ namespace GPlatesQtWidgets
 		
 		void
 		react_configure_export_parameters_clicked();
+
+		void
+		react_add_export_clicked();
+
+		void
+		react_choose_target_directory_clicked();
+
+		void
+		react_remove_export_clicked();
+
+		void
+		react_remove_all_clicked();
+
+		void
+		react_add_all_clicked();
 
 	private:
 		/**
@@ -177,6 +237,20 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesQtWidgets::ConfigureExportParametersDialog *d_configure_parameters_dialog_ptr;
 
+		/*
+		 * flag used to indicate which stack widget is currently using                                                                     
+		 */
+		bool d_is_single_frame;
+
+		 /*
+		 * the output path for single snapshot
+		 */
+		QString d_single_path;
+		
+		/*
+		 * the output path for a range of snapshots
+		 */
+		QString d_range_path;
 
 		/**
 		 * Updates button label & icon.
@@ -184,15 +258,6 @@ namespace GPlatesQtWidgets
 		void
 		set_export_abort_button_state(
 				bool we_are_exporting);
-
-		/**
-		 * Recalculates the summary label describing the parameters
-		 * that have been chosen for export, to avoid forcing the
-		 * user to open up the configuration dialog each time just to
-		 * check what is about to be exported.
-		 */
-		void
-		recalculate_parameters_description();
 
 		/**
 		 * Recalculates the range of the progress bar to be displayed
@@ -204,6 +269,94 @@ namespace GPlatesQtWidgets
 		void
 		recalculate_progress_bar();
 
+		void
+		update_target_directory(
+				const QString &new_target);
+
+		void
+		set_export_parameters();
+
+		typedef GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemName ExportItemName;
+		typedef GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemType ExportItemType;
+	
+		class ExportItem :
+			public QTableWidgetItem
+		{
+			
+		public:
+			ExportItem(
+					ExportItemName item_id):
+			d_id(item_id)
+			{  }
+
+			ExportItemName
+			item_name_id()
+			{
+				return d_id;
+			}
+
+		private:
+			ExportItemName d_id;
+		};
+
+		class ExportTypeItem :
+			public QTableWidgetItem
+		{
+			
+		public:
+			ExportTypeItem(
+					ExportItemType type_id):
+			d_id(type_id)
+			{  }
+
+			ExportItemType
+			item_type_id()
+			{
+				return d_id;
+			}
+
+		private:
+			ExportItemType d_id;
+		};
+
+		public:
+		inline
+		ExportItemName 
+		get_export_item_name(
+				QTableWidgetItem* widget_item)
+		{
+			if(ExportItem* item = dynamic_cast<ExportItem*> (widget_item))
+			{
+				return item->item_name_id();
+			}
+			else
+			{
+				//This is very unlikely to happen. If it did happen, it is not necessary to abort the application since this is not a fatal error.
+				//Record the error here. The further improvement could be throwing exception and make sure the exception is handled properly.
+				qWarning()
+					<<"Unexpected pointer type found in ExportAnimationDialog::get_export_item_name()";
+				return GPlatesQtWidgets::ConfigureExportParametersDialog::INVALID_NAME;
+			}
+		};
+
+		inline
+		ExportItemType
+		get_export_item_type(
+				QTableWidgetItem* widget_item)
+		{
+			if(ExportTypeItem* item = dynamic_cast<ExportTypeItem*> (widget_item))
+			{
+				return item->item_type_id();
+			}
+			else
+			{
+				//This is very unlikely to happen. If it did happen, it is not necessary to abort the application since this is not a fatal error.
+				//Record the error here. The further improvement could be throwing exception and make sure the exception is handled properly.
+				qWarning()
+					<<"Unexpected pointer type found in ExportAnimationDialog::get_export_item_type()";
+				return GPlatesQtWidgets::ConfigureExportParametersDialog::INVALID_TYPE;
+			}
+		}
 	};
 }
 

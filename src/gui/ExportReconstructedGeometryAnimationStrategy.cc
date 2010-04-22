@@ -38,23 +38,41 @@
 #include "presentation/ViewState.h"
 
 
+const QString 
+GPlatesGui::ExportReconstructedGeometryAnimationStrategy::DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE
+		="reconstructed_%u_%0.2f.xy";
+const QString 
+GPlatesGui::ExportReconstructedGeometryAnimationStrategy::DEFAULT_RECONSTRUCTED_GEOMETRIES_SHP_FILENAME_TEMPLATE
+		="reconstructed_%u_%0.2f.shp";
+const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC
+		=FORMAT_CODE_DESC;
+const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC
+		="Export reconstructed geometries.";
 
 const GPlatesGui::ExportReconstructedGeometryAnimationStrategy::non_null_ptr_type
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context)
+		GPlatesGui::ExportAnimationContext &export_animation_context,
+		FileFormat format,
+		const ExportAnimationStrategy::Configuration &cfg)
 {
-	return non_null_ptr_type(new ExportReconstructedGeometryAnimationStrategy(export_animation_context),
+	ExportReconstructedGeometryAnimationStrategy * ptr=
+			new ExportReconstructedGeometryAnimationStrategy(
+					export_animation_context,
+					cfg.filename_template());
+
+	ptr->d_file_format=format;
+	
+	return non_null_ptr_type(
+			ptr,
 			GPlatesUtils::NullIntrusivePointerHandler());
 }
 
-
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::ExportReconstructedGeometryAnimationStrategy(
-		GPlatesGui::ExportAnimationContext &export_animation_context):
+		GPlatesGui::ExportAnimationContext &export_animation_context,
+		const QString &filename_template):
 	ExportAnimationStrategy(export_animation_context)
 {
-	// Set the ExportTemplateFilenameSequence name once here, to a sane default.
-	// Later, we will let the user configure this.
-	set_template_filename(QString("reconstructed_%u_%0.2f.xy"));
+	set_template_filename(filename_template);
 	
 	GPlatesAppLogic::FeatureCollectionFileState &file_state =
 			d_export_animation_context_ptr->view_state().get_application_state()
@@ -78,20 +96,13 @@ bool
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-	// Get the iterator for the next filename.
-	if (!d_filename_iterator_opt || !d_filename_sequence_opt) {
-		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Error in export iteration - not properly initialised!"));
+	if(!check_filename_sequence())
+	{
 		return false;
 	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = *d_filename_iterator_opt;
 
-	// Doublecheck that the iterator is valid.
-	if (filename_it == d_filename_sequence_opt->end()) {
-		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Error in filename sequence - not enough filenames supplied!"));
-		return false;
-	}
+	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+		*d_filename_iterator_opt;
 
 	// Figure out a filename from the template filename sequence.
 	QString basename = *filename_it++;
@@ -127,6 +138,23 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
+}
+
+const QString&
+GPlatesGui::ExportReconstructedGeometryAnimationStrategy::get_default_filename_template()
+{
+	switch(d_file_format)
+	{
+	case SHAPEFILE:
+		return DEFAULT_RECONSTRUCTED_GEOMETRIES_SHP_FILENAME_TEMPLATE;
+		break;
+	case GMT:
+		return DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE;
+		break;
+	default:
+		return DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE;
+		break;
+	}
 }
 
 

@@ -26,15 +26,20 @@
 #ifndef GPLATES_GUI_EXPORTANIMATIONCONTEXT_H
 #define GPLATES_GUI_EXPORTANIMATIONCONTEXT_H
 
+#include <map>
+
 #include <QDir>
 #include <QString>
+
+#include <boost/function.hpp>
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
+#include "utils/ExportAnimationStrategyExporterID.h"
 
 #include "gui/ExportAnimationStrategy.h"
-
+#include "gui/ExportRotationAnimationStrategy.h"
 
 namespace GPlatesPresentation
 {
@@ -50,8 +55,6 @@ namespace GPlatesQtWidgets
 namespace GPlatesGui
 {
 	class AnimationController;
-
-
 	/**
 	 * ExportAnimationContext manages the iteration steps and progress bar updates while
 	 * we are exporting an animation via the ExportAnimationDialog.
@@ -75,6 +78,10 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportAnimationContext,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
+		typedef std::map<
+				GPlatesUtils::Exporter_ID, 
+				ExportAnimationStrategy::non_null_ptr_type> 
+			ExportersMapType;
 
 		explicit
 		ExportAnimationContext(
@@ -86,10 +93,15 @@ namespace GPlatesGui
 		virtual
 		~ExportAnimationContext()
 		{  }
-
+	
 		const double &
 		view_time() const;
-
+	
+		GPlatesQtWidgets::ExportAnimationDialog *
+		get_export_dialog()
+		{
+			return d_export_animation_dialog_ptr;
+		}
 
 		bool
 		is_running() const
@@ -105,106 +117,15 @@ namespace GPlatesGui
 
 		void
 		set_target_dir(
-			const QDir &dir)
+				const QDir &dir)
 		{
 			d_target_dir = dir;
 		}
 		
-		bool
-		svg_exporter_enabled()
-		{
-			return d_svg_exporter_enabled;
-		}
-		
 		void
-		set_svg_exporter_enabled(
-				bool enable)
-		{
-			d_svg_exporter_enabled = enable;
-		}
-		
-		const QString
-		svg_exporter_filename_template()
-		{
-			return "snapshot_%u_%0.2f.svg";
-		}
-
-		bool
-		velocity_exporter_enabled()
-		{
-			return d_velocity_exporter_enabled;
-		}
-
-		void
-		set_velocity_exporter_enabled(
-				bool enable)
-		{
-			d_velocity_exporter_enabled = enable;
-		}
-		
-		const QString
-		velocity_exporter_filename_template()
-		{
-			return "velocity_colat+lon_at_%u_%0.2fMa_on_mesh-%P.gpml";
-		}
-
-		bool
-		gmt_exporter_enabled()
-		{
-			return d_gmt_exporter_enabled;
-		}
-		
-		void
-		set_gmt_exporter_enabled(
-				bool enable)
-		{
-			d_gmt_exporter_enabled = enable;
-		}
-		
-		const QString
-		gmt_exporter_filename_template()
-		{
-			return "reconstructed_%u_%0.2f.xy";
-		}
-
-		bool
-		shp_exporter_enabled()
-		{
-			return d_shp_exporter_enabled;
-		}
-		
-		void
-		set_shp_exporter_enabled(
-				bool enable)
-		{
-			d_shp_exporter_enabled = enable;
-		}
-		
-		const QString
-		shp_exporter_filename_template()
-		{
-			return "reconstructed_%u_%0.2f.shp";
-		}
-
-		bool
-		resolved_topology_exporter_enabled()
-		{
-			return d_resolved_topology_exporter_enabled;
-		}
-		
-		void
-		set_resolved_topology_exporter_enabled(
-				bool enable)
-		{
-			d_resolved_topology_exporter_enabled = enable;
-		}
-		
-		const QString
-		resolved_topology_exporter_filename_template()
-		{
-			return "Polygons.%P.%d.xy";
-		}
-
+		add_exporter(
+				GPlatesUtils::Exporter_ID,
+				const ExportAnimationStrategy::Configuration& cfg);
 
 
 		const GPlatesGui::AnimationController &
@@ -215,7 +136,6 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::ViewportWindow &
 		viewport_window();
-
 
 		/**
 		 * Used by ExportAnimationDialog in response to user.
@@ -241,12 +161,27 @@ namespace GPlatesGui
 		bool
 		do_export();
 
-
 		void
 		update_status_message(
-				QString message);
+				const QString &message);
+
+		enum EXPORT_ITEMS
+		{
+			RECONSTRUCTED_GEOMETRIES_GMT,
+			RECONSTRUCTED_GEOMETRIES_SHAPEFILE,
+			PROJECTED_GEOMETRIES_SVG,
+			MESH_VILOCITIES_GPML,
+			RESOLVED_TOPOLOGIES_GMT,
+			INVALID=999
+		};
 
 	private:
+		void
+		cleanup_exporters_map()
+		{
+			d_exporters_map.clear();
+		}
+
 		/**
 		 * Pointer back to the ExportAnimationDialog, so that we can update
 		 * the progress bar and status message during export.
@@ -295,41 +230,13 @@ namespace GPlatesGui
 		 */
 		QDir d_target_dir;
 
-
-		/**
-		 * Whether the strategy for writing SVG files should be enabled during export.
-		 * Note we may later put this flag plus filename template etc. into a
-		 * strategy-specific 'configuration' object. But time is of the essence.
-		 */
-		bool d_svg_exporter_enabled;
-
-		/**
-		 * Whether the strategy for writing velocity files should be enabled during export.
-		 * Note we may later put this flag plus filename template etc. into a
-		 * strategy-specific 'configuration' object. But time is of the essence.
-		 */
-		bool d_velocity_exporter_enabled;
-
-		/**
-		 * Whether the strategy for writing GMT files should be enabled during export.
-		 * Note we may later put this flag plus filename template etc. into a
-		 * strategy-specific 'configuration' object. But time is of the essence.
-		 */
-		bool d_gmt_exporter_enabled;
-
-		/**
-		 * Whether the strategy for writing Shapefile files should be enabled during export.
-		 * Note we may later put this flag plus filename template etc. into a
-		 * strategy-specific 'configuration' object. But time is of the essence.
-		 */
-		bool d_shp_exporter_enabled;
-
-		/**
-		 * Whether the strategy for writing resolved topology files should be enabled during export.
-		 * Note we may later put this flag plus filename template etc. into a
-		 * strategy-specific 'configuration' object. But time is of the essence.
-		 */
-		bool d_resolved_topology_exporter_enabled;
+		/*
+		* a std::map to manage exporters
+		*/
+		ExportersMapType d_exporters_map;
+		std::map<QString, boost::function<
+				void (const ExportAnimationStrategy::Configuration&)> > 
+			d_class_id_map;
 	};
 }
 

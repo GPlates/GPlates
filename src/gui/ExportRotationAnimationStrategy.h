@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_EXPORTRECONSTRUCTEDGEOMETRYANIMATIONSTRATEGY_H
-#define GPLATES_GUI_EXPORTRECONSTRUCTEDGEOMETRYANIMATIONSTRATEGY_H
+#ifndef GPLATES_GUI_EXPORTROTATIONSTRATEGY_H
+#define GPLATES_GUI_EXPORTROTATIONSTRATEGY_H
 
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
@@ -36,8 +36,6 @@
 #include "utils/ReferenceCount.h"
 
 #include "utils/ExportTemplateFilenameSequence.h"
-
-#include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
 
 #include "gui/ExportAnimationStrategy.h"
 
@@ -54,45 +52,51 @@ namespace GPlatesGui
 	 * ExportReconstructedGeometryAnimationStrategy serves as the concrete Strategy role as
 	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
 	 */
-	class ExportReconstructedGeometryAnimationStrategy:
+	class ExportRotationAnimationStrategy:
 			public GPlatesGui::ExportAnimationStrategy
 	{
 	public:
+
+ 		enum RotationType
+ 		{
+			RELATIVE_COMMA,
+			RELATIVE_SEMI,
+			RELATIVE_TAB,
+			EQUIVALENT_COMMA,
+			EQUIVALENT_SEMI,
+			EQUIVALENT_TAB,
+			INVALID_TYPE=999
+		};
+
+		static const QString DEFAULT_RELATIVE_COMMA_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RELATIVE_SEMI_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RELATIVE_TAB_FILENAME_TEMPLATE;
+		static const QString DEFAULT_EQUIVALENT_COMMA_FILENAME_TEMPLATE;
+		static const QString DEFAULT_EQUIVALENT_SEMI_FILENAME_TEMPLATE;
+		static const QString DEFAULT_EQUIVALENT_TAB_FILENAME_TEMPLATE;
+		static const QString ROTATION_FILENAME_TEMPLATE_DESC;
+		static const QString RELATIVE_ROTATION_DESC;
+		static const QString EQUIVALENT_ROTATION_DESC;
+
 		/**
 		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy,
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportRotationAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-		static const QString 
-				DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE;
-		static const QString 
-				DEFAULT_RECONSTRUCTED_GEOMETRIES_SHP_FILENAME_TEMPLATE;
-		static const QString
-				RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
-		static const QString 
-				RECONSTRUCTED_GEOMETRIES_DESC;
-			
-		enum FileFormat
-		{
-			SHAPEFILE,
-			GMT
-		};
-
+		
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				FileFormat format=GMT,
-				const ExportAnimationStrategy::Configuration& cfg=
+				RotationType type=EQUIVALENT_COMMA,
+				const ExportAnimationStrategy::Configuration &cfg=
 					ExportAnimationStrategy::Configuration(
-							DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE));
-
+							DEFAULT_EQUIVALENT_COMMA_FILENAME_TEMPLATE));
 
 		virtual
-		~ExportReconstructedGeometryAnimationStrategy()
+		~ExportRotationAnimationStrategy()
 		{  }
-
 
 		/**
 		 * Does one frame of export. Called by the ExportAnimationContext.
@@ -105,21 +109,19 @@ namespace GPlatesGui
 
 		virtual
 		const QString&
-				get_default_filename_template();
+		get_default_filename_template();
 
 		virtual
 		const QString&
-		get_filename_template_desc()
-		{
-			return RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
-		}
+		get_filename_template_desc();
 
 		virtual
 		const QString&
-		get_description()
+				get_description()
 		{
-			return RECONSTRUCTED_GEOMETRIES_DESC;
+			return RELATIVE_ROTATION_DESC;
 		}
+
 
 	protected:
 		/**
@@ -127,24 +129,19 @@ namespace GPlatesGui
 		 * Use the create() method on the individual Strategy subclasses.
 		 */
 		explicit
-		ExportReconstructedGeometryAnimationStrategy(
+		ExportRotationAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const QString &filename_template);
 		
 	private:
+		ExportRotationAnimationStrategy();
+		RotationType d_type;
+		char d_delimiter;
 		
-		/**
-		 * The list of visible, reconstructable FeatureCollections to take
-		 * geometry from.
-		 */
-		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type
-				d_active_reconstructable_files;
-		ExportReconstructedGeometryAnimationStrategy();
-		FileFormat d_file_format;
 	};
 }
 
 
-#endif //GPLATES_GUI_EXPORTRECONSTRUCTEDGEOMETRYANIMATIONSTRATEGY_H
+#endif //GPLATES_GUI_EXPORTROTATIONSTRATEGY_H
 
 
