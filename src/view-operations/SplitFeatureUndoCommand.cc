@@ -33,6 +33,9 @@
 
 #include "feature-visitors/GeometrySetter.h"
 #include "feature-visitors/PropertyValueFinder.h"
+
+#include "model/TopLevelPropertyInline.h"
+
 void
 GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 {
@@ -77,7 +80,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	GPlatesModel::PropertyName property_name = 
 		(*property_iter)->property_name(); 
 
-#if 0
+#if 1
 	//we remove the geometry from the feature and then add the new one into it
 	GPlatesUtils::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
 #endif
@@ -130,7 +133,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 			GPlatesMaths::PolylineOnSphere::create_on_heap(
 					points.begin(), 
 					points.begin() + point_index_to_split));
-
+#if 0
 	//FIXME:
 	//since the non-const value finder has been disabled, 
 	//use const_cast as workaround for now
@@ -141,11 +144,39 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 			const_val);
 	GPlatesPropertyValues::GmlLineString* val=
 		const_cast<GPlatesPropertyValues::GmlLineString*>(const_val);
+#endif
+
+#if 0
+	GPlatesModel::TopLevelProperty::non_null_ptr_type clone 
+		= (*property_iter)->deep_clone();
+	GPlatesModel::TopLevelPropertyInline::non_null_ptr_type geom_prop_clone
+		= dynamic_cast<GPlatesModel::TopLevelPropertyInline *>(clone.get());
+	GPlatesPropertyValues::GmlLineString *val;
+
+	GPlatesModel::TopLevelPropertyInline::iterator tlpi_iter = geom_prop_clone->begin();
+	for (;tlpi_iter != geom_prop_clone->end(); ++tlpi_iter)
+	{
+		GPlatesPropertyValues::GmlLineString *curr_val =
+			dynamic_cast<GPlatesPropertyValues::GmlLineString *>((*tlpi_iter).get());
+		if (curr_val)
+		{
+			val = curr_val;
+			break;
+		}
+	}
+	if(tlpi_iter == geom_prop_clone->end())
+	{
+		qWarning()<<"Cannot find the proper geometry value!";
+		return;
+	}
+
 	geometry_setter.set_geometry(val);
+	*property_iter = geom_prop_clone;
+#endif
 
 	// TODO: currently the ploy line type has been hard-coded here, 
 	// we need to support other geometry type in the future
-#if 0
+#if 1
 	(*d_old_feature)->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				property_name,
