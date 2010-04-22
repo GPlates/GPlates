@@ -30,26 +30,6 @@
 #include "GmlOrientableCurve.h"
 
 
-GPlatesPropertyValues::GmlOrientableCurve::GmlOrientableCurve(
-		GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
-		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-				xml_attributes_):
-	PropertyValue(),
-	d_base_curve(base_curve_),
-	d_xml_attributes(xml_attributes_)
-{
-}
-
-
-GPlatesPropertyValues::GmlOrientableCurve::GmlOrientableCurve(
-		const GmlOrientableCurve &other) :
-	PropertyValue(other), /* share instance id */
-	d_base_curve(other.d_base_curve),
-	d_xml_attributes(other.d_xml_attributes)
-{
-}
-
-
 const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
 GPlatesPropertyValues::GmlOrientableCurve::deep_clone() const
 {

@@ -31,9 +31,10 @@
 #include <QGroupBox>
 #include <boost/optional.hpp>
 
+#include "AbstractEditWidget.h"
+
 #include "model/FeatureHandle.h"
 #include "model/PropertyValue.h"
-#include "qt-widgets/AbstractEditWidget.h"
 
 
 namespace GPlatesPresentation

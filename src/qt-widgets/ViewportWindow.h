@@ -324,45 +324,6 @@ namespace GPlatesQtWidgets
 		enable_or_disable_feature_actions(
 				GPlatesGui::FeatureFocus &feature_focus);
 
-		/**
-		 * Uncheck all colouring menu items, and then check @a checked_action
-		 */
-		void
-		change_checked_colouring_action(
-				QAction *action);
-		
-		// FIXME: Delete after refactoring
-		void	
-		choose_colour_by_feature_type();
-
-		// FIXME: Delete after refactoring
-		void
-		choose_colour_by_age();
-		
-		void
-		choose_colour_by_single_colour_red();
-
-		void
-		choose_colour_by_single_colour_blue();
-
-		void
-		choose_colour_by_single_colour_green();
-
-		void
-		choose_colour_by_single_colour_yellow();
-
-		void
-		choose_colour_by_single_colour_white();
-
-		void
-		choose_colour_by_single_colour_customise();
-
-		void
-		choose_colour_by_plate_id_default();
-
-		void
-		choose_colour_by_plate_id_regional();
-
 		void
 		choose_clicked_geometry_table() const
 		{
@@ -684,7 +645,10 @@ namespace GPlatesQtWidgets
 		pop_up_calculate_reconstruction_pole_dialog();
 
 		void
-		pop_up_set_vgp_visibility_dialog();		
+		pop_up_set_vgp_visibility_dialog();
+
+		void
+		handle_colour_scheme_delegator_changed();
 
 	protected:
 	

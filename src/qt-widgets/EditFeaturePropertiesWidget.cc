@@ -27,12 +27,14 @@
 #include <QHeaderView>
 #include <QGridLayout>
 #include <QVBoxLayout>
+
 #include "EditFeaturePropertiesWidget.h"
+
+#include "EditTimePeriodWidget.h"
 
 #include "model/FeatureHandle.h"
 #include "model/PropertyName.h"
 #include "model/ModelUtils.h"
-#include "qt-widgets/EditTimePeriodWidget.h"
 #include "utils/UnicodeStringUtils.h"
 #include "presentation/ViewState.h"
 

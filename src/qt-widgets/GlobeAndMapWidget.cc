@@ -299,3 +299,9 @@ GPlatesQtWidgets::GlobeAndMapWidget::grab_frame_buffer()
 	return d_active_view_ptr->grab_frame_buffer();
 }
 
+void
+GPlatesQtWidgets::GlobeAndMapWidget::update_canvas()
+{
+	d_active_view_ptr->update_canvas();
+}
+

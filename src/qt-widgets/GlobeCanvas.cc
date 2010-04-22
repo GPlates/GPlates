@@ -82,8 +82,8 @@ namespace
 	inline
 	double
 	calc_globe_pos_discrim(
-			const double &y,
-			const double &z) 
+			double y,
+			double z) 
 	{
 		return (y * y + z * z);
 	}
@@ -96,7 +96,7 @@ namespace
 	inline
 	bool
 	discrim_signifies_on_globe(
-			const double &discrim) 
+			double discrim) 
 	{
 		return (discrim < 1.0);
 	}
@@ -111,9 +111,9 @@ namespace
 	 */
 	const GPlatesMaths::PointOnSphere
 	calc_pos_on_globe(
-			const double &y,
-			const double &z,
-			const double &discrim) 
+			double y,
+			double z,
+			double discrim) 
 	{
 		// Be wary of floating-point error, which could result in calculating the sqrt of a
 		// (very slightly) negative value.  (Yes, this is something I actually observed in
@@ -138,9 +138,9 @@ namespace
 	 */
 	const GPlatesMaths::PointOnSphere
 	calc_pos_at_intersection_with_globe(
-			const double &y,
-			const double &z,
-			const double &discrim) 
+			double y,
+			double z,
+			double discrim) 
 	{
 		double norm_reciprocal = 1.0 / sqrt(discrim);
 		return GPlatesMaths::PointOnSphere(
@@ -158,8 +158,8 @@ namespace
 	 */
 	const GPlatesMaths::PointOnSphere
 	calc_virtual_globe_position(
-			const double &y,
-			const double &z) 
+			double y,
+			double z) 
 	{
 		double discrim = calc_globe_pos_discrim(y, z);
 		

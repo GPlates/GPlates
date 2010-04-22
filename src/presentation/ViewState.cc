@@ -32,13 +32,12 @@
 #include "app-logic/PlateVelocityWorkflow.h"
 #include "app-logic/Reconstruct.h"
 
-#include "gui/ColourSchemeFactory.h"
+#include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeDelegator.h"
 #include "gui/FeatureFocus.h"
 #include "gui/GeometryFocusHighlight.h"
 #include "gui/MapTransform.h"
 #include "gui/RenderSettings.h"
-#include "gui/SingleColourScheme.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
@@ -57,9 +56,10 @@ GPlatesPresentation::ViewState::ViewState(
 					application_state.get_feature_collection_file_state())),
 	d_rendered_geometry_collection(
 			new GPlatesViewOperations::RenderedGeometryCollection()),
+	d_colour_scheme_container(
+			new GPlatesGui::ColourSchemeContainer(*this)),
 	d_colour_scheme(
-			new GPlatesGui::ColourSchemeDelegator(
-					GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme())),
+			new GPlatesGui::ColourSchemeDelegator(*d_colour_scheme_container)),
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
 	d_viewport_projection(
@@ -97,7 +97,6 @@ GPlatesPresentation::ViewState::ViewState(
 	d_reconstruct_view(
 			new GPlatesViewOperations::ReconstructView(
 					*d_plate_velocity_workflow, *d_paleomag_workflow,*d_rendered_geometry_collection)),
-	d_last_single_colour(Qt::white),
 	d_render_settings(
 			new GPlatesGui::RenderSettings()),
 	d_map_transform(
@@ -178,58 +177,22 @@ GPlatesPresentation::ViewState::get_plate_velocity_workflow() const
 }
 
 
-void
-GPlatesPresentation::ViewState::choose_colour_by_feature_type()
+GPlatesGui::ColourSchemeContainer &
+GPlatesPresentation::ViewState::get_colour_scheme_container()
 {
-	d_colour_scheme->set_colour_scheme(
-			GPlatesGui::ColourSchemeFactory::create_default_feature_colour_scheme());
-}
-
-
-void
-GPlatesPresentation::ViewState::choose_colour_by_age()
-{
-	d_colour_scheme->set_colour_scheme(
-			GPlatesGui::ColourSchemeFactory::create_default_age_colour_scheme(
-				get_reconstruct()));
-}
-
-
-void
-GPlatesPresentation::ViewState::choose_colour_by_single_colour(
-		const QColor &qcolor)
-{
-	d_colour_scheme->set_colour_scheme(
-			GPlatesGui::ColourSchemeFactory::create_single_colour_scheme(qcolor));
-	d_last_single_colour = qcolor;
-}
-
-
-void
-GPlatesPresentation::ViewState::choose_colour_by_plate_id_default()
-{
-	d_colour_scheme->set_colour_scheme(
-			GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme());
-}
-
-
-void
-GPlatesPresentation::ViewState::choose_colour_by_plate_id_regional()
-{
-	d_colour_scheme->set_colour_scheme(
-			GPlatesGui::ColourSchemeFactory::create_regional_plate_id_colour_scheme());
-}
-
-
-QColor
-GPlatesPresentation::ViewState::get_last_single_colour() const
-{
-	return d_last_single_colour;
+	return *d_colour_scheme_container;
 }
 
 
 GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
 GPlatesPresentation::ViewState::get_colour_scheme()
+{
+	return d_colour_scheme;
+}
+
+
+GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
+GPlatesPresentation::ViewState::get_colour_scheme_delegator()
 {
 	return d_colour_scheme;
 }

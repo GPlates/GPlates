@@ -28,10 +28,13 @@ set(srcs
     ColourProxy.cc
     ColourProxy.h
     ColourScheme.h
+    ColourSchemeContainer.cc
+    ColourSchemeContainer.h
     ColourSchemeDelegator.cc
     ColourSchemeDelegator.h
     ColourSchemeFactory.cc
     ColourSchemeFactory.h
+    ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
     CsvExport.cc

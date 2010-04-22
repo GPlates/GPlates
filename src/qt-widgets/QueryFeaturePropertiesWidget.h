@@ -27,7 +27,9 @@
 #define GPLATES_QTWIDGETS_QUERYFEATUREPROPERTIESWIDGET_H
 
 #include <QWidget>
+
 #include "QueryFeaturePropertiesWidgetUi.h"
+
 #include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"
 

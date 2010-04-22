@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_VIEWFEATUREGEOMETRIESWIDGET_H
 
 #include <QWidget>
+
 #include "ViewFeatureGeometriesWidgetUi.h"
 
 #include "gui/FeatureFocus.h"

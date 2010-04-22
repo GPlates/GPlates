@@ -300,6 +300,14 @@ d_command_id_factory(new UndoRedoInternal::CommandIdFactory())
 
 GPlatesViewOperations::UndoRedo::~UndoRedo()
 {
+	// The QUndoStacks allocated on the heap aren't automatically deallocated by Qt
+	// because they don't have a parent.
+	for (undo_stack_ptr_seq_type::iterator iter = d_undo_stack_seq.begin();
+			iter != d_undo_stack_seq.end(); ++iter)
+	{
+		delete *iter;
+	}
+
 	// End the scope block started in constructor.
 	end_unique_command_id_scope();
 }
@@ -462,3 +470,4 @@ GPlatesViewOperations::UndoRedo::CommandId::get_id() const
 {
 	return d_command_id_impl->get_id();
 }
+

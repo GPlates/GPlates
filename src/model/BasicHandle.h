@@ -322,7 +322,8 @@ namespace GPlatesModel
 		/**
 		 * Does the actual job of adding the child to the revision's container.
 		 *
-		 * Called by add(), in the style of the Template Method design pattern.
+		 * Called by add(), to allow add() to contain as much common functionality as
+		 * possible (much like the Template Method design pattern, but without the inheritance).
 		 */
 		container_size_type
 		actual_add(

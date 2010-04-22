@@ -184,7 +184,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::group_rfgs_with_their_fea
 
 	// Sort in preparation for grouping RFGs by feature.
 	std::sort(rfgs_sorted_by_feature.begin(), rfgs_sorted_by_feature.end(),
-			bind(&GPlatesModel::ReconstructedFeatureGeometry::feature_handle_ptr, _1) <
+		boost::lambda::bind(&GPlatesModel::ReconstructedFeatureGeometry::feature_handle_ptr, _1) <
 					boost::lambda::bind(
 							&GPlatesModel::ReconstructedFeatureGeometry::feature_handle_ptr, _2));
 

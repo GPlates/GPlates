@@ -110,6 +110,9 @@ namespace GPlatesQtWidgets
 		QImage
 		grab_frame_buffer();
 
+		void
+		update_canvas();
+
 	signals:
 
 		void

@@ -27,11 +27,14 @@
 #define GPLATES_QTWIDGETS_EDITTIMEPERIODWIDGET_H
 
 #include <boost/intrusive_ptr.hpp>
-#include "AbstractEditWidget.h"
-#include "InformationDialog.h"
-#include "property-values/GmlTimePeriod.h"
 
 #include "EditTimePeriodWidgetUi.h"
+
+#include "AbstractEditWidget.h"
+#include "InformationDialog.h"
+
+#include "property-values/GmlTimePeriod.h"
+
 
 namespace GPlatesQtWidgets
 {

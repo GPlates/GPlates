@@ -95,7 +95,7 @@ GPlatesGui::DeferredColourProxyImpl::get_colour(
 	// Run it through the colour filter, if one is installed.
 	if (d_colour_filter_ptr)
 	{
-		colour = d_colour_filter_ptr->change_colour(colour);
+		*colour = d_colour_filter_ptr->change_colour(*colour);
 	}
 
 	return colour;

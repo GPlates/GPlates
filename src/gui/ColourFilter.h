@@ -28,9 +28,8 @@
 #ifndef GPLATES_GUI_COLOURFILTER_H
 #define GPLATES_GUI_COLOURFILTER_H
 
-#include <boost/optional.hpp>
-
 #include "Colour.h"
+
 
 namespace GPlatesGui
 {
@@ -50,9 +49,9 @@ namespace GPlatesGui
 
 		//! Maps @a input_colour to another colour.
 		virtual
-		const boost::optional<Colour> &
+		const Colour &
 		change_colour(
-				const boost::optional<Colour> &input_colour) = 0;
+				const Colour &input_colour) = 0;
 
 	};
 

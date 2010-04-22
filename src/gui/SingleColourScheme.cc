@@ -27,10 +27,12 @@
 
 #include "SingleColourScheme.h"
 
+
 GPlatesGui::SingleColourScheme::SingleColourScheme()
 {
 	d_colour = boost::optional<Colour>(DEFAULT_COLOUR);
 }
+
 
 GPlatesGui::SingleColourScheme::SingleColourScheme(
 		const Colour &colour)
@@ -38,12 +40,21 @@ GPlatesGui::SingleColourScheme::SingleColourScheme(
 	d_colour = boost::optional<Colour>(colour);
 }
 
+
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::SingleColourScheme::get_colour(
 		const GPlatesModel::ReconstructionGeometry &) const
 {
 	return d_colour;
 }
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::SingleColourScheme::get_colour() const
+{
+	return d_colour;
+}
+
 
 const GPlatesGui::Colour
 GPlatesGui::SingleColourScheme::DEFAULT_COLOUR = GPlatesGui::Colour::get_white();

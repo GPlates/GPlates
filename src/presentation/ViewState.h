@@ -31,7 +31,6 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
-#include <QColor>
 
 #include "global/PointerTraits.h"
 
@@ -64,6 +63,7 @@ namespace GPlatesGui
 {
 	class Colour;
 	class ColourScheme;
+	class ColourSchemeContainer;
 	class ColourSchemeDelegator;
 	class GeometryFocusHighlight;
 	class FeatureFocus;
@@ -290,32 +290,10 @@ namespace GPlatesPresentation
 		get_plate_velocity_workflow() const;
 
 
-		// FIXME: Delete after refactoring
-		//! Colour reconstruction geometry by feature type.
-		void
-		choose_colour_by_feature_type();
+		//! Returns all loaded colour schemes, sorted by category.
+		GPlatesGui::ColourSchemeContainer &
+		get_colour_scheme_container();
 
-		// FIXME: Delete after refactoring
-		//! Colour reconstruction geometry by age.
-		void
-		choose_colour_by_age();
-
-		//! Colour reconstruction geometry with a single colour.
-		void
-		choose_colour_by_single_colour(
-				const QColor &qcolor);
-
-		//! Colour reconstruction geometry by plate ID (default colouring)
-		void
-		choose_colour_by_plate_id_default();
-
-		//! Colour reconstruction geometry by plate ID (regional colouring)
-		void
-		choose_colour_by_plate_id_regional();
-
-		//! Returns the colour last used for the "Single Colour" colouring option
-		QColor
-		get_last_single_colour() const;
 
 		/**
 		 * Returns the current colour scheme.
@@ -329,14 +307,22 @@ namespace GPlatesPresentation
 		GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
 		get_colour_scheme();
 
+
+		GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
+		get_colour_scheme_delegator();
+
+
 		GPlatesGui::RenderSettings &
 		get_render_settings();
+
 
 		GPlatesGui::MapTransform &
 		get_map_transform();
 
+
 		int
 		get_main_viewport_min_dimension();
+
 
 		void
 		set_main_viewport_min_dimension(
@@ -368,6 +354,9 @@ namespace GPlatesPresentation
 
 		//! Contains all rendered geometries for this view state.
 		boost::scoped_ptr<GPlatesViewOperations::RenderedGeometryCollection> d_rendered_geometry_collection;
+
+		//! Holds all loaded colour schemes, sorted by category.
+		boost::scoped_ptr<GPlatesGui::ColourSchemeContainer> d_colour_scheme_container;
 
 		//! Keeps track of the currently selected colour scheme.
 		GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type d_colour_scheme;
@@ -416,9 +405,6 @@ namespace GPlatesPresentation
 		 * Depends on d_plate_velocity_workflow, d_rendered_geometry_collection.
 		 */
 		boost::scoped_ptr<GPlatesViewOperations::ReconstructView> d_reconstruct_view;
-
-		//! The current choice of colour for the "Single Colour" colouring option
-		QColor d_last_single_colour;
 
 		//! What gets rendered and what doesn't
 		boost::scoped_ptr<GPlatesGui::RenderSettings> d_render_settings;

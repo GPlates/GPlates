@@ -40,7 +40,6 @@ set(srcs
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
-    ColourSchemeInfo.h
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
@@ -168,8 +167,6 @@ set(srcs
     ModifyReconstructionPoleWidget.h
     ModifyReconstructionPoleWidgetUi.ui
     NoActiveEditWidgetException.h
-    PaletteSelectionWidget.cc
-    PaletteSelectionWidget.h
     PoleSequenceTableWidget.cc
     PoleSequenceTableWidget.h
     PoleSequenceTableWidgetUi.ui

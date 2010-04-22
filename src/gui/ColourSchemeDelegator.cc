@@ -26,6 +26,7 @@
 #include <utility>
 
 #include "ColourSchemeDelegator.h"
+#include "ColourSchemeFactory.h"
 
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "model/FeatureHandle.h"
@@ -92,17 +93,33 @@ namespace
 
 
 GPlatesGui::ColourSchemeDelegator::ColourSchemeDelegator(
-		ColourScheme::non_null_ptr_type global_colour_scheme) :
-	d_global_colour_scheme(global_colour_scheme)
+		const ColourSchemeContainer &colour_scheme_container) :
+	d_colour_scheme_container(colour_scheme_container),
+	d_global_colour_scheme(
+			std::make_pair(
+					ColourSchemeCategory::PLATE_ID,
+					colour_scheme_container.begin(ColourSchemeCategory::PLATE_ID)->first))
+			// Default colour scheme is whichever is the first plate ID colour scheme.
 {
+	QObject::connect(
+			&d_colour_scheme_container,
+			SIGNAL(colour_scheme_edited(
+					GPlatesGui::ColourSchemeCategory::Type,
+					GPlatesGui::ColourSchemeContainer::id_type)),
+			this,
+			SLOT(handle_colour_scheme_edited(
+					GPlatesGui::ColourSchemeCategory::Type,
+					GPlatesGui::ColourSchemeContainer::id_type)));
 }
 
 
 void
 GPlatesGui::ColourSchemeDelegator::set_colour_scheme(
-		ColourScheme::non_null_ptr_type colour_scheme,
+		ColourSchemeCategory::Type category,
+		ColourSchemeContainer::id_type id,
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection)
 {
+	colour_scheme_handle colour_scheme = std::make_pair(category, id);
 	if (!feature_collection)
 	{
 		d_global_colour_scheme = colour_scheme;
@@ -123,11 +140,34 @@ GPlatesGui::ColourSchemeDelegator::set_colour_scheme(
 						d_special_colour_schemes,
 						result.first));
 		}
+		else
+		{
+			// Overwrite existing entry.
+			result.first->second = colour_scheme;
+		}
+
+		colour_scheme_handle inserted = d_special_colour_schemes[feature_collection];
 	}
+	
+	emit changed();
 }
 
 
-GPlatesGui::ColourScheme::non_null_ptr_type
+void
+GPlatesGui::ColourSchemeDelegator::unset_colour_scheme(
+		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection)
+{
+	colour_schemes_map_type::iterator iter = d_special_colour_schemes.find(feature_collection);
+	if (iter != d_special_colour_schemes.end())
+	{
+		d_special_colour_schemes.erase(iter);
+	}
+
+	emit changed();
+}
+
+
+boost::optional<GPlatesGui::ColourSchemeDelegator::colour_scheme_handle>
 GPlatesGui::ColourSchemeDelegator::get_colour_scheme(
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection) const
 {
@@ -137,14 +177,12 @@ GPlatesGui::ColourSchemeDelegator::get_colour_scheme(
 	}
 	else
 	{
-		colour_schemes_map_type::const_iterator special_colour_schemes_iter =
-			d_special_colour_schemes.find(feature_collection);
+		typedef colour_schemes_map_type::const_iterator iterator_type;
+		iterator_type special_colour_schemes_iter = d_special_colour_schemes.find(feature_collection);
 
-		// Return the global colour scheme if there is no special colour scheme for
-		// this feature collection.
 		if (special_colour_schemes_iter == d_special_colour_schemes.end())
 		{
-			return d_global_colour_scheme;
+			return boost::none;
 		}
 		else
 		{
@@ -161,28 +199,70 @@ GPlatesGui::ColourSchemeDelegator::get_colour(
 	// Shortcut if there are no feature collections have special colour schemes.
 	if (d_special_colour_schemes.empty())
 	{
-		return d_global_colour_scheme->get_colour(reconstruction_geometry);
+		return apply_colour_scheme(d_global_colour_scheme, reconstruction_geometry);
 	}
 
+	// Work out which feature collection the reconstruction geometry came from, if any.
 	GPlatesModel::FeatureCollectionHandle *feature_collection =
 		get_feature_collection_from_reconstruction_geometry(reconstruction_geometry);
 
+	// If the reconstruction geometry has no associated feature collection, use the
+	// global colour scheme.
 	if (!feature_collection)
 	{
-		return d_global_colour_scheme->get_colour(reconstruction_geometry);
+		return apply_colour_scheme(d_global_colour_scheme, reconstruction_geometry);
 	}
 
 	GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref =
 		feature_collection->reference();
-	colour_schemes_map_type::const_iterator feature_collection_iter =
-		d_special_colour_schemes.find(feature_collection_ref);
-	if (feature_collection_iter == d_special_colour_schemes.end())
+
+	typedef colour_schemes_map_type::const_iterator iterator_type;
+	iterator_type iter = d_special_colour_schemes.find(feature_collection_ref);
+	if (iter == d_special_colour_schemes.end())
 	{
-		return d_global_colour_scheme->get_colour(reconstruction_geometry);
+		return apply_colour_scheme(d_global_colour_scheme, reconstruction_geometry);
 	}
 	else
 	{
-		return feature_collection_iter->second->get_colour(reconstruction_geometry);
+		return apply_colour_scheme(iter->second, reconstruction_geometry);
 	}
 }
 
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::ColourSchemeDelegator::apply_colour_scheme(
+		const colour_scheme_handle &colour_scheme,
+		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+{
+	ColourScheme::non_null_ptr_type colour_scheme_ptr = d_colour_scheme_container.get(
+			colour_scheme.first, colour_scheme.second).colour_scheme_ptr;
+	return colour_scheme_ptr->get_colour(reconstruction_geometry);
+}
+
+
+void
+GPlatesGui::ColourSchemeDelegator::handle_colour_scheme_edited(
+		GPlatesGui::ColourSchemeCategory::Type category,
+		GPlatesGui::ColourSchemeContainer::id_type id)
+{
+	// We'll emit the changed signal if the colour scheme edited is the global
+	// colour scheme, or one of the special feature collection colour schemes.
+	if (d_global_colour_scheme.first == category &&
+		d_global_colour_scheme.second == id)
+	{
+		emit changed();
+		return;
+	}
+
+	for (colour_schemes_map_type::const_iterator iter = d_special_colour_schemes.begin();
+		iter != d_special_colour_schemes.end(); ++iter)
+	{
+		const colour_scheme_handle &curr = iter->second;
+		if (curr.first == category &&
+			curr.second == id)
+		{
+			emit changed();
+			return;
+		}
+	}
+}

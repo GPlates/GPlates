@@ -61,6 +61,7 @@
 #include "ExportReconstructedFeatureGeometryDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
+#include "GlobeAndMapWidget.h"
 #include "InformationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -451,9 +452,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Render everything on the screen in present-day positions.
 	get_view_state().get_reconstruct().reconstruct_to_time_with_anchor(0.0, 0);
-	
-	// Check the default colouring option
-	change_checked_colouring_action(action_Colour_By_Plate_ID_Default);
 
 	// Disable the Show Background Raster menu item until raster is loaded
 	action_Show_Raster->setEnabled(false);
@@ -468,8 +466,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
 	action_Show_Strings->setChecked(render_settings.show_strings());
 
-	// Remove access to new colouring dialog (for now)
-	action_Geometry_Colours->setVisible(false);
+	// Repaint the globe/map when the colour scheme delegator's target changes.
+	QObject::connect(
+			get_view_state().get_colour_scheme_delegator().get(),
+			SIGNAL(changed()),
+			this,
+			SLOT(handle_colour_scheme_delegator_changed()));
 }
 
 
@@ -628,7 +630,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
 	
 	// Layers Menu:
-	QObject::connect(action_Geometry_Colours, SIGNAL(triggered()),
+	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
 			this, SLOT(pop_up_colouring_dialog()));
 	QObject::connect(action_Generate_Mesh_Cap, SIGNAL(triggered()),
 		this, SLOT(generate_mesh_cap()));
@@ -651,29 +653,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(enable_arrows_display()));
 	QObject::connect(action_Show_Strings, SIGNAL(triggered()),
 			this, SLOT(enable_strings_display()));
-	// ----
-	QObject::connect(action_Colour_By_Feature_Type, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_feature_type()));
-	QObject::connect(action_Colour_By_Age, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_age()));
-	// ----
-	QObject::connect(action_Colour_By_Single_Colour_Red, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_single_colour_red()));
-	QObject::connect(action_Colour_By_Single_Colour_Green, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_single_colour_green()));
-	QObject::connect(action_Colour_By_Single_Colour_Blue, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_single_colour_blue()));
-	QObject::connect(action_Colour_By_Single_Colour_Yellow, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_single_colour_yellow()));
-	QObject::connect(action_Colour_By_Single_Colour_White, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_single_colour_white()));
-	QObject::connect(action_Colour_By_Single_Colour_Customise, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_single_colour_customise()));
-	// ----
-	QObject::connect(action_Colour_By_Plate_ID_Default, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_plate_id_default()));
-	QObject::connect(action_Colour_By_Plate_ID_Regional, SIGNAL(triggered()), 
-			this, SLOT(choose_colour_by_plate_id_regional()));
 	// ----
 	QObject::connect(action_Set_Projection, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_projection_dialog()));
@@ -1447,171 +1426,6 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 #endif
 }
 
-void
-GPlatesQtWidgets::ViewportWindow::change_checked_colouring_action(
-		QAction *checked_action)
-{
-	// Note: unfortunately, it's not possible to use a QActionGroup to handle
-	// selection/deselection of colouring menu items, because if actions are added
-	// to a QActionGroup, no signal is emitted if the user selects the currently
-	// selected item, e.g. if the currently selected item is one of the
-	// "Customise..." options, no signal is emitted if the user clicks on it again
-	// (but we need to get that signal in order to react to display the appropriate
-	// customisation dialog box).
-	
-	// put all the colouring actions into an array for easier traversal
-	QAction *colouring_actions[] = {
-		// FIXME: old colouring menu items, remove later
-		action_Colour_By_Feature_Type,
-		action_Colour_By_Age,
-		
-		// Single Colour submenu
-		action_Colour_By_Single_Colour_Red,
-		action_Colour_By_Single_Colour_Blue,
-		action_Colour_By_Single_Colour_Green,
-		action_Colour_By_Single_Colour_Yellow,
-		action_Colour_By_Single_Colour_White,
-		action_Colour_By_Single_Colour_Customise,
-
-		// Plate ID submenu
-		action_Colour_By_Plate_ID_Default,
-		action_Colour_By_Plate_ID_Regional
-	};
-
-#if 0  // FIXME: Re-enable once we increase minimum Boost to 1.34.
-	BOOST_FOREACH(QAction *action, colouring_actions)
-	{
-		action->setChecked(action == checked_action);
-	}
-#else
-	// (Q_FOREACH only works upon Qt containers like QList.)
-	size_t num_colouring_actions = sizeof(colouring_actions) / sizeof(colouring_actions[0]);
-	for (QAction **actions_iter = colouring_actions, **actions_end = colouring_actions + num_colouring_actions;
-			actions_iter != actions_end;
-			++actions_iter)
-	{
-		QAction *action = *actions_iter;
-		action->setChecked(action == checked_action);
-	}
-#endif
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_red()
-{
-	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_red());
-	change_checked_colouring_action(action_Colour_By_Single_Colour_Red);
-
-	// Force a redraw (no need to reconstruct due to ColourProxy)
-	d_reconstruction_view_widget.active_view().update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_blue()
-{
-	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_blue());
-	change_checked_colouring_action(action_Colour_By_Single_Colour_Blue);
-
-	// Force a redraw (no need to reconstruct due to ColourProxy)
-	d_reconstruction_view_widget.active_view().update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_green()
-{
-	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_green());
-	change_checked_colouring_action(action_Colour_By_Single_Colour_Green);
-
-	// Force a redraw (no need to reconstruct due to ColourProxy)
-	d_reconstruction_view_widget.active_view().update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_yellow()
-{
-	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_yellow());
-	change_checked_colouring_action(action_Colour_By_Single_Colour_Yellow);
-
-	// Force a redraw (no need to reconstruct due to ColourProxy)
-	d_reconstruction_view_widget.active_view().update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_white()
-{
-	get_view_state().choose_colour_by_single_colour(GPlatesGui::Colour::get_white());
-	change_checked_colouring_action(action_Colour_By_Single_Colour_White);
-
-	// Force a redraw (no need to reconstruct due to ColourProxy)
-	d_reconstruction_view_widget.active_view().update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour_customise()
-{
-	// Show dialog box and save colour if the dialog box was not cancelled
-	QColor current_colour = get_view_state().get_last_single_colour();
-	QColor qcolor = QColorDialog::getColor(current_colour, this);
-	if (qcolor.isValid())
-	{
-		get_view_state().choose_colour_by_single_colour(qcolor);
-		change_checked_colouring_action(action_Colour_By_Single_Colour_Customise);
-
-		// Force a redraw (no need to reconstruct due to ColourProxy)
-		d_reconstruction_view_widget.active_view().update_canvas();
-	}
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_plate_id_default()
-{
-	get_view_state().choose_colour_by_plate_id_default();
-	change_checked_colouring_action(action_Colour_By_Plate_ID_Default);
-
-	// Force a redraw (no need to reconstruct due to ColourProxy)
-	d_reconstruction_view_widget.active_view().update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_plate_id_regional()
-{
-	get_view_state().choose_colour_by_plate_id_regional();
-	change_checked_colouring_action(action_Colour_By_Plate_ID_Regional);
-
-	// Force a redraw (no need to reconstruct due to ColourProxy)
-	d_reconstruction_view_widget.active_view().update_canvas();
-}
-
-
-void	
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_feature_type()
-{
-	get_view_state().choose_colour_by_feature_type();
-	change_checked_colouring_action(action_Colour_By_Feature_Type);
-
-	// Force a redraw (no need to reconstruct due to ColourProxy)
-	d_reconstruction_view_widget.active_view().update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_colour_by_age()
-{
-	get_view_state().choose_colour_by_age();
-	change_checked_colouring_action(action_Colour_By_Age);
-
-	// Force a redraw (no need to reconstruct due to ColourProxy)
-	d_reconstruction_view_widget.active_view().update_canvas();
-}
-
 
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
@@ -2211,5 +2025,11 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_vgp_visibility_dialog()
 
 	// SetVGPVisbilityDialog is modal. 
 	d_set_vgp_visibility_dialog_ptr->exec();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_colour_scheme_delegator_changed()
+{
+	d_reconstruction_view_widget.globe_and_map_widget().update_canvas();
 }
 

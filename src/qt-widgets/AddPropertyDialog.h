@@ -28,7 +28,7 @@
 
 #include <QDialog>
 #include "AddPropertyDialogUi.h"
-#include "qt-widgets/EditWidgetGroupBox.h"
+#include "EditWidgetGroupBox.h"
 
 
 namespace GPlatesPresentation

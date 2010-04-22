@@ -33,8 +33,6 @@
 #include "ColourPalette.h"
 #include "model/types.h"
 
-#include <map>
-
 namespace GPlatesGui
 {
 	/**
@@ -49,18 +47,6 @@ namespace GPlatesGui
 		boost::optional<Colour>
 		get_colour(
 				GPlatesModel::integer_plate_id_type plate_id) const;
-
-	private:
-
-		//! The colours to rotate through
-		static
-		Colour
-		DEFAULT_COLOUR_ARRAY[];
-
-		//! The size of DEFAULT_COLOUR_ARRAY
-		static
-		size_t
-		DEFAULT_COLOUR_ARRAY_SIZE;
 	};
 
 	/**
@@ -75,18 +61,6 @@ namespace GPlatesGui
 		boost::optional<Colour>
 		get_colour(
 				GPlatesModel::integer_plate_id_type plate_id) const;
-
-	private:
-
-		//! Base colours for the regions
-		static
-		Colour
-		REGIONAL_COLOUR_ARRAY[];
-
-		//! The size of REGIONAL_COLOUR_ARRAY
-		static
-		size_t
-		REGIONAL_COLOUR_ARRAY_SIZE;
 	};
 }
 

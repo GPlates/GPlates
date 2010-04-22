@@ -26,7 +26,7 @@
 #define MESH_DIALOG_H
 
 #include <QObject>
-#include<QDialog>
+#include <QDialog>
 
 #include <iostream>
 

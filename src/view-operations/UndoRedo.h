@@ -24,8 +24,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_VIEWOPERATIONS_QTUNDOREDO_H
-#define GPLATES_VIEWOPERATIONS_QTUNDOREDO_H
+#ifndef GPLATES_VIEWOPERATIONS_UNDOREDO_H
+#define GPLATES_VIEWOPERATIONS_UNDOREDO_H
 
 #include <vector>
 #include <stack>
@@ -51,7 +51,7 @@ namespace GPlatesViewOperations
 	}
 
 	class UndoRedo :
-		public GPlatesUtils::Singleton<UndoRedo>
+			public GPlatesUtils::Singleton<UndoRedo>
 	{
 		GPLATES_SINGLETON_CONSTRUCTOR_DEF(UndoRedo)
 
@@ -240,4 +240,4 @@ namespace GPlatesViewOperations
 	};
 }
 
-#endif // GPLATES_VIEWOPERATIONS_QTUNDOREDO_H
+#endif // GPLATES_VIEWOPERATIONS_UNDOREDO_H

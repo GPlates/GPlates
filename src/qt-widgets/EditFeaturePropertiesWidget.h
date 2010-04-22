@@ -28,9 +28,11 @@
 
 #include <QWidget>
 #include <boost/optional.hpp>
+
 #include "EditFeaturePropertiesWidgetUi.h"
-#include "qt-widgets/AddPropertyDialog.h"
-#include "qt-widgets/EditWidgetGroupBox.h"
+#include "AddPropertyDialog.h"
+#include "EditWidgetGroupBox.h"
+
 #include "gui/FeatureFocus.h"
 #include "gui/FeaturePropertyTableModel.h"
 #include "model/FeatureHandle.h"

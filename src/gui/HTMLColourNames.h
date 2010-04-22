@@ -31,6 +31,7 @@
 #include "ColourNameSet.h"
 #include "utils/Singleton.h"
 
+#include <iostream>
 namespace GPlatesGui
 {
 	/**

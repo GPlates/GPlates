@@ -76,6 +76,7 @@ namespace GPlatesUtils
 	class Singleton :
 		public boost::noncopyable
 	{
+
 	public:
 
 		/**
@@ -105,6 +106,7 @@ namespace GPlatesUtils
 		}
 	
 	private:
+
 		static boost::scoped_ptr<T> s_instance_ptr;
 
 	};

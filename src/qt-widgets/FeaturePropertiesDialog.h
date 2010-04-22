@@ -27,13 +27,15 @@
 #define GPLATES_QTWIDGETS_FEATUREPROPERTIESDIALOG_H
 
 #include <QDialog>
+
 #include "FeaturePropertiesDialogUi.h"
 
-#include "gui/FeatureFocus.h"
-#include "model/FeatureHandle.h"
 #include "QueryFeaturePropertiesWidget.h"
 #include "EditFeaturePropertiesWidget.h"
 #include "ViewFeatureGeometriesWidget.h"
+
+#include "gui/FeatureFocus.h"
+#include "model/FeatureHandle.h"
 
 
 namespace GPlatesPresentation

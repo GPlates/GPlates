@@ -122,7 +122,7 @@ namespace
 
 	
 	/**
-	 * Checks that @a geomtry_seq is appropriate for constructing a multipoint.
+	 * Checks that @a geometry_seq is appropriate for constructing a multipoint.
 	 *
 	 * Returns true if the @a geometry_seq has at least two geometries, and 
 	 * each of these geometries contains only a single point.
