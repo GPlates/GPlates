@@ -355,8 +355,19 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_parameters()
 void
 GPlatesQtWidgets::ExportAnimationDialog::react_export_button_clicked()
 {
+	QTableWidget * table_widget = NULL;
+	if(d_is_single_frame)
+	{
+		table_widget=tableWidget_single;
+	}
+	else
+	{
+		table_widget=tableWidget_range;
+	}
+	if(table_widget->rowCount()==0)
+		return;
+
 	update_status_message(tr("Exporting..."));
-	
 	recalculate_progress_bar();
 	set_export_abort_button_state(true);
 	set_export_parameters();
