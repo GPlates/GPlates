@@ -234,7 +234,11 @@ set(srcs
     TotalReconstructionPolesDialog.cc
     TotalReconstructionPolesDialog.h
     TotalReconstructionPolesDialogUi.ui
+    TrinketIcon.cc
+    TrinketIcon.h
     UninitialisedEditWidgetException.h
+    UnsavedChangesWarningDialog.h
+    UnsavedChangesWarningDialogUi.ui
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h
     ViewFeatureGeometriesWidgetUi.ui

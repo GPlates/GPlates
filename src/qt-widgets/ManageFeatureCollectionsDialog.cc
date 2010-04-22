@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,11 +23,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-#include <boost/bind.hpp>
+#include <QCoreApplication>
 #include <QTableWidget>
 #include <QHeaderView>
-#include <QFileDialog>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QDebug>
@@ -41,21 +39,24 @@
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
 #include "file-io/FileFormatNotSupportedException.h"
-#include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "file-io/OgrException.h"
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
+#include "gui/FileIOFeedback.h"
 #include "model/FeatureCollectionHandle.h"
-#include "model/WeakReferenceCallback.h"
 #include "ManageFeatureCollectionsActionWidget.h"
 #include "ManageFeatureCollectionsStateWidget.h"
-#include "GMTHeaderFormatDialog.h"
 
 #include "ManageFeatureCollectionsDialog.h"
 
 
 namespace
 {
+	// The colours to be used for row backgrounds and icon colours.
+	const QColor bg_colour_normal(Qt::white);
+	const QColor bg_colour_unsaved("#FFA699"); // Red raised to same lightness as below.
+	const QColor bg_colour_new_feature_collection("#FFD799");	// Ubuntu (8.04) Light Orange Text Highlight
+
 	namespace ColumnNames
 	{
 		/**
@@ -67,6 +68,10 @@ namespace
 		};
 	}
 	
+	/**
+	 * Returns a text string that identifies the file format for a file.
+	 * Used to set the 'FORMAT' column in the table.
+	 */
 	const QString &
 	get_format_for_file(
 			const QFileInfo &qfileinfo)
@@ -108,169 +113,6 @@ namespace
 			return format_unknown;
 		}
 	}
-	
-	GPlatesQtWidgets::SaveFileDialog::filter_list_type
-	get_output_filters_for_file(
-			GPlatesAppLogic::FeatureCollectionFileState &file_state,
-			GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter,
-			bool has_gzip)
-	{
-		using std::make_pair;
-
-		// Appropriate filters for available output formats.
-		static const QString filter_gmt(QObject::tr("GMT xy (*.xy)"));
-		static const QString filter_gmt_ext(QObject::tr("xy"));
-		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
-		static const QString filter_line_ext(QObject::tr("dat"));
-		static const QString filter_rotation(QObject::tr("PLATES4 rotation (*.rot)"));
-		static const QString filter_rotation_ext(QObject::tr("rot"));
-		static const QString filter_shapefile(QObject::tr("ESRI shapefile (*.shp)"));
-		static const QString filter_shapefile_ext(QObject::tr("shp"));
-		static const QString filter_gpml(QObject::tr("GPlates Markup Language (*.gpml)"));
-		static const QString filter_gpml_ext(QObject::tr("gpml"));
-		static const QString filter_gpml_gz(QObject::tr("Compressed GPML (*.gpml.gz)"));
-		static const QString filter_gpml_gz_ext(QObject::tr("gpml.gz"));
-		static const QString filter_all(QObject::tr("All files (*)"));
-		static const QString filter_all_ext(QObject::tr(""));
-		
-		// Determine whether file contains reconstructable and/or reconstruction features.
-		const GPlatesAppLogic::ClassifyFeatureCollection::classifications_type classification =
-				file_state.get_feature_collection_classification(file_iter);
-		const bool has_features_with_geometry =
-				GPlatesAppLogic::ClassifyFeatureCollection::found_geometry_feature(classification);
-		const bool has_reconstruction_features =
-				GPlatesAppLogic::ClassifyFeatureCollection::found_reconstruction_feature(classification);
-
-		GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
-		
-		// Build the list of filters depending on the original file format.
-		switch ( file_iter->get_loaded_file_format() )
-		{
-		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
-			{
-				filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
-				if (has_gzip)
-				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
-				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
-				filters.push_back(make_pair(filter_line, filter_line_ext));
-				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
-				filters.push_back(make_pair(filter_all, filter_all_ext));
-			}
-			break;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
-			{
-				filters.push_back(make_pair(filter_line, filter_line_ext));
-				if (has_gzip)
-				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
-				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
-				filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
-				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
-				filters.push_back(make_pair(filter_all, filter_all_ext));
-			}
-			break;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
-			{
-				filters.push_back(make_pair(filter_rotation, filter_rotation_ext));
-				if (has_gzip)
-				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
-				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
-				filters.push_back(make_pair(filter_all, filter_all_ext));
-			}
-			break;
-			
-		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-			{
-				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
-				filters.push_back(make_pair(filter_line, filter_line_ext));
-				if (has_gzip)
-				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
-				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
-				filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
-				filters.push_back(make_pair(filter_all, filter_all_ext));
-			}
-			break;
-		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
-			{
-#if 0			
-				// Disable any kind of export from GMAP data. 
-				break;
-#else			
-				// No GMAP writing yet. (Ever?).
-				// Offer gmpl/gpml_gz export.
-				// 
-				// (Probably not useful to export these in shapefile or plates formats
-				// for example - users would get the geometries but nothing else).
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
-				if (has_gzip)
-				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
-				}
-				break;
-#endif
-			}
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
-		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
-		default: // If no file extension then use same options as GMPL.
-			{
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext)); // Save uncompressed by default, same as original
-				if (has_gzip)
-				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext)); // Option to change to compressed version.
-				}
-				if (has_features_with_geometry)
-				{
-					// Only offer to save in line-only formats if feature collection
-					// actually has reconstructable features in it!
-					filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
-					filters.push_back(make_pair(filter_line, filter_line_ext));
-					filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
-				}
-				if (has_reconstruction_features)
-				{
-					// Only offer to save as PLATES4 .rot if feature collection
-					// actually has rotations in it!
-					filters.push_back(make_pair(filter_rotation, filter_rotation_ext));
-				}
-				filters.push_back(make_pair(filter_all, filter_all_ext));
-			}
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
-			{
-				if (has_gzip)
-				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext)); // Save compressed by default, assuming we can.
-				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext)); // Option to change to uncompressed version.
-				if (has_features_with_geometry)
-				{
-					// Only offer to save in line-only formats if feature collection
-					// actually has reconstructable features in it!
-					filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
-					filters.push_back(make_pair(filter_line, filter_line_ext));
-					filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
-				}
-				if (has_reconstruction_features)
-				{
-					// Only offer to save as PLATES4 .rot if feature collection
-					// actually has rotations in it!
-					filters.push_back(make_pair(filter_rotation, filter_rotation_ext));
-				}
-				filters.push_back(make_pair(filter_all, filter_all_ext));
-			}
-			break;
-		}
-
-		return filters;
-	}
 
 
 	GPlatesQtWidgets::ManageFeatureCollectionsStateWidget *
@@ -292,81 +134,40 @@ namespace
 				qtable_widget->cellWidget(row, ColumnNames::ACTIONS));
 	}
 
+
+	/**
+	 * Convenience function to change the background for all table cells on
+	 * a given @a row.
+	 */
+	void
+	set_row_background(
+			QTableWidget *qtable_widget,
+			int row,
+			const QBrush &bg_colour)
+	{
+		int columns = qtable_widget->columnCount();
+		for (int col = 0; col < columns; ++col) {
+			QTableWidgetItem *item = qtable_widget->item(row, col);
+			if ( ! item) {
+				item = new QTableWidgetItem();
+				qtable_widget->setItem(row, col, item);
+			}
+			item->setBackground(bg_colour);
+		}
+	}
 	
 	/**
-	 * A test callback to receive notifications of changes to feature collections.
+	 * Creates a colour 'swatch' pixmap consisting of the given colour.
+	 * Useful for labels.
 	 */
-	class ExampleCallback :
-			public GPlatesModel::WeakReferenceCallback<GPlatesModel::FeatureCollectionHandle>
+	QPixmap
+	create_pixmap_from_colour(
+			const QColor &colour,
+			int size = 16)
 	{
-	public:
-
-		void
-		publisher_modified(
-				const modified_event_type &event)
-		{
-#if 0
-			bool publisher = event.type() & modified_event_type::PUBLISHER_MODIFIED;
-			bool child = event.type() & modified_event_type::CHILD_MODIFIED;
-			qDebug() << "[MFCD] feature collection modified " <<
-				(publisher ? "publisher " : "") <<
-				(child ? "child " : "");
-
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = event.reference();
-			qDebug() << "    contains unsaved changes? " << feature_collection->contains_unsaved_changes();
-			feature_collection->clear_unsaved_changes();
-			qDebug() << "    unsaved changes cleared.";
-#endif
-		}
-
-		void
-		publisher_added(
-				const added_event_type &event)
-		{
-#if 0
-			qDebug() << "[MFCD] feature collection added " << event.new_children().size() << " children";
-#endif
-		}
-
-		void
-		publisher_deactivated(
-				const deactivated_event_type &)
-		{
-#if 0
-			qDebug() << "[MFCD] feature collection deactivated";
-#endif
-		}
-
-		void
-		publisher_reactivated(
-				const reactivated_event_type &)
-		{
-#if 0
-			qDebug() << "[MFCD] feature collection reactivated";
-#endif
-		}
-
-		void
-		publisher_about_to_be_destroyed(
-				const about_to_be_destroyed_event_type &)
-		{
-#if 0
-			qDebug() << "[MFCD] feature collection about to be destroyed";
-#endif
-		}
-	};
-
-
-	void
-	register_example_callback(
-			GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file_iter)
-	{
-		// This isn't glorious code; it's just meant to demonstrate the workings of the callback system.
-		static std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> fc_weak_refs;
-		GPlatesFileIO::File &file = *file_iter;
-		fc_weak_refs.push_back(file.get_feature_collection());
-		GPlatesModel::FeatureCollectionHandle::weak_ref &fc_weak_ref = fc_weak_refs.back();
-		fc_weak_ref.attach_callback(new ExampleCallback());
+		QPixmap pix(size, size);
+		pix.fill(colour);
+		return pix;
 	}
 
 }
@@ -375,22 +176,12 @@ namespace
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
+		GPlatesGui::FileIOFeedback &gui_file_io_feedback,
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
 	d_file_state(file_state),
 	d_feature_collection_file_io(&feature_collection_file_io),
-	d_open_file_path(""),
-	d_save_file_as_dialog_ptr(
-			SaveFileDialog::get_save_file_dialog(
-				this,
-				"Save File As",
-				SaveFileDialog::filter_list_type())),
-	d_save_file_copy_dialog_ptr(
-			SaveFileDialog::get_save_file_dialog(
-				this,
-				"Save a copy of the file with a different name",
-				SaveFileDialog::filter_list_type())),
-	d_gzip_available(false)
+	d_gui_file_io_feedback_ptr(&gui_file_io_feedback)
 {
 	setupUi(this);
 	
@@ -399,27 +190,30 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
 	header->resizeSection(ColumnNames::LAYER_TYPES, 88);
-	header->resizeSection(ColumnNames::ACTIONS, 216);
+	header->resizeSection(ColumnNames::ACTIONS, 212);
 
 	// Enforce minimum row height for the Actions widget's sake.
 	QHeaderView *sider = table_feature_collections->verticalHeader();
 	sider->setResizeMode(QHeaderView::Fixed);
 	sider->setDefaultSectionSize(34);
 	
+	// Hide the 'unsaved' information labels by default - these are shown/hidden
+	// later as appropriate using highlight_unsaved_changes().
+	label_unsaved_changes->hide();
+	label_unsaved_changes_swatch->hide();
+	label_no_presence_on_disk->hide();
+	label_no_presence_on_disk_swatch->hide();
+	// Also set a stylish icon for them matching the row colour.
+	// These colours are defined in the anonymous namespace section.
+	label_unsaved_changes_swatch->setPixmap(create_pixmap_from_colour(bg_colour_unsaved));
+	label_no_presence_on_disk_swatch->setPixmap(create_pixmap_from_colour(bg_colour_new_feature_collection));
+
 	// Set up slots for Open File and Save All
-	QObject::connect(button_open_file, SIGNAL(clicked()), this, SLOT(open_files()));
-	QObject::connect(button_save_all, SIGNAL(clicked()), this, SLOT(save_all()));
+	QObject::connect(button_open_file, SIGNAL(clicked()), d_gui_file_io_feedback_ptr, SLOT(open_files()));
+	QObject::connect(button_save_all, SIGNAL(clicked()), this, SLOT(save_all_named()));
 	
 	// Set up slots for file load/unload notifications.
 	connect_to_file_state_signals();
-
-
-	// Test if we can offer on-the-fly gzip compression.
-	// FIXME: Ideally we should let the user know WHY we're concealing this option.
-	// The user will still be able to type in a .gpml.gz file name and activate the
-	// gzipped saving code, however this will produce an exception which pops up
-	// a suitable message box (See ViewportWindow.cc)
-	d_gzip_available = GPlatesFileIO::GpmlOnePointSixOutputVisitor::gzip_program().test();
 }
 
 
@@ -435,6 +229,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update()
 	for (; it != end; ++it) {
 		add_row(it);
 	}
+
+	highlight_unsaved_changes();
 }
 
 
@@ -462,19 +258,9 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 {
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file =
 			action_widget_ptr->get_file_info_iterator();
-
-	// Get the format to write feature collection in.
-	// This is usually determined by file extension but some format also
-	// require user preferences (eg, style of feature header in file).
-	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
-		get_feature_collection_write_format(file->get_file_info());
-	
-	// Save the feature collection.
-	save_file(
-			file->get_file_info(),
-			file->get_feature_collection(),
-			feature_collection_write_format);
+	d_gui_file_io_feedback_ptr->save_file_in_place(file);
 }
+
 
 
 void
@@ -483,54 +269,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 {
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file =
 			action_widget_ptr->get_file_info_iterator();
-
-	d_save_file_as_dialog_ptr->set_filters(
-			get_output_filters_for_file(
-				d_file_state,
-				file,
-				d_gzip_available));
-	QString file_path = file->get_file_info().get_qfileinfo().filePath();
-	if (file_path != "")
-	{
-		d_save_file_as_dialog_ptr->select_file(file_path);
-	}
-	boost::optional<QString> filename_opt = d_save_file_as_dialog_ptr->get_file_name();
-
-	if (!filename_opt)
-	{
-		return;
-	}
-	
-	QString &filename = *filename_opt;
-
-	// Make a new FileInfo object to tell save_file() what the new name should be.
-	// This also copies any other info stored in the FileInfo.
-	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
-			filename, file->get_file_info());
-
-	// Get the format to write feature collection in.
-	// This is usually determined by file extension but some format also
-	// require user preferences (eg, style of feature header in file).
-	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
-		get_feature_collection_write_format(new_fileinfo);
-
-	// Save the feature collection.
-	save_file(
-			new_fileinfo,
-			file->get_feature_collection(),
-			feature_collection_write_format);
-
-	// Wrap the same feature collection up with the new FileInfo.
-	const GPlatesFileIO::File::shared_ref new_file = GPlatesFileIO::File::create_save_file(
-			*file, new_fileinfo);
-
-	// Update the name of the file by replacing with the new File object.
-	// NOTE: this also removes the old file object thus making 'file'
-	// a dangling reference.
-	d_file_state.reset_file(file, new_file);
-
+	d_gui_file_io_feedback_ptr->save_file_as(file);
+	// Row text needs to be updated.
 	update();
 }
+
 
 
 void
@@ -539,42 +282,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 {
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file =
 			action_widget_ptr->get_file_info_iterator();
-	
-	d_save_file_copy_dialog_ptr->set_filters(
-			get_output_filters_for_file(
-				d_file_state,
-				file,
-				d_gzip_available));
-	QString file_path = file->get_file_info().get_qfileinfo().filePath();
-	if (file_path != "")
-	{
-		d_save_file_copy_dialog_ptr->select_file(file_path);
-	}
-	boost::optional<QString> filename_opt = d_save_file_copy_dialog_ptr->get_file_name();
-
-	if (!filename_opt)
-	{
-		return;
-	}
-	
-	QString &filename = *filename_opt;
-
-	// Make a new FileInfo object to tell save_file() what the copy name should be.
-	// This also copies any other info stored in the FileInfo.
-	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
-			filename, file->get_file_info());
-
-	// Get the format to write feature collection in.
-	// This is usually determined by file extension but some format also
-	// require user preferences (eg, style of feature header in file).
-	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
-			get_feature_collection_write_format(new_fileinfo);
-
-	// Save the feature collection.
-	save_file(
-			new_fileinfo,
-			file->get_feature_collection(),
-			feature_collection_write_format);
+	d_gui_file_io_feedback_ptr->save_file_copy(file);
 }
 
 
@@ -585,7 +293,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_file(
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it =
 			action_widget_ptr->get_file_info_iterator();
 	
-	reload_file(file_it);
+	d_gui_file_io_feedback_ptr->reload_file(file_it);
 }
 
 
@@ -650,24 +358,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstruction_state_for_f
 }
 
 
-void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::open_files()
-{
-	static const QString filters = tr(
-			"All loadable files (*.dat *.pla *.rot *.shp *.gpml *.gpml.gz *.vgp);;"
-			"PLATES4 line (*.dat *.pla);;"
-			"PLATES4 rotation (*.rot);;"
-			"ESRI shapefile (*.shp);;"
-			"GPlates Markup Language (*.gpml *.gpml.gz);;"
-			"GMAP VGP file (*.vgp);;"
-			"All files (*)" );
-	
-	QStringList filenames = QFileDialog::getOpenFileNames(parentWidget(),
-			tr("Open Files"), d_open_file_path, filters);
-
-	open_files(filenames);
-}
-
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::end_add_feature_collections(
@@ -679,9 +369,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::end_add_feature_collections(
 	for ( ; new_file_iter != new_files_end; ++new_file_iter)
 	{
 		add_row(new_file_iter);
-
-		// FIXME: Testing code only; remove later
-		register_example_callback(new_file_iter);
 	}
 }
 
@@ -933,7 +620,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 #endif
 	const bool active_reconstruction = d_file_state.is_file_active_reconstruction(file);
 	const bool enable_reconstruction = d_file_state.is_reconstruction_workflow_using_file(file);
-	
+
 	// Add blank row.
 	int row = table_feature_collections->rowCount();
 	table_feature_collections->insertRow(row);
@@ -967,6 +654,9 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	{
 		action_widget_ptr->enable_edit_configuration_button();
 	}
+
+	// A bit inefficient, but highlight everything now that we have a new row.
+	highlight_unsaved_changes();
 }
 
 
@@ -1026,158 +716,93 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::remove_row(
 }
 
 
-GPlatesFileIO::FeatureCollectionWriteFormat::Format
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::get_feature_collection_write_format(
-	const GPlatesFileIO::FileInfo& file_info)
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_all_named()
 {
-	switch (get_feature_collection_file_format(file_info) )
-	{
-	case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
-		{
-			GMTHeaderFormatDialog gmt_header_format_dialog(parentWidget());
-			gmt_header_format_dialog.exec();
+	save_all(false);
+}
 
-			return gmt_header_format_dialog.get_header_format();
-		}
 
-	default:
-		return GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION;
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_all(
+		bool include_unnamed_files)
+{
+	// Instant feedback is nice for such a long operation with no progress bars (yet).
+	QString button_text_normal = button_save_all->text();
+	button_save_all->setText(tr("Saving..."));
+	button_save_all->setEnabled(false);
+	// Attempting to make the GUI actually update...
+	button_save_all->update();
+	QCoreApplication::processEvents();
+
+	// Save all, with feedback.
+	d_gui_file_io_feedback_ptr->save_all(include_unnamed_files);
+	
+	// Update each row.
+	highlight_unsaved_changes();
+
+	// Re-enable button.
+	button_save_all->setText(button_text_normal);
+	button_save_all->setEnabled(true);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::highlight_unsaved_changes()
+{
+	// Assume no unsaved changes; hide the info labels.
+	label_unsaved_changes->hide();
+	label_unsaved_changes_swatch->hide();
+	label_no_presence_on_disk->hide();
+	label_no_presence_on_disk_swatch->hide();
+	// Change all row background colours to reflect unsavitivity.
+	// As a side effect, if there are any rows of that particular colour,
+	// the corresponding label will be shown.
+	for (int row = 0; row < table_feature_collections->rowCount(); ++row) {
+		set_row_background_colour(row);
 	}
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::open_files(
-		const QStringList &filenames)
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_row_background_colour(
+		int row)
 {
-	if (filenames.isEmpty())
-	{
+	// The colours to be used.
+	static const QBrush bg_normal(bg_colour_normal);
+	static const QBrush bg_unsaved(bg_colour_unsaved); // Red raised to same lightness as below.
+	static const QBrush bg_new_fc(bg_colour_new_feature_collection);	// Ubuntu Light Orange Text Highlight
+
+	// Get the file_iterator corresponding to this table row.
+	ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(
+			table_feature_collections, row);
+	if ( ! action_widget) {
 		return;
 	}
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it = action_widget->get_file_info_iterator();
 
-	try_catch_file_load(
-			boost::bind(
-					&GPlatesAppLogic::FeatureCollectionFileIO::load_files,
-					d_feature_collection_file_io,
-					filenames));
+	// Get the FileInfo and Feature Collection associated with that file.
+	GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref = file_it->get_const_feature_collection();
+	const GPlatesFileIO::FileInfo &file_info = file_it->get_file_info();
+	if (feature_collection_ref.is_valid()) {
+		bool has_unsaved_changes = feature_collection_ref->contains_unsaved_changes();
+		bool has_no_associated_file = ! GPlatesFileIO::file_exists(file_info);
 
-	// Set open file path to the last opened file.
-	if ( ! filenames.isEmpty() )
-	{
-		QFileInfo last_opened_file(filenames.last());
-		d_open_file_path = last_opened_file.path();
+		if (has_no_associated_file) {
+			set_row_background(table_feature_collections, row, bg_new_fc);
+			label_no_presence_on_disk->show();
+			label_no_presence_on_disk_swatch->show();
+		} else if (has_unsaved_changes) {
+			set_row_background(table_feature_collections, row, bg_unsaved);
+			label_unsaved_changes->show();
+			label_unsaved_changes_swatch->show();
+		} else {
+			set_row_background(table_feature_collections, row, bg_normal);
+		}
+	} else {
+		// Something is seriously wrong.
 	}
 }
 
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_file(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file_it)
-{
-	try_catch_file_load(
-			boost::bind(
-					&GPlatesAppLogic::FeatureCollectionFileIO::reload_file,
-					d_feature_collection_file_io,
-					file_it));
-}
-
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::try_catch_file_load(
-		boost::function<void ()> file_load_func)
-{
-	try
-	{
-		file_load_func();
-	}
-	catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &e)
-	{
-		QString message = tr("GPlates was unable to use the '%1' program to read the file '%2'."
-				" Please check that gzip is installed and in your PATH. You will still be able to open"
-				" files which are not compressed.")
-				.arg(e.command())
-				.arg(e.filename());
-		QMessageBox::critical(this, tr("Error Opening File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-	}
-	catch (GPlatesFileIO::FileFormatNotSupportedException &)
-	{
-		QString message = tr("Error: Loading files in this format is currently not supported.");
-		QMessageBox::critical(this, tr("Error Opening File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-	}
-	catch (GPlatesGlobal::Exception &e)
-	{
-		QString message = tr("Error: Unexpected error loading file - ignoring file.");
-		QMessageBox::critical(this, tr("Error Opening File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-
-		std::cerr << "Caught exception: " << e << std::endl;
-	}
-}
-
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
-		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
-{
-	try
-	{
-		// Save the feature collection.
-		GPlatesAppLogic::FeatureCollectionFileIO::save_file(
-				file_info,
-				feature_collection,
-				feature_collection_write_format);
-	}
-	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
-	{
-		QString message = tr("An error occurred while saving the file '%1'")
-				.arg(e.filename());
-		QMessageBox::critical(this, tr("Error Saving File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-				
-	}
-	catch (GPlatesFileIO::ErrorOpeningPipeToGzipException &e)
-	{
-		QString message = tr("GPlates was unable to use the '%1' program to save the file '%2'."
-				" Please check that gzip is installed and in your PATH. You will still be able to save"
-				" files without compression.")
-				.arg(e.command())
-				.arg(e.filename());
-		QMessageBox::critical(this, tr("Error Saving File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-				
-	}
-	catch (GPlatesGlobal::InvalidFeatureCollectionException &)
-	{
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-		QString message = tr("Error: Attempted to write an invalid feature collection.");
-		QMessageBox::critical(this, tr("Error Saving File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-	}
-	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &)
-	{
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-		QString message = tr("Error: Attempted to write an empty feature collection.");
-		QMessageBox::critical(this, tr("Error Saving File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-	}
-	catch (GPlatesFileIO::FileFormatNotSupportedException &)
-	{
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-		QString message = tr("Error: Writing files in this format is currently not supported.");
-		QMessageBox::critical(this, tr("Error Saving File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-	}
-	catch (GPlatesFileIO::OgrException &)
-	{
-		QString message = tr("An OGR error occurred.");
-		QMessageBox::critical(this, tr("Error Saving File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-	}
-}

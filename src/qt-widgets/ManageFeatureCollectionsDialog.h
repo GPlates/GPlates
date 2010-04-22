@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,8 +33,8 @@
 # include <boost/python.hpp>
 #endif
 
-#include <boost/function.hpp>
 #include <QObject>
+#include <QPointer>
 #include <QString>
 
 #include "ManageFeatureCollectionsDialogUi.h"
@@ -47,6 +47,12 @@ namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileIO;
 }
+
+namespace GPlatesGui
+{
+	class FileIOFeedback;
+}
+
 
 namespace GPlatesQtWidgets
 {
@@ -66,29 +72,16 @@ namespace GPlatesQtWidgets
 		ManageFeatureCollectionsDialog(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
+				GPlatesGui::FileIOFeedback &gui_file_io_feedback,
 				QWidget *parent_ = NULL);
 		
-		/**
-		 * Updates the contents of the table to match the current FeatureCollectionFileState.
-		 * This clears the table completely, and adds a new row for each loaded file.
-		 */
-		void
-		update();
-		
-		
+
 		/**
 		 * Initiates editing of the file configuration. 
 		 */
 		void
 		edit_configuration(
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
-
-		/**
-		 * Opens the specified files and keeps track of them internally.
-		 */
-		void
-		open_files(
-				const QStringList &filenames);
 
 		/**
 		 * Causes the file referenced by the action widget to be saved with its
@@ -156,12 +149,34 @@ namespace GPlatesQtWidgets
 	
 	public slots:
 	
+		/**
+		 * Updates the contents of the table to match the current FeatureCollectionFileState.
+		 * This clears the table completely, and adds a new row for each loaded file.
+		 * Doing this makes the scroll pane jump to the top of the table, which may not be
+		 * desirable - so avoid doing this unless the set of loaded files has @em actually changed.
+		 *
+		 * It also calls @a highlight_unsaved_changes().
+		 */
 		void
-		open_files();
+		update();
+
+
+		/**
+		 * Recolours table rows' background colours based on saved/unsaved state.
+		 *
+		 * If the only thing that has changed is this saved/unsaved state, this is much
+		 * cheaper to call and will not result in the scroll pane jumping to the top.
+		 */
+		void
+		highlight_unsaved_changes();
+
 		
+		/**
+		 * Saves-in-place all files with unsaved changes, except for those which
+		 * have not yet been given filenames.
+		 */
 		void
-		save_all()
-		{  }	// FIXME: This should invoke a call on AppState or ViewportWindow etc.
+		save_all_named();
 
 	private slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -244,30 +259,21 @@ namespace GPlatesQtWidgets
 		remove_row(
 				int row);
 
-		/**
-		 * Get format for writing to feature collection file.
-		 */
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format
-		get_feature_collection_write_format(
-				const GPlatesFileIO::FileInfo& file_info);
-
-
 
 		/**
-		 * Reloads specified file and handles any exceptions thrown while doing so.
+		 * Goes through each loaded file and saves-in-place each one that needs saving.
+		 * Will prompt for filenames on unnamed collections if @a include_unnamed_files.
 		 */
 		void
-		reload_file(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file_it);
+		save_all(
+				bool include_unnamed_files);
 
 		/**
-		 * Saves specified feature collection into a file described by @a file_info.
+		 * Recolours a single row's background based on saved/unsaved state.
 		 */
 		void
-		save_file(
-				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format);
+		set_row_background_colour(
+				int row);
 
 	private:
 		/**
@@ -281,26 +287,12 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::FeatureCollectionFileIO *d_feature_collection_file_io;
 
 		/**
-		 * Holds the path information from the last file opened using the Open File dialog.
-		 * Note that file save dialogs infer their directory based on the path of the file
-		 * being saved.
+		 * GUI wrapper around saving/loading to handle feedback dialogs, progress bars, etc.
+		 *
+		 * Guarded pointer, ViewportWindow/Qt owns FileIOFeedback.
 		 */
-		QString d_open_file_path;
-		
-		/**
-		 * Displays save file as dialog box.
-		 */
-		boost::shared_ptr<SaveFileDialog> d_save_file_as_dialog_ptr;
+		QPointer<GPlatesGui::FileIOFeedback> d_gui_file_io_feedback_ptr;
 
-		/**
-		 * Displays save file copy dialog box.
-		 */
-		boost::shared_ptr<SaveFileDialog> d_save_file_copy_dialog_ptr;
-		
-		/**
-		 * Controls whether Save File dialogs include a Compressed GPML option.
-		 */
-		bool d_gzip_available;
 
 		/**
 		 * Connect to signals from a @a FeatureCollectionFileState object.
@@ -308,13 +300,6 @@ namespace GPlatesQtWidgets
 		void
 		connect_to_file_state_signals();
 
-		/**
-		 * Allows calling multiple functions that throw the same types of exceptions and
-		 * handles those exceptions in one place.
-		 */
-		void
-		try_catch_file_load(
-				boost::function<void ()> file_load_func);
 	};
 }
 

@@ -90,6 +90,8 @@ namespace GPlatesFileIO
 					d_terminating_errors.empty() && d_failures_to_begin.empty());
 		}
 		
+		
+		
 		/**
 		 * The combined size of all read error collections in this ReadErrorAccumulation.
 		 */
@@ -99,7 +101,28 @@ namespace GPlatesFileIO
 			return (d_warnings.size() + d_recoverable_errors.size() +
 					d_terminating_errors.size() + d_failures_to_begin.size());
 		}
-		
+
+		/**
+		 * Returns the most severe type of warning/error found in this accumulation.
+		 * Used by ViewportWindow::handle_read_errors().
+		 */
+		ReadErrors::Severity
+		most_severe_error_type() const
+		{
+			if ( ! d_failures_to_begin.empty()) {
+				return ReadErrors::FailureToBegin;
+			} else if ( ! d_terminating_errors.empty()) {
+				return ReadErrors::TerminatingError;
+			} else if ( ! d_recoverable_errors.empty()) {
+				return ReadErrors::RecoverableError;
+			} else if ( ! d_warnings.empty()) {
+				return ReadErrors::Warning;
+			} else {
+				return ReadErrors::NothingWrong;
+			}
+		}
+
+
 		void
 		clear()
 		{

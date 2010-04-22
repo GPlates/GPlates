@@ -302,6 +302,8 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			SLOT(handle_globe_and_map_widget_resized(int, int)));
 
 	recalc_camera_position();
+	// Focus anything, ANYTHING, other than the time spinbox as it eats hotkeys.
+	globe_canvas().setFocus(Qt::ActiveWindowFocusReason);
 }
 
 

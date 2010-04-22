@@ -39,6 +39,7 @@
 #include <memory>
 #include <boost/scoped_ptr.hpp>
 #include <QtCore/QTimer>
+#include <QPointer>
 #include <QCloseEvent>
 #include <QStringList>
 #include <QUndoGroup>
@@ -80,6 +81,9 @@ namespace GPlatesGui
 	class MapCanvasToolChoice;
 	class TopologySectionsTable;
 	class TopologySectionsContainer;
+	class TrinketArea;
+	class UnsavedChangesTracker;
+	class FileIOFeedback;
 }
 
 namespace GPlatesPresentation
@@ -180,6 +184,13 @@ namespace GPlatesQtWidgets
 			return *d_feature_table_model_ptr;
 		}
 
+		GPlatesGui::TrinketArea &
+		trinket_area() 
+		{
+			return *d_trinket_area_ptr;
+		}
+
+
 		/** Get a pointer to the TopologySectionsContainer */
 		GPlatesGui::TopologySectionsContainer &
 		topology_sections_container()
@@ -193,7 +204,6 @@ namespace GPlatesQtWidgets
 		{
 			return d_task_panel_ptr;
 		}
-
 
 
 	public slots:
@@ -385,6 +395,12 @@ namespace GPlatesQtWidgets
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				const GPlatesFileIO::ReadErrorAccumulation &new_read_errors);
 
+		/**
+		 * Add secret menu filled with actions aid GUI-related debugging.
+		 * Triggered from gplates_main and commandline switch --debug-gui.
+		 */
+		void
+		install_gui_debug_menu();
 
 	private:
 		//! Returns the application state.
@@ -412,6 +428,28 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::AnimationController d_animation_controller;
 		GPlatesGui::FullScreenMode d_full_screen_mode;
+
+		//! Manages the icons in the status bar
+		boost::scoped_ptr<GPlatesGui::TrinketArea> d_trinket_area_ptr;
+
+		/**
+		 * Tracks changes to saved/unsaved status of files and manages user notification of same.
+		 *
+		 * QPointer is a guarded pointer which will be set to null when the QObject it points to
+		 * gets deleted; The UnsavedChangesTracker is parented to ViewportWindow, so the Qt
+		 * object system handles cleanup, and so that I have easier access to it via GuiDebug.
+		 */
+		QPointer<GPlatesGui::UnsavedChangesTracker> d_unsaved_changes_tracker_ptr;
+
+		/**
+		 * Wraps file loading and saving, opening dialogs appropriately for filenames and error feedback.
+		 * Can later provide save/load progress reports to progress bars in GUI.
+		 *
+		 * QPointer is a guarded pointer which will be set to null when the QObject it points to
+		 * gets deleted; The FileIOFeedback is parented to ViewportWindow, so the Qt
+		 * object system handles cleanup, and so that I have easier access to it via GuiDebug.
+		 */
+		QPointer<GPlatesGui::FileIOFeedback> d_file_io_feedback_ptr;
 
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
@@ -628,12 +666,6 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_set_projection_dialog();
-		
-		/**
-		 * A secret action triggerable with Ctrl+Shift+? to aid GUI-related debugging.
-		 */
-		void
-		handle_gui_debug_action();
 		
 		void
 		pop_up_create_vgp_dialog();

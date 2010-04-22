@@ -41,22 +41,11 @@
     <number>1</number>
    </property>
    <item>
-    <widget class="QPushButton" name="button_edit_configuration" >
+    <widget class="QToolButton" name="button_edit_configuration" >
      <property name="enabled" >
       <bool>false</bool>
      </property>
-     <property name="sizePolicy" >
-      <sizepolicy vsizetype="Fixed" hsizetype="Minimum" >
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize" >
-      <size>
-       <width>0</width>
-       <height>30</height>
-      </size>
-     </property>
+
      <property name="toolTip" >
       <string>Edit the file's configuration</string>
      </property>
@@ -75,7 +64,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="button_save" >
+    <widget class="QToolButton" name="button_save" >
      <property name="enabled" >
       <bool>true</bool>
      </property>
@@ -94,13 +83,10 @@
        <height>22</height>
       </size>
      </property>
-     <property name="flat" >
-      <bool>false</bool>
-     </property>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="button_save_as" >
+    <widget class="QToolButton" name="button_save_as" >
      <property name="toolTip" >
       <string>Save the file using a new name</string>
      </property>
@@ -116,13 +102,10 @@
        <height>22</height>
       </size>
      </property>
-     <property name="flat" >
-      <bool>false</bool>
-     </property>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="button_save_copy" >
+    <widget class="QToolButton" name="button_save_copy" >
      <property name="toolTip" >
       <string>Save a copy of the file with a different name</string>
      </property>
@@ -138,13 +121,10 @@
        <height>22</height>
       </size>
      </property>
-     <property name="flat" >
-      <bool>false</bool>
-     </property>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="button_reload" >
+    <widget class="QToolButton" name="button_reload" >
      <property name="toolTip" >
       <string>Reload the file from disk</string>
      </property>
@@ -160,13 +140,10 @@
        <height>22</height>
       </size>
      </property>
-     <property name="flat" >
-      <bool>false</bool>
-     </property>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="button_unload" >
+    <widget class="QToolButton" name="button_unload" >
      <property name="toolTip" >
       <string>Unload the file from GPlates</string>
      </property>
@@ -181,9 +158,6 @@
        <width>22</width>
        <height>22</height>
       </size>
-     </property>
-     <property name="flat" >
-      <bool>false</bool>
      </property>
     </widget>
    </item>

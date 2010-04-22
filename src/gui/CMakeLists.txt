@@ -66,6 +66,8 @@ set(srcs
     FeatureTableModel.cc
     FeatureTableModel.h
     FeatureWeakRefSequence.h
+    FileIOFeedback.cc
+    FileIOFeedback.h
     FullScreenMode.cc
     FullScreenMode.h
     GenericColourScheme.h
@@ -97,6 +99,8 @@ set(srcs
     GPlatesQApplication.h
     GPlatesQtMsgHandler.cc
     GPlatesQtMsgHandler.h
+    GuiDebug.cc
+    GuiDebug.h
     GuiException.h
     HTMLColourNames.cc
     HTMLColourNames.h
@@ -152,6 +156,10 @@ set(srcs
     TopologyTools.h
     TreeWidgetBuilder.cc
     TreeWidgetBuilder.h
+    TrinketArea.cc
+    TrinketArea.h
+    UnsavedChangesTracker.cc
+    UnsavedChangesTracker.h
     ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h

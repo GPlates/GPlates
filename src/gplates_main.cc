@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -61,17 +61,21 @@ namespace {
 	class CommandLineOptions
 	{
 	public:
-		CommandLineOptions()
+		CommandLineOptions():
+			debug_gui(false)
 		{ }
 
 		QStringList line_format_filenames;
 		QStringList rotation_format_filenames;
+		bool debug_gui;
 	};
 	
 	const char *ROTATION_FILE_OPTION_NAME_WITH_SHORT_OPTION = "rotation-file,r";
 	const char *LINE_FILE_OPTION_NAME_WITH_SHORT_OPTION = "line-file,l";
+
 	const char *ROTATION_FILE_OPTION_NAME = "rotation-file";
 	const char *LINE_FILE_OPTION_NAME = "line-file";
+	const char *DEBUG_GUI_OPTION_NAME = "debug-gui";
 
 	void
 	print_usage(
@@ -107,8 +111,11 @@ namespace {
 			char *argv[])
 	{
 		GPlatesUtils::CommandLineParser::InputOptions input_options;
+		
+		// Add simple help, version, etc.
 		input_options.add_simple_options();
 		
+		// Add generic, visible options more specific to GPlates use.
 		input_options.generic_options.add_options()
 			(ROTATION_FILE_OPTION_NAME_WITH_SHORT_OPTION, boost::program_options::value< std::vector<std::string> >(),
 			"specify rotation files")
@@ -118,6 +125,11 @@ namespace {
 		
 		input_options.positional_options.add(LINE_FILE_OPTION_NAME, -1);
 		
+		// Add secret developer options.
+		input_options.hidden_options.add_options()
+			(DEBUG_GUI_OPTION_NAME, "Enable GUI debugging menu")
+			;
+
 		boost::program_options::variables_map vm;
 
 		try
@@ -143,6 +155,7 @@ namespace {
 			exit(1);
 		}
 
+		// Create our return structure.
 		CommandLineOptions command_line_options;
 
 		if(vm.count(ROTATION_FILE_OPTION_NAME))
@@ -163,6 +176,10 @@ namespace {
 			{
 				command_line_options.line_format_filenames.push_back(line_files[i].c_str());
 			}
+		}
+		if(vm.count(DEBUG_GUI_OPTION_NAME))
+		{
+			command_line_options.debug_gui = true;
 		}
 
 		return command_line_options;
@@ -200,6 +217,10 @@ int internal_main(int argc, char* argv[])
 	main_window_widget.reconstruct_to_time_with_root(0.0, 0);
 	// Make sure the appropriate tool status message is displayed at start up. 
 	main_window_widget.update_tools_and_status_message();
+	// Install an extra menu for developers to help debug GUI problems.
+	if (command_line_options.debug_gui) {
+		main_window_widget.install_gui_debug_menu();
+	}
 
 	return qapplication.exec();
 }

@@ -247,6 +247,12 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 		const GPlatesFileIO::File::shared_ref file = GPlatesFileIO::read_feature_collection(
 				file_info, d_model, read_errors);
 
+		// Files that have been freshly loaded from disk are by definition, clean.
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = file->get_feature_collection();
+		if (feature_collection_ref.is_valid()) {
+			feature_collection_ref->clear_unsaved_changes();
+		}
+
 		files.push_back(file);
 	}
 
@@ -266,6 +272,12 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
 	// Read the feature collection from file.
 	const GPlatesFileIO::File::shared_ref file = GPlatesFileIO::read_feature_collection(
 			file_info, d_model, read_errors);
+
+	// Files that have been freshly loaded from disk are by definition, clean.
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = file->get_feature_collection();
+	if (feature_collection_ref.is_valid()) {
+		feature_collection_ref->clear_unsaved_changes();
+	}
 
 	emit_handle_read_errors_signal(read_errors);
 

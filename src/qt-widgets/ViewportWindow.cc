@@ -104,8 +104,10 @@
 #include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
+#include "gui/FileIOFeedback.h"
 #include "gui/GlobeCanvasToolAdapter.h"
 #include "gui/GlobeCanvasToolChoice.h"
+#include "gui/GuiDebug.h"
 #include "gui/MapCanvasToolAdapter.h"
 #include "gui/MapCanvasToolChoice.h"
 #include "gui/ModifyLoadedFeatureCollectionsFilter.h"
@@ -113,6 +115,8 @@
 #include "gui/SvgExport.h"
 #include "gui/TopologySectionsContainer.h"
 #include "gui/TopologySectionsTable.h"
+#include "gui/TrinketArea.h"
+#include "gui/UnsavedChangesTracker.h"
 
 #include "maths/PolylineIntersections.h"
 #include "maths/PointOnSphere.h"
@@ -150,7 +154,7 @@ void
 GPlatesQtWidgets::ViewportWindow::load_files(
 		const QStringList &filenames)
 {
-	d_manage_feature_collections_dialog_ptr->open_files(filenames);
+	d_file_io_feedback_ptr->open_files(filenames);
 }
 
 
@@ -175,10 +179,21 @@ GPlatesQtWidgets::ViewportWindow::handle_read_errors(
 		return;
 	}
 
+	// Populate the dialog.
 	d_read_errors_dialog_ptr->clear();
 	d_read_errors_dialog_ptr->read_errors().accumulate(new_read_errors);
 	d_read_errors_dialog_ptr->update();
-	d_read_errors_dialog_ptr->show();
+	
+	// At this point we can either throw the dialog in the user's face,
+	// or pop up a small icon in the status bar which they can click to see the errors.
+	// How do we decide? Well, until we get UserPreferences, let's just pop up the icon
+	// on warnings, and show the whole dialog on any kind of real error.
+	GPlatesFileIO::ReadErrors::Severity severity = new_read_errors.most_severe_error_type();
+	if (severity > GPlatesFileIO::ReadErrors::Warning) {
+		d_read_errors_dialog_ptr->show();
+	} else {
+		d_trinket_area_ptr->read_errors_trinket().setVisible(true);
+	}
 }
 
 
@@ -188,6 +203,17 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_application(application),
 	d_animation_controller(get_view_state().get_reconstruct()),
 	d_full_screen_mode(*this),
+	d_trinket_area_ptr(new GPlatesGui::TrinketArea(*this)),
+	d_unsaved_changes_tracker_ptr(new GPlatesGui::UnsavedChangesTracker(
+			*this,
+			get_application_state().get_feature_collection_file_state(),
+			get_application_state().get_feature_collection_file_io(),
+			this)),
+	d_file_io_feedback_ptr(new GPlatesGui::FileIOFeedback(
+			*this,
+			get_application_state().get_feature_collection_file_state(),
+			get_application_state().get_feature_collection_file_io(),
+			this)),
 	d_reconstruction_view_widget(
 			d_animation_controller,
 			*this,
@@ -210,6 +236,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new ManageFeatureCollectionsDialog(
 				get_application_state().get_feature_collection_file_state(),
 				get_application_state().get_feature_collection_file_io(),
+				*d_file_io_feedback_ptr,
 				this)),
 	d_mesh_dialog_ptr(NULL),
 	d_read_errors_dialog_ptr(
@@ -437,11 +464,15 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			&get_view_state().get_reconstruct(),
 			SLOT(reconstruct()));
 
-	// Add a progress bar to the status bar (Hidden until needed).
-	std::auto_ptr<QProgressBar> progress_bar(new QProgressBar(this));
-	progress_bar->setMaximumWidth(100);
-	progress_bar->hide();
-	statusBar()->addPermanentWidget(progress_bar.release());
+
+	// Initialise the "Trinket Area", a class which manages the various icons present in the
+	// status bar. This must occur after ViewportWindow::setupUi().
+	d_trinket_area_ptr->init();
+
+	// Initialise the "Unsaved Changes" tracking aspect of the GUI, now that setupUi() has
+	// been called and all the widgets that are used to notify the user are in place.
+	d_unsaved_changes_tracker_ptr->init();
+
 
 	// Registered a slot to be called when a new reconstruction is generated.
 	QObject::connect(
@@ -546,7 +577,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
-			d_manage_feature_collections_dialog_ptr.get(), SLOT(open_files()));
+			d_file_io_feedback_ptr, SLOT(open_files()));
 	QObject::connect(action_Open_Raster, SIGNAL(triggered()),
 			this, SLOT(open_raster()));
 	QObject::connect(action_Open_Time_Dependent_Raster_Sequence, SIGNAL(triggered()),
@@ -702,14 +733,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// Help Menu:
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
-
-	// This action is for GUI debugging purposes, to help developers trigger
-	// some arbitrary code while debugging GUI problems:
-#if 0	// I'm paranoid this will make it into the release somehow, so disabling until we get a commandline switch.
-	menu_View->addAction(action_Gui_Debug_Action);
-#endif
-	QObject::connect(action_Gui_Debug_Action, SIGNAL(triggered()),
-			this, SLOT(handle_gui_debug_action()));
 }
 
 
@@ -1440,6 +1463,10 @@ GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	d_read_errors_dialog_ptr->raise();
+
+	// Finally, if we're showing the Read Errors dialog, the user already knows about
+	// the errors and doesn't need to see the reminder in the status bar.
+	d_trinket_area_ptr->read_errors_trinket().setVisible(false);
 }
 
 
@@ -1583,12 +1610,17 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 void
 GPlatesQtWidgets::ViewportWindow::closeEvent(QCloseEvent *close_event)
 {
-	// For now, always accept the close event.
-	// In the future, ->reject() can be used to postpone closure in the event of
-	// unsaved files, etc.
-	close_event->accept();
-	// If we decide to accept the close event, we should also tidy up after ourselves.
-	close_all_dialogs();
+	// Check for unsaved changes and potentially give the user a chance to save/abort/etc.
+	bool close_ok = d_unsaved_changes_tracker_ptr->close_event_hook();
+	if (close_ok) {
+		// User is OK with quitting GPlates at this point.
+		close_event->accept();
+		// If we decide to accept the close event, we should also tidy up after ourselves.
+		close_all_dialogs();
+	} else {
+		// User is Not OK with quitting GPlates at this point.
+		close_event->ignore();
+	}
 }
 
 
@@ -1926,23 +1958,16 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_projection_dialog()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::handle_gui_debug_action()
+GPlatesQtWidgets::ViewportWindow::install_gui_debug_menu()
 {
-	// Some handy information that may aid debugging:
-#if 0
-	// "Where the hell did my keyboard focus go?"
-	qDebug() << "Current focus:" << QApplication::focusWidget();
-#endif
-	// "What's the name of the current style so I can test against it?"
-	qDebug() << "Current style:" << style()->objectName();
-
-	// "What's this thing doing there?"
-	QWidget *cursor_widget = QApplication::widgetAt(QCursor::pos());
-	qDebug() << "Current widget under cursor:" << cursor_widget;
-	while (cursor_widget && cursor_widget->parentWidget()) {
-		cursor_widget = cursor_widget->parentWidget();
-		qDebug() << "\twhich is inside:" << cursor_widget;
-	}
+	// Add the GUI Debug menu and associated functionality.
+	// This is okay, we're not bleeding memory out of our ears, Qt parents it
+	// to ViewportWindow and cleans up after us. We don't really need to keep
+	// a reference to this class around afterwards, which will help keep us
+	// be free of header and initialiser list spaghetti.
+	static GPlatesGui::GuiDebug *gui_debug = new GPlatesGui::GuiDebug(*this,
+			get_application_state(), this);
+	gui_debug->setObjectName("GuiDebug");
 }
 
 
