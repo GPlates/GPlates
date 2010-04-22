@@ -80,6 +80,8 @@ namespace GPlatesQtWidgets
 				ViewportWindow &viewport_window,
 				QWidget *parent_ = NULL);
 
+		~ModifyReconstructionPoleWidget();
+
 	public slots:
 
 		void
@@ -215,13 +217,9 @@ namespace GPlatesQtWidgets
 		 * This dialog forms the second phase of user-interaction (after dragging
 		 * geometries around on the globe to calculate a reconstruction pole adjustment).
 		 */
-		// This is technically a memory leak, but since the ModifyReconstructionPoleWidget will
-		// never be deleted...
-		ApplyReconstructionPoleAdjustmentDialog *d_dialog_ptr;
+		boost::scoped_ptr<ApplyReconstructionPoleAdjustmentDialog> d_dialog_ptr;
 
-		// This is technically a memory leak, but since the ModifyReconstructionPoleWidget will
-		// never be deleted...
-		AdjustmentApplicator *d_applicator_ptr;
+		boost::scoped_ptr<AdjustmentApplicator> d_applicator_ptr;
 
 		/**
 		 * Whether or not the latitude of the dragging motion should be constrained.
