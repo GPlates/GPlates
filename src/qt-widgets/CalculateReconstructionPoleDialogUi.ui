@@ -76,8 +76,14 @@
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="spinbox_vgp_lat" >
+          <property name="minimumSize" >
+           <size>
+            <width>75</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="decimals" >
-           <number>4</number>
+           <number>2</number>
           </property>
           <property name="minimum" >
            <double>-90.000000000000000</double>
@@ -99,8 +105,14 @@
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="spinbox_vgp_lon" >
+          <property name="minimumSize" >
+           <size>
+            <width>75</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="decimals" >
-           <number>4</number>
+           <number>2</number>
           </property>
           <property name="minimum" >
            <double>-360.000000000000000</double>
@@ -122,6 +134,12 @@
         </item>
         <item>
          <widget class="QSpinBox" name="spinbox_plateid" >
+          <property name="minimumSize" >
+           <size>
+            <width>75</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="maximum" >
            <number>1000000</number>
           </property>
@@ -139,6 +157,12 @@
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="spinbox_age" >
+          <property name="minimumSize" >
+           <size>
+            <width>75</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="maximum" >
            <double>1000000.000000000000000</double>
           </property>

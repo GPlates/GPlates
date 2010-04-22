@@ -1700,9 +1700,17 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_assign_recon_plate_ids_dialog_ptr->reject();
 	}
+	if (d_calculate_reconstruction_pole_dialog_ptr)
+	{
+		d_calculate_reconstruction_pole_dialog_ptr->reject();
+	}
 	if (d_colouring_dialog_ptr)
 	{
 		d_colouring_dialog_ptr->reject();
+	}
+	if (d_create_vgp_dialog_ptr)
+	{
+		d_create_vgp_dialog_ptr->reject();
 	}
 	if (d_mesh_dialog_ptr)
 	{
@@ -1735,6 +1743,10 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	if (d_set_raster_surface_extent_dialog_ptr)
 	{
 		d_set_raster_surface_extent_dialog_ptr->reject();
+	}
+	if (d_set_vgp_visibility_dialog_ptr)
+	{
+		d_set_vgp_visibility_dialog_ptr->reject();
 	}
 	if (d_shapefile_attribute_viewer_dialog_ptr)
 	{

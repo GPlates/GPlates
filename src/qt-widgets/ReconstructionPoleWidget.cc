@@ -45,10 +45,10 @@ GPlatesQtWidgets::ReconstructionPoleWidget::set_fields(
 {
 	QLocale locale_;
 	lineedit_moving_plate->setText(locale_.toString(static_cast<unsigned>(moving_plate_id)));
-	lineedit_time->setText(locale_.toString(time));
-	lineedit_latitude->setText(locale_.toString(latitude));
-	lineedit_longitude->setText(locale_.toString(longitude));
-	lineedit_angle->setText(locale_.toString(angle));
+	lineedit_time->setText(locale_.toString(time,'f',2));
+	lineedit_latitude->setText(locale_.toString(latitude,'f',2));
+	lineedit_longitude->setText(locale_.toString(longitude,'f',2));
+	spinbox_angle->setValue(angle);
 	lineedit_fixed_plate->setText(locale_.toString(static_cast<unsigned>(fixed_plate_id)));
 	
 	d_reconstruction_pole = ReconstructionPole(moving_plate_id,time,latitude,longitude,angle,fixed_plate_id);
