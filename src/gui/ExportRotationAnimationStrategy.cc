@@ -170,10 +170,7 @@ GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 
 			angle_string = locale_.toString(
 					GPlatesMaths::convert_rad_to_deg(params.angle).dval());
-
-			std::cout<<euler_pole_lon_string.toStdString()<<";"
-			<<euler_pole_lat_string.toStdString()<<";"
-			<<angle_string.toStdString()<<std::endl;
+			
 		}
 		GPlatesModel::integer_plate_id_type fixed_id = it->second->fixed_plate();
 		fixed_plate_id_string.setNum(fixed_id);
