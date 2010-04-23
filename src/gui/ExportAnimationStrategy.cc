@@ -26,14 +26,15 @@
 
 #include "ExportAnimationStrategy.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 
 #include "gui/AnimationController.h"
 #include "gui/ExportAnimationContext.h"
 
+#include "presentation/ViewState.h"
+
 #include "utils/FloatingPointComparisons.h"
 
-#include "presentation/ViewState.h"
 
 const QString GPlatesGui::ExportAnimationStrategy::dummy_desc="";
 
@@ -50,7 +51,7 @@ GPlatesGui::ExportAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
 	d_filename_sequence_opt = GPlatesUtils::ExportTemplateFilenameSequence(filename,
-			d_export_animation_context_ptr->view_state().get_reconstruct().get_current_anchored_plate_id(),
+			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 			d_export_animation_context_ptr->animation_controller().start_time(),
 			d_export_animation_context_ptr->animation_controller().end_time(),
 			d_export_animation_context_ptr->animation_controller().raw_time_increment(),

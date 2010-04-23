@@ -34,11 +34,6 @@
 #include "gui/TopologyTools.h"
 
 
-namespace GPlatesAppLogic
-{
-	class Reconstruct;
-}
-
 namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
@@ -152,11 +147,6 @@ namespace GPlatesCanvasTools
 		 * activated.
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
-
-		/**
-		 * For querying the reconstruction.
-		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
 
 		/**
 		 * This is currently used to pass messages to the status bar.

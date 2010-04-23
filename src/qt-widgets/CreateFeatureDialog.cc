@@ -44,10 +44,10 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/Reconstruct.h"
+#include "app-logic/GeometryUtils.h"
+#include "app-logic/ReconstructUtils.h"
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "gui/GeometricPropertyValueConstructor.h"
 #include "model/types.h"
 #include "model/Model.h"
 #include "model/PropertyName.h"
@@ -55,8 +55,8 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
-#include "utils/UnicodeStringUtils.h"
 #include "presentation/ViewState.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -624,7 +624,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_model_ptr(view_state_.get_application_state().get_model_interface()),
 	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
 	d_file_io(view_state_.get_application_state().get_feature_collection_file_io()),
-	d_reconstruct_ptr(&view_state_.get_reconstruct()),
+	d_application_state_ptr(&view_state_.get_application_state()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_creation_type(creation_type),
 	d_geometry_opt_ptr(boost::none),
@@ -891,20 +891,22 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		reject();
 		return;
 	}
-	
-	// Invoke GeometricPropertyValueConstructor.
-	// This will Un-Reconstruct the temporary geometry so that it's coordinates are
+
+	// Un-Reconstruct the temporary geometry so that it's coordinates are
 	// expressed in terms of present day location, given the plate ID that is associated
 	// with it and the current reconstruction time.
-	GPlatesModel::ReconstructionTree &recon_tree = 
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree();
-	GPlatesModel::integer_plate_id_type int_plate_id = 
-			d_plate_id_widget->create_integer_plate_id_from_widget();	
-	// It will also wrap the present-day GeometryOnSphere in a suitable PropertyValue,
-	// possibly including a GpmlConstantValue wrapper.
-	GPlatesGui::GeometricPropertyValueConstructor geometry_constructor;
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_value_opt =
-			geometry_constructor.convert(*d_geometry_opt_ptr, recon_tree, int_plate_id,
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
+			GPlatesAppLogic::ReconstructUtils::reconstruct(
+					d_geometry_opt_ptr.get(),
+					d_plate_id_widget->create_integer_plate_id_from_widget(),
+					d_application_state_ptr->get_current_reconstruction().reconstruction_tree(),
+					true /*reverse_reconstruct*/);
+
+	// Create a property value using the present-day GeometryOnSphere and optionally
+	// wrap with a GpmlConstantValue wrapper.
+	const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_value_opt =
+			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
+					present_day_geometry,
 					geom_prop_needs_constant_value);
 	
 	if ( ! geometry_value_opt) {

@@ -75,11 +75,9 @@ namespace GPlatesModel
 		static
 		const non_null_ptr_type
 		create(
-				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_,
-				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections_)
+				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_)
 		{
-			non_null_ptr_type ptr(new Reconstruction(reconstruction_tree_ptr_,
-							reconstruction_feature_collections_),
+			non_null_ptr_type ptr(new Reconstruction(reconstruction_tree_ptr_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -121,13 +119,12 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Access the feature collections containing the reconstruction features used to
-		 * create this reconstruction.
+		 * Return the reconstruction time of the reconstruction tree used for reconstructions.
 		 */
-		const std::vector<FeatureCollectionHandle::weak_ref> &
-		reconstruction_feature_collections() const
+		const double &
+		get_reconstruction_time() const
 		{
-			return d_reconstruction_feature_collections;
+			return d_reconstruction_tree_ptr->get_reconstruction_time();
 		}
 
 	private:
@@ -144,21 +141,13 @@ namespace GPlatesModel
 		ReconstructionTree::non_null_ptr_type d_reconstruction_tree_ptr;
 
 		/**
-		 * Access the feature collections containing the reconstruction features used to
-		 * create this reconstruction.
-		 */
-		std::vector<FeatureCollectionHandle::weak_ref> d_reconstruction_feature_collections;
-
-		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
 		explicit
 		Reconstruction(
-				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_,
-				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections_):
-			d_reconstruction_tree_ptr(reconstruction_tree_ptr_),
-			d_reconstruction_feature_collections(reconstruction_feature_collections_)
+				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_):
+			d_reconstruction_tree_ptr(reconstruction_tree_ptr_)
 		{  }
 
 		// This constructor should never be defined, because we don't want to allow

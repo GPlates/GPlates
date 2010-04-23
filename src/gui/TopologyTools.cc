@@ -55,7 +55,8 @@
 #include "ChooseCanvasTool.h"
 #include "FeatureFocus.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructionFeatureProperties.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/TopologyInternalUtils.h"
@@ -121,7 +122,6 @@
 #include "utils/GeometryCreationUtils.h"
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
-#include "utils/GeometryUtils.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
@@ -173,7 +173,7 @@ GPlatesGui::TopologyTools::TopologyTools(
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool):
 	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
 	d_feature_focus_ptr(&view_state.get_feature_focus()),
-	d_reconstruct_ptr(&view_state.get_reconstruct()),
+	d_application_state_ptr(&view_state.get_application_state()),
 	d_viewport_window_ptr(&viewport_window),
 	d_choose_canvas_tool(&choose_canvas_tool)
 {
@@ -216,8 +216,8 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 
 	// Connect to recon time changes
 	QObject::connect(
-		d_reconstruct_ptr,
-		SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+		d_application_state_ptr,
+		SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 		this,
 		SLOT(handle_reconstruction()));
 
@@ -365,8 +365,8 @@ GPlatesGui::TopologyTools::deactivate()
 
 	// Disconnect to recon time changes.
 	QObject::disconnect(
-		d_reconstruct_ptr,
-		SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+		d_application_state_ptr,
+		SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 		this,
 		SLOT(handle_reconstruction()));
 
@@ -581,7 +581,7 @@ GPlatesGui::TopologyTools::set_click_point(double lat, double lon)
 	d_click_point.set_focus(
 			d_feature_focus_ptr->focused_feature(),
 			reconstructed_click_point,
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree());
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree());
 
 	draw_click_point();
 }
@@ -607,7 +607,7 @@ std::cout << "GPlatesGui::TopologyTools::handle_reconstruction() " << std::endl;
 	// original click point) and then add the focused feature to the topology thus
 	// giving it a click point that is not on the feature like it was originally).
 	d_click_point.update_reconstructed_click_point(
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree());
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree());
 	draw_click_point();
 
 	// Update all topology sections and redraw.
@@ -1472,7 +1472,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
 				focus_feature_end_points =
-					GPlatesUtils::GeometryUtils::get_geometry_end_points(
+					GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
 							*d_feature_focus_ptr->associated_reconstruction_geometry()->geometry());
 
 		// draw the focused end_points
@@ -1763,7 +1763,7 @@ GPlatesGui::TopologyTools::does_topology_exist_at_current_recon_time() const
 
 	// See if topology feature exists for the current reconstruction time.
 	GPlatesAppLogic::ReconstructionFeatureProperties topology_reconstruction_params(
-			d_reconstruct_ptr->get_current_reconstruction_time());
+			d_application_state_ptr->get_current_reconstruction_time());
 	topology_reconstruction_params.visit_feature(d_topology_feature_ref);
 
 	return topology_reconstruction_params.is_feature_defined_at_recon_time();
@@ -1792,7 +1792,7 @@ GPlatesGui::TopologyTools::reconstruct_sections()
 		const boost::optional<VisibleSection> visible_section =
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
-						d_reconstruct_ptr->get_current_reconstruction());
+						d_application_state_ptr->get_current_reconstruction());
 
 		if (!visible_section)
 		{
@@ -2299,7 +2299,7 @@ GPlatesGui::TopologyTools::assign_boundary_segment(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			section_geometry_end_points =
-				GPlatesUtils::GeometryUtils::get_geometry_end_points(
+				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
 						**visible_section.d_section_geometry_unreversed,
 						get_section_info(visible_section).d_table_row.get_reverse());
 	// Set the section start and end points.
@@ -2419,7 +2419,7 @@ GPlatesGui::TopologyTools::get_boundary_geometry_end_points(
 					get_unreversed_boundary_segment(reverse_order);
 
 	// Return the start and end points of the current boundary subsegment.
-	return GPlatesUtils::GeometryUtils::get_geometry_end_points(
+	return GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
 			*geometry, reverse_order);
 }
 
@@ -2569,7 +2569,7 @@ GPlatesGui::TopologyTools::convert_topology_to_boundary_feature_property(
 				boundary_property_value));
 
 	// Set the ball rolling again ...
-	d_reconstruct_ptr->reconstruct(); 
+	d_application_state_ptr->reconstruct(); 
 }
 
 
@@ -2708,7 +2708,7 @@ GPlatesGui::TopologyTools::update_topology_vertices()
 
 		// Get the vertices from the possibly clipped section geometry
 		// and add them to the list of topology vertices.
-		GPlatesUtils::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(
 				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
 				d_topology_vertices,
 				get_section_info(visible_section).d_table_row.get_reverse());

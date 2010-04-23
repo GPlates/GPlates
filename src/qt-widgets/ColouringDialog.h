@@ -44,7 +44,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesGui
@@ -260,7 +260,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Used for creating feature-age colour schemes.
 		 */
-		GPlatesAppLogic::Reconstruct &d_reconstruct;
+		GPlatesAppLogic::ApplicationState &d_application_state;
 
 		/**
 		 * An existing GlobeAndMapWidget from which we'll clone our own

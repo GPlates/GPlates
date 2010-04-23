@@ -84,7 +84,6 @@ namespace GPlatesAppLogic
 
 	public:
 		TopologyNetworkResolver(
-				const double &recon_time,
 				GPlatesModel::Reconstruction &recon);
 
 		virtual

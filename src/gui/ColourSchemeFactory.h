@@ -33,7 +33,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesMaths
@@ -75,7 +75,7 @@ namespace GPlatesGui
 		 */
 		ColourScheme::non_null_ptr_type
 		create_default_age_colour_scheme(
-				const GPlatesAppLogic::Reconstruct &reconstruct);
+				const GPlatesAppLogic::ApplicationState &application_state);
 
 		/**
 		 * Creates a colour scheme that colours geometries by their age based on the
@@ -83,7 +83,7 @@ namespace GPlatesGui
 		 */
 		ColourScheme::non_null_ptr_type
 		create_monochrome_age_colour_scheme(
-				const GPlatesAppLogic::Reconstruct &reconstruct);
+				const GPlatesAppLogic::ApplicationState &application_state);
 
 		/**
 		 * Creates a colour scheme that colours geometries by their age based on the
@@ -91,7 +91,7 @@ namespace GPlatesGui
 		 */
 		ColourScheme::non_null_ptr_type
 		create_custom_age_colour_scheme(
-				const GPlatesAppLogic::Reconstruct &reconstruct,
+				const GPlatesAppLogic::ApplicationState &application_state,
 				ColourPalette<GPlatesMaths::Real> *palette);
 
 		/**

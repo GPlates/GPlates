@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <numeric>
 #include <vector>
 #include <boost/cast.hpp>
 #include <QHeaderView>
@@ -31,10 +32,11 @@
 
 #include "AssignReconstructionPlateIdsDialog.h"
 
+#include "ProgressDialog.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/AssignPlateIds.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/Reconstruct.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -47,22 +49,23 @@
 
 namespace
 {
-	const QString HELP_FEATURE_COLLECTIONS_DIALOG_TITLE = QObject::tr("Selecting feature collections");
-	const QString HELP_FEATURE_COLLECTIONS_DIALOG_TEXT = QObject::tr(
+	const QString HELP_PARTITIONING_FILES_DIALOG_TITLE = QObject::tr("Selecting feature collections");
+	const QString HELP_PARTITIONING_FILES_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<h3>Select the feature collections that contain polygon geometry in the form of "
+			"TopologicalClosedPlateBoundary features (dynamic polygons) or "
+			"non-topological features (that contain static polygon geometry)</h3>"
+			"<p>These polygons will be intersected with features and a subset of the polygon's "
+			"feature properties will be copied over.</p>"
+			"<p><em>It is recommended to choose either dynamic or static polygons (not both).</em>"
+			"</body></html>\n");
+	const QString HELP_PARTITIONED_FILES_DIALOG_TITLE = QObject::tr("Selecting feature collections");
+	const QString HELP_PARTITIONED_FILES_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
 			"<h3>Select the feature collections that will be assigned reconstruction plate ids</h3>"
 			"<p>All selected feature collections will have their features assigned a "
 			"reconstruction plate id (if they already have one it will be overwritten).</p>"
-			"<p>The plate ids are assigned using the currently loaded and active plate boundary "
-			"feature collections (these are the ones containing TopologicalClosedPlateBoundary "
-			"features).</p>"
-			"<p>Only the feature collections that are set as active in the "
-			"Manage Feature Collections dialog will be available for selection in this dialog - "
-			"if a feature collection appears to be missing try activating it in the "
-			"Manage Feature Collections dialog first.</p>" 
-			"<p><em>If this dialog was activated automatically when loading or reloading a "
-			"feature collection then that feature collection contains one or more features "
-			"that have no reconstruction plate id.</em></p>"
+			"<p>It is also possible to assign time of appearance and disappearance.</p>"
 			"</body></html>\n");
 	const QString HELP_RECONSTRUCTION_TIME_DIALOG_TITLE = QObject::tr("Selecting reconstruction time");
 	const QString HELP_RECONSTRUCTION_TIME_DIALOG_TEXT = QObject::tr(
@@ -77,62 +80,91 @@ namespace
 			"</ul>"
 			"<p><em>Note: Present day should be selected when assigning plate ids to "
 			"<b>VirtualGeomagneticPole</b> features.</em></p>"
-			"<p>The plate boundaries are rotated to the selected reconstruction time before "
-			"testing for overlap/intersection with the feature collections.</p>"
-			"<p>The geometry in the feature collections effectively represents a snapshot "
-			"of the features at the reconstruction time.</p>"
-			"<ul>"
-			"<li>For features with an existing reconstruction plate id this will be "
-			"the rotated geometry at the selected reconstruction time.</li>"
-			"<li>For features with no existing reconstruction plate id this will be "
-			"the unrotated geometry stored in the feature.</li>"
-			"</ul>"
+			"<p>The polygons are reconstructed to the reconstruction time before "
+			"testing for overlap/intersection with the features being partitioned.</p>"
+			"<p>The geometry in partitioned features effectively represents a snapshot "
+			"of the features at the reconstruction time. In other words the features to "
+			"be partitioned effectively contain geometry at the reconstruction time "
+			"regardless of whether they have a reconstruction plate id property or not.</p>"
 			"</body></html>\n");
-	const QString HELP_ASSIGN_PLATE_ID_DIALOG_TITLE = QObject::tr("Assign plate id options");
-	const QString HELP_ASSIGN_PLATE_ID_DIALOG_TEXT = QObject::tr(
+	const QString HELP_PARTITION_OPTIONS_DIALOG_TITLE = QObject::tr("Feature partition options");
+	const QString HELP_PARTITION_OPTIONS_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
-			"<h3>Specify how to assign plate ids to features</h3>"
-			"These three options determine how plate ids are assigned and "
-			"whether feature geometry will be subdivided or not."
-			"<h4>Assign each feature to the plate it overlaps the most:</h4>\n"
+			"<h3>Specify how to partition features using the polygons</h3>"
+			"These three options determine how features are partitioned."
+			"<h4>Copy feature properties from the polygon that most overlaps a feature:</h4>\n"
 			"<ul>\n"
 			"<li>Assign, to each feature, a single plate id corresponding to the "
-			"plate that the feature's geometry overlaps the most.</li>\n"
+			"polygon that the feature's geometry overlaps the most.</li>\n"
 			"<li>If a feature contains multiple sub-geometries then they are treated as "
 			"one composite geometry for the purpose of this test.</li>\n"
 			"</ul>\n"
-			"<h4>Assign each feature sub-geometry to the plate it overlaps the most:</h4>\n"
+			"<h4>Copy feature properties from the polygon that most overlaps each geometry in a feature:</h4>\n"
 			"<ul>\n"
 			"<li>Assign, to each sub-geometry of each feature, a single plate id "
-			"corresponding to the plate that the sub-geometry overlaps the most.</li>\n"
+			"corresponding to the polygon that the sub-geometry overlaps the most.</li>\n"
 			"<li>This can create extra features, for example if a feature has two "
 			"sub-geometries and one overlaps plate A the most and the other "
 			"overlaps plate B the most then the original feature (with the two "
-			"geometries) will get split into two features - one feature will contain "
+			"geometries) will then get split into two features - one feature will contain "
 			"the first geometry (and have plate id A) and the other feature will "
 			"contain the second geometry (and have plate id B).</li>\n"
 			"</ul>\n"
-			"<h4>Partition each feature into its containing plates:</h4>\n"
+			"<h4>Partition (cookie cut) feature geometry into polygons and copy feature properties:</h4>\n"
 			"<ul>\n"
-			"<li>Partition all geometries of each feature into the plates "
-			"containing them (intersecting them as needed and assigning the "
-			"resulting partitioned geometry to the appropriate plates).</li>\n"
+			"<li>Partition all geometries of each feature into the polygons "
+			"containing them (intersecting them as needed).</li>\n"
 			"<li>This can create extra features, for example if a feature has only one "
 			"sub-geometry but it overlaps plate A and plate B then it is partitioned "
 			"into geometry that is fully contained by plate A and likewise for plate B.  "
 			"These two partitioned geometries will now be two features since they "
 			"have different plate ids.</li>\n"
 			"</ul>\n"
-			"<p>If the plate boundaries do not cover the entire surface of the globe then it is "
+			"<p>If the polygons do not cover the entire surface of the globe then it is "
 			"possible for some features (or partitioned geometries) to fall outside "
-			"all plate boundaries. In this situation the feature (or partitioned geometry) "
-			"is not assigned a plate id and any existing plate id is removed. "
-			"These features will all have the same colour and will not move when the "
-			"reconstruction time is changed or animated.</p>"
+			"all polygons. In this situation the feature is not modified and will retain "
+			"its original feature properties (such as reconstruction plate id).</p>"
 			"<p><em><b>VirtualGeomagneticPole</b> features are treated differently - these "
-			"features are assigned to the plate whose boundary contains the feature's "
+			"features are assigned to the polygon whose boundary contains the feature's "
 			"sample site point location. For these features the above options are ignored.</em></p>"
 			"</body></html>\n");
+	const QString HELP_PROPERTIES_TO_ASSIGN_DIALOG_TITLE = QObject::tr("Feature properties options");
+	const QString HELP_PROPERTIES_TO_ASSIGN_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<h3>Specify which feature properties to copy from a polygon</h3>"
+			"<p>The two feature property options:</p>"
+			"<ul>"
+			"<li><b>Reconstruction plate id:</b> reconstruction time is 0Ma.</li>\n"
+			"<li><b>Time of appearance and disappearance:</b> the time interval a feature exists.</li>\n"
+			"</ul>"
+			"<p>These options are not mutually exclusive.</p>"
+			"<p>These properties are copied from the polygon feature to the feature being partitioned.</p>"
+			"</body></html>\n");
+}
+
+
+namespace
+{
+	/**
+	 * Finds the total number of features in a set of feature collections.
+	 */
+	GPlatesModel::container_size_type
+	get_num_features(
+			const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections)
+	{
+		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_seq_type;
+
+		GPlatesModel::container_size_type num_features = 0;
+
+		feature_collection_seq_type::const_iterator feature_collection_iter = feature_collections.begin();
+		feature_collection_seq_type::const_iterator feature_collection_end = feature_collections.end();
+		for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
+		{
+			num_features += (*feature_collection_iter)->size();
+		}
+
+		return num_features;
+	}
 }
 
 
@@ -141,52 +173,426 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
-	d_help_feature_collections_dialog(
+	d_help_partitioning_files_dialog(
 			new InformationDialog(
-					HELP_FEATURE_COLLECTIONS_DIALOG_TEXT,
-					HELP_FEATURE_COLLECTIONS_DIALOG_TITLE,
+					HELP_PARTITIONING_FILES_DIALOG_TEXT,
+					HELP_PARTITIONING_FILES_DIALOG_TITLE,
+					this)),
+	d_help_partitioned_files_dialog(
+			new InformationDialog(
+					HELP_PARTITIONED_FILES_DIALOG_TEXT,
+					HELP_PARTITIONED_FILES_DIALOG_TITLE,
 					this)),
 	d_help_reconstruction_time_dialog(
 			new InformationDialog(
 					HELP_RECONSTRUCTION_TIME_DIALOG_TEXT,
 					HELP_RECONSTRUCTION_TIME_DIALOG_TITLE,
 					this)),
-	d_help_assign_plate_id_options_dialog(
+	d_help_partition_options_dialog(
 			new InformationDialog(
-					HELP_ASSIGN_PLATE_ID_DIALOG_TEXT,
-					HELP_ASSIGN_PLATE_ID_DIALOG_TITLE,
+					HELP_PARTITION_OPTIONS_DIALOG_TEXT,
+					HELP_PARTITION_OPTIONS_DIALOG_TITLE,
 					this)),
-	d_model(application_state.get_model_interface()),
+	d_help_properties_to_assign_dialog(
+			new InformationDialog(
+					HELP_PROPERTIES_TO_ASSIGN_DIALOG_TEXT,
+					HELP_PROPERTIES_TO_ASSIGN_DIALOG_TITLE,
+					this)),
+	d_button_create(NULL),
 	d_feature_collection_file_state(application_state.get_feature_collection_file_state()),
-	d_reconstruct(view_state.get_reconstruct()),
+	d_application_state(view_state.get_application_state()),
 	d_feature_focus(view_state.get_feature_focus()),
-	d_only_assign_to_features_with_no_reconstruction_plate_id(false),
 	d_reconstruction_time_type(PRESENT_DAY_RECONSTRUCTION_TIME),
 	d_spin_box_reconstruction_time(0),
 	d_assign_plate_id_method(
-			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE)
+			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE),
+	d_assign_plate_ids(true),
+	d_assign_time_periods(false)
 {
 	setupUi(this);
 
-	// Connect the help dialogs.
-	QObject::connect(push_button_help_feature_collections, SIGNAL(clicked()),
-			d_help_feature_collections_dialog, SLOT(show()));
-	QObject::connect(push_button_help_reconstruction_time, SIGNAL(clicked()),
-			d_help_reconstruction_time_dialog, SLOT(show()));
-	QObject::connect(push_button_help_assign_plate_id_options, SIGNAL(clicked()),
-			d_help_assign_plate_id_options_dialog, SLOT(show()));
+	// NOTE: This needs to be done first thing after setupUi() is called.
+	d_partitioning_file_state_seq.table_widget = table_partitioning_files;
+	d_partitioned_file_state_seq.table_widget = table_partitioned_files;
 
-	// Connect the 'OK' button to the apply slot.
-	QObject::connect(button_apply, SIGNAL(clicked()),
+	set_up_button_box();
+
+	set_up_partitioning_files_page();
+	set_up_partitioned_files_page();
+	set_up_general_options_page();
+		
+	// When the current page is changed, we need to enable and disable some buttons.
+	QObject::connect(
+			stack_widget, SIGNAL(currentChanged(int)),
+			this, SLOT(handle_page_change(int)));
+
+	// Send a fake page change event to ensure buttons are set up properly at start.
+	handle_page_change(0);
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::exec_partition_features_dialog()
+{
+	const file_ptr_seq_type loaded_files = get_loaded_files();
+
+	// Setup the partitioning and partitioned file lists in the widget.
+	initialise_file_list(d_partitioning_file_state_seq, loaded_files);
+	initialise_file_list(d_partitioned_file_state_seq, loaded_files);
+
+	// Set the current reconstruction time label.
+	label_current_reconstruction_time->setText(
+			QString::number(d_application_state.get_current_reconstruction_time()));
+
+	// Set the stack back to the first page.
+	stack_widget->setCurrentIndex(0);
+
+	// Get the user to confirm the list of files.
+	// The assigning of plate ids will happen in 'accept()' if the user
+	// pressed 'OK'.
+	exec();
+}
+
+
+bool
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features()
+{
+	const GPlatesAppLogic::AssignPlateIds::non_null_ptr_type plate_id_assigner =
+			create_plate_id_assigner();
+
+	// Determine if any partitioning polygons.
+	if (!plate_id_assigner->has_partitioning_polygons())
+	{
+		// Nothing to do if there are no partitioning polygons.
+		pop_up_no_partitioning_polygon_features_found_message_box();
+		return false;
+	}
+
+	if (!partition_features(*plate_id_assigner))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
+GPlatesAppLogic::AssignPlateIds::non_null_ptr_type
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
+{
+	// Get the reconstruction files.
+	const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_feature_collections =
+			get_active_reconstruction_files();
+
+	// Get the partitioning polygon files.
+	const feature_collection_seq_type partitioning_feature_collections =
+			get_selected_feature_collections(d_partitioning_file_state_seq);
+
+	double reconstruction_time = 0;
+
+	// Determine which reconstruction time to use.
+	switch (d_reconstruction_time_type)
+	{
+	case CURRENT_RECONSTRUCTION_TIME:
+		// The user wants the current reconstruction time so just use the
+		// current reconstruction.
+		reconstruction_time = d_application_state.get_current_reconstruction_time();
+		break;
+
+	case USER_SPECIFIED_RECONSTRUCTION_TIME:
+		// Use the reconstruction time specified by the user.
+		reconstruction_time = d_spin_box_reconstruction_time;
+		break;
+
+	case PRESENT_DAY_RECONSTRUCTION_TIME:
+	default:
+		// Use the present day reconstruction time.
+		reconstruction_time = 0;
+		break;
+	}
+
+	// Determine which feature property types to copy from partitioning polygon.
+	GPlatesAppLogic::AssignPlateIds::feature_property_flags_type feature_property_types_to_assign;
+	if (d_assign_plate_ids)
+	{
+		feature_property_types_to_assign.set(GPlatesAppLogic::AssignPlateIds::RECONSTRUCTION_PLATE_ID);
+	}
+	if (d_assign_time_periods)
+	{
+		feature_property_types_to_assign.set(GPlatesAppLogic::AssignPlateIds::VALID_TIME);
+	}
+
+	return GPlatesAppLogic::AssignPlateIds::create(
+			d_assign_plate_id_method,
+			partitioning_feature_collections,
+			reconstruction_feature_collections,
+			reconstruction_time,
+			d_application_state.get_current_anchored_plate_id(),
+			feature_property_types_to_assign);
+}
+
+
+bool
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
+		GPlatesAppLogic::AssignPlateIds &plate_id_assigner)
+{
+	const feature_collection_seq_type selected_partitioned_feature_collections =
+			get_selected_feature_collections(d_partitioned_file_state_seq);
+
+	if (selected_partitioned_feature_collections.empty())
+	{
+		// No files were selected so notify the user and return without closing this dialog.
+		pop_up_no_partitioned_files_selected_message_box();
+		return false;
+	}
+
+	// Determine the number of features we are going to partition.
+	const GPlatesModel::container_size_type num_features_to_partition =
+			get_num_features(selected_partitioned_feature_collections);
+
+	// Setup a progress dialog.
+	ProgressDialog *partition_progress_dialog = new ProgressDialog(this);
+	const QString progress_dialog_text("Partitioning features...");
+	GPlatesModel::container_size_type num_features_partitioned = 0;
+	// Make progress dialog modal so cannot interact with assign plate ids dialog
+	// until processing finished or cancel button pressed.
+	partition_progress_dialog->setWindowModality(Qt::WindowModal);
+	partition_progress_dialog->setRange(0, num_features_to_partition);
+	partition_progress_dialog->setValue(0);
+	partition_progress_dialog->show();
+
+	// Iterate through the partitioned feature collections accepted by the user.
+	feature_collection_seq_type::const_iterator feature_collection_iter =
+			selected_partitioned_feature_collections.begin();
+	feature_collection_seq_type::const_iterator feature_collection_end =
+			selected_partitioned_feature_collections.end();
+	for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
+	{
+		const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+				*feature_collection_iter;
+
+		// Iterate over the features in the current feature collection.
+		GPlatesModel::FeatureCollectionHandle::iterator feature_iter = feature_collection_ref->begin();
+		const GPlatesModel::FeatureCollectionHandle::iterator feature_end = feature_collection_ref->end();
+		for ( ; feature_iter != feature_end; ++feature_iter)
+		{
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref = (*feature_iter)->reference();
+
+			partition_progress_dialog->update_progress(
+					num_features_partitioned,
+					progress_dialog_text);
+
+			// Partition the feature.
+			plate_id_assigner.assign_reconstruction_plate_id(
+					feature_ref,
+					feature_collection_ref);
+
+			++num_features_partitioned;
+
+			// See if feature is the focused feature.
+			if ((*feature_iter).get() == d_feature_focus.focused_feature().handle_ptr())
+			{
+				d_feature_focus.announce_modification_of_focused_feature();
+			}
+
+			if (partition_progress_dialog->canceled())
+			{
+				partition_progress_dialog->close();
+
+				// Reconstruct since we most likely modified a few features before
+				// the user pressed "Cancel".
+				d_application_state.reconstruct();
+
+				// Return without closing this dialog (the assign plate id dialog).
+				return false;
+			}
+		}
+	}
+
+	partition_progress_dialog->close();
+
+	// If any plate ids were assigned then we need to do another reconstruction.
+	// Note we'll do one anyway since the feature may have been modified even if
+	// a plate id was not assigned (such as removing an existing plate id).
+	d_application_state.reconstruct();
+
+	// Let the caller know it can close this dialog since files were selected.
+	return true;
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::pop_up_no_partitioning_polygon_features_found_message_box()
+{
+	const QString message = tr(
+			"Did not find any features containing either dynamic or static polygons.\n\n"
+			"Please select one or more feature collections containing either\n"
+			"TopologicalClosedPlateBoundary features or\n"
+			"regular static polygon features.");
+	QMessageBox::warning(
+			this,
+			tr("No partitioning polygon feature collections selected"),
+			message,
+			QMessageBox::Ok,
+			QMessageBox::Ok);
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::pop_up_no_partitioned_files_selected_message_box()
+{
+	const QString message = tr("Please select one or more feature collections to be partitioned.");
+	QMessageBox::information(this, tr("No features for partitioning"), message,
+			QMessageBox::Ok, QMessageBox::Ok);
+}
+
+
+std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_active_reconstruction_files()
+{
+	//
+	// Get a list of all active file reconstruction files.
+	//
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_files;
+
+	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator_range active_files =
+			d_feature_collection_file_state.get_active_reconstruction_files();
+
+	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator file_iter = active_files.begin;
+	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator file_end = active_files.end;
+	for ( ; file_iter != file_end; ++file_iter)
+	{
+		GPlatesFileIO::File &file = *file_iter;
+		reconstruction_files.push_back(file.get_feature_collection());
+	}
+
+	return reconstruction_files;
+}
+
+
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::file_ptr_seq_type
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_loaded_files()
+{
+	//
+	// Get a list of all loaded files.
+	//
+	file_ptr_seq_type loaded_files;
+
+	const GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range loaded_files_range =
+			d_feature_collection_file_state.get_loaded_files();
+
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator loaded_file_iter = loaded_files_range.begin;
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator loaded_file_end = loaded_files_range.end;
+	for ( ; loaded_file_iter != loaded_file_end; ++loaded_file_iter)
+	{
+		GPlatesFileIO::File &loaded_file = *loaded_file_iter;
+		loaded_files.push_back(&loaded_file);
+	}
+
+	return loaded_files;
+}
+
+
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::feature_collection_seq_type
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_selected_feature_collections(
+		FileStateCollection &file_state_collection)
+{
+	feature_collection_seq_type selected_feature_collections;
+
+	// Iterate through the files accepted by the user.
+	file_state_seq_type::const_iterator file_state_iter =
+			file_state_collection.file_state_seq.begin();
+	file_state_seq_type::const_iterator file_state_end =
+			file_state_collection.file_state_seq.end();
+	for ( ; file_state_iter != file_state_end; ++file_state_iter)
+	{
+		const FileState &file_state = *file_state_iter;
+
+		if (file_state.enabled)
+		{
+			selected_feature_collections.push_back(
+					file_state.file->get_feature_collection());
+		}
+	}
+
+	return selected_feature_collections;
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_button_box()
+{
+	// Default 'OK' button should read 'Apply'.
+	d_button_create = buttonbox->addButton(tr("Apply"), QDialogButtonBox::AcceptRole);
+	d_button_create->setDefault(true);
+	
+	QObject::connect(buttonbox, SIGNAL(accepted()),
 			this, SLOT(apply()));
+	QObject::connect(buttonbox, SIGNAL(rejected()),
+			this, SLOT(reject()));
+
+	// Extra buttons for switching between the pages.
+	QObject::connect(button_prev, SIGNAL(clicked()),
+			this, SLOT(handle_prev()));
+	QObject::connect(button_next, SIGNAL(clicked()),
+			this, SLOT(handle_next()));
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_partitioning_files_page()
+{
+	// Connect the help dialogs.
+	QObject::connect(push_button_help_partitioning_files, SIGNAL(clicked()),
+			d_help_partitioning_files_dialog, SLOT(show()));
 
 	// Listen for changes to the checkbox that enables/disables files.
-	QObject::connect(table_feature_collections, SIGNAL(cellChanged(int, int)),
-			this, SLOT(react_cell_changed(int, int)));
-	QObject::connect(button_clear_all, SIGNAL(clicked()),
-			this, SLOT(react_clear_all()));
-	QObject::connect(button_select_all, SIGNAL(clicked()),
-			this, SLOT(react_select_all()));
+	QObject::connect(table_partitioning_files, SIGNAL(cellChanged(int, int)),
+			this, SLOT(react_cell_changed_partitioning_files(int, int)));
+	QObject::connect(button_clear_all_partitioning_files, SIGNAL(clicked()),
+			this, SLOT(react_clear_all_partitioning_files()));
+	QObject::connect(button_select_all_partitioning_files, SIGNAL(clicked()),
+			this, SLOT(react_select_all_partitioning_files()));
+
+	// Try to adjust column widths.
+	QHeaderView *header = table_partitioning_files->horizontalHeader();
+	header->setResizeMode(FILENAME_COLUMN, QHeaderView::Stretch);
+	header->setResizeMode(ENABLE_FILE_COLUMN, QHeaderView::ResizeToContents);
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_partitioned_files_page()
+{
+	// Connect the help dialogs.
+	QObject::connect(push_button_help_partitioned_files, SIGNAL(clicked()),
+			d_help_partitioned_files_dialog, SLOT(show()));
+
+	// Listen for changes to the checkbox that enables/disables files.
+	QObject::connect(table_partitioned_files, SIGNAL(cellChanged(int, int)),
+			this, SLOT(react_cell_changed_partitioned_files(int, int)));
+	QObject::connect(button_clear_all_partitioned_files, SIGNAL(clicked()),
+			this, SLOT(react_clear_all_partitioned_files()));
+	QObject::connect(button_select_all_partitioned_files, SIGNAL(clicked()),
+			this, SLOT(react_select_all_partitioned_files()));
+
+	// Try to adjust column widths.
+	QHeaderView *header = table_partitioned_files->horizontalHeader();
+	header->setResizeMode(FILENAME_COLUMN, QHeaderView::Stretch);
+	header->setResizeMode(ENABLE_FILE_COLUMN, QHeaderView::ResizeToContents);
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_page()
+{
+	// Connect the help dialogs.
+	QObject::connect(push_button_help_reconstruction_time, SIGNAL(clicked()),
+			d_help_reconstruction_time_dialog, SLOT(show()));
+	QObject::connect(push_button_help_partitions_options, SIGNAL(clicked()),
+			d_help_partition_options_dialog, SLOT(show()));
+	QObject::connect(push_button_help_properties_to_assign, SIGNAL(clicked()),
+			d_help_properties_to_assign_dialog, SLOT(show()));
 
 	// Listen for reconstruction time radio button selections.
 	QObject::connect(radio_button_present_day, SIGNAL(toggled(bool)),
@@ -200,18 +606,19 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 	QObject::connect(double_spin_box_reconstruction_time, SIGNAL(valueChanged(double)),
 			this, SLOT(react_spin_box_reconstruction_time_changed(double)));
 
-	// Listen for assign plate id options radio button selections.
+	// Listen for partition options radio button selections.
 	QObject::connect(radio_button_assign_features, SIGNAL(toggled(bool)),
-			this, SLOT(react_assign_plate_id_options_radio_button(bool)));
+			this, SLOT(react_partition_options_radio_button(bool)));
 	QObject::connect(radio_button_assign_feature_sub_geometries, SIGNAL(toggled(bool)),
-			this, SLOT(react_assign_plate_id_options_radio_button(bool)));
+			this, SLOT(react_partition_options_radio_button(bool)));
 	QObject::connect(radio_button_partition_features, SIGNAL(toggled(bool)),
-			this, SLOT(react_assign_plate_id_options_radio_button(bool)));
+			this, SLOT(react_partition_options_radio_button(bool)));
 
-	// Try to adjust column widths.
-	QHeaderView *header = table_feature_collections->horizontalHeader();
-	header->setResizeMode(FILENAME_COLUMN, QHeaderView::Stretch);
-	header->setResizeMode(ENABLE_FILE_COLUMN, QHeaderView::ResizeToContents);
+	// Listen for feature properties radio button selections.
+	QObject::connect(radio_button_assign_plate_id, SIGNAL(toggled(bool)),
+			this, SLOT(react_feature_properties_options_radio_button(bool)));
+	QObject::connect(radio_button_assign_time_period, SIGNAL(toggled(bool)),
+			this, SLOT(react_feature_properties_options_radio_button(bool)));
 
 	// Set the initial reconstruction time for the double spin box.
 	double_spin_box_reconstruction_time->setValue(d_spin_box_reconstruction_time);
@@ -223,205 +630,103 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 	// Set the default radio button to assign each feature to the plate id
 	// it overlaps the most.
 	radio_button_assign_features->setChecked(true);
+
+	// The feature properties buttons are not mutually exclusive.
+	radio_button_assign_plate_id->setAutoExclusive(false);
+	radio_button_assign_time_period->setAutoExclusive(false);
+
+	// Copy plate ids from partitioning polygon?
+	radio_button_assign_plate_id->setChecked(d_assign_plate_ids);
+	// Copy time periods from partitioning polygon?
+	radio_button_assign_time_period->setChecked(d_assign_time_periods);
 }
 
 
 void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::assign_plate_ids_to_newly_loaded_feature_collections(
-		const file_seq_type &newly_loaded_feature_collection_files,
-		bool pop_up_message_box_if_no_plate_boundaries)
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::handle_prev()
 {
-	if (!check_for_plate_boundaries(pop_up_message_box_if_no_plate_boundaries))
+	const int prev_index = stack_widget->currentIndex() - 1;
+	if (prev_index >= 0)
 	{
-		return;
-	}
-
-	d_only_assign_to_features_with_no_reconstruction_plate_id = true;
-
-	file_ptr_seq_type files_to_assign_plate_ids;
-	get_files_to_assign_plate_ids(
-			files_to_assign_plate_ids,
-			newly_loaded_feature_collection_files);
-
-	query_user_and_assign_plate_ids(files_to_assign_plate_ids);
-}
-
-
-void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::reassign_reconstruction_plate_ids(
-		bool pop_up_message_box_if_no_plate_boundaries)
-{
-	if (!check_for_plate_boundaries(pop_up_message_box_if_no_plate_boundaries))
-	{
-		return;
-	}
-
-	d_only_assign_to_features_with_no_reconstruction_plate_id = false;
-
-	file_ptr_seq_type files_to_assign_plate_ids;
-	get_files_to_reassign_plate_ids(files_to_assign_plate_ids);
-
-	query_user_and_assign_plate_ids(files_to_assign_plate_ids);
-}
-
-
-bool
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::check_for_plate_boundaries(
-			bool pop_up_message_box_if_no_plate_boundaries)
-{
-	// Determine if any resolved topological boundaries.
-	if (!GPlatesAppLogic::TopologyUtils::has_resolved_topological_boundaries(
-			d_reconstruct.get_current_reconstruction()))
-	{
-		// Nothing to do if there are no resolved topological boundaries because
-		// cannot test geometry against plate boundaries.
-		if (pop_up_message_box_if_no_plate_boundaries)
-		{
-			pop_up_no_plate_boundaries_message_box();
-		}
-		return false;
-	}
-
-	return true;
-}
-
-
-void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::pop_up_no_plate_boundaries_message_box()
-{
-	const QString message = tr("GPlates cannot assign plate ids without plate boundary features.\n\n"
-			"Please load feature collection(s) containing "
-			"TopologicalClosedPlateBoundary features.");
-	QMessageBox::warning(this, tr("No plate boundary features loaded"), message,
-			QMessageBox::Ok, QMessageBox::Ok);
-}
-
-
-void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::pop_up_no_files_selected_message_box()
-{
-	const QString message = tr("Please select one or more feature collections.");
-	QMessageBox::information(this, tr("No feature collections selected"), message,
-			QMessageBox::Ok, QMessageBox::Ok);
-}
-
-
-void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_files_to_assign_plate_ids(
-		file_ptr_seq_type &files_to_assign_plate_ids,
-		const file_seq_type &newly_loaded_feature_collection_files)
-{
-	//
-	// Iterate through the feature collections and find any that contains features that
-	// do not have a 'reconstructionPlateId' property.
-	// Exclude reconstruction features (used for generating rotations).
-	//
-
-	file_seq_type::const_iterator file_seq_iter = newly_loaded_feature_collection_files.begin();
-	file_seq_type::const_iterator file_seq_end = newly_loaded_feature_collection_files.end();
-	for ( ; file_seq_iter != file_seq_end; ++file_seq_iter)
-	{
-		const GPlatesFileIO::File::shared_ref &file_ref = *file_seq_iter;
-
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref =
-				file_ref->get_feature_collection();
-
-		// Find any features in the current feature collection that are not
-		// reconstructable features (have no 'reconstructionPlateId' plate id) and
-		// are also not reconstruction features.
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> features_needing_plate_id;
-		if (GPlatesAppLogic::AssignPlateIds::find_reconstructable_features_without_reconstruction_plate_id(
-			features_needing_plate_id, feature_collection_ref))
-		{
-			// We found features in the current feature collection that need plate id assigning.
-			files_to_assign_plate_ids.push_back(file_ref.get());
-		}
+		stack_widget->setCurrentIndex(prev_index);
 	}
 }
 
 
 void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_files_to_reassign_plate_ids(
-		file_ptr_seq_type &files_to_assign_plate_ids)
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::handle_next()
 {
-	//
-	// Get a list of all active files excluding reconstruction files.
-	// This is the set of feature collections that can possibly make use
-	// of a 'gpml:reconstructionPlateId'. We're effectively removing any
-	// active files that the user will not want to assign a reconstruction plate id to.
-	//
-
-	typedef std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_iterator>
-			file_iterator_seq_type;
-	file_iterator_seq_type active_files;
-	d_feature_collection_file_state.get_active_files(
-			active_files,
-			d_feature_collection_file_state.get_registered_workflow_tags(),
-			true/*include_reconstructable_workflow*/);
-
-	// Convert sequence of file iterators to a sequence of file pointers.
-	files_to_assign_plate_ids.reserve(active_files.size());
-	file_iterator_seq_type::const_iterator active_files_iter = active_files.begin();
-	file_iterator_seq_type::const_iterator active_files_end = active_files.end();
-	for ( ; active_files_iter != active_files_end; ++active_files_iter)
+	const int next_index = stack_widget->currentIndex() + 1;
+	if (next_index < stack_widget->count())
 	{
-		const GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file_iter =
-				*active_files_iter;
-		GPlatesFileIO::File *active_file = &*file_iter;
-
-		files_to_assign_plate_ids.push_back(active_file);
+		stack_widget->setCurrentIndex(next_index);
 	}
 }
 
 
 void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::query_user_and_assign_plate_ids(
-		const file_ptr_seq_type &files_to_assign_plate_ids)
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::handle_page_change(
+		int page)
 {
-	// If there are no files then return early.
-	if (files_to_assign_plate_ids.empty())
+	// Enable all buttons and then disable buttons appropriately.
+	button_prev->setEnabled(true);
+	button_next->setEnabled(true);
+	d_button_create->setEnabled(true);
+	
+	// Disable buttons which are not valid for the page,
+	// and focus the first widget.
+	switch (page)
 	{
-		return;
+	case 0:
+			partitioning_files->setFocus();
+			button_prev->setEnabled(false);
+			d_button_create->setEnabled(false);
+			break;
+
+	case 1:
+			partitioned_files->setFocus();
+			d_button_create->setEnabled(false);
+			break;
+
+	case 2:
+			general_options->setFocus();
+			button_next->setEnabled(false);
+			break;
+
+	default:
+		break;
 	}
-
-	// Setup the file list in the widget.
-	initialise_file_list(files_to_assign_plate_ids);
-
-	// Set the current reconstruction time label.
-	label_current_reconstruction_time->setText(
-			QString::number(d_reconstruct.get_current_reconstruction_time()));
-
-	// Get the user to confirm the list of files.
-	// The assigning of plate ids will happen in 'accept()' if the user
-	// pressed 'OK'.
-	exec();
 }
 
 
 void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::initialise_file_list(
-		const file_ptr_seq_type &file_list)
+		FileStateCollection &file_state_collection,
+		const file_ptr_seq_type &files)
 {
-	clear_rows();
-	for (file_ptr_seq_type::const_iterator file_iter = file_list.begin();
-		file_iter != file_list.end();
+	clear_rows(file_state_collection);
+
+	for (file_ptr_seq_type::const_iterator file_iter = files.begin();
+		file_iter != files.end();
 		++file_iter)
 	{
-		add_row(*file_iter);
+		add_row(file_state_collection, *file_iter);
 	}
 }
 
 
 void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::clear_rows()
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::clear_rows(
+		FileStateCollection &file_state_collection)
 {
-	table_feature_collections->clearContents();	// Do not clear the header items as well.
-	table_feature_collections->setRowCount(0);	// Do remove the newly blanked rows.
+	file_state_collection.table_widget->clearContents(); // Do not clear the header items as well.
+	file_state_collection.table_widget->setRowCount(0);  // Do remove the newly blanked rows.
 }
 
 
 void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::add_row(
+		FileStateCollection &file_state_collection,
 		GPlatesFileIO::File *file)
 {
 	const GPlatesFileIO::FileInfo &file_info = file->get_file_info();
@@ -445,46 +750,69 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::add_row(
 	const QString filepath_str = qfileinfo.path();
 	
 	// The rows in the QTableWidget and our internal file sequence should be in sync.
-	const int row = table_feature_collections->rowCount();
+	const int row = file_state_collection.table_widget->rowCount();
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			row == boost::numeric_cast<int>(d_file_state_seq.size()),
+			row == boost::numeric_cast<int>(file_state_collection.file_state_seq.size()),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Add a row.
-	table_feature_collections->insertRow(row);
-	d_file_state_seq.push_back(FileState(file));
-	const FileState &row_file_state = d_file_state_seq.back();
+	file_state_collection.table_widget->insertRow(row);
+	file_state_collection.file_state_seq.push_back(FileState(file));
+	const FileState &row_file_state = file_state_collection.file_state_seq.back();
 	
 	// Add filename item.
 	QTableWidgetItem *filename_item = new QTableWidgetItem(display_name);
 	filename_item->setToolTip(tr("Location: %1").arg(filepath_str));
 	filename_item->setFlags(Qt::ItemIsEnabled);
-	table_feature_collections->setItem(row, FILENAME_COLUMN, filename_item);
+	file_state_collection.table_widget->setItem(row, FILENAME_COLUMN, filename_item);
 
 	// Add checkbox item to enable/disable the file.
 	QTableWidgetItem *file_enabled_item = new QTableWidgetItem();
-	file_enabled_item->setToolTip(tr("Select to enable file for plate id assignment"));
+	file_enabled_item->setToolTip(tr("Select to enable file for partitioning"));
 	file_enabled_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
 	file_enabled_item->setCheckState(row_file_state.enabled ? Qt::Checked : Qt::Unchecked);
-	table_feature_collections->setItem(row, ENABLE_FILE_COLUMN, file_enabled_item);
+	file_state_collection.table_widget->setItem(row, ENABLE_FILE_COLUMN, file_enabled_item);
 }
 
 
 void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::clear()
 {
-	clear_rows();
-	d_file_state_seq.clear();
+	clear_rows(d_partitioning_file_state_seq);
+	clear_rows(d_partitioned_file_state_seq);
+
+	d_partitioning_file_state_seq.file_state_seq.clear();
+	d_partitioned_file_state_seq.file_state_seq.clear();
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_cell_changed_partitioning_files(
+		int row,
+		int column)
+{
+	react_cell_changed(d_partitioning_file_state_seq, row, column);
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_cell_changed_partitioned_files(
+		int row,
+		int column)
+{
+	react_cell_changed(d_partitioned_file_state_seq, row, column);
 }
 
 
 void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_cell_changed(
+		FileStateCollection &file_state_collection,
 		int row,
 		int column)
 {
 	if (row < 0 ||
-			boost::numeric_cast<file_state_seq_type::size_type>(row) > d_file_state_seq.size())
+			boost::numeric_cast<file_state_seq_type::size_type>(row) >
+					file_state_collection.file_state_seq.size())
 	{
 		return;
 	}
@@ -497,27 +825,59 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_cell_changed(
 	}
 
 	// Set the enable flag in our internal file sequence.
-	d_file_state_seq[row].enabled =
-			table_feature_collections->item(row, column)->checkState() == Qt::Checked;
+	file_state_collection.file_state_seq[row].enabled =
+			file_state_collection.table_widget->item(row, column)->checkState() == Qt::Checked;
 }
 
 
 void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_clear_all()
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_clear_all_partitioned_files()
 {
-	for (int row = 0; row < table_feature_collections->rowCount(); ++row)
+	react_clear_all(d_partitioned_file_state_seq);
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_clear_all_partitioning_files()
+{
+	react_clear_all(d_partitioning_file_state_seq);
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_clear_all(
+		FileStateCollection &file_state_collection)
+{
+	for (int row = 0; row < file_state_collection.table_widget->rowCount(); ++row)
 	{
-		table_feature_collections->item(row, ENABLE_FILE_COLUMN)->setCheckState(Qt::Unchecked);
+		file_state_collection.table_widget->item(row, ENABLE_FILE_COLUMN)
+				->setCheckState(Qt::Unchecked);
 	}
 }
 
 
 void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_select_all()
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_select_all_partitioned_files()
 {
-	for (int row = 0; row < table_feature_collections->rowCount(); ++row)
+	react_select_all(d_partitioned_file_state_seq);
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_select_all_partitioning_files()
+{
+	react_select_all(d_partitioning_file_state_seq);
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_select_all(
+		FileStateCollection &file_state_collection)
+{
+	for (int row = 0; row < file_state_collection.table_widget->rowCount(); ++row)
 	{
-		table_feature_collections->item(row, ENABLE_FILE_COLUMN)->setCheckState(Qt::Checked);
+		file_state_collection.table_widget->item(row, ENABLE_FILE_COLUMN)
+				->setCheckState(Qt::Checked);
 	}
 }
 
@@ -558,7 +918,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_spin_box_reconstruct
 
 
 void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_assign_plate_id_options_radio_button(
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_partition_options_radio_button(
 		bool checked)
 {
 	if (!checked)
@@ -587,16 +947,22 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_assign_plate_id_opti
 
 
 void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_feature_properties_options_radio_button(
+		bool checked)
+{
+	d_assign_plate_ids = radio_button_assign_plate_id->isChecked();
+	d_assign_time_periods = radio_button_assign_time_period->isChecked();
+}
+
+
+void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::apply()
 {
-	GPlatesAppLogic::AssignPlateIds::non_null_ptr_type plate_id_assigner =
-			create_plate_id_assigner();
-
-	if (!assign_plate_ids(*plate_id_assigner))
+	if (!partition_features())
 	{
-		// No files were selected so notify the user and return
-		// without closing this dialog.
-		pop_up_no_files_selected_message_box();
+		// Return early and don't close dialog.
+		// This allows user to correct a mistake.
+		// Use still has option of pressing "Cancel".
 		return;
 	}
 
@@ -612,143 +978,4 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::reject()
 	clear();
 
 	done(QDialog::Rejected);
-}
-
-
-GPlatesAppLogic::AssignPlateIds::non_null_ptr_type
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
-{
-	GPlatesAppLogic::AssignPlateIds::non_null_ptr_type plate_id_assigner;
-
-	// Determine which reconstruction time to use.
-	switch (d_reconstruction_time_type)
-	{
-	case PRESENT_DAY_RECONSTRUCTION_TIME:
-	default:
-		// Use the present day reconstruction time.
-		plate_id_assigner =
-				GPlatesAppLogic::AssignPlateIds::create_at_new_reconstruction_time(
-						d_assign_plate_id_method,
-						d_model,
-						d_feature_collection_file_state,
-						0/*present day*/,
-						d_reconstruct.get_current_anchored_plate_id());
-		break;
-
-	case CURRENT_RECONSTRUCTION_TIME:
-		// The user wants the current reconstruction time so just use the
-		// current reconstruction.
-		plate_id_assigner =
-				GPlatesAppLogic::AssignPlateIds::create_at_current_reconstruction_time(
-						d_assign_plate_id_method, d_model, d_reconstruct);
-		break;
-
-	case USER_SPECIFIED_RECONSTRUCTION_TIME:
-		// Use the reconstruction time specified by the user.
-		plate_id_assigner =
-				GPlatesAppLogic::AssignPlateIds::create_at_new_reconstruction_time(
-						d_assign_plate_id_method,
-						d_model,
-						d_feature_collection_file_state,
-						d_spin_box_reconstruction_time,
-						d_reconstruct.get_current_anchored_plate_id());
-		break;
-	}
-
-	return plate_id_assigner;
-}
-
-
-bool
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::assign_plate_ids(
-		GPlatesAppLogic::AssignPlateIds &plate_id_assigner)
-{
-	bool assigned_any_plate_ids = false;
-	bool any_files_enabled = false;
-
-	// Iterate through the files accepted by the user.
-	file_state_seq_type::const_iterator file_state_iter = d_file_state_seq.begin();
-	file_state_seq_type::const_iterator file_state_end = d_file_state_seq.end();
-	for ( ; file_state_iter != file_state_end; ++file_state_iter)
-	{
-		const FileState &file_state = *file_state_iter;
-
-		// If user has disabled then continue to the next file.
-		if (!file_state.enabled)
-		{
-			continue;
-		}
-		any_files_enabled = true;
-
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref =
-				file_state.file->get_feature_collection();
-
-		if (d_only_assign_to_features_with_no_reconstruction_plate_id)
-		{
-			// Find any features in the current feature collection that are not
-			// reconstructable features (have no 'reconstructionPlateId' plate id) and
-			// are also not reconstruction features.
-			std::vector<GPlatesModel::FeatureHandle::weak_ref> features_needing_plate_id;
-			if (GPlatesAppLogic::AssignPlateIds::find_reconstructable_features_without_reconstruction_plate_id(
-				features_needing_plate_id, feature_collection_ref))
-			{
-				// We found features in the current feature collection that need plate id assigning.
-				const bool assigned_plate_id =
-						plate_id_assigner.assign_reconstruction_plate_ids(
-								features_needing_plate_id, feature_collection_ref);
-
-				assigned_any_plate_ids |= assigned_plate_id;
-
-				// See if any of the features are the focused feature.
-				std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator feature_ref_iter
-						= features_needing_plate_id.begin();
-				std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator feature_ref_end
-						= features_needing_plate_id.end();
-				for ( ; feature_ref_iter != feature_ref_end; ++feature_ref_iter)
-				{
-					if (feature_ref_iter->is_valid() &&
-						feature_ref_iter->handle_ptr() ==
-								d_feature_focus.focused_feature().handle_ptr())
-					{
-						d_feature_focus.announce_modification_of_focused_feature();
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			const bool assigned_plate_id =
-					plate_id_assigner.assign_reconstruction_plate_ids(feature_collection_ref);
-
-			assigned_any_plate_ids |= assigned_plate_id;
-
-			// See if any of the features are the focused feature.
-			GPlatesModel::FeatureCollectionHandle::iterator feature_iter;
-			for (feature_iter = feature_collection_ref->begin();
-				feature_iter != feature_collection_ref->end();
-				++feature_iter)
-			{
-				if ((*feature_iter).get() == d_feature_focus.focused_feature().handle_ptr())
-				{
-					d_feature_focus.announce_modification_of_focused_feature();
-					break;
-				}
-			}
-		}
-	}
-
-	// If no files were selected.
-	if (!any_files_enabled)
-	{
-		return false;
-	}
-
-	// If any plate ids were assigned then we need to do another reconstruction.
-	// Note we'll do one anyway since the feature may have been modified even if
-	// a plate id was not assigned (such as removing an existing plate id).
-	d_reconstruct.reconstruct();
-
-	// Let the caller know it can close this dialog since files were selected.
-	return true;
 }

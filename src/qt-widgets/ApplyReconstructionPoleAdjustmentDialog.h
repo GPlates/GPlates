@@ -36,7 +36,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesMaths
@@ -224,7 +224,7 @@ namespace GPlatesQtWidgets
 		have_reconstructed();
 
 	private:
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		ApplyReconstructionPoleAdjustmentDialog *d_dialog_ptr;
 		// The adjustment as calculated interactively, relative to the stationary plate.

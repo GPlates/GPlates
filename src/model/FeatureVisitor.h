@@ -290,14 +290,21 @@ namespace GPlatesModel
 				feature_handle_type &feature_handle);
 
 		/**
+		 * Invoke this function in @a visit_feature_properties to visit a feature properties.
+		 *
+		 * This function should not be overridden except in emergency.
+		 */
+		virtual
+		void
+		visit_feature_property(
+				const feature_iterator_type &feature_iterator);
+
+		/**
 		 * Invoke this function in @a visit_feature_handle to visit each of the the feature
 		 * properties in turn.
 		 *
-		 * This function should not be overridden except in emergency (such as in
-		 * ReconstructedFeatureGeometryPopulator, QueryFeaturePropertiesWidgetPopulator and
-		 * ViewFeatureGeometriesWidgetPopulator).
+		 * Note that this function is not virtual.  This function should not be overridden.
 		 */
-		virtual
 		void
 		visit_feature_properties(
 				feature_handle_type &feature_handle);
@@ -700,18 +707,38 @@ namespace GPlatesModel
 	}
 
 
-	// Template specialisations are in .cc file.
-	template<>
+	template<class FeatureHandleType>
 	void
-	FeatureVisitorBase<FeatureHandle>::visit_feature_properties(
-			feature_handle_type &feature_handle);
+	FeatureVisitorBase<FeatureHandleType>::visit_feature_properties(
+			feature_handle_type &feature_handle)
+	{
+		feature_iterator_type iter = feature_handle.begin();
+		feature_iterator_type end = feature_handle.end();
+		for ( ; iter != end; ++iter)
+		{
+			d_current_top_level_propiter = iter;
+			d_current_top_level_propname = (*iter)->property_name();
+
+			visit_feature_property(iter);
+
+			d_current_top_level_propiter = boost::none;
+			d_current_top_level_propname = boost::none;
+		}
+	}
 
 
 	// Template specialisations are in .cc file.
 	template<>
 	void
-	FeatureVisitorBase<const FeatureHandle>::visit_feature_properties(
-			feature_handle_type &feature_handle);
+	FeatureVisitorBase<FeatureHandle>::visit_feature_property(
+			const feature_iterator_type &feature_iterator);
+
+
+	// Template specialisations are in .cc file.
+	template<>
+	void
+	FeatureVisitorBase<const FeatureHandle>::visit_feature_property(
+			const feature_iterator_type &feature_iterator);
 
 
 	template<class FeatureHandleType>
@@ -784,6 +811,23 @@ namespace GPlatesModel
 	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
 	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 
+	/**
+	 * FIXME: This is temporary until we resolve the overhead of cloning properties
+	 * in non-const visitors or come to accept the overhead or some middle solution.
+	 *
+	 * A hacked non-const feature visitor that avoids the property cloning
+	 * that occurs with @a FeatureVisitor but relies on classes deriving from it
+	 * keeping their promise not to modify the property values that are visited.
+	 */
+	class FeatureVisitorThatGuaranteesNotToModify :
+			public FeatureVisitor
+	{
+	public:
+		virtual
+		void
+		visit_feature_property(
+				const feature_iterator_type &feature_iterator);
+	};
 }
 
 #endif  // GPLATES_MODEL_FEATUREVISITOR_H

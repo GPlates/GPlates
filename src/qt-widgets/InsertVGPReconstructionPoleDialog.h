@@ -34,9 +34,9 @@
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
 	class FeatureCollectionFileState;
 	class FeatureCollectionFileIO;
-	class Reconstruct;
 }
 
 namespace GPlatesMaths
@@ -76,7 +76,7 @@ namespace GPlatesQtWidgets
 	
 		ReconstructionPoleWidget *d_reconstruction_pole_widget_ptr;
 		
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 		
 		/**
 		 * The loaded feature collection files.

@@ -65,7 +65,7 @@ GPlatesModel::ReconstructionTreePopulator::ReconstructionTreePopulator(
 
 bool
 GPlatesModel::ReconstructionTreePopulator::initialise_pre_feature_properties(
-		const FeatureHandle &feature_handle)
+		FeatureHandle &feature_handle)
 {
 	d_accumulator = ReconstructionSequenceAccumulator();
 	return true;
@@ -74,7 +74,7 @@ GPlatesModel::ReconstructionTreePopulator::initialise_pre_feature_properties(
 
 void
 GPlatesModel::ReconstructionTreePopulator::finalise_post_feature_properties(
-		const FeatureHandle &feature_handle)
+		FeatureHandle &feature_handle)
 {
 	// So now we've visited the contents of this Total Recon Seq feature.  Let's find out if we
 	// were able to obtain all the information we need.
@@ -98,7 +98,8 @@ GPlatesModel::ReconstructionTreePopulator::finalise_post_feature_properties(
 	d_graph_ptr->insert_total_reconstruction_pole(
 			*(d_accumulator->d_fixed_ref_frame),
 			*(d_accumulator->d_moving_ref_frame),
-			*(d_accumulator->d_finite_rotation));
+			*(d_accumulator->d_finite_rotation),
+			feature_handle.reference());
 
 	d_accumulator = boost::none;
 }
@@ -106,7 +107,7 @@ GPlatesModel::ReconstructionTreePopulator::finalise_post_feature_properties(
 
 void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_finite_rotation(
-		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation) {
+		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation) {
 	if (d_accumulator->d_is_expecting_a_finite_rotation) {
 		// The visitor was expecting a FiniteRotation, which means the structure of the
 		// Total Reconstruction Sequence is (more or less) correct.
@@ -120,7 +121,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_finite_rotation(
 
 void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_finite_rotation_slerp(
-		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
+		GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
 {
 	// FIXME:  We should use this for something... (Currently, FiniteRotation SLERP is the only
 	// option, so the code below is hard-coded to perform a FiniteRotation SLERP.  But still,
@@ -130,7 +131,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_finite_rotation_slerp(
 
 void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
-		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+		GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
 	using namespace GPlatesPropertyValues;
 
@@ -154,8 +155,8 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	// (non-disabled) time sample.
 
 	// So, let's get to the most-recent non-disabled time sample.
-	std::vector<GpmlTimeSample>::const_iterator iter = gpml_irregular_sampling.time_samples().begin();
-	std::vector<GpmlTimeSample>::const_iterator end = gpml_irregular_sampling.time_samples().end();
+	std::vector<GpmlTimeSample>::iterator iter = gpml_irregular_sampling.time_samples().begin();
+	std::vector<GpmlTimeSample>::iterator end = gpml_irregular_sampling.time_samples().end();
 	while (iter != end && iter->is_disabled()) {
 		// This time-sample is disabled.  Let's move to the next one.
 		++iter;
@@ -208,7 +209,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	// remaining rails and posts.
 
 	// 'prev' is the previous non-disabled time sample.
-	std::vector<GpmlTimeSample>::const_iterator prev = iter;
+	std::vector<GpmlTimeSample>::iterator prev = iter;
 	for (++iter; iter != end; ++iter) {
 		if (iter->is_disabled()) {
 			// This time-sample is disabled.  Let's move to the next one.
@@ -309,7 +310,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 
 void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	static const PropertyName fixed_ref_frame_property_name =
 		PropertyName::create_gpml("fixedReferenceFrame");

@@ -36,7 +36,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesPresentation
@@ -116,7 +116,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * This is the view state which is used to obtain the reconstruction root.
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * This is the feature we are displaying. Make sure to check this ref is_valid()!

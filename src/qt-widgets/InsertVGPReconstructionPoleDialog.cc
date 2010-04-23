@@ -25,7 +25,6 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/Reconstruct.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "model/Reconstruction.h"
@@ -148,31 +147,25 @@ namespace
 	{
 		using namespace GPlatesModel;
 
-		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_iter =
-				reconstruction.reconstruction_feature_collections().begin();
-		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_end =
-				reconstruction.reconstruction_feature_collections().end();
-		for ( ; collections_iter != collections_end; ++collections_iter) {
-			const FeatureCollectionHandle::weak_ref &current_collection = *collections_iter;
-			if ( ! current_collection.is_valid()) {
+		std::vector<FeatureHandle::weak_ref>::const_iterator features_iter =
+				reconstruction.reconstruction_tree().get_reconstruction_features().begin();
+		std::vector<FeatureHandle::weak_ref>::const_iterator features_end =
+				reconstruction.reconstruction_tree().get_reconstruction_features().end();
+		for ( ; features_iter != features_end; ++features_iter) {
+			const FeatureHandle::weak_ref &current_feature = *features_iter;
+			if ( ! current_feature.is_valid()) {
 				// FIXME:  Should we do anything about this? Or is this acceptable?
-				// (If the collection is not valid, then presumably it has been
-				// unloaded.  In which case, why hasn't the reconstruction been
-				// recalculated?)
+				// (If the handle is not valid, then presumably it belongs to a feature
+				// collection that has been unloaded.  In which case, why hasn't the
+				// reconstruction been recalculated?)
 				continue;
 			}
 
-			FeatureCollectionHandle::iterator features_iter =
-					current_collection->begin();
-			FeatureCollectionHandle::iterator features_end =
-					current_collection->end();
-			for ( ; features_iter != features_end; ++features_iter) {
 #if 0			
-				examine_trs(sequence_choices, trs_plate_id_finder,
-						trs_time_period_finder, plate_id_of_interest,
-						reconstruction_time, features_iter);
+			examine_trs(sequence_choices, trs_plate_id_finder,
+					trs_time_period_finder, plate_id_of_interest,
+					reconstruction_time, current_feature);
 #endif
-			}
 		}
 	} 
 }
@@ -185,7 +178,7 @@ GPlatesQtWidgets::InsertVGPReconstructionPoleDialog::InsertVGPReconstructionPole
 	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_pole_sequence_table_widget_ptr(new PoleSequenceTableWidget()),
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget()),
-	d_reconstruct_ptr(&view_state_.get_reconstruct()),
+	d_application_state_ptr(&view_state_.get_application_state()),
 	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
 	d_file_io(view_state_.get_application_state().get_feature_collection_file_io())
 {
@@ -218,7 +211,8 @@ GPlatesQtWidgets::InsertVGPReconstructionPoleDialog::setup(
 
 	
 	// Should I use "reconstruction" or "file state" to access feature collections...?
-	if (d_reconstruct_ptr->get_current_reconstruction().reconstruction_feature_collections().empty())
+	if (d_application_state_ptr->get_current_reconstruction().reconstruction_tree()
+		.get_reconstruction_features().empty())
 	{
 		// We don't have any reconstruction feature collections, so we'll set up <Create a new feature collection>
 		feature_collection_name = QString("< Create a new feature collection >");
@@ -244,8 +238,8 @@ GPlatesQtWidgets::InsertVGPReconstructionPoleDialog::setup(
 	GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
 
 	find_trses(sequence_choices, trs_plate_id_finder, trs_time_period_finder, d_reconstruction_pole.d_moving_plate,
-		d_reconstruct_ptr->get_current_reconstruction(),
-		d_reconstruct_ptr->get_current_reconstruction_time());	
+		d_application_state_ptr->get_current_reconstruction(),
+		d_application_state_ptr->get_current_reconstruction_time());	
 	
 }
 

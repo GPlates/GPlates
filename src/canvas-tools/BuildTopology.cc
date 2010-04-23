@@ -31,7 +31,7 @@
 
 #include "BuildTopology.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "app-logic/TopologyInternalUtils.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "global/InternalInconsistencyException.h"
@@ -60,7 +60,6 @@ GPlatesCanvasTools::BuildTopology::BuildTopology(
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget):
 	GlobeCanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&view_state_.get_rendered_geometry_collection()),
-	d_reconstruct_ptr(&view_state_.get_reconstruct()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
 	d_topology_sections_container_ptr(&topology_sections_container),

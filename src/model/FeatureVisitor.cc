@@ -32,46 +32,51 @@ namespace GPlatesModel
 
 	template<>
 	void
-	FeatureVisitorBase<FeatureHandle>::visit_feature_properties(
-			feature_handle_type &feature_handle)
+	FeatureVisitorBase<FeatureHandle>::visit_feature_property(
+			const feature_iterator_type &feature_iterator)
 	{
-		feature_iterator_type iter = feature_handle.begin();
-		feature_iterator_type end = feature_handle.end();
-		for ( ; iter != end; ++iter)
-		{
-			d_current_top_level_propiter = iter;
-			d_current_top_level_propname = (*iter)->property_name();
-
-			// Note that if you dereference a feature children iterator, you get a
-			// TopLevelProperty::non_null_ptr_to_const_type. To modify properties in a
-			// feature, you need to make a deep clone of the property, modify the clone
-			// and then call set on the feature.
-			TopLevelProperty::non_null_ptr_type prop_clone = (*iter)->deep_clone();
-			prop_clone->accept_visitor(*this);
-			*iter = prop_clone;
-
-			d_current_top_level_propiter = boost::none;
-			d_current_top_level_propname = boost::none;
-		}
+		// Note that if you dereference a feature children iterator, you get a
+		// TopLevelProperty::non_null_ptr_to_const_type. To modify properties in a
+		// feature, you need to make a deep clone of the property, modify the clone
+		// and then call set on the feature.
+		TopLevelProperty::non_null_ptr_type prop_clone = (*feature_iterator)->deep_clone();
+		prop_clone->accept_visitor(*this);
+		*feature_iterator = prop_clone;
 	}
 
 
 	template<>
 	void
-	FeatureVisitorBase<const FeatureHandle>::visit_feature_properties(
-			feature_handle_type &feature_handle)
+	FeatureVisitorBase<const FeatureHandle>::visit_feature_property(
+			const feature_iterator_type &feature_iterator)
 	{
-		feature_iterator_type iter = feature_handle.begin();
-		feature_iterator_type end = feature_handle.end();
-		for ( ; iter != end; ++iter)
-		{
-			d_current_top_level_propiter = iter;
-			d_current_top_level_propname = (*iter)->property_name();
-			(*iter)->accept_visitor(*this);
-			d_current_top_level_propiter = boost::none;
-			d_current_top_level_propname = boost::none;
-		}
+		(*feature_iterator)->accept_visitor(*this);
 	}
 
+}
+
+
+void
+GPlatesModel::FeatureVisitorThatGuaranteesNotToModify::visit_feature_property(
+		const feature_iterator_type &feature_iterator)
+{
+	TopLevelProperty::non_null_ptr_to_const_type const_prop = *feature_iterator;
+
+	// HACK: This is the hack that this whole class is built upon (to avoid cloning properties).
+	// Cast away the const from the TopLevelProperty.
+	// The class derived from this class guarantees that they won't modify the property values.
+	// The derived class just wants non-const references.
+	// Note that for FeatureVisitor (which is non-const) the property value references are
+	// not valid after visitation because the cloned property is set in the model (which does
+	// another clone) and so the first clone (that the references reference) is destroyed
+	// making the references invalid.
+	// So why would the derived class want non-const reference if they're not going
+	// to modify the property values ?
+	// This is probably because they want a non-const reference to the feature being
+	// visited - presumably to pass to other objects that will later modify the feature
+	// (after this visitor has finished visiting all property values and returned).
+	TopLevelProperty *prop = const_cast<TopLevelProperty *>(const_prop.get());
+
+	prop->accept_visitor(*this);
 }
 

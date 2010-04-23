@@ -29,7 +29,7 @@
 
 #include "UndoRedo.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructUtils.h"
 
@@ -128,7 +128,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::FocusedFeatureGeometry
 		GPlatesPresentation::ViewState &view_state) :
 d_focused_feature_geom_builder(&focused_feature_geom_builder),
 d_feature_focus(&view_state.get_feature_focus()),
-d_reconstruct(&view_state.get_reconstruct()),
+d_application_state(&view_state.get_application_state()),
 d_ignore_geom_builder_update(false),
 d_block_infinite_signal_slot_loop_depth(0)
 {
@@ -339,7 +339,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 	{
 		// Get current reconstruction tree.
 		GPlatesModel::ReconstructionTree &recon_tree =
-				d_reconstruct->get_current_reconstruction().reconstruction_tree();
+				d_application_state->get_current_reconstruction().reconstruction_tree();
 
 		geometry_on_sphere = GPlatesAppLogic::ReconstructUtils::reconstruct(
 				geometry_on_sphere, plate_id, recon_tree, reverse_reconstruct);

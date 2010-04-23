@@ -28,8 +28,8 @@
 #include <QString>
 #include "ExportResolvedTopologyAnimationStrategy.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/AppLogicUtils.h"
-#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
@@ -47,6 +47,8 @@
 
 #include "model/ResolvedTopologicalBoundary.h"
 
+#include "presentation/ViewState.h"
+
 #include "property-values/Enumeration.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlConstantValue.h"
@@ -58,8 +60,6 @@
 #include "utils/ExportTemplateFilenameSequence.h"
 #include "utils/FloatingPointComparisons.h"
 #include "utils/UnicodeStringUtils.h"
-
-#include "presentation/ViewState.h"
 
 
 namespace
@@ -978,11 +978,11 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
 	//
 
-	GPlatesAppLogic::Reconstruct &reconstruct =
-			d_export_animation_context_ptr->view_state().get_reconstruct();
+	GPlatesAppLogic::ApplicationState &application_state =
+			d_export_animation_context_ptr->view_state().get_application_state();
 
-	GPlatesModel::Reconstruction &reconstruction = reconstruct.get_current_reconstruction();
-	const double &reconstruction_time = reconstruct.get_current_reconstruction_time();
+	GPlatesModel::Reconstruction &reconstruction = application_state.get_current_reconstruction();
+	const double &reconstruction_time = application_state.get_current_reconstruction_time();
 
 	// Find any ResolvedTopologicalBoundary objects in the reconstruction.
 	resolved_geom_seq_type resolved_geom_seq;

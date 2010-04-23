@@ -30,6 +30,7 @@
 
 #include "TopologyBoundaryResolver.h"
 
+#include "GeometryUtils.h"
 #include "ReconstructionGeometryUtils.h"
 #include "TopologyInternalUtils.h"
 
@@ -55,7 +56,6 @@
 #include "utils/GeometryCreationUtils.h"
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
-#include "utils/GeometryUtils.h"
 
 
 // Create a ReconstructedFeatureGeometry for the rotated reference points in each
@@ -69,10 +69,9 @@
 
 
 GPlatesAppLogic::TopologyBoundaryResolver::TopologyBoundaryResolver(
-			const double &recon_time,
 			GPlatesModel::Reconstruction &recon) :
 	d_reconstruction(recon),
-	d_reconstruction_params(recon_time)
+	d_reconstruction_params(recon.get_reconstruction_time())
 {  
 	d_num_topologies = 0;
 }
@@ -546,7 +545,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the plate polygon points.
-		GPlatesUtils::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(
 				*section.d_final_boundary_segment_unreversed_geom.get(),
 				polygon_points,
 				section.d_use_reverse);

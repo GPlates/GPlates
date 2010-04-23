@@ -33,8 +33,8 @@
 #include "ModifyReconstructionPoleWidget.h"
 #include "ViewportWindow.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/PaleomagUtils.h"
-#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
@@ -50,7 +50,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget
 		ViewportWindow &viewport_window,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_reconstruct_ptr(&view_state.get_reconstruct()),
+	d_application_state_ptr(&view_state.get_application_state()),
 	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
 	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&viewport_window)),
 	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr)),
@@ -161,10 +161,11 @@ namespace
 	add_children_to_geometry_collection(
 		std::vector<GPlatesModel::integer_plate_id_type> &child_plate_id_collection,
 		const GPlatesModel::integer_plate_id_type plate_id,
-		GPlatesAppLogic::Reconstruct *reconstruct_ptr
+		GPlatesAppLogic::ApplicationState *application_state_ptr
 		)
 	{
-		GPlatesModel::ReconstructionTree &tree = reconstruct_ptr->get_current_reconstruction().reconstruction_tree();
+		GPlatesModel::ReconstructionTree &tree =
+				application_state_ptr->get_current_reconstruction().reconstruction_tree();
 		GPlatesModel::ReconstructionTree::edge_refs_by_plate_id_map_const_range_type 
 			edges = tree.find_edges_whose_moving_plate_id_match(plate_id);
 
@@ -389,7 +390,7 @@ namespace
 			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
 			const double &reconstruction_time,
-			GPlatesModel::FeatureCollectionHandle::iterator &current_feature)
+			const GPlatesModel::FeatureHandle::weak_ref &current_feature)
 	{
 		using namespace GPlatesQtWidgets;
 
@@ -460,7 +461,7 @@ namespace
 
 			sequence_choices.push_back(
 					ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo(
-							(*current_feature)->reference(),
+							current_feature,
 							*trs_plate_id_finder.fixed_ref_frame_plate_id(),
 							*trs_plate_id_finder.moving_ref_frame_plate_id(),
 							trs_time_period_finder.begin_time()->value(),
@@ -489,29 +490,23 @@ namespace
 	{
 		using namespace GPlatesModel;
 
-		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_iter =
-				reconstruction.reconstruction_feature_collections().begin();
-		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_end =
-				reconstruction.reconstruction_feature_collections().end();
-		for ( ; collections_iter != collections_end; ++collections_iter) {
-			const FeatureCollectionHandle::weak_ref &current_collection = *collections_iter;
-			if ( ! current_collection.is_valid()) {
+		std::vector<FeatureHandle::weak_ref>::const_iterator features_iter =
+				reconstruction.reconstruction_tree().get_reconstruction_features().begin();
+		std::vector<FeatureHandle::weak_ref>::const_iterator features_end =
+				reconstruction.reconstruction_tree().get_reconstruction_features().end();
+		for ( ; features_iter != features_end; ++features_iter) {
+			const FeatureHandle::weak_ref &current_feature = *features_iter;
+			if ( ! current_feature.is_valid()) {
 				// FIXME:  Should we do anything about this? Or is this acceptable?
-				// (If the collection is not valid, then presumably it has been
-				// unloaded.  In which case, why hasn't the reconstruction been
-				// recalculated?)
+				// (If the handle is not valid, then presumably it belongs to a feature
+				// collection that has been unloaded.  In which case, why hasn't the
+				// reconstruction been recalculated?)
 				continue;
 			}
 
-			FeatureCollectionHandle::iterator features_iter =
-					current_collection->begin();
-			FeatureCollectionHandle::iterator features_end =
-					current_collection->end();
-			for ( ; features_iter != features_end; ++features_iter) {
-				examine_trs(sequence_choices, trs_plate_id_finder,
-						trs_time_period_finder, plate_id_of_interest,
-						reconstruction_time, features_iter);
-			}
+			examine_trs(sequence_choices, trs_plate_id_finder,
+					trs_time_period_finder, plate_id_of_interest,
+					reconstruction_time, current_feature);
 		}
 	}
 }
@@ -540,8 +535,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 	GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
 
 	find_trses(sequence_choices, trs_plate_id_finder, trs_time_period_finder, *d_plate_id,
-			d_reconstruct_ptr->get_current_reconstruction(),
-			d_reconstruct_ptr->get_current_reconstruction_time());
+			d_application_state_ptr->get_current_reconstruction(),
+			d_application_state_ptr->get_current_reconstruction_time());
 
 	// The Applicator should be set before the dialog is set up.
 	// Why, you ask?  Because when the dialog is set up, the first row in the sequence choices
@@ -550,10 +545,10 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 	d_applicator_ptr->set(
 			sequence_choices,
 			d_accum_orientation->rotation(),
-			d_reconstruct_ptr->get_current_reconstruction_time());
+			d_application_state_ptr->get_current_reconstruction_time());
 	d_dialog_ptr->setup_for_new_pole(
 			*d_plate_id,
-			d_reconstruct_ptr->get_current_reconstruction_time(),
+			d_application_state_ptr->get_current_reconstruction_time(),
 			sequence_choices,
 			d_accum_orientation->rotation());
 
@@ -687,7 +682,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 
 	if (d_should_display_children)
 	{
-		add_children_to_geometry_collection(plate_id_collection,*d_plate_id,d_reconstruct_ptr);
+		add_children_to_geometry_collection(plate_id_collection,*d_plate_id, d_application_state_ptr);
 	}
 
 #if 0
@@ -695,9 +690,9 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 #endif
 
 	GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
-			d_reconstruct_ptr->get_current_reconstruction().geometries().begin();
+			d_application_state_ptr->get_current_reconstruction().geometries().begin();
 	GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
-			d_reconstruct_ptr->get_current_reconstruction().geometries().end();
+			d_application_state_ptr->get_current_reconstruction().geometries().begin();
 	for ( ; iter != end; ++iter) {
 		GPlatesModel::ReconstructionGeometry *rg = iter->get();
 
@@ -781,7 +776,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 
 				boost::optional<GPlatesMaths::Rotation> optional_rotation;
 				GPlatesAppLogic::PaleomagUtils::VgpRenderer vgp_renderer(
-					d_reconstruct_ptr->get_current_reconstruction(),
+					d_application_state_ptr->get_current_reconstruction(),
 					optional_rotation,
 					d_initial_geom_layer_ptr,
 					white_colour,
@@ -849,7 +844,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 				boost::optional<GPlatesMaths::Rotation> optional_rotation;
 				optional_rotation.reset(d_accum_orientation->rotation());
 				GPlatesAppLogic::PaleomagUtils::VgpRenderer vgp_renderer(
-					d_reconstruct_ptr->get_current_reconstruction(),
+					d_application_state_ptr->get_current_reconstruction(),
 					optional_rotation,
 					d_dragged_geom_layer_ptr,
 					silver_colour,
@@ -933,8 +928,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 					GPlatesGui::FeatureFocus &)));
 
 	// The Reconstruction Pole widget needs to know when the reconstruction time changes.
-	QObject::connect(d_reconstruct_ptr,
-			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+	QObject::connect(d_application_state_ptr,
+			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 			this,
 			SLOT(handle_reconstruction()));
 

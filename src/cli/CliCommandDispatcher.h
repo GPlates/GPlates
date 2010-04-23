@@ -130,10 +130,18 @@ namespace GPlatesCli
 			AddCommand(
 					command_map_type &command_map);
 
+			template <typename T>
+			struct Wrap
+			{ };
+
+			/**
+			 * The @a Wrap type means we can transport the CommandType without creating
+			 * an instance of it.
+			 */
 			template <class CommandType>
 			void
 			operator()(
-					const CommandType &);
+					Wrap<CommandType>);
 
 		private:
 			command_map_type &d_command_map;

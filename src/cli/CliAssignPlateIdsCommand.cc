@@ -311,9 +311,8 @@ GPlatesCli::AssignPlateIdsCommand::run(
 
 	// Create the object used to assign plate ids.
 	const GPlatesAppLogic::AssignPlateIds::non_null_ptr_type plate_id_assigner =
-			GPlatesAppLogic::AssignPlateIds::create_at_new_reconstruction_time(
+			GPlatesAppLogic::AssignPlateIds::create(
 					assign_plate_ids_method,
-					d_model,
 					topological_boundary_feature_collections,
 					reconstruction_feature_collections,
 					d_recon_time,

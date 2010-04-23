@@ -69,7 +69,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesPresentation
@@ -432,7 +432,7 @@ namespace GPlatesGui
 		/**
 		 * Used to query the reconstruction.
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * The View State is used to access the digitisation layer in the globe in the

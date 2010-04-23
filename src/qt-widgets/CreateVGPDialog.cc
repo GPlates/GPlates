@@ -31,7 +31,6 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/Reconstruct.h"
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "model/Model.h"
@@ -319,7 +318,7 @@ GPlatesQtWidgets::CreateVGPDialog::CreateVGPDialog(
 	d_model_ptr(view_state_.get_application_state().get_model_interface()),
 	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
 	d_file_io(view_state_.get_application_state().get_feature_collection_file_io()),
-	d_reconstruct_ptr(&view_state_.get_reconstruct())
+	d_application_state_ptr(&view_state_.get_application_state())
 {
 	setupUi(this);
 	

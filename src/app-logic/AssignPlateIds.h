@@ -27,22 +27,21 @@
 #ifndef GPLATES_APP_LOGIC_ASSIGNPLATEIDS_H
 #define GPLATES_APP_LOGIC_ASSIGNPLATEIDS_H
 
+#include <bitset>
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
-#include "app-logic/TopologyUtils.h"
+#include "GeometryCookieCutter.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
-#include "model/ModelInterface.h"
 #include "model/Reconstruction.h"
 #include "model/types.h"
 
 
 namespace GPlatesAppLogic
 {
-	class FeatureCollectionFileState;
-	class Reconstruct;
+	class PartitionFeatureTask;
 
 	/**
 	 * Assigns reconstruction plate ids to feature(s) using resolved topological
@@ -127,137 +126,114 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Use the reconstruction, reconstruction time and anchor plate id from
-		 * @a reconstruct to find our resolved topological boundaries to be used
-		 * for cookie-cutting.
-		 *
-		 * Only the resolved topological boundaries are used from the @a Reconstruction.
+		 * The feature property types we can assign.
 		 */
-		static
-		non_null_ptr_type
-		create_at_current_reconstruction_time(
-				AssignPlateIdMethodType assign_plate_id_method,
-				const GPlatesModel::ModelInterface &model,
-				GPlatesAppLogic::Reconstruct &reconstruct)
+		enum FeaturePropertyType
 		{
-			return non_null_ptr_type(new AssignPlateIds(
-					assign_plate_id_method, model, reconstruct));
-		}
+			//! Reconstruction plate id
+			RECONSTRUCTION_PLATE_ID,
+			//! Time of appearance and disappearance
+			VALID_TIME,
+
+			NUM_FEATURE_PROPERTY_TYPES // Must be the last enum.
+		};
+
+		/**
+		 * A std::bitset for specifying which feature properties to assign.
+		 */
+		typedef std::bitset<NUM_FEATURE_PROPERTY_TYPES> feature_property_flags_type;
+
+		//! Specifies only the reconstruction plate id property is assigned.
+		static const feature_property_flags_type RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG;
 
 
 		/**
-		 * Create an internal @a Reconstruction using the active files from @a file_state
-		 * and @a reconstruction_time and @a anchor_plate_id to create a new set of
-		 * resolved topological boundaries to be used for cookie-cutting.
-		 *
-		 * Only the topological closed plate boundary features (and any features they reference)
-		 * are needed from @a file_state - only resolved topological boundaries are used from
-		 * the internal @a Reconstruction.
-		 */
-		static
-		non_null_ptr_type
-		create_at_new_reconstruction_time(
-				AssignPlateIdMethodType assign_plate_id_method,
-				const GPlatesModel::ModelInterface &model,
-				FeatureCollectionFileState &file_state,
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id)
-		{
-			return non_null_ptr_type(new AssignPlateIds(
-					assign_plate_id_method, model, file_state,
-					reconstruction_time, anchor_plate_id));
-		}
-
-
-		/**
-		 * Create an internal @a Reconstruction using @a topological_boundary_feature_collections,
+		 * Create an internal @a Reconstruction using @a partitioning_feature_collections,
 		 * @a reconstruction_feature_collections, @a reconstruction_time and @a anchor_plate_id
-		 * to create a new set of resolved topological boundaries to be used for cookie-cutting.
+		 * to create a new set of partitioning polygons to be used for cookie-cutting.
 		 *
-		 * Only the topological closed plate boundary features (and any features they reference)
-		 * are needed from @a topological_boundary_feature_collections - only resolved topological
-		 * boundaries are used from the internal @a Reconstruction.
+		 * @a partitioning_feature_collections can be a source of dynamic polygons or
+		 * static polygons.
+		 * That is they can contain TopologicalClosedPlateBoundary features or
+		 * regular static polygon features.
 		 *
 		 * @a reconstruction_feature_collections contains rotations required to reconstruct
-		 * the topological closed plate boundaries and any features that are later assigned
-		 * plate ids (if those features have plate ids already and hence require rotating to
-		 * the reconstruction time so they can be cookie-cut).
+		 * the partitioning polygon features and to reverse reconstruct any features
+		 * partitioned by them.
+		 *
+		 * @a allow_partitioning_using_topological_plate_polygons determines if
+		 * topological closed plate boundary features can be used as partitioning polygons.
+		 * @a allow_partitioning_using_static_polygons determines if
+		 * regular features (with static polygon geometry) can be used as partitioning polygons.
+		 * By default they both are allowed but the features in @a partitioning_feature_collections
+		 * should ideally only contain one type.
+		 *
+		 * The default value of @a feature_properties_to_assign only assigns
+		 * the reconstruction plate id.
 		 */
 		static
 		non_null_ptr_type
-		create_at_new_reconstruction_time(
+		create(
 				AssignPlateIdMethodType assign_plate_id_method,
-				const GPlatesModel::ModelInterface &model,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						topological_boundary_feature_collections,
+						partitioning_feature_collections,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstruction_feature_collections,
 				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id)
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const feature_property_flags_type &feature_property_types_to_assign =
+						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
+				bool allow_partitioning_using_topological_plate_polygons = true,
+				bool allow_partitioning_using_static_polygons = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
-					assign_plate_id_method, model,
-					topological_boundary_feature_collections, reconstruction_feature_collections,
-					reconstruction_time, anchor_plate_id));
+					assign_plate_id_method,
+					partitioning_feature_collections,
+					reconstruction_feature_collections,
+					reconstruction_time,
+					anchor_plate_id,
+					feature_property_types_to_assign,
+					allow_partitioning_using_topological_plate_polygons,
+					allow_partitioning_using_static_polygons));
 		}
 
 
 		/**
-		 * Finds features in @a feature_collection that have no 'gpml:reconstructionPlateId
-		 * and are not reconstruction features (used for rotations).
-		 *
-		 * Returns results in @a features_needing_plate_id.
-		 * Returns false if none are found.
+		 * Returns true if we have partitioning polygons.
 		 */
-		static
 		bool
-		find_reconstructable_features_without_reconstruction_plate_id(
-				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features_needing_plate_id,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+		has_partitioning_polygons() const;
+
 
 		/**
 		 * Assign reconstruction plate ids to all features in the feature collection.
 		 *
-		 * Returns true if any plate ids were assigned.
-		 *
-		 * NOTE: This will do nothing if no plate boundaries exist - that is, if no
-		 * TopologicalClosedPlateBoundary features have been previously loaded and activated.
-		 * Actually it will remove any 'gpml:reconstructionPlateId' properties.
+		 * This will do nothing if @a has_partitioning_polygons returns false.
 		 */
-		bool
+		void
 		assign_reconstruction_plate_ids(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
 
 		/**
 		 * Assign reconstruction plate ids to all features in a list of features.
 		 *
-		 * Returns true if any plate ids were assigned.
+		 * All features in @a feature_refs should be contained by @a feature_collection_ref.
 		 *
-		 * NOTE: All features in @a feature_refs should be contained by
-		 * @a feature_collection_ref.
-		 *
-		 * NOTE: This will do nothing if no plate boundaries exist - that is, if no
-		 * TopologicalClosedPlateBoundary features have been previously loaded and activated.
-		 * Actually it will remove any 'gpml:reconstructionPlateId' properties.
+		 * This will do nothing if @a has_partitioning_polygons returns false.
 		 */
-		bool
+		void
 		assign_reconstruction_plate_ids(
 				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &feature_refs,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
 
 		/**
 		 * Assign a reconstruction plate id to a feature.
-		 * Returns true if reconstruction plate id was assigned to the feature.
 		 *
-		 * Returns true if any plate ids were assigned.
+		 * @a feature_ref should be contained by @a feature_collection_ref.
 		 *
-		 * NOTE: @a feature_ref should be contained by @a feature_collection_ref.
-		 *
-		 * NOTE: This will do nothing if no plate boundaries exist - that is, if no
-		 * TopologicalClosedPlateBoundary features have been previously loaded and activated.
-		 * Actually it will remove any 'gpml:reconstructionPlateId' properties.
+		 * This will do nothing if @a has_partitioning_polygons returns false.
 		 */
-		bool
+		void
 		assign_reconstruction_plate_id(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
@@ -269,66 +245,40 @@ namespace GPlatesAppLogic
 		AssignPlateIdMethodType d_assign_plate_id_method;
 
 		/**
-		 * Used to create new features.
+		 * The types of feature properties to assign.
 		 */
-		GPlatesModel::ModelInterface d_model;
+		feature_property_flags_type d_feature_property_types_to_assign;
 
 		/**
-		 * The reconstruction time.
-		 */
-		double d_reconstruction_time;
-
-		/**
-		 * Keep a @a Reconstruction around in case even if we're just linking to
-		 * one from @a Reconstruct - if we're creating our own however then we need
-		 * to keep the @a ResolvedTopologicalBoundary objects, contained within,
-		 * alive for the cookie-cutting queries.
+		 * Contains the reconstructed polygons used for cookie-cutting.
 		 */
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction;
 
 		/**
-		 * Used to partition geometry using all resolved boundaries in a @a Reconstruction.
+		 * Used to cookie cut geometries to find partitioning polygons.
 		 */
-		GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type
-				d_resolved_boundaries_geometry_partitioning_query;
+		GeometryCookieCutter d_geometry_cookie_cutter;
+
+		//! Tasks that do the actual assigning of properties like plate id.
+		std::vector< boost::shared_ptr<PartitionFeatureTask> > d_partition_feature_tasks;
 
 
 		/**
-		 * Use the reconstruction, reconstruction time and anchor plate id from
-		 * @a reconstruct to find our resolved topological boundaries to be used
-		 * for cookie-cutting.
-		 */
-		AssignPlateIds(
-				AssignPlateIdMethodType assign_plate_id_method,
-				const GPlatesModel::ModelInterface &model,
-				GPlatesAppLogic::Reconstruct &reconstruct);
-
-		/**
-		 * Create an internal @a Reconstruction using the active files from @a file_state
-		 * and @a reconstruction_time and @a anchor_plate_id to create a new set of
-		 * resolved topological boundaries to be used for cookie-cutting.
-		 */
-		AssignPlateIds(
-				AssignPlateIdMethodType assign_plate_id_method,
-				const GPlatesModel::ModelInterface &model,
-				FeatureCollectionFileState &file_state,
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id);
-
-		/**
-		 * Create an internal @a Reconstruction using @a topological_boundary_feature_collections,
+		 * Create an internal @a Reconstruction using @a partitioning_feature_collections,
 		 * @a reconstruction_feature_collections, @a reconstruction_time and @a anchor_plate_id
-		 * to create a new set of resolved topological boundaries to be used for cookie-cutting.
+		 * to create a new set of partitioning polygons to be used for cookie-cutting.
 		 */
 		AssignPlateIds(
 				AssignPlateIdMethodType assign_plate_id_method,
-				const GPlatesModel::ModelInterface &model,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						topological_boundary_feature_collections,
+						partitioning_feature_collections,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstruction_feature_collections,
 				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id);
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const feature_property_flags_type &feature_property_types_to_assign,
+				bool allow_partitioning_using_topological_plate_polygons,
+				bool allow_partitioning_using_static_polygons);
 	};
 }
 

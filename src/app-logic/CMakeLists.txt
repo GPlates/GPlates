@@ -33,26 +33,47 @@ set(srcs
     FeatureCollectionFileStateImplDecls.h
     FeatureCollectionWorkflow.cc
     FeatureCollectionWorkflow.h
+    GenericPartitionFeatureTask.cc
+    GenericPartitionFeatureTask.h
+    GeometryCookieCutter.cc
+    GeometryCookieCutter.h
+    GeometryUtils.cc
+    GeometryUtils.h
+    LayerTask.h
+    LayerTaskRegistry.cc
+    LayerTaskRegistry.h
+    LayerTaskTypes.cc
+    LayerTaskTypes.h
     MeshGenerator.cc
     MeshGenerator.h
     PaleomagUtils.cc
     PaleomagUtils.h
     PaleomagWorkflow.cc
     PaleomagWorkflow.h
+    PartitionFeatureTask.cc
+    PartitionFeatureTask.h
+    PartitionFeatureUtils.cc
+    PartitionFeatureUtils.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
     PlateVelocityWorkflow.cc
     PlateVelocityWorkflow.h
-    Reconstruct.cc
-    Reconstruct.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
+    ReconstructGraph.cc
+    ReconstructGraph.h
+    ReconstructGraphImpl.cc
+    ReconstructGraphImpl.h
     ReconstructionActivationStrategy.cc
     ReconstructionActivationStrategy.h
     ReconstructionFeatureProperties.cc
     ReconstructionFeatureProperties.h
     ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
+    ReconstructionLayerTask.cc
+    ReconstructionLayerTask.h
+    ReconstructLayerTask.cc
+    ReconstructLayerTask.h
     ReconstructUtils.cc
     ReconstructUtils.h
     TopologyBoundaryIntersections.cc
@@ -65,6 +86,8 @@ set(srcs
     TopologyNetworkResolver.h
     TopologyUtils.cc
     TopologyUtils.h
+    VgpPartitionFeatureTask.cc
+    VgpPartitionFeatureTask.h
 )
 
 

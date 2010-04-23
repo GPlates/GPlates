@@ -165,9 +165,9 @@ GPlatesAppLogic::PlateVelocityWorkflow::solve_velocities(
 	//
 	GPlatesModel::ReconstructionTree::non_null_ptr_type reconstruction_tree_2_ptr = 
 			GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-					reconstruction_features_collection,
 					reconstruction_time_2,
-					reconstruction_anchored_plate_id);
+					reconstruction_anchored_plate_id,
+					reconstruction_features_collection);
 
 	// Our two reconstruction trees.
 	GPlatesModel::ReconstructionTree &reconstruction_tree_1 =

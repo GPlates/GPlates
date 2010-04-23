@@ -25,6 +25,9 @@
 
 #include "Application.h"
 
+#include "app-logic/ApplicationState.h"
+
+
 GPlatesPresentation::Application::Application() :
 	d_view_state(d_application_state)
 {

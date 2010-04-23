@@ -30,7 +30,6 @@
 #include "PlateVelocityUtils.h"
 
 #include "AppLogicUtils.h"
-#include "Reconstruct.h"
 #include "TopologyUtils.h"
 
 #include "feature-visitors/ComputationalMeshSolver.h"

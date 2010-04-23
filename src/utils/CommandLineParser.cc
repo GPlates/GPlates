@@ -187,9 +187,9 @@ namespace
 				config_filenames.begin(),
 				config_filenames.end(),
 				boost::bind(&parse_config_file,
-				_1/*config filename*/,
-				boost::cref(config_file_options),
-				boost::ref(vm)));
+						_1/*config filename*/,
+						boost::cref(config_file_options),
+						boost::ref(vm)));
 		}
 		catch (GPlatesFileIO::ErrorOpeningFileForReadingException &exc)
 		{

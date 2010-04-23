@@ -37,7 +37,6 @@
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
-	class Reconstruct;
 }
 
 
@@ -56,8 +55,7 @@ namespace GPlatesGui
 	public:
 		
 		FeatureFocus(
-				GPlatesAppLogic::ApplicationState &application_state,
-				GPlatesAppLogic::Reconstruct &reconstruct);
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		virtual
 		~FeatureFocus()
@@ -207,7 +205,7 @@ namespace GPlatesGui
 		 */
 		void
 		handle_reconstruction(
-				GPlatesAppLogic::Reconstruct &reconstructer);
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		/**
 		 * FIXME: This is a temporary hack to stop highlighting the focused feature if
@@ -280,7 +278,7 @@ namespace GPlatesGui
 		 * ONLY needed so that FeatureFocus can have a stab at finding an RFG automatically
 		 * when given a properties_iterator during @a set_focus().
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * Find the new associated ReconstructionGeometry for the currently-focused feature (if any).

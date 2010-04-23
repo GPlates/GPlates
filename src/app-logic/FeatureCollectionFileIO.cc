@@ -44,17 +44,8 @@ GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		GPlatesModel::ModelInterface &model,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
 	d_model(model),
-	d_file_state(file_state),
-	d_modify_filter(new ModifyFilter()/*default filter does not modify*/)
+	d_file_state(file_state)
 {
-}
-
-
-void
-GPlatesAppLogic::FeatureCollectionFileIO::set_modify_filter(
-		const boost::shared_ptr<ModifyFilter> &modify_filter)
-{
-	d_modify_filter = modify_filter;
 }
 
 
@@ -64,9 +55,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 {
 	// Read all the files before we add them to the application state.
 	const file_seq_type loaded_files = read_feature_collections(filenames);
-
-	// See if any loaded feature collections should be modified.
-	modify_feature_collections(loaded_files);
 
 	// Add files to the application state in one call.
 	//
@@ -90,9 +78,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 	// Read the feature collection from file_info.
 	const GPlatesFileIO::File::shared_ref loaded_file = read_feature_collection(file_info);
 
-	// See if loaded feature collection should be modified.
-	modify_feature_collection(loaded_file);
-
 	d_file_state.add_file(loaded_file);
 }
 
@@ -104,9 +89,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::reload_file(
 	// Read the feature collection from file.
 	const GPlatesFileIO::File::shared_ref reloaded_file = read_feature_collection(
 			file->get_file_info());
-
-	// See if loaded feature collection should be modified.
-	modify_feature_collection(reloaded_file);
 
 	// Replace old file with reloaded file.
 	// This will emit signals for anyone interested.
@@ -282,25 +264,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
 	emit_handle_read_errors_signal(read_errors);
 
 	return file;
-}
-
-
-void
-GPlatesAppLogic::FeatureCollectionFileIO::modify_feature_collections(
-		const file_seq_type &files)
-{
-	d_modify_filter->modify_loaded_files(files);
-}
-
-
-void
-GPlatesAppLogic::FeatureCollectionFileIO::modify_feature_collection(
-		const GPlatesFileIO::File::shared_ref &file)
-{
-	// Create a vector with one file so we can reuse 'modify_feature_collections()'.
-	const file_seq_type file_seq(1, file);
-
-	modify_feature_collections(file_seq);
 }
 
 

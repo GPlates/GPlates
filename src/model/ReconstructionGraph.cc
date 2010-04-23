@@ -28,6 +28,8 @@
 #include "ReconstructionGraph.h"
 #include "ReconstructionTree.h"
 
+#include "utils/ScopeGuard.h"
+
 
 namespace
 {
@@ -110,7 +112,8 @@ void
 GPlatesModel::ReconstructionGraph::insert_total_reconstruction_pole(
 		integer_plate_id_type fixed_plate_id_,
 		integer_plate_id_type moving_plate_id_,
-		const GPlatesMaths::FiniteRotation &pole)
+		const GPlatesMaths::FiniteRotation &pole,
+		const FeatureHandle::weak_ref &total_reconstruction_sequence_feature)
 {
 	// FIXME:  Confirm that 'fixed_plate_id' and 'moving_plate_id' are not equal
 
@@ -138,22 +141,47 @@ GPlatesModel::ReconstructionGraph::insert_total_reconstruction_pole(
 	// it twice, it's possible that it could fail the second time around, after the first has 
 	// succeeded, leaving the program state changed.  Hence, we're going to have to be a bit
 	// more careful, and clean up after ourselves if necessary.
-	edge_refs_by_plate_id_map_iterator pos_of_inserted_elem =
+	edge_refs_by_plate_id_map_iterator pos_of_inserted_original_edge =
 			d_edges_by_fixed_plate_id.insert(std::make_pair(fixed_plate_id_, original_edge));
 
-	// Now, let's insert the "reversed" edge.
-	try {
-		d_edges_by_fixed_plate_id.insert(std::make_pair(moving_plate_id_, reversed_edge));
-	} catch (...) {
-		// An exception was thrown.  Because we're guaranteeing exception-neutrality, we'll
-		// propagate the exception, but because we're guaranteeing strong exception-safety,
-		// we'll first "roll back" the previous insertion.  Note that the 'erase' function
-		// does not throw.
-		d_edges_by_fixed_plate_id.erase(pos_of_inserted_elem);
+#ifdef WIN32
+	// This is needed for WIN32 because std::map::erase returns an iterator instead of void.
+	// This is what C++0x will support but it's not what C++03 expects so we have to
+	// cast it.
+	typedef edge_refs_by_plate_id_map_type::iterator
+		(edge_refs_by_plate_id_map_type::*map_erase_func_type) (
+			edge_refs_by_plate_id_map_type::iterator);
+#else
+	typedef void
+		(edge_refs_by_plate_id_map_type::*map_erase_func_type) (
+			edge_refs_by_plate_id_map_type::iterator);
+#endif
 
-		// Now, re-throw the exception so it can propagate.
-		throw;
-	}
+	// Undo the insert if an exception is thrown.
+	// Note that the 'erase' function does not throw.
+	GPlatesUtils::ScopeGuard guard_insert_original = GPlatesUtils::make_guard(
+			static_cast<map_erase_func_type>(&edge_refs_by_plate_id_map_type::erase),
+			d_edges_by_fixed_plate_id,
+			pos_of_inserted_original_edge);
+
+	// Now, let's insert the "reversed" edge.
+	edge_refs_by_plate_id_map_iterator pos_of_inserted_reversed_edge =
+			d_edges_by_fixed_plate_id.insert(std::make_pair(moving_plate_id_, reversed_edge));
+
+	// Undo the insert if an exception is thrown.
+	// Note that the 'erase' function does not throw.
+	GPlatesUtils::ScopeGuard guard_insert_reversed = GPlatesUtils::make_guard(
+			static_cast<map_erase_func_type>(&edge_refs_by_plate_id_map_type::erase),
+			d_edges_by_fixed_plate_id,
+			pos_of_inserted_reversed_edge);
+
+	// Keep track of the features used to generate total reconstruction poles.
+	// Succeeds or has no effect if exception is thrown.
+	d_reconstruction_features.push_back(total_reconstruction_sequence_feature);
+
+	// We've made it this far so we can dismiss the undos.
+	guard_insert_original.dismiss();
+	guard_insert_reversed.dismiss();
 }
 
 

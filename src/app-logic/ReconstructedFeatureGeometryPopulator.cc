@@ -52,16 +52,14 @@
 
 
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeometryPopulator(
-		const double &recon_time,
-		unsigned long root_plate_id,
 		GPlatesModel::Reconstruction &recon,
-		GPlatesModel::ReconstructionTree &recon_tree,
 		bool should_keep_features_without_recon_plate_id):
-	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
-	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_reconstruction(recon),
-	d_reconstruction_tree(recon_tree),
-	d_reconstruction_params(recon_time),
+	d_recon_time(
+			GPlatesPropertyValues::GeoTimeInstant(
+					recon.reconstruction_tree().get_reconstruction_time())),
+	d_reconstruction_tree(recon.reconstruction_tree()),
+	d_reconstruction_params(recon.reconstruction_tree().get_reconstruction_time()),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  }
 

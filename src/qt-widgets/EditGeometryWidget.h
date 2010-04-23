@@ -40,7 +40,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesPresentation
@@ -154,9 +154,8 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		handle_reconstruction(
-				GPlatesAppLogic::Reconstruct &reconstructer,
-				bool reconstruction_time_changed,
-				bool anchor_plate_id_changed);
+				GPlatesAppLogic::ApplicationState &application_state,
+				const double &reconstruction_time);
 		
 
 		/**
@@ -220,7 +219,7 @@ namespace GPlatesQtWidgets
 		 * it for the current reconstruction time and perform reconstructions
 		 * of the points in the table.
 		 */
-		const GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		const GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 		
 		/**
 		 * The plate ID that should be used for reconstructions.

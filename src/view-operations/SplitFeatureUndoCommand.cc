@@ -26,8 +26,8 @@
 
 #include "SplitFeatureUndoCommand.h"
 
-#include "utils/GeometryUtils.h"
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
@@ -73,7 +73,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 		GPlatesFeatureVisitors::find_first_geometry(property_iter);
 
 	std::vector<GPlatesMaths::PointOnSphere> points;
-	GPlatesUtils::GeometryUtils::get_geometry_points(
+	GPlatesAppLogic::GeometryUtils::get_geometry_points(
 			*geometry_on_sphere,
 			points);
 
@@ -82,14 +82,14 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 #if 1
 	//we remove the geometry from the feature and then add the new one into it
-	GPlatesUtils::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
+	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
 #endif
 
 	//keep the old geometry property for "Undo"
 	d_old_geometry_property = 
 		GPlatesModel::TopLevelPropertyInline::create(
 				property_name,
-				*GPlatesUtils::GeometryUtils::create_geometry_property_value(
+				*GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						points.begin(), 
 						points.end(),
 						GPlatesViewOperations::GeometryType::POLYLINE));
@@ -105,7 +105,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 			GPlatesAppLogic::ReconstructUtils::reconstruct(
 					*d_oriented_pos_on_globe,
 					*rfg->reconstruction_plate_id(),
-					d_view_state->get_reconstruct().get_current_reconstruction().reconstruction_tree(),
+					d_view_state->get_application_state().get_current_reconstruction().reconstruction_tree(),
 					true);
 		
 			points.insert(
@@ -180,7 +180,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	(*d_old_feature)->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				property_name,
-				*GPlatesUtils::GeometryUtils::create_geometry_property_value(
+				*GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						points.begin(), 
 						points.begin() + point_index_to_split,
 						GPlatesViewOperations::GeometryType::POLYLINE)));
@@ -189,7 +189,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	(*d_new_feature)->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				property_name,
-				*GPlatesUtils::GeometryUtils::create_geometry_property_value(
+				*GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						points.begin() + point_index_to_split -1, 
 						points.end(),
 						GPlatesViewOperations::GeometryType::POLYLINE)));
@@ -207,7 +207,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 	RenderedGeometryCollection::UpdateGuard update_guard;
 	
 	//restore the old geometry
-	GPlatesUtils::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
+	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
 	(*d_old_feature)->add(*d_old_geometry_property);
 
 	GPlatesModel::ModelUtils::remove_feature(

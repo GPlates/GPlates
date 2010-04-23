@@ -196,10 +196,11 @@ GPlatesCli::ReconstructCommand::run(
 	// Perform reconstruction.
 	const GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
 			GPlatesAppLogic::ReconstructUtils::create_reconstruction(
-					reconstructable_feature_collections,
-					reconstruction_feature_collections,
-					d_recon_time,
-					d_anchor_plate_id);
+					GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+							d_recon_time,
+							d_anchor_plate_id,
+							reconstruction_feature_collections),
+					reconstructable_feature_collections);
 
 	// Get the reconstruction geometries.
 	const GPlatesModel::Reconstruction::geometry_collection_type &reconstruction_geometries =

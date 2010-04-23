@@ -39,6 +39,7 @@
 
 #include "AppLogicUtils.h"
 #include "CgalUtils.h"
+#include "GeometryUtils.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -49,8 +50,6 @@
 #include "model/Reconstruction.h"
 #include "model/ResolvedTopologicalBoundary.h"
 #include "model/ResolvedTopologicalNetwork.h"
-
-#include "utils/GeometryUtils.h"
 
 #if 0
 	#define DEBUG_POINT_IN_POLYGON
@@ -171,14 +170,12 @@ namespace GPlatesAppLogic
 
 void
 GPlatesAppLogic::TopologyUtils::resolve_topologies(
-		const double &reconstruction_time,
 		GPlatesModel::Reconstruction &reconstruction,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				topological_features_collection)
 {
 	// Visit topological boundary features.
-	TopologyBoundaryResolver topology_boundary_resolver(
-			reconstruction_time, reconstruction);
+	TopologyBoundaryResolver topology_boundary_resolver(reconstruction);
 
 	AppLogicUtils::visit_feature_collections(
 		topological_features_collection.begin(),
@@ -186,8 +183,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topologies(
 		topology_boundary_resolver);
 
 	// Visit topological network features.
-	TopologyNetworkResolver topology_network_resolver(
-			reconstruction_time, reconstruction);
+	TopologyNetworkResolver topology_network_resolver(reconstruction);
 
 	AppLogicUtils::visit_feature_collections(
 		topological_features_collection.begin(),
@@ -520,7 +516,7 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 
 			// Get the node's geometry points.
 			std::vector<GPlatesMaths::PointOnSphere> node_points;
-			GPlatesUtils::GeometryUtils::get_geometry_points(
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(
 					*node.get_geometry(), node_points);
 
 			// Get the feature referenced by the node.

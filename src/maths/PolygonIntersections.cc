@@ -53,7 +53,7 @@ namespace
 	{
 	public:
 		GeometryPartitioner(
-				PolygonIntersections &polygon_intersections,
+				const PolygonIntersections &polygon_intersections,
 				PolygonIntersections::partitioned_geometry_seq_type &partitioned_geometries_inside,
 				PolygonIntersections::partitioned_geometry_seq_type &partitioned_geometries_outside) :
 			d_polygon_intersections(polygon_intersections),
@@ -160,7 +160,7 @@ namespace
 		}
 
 	private:
-		PolygonIntersections &d_polygon_intersections;
+		const PolygonIntersections &d_polygon_intersections;
 
 		PolygonIntersections::Result d_result;
 		PolygonIntersections::partitioned_geometry_seq_type &
@@ -303,7 +303,7 @@ GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_geometry(
 		const GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned,
 		partitioned_geometry_seq_type &partitioned_geometries_inside,
-		partitioned_geometry_seq_type &partitioned_geometries_outside)
+		partitioned_geometry_seq_type &partitioned_geometries_outside) const
 {
 	GeometryPartitioner geometry_partitioner(
 			*this, partitioned_geometries_inside, partitioned_geometries_outside);
@@ -316,7 +316,7 @@ GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_polyline(
 		const PolylineOnSphere::non_null_ptr_to_const_type &polyline_to_be_partitioned,
 		partitioned_polyline_seq_type &partitioned_polylines_inside,
-		partitioned_polyline_seq_type &partitioned_polylines_outside)
+		partitioned_polyline_seq_type &partitioned_polylines_outside) const
 {
 	// Partition the geometry to be partitioned against the partitioning polygon.
 	// NOTE: The first argument is the partitioning polygon - this means it corresponds
@@ -366,7 +366,7 @@ GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_polygon(
 		const PolygonOnSphere::non_null_ptr_to_const_type &polygon_to_be_partitioned,
 		partitioned_polyline_seq_type &partitioned_polylines_inside,
-		partitioned_polyline_seq_type &partitioned_polylines_outside)
+		partitioned_polyline_seq_type &partitioned_polylines_outside) const
 {
 	// Partition the geometry to be partitioned against the partitioning polygon.
 	// NOTE: The first argument is the partitioning polygon - this means it corresponds
@@ -405,7 +405,7 @@ GPlatesMaths::PolygonIntersections::partition_polygon(
 
 GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_point(
-		const PointOnSphere &point_to_be_partitioned)
+		const PointOnSphere &point_to_be_partitioned) const
 {
 	const GPlatesMaths::PointInPolygon::Result point_in_polygon_result =
 			GPlatesMaths::PointInPolygon::test_point_in_polygon(
@@ -432,7 +432,7 @@ GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_multipoint(
 		const MultiPointOnSphere::non_null_ptr_to_const_type &multipoint_to_be_partitioned,
 		boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_inside,
-		boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_outside)
+		boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_outside) const
 {
 	bool any_intersecting_points = false;
 
@@ -502,7 +502,7 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_polyline_or_polygon_fully_inside_or_outside(
 		const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry1,
-		const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry2)
+		const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry2) const
 {
 	// Choose any point in the polygon and see if it's inside the
 	// partitioning polygon. Any point will do - we choose the start point.
@@ -529,7 +529,7 @@ void
 GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 		const GPlatesMaths::PolylineIntersections::Graph &partitioned_polylines_graph,
 		partitioned_polyline_seq_type &partitioned_polylines_inside,
-		partitioned_polyline_seq_type &partitioned_polylines_outside)
+		partitioned_polyline_seq_type &partitioned_polylines_outside) const
 {
 	InsidePartitionedPolylineMerger inside_partitioned_polyline_merger(
 			partitioned_polylines_inside);

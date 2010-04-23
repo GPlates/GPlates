@@ -463,15 +463,12 @@ output_reconstructions(
 
 		std::cout << "\n--> Building tree, root node: 501\n";
 		GPlatesModel::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(501);
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> empty_vector;
 		GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
-				GPlatesModel::Reconstruction::create(tree, empty_vector);
+				GPlatesModel::Reconstruction::create(tree);
 
 		traverse_recon_tree(reconstruction->reconstruction_tree());
 
-		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
-				*reconstruction,
-				reconstruction->reconstruction_tree());
+		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(*reconstruction);
 
 		GPlatesModel::FeatureCollectionHandle::iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {

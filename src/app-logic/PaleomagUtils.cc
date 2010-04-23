@@ -31,7 +31,7 @@
 #include "maths/PolylineOnSphere.h" // FIXME: for testing
 #include "maths/MathsUtils.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "gui/ColourProxy.h"
 #include "model/PropertyName.h"
 #include "model/ReconstructedFeatureGeometry.h"
@@ -193,7 +193,7 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::finalise_post_feature_properties(
 	GPlatesPresentation::ViewState::VGPRenderSettings::VGPVisibilitySetting visibility_setting =
 		vgp_render_settings.get_vgp_visibility_setting();
 		
-	double time = d_view_state_ptr->get_reconstruct().get_current_reconstruction_time();
+	double time = d_view_state_ptr->get_application_state().get_current_reconstruction_time();
 	GPlatesPropertyValues::GeoTimeInstant geo_time = 
 							GPlatesPropertyValues::GeoTimeInstant(time);
 	double delta_t = vgp_render_settings.get_vgp_delta_t();

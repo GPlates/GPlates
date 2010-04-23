@@ -38,7 +38,6 @@
 #include "GlobeAndMapWidget.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/Reconstruct.h"
 
 #include "file-io/RegularCptReader.h"
 
@@ -211,7 +210,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 		GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
-	d_reconstruct(view_state.get_reconstruct()),
+	d_application_state(view_state.get_application_state()),
 	d_existing_globe_and_map_widget_ptr(existing_globe_and_map_widget_ptr),
 	d_colour_scheme_container(view_state.get_colour_scheme_container()),
 	d_view_state_colour_scheme_delegator(view_state.get_colour_scheme_delegator()),
@@ -595,7 +594,7 @@ GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file()
 			GPlatesGui::GenericContinuousColourPalette *cpt = reader.read_file(file);
 			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme =
 				GPlatesGui::ColourSchemeFactory::create_custom_age_colour_scheme(
-						d_reconstruct, cpt);
+						d_application_state, cpt);
 
 			QFileInfo file_info(file);
 

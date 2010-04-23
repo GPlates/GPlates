@@ -56,7 +56,6 @@ namespace GPlatesAppLogic
 	class FeatureCollectionWorkflow;
 	class PaleomagWorkflow;
 	class PlateVelocityWorkflow;
-	class Reconstruct;
 }
 
 namespace GPlatesGui
@@ -266,10 +265,6 @@ namespace GPlatesPresentation
 		///////////////////////////////////
 
 
-		GPlatesAppLogic::Reconstruct &
-		get_reconstruct();
-
-
 		GPlatesViewOperations::RenderedGeometryCollection &
 		get_rendered_geometry_collection();
 
@@ -349,9 +344,6 @@ namespace GPlatesPresentation
 		// FIXME: remove this when refactored
 		GPlatesQtWidgets::ViewportWindow *d_other_view_state;
 
-		//! Performs the reconstructions.
-		boost::scoped_ptr<GPlatesAppLogic::Reconstruct> d_reconstruct;
-
 		//! Contains all rendered geometries for this view state.
 		boost::scoped_ptr<GPlatesViewOperations::RenderedGeometryCollection> d_rendered_geometry_collection;
 
@@ -425,12 +417,6 @@ namespace GPlatesPresentation
 
 		void
 		connect_to_viewport_zoom();
-
-		void
-		connect_to_file_state();
-
-		void
-		connect_to_file_io();
 
 		void
 		connect_to_feature_focus();

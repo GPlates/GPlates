@@ -79,7 +79,6 @@ namespace GPlatesAppLogic
 
 	public:
 		TopologyBoundaryResolver(
-				const double &recon_time,
 				GPlatesModel::Reconstruction &recon);
 
 		virtual

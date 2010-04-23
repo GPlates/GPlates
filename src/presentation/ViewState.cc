@@ -27,10 +27,8 @@
 #include "ViewState.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/PaleomagWorkflow.h"
 #include "app-logic/PlateVelocityWorkflow.h"
-#include "app-logic/Reconstruct.h"
 
 #include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeDelegator.h"
@@ -50,10 +48,6 @@ GPlatesPresentation::ViewState::ViewState(
 		GPlatesAppLogic::ApplicationState &application_state) :
 	d_application_state(application_state),
 	d_other_view_state(NULL), // FIXME: remove this when refactored
-	d_reconstruct(
-			new GPlatesAppLogic::Reconstruct(
-					application_state.get_model_interface(),
-					application_state.get_feature_collection_file_state())),
 	d_rendered_geometry_collection(
 			new GPlatesViewOperations::RenderedGeometryCollection()),
 	d_colour_scheme_container(
@@ -67,7 +61,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_geometry_focus_highlight(
 			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection)),
 	d_feature_focus(
-			new GPlatesGui::FeatureFocus(application_state, *d_reconstruct)),
+			new GPlatesGui::FeatureFocus(application_state)),
 	d_comp_mesh_point_layer(
 			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
@@ -104,15 +98,9 @@ GPlatesPresentation::ViewState::ViewState(
 	d_main_viewport_min_dimension(0)
 {
 	// Call the operations in ReconstructView whenever a reconstruction is generated.
-	d_reconstruct->set_reconstruction_hook(d_reconstruct_view.get());
+	get_application_state().set_reconstruction_hook(d_reconstruct_view.get());
 
 	connect_to_viewport_zoom();
-
-	// Connect to signals from FeatureCollectionFileState.
-	connect_to_file_state();
-
-	// Connect to signals from FeatureCollectionFileIO.
-	connect_to_file_io();
 
 	// Connect to signals from FeatureFocus.
 	connect_to_feature_focus();
@@ -132,13 +120,6 @@ GPlatesAppLogic::ApplicationState &
 GPlatesPresentation::ViewState::get_application_state()
 {
 	return d_application_state;
-}
-
-
-GPlatesAppLogic::Reconstruct &
-GPlatesPresentation::ViewState::get_reconstruct()
-{
-	return *d_reconstruct;
 }
 
 
@@ -280,31 +261,6 @@ GPlatesPresentation::ViewState::connect_to_viewport_zoom()
 
 
 void
-GPlatesPresentation::ViewState::connect_to_file_state()
-{
-	QObject::connect(
-			&d_application_state.get_feature_collection_file_state(),
-			SIGNAL(file_state_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &)),
-			d_reconstruct.get(),
-			SLOT(reconstruct()));
-}
-
-
-void
-GPlatesPresentation::ViewState::connect_to_file_io()
-{
-	QObject::connect(
-			&d_application_state.get_feature_collection_file_io(),
-			SIGNAL(remapped_shapefile_attributes(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
-			d_reconstruct.get(),
-			SLOT(reconstruct()));
-}
-
-
-void
 GPlatesPresentation::ViewState::connect_to_feature_focus()
 {
 	// If the focused feature is modified, we may need to reconstruct to update the view.
@@ -314,7 +270,7 @@ GPlatesPresentation::ViewState::connect_to_feature_focus()
 	QObject::connect(
 			&get_feature_focus(),
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
-			&get_reconstruct(),
+			&get_application_state(),
 			SLOT(reconstruct()));
 
 	// Connect the geometry-focus highlight to the feature focus.

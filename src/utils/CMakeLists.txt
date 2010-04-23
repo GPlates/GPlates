@@ -31,8 +31,6 @@ set(srcs
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
     GeometryCreationUtils.h
-    GeometryUtils.cc
-    GeometryUtils.h
     IdStringSet.cc
     IdStringSet.h
     LatLonAreaSampling.h
@@ -43,6 +41,7 @@ set(srcs
     Profile.cc
     Profile.h
     ReferenceCount.h
+    ScopeGuard.h
     Singleton.h
     SmartNodeLinkedList.h
     StringFormattingUtils.cc

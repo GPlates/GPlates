@@ -68,7 +68,6 @@ namespace GPlatesAppLogic
 		 */
 		void
 		resolve_topologies(
-				const double &reconstruction_time,
 				GPlatesModel::Reconstruction &reconstruction,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						topological_features_collection);

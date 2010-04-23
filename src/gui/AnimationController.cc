@@ -27,15 +27,15 @@
 
 #include "AnimationController.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "maths/Real.h"
 #include "utils/FloatingPointComparisons.h"
 #include "utils/AnimationSequenceUtils.h"
 
 
 GPlatesGui::AnimationController::AnimationController(
-		GPlatesAppLogic::Reconstruct &reconstruct):
-	d_reconstruct_ptr(&reconstruct),
+		GPlatesAppLogic::ApplicationState &application_state):
+	d_application_state_ptr(&application_state),
 	d_start_time(140.0),
 	d_end_time(0.0),
 	d_time_increment(-1.0),
@@ -47,17 +47,17 @@ GPlatesGui::AnimationController::AnimationController(
 	QObject::connect(&d_timer, SIGNAL(timeout()),
 			this, SLOT(react_animation_playback_step()));
 	QObject::connect(
-			d_reconstruct_ptr,
-			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+			d_application_state_ptr,
+			SIGNAL(reconstruction_time_changed(GPlatesAppLogic::ApplicationState &, const double &)),
 			this,
-			SLOT(react_view_time_changed(GPlatesAppLogic::Reconstruct &, bool, bool)));
+			SLOT(react_view_time_changed(GPlatesAppLogic::ApplicationState &)));
 }
 
 
 const double &
 GPlatesGui::AnimationController::view_time() const
 {
-	return d_reconstruct_ptr->get_current_reconstruction_time();
+	return d_application_state_ptr->get_current_reconstruction_time();
 }
 
 
@@ -413,7 +413,8 @@ GPlatesGui::AnimationController::set_view_time(
 	// Only modify the reconstruction time and emit signals if the time has
 	// actually been changed.
 	if ( ! geo_times_are_approx_equal(view_time(), new_time)) {
-		d_reconstruct_ptr->reconstruct_to_time(new_time);
+		// This will perform a new reconstruction.
+		d_application_state_ptr->set_reconstruction_time(new_time);
 		
 		emit view_time_changed(new_time);
 	}
@@ -581,15 +582,9 @@ GPlatesGui::AnimationController::react_animation_playback_step()
 
 void
 GPlatesGui::AnimationController::react_view_time_changed(
-		GPlatesAppLogic::Reconstruct &/*reconstructer*/,
-		bool reconstruction_time_changed,
-		bool /*anchor_plate_id_changed*/)
+		GPlatesAppLogic::ApplicationState &/*application_state*/)
 {
-	// Only react if the reconstruction time changed.
-	if (!reconstruction_time_changed)
-	{
-		return;
-	}
+	// If we get here then the reconstruction time has changed.
 
 	if (d_adjust_bounds_to_contain_current_time) {
 		ensure_bounds_contain_current_time();

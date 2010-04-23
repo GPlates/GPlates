@@ -98,7 +98,7 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature()
 
 	//create the geometry property and append to feature
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
-		*GPlatesUtils::GeometryUtil::create_geometry_property_value(
+		*GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 		d_focused_feature_geometry_builder->get_geometry_point_begin(0), 
 		d_focused_feature_geometry_builder->get_geometry_point_end(0),
 		d_focused_feature_geometry_builder->get_actual_type_of_current_geometry()), 

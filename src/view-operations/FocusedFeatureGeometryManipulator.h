@@ -39,7 +39,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesPresentation
@@ -134,7 +134,7 @@ namespace GPlatesViewOperations
 		/**
 		 * Used to get access to current reconstruction tree.
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct;
+		GPlatesAppLogic::ApplicationState *d_application_state;
 
 		/**
 		 * The feature which contains the geometry whose RFG is the currently-focused

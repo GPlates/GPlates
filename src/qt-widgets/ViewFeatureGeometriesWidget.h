@@ -37,7 +37,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesPresentation
@@ -98,7 +98,7 @@ namespace GPlatesQtWidgets
 		 * This is the reconstruction generator which is used to obtain the
 		 * reconstruction in order to iterate over RFGs.
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * This is the feature focus which tracks changes to the currently focused feature.

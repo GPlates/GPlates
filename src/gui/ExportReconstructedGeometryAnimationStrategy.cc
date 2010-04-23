@@ -28,15 +28,13 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/Reconstruct.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
 
-#include "utils/FloatingPointComparisons.h"
-
 #include "presentation/ViewState.h"
 
+#include "utils/FloatingPointComparisons.h"
 
 const QString 
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE
@@ -48,6 +46,7 @@ const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTR
 		=FORMAT_CODE_DESC;
 const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC
 		="Export reconstructed geometries.";
+
 
 const GPlatesGui::ExportReconstructedGeometryAnimationStrategy::non_null_ptr_type
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::create(
@@ -125,8 +124,7 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 				full_filename,
 				d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 				d_active_reconstructable_files,
-				d_export_animation_context_ptr->view_state().get_reconstruct()
-						.get_current_anchored_plate_id(),
+				d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 				d_export_animation_context_ptr->view_time());
 
 	} catch (...) {

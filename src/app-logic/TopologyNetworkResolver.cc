@@ -29,6 +29,7 @@
 #include <QDebug>
 
 #include "CgalUtils.h"
+#include "GeometryUtils.h"
 #include "ReconstructionGeometryUtils.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyNetworkResolver.h"
@@ -54,14 +55,12 @@
 
 #include "utils/GeometryCreationUtils.h"
 #include "utils/UnicodeStringUtils.h"
-#include "utils/GeometryUtils.h"
 
 
 GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
-			const double &recon_time,
 			GPlatesModel::Reconstruction &recon) :
 	d_reconstruction(recon),
-	d_reconstruction_params(recon_time)
+	d_reconstruction_params(recon.get_reconstruction_time())
 {  
 	d_num_topologies = 0;
 }
@@ -273,7 +272,7 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 
 		// Get the section geometry.
 		std::vector<GPlatesMaths::PointOnSphere> node_points;
-		GPlatesUtils::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(
 				*section.d_geometry.get(), node_points);
 
 		// Create a subsegment structure that'll get used when

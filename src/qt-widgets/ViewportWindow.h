@@ -145,9 +145,8 @@ namespace GPlatesQtWidgets
 
 
 		void
-		reconstruct_to_time_with_root(
-				double recon_time,
-				unsigned long recon_root);
+		reconstruct_to_time(
+				const double &recon_time);
 		
 
 		const GPlatesQtWidgets::ReconstructionViewWidget &
@@ -590,9 +589,6 @@ namespace GPlatesQtWidgets
 
 		void
 		update_time_dependent_raster();
-
-		void
-		set_modify_feature_collections_filter();
 
 	private slots:
 		void

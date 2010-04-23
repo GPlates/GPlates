@@ -517,8 +517,7 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 		{
 			GetPlateId get_plate_id_visitor;
 			reconstruction_geom_ptr->accept_visitor(get_plate_id_visitor);
-			return boost::optional<GPlatesModel::integer_plate_id_type>(
-					get_plate_id_visitor.get_plate_id());
+			return get_plate_id_visitor.get_plate_id();
 		}
 
 

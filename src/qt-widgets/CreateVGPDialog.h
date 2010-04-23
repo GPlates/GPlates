@@ -38,9 +38,9 @@
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
 	class FeatureCollectionFileState;
 	class FeatureCollectionFileIO;
-	class Reconstruct;
 }
 
 namespace GPlatesPresentation
@@ -131,10 +131,10 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::FeatureCollectionFileIO &d_file_io;
 		
 		/**
-		 * The reconstruction generator is used to access the reconstruction tree to
+		 * The application state is used to access the reconstruction tree to
 		 * perform reverse reconstruction of the temporary geometry (once we know the plate id).
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;	
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;	
 			
 
 	};

@@ -77,11 +77,11 @@
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
 
+#include "app-logic/ApplicationState.h"
+#include "app-logic/AppLogicUtils.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/AppLogicUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
-#include "app-logic/Reconstruct.h"
 
 #include "canvas-tools/MeasureDistanceState.h"
 
@@ -110,7 +110,6 @@
 #include "gui/GuiDebug.h"
 #include "gui/MapCanvasToolAdapter.h"
 #include "gui/MapCanvasToolChoice.h"
-#include "gui/ModifyLoadedFeatureCollectionsFilter.h"
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
 #include "gui/TopologySectionsContainer.h"
@@ -159,12 +158,11 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 
 
 void
-GPlatesQtWidgets::ViewportWindow::reconstruct_to_time_with_root(
-		double new_recon_time,
-		unsigned long new_recon_root)
+GPlatesQtWidgets::ViewportWindow::reconstruct_to_time(
+		const double &recon_time)
 {
-	get_view_state().get_reconstruct().reconstruct_to_time_with_anchor(
-			new_recon_time, new_recon_root);
+	// Setting the reconstruction time will trigger a new reconstruction.
+	get_application_state().set_reconstruction_time(recon_time);
 }
 
 
@@ -201,7 +199,7 @@ GPlatesQtWidgets::ViewportWindow::handle_read_errors(
 GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 		GPlatesPresentation::Application &application) :
 	d_application(application),
-	d_animation_controller(get_view_state().get_reconstruct()),
+	d_animation_controller(get_application_state()),
 	d_full_screen_mode(*this),
 	d_trinket_area_ptr(new GPlatesGui::TrinketArea(*this)),
 	d_unsaved_changes_tracker_ptr(new GPlatesGui::UnsavedChangesTracker(
@@ -251,7 +249,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 					this)),
 	d_specify_anchored_plate_id_dialog_ptr(
 			new SpecifyAnchoredPlateIdDialog(
-				get_view_state().get_reconstruct().get_current_anchored_plate_id(),
+				get_application_state().get_current_anchored_plate_id(),
 				this)),
 	d_specify_time_increment_dialog_ptr(
 			new SpecifyTimeIncrementDialog(
@@ -324,9 +322,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			this));
 	d_task_panel_ptr = task_panel_auto_ptr.get();
 
-	// Set the filter to call when new feature collections get loaded.
-	set_modify_feature_collections_filter();
-
 	// Connect all the Signal/Slot relationships of ViewportWindow's
 	// toolbar buttons and menu items.
 	connect_menu_actions();
@@ -367,8 +362,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// Perform a reconstruction when the anchor plate id changes.
 	QObject::connect(d_specify_anchored_plate_id_dialog_ptr.get(),
 			SIGNAL(value_changed(unsigned long)),
-			&get_view_state().get_reconstruct(),
-			SLOT(reconstruct_with_anchor(unsigned long)));
+			&get_application_state(),
+			SLOT(set_anchored_plate_id(unsigned long)));
 
 	// Set up the Reconstruction View widget.
 	setCentralWidget(&d_reconstruction_view_widget);
@@ -461,7 +456,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// make sure everything is displayed properly.
 	QObject::connect(&(d_task_panel_ptr->digitisation_widget().get_create_feature_dialog()),
 			SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
-			&get_view_state().get_reconstruct(),
+			&get_application_state(),
 			SLOT(reconstruct()));
 
 
@@ -476,13 +471,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Registered a slot to be called when a new reconstruction is generated.
 	QObject::connect(
-			&get_view_state().get_reconstruct(),
-			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+			&get_application_state(),
+			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 			this,
 			SLOT(handle_reconstruction()));
 
 	// Render everything on the screen in present-day positions.
-	get_view_state().get_reconstruct().reconstruct_to_time_with_anchor(0.0, 0);
+	get_application_state().reconstruct();
 
 	// Disable the Show Background Raster menu item until raster is loaded
 	action_Show_Raster->setEnabled(false);
@@ -1095,8 +1090,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_assign_reconstruction_plate_ids_dialog(
 {
 	// d_assign_recon_plate_ids_dialog_ptr is modal and should not need the 'raise' hack
 	// other dialogs use.
-	d_assign_recon_plate_ids_dialog_ptr->reassign_reconstruction_plate_ids(
-			true/*pop_up_message_box_if_no_plate_boundaries*/);
+	d_assign_recon_plate_ids_dialog_ptr->exec_partition_features_dialog();
 }
 
 #if 0
@@ -1126,11 +1120,11 @@ GPlatesQtWidgets::ViewportWindow::pop_up_export_reconstruction_dialog()
 	}
 
 	d_export_rfg_dialog_ptr->export_visible_reconstructed_feature_geometries(
-			get_view_state().get_reconstruct().get_current_reconstruction(),
+			get_application_state().get_current_reconstruction(),
 			get_view_state().get_rendered_geometry_collection(),
 			active_reconstructable_geometry_files,
-			get_view_state().get_reconstruct().get_current_anchored_plate_id(),
-			get_view_state().get_reconstruct().get_current_reconstruction_time());
+			get_application_state().get_current_anchored_plate_id(),
+			get_application_state().get_current_reconstruction_time());
 }
 
 #endif
@@ -1779,27 +1773,9 @@ GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
 {
 	QString filename = GPlatesFileIO::RasterReader::get_nearest_raster_filename(
 			d_time_dependent_raster_map,
-			get_view_state().get_reconstruct().get_current_reconstruction_time());
+			get_application_state().get_current_reconstruction_time());
 
 	load_raster(filename);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::set_modify_feature_collections_filter()
-{
-	// Handles any modifications that the user may want to loaded feature collections.
-	// Currently this is assigning reconstructionPlateId's to feature that don't have them.
-	// This is here because it contains a dialog whose parent is us.
-	boost::shared_ptr<GPlatesGui::ModifyLoadedFeatureCollectionsFilter>
-			modify_loaded_feature_collections_filter(
-					new GPlatesGui::ModifyLoadedFeatureCollectionsFilter(
-							get_application_state(),
-							get_view_state(),
-							this/* parent of internal dialog */));
-
-	get_application_state().get_feature_collection_file_io().set_modify_filter(
-			modify_loaded_feature_collections_filter);
 }
 
 
@@ -1822,7 +1798,7 @@ GPlatesQtWidgets::ViewportWindow::delete_focused_feature()
 						*feature_collection_ptr, index);
 				feature_collection_ptr->remove(iter_to_feature);
 
-				get_view_state().get_reconstruct().reconstruct();
+				get_view_state().get_application_state().reconstruct();
 			}
 		}
 #if 0

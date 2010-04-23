@@ -24,7 +24,7 @@
  */
 #include <boost/optional.hpp> 
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "presentation/ViewState.h" 
 #include "SetVGPVisibilityDialog.h"
 
@@ -118,7 +118,7 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 	}
 	accept();
 	// Tell GPlates to reconstruct now so that the updated render settings are used. 
-	d_view_state_ptr->get_reconstruct().reconstruct();	
+	d_view_state_ptr->get_application_state().reconstruct();	
 }
 
 void

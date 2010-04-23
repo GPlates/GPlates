@@ -57,10 +57,7 @@ namespace GPlatesAppLogic
 	{
 	public:
 		ReconstructedFeatureGeometryPopulator(
-				const double &recon_time,
-				unsigned long root_plate_id,
 				GPlatesModel::Reconstruction &recon,
-				GPlatesModel::ReconstructionTree &recon_tree,
 				bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
@@ -105,11 +102,10 @@ namespace GPlatesAppLogic
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
 	private:
+		GPlatesModel::Reconstruction &d_reconstruction;
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
-		GPlatesModel::integer_plate_id_type d_root_plate_id;
-		GPlatesModel::Reconstruction &d_reconstruction;
-		GPlatesModel::ReconstructionTree &d_reconstruction_tree;
+		const GPlatesModel::ReconstructionTree &d_reconstruction_tree;
 
 		ReconstructionFeatureProperties d_reconstruction_params;
 		boost::optional<GPlatesMaths::FiniteRotation> d_recon_rotation;

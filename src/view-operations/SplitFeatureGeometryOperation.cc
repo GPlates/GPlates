@@ -40,7 +40,6 @@
 #include "RenderedGeometryUtils.h"
 #include "UndoRedo.h"
 #include "SplitFeatureUndoCommand.h"
-#include "app-logic/Reconstruct.h"
 #include "gui/ChooseCanvasTool.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/PointOnSphere.h"

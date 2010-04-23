@@ -74,8 +74,6 @@ set(srcs
     GenericContinuousColourPalette.cc
     GenericContinuousColourPalette.h
     GenericDiscreteColourPalette.h
-    GeometricPropertyValueConstructor.cc
-    GeometricPropertyValueConstructor.h
     GeometryFocusHighlight.cc
     GeometryFocusHighlight.h
     Globe.cc
@@ -119,8 +117,6 @@ set(srcs
     MapProjection.h
     MapTransform.cc
     MapTransform.h
-    ModifyLoadedFeatureCollectionsFilter.cc
-    ModifyLoadedFeatureCollectionsFilter.h
     NurbsRenderer.cc
     NurbsRenderer.h
     OpaqueSphere.cc

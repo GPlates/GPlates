@@ -30,7 +30,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesGui
@@ -55,7 +55,7 @@ namespace GPlatesGui
 	
 		explicit
 		AnimationController(
-				GPlatesAppLogic::Reconstruct &reconstruct);
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		virtual
 		~AnimationController()
@@ -399,16 +399,14 @@ namespace GPlatesGui
 		 */
 		void
 		react_view_time_changed(
-				GPlatesAppLogic::Reconstruct &reconstructer,
-				bool reconstruction_time_changed,
-				bool anchor_plate_id_changed);
+				GPlatesAppLogic::ApplicationState &application_state);
 
 	private:
 		/**
 		 * This performs the reconstructions and is used to query and modify the current
 		 * reconstruction time.
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * This QTimer instance triggers the frame updates during animation playback.

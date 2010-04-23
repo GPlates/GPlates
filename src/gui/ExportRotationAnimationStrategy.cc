@@ -28,7 +28,6 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/Reconstruct.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
@@ -122,17 +121,17 @@ GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
-	GPlatesAppLogic::Reconstruct &reconstruct =
-		d_export_animation_context_ptr->view_state().get_reconstruct();
+	GPlatesAppLogic::ApplicationState &application_state =
+		d_export_animation_context_ptr->view_state().get_application_state();
 
 	std::multimap<GPlatesModel::integer_plate_id_type,
 			GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
 			GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			reconstruct.get_current_reconstruction().reconstruction_tree().edge_map_begin();
+			application_state.get_current_reconstruction().reconstruction_tree().edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
 			GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			reconstruct.get_current_reconstruction().reconstruction_tree().edge_map_end();
+			application_state.get_current_reconstruction().reconstruction_tree().edge_map_end();
 
 	GPlatesGui::CsvExport::LineDataType data_line;
 	std::vector<GPlatesGui::CsvExport::LineDataType> data;

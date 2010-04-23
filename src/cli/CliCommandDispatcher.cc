@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include <boost/mpl/for_each.hpp>
+#include <boost/mpl/lambda.hpp>
 #include <QString>
 
 #include "CliCommandDispatcher.h"
@@ -48,7 +49,7 @@ GPlatesCli::CommandDispatcher::AddCommand::AddCommand(
 template <class CommandType>
 void
 GPlatesCli::CommandDispatcher::AddCommand::operator()(
-		const CommandType &)
+		Wrap<CommandType>)
 {
 	command_ptr_type command(new CommandType());
 	d_command_map[command->get_command_name()] = command;
@@ -67,7 +68,7 @@ GPlatesCli::CommandDispatcher::CommandDispatcher()
 
 	// Iterate over the command types (actual class types stored in a boost::mpl::vector)
 	// and call the functor to add them to the command dispatcher.
-	boost::mpl::for_each<CommandTypes::command_types>(
+	boost::mpl::for_each< CommandTypes::command_types, AddCommand::Wrap<boost::mpl::_1> >(
 			boost::ref(add_command));
 }
 

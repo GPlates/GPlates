@@ -24,7 +24,6 @@
  */
 #include <QDebug>
 
-#include "app-logic/Reconstruct.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
@@ -43,7 +42,7 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::CalculateReconstructionPole
 	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_dialog_ptr(new InsertVGPReconstructionPoleDialog(view_state_,parent_)),
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget()),
-	d_reconstruct_ptr(&view_state_.get_reconstruct())
+	d_application_state_ptr(&view_state_.get_application_state())
 {
 	setupUi(this);
 

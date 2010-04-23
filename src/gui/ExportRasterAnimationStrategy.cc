@@ -29,7 +29,6 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/Reconstruct.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"

@@ -32,7 +32,7 @@
 #include "PlateIdColourPalettes.h"
 #include "SingleColourScheme.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "maths/Real.h"
 #include "model/types.h"
@@ -72,8 +72,8 @@ namespace
 		typedef GPlatesMaths::Real return_type;
 
 		AgePropertyExtractor(
-				const GPlatesAppLogic::Reconstruct &reconstruct) :
-			d_reconstruct(reconstruct)
+				const GPlatesAppLogic::ApplicationState &application_state) :
+			d_application_state(application_state)
 		{  }
 
 		const boost::optional<return_type>
@@ -103,13 +103,13 @@ namespace
 			{
 				// Has a real time of formation.
 				return GPlatesMaths::Real(
-						geo_time->value() - d_reconstruct.get_current_reconstruction_time());
+						geo_time->value() - d_application_state.get_current_reconstruction_time());
 			}
 		}
 	
 	private:
 
-		const GPlatesAppLogic::Reconstruct &d_reconstruct;
+		const GPlatesAppLogic::ApplicationState &d_application_state;
 	};
 
 	/**
@@ -166,32 +166,32 @@ GPlatesGui::ColourSchemeFactory::create_regional_plate_id_colour_scheme()
 
 GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_default_age_colour_scheme(
-		const GPlatesAppLogic::Reconstruct &reconstruct)
+		const GPlatesAppLogic::ApplicationState &application_state)
 {
 	return new GenericColourScheme<AgePropertyExtractor>(
 			new DefaultAgeColourPalette(),
-			AgePropertyExtractor(reconstruct));
+			AgePropertyExtractor(application_state));
 }
 
 
 GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_monochrome_age_colour_scheme(
-		const GPlatesAppLogic::Reconstruct &reconstruct)
+		const GPlatesAppLogic::ApplicationState &application_state)
 {
 	return new GenericColourScheme<AgePropertyExtractor>(
 			new MonochromeAgeColourPalette(),
-			AgePropertyExtractor(reconstruct));
+			AgePropertyExtractor(application_state));
 }
 
 
 GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_custom_age_colour_scheme(
-		const GPlatesAppLogic::Reconstruct &reconstruct,
+		const GPlatesAppLogic::ApplicationState &application_state,
 		ColourPalette<GPlatesMaths::Real> *palette)
 {
 	return new GenericColourScheme<AgePropertyExtractor>(
 			palette,
-			AgePropertyExtractor(reconstruct));
+			AgePropertyExtractor(application_state));
 }
 
 

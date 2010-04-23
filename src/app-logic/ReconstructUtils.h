@@ -52,51 +52,38 @@ namespace GPlatesAppLogic
 		 * contain reconstruction features (ie, total reconstruction sequences and absolute
 		 * reference frames).
 		 *
+		 * If @a reconstruction_features_collection is empty then the returned @a ReconstructionTree
+		 * will always give an identity rotation when queried for a composed absolute rotation.
+		 *
 		 * Question:  Do any of those other functions actually throw exceptions when
 		 * they're passed invalid weak_refs?  They should.
 		 */
 		const GPlatesModel::ReconstructionTree::non_null_ptr_type
 		create_reconstruction_tree(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstruction_features_collection,
 				const double &time,
-				GPlatesModel::integer_plate_id_type root);
+				GPlatesModel::integer_plate_id_type root,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						reconstruction_features_collection =
+								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
 
 
 		/**
-		 * Create and return a reconstruction for the reconstruction time @a time, with
-		 * root @a root.
+		 * Create and return a reconstruction containing @a ReconstructionGeometry objects by
+		 * rotating feature geometries in @a reconstructable_features_collection using
+		 * @a reconstruction_tree.
 		 *
-		 * The feature collections in @a reconstruction_features_collection are expected to
-		 * contain reconstruction features (ie, total reconstruction sequences and absolute
-		 * reference frames).
+		 * If @a reconstructable_features_collection is empty then the returned
+		 * @a Reconstruction will contain no @a ReconstructionGeometry objects.
 		 *
 		 * Question:  Do any of those other functions actually throw exceptions when
 		 * they're passed invalid weak_refs?  They should.
 		 */
 		const GPlatesModel::Reconstruction::non_null_ptr_type
 		create_reconstruction(
+				const GPlatesModel::ReconstructionTree::non_null_ptr_type &reconstruction_tree,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstructable_features_collection,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstruction_features_collection,
-				const double &time,
-				GPlatesModel::integer_plate_id_type root);
-
-
-		/**
-		 * Create and return an empty reconstruction for the reconstruction time @a time,
-		 * with root @a root.
-		 *
-		 * The reconstruction tree contained within the reconstruction will also be empty.
-		 *
-		 * FIXME:  Remove this function once it is possible to create empty reconstructions
-		 * by simply passing empty lists of feature-collections into the prev function.
-		 */
-		const GPlatesModel::Reconstruction::non_null_ptr_type
-		create_empty_reconstruction(
-				const double &time,
-				GPlatesModel::integer_plate_id_type root);
+						reconstructable_features_collection =
+								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
 
 
 		/**

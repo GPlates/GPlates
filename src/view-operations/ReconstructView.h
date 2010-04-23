@@ -26,7 +26,7 @@
 #ifndef GPLATES_VIEW_OPERATIONS_RECONSTRUCTVIEW_H
 #define GPLATES_VIEW_OPERATIONS_RECONSTRUCTVIEW_H
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 
 
 namespace GPlatesAppLogic
@@ -54,7 +54,7 @@ namespace GPlatesViewOperations
 	 * some view related tasks such as rendering RFGs.
 	 */
 	class ReconstructView :
-			public GPlatesAppLogic::Reconstruct::Hook
+			public GPlatesAppLogic::ApplicationState::ReconstructHook
 	{
 	public:
 		ReconstructView(

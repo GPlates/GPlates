@@ -29,10 +29,13 @@
 #define GPLATES_MODEL_RECONSTRUCTIONGRAPH_H
 
 #include <map>  // std::multimap
+#include <vector>
 #include <algorithm>  // std::swap
 #include <utility>  // std::pair
 
+#include "FeatureHandle.h"
 #include "ReconstructionTreeEdge.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 
@@ -139,6 +142,17 @@ namespace GPlatesModel
 		}
 
 		/**
+		 * Access the features containing the reconstruction features used to
+		 * create the total reconstruction pole inserted into this graph via
+		 * @a insert_total_reconstruction_pole.
+		 */
+		const std::vector<FeatureHandle::weak_ref> &
+		get_reconstruction_features() const
+		{
+			return d_reconstruction_features;
+		}
+
+		/**
 		 * Insert a total reconstruction pole for this reconstruction time.
 		 *
 		 * This will result in the creation of reconstruction tree edges, which will be
@@ -147,13 +161,17 @@ namespace GPlatesModel
 		 * For maximum computational efficiency, you should insert all relevant total
 		 * reconstruction poles before building the tree.
 		 *
+		 * @a total_reconstruction_sequence_feature is the feature used to generate the
+		 * total reconstruction pole.
+		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
 		void
 		insert_total_reconstruction_pole(
 				integer_plate_id_type fixed_plate_id_,
 				integer_plate_id_type moving_plate_id_,
-				const GPlatesMaths::FiniteRotation &pole);
+				const GPlatesMaths::FiniteRotation &pole,
+				const FeatureHandle::weak_ref &total_reconstruction_sequence_feature);
 
 		/**
 		 * Build the graph into a ReconstructionTree, specifying the @a root_plate_id of
@@ -207,6 +225,7 @@ namespace GPlatesModel
 		{
 			d_edges_by_fixed_plate_id.swap(other.d_edges_by_fixed_plate_id);
 			std::swap(d_reconstruction_time, other.d_reconstruction_time);
+			std::swap(d_reconstruction_features, other.d_reconstruction_features);
 		}
 
 		/**
@@ -246,6 +265,11 @@ namespace GPlatesModel
 		 * This is the reconstruction time of the total reconstruction poles in this graph.
 		 */
 		double d_reconstruction_time;
+
+		/**
+		 * The features used to generate the total reconstruction poles inserted into this graph.
+		 */
+		std::vector<FeatureHandle::weak_ref> d_reconstruction_features;
 	};
 }
 

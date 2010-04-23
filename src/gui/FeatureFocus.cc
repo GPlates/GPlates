@@ -28,23 +28,21 @@
 #include "FeatureFocus.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionGeometryFinder.h"
 
 
 GPlatesGui::FeatureFocus::FeatureFocus(
-		GPlatesAppLogic::ApplicationState &application_state,
-		GPlatesAppLogic::Reconstruct &reconstruct):
-	d_reconstruct_ptr(&reconstruct)
+		GPlatesAppLogic::ApplicationState &application_state):
+	d_application_state_ptr(&application_state)
 {
 	// Get notified whenever a new reconstruction occurs.
 	QObject::connect(
-			d_reconstruct_ptr,
-			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+			d_application_state_ptr,
+			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 			this,
-			SLOT(handle_reconstruction(GPlatesAppLogic::Reconstruct &)));
+			SLOT(handle_reconstruction(GPlatesAppLogic::ApplicationState &)));
 
 	// Get notified whenever a file is being removed or modified.
 	QObject::connect(
@@ -142,7 +140,7 @@ GPlatesGui::FeatureFocus::set_focus(
 	d_associated_geometry_property = new_associated_property;
 
 	// Find the ReconstructionGeometry associated with the geometry property.
-	find_new_associated_reconstruction_geometry(d_reconstruct_ptr->get_current_reconstruction());
+	find_new_associated_reconstruction_geometry(d_application_state_ptr->get_current_reconstruction());
 
 	// tell the rest of the application about the new focus
 	emit focus_changed(*this);
@@ -252,10 +250,10 @@ GPlatesGui::FeatureFocus::announce_deletion_of_focused_feature()
 
 void
 GPlatesGui::FeatureFocus::handle_reconstruction(
-		GPlatesAppLogic::Reconstruct &reconstructer)
+		GPlatesAppLogic::ApplicationState &application_state)
 {
 	find_new_associated_reconstruction_geometry(
-			reconstructer.get_current_reconstruction());
+			application_state.get_current_reconstruction());
 
 	// A new ReconstructionGeometry has been found so we should
 	// emit a signal in case clients need to know this.

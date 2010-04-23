@@ -28,7 +28,6 @@
 #include "AgeColourPalettes.h"
 #include "Colour.h"
 #include "ColourSpectrum.h" // FIXME: remove
-#include "app-logic/Reconstruct.h"
 #include "maths/Real.h"
 
 

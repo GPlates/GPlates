@@ -42,7 +42,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesGui
@@ -191,7 +191,7 @@ namespace GPlatesQtWidgets
 
 	private:
 		//! Manages reconstructions.
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * Used to draw rendered geometries.

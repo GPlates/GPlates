@@ -35,7 +35,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesPresentation
@@ -85,7 +85,7 @@ namespace GPlatesQtWidgets
 		 * We need to pass this onto the InsertVGPReconstructionDialog so that
 		 * the rotation model can be updated if necessary. 
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 		
 		
 	};
