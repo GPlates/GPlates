@@ -1810,7 +1810,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		}
 
 		typedef GPlatesModel::integer_plate_id_type plate_id_type;
-
+		
 		GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
 			gpml_old_plates_header = GPlatesPropertyValues::GpmlOldPlatesHeader::create(
 				GPlatesUtils::slice_string<unsigned int>(first_line, 0, 2, 
@@ -1821,7 +1821,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					GPlatesFileIO::ReadErrors::InvalidPlatesStringNumber),
 				GPlatesUtils::slice_string<std::string>(first_line, 10, std::string::npos, 
 					GPlatesFileIO::ReadErrors::InvalidPlatesGeographicDescription).c_str(),
-				GPlatesUtils::slice_string<plate_id_type>(second_line, 1, 4, 
+				// We now read the plate-id from the zeroeth column, to accommodate a possible
+				// 4-th plate-id digit.
+				GPlatesUtils::slice_string<plate_id_type>(second_line, 0, 4, 
 					GPlatesFileIO::ReadErrors::InvalidPlatesPlateIdNumber),
 				GPlatesUtils::slice_string<double>(second_line, 5, 11, 
 					GPlatesFileIO::ReadErrors::InvalidPlatesAgeOfAppearance),
@@ -1831,9 +1833,16 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCode).c_str(),
 				GPlatesUtils::slice_string<unsigned int>(second_line, 21, 25, 
 					GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCodeNumber),
+#if 0					
 				GPlatesUtils::slice_string<std::string>(second_line, 25, 26, 
 					GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCodeNumberAdditional).c_str(),
-				GPlatesUtils::slice_string<plate_id_type>(second_line, 26, 29, 
+#endif
+				// We don't read in a "DataTypeCodeNumberAdditional" field now, but we need
+				// to pass something to the header constructor, so we'll pass an empty string.
+				"",
+				// We now read the conjugate plate-id from column 25, to accommodate a
+				// possible 4th conjugate plate-id digit.
+				GPlatesUtils::slice_string<plate_id_type>(second_line, 25, 29, 
 					GPlatesFileIO::ReadErrors::InvalidPlatesConjugatePlateIdNumber),
 				GPlatesUtils::slice_string<unsigned int>(second_line, 30, 33, 
 					GPlatesFileIO::ReadErrors::InvalidPlatesColourCode),

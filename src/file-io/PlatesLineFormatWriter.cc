@@ -211,7 +211,7 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 		<< " "
 		<< GPlatesUtils::make_qstring_from_icu_string(old_plates_header.geographic_description)
 		<< endl;
-
+#if 0
 	// Second line of the PLATES4 header.
 	*d_output_stream << " "
 		<< formatted_int_to_string(old_plates_header.plate_id_number, 3).c_str()
@@ -229,6 +229,27 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 		<< " "
 		<< formatted_int_to_string(old_plates_header.number_of_points, 5).c_str()
 		<< endl;
+#endif		
+	// Modified version of output to use 4-field plate-id and conjugate plate-id fields.
+	// The space at the beginning of the line has been removed, as has the space before the
+	// conjugate field that used to be a placeholder for the "data type code additional number". 
+	
+	// Second line of the PLATES4 header.
+	*d_output_stream 
+		<< formatted_int_to_string(old_plates_header.plate_id_number, 4).c_str()
+		<< " "
+		<< formatted_double_to_string(old_plates_header.age_of_appearance, 6, 1).c_str()
+		<< " "
+		<< formatted_double_to_string(old_plates_header.age_of_disappearance, 6, 1).c_str()
+		<< " "
+		<< GPlatesUtils::make_qstring_from_icu_string(old_plates_header.data_type_code)
+		<< formatted_int_to_string(old_plates_header.data_type_code_number, 4).c_str()
+		<< formatted_int_to_string(old_plates_header.conjugate_plate_id_number, 4).c_str()
+		<< " "
+		<< formatted_int_to_string(old_plates_header.colour_code, 3).c_str()
+		<< " "
+		<< formatted_int_to_string(old_plates_header.number_of_points, 5).c_str()
+		<< endl;		
 }
 
 
