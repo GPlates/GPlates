@@ -25,7 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "AgeColourPalette.h"
+#include "AgeColourPalettes.h"
 #include "ColourSchemeFactory.h"
 #include "FeatureColourPalette.h"
 #include "GenericColourScheme.h"
@@ -139,12 +139,14 @@ namespace
 	};
 }
 
+
 GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_single_colour_scheme(
 		const Colour &colour)
 {
 	return new SingleColourScheme(colour);
 }
+
 
 GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme()
@@ -153,6 +155,7 @@ GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme()
 			new DefaultPlateIdColourPalette());
 }
 
+
 GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_regional_plate_id_colour_scheme()
 {
@@ -160,14 +163,37 @@ GPlatesGui::ColourSchemeFactory::create_regional_plate_id_colour_scheme()
 			new RegionalPlateIdColourPalette());
 }
 
+
 GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_default_age_colour_scheme(
 		const GPlatesAppLogic::Reconstruct &reconstruct)
 {
 	return new GenericColourScheme<AgePropertyExtractor>(
-			new AgeColourPalette(),
+			new DefaultAgeColourPalette(),
 			AgePropertyExtractor(reconstruct));
 }
+
+
+GPlatesGui::ColourScheme::non_null_ptr_type
+GPlatesGui::ColourSchemeFactory::create_monochrome_age_colour_scheme(
+		const GPlatesAppLogic::Reconstruct &reconstruct)
+{
+	return new GenericColourScheme<AgePropertyExtractor>(
+			new MonochromeAgeColourPalette(),
+			AgePropertyExtractor(reconstruct));
+}
+
+
+GPlatesGui::ColourScheme::non_null_ptr_type
+GPlatesGui::ColourSchemeFactory::create_custom_age_colour_scheme(
+		const GPlatesAppLogic::Reconstruct &reconstruct,
+		ColourPalette<GPlatesMaths::Real> *palette)
+{
+	return new GenericColourScheme<AgePropertyExtractor>(
+			palette,
+			AgePropertyExtractor(reconstruct));
+}
+
 
 GPlatesGui::ColourScheme::non_null_ptr_type
 GPlatesGui::ColourSchemeFactory::create_default_feature_colour_scheme()

@@ -189,6 +189,13 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 				"Default",
 				"Colours geometries by their age based on the current reconstruction time",
 				true));
+	add(
+			ColourSchemeCategory::FEATURE_AGE,
+			ColourSchemeInfo(
+				ColourSchemeFactory::create_monochrome_age_colour_scheme(view_state.get_reconstruct()),
+				"Monochrome",
+				"Colours geometries, in shades of grey, by their age based on the current reconstruction time",
+				true));
 
 	// Feature Type colour schemes:
 	add(

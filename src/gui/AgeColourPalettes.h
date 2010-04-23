@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * Contains the definition of the AgeColourPalette class.
+ * Contains the definition of the DefaultAgeColourPalette class.
  *
  * Most recent change:
  *   $Date$
@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_AGECOLOURPALETTE_H
-#define GPLATES_GUI_AGECOLOURPALETTE_H
+#ifndef GPLATES_GUI_AGECOLOURPALETTES_H
+#define GPLATES_GUI_AGECOLOURPALETTES_H
 
 #include "ColourPalette.h"
 
@@ -40,13 +40,10 @@ namespace GPlatesGui
 	class Colour;
 	
 	/**
-	 * AgeColourPalette maps age to colours.
-	 *
-	 * NOTE: After implementing CPT-file support, we might as well make the
-	 * default age colour palette a CPT-file and have no native age palettes.
+	 * DefaultAgeColourPalette maps age to colours using a rainbow of colours.
 	 */
-	class AgeColourPalette :
-		public ColourPalette<GPlatesMaths::Real>
+	class DefaultAgeColourPalette :
+			public ColourPalette<GPlatesMaths::Real>
 	{
 	public:
 
@@ -60,6 +57,26 @@ namespace GPlatesGui
 		static Colour DISTANT_FUTURE_COLOUR;
 
 	};
+
+
+	/**
+	 * MonochromeAgeColourPalette maps age to colours using shades of grey.
+	 */
+	class MonochromeAgeColourPalette :
+			public ColourPalette<GPlatesMaths::Real>
+	{
+	public:
+
+		boost::optional<Colour>
+		get_colour(
+				const GPlatesMaths::Real &geo_time) const;
+
+	private:
+
+		static const int UPPER_BOUND = 650; // Ma
+		static const int LOWER_BOUND = -50;
+
+	};
 }
 
-#endif  /* GPLATES_GUI_AGECOLOURPALETTE_H */
+#endif  /* GPLATES_GUI_AGECOLOURPALETTES_H */

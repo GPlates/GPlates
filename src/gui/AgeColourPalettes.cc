@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * Contains the implementation of the AgeColourPalette class.
+ * Contains the implementation of the DefaultAgeColourPalette class.
  *
  * Most recent change:
  *   $Date$
@@ -25,11 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "AgeColourPalette.h"
+#include "AgeColourPalettes.h"
 #include "Colour.h"
 #include "ColourSpectrum.h" // FIXME: remove
 #include "app-logic/Reconstruct.h"
 #include "maths/Real.h"
+
 
 namespace
 {
@@ -49,14 +50,17 @@ namespace
 	}
 }
 
-GPlatesGui::Colour
-GPlatesGui::AgeColourPalette::DISTANT_PAST_COLOUR = GPlatesGui::Colour::get_olive();
 
 GPlatesGui::Colour
-GPlatesGui::AgeColourPalette::DISTANT_FUTURE_COLOUR = GPlatesGui::Colour::get_red();
+GPlatesGui::DefaultAgeColourPalette::DISTANT_PAST_COLOUR = GPlatesGui::Colour::get_olive();
+
+
+GPlatesGui::Colour
+GPlatesGui::DefaultAgeColourPalette::DISTANT_FUTURE_COLOUR = GPlatesGui::Colour::get_red();
+
 
 boost::optional<GPlatesGui::Colour>
-GPlatesGui::AgeColourPalette::get_colour(
+GPlatesGui::DefaultAgeColourPalette::get_colour(
 		const GPlatesMaths::Real &age) const
 {
 	if (age.is_negative_infinity())
@@ -82,3 +86,27 @@ GPlatesGui::AgeColourPalette::get_colour(
 		return boost::optional<GPlatesGui::Colour>(get_colour_from_age(age.dval()));
 	}
 }
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::MonochromeAgeColourPalette::get_colour(
+		const GPlatesMaths::Real &age) const
+{
+	if (age > UPPER_BOUND)
+	{
+		return Colour::get_white();
+	}
+	else if (age < LOWER_BOUND)
+	{
+		return Colour::get_black();
+	}
+	else
+	{
+		double position = (age.dval() - LOWER_BOUND) / (UPPER_BOUND - LOWER_BOUND);
+		return Colour::linearly_interpolate(
+				Colour::get_black(),
+				Colour::get_white(),
+				position);
+	}
+}
+

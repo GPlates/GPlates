@@ -36,7 +36,11 @@ GPlatesGui::ColourSlice::ColourSlice(
 		Real lower_value_,
 		Real upper_value_,
 		boost::optional<Colour> lower_colour_,
-		boost::optional<Colour> upper_colour_)
+		boost::optional<Colour> upper_colour_) :
+	d_lower_value(lower_value_),
+	d_upper_value(upper_value_),
+	d_lower_colour(lower_colour_),
+	d_upper_colour(upper_colour_)
 {
 }
 
@@ -84,7 +88,7 @@ GPlatesGui::GenericContinuousColourPalette::get_colour(
 	}
 
 	// Return foreground colour if value after last slice.
-	if (value < d_colour_slices.back().upper_value())
+	if (value > d_colour_slices.back().upper_value())
 	{
 		return d_foreground_colour;
 	}

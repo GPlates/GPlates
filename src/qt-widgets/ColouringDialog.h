@@ -30,6 +30,7 @@
 #include <QIcon>
 #include <QPalette>
 #include <QColor>
+#include <QString>
 
 #include "ColouringDialogUi.h"
 
@@ -40,6 +41,11 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureStoreRootHandle.h"
 
+
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
 
 namespace GPlatesGui
 {
@@ -238,12 +244,23 @@ namespace GPlatesQtWidgets
 		open_file();
 
 		void
+		open_regular_cpt_file();
+
+		void
+		open_categorical_cpt_file();
+
+		void
 		add_single_colour();
 
 		void
 		insert_list_widget_item(
 				const GPlatesGui::ColourSchemeInfo &colour_scheme_info,
 				GPlatesGui::ColourSchemeContainer::id_type id);
+
+		/**
+		 * Used for creating feature-age colour schemes.
+		 */
+		GPlatesAppLogic::Reconstruct &d_reconstruct;
 
 		/**
 		 * An existing GlobeAndMapWidget from which we'll clone our own
@@ -312,6 +329,11 @@ namespace GPlatesQtWidgets
 		 * If true, this dialog will show thumbnail previews of colour schemes.
 		 */
 		bool d_show_thumbnails;
+
+		/**
+		 * A hack to prevent unwanted refreshes from happening.
+		 */
+		bool d_suppress_next_repaint;
 
 		/**
 		 * A weak reference to the feature collection for which we are currently

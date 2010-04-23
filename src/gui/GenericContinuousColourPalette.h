@@ -98,9 +98,12 @@ namespace GPlatesGui
 	 *
 	 * The primary design consideration for this class is that it should act as a
 	 * data structure for the in-memory representation of a "regular" CPT file.
+	 *
+	 * A description of a "regular" CPT file can be found at
+	 * http://gmt.soest.hawaii.edu/gmt/doc/gmt/html/GMT_Docs/node69.html 
 	 */
 	class GenericContinuousColourPalette :
-		public ColourPalette<GPlatesMaths::Real>
+			public ColourPalette<GPlatesMaths::Real>
 	{
 	public:
 
@@ -148,11 +151,11 @@ namespace GPlatesGui
 
 		std::vector<ColourSlice> d_colour_slices;
 
-		Colour d_background_colour;
+		boost::optional<Colour> d_background_colour;
 
-		Colour d_foreground_colour;
+		boost::optional<Colour> d_foreground_colour;
 
-		Colour d_nan_colour;
+		boost::optional<Colour> d_nan_colour;
 
 	};
 }

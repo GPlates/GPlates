@@ -121,71 +121,7 @@
       </property>
       <column/>
      </widget>
-     <widget class="QFrame" name="frame" >
-      <property name="palette" >
-       <palette>
-        <active>
-         <colorrole role="Base" >
-          <brush brushstyle="SolidPattern" >
-           <color alpha="255" >
-            <red>255</red>
-            <green>255</green>
-            <blue>255</blue>
-           </color>
-          </brush>
-         </colorrole>
-         <colorrole role="Window" >
-          <brush brushstyle="SolidPattern" >
-           <color alpha="255" >
-            <red>255</red>
-            <green>255</green>
-            <blue>255</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="Base" >
-          <brush brushstyle="SolidPattern" >
-           <color alpha="255" >
-            <red>255</red>
-            <green>255</green>
-            <blue>255</blue>
-           </color>
-          </brush>
-         </colorrole>
-         <colorrole role="Window" >
-          <brush brushstyle="SolidPattern" >
-           <color alpha="255" >
-            <red>255</red>
-            <green>255</green>
-            <blue>255</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="Base" >
-          <brush brushstyle="SolidPattern" >
-           <color alpha="255" >
-            <red>255</red>
-            <green>255</green>
-            <blue>255</blue>
-           </color>
-          </brush>
-         </colorrole>
-         <colorrole role="Window" >
-          <brush brushstyle="SolidPattern" >
-           <color alpha="255" >
-            <red>255</red>
-            <green>255</green>
-            <blue>255</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
-      </property>
+     <widget class="QFrame" name="right_side_frame" >
       <property name="autoFillBackground" >
        <bool>true</bool>
       </property>

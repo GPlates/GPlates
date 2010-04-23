@@ -13,8 +13,8 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     AddClickedGeometriesToFeatureTable.cc
     AddClickedGeometriesToFeatureTable.h
-    AgeColourPalette.cc
-    AgeColourPalette.h
+    AgeColourPalettes.cc
+    AgeColourPalettes.h
     AnimationController.cc
     AnimationController.h
     ChooseCanvasTool.cc

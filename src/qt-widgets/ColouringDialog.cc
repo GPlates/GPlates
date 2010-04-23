@@ -31,15 +31,22 @@
 #include <QMetaType>
 #include <QPixmap>
 #include <QColorDialog>
+#include <QFileDialog>
+#include <QMessageBox>
 
 #include "ColouringDialog.h"
 #include "GlobeAndMapWidget.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/Reconstruct.h"
+
+#include "file-io/RegularCptReader.h"
 
 #include "gui/Colour.h"
 #include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeInfo.h"
+#include "gui/ColourSchemeFactory.h"
+#include "gui/GenericContinuousColourPalette.h"
 #include "gui/HTMLColourNames.h"
 #include "gui/SingleColourScheme.h"
 
@@ -204,6 +211,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 		GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
+	d_reconstruct(view_state.get_reconstruct()),
 	d_existing_globe_and_map_widget_ptr(existing_globe_and_map_widget_ptr),
 	d_colour_scheme_container(view_state.get_colour_scheme_container()),
 	d_view_state_colour_scheme_delegator(view_state.get_colour_scheme_delegator()),
@@ -218,6 +226,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	d_feature_store_root(
 			view_state.get_application_state().get_model_interface()->root()),
 	d_show_thumbnails(true),
+	d_suppress_next_repaint(false),
 	d_last_single_colour(Qt::white)
 {
 	setupUi(this);
@@ -253,11 +262,15 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	colour_schemes_list->setResizeMode(QListView::Adjust);
 	colour_schemes_list->setUniformItemSizes(true);
 	colour_schemes_list->setWordWrap(true);
+	
+	// Change the background colour of the right hand side.
+	QPalette right_palette = right_side_frame->palette();
+	right_palette.setColor(QPalette::Window, colour_schemes_list->palette().color(QPalette::Base));
+	right_side_frame->setPalette(right_palette);
 
 	// Get current colour scheme selection from ViewState's colour scheme delegator.
 	std::pair<GPlatesGui::ColourSchemeCategory::Type, GPlatesGui::ColourSchemeContainer::id_type> curr_colour_scheme =
 		*d_view_state_colour_scheme_delegator->get_colour_scheme();
-	categories_table->setCurrentCell(curr_colour_scheme.first, 0 /* row selection is enabled */);
 	load_category(curr_colour_scheme.first);
 
 	// Listen in to notifications from the feature store root to find out new FCs.
@@ -421,6 +434,20 @@ GPlatesQtWidgets::ColouringDialog::load_category(
 	{
 		open_button->setText("Open...");
 	}
+	
+	// FIXME: For now, hide "Open" and "Remove" for Plate ID and Feature Type
+	// because we can't read categorical CPT files yet.
+	if (category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
+			category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
+	{
+		open_button->hide();
+		remove_button->hide();
+	}
+	else
+	{
+		open_button->show();
+		remove_button->show();
+	}
 
 	// Set the rendering chain in motion.
 	if (d_show_thumbnails)
@@ -532,6 +559,82 @@ GPlatesQtWidgets::ColouringDialog::handle_remove_button_clicked(
 void
 GPlatesQtWidgets::ColouringDialog::open_file()
 {
+	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
+			d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
+	{
+		open_categorical_cpt_file();
+	}
+	else if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_AGE)
+	{
+		open_regular_cpt_file();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file()
+{
+	QStringList file_list = QFileDialog::getOpenFileNames(
+			this,
+			"Open Files",
+			QString(),
+			"Regular CPT file (*.cpt)");
+
+	if (file_list.count() == 0)
+	{
+		return;
+	}
+
+	int first_index_in_list = -1;
+
+	GPlatesFileIO::RegularCptReader reader;
+	BOOST_FOREACH(QString file, file_list)
+	{
+		try
+		{
+			GPlatesGui::GenericContinuousColourPalette *cpt = reader.read_file(file);
+			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme =
+				GPlatesGui::ColourSchemeFactory::create_custom_age_colour_scheme(
+						d_reconstruct, cpt);
+
+			QFileInfo file_info(file);
+
+			GPlatesGui::ColourSchemeInfo cpt_info(
+					colour_scheme,
+					file_info.fileName(),
+					file_info.absoluteFilePath(),
+					false /* not built-in */);
+			GPlatesGui::ColourSchemeContainer::id_type id = d_colour_scheme_container.add(
+					d_current_colour_scheme_category, cpt_info);
+
+			insert_list_widget_item(cpt_info, id);
+			if (first_index_in_list == -1)
+			{
+				first_index_in_list = colour_schemes_list->count() - 1;
+			}
+		}
+		catch (const GPlatesFileIO::ErrorReadingCptFileException &err)
+		{
+			QMessageBox::critical(this, "Error", err.message);
+		}
+	}
+
+	if (first_index_in_list != -1)
+	{
+		start_rendering_from(first_index_in_list);
+		colour_schemes_list->setCurrentRow(colour_schemes_list->count() - 1);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ColouringDialog::open_categorical_cpt_file()
+{
+	QStringList file_list = QFileDialog::getOpenFileNames(
+			this,
+			"Open Files",
+			QString(),
+			"Categorical CPT file (*.cpt)");
 }
 
 
@@ -563,6 +666,12 @@ GPlatesQtWidgets::ColouringDialog::handle_main_repaint(
 {
 	if (!mouse_down)
 	{
+		if (d_suppress_next_repaint)
+		{
+			d_suppress_next_repaint = false;
+			return;
+		}
+
 		if (d_next_icon_to_render == -1)
 		{
 			start_rendering_from(0);
@@ -644,6 +753,10 @@ GPlatesQtWidgets::ColouringDialog::handle_colour_schemes_list_selection_changed(
 			else
 			{
 				// Selection's changed, so we better tell the colour scheme delegator.
+				if (!d_current_feature_collection)
+				{
+					d_suppress_next_repaint = true;
+				}
 				d_view_state_colour_scheme_delegator->set_colour_scheme(
 						d_current_colour_scheme_category,
 						id,

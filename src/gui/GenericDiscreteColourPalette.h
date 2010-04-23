@@ -44,6 +44,9 @@ namespace GPlatesGui
 	 *
 	 * The primary design consideration for this class is that it should act as a
 	 * data structure for the in-memory representation of a "categorical" CPT file.
+	 *
+	 * A description of a "categorical" CPT file can be found at
+	 * http://gmt.soest.hawaii.edu/gmt/doc/gmt/html/GMT_Docs/node68.html
 	 */
 	template<class T>
 	class GenericDiscreteColourPalette :
@@ -121,11 +124,11 @@ namespace GPlatesGui
 
 		std::map<T, Colour> d_mapping;
 
-		Colour d_background_colour;
+		boost::optional<Colour> d_background_colour;
 
-		Colour d_foreground_colour;
+		boost::optional<Colour> d_foreground_colour;
 
-		Colour d_nan_colour;
+		boost::optional<Colour> d_nan_colour;
 
 	};
 }

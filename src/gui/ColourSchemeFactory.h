@@ -36,8 +36,15 @@ namespace GPlatesAppLogic
 	class Reconstruct;
 }
 
+namespace GPlatesMaths
+{
+	class Real;
+}
+
 namespace GPlatesGui
 {
+	template<class T> class ColourPalette;
+
 	namespace ColourSchemeFactory
 	{
 		/**
@@ -64,11 +71,28 @@ namespace GPlatesGui
 
 		/**
 		 * Creates a colour scheme that colours geometries by their age based on the
-		 * current reconstruction time.
+		 * current reconstruction time, using default (rainbow-like) colours.
 		 */
 		ColourScheme::non_null_ptr_type
 		create_default_age_colour_scheme(
 				const GPlatesAppLogic::Reconstruct &reconstruct);
+
+		/**
+		 * Creates a colour scheme that colours geometries by their age based on the
+		 * current reconstruction time, using shades of grey.
+		 */
+		ColourScheme::non_null_ptr_type
+		create_monochrome_age_colour_scheme(
+				const GPlatesAppLogic::Reconstruct &reconstruct);
+
+		/**
+		 * Creates a colour scheme that colours geometries by their age based on the
+		 * current reconstruction time, using the provided @a palette.
+		 */
+		ColourScheme::non_null_ptr_type
+		create_custom_age_colour_scheme(
+				const GPlatesAppLogic::Reconstruct &reconstruct,
+				ColourPalette<GPlatesMaths::Real> *palette);
 
 		/**
 		 * Creates a colour scheme that colours geometries by their underlying feature type.

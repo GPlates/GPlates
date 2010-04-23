@@ -44,6 +44,13 @@ namespace GPlatesFileIO
 {
 	struct ErrorReadingCptFileException
 	{
+		ErrorReadingCptFileException(
+				QString message_ = QString()) :
+			message(message_)
+		{
+		}
+
+		QString message;
 	};
 
 	/**
@@ -53,18 +60,27 @@ namespace GPlatesFileIO
 	 * continuous ranges with colours linearly interpolated between the ends of
 	 * these ranges. (The other kind is "categorical" CPT files, used where it
 	 * makes no sense to interpolate between values; the values are discrete.)
+	 *
+	 * A description of a "regular" CPT file can be found at
+	 * http://gmt.soest.hawaii.edu/gmt/doc/gmt/html/GMT_Docs/node69.html 
+	 *
+	 * This reader does not understand pattern fills.
 	 */
 	class RegularCptReader
 	{
 	public:
 
 		/**
-		 * Reads the CPT file given by @a filename, storing the results into @palette.
+		 * Reads the CPT file given by @a filename.
+		 *
+		 * Ownership of the memory pointed to by the returned pointer passes to the
+		 * called of this function.
+		 *
+		 * Throws GPlatesFileIO::ErrorReadingCptFileException on error.
 		 */
-		void
+		GPlatesGui::GenericContinuousColourPalette *
 		read_file(
-				QString filename,
-				GPlatesGui::GenericContinuousColourPalette &palette);
+				QString filename);
 	};
 }
 
