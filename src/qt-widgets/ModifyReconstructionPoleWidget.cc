@@ -692,7 +692,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 	GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 			d_application_state_ptr->get_current_reconstruction().geometries().begin();
 	GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
-			d_application_state_ptr->get_current_reconstruction().geometries().begin();
+			d_application_state_ptr->get_current_reconstruction().geometries().end();
 	for ( ; iter != end; ++iter) {
 		GPlatesModel::ReconstructionGeometry *rg = iter->get();
 
