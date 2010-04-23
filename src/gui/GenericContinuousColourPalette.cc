@@ -25,54 +25,79 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <algorithm>
+#include <boost/foreach.hpp>
 
 #include "GenericContinuousColourPalette.h"
-#include "global/AssertionFailureException.h"
-#include "global/GPlatesAssert.h"
 
-GPlatesGui::GenericContinuousColourPalette::GenericContinuousColourPalette(
-		std::map<GPlatesMaths::Real, Colour> control_points) :
-	d_control_points(control_points)
+
+using GPlatesMaths::Real;
+
+GPlatesGui::ColourSlice::ColourSlice(
+		Real lower_value_,
+		Real upper_value_,
+		boost::optional<Colour> lower_colour_,
+		boost::optional<Colour> upper_colour_)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!control_points.empty(),
-			GPLATES_ASSERTION_SOURCE);
 }
 
-boost::optional<GPlatesGui::Colour>
-GPlatesGui::GenericContinuousColourPalette::get_colour(
-		const GPlatesMaths::Real &value) const
-{
-	typedef std::map<GPlatesMaths::Real, Colour>::const_iterator iterator_type;
-	iterator_type upper_value = d_control_points.upper_bound(value);
-		// first control value strictly greater than given value
 
-	if (upper_value == d_control_points.end())
+bool
+GPlatesGui::ColourSlice::can_handle(
+		Real value) const
+{
+	return d_lower_value <= value && value <= d_upper_value;
+}
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::ColourSlice::get_colour(
+		Real value) const
+{
+	if (d_lower_colour && d_upper_colour)
 	{
-		// given value is greater than or equal to largest control value; return last colour
-		iterator_type last = d_control_points.end();
-		--last;
-		return last->second;
+		Real position = (value - d_lower_value) / (d_upper_value - d_lower_value);
+		return Colour::linearly_interpolate(
+				*d_lower_colour,
+				*d_upper_colour,
+				position.dval());
 	}
 	else
 	{
-		if (upper_value == d_control_points.begin())
+		return boost::none;
+	}
+}
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::GenericContinuousColourPalette::get_colour(
+	const Real &value) const
+{
+	if (d_colour_slices.empty())
+	{
+		return d_nan_colour;
+	}
+
+	// Return background colour if value before first slice.
+	if (value < d_colour_slices.front().lower_value())
+	{
+		return d_background_colour;
+	}
+
+	// Return foreground colour if value after last slice.
+	if (value < d_colour_slices.back().upper_value())
+	{
+		return d_foreground_colour;
+	}
+
+	// Else try and find a slice that works, else return NaN colour.
+	BOOST_FOREACH(ColourSlice colour_slice, d_colour_slices)
+	{
+		if (colour_slice.can_handle(value))
 		{
-			// given value is before first control point; return first colour
-			return upper_value->second;
-		}
-		else
-		{
-			// in the middle; get the previous control point and linearly interpolate
-			iterator_type lower_value = upper_value;
-			--lower_value;
-			double position = ((value - lower_value->first) / (upper_value->first - lower_value->first)).dval();
-			return Colour::linearly_interpolate(
-					lower_value->second,
-					upper_value->second,
-					position);
+			return colour_slice.get_colour(value);
 		}
 	}
+
+	return d_nan_colour;
 }
 

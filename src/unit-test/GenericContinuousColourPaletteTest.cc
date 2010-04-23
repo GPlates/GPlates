@@ -44,6 +44,7 @@ GPlatesUnitTest::GenericContinuousColourPaletteTestSuite::GenericContinuousColou
 void
 GPlatesUnitTest::GenericContinuousColourPaletteTest::test_control_points_1()
 {
+#if 0
 	std::map<GPlatesMaths::Real, GPlatesGui::Colour> control_points;
 	control_points.insert(std::make_pair(0, GPlatesGui::Colour::get_red()));
 	
@@ -71,11 +72,13 @@ GPlatesUnitTest::GenericContinuousColourPaletteTest::test_control_points_1()
 	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
 	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
 	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
+#endif
 }
 
 void
 GPlatesUnitTest::GenericContinuousColourPaletteTest::test_control_points_2()
 {
+#if 0
 	std::map<GPlatesMaths::Real, GPlatesGui::Colour> control_points;
 	
 	control_points.insert(std::make_pair(0, GPlatesGui::Colour::get_red()));
@@ -119,11 +122,13 @@ GPlatesUnitTest::GenericContinuousColourPaletteTest::test_control_points_2()
 	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0.5));
 	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 0));
 	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
+#endif
 }
 
 void
 GPlatesUnitTest::GenericContinuousColourPaletteTest::test_control_points_3()
 {
+#if 0
 	std::map<GPlatesMaths::Real, GPlatesGui::Colour> control_points;
 	
 	control_points.insert(std::make_pair(0, GPlatesGui::Colour::get_red()));
@@ -183,16 +188,19 @@ GPlatesUnitTest::GenericContinuousColourPaletteTest::test_control_points_3()
 	BOOST_CHECK(are_almost_exactly_equal<float>(colour->green() , 0));
 	BOOST_CHECK(are_almost_exactly_equal<float>(colour->blue() , 1));
 	BOOST_CHECK(are_almost_exactly_equal<float>(colour->alpha() , 1));
+#endif
 }
 
 void
 GPlatesUnitTest::GenericContinuousColourPaletteTestSuite::construct_maps()
 {
+#if 0
 	boost::shared_ptr<GenericContinuousColourPaletteTest> instance(
 		new GenericContinuousColourPaletteTest());
 
 	ADD_TESTCASE(GenericContinuousColourPaletteTest,test_control_points_1);
 	ADD_TESTCASE(GenericContinuousColourPaletteTest,test_control_points_2);
 	ADD_TESTCASE(GenericContinuousColourPaletteTest,test_control_points_3);
+#endif
 }
 

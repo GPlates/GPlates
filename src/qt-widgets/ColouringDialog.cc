@@ -373,6 +373,8 @@ GPlatesQtWidgets::ColouringDialog::load_category(
 	// Ensure that the categories_table is in sync with the given category but
 	// let's unhook signals before we do anything.
 	QObject::disconnect(
+			categories_table,
+			SIGNAL(currentCellChanged(int, int, int, int)),
 			this,
 			SLOT(handle_categories_table_cell_changed(int, int, int, int)));
 	categories_table->setCurrentCell(category, 0);
@@ -561,7 +563,10 @@ GPlatesQtWidgets::ColouringDialog::handle_main_repaint(
 {
 	if (!mouse_down)
 	{
-		start_rendering_from(0);
+		if (d_next_icon_to_render == -1)
+		{
+			start_rendering_from(0);
+		}
 	}
 }
 
@@ -588,6 +593,7 @@ GPlatesQtWidgets::ColouringDialog::handle_repaint(
 	{
 		// We're done with rendering; hide for now.
 		d_globe_and_map_widget_ptr->hide();
+		d_next_icon_to_render = -1;
 	}
 }
 

@@ -86,6 +86,8 @@ set(srcs
     ReconstructedFeatureGeometryExport.h
     ReconstructedFeatureGeometryExportImpl.cc
     ReconstructedFeatureGeometryExportImpl.h
+    RegularCptReader.cc
+    RegularCptReader.h
     ShapefileFormatReconstructedFeatureGeometryExport.cc
     ShapefileFormatReconstructedFeatureGeometryExport.h
     ShapefileGeometryExporter.cc

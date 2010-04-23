@@ -617,12 +617,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	menu_Edit->removeAction(action_Undo_Placeholder);
 	menu_Edit->removeAction(action_Redo_Placeholder);
 	// ----
-#if 0		// Delete Feature is nontrivial to implement (in the model) properly.
 	QObject::connect(action_Delete_Feature, SIGNAL(triggered()),
 			this, SLOT(delete_focused_feature()));
-#else
-	action_Delete_Feature->setVisible(false);
-#endif
 	// ----
 	QObject::connect(action_Clear_Selection, SIGNAL(triggered()),
 			&get_view_state().get_feature_focus(), SLOT(unset_focus()));
@@ -881,10 +877,7 @@ GPlatesQtWidgets::ViewportWindow::set_up_task_panel_actions()
 
 	feature_actions.add_action(action_Query_Feature);
 	feature_actions.add_action(action_Edit_Feature);
-#if 0
-	// Doesn't work - hidden for release.
 	feature_actions.add_action(action_Delete_Feature);
-#endif
 	feature_actions.add_action(action_Clear_Selection);
 	feature_actions.add_action(action_Clone_Geometry);
 	feature_actions.add_action(action_Clone_Feature);
@@ -1431,12 +1424,7 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	
 	action_Query_Feature->setEnabled(enable_canvas_tool_actions);
 	action_Edit_Feature->setEnabled(enable_canvas_tool_actions);
-	
-#if 0		// Delete Feature is nontrivial to implement (in the model) properly.
 	action_Delete_Feature->setEnabled(enable_canvas_tool_actions);
-#else
-	action_Delete_Feature->setDisabled(true);
-#endif
 	action_Clear_Selection->setEnabled(true);
 	action_Clone_Geometry->setEnabled(enable_canvas_tool_actions);
 	action_Clone_Feature->setEnabled(enable_canvas_tool_actions);
@@ -1815,20 +1803,31 @@ GPlatesQtWidgets::ViewportWindow::set_modify_feature_collections_filter()
 }
 
 
-// FIXME: Should be a ViewState operation, or /somewhere/ better than this.
 void
 GPlatesQtWidgets::ViewportWindow::delete_focused_feature()
 {
 	if (get_view_state().get_feature_focus().is_valid())
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_ref =
-				get_view_state().get_feature_focus().focused_feature();
-#if 0		// Cannot call ModelInterface::remove_feature() as it is #if0'd out and not implemented in Model!
-		// FIXME: figure out FeatureCollectionHandle::weak_ref that feature_ref belongs to.
-		// Possibly implement that as part of ModelUtils.
-		d_model->remove_feature(feature_ref, collection_ref);
-#endif
+			get_view_state().get_feature_focus().focused_feature();
+		get_view_state().get_feature_focus().unset_focus();
+
+		if (feature_ref)
+		{
+			GPlatesModel::FeatureCollectionHandle *feature_collection_ptr = feature_ref->parent_ptr();
+			if (feature_collection_ptr)
+			{
+				GPlatesModel::container_size_type index = feature_ref->index_in_container();
+				GPlatesModel::FeatureCollectionHandle::iterator iter_to_feature(
+						*feature_collection_ptr, index);
+				feature_collection_ptr->remove(iter_to_feature);
+
+				get_view_state().get_reconstruct().reconstruct();
+			}
+		}
+#if 0
 		get_view_state().get_feature_focus().announce_deletion_of_focused_feature();
+#endif
 	}
 }
 

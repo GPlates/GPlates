@@ -28,28 +28,76 @@
 #ifndef GPLATES_GUI_GENERICCONTINUOUSCOLOURPALETTE_H
 #define GPLATES_GUI_GENERICCONTINUOUSCOLOURPALETTE_H
 
+#include <vector>
+#include <boost/optional.hpp>
+
+#include "Colour.h"
 #include "ColourPalette.h"
+
 #include "maths/Real.h"
-#include <map>
+
 
 namespace GPlatesGui
 {
+	/**
+	 * A colour slice specifies a gradient of colour between two real values.
+	 */
+	class ColourSlice
+	{
+	public:
+
+		ColourSlice(
+				GPlatesMaths::Real lower_value_,
+				GPlatesMaths::Real upper_value_,
+				boost::optional<Colour> lower_colour_,
+				boost::optional<Colour> upper_colour_);
+
+		bool
+		can_handle(
+				GPlatesMaths::Real value) const;
+
+		boost::optional<Colour>
+		get_colour(
+				GPlatesMaths::Real value) const;
+
+		GPlatesMaths::Real
+		lower_value() const
+		{
+			return d_lower_value;
+		}
+
+		GPlatesMaths::Real
+		upper_value() const
+		{
+			return d_upper_value;
+		}
+
+		boost::optional<Colour>
+		lower_colour() const
+		{
+			return d_lower_colour;
+		}
+
+		boost::optional<Colour>
+		upper_colour() const
+		{
+			return d_upper_colour;
+		}
+
+	private:
+
+		GPlatesMaths::Real d_lower_value, d_upper_value;
+		boost::optional<Colour> d_lower_colour, d_upper_colour;
+		
+	};
 	
 	/**
 	 * GenericContinuousColourPalette is a continuous colour palette that
 	 * linearly interpolates between colours specified for certain control
 	 * points.
 	 *
-	 * Colours can be specified for a series of adjacent ranges. Suppose the
-	 * ranges are [p_0, p_1) , [p_1, p_2) , ... , [p_{n-1}, p_m]. (Note that the
-	 * ranges are half-open except for the last range.) If the value lies in one
-	 * of those ranges, the colour returned is linearly interpolated between the
-	 * colour defined at the beginning of that range and the colour defined at the
-	 * end of that range. The colour defined at the end of the range [p_0, p_1)
-	 * can be different from the colour defined at the start of the range
-	 * [p_1, p_2) to provide compatibility with CPT files. Values that lie before
-	 * the first range are treated as if they are negative infinity, and values
-	 * that lie after the last range are treated as if they are positive infinity.
+	 * The primary design consideration for this class is that it should act as a
+	 * data structure for the in-memory representation of a "regular" CPT file.
 	 */
 	class GenericContinuousColourPalette :
 		public ColourPalette<GPlatesMaths::Real>
@@ -57,22 +105,39 @@ namespace GPlatesGui
 	public:
 
 		/**
-		 * Constructs an instance of GenericContinuousColourPalette
-		 * @param control_points A mapping of control values to their assigned colours.
+		 * Add a colour slice. Colour slices must be added in order of increasing
+		 * value other behaviour is undefined.
 		 */
-		explicit
-		GenericContinuousColourPalette(
-				std::map<GPlatesMaths::Real, Colour> control_points);
+		void
+		add_colour_slice(
+				const ColourSlice &colour_slice)
+		{
+			d_colour_slices.push_back(colour_slice);
+		}
+
+		void
+		set_background_colour(
+				const Colour &colour)
+		{
+			d_background_colour = colour;
+		}
+
+		void
+		set_foreground_colour(
+				const Colour &colour)
+		{
+			d_foreground_colour = colour;
+		}
+
+		void
+		set_nan_colour(
+				const Colour &colour)
+		{
+			d_nan_colour = colour;
+		}
 
 		/**
 		 * Retrieves a Colour based on the @a value given.
-		 *
-		 * If the value is a control value, the colour associated with it will be
-		 * returned. If the value is in between two control values, the colour
-		 * returned will be linearly interpolated between the colours associated
-		 * with those two points. If the value is before the first control value or
-		 * after the last control value, the colour returned will be the colour
-		 * associated with the first and last control value respectively.
 		 */
 		virtual
 		boost::optional<Colour>
@@ -80,7 +145,14 @@ namespace GPlatesGui
 			const GPlatesMaths::Real &value) const;
 
 	private:
-		std::map<GPlatesMaths::Real, Colour> d_control_points;
+
+		std::vector<ColourSlice> d_colour_slices;
+
+		Colour d_background_colour;
+
+		Colour d_foreground_colour;
+
+		Colour d_nan_colour;
 
 	};
 }
