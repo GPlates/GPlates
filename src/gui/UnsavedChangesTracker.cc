@@ -167,7 +167,7 @@ GPlatesGui::UnsavedChangesTracker::list_unsaved_filenames()
 			if ( ! qfileinfo.fileName().isEmpty()) {
 				filenames << qfileinfo.fileName();
 			} else {
-				filenames << "Unnamed Feature Collection";
+				filenames << "New Feature Collection";
 			}
 		}
 	}
