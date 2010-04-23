@@ -898,7 +898,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 	// Make sure that we don't create a contiguous sequence of three sections with the
 	// same geometry when we insert the focused feature geometry.
 	if (std::find(topology_sections_indices.begin(), topology_sections_indices.end(),
-			get_prev_index(insert_section_index, d_section_info_seq))
+			static_cast<int>(get_prev_index(insert_section_index, d_section_info_seq)))
 				!= topology_sections_indices.end())
 	{
 		// Cannot insert same geometry after itself.
