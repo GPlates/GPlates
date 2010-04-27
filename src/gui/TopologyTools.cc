@@ -904,11 +904,11 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 		// Cannot insert same geometry after itself.
 		return false;
 	}
-	else if (std::find(topology_sections_indices.begin(), topology_sections_indices.end(),
-			insert_section_index) != topology_sections_indices.end())
+	else if (std::find(topology_sections_indices.begin(), topology_sections_indices.end(), 
+				static_cast<int>(insert_section_index)) != topology_sections_indices.end())
 	{
 		if (std::find(topology_sections_indices.begin(), topology_sections_indices.end(),
-				get_next_index(insert_section_index, d_section_info_seq))
+				static_cast<int>(get_next_index(insert_section_index, d_section_info_seq)))
 					!= topology_sections_indices.end())
 		{
 			// We'd be inserting in front of two sections with same geometry - not allowed.
