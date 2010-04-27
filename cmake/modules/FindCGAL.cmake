@@ -72,8 +72,10 @@ if ( NOT CGAL_DIR )
   
 endif ( NOT CGAL_DIR )
 
-if ( CGAL_DIR )
-  
+# On Ubuntu 9.10, the CMake script adds -g because the CGAL CMake script adds the -g
+# flag even though it is a release build, so we use our own config script instead.
+if ( CGAL_DIR AND NOT CMAKE_COMPILER_IS_GNUCXX )
+ 
   if ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
     include( "${CGAL_DIR}/CGALConfig.cmake" )
     set( CGAL_FOUND TRUE )
@@ -106,7 +108,7 @@ else ( CGAL_DIR )
     endif (NOT CGAL_FOUND)
   endif (NOT WIN32 AND NOT APPLE AND CMAKE_COMPILER_IS_GNUCXX)
 
-endif ( CGAL_DIR )
+endif ( CGAL_DIR AND NOT CMAKE_COMPILER_IS_GNUCXX )
 
 if( NOT CGAL_FOUND)
   if(CGAL_FIND_REQUIRED)

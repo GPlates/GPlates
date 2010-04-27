@@ -344,7 +344,7 @@ GPlatesQtWidgets::ColouringDialog::populate_colour_scheme_categories()
 	BOOST_FOREACH(Type category, std::make_pair(begin(), end()))
 	{
 		QTableWidgetItem *item = new QTableWidgetItem(get_description(category));
-		item->setFlags(Qt::ItemIsSelectable);
+		item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
 		categories_table->setItem(row, 0, item);
 		++row;
 	}
@@ -752,14 +752,14 @@ GPlatesQtWidgets::ColouringDialog::handle_colour_schemes_list_selection_changed(
 			else
 			{
 				// Selection's changed, so we better tell the colour scheme delegator.
-				if (!d_current_feature_collection)
-				{
-					d_suppress_next_repaint = true;
-				}
 				d_view_state_colour_scheme_delegator->set_colour_scheme(
 						d_current_colour_scheme_category,
 						id,
 						d_current_feature_collection);
+
+				// There is no need to repaint the previews when we actually go and change
+				// the colour scheme (by definition of a preview).
+				d_suppress_next_repaint = true;
 			}
 
 			// Enable or disable the Remove button depending on whether the colour scheme
