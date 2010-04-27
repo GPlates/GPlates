@@ -30,10 +30,7 @@
 #include "ReconstructGraphImpl.h"
 
 
-namespace GPlatesAppLogic
-{
-	using namespace ReconstructGraphImpl;
-}
+using namespace GPlatesAppLogic::ReconstructGraphImpl;
 
 
 GPlatesAppLogic::ReconstructGraph::feature_collection_id_type
