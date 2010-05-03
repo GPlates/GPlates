@@ -51,6 +51,14 @@ namespace
 			QObject *qreceiver,
 			QEvent *qevent)
 	{
+#ifdef GPLATES_DEBUG
+		// For debug builds we don't want to catch exceptions because
+		// if we do then we lose the debugger call stack trace which is
+		// much more detailed than our own stack trace implementation that
+		// currently requires placing TRACK_CALL_STACK macros around the code.
+		// And, of course, debugging relies on the native debugger stack trace.
+		return func();
+#else
 		std::string error_message_std;
 		std::string call_stack_trace_std;
 
@@ -135,6 +143,7 @@ namespace
 
 		// Shouldn't get past qFatal - this just keeps compiler happy.
 		return false;
+#endif // GPLATES_DEBUG
 	}
 
 
