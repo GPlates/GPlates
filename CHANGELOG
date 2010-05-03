@@ -3,29 +3,30 @@ GPlates 0.9.9
 
 Changes since 0.9.8:
 
- * Added support for feature ids in Shapefiles (allows features referenced by
-   topological closed plate boundaries to be exported/imported as shapefiles).
- * Added conjugate plate id to the "Create Feature" dialog for those features
-   requiring one.
- * Can read/write 4-digit plate id from/to PLATES line format files.
- * Added unit test framework.
- * Added assign plate ids command to command-line version of GPlates and
-   improved flexibility of file conversion and reconstruct command-line options.
- * Added option to rotate daughter/children plates in the
-   Modify Reconstruction Pole tool.
- * Added multipoint support to PLATES line format (eg, hotspots).
- * Can generate CitcomS 3.1 meshes inside GPlates.
- * Added ability to split a feature into two features.
- * Added ability to clone a feature.
- * Added ability to clone geometry and use as input to the digitisation tools.
- * Topological closed plate boundary improvements including:
-   * Manual reversal of topological line sections no longer required,
-   * Add same topological line section multiple times to a boundary.
- * Added significant colouring improvements:
+ * Added new Paleomagnetic functionality:
+   * Ability to create a Virtual Geomeomagnetic Pole (VGP) feature by
+     manually entering its parameters/attributes (such as pole position),
+   * Ability to generate a total rotation pole that can be manually
+     inserted into a rotation file to make adjustments between
+     the VGP and the geographic pole,
+   * Ability to specify when Virtual Geomeomagnetic Pole features are
+     displayed (using a user-specified age range or time window).
+ * Colouring improvements:
    * Ability to preview the effects of each colouring option,
-   * Ability to load colour tables from GMT CPT files,
+   * Ability to load colour tables from GMT CPT files for user-defined colouring,
    * Ability to change colouring globally or per feature collection.
- * Significant export functionality improvements:
+ * Added ability to split a feature into two features.
+ * Added ability to delete a feature.
+ * Added ability to clone a feature.
+ * Added ability to clone geometry for input to a digitisation tool.
+ * Added support for "unsaved changes" to feature collections:
+   * Feature collections with unsaved changes are highlighted red in the
+     "Manage Feature Collections" dialog,
+   * New feature collections not yet saved are highlighted orange,
+   * "unsaved changes" and "file error" icons appear at the bottom-right
+     of GPlates when necessary,
+   * Exiting GPlates brings up a dialog with options to save unsaved changes.
+ * Export functionality improvements:
    * Combined time-sequence export and single-snapshot export into one,
    * Added export of the globe view as image(s),
    * Added two rotation exports ("Equivalent" and "Relative" that export
@@ -33,19 +34,25 @@ Changes since 0.9.8:
      for "Equivalent", and relative to the next plate in the circuit,
      for "Relative"),
    * Added ability to control export filenames by editing the filename template.
- * Added significant support for "unsaved changes" to feature collections:
-   * Feature collections with unsaved changes are highlighted red in the
-     "Manage Feature Collections" dialog,
-   * New feature collections not yet saved are highlighted orange,
-   * "unsaved changes" and "file error" icons appear at the bottom-right
-     of GPlates when necessary,
-   * Exiting GPlates brings up a dialog with options to save unsaved changes.
-  * Improvements to cookie-cutting and assigning plate ids:
-    * In addition to using topological closed plate boundary features
-	  can now use regular features with static polygon geometry to
-	  cookie-cut and/or assign plate ids to other features,
-	* Can assign time of appearance/disappearance to partitioned features
-	  in addition to plate ids.
+ * Improvements to cookie-cutting and assigning plate ids:
+   * Can cookie-cut using regular features containing static polygon geometry
+     in addition to using topological closed plate boundary features,
+   * Can assign time of appearance/disappearance in addition to plate ids.
+ * Added option to rotate daughter/children plates in the
+   "Modify Reconstruction Pole" tool.
+ * Can generate CitcomS 3.1 meshes inside GPlates.
+ * Added conjugate plate id to the "Create Feature" dialog for those features
+   requiring one.
+ * Topological closed plate boundary improvements including:
+   * Automated reversal of topological line sections,
+   * Can add same topological line section multiple times to a boundary.
+ * Added support for feature ids in Shapefiles (allows features referenced by
+   topological closed plate boundaries to be exported/imported as shapefiles).
+ * Can read/write 4-digit plate id from/to PLATES line format files.
+ * Added assign plate ids command to command-line version of GPlates and
+   improved flexibility of file conversion and reconstruct command-line options.
+ * Added multipoint support to PLATES line format (eg, hotspots).
+ * Added unit test framework.
 
 
 GPlates 0.9.8
