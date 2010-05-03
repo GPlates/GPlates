@@ -51,6 +51,8 @@ Changes since 0.9.8:
  * Can read/write 4-digit plate id from/to PLATES line format files.
  * Added assign plate ids command to command-line version of GPlates and
    improved flexibility of file conversion and reconstruct command-line options.
+ * Root of time-dependent raster filenames can vary, for example,
+   "imageA" and "imageB" in "imageA-0.jpg" and "imageB-1.jpg".
  * Added multipoint support to PLATES line format (eg, hotspots).
  * Added unit test framework.
 
