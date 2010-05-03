@@ -74,7 +74,8 @@ namespace GPlatesViewOperations
 			d_view_state(view_state),
 			d_geometry_builder(digitisation_state_ptr),
 			d_point_index_to_insert_at(point_index_to_insert_at),
-			d_oriented_pos_on_globe(oriented_pos_on_globe)
+			d_oriented_pos_on_globe(oriented_pos_on_globe),
+			d_nothing_has_been_done(false)
 		{
 			setText(QObject::tr("split feature"));
 		}
@@ -98,6 +99,7 @@ namespace GPlatesViewOperations
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_feature_collection_ref;
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_new_feature;
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_old_feature;
+		bool d_nothing_has_been_done;
 	};
 }
 

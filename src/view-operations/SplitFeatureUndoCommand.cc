@@ -65,9 +65,14 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 			d_feature_collection_ref,
 			&GPlatesFeatureVisitors::is_not_geometry_property);
 #endif
-	GPlatesModel::FeatureHandle::iterator property_iter = 
+	boost::optional<GPlatesModel::FeatureHandle::iterator> property_iter_opt = 
 		*GPlatesFeatureVisitors::find_first_geometry_property(*d_old_feature);
 
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			property_iter_opt,
+			GPLATES_ASSERTION_SOURCE);
+
+GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	//Here we assume there is only one geometry in the feature
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere =
 		GPlatesFeatureVisitors::find_first_geometry(property_iter);
@@ -79,6 +84,14 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 	GPlatesModel::PropertyName property_name = 
 		(*property_iter)->property_name(); 
+
+	//if the point is at the beginning or the end of the ployline, we do nothing but return
+	if (d_point_index_to_insert_at == 0 ||
+		(points.begin() + d_point_index_to_insert_at + 1) == points.end())
+	{
+		d_nothing_has_been_done = true;
+		return;
+	}
 
 #if 1
 	//we remove the geometry from the feature and then add the new one into it
@@ -122,13 +135,6 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	GeometryBuilder::PointIndex point_index_to_split;
 	point_index_to_split = d_point_index_to_insert_at + 1;
 	
-	//if the point is at the beginning or the end of the ployline, we do nothing but return
-	if (d_point_index_to_insert_at == 0 ||
-		(points.begin() + d_point_index_to_insert_at + 1) == points.end())
-	{
-		return;
-	}
-
 	GPlatesFeatureVisitors::GeometrySetter geometry_setter(
 			GPlatesMaths::PolylineOnSphere::create_on_heap(
 					points.begin(), 
@@ -204,6 +210,11 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 void
 GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 {
+	if(d_nothing_has_been_done)
+	{
+		return;
+	}
+
 	RenderedGeometryCollection::UpdateGuard update_guard;
 	
 	//restore the old geometry
