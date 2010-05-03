@@ -1,3 +1,53 @@
+GPlates 0.9.9
+=============
+
+Changes since 0.9.8:
+
+ * Added support for feature ids in Shapefiles (allows features referenced by
+   topological closed plate boundaries to be exported/imported as shapefiles).
+ * Added conjugate plate id to the "Create Feature" dialog for those features
+   requiring one.
+ * Can read/write 4-digit plate id from/to PLATES line format files.
+ * Added unit test framework.
+ * Added assign plate ids command to command-line version of GPlates and
+   improved flexibility of file conversion and reconstruct command-line options.
+ * Added option to rotate daughter/children plates in the
+   Modify Reconstruction Pole tool.
+ * Added multipoint support to PLATES line format (eg, hotspots).
+ * Can generate CitcomS 3.1 meshes inside GPlates.
+ * Added ability to split a feature into two features.
+ * Added ability to clone a feature.
+ * Added ability to clone geometry and use as input to the digitisation tools.
+ * Topological closed plate boundary improvements including:
+   * Manual reversal of topological line sections no longer required,
+   * Add same topological line section multiple times to a boundary.
+ * Added significant colouring improvements:
+   * Ability to preview the effects of each colouring option,
+   * Ability to load colour tables from GMT CPT files,
+   * Ability to change colouring globally or per feature collection.
+ * Significant export functionality improvements:
+   * Combined time-sequence export and single-snapshot export into one,
+   * Added export of the globe view as image(s),
+   * Added two rotation exports ("Equivalent" and "Relative" that export
+     total rotation poles for each plate id relative to the anchor plate,
+     for "Equivalent", and relative to the next plate in the circuit,
+     for "Relative"),
+   * Added ability to control export filenames by editing the filename template.
+ * Added significant support for "unsaved changes" to feature collections:
+   * Feature collections with unsaved changes are highlighted red in the
+     "Manage Feature Collections" dialog,
+   * New feature collections not yet saved are highlighted orange,
+   * "unsaved changes" and "file error" icons appear at the bottom-right
+     of GPlates when necessary,
+   * Exiting GPlates brings up a dialog with options to save unsaved changes.
+  * Improvements to cookie-cutting and assigning plate ids:
+    * In addition to using topological closed plate boundary features
+	  can now use regular features with static polygon geometry to
+	  cookie-cut and/or assign plate ids to other features,
+	* Can assign time of appearance/disappearance to partitioned features
+	  in addition to plate ids.
+
+
 GPlates 0.9.8
 =============
 
