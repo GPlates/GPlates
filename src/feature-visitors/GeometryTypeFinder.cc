@@ -185,7 +185,7 @@ GPlatesFeatureVisitors::find_first_geometry_property(
 				return iter;					
 			}
 		}
-		return iter;
+		return boost::none;
 	
 }
 
