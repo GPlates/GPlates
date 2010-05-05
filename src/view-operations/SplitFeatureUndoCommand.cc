@@ -85,19 +85,6 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	GPlatesModel::PropertyName property_name = 
 		(*property_iter)->property_name(); 
 
-	//if the point is at the beginning or the end of the ployline, we do nothing but return
-	if (d_point_index_to_insert_at == 0 ||
-		(points.begin() + d_point_index_to_insert_at + 1) == points.end())
-	{
-		d_nothing_has_been_done = true;
-		return;
-	}
-
-#if 1
-	//we remove the geometry from the feature and then add the new one into it
-	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
-#endif
-
 	//keep the old geometry property for "Undo"
 	d_old_geometry_property = 
 		GPlatesModel::TopLevelPropertyInline::create(
@@ -132,6 +119,22 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 					*d_oriented_pos_on_globe);
 		}
 	}
+	else
+	{
+		//if the point is at the beginning or the end of the ployline, we do nothing but return
+		if (d_point_index_to_insert_at == 0 ||
+			(points.begin() + d_point_index_to_insert_at + 1) == points.end())
+		{
+			d_nothing_has_been_done = true;
+			return;
+		}
+	}
+
+#if 1
+	//we remove the geometry from the feature and then add the new one into it
+	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
+#endif
+
 	GeometryBuilder::PointIndex point_index_to_split;
 	point_index_to_split = d_point_index_to_insert_at + 1;
 	
