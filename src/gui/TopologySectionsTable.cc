@@ -23,25 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <Qt>		// for Qt::Alignment, Qt::AlignmentFlag, Qt::ItemFlag
-#include <QHeaderView>
-#include <QVariant>
+#include <cstddef> // std::size_t
+#include <QGridLayout>
+#include <QWidget>
 #include <QDebug>
 #include <vector>
 #include <boost/noncopyable.hpp>
 
 #include "TopologySectionsTable.h"
-
-#include "app-logic/TopologyInternalUtils.h"
-
-#include "model/PropertyName.h"
-#include "model/FeatureHandle.h"
-#include "model/FeatureHandleWeakRefBackInserter.h"
-
-#include "property-values/GpmlPlateId.h"
-#include "property-values/XsString.h"
-#include "utils/UnicodeStringUtils.h"
-#include "feature-visitors/PropertyValueFinder.h"
 
 #include "qt-widgets/ActionButtonBox.h"
 #include "qt-widgets/InsertionPointWidget.h"
@@ -49,184 +38,8 @@
 #include "gui/TopologySectionsContainer.h"
 
 
-#define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
-#define NUM_ELEMS_INT(a) static_cast<int>(NUM_ELEMS(a))
-
 namespace
 {
-	/**
-	 * Defines a function used to turn a TopologySectionsContainer::TableRow
-	 * into an appropriate cell of data in the QTableWidget.
-	 */
-	typedef void (*table_accessor_type)(
-			const GPlatesGui::TopologySectionsContainer::TableRow &row_data,
-			QTableWidgetItem &cell);
-
-	/**
-	 * Defines a function used to modify a TopologySectionsContainer::TableRow
-	 * based on whatever user-entered data is in the QTableWidgetItem.
-	 */
-	typedef void (*table_mutator_type)(
-			GPlatesGui::TopologySectionsContainer::TableRow &row_data,
-			const QTableWidgetItem &cell);
-
-	// Table accessor functions:
-	// These functions take the raw data and modify a QTableWidgetItem
-	// to display the data appropriately.
-	
-	void
-	null_data_accessor(
-			const GPlatesGui::TopologySectionsContainer::TableRow &,
-			QTableWidgetItem &)
-	{  }
-
-
-	void
-	get_data_feature_type(
-			const GPlatesGui::TopologySectionsContainer::TableRow &row_data,
-			QTableWidgetItem &cell)
-	{
-		if (row_data.get_feature_ref().is_valid()) {
-			cell.setData(Qt::DisplayRole, QVariant(GPlatesUtils::make_qstring_from_icu_string(
-					row_data.get_feature_ref()->feature_type().build_aliased_name() )));
-		}
-	}
-			
-
-	void
-	get_data_reconstruction_plate_id(
-			const GPlatesGui::TopologySectionsContainer::TableRow &row_data,
-			QTableWidgetItem &cell)
-	{
-		static const GPlatesModel::PropertyName plate_id_property_name =
-				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-		
-		if (row_data.get_feature_ref().is_valid()) {
-			// Declare a pointer to a const GpmlPlateId. This is used as a return value;
-			// It is passed by reference into the get_property_value() call below,
-			// which sets it.
-			const GPlatesPropertyValues::GpmlPlateId *property_return_value = NULL;
-			
-			// Attempt to find the property name and value we are interested in.
-			if (GPlatesFeatureVisitors::get_property_value(
-					row_data.get_feature_ref(),
-					plate_id_property_name,
-					property_return_value)) {
-				// Convert it to something Qt can display.
-				const GPlatesModel::integer_plate_id_type &plate_id = property_return_value->value();
-				cell.setData(Qt::DisplayRole, QVariant(static_cast<quint32>(plate_id)));
-			} else {
-				// Feature resolves, but no reconstructionPlateId.
-				cell.setData(Qt::DisplayRole, QObject::tr("<none>"));
-			}
-		}
-	}
-
-
-	void
-	get_data_feature_name(
-			const GPlatesGui::TopologySectionsContainer::TableRow &row_data,
-			QTableWidgetItem &cell)
-	{
-		static const GPlatesModel::PropertyName gml_name_property_name =
-				GPlatesModel::PropertyName::create_gml("name");
-		
-		if (row_data.get_feature_ref().is_valid()) {
-			// FIXME: As in other situations involving gml:name, we -do- want to
-			// address the gml:codeSpace issue someday.
-			
-			// Declare a pointer to a const XsString. This is used as a return value;
-			// It is passed by reference into the get_property_value() call below,
-			// which sets it.
-			const GPlatesPropertyValues::XsString *property_return_value = NULL;
-			
-			// Attempt to find the property name and value we are interested in.
-			if (GPlatesFeatureVisitors::get_property_value(
-					row_data.get_feature_ref(),
-					gml_name_property_name,
-					property_return_value)) {
-				// Convert it to something Qt can display.
-				QString name_qstr = GPlatesUtils::make_qstring(property_return_value->value());
-				cell.setData(Qt::DisplayRole, name_qstr);
-			} else {
-				// Feature resolves, but no name property.
-				cell.setData(Qt::DisplayRole, QString(""));
-			}
-		}
-	}
-
-	// Table mutator functions:
-	// These functions take a QTableWidgetItem with user-entered values
-	// and update the raw data appropriately.
-
-	void
-	null_data_mutator(
-			GPlatesGui::TopologySectionsContainer::TableRow &,
-			const QTableWidgetItem &)
-	{  }
-
-
-	/**
-	 * Defines characteristics of each column of the table.
-	 */
-	struct ColumnHeadingInfo
-	{
-		const char *label;
-		const char *tooltip;
-		int width;
-		QHeaderView::ResizeMode resize_mode;
-		QFlags<Qt::AlignmentFlag> data_alignment;
-		QFlags<Qt::ItemFlag> data_flags;
-		table_accessor_type accessor;
-		table_mutator_type mutator;
-	};
-
-	/**
-	 * Convenience enum so we can refer to columns by name
-	 * in this file, to make it easier to talk about the
-	 * 'special' columns like "Actions". Keep it in sync with
-	 * the column_heading_info_table below.
-	 */
-	enum ColumnLayout
-	{
-		COLUMN_ACTIONS, COLUMN_FEATURE_TYPE, COLUMN_PLATE_ID, COLUMN_NAME,
-		NUM_COLUMNS
-	};
-
-	/**
-	 * The column header information table. This gets used
-	 * to set up the QTableWidget just the way we like it.
-	 * 
-	 * Don't forget to update the enumeration above if you
-	 * add or remove columns.
-	 */
-	static const ColumnHeadingInfo column_heading_info_table[] = {
-		{ QT_TR_NOOP("Actions"), QT_TR_NOOP("Buttons in this column allow you to remove sections and change where new sections will be added."),
-				104, QHeaderView::Fixed,	// FIXME: make this dynamic based on what the buttons need.
-				Qt::AlignCenter,
-				0,
-				null_data_accessor, null_data_mutator },
-
-		{ QT_TR_NOOP("Feature type"), QT_TR_NOOP("The type of this feature"),
-				140, QHeaderView::ResizeToContents,
-				Qt::AlignLeft | Qt::AlignVCenter,
-				Qt::ItemIsEnabled | Qt::ItemIsSelectable,
-				get_data_feature_type, null_data_mutator },
-
-		{ QT_TR_NOOP("Plate ID"), QT_TR_NOOP("The plate ID used to reconstruct this feature"),
-				60,  QHeaderView::ResizeToContents,
-				Qt::AlignCenter,
-				Qt::ItemIsEnabled | Qt::ItemIsSelectable,
-				get_data_reconstruction_plate_id, null_data_mutator },
-
-		{ QT_TR_NOOP("Name"), QT_TR_NOOP("A convenient label for this feature"),
-				140, QHeaderView::ResizeToContents,
-				Qt::AlignLeft | Qt::AlignVCenter,
-				Qt::ItemIsEnabled | Qt::ItemIsSelectable,
-				get_data_feature_name, null_data_mutator },
-	};
-	
-	
 	bool
 	check_row_validity(
 			const GPlatesGui::TopologySectionsContainer::TableRow &entry)
@@ -366,7 +179,7 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 			this,
 			SLOT(update_table()));
 	QObject::connect(d_container_ptr, SIGNAL(entry_modified(GPlatesGui::TopologySectionsContainer::size_type)),
-			this, SLOT(update_table()));
+			this, SLOT(topology_section_modified(GPlatesGui::TopologySectionsContainer::size_type)));
 
 	QObject::connect(d_container_ptr, SIGNAL(focus_feature_at_index( GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(react_focus_feature_at_index(GPlatesGui::TopologySectionsContainer::size_type)));
@@ -402,7 +215,6 @@ GPlatesGui::TopologySectionsTable::update_table()
 	for (int i = 0; i < d_table->rowCount(); ++i) {
 		update_table_row(i);
 	}
-	update_cell_widgets();
 }
 
 
@@ -440,7 +252,6 @@ GPlatesGui::TopologySectionsTable::react_cell_changed(
 	if (d_suppress_update_notification_guard) {
 		return;
 	}
-	
 
 	update_data_from_table(row);
 }
@@ -453,21 +264,9 @@ GPlatesGui::TopologySectionsTable::react_remove_clicked()
 	if (my_index > d_container_ptr->size()) {
 		return;
 	}
-	
-	// May as well remove the action box for the row which is about to vanish.
-	remove_action_box();
 
 	// Remove this entry from the table.
 	d_container_ptr->remove_at(my_index);
-	
-	// Now it's gone, we need to adjust the position of a few things.
-	// Note: We could figure out the new row under the mouse cursor, via
-	// QTableView::rowAt(int y), but that would involve getting the mouse location via
-	// reimplementing QWidget::mouseMoveEvent() on the table. Of course, we can also take
-	// a wild guess and say that the row under the cursor is the previous row + 1, since
-	// everything will have shuffled up after the deletion.
-	move_action_box(convert_data_index_to_table_row(my_index));
-	update_cell_widgets();
 }
 
 
@@ -483,10 +282,6 @@ GPlatesGui::TopologySectionsTable::react_insert_above_clicked()
 	}
 
 	d_container_ptr->move_insertion_point(target_index);
-	
-	// Put the action box back on row that triggered this (which may have moved).
-	move_action_box(convert_data_index_to_table_row(my_index));
-	update_cell_widgets();
 }
 
 
@@ -502,38 +297,22 @@ GPlatesGui::TopologySectionsTable::react_insert_below_clicked()
 	}
 	
 	d_container_ptr->move_insertion_point(target_index);
-
-	// Put the action box back on row that triggered this (which may have moved).
-	move_action_box(convert_data_index_to_table_row(my_index));
-	update_cell_widgets();
 }
 
 
 void
 GPlatesGui::TopologySectionsTable::react_cancel_insertion_point_clicked()
 {
-	// Moving the insertion point will probably affect the row that the
-	// action box is on. Let's make a note of it, before we do the reshuffling.
-	TopologySectionsContainer::size_type action_box_index = convert_table_row_to_data_index(get_current_action_box_row());
-
 	d_container_ptr->reset_insertion_point();
-	update_table();
-
-	// Put the action box back on the right row.
-	move_action_box(convert_data_index_to_table_row(action_box_index));
-
-	// Put the insertion point where it belongs.
-	update_cell_widgets();
 }
 
 
 void
-GPlatesGui::TopologySectionsTable::update_cell_widgets()
+GPlatesGui::TopologySectionsTable::topology_section_modified(
+		GPlatesGui::TopologySectionsContainer::size_type topology_sections_container_index)
 {
-	for (int i = 0; i < d_table->rowCount(); ++i) {
-		remove_insertion_point_widget(i);
-	}
-	set_insertion_point_widget(get_current_insertion_point_row());
+	update_table_row(
+			convert_data_index_to_table_row(topology_sections_container_index));
 }
 
 
@@ -548,20 +327,32 @@ void
 GPlatesGui::TopologySectionsTable::move_action_box(
 		int row)
 {
-	if (row == get_current_action_box_row() || row == get_current_insertion_point_row()) {
+	if (row == get_current_action_box_row()) {
 		return;
 	}
+
 	// Remove the Action Box from the previous location.
 	remove_action_box();
+
 	// Add the Action Box to the new location.
 	if (row >= 0 && row < d_table->rowCount()) {
+		// We set the action box row even if it's the same as the insertion point row.
+		// But we don't draw the action box if it's the same as the insertion point row.
+		//
+		// This has the effect of registering the current row as the action box row so
+		// that the action box will get drawn as soon as the insertion point moves -
+		// in this case it will move when the insertion point is reset.
+		//
+		// This needs to be done because the only time the action box is moved is when
+		// the mouse enters a cell which only happens when the mouse pointer moves and this
+		// won't happen when clicking on the 'reset insertion point' button next to the
+		// insertion arrow - but clicking on that button does move the insertion arrow
+		// leaving the row free for the action box.
 		d_action_box_row = row;
-		// While the 4.3 documentation does not indicate how Qt treats the
-		// cell widget, the 4.4 documentation enlightens us; it takes
-		// ownership. Unfortunately, there is no 'takeCellWidget', so
-		// we cannot get it back once it has grabbed it, only remove it.
-		// http://doc.trolltech.com/4.4/qtablewidget.html#setCellWidget
-		d_table->setCellWidget(row, COLUMN_ACTIONS, create_new_action_box());
+		if (row != get_current_insertion_point_row())
+		{
+			set_action_box_widget(row);
+		}
 	}
 }
 
@@ -569,7 +360,14 @@ GPlatesGui::TopologySectionsTable::move_action_box(
 void
 GPlatesGui::TopologySectionsTable::remove_action_box()
 {
-	int old_row = get_current_action_box_row();
+	const int old_row = get_current_action_box_row();
+
+	// Don't remove the insertion point arrow if the last row of our
+	// action box happened to be the same as the insertion point row.
+	if (old_row == get_current_insertion_point_row()) {
+		return;
+	}
+
 	if (old_row >= 0 && old_row < d_table->rowCount()) {
 		d_action_box_row = -1;
 		// While the 4.3 documentation does not indicate how Qt treats the
@@ -579,7 +377,24 @@ GPlatesGui::TopologySectionsTable::remove_action_box()
 		// http://doc.trolltech.com/4.4/qtablewidget.html#removeCellWidget
 		// Rest assured, the ActionButtonBox destructor does get called
 		// (by the QTableWidget) at this point.
-		d_table->removeCellWidget(old_row, COLUMN_ACTIONS);
+		d_table->removeCellWidget(old_row, TopologySectionsTableColumns::COLUMN_ACTIONS);
+	}
+}
+
+
+void
+GPlatesGui::TopologySectionsTable::set_action_box_widget(
+		int row)
+{
+	// Create the Action Box in the new location.
+	if (row >= 0 && row < d_table->rowCount()) {
+		// While the 4.3 documentation does not indicate how Qt treats the
+		// cell widget, the 4.4 documentation enlightens us; it takes
+		// ownership. Unfortunately, there is no 'takeCellWidget', so
+		// we cannot get it back once it has grabbed it, only remove it.
+		// http://doc.trolltech.com/4.4/qtablewidget.html#setCellWidget
+		d_table->setCellWidget(
+				row, TopologySectionsTableColumns::COLUMN_ACTIONS, create_new_action_box());
 	}
 }
 
@@ -602,7 +417,7 @@ GPlatesGui::TopologySectionsTable::set_insertion_point_widget(
 		// ownership. Unfortunately, there is no 'takeCellWidget', so
 		// we cannot get it back once it has grabbed it, only remove it.
 		// http://doc.trolltech.com/4.4/qtablewidget.html#setCellWidget
-		d_table->setCellWidget(row, COLUMN_ACTIONS,
+		d_table->setCellWidget(row, TopologySectionsTableColumns::COLUMN_ACTIONS,
 				new GPlatesQtWidgets::InsertionPointWidget(*d_cancel_insertion_point_action, d_table));
 	}
 }
@@ -620,7 +435,7 @@ GPlatesGui::TopologySectionsTable::remove_insertion_point_widget(
 		// http://doc.trolltech.com/4.4/qtablewidget.html#removeCellWidget
 		// Rest assured, the InsertionPointWidget destructor does get called
 		// (by the QTableWidget) at this point.
-		d_table->removeCellWidget(row, COLUMN_ACTIONS);
+		d_table->removeCellWidget(row, TopologySectionsTableColumns::COLUMN_ACTIONS);
 	}
 }
 
@@ -701,19 +516,22 @@ GPlatesGui::TopologySectionsTable::create_new_action_box()
 void
 GPlatesGui::TopologySectionsTable::set_up_table()
 {
-	d_table->setColumnCount(NUM_ELEMS_INT(column_heading_info_table));
+	// Get the columns.
+	d_column_heading_infos = TopologySectionsTableColumns::get_column_heading_infos();
+
+	d_table->setColumnCount(d_column_heading_infos.size());
 	// Set names and tooltips.
-	for (int column = 0; column < NUM_ELEMS_INT(column_heading_info_table); ++column) {
+	for (std::size_t column = 0; column < d_column_heading_infos.size(); ++column) {
 		// Construct a QTableWidgetItem to be used as a 'header' item.
-		QTableWidgetItem *item = new QTableWidgetItem(tr(column_heading_info_table[column].label));
-		item->setToolTip(tr(column_heading_info_table[column].tooltip));
+		QTableWidgetItem *item = new QTableWidgetItem(tr(d_column_heading_infos[column].label));
+		item->setToolTip(tr(d_column_heading_infos[column].tooltip));
 		// Add that item to the table.
 		d_table->setHorizontalHeaderItem(column, item);
 	}
 	// Set widths and stretching.
-	for (int column = 0; column < NUM_ELEMS_INT(column_heading_info_table); ++column) {
-		d_table->horizontalHeader()->setResizeMode(column, column_heading_info_table[column].resize_mode);
-		d_table->horizontalHeader()->resizeSection(column, column_heading_info_table[column].width);
+	for (std::size_t column = 0; column < d_column_heading_infos.size(); ++column) {
+		d_table->horizontalHeader()->setResizeMode(column, d_column_heading_infos[column].resize_mode);
+		d_table->horizontalHeader()->resizeSection(column, d_column_heading_infos[column].width);
 	}
 	
 	// Height of each column should be enough for the action buttons.
@@ -747,12 +565,27 @@ GPlatesGui::TopologySectionsTable::update_table_row(
 	if (row < 0 || row >= d_table->rowCount()) {
 		return;
 	}
-	
+
+	// We are changing the table programmatically. We don't want cellChanged events.
+	TableUpdateGuard guard(d_suppress_update_notification_guard);
+
+	// Reset the current row to the default state so we can render a new row
+	// without concern with what was previously there or what was the row state
+	// of things such as column spanning.
+	reset_row(row);
+
 	// Render different row types according to context.
 	if (row == get_current_insertion_point_row()) {
 		// Draw our magic insertion point row here.
-		render_insertion_point(row);
+		render_insertion_point_row(row);
 	} else {
+		// Render the action box for the current row if necessary.
+		// The action box only gets drawn on rows that are not the insertion point row.
+		if (row == get_current_action_box_row())
+		{
+			set_action_box_widget(row);
+		}
+
 		// Map this table row to an entry in the data vector.
 		TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
 		const TopologySectionsContainer::TableRow &entry = d_container_ptr->at(index);
@@ -761,10 +594,10 @@ GPlatesGui::TopologySectionsTable::update_table_row(
 
 			if ( ! check_row_validity_geom(entry)) {
 				// Draw a yellow row
-				render_table_row(row, entry, QColor("#FFFF00") );
+				render_valid_row(row, entry, QColor("#FFFF00") );
 			} else {
 				// Draw a nice normal valid row.
-				render_table_row(row, entry);
+				render_valid_row(row, entry);
 			}
 
 		} else {
@@ -776,80 +609,25 @@ GPlatesGui::TopologySectionsTable::update_table_row(
 
 
 void
-GPlatesGui::TopologySectionsTable::render_table_row(
+GPlatesGui::TopologySectionsTable::render_valid_row(
 		int row,
 		const TopologySectionsContainer::TableRow &row_data,
-		QColor bg
-		)
+		QColor bg)
 {
-	static const QColor invalid_bg = QColor("#FF6149");
+	// Iterate over each non-action column in this row and set the table cells to either a
+	// widget or a regular QTableWidgetItem.
+	for (std::size_t column = TopologySectionsTableColumns::COLUMN_ACTIONS;
+		column < d_column_heading_infos.size();
+		++column)
+	{
+		if (d_column_heading_infos[column].should_edit_cell_with_widget(row_data))
+		{
+			install_edit_cell_widget(row, column);
+			continue;
+		}
 
-	// We are changing the table programmatically. We don't want cellChanged events.
-	TableUpdateGuard guard(d_suppress_update_notification_guard);
-	
-	// Undo any effect the Insertion Point row may have caused.
-	int description_column = COLUMN_ACTIONS + 1;
-	d_table->setSpan(row, description_column, 1, 1);
-	remove_insertion_point_widget(row);
-
-	// Iterate over each column in this row, and set table cells based on whatever
-	// accessors are defined.
-	for (int column = 0; column < NUM_ELEMS_INT(column_heading_info_table); ++column) {
-		// Table cells start off as NULL QTableWidgetItems, so we need to make new ones
-		// initially. We could re-use an existing one if it is still there from the last
-		// time we made one, but it is better (in this case) to replace them with new
-		// QTableWidgetItems as we get into formatting trouble otherwise - for example,
-		// when a row that was the insertion points (with spanning colouring etc) gets
-		// replaced with a data row.
-		// QTableWidget handles the memory of these things.
-		QTableWidgetItem *item = new QTableWidgetItem;
-		d_table->setItem(row, column, item);
-
-
-		
-		// Set default flags and alignment for all table cells in this column.
-		item->setTextAlignment(column_heading_info_table[column].data_alignment);
-		item->setFlags(column_heading_info_table[column].data_flags);
-		
-		item->setData(Qt::BackgroundRole, bg);
-
-		// Call accessor function to put raw data into the table.
-		table_accessor_type accessor_fn = column_heading_info_table[column].accessor;
-		(*accessor_fn)(row_data, *item);
+		install_table_widget_item(row, column, row_data, bg);
 	}
-}
-
-
-void
-GPlatesGui::TopologySectionsTable::render_insertion_point(
-		int row)
-{
-	static const QColor insertion_fg = Qt::darkGray;
-
-	// We are changing the table programmatically. We don't want cellChanged events.
-	TableUpdateGuard guard(d_suppress_update_notification_guard);
-
-	// Table cells start off as NULL QTableWidgetItems. Fill in the blanks if needed.
-	QTableWidgetItem *actions_item = new QTableWidgetItem;
-	d_table->setItem(row, COLUMN_ACTIONS, actions_item);
-	
-	// Set default flags.
-	actions_item->setFlags(Qt::ItemIsEnabled);
-
-	// Table cells start off as NULL QTableWidgetItems. Fill in the blanks if needed.
-	int description_column = COLUMN_ACTIONS + 1;
-	int description_span = NUM_COLUMNS - description_column;
-	QTableWidgetItem *description_item = new QTableWidgetItem;
-	d_table->setItem(row, description_column, description_item);
-	
-	// Set more default flags.
-	description_item->setFlags(Qt::ItemIsEnabled);
-	description_item->setText(tr("This insertion point indicates where new topology sections will be added."));
-	description_item->setData(Qt::ForegroundRole, insertion_fg);
-	d_table->setSpan(row, description_column, 1, description_span);
-
-	// Put the insertion point where it belongs.
-	set_insertion_point_widget(row);
 }
 
 
@@ -861,24 +639,48 @@ GPlatesGui::TopologySectionsTable::render_invalid_row(
 	static const QColor invalid_fg = Qt::black;
 	static const QColor invalid_bg = QColor("#FF6149");
 
-	// We are changing the table programmatically. We don't want cellChanged events.
-	TableUpdateGuard guard(d_suppress_update_notification_guard);
-
-	// Undo any effect the Insertion Point row may have caused.
-	remove_insertion_point_widget(row);
-
 	// Table cells start off as NULL QTableWidgetItems. Fill in the blanks if needed.
-	int description_column = COLUMN_ACTIONS + 1;
-	int description_span = NUM_COLUMNS - description_column;
+	int description_column = TopologySectionsTableColumns::COLUMN_ACTIONS + 1;
+	int description_span = d_column_heading_infos.size() - description_column;
 	QTableWidgetItem *description_item = new QTableWidgetItem;
 	d_table->setItem(row, description_column, description_item);
-	
+
 	// Set more default flags.
 	description_item->setFlags(Qt::ItemIsEnabled);
 	description_item->setText(reason);
 	description_item->setData(Qt::ForegroundRole, invalid_fg);
 	description_item->setData(Qt::BackgroundRole, invalid_bg);
 	d_table->setSpan(row, description_column, 1, description_span);
+}
+
+
+void
+GPlatesGui::TopologySectionsTable::render_insertion_point_row(
+		int row)
+{
+	static const QColor insertion_fg = Qt::darkGray;
+
+	// Table cells start off as NULL QTableWidgetItems. Fill in the blanks if needed.
+	QTableWidgetItem *actions_item = new QTableWidgetItem;
+	d_table->setItem(row, TopologySectionsTableColumns::COLUMN_ACTIONS, actions_item);
+	
+	// Set default flags.
+	actions_item->setFlags(Qt::ItemIsEnabled);
+
+	// Table cells start off as NULL QTableWidgetItems. Fill in the blanks if needed.
+	int description_column = TopologySectionsTableColumns::COLUMN_ACTIONS + 1;
+	int description_span = d_column_heading_infos.size() - description_column;
+	QTableWidgetItem *description_item = new QTableWidgetItem;
+	d_table->setItem(row, description_column, description_item);
+	
+	// Set more default flags.
+	description_item->setFlags(Qt::ItemIsEnabled);
+	description_item->setText(tr("This insertion point indicates where new topology sections will be added."));
+	description_item->setData(Qt::ForegroundRole, insertion_fg);
+	d_table->setSpan(row, description_column, 1, description_span);
+
+	// Put the insertion point where it belongs.
+	set_insertion_point_widget(row);
 }
 
 
@@ -900,12 +702,11 @@ GPlatesGui::TopologySectionsTable::update_data_from_table(
 	TopologySectionsContainer::TableRow temp_entry = d_container_ptr->at(index);
 	// Iterate over each column in this row, and update the back-end data
 	// based on whatever accessors are defined.
-	for (int column = 0; column < NUM_ELEMS_INT(column_heading_info_table); ++column) {
+	for (std::size_t column = 0; column < d_column_heading_infos.size(); ++column) {
 		QTableWidgetItem *item = d_table->item(row, column);
 		if (item != NULL) {
 			// Call mutator function to access QTableWidgetItem and update data in the vector.
-			table_mutator_type mutator_fn = column_heading_info_table[column].mutator;
-			(*mutator_fn)(temp_entry, *item);
+			d_column_heading_infos[column].mutator(temp_entry, *item);
 		}
 	}
 	// Replace the old entry in the TopologySectionsContainer with the new, updated one.
@@ -948,3 +749,94 @@ GPlatesGui::TopologySectionsTable::react_focus_feature_at_index(
 	d_table->selectRow( convert_data_index_to_table_row(index) );
 }
 
+
+void
+GPlatesGui::TopologySectionsTable::install_table_widget_item(
+		int row,
+		int column,
+		const TopologySectionsContainer::TableRow &row_data,
+		QColor bg)
+{
+	// Table cells start off as NULL QTableWidgetItems, so we need to make new ones
+	// initially. We could re-use an existing one if it is still there from the last
+	// time we made one, but it is better (in this case) to replace them with new
+	// QTableWidgetItems as we get into formatting trouble otherwise - for example,
+	// when a row that was the insertion points (with spanning colouring etc) gets
+	// replaced with a data row.
+	// QTableWidget handles the memory of these things.
+	QTableWidgetItem *item = new QTableWidgetItem;
+	d_table->setItem(row, column, item);
+	
+	// Set default flags and alignment for all table cells in this column.
+	item->setTextAlignment(d_column_heading_infos[column].data_alignment);
+	item->setFlags(d_column_heading_infos[column].data_flags);
+	
+	item->setData(Qt::BackgroundRole, bg);
+
+	// Call accessor function to put raw data into the table.
+	d_column_heading_infos[column].accessor(row_data, *item);
+}
+
+
+void
+GPlatesGui::TopologySectionsTable::install_edit_cell_widget(
+		int row,
+		int column)
+{
+	// Get the index into the topological sections container for the current row.
+	const TopologySectionsContainer::size_type sections_container_index =
+			convert_table_row_to_data_index(row);
+
+	// Create our own widget to edit the cell with.
+	QWidget *edit_cell_widget = d_column_heading_infos[column].create_edit_cell_widget(
+			d_table,
+			*d_container_ptr,
+			sections_container_index);
+
+	std::cout << "install_edit_cell_widget" << std::endl;
+
+	d_table->setCellWidget(row, column, edit_cell_widget);
+}
+
+
+void
+GPlatesGui::TopologySectionsTable::remove_cell(
+		int row,
+		int column)
+{
+	if (d_table->cellWidget(row, column))
+	{
+		d_table->removeCellWidget(row, column);
+	}
+	else
+	{
+		// Delete the QTableWidgetItem so that it doesn't get drawn under the
+		// new cell widget we are about to install in its place.
+		// NOTE: 'delete' does nothing when NULL.
+		delete d_table->takeItem(row, column);
+	}
+}
+
+
+void
+GPlatesGui::TopologySectionsTable::remove_cells(
+		int row)
+{
+	for (std::size_t column = 0; column < d_column_heading_infos.size(); ++column)
+	{
+		remove_cell(row, column);
+	}
+}
+
+
+void
+GPlatesGui::TopologySectionsTable::reset_row(
+		int row)
+{
+	// Remove all cells in the current row.
+	remove_cells(row);
+
+	// Undo any effect the Insertion Point row may have caused.
+	const int description_column = TopologySectionsTableColumns::COLUMN_ACTIONS + 1;
+	d_table->setSpan(row, description_column, 1, 1);
+}
