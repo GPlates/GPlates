@@ -26,6 +26,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QVariant>
+#include <QLabel>
 
 #include "TopologySectionsTableColumns.h"
 
