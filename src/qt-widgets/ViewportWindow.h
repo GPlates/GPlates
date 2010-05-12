@@ -687,6 +687,23 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		closeEvent(QCloseEvent *close_event);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * GPlates main window.
+		 */
+		void
+		dragEnterEvent(
+				QDragEnterEvent *ev);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * GPlates main window.
+		 */
+		void
+		dropEvent(
+				QDropEvent *ev);
+
 	};
 }
 

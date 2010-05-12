@@ -33,6 +33,11 @@
 #include <QColorDialog>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QList>
+#include <QUrl>
+#include <QtGlobal>
 
 #include "ColouringDialog.h"
 #include "GlobeAndMapWidget.h"
@@ -202,7 +207,31 @@ namespace
 
 		QComboBox *d_combobox;
 	};
-}
+
+
+	/**
+	 * Transforms a list of file:// urls into a list of pathnames in string form.
+	 * Ignores any non-file url, and ignores any non-colour-palette file extension.
+	 * Used for drag-and-drop support.
+	 */
+	QStringList
+	extract_colour_palette_pathnames_from_file_urls(
+			const QList<QUrl> &urls)
+	{
+		QStringList pathnames;
+		Q_FOREACH(const QUrl &url, urls) {
+			if (url.scheme() == "file") {
+				QString path = url.toLocalFile();
+				// Only accept .cpt files.
+				if (path.endsWith(".cpt")) {
+					pathnames.push_back(path);
+				}
+			}
+		}
+		return pathnames;	// QStringList implicitly shares data and uses pimpl idiom, return by value is fine.
+	}
+
+}// anon namespace
 
 
 GPlatesQtWidgets::ColouringDialog::ColouringDialog(
@@ -474,6 +503,48 @@ GPlatesQtWidgets::ColouringDialog::insert_list_widget_item(
 
 
 void
+GPlatesQtWidgets::ColouringDialog::dragEnterEvent(
+		QDragEnterEvent *ev)
+{
+	// We don't support any dropping of files for the Single Colour mode.
+	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR) {
+		ev->ignore();
+		return;
+	}
+	
+	// OK, user wants to drop something. Does it have .cpt files?
+	if (ev->mimeData()->hasUrls()) {
+		QStringList cpts = extract_colour_palette_pathnames_from_file_urls(ev->mimeData()->urls());
+		if ( ! cpts.isEmpty()) {
+			ev->acceptProposedAction();
+		} else {
+			ev->ignore();
+		}
+	} else {
+		ev->ignore();
+	}
+}
+
+void
+GPlatesQtWidgets::ColouringDialog::dropEvent(
+		QDropEvent *ev)
+{
+	// OK, user is dropping something. Does it have .cpt files?
+	if (ev->mimeData()->hasUrls()) {
+		QStringList cpts = extract_colour_palette_pathnames_from_file_urls(ev->mimeData()->urls());
+		if ( ! cpts.isEmpty()) {
+			ev->acceptProposedAction();
+			open_files(cpts);
+		} else {
+			ev->ignore();
+		}
+	} else {
+		ev->ignore();
+	}
+}
+
+
+void
 GPlatesQtWidgets::ColouringDialog::start_rendering_from(
 		int list_index)
 {
@@ -561,24 +632,47 @@ GPlatesQtWidgets::ColouringDialog::open_file()
 	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
 			d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
 	{
-		open_categorical_cpt_file();
+		QStringList file_list = QFileDialog::getOpenFileNames(
+				this,
+				"Open Files",
+				QString(),
+				"Categorical CPT file (*.cpt)");
+		open_files(file_list);
 	}
 	else if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_AGE)
 	{
-		open_regular_cpt_file();
+		QStringList file_list = QFileDialog::getOpenFileNames(
+				this,
+				"Open Files",
+				QString(),
+				"Regular CPT file (*.cpt)");
+		open_files(file_list);
 	}
 }
 
 
 void
-GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file()
+GPlatesQtWidgets::ColouringDialog::open_files(
+		const QStringList &file_list)
 {
-	QStringList file_list = QFileDialog::getOpenFileNames(
-			this,
-			"Open Files",
-			QString(),
-			"Regular CPT file (*.cpt)");
+	// NOTE: Yeah, this duplicates the logic of which Open dialog to show. Maybe it could be
+	// put in an anon namespace function or something.
+	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
+			d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
+	{
+		open_categorical_cpt_file(file_list);
+	}
+	else if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_AGE)
+	{
+		open_regular_cpt_file(file_list);
+	}
+}
 
+
+void
+GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file(
+		const QStringList &file_list)
+{
 	if (file_list.count() == 0)
 	{
 		return;
@@ -627,13 +721,13 @@ GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file()
 
 
 void
-GPlatesQtWidgets::ColouringDialog::open_categorical_cpt_file()
+GPlatesQtWidgets::ColouringDialog::open_categorical_cpt_file(
+		const QStringList &file_list)
 {
-	QStringList file_list = QFileDialog::getOpenFileNames(
-			this,
-			"Open Files",
-			QString(),
-			"Categorical CPT file (*.cpt)");
+	if (file_list.count() == 0)
+	{
+		return;
+	}
 }
 
 

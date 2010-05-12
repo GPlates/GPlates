@@ -275,6 +275,22 @@ namespace GPlatesQtWidgets
 		set_row_background_colour(
 				int row);
 
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * Manage Feature Collections Dialog.
+		 */
+		void
+		dragEnterEvent(
+				QDragEnterEvent *ev);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * Manage Feature Collections Dialog.
+		 */
+		void
+		dropEvent(
+				QDropEvent *ev);
+
 	private:
 		/**
 		 * The loaded feature collection files.

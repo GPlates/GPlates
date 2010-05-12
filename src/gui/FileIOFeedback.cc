@@ -322,6 +322,23 @@ GPlatesGui::FileIOFeedback::open_files(
 
 
 void
+GPlatesGui::FileIOFeedback::open_urls(
+		const QList<QUrl> &urls)
+{
+	if (urls.isEmpty())
+	{
+		return;
+	}
+
+	try_catch_file_load_with_feedback(
+			boost::bind(
+					&GPlatesAppLogic::FeatureCollectionFileIO::load_urls,
+					d_feature_collection_file_io_ptr,
+					urls));
+}
+
+
+void
 GPlatesGui::FileIOFeedback::reload_file(
 		GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file)
 {

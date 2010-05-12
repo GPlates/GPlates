@@ -74,41 +74,55 @@ endif ( NOT CGAL_DIR )
 
 # On Ubuntu 9.10, the CMake script adds -g because the CGAL CMake script adds the -g
 # flag even though it is a release build, so we use our own config script instead.
-if ( CGAL_DIR AND (WIN32 OR APPLE) )
- 
-  if ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
-    include( "${CGAL_DIR}/CGALConfig.cmake" )
-    set( CGAL_FOUND TRUE )
-  endif ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
+# So we'll use our custom CGAL cmake script for all Linux variants.
+set(USE_CUSTOM_CGAL TRUE)
+# Fow Windows and MacOS X we should use the cmake scripts provided by CGAL since
+# we'll need them to link in any dependencies of CGAL.
+if (WIN32)
+	set(USE_CUSTOM_CGAL FALSE)
+endif (WIN32)
+if (APPLE)
+	set(USE_CUSTOM_CGAL FALSE)
+endif (APPLE)
 
-else ( CGAL_DIR AND (WIN32 OR APPLE) )
+if (USE_CUSTOM_CGAL)
 
-  # Versions of CGAL before 3.4 don't use cmake so we need to search for the
-  # include/lib directories ourself and we also need to add the appropriate
-  # compiler options (CGAL requires us to use the same options as were used
-  # to build the CGAL library).
-  # This is currently necessary only for Linux systems (eg, Ubuntu 8.04 has
-  # CGAL 3.3.1 as a package) - using the package manager avoids requiring
-  # the user to download and install CGAL from source code.
-  if (NOT WIN32 AND NOT APPLE AND CMAKE_COMPILER_IS_GNUCXX)
-    # Search for the CGAL include directory and library.
-    # We are only interested in libcgal-dev packages on linux which should be
-    # installed in standard locations and the library should be called "libCGAL.so".
-    find_path(CGAL_INCLUDE_DIR CGAL/version.h DOC "Include directory for the CGAL library")
-    find_library(CGAL_LIBRARY NAMES CGAL DOC "CGAL library")
+	# Versions of CGAL before 3.4 don't use cmake so we need to search for the
+	# include/lib directories ourself and we also need to add the appropriate
+	# compiler options (CGAL requires us to use the same options as were used
+	# to build the CGAL library).
+	# This is currently necessary only for Linux systems (eg, Ubuntu 8.04 has
+	# CGAL 3.3.1 as a package) - using the package manager avoids requiring
+	# the user to download and install CGAL from source code.
+  
+	# Search for the CGAL include directory and library.
+	# We are only interested in libcgal-dev packages on linux which should be
+	# installed in standard locations and the library should be called "libCGAL.so".
+	find_path(CGAL_INCLUDE_DIR CGAL/version.h DOC "Include directory for the CGAL library")
+	find_library(CGAL_LIBRARY NAMES CGAL DOC "CGAL library")
 
-    if (CGAL_INCLUDE_DIR AND CGAL_LIBRARY)
-      set(CGAL_FOUND TRUE)
-      set(CGAL_USE_FILE "${CMAKE_MODULE_PATH}/UseCGAL_3_3.cmake")
-    endif (CGAL_INCLUDE_DIR AND CGAL_LIBRARY)
+	if (CGAL_INCLUDE_DIR AND CGAL_LIBRARY)
+	  set(CGAL_FOUND TRUE)
+	  set(CGAL_USE_FILE "${CMAKE_MODULE_PATH}/UseCGAL_3_3.cmake")
+	endif (CGAL_INCLUDE_DIR AND CGAL_LIBRARY)
 
-    if (NOT CGAL_FOUND)
-      # This is a linux only error message.
-      set(CGAL_DIR_MESSAGE "CGAL not found.  Either install the 'libcgal-dev' package (if using CGAL 3.3 or below) or set the CGAL_DIR cmake variable or environment variable (if using CGAL 3.4 or above) to the ${CGAL_DIR_DESCRIPTION}")
-    endif (NOT CGAL_FOUND)
-  endif (NOT WIN32 AND NOT APPLE AND CMAKE_COMPILER_IS_GNUCXX)
+	if (NOT CGAL_FOUND)
+	  # This is a linux only error message.
+	  set(CGAL_DIR_MESSAGE "CGAL not found.  Either install the 'libcgal-dev' package (if using CGAL 3.3 or below) or set the CGAL_DIR cmake variable or environment variable (if using CGAL 3.4 or above) to the ${CGAL_DIR_DESCRIPTION}")
+	endif (NOT CGAL_FOUND)
 
-endif ( CGAL_DIR AND (WIN32 OR APPLE) )
+else (USE_CUSTOM_CGAL)
+
+	if ( CGAL_DIR )
+	 
+	  if ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
+	    include( "${CGAL_DIR}/CGALConfig.cmake" )
+	    set( CGAL_FOUND TRUE )
+	  endif ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
+
+	endif ( CGAL_DIR )
+	
+endif (USE_CUSTOM_CGAL)
 
 if( NOT CGAL_FOUND)
   if(CGAL_FIND_REQUIRED)

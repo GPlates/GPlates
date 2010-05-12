@@ -31,6 +31,7 @@
 #include <QPalette>
 #include <QColor>
 #include <QString>
+#include <QStringList>
 
 #include "ColouringDialogUi.h"
 
@@ -242,12 +243,18 @@ namespace GPlatesQtWidgets
 
 		void
 		open_file();
+		
+		void
+		open_files(
+				const QStringList &file_list);
 
 		void
-		open_regular_cpt_file();
+		open_regular_cpt_file(
+				const QStringList &file_list);
 
 		void
-		open_categorical_cpt_file();
+		open_categorical_cpt_file(
+				const QStringList &file_list);
 
 		void
 		add_single_colour();
@@ -256,6 +263,22 @@ namespace GPlatesQtWidgets
 		insert_list_widget_item(
 				const GPlatesGui::ColourSchemeInfo &colour_scheme_info,
 				GPlatesGui::ColourSchemeContainer::id_type id);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * colouring dialog.
+		 */
+		void
+		dragEnterEvent(
+				QDragEnterEvent *ev);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * colouring dialog.
+		 */
+		void
+		dropEvent(
+				QDropEvent *ev);
 
 		/**
 		 * Used for creating feature-age colour schemes.

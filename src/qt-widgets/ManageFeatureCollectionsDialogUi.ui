@@ -9,6 +9,9 @@
     <height>343</height>
    </rect>
   </property>
+  <property name="acceptDrops" >
+   <bool>true</bool>
+  </property>
   <property name="windowTitle" >
    <string>Manage Feature Collections</string>
   </property>

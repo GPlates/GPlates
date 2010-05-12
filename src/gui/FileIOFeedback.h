@@ -28,6 +28,8 @@
 
 #include <QObject>
 #include <QString>
+#include <QList>
+#include <QUrl>
 #include <boost/function.hpp>
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -93,11 +95,19 @@ namespace GPlatesGui
 		 * Opens the specified files, handling any exceptions thrown by popping up
 		 * appropriate error dialogs.
 		 *
-		 * See the slot open_files() for the version which pops up a dialog.
+		 * See the slot open_files() for the version which pops up a file selection dialog.
 		 */
 		void
 		open_files(
 				const QStringList &filenames);
+
+		/**
+		 * As @a open_files(QStringList), but for a list of QUrl. For drag-and-drop
+		 * functionality.
+		 */
+		void
+		open_urls(
+				const QList<QUrl> &urls);
 
 		/**
 		 * Reloads the file given by FileState file_iterator @a file and handles any

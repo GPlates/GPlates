@@ -32,6 +32,9 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QUrl>
+#include <QList>
+#include <QtGlobal>
 
 #include "app-logic/FeatureCollectionFileState.h"
 
@@ -99,6 +102,15 @@ namespace GPlatesAppLogic
 		void
 		load_file(
 				const QString &filename);
+
+
+		/**
+		 * As @a load_files, but for QUrl instances of file:// urls.
+		 * Included for drag and drop support.
+		 */
+		void
+		load_urls(
+				const QList<QUrl> &urls);
 
 
 		/**

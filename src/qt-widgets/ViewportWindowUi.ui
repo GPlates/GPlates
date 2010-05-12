@@ -15,6 +15,9 @@
     <height>600</height>
    </size>
   </property>
+  <property name="acceptDrops" >
+   <bool>true</bool>
+  </property>
   <property name="windowTitle" >
    <string>GPlates</string>
   </property>
@@ -25,10 +28,10 @@
   <widget class="QWidget" name="centralwidget" >
    <property name="geometry" >
     <rect>
-     <x>48</x>
-     <y>27</y>
-     <width>676</width>
-     <height>513</height>
+     <x>51</x>
+     <y>30</y>
+     <width>673</width>
+     <height>511</height>
     </rect>
    </property>
   </widget>
@@ -38,7 +41,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>27</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -178,9 +181,9 @@
    <property name="geometry" >
     <rect>
      <x>0</x>
-     <y>676</y>
+     <y>677</y>
      <width>724</width>
-     <height>24</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>
@@ -188,9 +191,9 @@
    <property name="geometry" >
     <rect>
      <x>0</x>
-     <y>27</y>
-     <width>48</width>
-     <height>649</height>
+     <y>30</y>
+     <width>51</width>
+     <height>647</height>
     </rect>
    </property>
    <property name="contextMenuPolicy" >
@@ -236,9 +239,9 @@
   <widget class="QDockWidget" name="dock_search_results" >
    <property name="geometry" >
     <rect>
-     <x>48</x>
-     <y>546</y>
-     <width>676</width>
+     <x>51</x>
+     <y>547</y>
+     <width>673</width>
      <height>130</height>
     </rect>
    </property>
@@ -257,9 +260,9 @@
    <widget class="QWidget" name="dockWidgetContents" >
     <property name="geometry" >
      <rect>
-      <x>23</x>
+      <x>21</x>
       <y>0</y>
-      <width>653</width>
+      <width>652</width>
       <height>130</height>
      </rect>
     </property>
@@ -301,8 +304,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>649</width>
-          <height>101</height>
+          <width>648</width>
+          <height>102</height>
          </rect>
         </property>
         <attribute name="title" >

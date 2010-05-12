@@ -45,6 +45,8 @@
 #include <QProgressBar>
 #include <QDockWidget>
 #include <QActionGroup>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QDebug>
 
 #include "ViewportWindow.h"
@@ -1590,7 +1592,8 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::closeEvent(QCloseEvent *close_event)
+GPlatesQtWidgets::ViewportWindow::closeEvent(
+		QCloseEvent *close_event)
 {
 	// Check for unsaved changes and potentially give the user a chance to save/abort/etc.
 	bool close_ok = d_unsaved_changes_tracker_ptr->close_event_hook();
@@ -1602,6 +1605,30 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(QCloseEvent *close_event)
 	} else {
 		// User is Not OK with quitting GPlates at this point.
 		close_event->ignore();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::dragEnterEvent(
+		QDragEnterEvent *ev)
+{
+	if (ev->mimeData()->hasUrls()) {
+		ev->acceptProposedAction();
+	} else {
+		ev->ignore();
+	}
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::dropEvent(
+		QDropEvent *ev)
+{
+	if (ev->mimeData()->hasUrls()) {
+		ev->acceptProposedAction();
+		d_file_io_feedback_ptr->open_urls(ev->mimeData()->urls());
+	} else {
+		ev->ignore();
 	}
 }
 

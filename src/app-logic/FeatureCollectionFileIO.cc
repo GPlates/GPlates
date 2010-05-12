@@ -40,6 +40,27 @@
 #include "model/Model.h"
 
 
+namespace
+{
+	/**
+	 * Transforms a list of file:// urls into a list of pathnames in string form.
+	 * Ignores any non-file url.
+	 */
+	QStringList
+	extract_pathnames_from_file_urls(
+			const QList<QUrl> &urls)
+	{
+		QStringList pathnames;
+		Q_FOREACH(const QUrl &url, urls) {
+			if (url.scheme() == "file") {
+				pathnames.push_back(url.toLocalFile());
+			}
+		}
+		return pathnames;	// QStringList implicitly shares data and uses pimpl idiom, return by value is fine.
+	}
+}
+
+
 GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		GPlatesModel::ModelInterface &model,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
@@ -79,6 +100,22 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 	const GPlatesFileIO::File::shared_ref loaded_file = read_feature_collection(file_info);
 
 	d_file_state.add_file(loaded_file);
+}
+
+
+void
+GPlatesAppLogic::FeatureCollectionFileIO::load_urls(
+		const QList<QUrl> &urls)
+{
+	// Transform file:// urls into pathnames; ignore any http:// etc urls.
+	// Read all the files before we add them to the application state.
+	QStringList filenames = extract_pathnames_from_file_urls(urls);
+	if (filenames.isEmpty()) {
+		return;
+	}
+	
+	// Then proceed exactly as though we had called load_files(QStringList).
+	load_files(filenames);
 }
 
 

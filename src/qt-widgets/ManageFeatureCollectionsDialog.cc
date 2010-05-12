@@ -28,6 +28,8 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QDebug>
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -805,4 +807,29 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_row_background_colour(
 		// Something is seriously wrong.
 	}
 }
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::dragEnterEvent(
+		QDragEnterEvent *ev)
+{
+	if (ev->mimeData()->hasUrls()) {
+		ev->acceptProposedAction();
+	} else {
+		ev->ignore();
+	}
+}
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::dropEvent(
+		QDropEvent *ev)
+{
+	if (ev->mimeData()->hasUrls()) {
+		ev->acceptProposedAction();
+		d_gui_file_io_feedback_ptr->open_urls(ev->mimeData()->urls());
+	} else {
+		ev->ignore();
+	}
+}
+
 
