@@ -28,8 +28,6 @@
 
 #include "unit-test/GuiTestSuite.h"
 #include "unit-test/TestSuiteFilter.h"
-#include "unit-test/GenericContinuousColourPaletteTest.h"
-
 GPlatesUnitTest::GuiTestSuite::GuiTestSuite(
 		unsigned level) : 
 	GPlatesUnitTest::GPlatesTestSuite(
@@ -41,7 +39,6 @@ GPlatesUnitTest::GuiTestSuite::GuiTestSuite(
 void 
 GPlatesUnitTest::GuiTestSuite::construct_maps()
 {
-	ADD_TESTSUITE(GenericContinuousColourPalette);
 }
 
 

@@ -51,7 +51,7 @@ namespace
 
 
 GPlatesGui::Colour
-GPlatesGui::DefaultAgeColourPalette::DISTANT_PAST_COLOUR = GPlatesGui::Colour::get_olive();
+GPlatesGui::DefaultAgeColourPalette::DISTANT_PAST_COLOUR = GPlatesGui::Colour::get_grey();
 
 
 GPlatesGui::Colour

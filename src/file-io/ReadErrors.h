@@ -29,6 +29,13 @@
 
 namespace GPlatesFileIO
 {
+	/**
+	 * Please keep these entries in the same order as they appear on the GPlates
+	 * Trac wiki page "ReadErrorMessages".
+	 *
+	 * A corresponding textual description will also need to be added to
+	 * qt-widgets/ReadErrorAccumulationDialog.cc.
+	 */
 	namespace ReadErrors
 	{
 		enum Description
@@ -112,9 +119,11 @@ namespace GPlatesFileIO
 			// The following relate to raster files.
 			InsufficientTextureMemory,
 			ErrorGeneratingTexture,
+			UnrecognisedRasterFileType,
 
 			// The following relate to GDAL-readable Raster files.
 			ErrorReadingGDALBand,
+			ErrorInSystemLibraries,
 
 			// The following relate to QImage-readable image files.
 			ErrorReadingQImageFile,
@@ -167,11 +176,21 @@ namespace GPlatesFileIO
 			GmapError,
 			GmapFieldFormatError,
 
+			// The following are specific to regular and categorical GMT CPT files.
+			InvalidRegularCptLine,
+			InvalidCategoricalCptLine,
+			CptSliceNotMonotonicallyIncreasing,
+			ColourModelChangedMidway,
+			NoLinesSuccessfullyParsed,
+			CptFileTypeNotDeduced,
+			UnexpectedCategoricalCptLabel,
+			PatternFillInLine,
+
 			// The following are generic to all local files
 			ErrorOpeningFileForReading,
 			FileIsEmpty,
 			NoFeaturesFoundInFile
-		};
+		}; // enum Description
 
 		enum Result
 		{
@@ -219,9 +238,13 @@ namespace GPlatesFileIO
 			// The following are specific to GMAP vgp files
 			GmapFeatureIgnored,
 
+			// The following are specific to regular and categorical GMT CPT files.
+			CptLineIgnored,
+
 			// The following are generic to all local files
-			FileNotLoaded
-		};
+			FileNotLoaded,
+			NoAction
+		}; // enum Result
 
 
 		/**
@@ -237,7 +260,7 @@ namespace GPlatesFileIO
 			TerminatingError,
 			FailureToBegin
 		};
-	}
+	} // namespace ReadErrors
 }
 
 #endif  // GPLATES_FILEIO_READERRORS_H

@@ -29,6 +29,7 @@
 #include "ReconstructionTree.h"
 
 #include "utils/ScopeGuard.h"
+#include "utils/OverloadResolution.h"
 
 
 namespace
@@ -117,6 +118,8 @@ GPlatesModel::ReconstructionGraph::insert_total_reconstruction_pole(
 {
 	// FIXME:  Confirm that 'fixed_plate_id' and 'moving_plate_id' are not equal
 
+	using namespace GPlatesUtils::OverloadResolution;
+
 	if (edge_is_already_in_graph(*this, fixed_plate_id_, moving_plate_id_, pole)) {
 		return;
 	}
@@ -144,31 +147,11 @@ GPlatesModel::ReconstructionGraph::insert_total_reconstruction_pole(
 	edge_refs_by_plate_id_map_iterator pos_of_inserted_original_edge =
 			d_edges_by_fixed_plate_id.insert(std::make_pair(fixed_plate_id_, original_edge));
 
-#ifdef WIN32
-	// This is needed for WIN32 because std::map::erase returns an iterator instead of void.
-	// This is what C++0x will support but it's not what C++03 expects so we have to
-	// cast it.
-	#if _MSC_VER <= 1400
-		typedef edge_refs_by_plate_id_map_type::iterator
-			(edge_refs_by_plate_id_map_type::*map_erase_func_type) (
-				edge_refs_by_plate_id_map_type::iterator);
-	#else
-		typedef edge_refs_by_plate_id_map_type::iterator
-			(edge_refs_by_plate_id_map_type::*map_erase_func_type) (
-				edge_refs_by_plate_id_map_type::const_iterator);
-	#endif
-#else
-	typedef void
-		(edge_refs_by_plate_id_map_type::*map_erase_func_type) (
-			edge_refs_by_plate_id_map_type::iterator);
-#endif
-
-	map_erase_func_type map_erase_func = &edge_refs_by_plate_id_map_type::erase;
-
 	// Undo the insert if an exception is thrown.
 	// Note that the 'erase' function does not throw.
 	GPlatesUtils::ScopeGuard guard_insert_original = GPlatesUtils::make_guard(
-			map_erase_func,
+			// std_map_erase_fn1<edge_refs_by_plate_id_map_type>(),
+			resolve<mem_fn_types<edge_refs_by_plate_id_map_type>::erase1>(&edge_refs_by_plate_id_map_type::erase),
 			d_edges_by_fixed_plate_id,
 			pos_of_inserted_original_edge);
 
@@ -179,7 +162,7 @@ GPlatesModel::ReconstructionGraph::insert_total_reconstruction_pole(
 	// Undo the insert if an exception is thrown.
 	// Note that the 'erase' function does not throw.
 	GPlatesUtils::ScopeGuard guard_insert_reversed = GPlatesUtils::make_guard(
-			map_erase_func,
+			resolve<mem_fn_types<edge_refs_by_plate_id_map_type>::erase1>(&edge_refs_by_plate_id_map_type::erase),
 			d_edges_by_fixed_plate_id,
 			pos_of_inserted_reversed_edge);
 

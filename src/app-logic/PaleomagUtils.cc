@@ -32,19 +32,24 @@
 #include "maths/MathsUtils.h"
 
 #include "app-logic/ApplicationState.h"
+
 #include "gui/ColourProxy.h"
+#include "gui/VGPRenderSettings.h"
+
 #include "model/PropertyName.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
+
 #include "presentation/ViewState.h"
+
 #include "property-values/GmlPoint.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsDouble.h"
-#include "view-operations/RenderedGeometryFactory.h"
 
+#include "view-operations/RenderedGeometryFactory.h"
 
 
 bool
@@ -187,10 +192,10 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::finalise_post_feature_properties(
 	
 	// Check the render settings and use them to decide if the vgp should be drawn for 
 	// the current time.
-	GPlatesPresentation::ViewState::VGPRenderSettings &vgp_render_settings =
+	GPlatesGui::VGPRenderSettings &vgp_render_settings =
 		d_view_state_ptr->get_vgp_render_settings();
 	
-	GPlatesPresentation::ViewState::VGPRenderSettings::VGPVisibilitySetting visibility_setting =
+	GPlatesGui::VGPRenderSettings::VGPVisibilitySetting visibility_setting =
 		vgp_render_settings.get_vgp_visibility_setting();
 		
 	double time = d_view_state_ptr->get_application_state().get_current_reconstruction_time();
@@ -200,10 +205,10 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::finalise_post_feature_properties(
 
 	switch(visibility_setting)
 	{
-		case GPlatesPresentation::ViewState::VGPRenderSettings::ALWAYS_VISIBLE:
+		case GPlatesGui::VGPRenderSettings::ALWAYS_VISIBLE:
 			should_draw_vgp = true;
 			break;
-		case GPlatesPresentation::ViewState::VGPRenderSettings::TIME_WINDOW:
+		case GPlatesGui::VGPRenderSettings::TIME_WINDOW:
 
 			if ((geo_time.is_later_than_or_coincident_with(vgp_render_settings.get_vgp_earliest_time()))
 				&& (geo_time.is_earlier_than_or_coincident_with(vgp_render_settings.get_vgp_latest_time())))
@@ -211,7 +216,7 @@ GPlatesAppLogic::PaleomagUtils::VgpRenderer::finalise_post_feature_properties(
 				should_draw_vgp = true;
 			}
 			break;
-		case GPlatesPresentation::ViewState::VGPRenderSettings::DELTA_T_AROUND_AGE:
+		case GPlatesGui::VGPRenderSettings::DELTA_T_AROUND_AGE:
 			if (d_age)
 			{
 				GPlatesPropertyValues::GeoTimeInstant earliest_time =

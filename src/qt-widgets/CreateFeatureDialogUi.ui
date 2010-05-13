@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>CreateFeatureDialog</class>
- <widget class="QDialog" name="CreateFeatureDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="CreateFeatureDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,50 +10,51 @@
     <height>458</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Create Feature</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
+    <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
-  <property name="sizeGripEnabled" >
+  <property name="sizeGripEnabled">
    <bool>true</bool>
   </property>
-  <property name="modal" >
+  <property name="modal">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QVBoxLayout">
    <item>
-    <widget class="QStackedWidget" name="stack" >
-     <property name="currentIndex" >
-      <number>2</number>
+    <widget class="QStackedWidget" name="stack">
+     <property name="currentIndex">
+      <number>1</number>
      </property>
-     <widget class="QWidget" name="page_feature_type" >
-      <layout class="QVBoxLayout" >
-       <property name="margin" >
+     <widget class="QWidget" name="page_feature_type">
+      <layout class="QVBoxLayout">
+       <property name="margin">
         <number>0</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="groupbox_type" >
-         <property name="title" >
+        <widget class="QGroupBox" name="groupbox_type">
+         <property name="title">
           <string>Feature type</string>
          </property>
-         <layout class="QVBoxLayout" >
+         <layout class="QVBoxLayout">
           <item>
-           <widget class="QListWidget" name="listwidget_feature_types" >
-            <property name="sizePolicy" >
-             <sizepolicy vsizetype="Ignored" hsizetype="Preferred" >
+           <widget class="QListWidget" name="listwidget_feature_types">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Ignored">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="minimumSize" >
+            <property name="minimumSize">
              <size>
               <width>0</width>
               <height>80</height>
              </size>
             </property>
-            <property name="horizontalScrollBarPolicy" >
+            <property name="horizontalScrollBarPolicy">
              <enum>Qt::ScrollBarAlwaysOff</enum>
             </property>
            </widget>
@@ -62,54 +64,51 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_feature_properties" >
-      <layout class="QVBoxLayout" >
-       <property name="margin" >
+     <widget class="QWidget" name="page_feature_properties">
+      <layout class="QVBoxLayout">
+       <property name="margin">
         <number>0</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="groupbox_geometry_destination" >
-         <property name="sizePolicy" >
-          <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+        <widget class="QGroupBox" name="groupbox_geometry_destination">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
            <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
+           <verstretch>3</verstretch>
           </sizepolicy>
          </property>
-         <property name="title" >
+         <property name="title">
           <string>Assign geometry to property</string>
          </property>
-         <layout class="QHBoxLayout" >
+         <layout class="QHBoxLayout">
           <item>
-           <widget class="QLabel" name="label_geometry_destinations" >
-            <property name="sizePolicy" >
-             <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+           <widget class="QLabel" name="label_geometry_destinations">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
               <horstretch>4</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="text" >
+            <property name="text">
              <string>Which property best indicates the geometry's purpose?</string>
             </property>
-            <property name="wordWrap" >
+            <property name="alignment">
+             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+            </property>
+            <property name="wordWrap">
              <bool>true</bool>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QListWidget" name="listwidget_geometry_destinations" >
-            <property name="sizePolicy" >
-             <sizepolicy vsizetype="Ignored" hsizetype="Preferred" >
+           <widget class="QListWidget" name="listwidget_geometry_destinations">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Ignored">
               <horstretch>6</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="minimumSize" >
-             <size>
-              <width>0</width>
-              <height>80</height>
-             </size>
-            </property>
-            <property name="horizontalScrollBarPolicy" >
+            <property name="horizontalScrollBarPolicy">
              <enum>Qt::ScrollBarAlwaysOff</enum>
             </property>
            </widget>
@@ -118,37 +117,43 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupbox_properties" >
-         <property name="title" >
+        <widget class="QGroupBox" name="groupbox_properties">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>7</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
           <string>Basic properties</string>
          </property>
         </widget>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_feature_collection" >
-      <layout class="QVBoxLayout" >
-       <property name="margin" >
+     <widget class="QWidget" name="page_feature_collection">
+      <layout class="QVBoxLayout">
+       <property name="margin">
         <number>0</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="groupBox" >
-         <property name="title" >
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
           <string>Add feature to collection</string>
          </property>
-         <layout class="QVBoxLayout" >
+         <layout class="QVBoxLayout">
           <item>
-           <widget class="QLabel" name="label_feature_collections" >
-            <property name="text" >
+           <widget class="QLabel" name="label_feature_collections">
+            <property name="text">
              <string>Choose the feature collection, to which the new feature should be added:</string>
             </property>
-            <property name="wordWrap" >
+            <property name="wordWrap">
              <bool>true</bool>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QListWidget" name="listwidget_feature_collections" />
+           <widget class="QListWidget" name="listwidget_feature_collections"/>
           </item>
          </layout>
         </widget>
@@ -158,40 +163,40 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QPushButton" name="button_prev" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_prev">
+       <property name="text">
         <string>Pre&amp;vious</string>
        </property>
-       <property name="autoDefault" >
+       <property name="autoDefault">
         <bool>false</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="button_next" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_next">
+       <property name="text">
         <string>Ne&amp;xt</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="button_create_and_save" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_create_and_save">
+       <property name="text">
         <string>Create and Save</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QDialogButtonBox" name="buttonbox" >
-       <property name="focusPolicy" >
+      <widget class="QDialogButtonBox" name="buttonbox">
+       <property name="focusPolicy">
         <enum>Qt::StrongFocus</enum>
        </property>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="standardButtons" >
+       <property name="standardButtons">
         <set>QDialogButtonBox::Cancel</set>
        </property>
       </widget>
@@ -201,7 +206,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections/>
 </ui>

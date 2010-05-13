@@ -326,7 +326,7 @@ GPlatesQtWidgets::CreateVGPDialog::CreateVGPDialog(
 
 	checkbox_site->setEnabled(true);
 	checkbox_site->setChecked(false);
-	frame_site_lat_lon->setEnabled(false);
+	handle_site_checked(0);
 
 	setup_connections();
 	
@@ -439,7 +439,10 @@ GPlatesQtWidgets::CreateVGPDialog::handle_cancel()
 void
 GPlatesQtWidgets::CreateVGPDialog::handle_site_checked(int state)
 {
-	frame_site_lat_lon->setEnabled(state);
+	label_site_lat->setEnabled(state);
+	spinbox_site_lat->setEnabled(state);
+	label_site_lon->setEnabled(state);
+	spinbox_site_lon->setEnabled(state);
 }
 
 void

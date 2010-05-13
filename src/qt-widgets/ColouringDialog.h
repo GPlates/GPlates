@@ -28,7 +28,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <QIcon>
-#include <QPalette>
 #include <QColor>
 #include <QString>
 #include <QStringList>
@@ -61,6 +60,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	class GlobeAndMapWidget;
+	class ReadErrorAccumulationDialog;
 
 	class ColouringDialog : 
 			public QDialog, 
@@ -71,12 +71,13 @@ namespace GPlatesQtWidgets
 	public:
 
 		/**
-		 * Constructs a ColouringDialog. Clones @a existing_globe_canvas_ptr for the
+		 * Constructs a ColouringDialog. Clones @a existing_globe_canvas for the
 		 * previews.
 		 */
 		ColouringDialog(
 			GPlatesPresentation::ViewState &view_state,
-			GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
+			const GlobeAndMapWidget &existing_globe_and_map_widget,
+			ReadErrorAccumulationDialog &read_error_accumulation_dialog,
 			QWidget* parent_ = NULL);
 
 	private slots:
@@ -224,23 +225,6 @@ namespace GPlatesQtWidgets
 		load_colour_scheme_from(
 				QListWidgetItem *item);
 
-		/**
-		 * Change the categories_table palette to suit an active state.
-		 *
-		 * Note that we can't use palette roles to automatically switch between an
-		 * active and an inactive palette because we disable editing of cells in the
-		 * table, which causes the inactive palette to be used for rendering cell
-		 * contents even though the table itself is not inactive.
-		 */
-		void
-		set_categories_table_active_palette();
-
-		/**
-		 * Change the categories_table palette to suit an inactive state.
-		 */
-		void
-		set_categories_table_inactive_palette();
-
 		void
 		open_file();
 		
@@ -293,7 +277,12 @@ namespace GPlatesQtWidgets
 		 * widget. When this widget does a non-intermediate repaint (which we take to
 		 * be a repaint when the mouse is not pressed), we get our clone to repaint.
 		 */
-		GlobeAndMapWidget *d_existing_globe_and_map_widget_ptr;
+		const GlobeAndMapWidget *d_existing_globe_and_map_widget_ptr;
+
+		/**
+		 * The dialog that shows file read errors.
+		 */
+		ReadErrorAccumulationDialog *d_read_error_accumulation_dialog_ptr;
 
 		/**
 		 * Contains all loaded colour schemes, sorted by category.
@@ -364,11 +353,6 @@ namespace GPlatesQtWidgets
 		 * colour scheme.
 		 */
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref d_current_feature_collection;
-
-		/**
-		 * The original palette used by the categories_table.
-		 */
-		QPalette d_categories_table_original_palette;
 
 		/**
 		 * The last colour added to the Single Colour category.

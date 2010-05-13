@@ -60,17 +60,6 @@ namespace GPlatesPropertyValues
 		{  }
 
 		/**
-		 * Generate a texture using the data contained in a std::vector<unsinged_byte_type>.
-		 */
-		virtual
-		void
-		generate_raster(
-				std::vector<unsigned_byte_type> &data,
-				QSize &size,
-				ColourFormat format) = 0;
-
-
-		/**
 		 * Generate a texture using the data pointed to by unsigned_byte_type *data.
 		 */
 		virtual

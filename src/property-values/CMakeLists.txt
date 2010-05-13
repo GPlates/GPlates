@@ -85,6 +85,8 @@ set(srcs
     InMemoryRaster.h
     PropertyValues.cc
     PropertyValues.h
+    RawRaster.cc
+    RawRaster.h
     TemplateTypeParameterType.h
     TextContent.h
     UninterpretedPropertyValue.cc

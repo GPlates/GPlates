@@ -484,7 +484,7 @@ GPlatesQtWidgets::ExportAnimationDialog::react_choose_target_directory_clicked()
 
 	QString path = 
 		QFileDialog::getExistingDirectory(
-				parentWidget(), 
+				this, 
 				tr("Select Path"), 
 				current_path);
 	

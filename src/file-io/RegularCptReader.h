@@ -32,26 +32,21 @@
 #ifndef GPLATES_FILEIO_REGULARCPTREADER_H
 #define GPLATES_FILEIO_REGULARCPTREADER_H
 
+#include <boost/shared_ptr.hpp>
 #include <QString>
+#include <QTextStream>
+
+#include "ReadErrorOccurrence.h"
 
 
 namespace GPlatesGui
 {
-	class GenericContinuousColourPalette;
+	class RegularCptColourPalette;
 }
 
 namespace GPlatesFileIO
 {
-	struct ErrorReadingCptFileException
-	{
-		ErrorReadingCptFileException(
-				QString message_ = QString()) :
-			message(message_)
-		{
-		}
-
-		QString message;
-	};
+	struct ReadErrorAccumulation;
 
 	/**
 	 * This reads in GMT colour palette tables (CPT) files.
@@ -65,22 +60,45 @@ namespace GPlatesFileIO
 	 * http://gmt.soest.hawaii.edu/gmt/doc/gmt/html/GMT_Docs/node69.html 
 	 *
 	 * This reader does not understand pattern fills.
+	 *
+	 * This reader also does not respect the .gmtdefaults4 settings file.
 	 */
 	class RegularCptReader
 	{
 	public:
 
 		/**
-		 * Reads the CPT file given by @a filename.
+		 * Parsers text from the provided @a text_stream as a regular CPT file.
 		 *
 		 * Ownership of the memory pointed to by the returned pointer passes to the
-		 * called of this function.
+		 * called of this function and it is the responsibility of the caller to make
+		 * sure that the memory is deallocated correctly.
 		 *
-		 * Throws GPlatesFileIO::ErrorReadingCptFileException on error.
+		 * Returns NULL if the entire file provided contained no lines recognised as
+		 * belonging to a regular CPT file.
+		 *
+		 * Any errors will be added to the @a errors accumulator.
 		 */
-		GPlatesGui::GenericContinuousColourPalette *
+		GPlatesGui::RegularCptColourPalette *
 		read_file(
-				QString filename);
+				QTextStream &text_stream,
+				ReadErrorAccumulation &errors,
+				boost::shared_ptr<DataSource> data_source =
+					boost::shared_ptr<DataSource>(
+						new GenericDataSource(
+							DataFormats::Cpt,
+							"QTextStream"))) const;
+
+		/**
+		 * A convenience function for reading the file with the given @a filename as
+		 * a regular CPT file.
+		 *
+		 * @see read_file() that takes a QTextStream as the first parameter.
+		 */
+		GPlatesGui::RegularCptColourPalette *
+		read_file(
+				const QString &filename,
+				ReadErrorAccumulation &errors) const;
 	};
 }
 

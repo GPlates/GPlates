@@ -56,24 +56,29 @@ namespace GPlatesQtWidgets
 	 * is MapView.
 	 */
 	class MapCanvas: 
-		public QGraphicsScene,
-		public boost::noncopyable
+			public QGraphicsScene,
+			public boost::noncopyable
 	{
-
 		Q_OBJECT
 
 	public:
 
 		MapCanvas(
-			GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-			GPlatesGui::RenderSettings &render_settings,
-			GPlatesGui::ViewportZoom &viewport_zoom,
-			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
-			GPlatesPresentation::ViewState &view_state,
-			QWidget *parent_ = NULL);
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesGui::RenderSettings &render_settings,
+				GPlatesGui::ViewportZoom &viewport_zoom,
+				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
+				GPlatesPresentation::ViewState &view_state,
+				QWidget *parent_ = NULL);
 
 		GPlatesGui::Map &
 		map()
+		{
+			return d_map;
+		}
+
+		const GPlatesGui::Map &
+		map() const
 		{
 			return d_map;
 		}
@@ -100,8 +105,8 @@ namespace GPlatesQtWidgets
 
 		void
 		update_canvas(
-			GPlatesViewOperations::RenderedGeometryCollection &collection,
-			GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type update_type);
+				GPlatesViewOperations::RenderedGeometryCollection &collection,
+				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type update_type);
 
 	private:
 		
@@ -116,19 +121,16 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		drawBackground(
-			QPainter *painter,
-			const QRectF &rect);
+				QPainter *painter,
+				const QRectF &rect);
 
 		/**
-		 * A virtual override of the QGraphicsScene function. 
-		 */ 
+		 * A virtual override of the QGraphicsScene function.
+		 */
 		void
-		drawItems(
-			QPainter *painter,
-			int numItems,
-			QGraphicsItem *items[],
-			const QStyleOptionGraphicsItem options[],
-			QWidget *widget = 0);
+		drawForeground(
+				QPainter *painter,
+				const QRectF &rect);
 
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;

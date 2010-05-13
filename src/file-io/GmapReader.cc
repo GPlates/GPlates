@@ -549,7 +549,7 @@ GPlatesFileIO::GmapReader::read_file(
 			catch (GPlatesFileIO::ReadErrors::Description error)
 			{
 				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-					new GPlatesFileIO::LineNumberInFile(line_number));
+					new GPlatesFileIO::LineNumber(line_number));
 				read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
 					source, location, error, GPlatesFileIO::ReadErrors::GmapFeatureIgnored));
 			}
@@ -559,7 +559,7 @@ GPlatesFileIO::GmapReader::read_file(
 	if (collection->begin() == collection->end())
 	{
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-			new GPlatesFileIO::LineNumberInFile(0));
+			new GPlatesFileIO::LineNumber(0));
 		read_errors.d_failures_to_begin.push_back(GPlatesFileIO::ReadErrorOccurrence(
 					source, location, GPlatesFileIO::ReadErrors::NoFeaturesFoundInFile,
 					GPlatesFileIO::ReadErrors::FileNotLoaded));

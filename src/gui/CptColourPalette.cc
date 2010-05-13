@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * Contains the implementation of the GenericContinuousColourPalette class.
+ * Contains the implementation of the CptColourPalette class.
  *
  * $Revision$
  * $Date$ 
@@ -27,27 +27,29 @@
 
 #include <boost/foreach.hpp>
 
-#include "GenericContinuousColourPalette.h"
+#include "CptColourPalette.h"
 
-
-using GPlatesMaths::Real;
 
 GPlatesGui::ColourSlice::ColourSlice(
-		Real lower_value_,
-		Real upper_value_,
+		value_type lower_value_,
 		boost::optional<Colour> lower_colour_,
-		boost::optional<Colour> upper_colour_) :
+		value_type upper_value_,
+		boost::optional<Colour> upper_colour_,
+		ColourScaleAnnotation::Type annotation_,
+		boost::optional<QString> label_) :
 	d_lower_value(lower_value_),
 	d_upper_value(upper_value_),
 	d_lower_colour(lower_colour_),
-	d_upper_colour(upper_colour_)
+	d_upper_colour(upper_colour_),
+	d_annotation(annotation_),
+	d_label(label_)
 {
 }
 
 
 bool
 GPlatesGui::ColourSlice::can_handle(
-		Real value) const
+		value_type value) const
 {
 	return d_lower_value <= value && value <= d_upper_value;
 }
@@ -55,11 +57,11 @@ GPlatesGui::ColourSlice::can_handle(
 
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::ColourSlice::get_colour(
-		Real value) const
+		value_type value) const
 {
 	if (d_lower_colour && d_upper_colour)
 	{
-		Real position = (value - d_lower_value) / (d_upper_value - d_lower_value);
+		value_type position = (value - d_lower_value) / (d_upper_value - d_lower_value);
 		return Colour::linearly_interpolate(
 				*d_lower_colour,
 				*d_upper_colour,
@@ -72,36 +74,38 @@ GPlatesGui::ColourSlice::get_colour(
 }
 
 
-boost::optional<GPlatesGui::Colour>
-GPlatesGui::GenericContinuousColourPalette::get_colour(
-	const Real &value) const
+bool
+GPlatesGui::operator<(
+		ColourSlice::value_type value,
+		const ColourSlice &colour_slice)
 {
-	if (d_colour_slices.empty())
-	{
-		return d_nan_colour;
-	}
+	return value < colour_slice.lower_value();
+}
 
-	// Return background colour if value before first slice.
-	if (value < d_colour_slices.front().lower_value())
-	{
-		return d_background_colour;
-	}
 
-	// Return foreground colour if value after last slice.
-	if (value > d_colour_slices.back().upper_value())
-	{
-		return d_foreground_colour;
-	}
+bool
+GPlatesGui::operator>(
+		ColourSlice::value_type value,
+		const ColourSlice &colour_slice)
+{
+	return value > colour_slice.upper_value();
+}
 
-	// Else try and find a slice that works, else return NaN colour.
-	BOOST_FOREACH(ColourSlice colour_slice, d_colour_slices)
-	{
-		if (colour_slice.can_handle(value))
-		{
-			return colour_slice.get_colour(value);
-		}
-	}
 
-	return d_nan_colour;
+bool
+GPlatesGui::operator<(
+		int value,
+		const ColourEntry<int> &colour_entry)
+{
+	return value < colour_entry.key();
+}
+
+
+bool
+GPlatesGui::operator>(
+		int value,
+		const ColourEntry<int> &colour_entry)
+{
+	return value > colour_entry.key();
 }
 

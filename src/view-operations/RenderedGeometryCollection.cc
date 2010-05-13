@@ -43,10 +43,10 @@ namespace GPlatesViewOperations
 		 * Singleton instance to keep track of @a RenderedGeometryCollection objects.
 		 */
 		class RenderedGeometryCollectionManager :
-			public GPlatesUtils::Singleton<RenderedGeometryCollectionManager>
+				public GPlatesUtils::Singleton<RenderedGeometryCollectionManager>
 		{
 
-			GPLATES_SINGLETON_CONSTRUCTOR_IMPL(RenderedGeometryCollectionManager)
+			GPLATES_SINGLETON_CONSTRUCTOR_DEF(RenderedGeometryCollectionManager)
 
 		public:
 			/**

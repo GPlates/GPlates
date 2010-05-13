@@ -38,6 +38,7 @@ set(srcs
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
+    OverloadResolution.h
     Profile.cc
     Profile.h
     ReferenceCount.h

@@ -84,12 +84,9 @@ GPlatesGui::DeferredColourProxyImpl::get_colour(
 {
 	boost::optional<Colour> colour =
 		colour_scheme->get_colour(*d_reconstruction_geometry_ptr);
-
-	// Change to olive if boost::none (see comments for ColourProxy::get_colour()).
-	// Note ColourScheme::get_colour() returns boost::none if, e.g., property does not exist.
 	if (!colour)
 	{
-		colour = Colour::get_olive();
+		return boost::none;
 	}
 
 	// Run it through the colour filter, if one is installed.

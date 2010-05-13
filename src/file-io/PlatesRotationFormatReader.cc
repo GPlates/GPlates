@@ -108,7 +108,7 @@ namespace
 			// No non-whitespace characters were found in the remainder, not even an
 			// exclamation mark.  Let's handle the problem by creating an empty comment
 			// for the user.
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::NoCommentFound;
 			ReadErrors::Result res = ReadErrors::EmptyCommentCreated;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -120,7 +120,7 @@ namespace
 			if (remainder[index_of_first_non_whitespace] != '!') {
 				// No, it's not an exclamation mark.  Let's handle the problem by
 				// pretending that the first character *was* an exclamation mark.
-				boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+				boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 				ReadErrors::Description descr = ReadErrors::NoExclMarkToStartComment;
 				ReadErrors::Result res = ReadErrors::ExclMarkInsertedAtCommentStart;
 				ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -165,7 +165,7 @@ namespace
 		double rotation_angle;
 
 		if ( ! (iss >> moving_plate_id)) {
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingMovingPlateId;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -174,7 +174,7 @@ namespace
 			throw PoleParsingException();
 		}
 		if ( ! (iss >> geo_time)) {
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingGeoTime;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -183,7 +183,7 @@ namespace
 			throw PoleParsingException();
 		}
 		if ( ! (iss >> pole_latitude)) {
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingPoleLatitude;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -192,7 +192,7 @@ namespace
 			throw PoleParsingException();
 		}
 		if ( ! (iss >> pole_longitude)) {
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingPoleLongitude;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -201,7 +201,7 @@ namespace
 			throw PoleParsingException();
 		}
 		if ( ! (iss >> rotation_angle)) {
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingRotationAngle;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -210,7 +210,7 @@ namespace
 			throw PoleParsingException();
 		}
 		if ( ! (iss >> fixed_plate_id)) {
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::ErrorReadingFixedPlateId;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -260,13 +260,13 @@ namespace
 		using namespace GPlatesFileIO;
 
 		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::SamePlateIdsButDuplicateGeoTime;
 			ReadErrors::Result res = ReadErrors::NewOverlappingSequenceBegun;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
 			read_errors.d_warnings.push_back(read_error);
 		} else {
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::SamePlateIdsButEarlierGeoTime;
 			ReadErrors::Result res = ReadErrors::NewOverlappingSequenceBegun;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -462,7 +462,7 @@ namespace
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
 
-				boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+				boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 				ReadErrors::Description descr = ReadErrors::CommentMovingPlateIdAfterNonCommentSequence;
 				ReadErrors::Result res = ReadErrors::MovingPlateIdChangedToMatchEarlierSequence;
 				ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -529,7 +529,7 @@ namespace
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
 
-				boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+				boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 				ReadErrors::Description descr = ReadErrors::CommentMovingPlateIdAfterNonCommentSequence;
 				ReadErrors::Result res = ReadErrors::MovingPlateIdChangedToMatchEarlierSequence;
 				ReadErrorOccurrence read_error(data_source, location, descr, res);
@@ -577,7 +577,7 @@ namespace
 		using namespace GPlatesFileIO;
 
 		if (fixed_plate_id == moving_plate_id && moving_plate_id != 999) {
-			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::MovingPlateIdEqualsFixedPlateId;
 			ReadErrors::Result res = ReadErrors::PoleDiscarded;
 			ReadErrorOccurrence read_error(data_source, location, descr, res);

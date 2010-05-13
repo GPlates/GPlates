@@ -345,12 +345,12 @@ namespace
 				IO::ReadErrors::UnexpectedNonEmptyAttributeList,
 				IO::ReadErrors::AttributesIgnored);
 	
-		IO::FeaturePropertiesMap *feature_properties_map = IO::FeaturePropertiesMap::instance();
+		IO::FeaturePropertiesMap &feature_properties_map = IO::FeaturePropertiesMap::instance();
 		IO::FeaturePropertiesMap::const_iterator property_creator_map =
-		   	feature_properties_map->find(
+		   	feature_properties_map.find(
 					Model::FeatureType(xml_elem->get_name()));
 
-		if (property_creator_map != feature_properties_map->end()) {
+		if (property_creator_map != feature_properties_map.end()) {
 			create_feature(xml_elem, model, collection, property_creator_map->second, params);
 		} else {
 			append_recoverable_error_if(true, xml_elem, params,
@@ -548,7 +548,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		if (reader.error()) {
 			// The XML was malformed somewhere along the line.
 			boost::shared_ptr<LocationInDataSource> loc(
-					new LineNumberInFile(reader.lineNumber()));
+					new LineNumber(reader.lineNumber()));
 			read_errors.d_terminating_errors.push_back(
 					ReadErrorOccurrence(source, loc,
 						ReadErrors::ParseError, 

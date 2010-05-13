@@ -280,7 +280,7 @@ GPlatesFileIO::read_feature_collection(
 				new GPlatesFileIO::LocalFileDataSource(
 						e.filename(), GPlatesFileIO::DataFormats::Unspecified));
 		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-				new GPlatesFileIO::LineNumberInFile(0));
+				new GPlatesFileIO::LineNumber(0));
 		read_errors.d_failures_to_begin.push_back(GPlatesFileIO::ReadErrorOccurrence(
 				e_source,
 				e_location,

@@ -466,7 +466,7 @@ namespace
 			boost::shared_ptr<GPlatesFileIO::DataSource> source(
 				new GPlatesFileIO::LocalFileDataSource(filename, GPlatesFileIO::DataFormats::Shapefile));
 			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-				new GPlatesFileIO::LineNumberInFile(count));
+				new GPlatesFileIO::LineNumber(count));
 			GPlatesModel::FeatureHandle::weak_ref feature = (*it)->reference();
 			remove_old_properties(feature);
 			map_attributes_to_properties(feature,model_to_attribute_map,read_errors,source,location);
@@ -585,7 +585,7 @@ GPlatesFileIO::ShapefileReader::check_file_format(
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
 		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
 	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-				new GPlatesFileIO::LineNumberInFile(0));
+				new GPlatesFileIO::LineNumber(0));
 
 	d_num_layers = d_data_source_ptr->GetLayerCount();
 
@@ -709,7 +709,7 @@ GPlatesFileIO::ShapefileReader::read_features(
 	while ((d_feature_ptr = d_layer_ptr->GetNextFeature()) != NULL){
 	
 		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-				new GPlatesFileIO::LineNumberInFile(feature_number));
+				new GPlatesFileIO::LineNumber(feature_number));
 
 		d_geometry_ptr = d_feature_ptr->GetGeometryRef();
 		if (d_geometry_ptr == NULL){
@@ -980,7 +980,7 @@ GPlatesFileIO::ShapefileReader::get_field_names(
 		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
 
 	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-		new GPlatesFileIO::LineNumberInFile(0));
+		new GPlatesFileIO::LineNumber(0));
 				
 	s_field_names.clear();
 	if (!d_feature_ptr){

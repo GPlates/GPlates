@@ -114,18 +114,27 @@ namespace GPlatesQtWidgets
 				std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel);
 
 		GlobeCanvas &
+		globe_canvas();
+
+		const GlobeCanvas &
 		globe_canvas() const;
 
 		MapView &
+		map_view();
+
+		const MapView &
 		map_view() const;
 
 		SceneView &
+		active_view();
+
+		const SceneView &
 		active_view() const;
 
-		MapCanvas &
-		map_canvas() const;
-
 		GlobeAndMapWidget &
+		globe_and_map_widget();
+
+		const GlobeAndMapWidget &
 		globe_and_map_widget() const;
 
 		bool

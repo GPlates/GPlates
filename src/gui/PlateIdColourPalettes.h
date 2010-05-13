@@ -40,7 +40,7 @@ namespace GPlatesGui
 	 * aims to make adjacent plates stand out from each other.
 	 */
 	class DefaultPlateIdColourPalette :
-		public ColourPalette<GPlatesModel::integer_plate_id_type>
+			public ColourPalette<GPlatesModel::integer_plate_id_type>
 	{
 	public:
 
@@ -54,7 +54,7 @@ namespace GPlatesGui
 	 * colours plates belonging to the same region with similar colours.
 	 */
 	class RegionalPlateIdColourPalette :
-		public ColourPalette<GPlatesModel::integer_plate_id_type>
+			public ColourPalette<GPlatesModel::integer_plate_id_type>
 	{
 	public:
 

@@ -720,11 +720,10 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 
 	QVBoxLayout *edit_layout;
 	edit_layout = new QVBoxLayout;
-	edit_layout->setSpacing(0);
-	edit_layout->setMargin(4);
 	edit_layout->addItem(plate_id_layout);
 	edit_layout->addWidget(d_time_period_widget);
 	edit_layout->addWidget(d_name_widget);
+	edit_layout->insertStretch(-1);
 	groupbox_properties->setLayout(edit_layout);
 	
 	// Note that the geometric properties list must be populated dynamically

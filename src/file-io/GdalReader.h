@@ -7,7 +7,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,14 +29,19 @@
 #ifndef GPLATES_FILEIO_GDALREADER_H
 #define GPLATES_FILEIO_GDALREADER_H
 
-#include "property-values/InMemoryRaster.h"
+#include <boost/noncopyable.hpp>
+
 #include "ReadErrorAccumulation.h"
+
+#include "property-values/InMemoryRaster.h"
+#include "property-values/RawRaster.h"
 
 class GDALDataset; 
 
-namespace GPlatesFileIO{
-	
-	class GdalReader
+namespace GPlatesFileIO
+{
+	class GdalReader :
+			public boost::noncopyable
 	{
 	public:
 
@@ -43,23 +49,16 @@ namespace GPlatesFileIO{
 
 		~GdalReader();
 
-		void
+		bool
 		read_file(
-			const QString &filename,
-			GPlatesPropertyValues::InMemoryRaster &raster,
-			ReadErrorAccumulation &read_errors);
+				const QString &filename,
+				GPlatesPropertyValues::InMemoryRaster &raster,
+				ReadErrorAccumulation &read_errors);
 
 	private:
-
-		GdalReader(
-			const GdalReader &other);
-
-		GdalReader &
-		operator=(
-			const GdalReader &other);
 
 		GDALDataset *d_dataset_ptr;
 	};
 }
 
-#endif // GPLATES_FILEIO_GDALREADER_H
+#endif  // GPLATES_FILEIO_GDALREADER_H

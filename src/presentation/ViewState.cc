@@ -36,13 +36,16 @@
 #include "gui/GeometryFocusHighlight.h"
 #include "gui/MapTransform.h"
 #include "gui/RenderSettings.h"
+#include "gui/Texture.h"
+#include "gui/VGPRenderSettings.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
+
+#include "utils/VirtualProxy.h"
 
 #include "view-operations/ReconstructView.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
-const double GPlatesPresentation::ViewState::INITIAL_VGP_DELTA_T = 5.;
 
 GPlatesPresentation::ViewState::ViewState(
 		GPlatesAppLogic::ApplicationState &application_state) :
@@ -95,7 +98,11 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::RenderSettings()),
 	d_map_transform(
 			new GPlatesGui::MapTransform()),
-	d_main_viewport_min_dimension(0)
+	d_main_viewport_min_dimension(0),
+	d_vgp_render_settings(
+			new GPlatesGui::VGPRenderSettings()),
+	d_texture(
+			new GPlatesUtils::VirtualProxy<GPlatesGui::Texture>())
 {
 	// Call the operations in ReconstructView whenever a reconstruction is generated.
 	get_application_state().set_reconstruction_hook(d_reconstruct_view.get());
@@ -290,3 +297,18 @@ GPlatesPresentation::ViewState::connect_to_feature_focus()
 			SLOT(set_focus(
 					GPlatesGui::FeatureFocus &)));
 }
+
+
+GPlatesGui::VGPRenderSettings &
+GPlatesPresentation::ViewState::get_vgp_render_settings()
+{
+	return *d_vgp_render_settings;
+}
+
+
+GPlatesGui::Texture &
+GPlatesPresentation::ViewState::get_texture()
+{
+	return **d_texture;
+}
+

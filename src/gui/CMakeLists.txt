@@ -37,6 +37,8 @@ set(srcs
     ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
+    CptColourPalette.cc
+    CptColourPalette.h
     CsvExport.cc
     CsvExport.h
     EnableCanvasTool.cc
@@ -65,15 +67,11 @@ set(srcs
     FeaturePropertyTableModel.h
     FeatureTableModel.cc
     FeatureTableModel.h
-    FeatureWeakRefSequence.h
     FileIOFeedback.cc
     FileIOFeedback.h
     FullScreenMode.cc
     FullScreenMode.h
     GenericColourScheme.h
-    GenericContinuousColourPalette.cc
-    GenericContinuousColourPalette.h
-    GenericDiscreteColourPalette.h
     GeometryFocusHighlight.cc
     GeometryFocusHighlight.h
     Globe.cc
@@ -158,6 +156,7 @@ set(srcs
     TrinketArea.h
     UnsavedChangesTracker.cc
     UnsavedChangesTracker.h
+    VGPRenderSettings.h
     ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h

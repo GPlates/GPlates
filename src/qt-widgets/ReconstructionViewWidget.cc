@@ -332,6 +332,13 @@ GPlatesQtWidgets::ReconstructionViewWidget::handle_projection_type_changed(
 
 
 GPlatesQtWidgets::GlobeCanvas &
+GPlatesQtWidgets::ReconstructionViewWidget::globe_canvas()
+{
+	return d_globe_and_map_widget_ptr->get_globe_canvas();
+}
+
+
+const GPlatesQtWidgets::GlobeCanvas &
 GPlatesQtWidgets::ReconstructionViewWidget::globe_canvas() const
 {
 	return d_globe_and_map_widget_ptr->get_globe_canvas();
@@ -339,6 +346,13 @@ GPlatesQtWidgets::ReconstructionViewWidget::globe_canvas() const
 
 
 GPlatesQtWidgets::MapView &
+GPlatesQtWidgets::ReconstructionViewWidget::map_view()
+{
+	return d_globe_and_map_widget_ptr->get_map_view();
+}
+
+
+const GPlatesQtWidgets::MapView &
 GPlatesQtWidgets::ReconstructionViewWidget::map_view() const
 {
 	return d_globe_and_map_widget_ptr->get_map_view();
@@ -346,20 +360,27 @@ GPlatesQtWidgets::ReconstructionViewWidget::map_view() const
 
 
 GPlatesQtWidgets::SceneView &
+GPlatesQtWidgets::ReconstructionViewWidget::active_view()
+{
+	return d_globe_and_map_widget_ptr->get_active_view();
+}
+
+
+const GPlatesQtWidgets::SceneView &
 GPlatesQtWidgets::ReconstructionViewWidget::active_view() const
 {
 	return d_globe_and_map_widget_ptr->get_active_view();
 }
 
 
-GPlatesQtWidgets::MapCanvas &
-GPlatesQtWidgets::ReconstructionViewWidget::map_canvas() const
+GPlatesQtWidgets::GlobeAndMapWidget &
+GPlatesQtWidgets::ReconstructionViewWidget::globe_and_map_widget()
 {
-	return d_globe_and_map_widget_ptr->get_map_canvas();
+	return *d_globe_and_map_widget_ptr;
 }
 
 
-GPlatesQtWidgets::GlobeAndMapWidget &
+const GPlatesQtWidgets::GlobeAndMapWidget &
 GPlatesQtWidgets::ReconstructionViewWidget::globe_and_map_widget() const
 {
 	return *d_globe_and_map_widget_ptr;

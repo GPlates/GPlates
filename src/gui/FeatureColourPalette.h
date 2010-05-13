@@ -28,10 +28,13 @@
 #ifndef GPLATES_GUI_FEATURECOLOURPALETTE_H
 #define GPLATES_GUI_FEATURECOLOURPALETTE_H
 
+#include <map>
+
+#include "Colour.h"
 #include "ColourPalette.h"
+
 #include "model/FeatureType.h"
 
-#include <map>
 
 namespace GPlatesGui
 {
@@ -39,13 +42,9 @@ namespace GPlatesGui
 	
 	/**
 	 * FeatureColourPalette maps feature types to colours.
-	 *
-	 * NOTE: After implementing CPT-file support, we might as well make the
-	 * default feature type colour palette a CPT-file and have no native feature
-	 * type palettes.
 	 */
 	class FeatureColourPalette :
-		public ColourPalette<GPlatesModel::FeatureType>
+			public ColourPalette<GPlatesModel::FeatureType>
 	{
 	public:
 
@@ -57,9 +56,13 @@ namespace GPlatesGui
 	
 	private:
 
-		//! A mapping of FeatureType to Colours
-		std::map<GPlatesModel::FeatureType, Colour> d_colours;
-
+		/**
+		 * A mapping of FeatureType to Colours.
+		 *
+		 * It's mutable because we cache the colour generated for a hitherto-unseen
+		 * feature type in this map.
+		 */
+		mutable std::map<GPlatesModel::FeatureType, Colour> d_colours;
 	};
 }
 

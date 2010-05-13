@@ -26,6 +26,7 @@
 
 #include "SetProjectionDialog.h"
 #include "MapCanvas.h"
+#include "MapView.h"
 #include "ViewportWindow.h"
 
 #include "global/GPlatesAssert.h"
@@ -79,7 +80,7 @@ GPlatesQtWidgets::SetProjectionDialog::setup()
 {
 	// Get the current projection. 
 	const GPlatesGui::ProjectionType projection_type =
-			d_viewport_window_ptr->reconstruction_view_widget().map_canvas().map().projection_type();
+			d_viewport_window_ptr->reconstruction_view_widget().map_view().map_canvas().map().projection_type();
 
 	set_projection(projection_type);
 }

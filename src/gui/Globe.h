@@ -34,7 +34,6 @@
 #include "NurbsRenderer.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
-#include "Texture.h"
 #include "SimpleGlobeOrientation.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
@@ -54,6 +53,7 @@ namespace GPlatesViewOperations
 namespace GPlatesGui
 {
 	class GlobeVisibilityTester;
+	class Texture;
 
 	class Globe
 	{
@@ -61,6 +61,7 @@ namespace GPlatesGui
 
 		Globe(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				Texture &texture_,
 				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
@@ -127,7 +128,7 @@ namespace GPlatesGui
 		Texture &
 		texture()
 		{
-			return **d_texture_ptr;
+			return d_texture;
 		}
 
 	private:
@@ -137,6 +138,8 @@ namespace GPlatesGui
 		
 		//! The collection of @a RenderedGeometry objects we need to paint.
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
+
+		Texture &d_texture;
 
 		/**
 		 * The NurbsRenderer used to draw large GreatCircleArcs.
@@ -158,12 +161,6 @@ namespace GPlatesGui
 		 * The solid earth.
 		 */
 		GPlatesUtils::VirtualProxy<OpaqueSphere, OpaqueSphereFactory> d_sphere;
-
-		/**
-		 * A (single) texture to be texture-mapped over the sphere surface.
-		 * Delay creation until it's used.
-		 */
-		boost::shared_ptr<GPlatesUtils::VirtualProxy<Texture> > d_texture_ptr;
 
 		/**
 		 * Lines of lat and lon on surface of earth.

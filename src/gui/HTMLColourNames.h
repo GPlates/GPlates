@@ -31,18 +31,17 @@
 #include "ColourNameSet.h"
 #include "utils/Singleton.h"
 
-#include <iostream>
 namespace GPlatesGui
 {
 	/**
 	 * This class maps colour names used by HTML to colours.
 	 */
 	class HTMLColourNames :
-		public ColourNameSet,
-		public GPlatesUtils::Singleton<HTMLColourNames>
+			public ColourNameSet,
+			public GPlatesUtils::Singleton<HTMLColourNames>
 	{
 
-		GPLATES_SINGLETON_CONSTRUCTOR_DEF(HTMLColourNames)
+		GPLATES_SINGLETON_CONSTRUCTOR_DECL(HTMLColourNames)
 
 	};
 

@@ -59,7 +59,7 @@ namespace GPlatesQtWidgets
 		explicit
 		UnsavedChangesWarningDialog(
 				QWidget *parent_ = NULL):
-			QDialog(parent_)
+			QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 		{
 			setupUi(this);
 			tweak_buttons();

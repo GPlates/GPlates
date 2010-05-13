@@ -41,10 +41,10 @@ namespace GPlatesGui
 	 * A Qt message handler to log qDebug, qWarning, qFatal, etc messages to a file.
 	 */
 	class GPlatesQtMsgHandler :
-		public GPlatesUtils::Singleton<GPlatesQtMsgHandler>
+			public GPlatesUtils::Singleton<GPlatesQtMsgHandler>
 	{
 
-		GPLATES_SINGLETON_CONSTRUCTOR_DEF(GPlatesQtMsgHandler)
+		GPLATES_SINGLETON_CONSTRUCTOR_DECL(GPlatesQtMsgHandler)
 
 	public:
 		~GPlatesQtMsgHandler();

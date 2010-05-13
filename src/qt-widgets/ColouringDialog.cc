@@ -24,23 +24,24 @@
  */
 
 #include <boost/foreach.hpp>
+#include <QPalette>
+#include <QApplication>
+#include <QColorDialog>
+#include <QDesktopWidget>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QHeaderView>
-#include <QApplication>
-#include <QDesktopWidget>
+#include <QMessageBox>
 #include <QMetaType>
 #include <QPixmap>
-#include <QColorDialog>
-#include <QFileDialog>
-#include <QMessageBox>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QList>
 #include <QUrl>
-#include <QtGlobal>
 
 #include "ColouringDialog.h"
 #include "GlobeAndMapWidget.h"
+#include "ReadErrorAccumulationDialog.h"
 
 #include "app-logic/ApplicationState.h"
 
@@ -50,7 +51,7 @@
 #include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeInfo.h"
 #include "gui/ColourSchemeFactory.h"
-#include "gui/GenericContinuousColourPalette.h"
+#include "gui/CptColourPalette.h"
 #include "gui/HTMLColourNames.h"
 #include "gui/SingleColourScheme.h"
 
@@ -219,11 +220,15 @@ namespace
 			const QList<QUrl> &urls)
 	{
 		QStringList pathnames;
-		Q_FOREACH(const QUrl &url, urls) {
-			if (url.scheme() == "file") {
+		BOOST_FOREACH(const QUrl &url, urls)
+		{
+			if (url.scheme() == "file")
+			{
 				QString path = url.toLocalFile();
+
 				// Only accept .cpt files.
-				if (path.endsWith(".cpt")) {
+				if (path.endsWith(".cpt"))
+				{
 					pathnames.push_back(path);
 				}
 			}
@@ -231,16 +236,18 @@ namespace
 		return pathnames;	// QStringList implicitly shares data and uses pimpl idiom, return by value is fine.
 	}
 
-}// anon namespace
+}  // anonymous namespace
 
 
 GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 		GPlatesPresentation::ViewState &view_state,
-		GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
+		const GlobeAndMapWidget &existing_globe_and_map_widget,
+		ReadErrorAccumulationDialog &read_error_accumulation_dialog,
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
 	d_application_state(view_state.get_application_state()),
-	d_existing_globe_and_map_widget_ptr(existing_globe_and_map_widget_ptr),
+	d_existing_globe_and_map_widget_ptr(&existing_globe_and_map_widget),
+	d_read_error_accumulation_dialog_ptr(&read_error_accumulation_dialog),
 	d_colour_scheme_container(view_state.get_colour_scheme_container()),
 	d_view_state_colour_scheme_delegator(view_state.get_colour_scheme_delegator()),
 	d_preview_colour_scheme(
@@ -248,7 +255,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 				d_view_state_colour_scheme_delegator)),
 	d_globe_and_map_widget_ptr(
 			new GlobeAndMapWidget(
-				existing_globe_and_map_widget_ptr,
+				d_existing_globe_and_map_widget_ptr,
 				d_preview_colour_scheme,
 				this)),
 	d_feature_store_root(
@@ -259,8 +266,6 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 {
 	setupUi(this);
 	reposition();
-
-	d_categories_table_original_palette = categories_table->palette();
 
 	// Create the blank icon.
 	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
@@ -279,7 +284,6 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
 	categories_table->horizontalHeader()->hide();
 	categories_table->verticalHeader()->hide();
-	set_categories_table_active_palette();
 
 	// Set up the list of colour schemes.
 	colour_schemes_list->setViewMode(QListWidget::IconMode);
@@ -293,7 +297,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	
 	// Change the background colour of the right hand side.
 	QPalette right_palette = right_side_frame->palette();
-	right_palette.setColor(QPalette::Window, colour_schemes_list->palette().color(QPalette::Base));
+	right_palette.setColor(QPalette::Active, QPalette::Window, colour_schemes_list->palette().color(QPalette::Base));
 	right_side_frame->setPalette(right_palette);
 
 	// Get current colour scheme selection from ViewState's colour scheme delegator.
@@ -314,25 +318,6 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	make_signal_slot_connections();
 
 	categories_table->setFocus();
-}
-
-
-void
-GPlatesQtWidgets::ColouringDialog::set_categories_table_active_palette()
-{
-	QPalette categories_table_palette = categories_table->palette();
-	categories_table_palette.setColor(
-			QPalette::Disabled /* cells are not editable, so by default they get painted as disabled, which looks ugly */,
-			QPalette::Text,
-			categories_table_palette.color(QPalette::Active, QPalette::Text));
-	categories_table->setPalette(categories_table_palette);
-}
-
-
-void
-GPlatesQtWidgets::ColouringDialog::set_categories_table_inactive_palette()
-{
-	categories_table->setPalette(d_categories_table_original_palette);
 }
 
 
@@ -507,20 +492,27 @@ GPlatesQtWidgets::ColouringDialog::dragEnterEvent(
 		QDragEnterEvent *ev)
 {
 	// We don't support any dropping of files for the Single Colour mode.
-	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR) {
+	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR)
+	{
 		ev->ignore();
 		return;
 	}
 	
 	// OK, user wants to drop something. Does it have .cpt files?
-	if (ev->mimeData()->hasUrls()) {
+	if (ev->mimeData()->hasUrls())
+	{
 		QStringList cpts = extract_colour_palette_pathnames_from_file_urls(ev->mimeData()->urls());
-		if ( ! cpts.isEmpty()) {
+		if (!cpts.isEmpty())
+		{
 			ev->acceptProposedAction();
-		} else {
+		}
+		else
+		{
 			ev->ignore();
 		}
-	} else {
+	}
+	else
+	{
 		ev->ignore();
 	}
 }
@@ -530,15 +522,21 @@ GPlatesQtWidgets::ColouringDialog::dropEvent(
 		QDropEvent *ev)
 {
 	// OK, user is dropping something. Does it have .cpt files?
-	if (ev->mimeData()->hasUrls()) {
+	if (ev->mimeData()->hasUrls())
+	{
 		QStringList cpts = extract_colour_palette_pathnames_from_file_urls(ev->mimeData()->urls());
-		if ( ! cpts.isEmpty()) {
+		if (!cpts.isEmpty())
+		{
 			ev->acceptProposedAction();
 			open_files(cpts);
-		} else {
+		}
+		else
+		{
 			ev->ignore();
 		}
-	} else {
+	}
+	else
+	{
 		ev->ignore();
 	}
 }
@@ -629,23 +627,24 @@ GPlatesQtWidgets::ColouringDialog::handle_remove_button_clicked(
 void
 GPlatesQtWidgets::ColouringDialog::open_file()
 {
+	QString filter_text;
 	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
 			d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
 	{
-		QStringList file_list = QFileDialog::getOpenFileNames(
-				this,
-				"Open Files",
-				QString(),
-				"Categorical CPT file (*.cpt)");
-		open_files(file_list);
+		filter_text = "Categorical CPT file (*.cpt)";
 	}
 	else if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_AGE)
+	{
+		filter_text = "Regular CPT file (*.cpt)";
+	}
+
+	if (!filter_text.isEmpty())
 	{
 		QStringList file_list = QFileDialog::getOpenFileNames(
 				this,
 				"Open Files",
 				QString(),
-				"Regular CPT file (*.cpt)");
+				filter_text);
 		open_files(file_list);
 	}
 }
@@ -655,8 +654,6 @@ void
 GPlatesQtWidgets::ColouringDialog::open_files(
 		const QStringList &file_list)
 {
-	// NOTE: Yeah, this duplicates the logic of which Open dialog to show. Maybe it could be
-	// put in an anon namespace function or something.
 	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
 			d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
 	{
@@ -680,17 +677,22 @@ GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file(
 
 	int first_index_in_list = -1;
 
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_error_accumulation_dialog_ptr->read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
+
 	GPlatesFileIO::RegularCptReader reader;
-	BOOST_FOREACH(QString file, file_list)
+	BOOST_FOREACH(QString filename, file_list)
 	{
-		try
+		GPlatesGui::RegularCptColourPalette *cpt = reader.read_file(filename, read_errors);
+
+		// cpt can be NULL if the file yielded no parseable lines.
+		if (cpt)
 		{
-			GPlatesGui::GenericContinuousColourPalette *cpt = reader.read_file(file);
 			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme =
 				GPlatesGui::ColourSchemeFactory::create_custom_age_colour_scheme(
 						d_application_state, cpt);
 
-			QFileInfo file_info(file);
+			QFileInfo file_info(filename);
 
 			GPlatesGui::ColourSchemeInfo cpt_info(
 					colour_scheme,
@@ -706,10 +708,13 @@ GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file(
 				first_index_in_list = colour_schemes_list->count() - 1;
 			}
 		}
-		catch (const GPlatesFileIO::ErrorReadingCptFileException &err)
-		{
-			QMessageBox::critical(this, "Error", err.message);
-		}
+	}
+
+	d_read_error_accumulation_dialog_ptr->update();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors)
+	{
+		d_read_error_accumulation_dialog_ptr->show();
 	}
 
 	if (first_index_in_list != -1)
@@ -940,7 +945,6 @@ GPlatesQtWidgets::ColouringDialog::handle_feature_collections_combobox_index_cha
 		use_global_checkbox->setCheckState(Qt::Unchecked);
 
 		splitter->setEnabled(true);
-		set_categories_table_active_palette();
 
 		GPlatesGui::ColourSchemeCategory::Type category = colour_scheme_handle->first;
 		GPlatesGui::ColourSchemeContainer::id_type id = colour_scheme_handle->second;
@@ -952,7 +956,6 @@ GPlatesQtWidgets::ColouringDialog::handle_feature_collections_combobox_index_cha
 		use_global_checkbox->setCheckState(Qt::Checked);
 
 		splitter->setEnabled(false);
-		set_categories_table_inactive_palette();
 	}
 }
 

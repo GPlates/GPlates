@@ -153,8 +153,3 @@ GPlatesUnitTest::TestSuiteFilter::is_match(std::string str, std::string pattern)
 
 GPlatesUnitTest::FilterData
 GPlatesUnitTest::TestSuiteFilter::d_filter(0);
-
-GPlatesUnitTest::TestSuiteFilter::TestSuiteFilter()
-{ }
-
-

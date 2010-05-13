@@ -36,14 +36,15 @@
 
 GPlatesGui::Globe::Globe(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		Texture &texture_,
 		RenderSettings &render_settings,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_render_settings(render_settings),
 	d_rendered_geom_collection(rendered_geom_collection),
+	d_texture(texture_),
 	d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
-	d_texture_ptr(new GPlatesUtils::VirtualProxy<Texture>()),
 	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
 	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
 	d_rendered_geom_collection_painter(rendered_geom_collection,
@@ -61,8 +62,8 @@ GPlatesGui::Globe::Globe(
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_render_settings(existing_globe.d_render_settings),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
+	d_texture(existing_globe.d_texture),
 	d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
-	d_texture_ptr(existing_globe.d_texture_ptr),
 	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
 	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
 	d_rendered_geom_collection_painter(d_rendered_geom_collection,
@@ -131,7 +132,7 @@ GPlatesGui::Globe::paint(
 	// Draw the texture slightly in front of the grey sphere, otherwise we get little
 	// bits of the sphere sticking out. 
 	glDepthRange(0.8, 0.9);
-	(*d_texture_ptr)->paint();
+	d_texture.paint();
 	
 	glDepthRange(0.7, 0.8);
 	d_grid.paint(Colour::get_silver());
@@ -205,18 +206,18 @@ GPlatesGui::Globe::paint_vector_output(
 void
 GPlatesGui::Globe::toggle_raster_display()
 {
-	(*d_texture_ptr)->toggle();
+	d_texture.toggle();
 }
 
 void
 GPlatesGui::Globe::enable_raster_display()
 {
-	(*d_texture_ptr)->set_enabled(true);
+	d_texture.set_enabled(true);
 }
 
 void
 GPlatesGui::Globe::disable_raster_display()
 {
-	(*d_texture_ptr)->set_enabled(false);
+	d_texture.set_enabled(false);
 }
 

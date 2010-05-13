@@ -28,6 +28,7 @@
 #ifndef GPLATES_GUI_GENERICCOLOURSCHEME_H
 #define GPLATES_GUI_GENERICCOLOURSCHEME_H
 
+#include "Colour.h"
 #include "ColourScheme.h"
 #include "ColourPalette.h"
 
@@ -47,13 +48,14 @@ namespace GPlatesGui
 	 * PropertyExtractorType also needs to publicly typedef the property's type as
 	 * 'return_type'.
 	 */
-	template <class PropertyExtractorType>
+	template<class PropertyExtractorType>
 	class GenericColourScheme :
-		public ColourScheme
+			public ColourScheme
 	{
 	private:
 
 		typedef ColourPalette<typename PropertyExtractorType::return_type> ColourPaletteType;
+		static const Colour PROPERTY_NOT_FOUND_COLOUR;
 
 	public:
 
@@ -94,7 +96,7 @@ namespace GPlatesGui
 			}
 			else
 			{
-				return boost::none;
+				return PROPERTY_NOT_FOUND_COLOUR;
 			}
 		}
 	
@@ -104,6 +106,10 @@ namespace GPlatesGui
 		PropertyExtractorType d_property_extractor;
 
 	};
+
+	template<class PropertyExtractorType>
+	const Colour
+	GenericColourScheme<PropertyExtractorType>::PROPERTY_NOT_FOUND_COLOUR = Colour::get_grey();
 }
 
 #endif  /* GPLATES_GUI_GENERICCOLOURSCHEME_H */

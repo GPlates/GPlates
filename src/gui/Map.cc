@@ -68,8 +68,15 @@ GPlatesGui::Map::projection()
 }
 
 
+const GPlatesGui::MapProjection &
+GPlatesGui::Map::projection() const
+{
+	return d_projection;
+}
+
+
 GPlatesGui::ProjectionType
-GPlatesGui::Map::projection_type()
+GPlatesGui::Map::projection_type() const
 {
 	return d_projection.projection_type();
 }

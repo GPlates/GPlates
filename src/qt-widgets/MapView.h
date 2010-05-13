@@ -33,7 +33,9 @@
 #include <QMouseEvent>
 
 #include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
 
+#include "gui/ColourScheme.h"
 #include "gui/ViewportZoom.h"
 #include "maths/LatLonPoint.h"
 #include "qt-widgets/SceneView.h"
@@ -96,8 +98,10 @@ namespace GPlatesQtWidgets
 
 		MapView(
 			GPlatesPresentation::ViewState &view_state,
-			MapCanvas *map_canvas,
+			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 			QWidget *parent);
+
+		~MapView();
 
 		/** 
 		 * Translates the view so that the LatLonPoint llp is centred on the viewport. 
@@ -183,8 +187,11 @@ namespace GPlatesQtWidgets
 		void
 		draw_svg_output();
 
-		MapCanvas &
+		const MapCanvas &
 		map_canvas() const;
+
+		MapCanvas &
+		map_canvas();
 
 		/**
 		 * Updates the member variable d_centre_of_viewport by translating the center of the viewport
@@ -356,7 +363,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * A pointer to the map canvas that this view is associated with. 
 		 */
-		MapCanvas *d_map_canvas_ptr;
+		boost::scoped_ptr<MapCanvas> d_map_canvas_ptr;
 
 		/**
 		 * Whether the mouse pointer is on the surface of the earth.

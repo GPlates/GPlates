@@ -21,8 +21,6 @@ set(srcs
     FeatureVisitorsTestSuite.h
     FileIoTestSuite.cc
     FileIoTestSuite.h
-    GenericContinuousColourPaletteTest.cc
-    GenericContinuousColourPaletteTest.h
     GeometryVisitorsTestSuite.cc
     GeometryVisitorsTestSuite.h
     GlobalTestSuite.cc

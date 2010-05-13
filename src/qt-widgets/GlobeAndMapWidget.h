@@ -30,7 +30,7 @@
 
 #include <QWidget>
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include "gui/ColourScheme.h"
 #include "maths/LatLonPoint.h"
@@ -71,22 +71,28 @@ namespace GPlatesQtWidgets
 
 		//! Use this constructor if you want to make a clone of an existing GlobeAndMapWidget.
 		GlobeAndMapWidget(
-				GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
+				const GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = NULL);
 
 		~GlobeAndMapWidget();
 
 		GlobeCanvas &
-		get_globe_canvas() const;
+		get_globe_canvas();
 
-		MapCanvas &
-		get_map_canvas() const;
+		const GlobeCanvas &
+		get_globe_canvas() const;
 		
 		MapView &
+		get_map_view();
+
+		const MapView &
 		get_map_view() const;
 
 		SceneView &
+		get_active_view();
+
+		const SceneView &
 		get_active_view() const;
 
 		bool
@@ -155,9 +161,8 @@ namespace GPlatesQtWidgets
 
 		GPlatesPresentation::ViewState &d_view_state;
 
-		GlobeCanvas *d_globe_canvas_ptr;
-		MapCanvas *d_map_canvas_ptr;
-		MapView *d_map_view_ptr;
+		boost::scoped_ptr<GlobeCanvas> d_globe_canvas_ptr;
+		boost::scoped_ptr<MapView> d_map_view_ptr;
 
 		//! Which of globe and map is currently active.
 		SceneView *d_active_view_ptr;

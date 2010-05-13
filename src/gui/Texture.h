@@ -28,13 +28,15 @@
 #ifndef GPLATES_GUI_TEXTURE_H
 #define GPLATES_GUI_TEXTURE_H
 
+#include <boost/noncopyable.hpp>
 #include <QtOpenGL/qgl.h>
 #include <QString>
 #include <QObject>
+
 #include "property-values/InMemoryRaster.h"
 
-namespace GPlatesGui {
-
+namespace GPlatesGui
+{
 	/**
 	 *	NUM_STRIPS_S and NUM_STRIPS_T are the number of strips that the texure is divided up into.
 	 *  The edges of these strips define coordinates in texture space (s,t). 
@@ -68,10 +70,10 @@ namespace GPlatesGui {
 	};
 
 	class Texture :
-		public QObject,
-		public GPlatesPropertyValues::InMemoryRaster
+			public QObject,
+			public GPlatesPropertyValues::InMemoryRaster,
+			public boost::noncopyable
 	{
-
 		Q_OBJECT
 
 	public:
@@ -93,24 +95,13 @@ namespace GPlatesGui {
 		~Texture();
 
 		/**
-		 * Generates a texture using the data contained in a std::vector<unsigned_byte_type>.
-		 * This is used for data loaded via GDAL. 
-		 */
-		void
-		generate_raster(
-			std::vector<unsigned_byte_type> &data,
-			QSize &size,
-			ColourFormat format);
-
-		/**
 		 * Generates a texture using the data pointed to by unsigned_byte_type *data.
-		 * This is used for images loaded via Qt's QImage class.
 		 */
 		void
 		generate_raster(
-			unsigned_byte_type *data,
-			QSize &size,
-			ColourFormat format);
+				unsigned_byte_type *data,
+				QSize &size,
+				ColourFormat format);
 
 		/**
 		 * Generates a checker-board pattern in memory, and creates a texture from this.
@@ -158,7 +149,7 @@ namespace GPlatesGui {
 		 */
 		void
 		set_enabled(
-			bool enabled);
+				bool enabled);
 	
 		/**
 		 * Toggles the state of the boolean d_enabled, which determines whether or not the texture
@@ -194,7 +185,7 @@ namespace GPlatesGui {
 		 */ 
 		void
 		set_min(
-			float min)
+				float min)
 		{
 			d_min = min;
 			emit texture_changed();
@@ -207,7 +198,7 @@ namespace GPlatesGui {
 		 */ 
 		void
 		set_max(
-			float max)
+				float max)
 		{
 			d_max = max;
 			emit texture_changed();
@@ -221,7 +212,7 @@ namespace GPlatesGui {
 		 */
 		void
 		set_corresponds_to_data(
-			bool data)
+				bool data)
 		{
 			d_corresponds_to_data = data;
 			emit texture_changed();
@@ -232,7 +223,7 @@ namespace GPlatesGui {
 		 */
 		void
 		set_extent(
-			const QRectF &rect);
+				const QRectF &rect);
 
 		/**
 		 * Return the coordinate range over which the texture is mapped.
@@ -257,14 +248,6 @@ namespace GPlatesGui {
 
 	private:
 
-		// Make copy and assignment private to prevent copying/assignment
-		Texture(
-			const Texture &other);
-
-		Texture &
-		operator=(
-			const Texture &other);
-
 		/** 
 		 * Maps 2D points in the texture coordinate system to 3D vertices in the sphere coordinate system. 
 		 */
@@ -277,7 +260,7 @@ namespace GPlatesGui {
 		 */
 		void
 		generate_mapping_coordinates(
-			QRectF &extent);
+				QRectF &extent);
 
 		/**
 		 * Re-maps an existing texture to the portion of the sphere surface given by extent.

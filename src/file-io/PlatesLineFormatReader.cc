@@ -1754,7 +1754,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesFileIO::ReadErrorAccumulation &errors)
 	{
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-				new GPlatesFileIO::LineNumberInFile(in.line_number()));
+				new GPlatesFileIO::LineNumber(in.line_number()));
 		errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(source, location, 
 				GPlatesFileIO::ReadErrors::UnknownPlatesDataTypeCode,
 				GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated));
@@ -1769,7 +1769,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesFileIO::ReadErrorAccumulation &errors)
 	{
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-				new GPlatesFileIO::LineNumberInFile(in.line_number()));
+				new GPlatesFileIO::LineNumber(in.line_number()));
 		errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(source, location, 
 				GPlatesFileIO::ReadErrors::AmbiguousPlatesIceShelfCode,
 				GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated));
@@ -2028,7 +2028,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		// Add error message.
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-				new GPlatesFileIO::LineNumberInFile(in.line_number()));
+				new GPlatesFileIO::LineNumber(in.line_number()));
 		errors.d_recoverable_errors.push_back(
 				GPlatesFileIO::ReadErrorOccurrence(
 						source, location, error_description, error_result));
@@ -2060,7 +2060,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		if (point_seq.size() < 2)
 		{
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-					new GPlatesFileIO::LineNumberInFile(in.line_number()));
+					new GPlatesFileIO::LineNumber(in.line_number()));
 			errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(source, location, 
 					GPlatesFileIO::ReadErrors::AdjacentSkipToPlotterCodes,
 					GPlatesFileIO::ReadErrors::NoGeometryCreatedByMovement));
@@ -2262,7 +2262,7 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 			read_feature(model, collection, in, source, read_errors);
 		} catch (GPlatesFileIO::ReadErrors::Description error) {
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-					new GPlatesFileIO::LineNumberInFile(in.line_number()));
+					new GPlatesFileIO::LineNumber(in.line_number()));
 			read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
 					source, location, error, GPlatesFileIO::ReadErrors::FeatureDiscarded));
 		}

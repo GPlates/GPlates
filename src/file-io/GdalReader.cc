@@ -28,38 +28,24 @@
 
 #include <iostream>
 
-#ifdef HAVE_CONFIG_H
-// We're building on a UNIX-y system, and can thus expect "global/config.h".
-
-// On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
-// The "CMake" script should have determined which one to use.
-#include "global/config.h"
-#ifdef HAVE_GDAL_OGRSF_FRMTS_H
-#include <gdal/gdal_priv.h>
-#else
-#include <gdal_priv.h>
-#endif
-
-#else  // We're not building on a UNIX-y system.  We'll have to assume it's <ogrsf_frmts.h>.
-#include <gdal_priv.h>
-#endif  // HAVE_CONFIG_H
-
 // Use this header instead of <cmath> if you want to use 'std::isnan'.
-#include <cmath_ext.h>
+#include <cmath_ext.h> // FIXME: use functions in maths/Real.h
 
 #include <QtOpenGL/qgl.h>
 #include <QColor>
 #include <QDir>
 #include <QRgb>
+#include <QDebug>
+
+#include "ErrorOpeningFileForReadingException.h"
+#include "Gdal.h"
+#include "GdalReader.h"
+#include "GdalReaderUtils.h"
 
 #include "maths/MathsUtils.h"
-#include "ErrorOpeningFileForReadingException.h"
-#include "GdalReader.h"
 
-namespace{
-
-	struct GdalException{};
-
+namespace
+{
 	// a blue->cyan->green->yellow->red colour map.
 	const static QRgb colour_map[9] = {
 		qRgb(0,0,255),			// blue = low
@@ -80,10 +66,10 @@ namespace{
 
 	void
 	convert_data_to_qcolor(
-		float data,
-		QColor &colour,
-		const float min,
-		const float max)
+			float data,
+			QColor &colour,
+			const float min,
+			const float max)
 	{
 		if (data < min) data = min;
 		if (data > max) data = max;
@@ -129,49 +115,49 @@ namespace{
 
 	void
 	convert_line_to_RGB(
-		std::vector<float> &line,
-		std::vector<GLubyte> &rgb,
-		double colour_min,
-		double colour_max,
-		double no_data_value,
-		int no_data_value_success)
+			std::vector<float> &line,
+			std::vector<GLubyte> &rgb,
+			double colour_min,
+			double colour_max,
+			double no_data_value,
+			int no_data_value_success)
 	{
-			std::vector<float>::iterator it = line.begin();
-			std::vector<float>::iterator it_end = line.end();
+		std::vector<float>::iterator it = line.begin();
+		std::vector<float>::iterator it_end = line.end();
 
-			float data;
-			QColor colour;
-			// loop over the pixels in the scan line and convert
-			// them to colour indices
-			for ( ; it != it_end ; ++it)
-			{
-				data = *it;
-				if (std::isnan(data)){
-					std::cerr << "NaN detected" << std::endl;
-					colour = Qt::black;
-				}
-				else if (no_data_value_success && (GPlatesMaths::are_almost_exactly_equal(static_cast<double>(data),no_data_value))){
-			//		std::cerr << "no_data_value detected" << std::endl;
-					colour = Qt::black;
-				}
-				else{
-					convert_data_to_qcolor(data,colour,colour_min,colour_max);
-				}
-				rgb.push_back(colour.red());
-				rgb.push_back(colour.green());
-				rgb.push_back(colour.blue());
-				rgb.push_back(static_cast<GLubyte>(255));
+		float data;
+		QColor colour;
+		// loop over the pixels in the scan line and convert
+		// them to colour indices
+		for ( ; it != it_end ; ++it)
+		{
+			data = *it;
+			if (std::isnan(data)){
+				std::cerr << "NaN detected" << std::endl;
+				colour = Qt::black;
 			}
+			else if (no_data_value_success && (GPlatesMaths::are_almost_exactly_equal(static_cast<double>(data),no_data_value))){
+		//		std::cerr << "no_data_value detected" << std::endl;
+				colour = Qt::black;
+			}
+			else{
+				convert_data_to_qcolor(data,colour,colour_min,colour_max);
+			}
+			rgb.push_back(colour.red());
+			rgb.push_back(colour.green());
+			rgb.push_back(colour.blue());
+			rgb.push_back(static_cast<GLubyte>(255));
+		}
 	}
 
 
 	void
 	convert_raster_to_RGB(
-		GDALRasterBand *band,
-		std::vector<GLubyte> &rgb,
-		double colour_min,
-		double colour_max,
-		bool flip)
+			GDALRasterBand *band,
+			std::vector<GLubyte> &rgb,
+			double colour_min,
+			double colour_max,
+			bool flip)
 	{
 		if (band == NULL) return;
 
@@ -209,16 +195,13 @@ namespace{
 			}
 			convert_line_to_RGB(line,rgb,colour_min,colour_max,no_data_value,no_data_value_success);
 		}		
-
 	}
-
 
 
 	void
 	display_gdal_projection_info(
-		GDALDataset *dataset)
+			GDALDataset *dataset)
 	{
-	
 		if (dataset == NULL)
 		{
 			return;
@@ -247,7 +230,7 @@ namespace{
 
 	void
 	display_gdal_band_info(
-		GDALRasterBand *band)
+			GDALRasterBand *band)
 	{
 
 		int xsize = band->GetXSize();
@@ -297,6 +280,7 @@ namespace{
 	}
 } // anonymous namespace
 
+
 GPlatesFileIO::GdalReader::GdalReader()
 {
 	GDALAllRegister();
@@ -304,105 +288,117 @@ GPlatesFileIO::GdalReader::GdalReader()
 	d_dataset_ptr = NULL;
 }
 
+
 GPlatesFileIO::GdalReader::~GdalReader()
 {
-	try {
-		if (d_dataset_ptr) {
+	try
+	{
+		if (d_dataset_ptr)
+		{
 			GDALClose(d_dataset_ptr);
 		}
 	}
-	catch (...) {
+	catch (...)
+	{
 	}
 }
 
-void
+
+bool
 GPlatesFileIO::GdalReader::read_file(
-	 const QString &filename,
-	 GPlatesPropertyValues::InMemoryRaster &raster,
-	 GPlatesFileIO::ReadErrorAccumulation &read_errors)
+		 const QString &filename,
+		 GPlatesPropertyValues::InMemoryRaster &raster,
+		 GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
-		new GPlatesFileIO::LocalFileDataSource(filename, GPlatesFileIO::DataFormats::Unspecified));
+			new GPlatesFileIO::LocalFileDataSource(filename, GPlatesFileIO::DataFormats::Unspecified));
 	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-		new GPlatesFileIO::LineNumberInFile(0));
+			new GPlatesFileIO::LineNumber(0));
 
-	d_dataset_ptr = static_cast<GDALDataset *>(GDALOpen(filename.toStdString().c_str(), GA_ReadOnly));
+	d_dataset_ptr = GdalReaderUtils::gdal_open(filename, read_errors);
 	
-	if (d_dataset_ptr == NULL)
+	if (!d_dataset_ptr)
 	{
-	//	std::cerr << "Error opening dataset via GDAL." << std::endl;
-		throw GPlatesFileIO::ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
+		// Note: GdalReaderUtils::gdal_open() appends to the read_errors if it
+		// returns NULL, so no need to do it ourselves here.
+		return false;
 	}
 
+#if 0
 	display_gdal_projection_info(d_dataset_ptr);
+#endif
 
 	int n = d_dataset_ptr->GetRasterCount();
 
 	//std::cerr << n << " Raster band(s) in file." << std::endl;
 
-	if (n == 0) {
+	if (n == 0)
+	{
 		read_errors.d_failures_to_begin.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			e_source,
-			e_location,
-			GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
-			GPlatesFileIO::ReadErrors::FileNotLoaded));
-		return;
+				GPlatesFileIO::ReadErrorOccurrence(
+					e_source,
+					e_location,
+					GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
+					GPlatesFileIO::ReadErrors::FileNotLoaded));
+		return false;
 	}
 
 	// GDAL raster bands are numbered from 1. 
 	GDALRasterBand *gdal_band_ptr = d_dataset_ptr->GetRasterBand(1);
-	if (gdal_band_ptr == NULL) {
+	if (gdal_band_ptr == NULL)
+	{
 		read_errors.d_failures_to_begin.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			e_source,
-			e_location,
-			GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
-			GPlatesFileIO::ReadErrors::FileNotLoaded));
-		return;
+				GPlatesFileIO::ReadErrorOccurrence(
+					e_source,
+					e_location,
+					GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
+					GPlatesFileIO::ReadErrors::FileNotLoaded));
+		return false;
 	}
+
 #if 0
 	display_gdal_band_info(gdal_band_ptr);
 #endif
 
-	QSize size(gdal_band_ptr->GetXSize(),gdal_band_ptr->GetYSize());
+	QSize size(gdal_band_ptr->GetXSize(), gdal_band_ptr->GetYSize());
 
 	std::vector<GLubyte> image_RGB;
 
-	double max,min,mean,dev;
+	double max, min, mean, dev;
 
-	if (gdal_band_ptr->GetStatistics(false,true,&min,&max,&mean,&dev) != CE_None)
+	if (gdal_band_ptr->GetStatistics(false, true, &min, &max, &mean, &dev) != CE_None)
 	{
 		read_errors.d_failures_to_begin.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			e_source,
-			e_location,
-			GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
-			GPlatesFileIO::ReadErrors::FileNotLoaded));
-		return;		
+				GPlatesFileIO::ReadErrorOccurrence(
+					e_source,
+					e_location,
+					GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
+					GPlatesFileIO::ReadErrors::FileNotLoaded));
+		return false;		
 	}
 
 	// Set up colour_min and colour_max so that the colour scale covers the 
 	// range (mean - 2*standard_deviation) to (mean + 2*standard_deviation)
-	double colour_min = mean - 2*dev;
-	double colour_max = mean + 2*dev;
-
+	double colour_min = mean - 2 * dev;
+	double colour_max = mean + 2 * dev;
 
 	// GMT style GRDs are stored, and imported, upside-down.
 	// See for example http://trac.osgeo.org/gdal/ticket/1926
 	bool flip = false;
 	QString driver_type = d_dataset_ptr->GetDriver()->GetDescription();
-	if (driver_type.compare("GMT") == 0){
+	if (driver_type.compare("GMT") == 0)
+	{
 		flip = true;
 	}
 
-	convert_raster_to_RGB(gdal_band_ptr,image_RGB,colour_min,colour_max,flip);
+	convert_raster_to_RGB(gdal_band_ptr, image_RGB, colour_min, colour_max, flip);
 
 	raster.set_min(colour_min);
 	raster.set_max(colour_max);
 	raster.set_corresponds_to_data(true);
-	raster.generate_raster(image_RGB,size,
-		GPlatesPropertyValues::InMemoryRaster::RgbaFormat);
+	raster.generate_raster(&image_RGB[0], size, GPlatesPropertyValues::InMemoryRaster::RgbaFormat);
 	raster.set_enabled(true);
 
+	return true;
 }
+

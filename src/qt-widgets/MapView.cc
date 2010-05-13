@@ -27,10 +27,10 @@
 
 #include <cmath>
 #include <QGraphicsView>
-#include <boost/shared_ptr.hpp>
+#include <QtOpenGL/qgl.h>
+#include <QPaintEngine>
 
 #include "MapView.h"
-
 #include "MapCanvas.h"
 
 #include "gui/MapTransform.h"
@@ -69,10 +69,17 @@ namespace
 
 GPlatesQtWidgets::MapView::MapView(
 		GPlatesPresentation::ViewState &view_state,
-		GPlatesQtWidgets::MapCanvas *map_canvas_,
+		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	d_viewport_zoom(&view_state.get_viewport_zoom()),
-	d_map_canvas_ptr(map_canvas_),
+	d_map_canvas_ptr(
+			new MapCanvas(
+				view_state.get_rendered_geometry_collection(),
+				view_state.get_render_settings(),
+				view_state.get_viewport_zoom(),
+				colour_scheme,
+				view_state,
+				this)),
 	d_scene_rect(-180,-90,360,180),
 	d_gl_widget_ptr(
 			new QGLWidget(
@@ -81,10 +88,43 @@ GPlatesQtWidgets::MapView::MapView(
 	d_mouse_wheel_enabled(true),
 	d_map_transform(view_state.get_map_transform())
 {
+#if QT_VERSION >= 0x040600
+	// From Qt 4.6, the default paint engine is QPaintEngine::OpenGL2. This
+	// causes the map view in GPlates to not function correctly.
+	// 
+	// This is documented in the Qt 4.6 changelog
+	// (http://qt.nokia.com/developer/changes/changes-4.6.0):
+	//
+	//		The default engine used to draw onto OpenGL buffers has changed in
+	//		Qt 4.6. The QPaintEngine::OpenGL2 engine is now used as the default
+	//		engine. This *may* cause compatibility problems for applications
+	//		that use a mix of QPainter and native OpenGL calls to draw into a GL
+	//		buffer. Use the QGL::setPreferredPaintEngine() function to enforce
+	//		usage of the old GL paint engine.
+	//
+	// FIXME: It may be desirable to fix the Map rendering code so that the new
+	// OpenGL2 paint engine can be used.
+	//
+	// Note that the 3D Globe view is not affected by the change to OpenGL2.
+	QGL::setPreferredPaintEngine(QPaintEngine::OpenGL);
+	// setOptimizationFlag(QGraphicsView::IndirectPainting);
+#endif
+
+	// QWidget::setMouseTracking:
+	//   If mouse tracking is disabled (the default), the widget only receives mouse move
+	//   events when at least one mouse button is pressed while the mouse is being moved.
+	//
+	//   If mouse tracking is enabled, the widget receives mouse move events even if no buttons
+	//   are pressed.
+	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
+	d_gl_widget_ptr->setMouseTracking(true);
 	setViewport(d_gl_widget_ptr);
+
 	d_map_canvas_ptr->map().set_text_renderer(
 				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr));
-	setScene(map_canvas_);
+	d_map_canvas_ptr->set_map_view_ptr(this);
+	setScene(d_map_canvas_ptr.get());
+
 	setViewportUpdateMode(
 		QGraphicsView::MinimalViewportUpdate);
 	setInteractive(false);
@@ -109,6 +149,10 @@ GPlatesQtWidgets::MapView::MapView(
 	make_signal_slot_connections();
 }
 
+GPlatesQtWidgets::MapView::~MapView()
+{
+}
+
 void
 GPlatesQtWidgets::MapView::make_signal_slot_connections()
 {
@@ -126,7 +170,7 @@ GPlatesQtWidgets::MapView::make_signal_slot_connections()
 
 	// Pass up repainted signals from MapCanvas.
 	QObject::connect(
-			d_map_canvas_ptr,
+			d_map_canvas_ptr.get(),
 			SIGNAL(repainted()),
 			this,
 			SLOT(handle_map_canvas_repainted()));
@@ -449,8 +493,14 @@ GPlatesQtWidgets::MapView::draw_svg_output()
 	map_canvas().draw_svg_output();
 }
 
-GPlatesQtWidgets::MapCanvas &
+const GPlatesQtWidgets::MapCanvas &
 GPlatesQtWidgets::MapView::map_canvas() const
+{
+	return *d_map_canvas_ptr;
+}
+
+GPlatesQtWidgets::MapCanvas &
+GPlatesQtWidgets::MapView::map_canvas()
 {
 	return *d_map_canvas_ptr;
 }

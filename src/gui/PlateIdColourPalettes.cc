@@ -71,12 +71,12 @@ namespace
 
 			// There are intentionally 13 colours - see ColourByPlateId on GPlates wiki.
 			d_colours.reserve(13);
-			/*  0 */ d_colours.push_back(Colour::get_maroon());
+			/*  0 */ d_colours.push_back(Colour::get_yellow());
 			/*  1 */ d_colours.push_back(*(HTMLColourNames::instance().get_colour("lightsalmon")));
 			/*  2 */ d_colours.push_back(Colour::get_lime());
 			/*  3 */ d_colours.push_back(Colour::get_fuchsia());
 			/*  4 */ d_colours.push_back(Colour::get_navy());
-			/*  5 */ d_colours.push_back(Colour::get_yellow());
+			/*  5 */ d_colours.push_back(Colour::get_white());
 			/*  6 */ d_colours.push_back(Colour::get_blue());
 			/*  7 */ d_colours.push_back(Colour::get_purple());
 			/*  8 */ d_colours.push_back(Colour::get_red());
@@ -159,6 +159,6 @@ GPlatesGui::RegionalPlateIdColourPalette::get_colour(
 	const double V_MAX = 1.0;
 	const int V_STEPS = 13; // why 13? same rationale as for DEFAULT_COLOUR_ARRAY above
 	hsv.v = (plate_id % V_STEPS) / static_cast<double>(V_STEPS) * (V_MAX - V_MIN) + V_MIN;
-	return boost::optional<Colour>(Colour::from_hsv(hsv));
+	return Colour::from_hsv(hsv);
 }
 

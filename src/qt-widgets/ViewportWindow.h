@@ -96,6 +96,7 @@ namespace GPlatesViewOperations
 {
 	class ActiveGeometryOperation;
 	class CloneOperation;
+	class DeleteFeatureOperation;
 	class FocusedFeatureGeometryManipulator;
 	class GeometryBuilder;
 	class GeometryOperationTarget;
@@ -138,16 +139,19 @@ namespace GPlatesQtWidgets
 
 		~ViewportWindow();
 
-
 		void
 		load_files(
 				const QStringList &filenames);
 
-
 		void
 		reconstruct_to_time(
 				const double &recon_time);
-		
+
+		GPlatesQtWidgets::ReconstructionViewWidget &
+		reconstruction_view_widget()
+		{
+			return d_reconstruction_view_widget;
+		}
 
 		const GPlatesQtWidgets::ReconstructionViewWidget &
 		reconstruction_view_widget() const
@@ -156,15 +160,32 @@ namespace GPlatesQtWidgets
 		}
 
 		GlobeCanvas &
+		globe_canvas()
+		{
+			return d_reconstruction_view_widget.globe_canvas();
+		}
+
+		const GlobeCanvas &
 		globe_canvas() const
 		{
-			return *d_globe_canvas_ptr;
+			return d_reconstruction_view_widget.globe_canvas();
+		}
+
+		MapView &
+		map_view()
+		{
+			return d_reconstruction_view_widget.map_view();
+		}
+
+		const MapView &
+		map_view() const
+		{
+			return d_reconstruction_view_widget.map_view();
 		}
 
 		void
 		create_svg_file(
 				const QString &filename);
-
 
 		void	
 		change_tab(int i) {
@@ -175,7 +196,6 @@ namespace GPlatesQtWidgets
 		get_tab() {
 			return tabWidget->currentIndex();
 		}
-
 
 		GPlatesGui::FeatureTableModel &
 		feature_table_model() 
@@ -188,7 +208,6 @@ namespace GPlatesQtWidgets
 		{
 			return *d_trinket_area_ptr;
 		}
-
 
 		/** Get a pointer to the TopologySectionsContainer */
 		GPlatesGui::TopologySectionsContainer &
@@ -380,10 +399,6 @@ namespace GPlatesQtWidgets
 
 		void
 		open_time_dependent_raster_sequence();
-		
-		// FIXME: Should be a ViewState operation, or /somewhere/ better than this.
-		void
-		delete_focused_feature();
 
 		void
 		update_tools_and_status_message();
@@ -475,8 +490,6 @@ namespace GPlatesQtWidgets
 
 		boost::shared_ptr<SaveFileDialog> d_export_geometry_snapshot_dialog_ptr;
 
-		GlobeCanvas *d_globe_canvas_ptr;
-
 		boost::scoped_ptr<GPlatesGui::ChooseCanvasTool> d_choose_canvas_tool;
 
 		boost::scoped_ptr<GPlatesViewOperations::GeometryBuilder> d_digitise_geometry_builder;
@@ -487,7 +500,9 @@ namespace GPlatesQtWidgets
 		// d_geometry_operation_target.
 		boost::scoped_ptr<GPlatesViewOperations::GeometryOperationTarget> d_geometry_operation_target;
 
-		boost::scoped_ptr<GPlatesViewOperations::CloneOperation> d_clone_operation_prt;
+		boost::scoped_ptr<GPlatesViewOperations::CloneOperation> d_clone_operation_ptr;
+
+		boost::scoped_ptr<GPlatesViewOperations::DeleteFeatureOperation> d_delete_feature_operation_ptr;
 
 		boost::scoped_ptr<GPlatesViewOperations::ActiveGeometryOperation> d_active_geometry_operation;
 

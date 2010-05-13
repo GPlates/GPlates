@@ -997,19 +997,3 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	// Time variant features.
 }
 
-
-/* 
- * Implementation of the singleton pattern:
- */
-GPlatesFileIO::FeaturePropertiesMap *
-GPlatesFileIO::FeaturePropertiesMap::d_instance = NULL;
-
-
-GPlatesFileIO::FeaturePropertiesMap *
-GPlatesFileIO::FeaturePropertiesMap::instance()
-{
-	if (d_instance == NULL) {
-		d_instance = new FeaturePropertiesMap();
-	}
-	return d_instance;
-}

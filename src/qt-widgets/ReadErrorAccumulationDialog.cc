@@ -178,7 +178,6 @@ namespace
 				QT_TR_NOOP("Overlapping geo-times"),
 				QT_TR_NOOP("Consecutive poles had the same plate IDs and overlapping geo-times.") },
 
-		
 		// Error descriptions for GPML format files:
 		{ GPlatesFileIO::ReadErrors::DuplicateProperty,
 				QT_TR_NOOP("Duplicate property"),
@@ -288,7 +287,6 @@ namespace
 				QT_TR_NOOP("Unexpected attributes found"),
 				QT_TR_NOOP("XML attributes were encountered on a Feature element where none were expected.") },
 
-
 		// The following descriptions are related to ESRI shapefile input errors:
 		{ GPlatesFileIO::ReadErrors::NoLayersFoundInFile,
 				QT_TR_NOOP("No layers found."),
@@ -366,12 +364,19 @@ namespace
 				QT_TR_NOOP("There was insufficient memory to load the requested raster.") },
 		{ GPlatesFileIO::ReadErrors::ErrorGeneratingTexture,
 				QT_TR_NOOP("Error generating texture."),
-				QT_TR_NOOP("There was an error generating an openGL texture.") },
+				QT_TR_NOOP("There was an error generating an OpenGL texture.") },
+		{ GPlatesFileIO::ReadErrors::UnrecognisedRasterFileType,
+				QT_TR_NOOP("Unrecognised raster file type."),
+				QT_TR_NOOP("The raster file was of an unrecognised type.") },
 
 		// Errors relating to GDAL-readable Raster files
 		{ GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
 				QT_TR_NOOP("Error reading GDAL band."),
 				QT_TR_NOOP("Error reading GDAL band.") },
+		{ GPlatesFileIO::ReadErrors::ErrorInSystemLibraries,
+				QT_TR_NOOP("Error in system libraries."),
+				QT_TR_NOOP("An error was encountered while using this system's version of GDAL to read the raster file. "
+					"Upgrading GDAL or compiling GDAL from source may fix this error.") },
 
 		// Errors relating to QImage-readable image files
 		{ GPlatesFileIO::ReadErrors::ErrorReadingQImageFile,
@@ -392,7 +397,33 @@ namespace
 				QT_TR_NOOP("Error reading GMAP file.") },	
 		{ GPlatesFileIO::ReadErrors::GmapFieldFormatError,
 				QT_TR_NOOP("Error reading GMAP field."),
-				QT_TR_NOOP("There was an error reading a field in the GMAP file.") },		
+				QT_TR_NOOP("There was an error reading a field in the GMAP file.") },
+
+		// Errors relating to GMT CPT files
+		{ GPlatesFileIO::ReadErrors::InvalidRegularCptLine,
+				QT_TR_NOOP("Invalid regular CPT line."),
+				QT_TR_NOOP("Line was not in a format expected in a regular CPT file.") },
+		{ GPlatesFileIO::ReadErrors::InvalidCategoricalCptLine,
+				QT_TR_NOOP("Invalid categorical CPT line."),
+				QT_TR_NOOP("Line was not in a format expected in a categorical CPT file.") },
+		{ GPlatesFileIO::ReadErrors::CptSliceNotMonotonicallyIncreasing,
+				QT_TR_NOOP("CPT slice not monotonically increasing."),
+				QT_TR_NOOP("Range of CPT slice overlapped with range of previous slice.") },
+		{ GPlatesFileIO::ReadErrors::ColourModelChangedMidway,
+				QT_TR_NOOP("Colour model changed midway."),
+				QT_TR_NOOP("A comment to change the colour model to RGB or HSV was encountered after some lines had already been processed.") },
+		{ GPlatesFileIO::ReadErrors::NoLinesSuccessfullyParsed,
+				QT_TR_NOOP("No lines successfully parsed."),
+				QT_TR_NOOP("No lines (except comments) could be parsed in the CPT file.") },
+		{ GPlatesFileIO::ReadErrors::CptFileTypeNotDeduced,
+				QT_TR_NOOP("CPT file type not deduced."),
+				QT_TR_NOOP("The type of the CPT file (regular or categorical) could not be deduced.") },
+		{ GPlatesFileIO::ReadErrors::UnexpectedCategoricalCptLabel,
+				QT_TR_NOOP("Unexpected categorical CPT label."),
+				QT_TR_NOOP("The label in the categorical CPT file was not one of the expected values.") },
+		{ GPlatesFileIO::ReadErrors::PatternFillInLine,
+				QT_TR_NOOP("Pattern fill in line."),
+				QT_TR_NOOP("Pattern fill encountered instead of a colour.") },
 
 		// Generic file-related error descriptions:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
@@ -471,10 +502,16 @@ namespace
 		// The following apply to GMAP vgp files.		
 		{ GPlatesFileIO::ReadErrors::GmapFeatureIgnored,
 				QT_TR_NOOP("The GMAP feature was ignored.") },				
-				
+		
+		// The following apply to GMT CPT files
+		{ GPlatesFileIO::ReadErrors::CptLineIgnored,
+				QT_TR_NOOP("CPT line was ignored.") },
+
 		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::FileNotLoaded,
 				QT_TR_NOOP("The file was not loaded.") },
+		{ GPlatesFileIO::ReadErrors::NoAction,
+				QT_TR_NOOP("No action was taken.") },
 	};
 
 	

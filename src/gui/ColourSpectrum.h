@@ -36,10 +36,10 @@
 namespace GPlatesGui 
 {
 	class ColourSpectrum :
-		public GPlatesUtils::Singleton<ColourSpectrum>
+			public GPlatesUtils::Singleton<ColourSpectrum>
 	{
 
-		GPLATES_SINGLETON_CONSTRUCTOR_DEF(ColourSpectrum)
+		GPLATES_SINGLETON_CONSTRUCTOR_DECL(ColourSpectrum)
 
 	public:
 

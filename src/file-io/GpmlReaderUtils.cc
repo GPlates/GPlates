@@ -40,7 +40,7 @@ namespace
 	{
 		if (condition) {
 			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> loc(
-				new GPlatesFileIO::LineNumberInFile(current_elem->line_number()));
+				new GPlatesFileIO::LineNumber(current_elem->line_number()));
 			errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 						params.source, loc, desc, res));
@@ -59,7 +59,7 @@ namespace
 	{
 		if (condition) {
 			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> loc(
-				new GPlatesFileIO::LineNumberInFile(params.reader.lineNumber()));
+				new GPlatesFileIO::LineNumber(params.reader.lineNumber()));
 			errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 						params.source, loc, desc, res));

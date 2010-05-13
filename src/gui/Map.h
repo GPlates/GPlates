@@ -56,8 +56,11 @@ namespace GPlatesGui
 		MapProjection &
 		projection();
 
+		const MapProjection &
+		projection() const;
+
 		ProjectionType
-		projection_type();
+		projection_type() const;
 
 		void
 		set_projection_type(

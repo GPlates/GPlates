@@ -151,14 +151,14 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 			ColourSchemeInfo(
 				ColourSchemeFactory::create_default_plate_id_colour_scheme(),
 				"Default",
-				"Colours geometries by plate ID in a manner that visually distinguishes nearby plates",
+				"Colour geometries by plate ID in a manner that visually distinguishes nearby plates",
 				true));
 	add(
 			ColourSchemeCategory::PLATE_ID,
 			ColourSchemeInfo(
 				ColourSchemeFactory::create_regional_plate_id_colour_scheme(),
 				"Group by Region",
-				"Colours geometries by plate ID such that plates with the same leading digit have similar colours",
+				"Colour geometries by plate ID such that plates with the same leading digit have similar colours",
 				true));
 
 	// Single Colour colouring schemes:
@@ -187,14 +187,14 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 			ColourSchemeInfo(
 				ColourSchemeFactory::create_default_age_colour_scheme(view_state.get_application_state()),
 				"Default",
-				"Colours geometries by their age based on the current reconstruction time",
+				"Colour geometries by age based on the current reconstruction time",
 				true));
 	add(
 			ColourSchemeCategory::FEATURE_AGE,
 			ColourSchemeInfo(
 				ColourSchemeFactory::create_monochrome_age_colour_scheme(view_state.get_application_state()),
 				"Monochrome",
-				"Colours geometries, in shades of grey, by their age based on the current reconstruction time",
+				"Colour geometries by age based on the current reconstruction time using shades of grey",
 				true));
 
 	// Feature Type colour schemes:
@@ -203,7 +203,7 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 			ColourSchemeInfo(
 				ColourSchemeFactory::create_default_feature_colour_scheme(),
 				"Default",
-				"Colours geometries by feature type",
+				"Colour geometries by feature type",
 				true));
 }
 
@@ -251,6 +251,6 @@ GPlatesGui::ColourSchemeContainer::create_single_colour_scheme(
 	return ColourSchemeInfo(
 			ColourSchemeFactory::create_single_colour_scheme(colour),
 			capitalised_colour_name,
-			"Colours all geometries " + colour_name,
+			"Colour all geometries " + colour_name,
 			is_built_in);
 }

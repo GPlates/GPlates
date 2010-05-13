@@ -30,11 +30,34 @@
 #include <string>
 #include <sstream>
 #include <boost/shared_ptr.hpp>
+#include <boost/optional.hpp>
 #include <QFileInfo>
+
 #include "ReadErrors.h"
+
 
 namespace GPlatesFileIO
 {
+	namespace DataFormats
+	{
+		enum DataFormat
+		{
+			GpmlOnePointSix,
+			PlatesRotation,
+			PlatesLine,
+			Shapefile,
+			Gmap,
+			RasterImage,
+			Cpt,
+			Unspecified
+		};
+
+		const char *
+		data_format_to_str(
+				DataFormat data_format);
+	}
+
+
 	struct DataSource
 	{
 		virtual
@@ -58,25 +81,12 @@ namespace GPlatesFileIO
 	};
 
 
-	namespace DataFormats
-	{
-		enum DataFormat
-		{
-			GpmlOnePointSix,
-			PlatesRotation,
-			PlatesLine,
-			Shapefile,
-			Gmap,
-			Unspecified
-		};
-
-		const char *
-		data_format_to_str(
-				DataFormat data_format);
-	}
-
-
-	struct LocalFileDataSource: public DataSource
+	/**
+	 * Use this DataSource derivation if the data source that triggered the read
+	 * error is a local file.
+	 */
+	struct LocalFileDataSource :
+			public DataSource
 	{
 		LocalFileDataSource(
 				const QString &filename,
@@ -117,6 +127,59 @@ namespace GPlatesFileIO
 	};
 
 
+	/**
+	 * This is a DataSource derivation that could be used for data sources other
+	 * than local files.
+	 */
+	struct GenericDataSource :
+			public DataSource
+	{
+		/**
+		 * GenericDataSource constructor.
+		 *
+		 * If @a full_name is boost::none (the default value), the full name is set
+		 * to be the same as the short name.
+		 */
+		GenericDataSource(
+				DataFormats::DataFormat data_format,
+				const std::string &short_name,
+				const boost::optional<const std::string> &full_name = boost::none) :
+			d_data_format(data_format),
+			d_short_name(short_name),
+			d_full_name(full_name ? *full_name : short_name)
+		{ }
+
+		virtual
+		void
+		write_short_name(
+				std::ostream &target) const
+		{
+			target << d_short_name;
+		}
+
+		virtual
+		void
+		write_full_name(
+				std::ostream &target) const
+		{
+			target << d_full_name;
+		}
+
+		virtual
+		void
+		write_format(
+				std::ostream &target) const
+		{
+			target << DataFormats::data_format_to_str(d_data_format) << " format";
+		}
+
+	private:
+		DataFormats::DataFormat d_data_format;
+		std::string d_short_name;
+		std::string d_full_name;
+	};
+
+
 	struct LocationInDataSource
 	{
 		virtual
@@ -130,10 +193,15 @@ namespace GPlatesFileIO
 	};
 
 
-	struct LineNumberInFile: public LocationInDataSource
+	/**
+	 * Use this LocationInDataSource derivation if the data souurce that triggered
+	 * the read error has a notion of line numbers.
+	 */
+	struct LineNumber :
+			public LocationInDataSource
 	{
 		explicit
-		LineNumberInFile(
+		LineNumber(
 				unsigned long line_num):
 			d_line_num(line_num)
 		{  }
@@ -195,6 +263,29 @@ namespace GPlatesFileIO
 		ReadErrors::Description d_description;
 		ReadErrors::Result d_result;
 	};
+
+
+	/**
+	 * A convenience function to create a ReadErrorOccurrence for file read errors.
+	 */
+	ReadErrorOccurrence
+	make_read_error_occurrence(
+			const QString &filename,
+			DataFormats::DataFormat data_format,
+			unsigned long line_num,
+			ReadErrors::Description description,
+			ReadErrors::Result result);
+
+	/**
+	 * A convenience function to create a ReadErrorOccurrence for read errors from
+	 * data sources that have line numbers.
+	 */
+	ReadErrorOccurrence
+	make_read_error_occurrence(
+			boost::shared_ptr<DataSource> data_source,
+			unsigned long line_num,
+			ReadErrors::Description description,
+			ReadErrors::Result result);
 }
 
 #endif  // GPLATES_FILEIO_READERROROCCURRENCE_H

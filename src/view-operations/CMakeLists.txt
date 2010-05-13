@@ -16,6 +16,8 @@ set(srcs
     AddPointGeometryOperation.h
     CloneOperation.cc
     CloneOperation.h
+    DeleteFeatureOperation.cc
+    DeleteFeatureOperation.h
     DeleteVertexGeometryOperation.cc
     DeleteVertexGeometryOperation.h
     FocusedFeatureGeometryManipulator.cc

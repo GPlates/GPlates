@@ -51,11 +51,11 @@
  *
  * The warnings are turned back on after the anonymous namespace scope.
  */
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
-#ifdef __WINDOWS__
-#pragma warning(disable: 4723)
+#if defined(__GNUC__)
+#	pragma GCC diagnostic ignored "-Wfloat-equal"
+#elif defined(__WINDOWS__)
+#	pragma warning( push )
+#	pragma warning( disable : 4723 )
 #endif
 
 namespace
@@ -69,7 +69,7 @@ namespace
 	bool
 	__gplates_is_nan(double d)
 	{
-#ifdef isnan
+#if defined(isnan)
 		return isnan(d);
 #else
 		// this exploits the property that NaN is unordered, such that it is not
@@ -84,7 +84,7 @@ namespace
 	bool
 	__gplates_is_infinity(double d)
 	{
-#ifdef isinf
+#if defined(isinf)
 		return isinf(d) == 1 || isinf(d) == -1;
 #else
 		return std::numeric_limits<double>::has_infinity // should be true
@@ -99,7 +99,7 @@ namespace
 	bool
 	__gplates_is_positive_infinity(double d)
 	{
-#ifdef isinf
+#if defined(isinf)
 		return isinf(d) == 1;
 #else
 		return std::numeric_limits<double>::has_infinity // should be true
@@ -113,7 +113,7 @@ namespace
 	bool
 	__gplates_is_negative_infinity(double d)
 	{
-#ifdef isinf
+#if defined(isinf)
 		return isinf(d) == -1;
 #else
 		return std::numeric_limits<double>::has_infinity // should be true
@@ -127,7 +127,7 @@ namespace
 	bool
 	__gplates_is_finite(double d)
 	{
-#ifdef isfinite
+#if defined(isfinite)
 		return isfinite(d);
 #else
 		return !__gplates_is_nan(d) && !__gplates_is_infinity(d);
@@ -181,11 +181,10 @@ namespace
 /**
  * Re-enable the warnings we disabled above
  */
-#ifdef __GNUC__
-#pragma GCC diagnostic error "-Wfloat-equal"
-#endif
-#ifdef __WINDOWS__
-#pragma warning(default: 4723)
+#if defined(__GNUC__)
+#	pragma GCC diagnostic error "-Wfloat-equal"
+#elif defined(__WINDOWS__)
+#	pragma warning( pop )
 #endif
 
 /*

@@ -31,739 +31,499 @@
 
 // On some versions of g++ with some versions of Qt, it's not liking at() and
 // operator[] in QStringList.
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wstrict-overflow"
+#if defined(__GNUC__)
+#	pragma GCC diagnostic ignored "-Wstrict-overflow"
 #endif
 
-#include <QDebug>
+#include <boost/noncopyable.hpp>
 #include <QFile>
 #include <QStringList>
-#include <QTextStream>
 
+#include "CptReaderUtils.h"
+#include "ReadErrorAccumulation.h"
 #include "RegularCptReader.h"
 
-#include "gui/GenericContinuousColourPalette.h"
-#include "gui/GMTColourNames.h"
+#include "gui/CptColourPalette.h"
 
 #include "maths/Real.h"
 
 
+using boost::tuples::get;
 using GPlatesMaths::Real;
 
 namespace
 {
+	using namespace GPlatesFileIO;
+
 	/**
-	 * At the end of every line, there are two optional strings.
-	 *
-	 * The first is one of L, U or B.
-	 *
-	 * The second starts with a semi-colon.
-	 *
-	 * This function checks whether these strings are of the right format.
+	 * Stores the state of the regular CPT parser as it proceeds through the file.
 	 */
-	bool
-	check_optional_strings(
-			const QStringList &list,
-			int starting_index)
+	struct ParserState :
+			public boost::noncopyable
 	{
-		if (starting_index == list.count())
+		ParserState(
+				GPlatesGui::RegularCptColourPalette &palette_,
+				ReadErrorAccumulation &errors_,
+				boost::shared_ptr<DataSource> data_source_) :
+			palette(palette_),
+			errors(errors_),
+			data_source(data_source_),
+			rgb(true),
+			any_successful_lines(false),
+			current_line_number(0),
+			upper_value_of_previous_slice(GPlatesMaths::negative_infinity())
 		{
-			// No tokens.
-			return true;
 		}
 
-		if (starting_index + 1 == list.count())
-		{
-			// Precisely 1 token left.
-			QString a = list[starting_index];
-			return a == "L" || a == "U" || a == "B";
-		}
-		else if (starting_index + 2 == list.count())
-		{
-			// Precisely 2 tokens left.
-			QString a = list[starting_index];
-			QString b = list[starting_index + 1];
-			return (a == "L" || a == "U" || a == "B") &&
-				b.startsWith(";");
-		}
-		else
-		{
-			return false;
-		}
-	}
+		/**
+		 * The data structure that holds all lines successfully read in.
+		 */
+		GPlatesGui::RegularCptColourPalette &palette;
+
+		/**
+		 * For the reporting of read errors.
+		 */
+		ReadErrorAccumulation errors;
+
+		/**
+		 * Where our lines are coming from; used for error reporting.
+		 */
+		boost::shared_ptr<DataSource> data_source;
+
+		/**
+		 * The default is true. If false, the colour model is HSV.
+		 */
+		bool rgb;
+
+		/**
+		 * True if any non-comment lines have been successfully parsed.
+		 */
+		bool any_successful_lines;
+
+		/**
+		 * The line number that we're currently parsing.
+		 */
+		unsigned long current_line_number;
+
+		/**
+		 * Stores the upper z-value of the previous slice.
+		 */
+		double upper_value_of_previous_slice;
+	};
 
 
 	/**
 	 * Attempts to process a line as a comment.
 	 *
-	 * Returns true if successful.
+	 * This function also checks if the comment is a special comment that switches
+	 * the colour model to RGB or HSV.
+	 *
+	 * Returns true if successful. Note that this function does not set the
+	 * any_successful_lines variable in @a parser_state because the notion of
+	 * successful lines only includes successful non-comment lines.
 	 */
 	bool
 	try_process_comment(
 			const QString &line,
-			bool &hsv)
+			ParserState &parser_state)
 	{
-		if (line == "# COLOR_MODEL = HSV" || line == "# COLOR_MODEL = +HSV")
+		// RGB or +RGB or HSV or +HSV.
+		static const QRegExp rgb_regex("\\+?RGB");
+		static const QRegExp hsv_regex("\\+?HSV");
+
+		if (line.startsWith("#"))
 		{
-			hsv = true;
-		}
-		return line.startsWith("#");
-	}
+			// Remove the # and see if the resulting comment is a colour model statement.
+			QString comment = line.right(line.length() - 1);
+			QStringList tokens = comment.split(QRegExp("[=\\s+]"), QString::SkipEmptyParts);
+			if (tokens.count() == 2 && tokens.at(0) == "COLOR_MODEL")
+			{
+				if (rgb_regex.exactMatch(tokens.at(1)))
+				{
+					parser_state.rgb = true;
+				}
+				else if (hsv_regex.exactMatch(tokens.at(1)))
+				{
+					parser_state.rgb = false;
+				}
+				else
+				{
+					// It's not a colour model statement, but it's still a valid comment.
+					return true;
+				}
 
-
-	bool
-	in_rgb_range(
-			int value)
-	{
-		return 0 <= value && value <= 255;
-	}
-
-
-	GPlatesGui::Colour
-	make_rgb_colour(
-			int r, int g, int b)
-	{
-		return GPlatesGui::Colour(
-				static_cast<GLfloat>(r / 255.0f),
-				static_cast<GLfloat>(g / 255.0f),
-				static_cast<GLfloat>(b / 255.0f));
-	}
-
-
-	bool
-	in_h_range(
-			int h)
-	{
-		return 0 <= h && h <= 360;
-	}
-
-
-	bool
-	in_sv_range(
-			double value)
-	{
-		return Real(0.0) <= Real(value) && Real(value) <= Real(1.0);
-	}
-
-
-	GPlatesGui::Colour
-	make_hsv_colour(
-			int h, double s, double v)
-	{
-		return GPlatesGui::Colour::from_hsv(GPlatesGui::HSVColour(h / 360.0, s, v));
-	}
-
-
-	bool
-	in_cmyk_range(
-			int value)
-	{
-		return 0 <= value && value <= 100;
-	}
-
-
-	GPlatesGui::Colour
-	make_cmyk_colour(
-			int c, int m, int y, int k)
-	{
-		return GPlatesGui::Colour::from_cmyk(
-				GPlatesGui::CMYKColour(
-					c / 100.0,
-					m / 100.0,
-					y / 100.0,
-					k / 100.0));
-	}
-
-
-	bool
-	in_grey_range(
-			int value)
-	{
-		return 0 <= value && value <= 255;
-	}
-
-
-	GPlatesGui::Colour
-	make_grey_colour(
-			int value)
-	{
-		GLfloat f = static_cast<GLfloat>(value / 255.0f);
-		return GPlatesGui::Colour(f, f, f);
-	}
-
-
-	/**
-	 * Attempts to process a line as one containing two RGB values.
-	 *
-	 * The format is:
-	 *
-	 *		x R G B y R G B
-	 *
-	 * with two optional strings at the end.
-	 *
-	 * Returns true if successful.
-	 */
-	bool
-	try_process_rgb(
-			const QStringList &list,
-			GPlatesGui::GenericContinuousColourPalette &palette)
-	{
-		if (list.count() < 8 || list.count() > 10)
-		{
-			return false;
-		}
-
-		// For conversions.
-		bool ok;
-
-		// Try and parse the first 8 tokens.
-		double x, y;
-		int r1, g1, b1, r2, g2, b2;
-
-		x = list[0].toFloat(&ok);
-		if (!ok)
-		{
-			return false;
-		}
-		r1 = list[1].toInt(&ok);
-		if (!ok || !in_rgb_range(r1))
-		{
-			return false;
-		}
-		g1 = list[2].toInt(&ok);
-		if (!ok || !in_rgb_range(g1))
-		{
-			return false;
-		}
-		b1 = list[3].toInt(&ok);
-		if (!ok || !in_rgb_range(b1))
-		{
-			return false;
-		}
-
-		y = list[4].toFloat(&ok);
-		if (!ok || Real(y) < Real(x))
-		{
-			return false;
-		}
-		r2 = list[5].toInt(&ok);
-		if (!ok || !in_rgb_range(r2))
-		{
-			return false;
-		}
-		g2 = list[6].toInt(&ok);
-		if (!ok || !in_rgb_range(g2))
-		{
-			return false;
-		}
-		b2 = list[7].toInt(&ok);
-		if (!ok || !in_rgb_range(b2))
-		{
-			return false;
-		}
-
-		// Check the last 2 tokens, if any.
-		check_optional_strings(list, 8);
-
-		// Store in palette.
-		palette.add_colour_slice(
-				GPlatesGui::ColourSlice(
-					x, y, make_rgb_colour(r1, g1, b1), make_rgb_colour(r2, g2, b2)));
-		return true;
-	}
-
-
-	/**
-	 * Attempts to process a line as one containing two HSV values.
-	 *
-	 * The format is:
-	 *
-	 *		x H S V y H S V
-	 *
-	 * with two optional strings at the end.
-	 *
-	 * Returns true if successful.
-	 */
-	bool
-	try_process_hsv(
-			const QStringList &list,
-			GPlatesGui::GenericContinuousColourPalette &palette)
-	{
-		if (list.count() < 8 || list.count() > 10)
-		{
-			return false;
-		}
-
-		// For conversions.
-		bool ok;
-
-		// Try and parse the first 8 tokens.
-		double x, y;
-		int h1, h2;
-		double s1, v1, s2, v2;
-
-		x = list[0].toFloat(&ok);
-		if (!ok)
-		{
-			return false;
-		}
-		h1 = list[1].toInt(&ok);
-		if (!ok || !in_h_range(h1))
-		{
-			return false;
-		}
-		s1 = list[2].toFloat(&ok);
-		if (!ok || !in_sv_range(s1))
-		{
-			return false;
-		}
-		v1 = list[3].toFloat(&ok);
-		if (!ok || !in_sv_range(v1))
-		{
-			return false;
-		}
-
-		y = list[4].toFloat(&ok);
-		if (!ok || Real(y) < Real(x))
-		{
-			return false;
-		}
-		h2 = list[5].toInt(&ok);
-		if (!ok || !in_h_range(h2))
-		{
-			return false;
-		}
-		s2 = list[6].toFloat(&ok);
-		if (!ok || !in_sv_range(s2))
-		{
-			return false;
-		}
-		v2 = list[7].toFloat(&ok);
-		if (!ok || !in_sv_range(v2))
-		{
-			return false;
-		}
-
-		// Check the last 2 tokens, if any.
-		check_optional_strings(list, 8);
-
-		// Store in palette.
-		palette.add_colour_slice(
-				GPlatesGui::ColourSlice(
-					x, y, make_hsv_colour(h1, s1, v1), make_hsv_colour(h2, s2, v2)));
-		return true;
-	}
-
-
-	bool
-	try_process_rgb_or_hsv(
-			const QStringList &list,
-			GPlatesGui::GenericContinuousColourPalette &palette,
-			bool &hsv)
-	{
-		if (hsv)
-		{
-			return try_process_hsv(list, palette);
+				// Warn user if colour model statement occurs after some lines have already
+				// been processed; we will begin to process colours in lines following this
+				// one using the new colour model, but this probably not what the user
+				// intended.
+				if (parser_state.any_successful_lines)
+				{
+					parser_state.errors.d_warnings.push_back(
+							make_read_error_occurrence(
+								parser_state.data_source,
+								parser_state.current_line_number,
+								ReadErrors::ColourModelChangedMidway,
+								ReadErrors::NoAction));
+				}
+			}
+			
+			// A valid comment.
+			return true;
 		}
 		else
 		{
-			return try_process_rgb(list, palette);
+			// Not a valid comment.
+			return false;
 		}
 	}
 
 
 	/**
-	 * Attempts to process a line as one containing two CMYK values.
+	 * Parses the optional label at the end of a regular CPT file line. The label
+	 * starts with a semi-colon.
+	 */
+	boost::optional<QString>
+	parse_label(
+			const QString &token)
+	{
+		if (token.startsWith(';'))
+		{
+			return token.right(token.length() - 1);
+		}
+		else
+		{
+			throw CptReaderUtils::BadTokenException();
+		}
+	}
+
+
+	/**
+	 * Attempts to process a regular CPT file line as a colour slice.
 	 *
-	 * The format is:
+	 * The format of the line is:
 	 *
-	 *		x C M Y K y C M Y K
+	 *		lower_value R G B upper_value R G B [a] [;label]
 	 *
-	 * with two optional strings at the end.
+	 * if the ColourSpecification parameter is CptReaderUtils::RGBColourSpecification.
+	 * For other choices of ColourSpecification, R, G and B are replaced as appropriate.
 	 *
-	 * Returns true if successful.
+	 * If the line was successfully parsed, the function returns true and inserts a
+	 * new entry into the current colour palette.
+	 */
+	template<class ColourSpecification>
+	bool
+	try_process_colour_slice(
+			const QStringList &tokens,
+			ParserState &parser_state)
+	{
+		typedef ColourSpecification colour_specification_type;
+		typedef typename colour_specification_type::components_type components_type;
+		static const int NUM_COMPONENTS = boost::tuples::length<components_type>::value;
+
+		// Check that the tokens list has an appropriate length: it must have
+		// the compulsory elements, with 2 optional tokens at the end.
+		static const int MIN_TOKENS_COUNT = (1 + NUM_COMPONENTS) * 2;
+		static const int MAX_TOKENS_COUNT = MIN_TOKENS_COUNT + 2;
+		if (tokens.count() < MIN_TOKENS_COUNT || tokens.count() > MAX_TOKENS_COUNT)
+		{
+			return false;
+		}
+
+		try
+		{
+			// Lower value of z-slice.
+			double lower_value = CptReaderUtils::parse_token<double>(tokens.at(0));
+
+			// First lot of colour components.
+			components_type lower_components = CptReaderUtils::parse_components<components_type>(tokens, 1);
+			boost::optional<GPlatesGui::Colour> lower_colour = colour_specification_type::convert(lower_components);
+
+			// Upper value of z-slice.
+			double upper_value = CptReaderUtils::parse_token<double>(tokens.at(1 + NUM_COMPONENTS));
+
+			// Second lot of colour components.
+			components_type upper_components = CptReaderUtils::parse_components<components_type>(
+					tokens, 1 + NUM_COMPONENTS + 1);
+			boost::optional<GPlatesGui::Colour> upper_colour = colour_specification_type::convert(upper_components);
+
+			// Parse the last 2 tokens, if any.
+			GPlatesGui::ColourScaleAnnotation::Type annotation = (tokens.count() == MIN_TOKENS_COUNT) ?
+				GPlatesGui::ColourScaleAnnotation::NONE :
+				CptReaderUtils::parse_token<GPlatesGui::ColourScaleAnnotation::Type>(tokens.at(MIN_TOKENS_COUNT));
+			boost::optional<QString> label = (tokens.count() == MAX_TOKENS_COUNT) ?
+				parse_label(tokens.at(MAX_TOKENS_COUNT - 1)) :
+				boost::none;
+			
+			// Issue a warning if this slice does not start after the end of the previous slice.
+			if (Real(lower_value) < Real(parser_state.upper_value_of_previous_slice))
+			{
+				parser_state.errors.d_warnings.push_back(
+						make_read_error_occurrence(
+							parser_state.data_source,
+							parser_state.current_line_number,
+							ReadErrors::CptSliceNotMonotonicallyIncreasing,
+							ReadErrors::NoAction));
+				parser_state.upper_value_of_previous_slice = upper_value;
+			}
+
+			// Store in palette.
+			parser_state.palette.add_entry(
+					GPlatesGui::ColourSlice(
+						lower_value,
+						lower_colour,
+						upper_value,
+						upper_colour,
+						annotation,
+						label));
+
+			return true;
+		}
+		catch (const CptReaderUtils::BadTokenException &)
+		{
+			return false;
+		}
+		catch (const CptReaderUtils::BadComponentsException &)
+		{
+			return false;
+		}
+		catch (const CptReaderUtils::PatternFillEncounteredException &)
+		{
+			parser_state.errors.d_warnings.push_back(
+					make_read_error_occurrence(
+						parser_state.data_source,
+						parser_state.current_line_number,
+						ReadErrors::PatternFillInLine,
+						ReadErrors::CptLineIgnored));
+
+			return false;
+		}
+	}
+
+
+	/**
+	 * Delegates to the correct function depending on the current colour model.
 	 */
 	bool
-	try_process_cmyk(
-			const QStringList &list,
-			GPlatesGui::GenericContinuousColourPalette &palette)
+	try_process_rgb_or_hsv_colour_slice(
+			const QStringList &tokens,
+			ParserState &parser_state)
 	{
-		if (list.count() < 10 || list.count() > 12)
+		if (parser_state.rgb)
 		{
-			return false;
+			return try_process_colour_slice<CptReaderUtils::RGBColourSpecification>(tokens, parser_state);
 		}
-
-		// For conversions.
-		bool ok;
-
-		// Try and parse the first 10 tokens.
-		double x, y;
-		int c1, m1, y1, k1, c2, m2, y2, k2;
-
-		x = list[0].toFloat(&ok);
-		if (!ok)
+		else
 		{
-			return false;
+			return try_process_colour_slice<CptReaderUtils::HSVColourSpecification>(tokens, parser_state);
 		}
-		c1 = list[1].toInt(&ok);
-		if (!ok || !in_cmyk_range(c1))
-		{
-			return false;
-		}
-		m1 = list[2].toInt(&ok);
-		if (!ok || !in_cmyk_range(m1))
-		{
-			return false;
-		}
-		y1 = list[3].toInt(&ok);
-		if (!ok || !in_cmyk_range(y1))
-		{
-			return false;
-		}
-		k1 = list[4].toInt(&ok);
-		if (!ok || !in_cmyk_range(k1))
-		{
-			return false;
-		}
-
-		y = list[5].toFloat(&ok);
-		if (!ok || Real(y) < Real(x))
-		{
-			return false;
-		}
-		c2 = list[6].toInt(&ok);
-		if (!ok || !in_cmyk_range(c2))
-		{
-			return false;
-		}
-		m2 = list[7].toInt(&ok);
-		if (!ok || !in_cmyk_range(m2))
-		{
-			return false;
-		}
-		y2 = list[8].toInt(&ok);
-		if (!ok || !in_cmyk_range(y2))
-		{
-			return false;
-		}
-		k2 = list[9].toInt(&ok);
-		if (!ok || !in_cmyk_range(k2))
-		{
-			return false;
-		}
-
-		// Check the last 2 tokens, if any.
-		check_optional_strings(list, 10);
-
-		// Store in palette.
-		palette.add_colour_slice(
-				GPlatesGui::ColourSlice(
-					x, y, make_cmyk_colour(c1, m1, y1, k1), make_cmyk_colour(c2, m2, y2, k2)));
-		return true;
-	}
-
-	
-	/**
-	 * Attempts to process a line as one containing two greyshade values.
-	 *
-	 * The format is:
-	 *
-	 *		x G y G
-	 *
-	 * with two optional strings at the end.
-	 *
-	 * Returns true if successful.
-	 */
-	bool
-	try_process_grey(
-			const QStringList &list,
-			GPlatesGui::GenericContinuousColourPalette &palette)
-	{
-		if (list.count() < 4 || list.count() > 6)
-		{
-			return false;
-		}
-
-		// For conversions.
-		bool ok;
-
-		// Try and parse the first 4 tokens.
-		double x, y;
-		int g1, g2;
-
-		x = list[0].toFloat(&ok);
-		if (!ok)
-		{
-			return false;
-		}
-		g1 = list[1].toInt(&ok);
-		if (!ok || !in_grey_range(g1))
-		{
-			return false;
-		}
-
-		y = list[2].toFloat(&ok);
-		if (!ok || Real(y) < Real(x))
-		{
-			return false;
-		}
-		g2 = list[3].toInt(&ok);
-		if (!ok || !in_grey_range(g2))
-		{
-			return false;
-		}
-
-		// Check the last 2 tokens, if any.
-		check_optional_strings(list, 4);
-
-		// Store in palette.
-		palette.add_colour_slice(
-				GPlatesGui::ColourSlice(
-					x, y, make_grey_colour(g1), make_grey_colour(g2)));
-		return true;
-	}
-
-	
-	/**
-	 * Attempts to process a line as one containing two colour names.
-	 *
-	 * The format is:
-	 *
-	 *		x Name y Name
-	 *
-	 * with two optional strings at the end.
-	 *
-	 * Returns true if successful.
-	 */
-	bool
-	try_process_name(
-			const QStringList &list,
-			GPlatesGui::GenericContinuousColourPalette &palette)
-	{
-		if (list.count() < 4 || list.count() > 6)
-		{
-			return false;
-		}
-
-		// For conversions.
-		bool ok;
-
-		// Try and parse the first 4 tokens.
-		double x, y;
-		boost::optional<GPlatesGui::Colour> lower_colour, upper_colour;
-
-		x = list[0].toFloat(&ok);
-		if (!ok)
-		{
-			return false;
-		}
-		lower_colour = GPlatesGui::GMTColourNames::instance().get_colour(list[1].toStdString());
-		if (!lower_colour)
-		{
-			return false;
-		}
-
-		y = list[2].toFloat(&ok);
-		if (!ok || Real(y) < Real(x))
-		{
-			return false;
-		}
-		upper_colour = GPlatesGui::GMTColourNames::instance().get_colour(list[3].toStdString());
-		if (!upper_colour)
-		{
-			return false;
-		}
-
-		// Check the last 2 tokens, if any.
-		check_optional_strings(list, 4);
-
-		// Store in palette.
-		palette.add_colour_slice(
-				GPlatesGui::ColourSlice(
-					x, y, *lower_colour, *upper_colour));
-		return true;
 	}
 
 
 	/**
-	 *  Parse the content of a "fbn" line, i.e. a line containing one of 
-	 *  F R G B  (foreground rgb value)
-	 *  B R G B  (background rgb value)      
-	 *  N R G B  (nan rgb value)           
+	 * Attempts to process a regular CPT file line as a "FBN" line.
+	 *
+	 * The format of the line is one of:
+	 *
+	 *		F	R	G	B
+	 *		B	R	G	B
+	 *		N	R	G	B
 	 * 
-	 * The first item should be a single character, and should be one of "F", "B" or "N"
-	 * The second, third and fourth terms should be integers in the range 0-255, representing
-	 * red, green and blue respectively.
+	 * if the ColourSpecification parameter is CptReaderUtils::RGBColourSpecification.
+	 * The only other valid ColourSpecification for a FBN line is
+	 * CptReaderUtils::HSVColourSpecification.
 	 *
-	 * Note: could also be HSV!
+	 * If the line was successfully parsed, the function returns true and changes
+	 * the foreground, background or NaN colours in the colour palette as appropriate.
 	 */
+	template<class ColourSpecification>
 	bool
 	try_process_fbn(
-			const QStringList &list,
-			GPlatesGui::GenericContinuousColourPalette &palette,
-			bool hsv)
+			const QStringList &tokens,
+			ParserState &parser_state)
 	{
-		if (list.count() != 4)
+		typedef ColourSpecification colour_specification_type;
+		typedef typename colour_specification_type::components_type components_type;
+		static const int NUM_COMPONENTS = boost::tuples::length<components_type>::value;
+
+		// Check that the tokens list is of the right length; it must be one longer
+		// than the number of components in the colour.
+		static const int EXPECTED_TOKENS_COUNT = 1 + NUM_COMPONENTS;
+		if (tokens.count() != EXPECTED_TOKENS_COUNT)
 		{
 			return false;
 		}
 
-		if (hsv)
+		try
 		{
-			int h;
-			double s, v;
-			bool ok = false;
-			// First h value
-			h = list.at(1).toInt(&ok);
-			if (!ok){
-				return false;
-			}
-			// First s value
-			s = list.at(2).toFloat(&ok);
-			if (!ok){
-				return false;
-			}
-			// First v value
-			v = list.at(3).toFloat(&ok);
-			if (!ok){
-				return false;
-			}
-
-			if (!(in_h_range(h) && in_sv_range(s) && in_sv_range(v)))
+			// Convert the colour, which starts from token 1.
+			components_type colour_components = CptReaderUtils::parse_components<components_type>(tokens, 1);
+			boost::optional<GPlatesGui::Colour> colour = colour_specification_type::convert(colour_components);
+			if (!colour)
 			{
 				return false;
 			}
 
-			QString letter = list.at(0);
+			// The first character, which is B, F or N.
+			const QString &letter = tokens.at(0);
 			if (letter == "B")
 			{
-				palette.set_background_colour(make_hsv_colour(h, s, v));
+				parser_state.palette.set_background_colour(*colour);
 				return true;
 			}
 			else if (letter == "F")
 			{
-				palette.set_foreground_colour(make_hsv_colour(h, s, v));
+				parser_state.palette.set_foreground_colour(*colour);
 				return true;
 			}
 			else if (letter == "N")
 			{
-				palette.set_nan_colour(make_hsv_colour(h, s, v));
+				parser_state.palette.set_nan_colour(*colour);
 				return true;
 			}
+			else
+			{
+				return false;
+			}
 		}
-		else // RGB
+		catch (...)
 		{
-			int r,g,b;
-			bool ok = false;
-			// First r value
-			r = list.at(1).toInt(&ok);
-			if (!ok){
-				return false;
-			}
-			// First g value
-			g = list.at(2).toInt(&ok);
-			if (!ok){
-				return false;
-			}
-			// First b value
-			b = list.at(3).toInt(&ok);
-			if (!ok){
-				return false;
-			}
-
-			if (!(in_rgb_range(r) && in_rgb_range(g) && in_rgb_range(b)))
-			{
-				return false;
-			}
-
-			QString letter = list.at(0);
-			if (letter == "B")
-			{
-				palette.set_background_colour(make_rgb_colour(r, g, b));
-				return true;
-			}
-			else if (letter == "F")
-			{
-				palette.set_foreground_colour(make_rgb_colour(r, g, b));
-				return true;
-			}
-			else if (letter == "N")
-			{
-				palette.set_nan_colour(make_rgb_colour(r, g, b));
-				return true;
-			}
+			return false;
 		}
-
-		return false;
 	}
 
 
-	void
-	process_line(
-			const QString &filename,
-			const QString &line,
-			GPlatesGui::GenericContinuousColourPalette &palette,
-			bool &hsv)
+	/**
+	 * Delegates to the correct function depending on the current colour model.
+	 */
+	bool
+	try_process_rgb_or_hsv_fbn(
+			const QStringList &tokens,
+			ParserState &parser_state)
 	{
-		if (try_process_comment(line, hsv))
+		if (parser_state.rgb)
+		{
+			return try_process_fbn<CptReaderUtils::RGBColourSpecification>(tokens, parser_state);
+		}
+		else
+		{
+			return try_process_fbn<CptReaderUtils::HSVColourSpecification>(tokens, parser_state);
+		}
+	}
+
+
+	/**
+	 * Attempts to parse a line in a regular CPT file.
+	 *
+	 * @a parser_state.any_successful_line is set to true if the @a line was
+	 * successfully parsed as a non-comment line.
+	 */
+	void
+	try_process_line(
+			const QString &line,
+			ParserState &parser_state)
+	{
+		if (try_process_comment(line, parser_state))
 		{
 			return;
 		}
 
-		QStringList list = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+		// Split the string by whitespace.
+		QStringList tokens = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
 
-		if (try_process_rgb_or_hsv(list, palette, hsv))
+		// Note the use of the short-circuiting mechanism.
+		if (try_process_rgb_or_hsv_colour_slice(tokens, parser_state) ||
+				try_process_colour_slice<CptReaderUtils::GMTNameColourSpecification>(tokens, parser_state) ||
+				try_process_rgb_or_hsv_fbn(tokens, parser_state) ||
+				try_process_colour_slice<CptReaderUtils::CMYKColourSpecification>(tokens, parser_state) ||
+				try_process_colour_slice<CptReaderUtils::GreyColourSpecification>(tokens, parser_state) ||
+				try_process_colour_slice<CptReaderUtils::InvisibleColourSpecification>(tokens, parser_state) ||
+				try_process_colour_slice<CptReaderUtils::PatternFillColourSpecification>(tokens, parser_state))
 		{
-			return;
+			parser_state.any_successful_lines = true;
 		}
-
-		if (try_process_cmyk(list, palette))
+		else
 		{
-			return;
+			parser_state.errors.d_recoverable_errors.push_back(
+					make_read_error_occurrence(
+						parser_state.data_source,
+						parser_state.current_line_number,
+						ReadErrors::InvalidRegularCptLine,
+						ReadErrors::CptLineIgnored));
 		}
-
-		if (try_process_grey(list, palette))
-		{
-			return;
-		}
-
-		if (try_process_name(list, palette))
-		{
-			return;
-		}
-
-		if (try_process_fbn(list, palette, hsv))
-		{
-			return;
-		}
-
-		throw GPlatesFileIO::ErrorReadingCptFileException(filename + ": could not parse " + line);
 	}
 }
 
 
-GPlatesGui::GenericContinuousColourPalette *
+GPlatesGui::RegularCptColourPalette *
 GPlatesFileIO::RegularCptReader::read_file(
-		QString filename)
+		QTextStream &text_stream,
+		ReadErrorAccumulation &errors,
+		boost::shared_ptr<DataSource> data_source) const
 {
-	QFile qfile(filename);
-	
-	if (!qfile.open(QIODevice::ReadOnly | QIODevice::Text))
-	{
-		throw ErrorReadingCptFileException(filename + " could not be opened.");
-	}
+	GPlatesGui::RegularCptColourPalette *palette = new GPlatesGui::RegularCptColourPalette();
+	ParserState parser_state(*palette, errors, data_source);
 
-	QTextStream text_stream(&qfile);
-	bool hsv = false;
-
-	GPlatesGui::GenericContinuousColourPalette *palette = new GPlatesGui::GenericContinuousColourPalette();
-	
+	// Go through each line one by one.
 	while (!text_stream.atEnd())
 	{
+		++parser_state.current_line_number;
 		QString line = text_stream.readLine().trimmed();
-		process_line(filename, line, *palette, hsv);
-	}
 
-	return palette;
+		if (!line.isEmpty())
+		{
+			try_process_line(line, parser_state);
+		}
+	}
+	
+	if (parser_state.any_successful_lines)
+	{
+		// Remember whether the file was read using the RGB or HSV colour model.
+		palette->set_rgb_colour_model(parser_state.rgb);
+
+		return palette;
+	}
+	else
+	{
+		// We add an error and return NULL if we did not parse any lines at all.
+		errors.d_terminating_errors.push_back(
+				make_read_error_occurrence(
+					data_source,
+					0,
+					ReadErrors::NoLinesSuccessfullyParsed,
+					ReadErrors::FileNotLoaded));
+
+		return NULL;
+	}
+}
+
+
+GPlatesGui::RegularCptColourPalette *
+GPlatesFileIO::RegularCptReader::read_file(
+		const QString &filename,
+		ReadErrorAccumulation &errors) const
+{
+	QFile qfile(filename);
+	boost::shared_ptr<DataSource> data_source(
+			new LocalFileDataSource(
+				filename,
+				DataFormats::Cpt));
+
+	if (qfile.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		// File open succeeded, proceed to read the file.
+		QTextStream text_stream(&qfile);
+		return read_file(text_stream, errors, data_source);
+	}
+	else
+	{
+		// File could not be opened for reading, add error and return NULL.
+		errors.d_failures_to_begin.push_back(
+				make_read_error_occurrence(
+					data_source,
+					0,
+					ReadErrors::ErrorOpeningFileForReading,
+					ReadErrors::FileNotLoaded));
+		return NULL;
+	}
 }
 

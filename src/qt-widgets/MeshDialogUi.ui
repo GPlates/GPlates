@@ -315,9 +315,6 @@
        <property name="text" >
         <string>&amp;Generate</string>
        </property>
-       <property name="icon" >
-        <iconset/>
-       </property>
       </widget>
      </item>
      <item>

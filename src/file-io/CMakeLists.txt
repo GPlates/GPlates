@@ -12,6 +12,10 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
+    CategoricalCptReader.cc
+    CategoricalCptReader.h
+    CptReaderUtils.cc
+    CptReaderUtils.h
     ErrorOpeningFileForReadingException.cc
     ErrorOpeningFileForReadingException.h
     ErrorOpeningFileForWritingException.cc
@@ -34,8 +38,11 @@ set(srcs
     FileInfo.cc
     FileInfo.h
     FileLoadAbortedException.h
+    Gdal.h
     GdalReader.cc
     GdalReader.h
+    GdalReaderUtils.cc
+    GdalReaderUtils.h
     GeometryExporter.h
     GmapReader.cc
     GmapReader.h
