@@ -71,6 +71,7 @@ namespace GPlatesGui
 	class MapTransform;
 	class RenderSettings;
 	class Texture;
+	typedef GPlatesUtils::VirtualProxy<Texture> ProxiedTexture;
 	class VGPRenderSettings;
 	class ViewportProjection;
 	class ViewportZoom;
@@ -202,7 +203,7 @@ namespace GPlatesPresentation
 		get_vgp_render_settings();
 
 
-		GPlatesGui::Texture &
+		GPlatesGui::ProxiedTexture &
 		get_texture();
 
 
@@ -298,7 +299,7 @@ namespace GPlatesPresentation
 		 * A (single) texture to be texture-mapped over the sphere surface.
 		 * Delay creation until it's used.
 		 */
-		boost::scoped_ptr<GPlatesUtils::VirtualProxy<GPlatesGui::Texture> > d_texture;
+		boost::scoped_ptr<GPlatesGui::ProxiedTexture> d_texture;
 
 		void
 		connect_to_viewport_zoom();

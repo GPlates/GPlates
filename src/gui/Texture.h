@@ -35,6 +35,9 @@
 
 #include "property-values/InMemoryRaster.h"
 
+#include "utils/VirtualProxy.h"
+
+
 namespace GPlatesGui
 {
 	/**
@@ -347,6 +350,12 @@ namespace GPlatesGui
 		bool d_is_loaded;
 	};
 
+
+	/**
+	 * Delays creation of the texture until first use.
+	 */
+	typedef GPlatesUtils::VirtualProxy<Texture> ProxiedTexture;
+	
 }
 
 #endif // GPLATES_GUI_TEXTURE_H

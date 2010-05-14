@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -40,7 +40,7 @@ namespace GPlatesGui
 	{
 	public:
 
-		static const double INITIAL_VGP_DELTA_T = 5.;
+		static const double INITIAL_VGP_DELTA_T;
 
 		enum VGPVisibilitySetting
 		{
@@ -49,13 +49,7 @@ namespace GPlatesGui
 			DELTA_T_AROUND_AGE
 		};		
 
-		VGPRenderSettings() :
-			d_vgp_visibility_setting(DELTA_T_AROUND_AGE),
-			d_vgp_delta_t(INITIAL_VGP_DELTA_T),
-			d_vgp_earliest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_past()),
-			d_vgp_latest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_future()),
-			d_should_draw_circular_error(true)
-		{  }
+		VGPRenderSettings();
 
 		VGPVisibilitySetting 
 		get_vgp_visibility_setting() const

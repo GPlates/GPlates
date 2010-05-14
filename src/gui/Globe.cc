@@ -25,18 +25,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QDebug>
-
 #include "Globe.h"
 #include "Texture.h"
 
 #include "maths/MathsUtils.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 
 GPlatesGui::Globe::Globe(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		Texture &texture_,
+		ProxiedTexture &texture_,
 		RenderSettings &render_settings,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
@@ -132,7 +131,7 @@ GPlatesGui::Globe::paint(
 	// Draw the texture slightly in front of the grey sphere, otherwise we get little
 	// bits of the sphere sticking out. 
 	glDepthRange(0.8, 0.9);
-	d_texture.paint();
+	d_texture->paint();
 	
 	glDepthRange(0.7, 0.8);
 	d_grid.paint(Colour::get_silver());
@@ -206,18 +205,18 @@ GPlatesGui::Globe::paint_vector_output(
 void
 GPlatesGui::Globe::toggle_raster_display()
 {
-	d_texture.toggle();
+	d_texture->toggle();
 }
 
 void
 GPlatesGui::Globe::enable_raster_display()
 {
-	d_texture.set_enabled(true);
+	d_texture->set_enabled(true);
 }
 
 void
 GPlatesGui::Globe::disable_raster_display()
 {
-	d_texture.set_enabled(false);
+	d_texture->set_enabled(false);
 }
 

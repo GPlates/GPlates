@@ -86,6 +86,13 @@ namespace GPlatesPropertyValues
 		{
 			return DOUBLE;
 		}
+
+		template<>
+		Type
+		from_type<rgba8_t>()
+		{
+			return RGBA_8;
+		}
 	}
 }
 
@@ -119,6 +126,9 @@ GPlatesPropertyValues::RasterDataType::size_of(
 
 		case DOUBLE:
 			return sizeof(double);
+
+		case RGBA_8:
+			return sizeof(rgba8_t);
 
 		default:
 			return 0;

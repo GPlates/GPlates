@@ -30,9 +30,19 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/scoped_array.hpp>
+#include <boost/optional.hpp>
 
 namespace GPlatesPropertyValues
 {
+	// This assumes a char is 8 bits, but that's a fairly safe assumption.
+	struct rgba8_t
+	{
+		unsigned char red;
+		unsigned char green;
+		unsigned char blue;
+		unsigned char alpha;
+	};
+
 	// A note on types:
 	//  - The exact-width integer types are said to be optional, but they should be
 	//    present on all platforms that we're interested in. See the documentation
@@ -58,7 +68,9 @@ namespace GPlatesPropertyValues
 			UINT_32,	/**< Raster stored as array of boost::uint32_t */
 
 			FLOAT,		/**< Raster stored as array of C++ floats */
-			DOUBLE		/**< Raster stored as array of C++ doubles */
+			DOUBLE,		/**< Raster stored as array of C++ doubles */
+
+			RGBA_8		/**< Raster stored as array of rgba8_t */
 		};
 
 		size_t
@@ -100,20 +112,71 @@ namespace GPlatesPropertyValues
 		template<>
 		Type
 		from_type<double>();
+
+		template<>
+		Type
+		from_type<rgba8_t>();
 	}
 
 	struct WrongRasterDataTypeException {  };
 
+	struct RasterStatistics
+	{
+		boost::optional<double> minimum, maximum, mean, standard_deviation;
+	};
+
+	struct GeoReferenceInfo
+	{
+		// This requires a bit more thought, as geo-referenced rasters don't have to
+		// be lat-lon aligned.
+		double min_lat, max_lat, min_lon, max_lon;
+
+		GeoReferenceInfo() :
+			min_lat(-90.0),
+			max_lat(90.0),
+			min_lon(-180),
+			max_lon(180)
+		{
+		}
+	};
+
+	/**
+	 * RawRaster holds the raw raster data that we read out of a raster file,
+	 * before it gets processed into OpenGL textures.
+	 */
 	class RawRaster
 	{
 	public:
 
 		RawRaster(
-				int width,
-				int height,
-				RasterDataType::Type data_type) :
-			d_data(new unsigned char[width * height * RasterDataType::size_of(data_type)])
+				unsigned int width_,
+				unsigned int height_,
+				RasterDataType::Type data_type_,
+				unsigned char *data_ = NULL) :
+			d_width(width_),
+			d_height(height_),
+			d_data_type(data_type_),
+			d_data(data_ ? data_ :
+					new unsigned char[width_ * height_ * RasterDataType::size_of(data_type_)])
 		{
+		}
+
+		unsigned int
+		width() const
+		{
+			return d_width;
+		}
+
+		unsigned int
+		height() const
+		{
+			return d_height;
+		}
+
+		RasterDataType::Type
+		data_type() const
+		{
+			return d_data_type;
 		}
 
 		template<class T>
@@ -129,11 +192,38 @@ namespace GPlatesPropertyValues
 				throw WrongRasterDataTypeException();
 			}
 		}
+
+		RasterStatistics &
+		statistics()
+		{
+			return d_statistics;
+		}
+
+		const RasterStatistics &
+		statistics() const
+		{
+			return d_statistics;
+		}
+
+		GeoReferenceInfo &
+		geo_reference_info()
+		{
+			return d_geo_reference_info;
+		}
+
+		const GeoReferenceInfo &
+		geo_reference_info() const
+		{
+			return d_geo_reference_info;
+		}
 	
 	private:
 
-		boost::scoped_array<unsigned char> d_data;
+		unsigned int d_width, d_height;
 		RasterDataType::Type d_data_type;
+		boost::scoped_array<unsigned char> d_data;
+		RasterStatistics d_statistics;
+		GeoReferenceInfo d_geo_reference_info;
 	};
 }
 

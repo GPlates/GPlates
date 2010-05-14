@@ -156,6 +156,7 @@ set(srcs
     TrinketArea.h
     UnsavedChangesTracker.cc
     UnsavedChangesTracker.h
+    VGPRenderSettings.cc
     VGPRenderSettings.h
     ViewportProjection.h
     ViewportZoom.cc

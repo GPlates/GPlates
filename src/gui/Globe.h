@@ -54,6 +54,7 @@ namespace GPlatesGui
 {
 	class GlobeVisibilityTester;
 	class Texture;
+	typedef GPlatesUtils::VirtualProxy<Texture> ProxiedTexture;
 
 	class Globe
 	{
@@ -61,7 +62,7 @@ namespace GPlatesGui
 
 		Globe(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				Texture &texture_,
+				ProxiedTexture &texture_,
 				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
@@ -128,7 +129,7 @@ namespace GPlatesGui
 		Texture &
 		texture()
 		{
-			return d_texture;
+			return *d_texture;
 		}
 
 	private:
@@ -139,7 +140,7 @@ namespace GPlatesGui
 		//! The collection of @a RenderedGeometry objects we need to paint.
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
-		Texture &d_texture;
+		ProxiedTexture &d_texture;
 
 		/**
 		 * The NurbsRenderer used to draw large GreatCircleArcs.

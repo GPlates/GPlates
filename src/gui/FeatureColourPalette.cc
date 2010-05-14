@@ -75,7 +75,7 @@ namespace
 		unsigned int result = 0;
 		BOOST_FOREACH(char c, str)
 		{
-			result = result xor c;
+			result ^= c;
 		}
 
 		return result;

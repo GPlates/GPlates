@@ -362,6 +362,7 @@ namespace
 					boost::lambda::_1) != descriptions.end());
 
 		// Also add GMT grid files, read by GDAL.
+
 		formats.insert(
 				std::make_pair(
 					"grd",
@@ -510,6 +511,7 @@ GPlatesFileIO::RasterReader::read_file(
 			return false;
 	}
 }
+
 
 
 void

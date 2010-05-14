@@ -102,7 +102,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_vgp_render_settings(
 			new GPlatesGui::VGPRenderSettings()),
 	d_texture(
-			new GPlatesUtils::VirtualProxy<GPlatesGui::Texture>())
+			new GPlatesGui::ProxiedTexture())
 {
 	// Call the operations in ReconstructView whenever a reconstruction is generated.
 	get_application_state().set_reconstruction_hook(d_reconstruct_view.get());
@@ -306,9 +306,9 @@ GPlatesPresentation::ViewState::get_vgp_render_settings()
 }
 
 
-GPlatesGui::Texture &
+GPlatesGui::ProxiedTexture &
 GPlatesPresentation::ViewState::get_texture()
 {
-	return **d_texture;
+	return *d_texture;
 }
 
