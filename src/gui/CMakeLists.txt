@@ -55,6 +55,8 @@ set(srcs
     ExportResolvedTopologyAnimationStrategy.h
     ExportRotationAnimationStrategy.cc
     ExportRotationAnimationStrategy.h
+    ExportRotationParamsAnimationStrategy.cc
+    ExportRotationParamsAnimationStrategy.h
     ExportSvgAnimationStrategy.cc
     ExportSvgAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc

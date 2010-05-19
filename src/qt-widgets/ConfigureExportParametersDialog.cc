@@ -63,7 +63,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 			Qt::WindowTitleHint | 
 			Qt::WindowSystemMenuHint),
 	d_export_animation_context_ptr(
-			export_animation_context_ptr)
+			export_animation_context_ptr),
+	d_is_single_frame(false)
 {
 	setupUi(this);
 	initialize_export_item_map();
@@ -89,12 +90,14 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 bool 
 GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_name_and_type_map()
 {
+	//TODO: these maps should be integrated into exporter classes.
 	d_name_map[RECONSTRUCTED_GEOMETRIES]=QObject::tr("Reconstructed Geometries");
 	d_name_map[PROJECTED_GEOMETRIES]    =QObject::tr("Projected Geometries");
 	d_name_map[MESH_VILOCITIES]         =QObject::tr("Colat/lon Mesh Velocities");
 	d_name_map[RESOLVED_TOPOLOGIES]     =QObject::tr("Resolved Topologies");
-	d_name_map[RELATIVE_ROTATION]       =QObject::tr("Relative Rotation");
-	d_name_map[EQUIVALENT_ROTATION]     =QObject::tr("Equivalent Rotation");
+	d_name_map[RELATIVE_ROTATION]       =QObject::tr("Relative Total Rotation");
+	d_name_map[EQUIVALENT_ROTATION]     =QObject::tr("Equivalent Total Rotation");
+	d_name_map[ROTATION_PARAMS]			=QObject::tr("Equivalent Stage Rotation");
 	d_name_map[RASTER]				    =QObject::tr("Raster");
 
 	d_type_map[GMT]             =QObject::tr("GMT (*.xy)");
@@ -119,6 +122,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_name_and_type
 void 
 GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_desc_map()
 {
+	//TODO: this map should be integrated into exporter classes.
 	d_desc_map[RECONSTRUCTED_GEOMETRIES] = 
 		GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC;
 	d_desc_map[PROJECTED_GEOMETRIES]     =
@@ -131,6 +135,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_desc_map()
 		GPlatesGui::ExportRotationAnimationStrategy::RELATIVE_ROTATION_DESC;
 	d_desc_map[EQUIVALENT_ROTATION]      = 
 		GPlatesGui::ExportRotationAnimationStrategy::EQUIVALENT_ROTATION_DESC;
+	d_desc_map[ROTATION_PARAMS]          = 
+		GPlatesGui::ExportRotationParamsAnimationStrategy::ROTATION_PARAMS_DESC;
 }
 
 void
@@ -153,106 +159,59 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_list_w
 	}
 }
 
+#define REGISTER_EXPORT_ITEM(ITEM_NAME,ITEM_TYPE) \
+	d_export_item_map[ITEM_NAME][ITEM_TYPE].class_id=GPlatesUtils::ITEM_NAME##_##ITEM_TYPE; \
+	d_export_item_map[ITEM_NAME][ITEM_TYPE].has_been_added = false;
+
 void
 GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_map()
 {
 	d_export_item_map.clear();
-	export_item_info item_info;
 
-//RECONSTRUCTED_GEOMETRY_GMT
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RECONSTRUCTED_GEOMETRIES_GMT;
-	d_export_item_map[RECONSTRUCTED_GEOMETRIES][GMT]=item_info;
-
-//RECONSTRUCTED_GEOMETRY_SHAPEFILE
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RECONSTRUCTED_GEOMETRIES_SHAPEFILE;
-	d_export_item_map[RECONSTRUCTED_GEOMETRIES][SHAPEFILE]=item_info;
-
-//PROJECTED_GEOMETRIES_SVG
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::PROJECTED_GEOMETRIES_SVG;
-	d_export_item_map[PROJECTED_GEOMETRIES][SVG]=item_info;
-
-//MESH_VILOCITIES_GPML
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::MESH_VILOCITIES_GPML;
-	d_export_item_map[MESH_VILOCITIES][GPML]=item_info;
-
-//RESOLVED_TOPOLOGIES_GMT
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RESOLVED_TOPOLOGIES_GMT;
-	d_export_item_map[RESOLVED_TOPOLOGIES][GMT]=item_info;
-
-//RELATIVE_ROTATION_CSV_COMMA
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RELATIVE_ROTATION_CSV_COMMA;
-	d_export_item_map[RELATIVE_ROTATION][CSV_COMMA]=item_info;
-
-//RELATIVE_ROTATION_CSV_SEMICOLON
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RELATIVE_ROTATION_CSV_SEMICOLON;
-	d_export_item_map[RELATIVE_ROTATION][CSV_SEMICOLON]=item_info;
-
-//RELATIVE_ROTATION_CSV_TAB
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RELATIVE_ROTATION_CSV_TAB;
-	d_export_item_map[RELATIVE_ROTATION][CSV_TAB]=item_info;
-
-//EQUIVALENT_ROTATION_CSV_COMMA
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::EQUIVALENT_ROTATION_CSV_COMMA;
-	d_export_item_map[EQUIVALENT_ROTATION][CSV_COMMA]=item_info;
-
-//EQUIVALENT_ROTATION_CSV_SEMICOLON
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::EQUIVALENT_ROTATION_CSV_SEMICOLON;
-	d_export_item_map[EQUIVALENT_ROTATION][CSV_SEMICOLON]=item_info;
-
-//EQUIVALENT_ROTATION_CSV_TAB
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::EQUIVALENT_ROTATION_CSV_TAB;
-	d_export_item_map[EQUIVALENT_ROTATION][CSV_TAB]=item_info;
-
-//RASTER_BMP
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RASTER_BMP;
-	d_export_item_map[RASTER][BMP]=item_info;
-
-//RASTER_JPG
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RASTER_JPG;
-	d_export_item_map[RASTER][JPG]=item_info;
-
-//RASTER_JPEG
-	item_info.has_been_added = false;
-		item_info.class_id=GPlatesUtils::RASTER_JPEG;
-	d_export_item_map[RASTER][JPEG]=item_info;
-
-//RASTER_PNG
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RASTER_PNG;
-	d_export_item_map[RASTER][PNG]=item_info;
-
-//RASTER_PPM
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RASTER_PPM;
-	d_export_item_map[RASTER][PPM]=item_info;
-
-//RASTER_TIFF
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RASTER_TIFF;
-	d_export_item_map[RASTER][TIFF]=item_info;
-
-//RASTER_XBM
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RASTER_XBM;
-	d_export_item_map[RASTER][XBM]=item_info;
-
-//RASTER_XPM
-	item_info.has_been_added = false;
-	item_info.class_id=GPlatesUtils::RASTER_XPM;
-	d_export_item_map[RASTER][XPM]=item_info;
+	//RECONSTRUCTED_GEOMETRY_GMT
+	REGISTER_EXPORT_ITEM(RECONSTRUCTED_GEOMETRIES,GMT);
+	//RECONSTRUCTED_GEOMETRY_SHAPEFILE
+	REGISTER_EXPORT_ITEM(RECONSTRUCTED_GEOMETRIES,SHAPEFILE);
+	//PROJECTED_GEOMETRIES_SVG
+	REGISTER_EXPORT_ITEM(PROJECTED_GEOMETRIES,SVG);
+	//MESH_VILOCITIES_GPML
+	REGISTER_EXPORT_ITEM(MESH_VILOCITIES,GPML);
+	//RESOLVED_TOPOLOGIES_GMT
+	REGISTER_EXPORT_ITEM(RESOLVED_TOPOLOGIES,GMT);
+	//RELATIVE_ROTATION_CSV_COMMA
+	REGISTER_EXPORT_ITEM(RELATIVE_ROTATION,CSV_COMMA);
+	//RELATIVE_ROTATION_CSV_SEMICOLON
+	REGISTER_EXPORT_ITEM(RELATIVE_ROTATION,CSV_SEMICOLON);
+	//RELATIVE_ROTATION_CSV_TAB
+	REGISTER_EXPORT_ITEM(RELATIVE_ROTATION,CSV_TAB);
+	//EQUIVALENT_ROTATION_CSV_COMMA
+	REGISTER_EXPORT_ITEM(EQUIVALENT_ROTATION,CSV_COMMA);
+	//EQUIVALENT_ROTATION_CSV_SEMICOLON
+	REGISTER_EXPORT_ITEM(EQUIVALENT_ROTATION,CSV_SEMICOLON);
+	//EQUIVALENT_ROTATION_CSV_TAB
+	REGISTER_EXPORT_ITEM(EQUIVALENT_ROTATION,CSV_TAB);
+	//ROTATION_PARAMS_CSV_COMMA
+	REGISTER_EXPORT_ITEM(ROTATION_PARAMS,CSV_COMMA);
+	//ROTATION_PARAMS_CSV_SEMICOLON
+	REGISTER_EXPORT_ITEM(ROTATION_PARAMS,CSV_SEMICOLON);
+	//ROTATION_PARAMS_CSV_TAB
+	REGISTER_EXPORT_ITEM(ROTATION_PARAMS,CSV_TAB);
+	//RASTER_BMP
+	REGISTER_EXPORT_ITEM(RASTER,BMP);
+	//RASTER_JPG
+	REGISTER_EXPORT_ITEM(RASTER,JPG);
+	//RASTER_JPEG
+	REGISTER_EXPORT_ITEM(RASTER,JPEG);
+	//RASTER_PNG
+	REGISTER_EXPORT_ITEM(RASTER,PNG);
+	//RASTER_PPM
+	REGISTER_EXPORT_ITEM(RASTER,PPM);
+	//RASTER_TIFF
+	REGISTER_EXPORT_ITEM(RASTER,TIFF);
+	//RASTER_XBM
+	REGISTER_EXPORT_ITEM(RASTER,XBM);
+	//RASTER_XPM
+	REGISTER_EXPORT_ITEM(RASTER,XPM);
 }
 
 void

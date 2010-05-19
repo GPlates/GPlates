@@ -153,6 +153,7 @@ namespace GPlatesQtWidgets
 			{
 				stackedWidget->setCurrentIndex(1);
 				d_is_single_frame=true;
+				d_configure_parameters_dialog_ptr->d_is_single_frame=d_is_single_frame;
 				update_target_directory(d_single_path);
 				reset();
 			}
@@ -166,6 +167,7 @@ namespace GPlatesQtWidgets
 			{
 				stackedWidget->setCurrentIndex(0);
 				d_is_single_frame=false;
+				d_configure_parameters_dialog_ptr->d_is_single_frame=d_is_single_frame;
 				update_target_directory(d_range_path);
 				reset();
 			}

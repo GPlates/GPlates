@@ -46,7 +46,7 @@ namespace GPlatesUtils
 		virtual
 		bool
 		is_valid(
-				const QString&)=0;
+				const QString&) = 0;
 
 		virtual
 		~ExportFileNameTemplateValidator()
@@ -94,7 +94,8 @@ namespace GPlatesUtils
 			}
 			catch (...)
 			{
-				set_result_message("Unexpected exception happened in the validation of file name template.");
+				set_result_message(
+						"Unexpected exception happened in the validation of file name template.");
 				return false;
 			}
 		}
@@ -107,7 +108,7 @@ namespace GPlatesUtils
 		has_invalid_characters(
 				const QString &filename)
 		{
-			if(filename.toStdString().find_first_of(INVALID_CHARACTERS)!=std::string::npos)
+			if(filename.toStdString().find_first_of(INVALID_CHARACTERS) != std::string::npos)
 			{
 				set_result_message(
 						QString(
@@ -129,14 +130,16 @@ namespace GPlatesUtils
 		has_percent_P(
 				const QString &filename)
 		{
-			if(filename.toStdString().find("%P")!=std::string::npos)
+			if(filename.toStdString().find("%P") != std::string::npos)
 			{
-				set_result_message("Parameter(%P) has been found in the file name template.");
+				set_result_message(
+						"Parameter(%P) has been found in the file name template.");
 				return true;
 			}
 			else
 			{
-				set_result_message("Parameter(%P) has not been found in the file name template.");
+				set_result_message(
+						"Parameter(%P) has not been found in the file name template.");
 				return false;
 			}
 		}
@@ -145,7 +148,7 @@ namespace GPlatesUtils
 		set_result_message(
 				const QString &msg)
 		{
-			d_result.d_message=msg;
+			d_result.d_message = msg;
 		}
 		ResultReport d_result;
 	};
@@ -197,6 +200,15 @@ namespace GPlatesUtils
 	};
 
 	class ExportRasterFileNameTemplateValidator :
+		public ExportFileNameTemplateValidator
+	{
+		virtual
+		bool
+		is_valid(
+				const QString&);
+	};
+
+	class ExportRotationParamsFileNameTemplateValidator :
 		public ExportFileNameTemplateValidator
 	{
 		virtual

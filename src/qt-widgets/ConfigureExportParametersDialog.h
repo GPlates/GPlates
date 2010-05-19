@@ -72,6 +72,7 @@ namespace GPlatesQtWidgets
 			RESOLVED_TOPOLOGIES,
 			RELATIVE_ROTATION,
 			EQUIVALENT_ROTATION,
+			ROTATION_PARAMS,
 			RASTER,
 			INVALID_NAME=999
 		};
@@ -228,6 +229,7 @@ namespace GPlatesQtWidgets
 		export_item_map_type d_export_item_map;
 		QString d_filename_template;
 
+		bool d_is_single_frame;
 		static bool dummy;
 
 

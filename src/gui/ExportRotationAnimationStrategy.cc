@@ -42,31 +42,39 @@
 #include "presentation/ViewState.h"
 
  const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_RELATIVE_COMMA_FILENAME_TEMPLATE
-		="relative_rotation_comma_%0.2f.csv";
+		="relative_total_rotation_comma_%0.2f.csv";
 
  const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_RELATIVE_SEMI_FILENAME_TEMPLATE
-		="relative_rotation_semicomma_%0.2f.csv";
+		="relative_total_rotation_semicomma_%0.2f.csv";
  
  const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_RELATIVE_TAB_FILENAME_TEMPLATE
-		="relative_rotation_tab_%0.2f.csv";
+		="relative_total_rotation_tab_%0.2f.csv";
  
  const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_EQUIVALENT_COMMA_FILENAME_TEMPLATE
-		="equivalent_rotation_comma_%0.2f.csv";
+		="equivalent_total_rotation_comma_%0.2f.csv";
  
  const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_EQUIVALENT_SEMI_FILENAME_TEMPLATE
-		="equivalent_rotation_semicomma_%0.2f.csv";
+		="equivalent_total_rotation_semicomma_%0.2f.csv";
  
  const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_EQUIVALENT_TAB_FILENAME_TEMPLATE
-		="equivalent_rotation_tab_%0.2f.csv";
+		="equivalent_total_rotation_tab_%0.2f.csv";
  
  const QString GPlatesGui::ExportRotationAnimationStrategy::ROTATION_FILENAME_TEMPLATE_DESC
 		=FORMAT_CODE_DESC;
 
- const QString GPlatesGui::ExportRotationAnimationStrategy::RELATIVE_ROTATION_DESC
-		="Export relative rotation data.";
+ const QString GPlatesGui::ExportRotationAnimationStrategy::RELATIVE_ROTATION_DESC =
+		"Export relative total rotation data:\n"
+		"- 'relative' is between a moving/fixed plate pair,\n"
+		"- 'total' is from the export reconstruction time to present day.\n"
+		"Each line in exported file(s) will contain the following entries...\n"
+		" 'moving_plate_id' 'euler_pole_lat' 'euler_pole_lon' 'euler_pole_angle' 'fixed_plate_id'\n";
 
- const QString GPlatesGui::ExportRotationAnimationStrategy::EQUIVALENT_ROTATION_DESC
-		="Export equivalent rotation data.";
+ const QString GPlatesGui::ExportRotationAnimationStrategy::EQUIVALENT_ROTATION_DESC =
+		"Export equivalent total rotation data:\n"
+		"- 'equivalent' is from an exported plate id to the anchor plate,\n"
+		"- 'total' is from the export reconstruction time to present day.\n"
+		"Each line in exported file(s) will contain the following entries...\n"
+		" 'plate_id' 'euler_pole_lat' 'euler_pole_lon' 'euler_pole_angle'\n";
 
 const GPlatesGui::ExportRotationAnimationStrategy::non_null_ptr_type
 GPlatesGui::ExportRotationAnimationStrategy::create(
@@ -143,11 +151,20 @@ GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 		QString euler_pole_lat_string;
 		QString euler_pole_lon_string;
 		QString angle_string;
-		QString fixed_plate_id_string;
 
 		plate_id_string.setNum(it->first);
 				
-		GPlatesMaths::FiniteRotation fr = it->second->composed_absolute_rotation();
+	
+		const bool is_relative_rotation = (
+				(d_type == RELATIVE_COMMA) ||
+				(d_type == RELATIVE_SEMI) ||
+				(d_type == RELATIVE_TAB) );
+
+		GPlatesMaths::FiniteRotation fr =
+				is_relative_rotation
+				? it->second->relative_rotation()
+				: it->second->composed_absolute_rotation();
+
 		const GPlatesMaths::UnitQuaternion3D &uq = fr.unit_quat();
 		
 		if (GPlatesMaths::represents_identity_rotation(uq)) 
@@ -171,18 +188,18 @@ GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 					GPlatesMaths::convert_rad_to_deg(params.angle).dval());
 			
 		}
-		GPlatesModel::integer_plate_id_type fixed_id = it->second->fixed_plate();
-		fixed_plate_id_string.setNum(fixed_id);
 
 		data_line.push_back(plate_id_string);
 		data_line.push_back(euler_pole_lat_string);
 		data_line.push_back(euler_pole_lon_string);
 		data_line.push_back(angle_string);
 		
-		if( (d_type == RELATIVE_COMMA)||
-			(d_type == RELATIVE_SEMI) ||
-			(d_type == RELATIVE_TAB) )
+		if (is_relative_rotation)
 		{
+			GPlatesModel::integer_plate_id_type fixed_id = it->second->fixed_plate();
+			QString fixed_plate_id_string;
+			fixed_plate_id_string.setNum(fixed_id);
+
 			data_line.push_back(fixed_plate_id_string);
 		}
 		

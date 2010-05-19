@@ -150,6 +150,30 @@ GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
 	return tree;
 }
 
+const GPlatesModel::ReconstructionTree::non_null_ptr_type
+GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+		const double &time,
+		GPlatesModel::integer_plate_id_type root,
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
+		reconstruction_features)
+{
+	GPlatesModel::ReconstructionGraph graph(time);
+	GPlatesModel::ReconstructionTreePopulator rtp(time, graph);
+
+	
+		std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator iter=
+		reconstruction_features.begin();
+
+		for ( ; iter != reconstruction_features.end(); ++iter)
+		{
+			rtp.visit_feature(*iter);
+		}
+	
+	// Build the reconstruction tree, using 'root' as the root of the tree.
+	GPlatesModel::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
+	return tree;
+}
+
 
 const GPlatesModel::Reconstruction::non_null_ptr_type
 GPlatesAppLogic::ReconstructUtils::create_reconstruction(

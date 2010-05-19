@@ -66,6 +66,12 @@ namespace GPlatesAppLogic
 						reconstruction_features_collection =
 								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
 
+		const GPlatesModel::ReconstructionTree::non_null_ptr_type
+		create_reconstruction_tree(
+				const double &time,
+				GPlatesModel::integer_plate_id_type root,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
+						reconstruction_features);
 
 		/**
 		 * Create and return a reconstruction containing @a ReconstructionGeometry objects by

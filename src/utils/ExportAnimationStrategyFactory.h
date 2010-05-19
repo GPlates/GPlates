@@ -40,6 +40,7 @@
 #include "gui/ExportReconstructedGeometryAnimationStrategy.h"
 #include "gui/ExportResolvedTopologyAnimationStrategy.h"
 #include "gui/ExportSvgAnimationStrategy.h"
+#include "gui/ExportRotationParamsAnimationStrategy.h"
 #include "gui/ExportRasterAnimationStrategy.h"
 
 
@@ -298,6 +299,42 @@ namespace GPlatesUtils
 			return GPlatesGui::ExportRasterAnimationStrategy::create(
 					export_context,
 					GPlatesGui::ExportRasterAnimationStrategy::XPM,
+					cfg);
+		}
+
+		static
+		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
+		create_ROTATION_PARAMS_CSV_COMMA(
+				GPlatesGui::ExportAnimationContext& export_context,			
+				const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
+		{		
+			return GPlatesGui::ExportRotationParamsAnimationStrategy::create(
+					export_context,
+					GPlatesGui::ExportRotationParamsAnimationStrategy::COMMA,
+					cfg);
+		}
+
+		static
+		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
+		create_ROTATION_PARAMS_CSV_SEMICOLON(
+				GPlatesGui::ExportAnimationContext& export_context,			
+				const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
+		{		
+			return GPlatesGui::ExportRotationParamsAnimationStrategy::create(
+					export_context,
+					GPlatesGui::ExportRotationParamsAnimationStrategy::SEMICOLON,
+					cfg);
+		}
+
+		static
+		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
+		create_ROTATION_PARAMS_CSV_TAB(
+				GPlatesGui::ExportAnimationContext& export_context,			
+				const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
+		{		
+			return GPlatesGui::ExportRotationParamsAnimationStrategy::create(
+					export_context,
+					GPlatesGui::ExportRotationParamsAnimationStrategy::TAB,
 					cfg);
 		}
 

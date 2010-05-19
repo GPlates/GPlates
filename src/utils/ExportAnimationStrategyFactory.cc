@@ -31,106 +31,36 @@ GPlatesUtils::ExportAnimationStrategyFactory::d_exporter_id_map;
 bool GPlatesUtils::ExportAnimationStrategyFactory::dummy=
 	GPlatesUtils::ExportAnimationStrategyFactory::init_id_map();
 
+#define REGISTER_EXPORTER( EXPORTER_NAME ) \
+	d_exporter_id_map[EXPORTER_NAME]= \
+		boost::bind( \
+			&create_ ## EXPORTER_NAME  , _1,_2);
+
 bool
 GPlatesUtils::ExportAnimationStrategyFactory::init_id_map()
 {
-	//TODO: define macro for the following code
-	d_exporter_id_map[RECONSTRUCTED_GEOMETRIES_GMT]=
-		boost::bind(
-				&create_RECONSTRUCTED_GEOMETRIES_GMT,
-				_1,
-				_2);
-	d_exporter_id_map[RECONSTRUCTED_GEOMETRIES_SHAPEFILE]=
-		boost::bind(
-				&create_RECONSTRUCTED_GEOMETRIES_SHAPEFILE,
-				_1,
-				_2);
-	d_exporter_id_map[PROJECTED_GEOMETRIES_SVG]=
-		boost::bind(
-				&create_PROJECTED_GEOMETRIES_SVG,
-				_1,
-				_2);
-	d_exporter_id_map[MESH_VILOCITIES_GPML]=
-		boost::bind(
-				&create_MESH_VILOCITIES_GPML,
-				_1,
-				_2);
-	d_exporter_id_map[RESOLVED_TOPOLOGIES_GMT]=
-		boost::bind(
-				&create_RESOLVED_TOPOLOGIES_GMT,
-				_1,
-				_2);
-	d_exporter_id_map[RELATIVE_ROTATION_CSV_COMMA]=
-		boost::bind(
-				&create_RELATIVE_ROTATION_CSV_COMMA,
-				_1,
-				_2);
-	d_exporter_id_map[RELATIVE_ROTATION_CSV_SEMICOLON]=
-		boost::bind(
-				&create_RELATIVE_ROTATION_CSV_SEMICOLON,
-				_1,
-				_2);
-	d_exporter_id_map[RELATIVE_ROTATION_CSV_TAB]=
-		boost::bind(
-				&create_RELATIVE_ROTATION_CSV_TAB,
-				_1,
-				_2);
-	d_exporter_id_map[EQUIVALENT_ROTATION_CSV_COMMA]=
-		boost::bind(
-				&create_EQUIVALENT_ROTATION_CSV_COMMA,
-				_1,
-				_2);
-	d_exporter_id_map[EQUIVALENT_ROTATION_CSV_SEMICOLON]=
-		boost::bind(
-				&create_EQUIVALENT_ROTATION_CSV_SEMICOLON,
-				_1,
-				_2);
-	d_exporter_id_map[EQUIVALENT_ROTATION_CSV_TAB]=
-		boost::bind(
-				&create_EQUIVALENT_ROTATION_CSV_TAB,
-				_1,
-				_2);
-	d_exporter_id_map[RASTER_BMP]=
-		boost::bind(
-				&create_RASTER_BMP,
-				_1,
-				_2);
-	d_exporter_id_map[RASTER_JPG]=
-		boost::bind(
-				&create_RASTER_JPG,
-				_1,
-				_2);
-	d_exporter_id_map[RASTER_JPEG]=
-		boost::bind(
-				&create_RASTER_JPEG,
-				_1,
-				_2);
-	d_exporter_id_map[RASTER_PNG]=
-		boost::bind(
-				&create_RASTER_PNG,
-				_1,
-				_2);
-	d_exporter_id_map[RASTER_PPM]=
-		boost::bind(
-				&create_RASTER_PPM,
-				_1,
-				_2);
-	d_exporter_id_map[RASTER_TIFF]=
-		boost::bind(
-				&create_RASTER_TIFF,
-				_1,
-				_2);
-	d_exporter_id_map[RASTER_XBM]=
-		boost::bind(
-				&create_RASTER_XBM,
-				_1,
-				_2);
-	d_exporter_id_map[RASTER_XPM]=
-		boost::bind(
-				&create_RASTER_XPM,
-				_1,
-				_2);
-				
+	REGISTER_EXPORTER(RECONSTRUCTED_GEOMETRIES_GMT);
+	REGISTER_EXPORTER(RECONSTRUCTED_GEOMETRIES_SHAPEFILE);
+	REGISTER_EXPORTER(PROJECTED_GEOMETRIES_SVG);
+	REGISTER_EXPORTER(MESH_VILOCITIES_GPML);
+	REGISTER_EXPORTER(RESOLVED_TOPOLOGIES_GMT);
+	REGISTER_EXPORTER(RELATIVE_ROTATION_CSV_COMMA);
+	REGISTER_EXPORTER(RELATIVE_ROTATION_CSV_SEMICOLON);
+	REGISTER_EXPORTER(RELATIVE_ROTATION_CSV_TAB);
+	REGISTER_EXPORTER(EQUIVALENT_ROTATION_CSV_COMMA);
+	REGISTER_EXPORTER(EQUIVALENT_ROTATION_CSV_SEMICOLON);
+	REGISTER_EXPORTER(EQUIVALENT_ROTATION_CSV_TAB);
+	REGISTER_EXPORTER(RASTER_BMP);
+	REGISTER_EXPORTER(RASTER_JPG);
+	REGISTER_EXPORTER(RASTER_JPEG);
+	REGISTER_EXPORTER(RASTER_PNG);
+	REGISTER_EXPORTER(RASTER_PPM);
+	REGISTER_EXPORTER(RASTER_TIFF);
+	REGISTER_EXPORTER(RASTER_XBM);
+	REGISTER_EXPORTER(RASTER_XPM);
+	REGISTER_EXPORTER(ROTATION_PARAMS_CSV_COMMA);
+	REGISTER_EXPORTER(ROTATION_PARAMS_CSV_SEMICOLON);
+	REGISTER_EXPORTER(ROTATION_PARAMS_CSV_TAB);
 	return true;
 }
 GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
@@ -139,7 +69,7 @@ GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
 		GPlatesGui::ExportAnimationContext &export_context,
 		const GPlatesGui::ExportAnimationStrategy::Configuration &cfg)
 {
-	//TODO: make it singleton
+	//TODO: make the exporters singleton
 	if(d_exporter_id_map.find(id)!=d_exporter_id_map.end())
 		return d_exporter_id_map[id](export_context,cfg);
 	else
