@@ -38,6 +38,26 @@
 void
 GPlatesViewOperations::CloneOperation::clone_focused_geometry()
 {
+	// There might not be a geometry in the focused feature geometry builder.
+	// This can happen when the user selects a topological plate boundary - it is not
+	// inserted into the builder because it shouldn't be modified (because it references
+	// other features).
+	//
+	// FIXME: we should disable the 'clone geometry' button in this case so that this
+	// code never gets called (and so the user doesn't think they can clone a topology).
+	//
+	// Actually it probably should be possible to clone the geometry of a topological polygon -
+	// the only reason it's prevented in FocusedFeatureGeometryManipulator is so tools
+	// like MoveVertex, etc don't try to move a vertex in a topology which makes little sense.
+	// This would require some significant changes though so it'll have to wait a while.
+	//
+	// For now simply refuse to clone geometry if the focused feature geometry builder
+	// contains no geometry.
+	if (!d_focused_feature_geometry_builder->has_geometry())
+	{
+		return;
+	}
+
 	GPlatesViewOperations::GeometryType::Value type = 
 		d_focused_feature_geometry_builder->get_actual_type_of_current_geometry();
 
