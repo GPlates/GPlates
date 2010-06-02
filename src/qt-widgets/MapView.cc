@@ -276,6 +276,12 @@ GPlatesQtWidgets::MapView::mousePressEvent(
 					mouse_pointer_is_on_surface(),
 					press_event->button(),
 					press_event->modifiers());
+					
+	emit mouse_pressed(
+		d_mouse_press_info->d_mouse_pointer_scene_coords,
+		d_mouse_press_info->d_is_on_surface,
+		d_mouse_press_info->d_button,
+		d_mouse_press_info->d_modifiers);
 
 }
 

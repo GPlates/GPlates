@@ -195,6 +195,23 @@ namespace
 		
 
 	void
+	append_conjugate_plate_id_to_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
+		int conjugate_plate_id_as_int)
+	{
+		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conjugate_plate_id = 
+			GPlatesPropertyValues::GpmlPlateId::create(conjugate_plate_id_as_int);
+
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+					GPlatesModel::ModelUtils::create_gpml_constant_value(
+						conjugate_plate_id,
+						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("conjugateplateId"))));
+	}
+
+
+	void
 	append_plate_id_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		int plate_id_as_int)
@@ -253,20 +270,6 @@ namespace
 					gml_description));
 	}
 	
-	void
-	append_conjugate_plate_id_to_feature(
-		const GPlatesModel::FeatureHandle::weak_ref &feature,
-		int conjugate_plate_id_as_int)
-	{
-		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conjugate_plate_id = 
-			GPlatesPropertyValues::GpmlPlateId::create(conjugate_plate_id_as_int);
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
-					GPlatesModel::ModelUtils::create_gpml_constant_value(
-						conjugate_plate_id,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("conjugatePlateId"))));
-	}	
 
 	/**
 	 * Removes properties with the property names:
@@ -361,7 +364,8 @@ namespace
 		boost::optional<double> age_of_appearance;
 		boost::optional<double> age_of_disappearance;
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::BEGIN]);
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::BEGIN]);
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -381,7 +385,8 @@ namespace
 			}
 		}
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::END]);
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::END]);
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -400,7 +405,8 @@ namespace
 			}
 		}
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::NAME]);
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::NAME]);
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -408,7 +414,8 @@ namespace
 			append_name_to_feature(feature,name);
 		}
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::DESCRIPTION]);
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::DESCRIPTION]);
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -420,8 +427,10 @@ namespace
 		if (age_of_appearance && age_of_disappearance){
 			append_geo_time_to_feature(feature,*age_of_appearance,*age_of_disappearance);
 		}
+		
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::CONJUGATE_PLATE_ID]);
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::CONJUGATE_PLATE_ID]);		
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -435,11 +444,12 @@ namespace
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
 					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefileConjugatePlateIdNumber,
-					GPlatesFileIO::ReadErrors::AttributeIgnored));
+					GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
+					GPlatesFileIO::ReadErrors::NoConjugatePlateIdLoadedForFeature));
 			}
 
 		}		
+		
 		
 	}
 

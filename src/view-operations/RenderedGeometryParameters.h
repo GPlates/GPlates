@@ -70,6 +70,7 @@ namespace GPlatesViewOperations
 
 		//! Line width for reconstruction layer.
 		const float POLE_MANIPULATION_LINE_WIDTH_HINT = 1.5f;
+
 	}
 
 	/**
@@ -119,6 +120,10 @@ namespace GPlatesViewOperations
 		 * to indicate, to the user, that an operation is possible.
 		 */
 		const float HIGHLIGHT_LINE_WIDTH_HINT = 2.0f;
+		
+	
+		//! Line width for move-vertex secondary geometries.
+		const float SECONDARY_LINE_WIDTH_HINT = 1.0f;
 
 		/////////////////
 		// Point sizes //

@@ -7,6 +7,7 @@
  * $Date$
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -32,17 +33,24 @@
 
 #include "ActiveGeometryOperation.h"
 #include "GeometryBuilderUndoCommands.h"
+#include "GeometryOperationTarget.h"
 #include "GeometryOperationUndo.h"
-#include "RenderedGeometryProximity.h"
 #include "QueryProximityThreshold.h"
+#include "RenderedGeometryProximity.h"
 #include "RenderedGeometryFactory.h"
 #include "RenderedGeometryLayerVisitor.h"
 #include "RenderedGeometryParameters.h"
 #include "RenderedGeometryUtils.h"
 #include "UndoRedo.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 #include "gui/ChooseCanvasTool.h"
+#include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 #include "maths/ProximityCriteria.h"
+#include "maths/ProximityHitDetail.h"
+#include "qt-widgets/TaskPanel.h"
+#include "qt-widgets/ViewportWindow.h"
+
 
 
 GPlatesViewOperations::MoveVertexGeometryOperation::MoveVertexGeometryOperation(
@@ -50,7 +58,8 @@ GPlatesViewOperations::MoveVertexGeometryOperation::MoveVertexGeometryOperation(
 		ActiveGeometryOperation &active_geometry_operation,
 		RenderedGeometryCollection *rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-		const QueryProximityThreshold &query_proximity_threshold) :
+		const QueryProximityThreshold &query_proximity_threshold,
+		const GPlatesQtWidgets::ViewportWindow *viewport_window) :
 d_geometry_builder(NULL),
 d_geometry_operation_target(&geometry_operation_target),
 d_active_geometry_operation(&active_geometry_operation),
@@ -58,8 +67,18 @@ d_rendered_geometry_collection(rendered_geometry_collection),
 d_choose_canvas_tool(&choose_canvas_tool),
 d_query_proximity_threshold(&query_proximity_threshold),
 d_selected_vertex_index(0),
-d_is_vertex_selected(false)
+d_is_vertex_selected(false),
+d_is_vertex_highlighted(false),
+d_should_check_nearby_vertices(false),
+d_nearby_vertex_threshold(0.),
+d_viewport_window_ptr(viewport_window) 
 {
+	// For updating move-nearby-vertex parameters from the task panel widget. 
+	QObject::connect(d_viewport_window_ptr->task_panel_ptr(),
+					SIGNAL(vertex_data_changed(bool,double,bool,GPlatesModel::integer_plate_id_type)),
+					this,
+					SLOT(update_vertex_data(bool,double,bool,GPlatesModel::integer_plate_id_type)));
+
 }
 
 void
@@ -135,53 +154,13 @@ GPlatesViewOperations::MoveVertexGeometryOperation::deactivate()
 
 	// User will have to click another vertex when this operation activates again.
 	d_is_vertex_selected = false;
+	d_is_vertex_highlighted = false;
 
 	// Not using this GeometryBuilder anymore.
 	d_geometry_builder = NULL;
+
+	
 }
-
-#if 0
-void
-GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
-{
-	// Do nothing if NULL geometry builder.
-	if (d_geometry_builder == NULL)
-	{
-		return;
-	}
-
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
-	//
-	// See if the user selected a vertex with their mouse click.
-	//
-
-	boost::optional<RenderedGeometryProximityHit> closest_hit = test_proximity_to_points(
-			clicked_pos_on_sphere, oriented_pos_on_sphere);
-	if (closest_hit)
-	{
-		// The index of the vertex selected corresponds to index of vertex in
-		// the geometry.
-		// NOTE: this will have to be changed when multiple internal geometries are
-		// possible in the GeometryBuilder.
-		d_selected_vertex_index = closest_hit->d_rendered_geom_index;
-
-		// Get a unique command id so that all move vertex commands in the
-		// current mouse drag will be merged together.
-		// This id will be released for reuse when the last copy of it is destroyed.
-		d_move_vertex_command_id = UndoRedo::instance().get_unique_command_id();
-
-		d_is_vertex_selected = true;
-
-		// Highlight the vertex the mouse is currently hovering over.
-		update_highlight_rendered_point(d_selected_vertex_index);
-	}
-}
-#else
 
 
 void
@@ -223,10 +202,11 @@ GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
 
 		// Highlight the vertex the mouse is currently hovering over.
 		update_highlight_rendered_point(d_selected_vertex_index);
+	
 	}
-
+	
 }
-#endif
+
 
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::update_drag(
@@ -277,6 +257,11 @@ GPlatesViewOperations::MoveVertexGeometryOperation::end_drag(
 	d_move_vertex_command_id = UndoRedo::CommandId();
 
 	d_is_vertex_selected = false;
+	
+	d_geometry_builder->clear_secondary_geometries();
+	// This will clear any secondary geometry highlighting and re-draw the "normal" move vertex geometries.
+	update_rendered_geometries();
+	
 }
 
 void
@@ -302,7 +287,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::mouse_move(
 	if (closest_hit)
 	{
 		const GeometryBuilder::PointIndex highlight_vertex_index = closest_hit->d_rendered_geom_index;
-
+		
 		update_highlight_rendered_point(highlight_vertex_index);
 
 		// Currently only one internal geometry is supported so set geometry index to zero.
@@ -312,11 +297,17 @@ GPlatesViewOperations::MoveVertexGeometryOperation::mouse_move(
 				geometry_index,
 				highlight_vertex_index,
 				GeometryOperationParameters::HIGHLIGHT_COLOUR);
+				
+		d_is_vertex_highlighted = true;
+		d_selected_vertex_index = highlight_vertex_index;
 	}
 	else
 	{
 		emit_unhighlight_signal(d_geometry_builder);
+		d_is_vertex_highlighted = false;
 	}
+	
+
 }
 
 boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
@@ -400,6 +391,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::geometry_builder_stopped_upd
 	// This could be optimised, if profiling says so, by listening to the other signals
 	// generated by GeometryBuilder instead and only making the minimum changes needed.
 	update_rendered_geometries();
+	update_rendered_secondary_geometries();
 }
 
 void
@@ -418,7 +410,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::move_vertex(
 					d_selected_vertex_index,
 					oriented_pos_on_sphere,
 					is_intermediate_move));
-
+					
 	// Command wraps move vertex command with handing canvas tool choice and
 	// move vertex tool activation.
 	std::auto_ptr<QUndoCommand> undo_command(
@@ -581,4 +573,195 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_highlight_rendered_po
 		GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);
 
 	d_highlight_point_layer_ptr->add_rendered_geometry(rendered_geom);
+}
+
+void
+GPlatesViewOperations::MoveVertexGeometryOperation::update_secondary_geometries(
+	const GPlatesMaths::PointOnSphere &point_on_sphere)
+{
+	d_geometry_builder->clear_secondary_geometries();
+
+	GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type sorted_hits;
+	
+	double proximity_inclusion_threshold = d_nearby_vertex_threshold; 
+
+	GPlatesMaths::ProximityCriteria criteria(point_on_sphere, proximity_inclusion_threshold);
+	GPlatesViewOperations::test_vertex_proximity(
+		sorted_hits,
+		*d_rendered_geometry_collection,
+		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
+		criteria);
+			
+	sorted_rendered_geometry_proximity_hits_type::const_iterator 
+		it = sorted_hits.begin(),
+		end = sorted_hits.end();
+		
+		
+	GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focus_rg = 
+		d_geometry_operation_target->get_feature_focus()->associated_reconstruction_geometry();	
+	
+	// We may want to extend this to store all geometries that have a vertex inside the proximity
+	// threshold, rather than just the geometry which has the closest vertex. 
+	boost::optional<RenderedGeometry> closest_non_focus_rendered_geom;
+	double closest_closeness = 0.;
+	unsigned int closest_vertex_index = 0;
+	
+	for (; it != end ; ++it)
+	{
+		RenderedGeometry rg = it->d_rendered_geom_layer->get_rendered_geometry(
+			it->d_rendered_geom_index);
+		
+		ReconstructionGeometryFinder finder;
+		rg.accept_visitor(finder);
+		boost::optional<GPlatesModel::ReconstructionGeometry::non_null_ptr_type> recon_geom =
+			finder.get_reconstruction_geometry();
+			
+
+		// The focus geometry itself will return a hit from the test_vertex_proximity test,
+		// so check that it's not the focus geometry before checking the closeness.
+		if (recon_geom && *recon_geom != focus_rg)
+		{
+			if (it->d_proximity_hit_detail->index())
+			{
+				unsigned int vertex_index = *(it->d_proximity_hit_detail->index());
+				//qDebug() << "Found non-focused geometry, vertex no: " << vertex_index;
+				if (it->d_proximity_hit_detail->closeness() > closest_closeness)
+				{
+					closest_non_focus_rendered_geom.reset(rg);
+					closest_vertex_index = vertex_index;
+					closest_closeness = it->d_proximity_hit_detail->closeness();
+				}
+			}
+			else
+			{
+				//qDebug() << "Found non-focused geometry, no vertex information";
+			}
+		}
+	}
+	
+	// We have found a geometry with a vertex in range; add it to the geometry builder.
+	// FIXME: may want to extend this to store multiple geometries that have
+	// a vertex close to the highlighted vertex. Right now we deal only with the geometry that has 
+	// the closest within-range vertex.
+	if (closest_non_focus_rendered_geom)
+	{
+		ReconstructionGeometryFinder recon_geom_finder;
+		closest_non_focus_rendered_geom->accept_visitor(recon_geom_finder);
+		boost::optional<GPlatesModel::ReconstructionGeometry::non_null_ptr_type> recon_geom = 
+			recon_geom_finder.get_reconstruction_geometry();
+			
+
+		GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
+		if (recon_geom &&
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
+				*recon_geom, rfg))
+			{
+				boost::optional<GPlatesModel::integer_plate_id_type> plate_id = (*rfg).reconstruction_plate_id();
+				if (d_should_use_plate_id_filter)
+				{ 
+					if ( d_filter_plate_id &&
+						plate_id &&
+						(*plate_id == *d_filter_plate_id))
+						{
+							d_geometry_builder->add_secondary_geometry(*recon_geom,closest_vertex_index);
+						}
+				}
+				else
+				{
+				// No plate-id filter selected, so add the geometry. 
+						d_geometry_builder->add_secondary_geometry(*recon_geom,closest_vertex_index);
+				}
+			}
+
+	}
+	
+
+}
+
+void
+GPlatesViewOperations::MoveVertexGeometryOperation::release_click()
+{
+	d_geometry_builder->clear_secondary_geometries();
+	
+	// This will clear the rendered geometry layers and re-draw the "normal" move vertex geometries.
+	update_rendered_geometries();
+	if (d_is_vertex_highlighted)
+	{
+		update_highlight_rendered_point(d_selected_vertex_index);
+	}
+}
+
+
+void
+GPlatesViewOperations::MoveVertexGeometryOperation::update_rendered_secondary_geometries()
+{
+	if (d_is_vertex_highlighted)
+	{
+		// FIXME: We're only grabbing the first of the secondary_geometries here. 
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geom = 
+			d_geometry_builder->get_secondary_geometry();
+
+		if (geom)
+		{
+			RenderedGeometryLayerFiller filler(d_points_layer_ptr,d_lines_layer_ptr);
+			(*geom)->accept_visitor(filler);	
+		}
+	
+	}
+
+}
+
+void
+GPlatesViewOperations::MoveVertexGeometryOperation::left_press(
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere, 
+		const double &closeness_inclusion_threshold)
+{
+#if 0
+	qDebug() << "is_vertex_highlighted: " << d_is_vertex_highlighted;
+	qDebug() << "should check: " << d_should_check_nearby_vertices;	
+#endif
+	d_geometry_builder->clear_secondary_geometries();
+	// If we're near a vertex in the focused geometry, then check other geometries in the model too. 
+	if (d_is_vertex_highlighted && d_should_check_nearby_vertices)
+	{
+		// Use the highlighted point (rather than the mouse point) for searching for secondary geometries.
+		const GPlatesMaths::PointOnSphere &highlight_point_on_sphere =
+			d_geometry_builder->get_geometry_point(0, d_selected_vertex_index);
+			
+		update_secondary_geometries(highlight_point_on_sphere);
+		update_rendered_secondary_geometries();
+		update_highlight_secondary_vertices();
+		//FIXME: find a better colour for highlighting the secondary geometries.
+		//FIMXE: highlight the nearest vertex in any of the secondary geometries.
+	}
+}
+
+void
+GPlatesViewOperations::MoveVertexGeometryOperation::update_vertex_data(
+	bool should_check_nearby_vertices,
+	double threshold,
+	bool should_use_plate_id,
+	GPlatesModel::integer_plate_id_type plate_id)
+{
+	d_should_check_nearby_vertices = should_check_nearby_vertices;
+	d_nearby_vertex_threshold = std::cos(GPlatesMaths::convert_deg_to_rad(threshold));
+	d_should_use_plate_id_filter = should_use_plate_id;
+	d_filter_plate_id.reset(plate_id);
+}
+
+void
+GPlatesViewOperations::MoveVertexGeometryOperation::update_highlight_secondary_vertices()
+{
+	boost::optional<GPlatesMaths::PointOnSphere> point = d_geometry_builder->get_secondary_vertex();
+	
+	if (point)
+	{
+		//qDebug() << "Found secondary highlight point";
+		RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
+			*point,
+			GeometryOperationParameters::HIGHLIGHT_COLOUR,
+			GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);
+
+		d_highlight_point_layer_ptr->add_rendered_geometry(rendered_geom);
+	}
 }

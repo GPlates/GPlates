@@ -181,6 +181,12 @@ namespace GPlatesViewOperations
 		 */
 		void
 		convert_geom_from_builder_to_feature();
+		
+		/**
+		 * Gets any secondary geometries from the GeometryBuilder and sets the corresponding features.                                                                     
+		 */
+		void
+		convert_secondary_geometries_to_features();
 
 		/**
 		 * Reconstructs the specified geometry forward or backward in time using

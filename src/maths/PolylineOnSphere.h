@@ -632,6 +632,11 @@ namespace GPlatesMaths
 				const ProximityCriteria &criteria) const;
 
 
+		virtual
+		ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const ProximityCriteria &criteria) const;
+
 		/**
 		 * Accept a ConstGeometryOnSphereVisitor instance.
 		 *

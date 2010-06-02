@@ -97,6 +97,15 @@ namespace GPlatesViewOperations
 						RenderedGeometryCollection::ALL_MAIN_LAYERS,
 			bool only_if_main_layer_active = true);
 
+	bool
+	test_vertex_proximity(
+		sorted_rendered_geometry_proximity_hits_type &sorted_proximity_hits,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		const RenderedGeometryCollection::main_layers_update_type main_layers_to_test,
+		const GPlatesMaths::ProximityCriteria &,
+		bool only_if_main_layer_active = true);
+
+
 	/**
 	 * Performs hit detection on the @a RenderedGeometry objects in the specified
 	 * @a RenderedGeometryLayer.
@@ -118,6 +127,14 @@ namespace GPlatesViewOperations
 			const GPlatesMaths::ProximityCriteria &proximity_criteria,
 			const RenderedGeometryCollection::MainLayerType main_layer_to_test,
 			bool only_if_main_layer_active = true);
+			
+	bool
+	test_vertex_proximity(
+		sorted_rendered_geometry_proximity_hits_type &sorted_proximity_hits,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		const RenderedGeometryCollection::MainLayerType main_layer_to_test,
+		const GPlatesMaths::ProximityCriteria &proximity_criteria,
+		bool only_if_main_layer_active = true);			
 }
 
 #endif // GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYPROXIMITY_H

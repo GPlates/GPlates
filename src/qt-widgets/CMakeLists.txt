@@ -217,6 +217,9 @@ set(srcs
     ShapefileAttributeWidgetUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
+    SnapNearbyVerticesWidget.cc
+    SnapNearbyVerticesWidget.h
+    SnapNearbyVerticesWidgetUi.ui
     SpecifyAnchoredPlateIdDialog.cc
     SpecifyAnchoredPlateIdDialog.h
     SpecifyAnchoredPlateIdDialogUi.ui

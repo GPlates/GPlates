@@ -1,72 +1,75 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="utf-8"?>
+<ui version="4.0">
  <class>MeshDialog</class>
- <widget class="QDialog" name="MeshDialog" >
-  <property name="windowModality" >
+ <widget class="QDialog" name="MeshDialog">
+  <property name="windowModality">
    <enum>Qt::NonModal</enum>
   </property>
-  <property name="enabled" >
+  <property name="enabled">
    <bool>true</bool>
   </property>
-  <property name="geometry" >
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>481</width>
-    <height>270</height>
+    <width>479</width>
+    <height>268</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Generate Mesh Caps</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_run_22.png</iconset>
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
+    <normaloff>:/gnome_run_22.png</normaloff>:/gnome_run_22.png</iconset>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QVBoxLayout">
    <item>
-    <widget class="QGroupBox" name="groupBox" >
-     <property name="minimumSize" >
+    <widget class="QGroupBox" name="groupBox">
+     <property name="minimumSize">
       <size>
        <width>0</width>
        <height>100</height>
       </size>
      </property>
-     <property name="title" >
+     <property name="title">
       <string>Resolution</string>
      </property>
-     <layout class="QVBoxLayout" >
+     <layout class="QVBoxLayout">
       <item>
-       <layout class="QHBoxLayout" >
+       <layout class="QHBoxLayout">
         <item>
-         <widget class="QLabel" name="label" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+         <widget class="QLabel" name="label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="text" >
+          <property name="text">
            <string>Specify the resolution used to generate mesh. </string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_info_resolution" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Maximum" hsizetype="Maximum" >
+         <widget class="QPushButton" name="pushButton_info_resolution">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="toolTip" >
+          <property name="toolTip">
            <string>More information</string>
           </property>
-          <property name="text" >
+          <property name="text">
            <string/>
           </property>
-          <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_gtk_about_16.png</iconset>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
           </property>
-          <property name="autoDefault" >
+          <property name="autoDefault">
            <bool>true</bool>
           </property>
          </widget>
@@ -74,32 +77,32 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" >
+       <layout class="QHBoxLayout">
         <item>
-         <widget class="QCheckBox" name="checkBox" >
-          <property name="enabled" >
+         <widget class="QCheckBox" name="checkBox">
+          <property name="enabled">
            <bool>false</bool>
           </property>
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="text" >
+          <property name="text">
            <string>Generate global mesh</string>
           </property>
-          <property name="checked" >
+          <property name="checked">
            <bool>true</bool>
           </property>
          </widget>
         </item>
         <item>
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -110,48 +113,48 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" >
+       <layout class="QHBoxLayout">
         <item>
-         <widget class="QLabel" name="label_x" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Maximum" hsizetype="Maximum" >
+         <widget class="QLabel" name="label_x">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="text" >
+          <property name="text">
            <string>nodeX:</string>
           </property>
-          <property name="alignment" >
+          <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="node_X" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Maximum" hsizetype="Maximum" >
+         <widget class="QSpinBox" name="node_X">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="minimum" >
+          <property name="minimum">
            <number>2</number>
           </property>
-          <property name="maximum" >
+          <property name="maximum">
            <number>129</number>
           </property>
          </widget>
         </item>
         <item>
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeType" >
+          <property name="sizeType">
            <enum>QSizePolicy::Fixed</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -160,49 +163,49 @@
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="label_y" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Maximum" hsizetype="Maximum" >
+         <widget class="QLabel" name="label_y">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="text" >
+          <property name="text">
            <string>nodeY:</string>
           </property>
-          <property name="textFormat" >
+          <property name="textFormat">
            <enum>Qt::AutoText</enum>
           </property>
-          <property name="alignment" >
+          <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="node_Y" >
-          <property name="enabled" >
+         <widget class="QSpinBox" name="node_Y">
+          <property name="enabled">
            <bool>false</bool>
           </property>
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Maximum" hsizetype="Maximum" >
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="minimum" >
+          <property name="minimum">
            <number>2</number>
           </property>
-          <property name="maximum" >
+          <property name="maximum">
            <number>129</number>
           </property>
          </widget>
         </item>
         <item>
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>351</width>
             <height>20</height>
@@ -216,67 +219,68 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_3" >
-     <property name="title" >
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
       <string>Output</string>
      </property>
-     <layout class="QVBoxLayout" >
+     <layout class="QVBoxLayout">
       <item>
-       <layout class="QGridLayout" >
-        <item row="0" column="0" >
-         <widget class="QLabel" name="label_3" >
-          <property name="text" >
+       <layout class="QGridLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
            <string>File name template:</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="1" colspan="2" >
-         <widget class="QLineEdit" name="lineEdit_file_template" />
+        <item row="0" column="1" colspan="2">
+         <widget class="QLineEdit" name="lineEdit_file_template"/>
         </item>
-        <item row="0" column="3" >
-         <widget class="QPushButton" name="pushButton_info_output" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Maximum" hsizetype="Maximum" >
+        <item row="0" column="3">
+         <widget class="QPushButton" name="pushButton_info_output">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="toolTip" >
+          <property name="toolTip">
            <string>More information</string>
           </property>
-          <property name="text" >
+          <property name="text">
            <string/>
           </property>
-          <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_gtk_about_16.png</iconset>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
           </property>
          </widget>
         </item>
-        <item row="1" column="0" >
-         <widget class="QLabel" name="label_4" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Maximum" hsizetype="Maximum" >
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_4">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="text" >
+          <property name="text">
            <string>Output directory:</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1" >
-         <widget class="QLineEdit" name="lineEdit_path" />
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="lineEdit_path"/>
         </item>
-        <item row="1" column="2" >
-         <widget class="QPushButton" name="button_path" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+        <item row="1" column="2">
+         <widget class="QPushButton" name="button_path">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="text" >
+          <property name="text">
            <string>Choose...</string>
           </property>
          </widget>
@@ -287,13 +291,13 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
+    <layout class="QHBoxLayout">
      <item>
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
          <height>20</height>
@@ -302,30 +306,30 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="button_gen" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Maximum" hsizetype="Maximum" >
+      <widget class="QPushButton" name="button_gen">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="layoutDirection" >
+       <property name="layoutDirection">
         <enum>Qt::LeftToRight</enum>
        </property>
-       <property name="text" >
+       <property name="text">
         <string>&amp;Generate</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="button_cancel" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Maximum" hsizetype="Maximum" >
+      <widget class="QPushButton" name="button_cancel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="text" >
+       <property name="text">
         <string>Cancel</string>
        </property>
       </widget>
@@ -335,7 +339,8 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections>
   <connection>
@@ -344,11 +349,11 @@
    <receiver>MeshDialog</receiver>
    <slot>reject()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>20</x>
      <y>20</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>20</x>
      <y>20</y>
     </hint>

@@ -109,6 +109,35 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_deactivation()
 }
 
 void
+GPlatesCanvasTools::CanvasToolAdapterForMap::handle_left_press(
+	const QPointF &click_point_on_scene,
+	bool is_on_surface)
+{
+	if (map_view().isVisible())
+	{
+		if (!is_on_surface)
+		{
+			// we currently can't do anything sensible with map view when off map.
+			// this can be removed when we have the ability to make mouse-clicks snap
+			// to the edge of the map, much like how it snaps to the horizon of the
+			// globe if you click outside of the globe.
+			return;
+		}
+
+		boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere =
+			qpointf_to_point_on_sphere(click_point_on_scene, map_canvas().map().projection());
+		if (point_on_sphere)
+		{
+			d_canvas_tool_ptr->handle_left_press(
+				*point_on_sphere,
+				is_on_surface,
+				map_view().current_proximity_inclusion_threshold(
+				*point_on_sphere));
+		}
+	}
+}
+
+void
 GPlatesCanvasTools::CanvasToolAdapterForMap::handle_left_click(
 		const QPointF &click_point_on_scene,
 		bool is_on_surface)

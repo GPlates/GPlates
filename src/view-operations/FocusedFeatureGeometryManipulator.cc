@@ -36,7 +36,7 @@
 #include "feature-visitors/GeometrySetter.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
-
+#include "model/ReconstructedFeatureGeometry.h"
 #include "model/ReconstructionTree.h"
 
 #include "presentation/ViewState.h"
@@ -320,6 +320,8 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 		GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->deep_clone();
 		geometry_setter.set_geometry(geom_top_level_prop_clone.get());
 		*iter = geom_top_level_prop_clone;
+		
+		convert_secondary_geometries_to_features();
 
 		// Announce that we've modified the focused feature.
 		d_feature_focus->announce_modification_of_focused_feature();
@@ -361,4 +363,36 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_plate_id_from_feat
 	}
 
 	return false;
+}
+
+void
+GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geometries_to_features()
+{
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geom = 
+		d_focused_feature_geom_builder->get_secondary_geometry();
+		
+	boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type> rfg = 
+		d_focused_feature_geom_builder->get_secondary_rfg();
+	
+	if (!geom || !rfg)
+	{
+		return;
+	}	
+	
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere =
+		*geom;
+
+	// Reconstruct back to present day.
+	geometry_on_sphere = reconstruct(geometry_on_sphere, true/*reverse_reconstruct*/);
+
+	// Set the actual geometry in the geometry property of the focused geometry.
+	GPlatesFeatureVisitors::GeometrySetter geometry_setter(geometry_on_sphere);
+
+	// Since we can have multiple geometry properties per feature we make sure we
+	// set the geometry that the user actually clicked on.
+	GPlatesModel::FeatureHandle::iterator iter = (*rfg)->property();
+	GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = 
+		(*iter)->deep_clone();
+	geometry_setter.set_geometry(geom_top_level_prop_clone.get());
+	*iter = geom_top_level_prop_clone;
 }

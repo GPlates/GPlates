@@ -63,6 +63,14 @@ namespace GPlatesViewOperations
 		{
 			return d_rendered_geom.test_proximity(criteria);
 		}
+		
+		virtual
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+			const GPlatesMaths::ProximityCriteria &criteria) const
+		{
+			return d_rendered_geom.test_vertex_proximity(criteria);
+		}		
 
 		GPlatesModel::ReconstructionGeometry::non_null_ptr_type
 		get_reconstruction_geometry() const

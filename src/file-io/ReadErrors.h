@@ -219,6 +219,7 @@ namespace GPlatesFileIO
 			OnlyExteriorRingRead,
 			NoPlateIdLoadedForFile,
 			NoPlateIdLoadedForFeature,
+			NoConjugatePlateIdLoadedForFeature,
 			AttributeIgnored,
 			UnclassifiedShapefileFeatureCreated,
 

@@ -7,6 +7,7 @@
  * $Date$
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -31,9 +32,16 @@
 #include <boost/optional.hpp>
 #include <QObject>
 
+#include "maths/ConstGeometryOnSphereVisitor.h"
+#include "model/ReconstructionGeometry.h"
+#include "model/types.h"
 #include "GeometryBuilder.h"
 #include "GeometryOperation.h"
 #include "RenderedGeometryCollection.h"
+#include "RenderedGeometryFactory.h"
+#include "RenderedGeometryParameters.h"
+#include "RenderedGeometryVisitor.h"
+#include "RenderedReconstructionGeometry.h"
 #include "UndoRedo.h"
 
 
@@ -45,6 +53,11 @@ namespace GPlatesMaths
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+}
+
+namespace GPlatesQtWidgets
+{
+	class ViewportWindow;
 }
 
 namespace GPlatesViewOperations
@@ -68,12 +81,112 @@ namespace GPlatesViewOperations
 		Q_OBJECT
 
 	public:
+		
+		/**
+		 * Visitor to find a rendered geometry's reconstruction geometry.
+		 */
+		class ReconstructionGeometryFinder:
+			public ConstRenderedGeometryVisitor
+		{
+		public:
+
+			ReconstructionGeometryFinder()
+			{  }
+
+			virtual
+			void
+			visit_rendered_reconstruction_geometry(
+				const RenderedReconstructionGeometry &rendered_reconstruction_geometry)
+			{
+				d_rendered_reconstruction_geometry.reset(
+					rendered_reconstruction_geometry.get_reconstruction_geometry());
+			}
+
+			boost::optional<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
+			get_reconstruction_geometry()
+			{
+				return d_rendered_reconstruction_geometry;
+			}
+
+		private:
+				
+			boost::optional<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
+				d_rendered_reconstruction_geometry;
+
+		};		
+	
+		/**
+		 * A visitor to add rendered geometries to the points and lines layers provided in the constructor.                                                                     
+		 */
+		class RenderedGeometryLayerFiller:
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+		{
+		public:
+			RenderedGeometryLayerFiller(
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type points_layer,
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type lines_layer):
+				d_points_layer(points_layer),
+				d_lines_layer(lines_layer)
+				{
+				
+				}
+			
+			void
+			visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+			{
+				RenderedGeometry rendered_geometry = RenderedGeometryFactory::create_rendered_point_on_sphere(
+												point_on_sphere,
+												GeometryOperationParameters::NOT_IN_FOCUS_COLOUR);
+				d_points_layer->add_rendered_geometry(rendered_geometry);
+			}
+			
+			void
+			visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+			{
+				RenderedGeometry rendered_geometry = RenderedGeometryFactory::create_rendered_multi_point_on_sphere(
+											multi_point_on_sphere,
+											GeometryOperationParameters::NOT_IN_FOCUS_COLOUR);
+				d_points_layer->add_rendered_geometry(rendered_geometry);
+			}		
+			
+			void
+			visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+			{
+				RenderedGeometry rendered_geometry = RenderedGeometryFactory::create_rendered_polyline_on_sphere(
+											polyline_on_sphere,
+											GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
+											GeometryOperationParameters::SECONDARY_LINE_WIDTH_HINT);
+				d_lines_layer->add_rendered_geometry(rendered_geometry);
+			}
+			
+			void
+			visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+			{
+				RenderedGeometry rendered_geometry = RenderedGeometryFactory::create_rendered_polygon_on_sphere(
+											polygon_on_sphere,
+											GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
+											GeometryOperationParameters::SECONDARY_LINE_WIDTH_HINT);
+				d_lines_layer->add_rendered_geometry(rendered_geometry);
+			}				
+		
+			
+		private:
+
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_points_layer;				
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_lines_layer;		
+		};
+
 		MoveVertexGeometryOperation(
 				GeometryOperationTarget &geometry_operation_target,
 				ActiveGeometryOperation &active_geometry_operation,
 				RenderedGeometryCollection *rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const QueryProximityThreshold &query_proximity_threshold);
+				const QueryProximityThreshold &query_proximity_threshold,
+				const GPlatesQtWidgets::ViewportWindow *viewport_window);
 
 		/**
 		 * Activate this operation and attach to specified @a GeometryBuilder
@@ -89,20 +202,19 @@ namespace GPlatesViewOperations
 		virtual
 		void
 		deactivate();
-#if 0
-		//! User has just clicked on the sphere.
+
 		void
-		start_drag(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
-#else
-		//! User has just clicked on the sphere.
-		// RJW: Mods to allow us to use this from both map and globe tools. 
+		left_press(
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);		
+				
+
+		//! User has just clicked and dragged on the sphere.
 		void
 		start_drag(
 				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 				const double &closeness_inclusion_threshold);
-#endif
+
 		//! User is currently in the middle of dragging the mouse.
 		void
 		update_drag(
@@ -112,6 +224,12 @@ namespace GPlatesViewOperations
 		void
 		end_drag(
 				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				
+		/**
+		 * User has released the mouse without a drag.                                                                      
+		 */
+		void
+		release_click();
 
 		//! The mouse has moved but it is not a drag because mouse button is not pressed.
 		void
@@ -126,8 +244,19 @@ namespace GPlatesViewOperations
 
 		void
 		geometry_builder_stopped_updating_geometry();
-
+		
+		
+	private slots:
+	
+		/**
+		 * This should be connected to a signal from the task panel, and will
+		 * transfer any user-provided move-nearby-vertex information 
+		 */
+		void
+		update_vertex_data(bool,double,bool,GPlatesModel::integer_plate_id_type);
+	
 	private:
+		
 		/**
 		 * This is used to build geometry. We move vertices with it.
 		 */
@@ -194,7 +323,42 @@ namespace GPlatesViewOperations
 		 * Has the user selected a vertex.
 		 */
 		bool d_is_vertex_selected;
-
+		
+		/**
+		 * Is the user hovering over a vertex                                                                     
+		 */
+		bool d_is_vertex_highlighted;		
+		
+		/**
+		 * Does the user want to check nearby vertices of other geometries                                                                     
+		 */
+		bool d_should_check_nearby_vertices;
+		
+		/**
+		 *  Does the user want to filter other geometries by plate-id                                                                     
+		 */
+		bool d_should_use_plate_id_filter;
+		
+		/**
+		 * Proximity threshold (degrees of arc)for checking nearby vertices.                                                                     
+		 */
+		double d_nearby_vertex_threshold;
+		
+		/**
+		 * View state.
+		 *
+		 * This lets us connect to signals from the move-nearby-vertices widget in the task panel.                                                                      
+		 */
+		const GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
+		
+		/**
+		 * Plate-id provided by user for restricting nearby features to check                                                                   
+		 */
+		boost::optional<GPlatesModel::integer_plate_id_type> d_filter_plate_id; 
+		
+		
+		
+		
 		/**
 		 * Perform the actual move vertex command.
 		 */
@@ -254,6 +418,26 @@ namespace GPlatesViewOperations
 		void
 		update_highlight_rendered_point(
 				const GeometryBuilder::PointIndex highlight_point_index);
+		
+		/**
+		 * Checks for nearby vertices in other geometries, and sends any results to the geometry builder.
+		 */		
+		void
+		update_secondary_geometries(
+				const GPlatesMaths::PointOnSphere &point_on_sphere);
+		
+		/**
+		 * Adds any secondary geometries in the geometry_builder to the appropriate rendered layers.
+		 */
+		void
+		update_rendered_secondary_geometries();
+		
+		
+		/**
+		 * Highlight any secondary geometry vertices which might be moved.                                                                    
+		 */
+		void
+		update_highlight_secondary_vertices();
 	};
 }
 

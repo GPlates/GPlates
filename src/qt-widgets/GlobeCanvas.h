@@ -455,6 +455,15 @@ namespace GPlatesQtWidgets
 		mouse_pointer_position_changed(
 				const GPlatesMaths::PointOnSphere &new_virtual_pos,
 				bool is_on_globe);
+				
+				
+		void
+		mouse_pressed(
+			const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+			const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
+			bool is_on_globe,
+			Qt::MouseButton button,
+			Qt::KeyboardModifiers modifiers);
 
 		void
 		mouse_clicked(

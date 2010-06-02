@@ -77,6 +77,23 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_deactivation()
 }
 
 void
+GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_press(
+	const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+	const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+	bool is_on_globe)
+{
+	if (globe_canvas().isVisible())
+	{
+		d_canvas_tool_ptr->handle_left_press(
+			oriented_click_pos_on_globe,
+			is_on_globe,
+			globe_canvas().current_proximity_inclusion_threshold(
+			click_pos_on_globe));
+	}
+}
+
+
+void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_click(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,

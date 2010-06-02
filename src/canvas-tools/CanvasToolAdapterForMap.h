@@ -94,6 +94,13 @@ namespace GPlatesCanvasTools
 
 		virtual
 		void
+		handle_left_press(
+				const QPointF &click_point_on_scene,
+				bool is_on_surface);
+
+
+		virtual
+		void
 		handle_left_click(
 				const QPointF &click_point_on_scene,
 				bool is_on_surface);

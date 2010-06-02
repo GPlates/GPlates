@@ -476,6 +476,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SLOT(reconstruct()));
 
 
+	// After modifying the move-nearby-vertices widget, this will reset the focus to the globe/map. 
+	QObject::connect(d_task_panel_ptr,
+					SIGNAL(vertex_data_changed(bool,double,bool,GPlatesModel::integer_plate_id_type)),
+					&d_reconstruction_view_widget,SLOT(setFocus()));
 	// Initialise the "Trinket Area", a class which manages the various icons present in the
 	// status bar. This must occur after ViewportWindow::setupUi().
 	d_trinket_area_ptr->init();
@@ -797,6 +801,15 @@ void
 GPlatesQtWidgets::ViewportWindow::connect_canvas_tools()
 {
 	GlobeCanvas *globe_canvas_ptr = &globe_canvas();
+
+	QObject::connect(globe_canvas_ptr, SIGNAL(mouse_pressed(const GPlatesMaths::PointOnSphere &,
+		const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
+		Qt::KeyboardModifiers)),
+		d_globe_canvas_tool_adapter_ptr.get(), SLOT(handle_press(const GPlatesMaths::PointOnSphere &,
+		const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
+		Qt::KeyboardModifiers)));
+
+
 	QObject::connect(globe_canvas_ptr, SIGNAL(mouse_clicked(const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
 					Qt::KeyboardModifiers)),
@@ -839,6 +852,12 @@ GPlatesQtWidgets::ViewportWindow::connect_canvas_tools()
 					const GPlatesMaths::PointOnSphere &, bool,
 					const GPlatesMaths::PointOnSphere &)));
 
+	QObject::connect(&(d_reconstruction_view_widget.map_view()), SIGNAL(mouse_pressed(const QPointF &,
+		bool, Qt::MouseButton,
+		Qt::KeyboardModifiers)),
+		d_map_canvas_tool_adapter_ptr.get(), SLOT(handle_press(const QPointF &,
+		bool, Qt::MouseButton,
+		Qt::KeyboardModifiers)));
 
 	QObject::connect(&map_view(), SIGNAL(mouse_clicked(const QPointF &,
 					 bool, Qt::MouseButton,
@@ -1341,6 +1360,7 @@ GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 	d_globe_canvas_tool_choice_ptr->choose_move_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_move_vertex_tool();
 	d_task_panel_ptr->choose_modify_geometry_tab();
+	d_task_panel_ptr->enable_move_nearby_vertices_widget(true);
 }
 
 
@@ -1352,6 +1372,7 @@ GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
 	d_map_canvas_tool_choice_ptr->choose_delete_vertex_tool();
 
 	d_task_panel_ptr->choose_modify_geometry_tab();
+	d_task_panel_ptr->enable_move_nearby_vertices_widget(false);	
 }
 
 
@@ -1363,6 +1384,7 @@ GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
 	d_map_canvas_tool_choice_ptr->choose_insert_vertex_tool();
 
 	d_task_panel_ptr->choose_modify_geometry_tab();
+	d_task_panel_ptr->enable_move_nearby_vertices_widget(false);	
 }
 
 void

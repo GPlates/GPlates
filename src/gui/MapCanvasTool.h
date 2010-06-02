@@ -106,6 +106,24 @@ namespace GPlatesGui
 		void
 		handle_deactivation()
 		{  }
+		
+		/**
+		* Handle a left mouse-button press.
+		*
+		* @a click_point_on_scene is the QPointF containing coordinates of the click point
+		* in the QGraphicsScene. 
+		*
+		* @a is_on_surface is true if the click point is on the surface of the map. 
+		*
+		* This function is a no-op implementation which may be overridden in a derived
+		* class.
+		*/
+		virtual
+		void
+		handle_left_press(
+			const QPointF &click_point_on_scene,
+			bool is_on_surface)
+		{  }
 
 		/**
 		 * Handle a left mouse-button click.
@@ -123,9 +141,7 @@ namespace GPlatesGui
 		handle_left_click(
 				const QPointF &click_point_on_scene,
 				bool is_on_surface)
-		{  
-	
-		}
+		{  }
 
 		/**
 		 * Handle a mouse drag with the left mouse-button pressed.

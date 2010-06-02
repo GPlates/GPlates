@@ -92,10 +92,19 @@ GPlatesViewOperations::GeometryBuilderMovePointUndoCommand::redo()
 	// Move point in geometry builder.
 	// This will also cause GeometryBuilder to emit a signal to
 	// its observers.
+	std::vector<GPlatesMaths::PointOnSphere> secondary_points;
+	for (int i = 0; i < static_cast<int>(d_secondary_geometries.size()) ; ++i)
+	{
+		secondary_points.push_back(d_oriented_pos_on_globe);
+	}
+
 	d_undo_operation = d_geometry_builder->move_point_in_current_geometry(
 		d_point_index_to_move,
 		d_oriented_pos_on_globe,
+		d_secondary_geometries,
+		secondary_points,
 		d_is_intermediate_move);
+
 }
 
 

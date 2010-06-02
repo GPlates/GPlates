@@ -42,33 +42,31 @@ namespace
 }
 
 void
-GPlatesGui::MapCanvasToolAdapter::handle_click(
-		const QPointF &point_on_scene,
-		bool is_on_surface,
-		Qt::MouseButton button,
-		Qt::KeyboardModifiers modifiers)
+GPlatesGui::MapCanvasToolAdapter::handle_press(
+	const QPointF &point_on_scene,
+	bool is_on_surface,
+	Qt::MouseButton button,
+	Qt::KeyboardModifiers modifiers)
 {
 	switch (button) {
 	case Qt::LeftButton:
 		switch (modifiers) {
-		case Qt::NoModifier:
-			get_tool(*this).handle_left_click(point_on_scene, is_on_surface);
-			break;
-		case Qt::ShiftModifier:
-			get_tool(*this).handle_shift_left_click(point_on_scene, is_on_surface);
-			break;
-		case Qt::ControlModifier:
-			get_tool(*this).handle_ctrl_left_click(point_on_scene, is_on_surface);
-			break;
-		default:
-			// This is an ugly way of getting around the fact that
-			// (Qt::ShiftModifier | Qt::ControlModifier) is not a constant-expression,
-			// and so cannot be used as a case label.
-			if (modifiers == (Qt::ShiftModifier | Qt::ControlModifier)) {
-			}
-			else {
-			}
-			break;
+	case Qt::NoModifier:
+		get_tool(*this).handle_left_press(point_on_scene, is_on_surface);
+		break;
+	case Qt::ShiftModifier:
+		break;
+	case Qt::ControlModifier:
+		break;
+	default:
+		// This is an ugly way of getting around the fact that
+		// (Qt::ShiftModifier | Qt::ControlModifier) is not a constant-expression,
+		// and so cannot be used as a case label.
+		if (modifiers == (Qt::ShiftModifier | Qt::ControlModifier)) {
+		}
+		else {
+		}
+		break;
 		}
 		break;
 
@@ -79,6 +77,48 @@ GPlatesGui::MapCanvasToolAdapter::handle_click(
 		break;
 	}
 }
+
+
+void
+GPlatesGui::MapCanvasToolAdapter::handle_click(
+	const QPointF &point_on_scene,
+	bool is_on_surface,
+	Qt::MouseButton button,
+	Qt::KeyboardModifiers modifiers)
+{
+	switch (button) {
+	case Qt::LeftButton:
+		switch (modifiers) {
+	case Qt::NoModifier:
+		get_tool(*this).handle_left_click(point_on_scene, is_on_surface);
+		break;
+	case Qt::ShiftModifier:
+		get_tool(*this).handle_shift_left_click(point_on_scene, is_on_surface);
+		break;
+	case Qt::ControlModifier:
+		get_tool(*this).handle_ctrl_left_click(point_on_scene, is_on_surface);
+		break;
+	default:
+		// This is an ugly way of getting around the fact that
+		// (Qt::ShiftModifier | Qt::ControlModifier) is not a constant-expression,
+		// and so cannot be used as a case label.
+		if (modifiers == (Qt::ShiftModifier | Qt::ControlModifier)) {
+		}
+		else {
+		}
+		break;
+		}
+		break;
+
+	case Qt::RightButton:
+		break;
+
+	default:
+		break;
+	}
+}
+
+
 
 
 

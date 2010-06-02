@@ -36,6 +36,7 @@
 #include <iostream>
 #include <boost/none.hpp>
 
+#include <QDebug>
 #include <QLinearGradient>
 #include <QLocale>
 #include <QPainter>
@@ -548,6 +549,13 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 					mouse_pointer_is_on_globe(),
 					press_event->button(),
 					press_event->modifiers());
+
+	emit mouse_pressed(
+		d_mouse_press_info->d_mouse_pointer_pos,
+		d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
+		d_mouse_press_info->d_is_on_globe,
+		d_mouse_press_info->d_button,
+		d_mouse_press_info->d_modifiers);
 
 }
 

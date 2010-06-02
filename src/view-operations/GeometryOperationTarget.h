@@ -140,6 +140,9 @@ namespace GPlatesViewOperations
 		void
 		set_internal_state(
 				internal_state_type internal_state);
+				
+		const GPlatesGui::FeatureFocus*
+		get_feature_focus();		
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments

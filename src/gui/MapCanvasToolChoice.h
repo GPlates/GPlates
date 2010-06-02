@@ -93,7 +93,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				const GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,

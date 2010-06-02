@@ -218,7 +218,7 @@ namespace GPlatesQtWidgets
 
 		/** Get a pointer to the TaskPanel */
 		GPlatesQtWidgets::TaskPanel *
-		task_panel_ptr()
+		task_panel_ptr() const
 		{
 			return d_task_panel_ptr;
 		}

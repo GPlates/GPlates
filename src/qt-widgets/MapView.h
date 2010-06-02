@@ -270,6 +270,14 @@ namespace GPlatesQtWidgets
 		mouse_pointer_position_changed(
 				const boost::optional<GPlatesMaths::LatLonPoint> &,
 				bool is_on_globe);
+				
+		void
+		mouse_pressed(
+				const QPointF &point_on_scene,
+				bool is_on_surface,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
+				
 
 		void
 		mouse_clicked(

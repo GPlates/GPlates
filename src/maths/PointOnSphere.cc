@@ -87,6 +87,22 @@ GPlatesMaths::PointOnSphere::test_proximity(
 	}
 }
 
+GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+GPlatesMaths::PointOnSphere::test_vertex_proximity(
+	const ProximityCriteria &criteria) const
+{
+	double closeness = calculate_closeness(criteria.test_point(), *this).dval();
+	unsigned int index = 0;
+	if (closeness > criteria.closeness_inclusion_threshold()) {
+		return make_maybe_null_ptr(PointProximityHitDetail::create(
+			this->get_non_null_pointer(),
+			closeness,
+			index));
+	} else {
+		return ProximityHitDetail::null;
+	}
+}
+
 
 void
 GPlatesMaths::PointOnSphere::accept_visitor(

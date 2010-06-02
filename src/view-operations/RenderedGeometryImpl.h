@@ -78,6 +78,12 @@ namespace GPlatesViewOperations
 		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 		test_proximity(
 				const GPlatesMaths::ProximityCriteria &criteria) const = 0;
+				
+				
+		virtual
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const GPlatesMaths::ProximityCriteria &criteria) const = 0;
 	};
 }
 

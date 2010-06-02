@@ -79,7 +79,9 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
+				const GPlatesQtWidgets::ViewportWindow *viewport_window
+				);
 		
 		
 		virtual
@@ -91,6 +93,20 @@ namespace GPlatesCanvasTools
 		void
 		handle_deactivation();
 
+
+		virtual
+		void
+		handle_left_click(
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
+
+		virtual
+		void
+		handle_left_press(
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 
 		virtual
 		void

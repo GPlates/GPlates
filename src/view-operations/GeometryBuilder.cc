@@ -32,11 +32,60 @@
 #include "GeometryBuilder.h"
 #include "InternalGeometryBuilder.h"
 
+#include "app-logic/ReconstructionGeometryUtils.h"
 #include "maths/PointOnSphere.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
+
+namespace
+{
+	void
+	fill_secondary_points(
+		std::vector<GPlatesMaths::PointOnSphere> &secondary_points,
+		const std::vector<GPlatesViewOperations::SecondaryGeometry> &secondary_geometries)
+	{
+		std::vector<GPlatesViewOperations::SecondaryGeometry>::const_iterator 
+			it = secondary_geometries.begin(),
+			end = secondary_geometries.end();
+		for(; it != end ; ++it)
+		{
+			GPlatesViewOperations::GeometryVertexFinder finder(it->d_index_of_vertex);
+			it->d_geometry_on_sphere->accept_visitor(finder);
+			if (finder.get_vertex())
+			{
+				secondary_points.push_back(*finder.get_vertex());
+			}
+		}
+	}
+
+	void
+	move_secondary_geometry_vertices(
+		std::vector<GPlatesViewOperations::SecondaryGeometry> &secondary_geometries,
+		std::vector<GPlatesMaths::PointOnSphere> &secondary_points)
+	{
+		
+		std::vector<GPlatesViewOperations::SecondaryGeometry>::iterator 
+			it = secondary_geometries.begin(),
+			end = secondary_geometries.end();
+			
+		std::vector<GPlatesMaths::PointOnSphere>::const_iterator
+			it_points = secondary_points.begin();
+			
+		for (; it != end ; ++it)
+		{
+			GPlatesViewOperations::GeometryUpdater geometry_updater(*it_points,it->d_index_of_vertex);
+			it->d_geometry_on_sphere->accept_visitor(geometry_updater);
+			if (geometry_updater.geometry())
+			{
+				it->d_geometry_on_sphere = *(geometry_updater.geometry());
+			}
+	
+		}
+	}
+
+}
 
 
 namespace GPlatesViewOperations
@@ -105,9 +154,13 @@ namespace GPlatesViewOperations
 		public:
 			MovePointUndoImpl(
 					GeometryBuilder::PointIndex point_index,
-					const GPlatesMaths::PointOnSphere &old_point) :
+					const GPlatesMaths::PointOnSphere &old_point,
+					std::vector<SecondaryGeometry> &secondary_geometries,
+					std::vector<GPlatesMaths::PointOnSphere> &secondary_points) :
 			d_point_index(point_index),
-			d_old_point(old_point)
+			d_old_point(old_point),
+			d_secondary_geometries(secondary_geometries),
+			d_secondary_points(secondary_points)
 			{  }
 
 			virtual
@@ -121,6 +174,8 @@ namespace GPlatesViewOperations
 
 			GeometryBuilder::PointIndex d_point_index;
 			GPlatesMaths::PointOnSphere d_old_point;
+			std::vector<SecondaryGeometry> d_secondary_geometries;
+			std::vector<GPlatesMaths::PointOnSphere> d_secondary_points;
 		};
 
 		class SetGeometryTypeUndoImpl :
@@ -377,6 +432,8 @@ GPlatesViewOperations::GeometryBuilder::UndoOperation
 GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 		PointIndex point_index,
 		const GPlatesMaths::PointOnSphere &new_oriented_pos_on_globe,
+		std::vector<SecondaryGeometry> &secondary_geometries,
+		std::vector<GPlatesMaths::PointOnSphere> &secondary_points,
 		bool is_intermediate_move)
 {
 	// This gets put in all public methods that modify geometry state.
@@ -396,13 +453,20 @@ GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 
 	GPlatesMaths::PointOnSphere old_oriented_pos_on_globe = *move_iter;
 	*move_iter = new_oriented_pos_on_globe;
+	
+	std::vector<GPlatesMaths::PointOnSphere> old_secondary_points;
+	fill_secondary_points(old_secondary_points,secondary_geometries);
+	if (!secondary_geometries.empty())
+	{
+		move_secondary_geometry_vertices(secondary_geometries,secondary_points);
+	}
 
 	emit moved_point_in_current_geometry(
 			point_index, new_oriented_pos_on_globe, is_intermediate_move);
 
 	return boost::any( GeometryBuilderInternal::UndoImpl(
 			new GeometryBuilderInternal::MovePointUndoImpl(
-					point_index, old_oriented_pos_on_globe)) );
+					point_index, old_oriented_pos_on_globe,secondary_geometries,old_secondary_points)) );
 }
 
 const GPlatesViewOperations::InternalGeometryBuilder&
@@ -536,9 +600,15 @@ GPlatesViewOperations::GeometryBuilder::visit_undo_operation(
 {
 	const PointIndex moved_point_index = move_point_undo.d_point_index;
 	const GPlatesMaths::PointOnSphere &old_point = move_point_undo.d_old_point;
-
+	std::vector<SecondaryGeometry> secondary_geometries = move_point_undo.d_secondary_geometries;
+	std::vector<GPlatesMaths::PointOnSphere> secondary_points = move_point_undo.d_secondary_points;
+	
 	// Ignore returned UndoOperation.
-	move_point_in_current_geometry(moved_point_index, old_point);
+
+	move_point_in_current_geometry(moved_point_index, old_point, secondary_geometries, secondary_points);
+
+	d_secondary_geometries = secondary_geometries;
+
 }
 
 void
@@ -813,3 +883,72 @@ GPlatesViewOperations::GeometryBuilder::UpdateGuard::~UpdateGuard()
 	{
 	}
 }
+
+void
+GPlatesViewOperations::GeometryBuilder::add_secondary_geometry(
+	GPlatesModel::ReconstructionGeometry::non_null_ptr_type recon_geom, 
+	unsigned int index_of_vertex)
+{
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+		recon_geom->geometry();
+		
+	GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
+	if (recon_geom &&
+		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
+		recon_geom, rfg))
+	{
+		SecondaryGeometry secondary_geometry(rfg->get_non_null_pointer(),geometry,index_of_vertex);
+		d_secondary_geometries.push_back(secondary_geometry);
+	}
+}
+
+boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+GPlatesViewOperations::GeometryBuilder::get_secondary_geometry()
+{
+	if (!d_secondary_geometries.empty())
+	{
+		SecondaryGeometry secondary_geometry = d_secondary_geometries.front();
+		return boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>(secondary_geometry.d_geometry_on_sphere);
+	}
+	return boost::none;
+}
+
+boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
+GPlatesViewOperations::GeometryBuilder::get_secondary_rfg()
+{
+	if (!d_secondary_geometries.empty())
+	{
+		SecondaryGeometry secondary_geometry = d_secondary_geometries.front();
+		return boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>(secondary_geometry.d_rfg);
+	}
+	return boost::none;
+}
+
+boost::optional<unsigned int> 
+GPlatesViewOperations::GeometryBuilder::get_secondary_index()
+{
+	if (!d_secondary_geometries.empty())
+	{
+		SecondaryGeometry secondary_geometry = d_secondary_geometries.front();
+		return boost::optional<unsigned int>(secondary_geometry.d_index_of_vertex);
+	}
+	return boost::none;
+}
+
+boost::optional<GPlatesMaths::PointOnSphere>
+GPlatesViewOperations::GeometryBuilder::get_secondary_vertex()
+{
+	geometry_opt_ptr_type geom = get_secondary_geometry();
+	if (geom)
+	{
+		unsigned int index = *get_secondary_index();
+		GeometryVertexFinder finder(index);
+		(*geom)->accept_visitor(finder);
+		if (finder.get_vertex())
+		{
+			return *finder.get_vertex();
+		}
+	}
+	return boost::none;
+}
+

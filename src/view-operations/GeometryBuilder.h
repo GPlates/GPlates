@@ -34,7 +34,10 @@
 #include <QObject>
 
 #include "InternalGeometryBuilder.h"
+#include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/PointOnSphere.h"
+#include "model/ReconstructedFeatureGeometry.h"
+#include "utils/GeometryCreationUtils.h"
 
 namespace GPlatesViewOperations
 {
@@ -47,6 +50,242 @@ namespace GPlatesViewOperations
 		class ClearAllGeometriesUndoImpl;
 		class InsertGeometryUndoImpl;
 	}
+
+	/**
+	 * Stores any geometries which have vertices lying near the MoveVertex tool's highlighted point.
+	 *
+	 * @rfg is required so that we can update the feature's geometry property from @geometry_on_sphere
+	 * at the end of a move vertex action.
+	 *
+	 * @geometry_on_sphere is updated at each drag and added to the MoveVertex tool's rendered layers.
+	 *
+	 * @index_of_vertex is the index of the vertex of @geometry_on_sphere which will be moved with the
+	 * MoveVertex tool. 
+	 */
+	struct SecondaryGeometry
+	{
+		SecondaryGeometry(
+			GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg,
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
+			unsigned int index_of_vertex):
+			d_rfg(rfg),
+			d_geometry_on_sphere(geometry_on_sphere),
+			d_index_of_vertex(index_of_vertex)
+		{
+		}
+#if 0
+		SecondaryGeometry&
+		operator=(
+			const SecondaryGeometry &other)
+		{
+			d_rfg = other.d_rfg;
+			d_index_of_vertex = other.d_index_of_vertex;
+			d_geometry_on_sphere = other.d_geometry_on_sphere->clone_as_geometry();
+			return *this;
+		}
+#endif
+		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type d_rfg;
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry_on_sphere;
+		unsigned int d_index_of_vertex;
+	};
+
+	/**
+	 * Visitor for creating a new GeometryOnSphere in which vertex @index_of_vertex has been 
+	 * changed to @point_on_sphere.
+	 */
+	class GeometryUpdater:
+		public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		GeometryUpdater(
+			const GPlatesMaths::PointOnSphere &point_on_sphere,
+			unsigned int index_of_vertex
+			):
+			d_point_on_sphere(point_on_sphere),
+			d_index_of_vertex(index_of_vertex),
+			d_validity(GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS)
+			{  }
+		
+		void
+		visit_point_on_sphere(
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			points.push_back(d_point_on_sphere);
+
+			d_geometry = GPlatesUtils::create_point_on_sphere(points,d_validity);
+		}
+
+		void
+		visit_multi_point_on_sphere(
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> new_points;
+
+			GPlatesMaths::MultiPointOnSphere::const_iterator 
+				it = multi_point_on_sphere->begin(),
+				end = multi_point_on_sphere->end();
+
+			for (; it != end ; ++it)
+			{
+				new_points.push_back(*it);
+			}	
+
+			std::vector<GPlatesMaths::PointOnSphere>::iterator 
+				new_it = new_points.begin();
+
+			std::advance(new_it,d_index_of_vertex);
+			*new_it = d_point_on_sphere;
+
+			d_geometry = GPlatesUtils::create_multipoint_on_sphere(new_points.begin(),new_points.end(),d_validity);
+		}		
+
+		void
+		visit_polyline_on_sphere(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> new_points;
+			
+			GPlatesMaths::PolylineOnSphere::vertex_const_iterator 
+				it = polyline_on_sphere->vertex_begin(),
+				end = polyline_on_sphere->vertex_end();
+				
+			for (; it != end ; ++it)
+			{
+				new_points.push_back(*it);
+			}	
+			
+			std::vector<GPlatesMaths::PointOnSphere>::iterator 
+				new_it = new_points.begin();
+			
+			std::advance(new_it,d_index_of_vertex);
+			*new_it = d_point_on_sphere;
+			
+			d_geometry = GPlatesUtils::create_polyline_on_sphere(new_points.begin(),new_points.end(),d_validity);
+		}
+
+		void
+		visit_polygon_on_sphere(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> new_points;
+
+			GPlatesMaths::PolygonOnSphere::vertex_const_iterator 
+				it = polygon_on_sphere->vertex_begin(),
+				end = polygon_on_sphere->vertex_end();
+
+			for (; it != end ; ++it)
+			{
+				new_points.push_back(*it);
+			}	
+
+			std::vector<GPlatesMaths::PointOnSphere>::iterator 
+				new_it = new_points.begin();
+
+			std::advance(new_it,d_index_of_vertex);
+			*new_it = d_point_on_sphere;
+
+			d_geometry = GPlatesUtils::create_polygon_on_sphere(new_points.begin(),new_points.end(),d_validity);
+		}	
+		
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		geometry()
+		{
+			if (d_validity == GPlatesUtils::GeometryConstruction::VALID)
+			{ 
+				return d_geometry;
+			}
+			return boost::none;
+		}
+		
+	private:
+
+		GPlatesMaths::PointOnSphere d_point_on_sphere;
+		unsigned int d_index_of_vertex;
+		GPlatesUtils::GeometryConstruction::GeometryConstructionValidity d_validity;		
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
+		
+	};
+
+
+	class GeometryVertexFinder:
+		public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		GeometryVertexFinder(
+			unsigned int index):
+		d_index(index)
+		{  }
+		
+		void
+		visit_point_on_sphere(
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			if (d_index == 0)
+			{
+				d_vertex.reset(*point_on_sphere);
+			}
+		}
+
+		void
+		visit_multi_point_on_sphere(
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			if (d_index >= multi_point_on_sphere->number_of_points())
+			{
+				return;
+			}
+			
+			GPlatesMaths::MultiPointOnSphere::const_iterator 
+				it = multi_point_on_sphere->begin();				
+			std::advance(it,d_index);
+			
+			d_vertex.reset(*it);
+		}		
+
+		void
+		visit_polyline_on_sphere(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			if (d_index >= polyline_on_sphere->number_of_vertices())
+			{
+				return;
+			}
+
+			GPlatesMaths::PolylineOnSphere::vertex_const_iterator
+				it = polyline_on_sphere->vertex_begin();				
+			std::advance(it,d_index);
+			d_vertex.reset(*it);
+		}
+
+		void
+		visit_polygon_on_sphere(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			if (d_index >= polygon_on_sphere->number_of_vertices())
+			{
+				return;
+			}
+
+			GPlatesMaths::PolygonOnSphere::vertex_const_iterator
+				it = polygon_on_sphere->vertex_begin();				
+			std::advance(it,d_index);
+			d_vertex.reset(*it);
+		}	
+
+
+		boost::optional<GPlatesMaths::PointOnSphere>
+		get_vertex()
+		{
+			return d_vertex;
+		}
+		
+		
+		
+	private:
+		unsigned int d_index;
+		boost::optional<GPlatesMaths::PointOnSphere> d_vertex;
+	};
 
 	class GeometryBuilder :
 		public QObject
@@ -177,6 +416,8 @@ namespace GPlatesViewOperations
 		move_point_in_current_geometry(
 				PointIndex point_index,
 				const GPlatesMaths::PointOnSphere &new_oriented_pos_on_globe,
+				std::vector<SecondaryGeometry> &secondary_geometries,
+				std::vector<GPlatesMaths::PointOnSphere> &secondary_points,
 				bool is_intermediate_move = false);
 
 		/**
@@ -355,6 +596,57 @@ namespace GPlatesViewOperations
 		void
 		visit_undo_operation(
 				GeometryBuilderInternal::InsertGeometryUndoImpl &);
+				
+		void
+		clear_secondary_geometries()
+		{
+			d_secondary_geometries.clear();
+		}
+		
+		void
+		add_secondary_geometry(
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type rfg,
+			unsigned int index_of_vertex);
+			
+		int
+		num_secondary_geometries()
+		{
+			return d_secondary_geometries.size();
+		}
+		
+		/**
+		 * Returns the first of any secondary geometries.                                                                      
+		 */
+		geometry_opt_ptr_type
+		get_secondary_geometry();
+		
+		/**
+		 * Returns the rfg of the first of any secondary geometries.                                                                     
+		 */
+		boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
+		get_secondary_rfg();
+		
+		/**
+		 * Returns a point representing the vertex of the first of any secondary geometries                                                                     
+		 */
+		boost::optional<GPlatesMaths::PointOnSphere>
+		get_secondary_vertex();
+		
+		/**
+		 * Returns the index of the vertex of the first of any secondary geometry                                                                     
+		 */
+		boost::optional<unsigned int>
+		get_secondary_index();
+		
+		/**
+		 * Returns a reference to the secondary geometry container.                                                                     
+		 */
+		std::vector<SecondaryGeometry> &
+		get_secondary_geometries()
+		{
+			return d_secondary_geometries;
+		}
+
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -475,6 +767,10 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::PointOnSphere &new_point_position,
 				bool is_intermediate_move);
 
+
+		
+
+			
 	private:
 		/**
 		 * Convenience structure for ensuring matching begin/end_update_geometry calls.
@@ -535,6 +831,8 @@ namespace GPlatesViewOperations
 		int d_update_geometry_depth;
 
 		static const GeometryIndex DEFAULT_GEOMETRY_INDEX = 0;
+		
+		std::vector<SecondaryGeometry> d_secondary_geometries;
 
 		void
 		begin_update_geometry(

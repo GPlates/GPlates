@@ -109,3 +109,4 @@ GPlatesGui::MonochromeAgeColourPalette::get_colour(
 	}
 }
 
+

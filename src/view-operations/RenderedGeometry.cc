@@ -58,3 +58,17 @@ GPlatesViewOperations::RenderedGeometry::test_proximity(
 
 	return GPlatesMaths::ProximityHitDetail::null;
 }
+
+GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+GPlatesViewOperations::RenderedGeometry::test_vertex_proximity(
+	const GPlatesMaths::ProximityCriteria &criteria) const
+{
+	// If we have an implementation then visit it.
+	if (d_impl)
+	{
+		return d_impl->test_vertex_proximity(criteria);
+	}
+
+	return GPlatesMaths::ProximityHitDetail::null;
+}
+

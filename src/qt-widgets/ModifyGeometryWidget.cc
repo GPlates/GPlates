@@ -27,6 +27,7 @@
 #include <QHeaderView>
 #include <QWidget>
 #include <QTreeWidget>
+#include <QVBoxLayout>
 
 #include "ModifyGeometryWidget.h"
 #include "LatLonCoordinatesTable.h"
@@ -51,6 +52,7 @@ GPlatesQtWidgets::ModifyGeometryWidget::ModifyGeometryWidget(
 			&active_geometry_operation));
 
 	connect_to_geometry_builder_tool_target(geometry_operation_target);
+	
 }
 
 GPlatesQtWidgets::ModifyGeometryWidget::~ModifyGeometryWidget()

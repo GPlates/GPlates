@@ -36,6 +36,8 @@
 #include "MeasureDistanceWidget.h"
 #include "ModifyGeometryWidget.h"
 #include "ModifyReconstructionPoleWidget.h"
+#include "SnapNearbyVerticesWidget.h"
+#include "ReconstructionPoleWidget.h"
 #include "TopologyToolsWidget.h"
 
 #include "gui/FeatureFocus.h"
@@ -127,6 +129,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 			view_state, viewport_window)),
 	d_topology_tools_widget_ptr( new TopologyToolsWidget(
 			view_state, viewport_window, choose_canvas_tool)),
+	d_snap_nearby_vertices_widget_ptr(new SnapNearbyVerticesWidget(this,view_state)),
 	d_measure_distance_widget_ptr(new MeasureDistanceWidget(
 			measure_distance_state))
 {
@@ -162,6 +165,7 @@ GPlatesQtWidgets::TaskPanel::set_up_ui()
 	sizep.setHorizontalStretch(1);
 	sizep.setVerticalStretch(0);
 	setSizePolicy(sizep);
+	
 	setMinimumSize(QSize(183, 0));
 	setMaximumSize(QSize(1024, 16777215));
 	
@@ -295,4 +299,31 @@ GPlatesQtWidgets::TaskPanel::set_up_measure_distance_tab()
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
+void
+GPlatesQtWidgets::TaskPanel::enable_move_nearby_vertices_widget(
+	bool enable)
+{
+	QLayout *lay = d_modify_geometry_widget_ptr->layout();	
+	if (enable)
+	{
+		lay->addWidget(d_snap_nearby_vertices_widget_ptr);
+		d_snap_nearby_vertices_widget_ptr->show();
+	}
+	else
+	{
+		lay->removeWidget(d_snap_nearby_vertices_widget_ptr);
+		d_snap_nearby_vertices_widget_ptr->hide();
+	}
+
+}
+
+void
+GPlatesQtWidgets::TaskPanel::emit_vertex_data_changed_signal(
+	bool should_check_nearby_vertices, 
+	double threshold, 
+	bool should_use_plate_id, 
+	GPlatesModel::integer_plate_id_type plate_id)
+{
+	emit vertex_data_changed(should_check_nearby_vertices,threshold,should_use_plate_id,plate_id);
+}
 
