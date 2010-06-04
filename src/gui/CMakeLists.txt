@@ -25,15 +25,15 @@ set(srcs
     ColourNameSet.cc
     ColourNameSet.h
     ColourPalette.h
+    ColourPaletteAdapter.h
     ColourProxy.cc
     ColourProxy.h
+    ColourRawRaster.h
     ColourScheme.h
     ColourSchemeContainer.cc
     ColourSchemeContainer.h
     ColourSchemeDelegator.cc
     ColourSchemeDelegator.h
-    ColourSchemeFactory.cc
-    ColourSchemeFactory.h
     ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
@@ -61,14 +61,14 @@ set(srcs
     ExportSvgAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc
     ExportVelocityAnimationStrategy.h
-    FeatureColourPalette.cc
-    FeatureColourPalette.h
     FeatureFocus.cc
     FeatureFocus.h
     FeaturePropertyTableModel.cc
     FeaturePropertyTableModel.h
     FeatureTableModel.cc
     FeatureTableModel.h
+    FeatureTypeColourPalette.cc
+    FeatureTypeColourPalette.h
     FileIOFeedback.cc
     FileIOFeedback.h
     FullScreenMode.cc
@@ -131,6 +131,8 @@ set(srcs
     QGLWidgetTextRenderer.h
     Quadrics.cc
     Quadrics.h
+    RasterColourPalette.cc
+    RasterColourPalette.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
     SimpleGlobeOrientation.cc

@@ -1,5 +1,7 @@
 <RCC>
-<qresource prefix="/" >
+  <qresource prefix="/">
+    <file>tango_redo_16.png</file>
+    <file>tango_undo_16.png</file>
     <file>GPlates-icon-160x160-opaque.png</file>
     <file>GPlates-logo-transparent.png</file>
     <file>africa_blank_35.png</file>
@@ -7,7 +9,7 @@
     <file>blank_16.png</file>
     <file>click_geometry_35.png</file>
     <file>clone_geometry_22.png</file>
-	<file>clone_feature_22.png</file>
+    <file>clone_feature_22.png</file>
     <file>digitise_multipoint_35.png</file>
     <file>digitise_polygon_35.png</file>
     <file>digitise_polyline_35.png</file>
@@ -103,5 +105,5 @@
     <file>unsaved_changes_red_disk_bang_22.png</file>
     <file>unsaved_changes_red_disk_question_22.png</file>
     <file>zoom_globe_35.png</file>
-</qresource>
+  </qresource>
 </RCC>

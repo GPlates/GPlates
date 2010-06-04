@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,7 +28,9 @@
 #ifndef GPLATES_GUI_COLOUR_H
 #define GPLATES_GUI_COLOUR_H
 
+#include <algorithm>
 #include <iosfwd>
+#include <boost/cstdint.hpp>
 #include <QColor>
 
 #include "OpenGL.h"
@@ -55,8 +57,7 @@ namespace GPlatesGui
 			s(s_),
 			v(v_),
 			a(a_)
-		{	
-		}
+		{  }
 	};
 
 	struct CMYKColour
@@ -79,8 +80,47 @@ namespace GPlatesGui
 			m(m_),
 			y(y_),
 			k(k_)
+		{  }
+	};
+
+	struct rgba8_t
+	{
+		static const int NUM_COMPONENTS = 4;
+
+		union
 		{
-		}
+			// If it's easier to access as an array of chars...
+			char components[NUM_COMPONENTS];
+
+			// If it's easier to access using named components...
+			struct
+			{
+				boost::uint8_t red, green, blue, alpha;
+			};
+
+			// If it's easier to access as a 32-bit int...
+			boost::int32_t int32_value;
+
+			// If it's easier to access as a 32-bit unsigned int...
+			boost::uint32_t uint32_value;
+		};
+
+		/**
+		 * This DOES NOT initialise any of the components.
+		 */
+		rgba8_t()
+		{  }
+
+		rgba8_t(
+				boost::uint8_t red_,
+				boost::uint8_t green_,
+				boost::uint8_t blue_,
+				boost::uint8_t alpha_) :
+			red(red_),
+			green(green_),
+			blue(blue_),
+			alpha(alpha_)
+		{  }
 	};
 
 	class Colour
@@ -94,30 +134,31 @@ namespace GPlatesGui
 		 * For example defining one static variable equal to another.
 		 * These functions have a local static colour variable.
 		 */
-		static const Colour & get_black();
-		static const Colour & get_white();
-		static const Colour & get_red();
-		static const Colour & get_green();
+		static const Colour &get_black();
+		static const Colour &get_white();
+		static const Colour &get_red();
+		static const Colour &get_green();
 
-		static const Colour & get_blue();
-		static const Colour & get_grey();
-		static const Colour & get_silver();
-		static const Colour & get_maroon();
+		static const Colour &get_blue();
+		static const Colour &get_grey();
+		static const Colour &get_silver();
+		static const Colour &get_maroon();
 
-		static const Colour & get_purple();
-		static const Colour & get_fuchsia();
-		static const Colour & get_lime();
-		static const Colour & get_olive();
+		static const Colour &get_purple();
+		static const Colour &get_fuchsia();
+		static const Colour &get_lime();
+		static const Colour &get_olive();
 
-		static const Colour & get_yellow();
-		static const Colour & get_navy();
-		static const Colour & get_teal();
-		static const Colour & get_aqua();
+		static const Colour &get_yellow();
+		static const Colour &get_navy();
+		static const Colour &get_teal();
+		static const Colour &get_aqua();
 
 		/**
 		 * Indices of the respective colour componets.
 		 */
-		enum {
+		enum
+		{
 			RED_INDEX = 0,
 			GREEN_INDEX = 1,
 			BLUE_INDEX = 2,
@@ -138,9 +179,9 @@ namespace GPlatesGui
 		 */
 		explicit
 		Colour(
-				const GLfloat &red   = 0.0,
+				const GLfloat &red = 0.0,
 				const GLfloat &green = 0.0,
-				const GLfloat &blue  = 0.0,
+				const GLfloat &blue = 0.0,
 				const GLfloat &alpha = 1.0);
 
 		/**
@@ -153,10 +194,7 @@ namespace GPlatesGui
 		Colour(
 				const Colour &colour)
 		{
-			d_rgba[RED_INDEX] = colour.d_rgba[RED_INDEX];
-			d_rgba[GREEN_INDEX] = colour.d_rgba[GREEN_INDEX];
-			d_rgba[BLUE_INDEX] = colour.d_rgba[BLUE_INDEX];
-			d_rgba[ALPHA_INDEX] = colour.d_rgba[ALPHA_INDEX];
+			std::copy(colour.d_rgba, colour.d_rgba + RGBA_SIZE, d_rgba);
 		}
 
 		/**
@@ -282,6 +320,24 @@ namespace GPlatesGui
 		static
 		HSVColour
 		to_hsv(
+				const Colour &colour);
+
+		/**
+		 * Converts an RGBA colour with 8-bit integer components to a Colour (which
+		 * uses floating-point values internally).
+		 */
+		static
+		Colour
+		from_rgba8(
+				const rgba8_t &rgba8);
+
+		/**
+		 * Converts a Colour (which uses floating-point values internally) to an RGBA
+		 * colour with 8-bit integer components.
+		 */
+		static
+		rgba8_t
+		to_rgba8(
 				const Colour &colour);
 
 	private:

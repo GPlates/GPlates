@@ -444,7 +444,7 @@ namespace
 				IO::ReadErrors::ElementNameChanged);
 
 		QStringRef file_version = reader.attributes().value(
-				XmlUtils::GPML_NAMESPACE, "version");
+				XmlUtils::GPML_NAMESPACE_QSTRING, "version");
 		append_warning_if(file_version == "", params,
 				IO::ReadErrors::MissingVersionAttribute,
 				IO::ReadErrors::AssumingCorrectVersion);
@@ -531,7 +531,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 				if (reader.isStartElement()) {
 					append_warning_if( 
 						! qualified_names_are_equal(
-								reader, XmlUtils::GML_NAMESPACE, "featureMember"), 
+								reader, XmlUtils::GML_NAMESPACE_QSTRING, "featureMember"), 
 						// FIXME: What do I use for the XmlNode here?  Maybe append the error
 						// manually instead?
 						params, 

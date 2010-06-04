@@ -26,9 +26,9 @@
 #include <utility>
 
 #include "ColourSchemeDelegator.h"
-#include "ColourSchemeFactory.h"
 
 #include "app-logic/ReconstructionGeometryUtils.h"
+
 #include "model/FeatureHandle.h"
 #include "model/WeakReferenceCallback.h"
 

@@ -93,7 +93,7 @@ namespace
 
 
 #if 0
-// TGA support is commented because it's not used right now.
+// TGA support is commented out because it's not used right now.
 
 /*
  * We use this macro to compare the return value of 'fread' (the number of objects read) with the
@@ -195,17 +195,16 @@ namespace
 #endif
 
 
-	bool
+	boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 	load_qimage_file(
 			const QString &filename,
-			GPlatesPropertyValues::InMemoryRaster &raster,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
+		// Read the image in using the QImageReader.
 		QImageReader image_reader(filename);
 		QImage raw_image = image_reader.read();
 		if (raw_image.isNull())
 		{
-	//		qDebug() << image_reader.errorString().toStdString().c_str();
 			read_errors.d_failures_to_begin.push_back(
 					make_read_error_occurrence(
 						filename,
@@ -215,58 +214,36 @@ namespace
 						ReadErrors::FileNotLoaded));
 			return false;
 		}
-		
+
+		// Convert it to RGBA format.
 		QImage image = QGLWidget::convertToGLFormat(raw_image);
-
-		GPlatesPropertyValues::InMemoryRaster::ColourFormat format =
-				GPlatesPropertyValues::InMemoryRaster::RgbaFormat;
-
-		raster.set_corresponds_to_data(false);
-
 		QSize image_size = image.size();
 
-		try
-		{
-			raster.generate_raster(
-					image.bits(),
-					image_size,
-					format);
-			raster.set_enabled(true);
-			return true;
-		}
-		catch (const GPlatesGui::OpenGLBadAllocException &)
-		{
-			read_errors.d_failures_to_begin.push_back(
-					make_read_error_occurrence(
-						filename,
-						DataFormats::RasterImage,
-						0,
-						ReadErrors::InsufficientTextureMemory,
-						ReadErrors::FileNotLoaded));		
-			return false;
-		}
-		catch (const GPlatesGui::OpenGLException &)
-		{
-			read_errors.d_failures_to_begin.push_back(
-					make_read_error_occurrence(
-						filename,
-						DataFormats::RasterImage,
-						0,
-						ReadErrors::ErrorGeneratingTexture,
-						ReadErrors::FileNotLoaded));		
-			return false;
-		}
+		// Copy it into a Rgba8RawRaster.
+		GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type raw_raster =
+			GPlatesPropertyValues::Rgba8RawRaster::create(
+					image_size.width(), image_size.height());
+		GPlatesGui::rgba8_t *raw_raster_buf = raw_raster->data().get();
+		GPlatesGui::rgba8_t *source_buf = reinterpret_cast<GPlatesGui::rgba8_t *>(image.bits());
+		std::copy(
+				source_buf,
+				source_buf + image_size.width() * image_size.height(),
+				raw_raster_buf);
+
+		return static_cast<GPlatesPropertyValues::RawRaster::non_null_ptr_type>(raw_raster);
 	}
 
 
-	bool
+	boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 	load_gdal_file(
 			const QString &filename,
-			GPlatesPropertyValues::InMemoryRaster &raster,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		GPlatesFileIO::GdalReader reader;
-		return reader.read_file(filename, raster, read_errors);
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> raw_raster_opt =
+			reader.read_file(filename, read_errors);
+
+		return raw_raster_opt;
 	}
 
 
@@ -464,16 +441,19 @@ namespace
 							&std::pair<const QString, QStringList>::second,
 							boost::lambda::_1)));
 
+		// The last filter matches all files, regardless of file extension.
+		QStringList all_files(QString("*"));
+		filters << create_file_dialog_filter_string("All files", all_files);
+
 		return filters.join(";;");
 	}
 
 }  // anonymous namespace
 
 
-bool
+boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 GPlatesFileIO::RasterReader::read_file(
 	   const FileInfo &file_info,
-	   GPlatesPropertyValues::InMemoryRaster &raster,
 	   ReadErrorAccumulation &read_errors)
 {
 	QFileInfo q_file_info = file_info.get_qfileinfo();
@@ -491,13 +471,11 @@ GPlatesFileIO::RasterReader::read_file(
 		case Q_IMAGE_READER:
 			return load_qimage_file(
 					file_path,
-					raster,
 					read_errors);
 		
 		case GDAL:
 			return load_gdal_file(
 					file_path,
-					raster,
 					read_errors);
 
 		default:
@@ -508,7 +486,7 @@ GPlatesFileIO::RasterReader::read_file(
 						0,
 						ReadErrors::UnrecognisedRasterFileType,
 						ReadErrors::FileNotLoaded));
-			return false;
+			return boost::none;
 	}
 }
 

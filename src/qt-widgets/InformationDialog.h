@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,10 +37,19 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
+
 		InformationDialog(
-			const QString &data,
-			const QString &title,
-			QWidget* parent_ = NULL);
+				const QString &text_,
+				const QString &title_,
+				QWidget *parent_ = NULL);
+
+		void
+		set_text(
+				const QString &text_);
+
+		void
+		set_title(
+				const QString &title_);
 	};
 }
 

@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * Contains the implementation of the FeatureColourPalette class.
+ * Contains the implementation of the FeatureTypeColourPalette class.
  *
  * Most recent change:
  *   $Date$
@@ -28,7 +28,7 @@
 #include <string>
 #include <boost/foreach.hpp>
 
-#include "FeatureColourPalette.h"
+#include "FeatureTypeColourPalette.h"
 #include "HTMLColourNames.h"
 
 #include "file-io/FeaturePropertiesMap.h"
@@ -94,7 +94,14 @@ namespace
 }
 
 
-GPlatesGui::FeatureColourPalette::FeatureColourPalette()
+GPlatesGui::FeatureTypeColourPalette::non_null_ptr_type
+GPlatesGui::FeatureTypeColourPalette::create()
+{
+	return new FeatureTypeColourPalette();
+}
+
+
+GPlatesGui::FeatureTypeColourPalette::FeatureTypeColourPalette()
 {
 	// Populate the colours map with FeatureTypes that we know about.
 	typedef GPlatesFileIO::FeaturePropertiesMap::const_iterator iterator_type;
@@ -114,7 +121,7 @@ GPlatesGui::FeatureColourPalette::FeatureColourPalette()
 
 
 boost::optional<GPlatesGui::Colour>
-GPlatesGui::FeatureColourPalette::get_colour(
+GPlatesGui::FeatureTypeColourPalette::get_colour(
 		const GPlatesModel::FeatureType &feature_type) const
 {
 	std::map<GPlatesModel::FeatureType, Colour>::const_iterator colour =

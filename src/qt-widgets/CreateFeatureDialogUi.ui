@@ -27,40 +27,15 @@
    <item>
     <widget class="QStackedWidget" name="stack">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="page_feature_type">
-      <layout class="QVBoxLayout">
+      <layout class="QVBoxLayout" name="verticalLayout">
        <property name="margin">
         <number>0</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="groupbox_type">
-         <property name="title">
-          <string>Feature type</string>
-         </property>
-         <layout class="QVBoxLayout">
-          <item>
-           <widget class="QListWidget" name="listwidget_feature_types">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Ignored">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>80</height>
-             </size>
-            </property>
-            <property name="horizontalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOff</enum>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
+        <widget class="QWidget" name="widget_choose_feature_type_placeholder" native="true"/>
        </item>
       </layout>
      </widget>
@@ -72,13 +47,13 @@
        <item>
         <widget class="QGroupBox" name="groupbox_geometry_destination">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
            <horstretch>0</horstretch>
-           <verstretch>3</verstretch>
+           <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="title">
-          <string>Assign geometry to property</string>
+          <string>Geometry Property</string>
          </property>
          <layout class="QHBoxLayout">
           <item>
@@ -103,10 +78,16 @@
           <item>
            <widget class="QListWidget" name="listwidget_geometry_destinations">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Ignored">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>6</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>100</height>
+             </size>
             </property>
             <property name="horizontalScrollBarPolicy">
              <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -121,11 +102,11 @@
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
            <horstretch>0</horstretch>
-           <verstretch>7</verstretch>
+           <verstretch>1</verstretch>
           </sizepolicy>
          </property>
          <property name="title">
-          <string>Basic properties</string>
+          <string>Other Properties</string>
          </property>
         </widget>
        </item>
@@ -137,25 +118,19 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="groupBox">
-         <property name="title">
-          <string>Add feature to collection</string>
+        <widget class="QWidget" name="widget_choose_feature_collection_placeholder" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>1</verstretch>
+          </sizepolicy>
          </property>
-         <layout class="QVBoxLayout">
-          <item>
-           <widget class="QLabel" name="label_feature_collections">
-            <property name="text">
-             <string>Choose the feature collection, to which the new feature should be added:</string>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QListWidget" name="listwidget_feature_collections"/>
-          </item>
-         </layout>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>100</height>
+          </size>
+         </property>
         </widget>
        </item>
       </layout>

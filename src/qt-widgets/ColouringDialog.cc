@@ -44,14 +44,15 @@
 #include "ReadErrorAccumulationDialog.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/PropertyExtractors.h"
 
-#include "file-io/RegularCptReader.h"
+#include "file-io/CptReader.h"
 
 #include "gui/Colour.h"
 #include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeInfo.h"
-#include "gui/ColourSchemeFactory.h"
 #include "gui/CptColourPalette.h"
+#include "gui/GenericColourScheme.h"
 #include "gui/HTMLColourNames.h"
 #include "gui/SingleColourScheme.h"
 
@@ -438,28 +439,19 @@ GPlatesQtWidgets::ColouringDialog::load_category(
 		colour_schemes_list->setCurrentRow(0);
 	}
 
-	// Change the "Open" button to "Add" for Single Colour category.
+	// Show "Add" button for Single Colour category, "Open" button for every other category.
+	// Also show "Edit" button only for Single Colour category.
 	if (category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR)
 	{
-		open_button->setText("Add...");
-	}
-	else
-	{
-		open_button->setText("Open...");
-	}
-	
-	// FIXME: For now, hide "Open" and "Remove" for Plate ID and Feature Type
-	// because we can't read categorical CPT files yet.
-	if (category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
-			category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
-	{
 		open_button->hide();
-		remove_button->hide();
+		add_button->show();
+		edit_button->show();
 	}
 	else
 	{
 		open_button->show();
-		remove_button->show();
+		add_button->hide();
+		edit_button->hide();
 	}
 
 	// Set the rendering chain in motion.
@@ -528,7 +520,7 @@ GPlatesQtWidgets::ColouringDialog::dropEvent(
 		if (!cpts.isEmpty())
 		{
 			ev->acceptProposedAction();
-			open_files(cpts);
+			open_cpt_files(cpts);
 		}
 		else
 		{
@@ -594,14 +586,82 @@ void
 GPlatesQtWidgets::ColouringDialog::handle_open_button_clicked(
 		bool checked)
 {
-	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR)
+	static const QString OPEN_DIALOG_TITLE = "Open Files";
+	static const QString ALL_FILES = ";;All files (*)";
+	static const QString REGULAR_FILTER = "Regular CPT files (*.cpt)" + ALL_FILES;
+	static const QString CATEGORICAL_FILTER = "Categorical CPT files (*.cpt)" + ALL_FILES;
+	static const QString UNIFIED_FILTER = "Regular or categorical CPT files (*.cpt)" + ALL_FILES;
+
+	const QString *filter = NULL;
+
+	switch (d_current_colour_scheme_category)
 	{
-		add_single_colour();
+		case GPlatesGui::ColourSchemeCategory::PLATE_ID:
+			filter = &UNIFIED_FILTER;
+			break;
+
+		case GPlatesGui::ColourSchemeCategory::FEATURE_AGE:
+			filter = &REGULAR_FILTER;
+			break;
+
+		case GPlatesGui::ColourSchemeCategory::FEATURE_TYPE:
+			filter = &CATEGORICAL_FILTER;
+			break;
+
+		default:
+			return;
 	}
-	else
+
+	QStringList file_list = QFileDialog::getOpenFileNames(
+			this,
+			OPEN_DIALOG_TITLE,
+			QString() /* directory */,
+			*filter);
+	open_cpt_files(file_list);
+}
+
+
+void
+GPlatesQtWidgets::ColouringDialog::open_cpt_files(
+		const QStringList &file_list)
+{
+	if (file_list.count() == 0)
 	{
-		open_file();
+		return;
 	}
+
+	switch (d_current_colour_scheme_category)
+	{
+		case GPlatesGui::ColourSchemeCategory::PLATE_ID:
+			open_cpt_files<GPlatesFileIO::IntegerCptReader<int> >(
+					file_list,
+					GPlatesAppLogic::PropertyExtractorAdapter<
+						GPlatesAppLogic::PlateIdPropertyExtractor, int>());
+			break;
+
+		case GPlatesGui::ColourSchemeCategory::FEATURE_AGE:
+			open_cpt_files<GPlatesFileIO::RegularCptReader>(
+					file_list,
+					GPlatesAppLogic::AgePropertyExtractor(d_application_state));
+			break;
+
+		case GPlatesGui::ColourSchemeCategory::FEATURE_TYPE:
+			open_cpt_files<GPlatesFileIO::CategoricalCptReader<GPlatesModel::FeatureType>::Type>(
+					file_list,
+					GPlatesAppLogic::FeatureTypePropertyExtractor());
+			break;
+
+		default:
+			break;
+	}
+}
+
+
+void
+GPlatesQtWidgets::ColouringDialog::handle_add_button_clicked(
+		bool checked)
+{
+	add_single_colour();
 }
 
 
@@ -624,73 +684,30 @@ GPlatesQtWidgets::ColouringDialog::handle_remove_button_clicked(
 }
 
 
+template<class CptReaderType, typename PropertyExtractorType>
 void
-GPlatesQtWidgets::ColouringDialog::open_file()
+GPlatesQtWidgets::ColouringDialog::open_cpt_files(
+		const QStringList &file_list,
+		const PropertyExtractorType &property_extractor)
 {
-	QString filter_text;
-	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
-			d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
-	{
-		filter_text = "Categorical CPT file (*.cpt)";
-	}
-	else if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_AGE)
-	{
-		filter_text = "Regular CPT file (*.cpt)";
-	}
-
-	if (!filter_text.isEmpty())
-	{
-		QStringList file_list = QFileDialog::getOpenFileNames(
-				this,
-				"Open Files",
-				QString(),
-				filter_text);
-		open_files(file_list);
-	}
-}
-
-
-void
-GPlatesQtWidgets::ColouringDialog::open_files(
-		const QStringList &file_list)
-{
-	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
-			d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
-	{
-		open_categorical_cpt_file(file_list);
-	}
-	else if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_AGE)
-	{
-		open_regular_cpt_file(file_list);
-	}
-}
-
-
-void
-GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file(
-		const QStringList &file_list)
-{
-	if (file_list.count() == 0)
-	{
-		return;
-	}
-
 	int first_index_in_list = -1;
 
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_error_accumulation_dialog_ptr->read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
 
-	GPlatesFileIO::RegularCptReader reader;
+	CptReaderType reader;
 	BOOST_FOREACH(QString filename, file_list)
 	{
-		GPlatesGui::RegularCptColourPalette *cpt = reader.read_file(filename, read_errors);
+		typedef typename CptReaderType::colour_palette_type colour_palette_type;
+		typename colour_palette_type::maybe_null_ptr_type cpt = reader.read_file(filename, read_errors);
 
 		// cpt can be NULL if the file yielded no parseable lines.
 		if (cpt)
 		{
 			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme =
-				GPlatesGui::ColourSchemeFactory::create_custom_age_colour_scheme(
-						d_application_state, cpt);
+				GPlatesGui::make_colour_scheme(
+						cpt.get(),
+						property_extractor);
 
 			QFileInfo file_info(filename);
 
@@ -721,17 +738,6 @@ GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file(
 	{
 		start_rendering_from(first_index_in_list);
 		colour_schemes_list->setCurrentRow(colour_schemes_list->count() - 1);
-	}
-}
-
-
-void
-GPlatesQtWidgets::ColouringDialog::open_categorical_cpt_file(
-		const QStringList &file_list)
-{
-	if (file_list.count() == 0)
-	{
-		return;
 	}
 }
 
@@ -866,45 +872,57 @@ GPlatesQtWidgets::ColouringDialog::handle_colour_schemes_list_selection_changed(
 			const GPlatesGui::ColourSchemeInfo &colour_scheme_info =
 				d_colour_scheme_container.get(d_current_colour_scheme_category, id);
 			remove_button->setEnabled(!colour_scheme_info.is_built_in);
+
+			// Also enable or disable the Edit button.
+			edit_button->setEnabled(!colour_scheme_info.is_built_in);
 		}
 	}
 }
 
 
 void
-GPlatesQtWidgets::ColouringDialog::handle_colour_schemes_list_item_double_clicked(
-		QListWidgetItem *item)
+GPlatesQtWidgets::ColouringDialog::edit_current_colour_scheme()
 {
 	// If a non-built-in colour scheme is double clicked, the user can edit the colour.
 	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR)
 	{
+		QListWidgetItem *item = colour_schemes_list->currentItem();
+		if (!item)
+		{
+			return;
+		}
+
 		QVariant qv = item->data(Qt::UserRole);
 		GPlatesGui::ColourSchemeContainer::id_type id = qv.value<GPlatesGui::ColourSchemeContainer::id_type>();
 		
 		const GPlatesGui::ColourSchemeInfo &colour_scheme_info = d_colour_scheme_container.get(
 				GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR, id);
-		if (!colour_scheme_info.is_built_in)
+		if (colour_scheme_info.is_built_in)
 		{
-			GPlatesGui::SingleColourScheme *colour_scheme_ptr =
-				dynamic_cast<GPlatesGui::SingleColourScheme *>(colour_scheme_info.colour_scheme_ptr.get());
-			if (colour_scheme_ptr)
-			{
-				boost::optional<GPlatesGui::Colour> original_colour = colour_scheme_ptr->get_colour();
-				QColor selected_colour = QColorDialog::getColor(
-						original_colour ? *original_colour : GPlatesGui::Colour::get_white(),
-						this);
-				if (selected_colour.isValid())
-				{
-					d_colour_scheme_container.edit_single_colour_scheme(
-							id,
-							selected_colour,
-							selected_colour.name());
+			return;
+		}
 
-					// colour_scheme_info should now be modified.
-					item->setText(colour_scheme_info.short_description);
-					item->setToolTip(colour_scheme_info.long_description);
-				}
-			}
+		GPlatesGui::SingleColourScheme *colour_scheme_ptr =
+			dynamic_cast<GPlatesGui::SingleColourScheme *>(colour_scheme_info.colour_scheme_ptr.get());
+		if (!colour_scheme_ptr)
+		{
+			return;
+		}
+
+		boost::optional<GPlatesGui::Colour> original_colour = colour_scheme_ptr->get_colour();
+		QColor selected_colour = QColorDialog::getColor(
+				original_colour ? *original_colour : GPlatesGui::Colour::get_white(),
+				this);
+		if (selected_colour.isValid())
+		{
+			d_colour_scheme_container.edit_single_colour_scheme(
+					id,
+					selected_colour,
+					selected_colour.name());
+
+			// colour_scheme_info should now be modified.
+			item->setText(colour_scheme_info.short_description);
+			item->setToolTip(colour_scheme_info.long_description);
 		}
 	}
 }
@@ -994,12 +1012,26 @@ GPlatesQtWidgets::ColouringDialog::make_signal_slot_connections()
 			this,
 			SLOT(handle_close_button_clicked(bool)));
 
-	// Open/Add button.
+	// Open button.
 	QObject::connect(
 			open_button,
 			SIGNAL(clicked(bool)),
 			this,
 			SLOT(handle_open_button_clicked(bool)));
+
+	// Add button.
+	QObject::connect(
+			add_button,
+			SIGNAL(clicked(bool)),
+			this,
+			SLOT(handle_add_button_clicked(bool)));
+
+	// Edit button.
+	QObject::connect(
+			edit_button,
+			SIGNAL(clicked(bool)),
+			this,
+			SLOT(edit_current_colour_scheme()));
 
 	// Remove button.
 	QObject::connect(
@@ -1037,7 +1069,7 @@ GPlatesQtWidgets::ColouringDialog::make_signal_slot_connections()
 			colour_schemes_list,
 			SIGNAL(itemDoubleClicked(QListWidgetItem *)),
 			this,
-			SLOT(handle_colour_schemes_list_item_double_clicked(QListWidgetItem *)));
+			SLOT(edit_current_colour_scheme()));
 
 	// Show thumbnails checkbox.
 	QObject::connect(
@@ -1129,3 +1161,4 @@ GPlatesQtWidgets::ColouringDialog::PreviewColourScheme::get_colour(
 		}
 	}
 }
+

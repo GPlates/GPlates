@@ -29,6 +29,7 @@
 #define GPLATES_PROPERTYVALUES_INMEMORYRASTER_H
 
 #include <vector>
+#include <boost/noncopyable.hpp>
 
 
 namespace GPlatesPropertyValues
@@ -39,7 +40,8 @@ namespace GPlatesPropertyValues
 	 * There are a variety of ways in which a raster might be stored; derivations of this base
 	 * will be used to implement different storage methods.
 	 */
-	class InMemoryRaster
+	class InMemoryRaster :
+			public boost::noncopyable
 	{
 	public:
 		typedef unsigned char unsigned_byte_type;
@@ -70,65 +72,6 @@ namespace GPlatesPropertyValues
 				ColourFormat format) = 0;
 
 		/**
-		 * For a raster representing "scientific" data as opposed to an RGB image, this
-		 * represents the minimum of the range of values used to generate colour values.
-		 */
-		virtual
-		float
-		get_min() = 0;
-
-
-		/**
-		 * For a raster representing "scientific" data as opposed to an RGB image, this
-		 * represents the maximum of the range of values used to generate colour values.
-		 */
-		virtual
-		float
-		get_max() = 0;
-
-
-		/**
-		 * This returns true for an image which was generated from scientific data 
-		 * (as opposed to RGB/image data), and which will therefore require a colour legend for
-		 * interpretation of the colour display. 
-		 */
-		virtual
-		bool
-		corresponds_to_data() = 0;
-
-		/**
-		 * Sets the value of d_min, which contains the lowest data value used in 
-		 * generating the colour scale. Note that this is *not* necessarily the minimum value 
-		 * in the original data set. 
-		 */ 
-		virtual
-		void
-		set_min(
-				float min) = 0;
-
-		/**
-		 * Sets the value of d_max, which contains the highest data value used in 
-		 * generating the colour scale. Note that this is *not* necessarily the maximum value 
-		 * in the original data set. 
-		 */ 
-		virtual
-		void
-		set_max(
-				float max) = 0;
-
-
-		/**
-		 * Sets the value of the boolean d_corresponds_to_data. This should be set to true for 
-		 * an image which was generated from scientific data 
-		 * (as opposed to RGB/image data), and which will therefore require a colour legend for
-		 * interpretation of the colour display.
-		 */
-		virtual
-		void
-		set_corresponds_to_data(
-				bool corresponds_to_data) = 0;
-
-		/**
 		 * Sets the value of the boolean d_enabled, which determines whether or not the texture
 		 * is displayed.
 		 */
@@ -136,17 +79,6 @@ namespace GPlatesPropertyValues
 		void
 		set_enabled(
 			bool enabled) = 0;
-
-	private:
-
-		// Make copy and assignment private to prevent copying/assignment
-		InMemoryRaster(
-			const InMemoryRaster &other);
-
-		InMemoryRaster &
-		operator=(
-			const InMemoryRaster &other);
-
 	};
 }
 

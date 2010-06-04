@@ -123,7 +123,7 @@ init_unit_test_suite(
 	GPlatesUnitTest::TestSuiteFilter::instance().set_filter_string(
 			get_test_to_run_option(argc, argv));
 	
-	new GPlatesUnitTest::MainTestSuite();
+	GPlatesUnitTest::MainTestSuite main_test_suite;
 	
 	return 0;
 }

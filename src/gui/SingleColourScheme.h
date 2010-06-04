@@ -59,6 +59,15 @@ namespace GPlatesGui
 			const Colour
 			DEFAULT_COLOUR;
 	};
+
+
+	inline
+	ColourScheme::non_null_ptr_type
+	make_single_colour_scheme(
+			const Colour &colour)
+	{
+		return new SingleColourScheme(colour);
+	}
 }
 
 #endif  /* GPLATES_GUI_SINGLECOLOURSCHEME_H */

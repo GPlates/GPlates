@@ -32,8 +32,9 @@
 
 
 GPlatesQtWidgets::SetVGPVisibilityDialog::SetVGPVisibilityDialog(
-	GPlatesPresentation::ViewState &view_state_,
-	QWidget *parent_):
+		GPlatesPresentation::ViewState &view_state_,
+		QWidget *parent_):
+	QDialog(parent_),
 	d_view_state_ptr(&view_state_)
 {
 	setupUi(this);

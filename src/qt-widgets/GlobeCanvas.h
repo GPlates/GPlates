@@ -224,10 +224,12 @@ namespace GPlatesQtWidgets
 		void
 		disable_raster_display();
 
+#if 0
 		void
 		draw_colour_legend(
 			QPainter *painter,
 			GPlatesGui::Texture &texture);
+#endif
 
 		virtual
 		void

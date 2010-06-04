@@ -28,7 +28,6 @@
 #ifndef GPLATES_GUI_TEXTURE_H
 #define GPLATES_GUI_TEXTURE_H
 
-#include <boost/noncopyable.hpp>
 #include <QtOpenGL/qgl.h>
 #include <QString>
 #include <QObject>
@@ -74,8 +73,7 @@ namespace GPlatesGui
 
 	class Texture :
 			public QObject,
-			public GPlatesPropertyValues::InMemoryRaster,
-			public boost::noncopyable
+			public GPlatesPropertyValues::InMemoryRaster
 	{
 		Q_OBJECT
 
@@ -87,9 +85,6 @@ namespace GPlatesGui
 			d_image_height(0),
 			d_texture_name(0),
 			d_enabled(false),
-			d_min(0),
-			d_max(0),
-			d_corresponds_to_data(false),
 			d_extent(INITIAL_EXTENT),
 			d_should_be_remapped(false),
 			d_is_loaded(false)
@@ -136,17 +131,6 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * This returns true for an image which was generated from scientific data 
-		 * (as opposed to RGB/image data), and which will therefore require a colour legend for
-		 * interpretation of the colour display. 
-		 */
-		bool
-		corresponds_to_data()
-		{
-			return d_corresponds_to_data;
-		}
-
-		/**
 		 * Sets the value of the boolean d_enabled, which determines whether or not the texture
 		 * is displayed.
 		 */
@@ -160,66 +144,6 @@ namespace GPlatesGui
 		 */
 		void
 		toggle();
-
-		/**
-		 * For a raster representing "scientific" data as opposed to an RGB image, this
-		 * represents the minimum of the range of values used to generate colour values.
-		 */
-		float
-		get_min()
-		{
-			return d_min;
-		}
-
-		/**
-		 * For a raster representing "scientific" data as opposed to an RGB image, this
-		 * represents the maximum of the range of values used to generate colour values.
-		 */
-		float
-		get_max()
-		{
-				return d_max;
-		}
-
-		/**
-		 * Sets the value of d_min, which contains the lowest data value used in 
-		 * generating the colour scale. Note that this is *not* necessarily the minimum value 
-		 * in the original data set. 
-		 */ 
-		void
-		set_min(
-				float min)
-		{
-			d_min = min;
-			emit texture_changed();
-		}
-
-		/**
-		 * Sets the value of d_max, which contains the highest data value used in 
-		 * generating the colour scale. Note that this is *not* necessarily the maximum value 
-		 * in the original data set. 
-		 */ 
-		void
-		set_max(
-				float max)
-		{
-			d_max = max;
-			emit texture_changed();
-		}
-
-		/**
-		 * Sets the value of the boolean d_corresponds_to_data. This should be set to true for 
-		 * an image which was generated from scientific data 
-		 * (as opposed to RGB/image data), and which will therefore require a colour legend for
-		 * interpretation of the colour display.
-		 */
-		void
-		set_corresponds_to_data(
-				bool data)
-		{
-			d_corresponds_to_data = data;
-			emit texture_changed();
-		}
 
 		/**
 		 * Set the coordinate range over which the texture will be mapped.
@@ -306,27 +230,6 @@ namespace GPlatesGui
 		 * Whether or not the texture is displayed.
 		 */
 		bool d_enabled;
-
-		/**
-		 * The minimum data value used in 
-		 * generating the colour scale. Note that this is *not* necessarily the minimum value 
-		 * in the original data set. 
-		 */ 
-		float d_min;
-
-		/**
-		 * The maximum data value used in 
-		 * generating the colour scale. Note that this is *not* necessarily the maximum value 
-		 * in the original data set. 
-		 */ 
-		float d_max;
-
-		/**
-		 * This should be true for an image which was generated from scientific data 
-		 * (as opposed to RGB/image data), and which will therefore require a colour legend for
-		 * interpretation of the colour display. 
-		 */
-		bool d_corresponds_to_data;
 
 		/**
 		 * The vertices used for mapping the texture to the sphere. 

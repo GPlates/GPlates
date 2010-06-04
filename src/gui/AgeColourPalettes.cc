@@ -26,64 +26,83 @@
  */
 
 #include "AgeColourPalettes.h"
-#include "Colour.h"
-#include "ColourSpectrum.h" // FIXME: remove
+#include "ColourSpectrum.h"
+
 #include "maths/Real.h"
 
 
-namespace
+const double
+GPlatesGui::DefaultAgeColourPalette::DEFAULT_UPPER_BOUND = 450.0; // Ma
+
+
+const double
+GPlatesGui::DefaultAgeColourPalette::DEFAULT_LOWER_BOUND = 0.0;
+
+
+GPlatesGui::DefaultAgeColourPalette::non_null_ptr_type
+GPlatesGui::DefaultAgeColourPalette::create()
 {
-	GPlatesGui::Colour
-	get_colour_from_age(
-			double age)
-	{
-		static const int COLOUR_SCALE_FACTOR = 10; // value from old AgeColourTable
-
-		std::vector<GPlatesGui::Colour> &colours =
-			GPlatesGui::ColourSpectrum::instance().get_colour_spectrum();
-
-		// A valid time of appearance with a usable 'age' relative to the
-		// current reconstruction time.
-		unsigned long index = static_cast<unsigned long>(age) * COLOUR_SCALE_FACTOR;
-		return colours[index % colours.size()];
-	}
+	return new DefaultAgeColourPalette();
 }
 
 
-GPlatesGui::Colour
-GPlatesGui::DefaultAgeColourPalette::DISTANT_PAST_COLOUR = GPlatesGui::Colour::get_grey();
-
-
-GPlatesGui::Colour
-GPlatesGui::DefaultAgeColourPalette::DISTANT_FUTURE_COLOUR = GPlatesGui::Colour::get_red();
+GPlatesGui::DefaultAgeColourPalette::DefaultAgeColourPalette() :
+	AgeColourPalette(DEFAULT_UPPER_BOUND, DEFAULT_LOWER_BOUND)
+{
+}
 
 
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::DefaultAgeColourPalette::get_colour(
 		const GPlatesMaths::Real &age) const
 {
-	if (age.is_negative_infinity())
+	double dval;
+	if (age.is_positive_infinity())
 	{
-		// Distant past
-		return boost::optional<GPlatesGui::Colour>(DISTANT_PAST_COLOUR);
+		// Distant past.
+		dval = d_upper_bound;
 	}
-	else if (age.is_positive_infinity())
+	else if (age.is_negative_infinity())
 	{
-		// Distant future
-		return boost::optional<GPlatesGui::Colour>(DISTANT_FUTURE_COLOUR);
+		// Distant future.
+		dval = d_lower_bound;
 	}
-	else if (age < 0)
+	else
 	{
-		// The feature shouldn't exist yet.
-		// If (for some reason) we are drawing things without regard to their
-		// valid time, we will display this with the same colour as the
-		// 'distant past' case.
-		return boost::optional<GPlatesGui::Colour>(DISTANT_PAST_COLOUR);
+		dval = age.dval();
 	}
-	else // age >= 0
-	{
-		return boost::optional<GPlatesGui::Colour>(get_colour_from_age(age.dval()));
-	}
+
+	double position = (dval - d_lower_bound) / (d_upper_bound - d_lower_bound);
+	return ColourSpectrum::get_colour_at(position);
+}
+
+
+const double
+GPlatesGui::MonochromeAgeColourPalette::DEFAULT_UPPER_BOUND = 450.0; // Ma
+
+
+const double
+GPlatesGui::MonochromeAgeColourPalette::DEFAULT_LOWER_BOUND = 0.0;
+
+
+const GPlatesGui::Colour
+GPlatesGui::MonochromeAgeColourPalette::UPPER_COLOUR = Colour::get_black();
+
+
+const GPlatesGui::Colour
+GPlatesGui::MonochromeAgeColourPalette::LOWER_COLOUR = Colour::get_white();
+
+
+GPlatesGui::MonochromeAgeColourPalette::MonochromeAgeColourPalette() :
+	AgeColourPalette(DEFAULT_UPPER_BOUND, DEFAULT_LOWER_BOUND)
+{
+}
+
+
+GPlatesGui::MonochromeAgeColourPalette::non_null_ptr_type
+GPlatesGui::MonochromeAgeColourPalette::create()
+{
+	return new MonochromeAgeColourPalette();
 }
 
 
@@ -91,20 +110,20 @@ boost::optional<GPlatesGui::Colour>
 GPlatesGui::MonochromeAgeColourPalette::get_colour(
 		const GPlatesMaths::Real &age) const
 {
-	if (age > UPPER_BOUND)
+	if (age >= d_upper_bound)
 	{
-		return Colour::get_white();
+		return UPPER_COLOUR;
 	}
-	else if (age < LOWER_BOUND)
+	else if (age <= d_lower_bound)
 	{
-		return Colour::get_black();
+		return LOWER_COLOUR;
 	}
 	else
 	{
-		double position = (age.dval() - LOWER_BOUND) / (UPPER_BOUND - LOWER_BOUND);
+		double position = (age.dval() - d_lower_bound) / (d_upper_bound - d_lower_bound);
 		return Colour::linearly_interpolate(
-				Colour::get_black(),
-				Colour::get_white(),
+				LOWER_COLOUR,
+				UPPER_COLOUR,
 				position);
 	}
 }

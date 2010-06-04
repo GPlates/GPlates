@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * Contains the definition of the FeatureColourPalette class.
+ * Contains colour palettes suitable for rasters.
  *
  * Most recent change:
  *   $Date$
@@ -25,45 +25,50 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_FEATURECOLOURPALETTE_H
-#define GPLATES_GUI_FEATURECOLOURPALETTE_H
+#ifndef GPLATES_GUI_RASTERCOLOURPALETTE_H
+#define GPLATES_GUI_RASTERCOLOURPALETTE_H
 
-#include <map>
-
-#include "Colour.h"
 #include "ColourPalette.h"
-
-#include "model/FeatureType.h"
+#include "CptColourPalette.h"
 
 
 namespace GPlatesGui
 {
-	class Colour;
-	
 	/**
-	 * FeatureColourPalette maps feature types to colours.
+	 * The default colour palette used to colour non-RGBA rasters upon file loading.
+	 * The colour palette covers a range of values up to two standard deviations
+	 * away from the mean.
 	 */
-	class FeatureColourPalette :
-			public ColourPalette<GPlatesModel::FeatureType>
+	class DefaultRasterColourPalette :
+			public ColourPalette<double>
 	{
 	public:
 
-		FeatureColourPalette();
+		/**
+		 * Constructs a DefaultRasterColourPalette, given the mean and the
+		 * standard deviation of the values in the raster.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				double mean,
+				double std_dev);
 
+		virtual
 		boost::optional<Colour>
 		get_colour(
-				const GPlatesModel::FeatureType &feature_type) const;
-	
+				double value) const;
+
 	private:
 
-		/**
-		 * A mapping of FeatureType to Colours.
-		 *
-		 * It's mutable because we cache the colour generated for a hitherto-unseen
-		 * feature type in this map.
-		 */
-		mutable std::map<GPlatesModel::FeatureType, Colour> d_colours;
+		DefaultRasterColourPalette(
+				double mean,
+				double std_dev);
+
+		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
+
+		static const int NUM_STD_DEV_AWAY_FROM_MEAN = 2;
 	};
 }
 
-#endif  /* GPLATES_GUI_FEATURECOLOURPALETTE_H */
+#endif  /* GPLATES_GUI_RASTERCOLOURPALETTE_H */

@@ -37,6 +37,12 @@ set(srcs
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
+    ChooseFeatureCollectionWidget.cc
+    ChooseFeatureCollectionWidget.h
+    ChooseFeatureCollectionWidgetUi.ui
+    ChooseFeatureTypeWidget.cc
+    ChooseFeatureTypeWidget.h
+    ChooseFeatureTypeWidgetUi.ui
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
@@ -52,6 +58,9 @@ set(srcs
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
+    EditAffineTransformGeoreferencingWidget.cc
+    EditAffineTransformGeoreferencingWidget.h
+    EditAffineTransformGeoreferencingWidgetUi.ui
     EditAngleWidget.cc
     EditAngleWidget.h
     EditAngleWidgetUi.ui
@@ -116,6 +125,8 @@ set(srcs
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
+    FriendlyLineEdit.cc
+    FriendlyLineEdit.h
     GlobeAndMapWidget.cc
     GlobeAndMapWidget.h
     GlobeCanvas.cc
@@ -176,9 +187,14 @@ set(srcs
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
     PropertyValueNotSupportedException.h
+    QtWidgetUtils.cc
+    QtWidgetUtils.h
     QueryFeaturePropertiesWidget.cc
     QueryFeaturePropertiesWidget.h
     QueryFeaturePropertiesWidgetUi.ui
+    RasterPropertiesDialog.cc
+    RasterPropertiesDialog.h
+    RasterPropertiesDialogUi.ui
     ReadErrorAccumulationDialog.cc
     ReadErrorAccumulationDialog.h
     ReadErrorAccumulationDialogUi.ui
@@ -197,9 +213,6 @@ set(srcs
     SetProjectionDialog.cc
     SetProjectionDialog.h
     SetProjectionDialogUi.ui
-    SetRasterSurfaceExtentDialog.cc
-    SetRasterSurfaceExtentDialog.h
-    SetRasterSurfaceExtentDialogUi.ui
     SetVGPVisibilityDialog.cc
     SetVGPVisibilityDialog.h
     SetVGPVisibilityDialogUi.ui

@@ -97,7 +97,7 @@
     <addaction name="action_Manage_Colouring"/>
     <addaction name="separator"/>
     <addaction name="action_Show_Raster"/>
-    <addaction name="action_Set_Raster_Surface_Extent"/>
+    <addaction name="action_Edit_Raster_Properties"/>
     <addaction name="separator"/>
     <addaction name="action_Show_Point_Features"/>
     <addaction name="action_Show_Line_Features"/>
@@ -1206,9 +1206,9 @@
     <string>E</string>
    </property>
   </action>
-  <action name="action_Set_Raster_Surface_Extent">
+  <action name="action_Edit_Raster_Properties">
    <property name="text">
-    <string>Set Raster Surface &amp;Extent...</string>
+    <string>Edit &amp;Raster Properties...</string>
    </property>
   </action>
   <action name="action_View_Shapefile_Attributes">

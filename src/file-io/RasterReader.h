@@ -35,7 +35,7 @@
 #include "FileInfo.h"
 #include "ReadErrorAccumulation.h"
 
-#include "property-values/InMemoryRaster.h"
+#include "property-values/RawRaster.h"
 
 
 namespace GPlatesFileIO
@@ -75,17 +75,12 @@ namespace GPlatesFileIO
 		 * Reads a raster image file and loads a raster in the corresponding InMemoryRaster
 		 * instance.
 		 *
-		 * Returns true iff the raster was successfully read.
-		 * 
-		 * Once the model is able to store raster data, we can replace this interface with 
-		 * one which takes a reference to the model instead of a reference to a raster, 
-		 * so that we are consistent with the other file-input classes.  
+		 * Returns boost::none if the raster was not successfully read.
 		 */
 		static
-		bool
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 		read_file(
 				const FileInfo &file_info,
-				GPlatesPropertyValues::InMemoryRaster &raster,
 				ReadErrorAccumulation &read_errors);
 
 		/**

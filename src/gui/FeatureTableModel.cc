@@ -503,7 +503,7 @@ namespace
 				get_feature_type, Qt::AlignLeft | Qt::AlignVCenter },
 
 		{ QT_TR_NOOP("Plate ID"), QT_TR_NOOP("The plate ID used to reconstruct this feature"),
-				60, QHeaderView::Fixed,
+				60, QHeaderView::ResizeToContents, // Note: used to be Fixed.
 				get_plate_id, Qt::AlignCenter },
 
 		{ QT_TR_NOOP("Name"), QT_TR_NOOP("A convenient label for this feature"),
@@ -515,11 +515,11 @@ namespace
 				get_clicked_geometry_property, Qt::AlignLeft | Qt::AlignVCenter },
 
 		{ QT_TR_NOOP("Begin"), QT_TR_NOOP("The time of appearance (Ma)"),
-				60, QHeaderView::Fixed,
+				60, QHeaderView::ResizeToContents, // Note: used to be Fixed.
 				get_time_begin, Qt::AlignCenter },
 
 		{ QT_TR_NOOP("End"), QT_TR_NOOP("The time of disappearance (Ma)"),
-				60, QHeaderView::Fixed,
+				60, QHeaderView::ResizeToContents, // Note: used to be Fixed.
 				get_time_end, Qt::AlignCenter }, 
 
 		{ QT_TR_NOOP("Present-day geometry (lat ; lon)"), QT_TR_NOOP("A summary of the present-day coordinates"),
@@ -624,7 +624,9 @@ GPlatesGui::FeatureTableModel::headerData(
 {
 	// The new way we are attempting to return an appropriate vertical
 	// and horizontal size in the Qt::SizeHintRole for the header!
+#if 0
 	QFontMetrics fm = QApplication::fontMetrics();
+#endif
 	
 #if 0
 	qDebug() << "\nFONT METRICS DEBUGGING:";
@@ -652,6 +654,10 @@ GPlatesGui::FeatureTableModel::headerData(
 		} else if (role == Qt::ToolTipRole) {
 			return get_column_tooltip(section);
 			
+#if 0
+		// Commenting this out because the logic is chopping off the descenders of
+		// letters (like the bottom part of 'g').
+
 		} else if (role == Qt::SizeHintRole) {
 			// Annoyingly, the metrics alone do not appear to be sufficient to supply
 			// the height of the header, so a few pixels are added.
@@ -660,7 +666,7 @@ GPlatesGui::FeatureTableModel::headerData(
 			// the width does not updated until a call to
 			// QTableView::resizeColumnsToContents();
 			return QSize(get_column_width(section), fm.height()+4);
-			
+#endif		
 		} else {
 			return QVariant();
 		}

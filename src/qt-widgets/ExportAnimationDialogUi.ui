@@ -181,7 +181,7 @@
             <item row="2" column="3">
              <widget class="QLabel" name="label_time_increment_units">
               <property name="text">
-               <string>M</string>
+               <string>My</string>
               </property>
               <property name="buddy">
                <cstring>widget_time_increment</cstring>

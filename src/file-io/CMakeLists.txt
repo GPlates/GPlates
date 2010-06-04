@@ -12,10 +12,8 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
-    CategoricalCptReader.cc
-    CategoricalCptReader.h
-    CptReaderUtils.cc
-    CptReaderUtils.h
+    CptReader.cc
+    CptReader.h
     ErrorOpeningFileForReadingException.cc
     ErrorOpeningFileForReadingException.h
     ErrorOpeningFileForWritingException.cc
@@ -93,8 +91,6 @@ set(srcs
     ReconstructedFeatureGeometryExport.h
     ReconstructedFeatureGeometryExportImpl.cc
     ReconstructedFeatureGeometryExportImpl.h
-    RegularCptReader.cc
-    RegularCptReader.h
     ShapefileFormatReconstructedFeatureGeometryExport.cc
     ShapefileFormatReconstructedFeatureGeometryExport.h
     ShapefileGeometryExporter.cc

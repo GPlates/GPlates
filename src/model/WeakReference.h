@@ -132,9 +132,11 @@ namespace GPlatesModel
 		{  }
 
 		/**
-		 * Converts this WeakReference<H> into a WeakReference<const H>.
+		 * Converts this WeakReference<H> into a WeakReference<const H>, where H is
+		 * non-const. If H is const, this will never be called.
 		 *
-		 * If H is already const, this effectively does nothing useful and returns WeakReference<H>.
+		 * Note: If a callback is attached to this WeakReference<H>, it is not copied
+		 * over to the WeakReference<const H> returned.
 		 */
 		operator WeakReference<const H>() const
 		{
@@ -202,6 +204,9 @@ namespace GPlatesModel
 		 * The effect of this operation is that this instance will reference the handle
 		 * which is referenced by @a other (if any).
 		 *
+		 * The callback (if any) registered with the @a other handle is copied across
+		 * to this instance.
+		 *
 		 * This function will not throw.
 		 */
 		WeakReference &
@@ -209,6 +214,7 @@ namespace GPlatesModel
 				const WeakReference &other)
 		{
 			WeakObserver<H>::operator=(other);
+			d_callback = other.d_callback;
 			return *this;
 		}
 

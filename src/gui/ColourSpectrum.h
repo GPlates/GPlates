@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,29 +28,25 @@
 #ifndef GPLATES_GUI_COLOURSPECTRUM_H
 #define GPLATES_GUI_COLOURSPECTRUM_H
 
-#include <vector>
-
-#include "Colour.h"
-#include "utils/Singleton.h"
 
 namespace GPlatesGui 
 {
-	class ColourSpectrum :
-			public GPlatesUtils::Singleton<ColourSpectrum>
+	class Colour;
+
+	namespace ColourSpectrum
 	{
-
-		GPLATES_SINGLETON_CONSTRUCTOR_DECL(ColourSpectrum)
-
-	public:
-
-		std::vector<GPlatesGui::Colour> &
-		get_colour_spectrum();
-
-	private:
-
-		std::vector<GPlatesGui::Colour> d_colours;
-
-	};
+		/**
+		 * Retrieves the colour along the colour spectrum at the given @a position.
+		 * The entire spectrum is covered in the range of @a position values from
+		 * 0.0 to 1.0.
+		 *
+		 * If @a position lies outside of [0.0, 1.0], it is clamped to the nearest
+		 * value in that range.
+		 */
+		GPlatesGui::Colour
+		get_colour_at(
+				double position);
+	}
 }
 
 #endif  /* GPLATES_GUI_COLOURSPECTRUM_H */

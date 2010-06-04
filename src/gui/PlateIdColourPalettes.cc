@@ -30,11 +30,14 @@
 
 #include "PlateIdColourPalettes.h"
 #include "HTMLColourNames.h"
+
 #include "utils/Singleton.h"
 
 
 namespace
 {
+	using namespace GPlatesGui;
+
 	int leading_digit(
 			GPlatesModel::integer_plate_id_type plate_id)
 	{
@@ -61,29 +64,36 @@ namespace
 	}
 
 
+	GPlatesGui::Colour
+	html_colour(
+			const char *name)
+	{
+		static HTMLColourNames &html_colours = HTMLColourNames::instance();
+		return *html_colours.get_colour(name);
+	}
+
+
 	class DefaultColours
 	{
 	public:
 
 		DefaultColours()
 		{
-			using namespace GPlatesGui;
-
-			// There are intentionally 13 colours - see ColourByPlateId on GPlates wiki.
-			d_colours.reserve(13);
+			// There are intentionally 11 colours because it does the best job of
+			// assigning adjacent plates different colours in the sample data coastlines
+			// file.
+			d_colours.reserve(11);
 			/*  0 */ d_colours.push_back(Colour::get_yellow());
-			/*  1 */ d_colours.push_back(*(HTMLColourNames::instance().get_colour("lightsalmon")));
-			/*  2 */ d_colours.push_back(Colour::get_lime());
+			/*  1 */ d_colours.push_back(Colour::get_aqua());
+			/*  2 */ d_colours.push_back(html_colour("seagreen"));
 			/*  3 */ d_colours.push_back(Colour::get_fuchsia());
-			/*  4 */ d_colours.push_back(Colour::get_navy());
-			/*  5 */ d_colours.push_back(Colour::get_white());
-			/*  6 */ d_colours.push_back(Colour::get_blue());
-			/*  7 */ d_colours.push_back(Colour::get_purple());
-			/*  8 */ d_colours.push_back(Colour::get_red());
-			/*  9 */ d_colours.push_back(Colour::get_green());
-			/* 10 */ d_colours.push_back(Colour::get_aqua());
-			/* 11 */ d_colours.push_back(*(HTMLColourNames::instance().get_colour("slategray")));
-			/* 12 */ d_colours.push_back(*(HTMLColourNames::instance().get_colour("orange")));
+			/*  4 */ d_colours.push_back(html_colour("slategray"));
+			/*  5 */ d_colours.push_back(Colour::get_lime());
+			/*  6 */ d_colours.push_back(html_colour("indigo"));
+			/*  7 */ d_colours.push_back(Colour::get_red());
+			/*  8 */ d_colours.push_back(html_colour("orange"));
+			/*  9 */ d_colours.push_back(html_colour("lightsalmon"));
+			/* 10 */ d_colours.push_back(Colour::get_navy());
 		}
 
 		const std::vector<GPlatesGui::Colour> &
@@ -94,7 +104,7 @@ namespace
 
 	private:
 
-		std::vector<GPlatesGui::Colour> d_colours;
+		std::vector<Colour> d_colours;
 	};
 
 
@@ -104,20 +114,18 @@ namespace
 
 		RegionalColours()
 		{
-			using namespace GPlatesGui;
-
 			// There are intentionally 10 colours (only 10 possible leading digits)
 			d_colours.reserve(10);
 			/*  0 */ d_colours.push_back(Colour::get_olive());
 			/*  1 */ d_colours.push_back(Colour::get_red());
 			/*  2 */ d_colours.push_back(Colour::get_blue());
 			/*  3 */ d_colours.push_back(Colour::get_lime());
-			/*  4 */ d_colours.push_back(*(HTMLColourNames::instance().get_colour("mistyrose")));
+			/*  4 */ d_colours.push_back(html_colour("mistyrose"));
 			/*  5 */ d_colours.push_back(Colour::get_aqua());
 			/*  6 */ d_colours.push_back(Colour::get_yellow());
-			/*  7 */ d_colours.push_back(*(HTMLColourNames::instance().get_colour("orange")));
+			/*  7 */ d_colours.push_back(html_colour("orange"));
 			/*  8 */ d_colours.push_back(Colour::get_purple());
-			/*  9 */ d_colours.push_back(*(HTMLColourNames::instance().get_colour("slategray")));
+			/*  9 */ d_colours.push_back(html_colour("slategray"));
 		}
 
 		const std::vector<GPlatesGui::Colour> &
@@ -128,14 +136,21 @@ namespace
 
 	private:
 
-		std::vector<GPlatesGui::Colour> d_colours;
+		std::vector<Colour> d_colours;
 	};
+}
+
+
+GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_type
+GPlatesGui::DefaultPlateIdColourPalette::create()
+{
+	return new DefaultPlateIdColourPalette();
 }
 
 
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::DefaultPlateIdColourPalette::get_colour(
-		GPlatesModel::integer_plate_id_type plate_id) const
+		value_type plate_id) const
 {
 	const std::vector<GPlatesGui::Colour> &colours =
 		GPlatesUtils::Singleton<DefaultColours>::instance().get_colours();
@@ -146,9 +161,16 @@ GPlatesGui::DefaultPlateIdColourPalette::get_colour(
 }
 
 
+GPlatesGui::RegionalPlateIdColourPalette::non_null_ptr_type
+GPlatesGui::RegionalPlateIdColourPalette::create()
+{
+	return new RegionalPlateIdColourPalette();
+}
+
+
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::RegionalPlateIdColourPalette::get_colour(
-		GPlatesModel::integer_plate_id_type plate_id) const
+		value_type plate_id) const
 {
 	int region = get_region_from_plate_id(plate_id);
 	HSVColour hsv = Colour::to_hsv(

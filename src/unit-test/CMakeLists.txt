@@ -44,6 +44,8 @@ set(srcs
     RealTest.h
     SmartNodeLinkedListTest.cc
     SmartNodeLinkedListTest.h
+    StringSetTest.cc
+    StringSetTest.h
     TestSuiteFilter.cc
     TestSuiteFilter.h
     TestSuiteFilterTest.cc

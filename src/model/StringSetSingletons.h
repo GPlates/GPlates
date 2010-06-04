@@ -34,64 +34,43 @@
 
 namespace GPlatesModel
 {
-	class StringSetSingletons
+	namespace StringSetSingletons
 	{
-
-	public:
-
-		static
 		GPlatesUtils::IdStringSet &
 		feature_id_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		feature_type_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		property_name_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		template_type_parameter_type_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		text_content_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		xml_attribute_name_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		xml_attribute_value_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		xml_namespace_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		xml_namespace_alias_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		xml_element_name_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		enumeration_content_instance();
 
-		static
 		GPlatesUtils::StringSet &
 		enumeration_type_instance();
-
-	private:
-
-		// This constructor should never be defined, because we don't want to allow
-		// instantiation of this class.
-		StringSetSingletons();
 
 		// Empty structs just so we can get different instances of StringSet returned
 		// from different *_instance() functions.
@@ -107,8 +86,7 @@ namespace GPlatesModel
 		struct EnumerationContentInstance { };
 		struct EnumerationTypeInstance { };
 
-	};
-
+	}
 }
 
 #endif  // GPLATES_MODEL_STRINGSETSINGLETONS_H

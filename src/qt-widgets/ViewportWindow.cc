@@ -70,7 +70,7 @@
 #include "SaveFileDialog.h"
 #include "SetCameraViewpointDialog.h"
 #include "SetProjectionDialog.h"
-#include "SetRasterSurfaceExtentDialog.h"
+#include "RasterPropertiesDialog.h"
 #include "SetVGPVisibilityDialog.h"
 #include "ShapefileAttributeViewerDialog.h"
 #include "ShapefilePropertyMapper.h"
@@ -112,6 +112,8 @@
 #include "gui/GuiDebug.h"
 #include "gui/MapCanvasToolAdapter.h"
 #include "gui/MapCanvasToolChoice.h"
+#include "gui/OpenGLBadAllocException.h"
+#include "gui/OpenGLException.h"
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
 #include "gui/TopologySectionsContainer.h"
@@ -133,7 +135,9 @@
 #include "presentation/Application.h"
 #include "presentation/ViewState.h"
 
+#include "property-values/Georeferencing.h"
 #include "property-values/GmlMultiPoint.h"
+#include "property-values/RawRasterUtils.h"
 
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ShapefilePropertyMapper.h"
@@ -247,7 +251,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new ReadErrorAccumulationDialog(this)),
 	d_set_camera_viewpoint_dialog_ptr(NULL),
 	d_set_projection_dialog_ptr(NULL),
-	d_set_raster_surface_extent_dialog_ptr(NULL),
+	d_raster_properties_dialog_ptr(NULL),
 	d_set_vgp_visibility_dialog_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog_ptr(
 			new ShapefileAttributeViewerDialog(
@@ -308,6 +312,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::FeatureTableModel(
 				get_view_state().get_feature_focus())),
 	d_task_panel_ptr(NULL),
+	d_georeferencing_needs_to_be_reset(true),
 	d_open_file_path("")
 {
 	setupUi(this);
@@ -499,9 +504,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// Render everything on the screen in present-day positions.
 	get_application_state().reconstruct();
 
-	// Disable the Show Background Raster menu item until raster is loaded
+	// Disable the Show Background Raster and Edit Raster Properties menu items until raster is loaded
 	action_Show_Raster->setEnabled(false);
 	action_Show_Raster->setCheckable(false);
+	action_Edit_Raster_Properties->setEnabled(false);
 
 	// Synchronise the "Show X Features" menu items with RenderSettings
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
@@ -680,8 +686,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// View Menu:
 	QObject::connect(action_Show_Raster, SIGNAL(triggered()),
 			this, SLOT(enable_raster_display()));
-	QObject::connect(action_Set_Raster_Surface_Extent, SIGNAL(triggered()),
-			this, SLOT(pop_up_set_raster_surface_extent_dialog()));
+	QObject::connect(action_Edit_Raster_Properties, SIGNAL(triggered()),
+			this, SLOT(pop_up_raster_properties_dialog()));
 	// ----
 	QObject::connect(action_Show_Point_Features, SIGNAL(triggered()),
 			this, SLOT(enable_point_display()));
@@ -1606,9 +1612,9 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_set_projection_dialog_ptr->reject();
 	}
-	if (d_set_raster_surface_extent_dialog_ptr)
+	if (d_raster_properties_dialog_ptr)
 	{
-		d_set_raster_surface_extent_dialog_ptr->reject();
+		d_raster_properties_dialog_ptr->reject();
 	}
 	if (d_set_vgp_visibility_dialog_ptr)
 	{
@@ -1741,11 +1747,12 @@ GPlatesQtWidgets::ViewportWindow::open_raster()
 			d_open_file_path,
 			GPlatesFileIO::RasterReader::get_file_dialog_filters() );
 
-	if ( filename.isEmpty())
+	if (filename.isEmpty())
 	{
 		return;
 	}
 
+	d_georeferencing_needs_to_be_reset = true;
 	if (load_raster(filename))
 	{
 		// If we've successfully loaded a single raster, clear the raster_map.
@@ -1768,14 +1775,79 @@ GPlatesQtWidgets::ViewportWindow::load_raster(
 
 	try
 	{
-		if (GPlatesFileIO::RasterReader::read_file(file_info, globe_canvas().globe().texture(), read_errors))
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> raw_raster =
+			GPlatesFileIO::RasterReader::read_file(file_info, read_errors);
+		if (raw_raster)
 		{
-			action_Show_Raster->setEnabled(true);
-			action_Show_Raster->setCheckable(true);
-			action_Show_Raster->setChecked(true);
-			globe_canvas().update_canvas();
+			try
+			{
+				// FIXME: Rip this up once when we get rasters out of ViewState.
 
-			result = true;
+				GPlatesPresentation::ViewState &view_state = get_view_state();
+
+				// Set georeferencing if required.
+				bool georeferencing_was_reset = false;
+				if (d_georeferencing_needs_to_be_reset)
+				{
+					boost::optional<std::pair<unsigned int, unsigned int> > raster_size =
+						GPlatesPropertyValues::RawRasterUtils::get_raster_size(**raw_raster);
+					if (raster_size)
+					{
+						GPlatesPropertyValues::Georeferencing::non_null_ptr_type georeferencing =
+							view_state.get_georeferencing();
+						georeferencing->reset_to_global_extents(raster_size->first, raster_size->second);
+
+						georeferencing_was_reset = true;
+						d_georeferencing_needs_to_be_reset = false;
+					}
+				}
+
+				view_state.set_raw_raster(*raw_raster);
+				if (georeferencing_was_reset)
+				{
+					view_state.update_texture_extents();
+				}
+				view_state.set_raster_filename(filename);
+
+				// This call can throw the two OpenGL exceptions we catch below.
+				if (view_state.update_texture_from_raw_raster())
+				{
+					action_Show_Raster->setEnabled(true);
+					action_Show_Raster->setCheckable(true);
+					action_Show_Raster->setChecked(true);
+					action_Edit_Raster_Properties->setEnabled(true);
+					globe_canvas().update_canvas();
+
+					// Refresh raster properties dialog if visible.
+					if (d_raster_properties_dialog_ptr &&
+							d_raster_properties_dialog_ptr->isVisible())
+					{
+						d_raster_properties_dialog_ptr->populate_from_data();
+					}
+
+					result = true;
+				}
+			}
+			catch (const GPlatesGui::OpenGLBadAllocException &)
+			{
+				read_errors.d_failures_to_begin.push_back(
+						GPlatesFileIO::make_read_error_occurrence(
+							filename,
+							GPlatesFileIO::DataFormats::RasterImage,
+							0,
+							GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
+							GPlatesFileIO::ReadErrors::FileNotLoaded));
+			}
+			catch (const GPlatesGui::OpenGLException &)
+			{
+				read_errors.d_failures_to_begin.push_back(
+						GPlatesFileIO::make_read_error_occurrence(
+							filename,
+							GPlatesFileIO::DataFormats::RasterImage,
+							0,
+							GPlatesFileIO::ReadErrors::ErrorGeneratingTexture,
+							GPlatesFileIO::ReadErrors::FileNotLoaded));
+			}
 		}
 	}
 	catch (...)
@@ -1820,6 +1892,10 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 		action_Show_Raster->setEnabled(true);
 		action_Show_Raster->setCheckable(true);
 		action_Show_Raster->setChecked(true);
+		action_Edit_Raster_Properties->setEnabled(true);
+		
+		d_georeferencing_needs_to_be_reset = true;
+
 		update_time_dependent_raster();
 	}
 }
@@ -1836,17 +1912,24 @@ GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_set_raster_surface_extent_dialog()
+GPlatesQtWidgets::ViewportWindow::pop_up_raster_properties_dialog()
 {
-	if (!d_set_raster_surface_extent_dialog_ptr)
+	if (!d_raster_properties_dialog_ptr)
 	{
-		d_set_raster_surface_extent_dialog_ptr.reset(
-				new SetRasterSurfaceExtentDialog(globe_canvas().globe().texture(), this));
+		d_raster_properties_dialog_ptr.reset(
+				new RasterPropertiesDialog(&get_view_state(), this));
 	}
 
-	d_set_raster_surface_extent_dialog_ptr->exec();
-	// d_set_raster_surface_extent_dialog_ptr is modal and should not need the 'raise' hack
-	// other dialogs use.
+	d_raster_properties_dialog_ptr->show();
+	d_raster_properties_dialog_ptr->populate_from_data();
+
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_raster_properties_dialog_ptr->activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_raster_properties_dialog_ptr->raise();
 }
 
 void
@@ -1865,7 +1948,7 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 	action_Show_Raster->setEnabled(enable_show_raster);
 	action_Show_Raster->setCheckable(enable_show_raster);
 	action_Show_Raster->setChecked(texture.is_enabled());
-	action_Set_Raster_Surface_Extent->setEnabled(globe_is_active);
+	action_Edit_Raster_Properties->setEnabled(enable_show_raster);
 	action_Show_Arrow_Decorations->setEnabled(globe_is_active);
 	
 	// Grey-out the modify pole tab when in map mode. 

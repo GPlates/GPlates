@@ -38,6 +38,10 @@
 
 #include "maths/Real.h"
 
+#include "utils/Parse.h"
+#include "utils/Select.h"
+#include "utils/TypeTraits.h"
+
 
 namespace GPlatesGui
 {
@@ -57,8 +61,44 @@ namespace GPlatesGui
 			BOTH	/**< Correpsonds to the B option */
 		};
 	}
+}
 
 
+namespace GPlatesUtils
+{
+	using namespace GPlatesGui;
+
+	// Specialisation of Parse for ColourScaleAnnotation::Type.
+	template<>
+	struct Parse<ColourScaleAnnotation::Type>
+	{
+		ColourScaleAnnotation::Type
+		operator()(
+				const QString &s)
+		{
+			if (s.isEmpty())
+			{
+				return ColourScaleAnnotation::NONE;
+			}
+			else if (s == "L")
+			{
+				return ColourScaleAnnotation::LOWER;
+			}
+			else if (s == "U")
+			{
+				return ColourScaleAnnotation::UPPER;
+			}
+			else
+			{
+				throw ParseError();
+			}
+		}
+	};
+}
+
+
+namespace GPlatesGui
+{
 	/**
 	 * A colour slice specifies a gradient of colour between two real values.
 	 *
@@ -75,8 +115,8 @@ namespace GPlatesGui
 				boost::optional<Colour> lower_colour_,
 				value_type upper_value_,
 				boost::optional<Colour> upper_colour_,
-				ColourScaleAnnotation::Type annotation_,
-				boost::optional<QString> label_);
+				ColourScaleAnnotation::Type annotation_ = ColourScaleAnnotation::NONE,
+				boost::optional<QString> label_ = boost::none);
 
 		bool
 		can_handle(
@@ -199,6 +239,11 @@ namespace GPlatesGui
 	public:
 
 		typedef T value_type;
+
+		enum
+		{
+			is_label_optional = false
+		};
 		
 		ColourEntry(
 				int key_,
@@ -285,10 +330,15 @@ namespace GPlatesGui
 
 		typedef int value_type;
 
+		enum
+		{
+			is_label_optional = true
+		};
+
 		ColourEntry(
 				int key_,
 				Colour colour_,
-				const QString &label_) :
+				const boost::optional<QString> &label_) :
 			d_key(key_),
 			d_colour(colour_),
 			d_label(label_)
@@ -338,7 +388,7 @@ namespace GPlatesGui
 			d_colour = colour_;
 		}
 
-		const QString &
+		const boost::optional<QString> &
 		label() const
 		{
 			return d_label;
@@ -346,7 +396,7 @@ namespace GPlatesGui
 
 		void
 		set_label(
-				const QString &label_)
+				const boost::optional<QString> &label_)
 		{
 			d_label = label_;
 		}
@@ -355,7 +405,7 @@ namespace GPlatesGui
 
 		int d_key;
 		Colour d_colour;
-		QString d_label;
+		boost::optional<QString> d_label;
 	};
 
 
@@ -371,21 +421,28 @@ namespace GPlatesGui
 			const ColourEntry<int> &colour_entry);
 
 
-	namespace CptColourPaletteInternals
+	template<typename T>
+	ColourEntry<T>
+	make_colour_entry(
+			int key,
+			const Colour &colour,
+			const boost::optional<QString> &label)
 	{
-		// A helper traits class to resolve the right parameter for get_colour().
-		template<typename T>
-		struct Traits
+		if (!label)
 		{
-			typedef const T & value_type;
-		};
-
-		template<>
-		struct Traits<int>
-		{
-			typedef int value_type;
-		};
+			throw GPlatesUtils::ParseError();
+		}
+		GPlatesUtils::Parse<T> parse;
+		return ColourEntry<T>(key, colour, parse(*label));
 	}
+
+
+	template<>
+	ColourEntry<int>
+	make_colour_entry<int>(
+			int key,
+			const Colour &colour,
+			const boost::optional<QString> &label);
 
 
 	/**
@@ -412,12 +469,7 @@ namespace GPlatesGui
 	{
 	public:
 
-		typedef typename CptColourPaletteInternals::Traits<typename EntryType::value_type>::value_type value_type;
-
-		CptColourPalette() :
-			d_rgb_colour_model(true)
-		{
-		}
+		typedef typename ColourPalette<typename EntryType::value_type>::value_type value_type;
 
 		/**
 		 * Adds an entry to the colour palette.
@@ -548,7 +600,17 @@ namespace GPlatesGui
 			return d_nan_colour;
 		}
 
+		size_t
+		size() const
+		{
+			return d_entries.size();
+		}
+
 	protected:
+
+		CptColourPalette() :
+			d_rgb_colour_model(true)
+		{  }
 
 		virtual
 		bool
@@ -560,9 +622,9 @@ namespace GPlatesGui
 		use_foreground_colour(
 				value_type value) const = 0;
 
-	private:
-
 		std::vector<EntryType> d_entries;
+
+	private:
 
 		boost::optional<Colour> d_background_colour;
 		boost::optional<Colour> d_foreground_colour;
@@ -576,50 +638,51 @@ namespace GPlatesGui
 	};
 
 
-	template<class EntryType>
-	bool
-	CptColourPalette<EntryType>::use_background_colour(
-			value_type value) const
-	{
-		// By default, background colour is used if value comes before first slice.
-		return value < d_entries.front();
-	}
-
-
-	template<class EntryType>
-	bool
-	CptColourPalette<EntryType>::use_foreground_colour(
-			value_type value) const
-	{
-		// By default, foreground colour is used if value comes after last slice.
-		return value > d_entries.back();
-	}
-
-
 	/**
 	 * A colour palette that stores entries from a regular CPT file.
 	 */
 	class RegularCptColourPalette :
 			public CptColourPalette<ColourSlice>
 	{
+	public:
+
+		typedef RegularCptColourPalette this_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
+		typedef boost::intrusive_ptr<this_type> maybe_null_ptr_type;
+		typedef boost::intrusive_ptr<const this_type> maybe_null_ptr_to_const_type;
+
+		static
+		non_null_ptr_type
+		create()
+		{
+			return new RegularCptColourPalette();
+		}
+
 	protected:
 
 		virtual
 		bool
 		use_background_colour(
-				const ColourSlice::value_type &value) const
+				value_type value) const
 		{
-			// Use default.
-			return CptColourPalette<ColourSlice>::use_background_colour(value);
+			// Background colour is used if value comes before first slice.
+			return value < d_entries.front();
 		}
 
 		virtual
 		bool
 		use_foreground_colour(
-				const ColourSlice::value_type &value) const
+				value_type value) const
 		{
-			// Use default.
-			return CptColourPalette<ColourSlice>::use_foreground_colour(value);
+			// Foreground colour is used if value comes after last slice.
+			return value > d_entries.back();
+		}
+
+	private:
+
+		RegularCptColourPalette()
+		{
 		}
 	};
 
@@ -631,12 +694,29 @@ namespace GPlatesGui
 	class CategoricalCptColourPalette :
 			public CptColourPalette<ColourEntry<T> >
 	{
+	public:
+
+		typedef CategoricalCptColourPalette<T> this_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
+		typedef boost::intrusive_ptr<this_type> maybe_null_ptr_type;
+		typedef boost::intrusive_ptr<const this_type> maybe_null_ptr_to_const_type;
+
+		typedef typename CptColourPalette<ColourEntry<T> >::value_type value_type;
+
+		static
+		non_null_ptr_type
+		create()
+		{
+			return new CategoricalCptColourPalette<T>();
+		}
+
 	protected:
 
 		virtual
 		bool
 		use_background_colour(
-				const T &value) const
+				value_type value) const
 		{
 			// Do not use background colour. For categorical CPT files whose value type is
 			// not int, we use the label as the value type, and there is no requirement
@@ -647,12 +727,18 @@ namespace GPlatesGui
 		virtual
 		bool
 		use_foreground_colour(
-				const T &value) const
+				value_type value) const
 		{
 			// Do not use foreground colour. For categorical CPT files whose value type is
 			// not int, we use the label as the value type, and there is no requirement
 			// that the labels are presented in sorted order (in fact, there may be no order).
 			return false;
+		}
+
+	private:
+
+		CategoricalCptColourPalette()
+		{
 		}
 	};
 
@@ -667,24 +753,45 @@ namespace GPlatesGui
 	class CategoricalCptColourPalette<int> :
 			public CptColourPalette<ColourEntry<int> >
 	{
+	public:
+
+		typedef CategoricalCptColourPalette<int> this_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
+		typedef boost::intrusive_ptr<this_type> maybe_null_ptr_type;
+		typedef boost::intrusive_ptr<const this_type> maybe_null_ptr_to_const_type;
+
+		static
+		non_null_ptr_type
+		create()
+		{
+			return new CategoricalCptColourPalette<int>();
+		}
+
 	protected:
 
 		virtual
 		bool
 		use_background_colour(
-				int value) const
+				value_type value) const
 		{
-			// Use default.
-			return CptColourPalette<ColourEntry<int> >::use_background_colour(value);
+			// Background colour is used if value comes before first slice.
+			return value < d_entries.front();
 		}
 
 		virtual
 		bool
 		use_foreground_colour(
-				int value) const
+				value_type value) const
 		{
-			// Use default.
-			return CptColourPalette<ColourEntry<int> >::use_foreground_colour(value);
+			// Foreground colour is used if value comes after last slice.
+			return value > d_entries.back();
+		}
+
+	private:
+
+		CategoricalCptColourPalette()
+		{
 		}
 	};
 }

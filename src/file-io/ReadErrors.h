@@ -183,7 +183,7 @@ namespace GPlatesFileIO
 			ColourModelChangedMidway,
 			NoLinesSuccessfullyParsed,
 			CptFileTypeNotDeduced,
-			UnexpectedCategoricalCptLabel,
+			UnrecognisedLabel,
 			PatternFillInLine,
 
 			// The following are generic to all local files

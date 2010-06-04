@@ -33,7 +33,6 @@
 #include "ColourPalette.h"
 
 #include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
 
 namespace GPlatesGui
 {
@@ -55,7 +54,6 @@ namespace GPlatesGui
 	private:
 
 		typedef ColourPalette<typename PropertyExtractorType::return_type> ColourPaletteType;
-		static const Colour PROPERTY_NOT_FOUND_COLOUR;
 
 	public:
 
@@ -67,8 +65,8 @@ namespace GPlatesGui
 		 */
 		explicit
 		GenericColourScheme(
-				ColourPaletteType *colour_palette_ptr,
-				const PropertyExtractorType &property_extractor = PropertyExtractorType()) :
+				typename ColourPaletteType::non_null_ptr_type colour_palette_ptr,
+				const PropertyExtractorType &property_extractor) :
 			d_colour_palette_ptr(colour_palette_ptr),
 			d_property_extractor(property_extractor)
 		{
@@ -102,14 +100,29 @@ namespace GPlatesGui
 	
 	private:
 
-		boost::scoped_ptr<ColourPaletteType> d_colour_palette_ptr;
+		typename ColourPaletteType::non_null_ptr_type d_colour_palette_ptr;
 		PropertyExtractorType d_property_extractor;
 
+		static const Colour PROPERTY_NOT_FOUND_COLOUR;
 	};
+
 
 	template<class PropertyExtractorType>
 	const Colour
 	GenericColourScheme<PropertyExtractorType>::PROPERTY_NOT_FOUND_COLOUR = Colour::get_grey();
+
+
+	template<typename ColourPalettePointerType, class PropertyExtractorType>
+	inline
+	ColourScheme::non_null_ptr_type
+	make_colour_scheme(
+			ColourPalettePointerType colour_palette_ptr,
+			const PropertyExtractorType &property_extractor)
+	{
+		return new GenericColourScheme<PropertyExtractorType>(
+				colour_palette_ptr,
+				property_extractor);
+	}
 }
 
 #endif  /* GPLATES_GUI_GENERICCOLOURSCHEME_H */

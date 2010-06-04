@@ -70,7 +70,9 @@ namespace GPlatesModel
 		const QualifiedXmlName
 		create_gpml(
 				const QString &name) {
-			return QualifiedXmlName(GPlatesUtils::XmlNamespaces::GPML_NAMESPACE, name);
+			return QualifiedXmlName(
+					GPlatesUtils::XmlNamespaces::GPML_NAMESPACE,
+					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
 
@@ -79,8 +81,10 @@ namespace GPlatesModel
 		create_gpml(
 				const QString &namespace_alias,
 				const QString &name) {
-			return QualifiedXmlName(GPlatesUtils::XmlNamespaces::GPML_NAMESPACE, 
-					namespace_alias, name);
+			return QualifiedXmlName(
+					GPlatesUtils::XmlNamespaces::GPML_NAMESPACE, 
+					GPlatesUtils::make_icu_string_from_qstring(namespace_alias),
+					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
 
@@ -88,7 +92,9 @@ namespace GPlatesModel
 		const QualifiedXmlName
 		create_gml(
 				const QString &name) {
-			return QualifiedXmlName(GPlatesUtils::XmlNamespaces::GML_NAMESPACE, name);
+			return QualifiedXmlName(
+					GPlatesUtils::XmlNamespaces::GML_NAMESPACE,
+					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
 
@@ -97,8 +103,10 @@ namespace GPlatesModel
 		create_gml(
 				const QString &namespace_alias,
 				const QString &name) {
-			return QualifiedXmlName(GPlatesUtils::XmlNamespaces::GML_NAMESPACE, 
-					namespace_alias, name);
+			return QualifiedXmlName(
+					GPlatesUtils::XmlNamespaces::GML_NAMESPACE, 
+					GPlatesUtils::make_icu_string_from_qstring(namespace_alias),
+					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
 
@@ -106,7 +114,9 @@ namespace GPlatesModel
 		const QualifiedXmlName
 		create_xsi(
 				const QString &name) {
-			return QualifiedXmlName(GPlatesUtils::XmlNamespaces::XSI_NAMESPACE, name);
+			return QualifiedXmlName(
+					GPlatesUtils::XmlNamespaces::XSI_NAMESPACE,
+					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
 
@@ -118,6 +128,7 @@ namespace GPlatesModel
 			d_namespace_alias(other.get_namespace_alias_iterator()),
 			d_name(SingletonType::instance().insert(other.get_name()))
 		{ }
+
 
 		/**
 		 * Instantiate a new QualifiedXmlName instance for the given namespace and name.
@@ -249,7 +260,7 @@ namespace GPlatesModel
 		void
 		set_namespace_alias() {
 			d_namespace_alias = 
-				GPlatesUtils::XmlNamespaces::get_standard_alias_for_namespace(d_namespace);
+				GPlatesUtils::XmlNamespaces::get_standard_alias_for_namespace(*d_namespace);
 		}
 	};
 

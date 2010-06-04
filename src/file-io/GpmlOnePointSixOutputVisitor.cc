@@ -544,20 +544,20 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::start_writing_document(
 	writer.writeStartDocument();
 
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::GPML_NAMESPACE, 
-			GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS);
+			GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
+			GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS_QSTRING);
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::GML_NAMESPACE, 
-			GPlatesUtils::XmlNamespaces::GML_STANDARD_ALIAS);
+			GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING,
+			GPlatesUtils::XmlNamespaces::GML_STANDARD_ALIAS_QSTRING);
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE, 
-			GPlatesUtils::XmlNamespaces::XSI_STANDARD_ALIAS);
+			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE_QSTRING,
+			GPlatesUtils::XmlNamespaces::XSI_STANDARD_ALIAS_QSTRING);
 
 	writer.writeStartGpmlElement("FeatureCollection");
 
 	writer.writeGpmlAttribute("version", "1.6");
 	writer.writeAttribute(
-			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE,
+			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE_QSTRING,
 			"schemaLocation",
 			"http://www.gplates.org/gplates ../xsd/gpml.xsd "\
 			"http://www.opengis.net/gml ../../../gml/current/base");

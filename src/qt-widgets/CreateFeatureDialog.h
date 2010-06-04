@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_CREATEFEATUREDIALOG_H
 
 #include <boost/optional.hpp>
+
 #include "CreateFeatureDialogUi.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -48,13 +49,15 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
-	class InformationDialog;
+	class ChooseFeatureCollectionWidget;
+	class ChooseFeatureTypeWidget;
 	class EditPlateIdWidget;
 	class EditTimePeriodWidget;
 	class EditStringWidget;
+	class InformationDialog;
+	class ViewportWindow;
 
-	class CreateFeatureDialog:
+	class CreateFeatureDialog :
 			public QDialog, 
 			protected Ui_CreateFeatureDialog
 	{
@@ -117,9 +120,6 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_create_and_save();
-
-		void
-		handle_create_topological();
 		
 	private:
 	
@@ -207,8 +207,21 @@ namespace GPlatesQtWidgets
 		QPushButton *d_button_create;
 
 		/**
-		* the newly created feature
-		*/
+		 * The widget that allows the user to select the feature type of the new feature.
+		 * Memory managed by Qt.
+		 */
+		ChooseFeatureTypeWidget *d_choose_feature_type_widget;
+
+		/**
+		 * The widget that allows the user to select an existing feature collection
+		 * to add the new feature to, or a new feature collection.
+		 * Memory managed by Qt.
+		 */
+		ChooseFeatureCollectionWidget *d_choose_feature_collection_widget;
+
+		/**
+		 * The newly created feature.
+		 */
 		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 		
 	};

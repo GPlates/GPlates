@@ -26,7 +26,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <iostream>
+#include <boost/lambda/bind.hpp>
 
 // Use this header instead of <cmath> if you want to use 'std::isnan'.
 #include <cmath_ext.h> // FIXME: use functions in maths/Real.h
@@ -43,161 +45,13 @@
 #include "GdalReaderUtils.h"
 
 #include "maths/MathsUtils.h"
+#include "maths/Real.h"
+
+#include "utils/TypeTraits.h"
 
 namespace
 {
-	// a blue->cyan->green->yellow->red colour map.
-	const static QRgb colour_map[9] = {
-		qRgb(0,0,255),			// blue = low
-		qRgb(0,127,255),
-		qRgb(0,255,255),		// Cyan
-		qRgb(0,255,127),
-		qRgb(0,255,0),			// green = central   
-		qRgb(127,255,0),
-		qRgb(255,255,0),		// yellow
-		qRgb(255,127,0),
-		qRgb(255,0,0)    // red = high
-	};
-
-	const float NUM_BANDS = 7;
-	const float BAND_MIN = -1800.;
-	const float BAND_MAX = 1800.;
-	const float BAND_WIDTH =(BAND_MAX - BAND_MIN)/NUM_BANDS;
-
-	void
-	convert_data_to_qcolor(
-			float data,
-			QColor &colour,
-			const float min,
-			const float max)
-	{
-		if (data < min) data = min;
-		if (data > max) data = max;
-		float range = max - min;
-
-		// The B->C->G->Y->R colour range is made up of 4 intervals.
-		
-		float r0 = min + 0.25*range;
-		float r1 = min + 0.5*range;
-		float r2 = min + 0.75*range;
-
-		float dr = 0.25*range;
-
-		// First interval is Blue to Cyan.
-		if (data < r0)
-		{
-			colour.setRed(0);
-			colour.setGreen(static_cast<int>((data-min)/dr*255.));
-			colour.setBlue(255);
-		}
-		// Second interval is Cyan to Green.
-		else if (data < r1)
-		{
-			colour.setRed(0);
-			colour.setGreen(255);		
-			colour.setBlue(static_cast<int>(255.-(data-r0)/dr*255.));
-		}
-		// Third interval is Green to Yellow.
-		else if (data < r2)
-		{
-			colour.setRed(static_cast<int>((data-r1)/dr*255));
-			colour.setGreen(255);		
-			colour.setBlue(0);
-		}
-		// Fourth interval is Yellow to Red.
-		else 
-		{
-			colour.setRed(255);
-			colour.setGreen(static_cast<int>(255.-(data-r2)/dr*255.));
-			colour.setBlue(0);
-		}
-	}
-
-	void
-	convert_line_to_RGB(
-			std::vector<float> &line,
-			std::vector<GLubyte> &rgb,
-			double colour_min,
-			double colour_max,
-			double no_data_value,
-			int no_data_value_success)
-	{
-		std::vector<float>::iterator it = line.begin();
-		std::vector<float>::iterator it_end = line.end();
-
-		float data;
-		QColor colour;
-		// loop over the pixels in the scan line and convert
-		// them to colour indices
-		for ( ; it != it_end ; ++it)
-		{
-			data = *it;
-			if (std::isnan(data)){
-				std::cerr << "NaN detected" << std::endl;
-				colour = Qt::black;
-			}
-			else if (no_data_value_success && (GPlatesMaths::are_almost_exactly_equal(static_cast<double>(data),no_data_value))){
-		//		std::cerr << "no_data_value detected" << std::endl;
-				colour = Qt::black;
-			}
-			else{
-				convert_data_to_qcolor(data,colour,colour_min,colour_max);
-			}
-			rgb.push_back(colour.red());
-			rgb.push_back(colour.green());
-			rgb.push_back(colour.blue());
-			rgb.push_back(static_cast<GLubyte>(255));
-		}
-	}
-
-
-	void
-	convert_raster_to_RGB(
-			GDALRasterBand *band,
-			std::vector<GLubyte> &rgb,
-			double colour_min,
-			double colour_max,
-			bool flip)
-	{
-		if (band == NULL) return;
-
-		int width = band->GetXSize();
-		int height = band->GetYSize();
-	
-		// The scanline will be stored here.
-		std::vector<float> line(width);
-		int line_index;
-	
-		int no_data_value_success;
-		double no_data_value = band->GetNoDataValue(&no_data_value_success);
-
-		for (int i = 0; i < height; i ++)
-		{
-	
-			line_index = i;
-			if (flip) {
-				line_index = height-1-i;
-			}
-			CPLErr error = band->RasterIO(GF_Read,
-				0,
-				line_index,
-				width,
-				1,
-				&line[0],
-				width,
-				1,
-				GDT_Float32,
-				0,
-				0);
-			
-			if (error != CE_None){
-				throw(GPlatesFileIO::ReadErrors::ErrorReadingGDALBand);
-			}
-			convert_line_to_RGB(line,rgb,colour_min,colour_max,no_data_value,no_data_value_success);
-		}		
-	}
-
-
+#if 0
 	void
 	display_gdal_projection_info(
 			GDALDataset *dataset)
@@ -206,7 +60,7 @@ namespace
 		{
 			return;
 		}
-#if 0
+
 		std::cerr << "Driver: " <<
 			dataset->GetDriver()->GetDescription() << " " << 
 			dataset->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME) 
@@ -225,7 +79,6 @@ namespace
 			std::cerr << "Pixel size: " <<
 				adfGeoTransform[1] << " " << adfGeoTransform[5] << std::endl;
 		}
-#endif
 	}
 
 	void
@@ -278,6 +131,175 @@ namespace
 				band->GetColorTable()->GetColorEntryCount() << " entries." << std::endl;
 		}
 	}
+#endif
+
+	using GPlatesFileIO::ErrorReadingGDALBand;
+
+
+	template<class RawRasterType, bool IsFloatingPoint>
+	struct ProcessNoDataValue
+	{
+		// IsFloatingPoint = false case here.
+		static
+		void
+		process_no_data_value(
+				typename RawRasterType::non_null_ptr_type result,
+				typename RawRasterType::element_type *raster_buf,
+				double no_data_value)
+		{
+			// For integer-valued rasters, we just cast the no_data_value to the
+			// correct type and store the value.
+			typedef typename RawRasterType::element_type raster_element_type;
+			result->set_no_data_value(static_cast<raster_element_type>(no_data_value));
+		}
+	};
+
+
+	template<class RawRasterType>
+	struct ProcessNoDataValue<RawRasterType, /* bool IsFloatingPoint = */ true>
+	{
+		static
+		void
+		process_no_data_value(
+				typename RawRasterType::non_null_ptr_type result,
+				typename RawRasterType::element_type *raster_buf,
+				double no_data_value)
+		{
+			// For floating-point rasters, we see if the no_data_value is NaN.
+			// If it is NaN, we don't need to do anything - internally, we
+			// expect NaN to be the no-data value anyway.
+			// However, if it's not NaN, we'll have to convert all values that
+			// match the no_data_value to NaN.
+			if (GPlatesMaths::is_nan(no_data_value))
+			{
+				return;
+			}
+
+			typedef typename RawRasterType::element_type raster_element_type;
+			raster_element_type casted_no_data_value = static_cast<raster_element_type>(no_data_value);
+			raster_element_type casted_nan_value = static_cast<raster_element_type>(GPlatesMaths::nan());
+
+			std::replace_if(
+					raster_buf,
+					raster_buf + result->width() * result->height(),
+					boost::lambda::bind(
+						&GPlatesMaths::are_almost_exactly_equal<raster_element_type>,
+						boost::lambda::_1,
+						casted_no_data_value),
+					casted_nan_value);
+		}
+	};
+
+
+	template<class RawRasterType>
+	GPlatesPropertyValues::RawRaster::non_null_ptr_type
+	read_raster_band(
+			GDALRasterBand *band,
+			bool flip,
+			GDALDataType data_type)
+	{
+		int raster_width = band->GetXSize();
+		int raster_height = band->GetYSize();
+
+		// Create a new RawRaster and get a pointer to the buffer.
+		typename RawRasterType::non_null_ptr_type result =
+			RawRasterType::create(raster_width, raster_height);
+		typedef typename RawRasterType::element_type raster_element_type;
+		boost::shared_array<raster_element_type> raster_array = result->data();
+		raster_element_type *raster_buf = raster_array.get();
+
+		// Read it in line by line.
+		for (int i = 0; i != raster_height; ++i)
+		{
+			// Work out which line we want to read in, depending on whether it's flipped.
+			int line_index = flip ? raster_height - 1 - i : i;
+
+			// Read the line into the buffer.
+			CPLErr error = band->RasterIO(
+					GF_Read,
+					0 /* zero x-offset, read from left hand side */,
+					line_index,
+					raster_width,
+					1 /* read one row */,
+					raster_buf + i * raster_width,
+					raster_width,
+					1 /* one row of buffer */,
+					data_type,
+					0 /* no offsets in buffer */,
+					0 /* no offsets in buffer */);
+
+			if (error != CE_None)
+			{
+				throw ErrorReadingGDALBand();
+			}
+		}
+
+		// Get and process the no-data value.
+		int no_data_success = 0;
+		double no_data_value = band->GetNoDataValue(&no_data_success);
+		if (no_data_success)
+		{
+			ProcessNoDataValue
+			<
+				RawRasterType,
+				GPlatesUtils::TypeTraits<raster_element_type>::is_floating_point
+			>::process_no_data_value(result, raster_buf, no_data_value);
+		}
+
+		// Get and process statistics.
+		GPlatesPropertyValues::RasterStatistics &statistics = result->statistics();
+		double min, max, mean, std_dev;
+		if (band->GetStatistics(
+				false /* approx ok */,
+				true /* force */,
+				&min, &max, &mean, &std_dev) != CE_None)
+		{
+			throw ErrorReadingGDALBand();
+		}
+		statistics.minimum = min;
+		statistics.maximum = max;
+		statistics.mean = mean;
+		statistics.standard_deviation = std_dev;
+
+		return result;
+	}
+
+
+	GPlatesPropertyValues::RawRaster::non_null_ptr_type
+	read_raster_band(
+			GDALRasterBand *band,
+			bool flip)
+	{
+		// Delegate to different template instantiation based on data type.
+		GDALDataType data_type = band->GetRasterDataType();
+		switch (data_type)
+		{
+			case GDT_Byte:
+				return read_raster_band<GPlatesPropertyValues::UInt8RawRaster>(band, flip, data_type);
+
+			case GDT_UInt16:
+				return read_raster_band<GPlatesPropertyValues::UInt16RawRaster>(band, flip, data_type);
+
+			case GDT_Int16:
+				return read_raster_band<GPlatesPropertyValues::Int16RawRaster>(band, flip, data_type);
+
+			case GDT_UInt32:
+				return read_raster_band<GPlatesPropertyValues::UInt32RawRaster>(band, flip, data_type);
+
+			case GDT_Int32:
+				return read_raster_band<GPlatesPropertyValues::Int32RawRaster>(band, flip, data_type);
+
+			case GDT_Float32:
+				return read_raster_band<GPlatesPropertyValues::FloatRawRaster>(band, flip, data_type);
+
+			case GDT_Float64:
+				return read_raster_band<GPlatesPropertyValues::DoubleRawRaster>(band, flip, data_type);
+
+			default:
+				throw ErrorReadingGDALBand();
+		}
+	}
+
 } // anonymous namespace
 
 
@@ -304,101 +326,59 @@ GPlatesFileIO::GdalReader::~GdalReader()
 }
 
 
-bool
+boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 GPlatesFileIO::GdalReader::read_file(
 		 const QString &filename,
-		 GPlatesPropertyValues::InMemoryRaster &raster,
 		 GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
-	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
-			new GPlatesFileIO::LocalFileDataSource(filename, GPlatesFileIO::DataFormats::Unspecified));
-	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-			new GPlatesFileIO::LineNumber(0));
-
-	d_dataset_ptr = GdalReaderUtils::gdal_open(filename, read_errors);
-	
-	if (!d_dataset_ptr)
+	try
 	{
-		// Note: GdalReaderUtils::gdal_open() appends to the read_errors if it
-		// returns NULL, so no need to do it ourselves here.
-		return false;
+		d_dataset_ptr = GdalReaderUtils::gdal_open(filename, read_errors);
+		
+		if (!d_dataset_ptr)
+		{
+			// Note: GdalReaderUtils::gdal_open() appends to the read_errors if it
+			// returns NULL, so no need to do it ourselves here.
+			return false;
+		}
+
+		int n = d_dataset_ptr->GetRasterCount();
+		if (n == 0)
+		{
+			throw ErrorReadingGDALBand();
+		}
+
+		// GDAL raster bands are numbered from 1. 
+		GDALRasterBand *gdal_band_ptr = d_dataset_ptr->GetRasterBand(1);
+		if (!gdal_band_ptr)
+		{
+			throw ErrorReadingGDALBand();
+		}
+
+		// GMT style GRDs are stored, and imported, upside-down.
+		// See for example http://trac.osgeo.org/gdal/ticket/1926
+		QString driver_type = d_dataset_ptr->GetDriver()->GetDescription();
+		bool flip = (driver_type.compare("GMT") == 0);
+
+		// Now read the band into a RawRaster.
+		GPlatesPropertyValues::RawRaster::non_null_ptr_type result = read_raster_band(gdal_band_ptr, flip);
+		return result;
 	}
-
-#if 0
-	display_gdal_projection_info(d_dataset_ptr);
-#endif
-
-	int n = d_dataset_ptr->GetRasterCount();
-
-	//std::cerr << n << " Raster band(s) in file." << std::endl;
-
-	if (n == 0)
+	catch (const ErrorReadingGDALBand &)
 	{
+		boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
+				new GPlatesFileIO::LocalFileDataSource(filename, GPlatesFileIO::DataFormats::Unspecified));
+		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
+				new GPlatesFileIO::LineNumber(0));
+
 		read_errors.d_failures_to_begin.push_back(
 				GPlatesFileIO::ReadErrorOccurrence(
 					e_source,
 					e_location,
 					GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
 					GPlatesFileIO::ReadErrors::FileNotLoaded));
-		return false;
+
+		return boost::none;
 	}
-
-	// GDAL raster bands are numbered from 1. 
-	GDALRasterBand *gdal_band_ptr = d_dataset_ptr->GetRasterBand(1);
-	if (gdal_band_ptr == NULL)
-	{
-		read_errors.d_failures_to_begin.push_back(
-				GPlatesFileIO::ReadErrorOccurrence(
-					e_source,
-					e_location,
-					GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
-					GPlatesFileIO::ReadErrors::FileNotLoaded));
-		return false;
-	}
-
-#if 0
-	display_gdal_band_info(gdal_band_ptr);
-#endif
-
-	QSize size(gdal_band_ptr->GetXSize(), gdal_band_ptr->GetYSize());
-
-	std::vector<GLubyte> image_RGB;
-
-	double max, min, mean, dev;
-
-	if (gdal_band_ptr->GetStatistics(false, true, &min, &max, &mean, &dev) != CE_None)
-	{
-		read_errors.d_failures_to_begin.push_back(
-				GPlatesFileIO::ReadErrorOccurrence(
-					e_source,
-					e_location,
-					GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
-					GPlatesFileIO::ReadErrors::FileNotLoaded));
-		return false;		
-	}
-
-	// Set up colour_min and colour_max so that the colour scale covers the 
-	// range (mean - 2*standard_deviation) to (mean + 2*standard_deviation)
-	double colour_min = mean - 2 * dev;
-	double colour_max = mean + 2 * dev;
-
-	// GMT style GRDs are stored, and imported, upside-down.
-	// See for example http://trac.osgeo.org/gdal/ticket/1926
-	bool flip = false;
-	QString driver_type = d_dataset_ptr->GetDriver()->GetDescription();
-	if (driver_type.compare("GMT") == 0)
-	{
-		flip = true;
-	}
-
-	convert_raster_to_RGB(gdal_band_ptr, image_RGB, colour_min, colour_max, flip);
-
-	raster.set_min(colour_min);
-	raster.set_max(colour_max);
-	raster.set_corresponds_to_data(true);
-	raster.generate_raster(&image_RGB[0], size, GPlatesPropertyValues::InMemoryRaster::RgbaFormat);
-	raster.set_enabled(true);
-
-	return true;
 }
 

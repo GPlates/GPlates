@@ -15,6 +15,8 @@ set(srcs
     Enumeration.h
     EnumerationContent.h
     EnumerationType.h
+    Georeferencing.cc
+    Georeferencing.h
     GeoTimeInstant.cc
     GeoTimeInstant.h
     GmlDataBlock.cc
@@ -85,8 +87,11 @@ set(srcs
     InMemoryRaster.h
     PropertyValues.cc
     PropertyValues.h
+    RasterStatistics.h
     RawRaster.cc
     RawRaster.h
+    RawRasterUtils.cc
+    RawRasterUtils.h
     TemplateTypeParameterType.h
     TextContent.h
     UninterpretedPropertyValue.cc

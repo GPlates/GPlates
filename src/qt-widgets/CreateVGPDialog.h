@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -50,11 +51,14 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class CreateVGPDialog:
+	class ChooseFeatureCollectionWidget;
+
+	class CreateVGPDialog :
 			public QDialog,
 			protected Ui_CreateVGPDialog
 	{
 		Q_OBJECT
+
 	public:
 	
 		enum StackedWidgetPage
@@ -135,8 +139,13 @@ namespace GPlatesQtWidgets
 		 * perform reverse reconstruction of the temporary geometry (once we know the plate id).
 		 */
 		GPlatesAppLogic::ApplicationState *d_application_state_ptr;	
-			
 
+		/**
+		 * The widget that allows the user to select an existing feature collection
+		 * to add the new feature to, or a new feature collection.
+		 * Memory managed by Qt.
+		 */
+		ChooseFeatureCollectionWidget *d_choose_feature_collection_widget;
 	};
 }
 

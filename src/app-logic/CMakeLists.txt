@@ -58,6 +58,8 @@ set(srcs
     PlateVelocityUtils.h
     PlateVelocityWorkflow.cc
     PlateVelocityWorkflow.h
+    PropertyExtractors.cc
+    PropertyExtractors.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
     ReconstructGraph.cc

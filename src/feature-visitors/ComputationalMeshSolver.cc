@@ -47,8 +47,6 @@
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "file-io/FileInfo.h"
 
-#include "gui/ColourSchemeFactory.h"
-
 #include "maths/PolylineOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/LatLonPoint.h"
@@ -121,7 +119,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	//d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_rendered_point_layer(point_layer),
 	d_rendered_arrow_layer(arrow_layer),
-	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
+	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id),
+	d_colour_palette(GPlatesGui::DefaultPlateIdColourPalette::create())
 {  
 	d_num_features = 0;
 	d_num_meshes = 0;
@@ -443,7 +442,7 @@ std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 
 	// get the color for the highest numeric id 
 	const boost::optional<GPlatesGui::Colour> plate_id_colour_opt =
-			d_colour_palette.get_colour(recon_plate_id);
+			d_colour_palette->get_colour(recon_plate_id);
 	const GPlatesGui::Colour &plate_id_colour = plate_id_colour_opt
 			? *plate_id_colour_opt
 			: GPlatesGui::Colour::get_olive();

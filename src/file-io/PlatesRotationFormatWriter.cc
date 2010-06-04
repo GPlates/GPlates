@@ -263,12 +263,12 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_plate_id(
 {
 	static const GPlatesModel::PropertyName
 		fixedReferenceFrame(
-				GPlatesUtils::XmlNamespaces::GPML_NAMESPACE,
-				GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS,
+				GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
+				GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS_QSTRING,
 				QString("fixedReferenceFrame")),
 		movingReferenceFrame(
-				GPlatesUtils::XmlNamespaces::GPML_NAMESPACE,
-				GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS,
+				GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
+				GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS_QSTRING,
 				QString("movingReferenceFrame"));
 
 	if (*current_top_level_propname() == fixedReferenceFrame) {

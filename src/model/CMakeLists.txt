@@ -35,6 +35,8 @@ set(srcs
     FeatureType.h
     FeatureVisitor.cc
     FeatureVisitor.h
+    GPGIMInfo.cc
+    GPGIMInfo.h
     HandleTraits.h
     IdTypeGenerator.h
     Model.cc

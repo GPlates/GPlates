@@ -91,6 +91,10 @@ namespace GPlatesQtWidgets
 				bool checked);
 
 		void
+		handle_add_button_clicked(
+				bool checked);
+
+		void
 		handle_remove_button_clicked(
 				bool checked);
 
@@ -112,9 +116,6 @@ namespace GPlatesQtWidgets
 		void
 		handle_colour_schemes_list_selection_changed();
 
-		void
-		handle_colour_schemes_list_item_double_clicked(
-				QListWidgetItem *item);
 
 		void
 		handle_show_thumbnails_changed(
@@ -127,6 +128,9 @@ namespace GPlatesQtWidgets
 		void
 		handle_use_global_changed(
 				int state);
+
+		void
+		edit_current_colour_scheme();
 
 	private:
 
@@ -226,19 +230,14 @@ namespace GPlatesQtWidgets
 				QListWidgetItem *item);
 
 		void
-		open_file();
-		
-		void
-		open_files(
+		open_cpt_files(
 				const QStringList &file_list);
 
+		template<class CptReaderType, typename PropertyExtractorType>
 		void
-		open_regular_cpt_file(
-				const QStringList &file_list);
-
-		void
-		open_categorical_cpt_file(
-				const QStringList &file_list);
+		open_cpt_files(
+				const QStringList &file_list,
+				const PropertyExtractorType &property_extractor);
 
 		void
 		add_single_colour();

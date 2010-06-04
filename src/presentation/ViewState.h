@@ -31,6 +31,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
+#include <QString>
 
 #include "global/PointerTraits.h"
 
@@ -80,6 +81,12 @@ namespace GPlatesGui
 namespace GPlatesModel
 {
 	class Reconstruction;
+}
+
+namespace GPlatesPropertyValues
+{
+	class Georeferencing;
+	class RawRaster;
 }
 
 namespace GPlatesQtWidgets
@@ -203,8 +210,56 @@ namespace GPlatesPresentation
 		get_vgp_render_settings();
 
 
+		// FIXME: Remove all raster/texture related stuff out of ViewState.
+
 		GPlatesGui::ProxiedTexture &
 		get_texture();
+
+
+		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::RawRaster>::non_null_ptr_type
+		get_raw_raster();
+
+
+		void
+		set_raw_raster(
+				GPlatesGlobal::PointerTraits<GPlatesPropertyValues::RawRaster>::non_null_ptr_type raw_raster);
+
+
+		bool
+		update_texture_from_raw_raster();
+
+
+		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::Georeferencing>::non_null_ptr_type
+		get_georeferencing();
+
+
+		void
+		update_texture_extents();
+
+
+		const QString &
+		get_raster_filename() const;
+
+
+		void
+		set_raster_filename(
+				const QString &filename);
+
+
+		const QString &
+		get_raster_colour_map_filename() const;
+
+
+		void
+		set_raster_colour_map_filename(
+				const QString &filename);
+
+
+		bool
+		is_raster_colour_map_invalid() const
+		{
+			return d_is_raster_colour_map_invalid;
+		}
 
 
 	private slots:
@@ -300,6 +355,51 @@ namespace GPlatesPresentation
 		 * Delay creation until it's used.
 		 */
 		boost::scoped_ptr<GPlatesGui::ProxiedTexture> d_texture;
+
+		/**
+		 * Stores the raw bits in the currently loaded raster.
+		 *
+		 * FIXME: This should only live in ViewState as long as we have only one
+		 * raster loaded at any time.
+		 */
+		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::RawRaster>::non_null_ptr_type d_raw_raster;
+
+		/**
+		 * Stores the georeferencing information for the currently loaded raster
+		 * or time dependent raster sequence.
+		 *
+		 * FIXME: This should only live in ViewState as long as we have only one
+		 * raster loaded at any time.
+		 */
+		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::Georeferencing>::non_null_ptr_type d_georeferencing;
+
+		/**
+		 * Stores the filename of the currently loaded raster.
+		 *
+		 * If it is the empty string, then no raster is currently loaded.
+		 *
+		 * FIXME: This should only live in ViewState as long as we have only one
+		 * raster loaded at any time.
+		 */
+		QString d_raster_filename;
+
+		/**
+		 * Stores the filename of the CPT file used to colour the raster.
+		 *
+		 * If it is the empty string, the default in-built colour map is used.
+		 *
+		 * FIXME: This should only live in ViewState as long as we have only one
+		 * raster loaded at any time.
+		 */
+		QString d_raster_colour_map_filename;
+
+		/**
+		 * True if d_raster_colour_map_filename is invalid.
+		 *
+		 * FIXME: This should only live in ViewState as long as we have only one
+		 * raster loaded at any time.
+		 */
+		bool d_is_raster_colour_map_invalid;
 
 		void
 		connect_to_viewport_zoom();

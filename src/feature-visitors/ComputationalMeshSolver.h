@@ -30,6 +30,7 @@
 
 #include <list>
 #include <boost/optional.hpp>
+#include <boost/noncopyable.hpp>
 
 #include "app-logic/TopologyUtils.h"
 
@@ -71,7 +72,8 @@ namespace GPlatesMaths
 namespace GPlatesFeatureVisitors
 {
 	class ComputationalMeshSolver :
-			public GPlatesModel::FeatureVisitor
+			public GPlatesModel::FeatureVisitor,
+			public boost::noncopyable
 	{
 	public:
 
@@ -216,7 +218,7 @@ namespace GPlatesFeatureVisitors
 		int d_num_points;
 
 		/** used to set the color of the points found on a plate */
-		GPlatesGui::DefaultPlateIdColourPalette d_colour_palette;
+		GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_type d_colour_palette;
 
 		/** vectors to hold computed values */
 		std::vector<double> d_velocity_colat_values;

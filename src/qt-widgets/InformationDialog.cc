@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,12 +27,30 @@
 
 
 GPlatesQtWidgets::InformationDialog::InformationDialog(
-		const QString &text_data,
-		const QString &text_title,
+		const QString &text_,
+		const QString &title_,
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 {
 	setupUi(this);
-	text_information->setText(text_data);
-	setWindowTitle(text_title);
+
+	text_information->setText(text_);
+	setWindowTitle(title_);
 }
+
+
+void
+GPlatesQtWidgets::InformationDialog::set_text(
+		const QString &text_)
+{
+	text_information->setText(text_);
+}
+
+
+void
+GPlatesQtWidgets::InformationDialog::set_title(
+		const QString &title_)
+{
+	setWindowTitle(title_);
+}
+

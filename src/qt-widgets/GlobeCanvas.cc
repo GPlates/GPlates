@@ -898,6 +898,7 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
 }
 #endif
 
+#if 0
 void
 GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
 	QPainter *painter,
@@ -971,7 +972,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
 	painter->drawText(bar_rect.right()+5, bar_rect.top()+2, max_string);
 
 }
-
+#endif
 
 void
 GPlatesQtWidgets::GlobeCanvas::create_svg_output(

@@ -33,13 +33,14 @@
 
 #include "ReadErrorAccumulation.h"
 
-#include "property-values/InMemoryRaster.h"
 #include "property-values/RawRaster.h"
 
 class GDALDataset; 
 
 namespace GPlatesFileIO
 {
+	struct ErrorReadingGDALBand {  };
+
 	class GdalReader :
 			public boost::noncopyable
 	{
@@ -49,10 +50,9 @@ namespace GPlatesFileIO
 
 		~GdalReader();
 
-		bool
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 		read_file(
 				const QString &filename,
-				GPlatesPropertyValues::InMemoryRaster &raster,
 				ReadErrorAccumulation &read_errors);
 
 	private:

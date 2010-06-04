@@ -109,3 +109,17 @@ GPlatesGui::operator>(
 	return value > colour_entry.key();
 }
 
+
+namespace GPlatesGui
+{
+	template<>
+	ColourEntry<int>
+	make_colour_entry<int>(
+			int key,
+			const Colour &colour,
+			const boost::optional<QString> &label)
+	{
+		return ColourEntry<int>(key, colour, label);
+	}
+}
+

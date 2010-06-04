@@ -119,7 +119,7 @@ namespace GPlatesQtWidgets
 	class SaveFileDialog;
 	class SetCameraViewpointDialog;
 	class SetProjectionDialog;
-	class SetRasterSurfaceExtentDialog;
+	class RasterPropertiesDialog;
 	class SetVGPVisibilityDialog;
 	class ShapefileAttributeViewerDialog;
 	class SpecifyAnchoredPlateIdDialog;
@@ -481,7 +481,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
-		boost::scoped_ptr<SetRasterSurfaceExtentDialog> d_set_raster_surface_extent_dialog_ptr;
+		boost::scoped_ptr<RasterPropertiesDialog> d_raster_properties_dialog_ptr;
 		boost::scoped_ptr<SetVGPVisibilityDialog> d_set_vgp_visibility_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
@@ -557,9 +557,13 @@ namespace GPlatesQtWidgets
 		 */
 		TaskPanel *d_task_panel_ptr;
 
+		// FIXME: Remove these out of ViewportWindow.
 
 		//!  map a time value to a raster filename
 		QMap<int,QString> d_time_dependent_raster_map;
+
+		//! If true, the georeferencing will be reset when load_raster is next called.
+		bool d_georeferencing_needs_to_be_reset;
 
 		//! The last path used for opening raster files.
 		QString d_open_file_path; 
@@ -600,7 +604,7 @@ namespace GPlatesQtWidgets
 
 		bool
 		load_raster(
-			QString filename);
+				QString filename);
 
 		void
 		update_time_dependent_raster();
@@ -649,7 +653,7 @@ namespace GPlatesQtWidgets
 		enable_raster_display();
 
 		void
-		pop_up_set_raster_surface_extent_dialog();
+		pop_up_raster_properties_dialog();
 
 		void
 		pop_up_shapefile_attribute_viewer_dialog();

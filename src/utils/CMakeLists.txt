@@ -39,10 +39,12 @@ set(srcs
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
     OverloadResolution.h
+    Parse.h
     Profile.cc
     Profile.h
     ReferenceCount.h
     ScopeGuard.h
+    Select.h
     Singleton.h
     SmartNodeLinkedList.h
     StringFormattingUtils.cc
@@ -50,11 +52,13 @@ set(srcs
     StringSet.cc
     StringSet.h
     StringUtils.h
+    TypeTraits.h
     UnicodeStringUtils.cc
     UnicodeStringUtils.h
     UniqueId.cc
     UniqueId.h
     VirtualProxy.h
+    XmlNamespaces.cc
     XmlNamespaces.h
 )
 

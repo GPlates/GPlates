@@ -265,7 +265,7 @@ namespace GPlatesModel
 		/**
 		 * Flushes pending notifications that were held up due to an active NotificationGuard.
 		 *
-		 * This will call flush_children_pending_notifications() to recurively call
+		 * This will call flush_children_pending_notifications() to recursively call
 		 * flush_pending_notifications() in children objects.
 		 */
 		void
