@@ -36,7 +36,7 @@
 #include "model/types.h"
 
 
-namespace GPlatesModel
+namespace GPlatesAppLogic
 {
 	class ReconstructedFeatureGeometry;
 }
@@ -46,12 +46,12 @@ namespace GPlatesFileIO
 	namespace ReconstructedFeatureGeometryExportImpl
 	{
 		//! Typedef for sequence of feature collection files.
-		typedef std::vector<const GPlatesFileIO::File *> files_collection_type;
+		typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;
 
 		/**
 		 * Typedef for a sequence of @a ReconstructedFeatureGeometry pointers.
 		 */
-		typedef std::vector<const GPlatesModel::ReconstructedFeatureGeometry *>
+		typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>
 			reconstructed_feature_geom_seq_type;
 
 
@@ -74,8 +74,8 @@ namespace GPlatesFileIO
 		 */
 		typedef std::list<FeatureGeometryGroup> feature_geometry_group_seq_type;
 
-		//! Typedef for sequence of file weak references that reference a collection of geometries.
-		typedef std::vector<const GPlatesFileIO::File *> referenced_files_collection_type;
+		//! Typedef for sequence of file references that reference a collection of geometries.
+		typedef std::vector<const GPlatesFileIO::File::Reference *> referenced_files_collection_type;
 
 
 		/**

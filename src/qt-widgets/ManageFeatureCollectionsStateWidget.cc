@@ -36,94 +36,59 @@
 
 GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::ManageFeatureCollectionsStateWidget(
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &feature_collections_dialog,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
-		bool reconstructable_active,
-		bool reconstruction_active,
-		bool enable_reconstructable,
-		bool enable_reconstruction,
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
+		bool active,
+		bool enable,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_collections_dialog(feature_collections_dialog),
-	d_file_iterator(file_it)
+	d_file_reference(file_ref)
 {
 	setupUi(this);
 
 	// Set up slots for the state checkboxen. Note we listen for the 'clicked' signal,
 	// NOT the 'toggled' signal, as the latter is emitted even when changing the
 	// checkbox state programattically.
-	QObject::connect(checkbox_active_reconstructable, SIGNAL(clicked(bool)),
-			this, SLOT(handle_active_reconstructable_checked(bool)));
-	QObject::connect(checkbox_active_reconstruction, SIGNAL(clicked(bool)),
-			this, SLOT(handle_active_reconstruction_checked(bool)));
+	QObject::connect(checkbox_active, SIGNAL(clicked(bool)),
+			this, SLOT(handle_active_checked(bool)));
 	// We also set up slots for the single-push buttons to the side of the checkboxes.
-	QObject::connect(button_active_reconstructable, SIGNAL(clicked()),
-			this, SLOT(handle_active_reconstructable_toggled()));
-	QObject::connect(button_active_reconstruction, SIGNAL(clicked()),
-			this, SLOT(handle_active_reconstruction_toggled()));
+	QObject::connect(button_active, SIGNAL(clicked()),
+			this, SLOT(handle_active_toggled()));
 
-	update_reconstructable_state(reconstructable_active, enable_reconstructable);
-	update_reconstruction_state(reconstruction_active, enable_reconstruction);
+	update_state(active, enable);
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::update_reconstructable_state(
+GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::update_state(
 		bool active,
-		bool enable_reconstructable)
+		bool enable)
 {
-	set_reconstructable_button_properties(active, enable_reconstructable);
+	set_button_properties(active, enable);
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::update_reconstruction_state(
-		bool active,
-		bool enable_reconstruction)
+GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::handle_active_toggled()
 {
-	set_reconstruction_button_properties(active, enable_reconstruction);
-}
-
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::handle_active_reconstructable_toggled()
-{
-	handle_active_reconstructable_checked( ! checkbox_active_reconstructable->isChecked());
+	handle_active_checked( ! checkbox_active->isChecked());
 }
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::handle_active_reconstructable_checked(
+GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::handle_active_checked(
 		bool checked)
 {
 	// Activate or deactivate the file.
 	// This will cause ManageFeatureCollectionsDialog to attempt to activate/deactivate
 	// the file through FeatureCollectionFileState and if successful it will get signaled
-	// and call our 'update_reconstructable_state()' which will set the button properties
+	// and call our 'update_state()' which will set the button properties
 	// appropriately.
-	d_feature_collections_dialog.set_reconstructable_state_for_file(this, checked);
+	d_feature_collections_dialog.set_state_for_file(this, checked);
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::handle_active_reconstruction_toggled()
-{
-	handle_active_reconstruction_checked( ! checkbox_active_reconstruction->isChecked());
-}
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::handle_active_reconstruction_checked(
-		bool checked)
-{
-	// Activate or deactivate the file.
-	// This will cause ManageFeatureCollectionsDialog to attempt to activate/deactivate
-	// the file through FeatureCollectionFileState and if successful it will get signaled
-	// and call our 'update_reconstruction_state()' which will set the button properties
-	// appropriately.
-	d_feature_collections_dialog.set_reconstruction_state_for_file(this, checked);
-}
-
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::set_reconstructable_button_properties(
+GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::set_button_properties(
 		bool is_active,
 		bool is_enabled)
 {
@@ -135,65 +100,26 @@ GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::set_reconstructable_butto
 	
 	// Ensure the checkbox state is what it's supposed to be, as we have several ways
 	// of setting it.
-	checkbox_active_reconstructable->setChecked(is_active);
+	checkbox_active->setChecked(is_active);
 	
 	// Update icons and tooltips.
 	if (is_active) {
-		button_active_reconstructable->setIcon(icon_active);
-		button_active_reconstructable->setToolTip(tooltip_active);
-		checkbox_active_reconstructable->setToolTip(tooltip_active);
+		button_active->setIcon(icon_active);
+		button_active->setToolTip(tooltip_active);
+		checkbox_active->setToolTip(tooltip_active);
 	} else {
-		button_active_reconstructable->setIcon(icon_inactive);
-		button_active_reconstructable->setToolTip(tooltip_inactive);
-		checkbox_active_reconstructable->setToolTip(tooltip_inactive);
+		button_active->setIcon(icon_inactive);
+		button_active->setToolTip(tooltip_inactive);
+		checkbox_active->setToolTip(tooltip_inactive);
 	}
 	if ( ! is_enabled) {
-		button_active_reconstructable->setToolTip(tooltip_disabled);
-		checkbox_active_reconstructable->setToolTip(tooltip_disabled);
+		button_active->setToolTip(tooltip_disabled);
+		checkbox_active->setToolTip(tooltip_disabled);
 	}
 	
 	// Disable/Enable the user's ability to change the 'checked' state, if we know
 	// that there are no features of this type available anyway - which also acts
 	// as a handy indicator of what is in the file.
-	button_active_reconstructable->setEnabled(is_enabled);
-	checkbox_active_reconstructable->setEnabled(is_enabled);
+	button_active->setEnabled(is_enabled);
+	checkbox_active->setEnabled(is_enabled);
 }
-
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::set_reconstruction_button_properties(
-		bool is_active,
-		bool is_enabled)
-{
-	static const QIcon icon_active(":/globe_reconstruction_22.png");
-	static const QIcon icon_inactive(":/globe_reconstruction_22.png");
-	static const QString tooltip_active(tr("The file contains reconstruction poles in use by GPlates."));
-	static const QString tooltip_inactive(tr("The file contains reconstruction poles which are not in use."));
-	static const QString tooltip_disabled(tr("The file does not contain reconstruction pole data."));
-
-	// Ensure the checkbox state is what it's supposed to be, as we have several ways
-	// of setting it.
-	checkbox_active_reconstruction->setChecked(is_active);
-
-	// Update icons and tooltips.
-	if (is_active) {
-		button_active_reconstruction->setIcon(icon_active);
-		button_active_reconstruction->setToolTip(tooltip_active);
-		checkbox_active_reconstruction->setToolTip(tooltip_active);
-	} else {
-		button_active_reconstruction->setIcon(icon_inactive);
-		button_active_reconstruction->setToolTip(tooltip_inactive);
-		checkbox_active_reconstruction->setToolTip(tooltip_inactive);
-	}
-	if ( ! is_enabled) {
-		button_active_reconstruction->setToolTip(tooltip_disabled);
-		checkbox_active_reconstruction->setToolTip(tooltip_disabled);
-	}
-
-	// Disable/Enable the user's ability to change the 'checked' state, if we know
-	// that there are no features of this type available anyway - which also acts
-	// as a handy indicator of what is in the file.
-	button_active_reconstruction->setEnabled(is_enabled);
-	checkbox_active_reconstruction->setEnabled(is_enabled);
-}
-

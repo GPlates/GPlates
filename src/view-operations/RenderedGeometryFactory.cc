@@ -266,7 +266,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_dashed_polyline_
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
-		GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geom,
 		RenderedGeometry rendered_geom)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedReconstructionGeometry(

@@ -35,10 +35,11 @@
 #include "TotalReconstructionPolesDialog.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/ReconstructionTree.h"
+#include "app-logic/ReconstructionTreeEdge.h"
 #include "gui/CsvExport.h"
-#include "presentation/ViewState.h"
-#include "model/ReconstructionTreeEdge.h"
 #include "maths/MathsUtils.h"
+#include "presentation/ViewState.h"
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -166,7 +167,7 @@ namespace {
 	void
 	fill_tree_item(
 		QTreeWidgetItem* item,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type edge)
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge)
 	{
 
 		int column = item->columnCount();
@@ -195,13 +196,13 @@ namespace {
 
 	void
 	add_children_of_edge_to_tree_item(
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type edge,
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge,
 		QTreeWidgetItem *item)
 	{
-		std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator it;
-		std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
+		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator it;
+		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
 			it_begin = edge->children_in_built_tree().begin();
-		std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
+		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
 			it_end = edge->children_in_built_tree().end();
 
 		for(it = it_begin; it != it_end ; it++)
@@ -300,19 +301,20 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::set_time(
  *	composite Euler poles.
  */
 void
-GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table(
+		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
 	table_equivalent->clearContents();
 	table_equivalent->setRowCount(0);
 
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
+			reconstruction_tree.edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
+			reconstruction_tree.edge_map_end();
 
 
 	for(it = it_begin; it != it_end ; ++it)
@@ -376,19 +378,20 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table()
 }
 
 void
-GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table(
+		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
 	table_relative->clearContents();
 	table_relative->setRowCount(0);
 
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
+			reconstruction_tree.edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
+			reconstruction_tree.edge_map_end();
 
 
 	for(it = it_begin; it != it_end ; ++it)
@@ -462,18 +465,16 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table()
  * Fill the QTreeWidget in the second tab with data from the Reconstruction Tree
  */
 void
-GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree(
+		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
 	tree_reconstruction->clear();
 
-	GPlatesModel::ReconstructionTree& tree =
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree();
-
-	std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator it;
-	std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator it_begin = 
-		tree.rootmost_edges_begin();
-	std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator it_end = 
-		tree.rootmost_edges_end();
+	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
+	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
+			reconstruction_tree.rootmost_edges_begin();
+	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
+			reconstruction_tree.rootmost_edges_end();
 
 	for(it = it_begin; it != it_end; ++it)
 	{
@@ -494,18 +495,19 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree()
  * Fill the QTreeWidget in the third tab with the circuit-to-stationary-plate for each plate-id. 
  */
 void
-GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree(
+		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
 	tree_circuit->clear();
 
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
+			reconstruction_tree.edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
+			reconstruction_tree.edge_map_end();
 
 
 	for(it = it_begin; it != it_end ; ++it)
@@ -521,13 +523,13 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree()
 		// go up the rotation tree using the parent, until 
 		// we come to the stationary plate.
 	
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type edge = it->second;
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge = it->second;
 
 		while (edge->parent_edge()) {
 			QTreeWidgetItem *child = new QTreeWidgetItem(item,0);
 			fill_tree_item(child,edge);
 
-			edge = GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type(
+			edge = GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type(
 					edge->parent_edge(),
 					GPlatesUtils::NullIntrusivePointerHandler());
 		}
@@ -546,12 +548,29 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree()
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::update()
 {
+	const GPlatesAppLogic::Reconstruction &reconstruction =
+			d_application_state_ptr->get_current_reconstruction();
+
+	// If there are no reconstruction trees then return.
+	if (reconstruction.begin_reconstruction_trees() == reconstruction.end_reconstruction_trees())
+	{
+		return;
+	}
+
+	// Use the first reconstruction tree - we are currently only expecting one reconstruction tree
+	// since loading a new reconstruction feature collection deactivates the previous one.
+	//
+	// FIXME: To support multiple reconstruction trees we'll need to add a widget to query
+	// the user for the reconstruction tree layer they're interested in displaying.
+	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree =
+			*reconstruction.begin_reconstruction_trees();
+
 	set_time(d_application_state_ptr->get_current_reconstruction_time());
 	set_plate(d_application_state_ptr->get_current_anchored_plate_id());
-	fill_equivalent_table();
-	fill_relative_table();
-	fill_reconstruction_tree();
-	fill_circuit_tree();
+	fill_equivalent_table(*reconstruction_tree);
+	fill_relative_table(*reconstruction_tree);
+	fill_reconstruction_tree(*reconstruction_tree);
+	fill_circuit_tree(*reconstruction_tree);
 }
 
 void

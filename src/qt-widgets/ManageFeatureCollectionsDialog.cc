@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QCoreApplication>
 #include <QTableWidget>
 #include <QHeaderView>
@@ -222,14 +223,15 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::update()
 {
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
-			d_file_state.get_loaded_files();
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
-	
 	clear_rows();
-	for (; it != end; ++it) {
-		add_row(it);
+
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+			d_file_state.get_loaded_files();
+	BOOST_FOREACH(
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
+			loaded_files)
+	{
+		add_row(file_ref);
 	}
 
 	highlight_unsaved_changes();
@@ -247,10 +249,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
 	//  
 	// For shapefiles, "edit configuration" translates to "re-map shapefile attributes to model properties". 
 	// 
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it =
-			action_widget_ptr->get_file_info_iterator();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref =
+			action_widget_ptr->get_file_reference();
 
-	d_feature_collection_file_io->remap_shapefile_attributes(file_it);
+	d_feature_collection_file_io->remap_shapefile_attributes(file_ref);
 }
 
 
@@ -258,8 +260,8 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file =
-			action_widget_ptr->get_file_info_iterator();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file =
+			action_widget_ptr->get_file_reference();
 	d_gui_file_io_feedback_ptr->save_file_in_place(file);
 }
 
@@ -269,11 +271,9 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file =
-			action_widget_ptr->get_file_info_iterator();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file =
+			action_widget_ptr->get_file_reference();
 	d_gui_file_io_feedback_ptr->save_file_as(file);
-	// Row text needs to be updated.
-	update();
 }
 
 
@@ -282,8 +282,8 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file =
-			action_widget_ptr->get_file_info_iterator();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file =
+			action_widget_ptr->get_file_reference();
 	d_gui_file_io_feedback_ptr->save_file_copy(file);
 }
 
@@ -292,8 +292,8 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_file(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it =
-			action_widget_ptr->get_file_info_iterator();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it =
+			action_widget_ptr->get_file_reference();
 	
 	d_gui_file_io_feedback_ptr->reload_file(file_it);
 }
@@ -303,84 +303,46 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_file(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it =
-			action_widget_ptr->get_file_info_iterator();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it =
+			action_widget_ptr->get_file_reference();
 	
 	d_feature_collection_file_io->unload_file(file_it);
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstructable_state_for_file(
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_state_for_file(
 		ManageFeatureCollectionsStateWidget *state_widget_ptr,
 		bool activate)
 {
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it =
-			state_widget_ptr->get_file_iterator();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref =
+			state_widget_ptr->get_file_reference();
 
-#if 1
-	// A temporary hack to hijack the active reconstructable GUI button to activate/deactivate
-	// all the workflows (instead of activate/deactivate generation/rendering of RFGs).
-	//
-	// FIXME: When the GUI supports workflows (in FeatureCollectionFileState) then
-	// remove this code.
-	if (d_file_state.is_reconstructable_workflow_using_file(file_it))
-	{
-		d_file_state.set_file_active_reconstructable(file_it, activate);
-	}
-	typedef std::vector<GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type>
-			workflow_seq_type;
-	const workflow_seq_type workflow_tags = d_file_state.get_workflow_tags(file_it);
-	// FIXME: HACK: We're hijacking the set reconstructable active button to set all
-	// the workflows active instead - we're relying on the fact that the reconstructable
-	// workflow will not be interested in this file if any other workflow is.
-	workflow_seq_type::const_iterator tags_iter = workflow_tags.begin();
-	const workflow_seq_type::const_iterator tag_end = workflow_tags.end();
-	for ( ; tags_iter != tag_end; ++tags_iter )
-	{
-		d_file_state.set_file_active_workflow(file_it, *tags_iter, activate);
-	}
-#else
-	// File will only be activated if it contains reconstructable features.
-	d_file_state.set_file_active_reconstructable(file_it, activate);
-#endif
+	// File will be activated.
+	file_ref.set_file_active(activate);
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstruction_state_for_file(
-		ManageFeatureCollectionsStateWidget *state_widget_ptr,
-		bool activate)
-{
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it =
-			state_widget_ptr->get_file_iterator();
-
-	// Activate the new reconstruction file.
-	d_file_state.set_file_active_reconstruction(file_it, activate);
-}
-
-
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::end_add_feature_collections(
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_files_added(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_begin,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_end)
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files)
 {
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_file_iter = new_files_begin;
-	for ( ; new_file_iter != new_files_end; ++new_file_iter)
+	BOOST_FOREACH(
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
+			new_files)
 	{
-		add_row(new_file_iter);
+		add_row(file_ref);
 	}
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::begin_remove_feature_collection(
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_file_about_to_be_removed(
 		GPlatesAppLogic::FeatureCollectionFileState &/*file_state*/,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator unload_file_it)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference unload_file_ref)
 {
-	const int row = find_row(unload_file_it);
+	const int row = find_row(unload_file_ref);
 
 	if (row != table_feature_collections->rowCount())
 	{
@@ -390,41 +352,22 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::begin_remove_feature_collectio
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::reconstructable_file_activation(
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_file_info_changed(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
-		bool activation)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref)
 {
-	const int row = find_row(file_it);
-
-	if (row != table_feature_collections->rowCount())
-	{
-		ManageFeatureCollectionsStateWidget *state_widget = get_state_widget(
-				table_feature_collections, row);
-		if (state_widget)
-		{
-			const bool enable_reconstructable =
-					file_state.is_reconstructable_workflow_using_file(file_it);
-			state_widget->update_reconstructable_state(activation, enable_reconstructable);
-		}
-
-		ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(
-				table_feature_collections, row);
-		if (action_widget)
-		{
-			action_widget->update_state();
-		}
-	}
+	// Row text needs to be updated.
+	update();
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::reconstruction_file_activation(
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_file_activation_changed(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
 		bool activation)
 {
-	const int row = find_row(file_it);
+	const int row = find_row(file_ref);
 
 	if (row != table_feature_collections->rowCount())
 	{
@@ -432,54 +375,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::reconstruction_file_activation
 				table_feature_collections, row);
 		if (state_widget)
 		{
-			const bool enable_reconstruction =
-					file_state.is_reconstruction_workflow_using_file(file_it);
-			state_widget->update_reconstruction_state(activation, enable_reconstruction);
-		}
-
-		ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(
-				table_feature_collections, row);
-		if (action_widget)
-		{
-			action_widget->update_state();
-		}
-	}
-}
-
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::workflow_file_activation(
-		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
-		const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &workflow_tag,
-		bool activation)
-{
-	const int row = find_row(file_it);
-
-	if (row != table_feature_collections->rowCount())
-	{
-		ManageFeatureCollectionsStateWidget *state_widget = get_state_widget(
-				table_feature_collections, row);
-		if (state_widget)
-		{
-#if 1
-			// A temporary hack to hijack the active reconstructable GUI button to activate/deactivate
-			// all the workflows (instead of activate/deactivate generation/rendering of RFGs).
-			//
-			// FIXME: When the GUI supports workflows (in FeatureCollectionFileState) then
-			// remove this code.
-			//
-			// Enable reconstructable button if the reconstructable workflow is using the file *or*
-			// if there are any other workflows using it.
-			const bool enable_reconstructable =
-					file_state.is_reconstructable_workflow_using_file(file_it) ||
-					!file_state.get_workflow_tags(file_it).empty();
-			state_widget->update_reconstructable_state(activation, enable_reconstructable);
-#else
-			const bool enable_workflow =
-					file_state.is_file_using_workflow(file_it, workflow_tag);
-			state_widget->update_workflow_state(activation, enable_workflow);
-#endif
+			state_widget->update_state(activation, true/*enable*/);
 		}
 
 		ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(
@@ -497,62 +393,44 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::connect_to_file_state_signals(
 {
 	QObject::connect(
 			&d_file_state,
-			SIGNAL(end_add_feature_collections(
+			SIGNAL(file_state_files_added(
 					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
+					const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &)),
 			this,
-			SLOT(end_add_feature_collections(
+			SLOT(handle_file_state_files_added(
 					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
+					const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &)));
 
 	QObject::connect(
 			&d_file_state,
-			SIGNAL(begin_remove_feature_collection(
+			SIGNAL(file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
 			this,
-			SLOT(begin_remove_feature_collection(
+			SLOT(handle_file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
 
 	QObject::connect(
 			&d_file_state,
-			SIGNAL(reconstructable_file_activation(
+			SIGNAL(file_state_file_info_changed(
 				GPlatesAppLogic::FeatureCollectionFileState &,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
+			this,
+			SLOT(handle_file_state_file_info_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
+
+	QObject::connect(
+			&d_file_state,
+			SIGNAL(file_state_file_activation_changed(
+				GPlatesAppLogic::FeatureCollectionFileState &,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference,
 				bool)),
 			this,
-			SLOT(reconstructable_file_activation(
+			SLOT(handle_file_state_file_activation_changed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					bool)));
-
-	QObject::connect(
-			&d_file_state,
-			SIGNAL(reconstruction_file_activation(
-				GPlatesAppLogic::FeatureCollectionFileState &,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-				bool)),
-			this,
-			SLOT(reconstruction_file_activation(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					bool)));
-
-	QObject::connect(
-			&d_file_state,
-			SIGNAL(workflow_file_activation(
-				GPlatesAppLogic::FeatureCollectionFileState &,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-				const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &,
-				bool)),
-			this,
-			SLOT(workflow_file_activation(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference,
 					bool)));
 }
 
@@ -567,9 +445,9 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::clear_rows()
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
-	const GPlatesFileIO::FileInfo &file_info = file->get_file_info();
+	const GPlatesFileIO::FileInfo &file_info = file.get_file().get_file_info();
 
 	// Obtain information from the FileInfo
 	const QFileInfo &qfileinfo = file_info.get_qfileinfo();
@@ -590,38 +468,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	QString filename_str = qfileinfo.fileName();
 	QString filepath_str = qfileinfo.path();
 	QString format_str = get_format_for_file(qfileinfo);
-#if 1
-	// A temporary hack to hijack the active reconstructable GUI button to activate/deactivate
-	// all the workflows (instead of activate/deactivate generation/rendering of RFGs).
-	//
-	// FIXME: When the GUI supports workflows (in FeatureCollectionFileState) then
-	// remove this code.
-	//
-	// Check the reconstructable button if the file is activated in the reconstructable workflow
-	// *or* if it is activated with any other workflow.
-	bool active_reconstructable = d_file_state.is_reconstructable_workflow_using_file(file);
-	typedef std::vector<GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type>
-			workflow_tag_seq_type;
-	const workflow_tag_seq_type workflow_tags = d_file_state.get_workflow_tags(file);
-	workflow_tag_seq_type::const_iterator workflow_tags_iter = workflow_tags.begin();
-	workflow_tag_seq_type::const_iterator workflow_tags_end = workflow_tags.end();
-	for ( ; workflow_tags_iter != workflow_tags_end; ++workflow_tags_iter)
-	{
-		if (d_file_state.is_file_active_workflow(file, *workflow_tags_iter))
-		{
-			active_reconstructable = true;
-		}
-	}
-	// Enable reconstructable button if the reconstructable workflow is using the file *or*
-	// if there are any other workflows using it.
-	const bool enable_reconstructable = d_file_state.is_reconstructable_workflow_using_file(file) ||
-			!d_file_state.get_workflow_tags(file).empty();
-#else
-	const bool active_reconstructable = d_file_state.is_file_active_reconstructable(file);
-	const bool enable_reconstructable = d_file_state.is_reconstructable_workflow_using_file(file);
-#endif
-	const bool active_reconstruction = d_file_state.is_file_active_reconstruction(file);
-	const bool enable_reconstruction = d_file_state.is_reconstruction_workflow_using_file(file);
+	const bool active = file.is_file_active();
 
 	// Add blank row.
 	int row = table_feature_collections->rowCount();
@@ -641,9 +488,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	// Add layer type / in use status.
 	ManageFeatureCollectionsStateWidget *state_widget_ptr =
 			new ManageFeatureCollectionsStateWidget(*this, file, 
-					active_reconstructable, active_reconstruction,
-					enable_reconstructable, enable_reconstruction,
-					this);
+					active, true/*enable*/, this);
 	table_feature_collections->setCellWidget(row, ColumnNames::LAYER_TYPES, state_widget_ptr);
 	
 	// Add action buttons widget.
@@ -679,9 +524,9 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::find_row(
 
 int
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::find_row(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref)
 {
-	// Look for the action widget that references 'file_it'.
+	// Look for the action widget that references 'file_ref'.
 	int row = 0;
 	int end = table_feature_collections->rowCount();
 	for ( ; row < end; ++row)
@@ -689,7 +534,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::find_row(
 		ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(
 				table_feature_collections, row);
 		if (action_widget &&
-				action_widget->get_file_info_iterator() == file_it)
+				action_widget->get_file_reference() == file_ref)
 		{
 			return row;
 		}
@@ -777,17 +622,19 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_row_background_colour(
 	static const QBrush bg_unsaved(bg_colour_unsaved); // Red raised to same lightness as below.
 	static const QBrush bg_new_fc(bg_colour_new_feature_collection);	// Ubuntu Light Orange Text Highlight
 
-	// Get the file_iterator corresponding to this table row.
+	// Get the file_reference corresponding to this table row.
 	ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(
 			table_feature_collections, row);
 	if ( ! action_widget) {
 		return;
 	}
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it = action_widget->get_file_info_iterator();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref =
+			action_widget->get_file_reference();
 
 	// Get the FileInfo and Feature Collection associated with that file.
-	GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref = file_it->get_const_feature_collection();
-	const GPlatesFileIO::FileInfo &file_info = file_it->get_file_info();
+	GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref =
+			file_ref.get_file().get_feature_collection();
+	const GPlatesFileIO::FileInfo &file_info = file_ref.get_file().get_file_info();
 	if (feature_collection_ref.is_valid()) {
 		bool has_unsaved_changes = feature_collection_ref->contains_unsaved_changes();
 		bool has_no_associated_file = ! GPlatesFileIO::file_exists(file_info);

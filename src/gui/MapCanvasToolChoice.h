@@ -32,6 +32,12 @@
 #include "MapCanvasTool.h"
 #include "FeatureTableModel.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
@@ -101,7 +107,8 @@ namespace GPlatesGui
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
-				GPlatesGui::MapTransform &map_transform_);
+				GPlatesGui::MapTransform &map_transform_,
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		~MapCanvasToolChoice()
 		{  }

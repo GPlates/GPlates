@@ -24,6 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QListWidget>
 #include <QMessageBox>
 
@@ -288,10 +289,10 @@ GPlatesQtWidgets::CreateVGPDialog::handle_create()
 	try
 	{
 		// Get the FeatureCollection the user has selected.
-		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_iterator, bool> collection_file_iter =
-			d_choose_feature_collection_widget->get_file_iterator();
+		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> collection_file_iter =
+			d_choose_feature_collection_widget->get_file_reference();
 		GPlatesModel::FeatureCollectionHandle::weak_ref collection =
-			(collection_file_iter.first)->get_feature_collection();
+			(collection_file_iter.first).get_file().get_feature_collection();
 
 		double vgp_lat = spinbox_pole_lat->value();
 		double vgp_lon = spinbox_pole_lon->value();
@@ -326,14 +327,6 @@ GPlatesQtWidgets::CreateVGPDialog::handle_create()
 		}
 		
 		append_a95_to_feature(feature,spinbox_A95->value());
-
-		// We've just modified the feature collection so let the feature collection file state
-		// know this so it can reclassify it.
-		// TODO: This is not ideal since we have to manually call this whenever a feature in
-		// the feature collection is modified - remove this call when feature/feature-collection
-		// callbacks have been implemented and then utilised inside FeatureCollectionFileState to
-		// listen on feature collection changes.
-		d_file_state.reclassify_feature_collection(collection_file_iter.first);
 
 		emit feature_created(feature);
 	

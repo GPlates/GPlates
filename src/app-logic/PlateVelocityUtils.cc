@@ -30,10 +30,15 @@
 #include "PlateVelocityUtils.h"
 
 #include "AppLogicUtils.h"
+#include "ReconstructionTree.h"
+#include "ResolvedTopologicalNetwork.h"
 #include "TopologyUtils.h"
 
 #include "feature-visitors/ComputationalMeshSolver.h"
 #include "feature-visitors/PropertyValueFinder.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "maths/CalculateVelocity.h"
 
@@ -42,8 +47,6 @@
 #include "model/Model.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
-#include "model/ReconstructionTree.h"
-#include "model/ResolvedTopologicalNetwork.h"
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GpmlPlateId.h"
@@ -109,10 +112,8 @@ namespace
 	{
 	public:
 		AddVelocityFieldFeatures(
-				GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
-				GPlatesModel::ModelInterface &model) :
-			d_velocity_field_feature_collection(velocity_field_feature_collection),
-			d_model(model)
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection) :
+			d_velocity_field_feature_collection(velocity_field_feature_collection)
 		{  }
 
 
@@ -161,8 +162,7 @@ namespace
 		}
 
 	private:
-		GPlatesModel::FeatureCollectionHandle::weak_ref &d_velocity_field_feature_collection;
-		GPlatesModel::ModelInterface &d_model;
+		GPlatesModel::FeatureCollectionHandle::weak_ref d_velocity_field_feature_collection;
 		GPlatesModel::FeatureHandle::weak_ref d_velocity_field_feature;
 
 
@@ -211,14 +211,14 @@ namespace
 	{
 	public:
 		InfoForVelocityCalculations(
-				const GPlatesModel::ReconstructionTree &reconstruction_tree_1_,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree_2_) :
+				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree_1_,
+				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree_2_) :
 			reconstruction_tree_1(&reconstruction_tree_1_),
 			reconstruction_tree_2(&reconstruction_tree_2_)
 		{  }
 
-		const GPlatesModel::ReconstructionTree *reconstruction_tree_1;
-		const GPlatesModel::ReconstructionTree *reconstruction_tree_2;
+		const GPlatesAppLogic::ReconstructionTree *reconstruction_tree_1;
+		const GPlatesAppLogic::ReconstructionTree *reconstruction_tree_2;
 	};
 
 
@@ -284,45 +284,40 @@ GPlatesAppLogic::PlateVelocityUtils::detect_velocity_mesh_nodes(
 }
 
 
-GPlatesModel::FeatureCollectionHandleUnloader::shared_ref
+GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes,
-		GPlatesModel::ModelInterface &model)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes)
 {
-	if (!feature_collection_with_mesh_nodes.is_valid())
-	{
-		return GPlatesModel::FeatureCollectionHandleUnloader::create(
-				GPlatesModel::FeatureCollectionHandle::weak_ref());
-	}
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			feature_collection_with_mesh_nodes.is_valid(),
+			GPLATES_ASSERTION_SOURCE);
 
 	// Create a new feature collection to store our velocity field features.
-	GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
-			GPlatesModel::FeatureCollectionHandle::create(model->root());
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type velocity_field_feature_collection =
+			GPlatesModel::FeatureCollectionHandle::create();
 
-	const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref
-			velocity_field_feature_collection_unloader =
-					GPlatesModel::FeatureCollectionHandleUnloader::create(
-							velocity_field_feature_collection);
+	// Create a reference to the new feature collection as that's needed to add features to it.
+	GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection_ref =
+			velocity_field_feature_collection->reference();
 
 	// A visitor to look for mesh node features in the original feature collection
 	// and create corresponding velocity field features in the new feature collection.
-	AddVelocityFieldFeatures add_velocity_field_features(
-			velocity_field_feature_collection, model);
+	AddVelocityFieldFeatures add_velocity_field_features(velocity_field_feature_collection_ref);
 
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 			feature_collection_with_mesh_nodes, add_velocity_field_features);
 
 	// Return the newly created feature collection.
-	return velocity_field_feature_collection_unloader;
+	return velocity_field_feature_collection;
 }
 
 
 void
 GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
-		GPlatesModel::Reconstruction &reconstruction,
-		GPlatesModel::ReconstructionTree &reconstruction_tree_1,
-		GPlatesModel::ReconstructionTree &reconstruction_tree_2,
+		ReconstructionGeometryCollection &reconstruction_geometry_collection,
+		ReconstructionTree &reconstruction_tree_1,
+		ReconstructionTree &reconstruction_tree_2,
 		const double &reconstruction_time_1,
 		const double &reconstruction_time_2,
 		GPlatesModel::integer_plate_id_type reconstruction_root,
@@ -334,7 +329,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 	// Later the velocity solver will query the boundaries at various points and
 	// then calculate velocities using the best matching boundary.
 	const TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type resolved_boundaries_query =
-			TopologyUtils::query_resolved_topologies_for_geometry_partitioning(reconstruction);
+			TopologyUtils::query_resolved_topologies_for_geometry_partitioning(reconstruction_geometry_collection);
 
 	// Get the resolved topological networks in the reconstruction.
 	// This effectively goes through all the node points in all topological networks
@@ -355,7 +350,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 	const TopologyUtils::network_interpolation_query_callback_type callback_function =
 			boost::lambda::bind(
 					// The member function that this callback will delegate to
-					&GPlatesModel::ResolvedTopologicalNetworkImpl::set_network_velocities,
+					&ResolvedTopologicalNetwork::set_network_velocities,
 					boost::lambda::_1/*the ResolvedTopologicalNetworkImpl object to set it on*/,
 					boost::lambda::bind(
 							// Construct a TopologicalNetworkVelocities object from the query
@@ -365,7 +360,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 	// Fill the topological network with velocities data at all the network points.
 	const TopologyUtils::resolved_networks_for_interpolation_query_type resolved_networks_query =
 			TopologyUtils::query_resolved_topology_networks_for_interpolation(
-					reconstruction,
+					reconstruction_geometry_collection,
 					&calc_velocity_vector_for_interpolation,
 					// Two scalars per velocity...
 					NUM_TOPOLOGICAL_NETWORK_VELOCITY_COMPONENTS,
@@ -377,7 +372,6 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 	// Visit the feature collections and fill computational meshes with 
 	// nice juicy velocity data
 	GPlatesFeatureVisitors::ComputationalMeshSolver velocity_solver( 
-			reconstruction,
 			reconstruction_time_1,
 			reconstruction_root,
 			reconstruction_tree_1,
@@ -397,8 +391,8 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 GPlatesMaths::Vector3D
 GPlatesAppLogic::PlateVelocityUtils::calc_velocity_vector(
 		const GPlatesMaths::PointOnSphere &point,
-		const GPlatesModel::ReconstructionTree &reconstruction_tree1,
-		const GPlatesModel::ReconstructionTree &reconstruction_tree2,
+		const ReconstructionTree &reconstruction_tree1,
+		const ReconstructionTree &reconstruction_tree2,
 		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id)
 {
 	// Get the finite rotation for this plate id.
@@ -415,8 +409,8 @@ GPlatesAppLogic::PlateVelocityUtils::calc_velocity_vector(
 GPlatesMaths::VectorColatitudeLongitude
 GPlatesAppLogic::PlateVelocityUtils::calc_velocity_colat_lon(
 		const GPlatesMaths::PointOnSphere &point,
-		const GPlatesModel::ReconstructionTree &reconstruction_tree1,
-		const GPlatesModel::ReconstructionTree &reconstruction_tree2,
+		const ReconstructionTree &reconstruction_tree1,
+		const ReconstructionTree &reconstruction_tree2,
 		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id)
 {
 	const GPlatesMaths::Vector3D vector_xyz = calc_velocity_vector(

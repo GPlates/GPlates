@@ -150,18 +150,18 @@ namespace GPlatesQtWidgets
 		public:
 			//! Files are disabled by default - user will need to enable them.
 			FileState(
-					GPlatesFileIO::File *file_) :
-				file(file_),
+					const GPlatesFileIO::File::Reference &file_) :
+				file(&file_),
 				enabled(false)
 			{  }
 
-			GPlatesFileIO::File *file;
+				const GPlatesFileIO::File::Reference *file;
 			bool enabled;
 		};
 		typedef std::vector<FileState> file_state_seq_type;
 
 		//! Typedef for a sequence of file pointers.
-		typedef std::vector<GPlatesFileIO::File *> file_ptr_seq_type;
+		typedef std::vector<const GPlatesFileIO::File::Reference *> file_ptr_seq_type;
 
 		//! Typedef for a sequence of feature collection weak refs.
 		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
@@ -275,7 +275,7 @@ namespace GPlatesQtWidgets
 		void
 		add_row(
 				FileStateCollection &file_state_collection,
-				GPlatesFileIO::File *file);
+				const GPlatesFileIO::File::Reference &file);
 
 		void
 		react_cell_changed(
@@ -292,7 +292,7 @@ namespace GPlatesQtWidgets
 				FileStateCollection &file_state_collection);
 
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-		get_active_reconstruction_files();
+		get_default_reconstruction_feature_collections();
 
 		file_ptr_seq_type
 		get_loaded_files();

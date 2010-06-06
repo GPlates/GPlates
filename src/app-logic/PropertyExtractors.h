@@ -37,7 +37,7 @@
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureType.h"
-#include "model/ReconstructionGeometry.h"
+#include "app-logic/ReconstructionGeometry.h"
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -61,7 +61,7 @@ namespace GPlatesAppLogic
 
 		const boost::optional<return_type>
 		operator()(
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 		{
 			typedef typename Adaptee::return_type adaptee_return_type;
 			boost::optional<adaptee_return_type> result = d_adaptee(reconstruction_geometry);
@@ -91,7 +91,7 @@ namespace GPlatesAppLogic
 
 		const boost::optional<return_type>
 		operator()(
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 	};
 
 	/**
@@ -110,7 +110,7 @@ namespace GPlatesAppLogic
 
 		const boost::optional<return_type>
 		operator()(
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 	
 	private:
 
@@ -128,7 +128,7 @@ namespace GPlatesAppLogic
 
 		const boost::optional<return_type>
 		operator()(
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 	};
 }
 

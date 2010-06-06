@@ -33,6 +33,8 @@
 #include <QFont>
 
 #include "RenderedGeometry.h"
+
+#include "app-logic/ReconstructionGeometry.h"
 #include "gui/Colour.h"
 #include "gui/ColourProxy.h"
 #include "maths/GeometryOnSphere.h"
@@ -41,7 +43,6 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/SmallCircle.h"
-#include "model/ReconstructionGeometry.h"
 
 namespace GPlatesMaths
 {
@@ -235,7 +236,7 @@ namespace GPlatesViewOperations
 		 */
 		RenderedGeometry
 		create_rendered_reconstruction_geometry(
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geom,
 				RenderedGeometry rendered_geom);
 	}
 
@@ -414,7 +415,7 @@ namespace GPlatesViewOperations
 	 */
 	RenderedGeometry
 	create_rendered_reconstruction_geometry(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geom,
 			RenderedGeometry rendered_geom);
 }
 

@@ -28,7 +28,7 @@
 
 #include <vector>
 
-#include "model/ReconstructionGeometry.h"
+#include "app-logic/ReconstructionGeometry.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -67,7 +67,7 @@ namespace GPlatesGui
 		/**
 		 * The type contained within the sequence.
 		 */
-		typedef GPlatesModel::ReconstructionGeometry::non_null_intrusive_ptr> elememt_type;
+		typedef GPlatesAppLogic::ReconstructionGeometry::non_null_intrusive_ptr> elememt_type;
 
 		/**
 		 * The type used to contain the sequence of feature weak-refs.

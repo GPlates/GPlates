@@ -34,9 +34,9 @@
 #include "ShapefileFormatReconstructedFeatureGeometryExport.h"
 #include "ShapefileGeometryExporter.h"
 
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsDouble.h"
@@ -130,7 +130,7 @@ namespace
 			file_iter != referenced_files.end();
 			++file_iter, ++file_count)
 		{
-			const GPlatesFileIO::File *file = *file_iter;
+			const GPlatesFileIO::File::Reference *file = *file_iter;
 
 			QString count_string = QString("%1").arg(file_count);
 			QString field_name = file_string + count_string;
@@ -195,7 +195,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 			rfg_iter != feature_geom_group.recon_feature_geoms.end();
 			++rfg_iter)
 		{
-			const GPlatesModel::ReconstructedFeatureGeometry *rfg = *rfg_iter;
+			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 			rfg->geometry()->accept_visitor(finder);
 		}
 	}
@@ -236,7 +236,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 			rfg_iter != feature_geom_group.recon_feature_geoms.end();
 			++rfg_iter)
 		{
-			const GPlatesModel::ReconstructedFeatureGeometry *rfg = *rfg_iter;
+			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 
 			// Write the reconstructed geometry.
 			geom_exporter.export_geometry(rfg->geometry(),kvd); 

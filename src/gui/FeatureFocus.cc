@@ -28,9 +28,45 @@
 #include "FeatureFocus.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/ReconstructGraph.h"
+#include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionGeometryFinder.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
-#include "model/Reconstruction.h"
-#include "model/ReconstructionGeometryFinder.h"
+
+#include "model/FeatureHandle.h"
+#include "model/WeakReferenceCallback.h"
+
+
+namespace
+{
+	/**
+	 * Feature handle weak ref callback to unset the focused feature
+	 * if it gets deactivated in the model.
+	 */
+	class FocusedFeatureDeactivatedCallback :
+			public GPlatesModel::WeakReferenceCallback<GPlatesModel::FeatureHandle>
+	{
+	public:
+
+		explicit
+		FocusedFeatureDeactivatedCallback(
+				GPlatesGui::FeatureFocus &feature_focus) :
+			d_feature_focus(feature_focus)
+		{
+		}
+
+		void
+		publisher_deactivated(
+				const deactivated_event_type &)
+		{
+			d_feature_focus.unset_focus();
+		}
+
+	private:
+
+		GPlatesGui::FeatureFocus &d_feature_focus;
+	};
+}
 
 
 GPlatesGui::FeatureFocus::FeatureFocus(
@@ -43,56 +79,20 @@ GPlatesGui::FeatureFocus::FeatureFocus(
 			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 			this,
 			SLOT(handle_reconstruction(GPlatesAppLogic::ApplicationState &)));
-
-	// Get notified whenever a file is being removed or modified.
-	QObject::connect(
-			&application_state.get_feature_collection_file_state(),
-			SIGNAL(begin_remove_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
-			this,
-			SLOT(modifying_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
-	QObject::connect(
-			&application_state.get_feature_collection_file_state(),
-			SIGNAL(begin_reset_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
-			this,
-			SLOT(modifying_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
-	QObject::connect(
-			&application_state.get_feature_collection_file_state(),
-			SIGNAL(begin_reclassify_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
-			this,
-			SLOT(modifying_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
 }
 
 
 void
 GPlatesGui::FeatureFocus::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
-		GPlatesModel::ReconstructionGeometry::non_null_ptr_type new_associated_rg)
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type new_associated_rg)
 {
-	set_focus(new_feature_ref, new_associated_rg.get());
-}
-
-
-void
-GPlatesGui::FeatureFocus::set_focus(
-		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
-		GPlatesModel::ReconstructionGeometry *new_associated_rg)
-{
-	if ( ! new_feature_ref.is_valid()) {
+	if ( ! new_feature_ref.is_valid())
+	{
 		unset_focus();
 		return;
 	}
+
 	if (d_focused_feature == new_feature_ref &&
 		d_associated_reconstruction_geometry == new_associated_rg)
 	{
@@ -101,19 +101,21 @@ GPlatesGui::FeatureFocus::set_focus(
 	}
 
 	d_focused_feature = new_feature_ref;
-	d_associated_reconstruction_geometry = new_associated_rg;
+	// Attach callback to feature handle weak-ref so we can unset the focus when
+	// the feature is deactivated in the model.
+	d_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
+
+	d_associated_reconstruction_geometry = new_associated_rg.get();
 
 	// See if the new_associated_rg has a geometry property.
-	GPlatesModel::FeatureHandle::iterator new_geometry_property;
-	if (new_associated_rg)
-	{
-		GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
-				new_associated_rg, new_geometry_property);
-	}
+	boost::optional<GPlatesModel::FeatureHandle::iterator> new_geometry_property =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
+					new_associated_rg);
 
 	// Either way we set the properties iterator - it'll either get set to
 	// the default value (invalid) or to the found properties iterator.
-	d_associated_geometry_property = new_geometry_property;
+	d_associated_geometry_property = new_geometry_property
+			? new_geometry_property.get() : GPlatesModel::FeatureHandle::iterator();
 
 	emit focus_changed(*this);
 }
@@ -124,10 +126,12 @@ GPlatesGui::FeatureFocus::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
 		GPlatesModel::FeatureHandle::iterator new_associated_property)
 {
-	if ( ! new_feature_ref.is_valid()) {
+	if ( ! new_feature_ref.is_valid())
+	{
 		unset_focus();
 		return;
 	}
+
 	if (d_focused_feature == new_feature_ref &&
 		d_associated_geometry_property == new_associated_property)
 	{
@@ -136,6 +140,10 @@ GPlatesGui::FeatureFocus::set_focus(
 	}
 
 	d_focused_feature = new_feature_ref;
+	// Attach callback to feature handle weak-ref so we can unset the focus when
+	// the feature is deactivated in the model.
+	d_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
+
 	d_associated_reconstruction_geometry = NULL;
 	d_associated_geometry_property = new_associated_property;
 
@@ -160,60 +168,52 @@ GPlatesGui::FeatureFocus::unset_focus()
 
 void
 GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry(
-		GPlatesModel::Reconstruction &reconstruction)
+		const GPlatesAppLogic::Reconstruction &reconstruction)
 {
-	if ( !is_valid() || !associated_geometry_property().is_still_valid() ) {
-		// There is either no focused feature, or no geometry property associated with the
-		// most recent RFG of the focused feature.
+	if ( !d_focused_feature.is_valid() ||
+		!d_associated_geometry_property.is_still_valid())
+	{
+		// There is either no focused feature, or no geometry property
+		// associated with the most recent ReconstructionGeometry of the focused feature.
 		// Either way, there's nothing for us to do here.
-		// Note that it's ok to have no RFG though - we can still find a new RFG
-		// if we have a geometry property.
 		return;
 	}
 
-	// Iterate through the RFGs (belonging to 'reconstruction')
-	// that are observing the focused feature.
-	GPlatesModel::ReconstructionGeometryFinder rgFinder(&reconstruction);
-	rgFinder.find_rgs_of_feature(d_focused_feature);
+	// Find the new associated ReconstructionGeometry for the currently-focused feature (if any).
+	//
+	// When the reconstruction is re-calculated, it will be populated with all-new
+	// RGs.  The old RGs will be meaningless (but due to the power of intrusive-ptrs,
+	// the associated RG currently referenced by this class will still exist).
+	boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
+			new_associated_rg =
+					GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
+							d_focused_feature,
+							d_associated_geometry_property,
+							*reconstruction.get_default_reconstruction_tree());
 
-	GPlatesModel::ReconstructionGeometryFinder::rg_container_type::const_iterator rgIter;
-	for (rgIter = rgFinder.found_rgs_begin();
-		rgIter != rgFinder.found_rgs_end();
-		++rgIter)
+	if (!new_associated_rg)
 	{
-		GPlatesModel::ReconstructionGeometry *new_rg = rgIter->get();
+		// We looked at the relevant reconstruction geometries in the new reconstruction, without
+		// finding a match.  Thus, it appears that there is no RG in the new reconstruction which
+		// corresponds to the current associated geometry property and reconstruction tree.
+		//
+		// When there is no RG found, we lose the associated RG.  This will be apparent to the user
+		// if he increments the reconstruction time to a time when there is no RG (meaning that the
+		// associated RG will become NULL). However the geometry property and reconstruction tree
+		// used by the RG will still be non-null so when the user then steps back one increment to
+		// where he was before, a new RG will be found that uses the same geometry property and
+		// so the RG will be non-null once again.
+		d_associated_reconstruction_geometry = NULL;
 
-		// See if the new ReconstructionGeometry has a geometry property.
-		GPlatesModel::FeatureHandle::iterator new_geometry_property;
-		if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
-				new_rg, new_geometry_property))
-		{
-			continue;
-		}
-
-		if (new_geometry_property == d_associated_geometry_property)
-		{
-			// We have a match!
-			d_associated_reconstruction_geometry = new_rg;
-			return;
-		}
+		// NOTE: We don't change the associated geometry property since
+		// the focused feature hasn't changed and hence it's still applicable.
+		// We'll be using the geometry property to find the associated RG when/if one comes
+		// back into existence.
+		return;
 	}
 
-	// Otherwise, looked at all reconstruction geometries in the new reconstruction, without
-	// finding a match.  Thus, it appears that there is no RG in the new reconstruction which
-	// corresponds to the current associated geometry property.
-	//
-	// When there is no RG found, we lose the associated RG.  This will be apparent to the user
-	// if he increments the reconstruction time to a time when there is no RG (meaning that the
-	// associated RG will become NULL). However the geometry property used by the RG will
-	// still be non-null so when the user then steps back one increment to where he was before
-	// a new RG will be found that uses the same geometry property and so the RG will be
-	// non-null once again.
-	d_associated_reconstruction_geometry = NULL;
-
-	// NOTE: We don't change the associated geometry property since the focused feature
-	// hasn't changed and hence it's still applicable. We'll be using the geometry property
-	// to find the associated RG when/if one comes back into existence.
+	// Assign the new associated reconstruction geometry.
+	d_associated_reconstruction_geometry = new_associated_rg.get().get();
 }
 
 
@@ -258,33 +258,4 @@ GPlatesGui::FeatureFocus::handle_reconstruction(
 	// A new ReconstructionGeometry has been found so we should
 	// emit a signal in case clients need to know this.
 	emit focus_changed(*this);
-}
-
-
-void
-GPlatesGui::FeatureFocus::modifying_feature_collection(
-		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file)
-{
-	// FIXME: This is a temporary hack to stop highlighting the focused feature if
-	// it's in the feature collection we're about to unload or modify (such as reload).
-	if (!is_valid())
-	{
-		return;
-	}
-
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-			file->get_feature_collection();
-
-	GPlatesModel::FeatureCollectionHandle::iterator feature_iter;
-	for (feature_iter = feature_collection->begin();
-		feature_iter != feature_collection->end();
-		++feature_iter)
-	{
-		if ((*feature_iter).get() == d_focused_feature.handle_ptr())
-		{
-			unset_focus();
-			break;
-		}
-	}
 }

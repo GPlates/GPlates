@@ -28,41 +28,22 @@
 #define GPLATES_APP_LOGIC_LAYERTASK_H
 
 #include <map>
+#include <utility>
 #include <vector>
-#include <boost/tuple/tuple.hpp>
-#include <boost/variant.hpp>
+#include <boost/mpl/assert.hpp>
+#include <boost/mpl/contains.hpp>
+#include <boost/optional.hpp>
+#include <QString>
 
-#include "ReconstructGraph.h"
+#include "Layer.h"
+#include "LayerTaskDataType.h"
+#include "ReconstructionTree.h"
 
-#include "model/FeatureCollectionHandle.h"
-#include "model/Reconstruction.h"
-#include "model/ReconstructionTree.h"
+#include "model/types.h"
 
 
 namespace GPlatesAppLogic
 {
-	/**
-	 * The data type that is input to or output from a layer.
-	 *
-	 * The three possible types are:
-	 * 1) feature collection - typically used as the first level of input
-	 *    to layers in the graph,
-	 * 2) reconstruction geometries - typically output by layers and can be used
-	 *    as inputs to other connected layers,
-	 * 3) reconstruction tree - typically output by a layer that converts rotation
-	 *    features (total reconstruction sequences) to a rotation tree that is used
-	 *    as input to other layers for reconstruction purposes.
-	 *
-	 * NOTE: Keep the feature collection weak ref as the first bounded type because
-	 * it is default-constructable (boost::variant default-constructs its first bounded type).
-	 */
-	typedef boost::variant<
-			GPlatesModel::FeatureCollectionHandle::weak_ref,
-			GPlatesModel::Reconstruction::non_null_ptr_type,
-			GPlatesModel::ReconstructionTree::non_null_ptr_type
-	> layer_data_type;
-
-
 	/**
 	 * Abstract interface for processing input feature collections, reconstructed geometries
 	 * and/or reconstruction trees into a single output.
@@ -75,8 +56,8 @@ namespace GPlatesAppLogic
 		 * data objects belonging to the channel.
 		 */
 		typedef std::multimap<
-				ReconstructGraph::layer_input_channel_name_type,
-				const layer_data_type *> input_data_type;
+				QString,
+				const layer_task_data_type *> input_data_type;
 
 
 		virtual
@@ -85,40 +66,93 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the channel name used by all layer tasks that require an input reconstruction tree.
+		 *
+		 * This is in the base layer task class so all layer tasks can access it.
+		 */
+		static
+		const char *
+		get_reconstruction_tree_channel_name()
+		{
+			static const char *RECONSTRUCTION_TREE_CHANNEL_NAME = "reconstruction tree";
+			return RECONSTRUCTION_TREE_CHANNEL_NAME;
+		}
+
+
+		/**
+		 * Returns the name and description of this layer task.
+		 *
+		 * This is useful for display to the user so they know what this layer does.
+		 */
+		virtual
+		std::pair<QString, QString>
+		get_layer_name_and_description() const = 0;
+
+
+		/**
 		 * Returns the input channels expected by this task and the data types and arity
 		 * for each channel.
 		 */
 		virtual
-		std::vector<ReconstructGraph::input_channel_definition_type>
+		std::vector<Layer::input_channel_definition_type>
 		get_input_channel_definitions() const = 0;
+
+
+		/**
+		 * Returns the main input feature collection channel used by this layer task.
+		 *
+		 * This is the channel containing the feature collection(s) used to determine the
+		 * layer tasks that are applicable to this layer.
+		 *
+		 * This can be used by the GUI to list available layer tasks to the user.
+		 *
+		 * NOTE: The data type of the input channel, as returned by @a get_input_channel_definitions,
+		 * must be Layer::INPUT_FEATURE_COLLECTION_DATA.
+		 */
+		virtual
+		QString
+		get_main_input_feature_collection_channel() const = 0;
 
 
 		/**
 		 * Returns the data type that this task outputs.
 		 */
 		virtual
-		ReconstructGraph::DataType
+		Layer::LayerOutputDataType
 		get_output_definition() const = 0;
 
+
+		/**
+		 * Returns true if this layer task is a topological layer task.
+		 *
+		 * A topological layer task is one that processes topological features which
+		 * in turn reference reconstructed features (possibly from other layers that aren't
+		 * connected to the topological layer).
+		 */
+		virtual
+		bool
+		is_topological_layer_task() const = 0;
+		
 
 		/**
 		 * Execute this task by processing the specified input data and storing
 		 * the result in the specified output data.
 		 *
-		 * If the output is not written to, for example because the required inputs
-		 * are not present, then returns false.
+		 * NOTE: If processing cannot succeed, for example because the required inputs
+		 * are not present, then false.
 		 */
 		virtual
-		bool
+		boost::optional<layer_task_data_type>
 		process(
 				const input_data_type &input_data,
-				layer_data_type &output_data,
-				const double &reconstruction_time) = 0;
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchored_plate_id,
+				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree) = 0;
 
 	protected:
 		/**
 		 * A utility function for derived classes to extract a specific bounded type
-		 * from the variant @a layer_data_type objects in a channel into a container
+		 * from the variant @a layer_task_data_type objects in a channel into a container
 		 * of the type ContainerType.
 		 *
 		 * The variant bounded type to be extracted is determined by the container's element type.
@@ -133,7 +167,7 @@ namespace GPlatesAppLogic
 		void
 		extract_input_channel_data(
 				ContainerType &input_channel_data,
-				const ReconstructGraph::layer_input_channel_name_type &input_channel_name,
+				const QString &input_channel_name,
 				const input_data_type &input_data)
 		{
 			// Get range of data objects assigned to 'input_channel_name'.
@@ -145,10 +179,19 @@ namespace GPlatesAppLogic
 			const input_data_type::const_iterator data_end = input_chanel_name_range.second;
 			for ( ; data_iter != data_end; ++data_iter)
 			{
-				const layer_data_type &layer_data = *data_iter->second;
+				const layer_task_data_type &layer_data = *data_iter->second;
 
 				// The type to be stored in the caller's container.
 				typedef typename ContainerType::value_type variant_bounded_type;
+
+				// Compile time error to make sure that the type 'variant_bounded_type'
+				// is one of the bounded types in the 'layer_task_data_type' variant.
+				//
+				// If you get this compile error then make sure the type stored in your container
+				// (in 'input_channel_data') is one of the types in 'layer_task_data_types'.
+#ifdef WIN32 // Old-style cast error in gcc...
+				BOOST_MPL_ASSERT((boost::mpl::contains<layer_task_data_types, variant_bounded_type>));
+#endif
 
 				// Extract the specified bounded type from the variant.
 				const variant_bounded_type *variant_bounded_data =
@@ -163,6 +206,19 @@ namespace GPlatesAppLogic
 				}
 			}
 		}
+
+
+		/**
+		 * Extracts a reconstruction tree from the input channel
+		 * 'get_reconstruction_tree_channel_name()' if there is one,
+		 * otherwise returns @a default_reconstruction_tree.
+		 *
+		 * Returns false if more than one reconstruction is tree found in the channel.
+		 */
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type>
+		extract_reconstruction_tree(
+				const input_data_type &input_data,
+				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
 	};
 }
 

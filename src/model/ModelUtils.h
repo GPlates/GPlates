@@ -41,8 +41,6 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/TemplateTypeParameterType.h"
 
-#include "app-logic/FeatureCollectionFileState.h"
-
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/InvalidParametersException.h"
 

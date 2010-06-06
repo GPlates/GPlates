@@ -97,15 +97,17 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	//we need to reverse reconstruct the inserted point to present day first
 	if (d_oriented_pos_on_globe)
 	{
-		const GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
-		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-				d_feature_focus->associated_reconstruction_geometry(), rfg))
+		boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+						const GPlatesAppLogic::ReconstructedFeatureGeometry>(
+								d_feature_focus->associated_reconstruction_geometry());
+		if (rfg)
 		{
 			GPlatesMaths::PointOnSphere reconstructed_point =
 			GPlatesAppLogic::ReconstructUtils::reconstruct(
 					*d_oriented_pos_on_globe,
-					*rfg->reconstruction_plate_id(),
-					d_view_state->get_application_state().get_current_reconstruction().reconstruction_tree(),
+					*rfg.get()->reconstruction_plate_id(),
+					*rfg.get()->reconstruction_tree(),
 					true);
 		
 			points.insert(
@@ -203,10 +205,21 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 						points.end(),
 						GPlatesViewOperations::GeometryType::POLYLINE)));
 
+	// Disabling setting of focus for now since we now need to know the reconstruction tree
+	// used to reconstruct the original feature - this is doable - but I wonder if we really
+	// need to set focus anyway (it's kind of arbitrary which geometry we're setting focus
+	// on anyway - probably should leave it up to the user to explicitly set focus by
+	// clicking on geometry. In any case they probably only split a feature once.
+	// For now let's only set focus when the user sets focus.
+#if 1
+	d_feature_focus->unset_focus();
+#else
 	d_feature_focus->set_focus(
 			*d_old_feature,
 			*GPlatesFeatureVisitors::find_first_geometry_property(
 					*d_old_feature));
+#endif
+
 	d_feature_focus->announce_modification_of_focused_feature();
 }
 
@@ -237,11 +250,19 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 			*GPlatesFeatureVisitors::find_first_geometry_property(
 					*d_old_feature);
 	
-	GPlatesGui::FeatureFocus * focus=d_feature_focus;
-	focus->set_focus(
-			*d_old_feature,
-			it);
-	focus->announce_modification_of_focused_feature();
+	// Disabling setting of focus for now since we now need to know the reconstruction tree
+	// used to reconstruct the original feature - this is doable - but I wonder if we really
+	// need to set focus anyway (it's kind of arbitrary which geometry we're setting focus
+	// on anyway - probably should leave it up to the user to explicitly set focus by
+	// clicking on geometry. In any case they probably only split a feature once.
+	// For now let's only set focus when the user sets focus.
+#if 1
+	d_feature_focus->unset_focus();
+#else
+	d_feature_focus->set_focus(*d_old_feature, it);
+#endif
+
+	d_feature_focus->announce_modification_of_focused_feature();
 #endif
 
 #if 0

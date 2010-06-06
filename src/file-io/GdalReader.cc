@@ -28,7 +28,7 @@
 
 #include <algorithm>
 #include <iostream>
-#include <boost/lambda/bind.hpp>
+#include <boost/bind.hpp>
 
 // Use this header instead of <cmath> if you want to use 'std::isnan'.
 #include <cmath_ext.h> // FIXME: use functions in maths/Real.h
@@ -179,12 +179,13 @@ namespace
 			raster_element_type casted_no_data_value = static_cast<raster_element_type>(no_data_value);
 			raster_element_type casted_nan_value = static_cast<raster_element_type>(GPlatesMaths::nan());
 
+			// Note: Boost lambda bind gave an error on MSVC2005 so changed to regular bind.
 			std::replace_if(
 					raster_buf,
 					raster_buf + result->width() * result->height(),
-					boost::lambda::bind(
+					boost::bind(
 						&GPlatesMaths::are_almost_exactly_equal<raster_element_type>,
-						boost::lambda::_1,
+						_1,
 						casted_no_data_value),
 					casted_nan_value);
 		}

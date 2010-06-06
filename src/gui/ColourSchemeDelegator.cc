@@ -76,17 +76,18 @@ namespace
 	 */
 	GPlatesModel::FeatureCollectionHandle *
 	get_feature_collection_from_reconstruction_geometry(
-			const GPlatesModel::ReconstructionGeometry &reconstruction_geometry)
+			const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry)
 	{
-		GPlatesModel::FeatureHandle::weak_ref feature_ref;
-		if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-					&reconstruction_geometry, feature_ref))
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+						&reconstruction_geometry);
+		if (!feature_ref)
 		{
 			return NULL;
 		}
 		else
 		{
-			return feature_ref->parent_ptr();
+			return feature_ref.get()->parent_ptr();
 		}
 	}
 }
@@ -194,7 +195,7 @@ GPlatesGui::ColourSchemeDelegator::get_colour_scheme(
 
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::ColourSchemeDelegator::get_colour(
-		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
 	// Shortcut if there are no feature collections have special colour schemes.
 	if (d_special_colour_schemes.empty())
@@ -232,7 +233,7 @@ GPlatesGui::ColourSchemeDelegator::get_colour(
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::ColourSchemeDelegator::apply_colour_scheme(
 		const colour_scheme_handle &colour_scheme,
-		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
 	ColourScheme::non_null_ptr_type colour_scheme_ptr = d_colour_scheme_container.get(
 			colour_scheme.first, colour_scheme.second).colour_scheme_ptr;

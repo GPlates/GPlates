@@ -73,13 +73,6 @@ namespace GPlatesGui
 		Q_OBJECT
 		
 	public:
-	
-		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-				feature_collection_weak_ref_container_type;
-		typedef feature_collection_weak_ref_container_type::iterator
-				feature_collection_weak_ref_iterator;
-	
-	
 		explicit
 		UnsavedChangesTracker(
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
@@ -139,29 +132,14 @@ namespace GPlatesGui
 	private slots:
 
 		void
-		handle_end_add_feature_collections(
+		handle_file_state_files_added(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_begin,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_end);
+				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files);
 
 		void
-		handle_begin_remove_feature_collection(
+		handle_file_state_file_about_to_be_removed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
-
-		void
-		handle_end_remove_feature_collection(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state);
-
-		void
-		handle_begin_reset_feature_collection(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
-
-		void
-		handle_end_reset_feature_collection(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
 
@@ -197,6 +175,31 @@ namespace GPlatesGui
 		 */
 		void
 		connect_to_file_state_signals();
+	
+
+		/**
+		 * Keeps track of a loaded file and its feature collection.
+		 *
+		 * This is done because @a FeatureCollectionFileState now tells us when a file is
+		 * about to be removed so we shouldn't then iterate over its loaded files whilst
+		 * in the middle of its signal because it'll list all files including the one about
+		 * to be removed.
+		 */
+		class LoadedFile
+		{
+		public:
+			LoadedFile(
+					const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_reference) :
+				d_file_reference(file_reference),
+				d_callback_feature_collection(file_reference.get_file().get_feature_collection())
+			{  }
+
+			GPlatesAppLogic::FeatureCollectionFileState::file_reference d_file_reference;
+			GPlatesModel::FeatureCollectionHandle::weak_ref d_callback_feature_collection;
+		};
+		typedef std::vector<LoadedFile> loaded_files_container_type;
+	
+	
 
 		/**
 		 * Pointer to the main window to update with changes.
@@ -232,7 +235,7 @@ namespace GPlatesGui
 		 * an item in the set because of course then it's a @em different thing.
 		 * Sometimes I think the STL is too damn clever for its own good.
 		 */
-		feature_collection_weak_ref_container_type d_feature_collection_weak_refs;
+		loaded_files_container_type d_loaded_files;
 	};
 }
 

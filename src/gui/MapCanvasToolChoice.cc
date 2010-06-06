@@ -60,7 +60,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 		GPlatesGui::TopologySectionsContainer &topology_sections_container,
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
-		GPlatesGui::MapTransform &map_transform_):
+		GPlatesGui::MapTransform &map_transform_,
+		GPlatesAppLogic::ApplicationState &application_state):
 	d_pan_map_tool_ptr(GPlatesCanvasTools::PanMap::create(
 			map_canvas_,
 			map_view_,
@@ -77,7 +78,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				view_state_,
 				clicked_table_model,
 				fp_dialog,
-				feature_focus),
+				feature_focus,
+				application_state),
 			map_canvas_,
 			map_view_,
 			view_state_,

@@ -30,6 +30,8 @@
 #include <QDebug>
 
 #include "GeometryUtils.h"
+#include "ReconstructedFeatureGeometryFinder.h"
+#include "ReconstructionTree.h"
 
 #include "feature-visitors/GeometryFinder.h"
 #include "feature-visitors/GeometryTypeFinder.h"
@@ -45,8 +47,6 @@
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/PropertyName.h"
-#include "model/ReconstructedFeatureGeometryFinder.h"
-#include "model/ReconstructionTree.h"
 #include "model/ModelUtils.h"
 
 #include "property-values/GpmlConstantValue.h"

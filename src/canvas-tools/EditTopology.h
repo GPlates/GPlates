@@ -34,6 +34,12 @@
 #include "gui/TopologyTools.h"
 
 
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+	class ReconstructGraph;
+}
+
 namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
@@ -82,7 +88,8 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget)
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
+				GPlatesAppLogic::ApplicationState &application_state)
 		{
 			EditTopology::non_null_ptr_type ptr(
 					new EditTopology(
@@ -92,7 +99,8 @@ namespace GPlatesCanvasTools
 							viewport_window, 
 							clicked_table_model,
 							topology_sections_container,
-							topology_tools_widget),
+							topology_tools_widget,
+							application_state),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -132,7 +140,8 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget);
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		GPlatesGui::FeatureTableModel &
 		clicked_table_model() const
@@ -176,7 +185,12 @@ namespace GPlatesCanvasTools
 		 * application know what the user just clicked on.
 		 */
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
-		
+
+		/**
+		 * Used when adding reconstruction geometries to the clicked feature table.
+		 */
+		const GPlatesAppLogic::ReconstructGraph &d_reconstruct_graph;
+
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.
 		EditTopology(

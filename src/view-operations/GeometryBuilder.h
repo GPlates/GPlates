@@ -34,9 +34,9 @@
 #include <QObject>
 
 #include "InternalGeometryBuilder.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/PointOnSphere.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "utils/GeometryCreationUtils.h"
 
 namespace GPlatesViewOperations
@@ -65,7 +65,7 @@ namespace GPlatesViewOperations
 	struct SecondaryGeometry
 	{
 		SecondaryGeometry(
-			GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg,
+			GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type rfg,
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
 			unsigned int index_of_vertex):
 			d_rfg(rfg),
@@ -84,7 +84,7 @@ namespace GPlatesViewOperations
 			return *this;
 		}
 #endif
-		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type d_rfg;
+		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type d_rfg;
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry_on_sphere;
 		unsigned int d_index_of_vertex;
 	};
@@ -605,7 +605,7 @@ namespace GPlatesViewOperations
 		
 		void
 		add_secondary_geometry(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type rfg,
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type rfg,
 			unsigned int index_of_vertex);
 			
 		int
@@ -623,7 +623,7 @@ namespace GPlatesViewOperations
 		/**
 		 * Returns the rfg of the first of any secondary geometries.                                                                     
 		 */
-		boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
+		boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
 		get_secondary_rfg();
 		
 		/**

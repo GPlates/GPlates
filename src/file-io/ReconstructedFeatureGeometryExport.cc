@@ -64,7 +64,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
 		const QString &filename,
 		ReconstructedFeatureGeometryExport::Format export_format,
 		const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
-		const files_collection_type &reconstructable_files,
+		const files_collection_type &active_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time)
 {
@@ -72,7 +72,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
 	// the features referenced by the ReconstructedFeatureGeometry objects.
 	ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type referenced_files;
 	ReconstructedFeatureGeometryExportImpl::get_files_referenced_by_geometries(
-			referenced_files, reconstructed_feature_geom_seq, reconstructable_files);
+			referenced_files, reconstructed_feature_geom_seq, active_files);
 
 	// Group the RFGs by their feature.
 	ReconstructedFeatureGeometryExportImpl::feature_geometry_group_seq_type grouped_rfgs_seq;

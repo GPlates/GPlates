@@ -33,8 +33,9 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
-#include "app-logic/ReconstructionFeatureProperties.h"
-#include "app-logic/TopologyBoundaryIntersections.h"
+#include "ReconstructedFeatureGeometry.h"
+#include "ReconstructionFeatureProperties.h"
+#include "TopologyBoundaryIntersections.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -44,15 +45,9 @@
 #include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/Model.h"
-#include "model/ReconstructedFeatureGeometry.h"
 
 #include "property-values/GpmlTopologicalSection.h"
 
-
-namespace GPlatesModel
-{
-	class Reconstruction;
-}
 
 namespace GPlatesPropertyValues
 {
@@ -62,15 +57,18 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesAppLogic
 {
+	class ReconstructionGeometryCollection;
+
 	/**
 	 * Finds all topological closed plate boundary features (in the features visited)
 	 * that exist at a particular reconstruction time and creates
 	 * @a ResolvedTopologicalBoundary objects for each one and stores them
-	 * in a @a Reconstruction object.
+	 * in a @a ReconstructionGeometryCollection object.
 	 *
 	 * @pre the features referenced by any of these topological closed plate boundary features
-	 *      must have already been reconstructed and exist in the @a Reconstruction object
-	 *      passed to constructor of @a TopologyBoundaryResolver.
+	 *      must have already been reconstructed and reference the same @a ReconstructionTree
+	 *      object referenced by the @a ReconstructionGeometryCollection object passed into
+	 *      the constructor of @a TopologyBoundaryResolver.
 	 */
 	class TopologyBoundaryResolver: 
 		public GPlatesModel::FeatureVisitor,
@@ -79,7 +77,7 @@ namespace GPlatesAppLogic
 
 	public:
 		TopologyBoundaryResolver(
-				GPlatesModel::Reconstruction &recon);
+				ReconstructionGeometryCollection &reconstruction_geometry_collection);
 
 		virtual
 		~TopologyBoundaryResolver() 
@@ -155,7 +153,7 @@ namespace GPlatesAppLogic
 			public:
 				Section(
 						const GPlatesModel::FeatureId &source_feature_id,
-						const GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type &source_rfg) :
+						const ReconstructedFeatureGeometry::non_null_ptr_type &source_rfg) :
 					d_source_feature_id(source_feature_id),
 					d_source_rfg(source_rfg),
 					d_use_reverse(false),
@@ -166,7 +164,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureId d_source_feature_id;
 
 				//! The source @a ReconstructedFeatureGeometry.
-				GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type d_source_rfg;
+				ReconstructedFeatureGeometry::non_null_ptr_type d_source_rfg;
 
 				//! The optional start intersection - only topological line sections can have this.
 				boost::optional<Intersection> d_start_intersection;
@@ -206,7 +204,8 @@ namespace GPlatesAppLogic
 		};
 
 
-		GPlatesModel::Reconstruction &d_reconstruction;
+		//! Destination for resolved boundaries.
+		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;

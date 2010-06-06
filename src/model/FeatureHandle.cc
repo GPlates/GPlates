@@ -129,11 +129,14 @@ GPlatesModel::FeatureHandle::add(
 	ChangesetHandle changeset(model_ptr());
 
 	ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
-	// changeset_ptr must be non-NULL because we created one at the top of the
-	// function. But changeset_ptr might not point to our changeset.
-	if (!changeset_ptr->has_handle(this))
+	// changeset_ptr will be NULL if we're not connected to a model.
+	if (changeset_ptr)
 	{
-		current_revision()->update_revision_id();
+		// changeset_ptr might not point to our changeset.
+		if (!changeset_ptr->has_handle(this))
+		{
+			current_revision()->update_revision_id();
+		}
 	}
 
 	return BasicHandle<FeatureHandle>::add(new_child);
@@ -147,11 +150,14 @@ GPlatesModel::FeatureHandle::remove(
 	ChangesetHandle changeset(model_ptr());
 
 	ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
-	// changeset_ptr must be non-NULL because we created one at the top of the
-	// function. But changeset_ptr might not point to our changeset.
-	if (!changeset_ptr->has_handle(this))
+	// changeset_ptr will be NULL if we're not connected to a model.
+	if (changeset_ptr)
 	{
-		current_revision()->update_revision_id();
+		// changeset_ptr might not point to our changeset.
+		if (!changeset_ptr->has_handle(this))
+		{
+			current_revision()->update_revision_id();
+		}
 	}
 
 	BasicHandle<FeatureHandle>::remove(iter);

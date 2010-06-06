@@ -26,17 +26,31 @@
 #ifndef GPLATES_GUI_FEATURETABLEMODEL_H
 #define GPLATES_GUI_FEATURETABLEMODEL_H
 
+#include <vector>
+#include <boost/optional.hpp>
 #include <QAbstractTableModel>
 #include <QItemSelection>
 #include <QHeaderView>
-#include <vector>
 
-#include "gui/FeatureFocus.h"
-#include "model/ReconstructionGeometry.h"
+#include "app-logic/Layer.h"
+#include "app-logic/ReconstructionGeometry.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+	class ReconstructGraph;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
 namespace GPlatesGui
 {
+	class FeatureFocus;
+
 	/**
 	 * This class is used by Qt to map a FeatureWeakRefSequence to a QTableView.
 	 * 
@@ -63,12 +77,30 @@ namespace GPlatesGui
 	{
 		Q_OBJECT
 	public:
-		typedef std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
-				geometry_sequence_type;
+		//! A reconstruction geometry and information associated with it.
+		struct ReconstructionGeometryRow
+		{
+			ReconstructionGeometryRow(
+					GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type
+							reconstruction_geometry_,
+					const GPlatesAppLogic::ReconstructGraph &reconstruct_graph);
+
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry;
+
+			/**
+			 * The reconstruction tree layer that generated the reconstruction tree that was
+			 * used to reconstruct the ReconstructionGeometry.
+			 * This is used to update the ReconstructionGeometry as the reconstruction time changes.
+			 */
+			boost::optional<GPlatesAppLogic::Layer> reconstruction_tree_layer;
+		};
+
+		//! Typedef for a sequence of reconstruction geometry rows.
+		typedef std::vector<ReconstructionGeometryRow> geometry_sequence_type;
 	
 		explicit
 		FeatureTableModel(
-				FeatureFocus &feature_focus,
+				GPlatesPresentation::ViewState &view_state,
 				QObject *parent_ = NULL);
 		
 		/**
@@ -262,6 +294,12 @@ namespace GPlatesGui
 		handle_feature_modified(
 				GPlatesGui::FeatureFocus &feature_focus);
 
+		/**
+		 * Update the internal @a ReconstructionGeometries for the new reconstruction.
+		 */
+		void
+		handle_reconstruction(
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		QModelIndex
 		current_index() {

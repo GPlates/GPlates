@@ -84,7 +84,7 @@ namespace GPlatesGui
 		 */
 		boost::optional<Colour>
 		get_colour(
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 		{
 			boost::optional<typename PropertyExtractorType::return_type> value =
 				d_property_extractor(reconstruction_geometry);

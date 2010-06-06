@@ -27,39 +27,23 @@
 #ifndef GPLATES_APP_LOGIC_FEATURECOLLECTIONFILESTATE_H
 #define GPLATES_APP_LOGIC_FEATURECOLLECTIONFILESTATE_H
 
-#include <list>
+#include <cstddef> // For std::size_t
+#include <utility>
 #include <vector>
 #include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <boost/operators.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QObject>
 
-#include "FeatureCollectionFileStateDecls.h"
-#include "FeatureCollectionFileStateImplDecls.h"
-
-#include "app-logic/ClassifyFeatureCollection.h"
-
 #include "file-io/File.h"
+
+#include "model/FeatureCollectionHandle.h"
+#include "model/ModelInterface.h"
+#include "model/WeakReferenceCallback.h"
 
 
 namespace GPlatesAppLogic
 {
-	namespace FeatureCollectionFileStateImpl
-	{
-		class ActiveListsManager;
-		class ActivationStateManager;
-		class FileNode;
-		class FileNodeActiveState;
-		class FileNodeState;
-		class ReconstructableWorkflow;
-		class ReconstructionWorkflow;
-		class WorkflowManager;
-	
-	}
-
-	class FeatureCollectionActivationStrategy;
-	class FeatureCollectionWorkflow;
-
-
 	/**
 	 * Holds information associated with the currently loaded and active feature collection files.
 	 */
@@ -69,444 +53,250 @@ namespace GPlatesAppLogic
 	{
 		Q_OBJECT
 
+	private:
+		//! Typedef for a file handle.
+		typedef std::size_t file_handle_type;
+
 	public:
 		/**
-		 * Typedef for the bidirectional iterator over loaded files.
+		 * Typedef for an index defining the order of currently loaded files.
 		 *
-		 * The iterator deferences to 'GPlatesFileIO::File &'.
+		 * The least recently loaded file will have index zero and most recently loaded file
+		 * will have the highest value index.
 		 *
-		 * NOTE: this iterator can be used to modify a @a GPlatesFileIO::File object
-		 * but it cannot modify the GPlatesFileIO::shared_ref's stored internally and hence
-		 * cannot affect when the feature collections are unloaded.
+		 * The file indices of all currently loaded files always start at zero and are always
+		 * contiguous (no gaps) even as files are randomly unloaded.
 		 */
-		typedef FeatureCollectionFileStateImpl::file_iterator_type file_iterator;
-
-		/**
-		 * Typedef for the bidirectional iterator over a sequence of active files for a specific
-		 * workflow (eg, active reconstructable files).
-		 *
-		 * This is a different type than @a file_iterator. A @a file_iterator is valid as
-		 * long as the file it points to is currently loaded. However a @a active_file_iterator
-		 * is only valid when it the file is active for that particular workflow
-		 * (eg, active reconstructable files). As a result it is not passed as arguments to
-		 * methods of this class - @a file_iterator is used for that instead.
-		 * @a active_file_iterator should be used purely for localised iteration over an
-		 * active group of files and then discarded.
-		 * 
-		 * The iterator deferences to 'GPlatesFileIO::File &'.
-		 *
-		 * NOTE: the iterator can be used to modify a @a GPlatesFileIO::File object
-		 * but it cannot modify the GPlatesFileIO::shared_ref's stored internally and hence
-		 * cannot affect when the feature collections are unloaded.
-		 */
-		typedef FeatureCollectionFileStateImpl::active_file_iterator_type active_file_iterator;
+		typedef std::size_t file_index_type;
 
 
 		/**
-		 * Typedef for iterator over loaded files.
-		 *
-		 * Use the data members file_iterator_range::begin and
-		 * file_iterator_range::end to traverse the iteration range.
+		 * A reference to a file loaded into @a FeatureCollectionFileState.
 		 */
-		typedef FeatureCollectionFileStateImpl::file_iterator_range_type
-				file_iterator_range;
+		class FileReference :
+				public boost::equality_comparable<FileReference>
+		{
+		public:
+			//! Constructor used by implementation only.
+			FileReference(
+					FeatureCollectionFileState &file_state,
+					file_handle_type file_handle) :
+				d_file_state(&file_state),
+				d_file_handle(file_handle)
+			{  }
+
+			/**
+			 * Returns the file object referenced.
+			 */
+			const GPlatesFileIO::File::Reference &
+			get_file() const
+			{
+				return d_file_state->get_file(d_file_handle);
+			}
+
+			/**
+			 * Returns the index of this file in the sequence of currently loaded files.
+			 *
+			 * The order of file indices is the order in which files were loaded.
+			 *
+			 * NOTE: Provided 'this' references a currently loaded file, the file index returned
+			 * will always be up-to-date even after files that were loaded before this file
+			 * are unloaded. For example, if a file is loaded before this file, and then this file
+			 * is loaded (giving this file index 1), then if the first file is unloaded then this
+			 * file will now return an index of 0 indicating it's the first of all currently
+			 * loaded files.
+			 */
+			file_index_type
+			get_file_index() const
+			{
+				return d_file_state->get_file_index(d_file_handle);
+			}
+
+			/**
+			 * Changes the file information to @a new_file_info.
+			 *
+			 * @a FeatureCollectionFileState emits signals @a file_state_file_info_changed and
+			 * @a file_state_changed after setting the file info.
+			 */
+			void
+			set_file_info(
+					const GPlatesFileIO::FileInfo &new_file_info)
+			{
+				d_file_state->set_file_info(d_file_handle, new_file_info);
+			}
+
+			/**
+			 * Activates or deactivates referenced file.
+			 *
+			 * This does not remove the file.
+			 *
+			 * @a FeatureCollectionFileState emits signals @a file_state_changed and
+			 * @a file_state_file_activation_changed just before returning if the file active state actually changed.
+			 */
+			void
+			set_file_active(
+					bool activate = true)
+			{
+				d_file_state->set_file_active(d_file_handle, activate);
+			}
+
+			/**
+			 * Tests if referenced file is active.
+			 */
+			bool
+			is_file_active() const
+			{
+				return d_file_state->is_file_active(d_file_handle);
+			}
+
+			/**
+			 * Returns the @a FeatureCollectionFileState that we belong to.
+			 */
+			FeatureCollectionFileState &
+			get_file_state() const
+			{
+				return *d_file_state;
+			}
+
+
+			/**
+			 * Equality comparison.
+			 * Inequality operator provided by base class boost::equality_comparable.
+			 */
+			friend
+			bool
+			operator==(
+					const FileReference &lhs,
+					const FileReference &rhs)
+			{
+				// Compare file handles.
+				return lhs.d_file_handle == rhs.d_file_handle;
+			}
+
+			/**
+			 * Less than comparison - useful for std::map.
+			 */
+			friend
+			bool
+			operator<(
+					const FileReference &lhs,
+					const FileReference &rhs)
+			{
+				// Compare file handles.
+				return lhs.d_file_handle < rhs.d_file_handle;
+			}
+
+			//! Used by implementation only.
+			file_handle_type
+			get_file_handle() const
+			{
+				return d_file_handle;
+			}
+
+		private:
+			FeatureCollectionFileState *d_file_state;
+			file_handle_type d_file_handle;
+		};
+
 
 		/**
-		 * Typedef for iterator over files used for other purposes
-		 * such as active reconstructable files.
+		 * Typedef for a reference to a loaded file.
 		 *
-		 * Use the data members active_file_iterator_range::begin and
-		 * active_file_iterator_range::end to traverse the iteration range.
+		 * The reference deferences to 'GPlatesFileIO::File &'.
 		 */
-		typedef FeatureCollectionFileStateImpl::active_file_iterator_range_type
-				active_file_iterator_range;
-
-
-		/**
-		 * Typedef for the tag used to identify workflows.
-		 */
-		typedef FeatureCollectionFileStateDecls::workflow_tag_type workflow_tag_type;
-
-		//! Typedef for a sequence of registered workflows.
-		typedef std::list<workflow_tag_type> workflow_tag_seq_type;
+		typedef FileReference file_reference;
 
 
 		//! Constructor.
-		FeatureCollectionFileState();
+		FeatureCollectionFileState(
+				GPlatesModel::ModelInterface &model);
 
 		//! Destructor.
 		~FeatureCollectionFileState();
 
 
 		/**
-		 * Returns an iteration range over all currently loaded files.
+		 * Returns a sequence of file reference to all currently loaded files.
 		 *
-		 * The iterators dereference to 'GPlatesFileIO::File &'.
+		 * The returned sequence is ordered by file index and the file indices are always
+		 * contiguous (no gaps) starting at index zero.
+		 * So if you have three files currently loaded they will have indices 0,1,2 and
+		 * index 0 will be at the front of the returned vector and index 2 will be at the back.
 		 *
-		 * Returned iterator type can be used in methods to add, remove files, etc.
-		 *
-		 * Use the data members file_iterator_range::begin and
-		 * file_iterator_range::end to traverse the iteration range.
+		 * The returned sequence is ordered by file index (that is the order in which
+		 * the files were first loaded).
 		 */
-		file_iterator_range
+		std::vector<file_reference>
 		get_loaded_files();
 
 
 		/**
-		 * Finds the list of files that are active with any workflows in @a workflow_tags and
-		 * appends the results to @a active_files.
+		 * Adds multiple feature collection files and activates them.
 		 *
-		 * @a include_reconstructable_workflow and @a include_reconstruction_workflow
-		 * are currently used because the user currently has no way of getting at their
-		 * workflow tags. This will be fixed soon when all workflows are treated equally.
-		 */
-		void
-		get_active_files(
-				std::vector<file_iterator> &active_files,
-				const workflow_tag_seq_type &workflow_tags,
-				bool include_reconstructable_workflow = false,
-				bool include_reconstruction_workflow = false);
-
-
-		/**
-		 * Returns an iteration range over all currently active reconstructable files.
+		 * The returned sequence is ordered by file index.
+		 * So if you have three files previously loaded they will have indices 0,1,2 and
+		 * now you're adding three more files then they will have indices 3,4,5 and
+		 * index 3 will be at the front of the returned vector (and the vector passed by the
+		 * @a file_state_files_added signal) and index 5 will be at the back.
 		 *
-		 * The iterators dereference to 'GPlatesFileIO::File &'.
+		 * Because of this you can simply iterate through the returned sequence and append
+		 * to your own sequence without checking the file indices.
 		 *
-		 * Use the data members active_file_iterator_range::begin and
-		 * active_file_iterator_range::end to traverse the iteration range.
-		 */
-		active_file_iterator_range
-		get_active_reconstructable_files();
-
-
-		/**
-		 * Returns an iteration range over all currently active reconstruction files.
+		 * The returned file references are also in the order as the @a files added.
 		 *
-		 * The iterators dereference to 'GPlatesFileIO::File &'.
-		 *
-		 * Use the data members active_file_iterator_range::begin and
-		 * active_file_iterator_range::end to traverse the iteration range.
-		 */
-		active_file_iterator_range
-		get_active_reconstruction_files();
-
-
-		/**
-		 * Returns an iteration range over all currently active workflow files
-		 * identified by the tag @a workflow_tag.
-		 *
-		 * The iterators dereference to 'GPlatesFileIO::File &'.
-		 *
-		 * Use the data members active_file_iterator_range::begin and
-		 * active_file_iterator_range::end to traverse the iteration range.
-		 */
-		active_file_iterator_range
-		get_active_workflow_files(
-				const workflow_tag_type &workflow_tag);
-
-
-		/**
-		 * Converts an iterator of type @a active_file_iterator to an iterator
-		 * of type @a file_iterator so it can be passed to other methods of this class.
-		 *
-		 * A @a file_iterator is more stable in that it remains valid as long as the file
-		 * it points to is loaded (ie, hasn't been removed with @a remove_file) whereas
-		 * a @a active_file_iterator is only valid as long as the file it's pointing to
-		 * is active for the particular workflow it was obtained from
-		 * (eg, @a get_active_reconstructable_files).
-		 *
-		 * Converting to a @a file_iterator makes the iterator more stable and means
-		 * it can be passed to other methods of this class.
-		 */
-		static
-		file_iterator
-		convert_to_file_iterator(
-				active_file_iterator);
-
-
-		/**
-		 * Registers @a workflow to be notified whenever a new feature collection is loaded
-		 * to see if it is interested in using it.
-		 * 
-		 * Also registers the initial activation strategy to attach to the workflow.
-		 * If @a activation_strategy is NULL then the default strategy is used which
-		 * activates all files added to the workflow.
-		 *
-		 * You do not need to call this explicitly if your class derived from
-		 * @a FeatureCollectionWorkflow calls the @a FeatureCollectionWorkflow
-		 * 'register_workflow' method.
-		 *
-		 * NOTE: It is an error to register multiple @a FeatureCollectionWorkflow instances
-		 * that have the same tag.
-		 * An assertion failure exception is thrown if this happens.
-		 */
-		void
-		register_workflow(
-				FeatureCollectionWorkflow *workflow,
-				FeatureCollectionActivationStrategy *activation_strategy = NULL);
-
-
-		/**
-		 * Unregisters @a workflow from 'this' file state.
-		 *
-		 * You do not need to call this explicitly if your class derived from @a FeatureCollectionWorkflow
-		 * calls the @a FeatureCollectionWorkflow 'register_workflow' method.
-		 */
-		void
-		unregister_workflow(
-				FeatureCollectionWorkflow *workflow);
-
-		/**
-		 * Returns a list of currently registered workflow tags.
-		 */
-		const workflow_tag_seq_type &
-		get_registered_workflow_tags() const;
-
-
-		/**
-		 * Sets the activation strategy attached to the reconstructable workflow.
-		 */
-		void
-		set_reconstructable_activation_strategy(
-				FeatureCollectionActivationStrategy *activation_strategy);
-
-
-		/**
-		 * Sets the activation strategy attached to the reconstruction workflow.
-		 */
-		void
-		set_reconstruction_activation_strategy(
-				FeatureCollectionActivationStrategy *activation_strategy);
-
-
-		/**
-		 * Sets the activation strategy attached to the workflow identified by @a workflow_tag.
-		 */
-		void
-		set_workflow_activation_strategy(
-				FeatureCollectionActivationStrategy *activation_strategy,
-				const workflow_tag_type &workflow_tag);
-
-
-		/**
-		 * Returns a list of workflow tags that have been attached to file @a file_iter.
-		 * This does not include the implementation defined internal tags for the
-		 * reconstructable and reconstruction workflows.
-		 */
-		std::vector<workflow_tag_type>
-		get_workflow_tags(
-				file_iterator file_iter) const;
-
-
-		/**
-		 * Adds multiple feature collection files and activates them as reconstructable
-		 * and/or reconstruction files depending on the types of features in them.
-		 *
-		 * Emits signal @a end_add_feature_collections and @a file_state_changed
+		 * Emits signals @a file_state_files_added and @a file_state_changed
 		 * just before returning.
-		 * Also emits @a reconstructable_file_activation or @a reconstruction_file_activation
-		 * signals as each new file is added.
 		 *
-		 * Returns an iteration range over the newly added files.
-		 * The iterators dereference to 'GPlatesFileIO::File &'.
+		 * Does not emit @a file_state_file_activation_changed signal since each new file added is
+		 * initially active.
 		 *
-		 * Use the data members file_iterator_range::begin and
-		 * file_iterator_range::end to traverse the iteration range.
+		 * Returns a sequence of file references to the newly added files.
 		 */
-		file_iterator_range
+		std::vector<file_reference>
 		add_files(
-				const std::vector<GPlatesFileIO::File::shared_ref> &files);
+				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &files);
 
 
 		/**
-		 * Add a file so the application can see what's loaded.
+		 * Adds a file and activates it.
 		 *
-		 * Emits signal @a end_add_feature_collections and @a file_state_changed
+		 * The file index of returned reference will be the next in the sequence.
+		 * So if you have three files previously loaded they will have indices 0,1,2 and
+		 * now you're adding a new file then it will have index 3.
+		 *
+		 * Emits signals @a file_state_files_added and @a file_state_changed
 		 * just before returning.
-		 * Also emits @a reconstructable_file_activation or @a reconstruction_file_activation
-		 * signal when new file is added.
+		 *
+		 * Does not emit @a file_state_file_activation_changed signal since file added is initially active.
 		 */
-		file_iterator
+		file_reference
 		add_file(
-				const GPlatesFileIO::File::shared_ref &file);
+				const GPlatesFileIO::File::non_null_ptr_type &file);
 
 
 		/**
-		 * Remove @a file from the collection of loaded files known to the application.
+		 * Remove @a file from the collection of currently loaded files.
 		 *
-		 * Emits signal @a begin_remove_feature_collection just before removing.
-		 * Emits signal @a end_remove_feature_collection and @a file_state_changed
-		 * just after removed.
-		 * Also emits @a reconstructable_file_activation or @a reconstruction_file_activation
-		 * signal if file was active.
+		 * The file index used by this file will be reused by the remaining currently
+		 * loaded files such that there will never be any gaps in the file indices
+		 * of currently loaded files.
+		 * So if you have four files loaded a,b,c,d with file indices 0,1,2,3 and
+		 * you remove the file b (that has index 1) then the remaining files a,c,d will
+		 * now have file indices 0,1,2.
 		 *
-		 * NOTE: If there are no other @a File references to this loaded file then
-		 * it will automatically have its feature collection unloaded.
-		 * Even if there are other @a File references keeping it alive then
-		 * the signals are still emitted. This is ok since some other code may still
-		 * be using the file for its own secret purposes but as far as the application
-		 * in general is concerned the file and its feature collection are no longer known.
+		 * Because of this you can simply erase an entry in your own sequence using the
+		 * file index of the removed file without checking the file indices.
+		 *
+		 * Emits signal @a file_state_file_about_to_be_removed before removal and
+		 * emits signal @a file_state_changed after removal.
+		 * The @a file_reference passed by the @a file_state_file_about_to_be_removed signal
+		 * should not dereference the internal feature collection as that might be invalid.
+		 *
+		 * Also emits @a file_state_file_activation_changed signal if file was active to signal deactivation.
 		 */
 		void
 		remove_file(
-				file_iterator file);
-
-
-		/**
-		 * Changes the file referenced by @a file_iter to be @a file.
-		 *
-		 * This effectively removes the previous file referenced by @a file_iter
-		 * replacing it with @a file.
-		 *
-		 * Emits signal @a begin_reset_feature_collection just before reseting file.
-		 * Emits signal @a end_reset_feature_collection and @a file_state_changed
-		 * just before returning.
-		 * Also emits @a reconstructable_file_activation or @a reconstruction_file_activation
-		 * signal if file was previously active but becomes inactive due to new
-		 * feature collection not having any reconstructable or reconstruction features.
-		 */
-		void
-		reset_file(
-				file_iterator file_iter,
-				const GPlatesFileIO::File::shared_ref &new_file);
-
-
-		/**
-		 * Reclassify the feature collection referenced inside @a file_iter.
-		 *
-		 * This is not normally necessary but can be required when the feature collection
-		 * is modified.
-		 *
-		 * Emits signal @a begin_reclassify_feature_collection just before reclassifying.
-		 * Emits signal @a end_reclassify_feature_collection and @a file_state_changed
-		 * just before returning.
-		 * Also emits @a reconstructable_file_activation or @a reconstruction_file_activation
-		 * signal if file was previously active but becomes inactive due to feature collection
-		 * not having any reconstructable or reconstruction features anymore.
-		 */
-		void
-		reclassify_feature_collection(
-				file_iterator file_iter);
-
-
-		/**
-		 * Returns the current feature collection classification of @a file_iter.
-		 */
-		ClassifyFeatureCollection::classifications_type
-		get_feature_collection_classification(
-				file_iterator file_iter) const;
-
-
-		/**
-		 * Activates or deactivates @a file_iter as a reconstructable file.
-		 *
-		 * This does not remove the file.
-		 *
-		 * The file will only be activated if it contains reconstructable features.
-		 *
-		 * Emits signal @a end_set_file_active_reconstructable and @a file_state_changed
-		 * just before returning.
-		 * Also emits @a reconstructable_file_activation signal if active state changed.
-		 */
-		void
-		set_file_active_reconstructable(
-				file_iterator file_iter,
-				bool activate = true);
-
-
-		/**
-		 * Activates or deactivates @a file_iter as a reconstruction file.
-		 *
-		 * This does not remove the file.
-		 *
-		 * The file will only be activated if it contains reconstruction features.
-		 *
-		 * Emits signal @a end_set_file_active_reconstruction and @a file_state_changed
-		 * just before returning.
-		 * Also emits @a reconstruction_file_activation signal if active state changed.
-		 */
-		void
-		set_file_active_reconstruction(
-				file_iterator file_iter,
-				bool activate = true);
-
-
-		/**
-		 * Activates or deactivates @a file_iter as a file for the workflow identified
-		 * by @a workflow_tag.
-		 *
-		 * This does not remove the file.
-		 *
-		 * The file will only be activated if @a workflow_tag is in the list of workflow
-		 * tags returned by @a get_workflow_tags (with @a file_iter as its argument).
-		 *
-		 * Emits signal @a end_set_file_active_workflow and @a file_state_changed
-		 * just before returning.
-		 * Also emits @a workflow_file_activation signal if active state changed.
-		 */
-		void
-		set_file_active_workflow(
-				file_iterator file_iter,
-				const workflow_tag_type &workflow_tag,
-				bool activate = true);
-
-
-		/**
-		 * Tests if the @a file_iter is being used for reconstructable feature data.
-		 *
-		 * This can return false even if the file contains reconstructable features.
-		 * This can happen if the file was claimed by another workflow in which case
-		 * no RFGs are generated from the reconstructable features.
-		 */
-		bool
-		is_reconstructable_workflow_using_file(
-				file_iterator file_iter) const;
-
-
-		/**
-		 * Tests if the @a file_iter is active and being used for reconstructable
-		 * feature data.
-		 */
-		bool
-		is_file_active_reconstructable(
-				file_iterator file_iter) const;
-
-
-		/**
-		 * Tests if the @a file_iter is being used for reconstruction feature data.
-		 */
-		bool
-		is_reconstruction_workflow_using_file(
-				file_iterator file_iter) const;
-
-
-		/**
-		 * Tests if the @a file_iter is active and being used for reconstruction
-		 * tree data.
-		 */
-		bool
-		is_file_active_reconstruction(
-				file_iterator file_iter) const;
-
-		/**
-		 * Tests if the @a file_iter is being used for the workflow identified
-		 * by @a workflow_tag.
-		 */
-		bool
-		is_file_using_workflow(
-				file_iterator file_iter,
-				const workflow_tag_type &workflow_tag) const;
-
-
-		/**
-		 * Tests if the @a file_iter is active and being used for the workflow identified
-		 * by @a workflow_tag.
-		 */
-		bool
-		is_file_active_workflow(
-				file_iterator file_iter,
-				const workflow_tag_type &workflow_tag) const;
+				file_reference file_ref);
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -521,181 +311,223 @@ namespace GPlatesAppLogic
 		//
 
 		void
-		end_add_feature_collections(
+		file_state_files_added(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_begin,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_end);
+				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files);
+
+		// NOTE: Do not dereference the internal feature collection of @a file as
+		// it might be invalid (if this signal was generated when "undo"ing a file add).
+		//
+		// If you want a signal just after the file has been removed then you'll need to
+		// listen to signal @a file_state_changed (since a reference to the removed file
+		// cannot be safely provided).
+		void
+		file_state_file_about_to_be_removed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 		void
-		begin_remove_feature_collection(
+		file_state_file_info_changed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 		void
-		end_remove_feature_collection(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state);
-
-		void
-		begin_reset_feature_collection(
+		file_state_file_activation_changed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
-
-		void
-		end_reset_feature_collection(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
-
-		void
-		begin_reclassify_feature_collection(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
-
-		void
-		end_reclassify_feature_collection(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
-
-		void
-		end_set_file_active_reconstructable(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
-
-		void
-		end_set_file_active_reconstruction(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
-
-		void
-		end_set_file_active_workflow(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
-				const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &workflow_tag);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
+				bool activation);
 
 
 		//
 		// An alternative to the above signals is to listen to only one signal
 		// when all you are interested in is knowing that the state has been modified.
 		// This is useful for performing reconstructions.
-		// This signal is emitted at the end of every public method of this class.
 		//
 
+		// This signal is emitted *after* any file state has changed.
 		void
 		file_state_changed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 
-		//
-		// The following signals can be generated at any time inside the methods
-		// of this class and occur whenever a file is activated or deactivated.
-		//
-
-		void
-		reconstructable_file_activation(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
-				bool activation);
-
-		void
-		reconstruction_file_activation(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
-				bool activation);
-
-		void
-		workflow_file_activation(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
-				const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &workflow_tag,
-				bool activation);
-
-
 	private:
-		//! Typedef for the feature collection file node.
-		typedef FeatureCollectionFileStateImpl::FileNode file_node_type;
+		/**
+		 * Contains a loaded file's shared reference and less frequently accessed information or
+		 * information that is more expensive to copy.
+		 * More frequently accessed information is placed in @a FileSlot.
+		 *
+		 * All this information could go in @a FileSlot but is separated to minimise the
+		 * cost of copying @a FileSlot objects when the file slot sequence is compacted
+		 * (when a file slot is deleted).
+		 */
+		class FileSlotExtra
+		{
+		public:
+			FileSlotExtra(
+					const GPlatesFileIO::File::Reference::non_null_ptr_type &file_ref) :
+				d_file_ref(file_ref),
+				d_callback_feature_collection(file_ref->get_feature_collection()),
+				d_active(true)
+			{  }
 
-		//! Typedef for the feature collection file state node.
-		typedef FeatureCollectionFileStateImpl::FileNodeState file_node_state_type;
 
-		//! Typedef for the feature collection file state active node.
-		typedef FeatureCollectionFileStateImpl::FileNodeActiveState file_node_active_state_type;
+			//! Reference to the file.
+			GPlatesFileIO::File::Reference::non_null_ptr_type d_file_ref;
 
-		//! Typedef for the type that keeps track of any file activation changes.
-		typedef FeatureCollectionFileStateImpl::ActivationStateManager activation_state_manager_type;
+			/**
+			 * Keep another reference to the feature collection in 'd_file' to contain
+			 * our model callback.
+			 */
+			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_feature_collection;
 
-		//! Typedef for a sequence of files.
-		typedef FeatureCollectionFileStateImpl::file_seq_impl_type file_seq_impl_type;
-		typedef file_seq_impl_type::iterator file_seq_iterator_impl_type;
-
-		//! Typedef for a sequence of file iterators.
-		typedef FeatureCollectionFileStateImpl::file_iterator_seq_impl_type file_iterator_seq_impl_type;
-		typedef file_iterator_seq_impl_type::iterator file_iterator_seq_iterator_impl_type;
-
-
-		//! The sequence of all currently loaded files.
-		file_seq_impl_type d_loaded_files;
-
-		//! The currently registered workflows.
-		workflow_tag_seq_type d_registered_workflow_seq;
-
-		//! Manages the active files lists for each workflow.
-		boost::scoped_ptr<FeatureCollectionFileStateImpl::ActiveListsManager> d_active_lists_manager;
+			//! Has the user activated/deactivated the file?
+			bool d_active;
+		};
 
 		/**
-		 * Manages the workflows and their activation strategies and handles notification
-		 * of workflows (eg, file adds, removes, changes, etc).
+		 * A slot to store information about a file in a sequence of loaded files.
 		 */
-		boost::scoped_ptr<FeatureCollectionFileStateImpl::WorkflowManager> d_workflow_manager;
+		class FileSlot
+		{
+		public:
+			FileSlot(
+					const GPlatesFileIO::File::Reference::non_null_ptr_type &file_,
+					file_index_type index_into_file_index_array) :
+				d_file_slot_extra(new FileSlotExtra(file_)),
+				d_index_into_file_index_array(index_into_file_index_array),
+				d_is_active_in_model(true)
+			{  }
 
-		//! The default behaviour for activating files for all workflows.
-		boost::scoped_ptr<FeatureCollectionActivationStrategy> d_default_activation_strategy;
+			boost::shared_ptr<FileSlotExtra> d_file_slot_extra;
+			file_index_type d_index_into_file_index_array;
+			bool d_is_active_in_model;
+		};
 
-		// NOTE: these should be declared last since they register with 'this'
-		// which requires its state to be initialised.
+		//! Typedef for a sequence of @a FileSlot objects.
+		typedef std::vector<FileSlot> file_slot_seq_type;
+
+		//! Typedef for a sequence of file handles.
+		typedef std::vector<file_handle_type> file_handles_seq_type;
+
+		//! Typedef for a sequence of indices indicating the order in which files were added.
+		typedef std::vector<file_index_type> file_indices_seq_type;
+
 
 		/**
-		 * The workflow for handling files with reconstructable features.
+		 * Used to add the feature collections of new files to the model.
 		 */
-		boost::scoped_ptr<FeatureCollectionFileStateImpl::ReconstructableWorkflow>
-				d_reconstructable_workflow;
+		GPlatesModel::ModelInterface d_model;
 
 		/**
-		 * The workflow for handling files with reconstruction features.
+		 * The number of loaded files (includes files that were deactivated in the *model* and
+		 * subsequently reactivated).
 		 */
-		boost::scoped_ptr<FeatureCollectionFileStateImpl::ReconstructionWorkflow>
-				d_reconstruction_workflow;
+		std::size_t d_num_currently_loaded_files;
+
+		/**
+		 * The sequence of all currently loaded files (includes those that have been
+		 * conceptually deleted in the model - ie, deactivated in the model).
+		 */
+		file_slot_seq_type d_file_slots;
+
+		/**
+		 * A sequence of file handles that have been released and can be reused.
+		 */
+		file_handles_seq_type d_free_file_handles;
+
+		/**
+		 * The sequence of file indices.
+		 * Modifications are such that entries are always naturally sorted (although
+		 * there can be duplicate entries when a file is deactivated in the model).
+		 * This sequence is indexed by FileSlotExtra::d_index_into_file_index_array.
+		 */
+		file_indices_seq_type d_file_indices;
 
 
-		file_iterator
+		file_handle_type
 		add_file_internal(
-				const GPlatesFileIO::File::shared_ref &file_to_add);
+				const GPlatesFileIO::File::non_null_ptr_type &file);
 
+		const GPlatesFileIO::File::Reference &
+		get_file(
+				file_handle_type file_handle) const;
+
+		file_index_type
+		get_file_index(
+				file_handle_type file_handle) const;
 
 		void
-		change_file_internal(
-				file_iterator file_iter,
-				const GPlatesFileIO::File::shared_ref &new_file);
+		set_file_info(
+				file_handle_type file_handle,
+				const GPlatesFileIO::FileInfo &new_file_info);
 
-
-		bool
-		set_file_active_workflow_internal(
-				file_iterator file_iter,
-				const workflow_tag_type &workflow_tag,
+		void
+		set_file_active(
+				file_handle_type file_handle,
 				bool activate);
 
+		bool
+		is_file_active(
+				file_handle_type file_handle) const;
+
+		void
+		deactivated_feature_collection(
+				file_handle_type file_handle);
+
+		void
+		reactivated_feature_collection(
+				file_handle_type file_handle);
+
+		void
+		destroying_feature_collection(
+				file_handle_type file_handle);
+
 
 		/**
-		 * Emits activation signals for all workflow files whose activation state has changed.
+		 * Keeps track of feature collections as they are deactivated and reactivated in the *model*.
 		 */
-		void
-		emit_activation_signals(
-				const activation_state_manager_type &activation_state_manager);
+		class FeatureCollectionUnloadCallback :
+				public GPlatesModel::WeakReferenceCallback<const GPlatesModel::FeatureCollectionHandle>
+		{
+		public:
+			explicit
+			FeatureCollectionUnloadCallback(
+					GPlatesAppLogic::FeatureCollectionFileState &file_state,
+					file_handle_type file_handle) :
+				d_file_state(file_state),
+				d_file_handle(file_handle)
+			{  }
 
+			virtual
+			void
+			publisher_deactivated(
+					const deactivated_event_type &)
+			{
+				d_file_state.deactivated_feature_collection(d_file_handle);
+			}
 
-		void
-		emit_activation_signal(
-				file_iterator file_iter,
-				const workflow_tag_type &workflow_tag);
+			virtual
+			void
+			publisher_reactivated(
+					const reactivated_event_type &)
+			{
+				d_file_state.reactivated_feature_collection(d_file_handle);
+			}
+
+			virtual
+			void
+			publisher_about_to_be_destroyed(
+					const about_to_be_destroyed_event_type &)
+			{
+				d_file_state.destroying_feature_collection(d_file_handle);
+			}
+
+		private:
+			GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
+			file_handle_type d_file_handle;
+		};
 	};
+
 
 	/**
 	 * Return FeatureCollectionHandle which contains the given feature handle.

@@ -28,81 +28,87 @@
 #include "AppLogicUtils.h"
 #include "ReconstructUtils.h"
 
-#include "feature-visitors/GeometryTypeFinder.h"
 
-
-const char *GPlatesAppLogic::ReconstructLayerTask::RECONSTRUCTION_TREE_CHANNEL_NAME =
-		"reconstruction tree";
 const char *GPlatesAppLogic::ReconstructLayerTask::RECONSTRUCTABLE_FEATURES_CHANNEL_NAME =
 		"reconstructable features";
 
 
-bool
-GPlatesAppLogic::ReconstructLayerTask::can_process_feature_collection(
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+std::pair<QString, QString>
+GPlatesAppLogic::ReconstructLayerTask::get_name_and_description()
 {
-	// If there are any features containing geometry then we can process them.
-	GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
+	return std::make_pair(
+		"Reconstruct geometries to a geological time",
 
-	AppLogicUtils::visit_feature_collection(feature_collection, geometry_type_finder);
-
-	return geometry_type_finder.has_found_geometries();
+		"Geometries in this layer will be reconstructed when "
+		"this layer is connected to a reconstruction tree layer");
 }
 
 
-std::vector<GPlatesAppLogic::ReconstructGraph::input_channel_definition_type>
+bool
+GPlatesAppLogic::ReconstructLayerTask::can_process_feature_collection(
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+{
+	return ReconstructUtils::has_reconstructable_features(feature_collection);
+}
+
+
+std::vector<GPlatesAppLogic::Layer::input_channel_definition_type>
 GPlatesAppLogic::ReconstructLayerTask::get_input_channel_definitions() const
 {
-	std::vector<ReconstructGraph::input_channel_definition_type> input_channel_definitions;
+	std::vector<Layer::input_channel_definition_type> input_channel_definitions;
 
 	// Channel definition for the reconstruction tree.
 	input_channel_definitions.push_back(
 			boost::make_tuple(
-					RECONSTRUCTION_TREE_CHANNEL_NAME,
-					ReconstructGraph::RECONSTRUCTION_TREE_DATA,
-					ReconstructGraph::ONE_DATA_IN_CHANNEL));
+					get_reconstruction_tree_channel_name(),
+					Layer::INPUT_RECONSTRUCTION_TREE_DATA,
+					Layer::ONE_DATA_IN_CHANNEL));
 
 	// Channel definition for the reconstructable features.
 	input_channel_definitions.push_back(
 			boost::make_tuple(
 					RECONSTRUCTABLE_FEATURES_CHANNEL_NAME,
-					ReconstructGraph::FEATURE_COLLECTION_DATA,
-					ReconstructGraph::MULTIPLE_DATAS_IN_CHANNEL));
+					Layer::INPUT_FEATURE_COLLECTION_DATA,
+					Layer::MULTIPLE_DATAS_IN_CHANNEL));
 	
 	return input_channel_definitions;
 }
 
 
-GPlatesAppLogic::ReconstructGraph::DataType
-GPlatesAppLogic::ReconstructLayerTask::get_output_definition() const
+QString
+GPlatesAppLogic::ReconstructLayerTask::get_main_input_feature_collection_channel() const
 {
-	return ReconstructGraph::RECONSTRUCTED_GEOMETRY_COLLECTION_DATA;
+	return RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
 }
 
 
-bool
+GPlatesAppLogic::Layer::LayerOutputDataType
+GPlatesAppLogic::ReconstructLayerTask::get_output_definition() const
+{
+	return Layer::OUTPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA;
+}
+
+
+boost::optional<GPlatesAppLogic::layer_task_data_type>
 GPlatesAppLogic::ReconstructLayerTask::process(
 		const input_data_type &input_data,
-		layer_data_type &output_data,
-		const double &/*reconstruction_time*/)
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchored_plate_id,
+		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
 {
 	//
 	// Get the reconstruction tree input.
 	//
-	std::vector<GPlatesModel::ReconstructionTree::non_null_ptr_type> reconstruction_trees;
-	extract_input_channel_data(
-			reconstruction_trees,
-			RECONSTRUCTION_TREE_CHANNEL_NAME,
-			input_data);
-
-	if (reconstruction_trees.size() != 1)
+	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree =
+			extract_reconstruction_tree(
+					input_data,
+					default_reconstruction_tree);
+	if (!reconstruction_tree)
 	{
 		// Expecting a single reconstruction tree.
-		return false;
+		return boost::none;
 	}
-	const GPlatesModel::ReconstructionTree::non_null_ptr_type reconstruction_tree =
-			reconstruction_trees.front();
-	
+
 	//
 	// Get the reconstructable features collection input.
 	//
@@ -115,9 +121,12 @@ GPlatesAppLogic::ReconstructLayerTask::process(
 	//
 	// Perform the actual reconstruction using the reconstruction tree.
 	//
-	output_data = ReconstructUtils::create_reconstruction(
-			reconstruction_tree,
-			reconstructable_features_collection);
+	const ReconstructionGeometryCollection::non_null_ptr_to_const_type
+			reconstruction_geometry_collection =
+					ReconstructUtils::reconstruct(
+							reconstruction_tree.get(),
+							reconstructable_features_collection);
 
-	return true;
+	// Return the reconstruction geometry collection.
+	return layer_task_data_type(reconstruction_geometry_collection);
 }

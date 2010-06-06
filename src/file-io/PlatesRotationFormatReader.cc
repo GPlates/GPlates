@@ -638,12 +638,14 @@ namespace
 }
 
 
-GPlatesFileIO::File::shared_ref
+void
 GPlatesFileIO::PlatesRotationFormatReader::read_file(
-		const FileInfo &fileinfo,
+		const File::Reference &file,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	const FileInfo &fileinfo = file.get_file_info();
+
 	// By placing all changes to the model under the one changeset, we ensure that
 	// feature revision ids don't get changed from what was loaded from file no
 	// matter what we do to the features.
@@ -659,14 +661,8 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 	LineReader line_buffer(input);
 	boost::shared_ptr<DataSource> data_source(
 			new LocalFileDataSource(filename, DataFormats::PlatesRotation));
-	GPlatesModel::FeatureCollectionHandle::weak_ref rotations =
-			GPlatesModel::FeatureCollectionHandle::create(
-					model->root(),
-					GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
-	// Make sure feature collection gets unloaded when it's no longer needed.
-	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref rotations_unloader =
-			GPlatesModel::FeatureCollectionHandleUnloader::create(rotations);
+	GPlatesModel::FeatureCollectionHandle::weak_ref rotations = file.get_feature_collection();
 
 	try
 	{
@@ -678,7 +674,5 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		// There was an internal error, after which we can't really proceed.
 		// FIXME:  Handle this exception properly, with logging of the exception, etc.
 	}
-
-	return File::create_loaded_file(rotations_unloader, fileinfo);
 }
 

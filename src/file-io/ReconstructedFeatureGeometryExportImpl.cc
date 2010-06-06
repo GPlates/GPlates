@@ -38,7 +38,7 @@
 
 #include "ReconstructedFeatureGeometryExportImpl.h"
 
-#include "model/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
 
 
 namespace
@@ -58,7 +58,7 @@ namespace
 	/**
 	 * Typedef for mapping from @a FeatureHandle to the feature collection file it came from.
 	 */
-	typedef std::map<const GPlatesModel::FeatureHandle *, const GPlatesFileIO::File *>
+	typedef std::map<const GPlatesModel::FeatureHandle *, const GPlatesFileIO::File::Reference *>
 			feature_handle_to_collection_map_type;
 
 	//! Convenience typedef for a sequence of grouped RFGs.
@@ -80,7 +80,7 @@ namespace
 			reconstructable_files_iter != reconstructable_files.end();
 			++reconstructable_files_iter)
 		{
-			const GPlatesFileIO::File *recon_file = *reconstructable_files_iter;
+			const GPlatesFileIO::File::Reference *recon_file = *reconstructable_files_iter;
 
 			const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_handle =
 					recon_file->get_feature_collection();
@@ -122,7 +122,7 @@ namespace
 			rfg_iter != reconstructed_feature_geometry_seq.end();
 			++rfg_iter)
 		{
-			const GPlatesModel::ReconstructedFeatureGeometry *rfg = *rfg_iter;
+			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 			const GPlatesModel::FeatureHandle *feature_handle_ptr = rfg->feature_handle_ptr();
 
 			const feature_handle_to_collection_map_type::const_iterator map_iter =
@@ -132,7 +132,7 @@ namespace
 				continue;
 			}
 
-			const GPlatesFileIO::File *file = map_iter->second;
+			const GPlatesFileIO::File::Reference *file = map_iter->second;
 			referenced_files.push_back(file);
 		}
 
@@ -184,9 +184,9 @@ GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::group_rfgs_with_their_fea
 
 	// Sort in preparation for grouping RFGs by feature.
 	std::sort(rfgs_sorted_by_feature.begin(), rfgs_sorted_by_feature.end(),
-		boost::lambda::bind(&GPlatesModel::ReconstructedFeatureGeometry::feature_handle_ptr, _1) <
+		boost::lambda::bind(&GPlatesAppLogic::ReconstructedFeatureGeometry::feature_handle_ptr, _1) <
 					boost::lambda::bind(
-							&GPlatesModel::ReconstructedFeatureGeometry::feature_handle_ptr, _2));
+							&GPlatesAppLogic::ReconstructedFeatureGeometry::feature_handle_ptr, _2));
 
 	const GPlatesModel::FeatureHandle *current_feature_handle_ptr = NULL;
 
@@ -197,7 +197,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::group_rfgs_with_their_fea
 		sorted_rfg_iter != rfgs_sorted_by_feature.end();
 		++sorted_rfg_iter)
 	{
-		const GPlatesModel::ReconstructedFeatureGeometry *rfg = *sorted_rfg_iter;
+		const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *sorted_rfg_iter;
 		const GPlatesModel::FeatureHandle *feature_handle_ptr = rfg->feature_handle_ptr();
 
 		if (feature_handle_ptr != current_feature_handle_ptr)

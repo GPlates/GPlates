@@ -123,7 +123,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * The @a ReconstructedFeatureGeometry associated with the feature that is in focus.
 		 */
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_rg;
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_rg;
 
 		GPlatesQtWidgets::QueryFeaturePropertiesWidget *d_query_feature_properties_widget;
 		GPlatesQtWidgets::EditFeaturePropertiesWidget *d_edit_feature_properties_widget;

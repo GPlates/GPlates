@@ -144,13 +144,17 @@ GPlatesCli::FeatureCollectionFileIO::load_feature_collections(
 	std::vector<std::string>::const_iterator filename_end = filenames.end();
 	for ( ; filename_iter != filename_end; ++filename_iter)
 	{
-		GPlatesFileIO::ReadErrorAccumulation read_errors;
-
 		// Read the feature collection from the file.
 		const QString filename(filename_iter->c_str());
 		const GPlatesFileIO::FileInfo file_info(filename);
-		GPlatesFileIO::File::shared_ref file =
-				GPlatesFileIO::read_feature_collection(file_info, d_model, read_errors);
+
+		// Create a file with an empty feature collection.
+		GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file(file_info);
+
+		// Read new features from the file into the feature collection.
+		// Both the filename and target feature collection are in 'file_ref'.
+		GPlatesFileIO::ReadErrorAccumulation read_errors;
+		GPlatesFileIO::read_feature_collection(file->get_reference(), d_model, read_errors);
 
 		files.push_back(file);
 	}
@@ -167,7 +171,7 @@ GPlatesCli::FeatureCollectionFileIO::extract_feature_collections(
 	FeatureCollectionFileIO::feature_collection_file_seq_type::iterator file_end = files.end();
 	for ( ; file_iter != file_end; ++file_iter)
 	{
-		feature_collections.push_back((*file_iter)->get_feature_collection());
+		feature_collections.push_back((*file_iter)->get_reference().get_feature_collection());
 	}
 }
 

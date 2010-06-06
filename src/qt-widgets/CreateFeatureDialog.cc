@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 #include <map>
@@ -489,10 +490,10 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	try
 	{
 		// Get the FeatureCollection the user has selected.
-		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_iterator, bool> collection_file_iter =
-			d_choose_feature_collection_widget->get_file_iterator();
+		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> collection_file_iter =
+			d_choose_feature_collection_widget->get_file_reference();
 		GPlatesModel::FeatureCollectionHandle::weak_ref collection =
-			(collection_file_iter.first)->get_feature_collection();
+			(collection_file_iter.first).get_file().get_feature_collection();
 
 		// Actually create the Feature!
 		GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
@@ -517,11 +518,45 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 			// Un-Reconstruct the temporary geometry so that it's coordinates are
 			// expressed in terms of present day location, given the plate ID that is associated
 			// with it and the current reconstruction time.
+			//
+			// FIXME: Currently we can have multiple reconstruction tree visual layers but we
+			// only allow one active at a time - when this changes we'll need to somehow figure out
+			// which reconstruction tree to use here.
+			// We could search the layers for the one that reconstructs the feature collection that
+			// will contain the new feature and see which reconstruction tree that layer uses in turn.
+			// This could fail if the containing feature collection is reconstructed by multiple layers
+			// (for example if the user wants to reconstruct the same features using two different
+			// reconstruction trees). We could detect this case and ask the user which reconstruction tree
+			// to use (for reverse reconstructing).
+			// This can also fail if the user is adding the created feature to a new feature collection
+			// in which case we cannot know which reconstruction tree they will choose when they wrap
+			// the new feature collection in a new layer. Although when the new feature collection is
+			// created it will automatically create a new layer and set the "default" reconstruction tree
+			// layer as its input (where 'default' will probably be the most recently created
+			// reconstruction tree layer that is currently active). In this case we could figure out
+			// which reconstruction tree layer this is going to be. But this is not ideal because the
+			// user may then immediately switch to a different reconstruction tree input layer and our
+			// reverse reconstruction will not be the one they wanted.
+			// Perhaps the safest solution here is to again ask the user which reconstruction tree layer
+			// to use and then use that instead of the 'default' when creating a new layer for the new
+			// feature collection.
+			// So in summary:
+			// * if adding feature to an existing feature collection:
+			//   * if feature collection is being processed by only one layer then reverse reconstruct
+			//     using the reconstruction tree used by that layer,
+			//   * if feature collection is being processed by more than one layer then gather the
+			//     reconstruction trees used by those layers and ask user which one to
+			//     reverse reconstruct with,
+			// * if adding feature to a new feature collection gather all reconstruction tree layers
+			//   including inactive ones and ask user which one to use for the new layer that will
+			//   wrap the new feature collection.
+			//
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
 					GPlatesAppLogic::ReconstructUtils::reconstruct(
 							d_geometry_opt_ptr.get(),
 							d_plate_id_widget->create_integer_plate_id_from_widget(),
-							d_application_state_ptr->get_current_reconstruction().reconstruction_tree(),
+							*d_application_state_ptr->get_current_reconstruction()
+									.get_default_reconstruction_tree(),
 							true /*reverse_reconstruct*/);
 
 			// Create a property value using the present-day GeometryOnSphere and optionally
@@ -583,14 +618,6 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gml("name"),
 					d_name_widget->create_property_value_from_widget()));
-
-		// We've just modified the feature collection so let the feature collection file state
-		// know this so it can reclassify it.
-		// TODO: This is not ideal since we have to manually call this whenever a feature in
-		// the feature collection is modified - remove this call when feature/feature-collection
-		// callbacks have been implemented and then utilised inside FeatureCollectionFileState to
-		// listen on feature collection changes.
-		d_file_state.reclassify_feature_collection(collection_file_iter.first);
 		
 		emit feature_created(feature);
 		accept();

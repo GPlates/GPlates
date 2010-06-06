@@ -40,6 +40,9 @@
 #include "ComputationalMeshSolver.h"
 
 #include "app-logic/PlateVelocityUtils.h"
+#include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionTree.h"
+#include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
@@ -58,10 +61,6 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/ModelUtils.h"
-#include "model/ReconstructedFeatureGeometry.h"
-#include "model/Reconstruction.h"
-#include "model/ReconstructionTree.h"
-#include "model/ResolvedTopologicalBoundary.h"
 #include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GmlMultiPoint.h"
@@ -93,12 +92,11 @@
 
 
 GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
-			GPlatesModel::Reconstruction &reconstruction,
 			const double &recon_time,
 			unsigned long root_plate_id,
-			//GPlatesModel::Reconstruction &recon,
-			GPlatesModel::ReconstructionTree &recon_tree,
-			GPlatesModel::ReconstructionTree &recon_tree_2,
+			//GPlatesAppLogic::Reconstruction &recon,
+			GPlatesAppLogic::ReconstructionTree &recon_tree,
+			GPlatesAppLogic::ReconstructionTree &recon_tree_2,
 			const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 					resolved_boundaries_for_partitioning_geometry_query,
 			const GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type &
@@ -109,7 +107,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
-	d_recon_ptr(&reconstruction),
 	d_recon_tree_ptr(&recon_tree),
 	d_recon_tree_2_ptr(&recon_tree_2),
 	d_resolved_boundaries_for_partitioning_geometry_query(

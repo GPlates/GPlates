@@ -162,7 +162,7 @@ namespace GPlatesQtWidgets
 			virtual
 			boost::optional<GPlatesGui::Colour>
 			get_colour(
-					const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
+					const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 
 		private:
 

@@ -30,9 +30,14 @@
 
 #include "CgalUtils.h"
 #include "GeometryUtils.h"
+#include "ReconstructionGeometryCollection.h"
 #include "ReconstructionGeometryUtils.h"
+#include "ReconstructedFeatureGeometry.h"
+#include "Reconstruction.h"
+#include "ResolvedTopologicalNetwork.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyNetworkResolver.h"
+#include "TopologyUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -40,10 +45,6 @@
 #include "global/GPlatesAssert.h"
 
 #include "maths/GeometryOnSphere.h"
-
-#include "model/ReconstructedFeatureGeometry.h"
-#include "model/Reconstruction.h"
-#include "model/ResolvedTopologicalNetwork.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
@@ -58,9 +59,9 @@
 
 
 GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
-			GPlatesModel::Reconstruction &recon) :
-	d_reconstruction(recon),
-	d_reconstruction_params(recon.get_reconstruction_time())
+			ReconstructionGeometryCollection &reconstruction_geometry_collection) :
+	d_reconstruction_geometry_collection(reconstruction_geometry_collection),
+	d_reconstruction_params(reconstruction_geometry_collection.get_reconstruction_time())
 {  
 	d_num_topologies = 0;
 }
@@ -70,16 +71,8 @@ bool
 GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
-	// Make sure only processing topology networks.
-	//
-	// FIXME: Do this check based on feature properties rather than feature type.
-	// So if something looks like a TCPB (because it has a topology polygon property)
-	// then treat it like one. For this to happen we first need TopologicalNetwork to
-	// use a property type different than TopologicalPolygon.
-	//
-	static QString type("TopologicalNetwork");
-	if ( type != GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.feature_type().get_name() ) ) 
+	// super short-cut for features without network properties
+	if (!TopologyUtils::is_topological_network_feature(feature_handle))
 	{ 
 		// Quick-out: No need to continue.
 		return false; 
@@ -218,9 +211,12 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_section_reconstruct
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
 	// Get the reconstructed geometry of the topological section's delegate.
-	boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
+	// The referenced features must have been reconstructed using the
+	// reconstruction tree referenced by our destination reconstruction geometry collection.
+	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
-					geometry_delegate, d_reconstruction);
+					geometry_delegate,
+					*d_reconstruction_geometry_collection.reconstruction_tree());
 
 	if (!source_rfg)
 	{
@@ -246,9 +242,9 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 			new CgalUtils::cgal_delaunay_triangulation_type());
 
 	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalNetwork.
-	std::vector<GPlatesModel::ResolvedTopologicalNetworkImpl::Node> output_nodes;
+	std::vector<ResolvedTopologicalNetwork::Node> output_nodes;
 
-	// Iterate over the sections of the resolved boundary and construct
+	// Iterate over the sections of the resolved network and construct
 	// the resolved network.
 	ResolvedNetwork::section_seq_type::const_iterator section_iter =
 			d_resolved_network.d_sections.begin();
@@ -266,9 +262,8 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		}
 
 		// Get the node feature reference.
-		const GPlatesModel::FeatureHandle::weak_ref node_feature_ref =
+		const GPlatesModel::FeatureHandle::const_weak_ref node_feature_const_ref =
 				(*section.d_source_rfg)->get_feature_ref();
-		const GPlatesModel::FeatureHandle::const_weak_ref node_feature_const_ref(node_feature_ref);
 
 		// Get the section geometry.
 		std::vector<GPlatesMaths::PointOnSphere> node_points;
@@ -277,7 +272,7 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 
 		// Create a subsegment structure that'll get used when
 		// creating the resolved topological geometry.
-		const GPlatesModel::ResolvedTopologicalNetworkImpl::Node output_node(
+		const ResolvedTopologicalNetwork::Node output_node(
 				section.d_geometry.get(),
 				node_feature_const_ref);
 		output_nodes.push_back(output_node);
@@ -288,8 +283,9 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 	}
 
 	// Create the network.
-	const GPlatesModel::ResolvedTopologicalNetworkImpl::non_null_ptr_type network =
-			GPlatesModel::ResolvedTopologicalNetworkImpl::create(
+	const ResolvedTopologicalNetwork::non_null_ptr_type network =
+			ResolvedTopologicalNetwork::create(
+					d_reconstruction_geometry_collection.reconstruction_tree(),
 					delaunay_triangulation,
 					*(current_top_level_propiter()->handle_weak_ref()),
 					*(current_top_level_propiter()),
@@ -298,45 +294,7 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 					d_reconstruction_params.get_recon_plate_id(),
 					d_reconstruction_params.get_time_of_appearance());
 
-	// Iterate over the individual faces of the triangulation and create a
-	// ResolvedTopologicalNetwork for each one.
-	CgalUtils::cgal_finite_faces_iterator finite_faces_iter =
-			delaunay_triangulation->finite_faces_begin();
-	CgalUtils::cgal_finite_faces_iterator finite_faces_end =
-			delaunay_triangulation->finite_faces_end();
-	for ( ; finite_faces_iter != finite_faces_end; ++finite_faces_iter)
-	{
-		std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
-		network_triangle_points.reserve(3);
-
-		for (int index = 0; index != 3 ; ++index)
-		{
-			const CgalUtils::cgal_point_2_type cgal_triangle_point =
-					finite_faces_iter->vertex( index )->point();
-			const float lon = cgal_triangle_point.x();
-			const float lat = cgal_triangle_point.y();
-
-			// convert coordinates
-			const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
-			const GPlatesMaths::PointOnSphere triangle_point =
-					GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
-			network_triangle_points.push_back(triangle_point);
-		}
-
-		// create a PolygonOnSphere
-		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
-				GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
-
-		// Create an RTN.
-		GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_type rtn_ptr =
-			GPlatesModel::ResolvedTopologicalNetwork::create(
-				resolved_topology_network_triangle,
-				*current_top_level_propiter()->handle_weak_ref(),
-				network);
-
-		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rtn_ptr, d_reconstruction);
-	}
+	d_reconstruction_geometry_collection.add_reconstruction_geometry(network);
 }
 
 

@@ -30,7 +30,7 @@
 
 const boost::optional<GPlatesAppLogic::PlateIdPropertyExtractor::return_type>
 GPlatesAppLogic::PlateIdPropertyExtractor::operator()(
-		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
 	return ReconstructionGeometryUtils::get_plate_id(
 				&reconstruction_geometry);
@@ -39,7 +39,7 @@ GPlatesAppLogic::PlateIdPropertyExtractor::operator()(
 
 const boost::optional<GPlatesAppLogic::AgePropertyExtractor::return_type>
 GPlatesAppLogic::AgePropertyExtractor::operator()(
-		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
 	boost::optional<GPlatesPropertyValues::GeoTimeInstant> geo_time =
 		ReconstructionGeometryUtils::get_time_of_formation(
@@ -71,17 +71,17 @@ GPlatesAppLogic::AgePropertyExtractor::operator()(
 
 const boost::optional<GPlatesAppLogic::FeatureTypePropertyExtractor::return_type>
 GPlatesAppLogic::FeatureTypePropertyExtractor::operator()(
-		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
-	GPlatesModel::FeatureHandle::weak_ref feature_ref;
-	if (!ReconstructionGeometryUtils::get_feature_ref(
-				&reconstruction_geometry, feature_ref))
+	const boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+			ReconstructionGeometryUtils::get_feature_ref(&reconstruction_geometry);
+	if (!feature_ref)
 	{
 		return boost::none;
 	}
 	else
 	{
-		return feature_ref->feature_type();
+		return feature_ref.get()->feature_type();
 	}
 }
 

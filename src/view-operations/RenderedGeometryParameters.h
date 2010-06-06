@@ -160,11 +160,12 @@ namespace GPlatesViewOperations
 		 * Colour to be used for rendering points for "split feature" tool.
 		 */
 		const GPlatesGui::Colour SPLIT_FEATURE_START_POINT_COLOUR = 
-			GPlatesGui::Colour::get_green();
+				GPlatesGui::Colour::get_green();
 		const GPlatesGui::Colour SPLIT_FEATURE_MIDDLE_POINT_COLOUR = 
-			GPlatesGui::Colour::get_yellow();
+				GPlatesGui::Colour::get_yellow();
 		const GPlatesGui::Colour SPLIT_FEATURE_END_POINT_COLOUR = 
-			GPlatesGui::Colour::get_red();
+				GPlatesGui::Colour::get_red();
+
 		/**
 		 * Colour to use for rendering those parts of geometry that are not in focus.
 		 */

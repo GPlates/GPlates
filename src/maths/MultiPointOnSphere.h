@@ -252,7 +252,10 @@ namespace GPlatesMaths
 		 * the stack or the heap.
 		 */
 		const non_null_ptr_to_const_type
-		get_non_null_pointer() const;
+		get_non_null_pointer() const
+		{
+			return GPlatesUtils::get_non_null_pointer(this);
+		}
 
 
 		/**

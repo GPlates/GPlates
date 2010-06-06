@@ -30,6 +30,7 @@
 #include "CliRequiredOptionNotPresent.h"
 
 #include "app-logic/ReconstructUtils.h"
+#include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "file-io/ReconstructedFeatureGeometryExport.h"
@@ -39,7 +40,6 @@
 #include "file-io/ReadErrorAccumulation.h"
 
 #include "model/Model.h"
-#include "model/Reconstruction.h"
 
 
 namespace
@@ -194,24 +194,21 @@ GPlatesCli::ReconstructCommand::run(
 	//
 
 	// Perform reconstruction.
-	const GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
-			GPlatesAppLogic::ReconstructUtils::create_reconstruction(
-					GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-							d_recon_time,
-							d_anchor_plate_id,
-							reconstruction_feature_collections),
-					reconstructable_feature_collections);
-
-	// Get the reconstruction geometries.
-	const GPlatesModel::Reconstruction::geometry_collection_type &reconstruction_geometries =
-			reconstruction->geometries();
+	const GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type
+			reconstruction_geometry_collection =
+					GPlatesAppLogic::ReconstructUtils::reconstruct(
+							GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+									d_recon_time,
+									d_anchor_plate_id,
+									reconstruction_feature_collections),
+							reconstructable_feature_collections);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::reconstructed_feature_geom_seq_type
 			reconstruct_feature_geom_seq;
 	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-			reconstruction_geometries.begin(),
-			reconstruction_geometries.end(),
+			reconstruction_geometry_collection->begin(),
+			reconstruction_geometry_collection->end(),
 			reconstruct_feature_geom_seq);
 
 	// Get the sequence of reconstructable files as File pointers.
@@ -220,7 +217,7 @@ GPlatesCli::ReconstructCommand::run(
 	loaded_feature_collection_file_seq_type::const_iterator file_end = reconstructable_files.end();
 	for ( ; file_iter != file_end; ++file_iter)
 	{
-		reconstructable_file_ptrs.push_back(file_iter->get());
+		reconstructable_file_ptrs.push_back(&(*file_iter)->get_reference());
 	}
 
 	// Export filename.

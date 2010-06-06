@@ -26,237 +26,236 @@
 #ifndef GPLATES_FILE_IO_FILE_H
 #define GPLATES_FILE_IO_FILE_H
 
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include "FeatureCollectionFileFormat.h"
 #include "FileInfo.h"
 
 #include "model/FeatureCollectionHandle.h"
-#include "model/FeatureCollectionHandleUnloader.h"
+#include "model/ModelInterface.h"
+
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesFileIO
 {
 	/**
-	 * Wrapper to associate a file information with a feature collection loaded from a file and
-	 * manage unloading of feature collection.
+	 * A wrapper around a file that owns a feature collection (that has not been added to the model).
 	 */
 	class File :
-			private boost::noncopyable
+			public GPlatesUtils::ReferenceCount<File>
 	{
 	public:
 		/**
-		 * Typedef for a shared reference to a file.
-		 *
-		 * For example:
-		 *   File::shared_ref file = File::create_loaded_file(feature_collection, file_info);
-		 *   file->get_feature_collection();
-		 *   ...
-		 *   File file2 = file;
-		 *   file2->get_feature_collection();
-		 *   ...
-		 *   // NOTE: when 'file' and 'file2' both go out of scope the feature collection
-		 *   // is unloaded.
+		 * Interface to get file information associated with a feature collection loaded from or
+		 * saved to a file.
 		 */
-		typedef boost::shared_ptr<File> shared_ref;
-
-		/**
-		 * Same as @a shared_ref except references a const @a File.
-		 */
-		typedef boost::shared_ptr<const File> const_shared_ref;
-
-
-		/**
-		 * Copies a @a shared_ref to a @a const_shared_ref such that
-		 * both reference the same @a File object correctly.
-		 */
-		static
-		const_shared_ref
-		get_const_shared_ref(
-				const shared_ref &ref)
+		class Reference :
+				public GPlatesUtils::ReferenceCount<Reference>
 		{
-			return boost::static_pointer_cast<const File>(ref);
-		}
+		public:
+			//! A convenience typedef for a non-null intrusive pointer to a non-const @a Reference.
+			typedef GPlatesUtils::non_null_intrusive_ptr<Reference> non_null_ptr_type;
+
+
+			/**
+			 * Returns non-const reference to feature collection.
+			 *
+			 * FIXME: May want to consider whether this const method should be
+			 * returning a non-const weak ref ?  For the time being there are lots of
+			 * places where a fix like this would propagate so for the time being
+			 * will just leave it as is.
+			 */
+			GPlatesModel::FeatureCollectionHandle::weak_ref
+			get_feature_collection() const
+			{
+				return d_feature_collection;
+			}
+
+
+			/**
+			 * Returns const reference to @a FileInfo object associated with this file.
+			 */
+			const FileInfo &
+			get_file_info() const
+			{
+				return d_file_info;
+			}
+
+
+			/**
+			 * Modifies the file information.
+			 *
+			 * This is useful when you want to save the file with a different filename.
+			 *
+			 * NOTE: The loaded file format will still represent the format of the file
+			 * that the feature collection was originally loaded from.
+			 */
+			void
+			set_file_info(
+					const FileInfo &file_info)
+			{
+				d_file_info = file_info;
+			}
+
+
+			/**
+			 * Returns the file format associated with this file when it was loaded.
+			 *
+			 * Returns FeatureCollectionFileFormat::UNKNOWN if this was created with
+			 * @a create_empty_file or if the file format was not recognised.
+			 *
+			 * NOTE: Even if the file info was modified with @a set_file_info
+			 * the file format *still* represents the file format when the file was loaded.
+			 */
+			FeatureCollectionFileFormat::Format
+			get_loaded_file_format() const
+			{
+				return d_loaded_file_format;
+			}
+
+
+			//
+			// Note: setting or modifying the internal @a FileInfo is a bit fragile at the moment.
+			//
+			// This is because the feature collection and @a FileInfo can go out of sync - actually
+			// it's also possible to alter the feature collection under the hood so
+			// this situation needs to be dealt with better.
+			//
+			// An example of getting out of sync is classifying the feature collection as
+			// reconstructable or reconstruction which could be done by first looking at the
+			// file format in FileInfo (currently based on the filename extension) and if
+			// it was loaded from a PLATES rotation file for example then we know it can
+			// only be reconstruction features. If the file format allows both types only then
+			// does it look at the features in the collection itself.
+			//
+			// Code that does this sort of thing should use @a get_loaded_file_format instead
+			// of looking at the @a FileInfo since the @a File object may have had its @a FileInfo
+			// modified and therefore have a different @a FileInfo that does not
+			// reflect the classification of the feature collection.
+			//
+			// FIXME: Perhaps we should remove @a get_loaded_file_format thus forcing clients
+			// to look at the internal feature collection to determine things like which
+			// file types can be saved.
+			//
+
+		private:
+			/**
+			 * Weak reference to a feature collection handle.
+			 *
+			 * The feature collection handle could be stored in the model or in @a File
+			 * as a 'FeatureCollectionHandle::non_null_ptr_type'.
+			 */
+			GPlatesModel::FeatureCollectionHandle::weak_ref d_feature_collection;
+
+			//! Information about the file that the feature collection was loaded from or saved to.
+			FileInfo d_file_info;
+
+			//! The format of the file that the feature collection was loaded from.
+			FeatureCollectionFileFormat::Format d_loaded_file_format;
+
+
+			/**
+			 * Constructor.
+			 *
+			 * Is private so that only way to create is using friend class @a File.
+			 */
+			Reference(
+					const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+					const FileInfo &file_info,
+					const FeatureCollectionFileFormat::Format file_format);
+
+			friend class File;
+		};
+
+
+		//! A convenience typedef for a non-null intrusive pointer to a non-const @a File.
+		typedef GPlatesUtils::non_null_intrusive_ptr<File> non_null_ptr_type;
 
 
 		/**
-		 * Create a file from a lifetime-managed feature collection that was not loaded
-		 * from a file.
+		 * Create a @a File object with feature collection @a feature_collection.
 		 *
-		 * A utility function that handles the creation of a @a File object
-		 * and wrapping it up in a @a shared_ref.
+		 * Note that this does not load/save the feature collection from/to an actual
+		 * file in the file system.
 		 *
-		 * The file format is set to UNKNOWN.
-		 *
-		 * The GPlatesModel::FeatureCollectionHandleUnloader forces us to share the
-		 * responsibility of unloading the feature collection - this is based on the
-		 * assumption that the feature collection was created to be saved to a file and
-		 * we are now responsible for managing its lifetime.
-		 */
-		static
-		shared_ref
-		create_empty_file(
-				const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref &feature_collection);
-
-
-		/**
-		 * Create a file from a lifetime-managed feature collection and a @a FileInfo
-		 * that represents a file that has just been loaded.
-		 *
-		 * @a file_info should represent the file that @a feature_collection was loaded from.
-		 *
-		 * A utility function that handles the creation of a @a File object
-		 * and wrapping it up in a @a shared_ref.
+		 * @a file_info should represent the file that @a feature_collection was read from
+		 * (or will be saved to) or it should represent (if @a feature_collection is empty)
+		 * the file that you will subsequently read new features from in order to populate
+		 * the internal feature collection (which will initially be empty).
+		 * Note: In order to populate the internal feature collection pass the File::Reference
+		 * of the returned @a File to a feature collection file reader.
 		 *
 		 * The file format is determined from the file extension in @a file_info.
 		 *
-		 * The GPlatesModel::FeatureCollectionHandleUnloader forces us to share the
-		 * responsibility of unloading the feature collection - this is based on the
-		 * assumption that the feature collection was created from a file and we
-		 * are now responsible for managing its lifetime.
+		 * The default value for @a file_info represents no filename and the file format UNKNOWN.
+		 *
+		 * The default value for @a feature_collection is a new empty feature collection.
+		 *
+		 * The internal feature_collection is a non_null_ptr_type and has not been added
+		 * to the model so the returned @a File is now responsible for managing its lifetime
+		 * until @a add_feature_collection_to_model is called to transfer ownership to the model.
 		 */
 		static
-		shared_ref
-		create_loaded_file(
-				const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref &feature_collection,
-				const FileInfo &file_info);
+		File::non_null_ptr_type
+		create_file(
+				const FileInfo &file_info = FileInfo(),
+				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection =
+						GPlatesModel::FeatureCollectionHandle::create());
 
 
 		/**
-		 * Create a file that shares the same lifetime-managed feature collection as @a file
-		 * but has a new association with @a file_info which will be used to save the
-		 * feature collection (with a new filename for example).
-		 *
-		 * NOTE: The file format is *not* determined from the file extension in @a file_info -
-		 * instead it remains the same as that in the original file @a file.
-		 *
-		 * Both @a file and the newly created @a File share lifetime management of the
-		 * feature collection contained in @a file.
+		 * Returns a reference to a usable file interface.
 		 */
-		static
-		shared_ref
-		create_save_file(
-				const File &file,
-				const FileInfo &file_info);
-
-
-		/**
-		 * Returns const reference to feature collection.
-		 *
-		 * NOTE: If returned feature collection reference outlives all @a shared_ref references
-		 * then it will get invalidated since the feature collection will be unloaded.
-		 */
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref
-		get_feature_collection() const
+		const Reference &
+		get_reference() const
 		{
-			return d_feature_collection->get_feature_collection();
+			return *d_file;
 		}
 
 
 		/**
-		 * Returns non-const reference to feature collection.
-		 *
-		 * NOTE: If returned feature collection reference outlives all @a shared_ref references
-		 * then it will get invalidated since the feature collection will be unloaded.
+		 * Returns a reference to a usable file interface.
 		 */
-		GPlatesModel::FeatureCollectionHandle::weak_ref
-		get_feature_collection()
+		Reference &
+		get_reference()
 		{
-			return d_feature_collection->get_feature_collection();
+			return *d_file;
 		}
 
 
 		/**
-		 * Returns const reference to feature collection.
+		 * Adds the feature collection contained within to @a model.
 		 *
-		 * NOTE: If returned feature collection reference outlives all @a shared_ref references
-		 * then it will get invalidated since the feature collection will be unloaded.
+		 * Ownership of the internal feature collection is *transferred* to @a model.
+		 *
+		 * The returned @a Reference is also referenced (shared) internally so the @a get_reference
+		 * can still be used.
+		 *
+		 * The returned reference can now be used instead of 'this' and 'this' be can destroyed
+		 * as it's no longer needed.
 		 */
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref
-		get_const_feature_collection() const
-		{
-			return d_feature_collection->get_feature_collection();
-		}
-
-
-		/**
-		 * Returns const reference to @a FileInfo object associated with this file.
-		 *
-		 * If created using @a create_loaded_file then contains information about
-		 * the file that the feature collection was loaded from.
-		 * If created using @a create_save_file then contains information about
-		 * the file that the feature collection will be saved to (eg, if the
-		 * user saves file with a different filename).
-		 */
-		const FileInfo &
-		get_file_info() const
-		{
-			return d_file_info;
-		}
-
-
-		/**
-		 * Returns the file format associated with this file when it was loaded.
-		 *
-		 * Returns FeatureCollectionFileFormat::UNKNOWN if this was created with
-		 * @a create_empty_file or if the file format was not recognised.
-		 *
-		 * NOTE: If this file was created with @a create_save_file then the file format
-		 * *still* represents the file format when the file was loaded.
-		 * This is so the file format accurately reflects the feature collection (see
-		 * comment below about modifying FileInfo for more detail).
-		 */
-		FeatureCollectionFileFormat::Format
-		get_loaded_file_format() const
-		{
-			return d_loaded_file_format;
-		}
-
-
-		//
-		// Note: setting or modifying the internal @a FileInfo is not allowed.
-		//
-		// This is to keep the feature collection and @a FileInfo in sync - although
-		// it's still possible to alter the feature collection under the hood so
-		// this situation needs to be dealt with better - in fact the whole concept of
-		// @a File should be scrutinised - it is really an intermediate solution
-		// until a better design involving the model is devised - FIXME.
-		//
-		// If you wish to modify the @a FileInfo then use @a create_save_file to create
-		// another @a File using the same feature collection but with a different @a FileInfo.
-		//
-		// An example of getting out of sync is classifying the feature collection as
-		// reconstructable or reconstruction which could be done by first looking at the
-		// file format in FileInfo (currently based on the filename extension) and if
-		// it was loaded from a PLATES rotation file for example then we know it can
-		// only be reconstruction features. If the file format allows both types only then
-		// does it look at the features in the collection itself.
-		//
-		// Code that does this sort of thing should use @a get_loaded_file_format instead
-		// of looking at the @a FileInfo since the @a File object may have been created with
-		// @a create_save_file and therefore have a different @a FileInfo that does not
-		// reflect the classification of the feature collection.
-		//
+		Reference::non_null_ptr_type
+		add_feature_collection_to_model(
+				GPlatesModel::ModelInterface &model);
 
 	private:
-		//! The lifetime-managed feature collection.
-		GPlatesModel::FeatureCollectionHandleUnloader::shared_ref d_feature_collection;
+		Reference::non_null_ptr_type d_file;
 
-		//! Information about the file that the feature collection was loaded from or saved to.
-		FileInfo d_file_info;
-
-		//! The format of the file that the feature collection was loaded from.
-		FeatureCollectionFileFormat::Format d_loaded_file_format;
+		/**
+		 * The feature collection handle before it is added, if ever, to the model.
+		 * It is optional so we can release it when we add it to the model since
+		 * the model will then 'own' it.
+		 */
+		boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
+				d_feature_collection_handle;
 
 
 		/**
 		 * Constructor.
 		 *
-		 * Is private so that only way to create is via @a create_loaded_file or @a create_save_file.
+		 * Is private so that only way to create is via @a create_loaded_file or @a create_empty_file.
 		 */
 		File(
-				const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref &feature_collection,
+				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
 				const FileInfo &file_info,
 				const FeatureCollectionFileFormat::Format file_format);
 	};

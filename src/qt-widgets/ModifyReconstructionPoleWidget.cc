@@ -34,12 +34,12 @@
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/PaleomagUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructionTree.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "gui/FeatureFocus.h"
-#include "model/ReconstructionTree.h"
+#include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
@@ -89,7 +89,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::deactivate()
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries_at_activation()
 {
-	d_initial_geometries.clear();
+	d_reconstructed_feature_geometries.clear();
 	populate_initial_geometries();
 	draw_dragged_geometries();
 }
@@ -140,14 +140,13 @@ namespace
 
 	void
 	add_child_edges_to_collection(
-		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type edge,
-		std::vector<GPlatesModel::integer_plate_id_type> &child_plate_id_collection
-		)
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge,
+		std::vector<GPlatesModel::integer_plate_id_type> &child_plate_id_collection)
 	{	
-		std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator it;
-		std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
+		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator it;
+		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
 			it_begin = edge->children_in_built_tree().begin();
-		std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
+		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
 			it_end = edge->children_in_built_tree().end();
 
 		for(it = it_begin; it != it_end ; it++)
@@ -161,12 +160,9 @@ namespace
 	add_children_to_geometry_collection(
 		std::vector<GPlatesModel::integer_plate_id_type> &child_plate_id_collection,
 		const GPlatesModel::integer_plate_id_type plate_id,
-		GPlatesAppLogic::ApplicationState *application_state_ptr
-		)
+		const GPlatesAppLogic::ReconstructionTree &tree)
 	{
-		GPlatesModel::ReconstructionTree &tree =
-				application_state_ptr->get_current_reconstruction().reconstruction_tree();
-		GPlatesModel::ReconstructionTree::edge_refs_by_plate_id_map_const_range_type 
+		GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_range_type 
 			edges = tree.find_edges_whose_moving_plate_id_match(plate_id);
 
 		if (edges.first == edges.second)
@@ -185,7 +181,7 @@ namespace
 			return;			
 		}
 
-		GPlatesModel::ReconstructionTree::edge_refs_by_plate_id_map_const_iterator
+		GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_iterator
 			it = edges.first;
 
 		for (; it != edges.second ; ++it)
@@ -390,7 +386,7 @@ namespace
 			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
 			const double &reconstruction_time,
-			const GPlatesModel::FeatureHandle::weak_ref &current_feature)
+			GPlatesModel::FeatureCollectionHandle::iterator &current_feature)
 	{
 		using namespace GPlatesQtWidgets;
 
@@ -461,7 +457,7 @@ namespace
 
 			sequence_choices.push_back(
 					ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo(
-							current_feature,
+							(*current_feature)->reference(),
 							*trs_plate_id_finder.fixed_ref_frame_plate_id(),
 							*trs_plate_id_finder.moving_ref_frame_plate_id(),
 							trs_time_period_finder.begin_time()->value(),
@@ -485,28 +481,31 @@ namespace
 			GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
 			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
-			const GPlatesModel::Reconstruction &reconstruction,
-			const double &reconstruction_time)
+			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 	{
 		using namespace GPlatesModel;
 
-		std::vector<FeatureHandle::weak_ref>::const_iterator features_iter =
-				reconstruction.reconstruction_tree().get_reconstruction_features().begin();
-		std::vector<FeatureHandle::weak_ref>::const_iterator features_end =
-				reconstruction.reconstruction_tree().get_reconstruction_features().end();
-		for ( ; features_iter != features_end; ++features_iter) {
-			const FeatureHandle::weak_ref &current_feature = *features_iter;
-			if ( ! current_feature.is_valid()) {
+		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_iter =
+				reconstruction_tree.get_reconstruction_features().begin();
+		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_end =
+				reconstruction_tree.get_reconstruction_features().end();
+		for ( ; collections_iter != collections_end; ++collections_iter) {
+			const FeatureCollectionHandle::weak_ref &current_collection = *collections_iter;
+			if ( ! current_collection.is_valid()) {
 				// FIXME:  Should we do anything about this? Or is this acceptable?
-				// (If the handle is not valid, then presumably it belongs to a feature
-				// collection that has been unloaded.  In which case, why hasn't the
-				// reconstruction been recalculated?)
+				// (If the collection is not valid, then presumably it has been
+				// unloaded.  In which case, why hasn't the reconstruction been
+				// recalculated?)
 				continue;
 			}
 
-			examine_trs(sequence_choices, trs_plate_id_finder,
-					trs_time_period_finder, plate_id_of_interest,
-					reconstruction_time, current_feature);
+			FeatureCollectionHandle::iterator features_iter = current_collection->begin();
+			FeatureCollectionHandle::iterator features_end = current_collection->end();
+			for ( ; features_iter != features_end; ++features_iter) {
+				examine_trs(sequence_choices, trs_plate_id_finder,
+						trs_time_period_finder, plate_id_of_interest,
+						reconstruction_tree.get_reconstruction_time(), features_iter);
+			}
 		}
 	}
 }
@@ -521,7 +520,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 		return;
 	}
 
-	if ( ! d_plate_id) {
+	if ( ! d_plate_id || ! d_reconstruction_tree) {
 		// Presumably the feature did not contain a reconstruction plate ID.
 		// What do we do here?  Do we give it one, or do nothing?
 		// For now, let's just do nothing.
@@ -535,8 +534,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 	GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
 
 	find_trses(sequence_choices, trs_plate_id_finder, trs_time_period_finder, *d_plate_id,
-			d_application_state_ptr->get_current_reconstruction(),
-			d_application_state_ptr->get_current_reconstruction_time());
+			 **d_reconstruction_tree);
 
 	// The Applicator should be set before the dialog is set up.
 	// Why, you ask?  Because when the dialog is set up, the first row in the sequence choices
@@ -545,7 +543,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 	d_applicator_ptr->set(
 			sequence_choices,
 			d_accum_orientation->rotation(),
-			d_application_state_ptr->get_current_reconstruction_time());
+			*d_reconstruction_tree);
 	d_dialog_ptr->setup_for_new_pole(
 			*d_plate_id,
 			d_application_state_ptr->get_current_reconstruction_time(),
@@ -601,7 +599,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::change_highlight_children_chec
 	}
 
 	// Ignore any other values of 'new_checkbox_state'.
-	d_initial_geometries.clear();
+	d_reconstructed_feature_geometries.clear();
 	draw_initial_geometries();
 	draw_dragged_geometries();
 }
@@ -610,7 +608,7 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 		GPlatesGui::FeatureFocus &feature_focus)
 {
-	const GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry =
+	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry =
 			feature_focus.associated_reconstruction_geometry();
 
 	if ( ! focused_geometry) {
@@ -619,7 +617,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 		// Clear the plate ID and the plate ID field.
 		d_plate_id = boost::none;
 		reset_adjustment();
-		d_initial_geometries.clear();
+		d_reconstructed_feature_geometries.clear();
 		field_moving_plate->clear();
 		// This is to clear the rendered geometries if the feature geometry
 		// disappears when this tool is still active (eg, when a
@@ -631,20 +629,23 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
 	// for instance, are used to assign plate ids to regular features so we probably only
 	// want to look at geometries of regular features).
-	const GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
-	if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-			focused_geometry, rfg))
+	// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
+	// from ReconstructedFeatureGeometry.
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry);
+	if (!rfg)
 	{
 		return;
 	}
 
-	if (d_plate_id == rfg->reconstruction_plate_id()) {
+	if (d_plate_id == rfg.get()->reconstruction_plate_id()) {
 		// The plate ID hasn't changed, so there's nothing to do.
 		return;
 	}
 	reset_adjustment();
-	d_initial_geometries.clear();
-	d_plate_id = rfg->reconstruction_plate_id();
+	d_reconstructed_feature_geometries.clear();
+	d_plate_id = rfg.get()->reconstruction_plate_id();
 	if (d_plate_id) {
 		QLocale locale_;
 		// We need this static-cast because apparently QLocale's 'toString' member function
@@ -673,7 +674,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 {
 	// If there's no plate ID of the currently-focused RFG, then there can be no other RFGs
 	// with the same plate ID.
-	if ( ! d_plate_id) {
+	if ( ! d_plate_id || ! d_reconstruction_tree) {
 		return;
 	}
 	
@@ -682,40 +683,55 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 
 	if (d_should_display_children)
 	{
-		add_children_to_geometry_collection(plate_id_collection,*d_plate_id, d_application_state_ptr);
+		add_children_to_geometry_collection(
+				plate_id_collection, *d_plate_id, **d_reconstruction_tree);
 	}
 
 #if 0
 	display_collection(plate_id_collection);	
 #endif
 
-	GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
-			d_application_state_ptr->get_current_reconstruction().geometries().begin();
-	GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
-			d_application_state_ptr->get_current_reconstruction().geometries().end();
-	for ( ; iter != end; ++iter) {
-		GPlatesModel::ReconstructionGeometry *rg = iter->get();
+	// Iterate over all the reconstruction geometries that were reconstructed using the same
+	// reconstruction tree as the focused feature geometry.
+	GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator iter =
+			d_application_state_ptr->get_current_reconstruction().begin_reconstruction_geometries(
+					*d_reconstruction_tree);
+	GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator end =
+			d_application_state_ptr->get_current_reconstruction().end_reconstruction_geometries(
+					*d_reconstruction_tree);
+	for ( ; iter != end; ++iter)
+	{
+		const GPlatesAppLogic::ReconstructionGeometry *rg = (*iter).get();
 
 		// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
 		// for instance, are used to assign plate ids to regular features so we probably only
 		// want to look at geometries of regular features).
-		GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
-		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-				rg, rfg))
+		// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
+		// from ReconstructedFeatureGeometry.
+		boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+						const GPlatesAppLogic::ReconstructedFeatureGeometry>(rg);
+		if (!rfg)
 		{
-			// It's an RFG, so let's look at its reconstruction plate ID property (if
-			// there is one).
-			if (rfg->reconstruction_plate_id()) {
-				// OK, so the RFG *does* have a reconstruction plate ID.
-				GPlatesModel::integer_plate_id_type rfg_plate_id = *(rfg->reconstruction_plate_id());
-				if (std::find(plate_id_collection.begin(),plate_id_collection.end(),rfg_plate_id) != plate_id_collection.end()){
-					d_initial_geometries.push_back(std::make_pair(rfg->geometry(),rfg->get_non_null_pointer_to_const()));
-				}
+			continue;
+		}
+
+		// It's an RFG, so let's look at its reconstruction plate ID property (if
+		// there is one).
+		if (rfg.get()->reconstruction_plate_id())
+		{
+			// OK, so the RFG *does* have a reconstruction plate ID.
+			GPlatesModel::integer_plate_id_type rfg_plate_id = *rfg.get()->reconstruction_plate_id();
+			if (std::find(plate_id_collection.begin(), plate_id_collection.end(), rfg_plate_id) !=
+				plate_id_collection.end())
+			{
+				d_reconstructed_feature_geometries.push_back(
+						rfg.get()->get_non_null_pointer_to_const());
 			}
 		}
 	}
 
-	if (d_initial_geometries.empty()) {
+	if (d_reconstructed_feature_geometries.empty()) {
 		// That's pretty strange.  We expected at least one geometry here, or else, what's
 		// the user dragging?
 		std::cerr << "No initial geometries found ModifyReconstructionPoleWidget::populate_initial_geometries!"
@@ -731,7 +747,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 	static const GPlatesModel::PropertyName vgp_prop_name =
 		GPlatesModel::PropertyName::create_gpml("polePosition");
 
-	d_initial_geometries.clear();
+	d_reconstructed_feature_geometries.clear();
 	populate_initial_geometries();
 
 	// Delay any notification of changes to the rendered geometry collection
@@ -747,48 +763,31 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 	d_initial_geom_layer_ptr->clear_rendered_geometries();
 	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
-	const GPlatesGui::ColourProxy &white_colour = GPlatesGui::Colour::get_white();
+	const GPlatesGui::Colour &white_colour = GPlatesGui::Colour::get_white();
 
-	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
-	geometry_collection_type::const_iterator end = d_initial_geometries.end();
-	for ( ; iter != end; ++iter)
+	// FIXME: Probably should use the same styling params used to draw
+	// the original geometries rather than use some of the defaults.
+	GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams render_style_params;
+	render_style_params.reconstruction_line_width_hint =
+			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT;
+	render_style_params.reconstruction_point_size_hint =
+			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT;
+
+	// This creates the RenderedGeometry's from the ReconstructedFeatureGeomtries
+	// using the colour 'white_colour'.
+	GPlatesPresentation::ReconstructionGeometryRenderer initial_geometry_renderer(
+			*d_initial_geom_layer_ptr,
+			render_style_params,
+			white_colour);
+
+	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
+			d_reconstructed_feature_geometries.begin();
+	reconstructed_feature_geometry_collection_type::const_iterator rfg_end =
+			d_reconstructed_feature_geometries.end();
+	for ( ; rfg_iter != rfg_end; ++rfg_iter)
 	{
-		// Create rendered geometry.
-		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					(*iter).first,
-					white_colour,
-					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
-
-		// Add to pole manipulation layer.
-		d_initial_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
-
-
-
-		///////////////////////////////////////////////////////////////////
-		// FIXME: The following is part of the paleomag workarounds.
-		if (iter->second->is_valid())
-		{
-		
-			if ((*(*iter).second->property())->property_name() == vgp_prop_name)
-			{
-
-				boost::optional<GPlatesMaths::Rotation> optional_rotation;
-				GPlatesAppLogic::PaleomagUtils::VgpRenderer vgp_renderer(
-					d_application_state_ptr->get_current_reconstruction(),
-					optional_rotation,
-					d_initial_geom_layer_ptr,
-					white_colour,
-					d_view_state_ptr);
-
-				vgp_renderer.visit_feature(
-					iter->second->feature_handle_ptr()->reference());			
-			}
-		}
-		// End of paleomag workaround.
-		//////////////////////////////////////////////////////////////////////
-
+		// Visit the RFG with the renderer.
+		(*rfg_iter)->accept_visitor(initial_geometry_renderer);
 	}
 }
 
@@ -810,53 +809,35 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 		return;
 	}
 
-	static const GPlatesModel::PropertyName vgp_prop_name =
-		GPlatesModel::PropertyName::create_gpml("polePosition");
-
 	// Clear all dragged geometry RenderedGeometry's before adding new ones.
 	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
-	const GPlatesGui::ColourProxy &silver_colour = GPlatesGui::Colour::get_silver();
+	const GPlatesGui::Colour &silver_colour = GPlatesGui::Colour::get_silver();
 
-	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
-	geometry_collection_type::const_iterator end = d_initial_geometries.end();
-	for ( ; iter != end; ++iter)
+	// FIXME: Probably should use the same styling params used to draw
+	// the original geometries rather than use some of the defaults.
+	GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams render_style_params;
+	render_style_params.reconstruction_line_width_hint =
+			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT;
+	render_style_params.reconstruction_point_size_hint =
+			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT;
+
+	// This creates the RenderedGeometry's from the ReconstructedFeatureGeomtries
+	// using the colour 'silver_colour' and rotates geometries in the RFGs.
+	GPlatesPresentation::ReconstructionGeometryRenderer dragged_geometry_renderer(
+			*d_dragged_geom_layer_ptr,
+			render_style_params,
+			silver_colour,
+			d_accum_orientation->rotation());
+
+	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
+			d_reconstructed_feature_geometries.begin();
+	reconstructed_feature_geometry_collection_type::const_iterator rfg_end =
+			d_reconstructed_feature_geometries.end();
+	for ( ; rfg_iter != rfg_end; ++rfg_iter)
 	{
-		// Create rendered geometry.
-		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					d_accum_orientation->orient_geometry((*iter).first),
-					silver_colour,
-					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
-
-		// Add to pole manipulation layer.
-		d_dragged_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
-		
-	
-		///////////////////////////////////////////////////////////////////////////
-		// FIXME: The following is part of the paleomag workarounds.
-		if (iter->second->is_valid())
-		{
-			if ((*(*iter).second->property())->property_name() == vgp_prop_name)
-			{
-
-				boost::optional<GPlatesMaths::Rotation> optional_rotation;
-				optional_rotation.reset(d_accum_orientation->rotation());
-				GPlatesAppLogic::PaleomagUtils::VgpRenderer vgp_renderer(
-					d_application_state_ptr->get_current_reconstruction(),
-					optional_rotation,
-					d_dragged_geom_layer_ptr,
-					silver_colour,
-					d_view_state_ptr);
-
-				vgp_renderer.visit_feature(
-					iter->second->feature_handle_ptr()->reference());
-			}	
-		}
-		// End of paleomag workaround.	
-		////////////////////////////////////////////////////////////////////////////		
-
+		// Visit the RFG with the renderer.
+		(*rfg_iter)->accept_visitor(dragged_geometry_renderer);
 	}
 }
 

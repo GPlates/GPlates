@@ -130,7 +130,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::property_tree() const
 void
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg)
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg)
 {
 	d_feature_ref = feature_ref;
 	d_focused_rg = focused_rg;
@@ -142,7 +142,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::display_feature(
 void
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 {
-	if ( ! d_feature_ref.is_valid()) {
+	if ( ! d_feature_ref.is_valid() || ! d_focused_rg) {
 		// Always check your weak-refs, even if they should be valid because
 		// FeaturePropertiesDialog promised it'd check them, because in this
 		// one case we can also get updated directly when the reconstruction
@@ -176,10 +176,9 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 		// Now let's use the reconstruction plate ID of the feature to find the appropriate 
 		// absolute rotation in the reconstruction tree.
-		GPlatesModel::ReconstructionTree &recon_tree =
-				d_application_state_ptr->get_current_reconstruction().reconstruction_tree();
+		const GPlatesAppLogic::ReconstructionTree &recon_tree = *d_focused_rg->reconstruction_tree();
 		std::pair<GPlatesMaths::FiniteRotation,
-				GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
+				GPlatesAppLogic::ReconstructionTree::ReconstructionCircumstance>
 				absolute_rotation =
 						recon_tree.get_composed_absolute_rotation(recon_plate_id->value());
 

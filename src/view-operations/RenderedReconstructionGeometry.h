@@ -29,7 +29,8 @@
 #include "RenderedGeometry.h"
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "model/ReconstructionGeometry.h"
+
+#include "app-logic/ReconstructionGeometry.h"
 
 
 namespace GPlatesViewOperations
@@ -39,7 +40,7 @@ namespace GPlatesViewOperations
 	{
 	public:
 		RenderedReconstructionGeometry(
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geom,
 				RenderedGeometry rendered_geom) :
 		d_reconstruction_geom(reconstruction_geom),
 		d_rendered_geom(rendered_geom)
@@ -72,14 +73,14 @@ namespace GPlatesViewOperations
 			return d_rendered_geom.test_vertex_proximity(criteria);
 		}		
 
-		GPlatesModel::ReconstructionGeometry::non_null_ptr_type
+		const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &
 		get_reconstruction_geometry() const
 		{
 			return d_reconstruction_geom;
 		}
 
 	private:
-		GPlatesModel::ReconstructionGeometry::non_null_ptr_type d_reconstruction_geom;
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_geom;
 		RenderedGeometry d_rendered_geom;
 	};
 }

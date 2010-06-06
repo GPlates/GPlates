@@ -41,7 +41,7 @@
     <number>1</number>
    </property>
    <item>
-    <widget class="QPushButton" name="button_active_reconstructable" >
+    <widget class="QPushButton" name="button_active" >
      <property name="toolTip" >
       <string>The file contains feature data in use</string>
      </property>
@@ -66,51 +66,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QCheckBox" name="checkbox_active_reconstructable" >
-     <property name="sizePolicy" >
-      <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="text" >
-      <string/>
-     </property>
-     <property name="checkable" >
-      <bool>true</bool>
-     </property>
-     <property name="checked" >
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="button_active_reconstruction" >
-     <property name="toolTip" >
-      <string>The file is used for reconstructions</string>
-     </property>
-     <property name="text" >
-      <string/>
-     </property>
-     <property name="icon" >
-      <iconset resource="../qt-resources/qt_widgets.qrc" >:/globe_reconstruction_22.png</iconset>
-     </property>
-     <property name="iconSize" >
-      <size>
-       <width>22</width>
-       <height>22</height>
-      </size>
-     </property>
-     <property name="checkable" >
-      <bool>false</bool>
-     </property>
-     <property name="flat" >
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="checkbox_active_reconstruction" >
+    <widget class="QCheckBox" name="checkbox_active" >
      <property name="sizePolicy" >
       <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
        <horstretch>0</horstretch>

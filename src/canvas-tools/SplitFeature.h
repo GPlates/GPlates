@@ -29,8 +29,8 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "CanvasTool.h"
+
 #include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "presentation/ViewState.h"
 
 

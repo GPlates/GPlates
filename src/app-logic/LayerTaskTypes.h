@@ -38,6 +38,12 @@ namespace GPlatesAppLogic
 		/**
 		 * Register the layer tasks in @a task_types with @a layer_task_registry.
 		 *
+		 * One of the registered layers will also be set as the default layer that will be
+		 * used when no layers can be found to process a feature collection.
+		 * This default catch-all layer task will be the reconstruct layer task as it
+		 * is the most common layer task and it is also a primary layer task (ie, can be
+		 * used to automatically create a layer when a file is first loaded).
+		 *
 		 * NOTE: any new @a LayerTask derived types needs to have a registration entry
 		 * added inside @a register_layer_task_types.
 		 */

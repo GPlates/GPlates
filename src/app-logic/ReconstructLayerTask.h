@@ -27,21 +27,49 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTLAYERTASK_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTLAYERTASK_H
 
+#include <utility>
 #include <boost/shared_ptr.hpp>
+#include <QString>
 
 #include "LayerTask.h"
+
+#include "model/FeatureCollectionHandle.h"
 
 
 namespace GPlatesAppLogic
 {
+	/**
+	 * A layer task that reconstructs geometries of features from feature collection(s).
+	 */
 	class ReconstructLayerTask :
 			public LayerTask
 	{
 	public:
+		/**
+		 * Returns the name and description of this layer task.
+		 *
+		 * This is useful for display to the user so they know what this layer does.
+		 */
+		static
+		std::pair<QString, QString>
+		get_name_and_description();
+
+
+		/**
+		 * Can be used to create a layer automatically when a file is first loaded.
+		 */
+		static
+		bool
+		is_primary_layer_task_type()
+		{
+			return true;
+		}
+
+
 		static
 		bool
 		can_process_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
 
 
 		static
@@ -53,28 +81,50 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		std::vector<ReconstructGraph::input_channel_definition_type>
+		std::pair<QString, QString>
+		get_layer_name_and_description() const
+		{
+			return get_name_and_description();
+		}
+
+
+		virtual
+		std::vector<Layer::input_channel_definition_type>
 		get_input_channel_definitions() const;
 
 
 		virtual
-		ReconstructGraph::DataType
+		QString
+		get_main_input_feature_collection_channel() const;
+
+
+		virtual
+		Layer::LayerOutputDataType
 		get_output_definition() const;
 
 
 		virtual
 		bool
+		is_topological_layer_task() const
+		{
+			return false;
+		}
+
+
+		virtual
+		boost::optional<layer_task_data_type>
 		process(
 				const input_data_type &input_data,
-				layer_data_type &output_data,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchored_plate_id,
+				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
 
 	private:
+		static const char *RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
+
+
 		ReconstructLayerTask()
 		{  }
-
-		static const char *RECONSTRUCTION_TREE_CHANNEL_NAME;
-		static const char *RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
 	};
 }
 

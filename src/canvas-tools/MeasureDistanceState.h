@@ -31,10 +31,10 @@
 #include <QObject>
 #include <boost/optional.hpp>
 
+#include "app-logic/ReconstructionGeometry.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Real.h"
 #include "model/FeatureHandle.h"
-#include "model/ReconstructionGeometry.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 namespace GPlatesViewOperations

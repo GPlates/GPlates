@@ -69,7 +69,7 @@
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
 		GPlatesModel::FeatureHandle::const_weak_ref &feature,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg)
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg)
 {
 	d_tree_widget_ptr->clear();
 
@@ -82,11 +82,12 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
 		// This serves two purposes:
 		//   1) highlights to the user which geometry (of the feature) is in focus.
 		//   2) serves a dramatic optimisation for large number of geometries in feature.
-		GPlatesModel::FeatureHandle::iterator focused_geometry_property;
-		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
-				focused_rg, focused_geometry_property))
+		boost::optional<GPlatesModel::FeatureHandle::iterator> focused_geometry_property =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
+						focused_rg);
+		if (focused_geometry_property)
 		{
-			d_focused_geometry = focused_geometry_property;
+			d_focused_geometry = focused_geometry_property.get();
 		}
 	}
 	visit_feature(feature);

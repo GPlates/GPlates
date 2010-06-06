@@ -17,6 +17,7 @@ set(srcs
     CallStackTracker.h
     CommandLineParser.cc
     CommandLineParser.h
+    CopyConst.h
     ExportAnimationStrategyExporterID.h
     ExportAnimationStrategyFactory.cc
     ExportAnimationStrategyFactory.h

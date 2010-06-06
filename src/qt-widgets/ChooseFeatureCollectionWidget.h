@@ -76,8 +76,8 @@ namespace GPlatesQtWidgets
 		 * Throws NoFeatureCollectionSelectedException if no feature collection was
 		 * selected by the user.
 		 */
-		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_iterator, bool>
-		get_file_iterator() const;
+		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool>
+		get_file_reference() const;
 
 	signals:
 

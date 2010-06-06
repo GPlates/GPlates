@@ -32,10 +32,10 @@
 #include <boost/shared_ptr.hpp>
 
 #include "GeometryCookieCutter.h"
+#include "ReconstructionGeometryCollection.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
-#include "model/Reconstruction.h"
 #include "model/types.h"
 
 
@@ -252,7 +252,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Contains the reconstructed polygons used for cookie-cutting.
 		 */
-		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction;
+		ReconstructionGeometryCollection::non_null_ptr_type d_reconstruction_geometry_collection;
 
 		/**
 		 * Used to cookie cut geometries to find partitioning polygons.

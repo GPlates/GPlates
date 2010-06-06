@@ -32,13 +32,12 @@
 #include <boost/optional.hpp>
 #include <QTreeWidget>
 
+#include "app-logic/Reconstruction.h"
 #include "gui/TreeWidgetBuilder.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"
-#include "model/Reconstruction.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -53,7 +52,7 @@ namespace GPlatesFeatureVisitors
 
 		explicit
 		ViewFeatureGeometriesWidgetPopulator(
-				GPlatesModel::Reconstruction &reconstruction,
+				const GPlatesAppLogic::Reconstruction &reconstruction,
 				QTreeWidget &tree_widget):
 			d_reconstruction_ptr(&reconstruction),
 			d_tree_widget_ptr(&tree_widget),
@@ -69,7 +68,7 @@ namespace GPlatesFeatureVisitors
 		void
 		populate(
 				GPlatesModel::FeatureHandle::weak_ref &feature,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg);
+				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg);
 
 	private:
 		virtual
@@ -166,7 +165,7 @@ namespace GPlatesFeatureVisitors
 		/**
 		 * The Reconstruction which we will scan for RFGs from.
 		 */
-		GPlatesModel::Reconstruction *d_reconstruction_ptr;
+		const GPlatesAppLogic::Reconstruction *d_reconstruction_ptr;
 		
 		/**
 		 * The tree widget we are populating.

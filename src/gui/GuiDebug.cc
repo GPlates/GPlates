@@ -28,6 +28,7 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QMetaMethod>
+#include <boost/foreach.hpp>
 
 #include "GuiDebug.h"
 
@@ -197,13 +198,15 @@ GPlatesGui::GuiDebug::debug_set_all_files_clean()
 	// Grab the FeatureCollectionFileState and just go through all loaded files' feature collections.
 	GPlatesAppLogic::FeatureCollectionFileState &fcfs = 
 			d_app_state_ptr->get_feature_collection_file_state();
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
+
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
 			fcfs.get_loaded_files();
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
-	
-	for (; it != end; ++it) {
-		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = it->get_feature_collection();
+	BOOST_FOREACH(
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &loaded_file,
+			loaded_files)
+	{
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+				loaded_file.get_file().get_feature_collection();
 
 		if (feature_collection_ref.is_valid()) {
 			feature_collection_ref->clear_unsaved_changes();

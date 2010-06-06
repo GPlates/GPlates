@@ -26,9 +26,9 @@
 
 #include "ViewState.h"
 
+#include "VisualLayers.h"
+
 #include "app-logic/ApplicationState.h"
-#include "app-logic/PaleomagWorkflow.h"
-#include "app-logic/PlateVelocityWorkflow.h"
 
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
@@ -56,7 +56,6 @@
 
 #include "utils/VirtualProxy.h"
 
-#include "view-operations/ReconstructView.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -90,23 +89,7 @@ GPlatesPresentation::ViewState::ViewState(
 			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER,
 					0.175f)),					
-	d_plate_velocity_workflow(
-			new GPlatesAppLogic::PlateVelocityWorkflow(
-					application_state, d_comp_mesh_point_layer, d_comp_mesh_arrow_layer)),
-	d_plate_velocity_unregister(
-			GPlatesAppLogic::FeatureCollectionWorkflow::register_and_create_auto_unregister_handle(
-					d_plate_velocity_workflow.get(),
-					application_state.get_feature_collection_file_state())),
-	d_paleomag_workflow(
-			new GPlatesAppLogic::PaleomagWorkflow(
-					application_state, this, d_paleomag_layer)),
-	d_paleomag_unregister(
-			GPlatesAppLogic::FeatureCollectionWorkflow::register_and_create_auto_unregister_handle(
-					d_paleomag_workflow.get(),
-					application_state.get_feature_collection_file_state())),
-	d_reconstruct_view(
-			new GPlatesViewOperations::ReconstructView(
-					*d_plate_velocity_workflow, *d_paleomag_workflow,*d_rendered_geometry_collection)),
+	d_visual_layers(new VisualLayers(*this)),
 	d_render_settings(
 			new GPlatesGui::RenderSettings()),
 	d_map_transform(
@@ -122,9 +105,6 @@ GPlatesPresentation::ViewState::ViewState(
 			GPlatesPropertyValues::Georeferencing::create()),
 	d_is_raster_colour_map_invalid(false)
 {
-	// Call the operations in ReconstructView whenever a reconstruction is generated.
-	get_application_state().set_reconstruction_hook(d_reconstruct_view.get());
-
 	connect_to_viewport_zoom();
 
 	// Connect to signals from FeatureFocus.
@@ -176,13 +156,6 @@ GPlatesPresentation::ViewState::get_viewport_projection()
 }
 
 
-const GPlatesAppLogic::PlateVelocityWorkflow &
-GPlatesPresentation::ViewState::get_plate_velocity_workflow() const
-{
-	return *d_plate_velocity_workflow;
-}
-
-
 GPlatesGui::ColourSchemeContainer &
 GPlatesPresentation::ViewState::get_colour_scheme_container()
 {
@@ -201,6 +174,13 @@ GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_ty
 GPlatesPresentation::ViewState::get_colour_scheme_delegator()
 {
 	return d_colour_scheme;
+}
+
+
+GPlatesPresentation::VisualLayers &
+GPlatesPresentation::ViewState::get_visual_layers()
+{
+	return *d_visual_layers;
 }
 
 

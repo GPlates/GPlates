@@ -460,7 +460,7 @@ namespace
 	 */
 	void
 	remap_feature_collection(
-		GPlatesFileIO::File &file,
+		const GPlatesFileIO::File::Reference &file,
 		QMap< QString,QString > model_to_attribute_map,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
@@ -1188,12 +1188,14 @@ GPlatesFileIO::ShapefileReader::is_valid_shape_data(
 	return true;
 }
 
-const GPlatesFileIO::File::shared_ref
+void
 GPlatesFileIO::ShapefileReader::read_file(
-		const FileInfo &fileinfo,
+		const GPlatesFileIO::File::Reference &file_ref,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	const FileInfo &fileinfo = file_ref.get_file_info();
+
 	// By placing all changes to the model under the one changeset, we ensure that
 	// feature revision ids don't get changed from what was loaded from file no
 	// matter what we do to the features.
@@ -1232,21 +1234,12 @@ GPlatesFileIO::ShapefileReader::read_file(
 	// Store the map in the feature collection's file-info
 	fileinfo.set_model_to_shapefile_map(s_model_to_attribute_map);
 
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-		= GPlatesModel::FeatureCollectionHandle::create(
-				model->root(),
-				GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
-
-	// Make sure feature collection gets unloaded when it's no longer needed.
-	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
-			GPlatesModel::FeatureCollectionHandleUnloader::create(collection);
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection = file_ref.get_feature_collection();
 
 	reader.read_features(model,collection,read_errors);
 
 
 	//reader.display_feature_counts();
-
-	return File::create_loaded_file(collection_unloader, fileinfo);
 }
 
 void
@@ -1677,7 +1670,7 @@ GPlatesFileIO::ShapefileReader::add_ring_to_points_list(
 
 void
 GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
-	File &file,
+	const GPlatesFileIO::File::Reference &file,
 	GPlatesModel::ModelInterface &model,
 	ReadErrorAccumulation &read_errors)
 {

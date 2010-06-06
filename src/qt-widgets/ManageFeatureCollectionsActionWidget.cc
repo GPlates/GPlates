@@ -31,11 +31,11 @@
 
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollectionsActionWidget(
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &feature_collections_dialog,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_collections_dialog(feature_collections_dialog),
-	d_file_info_iterator(file_it)
+	d_file_reference(file_ref)
 {
 	setupUi(this);
 
@@ -54,7 +54,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollections
 void
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state()
 {
-	const GPlatesFileIO::FileInfo &fileinfo = d_file_info_iterator->get_file_info();
+	const GPlatesFileIO::FileInfo &fileinfo = d_file_reference.get_file().get_file_info();
 
 	// Enable the buttons in question first, then disable if needed.
 	button_save->setDisabled(false);

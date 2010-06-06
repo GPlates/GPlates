@@ -29,14 +29,13 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/ReconstructionTreeEdge.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
 #include "gui/CsvExport.h"
 
 #include "maths/MathsUtils.h"
-
-#include "model/ReconstructionTreeEdge.h"
 
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/GlobeAndMapWidget.h"

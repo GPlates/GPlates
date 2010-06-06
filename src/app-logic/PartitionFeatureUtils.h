@@ -36,16 +36,15 @@
 
 #include "AssignPlateIds.h"
 #include "GeometryCookieCutter.h"
+#include "Reconstruction.h"
+#include "ReconstructionTree.h"
 
 #include "maths/GeometryOnSphere.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/PropertyName.h"
-#include "model/Reconstruction.h"
-#include "model/ReconstructionTree.h"
 #include "model/types.h"
-
 #include "model/TopLevelProperty.h"
 
 #include "property-values/GmlTimePeriod.h"
@@ -203,7 +202,7 @@ namespace GPlatesAppLogic
 			 */
 			GPlatesModel::FeatureHandle::weak_ref
 			get_feature_for_partition(
-					const boost::optional<const GPlatesModel::ReconstructionGeometry *> &
+					const boost::optional<const ReconstructionGeometry *> &
 							partition = boost::none);
 
 		private:
@@ -211,7 +210,7 @@ namespace GPlatesAppLogic
 			 * Typedef for mapping partitions to features.
 			 */
 			typedef std::map<
-					boost::optional<const GPlatesModel::ReconstructionGeometry *>,
+					boost::optional<const ReconstructionGeometry *>,
 					GPlatesModel::FeatureHandle::weak_ref> partition_to_feature_map_type;
 
 			/**
@@ -257,7 +256,7 @@ namespace GPlatesAppLogic
 			void
 			assign_property_values(
 					const GPlatesModel::FeatureHandle::weak_ref &partitioned_feature,
-					const boost::optional<const GPlatesModel::ReconstructionGeometry *> &partition);
+					const boost::optional<const ReconstructionGeometry *> &partition);
 		};
 
 
@@ -276,8 +275,8 @@ namespace GPlatesAppLogic
 						partitioned_geometries,
 				const GPlatesModel::PropertyName &geometry_property_name,
 				PartitionedFeatureManager &partitioned_feature_manager,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree,
-				const boost::optional<const GPlatesModel::ReconstructionGeometry *> &partition = boost::none);
+				const ReconstructionTree &reconstruction_tree,
+				const boost::optional<const ReconstructionGeometry *> &partition = boost::none);
 
 
 		/**
@@ -292,7 +291,7 @@ namespace GPlatesAppLogic
 				const GPlatesAppLogic::GeometryCookieCutter::partition_seq_type &partitions,
 				const GPlatesModel::PropertyName &geometry_property_name,
 				PartitionedFeatureManager &partitioned_feature_manager,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree);
+				const ReconstructionTree &reconstruction_tree);
 
 
 		/**
@@ -306,8 +305,8 @@ namespace GPlatesAppLogic
 		add_partitioned_geometry_to_feature(
 				const GPlatesModel::TopLevelProperty::non_null_ptr_type &geometry_property,
 				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree,
-				const boost::optional<const GPlatesModel::ReconstructionGeometry *> &partition = boost::none);
+				const ReconstructionTree &reconstruction_tree,
+				const boost::optional<const ReconstructionGeometry *> &partition = boost::none);
 
 
 		/**
@@ -319,7 +318,7 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns the false if @a geometry_property has no partitioned inside geometries.
 		 */
-		boost::optional<const GPlatesModel::ReconstructionGeometry *>
+		boost::optional<const ReconstructionGeometry *>
 		find_partition_containing_most_geometry(
 				const PartitionedFeature::GeometryProperty &geometry_property);
 
@@ -333,7 +332,7 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns the false if @a partitioned_feature has no partitioned inside geometries.
 		 */
-		boost::optional<const GPlatesModel::ReconstructionGeometry *>
+		boost::optional<const ReconstructionGeometry *>
 		find_partition_containing_most_geometry(
 				const PartitionedFeature &partitioned_feature);
 
@@ -353,8 +352,8 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesMaths::FiniteRotation>
 		get_reverse_reconstruction(
-				const boost::optional<const GPlatesModel::ReconstructionGeometry *> &partition,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree);
+				const boost::optional<const ReconstructionGeometry *> &partition,
+				const ReconstructionTree &reconstruction_tree);
 
 
 		/**

@@ -52,21 +52,21 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		bool allow_partitioning_using_static_polygons) :
 	d_assign_plate_id_method(assign_plate_id_method),
 	d_feature_property_types_to_assign(feature_property_types_to_assign),
-	d_reconstruction(
-			GPlatesAppLogic::ReconstructUtils::create_reconstruction(
+	d_reconstruction_geometry_collection(
+			GPlatesAppLogic::ReconstructUtils::reconstruct(
 					GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
 							reconstruction_time,
 							anchor_plate_id,
 							reconstruction_feature_collections),
 					partitioning_feature_collections)),
 	d_geometry_cookie_cutter(
-			*d_reconstruction,
+			*d_reconstruction_geometry_collection,
 			allow_partitioning_using_topological_plate_polygons,
 			allow_partitioning_using_static_polygons),
 	d_partition_feature_tasks(
 			// Get all tasks that assign properties from polygon features to partitioned features.
 			get_partition_feature_tasks(
-					d_reconstruction->reconstruction_tree(),
+					*d_reconstruction_geometry_collection->reconstruction_tree(),
 					assign_plate_id_method,
 					feature_property_types_to_assign))
 {

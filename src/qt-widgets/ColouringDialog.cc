@@ -1114,7 +1114,7 @@ GPlatesQtWidgets::ColouringDialog::PreviewColourScheme::set_preview_colour_schem
 
 boost::optional<GPlatesGui::Colour>
 GPlatesQtWidgets::ColouringDialog::PreviewColourScheme::get_colour(
-		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
 	if (!d_preview_colour_scheme)
 	{
@@ -1122,12 +1122,11 @@ GPlatesQtWidgets::ColouringDialog::PreviewColourScheme::get_colour(
 	}
 
 	// Find the feature collection from which the reconstruction_geometry was created.
-	GPlatesModel::FeatureHandle::weak_ref feature_ref;
+	boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+					&reconstruction_geometry);
 	GPlatesModel::FeatureCollectionHandle *feature_collection_ptr =
-		GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-			&reconstruction_geometry, feature_ref) ?
-		feature_ref->parent_ptr() :
-		NULL;
+			feature_ref ? feature_ref.get()->parent_ptr() : NULL;
 
 	if (d_altered_feature_collection)
 	{

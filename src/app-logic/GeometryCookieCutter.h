@@ -37,16 +37,13 @@
 #include "model/types.h"
 
 
-namespace GPlatesModel
-{
-	class ReconstructedFeatureGeometry;
-	class Reconstruction;
-	class ReconstructionGeometry;
-	class ResolvedTopologicalBoundary;
-}
-
 namespace GPlatesAppLogic
 {
+	class ReconstructedFeatureGeometry;
+	class ReconstructionGeometry;
+	class ReconstructionGeometryCollection;
+	class ResolvedTopologicalBoundary;
+
 	/**
 	 * Partitions geometry using dynamic resolved topological boundaries and/or
 	 * static reconstructed feature polygons.
@@ -68,11 +65,11 @@ namespace GPlatesAppLogic
 		{
 		public:
 			Partition(
-					const GPlatesModel::ReconstructionGeometry *reconstruction_geometry_) :
+					const ReconstructionGeometry *reconstruction_geometry_) :
 				reconstruction_geometry(reconstruction_geometry_)
 			{ }
 
-			const GPlatesModel::ReconstructionGeometry *reconstruction_geometry;
+			const ReconstructionGeometry *reconstruction_geometry;
 			partitioned_geometry_seq_type partitioned_geometries;
 		};
 
@@ -95,7 +92,7 @@ namespace GPlatesAppLogic
 		 * Both flags can be true (but probably not useful).
 		 */
 		GeometryCookieCutter(
-				const GPlatesModel::Reconstruction &reconstruction,
+				const ReconstructionGeometryCollection &reconstruction_geometry_collection,
 				bool partition_using_topological_plate_polygons = true,
 				bool partition_using_static_polygons = false);
 
@@ -133,7 +130,7 @@ namespace GPlatesAppLogic
 		 * Finds which partitioning polygon boundary contains @a point.
 		 * Returns false if no containing boundaries are found.
 		 */
-		boost::optional<const GPlatesModel::ReconstructionGeometry *>
+		boost::optional<const ReconstructionGeometry *>
 		partition_point(
 				const GPlatesMaths::PointOnSphere &point) const;
 
@@ -157,14 +154,14 @@ namespace GPlatesAppLogic
 		{
 		public:
 			PartitioningGeometry(
-					const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary);
+					const ResolvedTopologicalBoundary *resolved_topological_boundary);
 
 			PartitioningGeometry(
-					const GPlatesModel::ReconstructedFeatureGeometry *reconstructed_feature_geometry,
+					const ReconstructedFeatureGeometry *reconstructed_feature_geometry,
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon);
 
 
-			const GPlatesModel::ReconstructionGeometry *d_reconstruction_geometry;
+			const ReconstructionGeometry *d_reconstruction_geometry;
 			GPlatesMaths::PolygonIntersections::non_null_ptr_type d_polygon_intersections;
 
 			//! Used to sort by plate id.
@@ -193,7 +190,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_resolved_topological_boundaries(
-				const GPlatesModel::Reconstruction &reconstruction);
+				const ReconstructionGeometryCollection &reconstruction_geometry_collection);
 
 		/**
 		 * Adds all @a ReconstructedFeatureGeometry objects in @a reconstruction, that have
@@ -201,7 +198,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_reconstructed_feature_polygons(
-				const GPlatesModel::Reconstruction &reconstruction);
+				const ReconstructionGeometryCollection &reconstruction_geometry_collection);
 
 		/**
 		 * Sorts the sequence of @a ReconstructionGeometry objects added with

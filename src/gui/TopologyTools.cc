@@ -57,7 +57,10 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/ReconstructedFeatureGeometryFinder.h"
+#include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionFeatureProperties.h"
+#include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/TopologyInternalUtils.h"
 
@@ -85,9 +88,8 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/ModelUtils.h"
-#include "model/ReconstructedFeatureGeometryFinder.h"
-#include "model/ReconstructionGeometry.h"
 
+#include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -529,16 +531,6 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
-	// click point of the current mouse position
-	d_click_point_layer_ptr =
-		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
-
-	// click points of the boundary feature data 
-	d_click_points_layer_ptr =
-		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
-
 	// head and tail points of src geometry 
 	d_end_points_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
@@ -563,27 +555,7 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 	d_insertion_neighbors_layer_ptr->set_active();
 	d_segments_layer_ptr->set_active();
 	d_intersection_points_layer_ptr->set_active();
-	d_click_point_layer_ptr->set_active();
-	d_click_points_layer_ptr->set_active();
 	d_end_points_layer_ptr->set_active();
-}
-
-
-void
-GPlatesGui::TopologyTools::set_click_point(double lat, double lon)
-{
-	const GPlatesMaths::PointOnSphere &reconstructed_click_point =
-			GPlatesMaths::make_point_on_sphere(
-					GPlatesMaths::LatLonPoint(lat, lon));
-
-	// NOTE: This relies on the focused feature being set before we are called -
-	// this is currently taken care of by the BuildTopology and EditTopology classes.
-	d_click_point.set_focus(
-			d_feature_focus_ptr->focused_feature(),
-			reconstructed_click_point,
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree());
-
-	draw_click_point();
 }
 
 
@@ -600,15 +572,6 @@ std::cout << "GPlatesGui::TopologyTools::handle_reconstruction() " << std::endl;
 	// features (sections) referenced by the topology being built/edited.
 	// We are handling this in this method since an unloaded file will trigger a reconstruction.
 	handle_unloaded_sections();
-
-	// Update the click point.
-	// NOTE: This is necessary since the user might click on a feature, then
-	// animate the reconstruction time (moving the focused feature away from the
-	// original click point) and then add the focused feature to the topology thus
-	// giving it a click point that is not on the feature like it was originally).
-	d_click_point.update_reconstructed_click_point(
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree());
-	draw_click_point();
 
 	// Update all topology sections and redraw.
 	update_and_redraw_topology();
@@ -664,11 +627,6 @@ GPlatesGui::TopologyTools::set_focus(
 		// Clear focused geometry - we don't want the user to think they
 		// can add it as a section to the topology..
 		draw_focused_geometry(false);
-
-		// Reset the click point - it represents where the user clicked on a feature
-		// and since the feature is now unfocused we should remove it.
-		d_click_point.unset_focus();
-		draw_click_point();
 
 		d_topology_tools_widget_ptr->choose_topology_tab();
 	}
@@ -795,29 +753,22 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 		return false;
 	}
 
-	//
-	// Check feature type via qstrings.
-	//
-	// The following check for "TopologicalClosedPlateBoundary", etc is not needed
-	// anymore since only ReconstructedFeatureGeometry's and not
-	// ResolvedTopologicalBoundary's are added to the clicked feature table
-	// when using the topology tools.
-	// However we'll keep it here just in case.
-	//
-	// FIXME: Do this check based on feature properties rather than feature type.
-	// So if something looks like a TCPB (because it has a topology polygon property)
-	// then treat it like one. For this to happen we first need TopologicalNetwork to
-	// use a property type different than TopologicalPolygon.
-	//
- 	static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
- 	static const QString topology_network_type_name ("TopologicalNetwork");
-	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		d_feature_focus_ptr->focused_feature()->feature_type().get_name() );
-	if ( ( feature_type_name == topology_boundary_type_name ) ||
-		( feature_type_name == topology_network_type_name ) )
+	if ( !d_feature_focus_ptr->associated_reconstruction_geometry() )
 	{
 		return false;
-	} 
+	}
+
+	// Only insert features that have a ReconstructedFeatureGeometry.
+	// The BuildTopology and EditTopology tools filter out everything else
+	// so we shouldn't have to test this but we will anyway.
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ReconstructedFeatureGeometry>(
+							d_feature_focus_ptr->associated_reconstruction_geometry());
+	if (!focused_rfg)
+	{
+		return false;
+	}
 
 	// Currently we cannot handle a feature that contains more than one geometry property.
 	// This is because a topology geometry is referenced using a property delegate and
@@ -1167,7 +1118,7 @@ GPlatesGui::TopologyTools::handle_add_feature()
 	// Flip to Topology Sections Table
 	d_viewport_window_ptr->change_tab( 2 );
 
-	const GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type rg_ptr =
+	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type rg_ptr =
 			d_feature_focus_ptr->associated_reconstruction_geometry();
 
 	// only insert features with a valid RG
@@ -1177,21 +1128,17 @@ GPlatesGui::TopologyTools::handle_add_feature()
 	// We exclude features with a ResolvedTopologicalBoundary because those features are
 	// themselves topological boundaries and we're trying to build a topological boundary
 	// from ordinary features.
-	const GPlatesModel::ReconstructedFeatureGeometry *rfg_ptr = NULL;
-	if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-			rg_ptr, rfg_ptr))
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg_ptr =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ReconstructedFeatureGeometry>(rg_ptr);
+	if (!rfg_ptr)
 	{
 		return;
 	}
 
 	// The table row to insert into the topology sections container.
-	//
-	// This user click point is the last user click intercepted by us.
-	// It is where the user clicked on the feature we are now adding (rotated
-	// to present day).
 	const GPlatesGui::TopologySectionsContainer::TableRow table_row(
-			rfg_ptr->property(),
-			d_click_point.d_present_day_click_point);
+			rfg_ptr.get()->property());
 
 	// Insert the row.
 	// NOTE: This will generate a signal that will call our 'react_entries_inserted()'
@@ -1250,8 +1197,6 @@ GPlatesGui::TopologyTools::draw_all_layers_clear()
 	d_segments_layer_ptr->clear_rendered_geometries();
 	d_end_points_layer_ptr->clear_rendered_geometries();
 	d_intersection_points_layer_ptr->clear_rendered_geometries();
-	d_click_point_layer_ptr->clear_rendered_geometries();
-	d_click_points_layer_ptr->clear_rendered_geometries();
 }
 
 
@@ -1452,34 +1397,51 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 	// always check weak refs
 	if ( ! d_feature_focus_ptr->is_valid() ) { return; }
 
-	if ( d_feature_focus_ptr->associated_reconstruction_geometry() )
+	if ( !d_feature_focus_ptr->associated_reconstruction_geometry() ) { return; }
+
+	// We only accept reconstructed feature geometry's.
+	// The BuildTopology and EditTopology tools filter out everything else
+	// so we shouldn't have to test this but we will anyway.
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ReconstructedFeatureGeometry>(
+							d_feature_focus_ptr->associated_reconstruction_geometry());
+	if (!focused_rfg)
 	{
-		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
-
-		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				d_feature_focus_ptr->associated_reconstruction_geometry()->geometry(),
-				colour,
-				GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
-
-		d_focused_feature_layer_ptr->add_rendered_geometry(rendered_geometry);
-
-		// Get the start and end points of the focused feature's geometry.
-		// Since the geometry is in focus but has not been added to the topology
-		// there is no information about whether to reverse its points so we don't.
-		std::pair<
-			GPlatesMaths::PointOnSphere/*start point*/,
-			GPlatesMaths::PointOnSphere/*end point*/>
-				focus_feature_end_points =
-					GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
-							*d_feature_focus_ptr->associated_reconstruction_geometry()->geometry());
-
-		// draw the focused end_points
-		draw_focused_geometry_end_points(
-				focus_feature_end_points.first,
-				focus_feature_end_points.second);
+		return;
 	}
+
+	const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
+
+	// FIXME: Probably should use the same styling params used to draw
+	// the original geometries rather than use some of the defaults.
+	GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams render_style_params;
+	render_style_params.reconstruction_line_width_hint =
+			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
+	render_style_params.reconstruction_point_size_hint =
+			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
+
+	// This creates the RenderedGeometry's from the ReconstructionGeometry's.
+	GPlatesPresentation::ReconstructionGeometryRenderer reconstruction_geometry_renderer(
+			*d_focused_feature_layer_ptr,
+			render_style_params,
+			colour);
+	focused_rfg.get()->accept_visitor(reconstruction_geometry_renderer);
+
+	// Get the start and end points of the focused feature's geometry.
+	// Since the geometry is in focus but has not been added to the topology
+	// there is no information about whether to reverse its points so we don't.
+	std::pair<
+		GPlatesMaths::PointOnSphere/*start point*/,
+		GPlatesMaths::PointOnSphere/*end point*/>
+			focus_feature_end_points =
+				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+						*focused_rfg.get()->geometry());
+
+	// draw the focused end_points
+	draw_focused_geometry_end_points(
+			focus_feature_end_points.first,
+			focus_feature_end_points.second);
 }
 
 
@@ -1637,67 +1599,6 @@ GPlatesGui::TopologyTools::draw_intersection_points()
 
 
 void
-GPlatesGui::TopologyTools::draw_click_point()
-{
-	// No need to draw click point anymore since click point positions are no longer
-	// used to determine which partitioned subsegment of a section contributes to the
-	// boundary of the plate polygon.
-#if 0
-	d_click_point_layer_ptr->clear_rendered_geometries();
-
-	// Make sure click point has been set - it should be.
-	if (!d_click_point.d_reconstructed_click_point)
-	{
-		return;
-	}
-
-	const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_olive();
-
-	// Create rendered geometry.
-	const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-			*d_click_point.d_reconstructed_click_point,
-			colour,
-			GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT);
-
-	d_click_point_layer_ptr->add_rendered_geometry(rendered_geometry);
-#endif
-}
-
-
-void
-GPlatesGui::TopologyTools::draw_click_points()
-{
-	d_click_points_layer_ptr->clear_rendered_geometries();
-
-	const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_black();
-
-	// Iterate over the visible sections and the reconstructed click points
-	// in each section that has one.
-	visible_section_seq_type::const_iterator visible_section_iter = d_visible_section_seq.begin();
-	visible_section_seq_type::const_iterator visible_section_end = d_visible_section_seq.end();
-	for ( ; visible_section_iter != visible_section_end; ++visible_section_iter)
-	{
-		if (visible_section_iter->d_reconstructed_click_point)
-		{
-			const GPlatesMaths::PointOnSphere &reconstructed_click_point =
-					*visible_section_iter->d_reconstructed_click_point;
-
-			// Create rendered geometry.
-			const GPlatesViewOperations::RenderedGeometry click_point_rendered_geometry =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-					reconstructed_click_point,
-					colour,
-					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);
-
-			// Add to layer.
-			d_click_points_layer_ptr->add_rendered_geometry(click_point_rendered_geometry);
-		}
-	}
-}
-
-
-void
 GPlatesGui::TopologyTools::update_and_redraw_topology()
 {
 	PROFILE_FUNC();
@@ -1777,6 +1678,12 @@ GPlatesGui::TopologyTools::reconstruct_sections()
 	// We're going to repopulate it.
 	d_visible_section_seq.clear();
 
+	// Get the reconstruction tree output of the default reconstruction tree layer.
+	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
+	// as input to other layers - when that happens we'll need to handle non-default trees too.
+	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			d_application_state_ptr->get_current_reconstruction().get_default_reconstruction_tree();
+
 	const section_info_seq_type::size_type num_sections = d_section_info_seq.size();
 
 	section_info_seq_type::size_type section_index;
@@ -1792,7 +1699,7 @@ GPlatesGui::TopologyTools::reconstruct_sections()
 		const boost::optional<VisibleSection> visible_section =
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
-						d_application_state_ptr->get_current_reconstruction());
+						*reconstruction_tree);
 
 		if (!visible_section)
 		{
@@ -2617,8 +2524,7 @@ GPlatesGui::TopologyTools::create_topological_sections(
 								section_info.d_table_row.get_geometry_property(),
 								section_info.d_table_row.get_reverse(),
 								prev_intersection,
-								next_intersection,
-								section_info.d_table_row.get_present_day_click_point());
+								next_intersection);
 		if (!topological_section)
 		{
 			qDebug() << "ERROR: ======================================";
@@ -2758,49 +2664,28 @@ GPlatesGui::TopologyTools::update_topology_vertices()
 
 GPlatesGui::TopologyTools::VisibleSection::VisibleSection(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry_unreversed,
-		const GPlatesGui::TopologySectionsContainer::TableRow &table_row,
-		const std::size_t section_info_index,
-		const GPlatesModel::Reconstruction &reconstruction) :
+		const std::size_t section_info_index) :
 	d_section_info_index(section_info_index),
 	// The section geometry is always the whole unclipped section geometry.
 	// This shouldn't change when we do neighbouring section intersection processing.
 	d_section_geometry_unreversed(section_geometry_unreversed),
-	// Reconstruct the click point if there is one.
-	// Otherwise just use the present day click point.
-	d_reconstructed_click_point(table_row.get_present_day_click_point()),
 	d_intersection_results(section_geometry_unreversed)
 {
-	if (table_row.get_present_day_click_point())
-	{
-		// Get the rotation used to rotate this section's reference point.
-		// NOTE: we use the section itself as the reference feature rather than the
-		// feature stored in the GpmlTopologicalIntersection.
-		const boost::optional<GPlatesMaths::FiniteRotation> fwd_rot =
-				GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
-						table_row.get_feature_ref(),
-						reconstruction.reconstruction_tree());
-
-		if (fwd_rot)
-		{
-			d_reconstructed_click_point =
-					*fwd_rot * *table_row.get_present_day_click_point();
-		}
-	}
 }
 
 
 boost::optional<GPlatesGui::TopologyTools::VisibleSection>
 GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		std::size_t section_index,
-		GPlatesModel::Reconstruction &reconstruction) const
+		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree) const
 {
 	// Find the RFG, in the current Reconstruction, for the current topological section.
-	boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type> section_rfg =
+	boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> section_rfg =
 			GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 					d_table_row.get_geometry_property(),
-					reconstruction);
+					reconstruction_tree);
 
-	// If not RFG was found then either:
+	// If no RFG was found then either:
 	// - the feature id could not be resolved (feature not loaded or loaded twice), or
 	// - the referenced feature's age range does not include the current reconstruction time.
 	// The first condition has already reported an error and the second condition means
@@ -2814,74 +2699,5 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry_unreversed =
 			(*section_rfg)->geometry();
 
-	return VisibleSection(section_geometry_unreversed, d_table_row, section_index, reconstruction);
-}
-
-
-void
-GPlatesGui::TopologyTools::ClickPoint::update_reconstructed_click_point(
-		GPlatesModel::ReconstructionTree &reconstruction_tree)
-{
-	//
-	// Compute a new reconstructed click point from the present day click point.
-	//
-
-	if (!d_present_day_click_point)
-	{
-		d_reconstructed_click_point = boost::none;
-		return;
-	}
-
-	// Get the rotation used to rotate the present-day click point.
-	const boost::optional<GPlatesMaths::FiniteRotation> fwd_rot =
-			GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
-					d_clicked_feature_ref,
-					reconstruction_tree);
-	if (!fwd_rot)
-	{
-		// NOTE: no rotation so just set the rotated click point to
-		// the present day click point.
-		// FIXME: Perhaps we should be setting it to boost::none ?
-		d_reconstructed_click_point = d_present_day_click_point;
-		return;
-	}
-
-	// Reconstruct the point. 
-	d_reconstructed_click_point = *fwd_rot * *d_present_day_click_point;
-}
-
-
-void
-GPlatesGui::TopologyTools::ClickPoint::calc_present_day_click_point(
-		GPlatesModel::ReconstructionTree &reconstruction_tree)
-{
-	//
-	// Compute the present day user click point from the reconstructed click point.
-	//
-
-	if (!d_reconstructed_click_point)
-	{
-		d_present_day_click_point = boost::none;
-		return;
-	}
-
-	// Get the rotation used to rotate the present-day click point.
-	const boost::optional<GPlatesMaths::FiniteRotation> fwd_rot =
-			GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
-					d_clicked_feature_ref,
-					reconstruction_tree);
-	if (!fwd_rot)
-	{
-		// NOTE: no rotation so just set the present day click point to
-		// the rotated click point.
-		// FIXME: Perhaps we should be setting it to boost::none ?
-		d_present_day_click_point = d_reconstructed_click_point;
-		return;
-	}
-
-	// Get the reverse rotation.
-	const GPlatesMaths::FiniteRotation rev_rot = GPlatesMaths::get_reverse(*fwd_rot);
-
-	// Un-reconstruct the point. 
-	d_present_day_click_point = rev_rot * *d_reconstructed_click_point;
+	return VisibleSection(section_geometry_unreversed, section_index);
 }

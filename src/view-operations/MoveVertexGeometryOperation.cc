@@ -597,7 +597,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_secondary_geometries(
 		end = sorted_hits.end();
 		
 		
-	GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focus_rg = 
+	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focus_rg = 
 		d_geometry_operation_target->get_feature_focus()->associated_reconstruction_geometry();	
 	
 	// We may want to extend this to store all geometries that have a vertex inside the proximity
@@ -613,8 +613,8 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_secondary_geometries(
 		
 		ReconstructionGeometryFinder finder;
 		rg.accept_visitor(finder);
-		boost::optional<GPlatesModel::ReconstructionGeometry::non_null_ptr_type> recon_geom =
-			finder.get_reconstruction_geometry();
+		boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
+				recon_geom = finder.get_reconstruction_geometry();
 			
 
 		// The focus geometry itself will return a hit from the test_vertex_proximity test,
@@ -647,16 +647,19 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_secondary_geometries(
 	{
 		ReconstructionGeometryFinder recon_geom_finder;
 		closest_non_focus_rendered_geom->accept_visitor(recon_geom_finder);
-		boost::optional<GPlatesModel::ReconstructionGeometry::non_null_ptr_type> recon_geom = 
-			recon_geom_finder.get_reconstruction_geometry();
+		boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
+				recon_geom = recon_geom_finder.get_reconstruction_geometry();
 			
 
-		GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
-		if (recon_geom &&
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-				*recon_geom, rfg))
+		if (recon_geom)
+		{
+			const boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+							const GPlatesAppLogic::ReconstructedFeatureGeometry>(recon_geom.get());
+			if (rfg)
 			{
-				boost::optional<GPlatesModel::integer_plate_id_type> plate_id = (*rfg).reconstruction_plate_id();
+				boost::optional<GPlatesModel::integer_plate_id_type> plate_id =
+						rfg.get()->reconstruction_plate_id();
 				if (d_should_use_plate_id_filter)
 				{ 
 					if ( d_filter_plate_id &&
@@ -672,7 +675,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_secondary_geometries(
 						d_geometry_builder->add_secondary_geometry(*recon_geom,closest_vertex_index);
 				}
 			}
-
+		}
 	}
 	
 

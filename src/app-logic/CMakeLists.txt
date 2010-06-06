@@ -21,71 +21,91 @@ set(srcs
     CgalUtils.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
-    FeatureCollectionActivationStrategy.cc
-    FeatureCollectionActivationStrategy.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
     FeatureCollectionFileState.h
-    FeatureCollectionFileStateDecls.h
-    FeatureCollectionFileStateImpl.cc
-    FeatureCollectionFileStateImpl.h
-    FeatureCollectionFileStateImplDecls.h
-    FeatureCollectionWorkflow.cc
-    FeatureCollectionWorkflow.h
     GenericPartitionFeatureTask.cc
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
     GeometryCookieCutter.h
     GeometryUtils.cc
     GeometryUtils.h
+    Layer.cc
+    Layer.h
+    LayerTask.cc
     LayerTask.h
+    LayerTaskDataType.h
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
     LayerTaskTypes.cc
     LayerTaskTypes.h
     MeshGenerator.cc
     MeshGenerator.h
-    PaleomagUtils.cc
-    PaleomagUtils.h
-    PaleomagWorkflow.cc
-    PaleomagWorkflow.h
     PartitionFeatureTask.cc
     PartitionFeatureTask.h
     PartitionFeatureUtils.cc
     PartitionFeatureUtils.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
-    PlateVelocityWorkflow.cc
-    PlateVelocityWorkflow.h
+    ReconstructedFeatureGeometry.cc
+    ReconstructedFeatureGeometry.h
+    ReconstructedFeatureGeometryFinder.cc
+    ReconstructedFeatureGeometryFinder.h
     PropertyExtractors.cc
     PropertyExtractors.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
+    ReconstructedPaleomagGeometryPopulator.h
+    ReconstructedVirtualGeomagneticPole.cc
+    ReconstructedVirtualGeomagneticPole.h
     ReconstructGraph.cc
     ReconstructGraph.h
     ReconstructGraphImpl.cc
     ReconstructGraphImpl.h
-    ReconstructionActivationStrategy.cc
-    ReconstructionActivationStrategy.h
+    Reconstruction.cc
+    Reconstruction.h
     ReconstructionFeatureProperties.cc
     ReconstructionFeatureProperties.h
+    ReconstructionGeometry.cc
+    ReconstructionGeometry.h
+    ReconstructionGeometryCollection.cc
+    ReconstructionGeometryCollection.h
+    ReconstructionGeometryFinder.cc
+    ReconstructionGeometryFinder.h
     ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
+    ReconstructionGeometryVisitor.h
+    ReconstructionGraph.cc
+    ReconstructionGraph.h
     ReconstructionLayerTask.cc
     ReconstructionLayerTask.h
+    ReconstructionTree.cc
+    ReconstructionTree.h
+    ReconstructionTreeEdge.cc
+    ReconstructionTreeEdge.h
+    ReconstructionTreePopulator.cc
+    ReconstructionTreePopulator.h
     ReconstructLayerTask.cc
     ReconstructLayerTask.h
     ReconstructUtils.cc
     ReconstructUtils.h
+    ResolvedTopologicalBoundary.cc
+    ResolvedTopologicalBoundary.h
+    ResolvedTopologicalNetwork.cc
+    ResolvedTopologicalNetwork.h
     TopologyBoundaryIntersections.cc
     TopologyBoundaryIntersections.h
     TopologyBoundaryResolver.cc
     TopologyBoundaryResolver.h
+    TopologyBoundaryResolverLayerTask.cc
+    TopologyBoundaryResolverLayerTask.h
     TopologyInternalUtils.cc
     TopologyInternalUtils.h
     TopologyNetworkResolver.cc
     TopologyNetworkResolver.h
+    TopologyNetworkResolverLayerTask.cc
+    TopologyNetworkResolverLayerTask.h
     TopologyUtils.cc
     TopologyUtils.h
     VgpPartitionFeatureTask.cc

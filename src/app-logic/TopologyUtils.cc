@@ -30,16 +30,17 @@
 #include <boost/cast.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "TopologyInternalUtils.h"
-#include "TopologyUtils.h"
-
-#include "ReconstructionGeometryUtils.h"
-#include "TopologyBoundaryResolver.h"
-#include "TopologyNetworkResolver.h"
-
 #include "AppLogicUtils.h"
 #include "CgalUtils.h"
 #include "GeometryUtils.h"
+#include "Reconstruction.h"
+#include "ReconstructionGeometryUtils.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalNetwork.h"
+#include "TopologyBoundaryResolver.h"
+#include "TopologyInternalUtils.h"
+#include "TopologyNetworkResolver.h"
+#include "TopologyUtils.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -47,9 +48,8 @@
 #include "maths/PointInPolygon.h"
 #include "maths/PolygonIntersections.h"
 
-#include "model/Reconstruction.h"
-#include "model/ResolvedTopologicalBoundary.h"
-#include "model/ResolvedTopologicalNetwork.h"
+#include "utils/UnicodeStringUtils.h"
+
 
 #if 0
 	#define DEBUG_POINT_IN_POLYGON
@@ -68,14 +68,14 @@ namespace GPlatesAppLogic
 		{
 		public:
 			ResolvedBoundaryForGeometryPartitioning(
-					const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary_,
+					const ResolvedTopologicalBoundary *resolved_topological_boundary_,
 					const GPlatesMaths::PolygonIntersections::non_null_ptr_type &polygon_intersections_) :
 				resolved_topological_boundary(resolved_topological_boundary_),
 				polygon_intersections(polygon_intersections_)
 			{  }
 
 
-			const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary;
+			const ResolvedTopologicalBoundary *resolved_topological_boundary;
 			GPlatesMaths::PolygonIntersections::non_null_ptr_type polygon_intersections;
 		};
 		/**
@@ -97,14 +97,14 @@ namespace GPlatesAppLogic
 		{
 		public:
 			ResolvedNetworkForInterpolationQuery(
-					GPlatesModel::ResolvedTopologicalNetworkImpl *network_) :
+					ResolvedTopologicalNetwork *network_) :
 				network(network_)
 			{  }
 
 			typedef boost::shared_ptr<CgalUtils::cgal_map_point_to_value_type> scalar_map_ptr_type;
 			typedef std::vector<scalar_map_ptr_type> scalar_map_seq_type;
 
-			GPlatesModel::ResolvedTopologicalNetworkImpl *network;
+			ResolvedTopologicalNetwork *network;
 			scalar_map_seq_type scalar_map_seq;
 		};
 		/**
@@ -168,49 +168,34 @@ namespace GPlatesAppLogic
 }
 
 
-void
-GPlatesAppLogic::TopologyUtils::resolve_topologies(
-		GPlatesModel::Reconstruction &reconstruction,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				topological_features_collection)
+bool
+GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(
+		const GPlatesModel::FeatureHandle &feature)
 {
-	// Visit topological boundary features.
-	TopologyBoundaryResolver topology_boundary_resolver(reconstruction);
+	// FIXME: Do this check based on feature properties rather than feature type.
+	// So if something looks like a TCPB (because it has a topology polygon property)
+	// then treat it like one. For this to happen we first need TopologicalNetwork to
+	// use a property type different than TopologicalPolygon.
+	//
+	static const QString type("TopologicalClosedPlateBoundary");
 
-	AppLogicUtils::visit_feature_collections(
-		topological_features_collection.begin(),
-		topological_features_collection.end(),
-		topology_boundary_resolver);
-
-	// Visit topological network features.
-	TopologyNetworkResolver topology_network_resolver(reconstruction);
-
-	AppLogicUtils::visit_feature_collections(
-		topological_features_collection.begin(),
-		topological_features_collection.end(),
-		topology_network_resolver);
+	return type == GPlatesUtils::make_qstring_from_icu_string(feature.feature_type().get_name());
 }
 
 
 bool
-GPlatesAppLogic::TopologyUtils::has_resolved_topological_boundaries(
-		GPlatesModel::Reconstruction &reconstruction)
+GPlatesAppLogic::TopologyUtils::has_topological_closed_plate_boundary_features(
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
-	// Iterate through the reconstruction geometries and see if any are
-	// resolved topological boundaries.
-	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator rg_iter =
-			reconstruction.geometries().begin();
-	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator rg_end =
-			reconstruction.geometries().end();
-	for ( ; rg_iter != rg_end; ++rg_iter)
+	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_iter = feature_collection->begin();
+	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_end = feature_collection->end();
+	for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
 	{
-		const GPlatesModel::ReconstructionGeometry::non_null_ptr_type &rg = *rg_iter;
+		const GPlatesModel::FeatureHandle &feature_handle = **feature_collection_iter;
 
-		GPlatesModel::ResolvedTopologicalBoundary *rtb = NULL;
-		if (GPlatesAppLogic::ReconstructionGeometryUtils
-				::get_reconstruction_geometry_derived_type(rg, rtb))
-		{
-			return true;
+		if (is_topological_closed_plate_boundary_feature(feature_handle))
+		{ 
+			return true; 
 		}
 	}
 
@@ -218,15 +203,36 @@ GPlatesAppLogic::TopologyUtils::has_resolved_topological_boundaries(
 }
 
 
+GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type
+GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
+		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+				topological_boundary_features_collection)
+{
+	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geom_collection =
+			ReconstructionGeometryCollection::create(reconstruction_tree);
+
+	// Visit topological boundary features.
+	TopologyBoundaryResolver topology_boundary_resolver(*reconstruction_geom_collection);
+
+	AppLogicUtils::visit_feature_collections(
+		topological_boundary_features_collection.begin(),
+		topological_boundary_features_collection.end(),
+		topology_boundary_resolver);
+
+	return reconstruction_geom_collection;
+}
+
+
 GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type
 GPlatesAppLogic::TopologyUtils::query_resolved_topologies_for_geometry_partitioning(
-		GPlatesModel::Reconstruction &reconstruction)
+		const ReconstructionGeometryCollection &reconstruction_geometry_collection)
 {
 	// First get all ResolvedTopologicalBoundary objects in the reconstruction.
 	resolved_topological_boundary_seq_type all_resolved_boundaries;
 	ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-				reconstruction.geometries().begin(),
-				reconstruction.geometries().end(),
+				reconstruction_geometry_collection.begin(),
+				reconstruction_geometry_collection.end(),
 				all_resolved_boundaries);
 
 	// Query structure to return to the caller.
@@ -250,7 +256,7 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topologies_for_geometry_partition
 	resolved_topological_boundary_seq_type::const_iterator rtb_end = all_resolved_boundaries.end();
 	for ( ; rtb_iter != rtb_end; ++rtb_iter)
 	{
-		const GPlatesModel::ResolvedTopologicalBoundary *rtb = *rtb_iter;
+		const ResolvedTopologicalBoundary *rtb = *rtb_iter;
 
 		const ResolvedBoundaryForGeometryPartitioning resolved_boundary_for_geometry_partitioning(
 				rtb,
@@ -426,7 +432,7 @@ GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_ancho
 		rtb_iter != resolved_boundaries.end();
 		++rtb_iter)
 	{
-		const GPlatesModel::ResolvedTopologicalBoundary *rtb = *rtb_iter;
+		const ResolvedTopologicalBoundary *rtb = *rtb_iter;
 
 		if (rtb->plate_id())
 		{
@@ -449,25 +455,87 @@ GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_ancho
 
 
 GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedGeometries::ResolvedBoundaryPartitionedGeometries(
-		const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary_) :
+		const ResolvedTopologicalBoundary *resolved_topological_boundary_) :
 	resolved_topological_boundary(resolved_topological_boundary_)
 {
 }
 
 
+bool
+GPlatesAppLogic::TopologyUtils::is_topological_network_feature(
+		const GPlatesModel::FeatureHandle &feature)
+{
+	// FIXME: Do this check based on feature properties rather than feature type.
+	// So if something looks like a TCPB (because it has a topology polygon property)
+	// then treat it like one. For this to happen we first need TopologicalNetwork to
+	// use a property type different than TopologicalPolygon.
+	//
+	static const QString type("TopologicalNetwork");
+
+	return type == GPlatesUtils::make_qstring_from_icu_string(feature.feature_type().get_name());
+}
+
+
+bool
+GPlatesAppLogic::TopologyUtils::has_topological_network_features(
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+{
+	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_iter =
+			feature_collection->begin();
+	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_end =
+			feature_collection->end();
+	for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
+	{
+		const GPlatesModel::FeatureHandle &feature_handle = **feature_collection_iter;
+
+		if (is_topological_network_feature(feature_handle))
+		{ 
+			return true; 
+		}
+	}
+
+	return false;
+}
+
+
+GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type
+GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
+		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+				topological_network_features_collection)
+{
+	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geom_collection =
+			ReconstructionGeometryCollection::create(reconstruction_tree);
+
+	// Visit topological network features.
+	TopologyNetworkResolver topology_network_resolver(*reconstruction_geom_collection);
+
+	AppLogicUtils::visit_feature_collections(
+		topological_network_features_collection.begin(),
+		topological_network_features_collection.end(),
+		topology_network_resolver);
+
+	return reconstruction_geom_collection;
+}
+
+
 GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type
 GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolation(
-		GPlatesModel::Reconstruction &reconstruction,
+		ReconstructionGeometryCollection &reconstruction_geometry_collection,
 		const map_point_to_scalars_function_type &map_point_to_scalars_function,
 		const unsigned int num_mapped_scalars_per_point,
 		const boost::any &map_point_to_scalars_user_data,
 		const network_interpolation_query_callback_type &
 				network_interpolation_query_callback)
 {
-	resolved_topological_network_impl_seq_type unique_networks;
-	find_resolved_topological_network_impls(unique_networks, reconstruction);
+	// Get all ResolvedTopologicalNetwork objects in the reconstruction.
+	resolved_topological_network_seq_type resolved_networks;
+	ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+				reconstruction_geometry_collection.begin(),
+				reconstruction_geometry_collection.end(),
+				resolved_networks);
 
-	if (unique_networks.empty())
+	if (resolved_networks.empty())
 	{
 		// Return empty query.
 		return resolved_networks_for_interpolation_query_type();
@@ -481,11 +549,11 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 
 	// Iterate through the resolved topological networks and add the network points to
 	// a CGAL delaunay triangulation.
-	resolved_topological_network_impl_seq_type::const_iterator network_iter = unique_networks.begin();
-	resolved_topological_network_impl_seq_type::const_iterator network_end = unique_networks.end();
+	resolved_topological_network_seq_type::const_iterator network_iter = resolved_networks.begin();
+	resolved_topological_network_seq_type::const_iterator network_end = resolved_networks.end();
 	for ( ; network_iter != network_end; ++network_iter)
 	{
-		GPlatesModel::ResolvedTopologicalNetworkImpl *network = *network_iter;
+		ResolvedTopologicalNetwork *network = *network_iter;
 
 		resolved_network_for_interpolation_query_type resolved_network_query(
 				new ResolvedNetworkForInterpolationQuery(network));
@@ -506,13 +574,11 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 		}
 
 		// Iterate through the nodes of the current topological network.
-		GPlatesModel::ResolvedTopologicalNetworkImpl::node_const_iterator nodes_iter =
-				network->nodes_begin();
-		GPlatesModel::ResolvedTopologicalNetworkImpl::node_const_iterator nodes_end =
-				network->nodes_end();
+		ResolvedTopologicalNetwork::node_const_iterator nodes_iter = network->nodes_begin();
+		ResolvedTopologicalNetwork::node_const_iterator nodes_end = network->nodes_end();
 		for ( ; nodes_iter != nodes_end; ++nodes_iter)
 		{
-			const GPlatesModel::ResolvedTopologicalNetworkImpl::Node &node = *nodes_iter;
+			const ResolvedTopologicalNetwork::Node &node = *nodes_iter;
 
 			// Get the node's geometry points.
 			std::vector<GPlatesMaths::PointOnSphere> node_points;
@@ -705,50 +771,4 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_network(
 	const CgalUtils::cgal_point_2_type cgal_point_2 = CgalUtils::convert_point_to_cgal(point);
 
 	return interpolate_resolved_topology_network(resolved_network_query, cgal_point_2);
-}
-
-
-void
-GPlatesAppLogic::TopologyUtils::find_resolved_topological_network_impls(
-		resolved_topological_network_impl_seq_type &resolved_network_impls,
-		const GPlatesModel::Reconstruction &reconstruction)
-{
-	// First get all ResolvedTopologicalNetwork objects in the reconstruction.
-	resolved_topological_network_seq_type all_resolved_networks;
-	ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-				reconstruction.geometries().begin(),
-				reconstruction.geometries().end(),
-				all_resolved_networks);
-
-	if (all_resolved_networks.empty())
-	{
-		return;
-	}
-
-	// Find all the unique topological networks.
-	//
-	// Currently the ResolvedTopologicalNetwork's can share the actual topological network.
-	// This is because the ResolvedTopologicalNetwork's represent only a single triangle
-	// in a network's triangulation.
-
-	resolved_network_impls.reserve(all_resolved_networks.size());
-
-	// Iterate through the resolved topological networks and insert network into the set.
-	resolved_topological_network_seq_type::const_iterator rtn_iter =
-			all_resolved_networks.begin();
-	resolved_topological_network_seq_type::const_iterator rtn_end =
-			all_resolved_networks.end();
-	for ( ; rtn_iter != rtn_end; ++rtn_iter)
-	{
-		GPlatesModel::ResolvedTopologicalNetwork *rtn = *rtn_iter;
-		resolved_network_impls.push_back(&rtn->get_network());
-	}
-
-	// Sort in preparation for removing duplicates.
-	std::sort(resolved_network_impls.begin(), resolved_network_impls.end());
-
-	// Remove duplicates.
-	resolved_network_impls.erase(
-			std::unique(resolved_network_impls.begin(), resolved_network_impls.end()),
-			resolved_network_impls.end());
 }

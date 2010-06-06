@@ -31,6 +31,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/ReconstructionTreeEdge.h"
 #include "app-logic/ReconstructUtils.h"
 
 #include "gui/ExportAnimationContext.h"
@@ -38,8 +39,6 @@
 #include "gui/CsvExport.h"
 
 #include "maths/MathsUtils.h"
-
-#include "model/ReconstructionTreeEdge.h"
 
 #include "utils/FloatingPointComparisons.h"
 
@@ -119,23 +118,23 @@ GPlatesGui::ExportRotationParamsAnimationStrategy::do_export_iteration(
 	GPlatesAppLogic::ApplicationState &application_state =
 		d_export_animation_context_ptr->view_state().get_application_state();
 
-	GPlatesModel::ReconstructionTree& tree1 = 
-		application_state.get_current_reconstruction().reconstruction_tree();
+	const GPlatesAppLogic::ReconstructionTree& tree1 = 
+		*application_state.get_current_reconstruction().get_default_reconstruction_tree();
 
 	
 	std::multimap<GPlatesModel::integer_plate_id_type,
-			GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
+			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
-			GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
+			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
 			tree1.edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
-			GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
+			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
 			tree1.edge_map_end();
 
 	GPlatesGui::CsvExport::LineDataType data_line;
 	std::vector<GPlatesGui::CsvExport::LineDataType> data;
 	
-	GPlatesModel::ReconstructionTree::non_null_ptr_type tree2=
+	GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree2=
 		GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
 				tree1.get_reconstruction_time()+1,
 				tree1.get_anchor_plate_id(),

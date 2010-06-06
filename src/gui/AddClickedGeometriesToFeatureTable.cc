@@ -23,12 +23,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <boost/lambda/bind.hpp>
+#include <boost/lambda/construct.hpp>
 #include <boost/lambda/lambda.hpp>
 
 #include "AddClickedGeometriesToFeatureTable.h"
 
+#include "FeatureFocus.h"
 #include "FeatureTableModel.h"
+
+#include "app-logic/ReconstructGraph.h"
 
 #include "presentation/ViewState.h"
 
@@ -46,6 +51,7 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 		GPlatesGui::FeatureTableModel &clicked_table_model,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		const GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		filter_reconstruction_geometry_predicate_type filter_recon_geom_predicate)
 {
 	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
@@ -105,9 +111,22 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 	GPlatesGui::FeatureTableModel::geometry_sequence_type &clicked_table_recon_geom_seq =
 		clicked_table_model.geometry_sequence();
 
-	// Add to the beginning of the current sequence.
-	clicked_table_recon_geom_seq.insert(
-			clicked_table_recon_geom_seq.begin(), new_recon_geom_seq.begin(), new_recon_geom_seq.end()); 
+	// Add the reconstruction geometries to the clicked table model.
+	using boost::lambda::_1;
+	std::transform(
+			new_recon_geom_seq.begin(),
+			new_recon_geom_seq.end(),
+			std::inserter(
+					clicked_table_recon_geom_seq,
+					// Add to the beginning of the current geometry sequence.
+					clicked_table_recon_geom_seq.begin()),
+			// Calls the FeatureTableModel::ReconstructionGeometryRow constructor with a
+			// 'ReconstructionGeometry::non_null_ptr_to_const_type' and
+			// 'const ReconstructGraph &' as the arguments...
+			boost::lambda::bind(
+					boost::lambda::constructor<FeatureTableModel::ReconstructionGeometryRow>(),
+					_1,
+					boost::cref(reconstruct_graph)));
 
 	clicked_table_model.end_insert_features();
 

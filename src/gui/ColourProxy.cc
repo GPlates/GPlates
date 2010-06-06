@@ -31,7 +31,7 @@
 // ColourProxy ////////////////////////////////////////////////////////////////
 
 GPlatesGui::ColourProxy::ColourProxy(
-		GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geometry_ptr,
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_ptr,
 		boost::shared_ptr<ColourFilter> colour_filter_ptr) :
 	d_impl_ptr(
 			new DeferredColourProxyImpl(
@@ -70,7 +70,7 @@ GPlatesGui::ColourProxy::get_colour(
 // DeferredColourProxyImpl ////////////////////////////////////////////////////
 
 GPlatesGui::DeferredColourProxyImpl::DeferredColourProxyImpl(
-		GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geometry_ptr,
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_ptr,
 		boost::shared_ptr<ColourFilter> colour_filter_ptr) :
 	d_reconstruction_geometry_ptr(reconstruction_geometry_ptr),
 	d_colour_filter_ptr(colour_filter_ptr)

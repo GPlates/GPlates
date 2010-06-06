@@ -886,18 +886,18 @@ GPlatesViewOperations::GeometryBuilder::UpdateGuard::~UpdateGuard()
 
 void
 GPlatesViewOperations::GeometryBuilder::add_secondary_geometry(
-	GPlatesModel::ReconstructionGeometry::non_null_ptr_type recon_geom, 
+	GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type recon_geom, 
 	unsigned int index_of_vertex)
 {
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
-		recon_geom->geometry();
-		
-	GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
-	if (recon_geom &&
-		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-		recon_geom, rfg))
+	const boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ReconstructedFeatureGeometry>(recon_geom.get());
+	if (rfg)
 	{
-		SecondaryGeometry secondary_geometry(rfg->get_non_null_pointer(),geometry,index_of_vertex);
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = rfg.get()->geometry();
+	
+		SecondaryGeometry secondary_geometry(
+				rfg.get()->get_non_null_pointer_to_const(), geometry, index_of_vertex);
 		d_secondary_geometries.push_back(secondary_geometry);
 	}
 }
@@ -908,18 +908,20 @@ GPlatesViewOperations::GeometryBuilder::get_secondary_geometry()
 	if (!d_secondary_geometries.empty())
 	{
 		SecondaryGeometry secondary_geometry = d_secondary_geometries.front();
-		return boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>(secondary_geometry.d_geometry_on_sphere);
+		return boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>(
+				secondary_geometry.d_geometry_on_sphere);
 	}
 	return boost::none;
 }
 
-boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
+boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
 GPlatesViewOperations::GeometryBuilder::get_secondary_rfg()
 {
 	if (!d_secondary_geometries.empty())
 	{
 		SecondaryGeometry secondary_geometry = d_secondary_geometries.front();
-		return boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>(secondary_geometry.d_rfg);
+		return boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>(
+				secondary_geometry.d_rfg);
 	}
 	return boost::none;
 }

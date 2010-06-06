@@ -39,30 +39,6 @@ const unsigned
 GPlatesMaths::MultiPointOnSphere::s_min_num_collection_points = 1;
 
 
-const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
-GPlatesMaths::MultiPointOnSphere::get_non_null_pointer() const
-{
-	if (get_reference_count() == 0) {
-		// How did this happen?  This should not have happened.
-		//
-		// Presumably, the programmer obtained the raw MultiPointOnSphere pointer from
-		// inside a MultiPointOnSphere::non_null_ptr_type, and is invoking this member
-		// function upon the instance indicated by the raw pointer, after all ref-counting
-		// pointers have expired and the instance has actually been deleted.
-		//
-		// Regardless of how this happened, this is an error.
-		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
-				this);
-	} else {
-		// This instance is already managed by intrusive-pointers, so we can simply return
-		// another intrusive-pointer to this instance.
-		return non_null_ptr_to_const_type(
-				this,
-				GPlatesUtils::NullIntrusivePointerHandler());
-	}
-}
-
-
 GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 GPlatesMaths::MultiPointOnSphere::test_proximity(
 		const ProximityCriteria &criteria) const

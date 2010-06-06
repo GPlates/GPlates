@@ -126,12 +126,26 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature()
 		new_feature_ref);
 #endif
 
+	// Disabling setting of focus for now since we now need to know the reconstruction tree
+	// used to reconstruct the original feature - this is doable - but I wonder if we really
+	// need to set focus anyway (it's kind of arbitrary which geometry we're setting focus
+	// on anyway (in the case of a multi-geometry feature anyway) - probably should leave it
+	// up to the user to explicitly set focus by clicking on geometry.
+	// For now let's only set focus when the user sets focus.
+	// I suppose we could leave the original feature focused but we're released a version
+	// of GPlates that sets focus on the new feature so unsetting focus so user doesn't
+	// think the cloned feature is in focus.
+#if 1
+	d_view_state.get_feature_focus().unset_focus();
+#else
 	//set focus to the new feature 
 	GPlatesModel::FeatureHandle::iterator geo_property_iter =
 			*GPlatesFeatureVisitors::find_first_geometry_property(new_feature_ptr->reference());
 	d_view_state.get_feature_focus().set_focus(
 			new_feature_ptr->reference(),
 			geo_property_iter);
+#endif
+
 	d_view_state.get_feature_focus().announce_modification_of_focused_feature();
 }
 

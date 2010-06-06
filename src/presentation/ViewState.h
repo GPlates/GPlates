@@ -56,9 +56,7 @@ namespace GPlatesAppLogic
 {
 	class ApplicationState;
 	class FeatureCollectionFileIO;
-	class FeatureCollectionWorkflow;
-	class PaleomagWorkflow;
-	class PlateVelocityWorkflow;
+	class Reconstruction;
 }
 
 namespace GPlatesGui
@@ -76,11 +74,6 @@ namespace GPlatesGui
 	class VGPRenderSettings;
 	class ViewportProjection;
 	class ViewportZoom;
-}
-
-namespace GPlatesModel
-{
-	class Reconstruction;
 }
 
 namespace GPlatesPropertyValues
@@ -102,6 +95,8 @@ namespace GPlatesViewOperations
 
 namespace GPlatesPresentation
 {
+	class VisualLayers;
+
 	class ViewState :
 			public QObject,
 			private boost::noncopyable
@@ -163,10 +158,6 @@ namespace GPlatesPresentation
 		get_viewport_projection();
 
 
-		const GPlatesAppLogic::PlateVelocityWorkflow &
-		get_plate_velocity_workflow() const;
-
-
 		//! Returns all loaded colour schemes, sorted by category.
 		GPlatesGui::ColourSchemeContainer &
 		get_colour_scheme_container();
@@ -187,6 +178,10 @@ namespace GPlatesPresentation
 
 		GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
 		get_colour_scheme_delegator();
+
+
+		VisualLayers &
+		get_visual_layers();
 
 
 		GPlatesGui::RenderSettings &
@@ -317,21 +312,12 @@ namespace GPlatesPresentation
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_paleomag_layer;
 
-		//! Feature collection workflow for calculating plate velocities - pointer owns workflow.
-		boost::scoped_ptr<GPlatesAppLogic::PlateVelocityWorkflow> d_plate_velocity_workflow;
-
-		//! This shared pointer only unregisters the plate velocity workflow - doesn't own it.
-		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_plate_velocity_unregister;
-
-		boost::shared_ptr<GPlatesAppLogic::PaleomagWorkflow> d_paleomag_workflow;
-		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_paleomag_unregister;
-
 		/**
-		 * Performs tasks each time a reconstruction is generated.
-		 *
-		 * Depends on d_plate_velocity_workflow, d_rendered_geometry_collection.
+		 * Manages the various layers (usually corresponding to each loaded feature collection)
+		 * whose output results are drawn into child layers of the RECONSTRUCTION main
+		 * rendered geometry layer.
 		 */
-		boost::scoped_ptr<GPlatesViewOperations::ReconstructView> d_reconstruct_view;
+		boost::scoped_ptr<VisualLayers> d_visual_layers;
 
 		//! What gets rendered and what doesn't
 		boost::scoped_ptr<GPlatesGui::RenderSettings> d_render_settings;

@@ -265,7 +265,7 @@ namespace GPlatesModel
 		/**
 		 * Flushes pending notifications that were held up due to an active NotificationGuard.
 		 *
-		 * This will call flush_children_pending_notifications() to recursively call
+		 * This will call flush_children_pending_notifications() to recurively call
 		 * flush_pending_notifications() in children objects.
 		 */
 		void
@@ -550,10 +550,13 @@ namespace GPlatesModel
 		notify_listeners_of_addition(new_child_iter);
 
 		ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
-		// changeset_ptr must be non-NULL because we created one at the top of the
-		// function. But changeset_ptr might not point to our changeset.
-		changeset_ptr->add_handle(d_handle_ptr);
-		changeset_ptr->add_handle((*new_child_iter).get());
+		// changeset_ptr will be NULL if we're not connected to a model.
+		if (changeset_ptr)
+		{
+			// changeset_ptr might not point our changeset.
+			changeset_ptr->add_handle(d_handle_ptr);
+			changeset_ptr->add_handle((*new_child_iter).get());
+		}
 
 		return new_child_iter;
 	}
@@ -592,9 +595,12 @@ namespace GPlatesModel
 		current_revision()->remove(iter.index());
 
 		ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
-		// changeset_ptr must be non-NULL because we created one at the top of the
-		// function. But changeset_ptr might not point our changeset.
-		changeset_ptr->add_handle(d_handle_ptr);
+		// changeset_ptr will be NULL if we're not connected to a model.
+		if (changeset_ptr)
+		{
+			// changeset_ptr might not point our changeset.
+			changeset_ptr->add_handle(d_handle_ptr);
+		}
 
 		notify_listeners_of_modification(true, false);
 	}

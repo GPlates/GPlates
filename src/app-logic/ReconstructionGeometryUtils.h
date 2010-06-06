@@ -26,28 +26,27 @@
 #ifndef GPLATES_APPLOGIC_RECONSTRUCTIONGEOMETRYUTILS_H
 #define GPLATES_APPLOGIC_RECONSTRUCTIONGEOMETRYUTILS_H
 
+#include <algorithm>
 #include <iterator>
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 	
-#include "model/ReconstructionGeometry.h"
-#include "model/ConstReconstructionGeometryVisitor.h"
-#include "model/ReconstructionGeometryVisitor.h"
-#include "model/ReconstructedFeatureGeometry.h"
-#include "model/ResolvedTopologicalBoundary.h"
-#include "model/ResolvedTopologicalNetwork.h"
+#include "ReconstructedFeatureGeometry.h"
+#include "ReconstructedVirtualGeomagneticPole.h"
+#include "ReconstructionGeometry.h"
+#include "ReconstructionGeometryVisitor.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalNetwork.h"
 
 #include "property-values/GeoTimeInstant.h"
 
 
-namespace GPlatesModel
-{
-	class Reconstruction;
-}
-
 namespace GPlatesAppLogic
 {
+	class Reconstruction;
+	class ReconstructionTree;
+
 	namespace ReconstructionGeometryUtils
 	{
 		///////////////
@@ -57,22 +56,26 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Determines if the @a ReconstructionGeometry object pointed to by
-		 * ReconstructionGeometryPointer is of type ReconstructionGeometryDerivedType.
+		 * @a reconstruction_geom_ptr is of type ReconstructionGeometryDerivedType.
 		 *
-		 * If type matches then returns true and stores pointer to derived type
-		 * in @a reconstruction_geom_derived_type_ptr.
+		 * Example usage:
+		 *   const ReconstructionGeometry *reconstruction_geometry_ptr = ...;
+		 *   boost::optional<const ReconstructedFeatureGeometry *> rfg =
+		 *        get_reconstruction_geometry_derived_type<const ReconstructedFeatureGeometry>(
+		 *              reconstruction_geometry_ptr);
+		 *
+		 * If type matches then returns pointer to derived type otherwise returns false.
 		 */
-		template <typename ReconstructionGeometryPointer,
-				class ReconstructionGeometryDerivedType>
-		bool
+		template <class ReconstructionGeometryDerivedType, typename ReconstructionGeometryPointer>
+		boost::optional<ReconstructionGeometryDerivedType *>
 		get_reconstruction_geometry_derived_type(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				ReconstructionGeometryDerivedType *&reconstruction_geom_derived_type_ptr);
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
 		/**
 		 * Searches a sequence of @a ReconstructionGeometry objects for
-		 * a certain type derived from @a ReconstructionGeometry and returns any found.
+		 * a certain type derived from @a ReconstructionGeometry and appends any found
+		 * to @a reconstruction_geom_derived_type_seq.
 		 *
 		 * Template parameter 'ReconstructionGeometryForwardIter' contains pointers to
 		 * @a ReconstructionGeometry objects (or anything that behaves like a pointer).
@@ -101,10 +104,9 @@ namespace GPlatesAppLogic
 		 * non-const pointer to a @a ReconstructionGeometry.
 		 */
 		template <typename ReconstructionGeometryPointer>
-		bool
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref>
 		get_feature_ref(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::FeatureHandle::weak_ref &feature_ref);
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
 		/**
@@ -115,10 +117,9 @@ namespace GPlatesAppLogic
 		 * non-const pointer to a @a ReconstructionGeometry.
 		 */
 		template <typename ReconstructionGeometryPointer>
-		bool
+		boost::optional<GPlatesModel::FeatureHandle::iterator>
 		get_geometry_property_iterator(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::FeatureHandle::iterator &properties_iterator);
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
 		/**
@@ -149,13 +150,38 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Simply adds @a recon_geom to the list of geometries in @a reconstruction and
-		 * sets the @a Reconstruction pointer in @a recon_geom to @a reconstruction.
+		 * Finds the @a ReconstructionGeometry that was generated from the same geometry property
+		 * as @a reconstruction_geometry and that was reconstructed using @a reconstruction_tree.
+		 *
+		 * This is useful for tracking reconstruction geometries as the reconstruction time,
+		 * and hence reconstruction tree, changes.
 		 */
-		void
-		add_reconstruction_geometry_to_reconstruction(
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type recon_geom,
-				GPlatesModel::Reconstruction &reconstruction);
+		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type>
+		find_reconstruction_geometry(
+				const ReconstructionGeometry &reconstruction_geometry,
+				const ReconstructionTree &reconstruction_tree);
+
+
+		/**
+		 * Finds the @a ReconstructionGeometry that was generated from the geometry property
+		 * @a geometry_property_iterator in feature @a feature_ref and
+		 * that was reconstructed using @a reconstruction_tree.
+		 *
+		 * This is useful for tracking reconstruction geometries as the reconstruction time,
+		 * and hence reconstruction tree, changes.
+		 *
+		 * This is useful when the old @a ReconstructionGeometry does not exist, for example,
+		 * when the reconstruction time changes to a time that is outside the valid time range
+		 * of the feature. Later the reconstruction time might change to a time that is inside
+		 * a feature's valid time range and we'd like to find the @a ReconstructionGeometry
+		 * but don't have the old @a ReconstructionGeometry any more - in this case we can
+		 * keep track of the feature and the geometry property and supply a new reconstruction tree.
+		 */
+		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type>
+		find_reconstruction_geometry(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
+				const ReconstructionTree &reconstruction_tree);
 
 
 		////////////////////
@@ -163,113 +189,129 @@ namespace GPlatesAppLogic
 		////////////////////
 
 
-		// Declare template class ReconstructionGeometryDerivedTypeFinder but never define it.
-		// We will rely on specialisations of this class for derived type of ReconstructionGeometry.
+		/**
+		 * Template visitor class to find instances of a class derived from @a ReconstructionGeometry.
+		 */
 		template <class ReconstructionGeometryDerivedType>
-		class ReconstructionGeometryDerivedTypeFinder;
-
-		// This class and its specialisation for 'const' derived types is used
-		// to determine which non-null intrusive pointer to use.
-		template <class ReconstructionGeometryDerivedType>
-		struct ReconstructionGeometryDerivedTypeTraits
+		class ReconstructionGeometryDerivedTypeFinder :
+				public ReconstructionGeometryVisitorBase<
+						typename GPlatesUtils::CopyConst<
+								ReconstructionGeometryDerivedType, ReconstructionGeometry>::type >
 		{
-			typedef typename ReconstructionGeometryDerivedType::non_null_ptr_type non_null_ptr_type;
+		public:
+			//! Typedef for base class type.
+			typedef ReconstructionGeometryVisitorBase<
+					typename GPlatesUtils::CopyConst<
+							ReconstructionGeometryDerivedType, ReconstructionGeometry>::type > base_class_type;
+
+			/**
+			 * Convenience typedef for the template parameter which is a type derived
+			 * from @a ReconstructionGeometry.
+			 */
+			typedef ReconstructionGeometryDerivedType reconstruction_geometry_derived_type;
+
+			//! Convenience typedef for sequence of pointers to reconstruction geometry derived type.
+			typedef std::vector<reconstruction_geometry_derived_type *> container_type;
+
+			// Bring base class visit methods into scope of current class.
+			using base_class_type::visit;
+
+			//! Returns a sequence of reconstruction geometries of type ReconstructionGeometryDerivedType
+			const container_type &
+			get_geometry_type_sequence() const
+			{
+				return d_found_geometries;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstruction_geometry_derived_type> &rg)
+			{
+				d_found_geometries.push_back(rg.get());
+			}
+
+		private:
+			container_type d_found_geometries;
 		};
 
 
-		// Macro to declare a template specialisation of class ReconstructionGeometryDerivedTypeFinder.
-		// NOTE: We wouldn't need to do this if all "visit" methods were called 'visit' instead
-		// of 'visit_reconstructed_feature_geometry' for example - in which case a simple template
-		// class would suffice.
-		// However having "visit" methods named as they are probably help readability and avoids needing
-		// 'using ConstReconstructionGeometryVisitor::visit;" declarations in derived visitor classes.
-		//
-#define DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER_CLASS( \
-		reconstruction_geometry_derived_type, \
-		reconstruction_geometry_visitor_type, \
-		visit_reconstruction_geometry_derived_type_method \
-) \
-		template <> \
-		class ReconstructionGeometryDerivedTypeFinder<reconstruction_geometry_derived_type> : \
-				public reconstruction_geometry_visitor_type \
-		{ \
-		public: \
-			typedef ReconstructionGeometryDerivedTypeTraits<reconstruction_geometry_derived_type> \
-					::non_null_ptr_type non_null_intrusive_ptr_type; \
-		\
-			typedef std::vector<reconstruction_geometry_derived_type *> container_type; \
-		\
-			const container_type & \
-			get_geometry_type_sequence() const \
-			{ \
-				return d_found_geometries; \
-			} \
-		\
-			virtual \
-			void \
-			visit_reconstruction_geometry_derived_type_method( \
-					non_null_intrusive_ptr_type geometry) \
-			{ \
-				d_found_geometries.push_back(geometry.get()); \
-			} \
-		\
-		private: \
-			container_type d_found_geometries; \
+		/**
+		 * Template visitor class to find instances of @a ReconstructionFeatureGeometry.
+		 */
+		template <class ReconstructedFeatureGeometryType>
+		class ReconstructedFeatureGeometryTypeFinderBase :
+				public ReconstructionGeometryVisitorBase<
+						typename GPlatesUtils::CopyConst<
+								ReconstructedFeatureGeometryType, ReconstructionGeometry>::type >
+		{
+		public:
+			//! Typedef for base class type.
+			typedef ReconstructionGeometryVisitorBase<
+					typename GPlatesUtils::CopyConst<
+							ReconstructedFeatureGeometryType, ReconstructionGeometry>::type > base_class_type;
+
+			//! Typedef for reconstructed feature geometry type.
+			typedef typename base_class_type::reconstructed_feature_geometry_type reconstructed_feature_geometry_type;
+
+			//! Typedef for reconstructed virtual geomagnetic pole type.
+			typedef typename base_class_type::reconstructed_virtual_geomagnetic_pole_type reconstructed_virtual_geomagnetic_pole_type ;
+
+			//! Convenience typedef for sequence of pointers to a reconstructed feature geometry.
+			typedef std::vector<reconstructed_feature_geometry_type *> container_type;
+
+			// Bring base class visit methods into scope of current class.
+			using base_class_type::visit;
+
+			//! Returns a sequence of reconstruction geometries of type ReconstructedFeatureGeometryType
+			const container_type &
+			get_geometry_type_sequence() const
+			{
+				return d_found_geometries;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rg)
+			{
+				d_found_geometries.push_back(rg.get());
+			}
+
+			//! A @a ReconstructedVirtualGeomagneticPole is derived from @a ReconstructedFeatureGeometry.
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
+			{
+				d_found_geometries.push_back(rvgp.get());
+			}
+
+		private:
+			container_type d_found_geometries;
 		};
 
 
-		// First parameter should be the namespace qualified class derived from
-		// GPlatesModel::ReconstructionGeometry.
-		// Second parameter should be the name of the visitor method that visits the
-		// derived class.
-		// For example:
-		//     DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ReconstructedFeatureGeometry,
-		//        visit_reconstructed_feature_geometry)
-		//
-#define DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER( \
-				reconstruction_geometry_derived_type, \
-				visit_reconstruction_geometry_derived_type_method \
-		) \
-		\
-		/* Helps determine which non-null intrusive pointer to use based on 'const' */ \
-		template <> \
-		struct ReconstructionGeometryDerivedTypeTraits<const reconstruction_geometry_derived_type> \
-		{ \
-			typedef reconstruction_geometry_derived_type::non_null_ptr_to_const_type non_null_ptr_type; \
-		}; \
-		\
-		/* const and non-const ReconstructionGeometry's for const derived types */ \
-		DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER_CLASS( \
-				const reconstruction_geometry_derived_type, \
-				GPlatesModel::ConstReconstructionGeometryVisitor, \
-				visit_reconstruction_geometry_derived_type_method) \
-		/* non-const ReconstructionGeometry's for non-const derived types */ \
-		DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER_CLASS( \
-				reconstruction_geometry_derived_type, \
-				GPlatesModel::ReconstructionGeometryVisitor, \
-				visit_reconstruction_geometry_derived_type_method)
-
-		//
-		// NOTE: declared here instead of top of respective files because we need to include
-		// the respective header files because of the 'non_null_ptr_type' typedefs.
-		//
-
-DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ReconstructedFeatureGeometry, \
-		visit_reconstructed_feature_geometry)
-
-DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopologicalBoundary, \
-		visit_resolved_topological_boundary)
-
-DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopologicalNetwork, \
-		visit_resolved_topological_network)
+		/*
+		 * Specialisations for the @a ReconstructedFeatureGeometry derived type
+		 * since other derived types (such as @a ReconstructedVirtualGeomagneticPole)
+		 * are derived from it and we want to catch all types that are a
+		 * @a ReconstructedFeatureGeometry.
+		 */
+		template <>
+		class ReconstructionGeometryDerivedTypeFinder<ReconstructedFeatureGeometry> :
+				public ReconstructedFeatureGeometryTypeFinderBase<ReconstructedFeatureGeometry>
+		{  };
+		template <>
+		class ReconstructionGeometryDerivedTypeFinder<const ReconstructedFeatureGeometry> :
+				public ReconstructedFeatureGeometryTypeFinderBase<const ReconstructedFeatureGeometry>
+		{  };
 
 
-		template <typename ReconstructionGeometryPointer,
-				class ReconstructionGeometryDerivedType>
-		bool
+		template <class ReconstructionGeometryDerivedType, typename ReconstructionGeometryPointer>
+		boost::optional<ReconstructionGeometryDerivedType *>
 		get_reconstruction_geometry_derived_type(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				ReconstructionGeometryDerivedType *&reconstruction_geom_derived_type_ptr)
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
 		{
 			// Type of finder class.
 			typedef ReconstructionGeometryDerivedTypeFinder<ReconstructionGeometryDerivedType>
@@ -288,12 +330,10 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 			if (derived_type_seq.empty())
 			{
 				// Return false since found no derived type.
-				return false;
+				return boost::none;
 			}
 
-			reconstruction_geom_derived_type_ptr = derived_type_seq.front();
-
-			return true;
+			return derived_type_seq.front();
 		}
 
 
@@ -317,8 +357,7 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 			reconstruction_geometry_derived_type_finder_type recon_geom_derived_type_finder;
 
 			// Visit each ReconstructionGeometry in the input sequence.
-			ReconstructionGeometryForwardIter recon_geom_iter;
-			for (recon_geom_iter = reconstruction_geoms_begin;
+			for (ReconstructionGeometryForwardIter recon_geom_iter = reconstruction_geoms_begin;
 				recon_geom_iter != reconstruction_geoms_end;
 				++recon_geom_iter)
 			{
@@ -329,20 +368,11 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 			const typename reconstruction_geometry_derived_type_finder_type::container_type &
 					derived_type_seq = recon_geom_derived_type_finder.get_geometry_type_sequence();
 
-			// Going to insert at back of the output sequence of derived types.
-			std::back_insert_iterator<ContainerOfReconstructionGeometryDerivedType> back_insert_iter =
-					std::back_inserter(reconstruction_geom_derived_type_seq);
-
-			// Insert at the end of the output sequence of derived types.
-			typedef typename reconstruction_geometry_derived_type_finder_type::
-					container_type::const_iterator derived_type_seq_iterator_type;
-			derived_type_seq_iterator_type derived_seq_iter;
-			for (derived_seq_iter = derived_type_seq.begin();
-				derived_seq_iter != derived_type_seq.end();
-				++derived_seq_iter)
-			{
-				*back_insert_iter++ = *derived_seq_iter;
-			}
+			// Append to the end of the output sequence of derived types.
+			std::copy(
+					derived_type_seq.begin(),
+					derived_type_seq.end(),
+					std::back_inserter(reconstruction_geom_derived_type_seq));
 
 			// Return true if found any derived types.
 			return !derived_type_seq.empty();
@@ -350,7 +380,7 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 
 		class GetFeatureRef :
-				public GPlatesModel::ConstReconstructionGeometryVisitor
+				public ConstReconstructionGeometryVisitor
 		{
 		public:
 			const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
@@ -361,24 +391,32 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 			virtual
 			void
-			visit_reconstructed_feature_geometry(
-					GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_to_const_type rfg)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 			{
 				d_feature_ref = rfg->get_feature_ref();
 			}
 
 			virtual
 			void
-			visit_resolved_topological_boundary(
-					GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_to_const_type rtb)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
+			{
+				d_feature_ref = rvgp->get_feature_ref();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 			{
 				d_feature_ref = rtb->get_feature_ref();
 			}
 
 			virtual
 			void
-			visit_resolved_topological_network(
-					GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_to_const_type rtn)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 			{
 				d_feature_ref = rtn->get_feature_ref();
 			}
@@ -389,10 +427,9 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 
 		template <typename ReconstructionGeometryPointer>
-		bool
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref>
 		get_feature_ref(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
 		{
 			GetFeatureRef get_feature_ref_visitor;
 			reconstruction_geom_ptr->accept_visitor(get_feature_ref_visitor);
@@ -401,17 +438,15 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 					get_feature_ref_visitor.get_feature_ref();
 			if (!feature_ref_opt || !feature_ref_opt->is_valid())
 			{
-				return false;
+				return boost::none;
 			}
 
-			feature_ref = *feature_ref_opt;
-
-			return true;
+			return feature_ref_opt;
 		}
 
 
 		class GetGeometryProperty :
-				public GPlatesModel::ConstReconstructionGeometryVisitor
+				public ConstReconstructionGeometryVisitor
 		{
 		public:
 			const boost::optional<GPlatesModel::FeatureHandle::iterator> &
@@ -422,24 +457,32 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 			virtual
 			void
-			visit_reconstructed_feature_geometry(
-					GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_to_const_type rfg)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 			{
 				d_property = rfg->property();
 			}
 
 			virtual
 			void
-			visit_resolved_topological_boundary(
-					GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_to_const_type rtb)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
+			{
+				d_property = rvgp->property();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 			{
 				d_property = rtb->property();
 			}
 
 			virtual
 			void
-			visit_resolved_topological_network(
-					GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_to_const_type rtn)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 			{
 				d_property = rtn->property();
 			}
@@ -450,10 +493,9 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 
 		template <typename ReconstructionGeometryPointer>
-		bool
+		boost::optional<GPlatesModel::FeatureHandle::iterator>
 		get_geometry_property_iterator(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::FeatureHandle::iterator &properties_iterator)
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
 		{
 			GetGeometryProperty get_geometry_property_visitor;
 			reconstruction_geom_ptr->accept_visitor(get_geometry_property_visitor);
@@ -462,17 +504,15 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 					get_geometry_property_visitor.get_property();
 			if (!property_opt || !property_opt->is_still_valid())
 			{
-				return false;
+				return boost::none;
 			}
 
-			properties_iterator = *property_opt;
-
-			return true;
+			return property_opt;
 		}
 
 
 		class GetPlateId :
-				public GPlatesModel::ConstReconstructionGeometryVisitor
+				public ConstReconstructionGeometryVisitor
 		{
 		public:
 			const boost::optional<GPlatesModel::integer_plate_id_type> &
@@ -483,24 +523,32 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 			virtual
 			void
-			visit_reconstructed_feature_geometry(
-					GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_to_const_type rfg)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 			{
 				d_plate_id = rfg->reconstruction_plate_id();
 			}
 
 			virtual
 			void
-			visit_resolved_topological_boundary(
-					GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_to_const_type rtb)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
+			{
+				d_plate_id = rvgp->reconstruction_plate_id();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 			{
 				d_plate_id = rtb->plate_id();
 			}
 
 			virtual
 			void
-			visit_resolved_topological_network(
-					GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_to_const_type rtn)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 			{
 				d_plate_id = rtn->plate_id();
 			}
@@ -522,7 +570,7 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 
 		class GetTimeOfFormation :
-				public GPlatesModel::ConstReconstructionGeometryVisitor
+				public ConstReconstructionGeometryVisitor
 		{
 		public:
 			const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
@@ -533,24 +581,32 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 			virtual
 			void
-			visit_reconstructed_feature_geometry(
-					GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_to_const_type rfg)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 			{
 				d_time_of_formation = rfg->time_of_formation();
 			}
 
 			virtual
 			void
-			visit_resolved_topological_boundary(
-					GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_to_const_type rtb)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
+			{
+				d_time_of_formation = rvgp->time_of_formation();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 			{
 				d_time_of_formation = rtb->time_of_formation();
 			}
 
 			virtual
 			void
-			visit_resolved_topological_network(
-					GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_to_const_type rtn)
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 			{
 				d_time_of_formation = rtn->time_of_formation();
 			}

@@ -30,15 +30,17 @@
 #include "UndoRedo.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructUtils.h"
 
 #include "feature-visitors/GeometrySetter.h"
 
-#include "maths/ConstGeometryOnSphereVisitor.h"
-#include "model/ReconstructedFeatureGeometry.h"
-#include "model/ReconstructionTree.h"
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
+#include "maths/ConstGeometryOnSphereVisitor.h"
 #include "presentation/ViewState.h"
 
 
@@ -51,7 +53,7 @@ namespace GPlatesViewOperations
 		 * derived object and sets the geometry in a @a GeometryBuilder.
 		 */
 		class SetGeometryInBuilder :
-			private GPlatesMaths::ConstGeometryOnSphereVisitor
+				private GPlatesMaths::ConstGeometryOnSphereVisitor
 		{
 		public:
 			SetGeometryInBuilder(
@@ -253,16 +255,17 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 
 	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
 	// for instance, reference regular feature geometries).
-	GPlatesModel::ReconstructedFeatureGeometry *focused_rfg = NULL;
-	if (feature_focus.associated_reconstruction_geometry() &&
-		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-				feature_focus.associated_reconstruction_geometry(), focused_rfg))
+	d_focused_geometry = NULL;
+	if (feature_focus.associated_reconstruction_geometry())
 	{
-		d_focused_geometry = focused_rfg;
-	}
-	else
-	{
-		d_focused_geometry = NULL;
+		boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+						const GPlatesAppLogic::ReconstructedFeatureGeometry>(
+								feature_focus.associated_reconstruction_geometry());
+		if (focused_rfg)
+		{
+			d_focused_geometry = focused_rfg.get();
+		}
 	}
 
 	convert_geom_from_feature_to_builder();
@@ -336,33 +339,34 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 	// If feature is reconstructable then need to convert geometry to present day
 	// coordinates first. This is because the geometry is currently reconstructed
 	// geometry at the current reconstruction time.
-	GPlatesModel::integer_plate_id_type plate_id;
-	if (get_plate_id_from_feature(plate_id))
+	boost::optional<GPlatesModel::integer_plate_id_type> plate_id = get_plate_id_from_feature();
+	if (plate_id)
 	{
-		// Get current reconstruction tree.
-		GPlatesModel::ReconstructionTree &recon_tree =
-				d_application_state->get_current_reconstruction().reconstruction_tree();
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_focused_geometry,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Get current reconstruction tree from the focused geometry.
+		const GPlatesAppLogic::ReconstructionTree &recon_tree =
+				*d_focused_geometry->reconstruction_tree();
 
 		geometry_on_sphere = GPlatesAppLogic::ReconstructUtils::reconstruct(
-				geometry_on_sphere, plate_id, recon_tree, reverse_reconstruct);
+				geometry_on_sphere, plate_id.get(), recon_tree, reverse_reconstruct);
 	}
 
 	// If feature wasn't reconstructed then we'll be returning the geometry passed in.
 	return geometry_on_sphere;
 }
 
-bool
-GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_plate_id_from_feature(
-		GPlatesModel::integer_plate_id_type &plate_id)
+boost::optional<GPlatesModel::integer_plate_id_type>
+GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_plate_id_from_feature()
 {
 	if (d_focused_geometry && d_focused_geometry->reconstruction_plate_id())
 	{
-		plate_id = *d_focused_geometry->reconstruction_plate_id();
-
-		return true;
+		return *d_focused_geometry->reconstruction_plate_id();
 	}
 
-	return false;
+	return boost::none;
 }
 
 void
@@ -371,7 +375,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geom = 
 		d_focused_feature_geom_builder->get_secondary_geometry();
 		
-	boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type> rfg = 
+	boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type> rfg = 
 		d_focused_feature_geom_builder->get_secondary_rfg();
 	
 	if (!geom || !rfg)

@@ -31,12 +31,14 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "Reconstruction.h"
+#include "ReconstructionGeometryCollection.h"
+#include "ReconstructionTree.h"
+
 #include "maths/FiniteRotation.h"
 #include "maths/GeometryOnSphere.h"
 
 #include "model/FeatureCollectionHandle.h"
-#include "model/Reconstruction.h"
-#include "model/ReconstructionTree.h"
 #include "model/types.h"
 
 
@@ -44,6 +46,25 @@ namespace GPlatesAppLogic
 {
 	namespace ReconstructUtils
 	{
+		/**
+		 * Returns true if @a feature_ref is a reconstruction feature.
+		 *
+		 * This is total reconstruction sequences and absolute reference frames.
+		 */
+		bool
+		is_reconstruction_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref);
+
+
+		/**
+		 * Returns true if @a feature_collection contains any features that pass the
+		 * @a is_reconstruction_feature test.
+		 */
+		bool
+		has_reconstruction_features(
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
+
+
 		/**
 		 * Create and return a reconstruction tree for the reconstruction time @a time,
 		 * with root @a root.
@@ -58,7 +79,7 @@ namespace GPlatesAppLogic
 		 * Question:  Do any of those other functions actually throw exceptions when
 		 * they're passed invalid weak_refs?  They should.
 		 */
-		const GPlatesModel::ReconstructionTree::non_null_ptr_type
+		const ReconstructionTree::non_null_ptr_type
 		create_reconstruction_tree(
 				const double &time,
 				GPlatesModel::integer_plate_id_type root,
@@ -66,27 +87,57 @@ namespace GPlatesAppLogic
 						reconstruction_features_collection =
 								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
 
-		const GPlatesModel::ReconstructionTree::non_null_ptr_type
+#if 0
+		/**
+		 * Same as the above overload of @a create_reconstruction_tree except that it accepts
+		 * a sequence of feature handles instead of a sequence of feature collections.
+		 */
+		const ReconstructionTree::non_null_ptr_type
 		create_reconstruction_tree(
 				const double &time,
 				GPlatesModel::integer_plate_id_type root,
 				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
 						reconstruction_features);
+#endif
+
 
 		/**
-		 * Create and return a reconstruction containing @a ReconstructionGeometry objects by
-		 * rotating feature geometries in @a reconstructable_features_collection using
-		 * @a reconstruction_tree.
+		 * Returns true if @a feature_ref is reconstructable.
+		 *
+		 * This is any feature that can generate a @a ReconstructedFeatureGeometry when
+		 * @a reconstruct processes it.
+		 */
+		bool
+		is_reconstructable_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref);
+
+
+		/**
+		 * Returns true if @a feature_collection contains any features that pass the
+		 * @a is_reconstructable_feature test.
+		 */
+		bool
+		has_reconstructable_features(
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
+
+
+		/**
+		 * Create and return a reconstruction geometry collection, containing
+		 * @a ReconstructionGeometry objects, by rotating feature geometries in
+		 * @a reconstructable_features_collection using @a reconstruction_tree.
+		 *
+		 * Only features that exist at the reconstruction time of @a reconstruction_tree
+		 * are rotated and generate reconstruction geometries.
 		 *
 		 * If @a reconstructable_features_collection is empty then the returned
-		 * @a Reconstruction will contain no @a ReconstructionGeometry objects.
+		 * @a ReconstructionGeometryCollection will contain no @a ReconstructionGeometry objects.
 		 *
 		 * Question:  Do any of those other functions actually throw exceptions when
 		 * they're passed invalid weak_refs?  They should.
 		 */
-		const GPlatesModel::Reconstruction::non_null_ptr_type
-		create_reconstruction(
-				const GPlatesModel::ReconstructionTree::non_null_ptr_type &reconstruction_tree,
+		ReconstructionGeometryCollection::non_null_ptr_type
+		reconstruct(
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstructable_features_collection =
 								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
@@ -106,7 +157,7 @@ namespace GPlatesAppLogic
 		reconstruct(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				const GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree,
+				const ReconstructionTree &reconstruction_tree,
 				bool reverse_reconstruct = false);
 
 
@@ -120,7 +171,7 @@ namespace GPlatesAppLogic
 		reconstruct(
 				const GeometryType &geometry,
 				GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree,
+				const ReconstructionTree &reconstruction_tree,
 				bool reverse_reconstruct = false);
 	}
 
@@ -135,7 +186,7 @@ namespace GPlatesAppLogic
 		reconstruct(
 				const GeometryType &geometry,
 				GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree,
+				const ReconstructionTree &reconstruction_tree,
 				bool reverse_reconstruct)
 		{
 			// Get the composed absolute rotation needed to bring a thing on that plate

@@ -35,6 +35,11 @@
 #include <utility>  /* std::pair */
 
 #include "app-logic/ReconstructedFeatureGeometryPopulator.h"
+#include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionGeometryCollection.h"
+#include "app-logic/ReconstructionGraph.h"
+#include "app-logic/ReconstructionTree.h"
+#include "app-logic/ReconstructionTreePopulator.h"
 
 #include "model/Model.h"
 #include "model/ModelInterface.h"
@@ -43,10 +48,6 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
 #include "model/ModelUtils.h"
-#include "model/Reconstruction.h"
-#include "model/ReconstructionGraph.h"
-#include "model/ReconstructionTree.h"
-#include "model/ReconstructionTreePopulator.h"
 
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "file-io/XmlOutputInterface.h"
@@ -144,7 +145,7 @@ create_isochron(
 
 void
 traverse_recon_tree_recursive(
-		GPlatesModel::ReconstructionTreeEdge &edge)
+		GPlatesAppLogic::ReconstructionTreeEdge &edge)
 {
 	std::cout << " * Children of pole (fixed plate: "
 			<< edge.fixed_plate()
@@ -152,9 +153,9 @@ traverse_recon_tree_recursive(
 			<< edge.moving_plate()
 			<< ")\n";
 
-	GPlatesModel::ReconstructionTree::edge_collection_type::iterator iter =
+	GPlatesAppLogic::ReconstructionTree::edge_collection_type::iterator iter =
 			edge.children_in_built_tree().begin();
-	GPlatesModel::ReconstructionTree::edge_collection_type::iterator end =
+	GPlatesAppLogic::ReconstructionTree::edge_collection_type::iterator end =
 			edge.children_in_built_tree().end();
 	for ( ; iter != end; ++iter) {
 		std::cout << " - FiniteRotation: " << (*iter)->relative_rotation() << "\n";
@@ -162,7 +163,7 @@ traverse_recon_tree_recursive(
 		std::cout << "    and fixed plate: " << (*iter)->fixed_plate() << std::endl;
 		std::cout << "    and moving plate: " << (*iter)->moving_plate() << std::endl;
 		if ((*iter)->pole_type() ==
-				GPlatesModel::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
+				GPlatesAppLogic::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
 			std::cout << "    which is original.\n";
 		} else {
 			std::cout << "    which is reversed.\n";
@@ -177,13 +178,13 @@ traverse_recon_tree_recursive(
 
 void
 traverse_recon_tree(
-		GPlatesModel::ReconstructionTree &recon_tree)
+		const GPlatesAppLogic::ReconstructionTree &recon_tree)
 {
 	std::cout << " * Root-most poles:\n";
 
-	GPlatesModel::ReconstructionTree::edge_collection_type::iterator iter =
+	GPlatesAppLogic::ReconstructionTree::edge_collection_type::const_iterator iter =
 			recon_tree.rootmost_edges_begin();
-	GPlatesModel::ReconstructionTree::edge_collection_type::iterator end =
+	GPlatesAppLogic::ReconstructionTree::edge_collection_type::const_iterator end =
 			recon_tree.rootmost_edges_end();
 	for ( ; iter != end; ++iter) {
 		std::cout << " - FiniteRotation: " << (*iter)->relative_rotation() << "\n";
@@ -191,7 +192,7 @@ traverse_recon_tree(
 		std::cout << "    and fixed plate: " << (*iter)->fixed_plate() << std::endl;
 		std::cout << "    and moving plate: " << (*iter)->moving_plate() << std::endl;
 		if ((*iter)->pole_type() ==
-				GPlatesModel::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
+				GPlatesAppLogic::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
 			std::cout << "    which is original.\n";
 		} else {
 			std::cout << "    which is reversed.\n";
@@ -450,8 +451,10 @@ output_reconstructions(
 	for (unsigned i = 0; i < num_recon_times_to_test; ++i) {
 		double recon_time = recon_times_to_test[i];
 
-		GPlatesModel::ReconstructionGraph graph(recon_time);
-		GPlatesModel::ReconstructionTreePopulator rtp(recon_time, graph);
+		GPlatesAppLogic::ReconstructionGraph graph(
+				recon_time,
+				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>()/*empty*/);
+		GPlatesAppLogic::ReconstructionTreePopulator rtp(recon_time, graph);
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
@@ -462,34 +465,50 @@ output_reconstructions(
 		}
 
 		std::cout << "\n--> Building tree, root node: 501\n";
-		GPlatesModel::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(501);
-		GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
-				GPlatesModel::Reconstruction::create(tree);
+		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(501);
+		GPlatesAppLogic::Reconstruction::non_null_ptr_type reconstruction =
+				GPlatesAppLogic::Reconstruction::create(recon_time, tree);
 
-		traverse_recon_tree(reconstruction->reconstruction_tree());
+		traverse_recon_tree(*tree);
 
-		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(*reconstruction);
+		GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type rgc =
+			GPlatesAppLogic::ReconstructionGeometryCollection::create(tree);
+
+		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(*rgc);
 
 		GPlatesModel::FeatureCollectionHandle::iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
 			rfgp.visit_feature(iter2);
 		}
+		reconstruction->add_reconstruction_geometries(rgc);
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "
-				<< reconstruction->geometries().size()
+			<< std::distance(reconstruction->begin_reconstruction_geometries(tree),
+					reconstruction->end_reconstruction_geometries(tree))
 				<< " reconstructed geometries."
 				<< std::endl;
 
 		std::cout << " > The reconstructed polylines are:\n";
-		GPlatesModel::Reconstruction::geometry_collection_type::iterator
-				iter3 = reconstruction->geometries().begin();
-		GPlatesModel::Reconstruction::geometry_collection_type::iterator
-				end3 = reconstruction->geometries().end();
+		GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator
+				iter3 = reconstruction->begin_reconstruction_geometries(tree);
+		GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator
+				end3 = reconstruction->end_reconstruction_geometries(tree);
 		for ( ; iter3 != end3; ++iter3) {
+			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &rg =
+					*iter3;
+
+			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg =
+					dynamic_cast<const GPlatesAppLogic::ReconstructedFeatureGeometry *>(rg.get());
+			if ( ! rfg) {
+				// Why wasn't it an RFG?
+				std::cerr << "Why wasn't it a ReconstructedFeatureGeometry?" << std::endl;
+				std::exit(1);
+			}
+
 			// We only care about polylines (since all the geometries in this function
 			// *should* be polylines), so let's just use a dynamic cast.
 			const GPlatesMaths::PolylineOnSphere *polyline =
-					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>((*iter3)->geometry().get());
+					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(rfg->geometry().get());
 			if ( ! polyline) {
 				// Why wasn't it a polyline?
 				std::cerr << "Why wasn't it a polyline?" << std::endl;
@@ -563,11 +582,14 @@ main(int argc, char *argv[])
 		GPlatesFileIO::ReadErrorAccumulation accum;
 
 
-		const GPlatesFileIO::File::shared_ref file =
-				GPlatesFileIO::GpmlOnePointSixReader::read_file(fileinfo, new_model, accum);
+		// Create a file with an empty feature collection.
+		GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file(fileinfo);
+
+		// Read new features from the file into the empty feature collection.
+		GPlatesFileIO::GpmlOnePointSixReader::read_file(file->get_reference(), new_model, accum);
 
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref features =
-				file->get_const_feature_collection();
+				file->get_reference().get_feature_collection();
 		::output_as_gpml(features->begin(), features->end());
 
 #if 0

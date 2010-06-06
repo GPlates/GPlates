@@ -34,7 +34,9 @@
 #include "Colour.h"
 #include "ColourFilter.h"
 #include "ColourScheme.h"
-#include "model/ReconstructionGeometry.h"
+
+#include "app-logic/ReconstructionGeometry.h"
+
 
 namespace GPlatesGui
 {
@@ -74,7 +76,7 @@ namespace GPlatesGui
 		 */
 		explicit
 		ColourProxy(
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geometry_ptr,
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_ptr,
 				boost::shared_ptr<ColourFilter> colour_filter_ptr =
 					boost::shared_ptr<ColourFilter>());
 
@@ -135,7 +137,7 @@ namespace GPlatesGui
 
 		explicit
 		DeferredColourProxyImpl(
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geometry_ptr,
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_ptr,
 				boost::shared_ptr<ColourFilter> colour_filter_ptr);
 
 		virtual
@@ -145,7 +147,7 @@ namespace GPlatesGui
 
 	private:
 
-		GPlatesModel::ReconstructionGeometry::non_null_ptr_type d_reconstruction_geometry_ptr;
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_geometry_ptr;
 		boost::shared_ptr<ColourFilter> d_colour_filter_ptr;
 	};
 

@@ -88,7 +88,7 @@ namespace GPlatesQtWidgets
 		void
 		feature_collection_created(
 			GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection,
-			GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file_iter);			
+			GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_iter);			
 	
 	private:
 		void

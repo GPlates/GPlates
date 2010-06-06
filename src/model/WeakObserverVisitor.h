@@ -29,12 +29,17 @@
 #define GPLATES_MODEL_WEAKOBSERVERVISITOR_H
 
 
+namespace GPlatesAppLogic
+{
+	class ReconstructedFeatureGeometry;
+	class ReconstructedVirtualGeomagneticPole;
+	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalNetwork;
+}
+
 namespace GPlatesModel
 {
 	class FeatureHandle;
-	class ReconstructedFeatureGeometry;
-	class ResolvedTopologicalBoundary;
-	class ResolvedTopologicalNetwork;
 	template<class H> class WeakReference;
 
 	/**
@@ -74,7 +79,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_reconstructed_feature_geometry(
-				ReconstructedFeatureGeometry &rfg)
+				GPlatesAppLogic::ReconstructedFeatureGeometry &rfg)
 		{  }
 #endif
 
@@ -133,7 +138,16 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_reconstructed_feature_geometry(
-				ReconstructedFeatureGeometry &rfg)
+				GPlatesAppLogic::ReconstructedFeatureGeometry &rfg)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_reconstructed_virtual_geomagnetic_pole(
+				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
 		{  }
 
 		/**
@@ -142,7 +156,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_resolved_topological_boundary(
-				ResolvedTopologicalBoundary &rtb)
+				GPlatesAppLogic::ResolvedTopologicalBoundary &rtb)
 		{  }
 
 		/**
@@ -151,7 +165,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_resolved_topological_network(
-				ResolvedTopologicalNetwork &rtn)
+				GPlatesAppLogic::ResolvedTopologicalNetwork &rtn)
 		{  }
 
 #if 0

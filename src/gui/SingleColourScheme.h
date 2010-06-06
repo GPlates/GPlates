@@ -47,7 +47,7 @@ namespace GPlatesGui
 			virtual
 			boost::optional<Colour>
 			get_colour(
-					const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
+					const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 
 			boost::optional<Colour>
 			get_colour() const;

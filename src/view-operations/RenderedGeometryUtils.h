@@ -33,7 +33,7 @@
 #include "RenderedGeometryCollectionVisitor.h"
 #include "RenderedGeometryProximity.h"
 
-#include "model/ReconstructionGeometry.h"
+#include "app-logic/ReconstructionGeometry.h"
 
 namespace GPlatesViewOperations
 {
@@ -106,7 +106,7 @@ namespace GPlatesViewOperations
 
 
 		//! Typedef for sequence of @a ReconstructionGeometry objects.
-		typedef std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
+		typedef std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
 				reconstruction_geom_seq_type;
 
 		/**

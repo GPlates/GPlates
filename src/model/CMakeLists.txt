@@ -16,10 +16,8 @@ set(srcs
     BasicRevision.h
     ChangesetHandle.cc
     ChangesetHandle.h
-    ConstReconstructionGeometryVisitor.h
     FeatureCollectionHandle.cc
     FeatureCollectionHandle.h
-    FeatureCollectionHandleUnloader.h
     FeatureCollectionRevision.cc
     FeatureCollectionRevision.h
     FeatureHandle.cc
@@ -51,29 +49,6 @@ set(srcs
     PropertyValue.cc
     PropertyValue.h
     QualifiedXmlName.h
-    ReconstructedFeatureGeometry.cc
-    ReconstructedFeatureGeometry.h
-    ReconstructedFeatureGeometryFinder.cc
-    ReconstructedFeatureGeometryFinder.h
-    Reconstruction.cc
-    Reconstruction.h
-    ReconstructionGeometry.h
-    ReconstructionGeometryFinder.cc
-    ReconstructionGeometryFinder.h
-    ReconstructionGeometryVisitor.h
-    ReconstructionGraph.cc
-    ReconstructionGraph.h
-    ReconstructionTree.cc
-    ReconstructionTree.h
-    ReconstructionTreeEdge.cc
-    ReconstructionTreeEdge.h
-    ReconstructionTreePopulator.cc
-    ReconstructionTreePopulator.h
-    ResolvedTopologicalBoundary.cc
-    ResolvedTopologicalBoundary.h
-    ResolvedTopologicalNetwork.cc
-    ResolvedTopologicalNetwork.h
-    ResolvedTopologicalNetworkImpl.h
     RevisionAwareIterator.cc
     RevisionAwareIterator.h
     RevisionId.h

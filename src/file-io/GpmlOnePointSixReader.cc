@@ -457,13 +457,15 @@ namespace
 }
 
 
-const GPlatesFileIO::File::shared_ref
+void
 GPlatesFileIO::GpmlOnePointSixReader::read_file(
-		const FileInfo &fileinfo,
+		const File::Reference &file,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors,
 		bool use_gzip)
 {
+	const FileInfo &fileinfo = file.get_file_info();
+
 	// By placing all changes to the model under the one changeset, we ensure that
 	// feature revision ids don't get changed from what was loaded from file no
 	// matter what we do to the features.
@@ -502,14 +504,8 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 
 	boost::shared_ptr<DataSource> source( 
 			new LocalFileDataSource(filename, DataFormats::GpmlOnePointSix));
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection =
-			GPlatesModel::FeatureCollectionHandle::create(
-					model->root(),
-					GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
-	// Make sure feature collection gets unloaded when it's no longer needed.
-	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
-			GPlatesModel::FeatureCollectionHandleUnloader::create(collection);
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection = file.get_feature_collection();
 
 	GpmlReaderUtils::ReaderParams params(reader, source, read_errors);
 	boost::shared_ptr<Model::XmlElementNode::AliasToNamespaceMap> alias_map(
@@ -555,7 +551,5 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 						ReadErrors::ParsingStoppedPrematurely));
 		}
 	}
-
-	return File::create_loaded_file(collection_unloader, fileinfo);
 }
 

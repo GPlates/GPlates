@@ -25,6 +25,8 @@
 
 #include <QLocale>
 #include <QDebug>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 
 #include "FeatureSummaryWidget.h"
 
@@ -132,24 +134,24 @@ namespace
 	 *
 	 * If no match is found, the 'end' iterator is returned!
 	 */
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator
-	get_file_iterator_for_feature(
+	boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
+	get_file_reference_for_feature(
 			GPlatesAppLogic::FeatureCollectionFileState &state,
 			GPlatesModel::FeatureHandle::const_weak_ref feature_ref)
 	{
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
 				state.get_loaded_files();
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
-		
-		for (; it != end; ++it) {
+		BOOST_FOREACH(
+				const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
+				loaded_files)
+		{
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref collection_ref =
-					it->get_const_feature_collection();
+					file_ref.get_file().get_feature_collection();
 			if (feature_collection_contains_feature(collection_ref, feature_ref)) {
-				return it;
+				return file_ref;
 			}
 		}
-		return end;
+		return boost::none;
 	}
 	
 	/**
@@ -160,22 +162,22 @@ namespace
 	 */
 	QString
 	get_feature_collection_name_for_feature(
-			GPlatesAppLogic::FeatureCollectionFileState &state,
+			GPlatesAppLogic::FeatureCollectionFileState &file_state,
 			GPlatesModel::FeatureHandle::const_weak_ref feature_ref)
 	{
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it = 
-				get_file_iterator_for_feature(state, feature_ref);
-		if (file_it == state.get_loaded_files().end) {
+		boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_ref = 
+				get_file_reference_for_feature(file_state, feature_ref);
+		if (!file_ref) {
 			return QObject::tr("< Invalid Feature Collection >");
 		}
 		
 		// Some files might not actually exist yet if the user created a new
 		// feature collection internally and hasn't saved it to file yet.
 		QString name;
-		if (GPlatesFileIO::file_exists(file_it->get_file_info()))
+		if (GPlatesFileIO::file_exists(file_ref->get_file().get_file_info()))
 		{
 			// Get a suitable label; we will prefer the short filename.
-			name = file_it->get_file_info().get_display_name(false);
+			name = file_ref->get_file().get_file_info().get_display_name(false);
 		}
 		else
 		{
@@ -235,7 +237,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 		GPlatesGui::FeatureFocus &feature_focus)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature_focus.focused_feature();
-	const GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg =
+	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type associated_rg =
 			feature_focus.associated_reconstruction_geometry();
 
 	// Clear the fields first, then fill in those that we have data for.
@@ -310,13 +312,14 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	{
 		// There was an associated ReconstructionGeometry, which means there
 		// was a clicked geometry.
-		GPlatesModel::FeatureHandle::iterator geometry_property;
-		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
-				associated_rg, geometry_property))
+		boost::optional<GPlatesModel::FeatureHandle::iterator> geometry_property =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
+						associated_rg);
+		if (geometry_property)
 		{
 			lineedit_clicked_geometry->setText(
 					GPlatesUtils::make_qstring_from_icu_string(
-						(*geometry_property)->property_name().build_aliased_name()));
+						(*geometry_property.get())->property_name().build_aliased_name()));
 		}
 		else
 		{

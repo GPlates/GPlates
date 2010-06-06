@@ -43,7 +43,7 @@ GPlatesGui::SingleColourScheme::SingleColourScheme(
 
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::SingleColourScheme::get_colour(
-		const GPlatesModel::ReconstructionGeometry &) const
+		const GPlatesAppLogic::ReconstructionGeometry &) const
 {
 	return d_colour;
 }

@@ -30,8 +30,10 @@
 #include <QCoreApplication>
 #include <iostream>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 #include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/ClassifyFeatureCollection.h"
 #include "file-io/FileInfo.h"
 #include "file-io/ExternalProgram.h"
 #include "file-io/FeatureCollectionFileFormat.h"
@@ -62,7 +64,7 @@ namespace
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type
 	get_output_filters_for_file(
 			GPlatesAppLogic::FeatureCollectionFileState &file_state,
-			GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter,
+			GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
 			bool has_gzip)
 	{
 		using std::make_pair;
@@ -85,7 +87,9 @@ namespace
 		
 		// Determine whether file contains reconstructable and/or reconstruction features.
 		const GPlatesAppLogic::ClassifyFeatureCollection::classifications_type classification =
-				file_state.get_feature_collection_classification(file_iter);
+				GPlatesAppLogic::ClassifyFeatureCollection::classify_feature_collection(
+						file_ref.get_file());
+
 		const bool has_features_with_geometry =
 				GPlatesAppLogic::ClassifyFeatureCollection::found_geometry_feature(classification);
 		const bool has_reconstruction_features =
@@ -94,7 +98,7 @@ namespace
 		GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
 		
 		// Build the list of filters depending on the original file format.
-		switch ( file_iter->get_loaded_file_format() )
+		switch ( file_ref.get_file().get_loaded_file_format() )
 		{
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
 			{
@@ -232,10 +236,10 @@ namespace
 	 */
 	bool
 	file_is_unnamed(
-			GPlatesAppLogic::FeatureCollectionFileState::file_iterator file)
+			GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 	{
 		// Get the QFileInfo, to determine unnamed state.
-		const QFileInfo &qfileinfo = file->get_file_info().get_qfileinfo();
+		const QFileInfo &qfileinfo = file.get_file().get_file_info().get_qfileinfo();
 		return qfileinfo.fileName().isEmpty();
 	}
 }
@@ -340,7 +344,7 @@ GPlatesGui::FileIOFeedback::open_urls(
 
 void
 GPlatesGui::FileIOFeedback::reload_file(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference &file)
 {
 	try_catch_file_load_with_feedback(
 			boost::bind(
@@ -352,7 +356,7 @@ GPlatesGui::FileIOFeedback::reload_file(
 
 bool
 GPlatesGui::FileIOFeedback::save_file_as_appropriate(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
 	if (file_is_unnamed(file)) {
 		return save_file_as(file);
@@ -364,18 +368,18 @@ GPlatesGui::FileIOFeedback::save_file_as_appropriate(
 
 bool
 GPlatesGui::FileIOFeedback::save_file_in_place(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
 	// Get the format to write feature collection in.
 	// This is usually determined by file extension but some format also
 	// require user preferences (eg, style of feature header in file).
 	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
-		get_feature_collection_write_format(file->get_file_info());
+		get_feature_collection_write_format(file.get_file().get_file_info());
 	
 	// Save the feature collection with GUI feedback.
 	bool ok = save_file(
-			file->get_file_info(),
-			file->get_feature_collection(),
+			file.get_file().get_file_info(),
+			file.get_file().get_feature_collection(),
 			feature_collection_write_format);
 	return ok;
 }
@@ -383,7 +387,7 @@ GPlatesGui::FileIOFeedback::save_file_in_place(
 
 bool
 GPlatesGui::FileIOFeedback::save_file_as(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
 	// Configure and open the Save As dialog.
 	d_save_file_as_dialog_ptr->set_filters(
@@ -391,7 +395,7 @@ GPlatesGui::FileIOFeedback::save_file_as(
 				*d_file_state_ptr,
 				file,
 				d_gzip_available));
-	QString file_path = file->get_file_info().get_qfileinfo().filePath();
+	QString file_path = file.get_file().get_file_info().get_qfileinfo().filePath();
 	if (file_path != "")
 	{
 		d_save_file_as_dialog_ptr->select_file(file_path);
@@ -411,7 +415,7 @@ GPlatesGui::FileIOFeedback::save_file_as(
 	// Make a new FileInfo object to tell save_file() what the new name should be.
 	// This also copies any other info stored in the FileInfo.
 	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
-			filename, file->get_file_info());
+			filename, file.get_file().get_file_info());
 
 	// Get the format to write feature collection in.
 	// This is usually determined by file extension but some format also
@@ -422,7 +426,7 @@ GPlatesGui::FileIOFeedback::save_file_as(
 	// Save the feature collection, with GUI feedback.
 	bool ok = save_file(
 			new_fileinfo,
-			file->get_feature_collection(),
+			file.get_file().get_feature_collection(),
 			feature_collection_write_format);
 	
 	// If there was an error saving, don't change the fileinfo.
@@ -430,15 +434,8 @@ GPlatesGui::FileIOFeedback::save_file_as(
 		return false;
 	}
 
-	// Wrap the same feature collection up with the new FileInfo.
-	const GPlatesFileIO::File::shared_ref new_file = GPlatesFileIO::File::create_save_file(
-			*file, new_fileinfo);
-
-	// Update the name of the file by replacing with the new File object.
-	// NOTE: this also removes the old file object thus making 'file'
-	// a dangling reference.
-	// FIXME: Is this a FIXME? I can't grok what this implies right now. -JC
-	d_file_state_ptr->reset_file(file, new_file);
+	// Change the file info in the file - this will emit signals to interested observers.
+	file.set_file_info(new_fileinfo);
 	
 	return true;
 }
@@ -446,7 +443,7 @@ GPlatesGui::FileIOFeedback::save_file_as(
 
 bool
 GPlatesGui::FileIOFeedback::save_file_copy(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
 	// Configure and pop up the Save a Copy dialog.
 	d_save_file_copy_dialog_ptr->set_filters(
@@ -454,7 +451,7 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 				*d_file_state_ptr,
 				file,
 				d_gzip_available));
-	QString file_path = file->get_file_info().get_qfileinfo().filePath();
+	QString file_path = file.get_file().get_file_info().get_qfileinfo().filePath();
 	if (file_path != "")
 	{
 		d_save_file_copy_dialog_ptr->select_file(file_path);
@@ -474,7 +471,7 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 	// Make a new FileInfo object to tell save_file() what the copy name should be.
 	// This also copies any other info stored in the FileInfo.
 	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
-			filename, file->get_file_info());
+			filename, file.get_file().get_file_info());
 
 	// Get the format to write feature collection in.
 	// This is usually determined by file extension but some format also
@@ -485,7 +482,7 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 	// Save the feature collection, with GUI feedback.
 	save_file(
 			new_fileinfo,
-			file->get_feature_collection(),
+			file.get_file().get_feature_collection(),
 			feature_collection_write_format);
 
 	return true;
@@ -584,30 +581,32 @@ GPlatesGui::FileIOFeedback::save_all(
 	viewport_window().status_message("GPlates is saving files...");
 
 	// For each loaded file; if it has unsaved changes, behave as though 'save in place' was clicked.
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
 			d_file_state_ptr->get_loaded_files();
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
 
 	// Return true only if all files saved without issue.
 	bool all_ok = true;
-	
-	for (; it != end; ++it) {
+
+	BOOST_FOREACH(
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &loaded_file,
+			loaded_files)
+	{
 		// Attempt to ensure GUI still gets updates... FIXME, it's not enough.
 		QCoreApplication::processEvents();
 
 		// Get the FeatureCollectionHandle, to determine unsaved state.
-		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = it->get_feature_collection();
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+				loaded_file.get_file().get_feature_collection();
 
 		// Does this file need saving?
 		if (feature_collection_ref.is_valid() && feature_collection_ref->contains_unsaved_changes()) {
 			// For now, to avoid pointless 'give me a name for this file (which you can't identify)'
 			// situations, only save the files which we have a name for already (unless @a include_unnamed_files)
-			if (file_is_unnamed(it) && ! include_unnamed_files) {
+			if (file_is_unnamed(loaded_file) && ! include_unnamed_files) {
 				// Skip the unnamed file.
 			} else {
 				// Save the feature collection, in place or with dialog, with GUI feedback.
-				bool ok = save_file_as_appropriate(it);
+				bool ok = save_file_as_appropriate(loaded_file);
 				// save_all() needs to report any failures.
 				if ( ! ok) {
 					all_ok = false;

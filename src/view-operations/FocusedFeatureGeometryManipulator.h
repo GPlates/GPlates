@@ -28,12 +28,14 @@
 #ifndef GPLATES_VIEWOPERATIONS_FOCUSEDFEATUREGEOMETRYMANIPULATOR_H
 #define GPLATES_VIEWOPERATIONS_FOCUSEDFEATUREGEOMETRYMANIPULATOR_H
 
+#include <boost/optional.hpp>
 #include <QObject>
 
 #include "GeometryBuilder.h"
+
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "gui/FeatureFocus.h"
 #include "maths/GeometryOnSphere.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "model/types.h"
 
 
@@ -151,7 +153,7 @@ namespace GPlatesViewOperations
 		 * Note that there may not be a focused reconstructed feature geometry,
 		 * in which case this would be a null pointer.
 		 */
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_focused_geometry;
+		GPlatesAppLogic::ReconstructedFeatureGeometry::maybe_null_ptr_to_const_type d_focused_geometry;
 
 		/**
 		 * Is true if we've received an update signal from @a GeometryBuilder
@@ -226,9 +228,8 @@ namespace GPlatesViewOperations
 		 * Gets the plate id from the focused feature.
 		 * Returns false if nothing found.
 		 */
-		bool
-		get_plate_id_from_feature(
-				GPlatesModel::integer_plate_id_type &plate_id);
+		boost::optional<GPlatesModel::integer_plate_id_type>
+		get_plate_id_from_feature();
 	};
 }
 

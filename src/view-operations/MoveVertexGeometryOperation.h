@@ -33,7 +33,7 @@
 #include <QObject>
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
-#include "model/ReconstructionGeometry.h"
+#include "app-logic/ReconstructionGeometry.h"
 #include "model/types.h"
 #include "GeometryBuilder.h"
 #include "GeometryOperation.h"
@@ -102,7 +102,7 @@ namespace GPlatesViewOperations
 					rendered_reconstruction_geometry.get_reconstruction_geometry());
 			}
 
-			boost::optional<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
+			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
 			get_reconstruction_geometry()
 			{
 				return d_rendered_reconstruction_geometry;
@@ -110,7 +110,7 @@ namespace GPlatesViewOperations
 
 		private:
 				
-			boost::optional<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
+			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
 				d_rendered_reconstruction_geometry;
 
 		};		

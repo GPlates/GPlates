@@ -29,16 +29,17 @@
 #include "ExportVelocityAnimationStrategy.h"
 
 #include "app-logic/AppLogicUtils.h"
-#include "app-logic/PlateVelocityWorkflow.h"
 
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 
-#include "utils/FloatingPointComparisons.h"
+#include "global/NotYetImplementedException.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
 
 #include "presentation/ViewState.h"
+
+#include "utils/FloatingPointComparisons.h"
 
 
 namespace
@@ -126,6 +127,9 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 	QString output_filename_prefix = *filename_it++;
 	QDir target_dir = d_export_animation_context_ptr->target_dir();
 
+#if 1
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+#else
 	// Here's where we would do the actual calculating and exporting of the
 	// velocities. The View is already set to the appropriate reconstruction time for
 	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
@@ -172,6 +176,7 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 				velocity_feature_collection, gpml_writer);
 	}
+#endif
 	
 	// Normal exit, all good, ask the Context to process the next iteration please.
 	return true;

@@ -27,18 +27,30 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTGRAPH_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTGRAPH_H
 
-#include <string>
+#include <iterator>
 #include <list>
+#include <map>
+#include <set>
 #include <vector>
-#include <boost/tuple/tuple.hpp>
+#include <boost/mpl/assert.hpp>
+#include <boost/mpl/contains.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/operators.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <QObject>
+
+#include "FeatureCollectionFileState.h"
+#include "Layer.h"
+#include "LayerTaskDataType.h"
+#include "Reconstruction.h"
 
 #include "model/FeatureCollectionHandle.h"
 
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
 	class LayerTask;
 
 	namespace ReconstructGraphImpl
@@ -49,200 +61,461 @@ namespace GPlatesAppLogic
 	}
 
 
-	class ReconstructGraph
+	/**
+	 * Manages layer creation and connection to other layers or input feature collections
+	 * and generates a @a Reconstruction that is the accumulated result of all layer outputs
+	 * for a specific reconstruction time.
+	 */
+	class ReconstructGraph :
+			public QObject,
+			private boost::noncopyable
 	{
+		Q_OBJECT
+
+	private:
+		//! Typedef for a shared pointer to a layer added to the graph.
+		typedef boost::shared_ptr<ReconstructGraphImpl::Layer> layer_ptr_type;
+
+		//! Typedef for a sequence of layers.
+		typedef std::list<layer_ptr_type> layer_ptr_seq_type;
+
 	public:
 		/**
-		 * The various types of layers distinguished by the type of processing
-		 * they perform on their inputs.
+		 * Forward iterator over all layers in the graph.
 		 */
-		enum LayerType
+		class LayerConstIterator :
+				public std::iterator<std::forward_iterator_tag, Layer>,
+				public boost::equality_comparable<LayerConstIterator>,
+				public boost::incrementable<LayerConstIterator>
 		{
-			/*
-			 * Creates @a ReconstructedFeatureGeometry objects from features
-			 * containing geometry properties and a reconstruction plate id.
-			 */
-			RECONSTRUCT_LAYER,
-			/*
-			 * Creates a @a ReconstructionTree from total reconstruction sequence features.
-			 */
-			ROTATE_LAYER,
-			/*
-			 * Creates @a ResolvedTopologicalBoundary objects from topological
-			 * closed plate boundary features.
-			 */
-			TOPOLOGICAL_PLATE_POLYGON_LAYER,
+		public:
+			//! Create a "begin" iterator.
+			static
+			LayerConstIterator
+			create_begin(
+					const ReconstructGraph &reconstruct_graph)
+			{
+				return LayerConstIterator(reconstruct_graph.d_layers.begin());
+			}
 
-			NUM_LAYER_TYPES // Must be last
+			//! Create an "end" iterator.
+			static
+			LayerConstIterator
+			create_end(
+					const ReconstructGraph &reconstruct_graph)
+			{
+				return LayerConstIterator(reconstruct_graph.d_layers.end());
+			}
+
+			/**
+			 * Dereference operator.
+			 * No 'operator->()' is provided since we're returning a temporary object.
+			 */
+			const Layer
+			operator*() const
+			{
+				// Convert to a weak reference.
+				return Layer(*d_layer_seq_iterator);
+			}
+
+
+			/**
+			 * Pre-increment operator.
+			 * Post-increment operator provided by base class boost::incrementable.
+			 */
+			LayerConstIterator &
+			operator++()
+			{
+				++d_layer_seq_iterator;
+				return *this;
+			}
+
+
+			/**
+			 * Equality comparison for @a LayerConstIterator.
+			 * Inequality operator provided by base class boost::equality_comparable.
+			 */
+			friend
+			bool
+			operator==(
+					const LayerConstIterator &lhs,
+					const LayerConstIterator &rhs)
+			{
+				return lhs.d_layer_seq_iterator == rhs.d_layer_seq_iterator;
+			}
+
+		private:
+			layer_ptr_seq_type::const_iterator d_layer_seq_iterator;
+
+
+			LayerConstIterator(
+					layer_ptr_seq_type::const_iterator layer_seq_iterator) :
+				d_layer_seq_iterator(layer_seq_iterator)
+			{  }
 		};
 
 		/**
-		 * The data type that is input to or output from a layer.
+		 * Typedef for an iterator over the layers in the graph.
+		 */
+		typedef LayerConstIterator layer_const_iterator;
+
+
+		/**
+		 * Constructor.
+		 */
+		ReconstructGraph(
+				ApplicationState &application_state);
+
+
+		/**
+		 * Adds a new layer to the graph and sets it as the default reconstruction tree layer
+		 * (if @a layer_task generates a reconstruction tree as output).
 		 *
-		 * The three possible types are:
-		 * 1) feature collection - typically used as the first level of input
-		 *    to layers in the graph,
-		 * 2) reconstruction geometries - typically output by layers and can be used
-		 *    as inputs to other connected layers,
-		 * 3) reconstruction tree - typically output by a layer that converts rotation
-		 *    features (total reconstruction sequences) to a rotation tree that is used
-		 *    as input to other layers for reconstruction purposes.
-		 */
-		enum DataType
-		{
-			FEATURE_COLLECTION_DATA,
-			RECONSTRUCTED_GEOMETRY_COLLECTION_DATA,
-			RECONSTRUCTION_TREE_DATA
-		};
-
-		/**
-		 * Represents the number of data inputs allowed by a specific input channel of a layer.
+		 * The layer will still need to be connected to a feature collection or
+		 * the output of another layer.
 		 *
-		 * A layer can have one of more input channels representing different classifications
-		 * of input data and each channel can have one or more data objects.
-		 * The latter is what's determined here.
+		 * Emits the signal @a layer_added - clients of that signal should note that
+		 * the layer does not yet have any input connections - whoever called @a add_layer
+		 * could still be in the process of making input connections.
 		 *
-		 * For example the @a RECONSTRUCT_LAYER layer has a "rotation tree" input channel and a
-		 * "reconstructable features" input channel.
-		 * In the "reconstructable features" there can be multiple feature collections but
-		 * in the rotation tree channel there can only be one reconstruction tree.
-		 */
-		enum ChannelDataArity
-		{
-			ONE_DATA_IN_CHANNEL,
-			MULTIPLE_DATAS_IN_CHANNEL
-		};
-
-		/**
-		 * Handle id to a feature collection added to the graph.
-		 */
-		typedef boost::weak_ptr<ReconstructGraphImpl::Data> feature_collection_id_type;
-
-		/**
-		 * Handle id to a layer added to the graph.
-		 */
-		typedef boost::weak_ptr<ReconstructGraphImpl::Layer> layer_id_type;
-
-		/**
-		 * Handle id to a connection between a data source and layer.
-		 */
-		typedef boost::weak_ptr<ReconstructGraphImpl::LayerInputConnection> layer_input_connection_id_type;
-
-		/**
-		 * Channel name identifies a specific input channel of a layer.
-		 */
-		typedef std::string layer_input_channel_name_type;
-
-		/**
-		 * Typedef for information describing the data type and arity allowed for
-		 * a single input channel.
-		 */
-		typedef boost::tuple<
-				ReconstructGraph::layer_input_channel_name_type,
-				ReconstructGraph::DataType,
-				ReconstructGraph::ChannelDataArity> input_channel_definition_type;
-
-
-		feature_collection_id_type
-		add_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
-
-
-		void
-		remove_feature_collection(
-				const feature_collection_id_type &feature_collection_id);
-
-
-		/**
-		 * Adds a new layer to the graph.
-		 *
-		 * The layer will need to be connected to a feature collection or another layer.
+		 * Can also emit the signal @a default_reconstruction_tree_layer_changed if
+		 * the layer created is a reconstruction tree layer.
 		 *
 		 * You can create @a layer_task using @a LayerTaskRegistry.
 		 */
-		layer_id_type
+		Layer
 		add_layer(
 				const boost::shared_ptr<LayerTask> &layer_task);
 
 
+		/**
+		 * Removes a layer from the graph and sets the default reconstruction tree layer
+		 * to none (if removing the default reconstruction tree layer).
+		 *
+		 * Any layers whose input is connected to the output of @a layer
+		 * will be disconnected from it.
+		 * Any feature collections (or layers whose output is) connected to the input of
+		 * @a layer will be disconnected from it.
+		 *
+		 * This call will also be necessary before any memory can be released (even if
+		 * @a layer was never connected to the graph).
+		 *
+		 * Emits the signal @a layer_about_to_be_removed before the layer is removed.
+		 *
+		 * Also emits the signal @a layer_activation_changed (before the signal
+		 * @a layer_about_to_be_removed) if @a layer is currently active.
+		 *
+		 * Can also emit the signal @a default_reconstruction_tree_layer_changed if
+		 * @a layer is currently the default reconstruction tree layer.
+		 *
+		 * @throws @a PreconditionViolationError if layer already removed from graph.
+		 */
 		void
 		remove_layer(
-				const layer_id_type &layer_id);
-
-
-		std::vector<input_channel_definition_type>
-		get_layer_input_channel_definitions(
-				const layer_id_type &layer_id) const;
-
-
-		DataType
-		get_layer_output_definition(
-				const layer_id_type &layer_id) const;
-
-
-		layer_input_connection_id_type
-		connect_layer_input_to_feature_collection(
-				const feature_collection_id_type &feature_collection_id,
-				const layer_id_type &layer_id_inputting_data,
-				const layer_input_channel_name_type &layer_input_data_channel);
-
-
-		layer_input_connection_id_type
-		connect_layer_input_to_layer_output(
-				const layer_id_type &layer_id_outputting_data,
-				const layer_id_type &layer_id_inputting_data,
-				const layer_input_channel_name_type &layer_input_data_channel);
+				Layer layer);
 
 
 		/**
-		 * Disconnects an input data source from a layer.
+		 * Gets the input file handle for @a input_file.
 		 *
-		 * There are two situations where this can occur:
-		 * 1) A feature collection that is used as input to a layer,
-		 * 2) A layer output that is used as input to another layer.
+		 * The returned file is a weak reference and does not need to be stored anywhere.
+		 * It's typically passed straight to Layer::connect_to_input_file.
+		 *
+		 * If this file gets unloaded by the user then the returned weak reference will
+		 * become invalid and all layers connecting to this input file will lose those
+		 * connections automatically. This is the primary reason for having this method.
+		 * If any layer has no more input connections on its main channel input then that
+		 * layer will be removed automatically and destroyed.
+		 *
+		 * @throws PreconditionViolationError if @a input_file is not a currently loaded file.
+		 */
+		Layer::InputFile
+		get_input_file(
+				const FeatureCollectionFileState::file_reference input_file);
+
+
+		/**
+		 * Sets the current default reconstruction tree layer.
+		 *
+		 * Any layers that require a reconstruction tree input but are not explicitly
+		 * connected to one will use the default reconstruction tree layer instead.
+		 *
+		 * Layers that are explicitly connected to a reconstruction tree layer will
+		 * ignore the default reconstruction tree layer.
+		 *
+		 * Disabling or destroying the default reconstruction tree layer will result in
+		 * layers that implicitly connect to it to use identity rotations for all plates.
+		 *
+		 * If @a default_reconstruction_tree_layer is invalid then there will be no
+		 * default reconstruction tree layer - this is they way to specify no default layer.
+		 *
+		 * Emits the @a default_reconstruction_tree_layer_changed signal if the default
+		 * reconstruction tree layer changed.
+		 *
+		 * @a throws PreconditionViolationError if @a default_reconstruction_tree_layer is valid,
+		 * but the layer it refers to is not a reconstruction tree layer.
 		 */
 		void
-		disconnect_layer_input(
-				const layer_input_connection_id_type &layer_input_connection_id);
+		set_default_reconstruction_tree_layer(
+				const Layer &default_reconstruction_tree_layer = Layer());
+
+
+		/**
+		 * Returns the current default reconstruction tree layer.
+		 *
+		 * NOTE: Check the returned weak reference is valid before using since
+		 * there may be no default layer.
+		 */
+		Layer
+		get_default_reconstruction_tree_layer() const;
+
+
+		/**
+		 * Returns the "begin" layer_const_iterator to iterate over the
+		 * sequence of @a Layer objects in this graph.
+		 */
+		layer_const_iterator
+		begin_layers() const
+		{
+			return layer_const_iterator::create_begin(*this);
+		}
+
+
+		/**
+		 * Returns the "end" layer_const_iterator to iterate over the
+		 * sequence of @a Layer objects in this graph.
+		 */
+		layer_const_iterator
+		end_layers() const
+		{
+			return layer_const_iterator::create_end(*this);
+		}
+
+
+		///////////////////////////////////////////////////////////////
+		// The following public methods are used by ApplicationState //
+		///////////////////////////////////////////////////////////////
+
+
+		/**
+		 * Executes the layer tasks in the current reconstruction graph.
+		 *
+		 * Layer tasks requiring input from other layer tasks are executed in the correct order.
+		 *
+		 * Also accumulates the output results of each layer into the returned @a Reconstruction.
+		 */
+		Reconstruction::non_null_ptr_to_const_type
+		execute_layer_tasks(
+				const double &reconstruction_time);
+
+
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
+		// Used to be a slot but is now called directly by @a ApplicationState.
+		void
+		handle_file_state_files_added(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files);
+
+		// Used to be a slot but is now called directly by @a ApplicationState.
+		void
+		handle_file_state_file_about_to_be_removed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
+
+	signals:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
+		/**
+		 * Emitted when a new layer has been added by @a add_layer.
+		 */
+		void
+		layer_added(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer);
+
+		/**
+		 * Emitted when an existing layer is about to be removed inside @a remove_layer.
+		 */
+		void
+		layer_about_to_be_removed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer);
+
+		/**
+		 * Emitted when layer @a layer has been activated or deactivated.
+		 */
+		void
+		layer_activation_changed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer,
+				bool activation);
+
+		/**
+		 * Emitted when layer @a layer has added a new input connection.
+		 */
+		void
+		layer_added_input_connection(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer,
+				GPlatesAppLogic::Layer::InputConnection input_connection);
+
+		/**
+		 * Emitted when layer @a layer is about to remove an existing input connection.
+		 *
+		 * NOTE: This signal only gets emitted if a connection is explicitly disconnected
+		 * (by calling Layer::InputConnection::disconnect()). When an input connection is
+		 * automatically destroyed because its parent layer is removed then no signal is emitted.
+		 */
+		void
+		layer_about_to_remove_input_connection(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer,
+				GPlatesAppLogic::Layer::InputConnection input_connection);
+
+		/**
+		 * Emitted when the default reconstruction tree layer is changed.
+		 *
+		 * An invalid layer means no layer (in other words there was or will be
+		 * no default reconstruction tree layer).
+		 */
+		void
+		default_reconstruction_tree_layer_changed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer prev_default_reconstruction_tree_layer,
+				GPlatesAppLogic::Layer new_default_reconstruction_tree_layer);
 
 	private:
-		typedef std::list< boost::shared_ptr<ReconstructGraphImpl::Layer> >
-				layer_ptr_seq_type;
+		//! Emits the @a layer_activation_changed signal.
+		void
+		emit_layer_activation_changed(
+				const Layer &layer,
+				bool activation);
 
-		typedef std::list< boost::shared_ptr<ReconstructGraphImpl::Data> >
-				feature_collection_ptr_seq_type;
+		//! Emits the @a layer_added_input_connection signal.
+		void
+		emit_layer_added_input_connection(
+				GPlatesAppLogic::Layer layer,
+				GPlatesAppLogic::Layer::InputConnection input_connection);
 
-		typedef std::list< boost::shared_ptr<ReconstructGraphImpl::LayerInputConnection> >
-				layer_input_connection_ptr_seq_type;
+		//! Emits the @a layer_about_to_remove_input_connection signal.
+		void
+		emit_layer_about_to_remove_input_connection(
+				GPlatesAppLogic::Layer layer,
+				GPlatesAppLogic::Layer::InputConnection input_connection);
+
+		friend class Layer;
+
+	private:
+		//! Typedef for a shared pointer to an input file.
+		typedef boost::shared_ptr<ReconstructGraphImpl::Data> input_file_ptr_type;
+
+		//! Typedef for a sequence of input files with file references as map keys.
+		typedef std::map<FeatureCollectionFileState::file_reference, input_file_ptr_type>
+				input_file_ptr_map_type;
 
 
-		feature_collection_ptr_seq_type d_feature_collections;
+		ApplicationState &d_application_state;
+
+		input_file_ptr_map_type d_input_files;
 		layer_ptr_seq_type d_layers;
-		layer_input_connection_ptr_seq_type d_layer_input_connections;
+
+		/**
+		 * The default reconstruction tree layer.
+		 * Can be invalid if no default layer set or if the default layer was destroyed.
+		 */
+		Layer d_default_reconstruction_tree_layer;
 
 
 		/**
-		 * Remove all input connections linked to @a layer.
-		 *
-		 * Each deleted connection will in turn unlink @a layer from an input data source.
+		 * Determines an order of layers that will not violate the dependency graph -
+		 * in other words does not execute a layer before its input layers have been executed.
 		 */
-		void
-		remove_layer_input_connections(
-				ReconstructGraphImpl::Layer *layer);
-
-		void
-		remove_layer_input_connection(
-				ReconstructGraphImpl::LayerInputConnection *layer_input_connection);
+		std::vector<ReconstructGraphImpl::Layer *>
+		get_layer_dependency_order(
+				ReconstructGraphImpl::Layer *default_reconstruction_tree_layer) const;
 
 		/**
-		 * Remove all connections linked to @a feature_collection_data.
-		 *
-		 * Each deleted connection will in turn unlink the feature collection from a layer.
+		 * Partitions all layers into:
+		 * - topological layers and their dependency ancestors, and
+		 * - the rest.
 		 */
 		void
-		remove_data_output_connections(
-				ReconstructGraphImpl::Data *feature_collection_data);
+		partition_topological_layers_and_their_dependency_ancestors(
+				std::set<ReconstructGraphImpl::Layer *> &topological_layers_and_ancestors,
+				std::set<ReconstructGraphImpl::Layer *> &other_layers) const;
+
+		/**
+		 * Find dependency ancestors of @a layer and appends them to @a ancestor_layers.
+		 */
+		void
+		find_dependency_ancestors_of_layer(
+				const ReconstructGraphImpl::Layer *layer,
+				std::set<ReconstructGraphImpl::Layer *> &ancestor_layers) const;
+
+		/**
+		 * Determines a dependency ordering of the dependency graph rooted at @a layer and
+		 * outputs the ordered results to @a dependency_ordered_layers.
+		 *
+		 * @a all_layers_visited is used to avoid visiting the same layer more than once.
+		 */
+		void
+		find_layer_dependency_order(
+				ReconstructGraphImpl::Layer *layer,
+				std::vector<ReconstructGraphImpl::Layer *> &dependency_ordered_layers,
+				std::set<ReconstructGraphImpl::Layer *> &all_layers_visited) const;
 	};
+
+
+	/**
+	 * Finds the layer in @a reconstruct_graph that generated
+	 * the output @a layer_output_data_to_match.
+	 *
+	 * Examples of the template parameter LayerOutputDataType are:
+	 * - ReconstructionGeometryCollection::non_null_ptr_to_const_type
+	 * - ReconstructionTree::non_null_ptr_to_const_type
+	 * ...they are expected to be types in the @a layer_task_data_type variant.
+	 */
+	template <class LayerOutputDataType>
+	boost::optional<Layer>
+	find_layer(
+			const ReconstructGraph &reconstruct_graph,
+			const LayerOutputDataType &layer_output_data_to_match)
+	{
+		// Compile time error to make sure that the template parameter 'LayerOutputDataType'
+		// is one of the bounded types in the 'layer_task_data_type' variant.
+#ifdef WIN32 // Old-style cast error in gcc...
+		BOOST_MPL_ASSERT((boost::mpl::contains<layer_task_data_types, LayerOutputDataType>));
+#endif
+
+		// Iterate over the layers in the graph.
+		ReconstructGraph::layer_const_iterator layer_iter = reconstruct_graph.begin_layers();
+		ReconstructGraph::layer_const_iterator layer_end = reconstruct_graph.end_layers();
+		for ( ; layer_iter != layer_end; ++layer_iter)
+		{
+			const Layer &layer = *layer_iter;
+
+			// Get the most recent output data generated by the current layer.
+			boost::optional<LayerOutputDataType> layer_output_data =
+					layer.get_output_data<LayerOutputDataType>();
+
+			// If the data type output by the current layer is what we're looking for...
+			if (layer_output_data)
+			{
+				// If the data itself matches then we've found the layer that generated the data.
+				if (layer_output_data.get() == layer_output_data_to_match)
+				{
+					return layer;
+				}
+			}
+		}
+
+		return boost::none;
+	}
 }
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTGRAPH_H

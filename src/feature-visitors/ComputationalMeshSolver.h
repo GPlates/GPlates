@@ -32,6 +32,7 @@
 #include <boost/optional.hpp>
 #include <boost/noncopyable.hpp>
 
+#include "app-logic/Reconstruction.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "global/types.h"
@@ -48,10 +49,8 @@
 #include "model/types.h"
 #include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"
-#include "model/Reconstruction.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryParameters.h"
@@ -110,7 +109,7 @@ namespace GPlatesFeatureVisitors
 		};
 
 
-		typedef std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
+		typedef std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
 				reconstruction_geometries_type;
 
 		//
@@ -120,11 +119,10 @@ namespace GPlatesFeatureVisitors
 		// This is a mimic of ReconstructedFeatureGeometryPopulator()
 
 		ComputationalMeshSolver(
-			GPlatesModel::Reconstruction &reconstruction,
 			const double &recon_time,
 			unsigned long root_plate_id,
-			GPlatesModel::ReconstructionTree &recon_tree,
-			GPlatesModel::ReconstructionTree &recon_tree_2,
+			GPlatesAppLogic::ReconstructionTree &recon_tree,
+			GPlatesAppLogic::ReconstructionTree &recon_tree_2,
 			const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 					resolved_boundaries_for_partitioning_geometry_query,
 			const GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type &
@@ -181,9 +179,8 @@ namespace GPlatesFeatureVisitors
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
 
-		GPlatesModel::Reconstruction *d_recon_ptr;
-		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
-		GPlatesModel::ReconstructionTree *d_recon_tree_2_ptr;
+		GPlatesAppLogic::ReconstructionTree *d_recon_tree_ptr;
+		GPlatesAppLogic::ReconstructionTree *d_recon_tree_2_ptr;
 		GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type
 				d_resolved_boundaries_for_partitioning_geometry_query;
 

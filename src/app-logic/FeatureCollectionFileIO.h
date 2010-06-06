@@ -114,13 +114,13 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Given a file_iterator, reloads the data for that file from disk,
-		 * replacing the feature collection associated with that file_iterator in
+		 * Given a file_reference, reloads the data for that file from disk,
+		 * replacing the feature collection associated with that file_reference in
 		 * the application state.
 		 */
 		void
 		reload_file(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 
 		/**
@@ -128,14 +128,14 @@ namespace GPlatesAppLogic
 		 */
 		void
 		unload_file(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 
 		/**
 		 * Creates a fresh, empty, FeatureCollection. Associates a 'dummy'
 		 * FileInfo for it, and registers it with FeatureCollectionFileState.
 		 */
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference
 		create_empty_file();
 
 
@@ -147,10 +147,10 @@ namespace GPlatesAppLogic
 		 * originally loaded from a file - and you want the new file to appear in the
 		 * list of loaded files maintained by FeatureCollectionFileState.
 		 */
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference
 		create_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
 				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
 					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 
@@ -175,7 +175,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		remap_shapefile_attributes(
-			GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it);
+			GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it);
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -190,11 +190,11 @@ namespace GPlatesAppLogic
 		void
 		remapped_shapefile_attributes(
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_manager,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
 		//! Typedef for a sequence of file shared refs.
-		typedef std::vector<GPlatesFileIO::File::shared_ref> file_seq_type;
+		typedef std::vector<GPlatesFileIO::File::non_null_ptr_type> file_seq_type;
 
 
 		GPlatesModel::ModelInterface d_model;
@@ -209,9 +209,12 @@ namespace GPlatesAppLogic
 		read_feature_collections(
 				const QStringList &filenames);
 
-		const GPlatesFileIO::File::shared_ref
+		/**
+		 * Read new features from file into @a file_ref.
+		 */
+		void
 		read_feature_collection(
-				const GPlatesFileIO::FileInfo &file_info);
+				const GPlatesFileIO::File::Reference &file_ref);
 
 		void
 		emit_handle_read_errors_signal(

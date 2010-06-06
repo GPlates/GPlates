@@ -32,9 +32,9 @@
 #include "PartitionFeatureTask.h"
 
 #include "PartitionFeatureUtils.h"
+#include "ReconstructionTree.h"
 
 #include "model/FeatureCollectionHandle.h"
-#include "model/ReconstructionTree.h"
 
 
 namespace GPlatesAppLogic
@@ -49,7 +49,7 @@ namespace GPlatesAppLogic
 	{
 	public:
 		GenericPartitionFeatureTask(
-				const GPlatesModel::ReconstructionTree &reconstruction_tree,
+				const ReconstructionTree &reconstruction_tree,
 				GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
 				const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign);
 
@@ -71,7 +71,7 @@ namespace GPlatesAppLogic
 				const GeometryCookieCutter &geometry_cookie_cutter);
 
 	private:
-		const GPlatesModel::ReconstructionTree &d_reconstruction_tree;
+		const ReconstructionTree &d_reconstruction_tree;
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType d_assign_plate_id_method;
 		GPlatesAppLogic::AssignPlateIds::feature_property_flags_type d_feature_property_types_to_assign;
 

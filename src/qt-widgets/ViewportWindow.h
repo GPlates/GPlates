@@ -111,7 +111,6 @@ namespace GPlatesQtWidgets
 	class ColouringDialog;
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
-	class ExportReconstructedFeatureGeometryDialog;
 	class FeaturePropertiesDialog;
 	class ManageFeatureCollectionsDialog;
 	class MeshDialog;
@@ -474,7 +473,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
-		boost::scoped_ptr<ExportReconstructedFeatureGeometryDialog> d_export_rfg_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
 		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;

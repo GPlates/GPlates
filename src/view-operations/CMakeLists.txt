@@ -40,8 +40,6 @@ set(srcs
     MoveVertexGeometryOperation.cc
     MoveVertexGeometryOperation.h
     QueryProximityThreshold.h
-    ReconstructView.cc
-    ReconstructView.h
     RenderedDirectionArrow.h
     RenderedEllipse.h
     RenderedGeometry.cc
@@ -69,8 +67,6 @@ set(srcs
     RenderedSmallCircle.h
     RenderedSmallCircleArc.h
     RenderedString.h
-    RenderReconstructionGeometries.cc
-    RenderReconstructionGeometries.h
     SplitFeatureGeometryOperation.cc
     SplitFeatureGeometryOperation.h
     SplitFeatureUndoCommand.cc

@@ -60,7 +60,6 @@
 #include "CreateFeatureDialog.h"
 #include "CreateVGPDialog.h"
 #include "ExportAnimationDialog.h"
-#include "ExportReconstructedFeatureGeometryDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
 #include "GlobeAndMapWidget.h"
@@ -235,7 +234,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_colouring_dialog_ptr(NULL),
 	d_create_vgp_dialog_ptr(NULL),
 	d_export_animation_dialog_ptr(NULL),
-	d_export_rfg_dialog_ptr(NULL),
 	d_feature_properties_dialog_ptr(
 			new FeaturePropertiesDialog(
 				get_view_state(),
@@ -310,7 +308,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::TopologySectionsContainer()),
 	d_feature_table_model_ptr(
 			new GPlatesGui::FeatureTableModel(
-				get_view_state().get_feature_focus())),
+				get_view_state())),
 	d_task_panel_ptr(NULL),
 	d_georeferencing_needs_to_be_reset(true),
 	d_open_file_path("")
@@ -437,7 +435,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 					*d_topology_sections_container_ptr,
 					d_task_panel_ptr->topology_tools_widget(),
 					*d_measure_distance_state_ptr,
-					get_view_state().get_map_transform()));
+					get_view_state().get_map_transform(),
+					get_application_state()));
 
 
 
@@ -1139,41 +1138,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_assign_reconstruction_plate_ids_dialog(
 	d_assign_recon_plate_ids_dialog_ptr->exec_partition_features_dialog();
 }
 
-#if 0
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_export_reconstruction_dialog()
-{
-	if (!d_export_rfg_dialog_ptr)
-	{
-		d_export_rfg_dialog_ptr.reset(new ExportReconstructedFeatureGeometryDialog(this));
-	}
 
-	GPlatesAppLogic::FeatureCollectionFileState &file_state =
-			get_application_state().get_feature_collection_file_state();
-
-	GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type
-			active_reconstructable_geometry_files;
-
-	// Copy active reconstructable file pointers into a vector.
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator_range active_files =
-		file_state.get_active_reconstructable_files();
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator iter = active_files.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator end = active_files.end;
-	for ( ; iter != end; ++iter)
-	{
-		GPlatesFileIO::File &file = *iter;
-		active_reconstructable_geometry_files.push_back(&file);
-	}
-
-	d_export_rfg_dialog_ptr->export_visible_reconstructed_feature_geometries(
-			get_application_state().get_current_reconstruction(),
-			get_view_state().get_rendered_geometry_collection(),
-			active_reconstructable_geometry_files,
-			get_application_state().get_current_anchored_plate_id(),
-			get_application_state().get_current_reconstruction_time());
-}
-
-#endif
 void
 GPlatesQtWidgets::ViewportWindow::enable_drag_globe_tool(
 		bool enable)

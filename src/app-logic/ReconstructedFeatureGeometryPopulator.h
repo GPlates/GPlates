@@ -32,32 +32,43 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionFeatureProperties.h"
+#include "ReconstructionTree.h"
 
 #include "maths/FiniteRotation.h"
 
 #include "model/FeatureVisitor.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
 
 
-namespace GPlatesModel
-{
-	class Reconstruction;
-	class ReconstructionTree;
-}
-
 namespace GPlatesAppLogic
 {
+	class ReconstructionGeometryCollection;
+
+	/**
+	 * Reconstructs (rotates) geometries contained inside a feature using a @a ReconstructionTree.
+	 */
 	class ReconstructedFeatureGeometryPopulator:
 			public GPlatesModel::FeatureVisitor,
 			private boost::noncopyable
 	{
 	public:
+		/**
+		 * Returns true if @a ReconstructedFeatureGeometryPopulator can process @a feature_ref.
+		 *
+		 * Note: Returns false if there is no 'gpml:reconstructionPlateId' property.
+		 */
+		static
+		bool
+		can_process(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref);
+
+
 		ReconstructedFeatureGeometryPopulator(
-				GPlatesModel::Reconstruction &recon,
+				ReconstructionGeometryCollection &reconstruction_geometry_collection,
 				bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
@@ -67,8 +78,8 @@ namespace GPlatesAppLogic
 	protected:
 
 		virtual
-		void
-		visit_feature_handle(
+		bool
+		initialise_pre_feature_properties(
 				GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
@@ -102,10 +113,10 @@ namespace GPlatesAppLogic
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
 	private:
-		GPlatesModel::Reconstruction &d_reconstruction;
+		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
+		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
-		const GPlatesModel::ReconstructionTree &d_reconstruction_tree;
 
 		ReconstructionFeatureProperties d_reconstruction_params;
 		boost::optional<GPlatesMaths::FiniteRotation> d_recon_rotation;

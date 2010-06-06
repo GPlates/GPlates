@@ -41,14 +41,14 @@ namespace GPlatesViewOperations
 	namespace VisibleReconstructedFeatureGeometryExport
 	{
 		//! Typedef for sequence of feature collection files.
-		typedef std::vector<const GPlatesFileIO::File *> files_collection_type;
+		typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;
 
 		/**
-		 * Collects visible @a ReconstructedFeatureGeometry objects from
-		 * @a reconstruction that are displayed using @a rendered_geom_collection
-		 * and exports to a file depending on the file extension of @a filename.
+		 * Collects visible @a ReconstructedFeatureGeometry objects that are displayed
+		 * using @a rendered_geom_collection and exports to a file depending on the
+		 * file extension of @a filename.
 		 *
-		 * @param reconstructable_files used to determine which files the RFGs came from.
+		 * @param active_files used to determine which files the RFGs came from.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
 		 * @param reconstruction_time time at which the reconstruction took place.
 		 *
@@ -59,7 +59,7 @@ namespace GPlatesViewOperations
 		export_visible_geometries(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				const files_collection_type &reconstructable_files,
+				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 	}

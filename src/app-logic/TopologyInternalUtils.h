@@ -31,12 +31,13 @@
 #include <boost/tuple/tuple.hpp>
 #include <QString>
 
+#include "ReconstructedFeatureGeometry.h"
+
 #include "maths/GeometryOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
-#include "model/ReconstructedFeatureGeometry.h"
 
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlTopologicalIntersection.h"
@@ -48,12 +49,6 @@ namespace GPlatesMaths
 	class PointOnSphere;
 }
 
-namespace GPlatesModel
-{
-	class Reconstruction;
-	class ReconstructionTree;
-}
-
 namespace GPlatesPropertyValues
 {
 	class GpmlPropertyDelegate;
@@ -61,6 +56,9 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesAppLogic
 {
+	class Reconstruction;
+	class ReconstructionTree;
+
 	/**
 	 * This namespace contains utilities that are used internally in topology-related code.
 	 */
@@ -150,17 +148,17 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Finds the reconstructed feature geometry, contained in @a reconstruction,
+		 * Finds the reconstructed feature geometry, referencing @a reconstruction_tree,
 		 * for the geometry property referenced by the property delegate @a geometry_delegate.
 		 *
 		 * Returns false if:
 		 * - there is *not* exactly *one* feature referencing the delegate feature id
 		 *   (in this case an error message is output to the console), or
-		 * - there is no RFG in @a reconstruction that is reconstructed from
+		 * - there is no RFG (referencing @a reconstruction_tree) that is reconstructed from
 		 *   @a geometry_property (this probably means the reconstruction time is
 		 *   outside the age range of the feature containing @a geometry_property) and
 		 *   in this case *no* error message is output, or
-		 * - there are more than one RFGs in @a reconstruction that are referencing
+		 * - there are more than one RFGs (referencing @a reconstruction_tree) that are referencing
 		 *   the delegate feature (this means there are multiple geometry properties
 		 *   in the delegate feature that have the same delegate property name) and
 		 *   in this case an error message is output to the console.
@@ -169,26 +167,26 @@ namespace GPlatesAppLogic
 		 * identify a property since they use the property name and a feature can
 		 * have multiple properties with the same name.
 		 */
-		boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
+		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-				GPlatesModel::Reconstruction &reconstruction);
+				const ReconstructionTree &reconstruction_tree);
 
 
 		/**
-		 * Finds the reconstructed feature geometry, contained in @a reconstruction,
+		 * Finds the reconstructed feature geometry, referencing @a reconstruction_tree,
 		 * for the geometry properties iterator @a geometry_property.
 		 *
 		 * Returns false if:
 		 * - @a geometry_property is invalid, or
-		 * - there is no RFG in @a reconstruction that is reconstructed from
+		 * - there is no RFG (referencing @a reconstruction_tree) that is reconstructed from
 		 *   @a geometry_property (this probably means the reconstruction time is
 		 *   outside the age range of the feature containing @a geometry_property).
 		 */
-		boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
+		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
-				GPlatesModel::Reconstruction &reconstruction);
+				const ReconstructionTree &reconstruction_tree);
 
 
 		/**
@@ -202,7 +200,7 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesMaths::FiniteRotation>
 		get_finite_rotation(
 				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_plateid_feature,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree);
+				const ReconstructionTree &reconstruction_tree);
 
 
 		/**
@@ -469,7 +467,7 @@ namespace GPlatesAppLogic
 		 */
 		bool
 		include_only_reconstructed_feature_geometries(
-				const GPlatesModel::ReconstructionGeometry::non_null_ptr_type &recon_geom);
+				const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom);
 	}
 }
 

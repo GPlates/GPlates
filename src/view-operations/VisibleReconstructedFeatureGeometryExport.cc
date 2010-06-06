@@ -29,9 +29,9 @@
 
 #include "RenderedGeometryUtils.h"
 #include "RenderedGeometryCollection.h"
+
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "file-io/ReconstructedFeatureGeometryExport.h"
-#include "model/ReconstructedFeatureGeometry.h"
 
 
 namespace
@@ -46,7 +46,7 @@ void
 GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries(
 		const QString &filename,
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		const files_collection_type &reconstructable_files,
+		const files_collection_type &active_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time)
 {
@@ -68,7 +68,7 @@ GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
 			filename,
 			reconstruct_feature_geom_seq,
-			reconstructable_files,
+			active_files,
 			reconstruction_anchor_plate_id,
 			reconstruction_time);
 }

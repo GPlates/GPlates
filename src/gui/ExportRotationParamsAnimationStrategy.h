@@ -31,8 +31,6 @@
 
 #include <QString>
 
-#include "model/Reconstruction.h"
-
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"

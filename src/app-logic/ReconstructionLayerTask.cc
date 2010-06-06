@@ -25,8 +25,6 @@
 
 #include "ReconstructionLayerTask.h"
 
-#include "ApplicationState.h"
-#include "ClassifyFeatureCollection.h"
 #include "ReconstructUtils.h"
 
 
@@ -34,53 +32,61 @@ const char *GPlatesAppLogic::ReconstructionLayerTask::RECONSTRUCTION_FEATURES_CH
 		"reconstruction features";
 
 
+std::pair<QString, QString>
+GPlatesAppLogic::ReconstructionLayerTask::get_name_and_description()
+{
+	return std::make_pair(
+		"Create a reconstruction tree",
+
+		"A plate-reconstruction hierarchy of total reconstruction poles "
+		"which can be used to reconstruct geometries in other layers");
+}
+
+
 bool
 GPlatesAppLogic::ReconstructionLayerTask::can_process_feature_collection(
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
-	ClassifyFeatureCollection::classifications_type classification =
-			ClassifyFeatureCollection::classify_feature_collection(feature_collection);
-
-	// We're interested in a file if it contains reconstruction features.
-	return classification.test(ClassifyFeatureCollection::RECONSTRUCTION);
+	return ReconstructUtils::has_reconstruction_features(feature_collection);
 }
 
 
-GPlatesAppLogic::ReconstructionLayerTask::ReconstructionLayerTask(
-		const ApplicationState &application_state) :
-	d_application_state(application_state)
-{
-}
-
-
-std::vector<GPlatesAppLogic::ReconstructGraph::input_channel_definition_type>
+std::vector<GPlatesAppLogic::Layer::input_channel_definition_type>
 GPlatesAppLogic::ReconstructionLayerTask::get_input_channel_definitions() const
 {
-	std::vector<ReconstructGraph::input_channel_definition_type> input_channel_definitions;
+	std::vector<Layer::input_channel_definition_type> input_channel_definitions;
 
 	// Channel definition for the reconstruction features.
 	input_channel_definitions.push_back(
 			boost::make_tuple(
 					RECONSTRUCTION_FEATURES_CHANNEL_NAME,
-					ReconstructGraph::FEATURE_COLLECTION_DATA,
-					ReconstructGraph::MULTIPLE_DATAS_IN_CHANNEL));
+					Layer::INPUT_FEATURE_COLLECTION_DATA,
+					Layer::MULTIPLE_DATAS_IN_CHANNEL));
 	
 	return input_channel_definitions;
 }
 
 
-GPlatesAppLogic::ReconstructGraph::DataType
-GPlatesAppLogic::ReconstructionLayerTask::get_output_definition() const
+QString
+GPlatesAppLogic::ReconstructionLayerTask::get_main_input_feature_collection_channel() const
 {
-	return ReconstructGraph::RECONSTRUCTION_TREE_DATA;
+	return RECONSTRUCTION_FEATURES_CHANNEL_NAME;
 }
 
 
-bool
+GPlatesAppLogic::Layer::LayerOutputDataType
+GPlatesAppLogic::ReconstructionLayerTask::get_output_definition() const
+{
+	return Layer::OUTPUT_RECONSTRUCTION_TREE_DATA;
+}
+
+
+boost::optional<GPlatesAppLogic::layer_task_data_type>
 GPlatesAppLogic::ReconstructionLayerTask::process(
 		const input_data_type &input_data,
-		layer_data_type &output_data,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchored_plate_id,
+		const ReconstructionTree::non_null_ptr_to_const_type &/*default_reconstruction_tree*/)
 {
 	//
 	// Get the reconstruction features collection input.
@@ -94,10 +100,12 @@ GPlatesAppLogic::ReconstructionLayerTask::process(
 	//
 	// Create the reconstruction tree.
 	//
-	output_data = ReconstructUtils::create_reconstruction_tree(
-			reconstruction_time,
-			d_application_state.get_current_anchored_plate_id(),
-			reconstruction_features_collection);
+	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			ReconstructUtils::create_reconstruction_tree(
+					reconstruction_time,
+					anchored_plate_id,
+					reconstruction_features_collection);
 
-	return true;
+	// Return the reconstruction tree.
+	return layer_task_data_type(reconstruction_tree);
 }

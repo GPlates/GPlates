@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QString>
@@ -50,10 +51,10 @@ namespace
 	public:
 		// Standard constructor for creating FeatureCollection entry.
 		FeatureCollectionItem(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
 				const QString &label):
 			QListWidgetItem(label),
-			d_file_iter(file_iter)
+			d_file_ref(file_ref)
 		{  }
 
 		// Constructor for creating fake "Make a new Feature Collection" entry.
@@ -65,31 +66,31 @@ namespace
 		bool
 		is_create_new_collection_item()
 		{
-			return !d_file_iter;
+			return !d_file_ref;
 		}
 
 		/**
 		 * NOTE: Check with @a is_create_new_collection_item first and set a valid file
 		 * iterator if necessary before calling this method.
 		 */
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
-		get_file_iterator()
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference
+		get_file_reference()
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_file_iter, GPLATES_ASSERTION_SOURCE);
+					d_file_ref, GPLATES_ASSERTION_SOURCE);
 
-			return *d_file_iter;
+			return *d_file_ref;
 		}
 
 		void
-		set_file_iterator(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter)
+		set_file_reference(
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref)
 		{
-			d_file_iter = file_iter;
+			d_file_ref = file_ref;
 		}
 	
 	private:
-		boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_iterator> d_file_iter;
+		boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> d_file_ref;
 	};
 
 
@@ -101,25 +102,26 @@ namespace
 			QListWidget &list_widget,
 			GPlatesAppLogic::FeatureCollectionFileState &state)
 	{
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
-				state.get_loaded_files();
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
-		
 		list_widget.clear();
-		for (; it != end; ++it) {
+
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+				state.get_loaded_files();
+		BOOST_FOREACH(
+				const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
+				loaded_files)
+		{
 			// Get the FeatureCollectionHandle for this file.
 			GPlatesModel::FeatureCollectionHandle::weak_ref collection_opt =
-					it->get_feature_collection();
+					file_ref.get_file().get_feature_collection();
 
 			// Some files might not actually exist yet if the user created a new
 			// feature collection internally and hasn't saved it to file yet.
 			QString label;
-			if (GPlatesFileIO::file_exists(it->get_file_info()))
+			if (GPlatesFileIO::file_exists(file_ref.get_file().get_file_info()))
 			{
 
 				// Get a suitable label; we will prefer the full filename.
-				label = it->get_file_info().get_display_name(true);
+				label = file_ref.get_file().get_file_info().get_display_name(true);
 			}
 			else
 			{
@@ -129,7 +131,7 @@ namespace
 			
 			// We are only interested in loaded files which have valid FeatureCollections.
 			if (collection_opt.is_valid()) {
-				list_widget.addItem(new FeatureCollectionItem(it, label));
+				list_widget.addItem(new FeatureCollectionItem(file_ref, label));
 			}
 		}
 		// Add a final option for creating a brand new FeatureCollection.
@@ -176,8 +178,8 @@ GPlatesQtWidgets::ChooseFeatureCollectionWidget::handle_listwidget_item_activate
 }
 
 
-std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_iterator, bool>
-GPlatesQtWidgets::ChooseFeatureCollectionWidget::get_file_iterator() const
+std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool>
+GPlatesQtWidgets::ChooseFeatureCollectionWidget::get_file_reference() const
 {
 	FeatureCollectionItem *collection_item = dynamic_cast<FeatureCollectionItem *>(
 			listwidget_feature_collections->currentItem());
@@ -189,7 +191,7 @@ GPlatesQtWidgets::ChooseFeatureCollectionWidget::get_file_iterator() const
 		}
 		else
 		{
-			return std::make_pair(collection_item->get_file_iterator(), false);
+			return std::make_pair(collection_item->get_file_reference(), false);
 		}
 	}
 	else

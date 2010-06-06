@@ -216,15 +216,15 @@ GPlatesFileIO::get_feature_collection_writer(
 	}
 }
 
-const GPlatesFileIO::File::shared_ref
+void
 GPlatesFileIO::read_feature_collection(
-		const FileInfo &file_info,
+		const GPlatesFileIO::File::Reference &file_ref,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
 	try
 	{
-		switch ( get_feature_collection_file_format(file_info) )
+		switch ( get_feature_collection_file_format(file_ref.get_file_info()) )
 		{
 		case FeatureCollectionFileFormat::GPML:
 		case FeatureCollectionFileFormat::GPML_GZ:
@@ -232,17 +232,17 @@ GPlatesFileIO::read_feature_collection(
 			// Instead of trusting the file extension 'GPML' or 'GPML_GZ'
 			// we'll check the first few bytes of the file to make sure it's
 			// a gzip compressed file or xml file.
-			switch ( identify_by_magic_number(file_info) )
+			switch ( identify_by_magic_number(file_ref.get_file_info()) )
 			{
 			case XML:
 			case UNKNOWN:
 				// Not gzipped, probably XML (although if the magic number doesn't match
 				// XML, we should attempt to read it as XML anyway because to reach this
 				// point, the user has specified a filename matching a GPML extension)
-				return GpmlOnePointSixReader::read_file(file_info, model, read_errors, false);
+				return GpmlOnePointSixReader::read_file(file_ref, model, read_errors, false);
 
 			case GZIP:
-				return GpmlOnePointSixReader::read_file(file_info, model, read_errors, true);
+				return GpmlOnePointSixReader::read_file(file_ref, model, read_errors, true);
 
 			default:
 				throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
@@ -251,16 +251,16 @@ GPlatesFileIO::read_feature_collection(
 			break;
 
 		case FeatureCollectionFileFormat::PLATES4_LINE:
-			return PlatesLineFormatReader::read_file(file_info, model, read_errors);
+			return PlatesLineFormatReader::read_file(file_ref, model, read_errors);
 
 		case FeatureCollectionFileFormat::PLATES4_ROTATION:
-			return PlatesRotationFormatReader::read_file(file_info, model, read_errors);
+			return PlatesRotationFormatReader::read_file(file_ref, model, read_errors);
 
 		case FeatureCollectionFileFormat::SHAPEFILE:
-			return ShapefileReader::read_file(file_info, model, read_errors);
+			return ShapefileReader::read_file(file_ref, model, read_errors);
 
 		case FeatureCollectionFileFormat::GMAP:
-			return GmapReader::read_file(file_info,model,read_errors);
+			return GmapReader::read_file(file_ref, model, read_errors);
 
 		case FeatureCollectionFileFormat::GMT:
 		

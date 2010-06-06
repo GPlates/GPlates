@@ -37,6 +37,8 @@
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
+#include "model/ChangesetHandle.h"
+#include "model/NotificationGuard.h"
 #include "model/Model.h"
 
 
@@ -75,13 +77,13 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 		const QStringList &filenames)
 {
 	// Read all the files before we add them to the application state.
-	const file_seq_type loaded_files = read_feature_collections(filenames);
+	file_seq_type loaded_files = read_feature_collections(filenames);
 
 	// Add files to the application state in one call.
 	//
 	// NOTE: It is important to load multiple files in one group here rather than
-	// reuse load_file() for each file because the application state will then send
-	// only one notification instead of multiple notifications which is needed in
+	// reuse load_file() for each file because the file state will then send
+	// only one notification (instead of multiple notifications) which is needed in
 	// some cases where the files in the group depend on each other - an example is
 	// topological boundary features which get resolved after the notification and
 	// require any referenced features to be loaded into the model (and they might
@@ -96,10 +98,13 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 {
 	const GPlatesFileIO::FileInfo file_info(filename);
 
-	// Read the feature collection from file_info.
-	const GPlatesFileIO::File::shared_ref loaded_file = read_feature_collection(file_info);
+	// Create a file with an empty feature collection.
+	GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file(file_info);
 
-	d_file_state.add_file(loaded_file);
+	// Read new features from the file into the empty feature collection.
+	read_feature_collection(file->get_reference());
+
+	d_file_state.add_file(file);
 }
 
 
@@ -121,26 +126,47 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_urls(
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::reload_file(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
-	// Read the feature collection from file.
-	const GPlatesFileIO::File::shared_ref reloaded_file = read_feature_collection(
-			file->get_file_info());
+	// We want the removal of all features from the feature collection and
+	// subsequent addition of new features from the file loading code to
+	// occupy a single changeset in the model.
+	GPlatesModel::ChangesetHandle changeset(
+			d_model.access_model(),
+			"reload " + file.get_file().get_file_info().get_qfileinfo().fileName().toStdString());
+	// Also want to merge model events across this scope.
+	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
 
-	// Replace old file with reloaded file.
-	// This will emit signals for anyone interested.
-	d_file_state.reset_file(file, reloaded_file);
+	//
+	// By removing all features and then reading new features from the file
+	// we get to keep the same feature collection handle which means we don't
+	// need to notify clients that their feature collection weak ref no longer
+	// points to the correct feature collection handle.
+	//
+	// This will register as a modification to the feature collection for any
+	// model callbacks attached by client code.
+	//
+
+	// Remove all features from the feature collection first.
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
+			file.get_file().get_feature_collection();
+	for (GPlatesModel::FeatureCollectionHandle::iterator feature_iter = feature_collection->begin();
+		feature_iter != feature_collection->end();
+		++feature_iter)
+	{
+		feature_collection->remove(feature_iter);
+	}
+
+	// Read new features from the file into the feature collection.
+	read_feature_collection(file.get_file());
 }
 
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator loaded_file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference loaded_file)
 {
-	// Remove the loaded file from the application state - if the application state
-	// holds the only file reference (which it should unless some other code is still
-	// using it - which is also ok but might be by accident) then the feature collection
-	// will automatically get unloaded.
+	// Remove the loaded file from the file state - also removes it from the model.
 	d_file_state.remove_file(loaded_file);
 }
 
@@ -182,67 +208,44 @@ GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 }
 
 
-GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::FeatureCollectionFileIO::create_empty_file()
 {
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-			GPlatesModel::FeatureCollectionHandle::create(d_model->root());
+	// Create a file with an empty feature collection and no filename.
+	GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file();
 
-	// Make sure feature collection gets unloaded when it's no longer needed.
-	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref feature_collection_unloader =
-			GPlatesModel::FeatureCollectionHandleUnloader::create(feature_collection);
-
-	GPlatesFileIO::File::shared_ref file = GPlatesFileIO::File::create_empty_file(
-			feature_collection_unloader);
-
-	// The file contains no features yet so it won't get classified when we add it (actually
-	// I think at the moment it will get classified as reconstructable since it contains
-	// no reconstruction features - but this way of classifying could easily change).
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_file_it =
-			d_file_state.add_file(file);
-
-	return new_file_it;
+	return d_file_state.add_file(file);
 }
 
 
-GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::FeatureCollectionFileIO::create_file(
 		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
 		GPlatesFileIO::FeatureCollectionWriteFormat::Format format)
 {
-	// Make sure feature collection gets unloaded when it's no longer needed.
-	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref feature_collection_unloader =
-			GPlatesModel::FeatureCollectionHandleUnloader::create(feature_collection);
+	const GPlatesFileIO::File::non_null_ptr_type file =
+			GPlatesFileIO::File::create_file(file_info, feature_collection);
 
-	GPlatesFileIO::File::shared_ref file = GPlatesFileIO::File::create_loaded_file(
-			feature_collection_unloader, file_info);
+	save_file(file_info, file->get_reference().get_feature_collection(), format);
 
-	save_file(file_info, feature_collection, format);
-
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_file_it =
-			d_file_state.add_file(file);
-
-	return new_file_it;
+	return d_file_state.add_file(file);
 }
 
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::remap_shapefile_attributes(
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref)
 {
 	GPlatesFileIO::ReadErrorAccumulation read_errors;
 	GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
-			*file_it,
+			file_ref.get_file(),
 			d_model,
 			read_errors);
 
 	emit_handle_read_errors_signal(read_errors);
 
-	emit remapped_shapefile_attributes(*this, file_it);
-
-	// Re-classify the feature collection.
-	d_file_state.reclassify_feature_collection(file_it);
+	emit remapped_shapefile_attributes(*this, file_ref);
 }
 
 
@@ -260,14 +263,18 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 	{
 		const QString &filename = *filename_iter;
 
-		GPlatesFileIO::FileInfo file_info(filename);
+		const GPlatesFileIO::FileInfo file_info(filename);
 
-		// Read the feature collection from file.
-		const GPlatesFileIO::File::shared_ref file = GPlatesFileIO::read_feature_collection(
-				file_info, d_model, read_errors);
+		// Create a file with an empty feature collection.
+		GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file(file_info);
+
+		// Read new features from the file into the feature collection.
+		// Both the filename and target feature collection are in 'file'.
+		GPlatesFileIO::read_feature_collection(file->get_reference(), d_model, read_errors);
 
 		// Files that have been freshly loaded from disk are by definition, clean.
-		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = file->get_feature_collection();
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+				file->get_reference().get_feature_collection();
 		if (feature_collection_ref.is_valid()) {
 			feature_collection_ref->clear_unsaved_changes();
 		}
@@ -282,25 +289,24 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 }
 
 
-const GPlatesFileIO::File::shared_ref
+void
 GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
-		const GPlatesFileIO::FileInfo &file_info)
+		const GPlatesFileIO::File::Reference &file_ref)
 {
 	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
-	// Read the feature collection from file.
-	const GPlatesFileIO::File::shared_ref file = GPlatesFileIO::read_feature_collection(
-			file_info, d_model, read_errors);
+	// Read new features from the file into the feature collection.
+	// Both the filename and target feature collection are in 'file_ref'.
+	GPlatesFileIO::read_feature_collection(file_ref, d_model, read_errors);
 
 	// Files that have been freshly loaded from disk are by definition, clean.
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = file->get_feature_collection();
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+			file_ref.get_feature_collection();
 	if (feature_collection_ref.is_valid()) {
 		feature_collection_ref->clear_unsaved_changes();
 	}
 
 	emit_handle_read_errors_signal(read_errors);
-
-	return file;
 }
 
 

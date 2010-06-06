@@ -47,7 +47,7 @@ namespace GPlatesFeatureVisitors
 	 * This is performed by applying (composing) the supplied Rotation to the finite rotation
 	 * found/interpolated in the sequence for that time.
 	 *
-	 * This class is based very strongly on 'GPlatesModel::ReconstructionTreePopulator'.
+	 * This class is based very strongly on 'GPlatesAppLogic::ReconstructionTreePopulator'.
 	 */
 	class TotalReconstructionSequenceRotationInserter:
 			public GPlatesModel::FeatureVisitor

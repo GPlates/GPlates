@@ -299,7 +299,7 @@
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
             <gpml:identity>GPlates-cbb242e1-e3f7-45c9-a606-766835d1a763</gpml:identity>
-            <gpml:revision>GPlates-a7f1c4d3-9d15-452e-9962-3cbf0c7f6c4a</gpml:revision>
+            <gpml:revision>GPlates-be25c044-e27e-4033-a93f-aa0cdae9dd35</gpml:revision>
             <gpml:centerLineOf>
                 <gpml:ConstantValue>
                     <gpml:value>
@@ -320,12 +320,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">6</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>

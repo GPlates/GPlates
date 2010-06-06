@@ -24,6 +24,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
+
 #include "ShapefileAttributeViewerDialog.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -68,10 +70,10 @@ namespace
 
 	bool
 	file_contains_shapefile_attributes(
-		const GPlatesFileIO::File &file)
+	const GPlatesFileIO::File::Reference &file)
 	{
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
-				file.get_const_feature_collection();
+				file.get_feature_collection();
 
 		if (feature_collection_contains_shapefile_attributes(feature_collection))
 		{
@@ -232,30 +234,32 @@ GPlatesQtWidgets::ShapefileAttributeViewerDialog::update(
 
 	// Update the combo box with currently loaded shapefile feature collections, and
 	// update the table if necessary. 
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
-			file_state.get_loaded_files();
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
 	
 	combo_feature_collections->clear();
 	d_file_vector.clear();
 
-	for (; it != end; ++it) {
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+			file_state.get_loaded_files();
+	BOOST_FOREACH(
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
+			loaded_files)
+	{
 #if 0
 		// Get the file name, check if it's a shapefile; if so, add it to the combobox. 
 		if (is_file_shapefile(*it))
 		{
-			combo_feature_collections->addItem(it->get_qfileinfo().fileName());
+			combo_feature_collections->addItem(file_ref.get_file().get_file_info().get_qfileinfo().fileName());
 			d_fileinfo_vector.push_back(*it);
 		}
 #endif
 		// Get the file name, check if its feature collection contains shapefile attributes ; 
 		// if so, add it to the combobox. 
-		if (file_contains_shapefile_attributes(*it))
+		if (file_contains_shapefile_attributes(file_ref.get_file()))
 		{
-			combo_feature_collections->addItem(it->get_file_info().get_qfileinfo().fileName());
+			combo_feature_collections->addItem(
+					file_ref.get_file().get_file_info().get_qfileinfo().fileName());
 
-			d_file_vector.push_back(&*it);
+			d_file_vector.push_back(&file_ref.get_file());
 		}
 
 
@@ -275,7 +279,7 @@ GPlatesQtWidgets::ShapefileAttributeViewerDialog::update_table()
 
 	if (index >= 0 && index < static_cast<int>(d_file_vector.size()))
 	{
-		GPlatesFileIO::File *file = d_file_vector.at(index);
+		const GPlatesFileIO::File::Reference *file = d_file_vector.at(index);
 
 		//std::cerr << index << " " << file.get_file_info().get_qfileinfo().fileName().toStdString().c_str() << std::endl;
 
@@ -298,19 +302,10 @@ void
 GPlatesQtWidgets::ShapefileAttributeViewerDialog::connect_feature_collection_file_state_signals(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state)
 {
+	// Update when any changes to the file state occur.
 	QObject::connect(
 			&file_state,
-			SIGNAL(end_add_feature_collections(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
-			this,
-			SLOT(update(
-					GPlatesAppLogic::FeatureCollectionFileState &)));
-
-	QObject::connect(
-			&file_state,
-			SIGNAL(end_remove_feature_collection(
+			SIGNAL(file_state_changed(
 					GPlatesAppLogic::FeatureCollectionFileState &)),
 			this,
 			SLOT(update(

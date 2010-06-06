@@ -81,7 +81,8 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 				viewport_window,
 				clicked_table_model,
 				fp_dialog,
-				feature_focus),
+				feature_focus,
+				view_state.get_application_state()),
 			globe,
 			globe_canvas,
 			viewport_window)),
@@ -177,7 +178,8 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 			viewport_window, 
 			clicked_table_model, 
 			topology_sections_container,
-			topology_tools_widget)),
+			topology_tools_widget,
+			view_state.get_application_state())),
 	d_edit_topology_tool_ptr(GPlatesCanvasTools::EditTopology::create(
 			globe, 
 			globe_canvas, 
@@ -185,7 +187,8 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 			viewport_window, 
 			clicked_table_model, 
 			topology_sections_container,
-			topology_tools_widget)),
+			topology_tools_widget,
+			view_state.get_application_state())),
 	d_measure_distance_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
 			new GPlatesCanvasTools::MeasureDistance(
 				rendered_geom_collection,

@@ -28,8 +28,13 @@
 
 #include <boost/function.hpp>
 
-#include "model/ReconstructionGeometry.h"
+#include "app-logic/ReconstructionGeometry.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ReconstructGraph;
+}
 
 namespace GPlatesGui
 {
@@ -40,11 +45,6 @@ namespace GPlatesGui
 namespace GPlatesMaths
 {
 	class PointOnSphere;
-}
-
-namespace GPlatesModel
-{
-	class ReconstructionGeometry;
 }
 
 namespace GPlatesQtWidgets
@@ -64,7 +64,7 @@ namespace GPlatesGui
 	 *
 	 * It takes a reconstruction geometry as its argument and returns a bool.
 	 */
-	typedef boost::function<bool (const GPlatesModel::ReconstructionGeometry::non_null_ptr_type &)>
+	typedef boost::function<bool (const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &)>
 			filter_reconstruction_geometry_predicate_type;
 
 
@@ -74,7 +74,7 @@ namespace GPlatesGui
 	inline
 	bool
 	default_filter_reconstruction_geometry_predicate(
-			const GPlatesModel::ReconstructionGeometry::non_null_ptr_type &)
+			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &)
 	{
 		return true;
 	}
@@ -102,6 +102,7 @@ namespace GPlatesGui
 			GPlatesGui::FeatureTableModel &clicked_table_model,
 			GPlatesGui::FeatureFocus &feature_focus,
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+			const GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 			filter_reconstruction_geometry_predicate_type filter_recon_geom_predicate =
 					&default_filter_reconstruction_geometry_predicate);
 }

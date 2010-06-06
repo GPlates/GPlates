@@ -31,12 +31,12 @@
 #include <boost/optional.hpp>
 #include <QTreeWidget>
 
+#include "app-logic/ReconstructionGeometry.h"
 #include "gui/TreeWidgetBuilder.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
-#include "model/ReconstructionGeometry.h"
 
 namespace GPlatesPropertyValues
 {
@@ -67,7 +67,7 @@ namespace GPlatesFeatureVisitors
 		void
 		populate(
 				GPlatesModel::FeatureHandle::const_weak_ref &feature,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg);
+				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg);
 
 	private:
 		virtual

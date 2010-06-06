@@ -34,7 +34,7 @@
 #include "model/types.h"
 
 
-namespace GPlatesModel
+namespace GPlatesAppLogic
 {
 	class ReconstructedFeatureGeometry;
 }
@@ -55,10 +55,10 @@ namespace GPlatesFileIO
 
 
 		//! Typedef for sequence of feature collection files.
-		typedef std::vector<const GPlatesFileIO::File *> files_collection_type;
+		typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;
 
 		//! Typedef for sequence of RFGs.
-		typedef std::vector<const GPlatesModel::ReconstructedFeatureGeometry *>
+		typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>
 				reconstructed_feature_geom_seq_type;
 
 
@@ -85,7 +85,7 @@ namespace GPlatesFileIO
 				const QString &filename,
 				ReconstructedFeatureGeometryExport::Format export_format,
 				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
-				const files_collection_type &reconstructable_files,
+				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 
@@ -103,7 +103,7 @@ namespace GPlatesFileIO
 		export_geometries(
 				const QString &filename,
 				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
-				const files_collection_type &reconstructable_files,
+				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time)
 		{
@@ -111,7 +111,7 @@ namespace GPlatesFileIO
 					filename,
 					get_export_file_format(filename),
 					reconstructed_feature_geom_seq,
-					reconstructable_files,
+					active_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time);
 		}
