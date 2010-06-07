@@ -261,6 +261,14 @@ GPlatesAppLogic::ApplicationState::handle_file_state_file_activation_changed(
 }
 
 
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+#if defined(__GNUC__)
+#	pragma GCC diagnostic ignored "-Wshadow"
+#endif
+
+
 void
 GPlatesAppLogic::ApplicationState::handle_setting_default_reconstruction_tree_layer(
 		FeatureCollectionFileState::file_reference file)
@@ -310,6 +318,12 @@ GPlatesAppLogic::ApplicationState::handle_setting_default_reconstruction_tree_la
 
 	d_block_handle_file_state_file_activation_changed = false;
 }
+
+
+// See above.
+#if defined(__GNUC__)
+#	pragma GCC diagnostic error "-Wshadow"
+#endif
 
 
 const GPlatesAppLogic::Reconstruction &

@@ -29,6 +29,7 @@
 
 #include <QRectF>
 #include <QFileDialog>
+#include <QHeaderView>
 
 #include "EditAffineTransformGeoreferencingWidget.h"
 #include "FriendlyLineEdit.h"

@@ -560,12 +560,12 @@ namespace GPlatesAppLogic
 		 * This is the output generated during the most recent call
 		 * to ReconstructGraph::execute_layer_tasks().
 		 *
-		 * Returns false if the output data is not of type LayerOutputDataType.
+		 * Returns false if the output data is not of type LayerDataType.
 		 *
-		 * The template parameter LayerOutputDataType is expected to be one of the types
+		 * The template parameter LayerDataType is expected to be one of the types
 		 * in the @a layer_task_data_type variant.
 		 *
-		 * Examples of the template parameter LayerOutputDataType are:
+		 * Examples of the template parameter LayerDataType are:
 		 * - ReconstructionGeometryCollection::non_null_ptr_to_const_type
 		 * - ReconstructionTree::non_null_ptr_to_const_type
 		 *
@@ -574,14 +574,14 @@ namespace GPlatesAppLogic
 		 *
 		 * @throws PreconditionViolationError if @a is_valid is false.
 		 */
-		template <class LayerOutputDataType>
-		boost::optional<LayerOutputDataType>
+		template <class LayerDataType> // Can't call parameter LayerOutputDataType as it conflicts with enum above.
+		boost::optional<LayerDataType>
 		get_output_data() const
 		{
-			// Compile time error to make sure that the template parameter 'LayerOutputDataType'
+			// Compile time error to make sure that the template parameter 'LayerDataType'
 			// is one of the bounded types in the 'layer_task_data_type' variant.
 #ifdef WIN32 // Old-style cast error in gcc...
-			BOOST_MPL_ASSERT((boost::mpl::contains<layer_task_data_types, LayerOutputDataType>));
+			BOOST_MPL_ASSERT((boost::mpl::contains<layer_task_data_types, LayerDataType>));
 #endif
 
 			// Throw our own exception to track location of throw.
@@ -600,7 +600,7 @@ namespace GPlatesAppLogic
 			}
 
 			// Attempt to cast the variant to the type expected by the caller.
-			return get_layer_task_data<LayerOutputDataType>(layer_task_output_data.get());
+			return get_layer_task_data<LayerDataType>(layer_task_output_data.get());
 		}
 
 
