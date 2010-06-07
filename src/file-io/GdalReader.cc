@@ -340,7 +340,7 @@ GPlatesFileIO::GdalReader::read_file(
 		{
 			// Note: GdalReaderUtils::gdal_open() appends to the read_errors if it
 			// returns NULL, so no need to do it ourselves here.
-			return false;
+			return boost::none;
 		}
 
 		int n = d_dataset_ptr->GetRasterCount();
