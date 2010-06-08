@@ -75,75 +75,28 @@ namespace GPlatesUtils
 		}
 	
 	protected:
-		inline
+		/**
+		 * return true if filename passed the validation, otherwise false.
+		 */
 		bool
 		file_sequence_validate(
-				const QString &filename)
-		{
-			std::ostringstream os;
-			try
-			{
-				GPlatesUtils::ExportTemplateFilename::validate_filename_template(filename);
-				return true;
-			}
-			catch (GPlatesGlobal::Exception &exc)
-			{
-				exc.write(os);
-				set_result_message(os.str().c_str());
-				return false;
-			}
-			catch (...)
-			{
-				set_result_message(
-						"Unexpected exception happened in the validation of file name template.");
-				return false;
-			}
-		}
+				const QString &filename);
 
 		/**
 		 * return true if no invalid characters found, otherwise false.
 		 */
-		inline 
 		bool
 		has_invalid_characters(
-				const QString &filename)
-		{
-			if(filename.toStdString().find_first_of(INVALID_CHARACTERS) != std::string::npos)
-			{
-				set_result_message(
-						QString(
-								"File name contains illegal characters -- ").append(
-										INVALID_CHARACTERS.c_str()));
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
+				const QString &filename);
 
 		/**
 		 * return true if %P found, otherwise false.
 		 */
-		inline 
 		bool
 		has_percent_P(
-				const QString &filename)
-		{
-			if(filename.toStdString().find("%P") != std::string::npos)
-			{
-				set_result_message(
-						"Parameter(%P) has been found in the file name template.");
-				return true;
-			}
-			else
-			{
-				set_result_message(
-						"Parameter(%P) has not been found in the file name template.");
-				return false;
-			}
-		}
+				const QString &filename);
 
+		inline
 		void
 		set_result_message(
 				const QString &msg)
