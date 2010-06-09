@@ -212,7 +212,7 @@ GPlatesUtils::ExportFileNameTemplateValidator::file_sequence_validate(
 	catch (...)
 	{
 		set_result_message("Unexpected exception happened in the validation of file name template.");
-		throw false;
+		throw;
 	}
 }
 
