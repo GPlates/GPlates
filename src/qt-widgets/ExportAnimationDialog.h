@@ -96,7 +96,8 @@ namespace GPlatesQtWidgets
 
 		void
 		update_status_message(
-				QString message);
+				QString message,
+				bool is_error_msg = false);
 
 		void
 		set_start_time_value_to_view_time();
@@ -271,7 +272,7 @@ namespace GPlatesQtWidgets
 		void
 		recalculate_progress_bar();
 
-		void
+		bool
 		update_target_directory(
 				const QString &new_target);
 

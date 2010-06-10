@@ -219,11 +219,13 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_format_selection_change
 {
 
 	if(!listWidget_export_items->currentItem() || !listWidget_format->currentItem())
+	{
 		return;
+	}
 	ExportItemName selected_item = get_export_item_name(listWidget_export_items->currentItem());
 	ExportItemType selected_type = get_export_item_type(listWidget_format->currentItem());
 	
-	if(selected_type==INVALID_TYPE||selected_item==INVALID_NAME)
+	if(selected_type == INVALID_TYPE||selected_item == INVALID_NAME)
 	{	
 		qWarning()<<"invalid export type or item!";
 		return;
@@ -340,6 +342,21 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 	
 	QString filename_template = lineEdit_filename->text()+label_file_extension->text();		
 	
+	boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator> validator=
+		GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
+				d_export_item_map[selected_item][selected_type].class_id);
+	
+	if(!validator->is_valid(filename_template))	
+	{
+		label_filename_desc->setText(
+				validator->get_result_report().message());
+		QPalette pal=label_filename_desc->palette();
+		pal.setColor(QPalette::WindowText, QColor("red")); 
+		label_filename_desc->setPalette(pal);
+		button_add_item->setEnabled(false);
+		return;
+	}
+	
 	d_export_item_map[selected_item][selected_type].has_been_added=true;
 
 	delete listWidget_format->takeItem(listWidget_format->currentRow());
@@ -379,13 +396,18 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::init(
 void
 GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_changed()
 {
+#if 0
+	//comments out these code
+	//the validation of file name template will be done when "add" button is clicked.
 	ExportItemName selected_item = get_export_item_name(
 			listWidget_export_items->currentItem());
 	ExportItemType selected_type = get_export_item_type(
 			listWidget_format->currentItem());
 
 	if(selected_type==INVALID_TYPE || selected_item==INVALID_NAME)
+	{
 		return;
+	}
 
 	QString filename_template = lineEdit_filename->text()+label_file_extension->text();
 	
@@ -394,7 +416,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_chang
 				d_export_item_map[selected_item][selected_type].class_id);
 	if(validator->is_valid(filename_template))	
 	{
-		d_filename_template=filename_template;
+		//d_filename_template=filename_template;
 		button_add_item->setEnabled(true);
 	}
 	else
@@ -404,9 +426,9 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_chang
 		QPalette pal=label_filename_desc->palette();
 		pal.setColor(QPalette::WindowText, QColor("red")); 
 		label_filename_desc->setPalette(pal);
-		//lineEdit_filename->selectAll();
 		button_add_item->setEnabled(false);
 	}
+#endif	
 }
 
 void
