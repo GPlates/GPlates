@@ -41,6 +41,10 @@ namespace GPlatesUnitTest
 		{
 			init(0);//for main test suite, the level is 0.
 		}
+		~MainTestSuite()
+		{
+			std::cout << "Destructing MainTestSuite object" << std::endl;
+		}
 
 	protected:
 		void 

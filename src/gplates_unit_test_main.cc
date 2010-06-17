@@ -123,7 +123,17 @@ init_unit_test_suite(
 	GPlatesUnitTest::TestSuiteFilter::instance().set_filter_string(
 			get_test_to_run_option(argc, argv));
 	
-	GPlatesUnitTest::MainTestSuite main_test_suite;
+	/*
+	"DO NOT REMOVE THE NEW OPERATOR!
+	*/
+	//I know it looks strange, feel like a memory leak.
+	//But the memory is managed by boost unit test framework.
+	//We need to keep the object alive. The boost framework will release memory.
+	//I print out a message in the destructor of MainTestSuite to testify it.
+	new GPlatesUnitTest::MainTestSuite();
+	/*
+	" DO NOT REMOVE THE NEW OPERATOR!
+	*/
 	
 	return 0;
 }
