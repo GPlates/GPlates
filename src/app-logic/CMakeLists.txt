@@ -48,12 +48,12 @@ set(srcs
     PartitionFeatureUtils.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
+    PropertyExtractors.cc
+    PropertyExtractors.h
     ReconstructedFeatureGeometry.cc
     ReconstructedFeatureGeometry.h
     ReconstructedFeatureGeometryFinder.cc
     ReconstructedFeatureGeometryFinder.h
-    PropertyExtractors.cc
-    PropertyExtractors.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
     ReconstructedPaleomagGeometryPopulator.h

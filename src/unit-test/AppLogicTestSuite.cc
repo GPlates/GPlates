@@ -29,6 +29,8 @@
 #include "unit-test/AppLogicTestSuite.h"
 #include "unit-test/ApplicationStateTest.h"
 #include "unit-test/TestSuiteFilter.h"
+#include "unit-test/MeshGeneratorTest.h"
+
 
 GPlatesUnitTest::AppLogicTestSuite::AppLogicTestSuite(
 		unsigned level) : 
@@ -42,5 +44,6 @@ void
 GPlatesUnitTest::AppLogicTestSuite::construct_maps()
 {
 	ADD_TESTSUITE(ApplicationState);
+	ADD_TESTSUITE(MeshGenerator);
 }
 
