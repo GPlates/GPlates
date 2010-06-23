@@ -61,12 +61,6 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates s
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}artwork for the GNOME desktop environment.\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html>\\n")
 
-# The subversion revision of the GPlates source code.
-# This is manually set when making GPlates releases.
-# You can leave this empty for developer builds though.
-# It should be set to the output of the 'svnversion' command (run it on this source code that you checked out of Subversion).
-set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "8204")
-
 # List the Qt plugins used by GPlates.
 # This is needed for packaging standalone versions of GPlates for a binary installer.
 # NOTE: each plugin listed should have its own double quotes as these are list variables.

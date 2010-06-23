@@ -13,7 +13,6 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     AbortException.cc
     AbortException.h
-    AlreadyInitialisedSingletonException.h
     AssertionFailureException.cc
     AssertionFailureException.h
     config.h
@@ -38,10 +37,10 @@ set(srcs
     PointerTraits.h
     PreconditionViolationError.h
     RetrievalFromEmptyContainerException.h
+    SubversionInfo.h
     types.h
     UnexpectedEmptyFeatureCollectionException.h
     UninitialisedIteratorException.h
-    UninitialisedSingletonException.h
     UnsupportedFunctionException.h
 )
 

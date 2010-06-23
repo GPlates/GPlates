@@ -22,19 +22,13 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #include "AboutDialog.h"
 #include "LicenseDialog.h"
-#include "global/Constants.h"  // the copyright string macro
 
-GPlatesQtWidgets::AboutDialog::~AboutDialog()
-{
-	// close license dialog if it somehow is still there
-	if (d_license_dialog_ptr)
-	{
-		d_license_dialog_ptr->reject();
-	}
-}
+#include "global/Constants.h"  // the copyright string macro
+#include "global/SubversionInfo.h"
+
 
 GPlatesQtWidgets::AboutDialog::AboutDialog(
 		QWidget *parent_):
@@ -46,12 +40,42 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 	QObject::connect(button_License, SIGNAL(clicked()),
 			this, SLOT(pop_up_license_dialog()));
 
+	// Set GPlates version label text.
 	QString version(QObject::tr(GPlatesGlobal::VersionString));
 	label_GPlates->setText(version);
 
+	// Set Subversion info label text.
+	QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
+	QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
+	if (subversion_version_number.isEmpty())
+	{
+		label_subversion_info->hide();
+	}
+	else
+	{
+		QString subversion_info = "Build: " + subversion_version_number;
+		if (!subversion_branch_name.isEmpty())
+		{
+			subversion_info.append(" (").append(subversion_branch_name).append(" branch)");
+		}
+		label_subversion_info->setText(subversion_info);
+	}
+
+	// Set contents of copyright box.
 	QString copyright(QObject::tr(GPlatesGlobal::HtmlCopyrightString));
 	text_Copyright->setHtml(copyright);
 }
+
+
+GPlatesQtWidgets::AboutDialog::~AboutDialog()
+{
+	// close license dialog if it somehow is still there
+	if (d_license_dialog_ptr)
+	{
+		d_license_dialog_ptr->reject();
+	}
+}
+
 
 void
 GPlatesQtWidgets::AboutDialog::pop_up_license_dialog()

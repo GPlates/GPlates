@@ -199,6 +199,20 @@ foreach(dir ${ALL_GPlates_src_subdirs})
 endforeach(dir)
 
 #
+# Compile and run the gplates-extract-svn-info executable, which generates SubversionInfo.cc,
+# a file that contains the parsed output of the 'svnversion' and 'svn info' commands.
+#
+add_executable(gplates-extract-svn-info
+	gplates_extract_svn_info_main.cc)
+target_link_libraries(gplates-extract-svn-info ${QT_LIBRARIES})
+set(GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/global/SubversionInfo.cc)
+add_custom_target(
+	run-gplates-extract-svn-info ALL gplates-extract-svn-info ${CMAKE_SOURCE_DIR} ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH}
+	DEPENDS gplates-extract-svn-info)
+# Create a dummy output file so that CMake doesn't complain about it being missing.
+file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")
+
+#
 # Set top-level target dependencies.
 # A top-level target is one created by ADD_EXECUTABLE, ADD_LIBRARY, or ADD_CUSTOM_TARGET.
 #
@@ -211,6 +225,8 @@ if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGR
     add_dependencies(view-operations qt-widgets)
     add_dependencies(presentation qt-widgets)
     add_dependencies(gui qt-widgets)
+    add_dependencies(global run-gplates-extract-svn-info)
+    	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
     #add_dependencies(qt-widgets qt-resources)
 endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
 
@@ -254,7 +270,8 @@ endif (APPLE)
 message(STATUS "Adding executable for GPlates application.")
 add_executable(gplates
 	${target_GPlates_SRCS}
-	${GPlates_ICON})
+	${GPlates_ICON}
+	${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
 GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates TRUE)
 
 # The "EXCLUDE_FROM_ALL" flag means you have to type 'make gplates-no-gui' to build this target -
@@ -264,13 +281,17 @@ GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-no-gui FALSE)
 
 if (ADD_GPLATES_CLI_TARGET)
     message(STATUS "Adding executable for GPlates command line application.")
-	add_executable(gplates-cli EXCLUDE_FROM_ALL ${target_GPlates_cli_SRCS})
+	add_executable(gplates-cli EXCLUDE_FROM_ALL
+		${target_GPlates_cli_SRCS}
+		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
 	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-cli FALSE)
 endif (ADD_GPLATES_CLI_TARGET)
 
 if (ADD_UNIT_TEST_TARGET)
     message(STATUS "Adding executable for GPlates unit test application.")
-	add_executable(gplates-unit-test EXCLUDE_FROM_ALL ${target_GPlates_unit_test_SRCS})
+	add_executable(gplates-unit-test EXCLUDE_FROM_ALL
+		${target_GPlates_unit_test_SRCS}
+		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
 	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-unit-test FALSE)
 endif (ADD_UNIT_TEST_TARGET)
 
@@ -308,16 +329,16 @@ endif (APPLE)
 # NOTE: Even though Qt and ICU includes are taken care of by including QT_USE_FILE and ICU_USE_FILE
 # their libraries still have to be explicitly listed at each 'target_link_libraries()' call.
 # CGAL also uses a CGAL_USE_FILE but it differs from QT and ICU in that it uses the deprecated
-# 'link_libraries()' to link it's library to all targets (it's not physically deprecated, just
+# 'link_libraries()' to link its library to all targets (it's not physically deprecated, just
 # advised not to use). See http://www.cmake.org/pipermail/cmake/2009-April/028439.html
-#	for a description of the difference between 'link_libraries' and 'target_link_libraries'.
+# for a description of the difference between 'link_libraries' and 'target_link_libraries'.
 set(dependency_LIBS
 	${GDAL_LIBRARY}
 	${ICU_LIBRARIES}
 	${QT_LIBRARIES}
 	${OPENGL_LIBRARIES}
-	${PROJ4_LIBRARY}
-	)
+	${PROJ4_LIBRARY})
+
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
 if (NOT WIN32)
@@ -399,4 +420,3 @@ endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
 if (CMAKE_COMPILER_IS_GNUCXX)
 	set_source_files_properties(gplates_cli_main.cc PROPERTIES COMPILE_FLAGS "-Wno-shadow")
 endif (CMAKE_COMPILER_IS_GNUCXX)
-

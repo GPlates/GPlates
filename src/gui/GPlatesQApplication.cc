@@ -35,6 +35,7 @@
 
 #include "global/Constants.h"
 #include "global/GPlatesException.h"
+#include "global/SubversionInfo.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 
@@ -134,7 +135,7 @@ namespace
 			qWarning()
 					<< QString::fromStdString(call_stack_trace_std)
 					<< endl
-					<< GPlatesGlobal::SourceCodeControlVersionString;
+					<< GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
 		}
 
 		// If we have an installed message handler then this will output to a log file.
