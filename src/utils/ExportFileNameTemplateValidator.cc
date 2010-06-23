@@ -27,26 +27,31 @@
 const std::string 
 GPlatesUtils::ExportFileNameTemplateValidator::INVALID_CHARACTERS = "/\\|*?\"><:";
 
-boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>
+boost::shared_ptr<
+		GPlatesUtils::ExportFileNameTemplateValidator >
 GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
 		GPlatesUtils::Exporter_ID id)
 {
 	if(	id==GPlatesUtils::RECONSTRUCTED_GEOMETRIES_SHAPEFILE||
 		id==GPlatesUtils::RECONSTRUCTED_GEOMETRIES_GMT)
-		return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
-				new ExportReconstructedGeometryFileNameTemplateValidator());
+		return boost::shared_ptr<
+				GPlatesUtils::ExportFileNameTemplateValidator >(
+						new ExportReconstructedGeometryFileNameTemplateValidator());
 
 	if(id==GPlatesUtils::PROJECTED_GEOMETRIES_SVG)
-		return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
-				new ExportSvgFileNameTemplateValidator());
+		return boost::shared_ptr<
+				GPlatesUtils::ExportFileNameTemplateValidator >(
+						new ExportSvgFileNameTemplateValidator());
 	
 	if(id==GPlatesUtils::MESH_VILOCITIES_GPML)
-		return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
-				new ExportVelocityFileNameTemplateValidator());
+		return boost::shared_ptr<
+				GPlatesUtils::ExportFileNameTemplateValidator >(
+						new ExportVelocityFileNameTemplateValidator());
 	
 	if(id==GPlatesUtils::RESOLVED_TOPOLOGIES_GMT)
-		return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
-				new ExportResolvedTopologyFileNameTemplateValidator());
+		return boost::shared_ptr<
+				GPlatesUtils::ExportFileNameTemplateValidator >(
+						new ExportResolvedTopologyFileNameTemplateValidator());
 	
 	if( id==GPlatesUtils::RELATIVE_ROTATION_CSV_COMMA||
 		id==GPlatesUtils::RELATIVE_ROTATION_CSV_SEMICOLON||
@@ -57,17 +62,19 @@ GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
 		return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
 				new ExportRotationFileNameTemplateValidator());
 	
-	if( id==GPlatesUtils::RASTER_BMP||
-		id==GPlatesUtils::RASTER_BMP||
-		id==GPlatesUtils::RASTER_JPG||
-		id==GPlatesUtils::RASTER_JPEG||
-		id==GPlatesUtils::RASTER_PNG||
-		id==GPlatesUtils::RASTER_PPM||
-		id==GPlatesUtils::RASTER_TIFF||
-		id==GPlatesUtils::RASTER_XBM||
-		id==GPlatesUtils::RASTER_XPM)
-		return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
-				new ExportRasterFileNameTemplateValidator());
+	if( id == GPlatesUtils::RASTER_BMP ||
+		id == GPlatesUtils::RASTER_JPG ||
+		id == GPlatesUtils::RASTER_JPEG ||
+		id == GPlatesUtils::RASTER_PNG ||
+		id == GPlatesUtils::RASTER_PPM ||
+		id == GPlatesUtils::RASTER_TIFF ||
+		id == GPlatesUtils::RASTER_XBM ||
+		id == GPlatesUtils::RASTER_XPM)
+	{
+		return boost::shared_ptr<
+				GPlatesUtils::ExportFileNameTemplateValidator >(
+						new ExportRasterFileNameTemplateValidator());
+	}
 
 	return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
 		new DummyExportFileNameTemplateValidator());
@@ -132,7 +139,7 @@ bool
 GPlatesUtils::ExportRasterFileNameTemplateValidator::is_valid(
 	const QString &filename)
 {
-	if(has_invalid_characters(filename)||has_percent_P(filename))
+	if(has_invalid_characters(filename) || has_percent_P(filename))
 	{
 		return false;
 	}
@@ -145,6 +152,76 @@ GPlatesUtils::DummyExportFileNameTemplateValidator::is_valid(
 {
 	return true;
 }
+
+bool
+GPlatesUtils::ExportFileNameTemplateValidator::file_sequence_validate(
+		const QString &filename)
+{
+	std::ostringstream os;
+	try
+	{
+		GPlatesUtils::ExportTemplateFilename::validate_filename_template(filename);
+		return true;
+	}
+	catch (
+			GPlatesUtils::ExportTemplateFilename::UnrecognisedFormatString &exc)
+	{
+		exc.write(os);
+		set_result_message(os.str().c_str());
+		return false;
+	}
+	catch (	
+			GPlatesUtils::ExportTemplateFilename::NoFilenameVariation &exc)
+	{
+		exc.write(os);
+		os << "Cannot find necessary file name variations. ";
+		set_result_message(os.str().c_str());
+		return false;
+	}
+	catch (...)
+	{
+		set_result_message("Unexpected exception happened in the validation of file name template.");
+		throw false;
+	}
+}
+
+bool
+GPlatesUtils::ExportFileNameTemplateValidator::has_invalid_characters(
+		const QString &filename)
+{
+	if(filename.toStdString().find_first_of(INVALID_CHARACTERS) != std::string::npos)
+	{
+		set_result_message(
+				QString(
+						"File name contains illegal characters -- ").append(
+								INVALID_CHARACTERS.c_str()));
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool
+GPlatesUtils::ExportFileNameTemplateValidator::has_percent_P(
+		const QString &filename)
+{
+	if(filename.toStdString().find("%P") != std::string::npos)
+	{
+		set_result_message(
+					"Parameter(%P) has been found in the file name template.");
+		return true;
+	}
+	else
+	{
+		set_result_message(
+					"Parameter(%P) has not been found in the file name template.");
+		return false;
+	}
+}
+
+
 
 
 
