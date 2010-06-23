@@ -945,6 +945,9 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
 	// The '%P' placeholder string will get replaced for each type of export
 	// in 'do_export_iteration()'.
 	// The "%d" tells ExportTemplateFilenameSequence to insert the reconstruction time.
+#if 0
+	//The placeholders, %P and %d", have been taken care by "export" dialog.
+	//So there is no need to add them here again.
 	const QString suffix =
 			"." +
 			GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING +
@@ -953,8 +956,10 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
 	const QString modified_template_filename =
 			append_suffix_to_template_filebasename(filename, suffix);
 
+#endif
 	// Call base class method to actually set the template filename.
-	ExportAnimationStrategy::set_template_filename(modified_template_filename);
+	//ExportAnimationStrategy::set_template_filename(modified_template_filename);
+	ExportAnimationStrategy::set_template_filename(filename);
 }
 
 
