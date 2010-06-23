@@ -207,7 +207,7 @@ add_executable(gplates-extract-svn-info
 target_link_libraries(gplates-extract-svn-info ${QT_LIBRARIES})
 set(GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/global/SubversionInfo.cc)
 add_custom_target(
-	run-gplates-extract-svn-info ALL gplates-extract-svn-info ${CMAKE_SOURCE_DIR} ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH}
+	run-gplates-extract-svn-info ALL ${EXECUTABLE_OUTPUT_PATH}/gplates-extract-svn-info ${CMAKE_SOURCE_DIR} ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH}
 	DEPENDS gplates-extract-svn-info)
 # Create a dummy output file so that CMake doesn't complain about it being missing.
 file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")
