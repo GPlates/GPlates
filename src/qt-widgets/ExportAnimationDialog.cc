@@ -217,20 +217,43 @@ GPlatesQtWidgets::ExportAnimationDialog::update_progress_bar(
 
 void
 GPlatesQtWidgets::ExportAnimationDialog::update_status_message(
-		QString message)
+		QString message,
+		bool is_error_msg)
 {
+	QLabel* export_status = NULL; 
+	
 	if(!d_is_single_frame)
 	{
-		label_export_status->setText(message);
-		// Demand an immediate repaint to ensure status label widget actually
-		// gets updated - it doesn't always seem to get updated otherwise. Qt bug?
-		label_export_status->repaint();
+		export_status = label_export_status;
+		
 	}
 	else
 	{
-		label_export_status_single->setText(message);
-		label_export_status_single->repaint();
+		export_status = label_export_status_single;
 	}
+
+	if(is_error_msg)
+	{
+		QPalette pal = export_status->palette();
+		pal.setColor(
+				QPalette::WindowText, 
+				QColor("red")); 
+		export_status->setPalette(pal);
+	}
+	else
+	{
+		QPalette pal = export_status->palette();
+		pal.setColor(
+				QPalette::WindowText, 
+				QColor("black")); 
+		export_status->setPalette(pal);
+	}
+	
+	export_status->setText(message);
+	// Demand an immediate repaint to ensure status label widget actually
+	// gets updated - it doesn't always seem to get updated otherwise. Qt bug?
+	export_status->repaint();
+
 	// Process events so the UI remains partly usable while we do all this.
 	QCoreApplication::processEvents();
 }
@@ -335,7 +358,7 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_parameters()
 		table_widget=tableWidget_range;
 		path=lineEdit_range_path->text();
 	}
-	update_target_directory(path);
+	
 	for(int i=0; i<table_widget->rowCount();i++)
 	{
 		GPlatesUtils::Exporter_ID class_id=
@@ -355,18 +378,33 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_parameters()
 void
 GPlatesQtWidgets::ExportAnimationDialog::react_export_button_clicked()
 {
+
+	QString path;
 	QTableWidget * table_widget = NULL;
+	
 	if(d_is_single_frame)
 	{
-		table_widget=tableWidget_single;
+		path = lineEdit_single_path->text();
+		table_widget = tableWidget_single;
 	}
 	else
 	{
-		table_widget=tableWidget_range;
+		table_widget = tableWidget_range;
+		path = lineEdit_range_path->text();
 	}
-	if(table_widget->rowCount()==0)
-		return;
 
+	if(table_widget->rowCount()==0)
+	{
+		//no export item, show error message, do nothing
+		update_status_message(
+				tr("Nothing to export."), true);
+		return;
+	}
+	if(!update_target_directory(path))
+	{
+		//target directory invalid, do nothing
+		return;
+	}
 	update_status_message(tr("Exporting..."));
 	recalculate_progress_bar();
 	set_export_abort_button_state(true);
@@ -402,7 +440,7 @@ GPlatesQtWidgets::ExportAnimationDialog::react_add_export_clicked()
 	{
 		table_widget = tableWidget_range;
 	}
-	
+	update_status_message("Ready to export");
 	d_configure_parameters_dialog_ptr->init(this, table_widget);
 	d_configure_parameters_dialog_ptr->exec();
 }
@@ -498,6 +536,10 @@ GPlatesQtWidgets::ExportAnimationDialog::react_choose_target_directory_clicked()
 void
 GPlatesQtWidgets::ExportAnimationDialog::set_path()
 {
+#if 0	
+	//comment out these code. 
+	//we are going to update target directory while export button is clicked.
+	
 	if(d_is_single_frame)
 	{
 		update_target_directory(lineEdit_single_path->text());
@@ -506,6 +548,7 @@ GPlatesQtWidgets::ExportAnimationDialog::set_path()
 	{
 		update_target_directory(lineEdit_range_path->text());
 	}
+#endif	
 }
 
 void
@@ -573,13 +616,15 @@ GPlatesQtWidgets::ExportAnimationDialog::update_single_frame_progress_bar(
 	QCoreApplication::processEvents();
 }
 
-void
+bool
 GPlatesQtWidgets::ExportAnimationDialog::update_target_directory(
 		const QString &new_target)
 {
 	//Check properties of supplied pathname.
 	QDir new_target_dir(new_target);
 	QFileInfo new_target_fileinfo(new_target);
+	
+	bool ret = false;
 	
 	if (new_target_fileinfo.exists() && 
 		new_target_fileinfo.isDir() && 
@@ -595,6 +640,7 @@ GPlatesQtWidgets::ExportAnimationDialog::update_target_directory(
 		{
 			d_range_path=new_target;
 		}
+		ret = true;
 	}
 
 	//if the directory is invalid, the following code will restore the previous valid value
@@ -607,6 +653,19 @@ GPlatesQtWidgets::ExportAnimationDialog::update_target_directory(
 	{
 		lineEdit_range_path->setText(d_range_path);
 	}
+
+	if(ret == false)
+	{
+		update_status_message(
+				tr("Invalid target directory. The directory has been reset to previous valid path."),
+				true);
+	}
+	else
+	{
+		update_status_message(tr("Ready to export"));
+	}
+	return ret;
+	
 }
 
 void
@@ -646,7 +705,7 @@ GPlatesQtWidgets::ExportAnimationDialog::react_remove_all_clicked()
 void
 GPlatesQtWidgets::ExportAnimationDialog::react_add_all_clicked()
 {
-	QTableWidget *tableWidget=NULL;
+	QTableWidget *tableWidget = NULL;
 	if(d_is_single_frame)
 	{
 		tableWidget=tableWidget_single;
