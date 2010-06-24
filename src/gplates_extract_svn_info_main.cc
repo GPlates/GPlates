@@ -68,7 +68,7 @@ namespace
 	/**
 	 * Timeout for reading from a process's standard output, in milliseconds.
 	 */
-	const int READ_TIMEOUT = 1000;
+	const int READ_TIMEOUT = 2000;
 
 
 	/**
@@ -84,7 +84,8 @@ namespace
 	 */
 	QString
 	get_compact_version_number(
-			const char *working_directory)
+			const char *working_directory,
+			const char *program_name)
 	{
 		// Start the `svnversion` program.
 		QProcess process;
@@ -94,18 +95,19 @@ namespace
 		if (!process.waitForStarted())
 		{
 			// Process couldn't start, e.g. `svnversion` not found.
-			std::cerr << "warning: svnversion could not start" << std::endl;
+			std::cerr << program_name << ": warning: svnversion could not start" << std::endl;
 			return QString();
 		}
 
 		// Read from the process's standard output.
 		QString result;
-		if (process.waitForReadyRead(READ_TIMEOUT))
+
+		// For some reason, we sometimes don't read anything from the process.
+		// So let's try it a few more times and see if it works.
+		static const int MAX_ATTEMPTS = 5;
+		for (int i = 0; i != MAX_ATTEMPTS; ++i)
 		{
-			// For some reason, we sometimes don't read anything from the process.
-			// So let's try it a few more times and see if it works.
-			static const int MAX_ATTEMPTS = 5;
-			for (int i = 0; i != MAX_ATTEMPTS; ++i)
+			if (process.waitForReadyRead(READ_TIMEOUT))
 			{
 				QByteArray input_bytes = process.readAllStandardOutput();
 				QTextStream input_stream(&input_bytes);
@@ -119,7 +121,7 @@ namespace
 
 		if (result.isEmpty())
 		{
-			std::cerr << "warning: could not read from svnversion" << std::endl;
+			std::cerr << program_name << ": warning: could not read from svnversion" << std::endl;
 		}
 
 		// Close the process.
@@ -221,7 +223,8 @@ namespace
 	 */
 	QString
 	get_branch_name(
-			const char *working_directory)
+			const char *working_directory,
+			const char *program_name)
 	{
 		// Start the `svn info` program.
 		QProcess process;
@@ -231,7 +234,7 @@ namespace
 		if (!process.waitForStarted())
 		{
 			// Process couldn't start, e.g. `svn` not found.
-			std::cerr << "warning: svn could not start" << std::endl;
+			std::cerr << program_name << ": warning: svn could not start" << std::endl;
 			return QString();
 		}
 
@@ -398,8 +401,8 @@ int main(int argc, char *argv[])
 	const char *output_filename = argv[2];
 
 	// Compute the version number and branch name.
-	QString version_number = get_compact_version_number(working_directory);
-	QString branch_name = get_branch_name(working_directory);
+	QString version_number = get_compact_version_number(working_directory, program_name);
+	QString branch_name = get_branch_name(working_directory, program_name);
 
 	// Check whether we need to write the values out again or not. We don't write
 	// the values out if they haven't changed because we don't want to cause
