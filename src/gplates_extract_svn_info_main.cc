@@ -94,15 +94,32 @@ namespace
 		if (!process.waitForStarted())
 		{
 			// Process couldn't start, e.g. `svnversion` not found.
+			std::cerr << "warning: svnversion could not start" << std::endl;
 			return QString();
 		}
 
 		// Read from the process's standard output.
-		QTextStream input_stream(&process);
 		QString result;
 		if (process.waitForReadyRead(READ_TIMEOUT))
 		{
-			result = input_stream.readLine();
+			// For some reason, we sometimes don't read anything from the process.
+			// So let's try it a few more times and see if it works.
+			static const int MAX_ATTEMPTS = 5;
+			for (int i = 0; i != MAX_ATTEMPTS; ++i)
+			{
+				QByteArray input_bytes = process.readAllStandardOutput();
+				QTextStream input_stream(&input_bytes);
+				result = input_stream.readLine();
+				if (!result.isEmpty())
+				{
+					break;
+				}
+			}
+		}
+
+		if (result.isEmpty())
+		{
+			std::cerr << "warning: could not read from svnversion" << std::endl;
 		}
 
 		// Close the process.
@@ -214,6 +231,7 @@ namespace
 		if (!process.waitForStarted())
 		{
 			// Process couldn't start, e.g. `svn` not found.
+			std::cerr << "warning: svn could not start" << std::endl;
 			return QString();
 		}
 
