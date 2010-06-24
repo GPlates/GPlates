@@ -144,6 +144,18 @@ gzip
   2. Add the location of the gzip executable to the PATH environment variable
      (see above).
 
+Subversion (optional, but recommended for developers)
+
+  1. Get the command-line client from http://www.collab.net/downloads/subversion/
+     Either the server and client bundle or the client-only bundle will suffice.
+     Even if you have installed TortoiseSVN, this needs to be installed separately
+     to provide the `svn` and `svnversion` command line tools.
+      * Alternatively, Cygwin (http://www.cygwin.com/) contains Subversion.
+  2. Add the location of the `svn` executable to the PATH environment variable
+     (see above).
+  If Subversion is not installed, the build number and branch name will not be
+  automatically inserted into the About dialog box by the build process.
+
 Graphviz (required for documentation, but not required to build GPlates)
 
   1. Get and install the latest version of Graphviz from http://www.graphviz.org/
@@ -154,5 +166,6 @@ Doxygen (required for documentation, but not required to build GPlates)
 
   1. Get and install the latest version of Doxygen from
      http://www.stack.nl/~dimitri/doxygen/download.html#latestsrc
+      * Alternatively, Cygwin (http://www.cygwin.com/) contains Doxygen.
   2. Add the location of the Doxygen main executable to the PATH environment
      variable (see above).
