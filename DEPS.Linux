@@ -5,8 +5,8 @@ Table of Contents
  1. Introduction
  2. Program and library dependencies
  3. Corresponding package dependencies
-     1. For Ubuntu 7.10
-         1. Ubuntu 7.10 packages
+     1. For Ubuntu 8.04
+         1. Ubuntu 8.04 packages
          2. How to install via a GUI (recommended)
          3. How to install using the command-line (advanced)
          4. A note about the packages for GL and GLU
@@ -15,6 +15,13 @@ Introduction
 
 This page lists the package dependencies which need to be satisfied to be able
 to build GPlates from source on Linux.
+
+Below, we list the corresponding Ubuntu 8.04 packages. Similar packages should
+be available on other Linux distributions. Although we only list packages for
+Ubuntu 8.04, GPlates will work with newer Ubuntu distributions; the names of the
+packages vary slightly. However, Ubuntu 8.04 is the oldest Ubuntu release that
+we support; users of older Ubuntu releases may, for some packages, be required
+to install and/or compile the dependencies manually.
 
 Program and library dependencies
 
@@ -28,14 +35,14 @@ installed:
   • GLU library (the OpenGL Utility shared library)
   • Expat library
   • ICU library
-  • Boost library headers
-  • Qt library (version 4.3.2 or newer)
+  • Boost library headers (version 1.34 or newer)
+  • Qt library (version 4.4 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
   • Computational Geometry Algorithms Library (CGAL) (3.3.1 or newer)
 
 Corresponding package dependencies
 
-For Ubuntu 7.10
+For Ubuntu 8.04
 
 This subsection provides more specific information on resolving the program and
 library dependencies on an Ubuntu 7.10 system.
@@ -47,22 +54,20 @@ Note that Ubuntu is based upon Debian, so (subject to the availability of the
 appropriate versions of packages) these instructions should also work on a
 Debian system.
 
-Ubuntu 7.10 packages
+Ubuntu 8.04 packages
 
 Program/library Corresponding Ubuntu packages
 cmake           cmake
-g++ 4.0         g++-4.1
+g++             g++-4.2
 make            make
 GL              See note below. (On JC's 7.10 system: libgl1-mesa-dev)
 GLU             See note below. (On JC's 7.10 system: libglu1-mesa-dev)
 Expat           libexpat1 libexpat1-dev
-ICU             libicu36 libicu36-dev
+ICU             libicu38 libicu-dev
 Boost           libboost-dev
 Qt              libqt4-gui libqt4-dev
 GDAL            libgdal1-dev libgdal1-1.4.0
-CGAL            libcgal-dev libcgal2 (Only available for Ubuntu 8.04 and above -
-                for Ubuntu 7.10 you will need to download from http://www.cgal.org/
-                and compile/install it yourself)
+CGAL            libcgal-dev libcgal2
 
 How to install via a GUI (recommended)
 

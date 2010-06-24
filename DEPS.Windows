@@ -52,7 +52,9 @@ Program and library dependencies
 The following libraries and binaries are required to build GPlates. If you
 cannot use, or you cannot obtain, the exact same version as listed, you should
 try to use a version with the same major and minor build numbers (i.e. for a
-version number of x.y.z, you should aim to keep x and y the same).
+version number of x.y.z, you should aim to keep x and y the same). However,
+GPlates should compile and function correctly with newer versions of these
+dependencies.
 
 CMake
 
@@ -60,7 +62,7 @@ CMake
 
 Qt
 
-  1. Download qt-win-opensource-src-4.3.4.zip from: http://get.qt.nokia.com/qt/source/
+  1. Download qt-win-opensource-src-4.4.3.zip from: http://get.qt.nokia.com/qt/source/
   2. Extract it to a path containing no spaces 
   3. Run: configure
       * If there are errors, open the "Visual Studio 200x Command Prompt" from
