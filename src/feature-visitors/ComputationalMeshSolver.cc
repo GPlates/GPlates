@@ -392,6 +392,15 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 				point, resolved_topological_boundaries_containing_point);
 		return;
 	}
+
+    // else, point not found in any topology set the velocity values to 0 
+	d_velocity_colat_values.push_back( 0 );
+	d_velocity_lon_values.push_back( 0 );
+
+    // report a warning 
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+	std::cout << "WARNING: mesh point not in any Topology! point = " << llp << std::endl;
+
 }
 
 
