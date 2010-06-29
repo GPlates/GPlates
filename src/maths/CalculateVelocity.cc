@@ -52,8 +52,8 @@ GPlatesMaths::calculate_velocity_vector(
 
 	static const real_t radius_of_earth = 6.378e8;  // in centimetres.
 
-	// This quaternion represents a rotation between t1 and t2
-	UnitQuaternion3D q = fr_t2.unit_quat().get_inverse() * fr_t1.unit_quat();
+	// This quaternion represents a rotation from t2 to t1.
+	UnitQuaternion3D q = fr_t1.unit_quat() * fr_t2.unit_quat().get_inverse();
 	
 	if ( represents_identity_rotation( q ) ) 
 	{
