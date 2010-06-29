@@ -10,6 +10,7 @@ Table of Contents
          2. How to install via a GUI (recommended)
          3. How to install using the command-line (advanced)
          4. A note about the packages for GL and GLU
+         5. A note about Qt
 
 Introduction
 
@@ -45,7 +46,7 @@ Corresponding package dependencies
 For Ubuntu 8.04
 
 This subsection provides more specific information on resolving the program and
-library dependencies on an Ubuntu 7.10 system.
+library dependencies on an Ubuntu 8.04 system.
 
 (Note that GPlates development at the USyd node occurs on Ubuntu systems, so
 the Ubuntu package dependencies will always be the most tested and up-to-date.)
@@ -65,7 +66,7 @@ GLU             See note below. (On JC's 7.10 system: libglu1-mesa-dev)
 Expat           libexpat1 libexpat1-dev
 ICU             libicu38 libicu-dev
 Boost           libboost-dev
-Qt              libqt4-gui libqt4-dev
+Qt              libqt4-gui libqt4-dev (See note below.)
 GDAL            libgdal1-dev libgdal1-1.4.0
 CGAL            libcgal-dev libcgal2
 
@@ -143,3 +144,16 @@ package may remove some mesa related packages. Only attempt this if configure
 complains about a missing GL dependency and you are certain you are using the
 nvidia binary driver.  (If you don't know what this means, don't install
 nvidia-glx-dev!)
+
+A note about Qt
+
+To obtain Qt 4.4 on Ubuntu 8.04, you will need to enable the 'backports'
+repository. (By default, Ubuntu 8.04 is shipped with Qt 4.3.) To enable the
+'backports' repository, edit /etc/apt/sources.list and uncomment the two lines
+in that file that refer to that repository. If you have already installed Qt,
+you will then need to go to the Synaptic Package Manager and upgrade Qt. Note,
+however, that the 'backports' repository only provides Qt 4.4.0, which is not
+the latest bugfix release of Qt 4.4.
+
+Qt 4.4 or newer is provided out of the box on Ubuntu 8.10 and newer, and it is
+not necessary to enable the 'backports' repository on those systems.
