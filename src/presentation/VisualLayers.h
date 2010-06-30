@@ -28,15 +28,16 @@
 #define GPLATES_PRESENTATION_VISUALLAYERS_H
 
 #include <list>
+#include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <QObject>
 
 #include "VisualLayer.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Layer.h"
-#include "app-logic/ReconstructGraph.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 
@@ -44,6 +45,7 @@
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class ReconstructGraph;
 }
 
 namespace GPlatesPresentation
@@ -57,11 +59,79 @@ namespace GPlatesPresentation
 		Q_OBJECT
 
 	public:
-		VisualLayers(
-				GPlatesPresentation::ViewState &view_state);
 
+		typedef std::vector<GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type>
+			rendered_geometry_layer_seq_type;
+
+		VisualLayers(
+				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection);
+
+		/**
+		 * Returns an ordered sequence of indices of child layers in the
+		 * RECONSTRUCTION_LAYER in the RenderedGeometryCollection.
+		 *
+		 * Layers are returned in increasing z-order, i.e. when drawing these layers,
+		 * start from the front and work towards the back.
+		 */
+		const rendered_geometry_layer_seq_type &
+		get_layer_order() const
+		{
+			return d_layer_order;
+		}
+
+		/**
+		 * Moves the layer at @a from_index to @a to_index.
+		 *
+		 * If the layer is moved down in the ordering (i.e. @a from_index is less than
+		 * @a to_index), layers between from_index and to_index get shifted upwards.
+		 *
+		 * If the layer is moved up in the ordering (i.e. @a from_index is greater than
+		 * @a to_index), layers between from_index and to_index get shifted downwards.
+		 */
+		void
+		move_layer(
+				size_t from_index,
+				size_t to_index);
+
+		/**
+		 * Returns the visual layer that is at position @a index in the layer ordering.
+		 *
+		 * Returns an invalid weak pointer if the index provided is invalid.
+		 */
+		boost::weak_ptr<const VisualLayer>
+		at(
+				size_t index) const;
+
+		/**
+		 * Returns the visual layer that is at position @a index in the layer ordering.
+		 *
+		 * Returns an invalid weak pointer if the index provided is invalid.
+		 */
+		boost::weak_ptr<VisualLayer>
+		at(
+				size_t index);
+
+		/**
+		 * Returns the corresponding visual layer for the given @a layer.
+		 *
+		 * Returns an invalid weak pointer if @a layer has no corresponding visual layer.
+		 */
+		boost::weak_ptr<const VisualLayer>
+		get_visual_layer(
+				const GPlatesAppLogic::Layer &layer) const;
+
+		/**
+		 * Returns the corresponding visual layer for the given @a layer.
+		 *
+		 * Returns an invalid weak pointer if @a layer has no corresponding visual layer.
+		 */
+		boost::weak_ptr<VisualLayer>
+		get_visual_layer(
+				const GPlatesAppLogic::Layer &layer);
 
 	public slots:
+
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -88,8 +158,97 @@ namespace GPlatesPresentation
 		void
 		create_rendered_geometries();
 
+	signals:
+
+		/**
+		 * Indicates that there has been a change in the ordering of layer indices
+		 * from @a first_index to @a last_index, inclusive.
+		 */
+		void
+		layer_order_changed(
+				size_t first_index,
+				size_t last_index);
+
+		/**
+		 * This signal is emitted just before a new visual layer is added.
+		 *
+		 * The @a index provided is the prospective index of the new visual layer in
+		 * the ordering of visual layers.
+		 */
+		void
+		layer_about_to_be_added(
+				size_t index);
+
+		/**
+		 * This signal is emitted just after a new visual layer is added.
+		 *
+		 * The @a index provided is the index of the new visual layer in
+		 * the ordering of visual layers.
+		 */
+		void
+		layer_added(
+				size_t index);
+
+		/**
+		 * This signal is emitted just after a new visual layer is added.
+		 *
+		 * Both layer_added variations are emitted, so it should only be necessary to
+		 * connect to the signal with the most convenient form.
+		 */
+		void
+		layer_added(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+
+		/**
+		 * This signal is emitted just before a visual layer is removed.
+		 *
+		 * The @a index provided is the index of the visual layer that is to be
+		 * removed in the ordering of visual layers.
+		 */
+		void
+		layer_about_to_be_removed(
+				size_t index);
+
+		/**
+		 * This signal is emitted just before a visual layer is removed.
+		 *
+		 * Both layer_about_to_be_removed variations are emitted, so it should only be
+		 * necessary to connect to the signal with the most convenient form.
+		 */
+		void
+		layer_about_to_be_removed(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+
+		/**
+		 * This signal is emitted just after a visual layer is removed.
+		 *
+		 * The @a index provided is the former index of the visual layer that was
+		 * removed in the ordering of visual layers.
+		 */
+		void
+		layer_removed(
+				size_t index);
+
+		/**
+		 * This signal is emitted just after a visual layer's underlying reconstruct
+		 * graph layer is modified. This signal is also emitted when one of a visual
+		 * layer's properties is modified.
+		 *
+		 * In particular, this signal is emitted after a change in the layer's
+		 * activation or after an input connection is added or removed.
+		 *
+		 * This signal is also emitted when a visual layer is expanded or collapsed,
+		 * or its visibility is toggled on or off.
+		 *
+		 * The @a index provided is the index of the visual layer in the ordering
+		 * of visual layers.
+		 */
+		void
+		layer_modified(
+				size_t index);
 
 	private slots:
+
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -104,7 +263,25 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 				GPlatesAppLogic::Layer layer);
 
+		void
+		handle_layer_activation_changed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer,
+				bool activation);
+
+		void
+		handle_layer_added_input_connection(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer,
+				GPlatesAppLogic::Layer::InputConnection input_connection);
+
+		void
+		handle_layer_removed_input_connection(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer);
+
 	private:
+
 		/**
 		 * Typedef for a shared pointer to a @a VisualLayer.
 		 */
@@ -115,8 +292,67 @@ namespace GPlatesPresentation
 		 */
 		typedef std::map<GPlatesAppLogic::Layer, visual_layer_ptr_type> visual_layer_map_type;
 
+		/**
+		 * Typedef for mapping a rendered geometry layer index to a visual layer.
+		 */
+		typedef std::map<
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type,
+			boost::weak_ptr<VisualLayer>
+		> index_map_type;
+
+		void
+		connect_to_application_state_signals();
+
+		visual_layer_ptr_type
+		create_visual_layer(
+				const GPlatesAppLogic::Layer &layer);
+
+		void
+		add_layer(
+				const GPlatesAppLogic::Layer &layer);
+
+		void
+		remove_layer(
+				const GPlatesAppLogic::Layer &layer);
+
+		void
+		handle_layer_modified(
+				const GPlatesAppLogic::Layer &layer);
+
+		/**
+		 * Returns the visual layer that owns the rendered geometry layer with the
+		 * given index.
+		 *
+		 * Returns an invalid weak pointer if the index does not have a corresponding
+		 * visual layer.
+		 */
+		boost::weak_ptr<const VisualLayer>
+		get_visual_layer(
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index) const;
+
+		/**
+		 * Returns the visual layer that owns the rendered geometry layer with the
+		 * given index.
+		 *
+		 * Returns an invalid weak pointer if the index does not have a corresponding
+		 * visual layer.
+		 */
+		boost::weak_ptr<VisualLayer>
+		get_visual_layer(
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index);
+
+		/**
+		 * Emits the layer_modified signal, if @a index is found in the layer ordering.
+		 */
+		void
+		emit_layer_modified(
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index);
+
+		// VisualLayer causes VisualLayers to emit layer_modified.
+		friend class VisualLayer;
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
+
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**
@@ -127,13 +363,23 @@ namespace GPlatesPresentation
 		 */
 		visual_layer_map_type d_visual_layers;
 
+		/**
+		 * A custom ordering of child layers in the RECONSTRUCTION_LAYER.
+		 *
+		 * Layers are stored in increasing z-order, i.e. when drawing these layers,
+		 * start from the front and work towards the back.
+		 */
+		rendered_geometry_layer_seq_type d_layer_order;
 
-		void
-		connect_to_application_state_signals();
+		/**
+		 * Associates rendered geometry collection layer indices with a visual layer.
+		 */
+		index_map_type d_index_map;
 
-		boost::shared_ptr<VisualLayer>
-		create_visual_layer(
-				const GPlatesAppLogic::Layer &layer);
+		/**
+		 * The number that will be given to the next visual layer created.
+		 */
+		int d_next_visual_layer_number;
 	};
 }
 

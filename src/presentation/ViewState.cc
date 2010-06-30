@@ -89,7 +89,10 @@ GPlatesPresentation::ViewState::ViewState(
 			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER,
 					0.175f)),					
-	d_visual_layers(new VisualLayers(*this)),
+	d_visual_layers(
+			new VisualLayers(
+				d_application_state,
+				*d_rendered_geometry_collection)),
 	d_render_settings(
 			new GPlatesGui::RenderSettings()),
 	d_map_transform(

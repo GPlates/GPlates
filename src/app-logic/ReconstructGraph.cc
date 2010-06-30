@@ -494,3 +494,12 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_about_to_remove_input_connection(
 {
 	emit layer_about_to_remove_input_connection(*this, layer, input_connection);
 }
+
+
+void
+GPlatesAppLogic::ReconstructGraph::emit_layer_removed_input_connection(
+		GPlatesAppLogic::Layer layer)
+{
+	emit layer_removed_input_connection(*this, layer);
+}
+

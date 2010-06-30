@@ -28,6 +28,7 @@
 
 #include <boost/optional.hpp>
 #include <QGroupBox>
+#include <QFocusEvent>
 
 #include "ChooseFeatureTypeWidgetUi.h"
 
@@ -66,6 +67,13 @@ namespace GPlatesQtWidgets
 
 		void
 		item_activated();
+
+	protected:
+
+		virtual
+		void
+		focusInEvent(
+				QFocusEvent *ev);
 
 	private slots:
 

@@ -316,6 +316,10 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::~Layer()
 }
 
 
+// gcc isn't liking the BOOST_MPL_ASSERT.
+#if defined(__GNUC__)
+#	pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
 void
 GPlatesAppLogic::ReconstructGraphImpl::Layer::execute(
 		Reconstruction &reconstruction,
@@ -378,11 +382,9 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::execute(
 
 		// Generate compile time error if the bounded type in the 'layer_task_data_type' variant
 		// that corresponds to reconstruction geometry collections is changed.
-#ifdef WIN32 // Get old-style cast error in gcc...
 		BOOST_MPL_ASSERT((boost::mpl::contains<
 				layer_task_data_types,
 				reconstruction_geometry_collection_type>));
-#endif
 
 		const reconstruction_geometry_collection_type *reconstruction_geometry_collection =
 				boost::get<reconstruction_geometry_collection_type>(&layer_task_output.get());
@@ -392,6 +394,9 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::execute(
 		}
 	}
 }
+#if defined(__GNUC__)
+#	pragma GCC diagnostic error "-Wold-style-cast"
+#endif
 
 
 void

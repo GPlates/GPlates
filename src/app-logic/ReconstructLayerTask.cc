@@ -37,7 +37,7 @@ std::pair<QString, QString>
 GPlatesAppLogic::ReconstructLayerTask::get_name_and_description()
 {
 	return std::make_pair(
-		"Reconstruct geometries to a geological time",
+		"Geometry Reconstruction",
 
 		"Geometries in this layer will be reconstructed when "
 		"this layer is connected to a reconstruction tree layer");

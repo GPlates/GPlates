@@ -31,11 +31,15 @@
 #include <QPaintEngine>
 #include <QPainter>
 
-#include "gui/MapProjection.h"
-#include "gui/RenderSettings.h"
-#include "presentation/ViewState.h"
 #include "MapCanvas.h"
 #include "MapView.h"
+
+#include "gui/Map.h"
+#include "gui/MapProjection.h"
+#include "gui/RenderSettings.h"
+
+#include "presentation/ViewState.h"
+
 
 GPlatesQtWidgets::MapCanvas::MapCanvas(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
@@ -48,6 +52,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	d_view_state(view_state),
 	d_map(
 			rendered_geometry_collection,
+			view_state.get_visual_layers().get_layer_order(),
 			render_settings,
 			viewport_zoom,
 			colour_scheme),

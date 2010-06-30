@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,6 +35,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/foreach.hpp>
 #include <QObject>
 
 #include "RenderedGeometryLayer.h"
@@ -42,8 +43,8 @@
 
 namespace GPlatesViewOperations
 {
-	class ConstRenderedGeometryCollectionVisitor;
-	class RenderedGeometryCollectionVisitor;
+	template<class T> class ConstRenderedGeometryCollectionVisitor;
+	template<class T> class RenderedGeometryCollectionVisitor;
 	class RenderedGeometryLayer;
 
 	/**
@@ -122,12 +123,13 @@ namespace GPlatesViewOperations
      * * Proximity queries can be performed on RenderedGeometry objects.
 	*/
 	class RenderedGeometryCollection :
-		public QObject,
-		private boost::noncopyable
+			public QObject,
+			private boost::noncopyable
 	{
 		Q_OBJECT
 
 	public:
+
 		/**
 		 * The main render layers.
 		 *
@@ -166,6 +168,11 @@ namespace GPlatesViewOperations
 		 * Typedef for an index to a child rendered layer.
 		 */
 		typedef unsigned int child_layer_index_type;
+
+		/**
+		 * Typedef for a sequence of child layer indices.
+		 */
+		typedef std::list<child_layer_index_type> child_layer_index_seq_type;
 
 		/**
 		 * Typedef for a handle that owns a child layer.
@@ -265,7 +272,7 @@ namespace GPlatesViewOperations
 				MainLayerType parent_layer);
 
 		/**
-		 * Yet another convenient method - creates child rendered layer
+		 * Yet another convenience method - creates child rendered layer
 		 * and transfers ownership to returned pointer type.
 		 *
 		 * Basically calls @a create_child_rendered_layer and then
@@ -292,6 +299,14 @@ namespace GPlatesViewOperations
 		RenderedGeometryLayer *
 		get_child_rendered_layer(
 				child_layer_index_type);
+
+		/**
+		 * Get the sequence of child layer indices for the given parent layer.
+		 * This sequence is the default order in which child layers are visited.
+		 */
+		const child_layer_index_seq_type &
+		get_child_rendered_layer_indices(
+				MainLayerType parent_layer) const;
 
 		/**
 		 * Set a specific main layer as active/inactive.
@@ -373,7 +388,6 @@ namespace GPlatesViewOperations
 		restore_main_layer_active_state(
 				MainLayerActiveState main_layer_active_state);
 
-
 		/**
 		 * Recursively visit the main rendered layers, their child rendered
 		 * layers and the @a RenderedGeometry objects in them.
@@ -396,9 +410,10 @@ namespace GPlatesViewOperations
 		 *       really extrinsic state of the visitor - but it is useful to store it
 		 *       on the rendered geometry collection.
 		 */
+		template<class ForwardReadableRange>
 		void
 		accept_visitor(
-				ConstRenderedGeometryCollectionVisitor &) const;
+				ConstRenderedGeometryCollectionVisitor<ForwardReadableRange> &) const;
 
 		/**
 		 * Recursively visit the main rendered layers, their child rendered
@@ -406,11 +421,11 @@ namespace GPlatesViewOperations
 		 *
 		 * Same as @a accept_visitor for const visitor except visits a
 		 * non-const visitor.
-		 *
 		 */
+		template<class ForwardReadableRange>
 		void
 		accept_visitor(
-				RenderedGeometryCollectionVisitor &);
+				RenderedGeometryCollectionVisitor<ForwardReadableRange> &);
 
 		//@{
 		/**
@@ -444,7 +459,7 @@ namespace GPlatesViewOperations
 		 * is in scope).
 		 */
 		struct UpdateGuard :
-			public boost::noncopyable
+				public boost::noncopyable
 		{
 			UpdateGuard();
 
@@ -494,8 +509,6 @@ namespace GPlatesViewOperations
 		 */
 		typedef std::bitset<NUM_LAYERS> main_layer_active_state_internal_type;
 
-		typedef unsigned int RenderedGeometryLayerIndex;
-
 		class RenderedGeometryLayerManager
 		{
 		public:
@@ -503,17 +516,17 @@ namespace GPlatesViewOperations
 
 			RenderedGeometryLayer *
 			get_rendered_geometry_layer(
-					RenderedGeometryLayerIndex);
+					child_layer_index_type);
 
 			const RenderedGeometryLayer *
 			get_rendered_geometry_layer(
-					RenderedGeometryLayerIndex) const;
+					child_layer_index_type) const;
 
 			/**
-			 * Creates a new @a RenderedGeometrylayer and returns an index
+			 * Creates a new @a RenderedGeometryLayer and returns an index
 			 * that can be used to @a get_rendered_geometry_layer().
 			 */
-			RenderedGeometryLayerIndex
+			child_layer_index_type
 			create_rendered_geometry_layer(
 					MainLayerType main_layer);
 
@@ -521,38 +534,36 @@ namespace GPlatesViewOperations
 			 * Same as other overloaded @a create_rendered_geometry_layer except
 			 * creates a zoom-dependent rendered geometry layer instead of a normal one.
 			 */
-			RenderedGeometryLayerIndex
+			child_layer_index_type
 			create_rendered_geometry_layer(
 					MainLayerType main_layer,
 					float ratio_zoom_dependent_bin_dimension_to_globe_radius,
 					const double &current_viewport_zoom_factor);
 
 			/**
-			 * Destroys the rendered geometry layered specified.
+			 * Destroys the rendered geometry layer specified.
 			 */
 			void
 			destroy_rendered_geometry_layer(
-					RenderedGeometryLayerIndex);
+					child_layer_index_type);
 
 		private:
 			typedef RenderedGeometryLayer *rendered_geometry_layer_ptr_type;
 			typedef std::vector<rendered_geometry_layer_ptr_type> rendered_geometry_layer_seq_type;
-			typedef std::list<child_layer_index_type> child_layer_index_seq_type;
 			typedef std::stack<child_layer_index_type> available_child_layer_indices_type;
 
 			rendered_geometry_layer_seq_type d_layer_storage;
 			child_layer_index_seq_type d_layers;
 			available_child_layer_indices_type d_layers_available_for_reuse;
 
-
 			//! Allocate a handle for a rendered geometry layer about to be created.
-			RenderedGeometryLayerIndex
+			child_layer_index_type
 			allocate_layer_index();
 
 			//! Deallocate a handle used by a rendered geometry layer that was just destroyed.
 			void
 			deallocate_layer_index(
-					RenderedGeometryLayerIndex);
+					child_layer_index_type);
 		};
 
 		struct MainLayer
@@ -560,7 +571,6 @@ namespace GPlatesViewOperations
 			MainLayer(
 					MainLayerType main_layer_type);
 
-			typedef std::list<RenderedGeometryLayerIndex> child_layer_index_seq_type;
 			typedef boost::shared_ptr<RenderedGeometryLayer> rendered_geom_layer_ptr_type;
 
 			rendered_geom_layer_ptr_type d_rendered_geom_layer;
@@ -649,18 +659,22 @@ namespace GPlatesViewOperations
 		signal_update(
 				main_layers_update_type main_layers_updated);
 
-		template <class RenderedGeometryLayerType,
-				class RenderedGeometryCollectionType,
-				class RenderedGeometryCollectionVisitorType>
+		template<
+			class RenderedGeometryLayerType,
+			class ChildLayerIndexRangeType,
+			class RenderedGeometryCollectionType,
+			class RenderedGeometryCollectionVisitorType>
 		static
 		void
 		accept_visitor_internal(
 				RenderedGeometryCollectionVisitorType &visitor,
 				RenderedGeometryCollectionType &rendered_geom_collection);
 
-		template <class RenderedGeometryLayerType,
-				class RenderedGeometryCollectionType,
-				class RenderedGeometryCollectionVisitorType>
+		template<
+			class RenderedGeometryLayerType,
+			class ChildLayerIndexRangeType,
+			class RenderedGeometryCollectionType,
+			class RenderedGeometryCollectionVisitorType>
 		static
 		void
 		visit_main_rendered_layer(
@@ -668,8 +682,21 @@ namespace GPlatesViewOperations
 				MainLayerType main_layer_type,
 				RenderedGeometryCollectionType &rendered_geom_collection);
 
-		template <class RenderedGeometryLayerType,
-				class RenderedGeometryCollectionVisitorType>
+		template<
+			class RenderedGeometryLayerType,
+			class ChildLayerIndexRangeType,
+			class RenderedGeometryCollectionType,
+			class RenderedGeometryCollectionVisitorType>
+		static
+		void
+		visit_main_rendered_layer(
+				RenderedGeometryCollectionVisitorType &visitor,
+				RenderedGeometryCollectionType &rendered_geom_collection,
+				const ChildLayerIndexRangeType &children_range);
+
+		template<
+			class RenderedGeometryLayerType,
+			class RenderedGeometryCollectionVisitorType>
 		static
 		void
 		visit_rendered_geometry_layer(
@@ -682,7 +709,7 @@ namespace GPlatesViewOperations
 		 */
 		void
 		connect_child_rendered_layer_to_parent(
-				const RenderedGeometryLayerIndex child_layer_index,
+				const child_layer_index_type child_layer_index,
 				MainLayerType parent_layer);
 
 		/**
@@ -692,6 +719,144 @@ namespace GPlatesViewOperations
 		connect_to_rendered_geometry_layer_signal(
 				RenderedGeometryLayer *rendered_geom_layer);
 	};
+	
+	
+	template<
+		class RenderedGeometryLayerType,
+		class RenderedGeometryCollectionVisitorType>
+	void
+	RenderedGeometryCollection::visit_rendered_geometry_layer(
+			RenderedGeometryCollectionVisitorType &visitor,
+			RenderedGeometryLayerType &rendered_geom_layer)
+	{
+		// Ask the visitor if it wants to visit this RenderedGeometryLayer.
+		// It can query the active status of this RenderedGeometryLayer to decide.
+		if (visitor.visit_rendered_geometry_layer(rendered_geom_layer))
+		{
+			rendered_geom_layer.accept_visitor(visitor);
+		}
+	}
+
+
+	template<
+		class RenderedGeometryLayerType,
+		class ChildLayerIndexRangeType,
+		class RenderedGeometryCollectionType,
+		class RenderedGeometryCollectionVisitorType>
+	void
+	RenderedGeometryCollection::visit_main_rendered_layer(
+			RenderedGeometryCollectionVisitorType &visitor,
+			RenderedGeometryCollectionType &rendered_geom_collection,
+			const ChildLayerIndexRangeType &children_range)
+	{
+		BOOST_FOREACH(child_layer_index_type child_layer_index, children_range)
+		{
+			RenderedGeometryLayerType *child_rendered_geom_layer =
+				rendered_geom_collection.d_rendered_geometry_layer_manager.get_rendered_geometry_layer(
+						child_layer_index);
+
+			// Visit child rendered geometry layer.
+			visit_rendered_geometry_layer(
+					visitor,
+					*child_rendered_geom_layer);
+		}
+	}
+
+
+	template<
+		class RenderedGeometryLayerType,
+		class ChildLayerIndexRangeType,
+		class RenderedGeometryCollectionType,
+		class RenderedGeometryCollectionVisitorType>
+	void
+	RenderedGeometryCollection::visit_main_rendered_layer(
+			RenderedGeometryCollectionVisitorType &visitor,
+			MainLayerType main_layer_type,
+			RenderedGeometryCollectionType &rendered_geom_collection)
+	{
+		// Ask the visitor if it wants to visit this main layer.
+		// It can query the active status of this main layer and use that to decide.
+		if (visitor.visit_main_rendered_layer(rendered_geom_collection, main_layer_type))
+		{
+			const MainLayer &main_layer = rendered_geom_collection.d_main_layer_seq[main_layer_type];
+
+			// Visit the main render layer first.
+			RenderedGeometryLayerType &main_rendered_geom_layer = *main_layer.d_rendered_geom_layer;
+
+			visit_rendered_geometry_layer(
+					visitor,
+					main_rendered_geom_layer);
+
+			// Visit the child render layers second.
+
+			// First, determine if the visitor would like to use a custom order of visitation.
+			const ChildLayerIndexRangeType *custom_child_layers_order =
+				visitor.custom_child_layers_order(main_layer_type);
+			if (custom_child_layers_order)
+			{
+				visit_main_rendered_layer<RenderedGeometryLayerType>(
+						visitor,
+						rendered_geom_collection,
+						*custom_child_layers_order);
+			}
+			else
+			{
+				// If no custom order of visitation, use order of creation.
+				visit_main_rendered_layer<RenderedGeometryLayerType>(
+						visitor,
+						rendered_geom_collection,
+						main_layer.d_child_layer_index_seq);
+			}
+		}
+	}
+
+
+	template<
+		class RenderedGeometryLayerType,
+		class ChildLayerIndexRangeType,
+		class RenderedGeometryCollectionType,
+		class RenderedGeometryCollectionVisitorType>
+	void
+	GPlatesViewOperations::RenderedGeometryCollection::accept_visitor_internal(
+			RenderedGeometryCollectionVisitorType &visitor,
+			RenderedGeometryCollectionType &rendered_geom_collection)
+	{
+		// Visit each main rendered layer.
+		main_layer_seq_type::size_type main_layer_index;
+		for (
+			main_layer_index = 0;
+			main_layer_index != rendered_geom_collection.d_main_layer_seq.size();
+			++main_layer_index)
+		{
+			// The static_cast is a bit dangerous.
+			// Is there a better way to iterate over the enumerations ?
+			MainLayerType main_layer_type =
+				static_cast<MainLayerType>(main_layer_index);
+
+			visit_main_rendered_layer<RenderedGeometryLayerType, ChildLayerIndexRangeType>(
+					visitor,
+					main_layer_type,
+					rendered_geom_collection);
+		}
+	}
+
+
+	template<class ForwardReadableRange>
+	void
+	RenderedGeometryCollection::accept_visitor(
+			ConstRenderedGeometryCollectionVisitor<ForwardReadableRange> &visitor) const
+	{
+		accept_visitor_internal<const RenderedGeometryLayer, ForwardReadableRange>(visitor, *this);
+	}
+
+
+	template<class ForwardReadableRange>
+	void
+	RenderedGeometryCollection::accept_visitor(
+			RenderedGeometryCollectionVisitor<ForwardReadableRange> &visitor)
+	{
+		accept_visitor_internal<RenderedGeometryLayer, ForwardReadableRange>(visitor, *this);
+	}
 }
 
 #endif // GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYCOLLECTION_H

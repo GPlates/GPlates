@@ -40,8 +40,8 @@ set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}the following individua
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * James Boyden (from the ReconTreeViewer software)\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * Peter Dimov (from the Boost intrusive_ptr class template)\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source tree additionally contains icons which were part of the\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}artwork for the GNOME desktop environment.")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source tree additionally contains icons which are part of the\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}artwork for the GNOME desktop environment and the Inkscape vector graphics editor.")
 
 # The GPlates copyright for html.
 set(GPLATES_HTML_COPYRIGHT_STRING "")
@@ -57,8 +57,8 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING} <li> James B
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING} <li> Peter Dimov (from the Boost intrusive_ptr class template) </li>\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</ul>\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source tree additionally contains icons which were part of the\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}artwork for the GNOME desktop environment.\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source tree additionally contains icons which are part of the\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}artwork for the GNOME desktop environment and the Inkscape vector graphics editor.\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html>\\n")
 
 # List the Qt plugins used by GPlates.

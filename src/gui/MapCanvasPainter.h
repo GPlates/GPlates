@@ -35,6 +35,9 @@
 #include "ColourScheme.h"
 #include "RenderSettings.h"
 #include "TextRenderer.h"
+
+#include "presentation/VisualLayers.h"
+
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
@@ -49,7 +52,8 @@ namespace GPlatesGui
 	 * This is a Visitor to paint geometries on the map canvas.
 	 */
 	class MapCanvasPainter:
-			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor,
+			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
+				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>,
 			public boost::noncopyable
 	{
 	public:
@@ -57,6 +61,7 @@ namespace GPlatesGui
 		explicit
 		MapCanvasPainter(
 				Map &map,
+				const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
 				GPlatesGui::RenderSettings &render_settings,
 				GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
@@ -134,6 +139,9 @@ namespace GPlatesGui
 	private:
 
 		Map &d_map;
+
+		//! The order in which the reconstruction layers are to be drawn.
+		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &d_reconstruction_layer_order;
 
 		//! Rendering flags for determining what gets shown
 		RenderSettings &d_render_settings;

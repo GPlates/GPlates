@@ -33,6 +33,9 @@
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "RenderSettings.h"
+
+#include "presentation/VisualLayers.h"
+
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
 
 #include <QGLWidget>
@@ -51,15 +54,18 @@ namespace GPlatesGui
 
 	/**
 	 * Draws rendered geometries (in a @a RenderedGeometryCollection) onto a
-	 * 3d orthographic view of the globe using OpenGL.
+	 * 3D orthographic view of the globe using OpenGL.
 	 */
 	class GlobeRenderedGeometryCollectionPainter :
-			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor,
+			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
+				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>,
 			private boost::noncopyable
 	{
 	public:
+
 		GlobeRenderedGeometryCollectionPainter(
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
 				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
@@ -86,14 +92,19 @@ namespace GPlatesGui
 		}
 
 	private:
+
 		virtual
 		bool
 		visit_rendered_geometry_layer(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer);
 
-	private:
 		const GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
+
+		//! The order in which the reconstruction layers are to be drawn.
+		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &d_reconstruction_layer_order;
+
 		double d_current_layer_far_depth;
+
 		double d_depth_range_per_layer;
 
 		//! Rendering flags to determine what gets shown
@@ -129,6 +140,7 @@ namespace GPlatesGui
 
 		//! When rendering globes that are meant to be a scale copy of another
 		float d_scale;
+
 	};
 }
 

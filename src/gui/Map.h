@@ -33,7 +33,11 @@
 #include "ColourScheme.h"
 #include "MapProjection.h"
 #include "TextRenderer.h"
+
 #include "gui/ViewportZoom.h"
+
+#include "presentation/VisualLayers.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 namespace GPlatesGui
@@ -49,6 +53,7 @@ namespace GPlatesGui
 
 		Map(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
 				RenderSettings &render_settings,
 				ViewportZoom &viewport_zoom,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -102,6 +107,9 @@ namespace GPlatesGui
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_update_type;
+
+		//! The order in which the reconstruction layers are to be drawn.
+		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &d_reconstruction_layer_order;
 
 		//! Used for rendering text
 		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer_ptr;

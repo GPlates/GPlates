@@ -960,12 +960,14 @@ namespace
 
 GPlatesGui::MapCanvasPainter::MapCanvasPainter(
 		Map &map,
+		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
 		GPlatesGui::RenderSettings &render_settings,
 		GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
 		const double &inverse_zoom_factor,
 		ColourScheme::non_null_ptr_type colour_scheme):
 	d_map(map),
+	d_reconstruction_layer_order(reconstruction_layer_order),
 	d_render_settings(render_settings),
 	d_text_renderer_ptr(text_renderer_ptr),
 	d_main_rendered_layers_to_visit(layers_to_visit),

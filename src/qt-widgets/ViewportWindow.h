@@ -468,7 +468,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
-
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
@@ -485,6 +484,8 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<SpecifyTimeIncrementDialog> d_specify_time_increment_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
+
+		boost::scoped_ptr<QDialog> d_layering_dialog_ptr;
 
 		boost::shared_ptr<SaveFileDialog> d_export_geometry_snapshot_dialog_ptr;
 
@@ -619,6 +620,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_colouring_dialog();
+
+		void
+		pop_up_layering_dialog();
 
 		void
 		close_all_dialogs();

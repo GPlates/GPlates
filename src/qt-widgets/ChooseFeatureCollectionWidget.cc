@@ -152,8 +152,6 @@ GPlatesQtWidgets::ChooseFeatureCollectionWidget::ChooseFeatureCollectionWidget(
 {
 	setupUi(this);
 
-	listwidget_feature_collections->setFocus();
-
 	// Emit signal if the user pushes Enter or double-clicks on the list.
 	QObject::connect(
 			listwidget_feature_collections,
@@ -200,3 +198,10 @@ GPlatesQtWidgets::ChooseFeatureCollectionWidget::get_file_reference() const
 	}
 }
 
+
+void
+GPlatesQtWidgets::ChooseFeatureCollectionWidget::focusInEvent(
+		QFocusEvent *ev)
+{
+	listwidget_feature_collections->setFocus();
+}

@@ -90,6 +90,13 @@ namespace GPlatesQtWidgets
 		handle_listwidget_item_activated(
 				QListWidgetItem *);
 
+	protected:
+
+		virtual
+		void
+		focusInEvent(
+				QFocusEvent *ev);
+
 	private:
 
 		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;

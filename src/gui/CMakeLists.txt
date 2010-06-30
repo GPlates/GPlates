@@ -165,6 +165,8 @@ set(srcs
     ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h
+    VisualLayersListModel.cc
+    VisualLayersListModel.h
 )
 
 

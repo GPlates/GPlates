@@ -38,7 +38,7 @@ std::pair<QString, QString>
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_name_and_description()
 {
 	return std::make_pair(
-		"Resolve topological networks at a geological time",
+		"Topological Networks Resolver",
 
 		"Deforming regions will be dynamically formed by referencing topological section "
 		"features, that have been reconstructed to a geological time, and triangulating the "

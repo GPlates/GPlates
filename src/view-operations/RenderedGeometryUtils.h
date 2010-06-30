@@ -172,7 +172,7 @@ namespace GPlatesViewOperations
 		 * The above functions use this class.
 		 */
 		class VisitFunctionOnRenderedGeometryLayers :
-			private RenderedGeometryCollectionVisitor
+				private RenderedGeometryCollectionVisitor<>
 		{
 		public:
 			/**
@@ -226,7 +226,7 @@ namespace GPlatesViewOperations
 		 * The above functions use this class.
 		 */
 		class ConstVisitFunctionOnRenderedGeometryLayers :
-			private ConstRenderedGeometryCollectionVisitor
+				private ConstRenderedGeometryCollectionVisitor<>
 		{
 		public:
 			/**

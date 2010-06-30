@@ -111,6 +111,8 @@ set(srcs
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
     EditWidgetGroupBox.h
+    ElidedLabel.cc
+    ElidedLabel.h
     ExportAnimationDialog.cc
     ExportAnimationDialog.h
     ExportAnimationDialogUi.ui
@@ -259,6 +261,16 @@ set(srcs
     ViewportWindow.cc
     ViewportWindow.h
     ViewportWindowUi.ui
+    VisualLayersDelegate.cc
+    VisualLayersDelegate.h
+    VisualLayersListView.cc
+    VisualLayersListView.h
+    VisualLayersWidget.cc
+    VisualLayersWidget.h
+    VisualLayersWidgetUi.ui
+    VisualLayerWidget.cc
+    VisualLayerWidget.h
+    VisualLayerWidgetUi.ui
     ZoomControlWidget.cc
     ZoomControlWidget.h
     ZoomControlWidgetUi.ui

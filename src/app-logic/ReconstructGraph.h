@@ -38,6 +38,8 @@
 #include <boost/operators.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/utility/enable_if.hpp>
+#include <boost/foreach.hpp>
 #include <QObject>
 
 #include "FeatureCollectionFileState.h"
@@ -84,11 +86,12 @@ namespace GPlatesAppLogic
 		 * Forward iterator over all layers in the graph.
 		 */
 		class LayerConstIterator :
-				public std::iterator<std::forward_iterator_tag, Layer>,
+				public std::iterator<std::forward_iterator_tag, const Layer>,
 				public boost::equality_comparable<LayerConstIterator>,
 				public boost::incrementable<LayerConstIterator>
 		{
 		public:
+
 			//! Create a "begin" iterator.
 			static
 			LayerConstIterator
@@ -109,13 +112,25 @@ namespace GPlatesAppLogic
 
 			/**
 			 * Dereference operator.
-			 * No 'operator->()' is provided since we're returning a temporary object.
 			 */
-			const Layer
+			const Layer &
 			operator*() const
 			{
-				// Convert to a weak reference.
-				return Layer(*d_layer_seq_iterator);
+				// Convert to a weak reference if current weak reference not valid.
+				d_current_layer_weak_ref = Layer(*d_layer_seq_iterator);
+				return d_current_layer_weak_ref;
+			}
+
+
+			/**
+			 * Arrow operator.
+			 */
+			const Layer *
+			operator->() const
+			{
+				// Convert to a weak reference if current weak reference not valid.
+				d_current_layer_weak_ref = Layer(*d_layer_seq_iterator);
+				return &d_current_layer_weak_ref;
 			}
 
 
@@ -127,6 +142,10 @@ namespace GPlatesAppLogic
 			operator++()
 			{
 				++d_layer_seq_iterator;
+
+				// Invalidate current weak reference.
+				d_current_layer_weak_ref = Layer();
+
 				return *this;
 			}
 
@@ -145,19 +164,21 @@ namespace GPlatesAppLogic
 			}
 
 		private:
-			layer_ptr_seq_type::const_iterator d_layer_seq_iterator;
-
 
 			LayerConstIterator(
 					layer_ptr_seq_type::const_iterator layer_seq_iterator) :
 				d_layer_seq_iterator(layer_seq_iterator)
 			{  }
+
+			layer_ptr_seq_type::const_iterator d_layer_seq_iterator;
+
+			mutable Layer d_current_layer_weak_ref;
 		};
 
 		/**
 		 * Typedef for an iterator over the layers in the graph.
 		 */
-		typedef LayerConstIterator layer_const_iterator;
+		typedef LayerConstIterator const_iterator;
 
 
 		/**
@@ -271,24 +292,24 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the "begin" layer_const_iterator to iterate over the
+		 * Returns the "begin" const_iterator to iterate over the
 		 * sequence of @a Layer objects in this graph.
 		 */
-		layer_const_iterator
-		begin_layers() const
+		const_iterator
+		begin() const
 		{
-			return layer_const_iterator::create_begin(*this);
+			return const_iterator::create_begin(*this);
 		}
 
 
 		/**
-		 * Returns the "end" layer_const_iterator to iterate over the
+		 * Returns the "end" const_iterator to iterate over the
 		 * sequence of @a Layer objects in this graph.
 		 */
-		layer_const_iterator
-		end_layers() const
+		const_iterator
+		end() const
 		{
-			return layer_const_iterator::create_end(*this);
+			return const_iterator::create_end(*this);
 		}
 
 
@@ -378,6 +399,18 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::Layer::InputConnection input_connection);
 
 		/**
+		 * Emitted when layer @a layer has finished removing an existing input connection.
+		 *
+		 * NOTE: This signal only gets emitted if a connection is explicitly disconnected
+		 * (by calling Layer::InputConnection::disconnect()). When an input connection is
+		 * automatically destroyed because its parent layer is removed then no signal is emitted.
+		 */
+		void
+		layer_removed_input_connection(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer);
+
+		/**
 		 * Emitted when the default reconstruction tree layer is changed.
 		 *
 		 * An invalid layer means no layer (in other words there was or will be
@@ -407,6 +440,11 @@ namespace GPlatesAppLogic
 		emit_layer_about_to_remove_input_connection(
 				GPlatesAppLogic::Layer layer,
 				GPlatesAppLogic::Layer::InputConnection input_connection);
+
+		//! Emits the @a layer_removed_input_connection signal.
+		void
+		emit_layer_removed_input_connection(
+				GPlatesAppLogic::Layer layer);
 
 		friend class Layer;
 
@@ -469,8 +507,33 @@ namespace GPlatesAppLogic
 				std::vector<ReconstructGraphImpl::Layer *> &dependency_ordered_layers,
 				std::set<ReconstructGraphImpl::Layer *> &all_layers_visited) const;
 	};
+}
 
 
+namespace boost
+{
+	// We need to tell BOOST_FOREACH and Boost.Range to always use 'const_iterator',
+	// because ReconstructGraph does not have an inner type called 'iterator'.
+	// NOTE: This needs to be placed above the definition of find_layer, which uses
+	// BOOST_FOREACH, otherwise g++ 4.2 will complain that the template
+	// specialisation appears after the template has been instantiated.
+
+	template<>
+	struct range_iterator<GPlatesAppLogic::ReconstructGraph>
+	{
+		typedef GPlatesAppLogic::ReconstructGraph::const_iterator type;
+	};
+
+	template<>
+	struct range_const_iterator<GPlatesAppLogic::ReconstructGraph>
+	{
+		typedef GPlatesAppLogic::ReconstructGraph::const_iterator type;
+	};
+}
+
+
+namespace GPlatesAppLogic
+{
 	/**
 	 * Finds the layer in @a reconstruct_graph that generated
 	 * the output @a layer_output_data_to_match.
@@ -484,21 +547,16 @@ namespace GPlatesAppLogic
 	boost::optional<Layer>
 	find_layer(
 			const ReconstructGraph &reconstruct_graph,
-			const LayerOutputDataType &layer_output_data_to_match)
+			const LayerOutputDataType &layer_output_data_to_match,
+			// This function can only be called if the template parameter
+			// LayerOutputDataType is one of the bounded types in layer_task_data_types.
+			typename boost::enable_if<
+				boost::mpl::contains<layer_task_data_types, LayerOutputDataType>
+			>::type *dummy = NULL)
 	{
-		// Compile time error to make sure that the template parameter 'LayerOutputDataType'
-		// is one of the bounded types in the 'layer_task_data_type' variant.
-#ifdef WIN32 // Old-style cast error in gcc...
-		BOOST_MPL_ASSERT((boost::mpl::contains<layer_task_data_types, LayerOutputDataType>));
-#endif
-
 		// Iterate over the layers in the graph.
-		ReconstructGraph::layer_const_iterator layer_iter = reconstruct_graph.begin_layers();
-		ReconstructGraph::layer_const_iterator layer_end = reconstruct_graph.end_layers();
-		for ( ; layer_iter != layer_end; ++layer_iter)
+		BOOST_FOREACH(const Layer &layer, reconstruct_graph)
 		{
-			const Layer &layer = *layer_iter;
-
 			// Get the most recent output data generated by the current layer.
 			boost::optional<LayerOutputDataType> layer_output_data =
 					layer.get_output_data<LayerOutputDataType>();
@@ -517,5 +575,6 @@ namespace GPlatesAppLogic
 		return boost::none;
 	}
 }
+
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTGRAPH_H

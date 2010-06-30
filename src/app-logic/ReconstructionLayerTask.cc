@@ -36,7 +36,7 @@ std::pair<QString, QString>
 GPlatesAppLogic::ReconstructionLayerTask::get_name_and_description()
 {
 	return std::make_pair(
-		"Create a reconstruction tree",
+		"Reconstruction Tree Generator",
 
 		"A plate-reconstruction hierarchy of total reconstruction poles "
 		"which can be used to reconstruct geometries in other layers");

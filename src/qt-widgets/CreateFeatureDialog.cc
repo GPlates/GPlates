@@ -338,9 +338,9 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_collection_page()
 {
-	// Pushing Enter or double-clicking should cause the buttonbox to focus.
+	// Pushing Enter or double-clicking should be the same as clicking create.
 	QObject::connect(d_choose_feature_collection_widget, SIGNAL(item_activated()),
-			buttonbox, SLOT(setFocus()));
+			this, SLOT(handle_create()));
 }
 
 

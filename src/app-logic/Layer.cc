@@ -222,6 +222,48 @@ GPlatesAppLogic::Layer::connect_input_to_layer_output(
 
 
 void
+GPlatesAppLogic::Layer::disconnect_input_from_file(
+		const InputFile &input_file,
+		const QString &input_data_channel)
+{
+	// Get the channel input connections.
+	std::vector<InputConnection> channel_inputs = get_channel_inputs(input_data_channel);
+
+	// Find the input connection with the given input file.
+	BOOST_FOREACH(InputConnection &input_connection, channel_inputs)
+	{
+		boost::optional<InputFile> current_input_file = input_connection.get_input_file();
+		if (current_input_file && *current_input_file == input_file)
+		{
+			input_connection.disconnect();
+			break;
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::Layer::disconnect_input_from_layer_output(
+		const Layer &layer_outputting_data,
+		const QString &input_data_channel)
+{
+	// Get the channel input connections.
+	std::vector<InputConnection> channel_inputs = get_channel_inputs(input_data_channel);
+
+	// Find the input connection with the given layer.
+	BOOST_FOREACH(InputConnection &input_connection, channel_inputs)
+	{
+		boost::optional<Layer> current_input_layer = input_connection.get_input_layer();
+		if (current_input_layer && *current_input_layer == layer_outputting_data)
+		{
+			input_connection.disconnect();
+			break;
+		}
+	}
+}
+
+
+void
 GPlatesAppLogic::Layer::disconnect_channel_inputs(
 		const QString &input_data_channel)
 {
@@ -418,9 +460,14 @@ GPlatesAppLogic::Layer::InputConnection::disconnect()
 
 	// Get the ReconstructGraph to emit a signal.
 	const boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(layer.get_impl());
-	layer_impl->get_reconstruct_graph().emit_layer_about_to_remove_input_connection(layer, *this);
+	ReconstructGraph &reconstruct_graph = layer_impl->get_reconstruct_graph();
+	reconstruct_graph.emit_layer_about_to_remove_input_connection(layer, *this);
 
 	// NOTE: this will make 'this' invalid (see @a is_valid) upon returning since
 	// there will be no more owning references to 'input_connection_impl'.
 	input_connection_impl->disconnect_from_parent_layer();
+
+	// Get the ReconstructGraph to emit another signal.
+	reconstruct_graph.emit_layer_removed_input_connection(layer);
 }
+

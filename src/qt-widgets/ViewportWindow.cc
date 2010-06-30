@@ -77,6 +77,7 @@
 #include "SpecifyTimeIncrementDialog.h"
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
+#include "VisualLayersWidget.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/AppLogicUtils.h"
@@ -266,6 +267,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new TotalReconstructionPolesDialog(
 				get_view_state(),
 				this)),
+	d_layering_dialog_ptr(NULL),
 	d_choose_canvas_tool(
 			new GPlatesGui::ChooseCanvasTool(*this)),
 	d_digitise_geometry_builder(
@@ -677,6 +679,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
 	
 	// Layers Menu:
+	QObject::connect(action_Show_Layers, SIGNAL(triggered()),
+			this, SLOT(pop_up_layering_dialog()));
 	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
 			this, SLOT(pop_up_colouring_dialog()));
 	QObject::connect(action_Generate_Mesh_Cap, SIGNAL(triggered()),
@@ -1083,6 +1087,38 @@ GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	d_about_dialog_ptr->raise();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_layering_dialog()
+{
+	if (!d_layering_dialog_ptr)
+	{
+		// Create a new dialog and fill it with a VisualLayersWidget.
+		// This doesn't have to be anything fancy, because this widget is only
+		// temporarily living in a dialog (it will go into a dock later).
+		QDialog *dialog = new QDialog(this, Qt::Window);
+		QHBoxLayout *dialog_layout = new QHBoxLayout(dialog);
+		dialog_layout->addWidget(
+				new VisualLayersWidget(
+					get_view_state().get_visual_layers(),
+					dialog));
+		dialog->setLayout(dialog_layout);
+		dialog->setWindowTitle("Layers");
+		dialog->resize(250, 450);
+
+		d_layering_dialog_ptr.reset(dialog);
+	}
+
+	d_layering_dialog_ptr->show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_layering_dialog_ptr->activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_layering_dialog_ptr->raise();
 }
 
 

@@ -121,16 +121,12 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::ChooseFeatureTypeWidget(
 {
 	setupUi(this);
 
-#if 0
-	listwidget_feature_collections->setFocus();
-
 	// Emit signal if the user pushes Enter or double-clicks on the list.
 	QObject::connect(
-			listwidget_feature_collections,
+			listwidget_feature_types,
 			SIGNAL(itemActivated(QListWidgetItem *)),
 			this,
 			SLOT(handle_listwidget_item_activated(QListWidgetItem *)));
-#endif
 }
 
 
@@ -156,3 +152,10 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::get_feature_type() const
 	return currently_selected_feature_type(listwidget_feature_types);
 }
 
+
+void
+GPlatesQtWidgets::ChooseFeatureTypeWidget::focusInEvent(
+		QFocusEvent *ev)
+{
+	listwidget_feature_types->setFocus();
+}

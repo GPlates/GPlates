@@ -33,6 +33,7 @@
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/contains.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/enable_if.hpp>
 #include <QString>
 
 #include "Layer.h"
@@ -168,7 +169,17 @@ namespace GPlatesAppLogic
 		extract_input_channel_data(
 				ContainerType &input_channel_data,
 				const QString &input_channel_name,
-				const input_data_type &input_data)
+				const input_data_type &input_data,
+				// This function can only be called if the value_type of the
+				// template parameter ContainerType is one of the bounded types
+				// in layer_task_data_types.
+				//
+				// If the compiler can't find an appropriate overload of this
+				// function, then make sure the type stored in your container
+				// (in 'input_channel_data') is one of the types in layer_task_data_types.
+				typename boost::enable_if<
+					boost::mpl::contains<layer_task_data_types, typename ContainerType::value_type>
+				>::type *dummy = NULL)
 		{
 			// Get range of data objects assigned to 'input_channel_name'.
 			const std::pair<input_data_type::const_iterator, input_data_type::const_iterator>
@@ -183,15 +194,6 @@ namespace GPlatesAppLogic
 
 				// The type to be stored in the caller's container.
 				typedef typename ContainerType::value_type variant_bounded_type;
-
-				// Compile time error to make sure that the type 'variant_bounded_type'
-				// is one of the bounded types in the 'layer_task_data_type' variant.
-				//
-				// If you get this compile error then make sure the type stored in your container
-				// (in 'input_channel_data') is one of the types in 'layer_task_data_types'.
-#ifdef WIN32 // Old-style cast error in gcc...
-				BOOST_MPL_ASSERT((boost::mpl::contains<layer_task_data_types, variant_bounded_type>));
-#endif
 
 				// Extract the specified bounded type from the variant.
 				const variant_bounded_type *variant_bounded_data =

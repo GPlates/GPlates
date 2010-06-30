@@ -37,6 +37,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/utility/enable_if.hpp>
 #include <QString>
 
 #include "FeatureCollectionFileState.h"
@@ -468,7 +469,7 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Connects a feature collection, from a loaded file, as input on the
-		 * @a layer_input_data_channel input channel.
+		 * @a input_data_channel input channel.
 		 *
 		 * The returned @a InputConnection is a weak reference - it can be ignored (in other
 		 * words it does not need to be stored somewhere to keep the connection alive).
@@ -513,6 +514,42 @@ namespace GPlatesAppLogic
 		 */
 		InputConnection
 		connect_input_to_layer_output(
+				const Layer &layer_outputting_data,
+				const QString &input_data_channel);
+
+
+		/**
+		 * Disconnects a feature collection, from a loaded file @a input_file, as
+		 * input on the @a input_data_channel input channel.
+		 *
+		 * This function does nothing if @a input_file is not actually connected as an
+		 * input on the @a input_data_channel input channel.
+		 *
+		 * Emits the @a ReconstructGraph signal @a layer_removed_input_connection, if
+		 * an input connection was removed as a result of this call.
+		 *
+		 * @throws PreconditionViolationError if @a is_valid is false.
+		 */
+		void
+		disconnect_input_from_file(
+				const InputFile &input_file,
+				const QString &input_data_channel);
+
+
+		/**
+		 * Disconnects the output of the @a layer_outputting_data as input on the
+		 * @a input_data_channel input channel.
+		 *
+		 * This function does nothing if @a layer_outputting_data is not actually
+		 * connected as an input on the @a input_data_channel input channel.
+		 *
+		 * Emits the @a ReconstructGraph signal @a layer_removed_input_connection, if
+		 * an input connection was removed as a reslt of this call.
+		 *
+		 * @throws PreconditionViolationError if @a is_valid is false.
+		 */
+		void
+		disconnect_input_from_layer_output(
 				const Layer &layer_outputting_data,
 				const QString &input_data_channel);
 
@@ -576,14 +613,13 @@ namespace GPlatesAppLogic
 		 */
 		template <class LayerDataType> // Can't call parameter LayerOutputDataType as it conflicts with enum above.
 		boost::optional<LayerDataType>
-		get_output_data() const
+		get_output_data(
+				// This function can only be called if the template parameter
+				// LayerDataType is one of the bounded types in layer_task_data_types.
+				typename boost::enable_if<
+					boost::mpl::contains<layer_task_data_types, LayerDataType>
+				>::type *dummy = NULL) const
 		{
-			// Compile time error to make sure that the template parameter 'LayerDataType'
-			// is one of the bounded types in the 'layer_task_data_type' variant.
-#ifdef WIN32 // Old-style cast error in gcc...
-			BOOST_MPL_ASSERT((boost::mpl::contains<layer_task_data_types, LayerDataType>));
-#endif
-
 			// Throw our own exception to track location of throw.
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				is_valid(),

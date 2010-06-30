@@ -31,6 +31,7 @@
 #include <boost/mpl/contains.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/variant.hpp>
+#include <boost/utility/enable_if.hpp>
 
 #include "ReconstructionGeometryCollection.h"
 #include "ReconstructionTree.h"
@@ -78,14 +79,13 @@ namespace GPlatesAppLogic
 	template <class LayerDataType>
 	boost::optional<LayerDataType>
 	get_layer_task_data(
-			const layer_task_data_type &layer_task_data)
+			const layer_task_data_type &layer_task_data,
+			// This function can only be called if the template parameter
+			// LayerDataType is one of the bounded types in layer_task_data_types.
+			typename boost::enable_if<
+				boost::mpl::contains<layer_task_data_types, LayerDataType>
+			>::type *dummy = NULL)
 	{
-		// Compile time error to make sure that the template parameter 'LayerDataType'
-		// is one of the bounded types in the 'layer_task_data_type' variant.
-#ifdef WIN32 // Old-style cast error in gcc...
-		BOOST_MPL_ASSERT((boost::mpl::contains<layer_task_data_types, LayerDataType>));
-#endif
-
 		// Extract the data type that we are looking for from the variant.
 		const LayerDataType *layer_data =
 				boost::get<LayerDataType>(&layer_task_data);

@@ -1,5 +1,10 @@
 <RCC>
   <qresource prefix="/">
+    <file>inkscape_object_hidden_16.png</file>
+    <file>inkscape_object_visible_16.png</file>
+    <file>tango_list_remove_22.png</file>
+    <file>gnome_stock_data-next_down_16.png</file>
+    <file>gnome_stock_data-next_16.png</file>
     <file>tango_redo_16.png</file>
     <file>tango_undo_16.png</file>
     <file>GPlates-icon-160x160-opaque.png</file>
