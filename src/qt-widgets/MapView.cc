@@ -104,10 +104,20 @@ GPlatesQtWidgets::MapView::MapView(
 	// setOptimizationFlag(QGraphicsView::IndirectPainting);
 #endif
 
+	// QWidget::setMouseTracking:
+	//   If mouse tracking is disabled (the default), the widget only receives mouse move
+	//   events when at least one mouse button is pressed while the mouse is being moved.
+	//
+	//   If mouse tracking is enabled, the widget receives mouse move events even if no buttons
+	//   are pressed.
+	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
+	d_gl_widget_ptr->setMouseTracking(true);
 	setViewport(d_gl_widget_ptr);
+
 	d_map_canvas_ptr->map().set_text_renderer(
 				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr));
 	setScene(map_canvas_);
+
 	setViewportUpdateMode(
 		QGraphicsView::MinimalViewportUpdate);
 	setInteractive(false);
