@@ -75,19 +75,16 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 
 void
 GPlatesQtWidgets::MapCanvas::drawBackground(
-	QPainter *painter,
-	const QRectF &rect)
+		QPainter *painter,
+		const QRectF &rect)
 {
 	d_map.draw_background();
 }
 
 void
-GPlatesQtWidgets::MapCanvas::drawItems(
-	QPainter *painter, 
-	int numItems, 
-	QGraphicsItem *items_[], 
-	const QStyleOptionGraphicsItem options[], 
-	QWidget *widget)
+GPlatesQtWidgets::MapCanvas::drawForeground(
+		QPainter *painter, 
+		const QRectF &rect)
 {
 	d_map.paint(calculate_scale());
 	emit repainted();
@@ -101,8 +98,8 @@ GPlatesQtWidgets::MapCanvas::update_canvas()
 
 void
 GPlatesQtWidgets::MapCanvas::update_canvas(
-	GPlatesViewOperations::RenderedGeometryCollection &collection,
-	GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type update_type)
+		GPlatesViewOperations::RenderedGeometryCollection &collection,
+		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type update_type)
 {
 	d_map.set_update_type(update_type);
 	update();

@@ -27,7 +27,8 @@
 
 #include <cmath>
 #include <QGraphicsView>
-#include <boost/shared_ptr.hpp>
+#include <QtOpenGL/qgl.h>
+#include <QPaintEngine>
 
 #include "MapView.h"
 
@@ -81,6 +82,28 @@ GPlatesQtWidgets::MapView::MapView(
 	d_mouse_wheel_enabled(true),
 	d_map_transform(view_state.get_map_transform())
 {
+#if QT_VERSION >= 0x040600
+	// From Qt 4.6, the default paint engine is QPaintEngine::OpenGL2. This
+	// causes the map view in GPlates to not function correctly.
+	// 
+	// This is documented in the Qt 4.6 changelog
+	// (http://qt.nokia.com/developer/changes/changes-4.6.0):
+	//
+	//		The default engine used to draw onto OpenGL buffers has changed in
+	//		Qt 4.6. The QPaintEngine::OpenGL2 engine is now used as the default
+	//		engine. This *may* cause compatibility problems for applications
+	//		that use a mix of QPainter and native OpenGL calls to draw into a GL
+	//		buffer. Use the QGL::setPreferredPaintEngine() function to enforce
+	//		usage of the old GL paint engine.
+	//
+	// FIXME: It may be desirable to fix the Map rendering code so that the new
+	// OpenGL2 paint engine can be used.
+	//
+	// Note that the 3D Globe view is not affected by the change to OpenGL2.
+	QGL::setPreferredPaintEngine(QPaintEngine::OpenGL);
+	// setOptimizationFlag(QGraphicsView::IndirectPainting);
+#endif
+
 	setViewport(d_gl_widget_ptr);
 	d_map_canvas_ptr->map().set_text_renderer(
 				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr));
