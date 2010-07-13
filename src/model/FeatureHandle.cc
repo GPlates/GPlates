@@ -226,6 +226,13 @@ GPlatesModel::FeatureHandle::revision_id() const
 }
 
 
+time_t
+GPlatesModel::FeatureHandle::creation_time() const
+{
+	return d_creation_time;
+}
+
+
 GPlatesModel::FeatureHandle::FeatureHandle(
 		const FeatureType &feature_type_,
 		const FeatureId &feature_id_,
@@ -234,7 +241,8 @@ GPlatesModel::FeatureHandle::FeatureHandle(
 			this,
 			revision_),
 	d_feature_type(feature_type_),
-	d_feature_id(feature_id_)
+	d_feature_id(feature_id_),
+	d_creation_time(time(NULL))
 {
 	d_feature_id.set_back_ref_target(*this);
 }

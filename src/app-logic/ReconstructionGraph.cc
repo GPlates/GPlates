@@ -25,10 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <loki/ScopeGuard.h>
+
 #include "ReconstructionGraph.h"
 #include "ReconstructionTree.h"
 
-#include "utils/ScopeGuard.h"
 #include "utils/OverloadResolution.h"
 
 
@@ -150,7 +151,7 @@ GPlatesAppLogic::ReconstructionGraph::insert_total_reconstruction_pole(
 
 	// Undo the insert if an exception is thrown.
 	// Note that the 'erase' function does not throw.
-	GPlatesUtils::ScopeGuard guard_insert_original = GPlatesUtils::make_guard(
+	Loki::ScopeGuard guard_insert_original = Loki::MakeGuard(
 			// std_map_erase_fn1<edge_refs_by_plate_id_map_type>(),
 			resolve<mem_fn_types<edge_refs_by_plate_id_map_type>::erase1>(&edge_refs_by_plate_id_map_type::erase),
 			d_edges_by_fixed_plate_id,
@@ -161,7 +162,7 @@ GPlatesAppLogic::ReconstructionGraph::insert_total_reconstruction_pole(
 			d_edges_by_fixed_plate_id.insert(std::make_pair(moving_plate_id_, reversed_edge));
 
 	// We've made it this far so we can dismiss the undos.
-	guard_insert_original.dismiss();
+	guard_insert_original.Dismiss();
 }
 
 

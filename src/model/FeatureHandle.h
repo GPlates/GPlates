@@ -28,6 +28,7 @@
 #ifndef GPLATES_MODEL_FEATUREHANDLE_H
 #define GPLATES_MODEL_FEATUREHANDLE_H
 
+#include <ctime>
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 
@@ -254,6 +255,14 @@ namespace GPlatesModel
 		const RevisionId &
 		revision_id() const;
 
+		/**
+		 * Returns the time of creation of this instance.
+		 *
+		 * The time returned is the time as reported by the C function @a time().
+		 */
+		time_t
+		creation_time() const;
+
 	private:
 
 		/**
@@ -290,6 +299,10 @@ namespace GPlatesModel
 		 */
 		FeatureId d_feature_id;
 
+		/**
+		 * The time of creation of this instance.
+		 */
+		time_t d_creation_time;
 	};
 
 }
