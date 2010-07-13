@@ -968,6 +968,7 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 				QItemSelectionModel::Rows);
 	}
 	table_view_clicked_geometries->scrollToTop();
+	table_view_clicked_geometries->resizeColumnsToContents();
 }
 
 
