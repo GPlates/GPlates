@@ -72,20 +72,14 @@ if ( NOT CGAL_DIR )
   
 endif ( NOT CGAL_DIR )
 
-# On Ubuntu 9.10, the CMake script adds -g because the CGAL CMake script adds the -g
-# flag even though it is a release build, so we use our own config script instead.
-# So we'll use our custom CGAL cmake script for all Linux variants.
-set(USE_CUSTOM_CGAL TRUE)
-# Fow Windows and MacOS X we should use the cmake scripts provided by CGAL since
-# we'll need them to link in any dependencies of CGAL.
-if (WIN32)
-	set(USE_CUSTOM_CGAL FALSE)
-endif (WIN32)
-if (APPLE)
-	set(USE_CUSTOM_CGAL FALSE)
-endif (APPLE)
+if ( CGAL_DIR )
 
-if (USE_CUSTOM_CGAL)
+	if ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
+		include ( "${CGAL_DIR}/CGALConfig.cmake" )
+		set ( CGAL_FOUND TRUE )
+	endif ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
+
+else ( CGAL_DIR )
 
 	# Versions of CGAL before 3.4 don't use cmake so we need to search for the
 	# include/lib directories ourself and we also need to add the appropriate
@@ -111,18 +105,7 @@ if (USE_CUSTOM_CGAL)
 	  set(CGAL_DIR_MESSAGE "CGAL not found.  Either install the 'libcgal-dev' package (if using CGAL 3.3 or below) or set the CGAL_DIR cmake variable or environment variable (if using CGAL 3.4 or above) to the ${CGAL_DIR_DESCRIPTION}")
 	endif (NOT CGAL_FOUND)
 
-else (USE_CUSTOM_CGAL)
-
-	if ( CGAL_DIR )
-	 
-	  if ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
-	    include( "${CGAL_DIR}/CGALConfig.cmake" )
-	    set( CGAL_FOUND TRUE )
-	  endif ( EXISTS "${CGAL_DIR}/CGALConfig.cmake" )
-
-	endif ( CGAL_DIR )
-	
-endif (USE_CUSTOM_CGAL)
+endif ( CGAL_DIR )
 
 if( NOT CGAL_FOUND)
   if(CGAL_FIND_REQUIRED)
