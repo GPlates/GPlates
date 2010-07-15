@@ -3,7 +3,7 @@
 # This is because MacOS and Windows should use CGAL 3.5 which has cmake support
 # (versions 3.4 and above have cmake support).
 # Some older linux systems (using the binary package management system) only support
-# CGAL 3.3 which does not has cmake support.
+# CGAL 3.3 which does not have cmake support.
 # In that case this file is included when calling 'include(${CGAL_USE_FILE})'
 # instead of the file in the CGAL installation. And this file uses some variables
 # set in 'FindCGAL.cmake'.
