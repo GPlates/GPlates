@@ -62,10 +62,12 @@ include (${ICU_USE_FILE})
 
 # Include CGAL.
 include(${CGAL_USE_FILE})
-string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
-if ( CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER} )
-	set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
-endif ( CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER} )
+if ( NOT WIN32 )
+	string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
+	if ( CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER} )
+		set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
+	endif ( CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER} )
+endif ( NOT WIN32 )
 
 # Include compiler options for the C++ programming language.
 # NOTE: We do this after all dependency packages have been found because we are going to modify the
