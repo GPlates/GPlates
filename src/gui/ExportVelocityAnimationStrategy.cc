@@ -58,16 +58,21 @@ namespace
 			const QString &output_filename_prefix,
 			const QFileInfo &cap_qfileinfo)
 	{
+#if 0	
 		//remove the cap file extension name 
 		QString cap_filename = cap_qfileinfo.fileName();
-		QString cap_base_filename = 
-			cap_filename.left(
-					cap_filename.lastIndexOf(".gpml",-1));
+		int idx = cap_filename.lastIndexOf(".gpml",-1);
+		if(-1 != idx)
+		{
+			cap_filename = cap_filename.left(idx);
+		}
+#endif
 
 		const QString output_basename = substitute_placeholder(
 				output_filename_prefix,
 				GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
 				cap_qfileinfo.fileName());
+				//cap_filename);
 
 		return output_basename;
 	}
