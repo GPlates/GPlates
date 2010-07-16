@@ -52,7 +52,9 @@ Program and library dependencies
 The following libraries and binaries are required to build GPlates. If you
 cannot use, or you cannot obtain, the exact same version as listed, you should
 try to use a version with the same major and minor build numbers (i.e. for a
-version number of x.y.z, you should aim to keep x and y the same).
+version number of x.y.z, you should aim to keep x and y the same). However,
+GPlates should compile and function correctly with newer versions of these
+dependencies.
 
 CMake
 
@@ -60,7 +62,7 @@ CMake
 
 Qt
 
-  1. Download qt-win-opensource-src-4.3.4.zip from: http://get.qt.nokia.com/qt/source/
+  1. Download qt-win-opensource-src-4.4.3.zip from: http://get.qt.nokia.com/qt/source/
   2. Extract it to a path containing no spaces 
   3. Run: configure
       * If there are errors, open the "Visual Studio 200x Command Prompt" from
@@ -94,11 +96,6 @@ ICU
        * Executable files: \bin
   3. Add the \bin directory to the PATH environment variable (see above).
   4. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
-
-Expat
-
-  1. Get and install Expat 2.0.1 from http://sourceforge.net/projects/expat/files/expat_win32/
-  2. Add the Expat \Bin directory to the PATH environment variable (see above).
 
 FWTools (for GDAL and Proj4)
 
@@ -142,15 +139,29 @@ gzip
   2. Add the location of the gzip executable to the PATH environment variable
      (see above).
 
+Subversion (optional, but recommended for developers)
+
+  1. Get the command-line client from http://www.collab.net/downloads/subversion/
+     Either the server and client bundle or the client-only bundle will suffice.
+     Even if you have installed TortoiseSVN, this needs to be installed separately
+     to provide the `svn` and `svnversion` command line tools.
+      * Alternatively, Cygwin (http://www.cygwin.com/) contains Subversion.
+  2. Add the location of the `svn` executable to the PATH environment variable
+     (see above).
+  If Subversion is not installed, the build number and branch name will not be
+  automatically inserted into the About dialog box by the build process.
+
 Graphviz (required for documentation, but not required to build GPlates)
 
   1. Get and install the latest version of Graphviz from http://www.graphviz.org/
   2. Add the location of the Graphviz main executable to the PATH environment
-     variable (see above).
+     variable (see above). This must be added *after* the FWTools \bin folder
+     (which was added in a previous step).
 
 Doxygen (required for documentation, but not required to build GPlates)
 
   1. Get and install the latest version of Doxygen from
      http://www.stack.nl/~dimitri/doxygen/download.html#latestsrc
+      * Alternatively, Cygwin (http://www.cygwin.com/) contains Doxygen.
   2. Add the location of the Doxygen main executable to the PATH environment
      variable (see above).
