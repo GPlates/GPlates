@@ -60,6 +60,11 @@ SET(ICU_USE_I18N 1)
 SET(ICU_USE_IO 1)
 include (${ICU_USE_FILE})
 
+# Make sure the ICU headers and the requested libraries were found.
+if (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
+	message(FATAL_ERROR "ICU library was not found - please make sure it is installed.")
+endif (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
+
 # Include CGAL.
 include(${CGAL_USE_FILE})
 if ( NOT WIN32 )
