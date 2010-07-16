@@ -28,7 +28,8 @@ installed:
   • Boost library headers (version 1.34 or newer)
   • Qt library (version 4.4 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
-  • Computational Geometry Algorithms Library (CDAL) (3.3.1 or newer)
+  • Computational Geometry Algorithms Library (CGAL) (3.3.1 or newer)
+  • PROJ.4 (4.6.0 or newer)
 
 Corresponding package dependencies
 
@@ -42,6 +43,7 @@ Boost           boost
 Qt              qt4-mac
 GDAL            gdal
 CGAL            cgal
+PROJ.4          proj
 
 Installing OpenGL
 
