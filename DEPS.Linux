@@ -7,10 +7,11 @@ Table of Contents
  3. Corresponding package dependencies
      1. For Ubuntu 8.04
          1. Ubuntu 8.04 packages
-         2. How to install via a GUI (recommended)
-         3. How to install using the command-line (advanced)
-         4. A note about the packages for GL and GLU
-         5. A note about Qt
+         3. How to install via a GUI (recommended)
+         4. How to install using the command-line (advanced)
+         5. A note about the packages for GL and GLU
+         6. A note about Qt
+     2. For Fedora 13
 
 Introduction
 
@@ -31,7 +32,6 @@ installed:
 
   • cmake
   • g++ 4.x
-  • make
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
   • ICU library
@@ -57,12 +57,14 @@ Debian system.
 
 Ubuntu 8.04 packages
 
+The following packages are not installed by default and may need to be
+installed manually:
+
 Program/library Corresponding Ubuntu packages
 cmake           cmake
 g++             g++-4.2
-make            make
-GL              See note below. (On JC's 7.10 system: libgl1-mesa-dev)
-GLU             See note below. (On JC's 7.10 system: libglu1-mesa-dev)
+GL              See note below.
+GLU             See note below.
 ICU             libicu38 libicu-dev
 Boost           libboost-dev
 Qt              libqt4-gui libqt4-dev (See note below.)
@@ -117,14 +119,14 @@ library dependencies.
 The GL library dependency is fulfilled by:
 
   • xlibmesa-gl + xlibmesa-gl-dev; or
-  • other packages
+  • libgl1-mesa-dri + libgl1-mesa-glx + libgl1-mesa-dev
 
 The GLU library dependency is fulfilled by:
 
   • xlibmesa-glu + xlibmesa-glu-dev; or
   • libglu1-mesa + libglu1-mesa-dev
 
-The mixture of packages seems to vary from system to system…
+The mixture of packages seems to vary from system to system.
 
 Firstly, whatever the mixture of packages on your system, if it fulfils the
 library dependencies, don't change it. ("If it ain't broke, don't fix it.")
@@ -157,3 +159,18 @@ the latest bugfix release of Qt 4.4.
 
 Qt 4.4 or newer is provided out of the box on Ubuntu 8.10 and newer, and it is
 not necessary to enable the 'backports' repository on those systems.
+
+Fedora 13 packages
+
+The following packages are not installed by default and may need to be
+installed manually:
+
+Program/library Corresponding Ubuntu packages
+cmake           cmake
+g++             gcc-c++
+ICU             libicu-devel
+Boost           boost-devel
+Qt              qt-devel
+GDAL            gdal-devel
+CGAL            CGAL-devel
+PROJ.4          proj-devel
