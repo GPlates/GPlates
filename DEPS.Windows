@@ -97,11 +97,6 @@ ICU
   3. Add the \bin directory to the PATH environment variable (see above).
   4. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
 
-Expat
-
-  1. Get and install Expat 2.0.1 from http://sourceforge.net/projects/expat/files/expat_win32/
-  2. Add the Expat \Bin directory to the PATH environment variable (see above).
-
 FWTools (for GDAL and Proj4)
 
   1. Get and install FWTools 2.4.5 from http://home.gdal.org/fwtools/ 
@@ -160,7 +155,8 @@ Graphviz (required for documentation, but not required to build GPlates)
 
   1. Get and install the latest version of Graphviz from http://www.graphviz.org/
   2. Add the location of the Graphviz main executable to the PATH environment
-     variable (see above).
+     variable (see above). This must be added *after* the FWTools \bin folder
+     (which was added in a previous step).
 
 Doxygen (required for documentation, but not required to build GPlates)
 

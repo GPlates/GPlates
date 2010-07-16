@@ -34,7 +34,6 @@ installed:
   • make
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
-  • Expat library
   • ICU library
   • Boost library headers (version 1.34 or newer)
   • Qt library (version 4.4 or newer)
@@ -63,7 +62,6 @@ g++             g++-4.2
 make            make
 GL              See note below. (On JC's 7.10 system: libgl1-mesa-dev)
 GLU             See note below. (On JC's 7.10 system: libglu1-mesa-dev)
-Expat           libexpat1 libexpat1-dev
 ICU             libicu38 libicu-dev
 Boost           libboost-dev
 Qt              libqt4-gui libqt4-dev (See note below.)
