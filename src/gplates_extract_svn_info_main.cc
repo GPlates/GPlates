@@ -127,6 +127,12 @@ namespace
 		// Close the process.
 		process.waitForFinished();
 		process.close();
+		
+		if (result == "exported")
+		{
+			// The directory we were given is not a working copy.
+			result = "";
+		}
 
 		return result;
 	}
@@ -364,11 +370,14 @@ namespace
 
 
 /**
- * This program is compiled and run every time GPlates is compiled.
+ * This program is compiled and run every time GPlates is compiled. It obtains
+ * information about the working copy from which GPlates is being compiled and
+ * creates, at GPlates compile time, a .cc file containing this information that
+ * is then compiled into GPlates.
  *
  * Usage:
  *
- *		gplates-extract-svn-info WORKING_DIRECTORY OUTPUT_CC_FILE
+ *		gplates-extract-svn-info WORKING_DIRECTORY OUTPUT_CC_FILE [CUSTOM_VERSION_NUMBER]
  *
  * WORKING_DIRECTORY is the working directory for which information is to be
  * obtained. OUTPUT_CC_FILE should be src/global/SubversionInfo.cc (with the
@@ -383,6 +392,22 @@ namespace
  * `svnversion` and `svn` are invoked without a full path. Thus, both of these
  * executables must reside in a directory in the system path.
  *
+ * If the optional argument CUSTOM_VERSION_NUMBER is provided, `svnversion` is
+ * not invoked; instead, CUSTOM_VERSION_NUMBER will be used as the version
+ * number and the branch name will be set to the empty string "".
+ *
+ * The arguments are provided to this program by the CMake scripts. By default,
+ * the last argument is not provided. However, a custom source control version
+ * number may be useful for consistency across public releases, for example.
+ *
+ * To set the value of CUSTOM_VERSION_NUMBER, set the CMake variable
+ * GPlates_SOURCE_CODE_CONTROL_VERSION, e.g.:
+ *
+ *     cmake -DGPlates_SOURCE_CODE_CONTROL_VERSION:STRING=1234 ../0.9.9
+ *
+ * On the Windows GUI version of CMake, the variable can be added by clicking
+ * the "Add Entry" button.
+ *
  * Why is this not a shell script? I'd then have to write a Batch file for use
  * on Windows, and Batch is not a language one speaks in polite company.
  */
@@ -390,19 +415,29 @@ int main(int argc, char *argv[])
 {
 	// If an incorrect number of arguments is provided, print a usage help message.
 	const char *program_name = argv[0];
-	if (argc != 3)
+	int num_args = argc - 1;
+	if (num_args < 2 || num_args > 3)
 	{
-		std::cerr << program_name << ": error: expected 2 arguments, found " << (argc - 1) << std::endl;
-		std::cerr << "Usage: " << program_name << " WORKING_DIRECTORY OUTPUT_CC_FILE" << std::endl;
+		std::cerr << program_name << ": error: expected 2 or 3 arguments, found " << num_args << std::endl;
+		std::cerr << "Usage: " << program_name << " WORKING_DIRECTORY OUTPUT_CC_FILE [CUSTOM_VERSION_NUMBER]" << std::endl;
 		return 1;
 	}
 
 	const char *working_directory = argv[1];
 	const char *output_filename = argv[2];
+	const char *custom_version_number = NULL;
+	if (num_args >= 3)
+	{
+		custom_version_number = argv[3];
+	}
 
-	// Compute the version number and branch name.
-	QString version_number = get_compact_version_number(working_directory, program_name);
-	QString branch_name = get_branch_name(working_directory, program_name);
+	// Compute the version number and branch name if required.
+	QString version_number = custom_version_number ?
+			QString(custom_version_number) :
+			get_compact_version_number(working_directory, program_name);
+	QString branch_name = custom_version_number ?
+			QString() :
+			get_branch_name(working_directory, program_name);
 
 	// Check whether we need to write the values out again or not. We don't write
 	// the values out if they haven't changed because we don't want to cause
@@ -414,7 +449,7 @@ int main(int argc, char *argv[])
 		if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
 		{
 			std::cerr << program_name << ": error: could not open " << output_filename << " for writing" << std::endl;
-			return 1;
+			return 2;
 		}
 
 		// Write the output file.
