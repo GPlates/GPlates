@@ -629,7 +629,7 @@ namespace
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tectonic_section_properties();
 
-		map[ PropertyName::create_gpml("subductingSlab") ] =
+		map[ PropertyName::create_gpml("subductionPolarity") ] =
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("islandArc") ] =
 			GET_PROP_VAL_NAME(create_feature_reference);
@@ -643,7 +643,7 @@ namespace
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tectonic_section_properties();
 
-		map[ PropertyName::create_gpml("subductingSlab") ] =
+		map[ PropertyName::create_gpml("subductionPolarity") ] =
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 
 		return map;

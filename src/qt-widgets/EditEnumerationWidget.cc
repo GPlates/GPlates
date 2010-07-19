@@ -72,9 +72,9 @@ namespace
 		{ "gpml:ContinentalBoundarySideEnumeration", "Right" },
 		{ "gpml:ContinentalBoundarySideEnumeration", "Unknown" },
 
-		{ "gpml:SubductionSideEnumeration", "Left" },
-		{ "gpml:SubductionSideEnumeration", "Right" },
-		{ "gpml:SubductionSideEnumeration", "Unknown" },
+		{ "gpml:SubductionPolarityEnumeration", "Left" },
+		{ "gpml:SubductionPolarityEnumeration", "Right" },
+		{ "gpml:SubductionPolarityEnumeration", "Unknown" },
 
 		{ "gpml:StrikeSlipEnumeration", "LeftLateral" },
 		{ "gpml:StrikeSlipEnumeration", "RightLateral" },

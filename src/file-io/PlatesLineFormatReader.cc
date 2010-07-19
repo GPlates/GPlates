@@ -1477,30 +1477,30 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq,
 			bool is_active,
-			const char *subduction_side_enumeration_content = "Unknown")
+			const char *subduction_polarity_enumeration_content = "Unknown")
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 				create_common(model, collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("SubductionZone"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	
-		const GPlatesPropertyValues::TemplateTypeParameterType subduction_side_property_type =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("SubductionSideEnumeration");
+		const GPlatesPropertyValues::TemplateTypeParameterType subduction_polarity_property_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("SubductionPolarityEnumeration");
 
-		const GPlatesPropertyValues::Enumeration::non_null_ptr_type subduction_side_property_value =
+		const GPlatesPropertyValues::Enumeration::non_null_ptr_type subduction_polarity_property_value =
 				GPlatesPropertyValues::Enumeration::create(
-						"gpml:SubductionSideEnumeration", subduction_side_enumeration_content);
+						"gpml:SubductionPolarityEnumeration", subduction_polarity_enumeration_content);
 	
 		// create the ConstantValue
-		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type subducting_slab_constant_value =
+		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type subduction_polarity_constant_value =
 			GPlatesPropertyValues::GpmlConstantValue::create(
-				subduction_side_property_value, 
-				subduction_side_property_type);
+				subduction_polarity_property_value, 
+				subduction_polarity_property_type);
 
 		feature_handle->add(
 				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("subductingSlab"),
-					subducting_slab_constant_value));
+					GPlatesModel::PropertyName::create_gpml("subductionPolarity"),
+					subduction_polarity_constant_value));
 
 		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
 				GPlatesPropertyValues::XsBoolean::create(is_active);

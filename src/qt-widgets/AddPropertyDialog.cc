@@ -112,7 +112,7 @@ namespace
 	//	{ "gpml:rightUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
 	//	{ "gpml:shipTrack", "gpml:FeatureReference", false, false }, // FeatureReference<MagneticAnomalyShipTrack>
 		{ "gpml:strikeSlip", "gpml:StrikeSlipEnumeration", false, false },
-		{ "gpml:subductingSlab", "gpml:SubductionSideEnumeration", true, false }, // TimeDependentPropertyValue<>
+		{ "gpml:subductionPolarity", "gpml:SubductionPolarityEnumeration", true, false }, // TimeDependentPropertyValue<>
 	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true, false }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
 	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false, false }, // Enumeration. For AbsoluteReferenceFrame.
 		{ "gpml:unclassifiedGeometry", "gml:MultiPoint", true, false },	// _Geometry
