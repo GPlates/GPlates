@@ -68,10 +68,24 @@ endif (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
 # Include CGAL.
 include(${CGAL_USE_FILE})
 if ( NOT WIN32 )
-	string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
-	if ( CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER} )
-		set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
-	endif ( CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER} )
+	# The system-provided CGAL CMake scripts so something silly: they insert
+	# -g and -O<something> into CMAKE_CXX_FLAGS, which means that even if you
+	# want a Release build, you get debug symbols, and the optimisation level
+	# might conflict with the optimisation level you want for the particular
+	# type of build (Release/Debug).
+	# The two following lines scrub out the -g and -O<something> from
+	# CMAKE_CXX_FLAGS but leave the good stuff (e.g. -frounding-math).
+	string(REGEX REPLACE "-g" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+	string(REGEX REPLACE "-O." "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+	# Valgrind doesn't emulate the FPU properly, so CGAL will complain about
+	# incorrect rounding when run under Valgrind (this is even if we compile
+	# with -frounding-math).
+	# If you intend to run GPlates under Valgrind, set the CMake variable
+	# GPlates_CGAL_DISABLE_ROUNDING_MATH_CHECK (type BOOL) to true.
+	if ( GPlates_CGAL_DISABLE_ROUNDING_MATH_CHECK )
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCGAL_DISABLE_ROUNDING_MATH_CHECK")
+	endif ( GPlates_CGAL_DISABLE_ROUNDING_MATH_CHECK )
 endif ( NOT WIN32 )
 
 # Include compiler options for the C++ programming language.
