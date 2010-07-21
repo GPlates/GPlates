@@ -367,6 +367,20 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_slab_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
+
+		map[ PropertyName::create_gpml("centerLineOf") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
+
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_volcano_properties()
@@ -967,6 +981,9 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_hot_spot_trail_properties();
 	d_map[ FeatureType::create_gpml("Seamount") ] =
 		get_seamount_properties();
+	d_map[ FeatureType::create_gpml("Slab") ] =
+		get_slab_properties();
+	d_map[ FeatureType::create_gpml("Volcano") ] =
 	d_map[ FeatureType::create_gpml("Volcano") ] =
 		get_volcano_properties();
 	d_map[ FeatureType::create_gpml("AseismicRidge") ] =
