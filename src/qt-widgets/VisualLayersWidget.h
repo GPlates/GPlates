@@ -30,6 +30,8 @@
 
 #include "VisualLayersWidgetUi.h"
 
+#include "gui/VisualLayersProxy.h"
+
 
 namespace GPlatesPresentation
 {
@@ -38,6 +40,10 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
+	/**
+	 * VisualLayersWidget displays the contents of VisualLayers. It displays a
+	 * widget for each visual layer, as well as tools to manipulate those layers.
+	 */
 	class VisualLayersWidget :
 			public QWidget,
 			protected Ui_VisualLayersWidget
@@ -50,6 +56,13 @@ namespace GPlatesQtWidgets
 		VisualLayersWidget(
 				GPlatesPresentation::VisualLayers &visual_layers,
 				QWidget *parent_ = NULL);
+
+	private:
+
+		/**
+		 * A wrapper around VisualLayers to invert the ordering for the user interface.
+		 */
+		GPlatesGui::VisualLayersProxy d_visual_layers;
 	};
 }
 

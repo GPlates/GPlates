@@ -102,7 +102,8 @@ set(srcs
     GuiException.h
     HTMLColourNames.cc
     HTMLColourNames.h
-    Interface.h
+    LayerTaskTypeInfo.cc
+    LayerTaskTypeInfo.h
     Map.cc
     Map.h
     MapCanvasPainter.cc
@@ -167,6 +168,8 @@ set(srcs
     ViewportZoom.h
     VisualLayersListModel.cc
     VisualLayersListModel.h
+    VisualLayersProxy.cc
+    VisualLayersProxy.h
 )
 
 

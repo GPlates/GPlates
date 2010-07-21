@@ -29,6 +29,7 @@
 #include <QPalette>
 #include <QResizeEvent>
 #include <QFont>
+#include <QString>
 #include <QDebug>
 
 #include "VisualLayerWidget.h"
@@ -36,10 +37,54 @@
 #include "ElidedLabel.h"
 #include "QtWidgetUtils.h"
 
+#include "app-logic/LayerTaskType.h"
+
 #include "gui/Colour.h"
+#include "gui/HTMLColourNames.h"
+#include "gui/LayerTaskTypeInfo.h"
+#include "gui/VisualLayersProxy.h"
 
 #include "presentation/VisualLayer.h"
-#include "presentation/VisualLayers.h"
+
+
+namespace
+{
+	using namespace GPlatesGui;
+
+	const Colour &
+	get_layer_colour(
+			GPlatesAppLogic::LayerTaskType::Type layer_type)
+	{
+		static const HTMLColourNames &html_colours = HTMLColourNames::instance();
+
+		static const Colour RECONSTRUCTION_COLOUR = *html_colours.get_colour("gold");
+		static const Colour RECONSTRUCT_COLOUR = *html_colours.get_colour("yellowgreen");
+		static const Colour TOPOLOGY_BOUNDARY_RESOLVER_COLOUR = *html_colours.get_colour("powderblue");
+		static const Colour TOPOLOGY_NETWORK_RESOLVER_COLOUR = *html_colours.get_colour("plum");
+
+		static const Colour DEFAULT_COLOUR = Colour::get_blue();
+
+		using namespace GPlatesAppLogic::LayerTaskType;
+
+		switch (layer_type)
+		{
+			case RECONSTRUCTION:
+				return RECONSTRUCTION_COLOUR;
+
+			case RECONSTRUCT:
+				return RECONSTRUCT_COLOUR;
+
+			case TOPOLOGY_BOUNDARY_RESOLVER:
+				return TOPOLOGY_BOUNDARY_RESOLVER_COLOUR;
+
+			case TOPOLOGY_NETWORK_RESOLVER:
+				return TOPOLOGY_NETWORK_RESOLVER_COLOUR;
+
+			default:
+				return DEFAULT_COLOUR;
+		}
+	}
+}
 
 
 GPlatesQtWidgets::VisualLayerWidgetInternals::ToggleIcon::ToggleIcon(
@@ -66,14 +111,17 @@ void
 GPlatesQtWidgets::VisualLayerWidgetInternals::ToggleIcon::mousePressEvent(
 		QMouseEvent *event_)
 {
-	emit clicked();
+	if (event_->button() == Qt::LeftButton)
+	{
+		emit clicked();
+	}
 }
 
 
 const QPixmap &
 GPlatesQtWidgets::VisualLayerWidgetInternals::get_collapsed_icon()
 {
-	static const QPixmap COLLAPSED_ICON(":/gnome_stock_data-next_16.png");
+	static const QPixmap COLLAPSED_ICON(":/gnome_stock_data_next_16.png");
 	return COLLAPSED_ICON;
 }
 
@@ -81,7 +129,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::get_collapsed_icon()
 const QPixmap &
 GPlatesQtWidgets::VisualLayerWidgetInternals::get_expanded_icon()
 {
-	static const QPixmap EXPANDED_ICON(":/gnome_stock_data-next_down_16.png");
+	static const QPixmap EXPANDED_ICON(":/gnome_stock_data_next_down_16.png");
 	return EXPANDED_ICON;
 }
 
@@ -97,18 +145,16 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::get_visible_icon()
 const QPixmap &
 GPlatesQtWidgets::VisualLayerWidgetInternals::get_hidden_icon()
 {
-	static const QPixmap HIDDEN_ICON(":/inkscape_object_hidden_16.png");
+	static const QPixmap HIDDEN_ICON(":/blank_16.png");
 	return HIDDEN_ICON;
 }
 
 
 GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
-		GPlatesPresentation::VisualLayers &visual_layers,
+		GPlatesGui::VisualLayersProxy &visual_layers,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
-	d_basic_info_widget(
-			new BasicInfoWidget(this)),
 	d_expand_icon(
 			new VisualLayerWidgetInternals::ToggleIcon(
 				VisualLayerWidgetInternals::get_expanded_icon(),
@@ -119,17 +165,28 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 				VisualLayerWidgetInternals::get_visible_icon(),
 				VisualLayerWidgetInternals::get_hidden_icon(),
 				this)),
-	d_input_channels_groupbox_layout(NULL)
+	d_name_label(
+			new ElidedLabel(Qt::ElideMiddle, this)),
+	d_type_label(
+			new ElidedLabel(Qt::ElideRight, this)),
+	d_input_channels_widget_layout(NULL)
 {
 	setupUi(this);
 
-	// Give the input_channels_groupbox a layout.
-	d_input_channels_groupbox_layout = new QVBoxLayout(input_channels_groupbox);
+	// Give the input_channels_widget a layout.
+	d_input_channels_widget_layout = new QVBoxLayout(input_channels_widget);
+	d_input_channels_widget_layout->setContentsMargins(0, 0, 0, 0);
 
-	// Install the basic info widget into its placeholder.
+	// Install labels for the layer name and type.
 	QtWidgetUtils::add_widget_to_placeholder(
-			d_basic_info_widget,
-			basic_info_placeholder_widget);
+			d_name_label,
+			name_label_placeholder_widget);
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_type_label,
+			type_label_placeholder_widget);
+	QFont type_label_font = d_type_label->font();
+	type_label_font.setItalic(true);
+	d_type_label->setFont(type_label_font);
 
 	// Install the icons into their placeholders.
 	QtWidgetUtils::add_widget_to_placeholder(
@@ -145,20 +202,11 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 	widget_palette.setColor(QPalette::Base, widget_palette.color(QPalette::Window));
 	setPalette(widget_palette);
 
-	// Set background colour of details panel to be lighter than widget background.
-	QPalette details_palette = details_placeholder_widget->palette();
-	details_palette.setColor(
-			QPalette::Base,
-			GPlatesGui::Colour::linearly_interpolate(
-				details_palette.color(QPalette::Window),
-				GPlatesGui::Colour::get_white(),
-				0.5 /* mid-way */));
-	details_placeholder_widget->setPalette(details_palette);
-
-	// Hide this for now...
-	additional_options_widget->hide();
-
 	make_signal_slot_connections();
+
+	// Hide things for now...
+	additional_options_group_widget->hide();
+	edit_colouring_group_widget->hide();
 }
 
 
@@ -170,6 +218,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 			visual_layer.lock())
 	{
 		const GPlatesAppLogic::Layer &layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::LayerTaskType::Type layer_type = layer.get_type();
 
 		// Store pointer to visual layer for later use.
 		d_visual_layer = visual_layer;
@@ -178,17 +227,22 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 		bool expanded = locked_visual_layer->is_expanded();
 		d_expand_icon->show_icon(expanded);
 
+		// Set the background colour of left_widget depending on what type of layer it is.
+		QPalette left_widget_palette;
+		left_widget_palette.setColor(QPalette::Base, get_layer_colour(layer_type));
+		left_widget->setPalette(left_widget_palette);
+
 		// Set the hide/show icon.
 		d_visibility_icon->show_icon(locked_visual_layer->is_visible());
+
+		// Update the basic info.
+		d_name_label->setText(locked_visual_layer->get_name());
+		d_type_label->setText(GPlatesGui::LayerTaskTypeInfo::get_name(layer_type));
 
 		// Show or hide the details panel as necessary.
 		details_placeholder_widget->setVisible(expanded);
 
-		// Update the basic info.
-		d_basic_info_widget->set_name(locked_visual_layer->get_name());
-		std::pair<QString, QString> layer_type_name_and_description = layer.get_name_and_description();
-		d_basic_info_widget->set_type(layer_type_name_and_description.first);
-
+		// Populate the details panel only if shown.
 		if (expanded)
 		{
 			// Update the input channel info.
@@ -241,7 +295,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_input_channel_data(
 		{
 			InputChannelWidget *new_widget = new InputChannelWidget(d_visual_layers, this);
 			d_input_channel_widgets.push_back(new_widget);
-			d_input_channels_groupbox_layout->addWidget(new_widget);
+			d_input_channels_widget_layout->addWidget(new_widget);
 		}
 	}
 
@@ -318,60 +372,17 @@ GPlatesQtWidgets::VisualLayerWidget::make_signal_slot_connections()
 }
 
 
-GPlatesQtWidgets::VisualLayerWidget::BasicInfoWidget::BasicInfoWidget(
-		QWidget *parent_) :
-	QWidget(parent_)
-{
-	d_name_label = new ElidedLabel("Global EarthByte GPlates Coastlines 20091014", this);
-	d_name_label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Minimum);
-
-	d_type_label = new ElidedLabel("Reconstruction", this);
-	d_type_label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Minimum);
-	QFont type_label_font = d_type_label->font();
-	type_label_font.setItalic(true);
-	d_type_label->setFont(type_label_font);
-
-	QVBoxLayout *this_layout = new QVBoxLayout(this);
-	this_layout->setContentsMargins(0, 0, 0, 0);
-	this_layout->setSpacing(0);
-	this_layout->addWidget(d_name_label);
-	this_layout->addWidget(d_type_label);
-
-	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-}
-
-
-void
-GPlatesQtWidgets::VisualLayerWidget::BasicInfoWidget::set_name(
-		const QString &name)
-{
-	d_name_label->setText(name);
-}
-
-
-void
-GPlatesQtWidgets::VisualLayerWidget::BasicInfoWidget::set_type(
-		const QString &type)
-{
-	d_type_label->setText(type);
-}
-
-
 GPlatesQtWidgets::VisualLayerWidget::InputConnectionWidget::InputConnectionWidget(
-		GPlatesPresentation::VisualLayers &visual_layers,
+		GPlatesGui::VisualLayersProxy &visual_layers,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
 	d_input_connection_label(
-			new ElidedLabel(this))
+			new ElidedLabel(Qt::ElideMiddle, this))
 {
-	// Put the internal label into a frame.
-	QFrame *label_frame = new QFrame(this);
-	label_frame->setFrameStyle(QFrame::StyledPanel | QFrame::Plain);
-	QtWidgetUtils::add_widget_to_placeholder(d_input_connection_label, label_frame);
-
-	// Put the frame into this widget.
-	QtWidgetUtils::add_widget_to_placeholder(label_frame, this);
+	// Put the internal label into this widget.
+	d_input_connection_label->setFrameStyle(QFrame::StyledPanel | QFrame::Plain);
+	QtWidgetUtils::add_widget_to_placeholder(d_input_connection_label, this);
 }
 
 
@@ -411,12 +422,12 @@ GPlatesQtWidgets::VisualLayerWidget::InputConnectionWidget::set_data(
 
 
 GPlatesQtWidgets::VisualLayerWidget::InputChannelWidget::InputChannelWidget(
-		GPlatesPresentation::VisualLayers &visual_layers,
+		GPlatesGui::VisualLayersProxy &visual_layers,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
 	d_input_channel_name_label(
-			new ElidedLabel(this)),
+			new ElidedLabel(Qt::ElideRight, this)),
 	d_input_connection_widgets_layout(NULL)
 {
 	// The widget has two subwidgets: the name label and the container of input

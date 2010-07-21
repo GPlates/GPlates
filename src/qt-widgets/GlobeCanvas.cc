@@ -197,7 +197,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_mouse_pointer_is_on_globe(false),
 	d_globe(
 			view_state.get_rendered_geometry_collection(),
-			view_state.get_visual_layers().get_layer_order(),
+			view_state.get_visual_layers(),
 			view_state.get_texture(),
 			view_state.get_render_settings(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),

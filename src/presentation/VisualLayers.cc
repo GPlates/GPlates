@@ -57,6 +57,13 @@ GPlatesPresentation::VisualLayers::VisualLayers(
 }
 
 
+size_t
+GPlatesPresentation::VisualLayers::size() const
+{
+	return d_layer_order.size();
+}
+
+
 boost::weak_ptr<const GPlatesPresentation::VisualLayer>
 GPlatesPresentation::VisualLayers::get_visual_layer(
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index) const
@@ -90,32 +97,34 @@ GPlatesPresentation::VisualLayers::get_visual_layer(
 
 
 boost::weak_ptr<const GPlatesPresentation::VisualLayer>
-GPlatesPresentation::VisualLayers::at(
+GPlatesPresentation::VisualLayers::visual_layer_at(
 		size_t index) const
 {
-	if (index >= d_layer_order.size())
-	{
-		return boost::weak_ptr<const GPlatesPresentation::VisualLayer>();
-	}
-	else
-	{
-		return get_visual_layer(d_layer_order[index]);
-	}
+	return get_visual_layer(d_layer_order[index]);
 }
 
 
 boost::weak_ptr<GPlatesPresentation::VisualLayer>
-GPlatesPresentation::VisualLayers::at(
+GPlatesPresentation::VisualLayers::visual_layer_at(
 		size_t index)
 {
-	if (index >= d_layer_order.size())
-	{
-		return boost::weak_ptr<GPlatesPresentation::VisualLayer>();
-	}
-	else
-	{
-		return get_visual_layer(d_layer_order[index]);
-	}
+	return get_visual_layer(d_layer_order[index]);
+}
+
+
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
+GPlatesPresentation::VisualLayers::child_layer_index_at(
+		size_t index) const
+{
+	return d_layer_order[index];
+}
+
+
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
+GPlatesPresentation::VisualLayers::child_layer_index_at(
+		size_t index)
+{
+	return d_layer_order[index];
 }
 
 
@@ -148,6 +157,20 @@ GPlatesPresentation::VisualLayers::get_visual_layer(
 	{
 		return iter->second;
 	}
+}
+
+
+GPlatesPresentation::VisualLayers::const_iterator
+GPlatesPresentation::VisualLayers::order_begin() const
+{
+	return d_layer_order.begin();
+}
+
+
+GPlatesPresentation::VisualLayers::const_iterator
+GPlatesPresentation::VisualLayers::order_end() const
+{
+	return d_layer_order.end();
 }
 
 
@@ -220,8 +243,8 @@ void
 GPlatesPresentation::VisualLayers::add_layer(
 		const GPlatesAppLogic::Layer &layer)
 {
-	// Index of new layer is d_layer_order.size() as it is added to the end.
-	size_t new_index = d_layer_order.size();
+	// Index of new layer is size() as it is added to the front.
+	size_t new_index = size();
 	emit layer_about_to_be_added(new_index);
 
 	// Create a new visual layer.

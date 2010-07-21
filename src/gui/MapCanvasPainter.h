@@ -52,8 +52,7 @@ namespace GPlatesGui
 	 * This is a Visitor to paint geometries on the map canvas.
 	 */
 	class MapCanvasPainter:
-			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
-				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>,
+			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<>,
 			public boost::noncopyable
 	{
 	public:
@@ -61,11 +60,11 @@ namespace GPlatesGui
 		explicit
 		MapCanvasPainter(
 				Map &map,
-				const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
+				const GPlatesPresentation::VisualLayers &visual_layers,
 				GPlatesGui::RenderSettings &render_settings,
 				GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
-				const double &inverse_zoom_factor,
+				double inverse_zoom_factor,
 				ColourScheme::non_null_ptr_type colour_scheme);
 		
 		virtual
@@ -140,8 +139,7 @@ namespace GPlatesGui
 
 		Map &d_map;
 
-		//! The order in which the reconstruction layers are to be drawn.
-		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &d_reconstruction_layer_order;
+		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		//! Rendering flags for determining what gets shown
 		RenderSettings &d_render_settings;

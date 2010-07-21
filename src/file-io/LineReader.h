@@ -39,17 +39,12 @@
 #include <string>
 #include <boost/noncopyable.hpp>
 
-#include "utils/SafeBool.h"
+namespace GPlatesFileIO {
 
-
-namespace GPlatesFileIO
-{
 	class LineReader :
-			public GPlatesUtils::SafeBool<LineReader>,
-			private boost::noncopyable
+		private boost::noncopyable
 	{
 	public:
-
 		explicit
 		LineReader(
 				std::istream &stream) :
@@ -92,10 +87,8 @@ namespace GPlatesFileIO
 
 			return *this;
 		}
-
-		// SafeBool base class provides operator bool().
-		bool
-		boolean_test() const
+	
+		operator bool() const
 		{
 			return *d_stream_ptr;
 		}
@@ -107,12 +100,12 @@ namespace GPlatesFileIO
 		}
 	
 	private:
-
 		std::istream *d_stream_ptr;
 		unsigned int d_line_number;
 		std::string d_buffered_line;
 		bool d_have_buffered_line;
 	};
+
 }
 
-#endif  // GPLATES_FILEIO_LINEREADER_H
+#endif /* GPLATES_FILEIO_LINEREADER_H */

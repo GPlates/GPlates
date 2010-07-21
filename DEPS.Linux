@@ -165,7 +165,7 @@ Fedora 13 packages
 The following packages are not installed by default and may need to be
 installed manually:
 
-Program/library Corresponding Fedora packages
+Program/library Corresponding Ubuntu packages
 cmake           cmake
 g++             gcc-c++
 ICU             libicu-devel

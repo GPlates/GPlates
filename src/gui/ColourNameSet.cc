@@ -29,9 +29,9 @@
 
 boost::optional<GPlatesGui::Colour>
 GPlatesGui::ColourNameSet::get_colour(
-		const std::string &name)
+		const std::string &name) const
 {
-	std::map<std::string, Colour>::iterator iter = colours.find(name);
+	std::map<std::string, Colour>::const_iterator iter = colours.find(name);
 	if (iter == colours.end())
 	{
 		return boost::none;

@@ -756,7 +756,8 @@ namespace
 GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 		GPlatesPresentation::VisualLayers &visual_layers,
 		QWidget *parent_) :
-	QWidget(parent_)
+	QWidget(parent_),
+	d_visual_layers(visual_layers)
 {
 	setupUi(this);
 
@@ -782,13 +783,13 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 		list->openPersistentEditor(model->index(i, 0));
 	}
 #else
-	QListView *list = new VisualLayersListView(visual_layers, this);
+	QListView *list = new VisualLayersListView(d_visual_layers, this);
 #endif
 
 	QtWidgetUtils::add_widget_to_placeholder(list, layers_list_placeholder_widget);
 	list->setFocus();
 
-	// Hide for the time being...
-	add_remove_widget->hide();
+	// Hide things for now...
+	control_widget->hide();
 }
 

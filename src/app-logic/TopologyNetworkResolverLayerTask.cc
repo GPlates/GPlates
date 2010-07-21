@@ -31,20 +31,7 @@
 
 
 const char *GPlatesAppLogic::TopologyNetworkResolverLayerTask::TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME =
-		"topological network features";
-
-
-std::pair<QString, QString>
-GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_name_and_description()
-{
-	return std::make_pair(
-		"Topological Networks Resolver",
-
-		"Deforming regions will be dynamically formed by referencing topological section "
-		"features, that have been reconstructed to a geological time, and triangulating the "
-		"convex hull region defined by these reconstructed sections while excluding any "
-		"micro-block sections from the triangulation");
-}
+		"Topological network features";
 
 
 bool

@@ -30,18 +30,7 @@
 
 
 const char *GPlatesAppLogic::ReconstructLayerTask::RECONSTRUCTABLE_FEATURES_CHANNEL_NAME =
-		"reconstructable features";
-
-
-std::pair<QString, QString>
-GPlatesAppLogic::ReconstructLayerTask::get_name_and_description()
-{
-	return std::make_pair(
-		"Geometry Reconstruction",
-
-		"Geometries in this layer will be reconstructed when "
-		"this layer is connected to a reconstruction tree layer");
-}
+		"Reconstructable features";
 
 
 bool

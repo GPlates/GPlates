@@ -53,7 +53,7 @@ namespace GPlatesGui
 
 		Map(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
+				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				ViewportZoom &viewport_zoom,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -108,8 +108,7 @@ namespace GPlatesGui
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_update_type;
 
-		//! The order in which the reconstruction layers are to be drawn.
-		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &d_reconstruction_layer_order;
+		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		//! Used for rendering text
 		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer_ptr;

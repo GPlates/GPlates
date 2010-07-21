@@ -39,7 +39,6 @@ GPlatesModel::TopLevelPropertyRef::TopLevelPropertyRef(
 
 GPlatesModel::TopLevelPropertyRef::TopLevelPropertyRef(
 		const TopLevelPropertyRef &other) :
-	GPlatesUtils::SafeBool<TopLevelPropertyRef>(other),
 	d_iterator_ptr(new FeatureHandle::iterator(*(other.d_iterator_ptr)))
 {
 }
@@ -93,8 +92,7 @@ GPlatesModel::TopLevelPropertyRef::operator=(
 }
 
 
-bool
-GPlatesModel::TopLevelPropertyRef::boolean_test() const
+GPlatesModel::TopLevelPropertyRef::operator bool() const
 {
 	return pointer();
 }

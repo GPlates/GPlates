@@ -29,18 +29,7 @@
 
 
 const char *GPlatesAppLogic::ReconstructionLayerTask::RECONSTRUCTION_FEATURES_CHANNEL_NAME =
-		"reconstruction features";
-
-
-std::pair<QString, QString>
-GPlatesAppLogic::ReconstructionLayerTask::get_name_and_description()
-{
-	return std::make_pair(
-		"Reconstruction Tree Generator",
-
-		"A plate-reconstruction hierarchy of total reconstruction poles "
-		"which can be used to reconstruct geometries in other layers");
-}
+		"Reconstruction features";
 
 
 bool

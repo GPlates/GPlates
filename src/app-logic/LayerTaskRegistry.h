@@ -76,17 +76,6 @@ namespace GPlatesAppLogic
 			}
 
 			/**
-			 * Returns the name and description of this layer task type.
-			 *
-			 * This is useful for display to the user so they know what a layer task
-			 * created from this layer task type will do.
-			 *
-			 * @throws PreconditionViolationError if @a is_valid is false.
-			 */
-			std::pair<QString, QString>
-			get_layer_task_name_and_description() const;
-
-			/**
 			 * Returns true if this task type can be used to create a layer automatically
 			 * when a file is first loaded (without any user interaction).
 			 *
@@ -139,14 +128,6 @@ namespace GPlatesAppLogic
 				can_layer_task_process_feature_collection_function_type;
 
 		/**
-		 * Typedef for a function to return a name and description string of a layer task type.
-		 *
-		 * Function takes no arguments and returns a std::pair<QString, QString>.
-		 */
-		typedef boost::function< std::pair<QString, QString> () >
-				get_layer_task_name_and_description_function_type;
-
-		/**
 		 * Typedef for a function to return true if a layer task type is a primary task type.
 		 *
 		 * Function takes no arguments and returns a bool.
@@ -166,8 +147,6 @@ namespace GPlatesAppLogic
 				const create_layer_task_function_type &create_layer_task_function,
 				const can_layer_task_process_feature_collection_function_type &
 						can_layer_task_process_feature_collection_function,
-				const get_layer_task_name_and_description_function_type &
-						get_layer_task_name_and_description_function,
 				const is_primary_layer_task_function_type &is_primary_layer_task_function);
 
 
@@ -186,8 +165,7 @@ namespace GPlatesAppLogic
 		 * This method must be called before @a get_layer_task_types_that_can_process_feature_collection
 		 * or @a get_layer_task_types_that_can_process_feature_collections can be called.
 		 *
-		 * @throws PreconditionViolationError if @a layer_task_type is false or
-		 * if @a layer_task_type is not a primary task type.
+		 * @throws PreconditionViolationError if @a layer_task_type is not a primary task type.
 		 */
 		void
 		set_default_primary_layer_task_type(
@@ -247,17 +225,12 @@ namespace GPlatesAppLogic
 					const create_layer_task_function_type &create_layer_task_function_,
 					const can_layer_task_process_feature_collection_function_type &
 							can_layer_task_process_feature_collection_function_,
-					const get_layer_task_name_and_description_function_type &
-							get_layer_task_description_function_,
 					const is_primary_layer_task_function_type &is_primary_layer_task_function_);
 
 			create_layer_task_function_type create_layer_task_function;
 
 			can_layer_task_process_feature_collection_function_type 
 					can_layer_task_process_feature_collection_function;
-
-			get_layer_task_name_and_description_function_type
-					get_layer_task_name_and_description_function;
 
 			is_primary_layer_task_function_type is_primary_layer_task_function;
 		};
@@ -273,6 +246,23 @@ namespace GPlatesAppLogic
 		 */
 		LayerTaskType d_default_layer_task_type;
 	};
+
+
+	/**
+	 * Register the default layer tasks with @a layer_task_registry.
+	 *
+	 * One of the registered layers will also be set as the default layer that will be
+	 * used when no layers can be found to process a feature collection.
+	 * This default catch-all layer task will be the reconstruct layer task as it
+	 * is the most common layer task and it is also a primary layer task (ie, can be
+	 * used to automatically create a layer when a file is first loaded).
+	 *
+	 * NOTE: any new @a LayerTask derived types needs to have a registration entry
+	 * added inside @a register_layer_task_types.
+	 */
+	void
+	register_default_layer_task_types(
+			LayerTaskRegistry &layer_task_registry);
 }
 
 #endif // GPLATES_APP_LOGIC_LAYERTASKREGISTRY_H

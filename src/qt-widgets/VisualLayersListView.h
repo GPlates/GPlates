@@ -29,9 +29,9 @@
 #include <QListView>
 
 
-namespace GPlatesPresentation
+namespace GPlatesGui
 {
-	class VisualLayers;
+	class VisualLayersProxy;
 }
 
 namespace GPlatesQtWidgets
@@ -42,7 +42,7 @@ namespace GPlatesQtWidgets
 	public:
 
 		VisualLayersListView(
-				GPlatesPresentation::VisualLayers &visual_layers,
+				GPlatesGui::VisualLayersProxy &visual_layers,
 				QWidget *parent_ = NULL);
 
 		virtual

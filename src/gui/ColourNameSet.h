@@ -28,17 +28,20 @@
 #ifndef GPLATES_GUI_COLOURNAMESET_H
 #define GPLATES_GUI_COLOURNAMESET_H
 
-#include "Colour.h"
 #include <map>
 #include <string>
 #include <boost/optional.hpp>
+#include <boost/noncopyable.hpp>
+
+#include "Colour.h"
 
 namespace GPlatesGui
 {
 	/**
 	 * ColourNameSet is a base class for classes that map colour names to Colours.
 	 */
-	class ColourNameSet
+	class ColourNameSet :
+			public boost::noncopyable
 	{
 	public:
 
@@ -54,7 +57,7 @@ namespace GPlatesGui
 		 */
 		boost::optional<Colour>
 		get_colour(
-				const std::string &name);
+				const std::string &name) const;
 
 	protected:
 

@@ -42,7 +42,7 @@ namespace GPlatesQtWidgets
 	/**
 	 * ElidedLabel is a widget that can display a piece of text, much like a QLabel.
 	 * However, when the text is wider than the width of the widget, the text is
-	 * truncated with an ellipsis (...) at the end. When the text is truncated and
+	 * elided with an ellipsis (...) at the end. When the text is elided and
 	 * the user moves the cursor over the widget, a tooltip that contains the full
 	 * text is displayed over the widget.
 	 */
@@ -52,11 +52,20 @@ namespace GPlatesQtWidgets
 	public:
 
 		ElidedLabel(
+				Qt::TextElideMode mode,
 				QWidget *parent_ = NULL);
 
 		ElidedLabel(
 				const QString &text_,
+				Qt::TextElideMode mode,
 				QWidget *parent_ = NULL);
+
+		void
+		set_text_elide_mode(
+				Qt::TextElideMode mode);
+
+		Qt::TextElideMode
+		get_text_elide_mode() const;
 
 		// Using Qt naming conventions here.
 
@@ -83,19 +92,42 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
-		enterEvent(
-				QEvent *event_);
-
-		virtual
-		void
 		paintEvent(
 				QPaintEvent *event_);
 
 	private:
 
 		/**
+		 * The internal label used to display the elided text.
+		 *
+		 * We subclass QLabel so that we can hook into @a enterEvent and @a leaveEvent.
+		 */
+		class InternalLabel :
+				public QLabel
+		{
+		public:
+
+			InternalLabel(
+					const QString &full_text,
+					const bool &is_elided,
+					QWidget *parent_ = NULL);
+
+		protected:
+
+			virtual
+			void
+			enterEvent(
+					QEvent *event_);
+
+		private:
+
+			const QString &d_full_text;
+			const bool &d_is_elided;
+		};
+
+		/**
 		 * The tooltip that is displayed over the ElidedLabel when the text is
-		 * truncated and the user moves the cursor over the ElidedLabel.
+		 * elided and the user moves the cursor over the ElidedLabel.
 		 *
 		 * We use a custom widget instead of a QToolTip because there are issues with
 		 * tooltip alignment and flickering.
@@ -112,8 +144,13 @@ namespace GPlatesQtWidgets
 			void
 			showToolTip(
 					const QString &text,
+					const QFont &text_font,
 					const QPoint &global_pos,
-					const QFont &text_font);
+					int label_height);
+
+			static
+			void
+			hideToolTip();
 
 		protected:
 
@@ -131,24 +168,28 @@ namespace GPlatesQtWidgets
 			void
 			do_show(
 					const QString &text,
+					const QFont &text_font,
 					const QPoint &global_pos,
-					const QFont &text_font);
+					int label_height);
+
+			void
+			do_hide();
 
 			ElidedLabelToolTip();
 
+			QFrame *d_internal_label_frame;
 			QLabel *d_internal_label;
 		};
 
+		// Initialisation common to both constructors.
 		void
 		init();
 
 		void
-		update_substring_widths_map();
-
-		void
 		update_internal_label();
 
-		QLabel *d_internal_label;
+		QFrame *d_internal_label_frame;
+		InternalLabel *d_internal_label;
 
 		/**
 		 * The current full text.
@@ -156,25 +197,16 @@ namespace GPlatesQtWidgets
 		QString d_text;
 
 		/**
-		 * Typedef for a map from widths (in pixels) of substrings of the current @a text
-		 * (plus any ellipsis at the end) to the length of the substring in characters.
+		 * Where the ellipsis should appear when eliding text.
 		 */
-		typedef std::map<int, int> substring_width_map_type;
-
-		// Invariant: if d_text is not the empty string, contains at least one entry.
-		substring_width_map_type d_substring_widths;
+		Qt::TextElideMode d_mode;
 
 		/**
-		 * If true, @a d_substring_widths needs to be regenerated from @a d_text.
+		 * Whether we are currently showing elided text.
 		 */
-		bool d_substring_widths_needs_updating;
+		bool d_is_elided;
 
-		/**
-		 * Whether the current text display is truncated.
-		 */
-		bool d_is_truncated;
-
-		static const QString ELLIPSIS;
+		bool d_internal_label_needs_updating;
 	};
 }
 

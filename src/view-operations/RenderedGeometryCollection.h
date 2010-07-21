@@ -791,7 +791,7 @@ namespace GPlatesViewOperations
 
 			// First, determine if the visitor would like to use a custom order of visitation.
 			const ChildLayerIndexRangeType *custom_child_layers_order =
-				visitor.custom_child_layers_order(main_layer_type);
+				visitor.get_custom_child_layers_order(main_layer_type);
 			if (custom_child_layers_order)
 			{
 				visit_main_rendered_layer<RenderedGeometryLayerType>(

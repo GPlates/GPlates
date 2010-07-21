@@ -27,6 +27,13 @@
 
 #include "LayerTaskRegistry.h"
 
+#include "LayerTask.h"
+#include "LayerTaskRegistry.h"
+#include "ReconstructionLayerTask.h"
+#include "ReconstructLayerTask.h"
+#include "TopologyBoundaryResolverLayerTask.h"
+#include "TopologyNetworkResolverLayerTask.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
@@ -36,15 +43,12 @@ GPlatesAppLogic::LayerTaskRegistry::register_layer_task_type(
 		const create_layer_task_function_type &create_layer_task_function,
 		const can_layer_task_process_feature_collection_function_type &
 				can_layer_task_process_feature_collection_function,
-		const get_layer_task_name_and_description_function_type &
-				get_layer_task_name_and_description_function,
 		const is_primary_layer_task_function_type &is_primary_layer_task_function)
 {
 	const boost::shared_ptr<const LayerTaskTypeInfo> layer_task_type(
 			new LayerTaskTypeInfo(
 					create_layer_task_function,
 					can_layer_task_process_feature_collection_function,
-					get_layer_task_name_and_description_function,
 					is_primary_layer_task_function));
 
 	d_layer_task_types.push_back(layer_task_type);
@@ -183,20 +187,6 @@ GPlatesAppLogic::LayerTaskRegistry::get_layer_task_types_that_can_process_featur
 }
 
 
-std::pair<QString, QString>
-GPlatesAppLogic::LayerTaskRegistry::LayerTaskType::get_layer_task_name_and_description() const
-{
-	// Throw our own exception to track location of throw.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-		is_valid(),
-		GPLATES_ASSERTION_SOURCE);
-
-	const boost::shared_ptr<const LayerTaskTypeInfo> layer_task_type(d_impl);
-
-	return layer_task_type->get_layer_task_name_and_description_function();
-}
-
-
 bool
 GPlatesAppLogic::LayerTaskRegistry::LayerTaskType::is_primary_task_type() const
 {
@@ -229,12 +219,52 @@ GPlatesAppLogic::LayerTaskRegistry::LayerTaskTypeInfo::LayerTaskTypeInfo(
 		const create_layer_task_function_type &create_layer_task_function_,
 		const can_layer_task_process_feature_collection_function_type &
 				can_layer_task_process_feature_collection_function_,
-		const get_layer_task_name_and_description_function_type &get_layer_task_description_function_,
 		const is_primary_layer_task_function_type &is_primary_layer_task_function_) :
 	create_layer_task_function(create_layer_task_function_),
 	can_layer_task_process_feature_collection_function(
 			can_layer_task_process_feature_collection_function_),
-	get_layer_task_name_and_description_function(get_layer_task_description_function_),
 	is_primary_layer_task_function(is_primary_layer_task_function_)
 {
 }
+
+
+void
+GPlatesAppLogic::register_default_layer_task_types(
+		LayerTaskRegistry &layer_task_registry)
+{
+	// Layer task that generates reconstruction trees.
+	layer_task_registry.register_layer_task_type(
+			&ReconstructionLayerTask::create_layer_task,
+			&ReconstructionLayerTask::can_process_feature_collection,
+			&ReconstructionLayerTask::is_primary_layer_task_type);
+
+	// Layer task that reconstructs geometries.
+	const LayerTaskRegistry::LayerTaskType reconstruct_layer_task_type =
+			layer_task_registry.register_layer_task_type(
+					&ReconstructLayerTask::create_layer_task,
+					&ReconstructLayerTask::can_process_feature_collection,
+					&ReconstructLayerTask::is_primary_layer_task_type);
+
+	// Layer task to resolve topological closed plate boundaries.
+	layer_task_registry.register_layer_task_type(
+			&TopologyBoundaryResolverLayerTask::create_layer_task,
+			&TopologyBoundaryResolverLayerTask::can_process_feature_collection,
+			&TopologyBoundaryResolverLayerTask::is_primary_layer_task_type);
+
+	// Layer task to resolve topological networks.
+	layer_task_registry.register_layer_task_type(
+			&TopologyNetworkResolverLayerTask::create_layer_task,
+			&TopologyNetworkResolverLayerTask::can_process_feature_collection,
+			&TopologyNetworkResolverLayerTask::is_primary_layer_task_type);
+
+	//
+	// Set the layer task type to use when no registered layer task types can process
+	// a feature collection.
+	//
+	// NOTE: This must be a primary layer task type so that when a file is first loaded
+	// a layer can always be created automatically for it. An exception is thrown if it's not.
+	//
+
+	layer_task_registry.set_default_primary_layer_task_type(reconstruct_layer_task_type);
+}
+

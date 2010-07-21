@@ -3,9 +3,9 @@
 /**
  * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,18 +22,31 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+ 
+#ifndef GPLATES_APP_LOGIC_LAYERTASKTYPE_H
+#define GPLATES_APP_LOGIC_LAYERTASKTYPE_H
 
-namespace GPlatesInterface
+
+namespace GPlatesAppLogic
 {
-	class Interface
+	/**
+	 * An enumeration of layer task types.
+	 *
+	 * This is useful for signalling to the user interface the type of a
+	 * particular layer.
+	 */
+	namespace LayerTaskType
 	{
-	public:
-		// Abstract routines to create widgets go here.
-		
-		virtual 
-		void
-		create_main_window(
-				const std::string &title) = 0;
-				
-	};
+		enum Type
+		{
+			RECONSTRUCTION,
+			RECONSTRUCT,
+			TOPOLOGY_BOUNDARY_RESOLVER,
+			TOPOLOGY_NETWORK_RESOLVER,
+
+			NUM_TYPES // This must be the last entry.
+		};
+	}
 }
+
+#endif // GPLATES_APP_LOGIC_LAYERTASKTYPE_H

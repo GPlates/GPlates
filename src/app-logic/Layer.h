@@ -42,6 +42,7 @@
 
 #include "FeatureCollectionFileState.h"
 #include "LayerTaskDataType.h"
+#include "LayerTaskType.h"
 #include "ReconstructGraphImpl.h"
 
 #include "global/GPlatesException.h"
@@ -391,14 +392,15 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the name and description of this layer.
+		 * Returns the type of this layer.
 		 *
-		 * This is useful for display to the user so they know what this layer does.
+		 * This is useful for customising the visual representation of this layer
+		 * depending on what type of layer it is.
 		 *
 		 * @throws PreconditionViolationError if @a is_valid is false.
 		 */
-		std::pair<QString, QString>
-		get_name_and_description() const;
+		LayerTaskType::Type
+		get_type() const;
 
 
 		/**
@@ -659,6 +661,7 @@ namespace GPlatesAppLogic
 		}
 
 	private:
+
 		boost::weak_ptr<ReconstructGraphImpl::Layer> d_impl;
 	};
 }

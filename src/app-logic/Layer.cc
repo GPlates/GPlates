@@ -76,8 +76,8 @@ GPlatesAppLogic::Layer::activate(
 }
 
 
-std::pair<QString, QString>
-GPlatesAppLogic::Layer::get_name_and_description() const
+GPlatesAppLogic::LayerTaskType::Type
+GPlatesAppLogic::Layer::get_type() const
 {
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -85,7 +85,7 @@ GPlatesAppLogic::Layer::get_name_and_description() const
 		GPLATES_ASSERTION_SOURCE);
 
 	return boost::shared_ptr<ReconstructGraphImpl::Layer>(d_impl)
-			->get_layer_task()->get_layer_name_and_description();
+			->get_layer_task()->get_layer_type();
 }
 
 

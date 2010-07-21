@@ -57,15 +57,14 @@ namespace GPlatesGui
 	 * 3D orthographic view of the globe using OpenGL.
 	 */
 	class GlobeRenderedGeometryCollectionPainter :
-			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
-				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>,
+			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<>,
 			private boost::noncopyable
 	{
 	public:
 
 		GlobeRenderedGeometryCollectionPainter(
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
+				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
@@ -100,8 +99,7 @@ namespace GPlatesGui
 
 		const GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
-		//! The order in which the reconstruction layers are to be drawn.
-		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &d_reconstruction_layer_order;
+		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		double d_current_layer_far_depth;
 

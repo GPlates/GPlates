@@ -34,13 +34,13 @@
 #include "global/GPlatesAssert.h"
 
 #include "gui/VisualLayersListModel.h"
+#include "gui/VisualLayersProxy.h"
 
 #include "presentation/VisualLayer.h"
-#include "presentation/VisualLayers.h"
 
 
 GPlatesQtWidgets::VisualLayersDelegate::VisualLayersDelegate(
-		GPlatesPresentation::VisualLayers &visual_layers,
+		GPlatesGui::VisualLayersProxy &visual_layers,
 		QObject *parent_) :
 	QItemDelegate(parent_),
 	d_visual_layers(visual_layers)
@@ -55,7 +55,7 @@ GPlatesQtWidgets::VisualLayersDelegate::sizeHint(
 {
 	// Find the VisualLayer at the given index.
 	boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer =
-		d_visual_layers.at(index.row());
+		d_visual_layers.visual_layer_at(index.row());
 
 	// We want the height of the sizeHint to be the preferred height of the edit
 	// widget for the given index.
@@ -86,6 +86,12 @@ GPlatesQtWidgets::VisualLayersDelegate::setEditorData(
 		QWidget *editor,
 		const QModelIndex &index) const
 {
+	// qDebug() << index.row() << d_visual_layers.size();
+	if (!index.isValid())
+	{
+		return;
+	}
+
 	// The editor should be a VisualLayerWidget and nothing else.
 	VisualLayerWidget *visual_layer_editor = dynamic_cast<VisualLayerWidget *>(editor);
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -94,7 +100,7 @@ GPlatesQtWidgets::VisualLayersDelegate::setEditorData(
 
 	// Get the visual layer at the given index; the visual layer should be valid.
 	boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer =
-		d_visual_layers.at(index.row());
+		d_visual_layers.visual_layer_at(index.row());
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			!visual_layer.expired(),
 			GPLATES_ASSERTION_SOURCE);

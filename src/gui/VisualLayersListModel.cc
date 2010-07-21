@@ -30,7 +30,7 @@
 
 #include "VisualLayersListModel.h"
 
-#include "presentation/VisualLayers.h"
+#include "VisualLayersProxy.h"
 
 
 const QString
@@ -38,7 +38,7 @@ GPlatesGui::VisualLayersListModel::VISUAL_LAYERS_MIME_TYPE = "application/gplate
 
 
 GPlatesGui::VisualLayersListModel::VisualLayersListModel(
-		GPlatesPresentation::VisualLayers &visual_layers,
+		VisualLayersProxy &visual_layers,
 		QObject *parent_) :
 	QAbstractListModel(parent_),
 	d_visual_layers(visual_layers)
@@ -84,14 +84,6 @@ GPlatesGui::VisualLayersListModel::make_signal_slot_connections()
 }
 
 
-int
-GPlatesGui::VisualLayersListModel::convert_to_visual_layers_index(
-		int list_view_row) const
-{
-	return d_visual_layers.get_layer_order().size() - 1 - list_view_row;
-}
-
-
 Qt::ItemFlags
 GPlatesGui::VisualLayersListModel::flags(
 		const QModelIndex &index_) const
@@ -110,13 +102,10 @@ GPlatesGui::VisualLayersListModel::data(
 		return QVariant();
 	}
 
-	const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &layer_order =
-		d_visual_layers.get_layer_order();
-	const int row = convert_to_visual_layers_index(index_.row());
-
-	if (0 <= row && static_cast<size_t>(row) < layer_order.size())
+	const int row = index_.row();
+	if (0 <= row && static_cast<size_t>(row) < d_visual_layers.size())
 	{
-		return QVariant(layer_order[row]);
+		return QVariant(d_visual_layers.child_layer_index_at(row));
 	}
 	else
 	{
@@ -129,7 +118,7 @@ int
 GPlatesGui::VisualLayersListModel::rowCount(
 		const QModelIndex &parent_) const
 {
-	return d_visual_layers.get_layer_order().size();
+	return d_visual_layers.size();
 }
 
 
@@ -204,7 +193,7 @@ GPlatesGui::VisualLayersListModel::dropMimeData(
 	stream >> from_row;
 
 	// Sanity check.
-	if (from_row < 0 || static_cast<size_t>(from_row) >= d_visual_layers.get_layer_order().size())
+	if (from_row < 0 || static_cast<size_t>(from_row) >= d_visual_layers.size())
 	{
 		return false;
 	}
@@ -224,19 +213,12 @@ GPlatesGui::VisualLayersListModel::dropMimeData(
 	{
 		// Treat a drop on the blank area after the last item in the list view as a
 		// drop on the last item itself.
-		to_row = d_visual_layers.get_layer_order().size() - 1;
+		to_row = d_visual_layers.size() - 1;
 	}
 
 	d_visual_layers.move_layer(from_row, to_row);
 
 	return true;
-}
-
-
-const GPlatesPresentation::VisualLayers &
-GPlatesGui::VisualLayersListModel::get_visual_layers() const
-{
-	return d_visual_layers;
 }
 
 

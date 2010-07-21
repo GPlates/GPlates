@@ -23,16 +23,32 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "QtWidgetUtils.h"
+#ifndef GPLATES_GUI_LAYERTASKTYPEINFO_H
+#define GPLATES_GUI_LAYERTASKTYPEINFO_H
+
+#include <QString>
+
+#include "app-logic/LayerTaskType.h"
 
 
-void
-GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
-		QWidget *widget,
-		QWidget *placeholder)
+namespace GPlatesGui
 {
-	QHBoxLayout *layout = new QHBoxLayout(placeholder);
-	layout->addWidget(widget);
-	layout->setContentsMargins(0, 0, 0, 0);
+	namespace LayerTaskTypeInfo
+	{
+		/**
+		 * Returns a human-readable name for the given layer task type.
+		 */
+		const QString &
+		get_name(
+				GPlatesAppLogic::LayerTaskType::Type layer_type);
+
+		/**
+		 * Returns a human-readable description for the given layer task type.
+		 */
+		const QString &
+		get_description(
+				GPlatesAppLogic::LayerTaskType::Type layer_type);
+	}
 }
 
+#endif // GPLATES_GUI_LAYERTASKTYPEINFO_H

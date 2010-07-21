@@ -38,6 +38,7 @@
 
 #include "Layer.h"
 #include "LayerTaskDataType.h"
+#include "LayerTaskType.h"
 #include "ReconstructionTree.h"
 
 #include "model/types.h"
@@ -73,21 +74,18 @@ namespace GPlatesAppLogic
 		 */
 		static
 		const char *
-		get_reconstruction_tree_channel_name()
-		{
-			static const char *RECONSTRUCTION_TREE_CHANNEL_NAME = "reconstruction tree";
-			return RECONSTRUCTION_TREE_CHANNEL_NAME;
-		}
+		get_reconstruction_tree_channel_name();
 
 
 		/**
-		 * Returns the name and description of this layer task.
+		 * Returns the type of this layer task.
 		 *
-		 * This is useful for display to the user so they know what this layer does.
+		 * This is useful for customising the visual representation of each type of
+		 * layer task.
 		 */
 		virtual
-		std::pair<QString, QString>
-		get_layer_name_and_description() const = 0;
+		LayerTaskType::Type
+		get_layer_type() const = 0;
 
 
 		/**

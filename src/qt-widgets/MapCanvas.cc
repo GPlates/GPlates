@@ -52,7 +52,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	d_view_state(view_state),
 	d_map(
 			rendered_geometry_collection,
-			view_state.get_visual_layers().get_layer_order(),
+			view_state.get_visual_layers(),
 			render_settings,
 			viewport_zoom,
 			colour_scheme),

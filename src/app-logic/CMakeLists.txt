@@ -38,8 +38,7 @@ set(srcs
     LayerTaskDataType.h
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
-    LayerTaskTypes.cc
-    LayerTaskTypes.h
+    LayerTaskType.h
     MeshGenerator.cc
     MeshGenerator.h
     PartitionFeatureTask.cc

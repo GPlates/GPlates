@@ -28,6 +28,14 @@
 #include "ReconstructUtils.h"
 
 
+const char *
+GPlatesAppLogic::LayerTask::get_reconstruction_tree_channel_name()
+{
+	static const char *RECONSTRUCTION_TREE_CHANNEL_NAME = "Reconstruction tree";
+	return RECONSTRUCTION_TREE_CHANNEL_NAME;
+}
+
+
 boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type>
 GPlatesAppLogic::LayerTask::extract_reconstruction_tree(
 		const input_data_type &input_data,
@@ -55,3 +63,4 @@ GPlatesAppLogic::LayerTask::extract_reconstruction_tree(
 	// Return the sole reconstruction tree in the channel.
 	return reconstruction_trees.front();
 }
+

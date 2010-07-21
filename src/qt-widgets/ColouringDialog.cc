@@ -79,21 +79,17 @@ namespace
 	insert_separator(
 			QComboBox *combobox)
 	{
-#if QT_VERSION >= 0x040400
 		combobox->insertSeparator(combobox->count());
-#endif
 	}
 
 	void
 	remove_separator(
 			QComboBox *combobox)
 	{
-#if QT_VERSION >= 0x040400
 		if (combobox->count() == 2)
 		{
 			combobox->removeItem(1);
 		}
-#endif
 	}
 
 	/**

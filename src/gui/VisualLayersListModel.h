@@ -29,14 +29,13 @@
 #include <QAbstractListModel>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
-namespace GPlatesPresentation
-{
-	class VisualLayers;
-}
 
 namespace GPlatesGui
 {
+	class VisualLayersProxy;
+
 	/**
 	 * The VisualLayersListModel is a model that represents the ordering of visual
 	 * layers that can be viewed and modified in a list view in the GUI.
@@ -64,7 +63,7 @@ namespace GPlatesGui
 		static const QString VISUAL_LAYERS_MIME_TYPE;
 
 		VisualLayersListModel(
-				GPlatesPresentation::VisualLayers &visual_layers,
+				VisualLayersProxy &visual_layers,
 				QObject *parent_ = NULL);
 
 		virtual
@@ -104,13 +103,6 @@ namespace GPlatesGui
 				int column,
 				const QModelIndex &parent_);
 
-		/**
-		 * Returns a const reference to the visual layers around which this model is
-		 * a wrapper.
-		 */
-		const GPlatesPresentation::VisualLayers &
-		get_visual_layers() const;
-
 	private slots:
 
 		void
@@ -143,19 +135,7 @@ namespace GPlatesGui
 		void
 		make_signal_slot_connections();
 
-		/**
-		 * Returns the index of the layer in the visual layers ordering given
-		 * corresponding to the given @a list_view_row.
-		 *
-		 * While the visual layers stores layers in the order in which they are to be
-		 * drawn, the GUI displays the layers in the reverse order, so that layers
-		 * that are visually on top (i.e. drawn later) appear higher up the list.
-		 */
-		int
-		convert_to_visual_layers_index(
-				int list_view_row) const;
-
-		GPlatesPresentation::VisualLayers &d_visual_layers;
+		VisualLayersProxy &d_visual_layers;
 	};
 }
 

@@ -51,12 +51,12 @@ namespace
 
 GPlatesGui::Map::Map(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
+		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
 		ViewportZoom &viewport_zoom,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(&rendered_geometry_collection),
-	d_reconstruction_layer_order(reconstruction_layer_order),
+	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
 	d_viewport_zoom(viewport_zoom),
 	d_colour_scheme(colour_scheme)
@@ -227,7 +227,7 @@ GPlatesGui::Map::paint(
 		double inverse_zoom_factor = 1.0 / d_viewport_zoom.zoom_factor();
 		GPlatesGui::MapCanvasPainter map_canvas_painter(
 				*this,
-				d_reconstruction_layer_order,
+				d_visual_layers,
 				d_render_settings,
 				d_text_renderer_ptr,
 				d_update_type,

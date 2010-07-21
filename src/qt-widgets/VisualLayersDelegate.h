@@ -31,10 +31,14 @@
 #include <QItemDelegate>
 
 
+namespace GPlatesGui
+{
+	class VisualLayersProxy;
+}
+
 namespace GPlatesPresentation
 {
 	class VisualLayer;
-	class VisualLayers;
 }
 
 namespace GPlatesQtWidgets
@@ -53,7 +57,7 @@ namespace GPlatesQtWidgets
 	public:
 
 		VisualLayersDelegate(
-				GPlatesPresentation::VisualLayers &visual_layers,
+				GPlatesGui::VisualLayersProxy &visual_layers,
 				QObject *parent_ = NULL);
 
 		virtual
@@ -103,7 +107,7 @@ namespace GPlatesQtWidgets
 			VisualLayerWidget *
 		> editor_ptr_map_type;
 
-		GPlatesPresentation::VisualLayers &d_visual_layers;
+		GPlatesGui::VisualLayersProxy &d_visual_layers;
 
 		mutable editor_ptr_map_type d_editor_ptrs;
 	};

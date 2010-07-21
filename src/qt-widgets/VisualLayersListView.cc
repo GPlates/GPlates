@@ -31,7 +31,7 @@
 
 
 GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
-		GPlatesPresentation::VisualLayers &visual_layers,
+		GPlatesGui::VisualLayersProxy &visual_layers,
 		QWidget *parent_) :
 	QListView(parent_)
 {
@@ -41,6 +41,7 @@ GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
 	setDragDropMode(QAbstractItemView::DragDrop);
 	setSelectionMode(QAbstractItemView::NoSelection);
 	setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+	setFrameShape(QFrame::NoFrame);
 
 	// Install the model and the delegate.
 	GPlatesGui::VisualLayersListModel *list_model =

@@ -45,15 +45,6 @@ namespace GPlatesAppLogic
 			public LayerTask
 	{
 	public:
-		/**
-		 * Returns the name and description of this layer task.
-		 *
-		 * This is useful for display to the user so they know what this layer does.
-		 */
-		static
-		std::pair<QString, QString>
-		get_name_and_description();
-
 
 		/**
 		 * Can be used to create a layer automatically when a file is first loaded.
@@ -81,10 +72,10 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		std::pair<QString, QString>
-		get_layer_name_and_description() const
+		LayerTaskType::Type
+		get_layer_type() const
 		{
-			return get_name_and_description();
+			return LayerTaskType::RECONSTRUCT;
 		}
 
 

@@ -27,22 +27,17 @@
 #include <QToolTip>
 #include <QFrame>
 #include <QFontInfo>
-#include <QDebug>
 
 #include "ElidedLabel.h"
 
 #include "QtWidgetUtils.h"
 
 
-// There is a special character for the ellipsis, but for now, let's just use three periods
-// so we don't run into complications where the font doesn't have an ellipsis.
-const QString
-GPlatesQtWidgets::ElidedLabel::ELLIPSIS = "...";
-
-
 GPlatesQtWidgets::ElidedLabel::ElidedLabel(
+		Qt::TextElideMode mode,
 		QWidget *parent_) :
-	QWidget(parent_)
+	QWidget(parent_),
+	d_mode(mode)
 {
 	init();
 }
@@ -50,8 +45,10 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabel(
 
 GPlatesQtWidgets::ElidedLabel::ElidedLabel(
 		const QString &text_,
+		Qt::TextElideMode mode,
 		QWidget *parent_) :
-	QWidget(parent_)
+	QWidget(parent_),
+	d_mode(mode)
 {
 	init();
 
@@ -62,11 +59,31 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabel(
 void
 GPlatesQtWidgets::ElidedLabel::init()
 {
-	// Initialisation common to both constructors.
-	d_internal_label = new QLabel(this);
-	QtWidgetUtils::add_widget_to_placeholder(d_internal_label, this);
-	d_substring_widths_needs_updating = false;
-	d_is_truncated = false;
+	// Create the frame around the internal label and add it to this widget.
+	d_internal_label_frame = new QFrame(this);
+	QtWidgetUtils::add_widget_to_placeholder(d_internal_label_frame, this);
+
+	// Create the internal label and add it to the frame.
+	d_internal_label = new InternalLabel(d_text, d_is_elided, this);
+	QtWidgetUtils::add_widget_to_placeholder(d_internal_label, d_internal_label_frame);
+
+	d_is_elided = false;
+	d_internal_label_needs_updating = false;
+}
+
+
+void
+GPlatesQtWidgets::ElidedLabel::set_text_elide_mode(
+		Qt::TextElideMode mode)
+{
+	d_mode = mode;
+}
+
+
+Qt::TextElideMode
+GPlatesQtWidgets::ElidedLabel::get_text_elide_mode() const
+{
+	return d_mode;
 }
 
 
@@ -74,15 +91,14 @@ void
 GPlatesQtWidgets::ElidedLabel::setText(
 		const QString &text_)
 {
-	// Remember the text.
 	d_text = text_;
-
-	// Give the full text to the internal label for now so that the sizeHint (well,
-	// at least the height component) is calculated correctly.
+	
+	// We will calculate the elided text only upon painting, but for now, we give
+	// the full text to the internal label so that the sizeHint (well, at least
+	// the height component) is calculated correctly.
 	d_internal_label->setText(text_);
 
-	// Mark @a d_substring_widths as needing updating.
-	d_substring_widths_needs_updating = true;
+	d_internal_label_needs_updating = true;
 }
 
 
@@ -97,14 +113,14 @@ void
 GPlatesQtWidgets::ElidedLabel::setFrameStyle(
 		int style_)
 {
-	d_internal_label->setFrameStyle(style_);
+	d_internal_label_frame->setFrameStyle(style_);
 }
 
 
 int
 GPlatesQtWidgets::ElidedLabel::frameStyle() const
 {
-	return d_internal_label->frameStyle();
+	return d_internal_label_frame->frameStyle();
 }
 
 
@@ -112,36 +128,7 @@ void
 GPlatesQtWidgets::ElidedLabel::resizeEvent(
 		QResizeEvent *event_)
 {
-	update_internal_label();
-}
-
-
-void
-GPlatesQtWidgets::ElidedLabel::enterEvent(
-		QEvent *event_)
-{
-	if (d_is_truncated)
-	{
-		// The tooltip should have the same font family and size as our label.
-		QFontInfo font_info(d_internal_label->font());
-		QFont tool_tip_font(
-				font_info.family(),
-				font_info.pointSize(),
-				font_info.weight(),
-				font_info.italic());
-
-		// The tool tip should be positioned on top of our label.
-		QPoint tool_tip_pos = mapToGlobal(d_internal_label->pos());
-
-		// Move the tool tip towards bottom-right if the label has a frame.
-		if (d_internal_label->frameShape() != QFrame::NoFrame)
-		{
-			int frame_width = d_internal_label->frameWidth();
-			tool_tip_pos += QPoint(frame_width, frame_width);
-		}
-
-		ElidedLabelToolTip::showToolTip(d_text, tool_tip_pos, tool_tip_font);
-	}
+	d_internal_label_needs_updating = true;
 }
 
 
@@ -149,117 +136,94 @@ void
 GPlatesQtWidgets::ElidedLabel::paintEvent(
 		QPaintEvent *event_)
 {
-	if (d_substring_widths_needs_updating)
+	if (d_internal_label_needs_updating)
 	{
-		d_substring_widths_needs_updating = false;
-
-		update_substring_widths_map();
+		d_internal_label_needs_updating = false;
 		update_internal_label();
 	}
 
 	QWidget::paintEvent(event_);
 }
 
-void
-GPlatesQtWidgets::ElidedLabel::update_substring_widths_map()
-{
-	substring_width_map_type substring_widths;
-
-	if (d_text.length())
-	{
-		QFontMetrics font_metrics = fontMetrics();
-
-		// Calculate the width of the full string.
-		int full_width = font_metrics.width(d_text);
-
-		// Go through each of the substrings, and calculate the width of that substring
-		// with the ellipsis at the end. Ignore any that are wider (once the ellipsis
-		// has been added) than the width of the full string.
-		// Note that the loop does not consider the empty string or the full string as
-		// substrings.
-		for (int i = 1; i != d_text.length(); ++i)
-		{
-			QString substring = d_text.left(i);
-			substring.append(ELLIPSIS);
-
-			int substring_width = font_metrics.width(substring);
-			if (substring_width < full_width)
-			{
-				substring_widths.insert(std::make_pair(substring_width, i));
-			}
-		}
-
-		// Now add the length of the full string, without any ellipsis.
-		substring_widths.insert(std::make_pair(full_width, d_text.length()));
-	}
-
-	std::swap(d_substring_widths, substring_widths);
-}
-
 
 void
 GPlatesQtWidgets::ElidedLabel::update_internal_label()
 {
-	// Handle empty string case.
-	if (d_text.isEmpty())
-	{
-		d_internal_label->setText(QString());
-		return;
-	}
+	// Calculate the elided string and show it in the internal label.
+	QFontMetrics font_metrics(font());
+	QString elided_text = font_metrics.elidedText(d_text, d_mode, d_internal_label->width());
+	d_internal_label->setText(elided_text);
+	d_is_elided = (elided_text != d_text);
+}
 
-	substring_width_map_type::const_iterator iter = d_substring_widths.upper_bound(width());
 
-	// iter points to entry after the one that we want.
-	// We can always decrement iter because there is always at least one entry in
-	// the map, unless iter points to the first element.
-	if (iter == d_substring_widths.begin())
-	{
-		// This means the width isn't enough to even display one character, plus
-		// ellipsis. So let's just display the empty string.
-		d_internal_label->setText(QString());
-		d_is_truncated = true;
-	}
-	else
-	{
-		--iter;
-		int num_chars = iter->second;
+GPlatesQtWidgets::ElidedLabel::InternalLabel::InternalLabel(
+		const QString &full_text,
+		const bool &is_elided,
+		QWidget *parent_) :
+	QLabel(parent_),
+	d_full_text(full_text),
+	d_is_elided(is_elided)
+{
+}
 
-		// Put the ellipsis after the substring if the substring is not the full text.
-		if (num_chars == d_text.length())
-		{
-			d_internal_label->setText(d_text);
-			d_is_truncated = false;
-		}
-		else
-		{
-			d_internal_label->setText(d_text.left(num_chars) + ELLIPSIS);
-			d_is_truncated = true;
-		}
+
+void
+GPlatesQtWidgets::ElidedLabel::InternalLabel::enterEvent(
+		QEvent *event_)
+{
+	// Only show a tool tip if currently elided.
+	if (d_is_elided)
+	{
+		// The tool tip should have the exact same font as 'this'.
+		QFontInfo font_info(font());
+		QFont tool_tip_font(
+				font_info.family(),
+				font_info.pointSize(),
+				font_info.weight(),
+				font_info.italic());
+
+		// The tool tip should be positioned on top of 'this'.
+		QPoint tool_tip_pos = mapToGlobal(QPoint(0, 0));
+
+		ElidedLabelToolTip::showToolTip(
+				d_full_text,
+				tool_tip_font,
+				tool_tip_pos,
+				height());
 	}
 }
 
 
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::ElidedLabelToolTip() :
 	QDialog(NULL, Qt::Popup),
+	d_internal_label_frame(new QFrame(this)),
 	d_internal_label(new QLabel(this))
 {
 	// Put the internal label into a frame.
-	QFrame *label_frame = new QFrame(this);
-	label_frame->setFrameStyle(QFrame::Box | QFrame::Plain);
-	QtWidgetUtils::add_widget_to_placeholder(d_internal_label, label_frame);
+	d_internal_label_frame->setFrameStyle(QFrame::Box | QFrame::Plain);
+	QtWidgetUtils::add_widget_to_placeholder(d_internal_label, d_internal_label_frame);
 
 	// Put the frame into this widget.
-	QtWidgetUtils::add_widget_to_placeholder(label_frame, this);
+	QtWidgetUtils::add_widget_to_placeholder(d_internal_label_frame, this);
 }
 
 
 void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::showToolTip(
 		const QString &text,
+		const QFont &text_font,
 		const QPoint &global_pos,
-		const QFont &text_font)
+		int label_height)
 {
-	instance().do_show(text, global_pos, text_font);
+	instance().do_show(text, text_font, global_pos, label_height);
+}
+
+
+void
+GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::hideToolTip()
+{
+	instance().do_hide();
 }
 
 
@@ -282,18 +246,31 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::instance()
 void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 		const QString &text,
+		const QFont &text_font,
 		const QPoint &global_pos,
-		const QFont &text_font)
+		int label_height)
 {
 	d_internal_label->setText(text);
 
-	// Shift 1px towards top-left because of 1px frame.
-	move(global_pos - QPoint(1, 1));
+	// Shift towards top-left because of frame.
+	int frame_width = d_internal_label_frame->frameWidth();
+	move(global_pos - QPoint(frame_width, frame_width));
 
-	// This roundabout way of setting the font is a hack to make sure the size of
-	// tool tip is recalculated.
+	// This little song and dance is necessary to make sure the tool tip is resized
+	// correctly when the user moves the mouse from one ElidedLabel to another.
 	setFont(QFont());
 	setFont(text_font);
-
+	hide();
 	show();
+	QSize new_size = layout()->sizeHint();
+	new_size.setHeight(label_height + frame_width * 2);
+	resize(new_size);
 }
+
+
+void
+GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_hide()
+{
+	hide();
+}
+

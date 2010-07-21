@@ -60,25 +60,18 @@ namespace GPlatesPresentation
 
 	public:
 
-		typedef std::vector<GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type>
-			rendered_geometry_layer_seq_type;
-
+		/**
+		 * Constructor.
+		 */
 		VisualLayers(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection);
 
 		/**
-		 * Returns an ordered sequence of indices of child layers in the
-		 * RECONSTRUCTION_LAYER in the RenderedGeometryCollection.
-		 *
-		 * Layers are returned in increasing z-order, i.e. when drawing these layers,
-		 * start from the front and work towards the back.
+		 * Returns the number of visual layers.
 		 */
-		const rendered_geometry_layer_seq_type &
-		get_layer_order() const
-		{
-			return d_layer_order;
-		}
+		size_t
+		size() const;
 
 		/**
 		 * Moves the layer at @a from_index to @a to_index.
@@ -96,20 +89,32 @@ namespace GPlatesPresentation
 
 		/**
 		 * Returns the visual layer that is at position @a index in the layer ordering.
-		 *
-		 * Returns an invalid weak pointer if the index provided is invalid.
 		 */
 		boost::weak_ptr<const VisualLayer>
-		at(
+		visual_layer_at(
 				size_t index) const;
 
 		/**
 		 * Returns the visual layer that is at position @a index in the layer ordering.
-		 *
-		 * Returns an invalid weak pointer if the index provided is invalid.
 		 */
 		boost::weak_ptr<VisualLayer>
-		at(
+		visual_layer_at(
+				size_t index);
+
+		/**
+		 * Returns the rendered geometry child layer index belonging to the visual
+		 * layer at @a index.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
+		child_layer_index_at(
+				size_t index) const;
+
+		/**
+		 * Returns the rendered geometry child layer index belonging to the visual
+		 * layer at @a index.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
+		child_layer_index_at(
 				size_t index);
 
 		/**
@@ -129,6 +134,36 @@ namespace GPlatesPresentation
 		boost::weak_ptr<VisualLayer>
 		get_visual_layer(
 				const GPlatesAppLogic::Layer &layer);
+
+	private:
+
+		/**
+		 * Typedef for the container that stores the visual layers ordering.
+		 */
+		typedef std::vector<GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type>
+			rendered_geometry_layer_seq_type;
+
+	public:
+
+		/**
+		 * Typedef for const iterator over the ordering of visual layers.
+		 *
+		 * The order traversed by this iterator is the order in which the visual
+		 * layers should be drawn, i.e. from back to front.
+		 */
+		typedef rendered_geometry_layer_seq_type::const_iterator const_iterator;
+
+		/**
+		 * Returns the 'begin' iterator for the visual layers ordering.
+		 */
+		const_iterator
+		order_begin() const;
+
+		/**
+		 * Returns the 'end' iterator for the visual layers ordering.
+		 */
+		const_iterator
+		order_end() const;
 
 	public slots:
 

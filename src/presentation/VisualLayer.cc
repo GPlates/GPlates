@@ -188,7 +188,7 @@ GPlatesPresentation::VisualLayer::get_generated_name() const
 		boost::optional<InputFile> input_file = input_connection.get_input_file();
 		if (input_file)
 		{
-			result = input_file->get_file_info().get_display_name(false /* no absolute path */);
+			result = input_file->get_file_info().get_file_name_without_extension();
 			break;
 		}
 	}

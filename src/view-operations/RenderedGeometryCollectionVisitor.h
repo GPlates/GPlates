@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -82,7 +82,7 @@ namespace GPlatesViewOperations
 		 */
 		virtual
 		const ForwardReadableRange *
-		custom_child_layers_order(
+		get_custom_child_layers_order(
 				RenderedGeometryCollection::MainLayerType parent_layer)
 		{
 			return NULL;
@@ -137,7 +137,7 @@ namespace GPlatesViewOperations
 		 */
 		virtual
 		const ForwardReadableRange *
-		custom_child_layers_order(
+		get_custom_child_layers_order(
 				RenderedGeometryCollection::MainLayerType parent_layer)
 		{
 			return NULL;

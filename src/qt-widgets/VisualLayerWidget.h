@@ -38,10 +38,14 @@
 #include "VisualLayerWidgetUi.h"
 
 
+namespace GPlatesGui
+{
+	class VisualLayersProxy;
+}
+
 namespace GPlatesPresentation
 {
 	class VisualLayer;
-	class VisualLayers;
 }
 
 namespace GPlatesQtWidgets
@@ -134,7 +138,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		VisualLayerWidget(
-				GPlatesPresentation::VisualLayers &visual_layers,
+				GPlatesGui::VisualLayersProxy &visual_layers,
 				QWidget *parent_ = NULL);
 
 		void
@@ -152,33 +156,6 @@ namespace GPlatesQtWidgets
 	private:
 
 		/**
-		 * The BasicInfoWidget is the widget at the top that holds the name of the
-		 * layer and its type.
-		 */
-		class BasicInfoWidget :
-				public QWidget
-		{
-		public:
-
-			BasicInfoWidget(
-					QWidget *parent_ = NULL);
-
-			void
-			set_name(
-					const QString &name);
-
-			void
-			set_type(
-					const QString &type);
-
-		private:
-
-			ElidedLabel *d_name_label;
-			ElidedLabel *d_type_label;
-		};
-
-
-		/**
 		 * Displays an existing input connection.
 		 */
 		class InputConnectionWidget :
@@ -187,7 +164,7 @@ namespace GPlatesQtWidgets
 		public:
 
 			InputConnectionWidget(
-					GPlatesPresentation::VisualLayers &visual_layers,
+					GPlatesGui::VisualLayersProxy &visual_layers,
 					QWidget *parent_ = NULL);
 
 			/**
@@ -199,7 +176,7 @@ namespace GPlatesQtWidgets
 
 		private:
 
-			GPlatesPresentation::VisualLayers &d_visual_layers;
+			GPlatesGui::VisualLayersProxy &d_visual_layers;
 
 			ElidedLabel *d_input_connection_label;
 		};
@@ -215,7 +192,7 @@ namespace GPlatesQtWidgets
 		public:
 
 			InputChannelWidget(
-					GPlatesPresentation::VisualLayers &visual_layers,
+					GPlatesGui::VisualLayersProxy &visual_layers,
 					QWidget *parent_ = NULL);
 
 			/**
@@ -229,7 +206,7 @@ namespace GPlatesQtWidgets
 
 		private:
 
-			GPlatesPresentation::VisualLayers &d_visual_layers;
+			GPlatesGui::VisualLayersProxy &d_visual_layers;
 
 			ElidedLabel *d_input_channel_name_label;
 
@@ -263,7 +240,7 @@ namespace GPlatesQtWidgets
 		set_input_channel_data(
 				const GPlatesAppLogic::Layer &layer);
 
-		GPlatesPresentation::VisualLayers &d_visual_layers;
+		GPlatesGui::VisualLayersProxy &d_visual_layers;
 
 		/**
 		 * A weak pointer to the visual layer that we're currently displaying.
@@ -272,13 +249,6 @@ namespace GPlatesQtWidgets
 		 * a visual layer.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
-
-		/**
-		 * Displays the name and the type of the layer.
-		 *
-		 * Memory managed by Qt.
-		 */
-		BasicInfoWidget *d_basic_info_widget;
 
 		/**
 		 * A pointer to the expand/collapse icon on the left. For this icon, 'on'
@@ -296,12 +266,16 @@ namespace GPlatesQtWidgets
 		 */
 		VisualLayerWidgetInternals::ToggleIcon *d_visibility_icon;
 
+		ElidedLabel *d_name_label;
+
+		ElidedLabel *d_type_label;
+
 		/**
-		 * A pointer to the layout of the input_channels_groupbox.
+		 * A pointer to the layout of the input_channels_widget.
 		 *
 		 * Memory managed by Qt.
 		 */
-		QVBoxLayout *d_input_channels_groupbox_layout;
+		QVBoxLayout *d_input_channels_widget_layout;
 
 		/**
 		 * A pool of InputChannelWidgets that can be used to display information about

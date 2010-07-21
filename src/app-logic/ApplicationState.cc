@@ -31,7 +31,6 @@
 #include "FeatureCollectionFileIO.h"
 #include "Layer.h"
 #include "LayerTaskRegistry.h"
-#include "LayerTaskTypes.h"
 #include "ReconstructGraph.h"
 #include "ReconstructUtils.h"
 
@@ -78,8 +77,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 			// Empty reconstruction
 			Reconstruction::create(d_reconstruction_time, 0/*anchored_plate_id*/))
 {
-	// Register all layer task types with the layer task registry.
-	LayerTaskTypes::register_layer_task_types(*d_layer_task_registry, *this);
+	// Register default layer task types with the layer task registry.
+	register_default_layer_task_types(*d_layer_task_registry);
 
 	mediate_signal_slot_connections();
 }

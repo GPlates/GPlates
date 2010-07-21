@@ -35,7 +35,7 @@
 
 GPlatesGui::Globe::Globe(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
+		const GPlatesPresentation::VisualLayers &visual_layers,
 		ProxiedTexture &texture_,
 		RenderSettings &render_settings,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
@@ -43,14 +43,14 @@ GPlatesGui::Globe::Globe(
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_render_settings(render_settings),
 	d_rendered_geom_collection(rendered_geom_collection),
-	d_reconstruction_layer_order(reconstruction_layer_order),
+	d_visual_layers(visual_layers),
 	d_texture(texture_),
 	d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
 	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
 	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
 	d_rendered_geom_collection_painter(
 			rendered_geom_collection,
-			reconstruction_layer_order,
+			visual_layers,
 			d_render_settings,
 			text_renderer_ptr,
 			visibility_tester,
@@ -65,14 +65,14 @@ GPlatesGui::Globe::Globe(
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_render_settings(existing_globe.d_render_settings),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
-	d_reconstruction_layer_order(existing_globe.d_reconstruction_layer_order),
+	d_visual_layers(existing_globe.d_visual_layers),
 	d_texture(existing_globe.d_texture),
 	d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
 	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
 	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
 	d_rendered_geom_collection_painter(
 			d_rendered_geom_collection,
-			d_reconstruction_layer_order,
+			d_visual_layers,
 			d_render_settings,
 			text_renderer_ptr,
 			visibility_tester,

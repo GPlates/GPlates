@@ -44,7 +44,7 @@ set(srcs
     Profile.cc
     Profile.h
     ReferenceCount.h
-    SafeBool.h
+    ScopeGuard.h
     Select.h
     Singleton.h
     SmartNodeLinkedList.h

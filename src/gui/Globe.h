@@ -66,7 +66,7 @@ namespace GPlatesGui
 
 		Globe(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
+				const GPlatesPresentation::VisualLayers &visual_layers,
 				ProxiedTexture &texture_,
 				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
@@ -145,7 +145,7 @@ namespace GPlatesGui
 		//! The collection of @a RenderedGeometry objects we need to paint.
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
-		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &d_reconstruction_layer_order;
+		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		ProxiedTexture &d_texture;
 

@@ -37,13 +37,13 @@
 
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollectionPainter(
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &reconstruction_layer_order,
+		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
-	d_reconstruction_layer_order(reconstruction_layer_order),
+	d_visual_layers(visual_layers),
 	d_current_layer_far_depth(0),
 	d_depth_range_per_layer(0),
 	d_render_settings(render_settings),
