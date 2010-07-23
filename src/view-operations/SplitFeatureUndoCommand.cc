@@ -212,6 +212,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	// clicking on geometry. In any case they probably only split a feature once.
 	// For now let's only set focus when the user sets focus.
 #if 1
+	d_view_state->get_application_state().reconstruct();
 	d_feature_focus->unset_focus();
 #else
 	d_feature_focus->set_focus(
@@ -257,12 +258,16 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 	// clicking on geometry. In any case they probably only split a feature once.
 	// For now let's only set focus when the user sets focus.
 #if 1
-	d_feature_focus->unset_focus();
+	//save the 	d_feature_focus pointer to local variable before it is destroyed by reconstruct.
+	GPlatesGui::FeatureFocus * feature_focus = d_feature_focus;
+	//DON'T USE ANY DATA MEMBER OF "UNDO OBJECT" AFTER RECONSTRUCTIOIN HAS BEEN CALLED.
+	d_view_state->get_application_state().reconstruct();
+	feature_focus->unset_focus();
 #else
 	d_feature_focus->set_focus(*d_old_feature, it);
 #endif
 
-	d_feature_focus->announce_modification_of_focused_feature();
+	feature_focus->announce_modification_of_focused_feature();
 #endif
 
 #if 0
