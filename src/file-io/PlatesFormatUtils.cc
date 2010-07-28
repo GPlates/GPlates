@@ -329,6 +329,13 @@ namespace
 	}
 
 	UnicodeString
+	get_data_type_code_for_slab(
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
+	{
+		return "SL";
+	}
+
+	UnicodeString
 	get_data_type_code_for_suture(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -517,6 +524,8 @@ namespace
 					get_data_type_code_for_ridge_segment;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Seamount")] = 
 					get_data_type_code_for_seamount;
+			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Slab")] = 
+					get_data_type_code_for_slab;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Suture")] = 
 					get_data_type_code_for_suture;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("TerraneBoundary")] = 

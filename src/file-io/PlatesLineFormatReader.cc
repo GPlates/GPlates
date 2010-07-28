@@ -1469,6 +1469,17 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_slab(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const geometry_seq_type &geometry_seq)
+	{
+		return create_common(model, collection, header, geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("Slab"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
+	}
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_subduction_zone(
@@ -1716,6 +1727,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		map["RA"] = create_island_arc_inactive;
 		map["RF"] = create_reverse_fault;
 		map["RI"] = create_ridge_segment;
+		map["SL"] = create_slab;
 		map["SM"] = create_seamount;
 		map["SS"] = create_strike_slip_fault;
 		map["SU"] = create_suture;
