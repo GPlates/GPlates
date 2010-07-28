@@ -854,10 +854,10 @@ GPlatesFileIO::PropertyCreationUtils::create_gpml_strike_slip_enumeration(
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
-GPlatesFileIO::PropertyCreationUtils::create_gpml_subduction_side_enumeration(
+GPlatesFileIO::PropertyCreationUtils::create_gpml_subduction_polarity_enumeration(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
 {
-	return create_enumeration(elem, "gpml:SubductionSideEnumeration");
+	return create_enumeration(elem, "gpml:SubductionPolarityEnumeration");
 }
 
 

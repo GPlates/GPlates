@@ -241,10 +241,10 @@ namespace GPlatesFileIO
 
 
 		GPlatesPropertyValues::Enumeration::non_null_ptr_type
-		create_gpml_subduction_side_enumeration(
+		create_gpml_subduction_polarity_enumeration(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
 
-		AS_PROP_VAL(create_gpml_subduction_side_enumeration)
+		AS_PROP_VAL(create_gpml_subduction_polarity_enumeration)
 
 
 		GPlatesPropertyValues::GpmlRevisionId::non_null_ptr_type

@@ -450,8 +450,8 @@ namespace
 
 			// We just visited 'feature' looking for:
 			// - a feature type of "SubductionZone",
-			// - a property named "subductingSlab",
-			// - a property type of "gpml:SubductionSideEnumeration".
+			// - a property named "subductionPolarity",
+			// - a property type of "gpml:SubductionPolarityEnumeration".
 			// - an enumeration value other than "Unknown".
 			//
 			// If we didn't find this information then look for the "sL" and "sR"
@@ -510,16 +510,16 @@ namespace
 		initialise_pre_property_values(
 				const GPlatesModel::TopLevelPropertyInline &)
 		{
-			static const GPlatesModel::PropertyName subducting_slab_property_name =
-					GPlatesModel::PropertyName::create_gpml("subductingSlab");
+			static const GPlatesModel::PropertyName subduction_polarity_property_name =
+					GPlatesModel::PropertyName::create_gpml("subductionPolarity");
 
-			// Only interested in detecting the "subductingSlab" property.
-			// If something is not a subducting slab then it is considering a ridge/transform.
-			return current_top_level_propname() == subducting_slab_property_name;
+			// Only interested in detecting the "subductionPolarity" property.
+			// If something is not a subduction zone then it is considering a ridge/transform.
+			return current_top_level_propname() == subduction_polarity_property_name;
 		}
 
 
-		// Need this since "SubductionSideEnumeration" is in a time-dependent property value.
+		// Need this since "SubductionPolarityEnumeration" is in a time-dependent property value.
 		virtual
 		void
 		visit_gpml_constant_value(
@@ -529,7 +529,7 @@ namespace
 		}
 
 
-		// Need this since "SubductionSideEnumeration" is in a time-dependent property value.
+		// Need this since "SubductionPolarityEnumeration" is in a time-dependent property value.
 		virtual
 		void
 		visit_gpml_irregular_sampling(
@@ -549,7 +549,7 @@ namespace
 		}
 
 
-		// Need this since "SubductionSideEnumeration" is in a time-dependent property value.
+		// Need this since "SubductionPolarityEnumeration" is in a time-dependent property value.
 		virtual
 		void
 		visit_gpml_piecewise_aggregation(
@@ -575,9 +575,9 @@ namespace
 		visit_enumeration(
 				const GPlatesPropertyValues::Enumeration &enumeration)
 		{
-			static const GPlatesPropertyValues::EnumerationType subduction_side_enumeration_type(
-					"gpml:SubductionSideEnumeration");
-			if (!subduction_side_enumeration_type.is_equal_to(enumeration.type()))
+			static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type(
+					"gpml:SubductionPolarityEnumeration");
+			if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.type()))
 			{
 				return;
 			}
