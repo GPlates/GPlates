@@ -462,11 +462,17 @@ namespace
 				get_sub_segment_feature_type_from_old_plates_header(feature);
 			}
 
+			# if 0
+			// NOTE: do not call this function;
+			// The sL or sR property is set by the feature, and should not change
+			// for any sub-segment
+			//
 			// Check if the sub_segment is being used in reverse in the polygon boundary
 			if (sub_segment.get_use_reverse())
 			{
 				reverse_orientation();
 			}
+			#endif
 
 			return d_sub_segment_type;
 		}
