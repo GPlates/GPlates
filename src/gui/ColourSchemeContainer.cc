@@ -176,6 +176,12 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 			Colour::get_white(),
 			"white");
 	add_single_colour_scheme(
+			Colour::get_black(),
+			"black");
+	add_single_colour_scheme(
+			Colour::get_silver(),
+			"silver");
+	add_single_colour_scheme(
 			*HTMLColourNames::instance().get_colour("gold"),
 			"gold");
 	add_single_colour_scheme(
