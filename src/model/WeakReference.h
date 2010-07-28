@@ -36,6 +36,9 @@
 #include "WeakObserverVisitor.h"
 #include "WeakReferenceCallback.h"
 
+#include "utils/SafeBool.h"
+
+
 namespace GPlatesModel
 {
 	/**
@@ -90,7 +93,8 @@ namespace GPlatesModel
 	 */
 	template<typename H>
 	class WeakReference:
-			public WeakObserver<H>
+			public WeakObserver<H>,
+			public GPlatesUtils::SafeBool<WeakReference<H> >
 	{
 
 	public:
@@ -187,13 +191,16 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return whether this pointer is valid to be deferenced.
-		 *
-		 * This is equivalent to calling is_valid() on the WeakReference.
+		 * Return whether this pointer is valid to be deferenced. This is equivalent
+		 * to calling is_valid() on the WeakReference.
 		 *
 		 * This function will not throw.
+		 *
+		 * This function is provided for the benefit of the SafeBool base class, which
+		 * provides operator bool().
 		 */
-		operator bool() const
+		bool
+		boolean_test() const
 		{
 			return is_valid();
 		}

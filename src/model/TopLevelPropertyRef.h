@@ -34,6 +34,9 @@
 
 #include "global/PointerTraits.h"
 
+#include "utils/SafeBool.h"
+
+
 namespace GPlatesModel
 {
 	class FeatureHandle;
@@ -85,7 +88,8 @@ namespace GPlatesModel
 	 * return boost::intrusive_ptrs to child elements on dereference; this is also
 	 * the case for const FeatureHandles.
 	 */
-	class TopLevelPropertyRef
+	class TopLevelPropertyRef :
+			public GPlatesUtils::SafeBool<TopLevelPropertyRef>
 	{
 
 	public:
@@ -118,7 +122,9 @@ namespace GPlatesModel
 		operator=(
 				GPlatesGlobal::PointerTraits<const TopLevelProperty>::non_null_ptr_type new_property);
 
-		operator bool() const;
+		// operator bool() provided by SafeBool.
+		bool
+		boolean_test() const;
 
 	private:
 
