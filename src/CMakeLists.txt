@@ -227,12 +227,12 @@ endforeach(dir)
 # Compile and run the gplates-extract-svn-info executable, which generates SubversionInfo.cc,
 # a file that contains the parsed output of the 'svnversion' and 'svn info' commands.
 #
-# There is an optional CMake variable called GPlates_SOURCE_CODE_CONTROL_VERSION
+# There is an optional CMake variable called GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING
 # that, if set, will cause the value of that variable to be used as the source
 # control version instead of any value read from `svnversion` and "" to be
 # used as the branch name. This optional variable is useful when making public
 # releases from a branch (e.g. the 0.9.9 branch) or an exported source tree. The
-# CMake type of the GPlates_SOURCE_CODE_CONTROL_VERSION variable is STRING; it
+# CMake type of the GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING variable is STRING; it
 # may be set to non-numeric string values.
 #
 add_executable(gplates-extract-svn-info
@@ -245,7 +245,7 @@ else (WIN32)
 	set (GPlates_EXTRACT_SVN_INFO_PATH ${EXECUTABLE_OUTPUT_PATH}/gplates-extract-svn-info)
 endif (WIN32)
 add_custom_target(
-	run-gplates-extract-svn-info ALL ${GPlates_EXTRACT_SVN_INFO_PATH} ${CMAKE_SOURCE_DIR} ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} ${GPlates_SOURCE_CODE_CONTROL_VERSION}
+	run-gplates-extract-svn-info ALL ${GPlates_EXTRACT_SVN_INFO_PATH} ${CMAKE_SOURCE_DIR} ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} ${GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING}
 	DEPENDS gplates-extract-svn-info)
 # Create a dummy output file so that CMake doesn't complain about it being missing.
 file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")

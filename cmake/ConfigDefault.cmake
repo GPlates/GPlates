@@ -63,6 +63,12 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates s
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}environment, the Inkscape vector graphics editor and the Tango icon library.\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html>\\n")
 
+# The subversion revision of the GPlates source code.
+# This is manually set when making GPlates *public* releases.
+# However, when making internal releases or just an ordinary developer build, leave it
+# empty; if it is empty, the revision number is automatically populated for you on build.
+set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "")
+
 # List the Qt plugins used by GPlates.
 # This is needed for packaging standalone versions of GPlates for a binary installer.
 # NOTE: each plugin listed should have its own double quotes as these are list variables.
