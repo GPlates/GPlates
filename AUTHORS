@@ -4,6 +4,7 @@ of the University of Sydney, Australia:
  James Clark
  John Cannon
  Enoch Lau
+ Michael Chin
  Mike Dowman
  James Farrow
  Glen Fernandes
@@ -19,10 +20,11 @@ The GPlates source code contains code written by the following employees
 of the California Institute of Technology:
  Mark Turner
 
-The GPlates source code contains code which was originally written by the
-following individuals:
- James Boyden (from the ReconTreeViewer software)
- Peter Dimov (from the Boost intrusive_ptr class template)
+The GPlates source code also contains code derived from:
+ ReconTreeViewer (James Boyden)
+ Boost intrusive_ptr (Peter Dimov)
+ Loki ScopeGuard (Andrei Alexandrescu, Petru Marginean, Joshua Lehrer)
+ Loki RefToValue (Richard Sposato, Peter Kummel)
 
-The GPlates source tree additionally contains icons which were part of the
-artwork for the GNOME desktop environment.
+The GPlates source tree additionally contains icons from the GNOME desktop
+environment, the Inkscape vector graphics editor and the Tango icon library.
