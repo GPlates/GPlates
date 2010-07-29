@@ -61,6 +61,7 @@ set(srcs
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
     LineReader.h
+    MipmappedRasterFormat.h
     OgrException.h
     OgrWriter.cc
     OgrWriter.h

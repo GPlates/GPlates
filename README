@@ -11,21 +11,11 @@ A copy of the license can be found in the file "COPYING" in this directory.
 Compiling GPlates on Linux
 --------------------------
 
-To compile GPlates on Linux, you will need the following programs and libraries
-installed:
- * CMake (2.4 or newer)
- * g++ 4
- * make
- * GL library (the OpenGL shared library)
- * GLU library (the OpenGL Utility shared library)
- * Expat library
- * Qt library (version 4.3.2 or newer)
- * ICU library
- * Boost library headers
- * Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
- * Computational Geometry Algorithms Library (CDAL) (3.3.1 or newer)
+To compile GPlates on Linux, you will need the programs and libraries as
+documented in the "Program and library dependencies" section in the "DEPS.Linux"
+file in this directory.
 
-To compile on Linux, execute:
+After installing those dependencies, to compile on Linux, execute:
 	cmake .
 	make
 and then optionally:
@@ -35,23 +25,14 @@ More information can be found in the files "DEPS.Linux" and "BUILD.Linux" in
 this directory.
 
 
-Compiling GPlates on Mac OSX
-----------------------------
+Compiling GPlates on Mac OS X
+-----------------------------
 
-To compile GPlates on Mac OSX, you will need the following programs and libraries
-installed:
- * CMake (2.4 or newer)
- * g++ 4
- * make
- * GL library (the OpenGL shared library)
- * GLU library (the OpenGL Utility shared library)
- * Qt library (version 4.3.2 or newer)
- * ICU library
- * Boost library headers
- * Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
- * Computational Geometry Algorithms Library (CDAL) (3.3.1 or newer)
+To compile GPlates on Mac OS X, you will need the programs and libraries as
+documented in the "Program and library dependencies" section in the "DEPS.OSX"
+file in this directory.
 
-To compile on Mac OSX, execute:
+After installing those dependencies, to compile on Mac OS X, execute:
 	cmake .
 	make
 and then optionally:
@@ -64,21 +45,15 @@ this directory.
 Compiling GPlates on Windows
 ----------------------------
 
-To compile GPlates on Microsoft Windows, you will need the following programs
-and libraries installed:
- * CMake (2.4 or newer)
- * Microsoft Visual Studio 8
- * Qt (version 4.3.4 or newer)
- * ICU
- * Boost
- * Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
- * Computational Geometry Algorithms Library (CDAL) (3.3.1 or newer)
+To compile GPlates on Microsoft Windows, you will need the programs and libraries
+as documented in the "Program and library dependencies" section in the "DEPS.Windows"
+file in this directory.
 
 To compile on Windows:
  * Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
    Boost, GDAL and ICU packages you've installed.
  * The Gzip package should be found automatically if it's installed in 'C:/Program Files/GnuWin32/'.
- * Run the CMake program ('CMakeSetup.exe'). CMake 2.4.8 and above is fine.
+ * Run the CMake program ('CMakeSetup.exe'). CMake 2.6.2 and above is fine.
       Vista NOTE: You need to elevate permissions on 'CMakeSetup.exe' by
       right-click->properties->compatibility(tab)->check "run this program as an administrator".
  * Set both the 'source' and 'build' directories to the root GPlates source directory
@@ -88,10 +63,10 @@ To compile on Windows:
  * Click 'configure' once more.
  * Click 'OK'.
  * Open newly created 'GPlates.sln' with the Visual Studio IDE.
- * Select 'release' build from the "Build->Configuration Manager..." menu.
+ * Select 'Release' build from the "Build->Configuration Manager..." menu.
  * Rebuild All from the Build menu.
 
-More information can be found in the file "BUILD.Windows" in this directory.
+More information can be found in the files "DEPS.Windows" and "BUILD.Windows" in this directory.
 
 
 GPlates on the Web
@@ -99,7 +74,4 @@ GPlates on the Web
 
 For up-to-date information about GPlates, you can go to the GPlates website:
  http://www.gplates.org/
-
-
-This README was last updated 2009-06-17 by James Boyden.
 

@@ -223,7 +223,7 @@ namespace
 		GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type raw_raster =
 			GPlatesPropertyValues::Rgba8RawRaster::create(
 					image_size.width(), image_size.height());
-		GPlatesGui::rgba8_t *raw_raster_buf = raw_raster->data().get();
+		GPlatesGui::rgba8_t *raw_raster_buf = raw_raster->data();
 		GPlatesGui::rgba8_t *source_buf = reinterpret_cast<GPlatesGui::rgba8_t *>(image.bits());
 		std::copy(
 				source_buf,

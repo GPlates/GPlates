@@ -118,6 +118,7 @@ set(srcs
     MapProjection.h
     MapTransform.cc
     MapTransform.h
+    Mipmapper.h
     NurbsRenderer.cc
     NurbsRenderer.h
     OpaqueSphere.cc

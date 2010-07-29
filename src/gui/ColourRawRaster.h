@@ -102,7 +102,7 @@ namespace GPlatesGui
 		GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type
 		colour_raw_raster(
 				RawRasterType &source,
-				typename ColourPalette<typename RawRasterType::element_type>::non_null_ptr_type colour_palette)
+				const typename ColourPalette<typename RawRasterType::element_type>::non_null_ptr_type &colour_palette)
 		{
 			// Creates an uninitialised RGBA8 raster with the same width and height (in
 			// pixels) as the original raster.
@@ -112,15 +112,10 @@ namespace GPlatesGui
 				GPlatesPropertyValues::Rgba8RawRaster::create(width, height);
 
 			// Get pointers to the source and destination buffers.
-			// It's important to hold a shared_array while operating on these buffers
-			// in case they get swept out from underneath us.
 			typedef typename RawRasterType::element_type source_element_type;
-			boost::shared_array<source_element_type> source_array = source.data();
-			source_element_type *source_buf = source_array.get();
+			source_element_type *source_buf = source.data();
 			const unsigned int source_size = width * height;
-
-			boost::shared_array<rgba8_t> dest_array = rgba_raster->data();
-			rgba8_t *dest_buf = dest_array.get();
+			rgba8_t *dest_buf = rgba_raster->data();
 
 			std::transform(source_buf, source_buf + source_size, dest_buf,
 					ColourRawRasterInternals::ColourPaletteFunctor<RawRasterType>(
@@ -133,7 +128,7 @@ namespace GPlatesGui
 		GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type
 		colour_raw_raster<GPlatesPropertyValues::Rgba8RawRaster>(
 				GPlatesPropertyValues::Rgba8RawRaster &source,
-				ColourPalette<rgba8_t>::non_null_ptr_type palette);
+				const ColourPalette<rgba8_t>::non_null_ptr_type &palette);
 			// This is intentionally not defined anywhere, because you can't colour a
 			// raster already in RGBA format.
 
@@ -156,7 +151,7 @@ namespace GPlatesGui
 				using GPlatesPropertyValues::RawRasterVisitor::visit;
 
 				ColourRawRasterVisitor(
-						typename ColourPalette<T>::non_null_ptr_type colour_palette) :
+						const typename ColourPalette<T>::non_null_ptr_type &colour_palette) :
 					d_colour_palette(colour_palette)
 				{  }
 
@@ -274,7 +269,7 @@ namespace GPlatesGui
 		boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type>
 		colour_raw_raster(
 				GPlatesPropertyValues::RawRaster &source,
-				typename ColourPalette<T>::non_null_ptr_type colour_palette)
+				const typename ColourPalette<T>::non_null_ptr_type &colour_palette)
 		{
 			ColourRawRasterInternals::ColourRawRasterVisitor<T> visitor(colour_palette);
 			source.accept_visitor(visitor);

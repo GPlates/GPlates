@@ -22,25 +22,51 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <iostream>
+#ifndef GPLATES_UNIT_TEST_REAL_TEST_H
+#define GPLATES_UNIT_TEST_REAL_TEST_H
 
-#include <QDebug>
+#include <boost/test/unit_test.hpp>
 
-#include "GuiTestSuite.h"
-#include "TestSuiteFilter.h"
-#include "MipmapperTest.h"
+#include "GPlatesTestSuite.h"
 
-GPlatesUnitTest::GuiTestSuite::GuiTestSuite(
-		unsigned level) : 
-	GPlatesUnitTest::GPlatesTestSuite(
-			"GuiTestSuite")
+
+namespace GPlatesUnitTest
 {
-	init(level);
+	class MipmapperTest
+	{
+	public:
+
+		void
+		test_extend_raster1();
+
+		void
+		test_extend_raster2();
+		
+		void
+		test_extend_raster3();
+
+		void
+		test_extend_raster4();
+
+		void
+		test_rgba_mipmapper();
+	};
+
+	
+	class MipmapperTestSuite : 
+			public GPlatesUnitTest::GPlatesTestSuite
+	{
+	public:
+
+		MipmapperTestSuite(
+				unsigned depth);
+
+	protected:
+
+		void 
+		construct_maps();
+	};
 }
 
-void 
-GPlatesUnitTest::GuiTestSuite::construct_maps()
-{
-	ADD_TESTSUITE(Mipmapper);
-}
+#endif //GPLATES_UNIT_TEST_REAL_TEST_H 
 

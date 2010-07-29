@@ -119,6 +119,21 @@ GPlatesGui::operator<<(
 }
 
 
+std::ostream &
+GPlatesGui::operator<<(
+		std::ostream &os,
+		const rgba8_t &c)
+{
+	os << "("
+			<< static_cast<int>(c.red) << ", "
+			<< static_cast<int>(c.green) << ", "
+			<< static_cast<int>(c.blue) << ", "
+			<< static_cast<int>(c.alpha) << ")";
+
+	return os;
+}
+
+
 GPlatesGui::Colour
 GPlatesGui::Colour::linearly_interpolate(
 		GPlatesGui::Colour first,

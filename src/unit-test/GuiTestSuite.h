@@ -27,7 +27,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "unit-test/GPlatesTestSuite.h"
+#include "GPlatesTestSuite.h"
 
 namespace GPlatesUnitTest
 {

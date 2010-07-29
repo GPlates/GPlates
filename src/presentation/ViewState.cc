@@ -470,7 +470,7 @@ GPlatesPresentation::ViewState::update_texture_from_raw_raster()
 
 	// Feed the bytes into Texture.
 	GPlatesGui::Texture &texture = *get_texture();
-	GPlatesGui::rgba8_t *rgba8_buf = (*rgba8_raster_opt)->data().get();
+	GPlatesGui::rgba8_t *rgba8_buf = (*rgba8_raster_opt)->data();
 	GPlatesPropertyValues::InMemoryRaster::ColourFormat format =
 		GPlatesPropertyValues::InMemoryRaster::RgbaFormat;
 	texture.generate_raster(

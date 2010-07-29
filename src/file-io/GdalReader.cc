@@ -206,8 +206,7 @@ namespace
 		typename RawRasterType::non_null_ptr_type result =
 			RawRasterType::create(raster_width, raster_height);
 		typedef typename RawRasterType::element_type raster_element_type;
-		boost::shared_array<raster_element_type> raster_array = result->data();
-		raster_element_type *raster_buf = raster_array.get();
+		raster_element_type *raster_buf = result->data();
 
 		// Read it in line by line.
 		for (int i = 0; i != raster_height; ++i)

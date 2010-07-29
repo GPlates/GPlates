@@ -20,6 +20,13 @@ if (NOT Boost_INCLUDE_DIR)
 	message(FATAL_ERROR "Boost include path not found - please make sure boost is installed.")
 endif (NOT Boost_INCLUDE_DIR)
 
+# Special case for ImageMagick, because we need to specify the Magick++
+# component.
+find_package(ImageMagick COMPONENTS Magick++)
+if (NOT ImageMagick_INCLUDE_DIRS)
+	message(FATAL_ERROR "ImageMagick include path not found - please make sure ImageMagick is installed.")
+endif (NOT ImageMagick_INCLUDE_DIRS)
+
 # The program_options library is now required for GPlates (both the GUI and command-line versions).
 if (NOT Boost_PROGRAM_OPTIONS_FOUND)
 	message(FATAL_ERROR "Boost program_options library not found - please make sure it is installed.")
@@ -204,7 +211,8 @@ set(external_INCLUDE_DIRS
 	${GDAL_INCLUDE_DIR}
 	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
 	${Boost_INCLUDE_DIR}
-	${PROJ4_INCLUDE_DIR})
+	${PROJ4_INCLUDE_DIR}
+	${ImageMagick_INCLUDE_DIRS})
 	
 # Internal include directories:
 set(internal_INCLUDE_DIRS
@@ -375,7 +383,8 @@ set(dependency_LIBS
 	${ICU_LIBRARIES}
 	${QT_LIBRARIES}
 	${OPENGL_LIBRARIES}
-	${PROJ4_LIBRARY})
+	${PROJ4_LIBRARY}
+	${ImageMagick_LIBRARIES})
 
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).

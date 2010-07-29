@@ -30,7 +30,7 @@ Program and library dependencies
 To compile GPlates, you will need the following programs and libraries
 installed:
 
-  • cmake
+  • cmake (2.6.2 or newer)
   • g++ 4.x
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
@@ -40,6 +40,7 @@ installed:
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
   • Computational Geometry Algorithms Library (CGAL) (3.3.1 or newer)
   • PROJ.4 (4.6.0 or newer)
+  • ImageMagick
 
 Corresponding package dependencies
 
@@ -71,6 +72,7 @@ Qt              libqt4-gui libqt4-dev (See note below.)
 GDAL            libgdal1-dev libgdal1-1.4.0
 CGAL            libcgal-dev libcgal2
 PROJ.4          proj
+ImageMagick     libmagick++-dev
 
 How to install via a GUI (recommended)
 
@@ -174,3 +176,4 @@ Qt              qt-devel
 GDAL            gdal-devel
 CGAL            CGAL-devel
 PROJ.4          proj-devel
+ImageMagick     ImageMagick-c++-devel

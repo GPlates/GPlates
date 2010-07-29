@@ -357,6 +357,11 @@ namespace GPlatesGui
 	operator<<(
 			std::ostream &os,
 			const Colour &c);
+
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const rgba8_t &c);
 }
 
 #endif  // GPLATES_GUI_COLOUR_H

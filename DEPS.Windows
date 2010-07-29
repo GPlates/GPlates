@@ -56,6 +56,10 @@ version number of x.y.z, you should aim to keep x and y the same). However,
 GPlates should compile and function correctly with newer versions of these
 dependencies.
 
+Microsoft Visual Studio
+
+  1. Install Visual Studio 8 (2005) or newer.
+
 CMake
 
   1. Get and install cmake-2.6.2-win32-x86.exe from: http://www.cmake.org/
@@ -138,6 +142,15 @@ gzip
          environment for Windows, contains gzip.
   2. Add the location of the gzip executable to the PATH environment variable
      (see above).
+
+ImageMagick
+
+  1. Get and install the Q16 DLL version of ImageMagick from
+     http://www.imagemagick.org/script/binary-releases.php
+  2. During the installation, a number of options will be presented to you:
+       * Ensure "Add application directory to your system path" is selected.
+       * Ensure "Install development headers and libraries for C and C++" is selected.
+       * The other options are not required, but may be chosen to taste.
 
 Subversion (optional, but recommended for developers)
 

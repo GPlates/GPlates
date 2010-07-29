@@ -30,7 +30,7 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
-#include <boost/shared_array.hpp>
+#include <boost/scoped_array.hpp>
 
 #include "RasterStatistics.h"
 
@@ -123,16 +123,30 @@ namespace GPlatesPropertyValues
 				return d_height;
 			}
 
-			boost::shared_array<T>
+			T *
 			data()
 			{
-				return d_data;
+				return d_data.get();
+			}
+
+			const T *
+			data() const
+			{
+				return d_data.get();
 			}
 
 			T &
 			at(
 					unsigned int x_pixel,
 					unsigned int y_line)
+			{
+				return d_data[y_line * d_width + x_pixel];
+			}
+
+			const T &
+			at(
+					unsigned int x_pixel,
+					unsigned int y_line) const
 			{
 				return d_data[y_line * d_width + x_pixel];
 			}
@@ -145,7 +159,7 @@ namespace GPlatesPropertyValues
 		private:
 
 			unsigned int d_width, d_height;
-			boost::shared_array<T> d_data;
+			boost::scoped_array<T> d_data;
 		};
 
 		/**
@@ -602,6 +616,11 @@ namespace GPlatesPropertyValues
 			return new RawRasterImpl(width_, height_, data_, statistics_);
 		}
 
+		/**
+		 * Creates a raster that has the given @a data_ and @a no_data_value_.
+		 *
+		 * This instance takes ownership of @a data_.
+		 */
 		static
 		non_null_ptr_type
 		create(

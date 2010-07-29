@@ -36,6 +36,8 @@ set(srcs
     MathsTestSuite.h
     MeshGeneratorTest.cc
     MeshGeneratorTest.h
+    MipmapperTest.cc
+    MipmapperTest.h
     ModelTestSuite.cc
     ModelTestSuite.h
     PresentationTestSuite.cc
