@@ -164,7 +164,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor);
 
 		inline 
-		const ReconstructedVirtualGeomagneticPoleParams&
+		const ReconstructedVirtualGeomagneticPoleParams &
 		vgp_params() const
 		{
 			return d_VGP_params;
@@ -186,15 +186,16 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_):
-			d_VGP_params(params),
 			ReconstructedFeatureGeometry(
 					reconstruction_tree_,
 					geometry_ptr,
 					feature_handle,
 					property_iterator_,
 					reconstruction_plate_id_,
-					time_of_formation_)
+					time_of_formation_),
+			d_VGP_params(params)
 		{  }
+
 		ReconstructedVirtualGeomagneticPoleParams d_VGP_params;
 	};
 }

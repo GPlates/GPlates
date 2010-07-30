@@ -116,7 +116,7 @@ namespace GPlatesPresentation
 
 		inline
 		const GPlatesAppLogic::ApplicationState &
-		GPlatesPresentation::ViewState::get_application_state() const
+		get_application_state() const
 		{
 			return d_application_state;
 		}
