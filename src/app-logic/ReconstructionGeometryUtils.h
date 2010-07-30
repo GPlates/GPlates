@@ -32,6 +32,8 @@
 #include <boost/optional.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 	
+#include "model/FeatureVisitor.h"
+
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionGeometry.h"
@@ -626,6 +628,53 @@ namespace GPlatesAppLogic
 
 			return get_time_of_formation_visitor.get_time_of_formation();
 		}
+
+		/**
+		* Determines if there are any paleomag features in the collection.
+		*/
+		class DetectPaleomagFeatures:
+			public GPlatesModel::ConstFeatureVisitor
+		{
+		public:
+			DetectPaleomagFeatures() :
+				d_found_paleomag_features(false)
+			{  }
+
+
+			bool
+			has_paleomag_features() const
+			{
+				return d_found_paleomag_features;
+			}
+
+
+			virtual
+			void
+			visit_feature_handle(
+					const GPlatesModel::FeatureHandle &feature_handle)
+			{
+				if (d_found_paleomag_features)
+				{
+					// We've already found a paleomag feature so just return.
+					return;
+				}
+
+				static const GPlatesModel::FeatureType paleomag_feature_type = 
+					GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
+
+				if (feature_handle.feature_type() == paleomag_feature_type)
+				{
+					d_found_paleomag_features = true;
+				}
+
+				// NOTE: We don't actually want to visit the feature's properties
+				// so we're not calling 'visit_feature_properties()'.
+			}
+
+		private:
+			bool d_found_paleomag_features;
+		};
+
 	}
 }
 

@@ -29,6 +29,7 @@
 #include "VisualLayers.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic//VGPRenderSettings.h"
 
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
@@ -44,7 +45,6 @@
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
 #include "gui/Texture.h"
-#include "gui/VGPRenderSettings.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
@@ -99,7 +99,7 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::MapTransform()),
 	d_main_viewport_min_dimension(0),
 	d_vgp_render_settings(
-			new GPlatesGui::VGPRenderSettings()),
+			GPlatesAppLogic::VGPRenderSettings::instance()),
 	d_texture(
 			new GPlatesGui::ProxiedTexture()),
 	d_raw_raster(
@@ -129,7 +129,6 @@ GPlatesPresentation::ViewState::get_application_state()
 {
 	return d_application_state;
 }
-
 
 GPlatesViewOperations::RenderedGeometryCollection &
 GPlatesPresentation::ViewState::get_rendered_geometry_collection()
@@ -300,7 +299,7 @@ GPlatesPresentation::ViewState::connect_to_feature_focus()
 }
 
 
-GPlatesGui::VGPRenderSettings &
+GPlatesAppLogic::VGPRenderSettings &
 GPlatesPresentation::ViewState::get_vgp_render_settings()
 {
 	return *d_vgp_render_settings;

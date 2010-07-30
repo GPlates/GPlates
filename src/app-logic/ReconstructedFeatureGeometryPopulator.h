@@ -33,6 +33,7 @@
 #include <boost/optional.hpp>
 
 #include "ReconstructedFeatureGeometry.h"
+#include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
 
@@ -42,6 +43,7 @@
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/XsDouble.h"
 
 
 namespace GPlatesAppLogic
@@ -81,6 +83,11 @@ namespace GPlatesAppLogic
 		bool
 		initialise_pre_feature_properties(
 				GPlatesModel::FeatureHandle &feature_handle);
+		
+		virtual
+		void
+		finalise_post_feature_properties(
+				GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
@@ -112,6 +119,15 @@ namespace GPlatesAppLogic
 		visit_gpml_constant_value(
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
+		void
+		handle_vgp_gml_point(
+				GPlatesPropertyValues::GmlPoint &gml_point);
+
+		virtual
+		void
+		visit_xs_double(
+				GPlatesPropertyValues::XsDouble &xs_double);
+
 	private:
 		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
 		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
@@ -122,6 +138,9 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesMaths::FiniteRotation> d_recon_rotation;
 
 		bool d_should_keep_features_without_recon_plate_id;
+
+		bool d_is_vgp_feature;
+		boost::optional<ReconstructedVirtualGeomagneticPoleParams> d_VGP_params;
 	};
 }
 

@@ -25,14 +25,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_VGPRENDERSETTINGS_H
-#define GPLATES_GUI_VGPRENDERSETTINGS_H
+#ifndef GPLATES_APP_VGPRENDERSETTINGS_H
+#define GPLATES_APP_VGPRENDERSETTINGS_H
+
+#include <boost/optional.hpp>
 
 #include "property-values/GeoTimeInstant.h"
 
 
-namespace GPlatesGui
+namespace GPlatesAppLogic
 {
+
 	/**
 	 *  Stores render settings for VirtualGeomagneticPole features.                                                                     
 	 */
@@ -49,7 +52,22 @@ namespace GPlatesGui
 			DELTA_T_AROUND_AGE
 		};		
 
-		VGPRenderSettings();
+		static
+		inline
+		VGPRenderSettings*
+		instance()
+		{
+			if(!d_instance)
+			{
+				d_instance = new VGPRenderSettings();
+			}
+			return d_instance;
+		}
+
+		bool
+		should_draw_vgp(
+				double current_time,
+				boost::optional<double> age) const;
 
 		VGPVisibilitySetting 
 		get_vgp_visibility_setting() const
@@ -72,7 +90,7 @@ namespace GPlatesGui
 
 		void
 		set_vgp_delta_t(
-		const double &vgp_delta_t)
+				const double &vgp_delta_t)
 		{	
 			d_vgp_delta_t = vgp_delta_t;
 		}
@@ -105,8 +123,9 @@ namespace GPlatesGui
 			d_vgp_latest_time = GPlatesPropertyValues::GeoTimeInstant(latest_time);
 		};		
 
+		inline
 		bool
-		should_draw_circular_error()
+		should_draw_circular_error() const
 		{
 			return d_should_draw_circular_error;
 		}
@@ -119,6 +138,9 @@ namespace GPlatesGui
 		}
 
 	private:
+		VGPRenderSettings();
+		VGPRenderSettings(
+				const VGPRenderSettings& );
 
 		/**
 		 *  enum indicating what sort of VGP visibility we have, one of:
@@ -151,7 +173,10 @@ namespace GPlatesGui
 		 * If false, we draw ellipses. (ellipse size defined by yet-to-be-calculated properties).                                                                     
 		 */
 		bool d_should_draw_circular_error;
+		
+		static VGPRenderSettings* d_instance;
+
 	};	
 }
 
-#endif  // GPLATES_GUI_VGPRENDERSETTINGS_H
+#endif  // GPLATES_APP_VGPRENDERSETTINGS_H

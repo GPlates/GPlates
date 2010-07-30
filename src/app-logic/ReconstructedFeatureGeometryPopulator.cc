@@ -34,6 +34,8 @@
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
 
+#include "VGPRenderSettings.h"
+
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
 
@@ -240,6 +242,19 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::initialise_pre_feature_p
 				*d_reconstruction_params.get_recon_plate_id()).first;
 	}
 
+	//detect VGP feature and set the flag.
+	ReconstructionGeometryUtils::DetectPaleomagFeatures detector;
+	detector.visit_feature_handle(feature_handle);
+	if(detector.has_paleomag_features())
+	{
+		d_is_vgp_feature = true;
+		d_VGP_params = ReconstructedVirtualGeomagneticPoleParams();
+	}
+	else
+	{
+		d_is_vgp_feature = false;
+	}
+
 	// Now visit the feature to reconstruct any geometries we find.
 	return true;
 }
@@ -331,6 +346,11 @@ void
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
+	if(d_is_vgp_feature)
+	{
+		handle_vgp_gml_point(gml_point);
+		return;
+	}
 	using namespace GPlatesMaths;
 
 	GPlatesModel::FeatureHandle::iterator property = *(current_top_level_propiter());
@@ -443,3 +463,127 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gpml_constant_valu
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
+
+void
+GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::handle_vgp_gml_point(
+		GPlatesPropertyValues::GmlPoint &gml_point)
+{
+	static const GPlatesModel::PropertyName site_name = 
+		GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition");
+		
+	static const GPlatesModel::PropertyName vgp_name =
+		GPlatesModel::PropertyName::create_gpml("polePosition");
+	
+	if(!d_VGP_params)	
+	{
+		d_VGP_params = ReconstructedVirtualGeomagneticPoleParams();
+	}
+
+	boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> reconstructed_point;
+
+	if (d_reconstruction_params.get_recon_plate_id()) 
+	{
+		using namespace GPlatesMaths;
+		const FiniteRotation &r = *d_recon_rotation;
+		reconstructed_point = r * gml_point.point();
+	}
+	else
+	{
+		reconstructed_point = gml_point.point();
+	}
+
+	if (current_top_level_propname() == site_name)
+	{
+		d_VGP_params->d_site_point.reset(*reconstructed_point);
+		d_VGP_params->d_site_iterator.reset(*current_top_level_propiter());
+	}
+	else if (current_top_level_propname() == vgp_name)
+	{
+		d_VGP_params->d_vgp_point.reset(*reconstructed_point);
+		d_VGP_params->d_vgp_iterator.reset(*current_top_level_propiter());
+	}
+}
+
+void
+GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_xs_double(
+		GPlatesPropertyValues::XsDouble &xs_double)
+{
+	if(!d_is_vgp_feature)
+	{
+		return;
+	}
+
+	static const GPlatesModel::PropertyName a95_name = 
+		GPlatesModel::PropertyName::create_gpml("poleA95");
+		
+	static const GPlatesModel::PropertyName dm_name = 
+		GPlatesModel::PropertyName::create_gpml("poleDm");
+		
+	static const GPlatesModel::PropertyName dp_name = 
+		GPlatesModel::PropertyName::create_gpml("poleDp");		
+		
+	static const GPlatesModel::PropertyName age_name = 
+		GPlatesModel::PropertyName::create_gpml("averageAge");				
+	
+	if (current_top_level_propname() == a95_name)
+	{
+		d_VGP_params->d_a95.reset(xs_double.value());
+	}
+	else if (current_top_level_propname() == dm_name)
+	{
+		d_VGP_params->d_dm.reset(xs_double.value());
+	}
+	else if (current_top_level_propname() == dp_name)
+	{
+		d_VGP_params->d_dp.reset(xs_double.value());
+	}
+	else if (current_top_level_propname() == age_name)
+	{
+		d_VGP_params->d_age.reset(xs_double.value());
+	}
+}
+
+void
+GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::finalise_post_feature_properties(
+		GPlatesModel::FeatureHandle &feature_handle)
+{
+	if(!d_is_vgp_feature)
+	{
+		return;
+	}
+	GPlatesAppLogic::VGPRenderSettings* render_setting = GPlatesAppLogic::VGPRenderSettings::instance();
+	if(!render_setting->should_draw_vgp(d_recon_time.value(),*d_VGP_params->d_age))
+	{
+		return;
+	}
+
+	if(d_VGP_params->d_vgp_point)
+	{
+		ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+			ReconstructedVirtualGeomagneticPole::create(
+					*d_VGP_params,
+					d_reconstruction_tree,
+					(*d_VGP_params->d_vgp_point),
+					*(*d_VGP_params->d_vgp_iterator).handle_weak_ref(),
+					(*d_VGP_params->d_vgp_iterator),
+					d_reconstruction_params.get_recon_plate_id(),
+					d_reconstruction_params.get_time_of_appearance());
+		d_reconstruction_geometry_collection.add_reconstruction_geometry(rfg_ptr);
+	}
+
+	if(d_VGP_params->d_site_point)
+	{
+		ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+				ReconstructedFeatureGeometry::create(
+						d_reconstruction_tree,
+						(*d_VGP_params->d_site_point),
+						*(*d_VGP_params->d_site_iterator).handle_weak_ref(),
+						(*d_VGP_params->d_site_iterator),
+						d_reconstruction_params.get_recon_plate_id(),
+						d_reconstruction_params.get_time_of_appearance());
+		d_reconstruction_geometry_collection.add_reconstruction_geometry(rfg_ptr);
+	}
+}
+
+
+

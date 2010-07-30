@@ -27,11 +27,13 @@
 
 #include "ReconstructionGeometryRenderer.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/PlateVelocityUtils.h"
+#include "app-logic//VGPRenderSettings.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -39,7 +41,10 @@
 
 #include "gui/Colour.h"
 
+#include "presentation/ViewState.h"
+
 #include "maths/CalculateVelocity.h"
+#include "maths/MathsUtils.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -188,16 +193,54 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
 {
-	GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			create_rendered_reconstruction_geometry(
-					rvgp->geometry(), rvgp, d_style_params, d_colour, d_rfg_rotation);
+	GPlatesAppLogic::VGPRenderSettings* vgp_render_setting = GPlatesAppLogic::VGPRenderSettings::instance();
 
-	// Add to the rendered geometry layer.
-	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+	if(rvgp->vgp_params().d_vgp_point)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_vgp_point =
+				create_rendered_reconstruction_geometry(
+						*rvgp->vgp_params().d_vgp_point, rvgp, d_style_params, d_colour, d_rfg_rotation);
+		// Add to the rendered geometry layer.
+		d_rendered_geometry_layer.add_rendered_geometry(rendered_vgp_point);
+	}
 
-	// FIXME: Also add the rendered VGP error circle/ellipse.
+	if (vgp_render_setting->should_draw_circular_error() && *rvgp->vgp_params().d_a95)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
+				GPlatesViewOperations::create_rendered_small_circle(
+						*(*rvgp->vgp_params().d_vgp_point),
+						GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95),
+						GPlatesGui::ColourProxy(rvgp));
+		// The circle/ellipse geometries are not (currently) queryable, so we
+		// just add the rendered geometry to the layer.
+		d_rendered_geometry_layer.add_rendered_geometry(rendered_small_circle);	
+	}
+	// We can only draw an ellipse if we have dm and dp defined, and if we have
+	// a site point. We need the site point so that we can align the ellipse axes
+	// appropriately. 
+	else if (
+			!vgp_render_setting->should_draw_circular_error() && 
+			*rvgp->vgp_params().d_dm && 
+			*rvgp->vgp_params().d_dp && 
+			*rvgp->vgp_params().d_site_point )
+	{
+		GPlatesMaths::GreatCircle great_circle(
+				**rvgp->vgp_params().d_site_point,
+				**rvgp->vgp_params().d_vgp_point);
+				
+		GPlatesViewOperations::RenderedGeometry rendered_ellipse = 
+			GPlatesViewOperations::create_rendered_ellipse(
+					*(*rvgp->vgp_params().d_vgp_point),
+					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dp),
+					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dm),
+					great_circle,
+					GPlatesGui::ColourProxy(rvgp));
+
+		// The circle/ellipse geometries are not (currently) queryable, so we
+		// just add the rendered geometry to the layer.
+		d_rendered_geometry_layer.add_rendered_geometry(rendered_ellipse);
+	}
 }
-
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(

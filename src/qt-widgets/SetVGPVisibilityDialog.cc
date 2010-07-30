@@ -27,7 +27,7 @@
 #include "SetVGPVisibilityDialog.h"
 
 #include "app-logic/ApplicationState.h"
-#include "gui/VGPRenderSettings.h"
+#include "app-logic/VGPRenderSettings.h"
 #include "presentation/ViewState.h" 
 
 
@@ -51,7 +51,7 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::set_initial_state()
 // Initial state is DELTA_T_AROUND_AGE.
 // FIXME: Grab these initial settings from the view state.
 	radiobutton_delta_t_around_age->setChecked(true);
-	spinbox_delta->setValue(GPlatesGui::VGPRenderSettings::INITIAL_VGP_DELTA_T);
+	spinbox_delta->setValue(GPlatesAppLogic::VGPRenderSettings::INITIAL_VGP_DELTA_T);
 	spinbox_begin->setValue(0.);
 	spinbox_end->setValue(0.);
 	checkbox_past->setChecked(true);
@@ -79,17 +79,17 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::setup_connections()
 void
 GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 {
-	GPlatesGui::VGPRenderSettings &vgp_render_settings =
+	GPlatesAppLogic::VGPRenderSettings &vgp_render_settings =
 		d_view_state_ptr->get_vgp_render_settings();
 		
 	// Update view_state with the state of this dialog.
 	if (radiobutton_always_visible->isChecked())
 	{
-		vgp_render_settings.set_vgp_visibility_setting(GPlatesGui::VGPRenderSettings::ALWAYS_VISIBLE);
+		vgp_render_settings.set_vgp_visibility_setting(GPlatesAppLogic::VGPRenderSettings::ALWAYS_VISIBLE);
 	}
 	else if (radiobutton_time_window->isChecked())
 	{
-		vgp_render_settings.set_vgp_visibility_setting(GPlatesGui::VGPRenderSettings::TIME_WINDOW);
+		vgp_render_settings.set_vgp_visibility_setting(GPlatesAppLogic::VGPRenderSettings::TIME_WINDOW);
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> begin_time;
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> end_time;		
 		if (checkbox_past->isChecked())
@@ -116,7 +116,7 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 	}
 	else if (radiobutton_delta_t_around_age->isChecked())
 	{
-		vgp_render_settings.set_vgp_visibility_setting(GPlatesGui::VGPRenderSettings::DELTA_T_AROUND_AGE);
+		vgp_render_settings.set_vgp_visibility_setting(GPlatesAppLogic::VGPRenderSettings::DELTA_T_AROUND_AGE);
 		vgp_render_settings.set_vgp_delta_t(spinbox_delta->value());
 	}
 	accept();

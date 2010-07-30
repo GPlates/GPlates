@@ -109,6 +109,8 @@ set(srcs
     TopologyUtils.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h
+    VGPRenderSettings.cc
+    VGPRenderSettings.h
 )
 
 

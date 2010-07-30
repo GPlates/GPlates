@@ -57,6 +57,7 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 	class FeatureCollectionFileIO;
 	class Reconstruction;
+	class VGPRenderSettings;
 }
 
 namespace GPlatesGui
@@ -71,7 +72,6 @@ namespace GPlatesGui
 	class RenderSettings;
 	class Texture;
 	typedef GPlatesUtils::VirtualProxy<Texture> ProxiedTexture;
-	class VGPRenderSettings;
 	class ViewportProjection;
 	class ViewportZoom;
 }
@@ -113,6 +113,13 @@ namespace GPlatesPresentation
 
 		GPlatesAppLogic::ApplicationState &
 		get_application_state();
+
+		inline
+		const GPlatesAppLogic::ApplicationState &
+		GPlatesPresentation::ViewState::get_application_state() const
+		{
+			return d_application_state;
+		}
 
 
 		///////////////////////////////////
@@ -201,9 +208,15 @@ namespace GPlatesPresentation
 				int min_dimension);
 
 
-		GPlatesGui::VGPRenderSettings &
+		inline
+		const GPlatesAppLogic::VGPRenderSettings &
+		get_vgp_render_settings() const
+		{
+			return *d_vgp_render_settings;
+		}
+	
+		GPlatesAppLogic::VGPRenderSettings &
 		get_vgp_render_settings();
-
 
 		// FIXME: Remove all raster/texture related stuff out of ViewState.
 
@@ -334,7 +347,7 @@ namespace GPlatesPresentation
 		/**
 		 * Stores render settings for VirtualGeomagneticPole features.                                                                     
 		 */
-		boost::scoped_ptr<GPlatesGui::VGPRenderSettings> d_vgp_render_settings;
+		boost::scoped_ptr<GPlatesAppLogic::VGPRenderSettings> d_vgp_render_settings;
 
 		/**
 		 * A (single) texture to be texture-mapped over the sphere surface.
