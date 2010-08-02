@@ -100,6 +100,7 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 
 #include "global/GPlatesException.h"
+#include "global/SubversionInfo.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
 #include "gui/ChooseCanvasTool.h"
@@ -525,6 +526,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SIGNAL(changed()),
 			this,
 			SLOT(handle_colour_scheme_delegator_changed()));
+
+	set_internal_release_window_title();
 }
 
 
@@ -2144,5 +2147,25 @@ void
 GPlatesQtWidgets::ViewportWindow::handle_colour_scheme_delegator_changed()
 {
 	d_reconstruction_view_widget.globe_and_map_widget().update_canvas();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
+{
+	QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
+
+	// If the subversion branch name is the empty string, that should mean that
+	// GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING is set in ConfigDefault.cmake,
+	// which should mean that this is a public release.
+	if (!subversion_branch_name.isEmpty())
+	{
+		QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
+		static const QString FORMAT = " (%1, r%2)";
+
+		QString window_title = windowTitle();
+		window_title.append(FORMAT.arg(subversion_branch_name, subversion_version_number));
+		setWindowTitle(window_title);
+	}
 }
 

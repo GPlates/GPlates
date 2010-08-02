@@ -56,7 +56,14 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 		QString subversion_info = "Build: " + subversion_version_number;
 		if (!subversion_branch_name.isEmpty())
 		{
-			subversion_info.append(" (").append(subversion_branch_name).append(" branch)");
+			if (subversion_branch_name == "trunk")
+			{
+				subversion_info.append(" (trunk)");
+			}
+			else
+			{
+				subversion_info.append(" (").append(subversion_branch_name).append(" branch)");
+			}
 		}
 		label_subversion_info->setText(subversion_info);
 	}

@@ -104,7 +104,7 @@ namespace
 
 		// For some reason, we sometimes don't read anything from the process.
 		// So let's try it a few more times and see if it works.
-		static const int MAX_ATTEMPTS = 5;
+		static const int MAX_ATTEMPTS = 10;
 		for (int i = 0; i != MAX_ATTEMPTS; ++i)
 		{
 			if (process.waitForReadyRead(READ_TIMEOUT))
@@ -284,6 +284,7 @@ namespace
 				if (iter == tokens.end())
 				{
 					// BRANCHES_DIRECTORY_NAME not found; we are probably looking at trunk.
+					branch_name = "trunk";
 					break;
 				}
 

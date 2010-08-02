@@ -608,6 +608,9 @@ namespace GPlatesQtWidgets
 		void
 		update_time_dependent_raster();
 
+		void
+		set_internal_release_window_title();
+
 	private slots:
 		void
 		pop_up_specify_anchored_plate_id_dialog();
