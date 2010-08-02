@@ -643,6 +643,9 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 		// The plate ID hasn't changed, so there's nothing to do.
 		return;
 	}
+
+	d_reconstruction_tree = focused_geometry->reconstruction_tree();
+
 	reset_adjustment();
 	d_reconstructed_feature_geometries.clear();
 	d_plate_id = rfg.get()->reconstruction_plate_id();
