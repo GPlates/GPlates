@@ -204,12 +204,24 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_vgp_point);
 	}
 
+	boost::optional<GPlatesMaths::PointOnSphere> pole_point = boost::none;
+	boost::optional<GPlatesMaths::PointOnSphere> site_point = boost::none;
+	if(d_rfg_rotation)
+	{
+		pole_point = (*d_rfg_rotation) * (**rvgp->vgp_params().d_vgp_point);
+		site_point = (*d_rfg_rotation) * (**rvgp->vgp_params().d_site_point);
+	}
+	else
+	{
+		pole_point = (**rvgp->vgp_params().d_vgp_point);
+		site_point = (**rvgp->vgp_params().d_site_point);
+	}
 	if (vgp_render_setting->should_draw_circular_error() &&
 			GPlatesMaths::are_almost_exactly_equal(*rvgp->vgp_params().d_a95, 0.0))
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
 				GPlatesViewOperations::create_rendered_small_circle(
-						*(*rvgp->vgp_params().d_vgp_point),
+						*pole_point,
 						GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95),
 						GPlatesGui::ColourProxy(rvgp));
 		// The circle/ellipse geometries are not (currently) queryable, so we
@@ -226,12 +238,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			*rvgp->vgp_params().d_site_point )
 	{
 		GPlatesMaths::GreatCircle great_circle(
-				**rvgp->vgp_params().d_site_point,
-				**rvgp->vgp_params().d_vgp_point);
+				*site_point,
+				*pole_point);
 				
 		GPlatesViewOperations::RenderedGeometry rendered_ellipse = 
 			GPlatesViewOperations::create_rendered_ellipse(
-					*(*rvgp->vgp_params().d_vgp_point),
+					*pole_point,
 					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dp),
 					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dm),
 					great_circle,
