@@ -28,9 +28,6 @@
 #include <memory>
 #include <boost/format.hpp>
 #include <boost/scoped_ptr.hpp>
-#if 0  // FIXME: Re-enable once we increase minimum Boost to 1.34.
-#include <boost/foreach.hpp>
-#endif
 
 #include <QtGlobal>
 #include <QFileDialog>
@@ -2161,10 +2158,20 @@ GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
 	if (!subversion_branch_name.isEmpty())
 	{
 		QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
-		static const QString FORMAT = " (%1, r%2)";
-
 		QString window_title = windowTitle();
-		window_title.append(FORMAT.arg(subversion_branch_name, subversion_version_number));
+
+		if (subversion_version_number.isEmpty())
+		{
+			static const QString FORMAT = " (%1)";
+			window_title.append(FORMAT.arg(subversion_branch_name));
+		}
+		else
+		{
+			static const QString FORMAT = " (%1, r%2)";
+
+			window_title.append(FORMAT.arg(subversion_branch_name, subversion_version_number));
+		}
+
 		setWindowTitle(window_title);
 	}
 }

@@ -49,7 +49,14 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 	QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
 	if (subversion_version_number.isEmpty())
 	{
-		label_subversion_info->hide();
+		if (subversion_branch_name.isEmpty())
+		{
+			label_subversion_info->hide();
+		}
+		else
+		{
+			label_subversion_info->setText("(" + subversion_branch_name + ")");
+		}
 	}
 	else
 	{

@@ -304,6 +304,13 @@ namespace
 		process.waitForFinished();
 		process.close();
 
+		// If branch_name is still empty, then that probably means the directory
+		// is not a working copy.
+		if (branch_name.isEmpty())
+		{
+			branch_name = "internal release";
+		}
+
 		return branch_name;
 	}
 
