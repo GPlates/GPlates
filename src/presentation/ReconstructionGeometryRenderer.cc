@@ -217,7 +217,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		site_point = (**rvgp->vgp_params().d_site_point);
 	}
 	if (vgp_render_setting->should_draw_circular_error() &&
-			!GPlatesMaths::are_almost_exactly_equal(*rvgp->vgp_params().d_a95, 0.0))
+		rvgp->vgp_params().d_a95 )
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
 				GPlatesViewOperations::create_rendered_small_circle(
@@ -233,9 +233,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// appropriately. 
 	else if (
 			!vgp_render_setting->should_draw_circular_error() && 
-			GPlatesMaths::are_almost_exactly_equal(*rvgp->vgp_params().d_dm, 0.0) && 
-			GPlatesMaths::are_almost_exactly_equal(*rvgp->vgp_params().d_dp, 0.0) && 
-			*rvgp->vgp_params().d_site_point )
+			rvgp->vgp_params().d_dm  && 
+			rvgp->vgp_params().d_dp  && 
+			rvgp->vgp_params().d_site_point )
 	{
 		GPlatesMaths::GreatCircle great_circle(
 				*site_point,
