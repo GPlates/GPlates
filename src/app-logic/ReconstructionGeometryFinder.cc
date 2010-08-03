@@ -30,6 +30,7 @@
 #include "Reconstruction.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
+#include "ReconstructedVirtualGeomagneticPole.h"
 
 
 namespace
@@ -44,6 +45,15 @@ namespace
 			((*rfg.property())->property_name() == property_name_to_match);
 	}
 
+	inline
+	bool
+	property_name_matches(
+			const GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp,
+			const GPlatesModel::PropertyName &property_name_to_match)
+	{
+		return rvgp.property().is_still_valid() &&
+			((*rvgp.property())->property_name() == property_name_to_match);
+	}
 
 	inline
 	bool
@@ -85,6 +95,12 @@ GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_feature_geome
 	visit_reconstruction_geometry_derived_type(rfg);
 }
 
+void
+GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_virtual_geomagnetic_pole(
+				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
+{
+	visit_reconstruction_geometry_derived_type(rvgp);
+}
 
 void
 GPlatesAppLogic::ReconstructionGeometryFinder::visit_resolved_topological_boundary(

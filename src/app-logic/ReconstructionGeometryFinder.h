@@ -153,6 +153,11 @@ namespace GPlatesAppLogic
 
 		virtual
 		void
+		visit_reconstructed_virtual_geomagnetic_pole(
+				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp);
+
+		virtual
+		void
 		visit_resolved_topological_boundary(
 				ResolvedTopologicalBoundary &rtb);
 
