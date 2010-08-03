@@ -209,12 +209,18 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	if(d_rfg_rotation)
 	{
 		pole_point = (*d_rfg_rotation) * (**rvgp->vgp_params().d_vgp_point);
-		site_point = (*d_rfg_rotation) * (**rvgp->vgp_params().d_site_point);
+		if(rvgp->vgp_params().d_site_point)
+		{
+			site_point = (*d_rfg_rotation) * (**rvgp->vgp_params().d_site_point);
+		}
 	}
 	else
 	{
 		pole_point = (**rvgp->vgp_params().d_vgp_point);
-		site_point = (**rvgp->vgp_params().d_site_point);
+		if(rvgp->vgp_params().d_site_point)
+		{
+			site_point = (**rvgp->vgp_params().d_site_point);
+		}
 	}
 	if (vgp_render_setting->should_draw_circular_error() &&
 		rvgp->vgp_params().d_a95 )
