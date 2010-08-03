@@ -147,6 +147,12 @@ namespace
 		{
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref collection_ref =
 					file_ref.get_file().get_feature_collection();
+			
+			if(!collection_ref.is_valid())
+			{
+				continue;
+			}
+
 			if (feature_collection_contains_feature(collection_ref, feature_ref)) {
 				return file_ref;
 			}
