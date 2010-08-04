@@ -107,7 +107,6 @@ GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::create_beg
 				&reconstruction,
 				lower_bound_iter);
 	}
-
 	return ConstReconstructionGeometryIterator(
 			&reconstruction,
 			lower_bound_iter,
@@ -129,11 +128,10 @@ GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::create_end
 				&reconstruction,
 				upper_bound_iter);
 	}
-
 	return ConstReconstructionGeometryIterator(
 			&reconstruction,
 			upper_bound_iter,
-			upper_bound_iter->second->end());
+			upper_bound_iter->second->begin());
 }
 
 
