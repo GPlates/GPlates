@@ -47,7 +47,7 @@ GPLATES_EXTRA_SOURCE_FILES = [
 # What constitutes a source file.
 FILE_INCLUDE_REGEXP = r'\S+\.cc$|\S+\.h$|\S+\.ui$|\S+\.qrc$'
 # What of the above pattern to exclude from source file list.
-FILE_EXCLUDE_REGEXP = r'\S+Ui\.h$|^moc_\S+\.cc|_pch\.h$|^qrc_\S+\.cc$|\S+_test\.(h|cc)$'
+FILE_EXCLUDE_REGEXP = r'\S+Ui\.h$|^moc_\S+\.cc|_pch\.h$|^qrc_\S+\.cc$|\S+_test\.(h|cc)$|^SubversionInfo.cc$'
 
 
 def get_existing_sources(directory, file_include_regexp, file_exclude_regexp):
