@@ -1,0 +1,16 @@
+#
+# This is an example regular CPT file that can be used with GPlates.
+#
+# This CPT file is intended for colouring geometries by their age.
+#
+# It contains two colour ramps, one between 0 and 300 Ma and another between
+# 300 and 700 Ma.
+#
+# The format for regular CPT files is described here:
+# http://www.soest.hawaii.edu/gmt/gmt/doc/gmt/html/GMT_Docs/node70.html
+#
+0	170	204	255	300	211	141	95
+300	211	141	95	700	145	111	111
+B	170	204	255
+F	145	111	111
+N	128	128	128

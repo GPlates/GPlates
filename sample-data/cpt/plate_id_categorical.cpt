@@ -1,0 +1,18 @@
+#
+# This is an example categorical CPT file that can be used with GPlates.
+#
+# It assigns colours to plates 701 and 801, and all other plates are coloured
+# grey.
+#
+# The format for categorical CPT files is described here:
+# http://www.soest.hawaii.edu/gmt/gmt/doc/gmt/html/GMT_Docs/node69.html
+#
+# In GPlates, categorical CPT files that assign colours to integer values
+# (such as plate IDs) are interpreted as follows:
+#  - First column (key): the value to be assigned a colour.
+#  - Second column (fill): the colour to be assigned.
+#  - Third column (label): (optional) description of the meaning of the value.
+#
+701 orange	Africa
+801 green Australia
+N	128	128	128
