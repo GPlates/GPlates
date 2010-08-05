@@ -1,3 +1,20 @@
+GPlates 0.9.9.1
+===============
+
+Changes since 0.9.9:
+
+ * Fixed incorrect reversal of subduction polarity when exporting topologies, 
+ * Fixed error in calculated velocities, 
+ * Fixed number of exported velocity samples not matching number of grid points, 
+ * Fixed incorrect order of CitcomS mesh points generated in GPlates, 
+ * Fixed inability to split a two-vertex polyline feature, 
+ * Fixed inability to select a feature after splitting it at its 
+   first vertex, 
+ * Fixed crash when attempting to clone geometry of a topological feature, 
+ * Fixed crash due to invalid export template filename, 
+ * Fixed duplicate string in filename of exported topologies. 
+
+
 GPlates 0.9.9
 =============
 
