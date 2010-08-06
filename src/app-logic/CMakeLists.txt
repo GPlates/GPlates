@@ -21,6 +21,7 @@ set(srcs
     CgalUtils.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
+    CubeQuadTree.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
@@ -49,6 +50,8 @@ set(srcs
     PlateVelocityUtils.h
     PropertyExtractors.cc
     PropertyExtractors.h
+    RasterLayerTask.cc
+    RasterLayerTask.h
     ReconstructedFeatureGeometry.cc
     ReconstructedFeatureGeometry.h
     ReconstructedFeatureGeometryFinder.cc
@@ -89,6 +92,8 @@ set(srcs
     ReconstructLayerTask.h
     ReconstructUtils.cc
     ReconstructUtils.h
+    ResolvedRaster.cc
+    ResolvedRaster.h
     ResolvedTopologicalBoundary.cc
     ResolvedTopologicalBoundary.h
     ResolvedTopologicalNetwork.cc

@@ -31,6 +31,7 @@
 #include "RenderedPointOnSphere.h"
 #include "RenderedPolygonOnSphere.h"
 #include "RenderedPolylineOnSphere.h"
+#include "RenderedResolvedRaster.h"
 #include "RenderedReconstructionGeometry.h"
 #include "RenderedSmallCircle.h"
 #include "RenderedSmallCircleArc.h"
@@ -181,6 +182,18 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_spher
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedPolygonOnSphere(
 			polygon_on_sphere, colour, line_width_hint));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
+		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedResolvedRaster(georeferencing, raster));
 
 	return RenderedGeometry(rendered_geom_impl);
 }

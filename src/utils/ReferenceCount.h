@@ -29,8 +29,10 @@
 #include <boost/noncopyable.hpp>
 #include <boost/checked_delete.hpp>
 
-#include "utils/non_null_intrusive_ptr.h"
+#include "global/GPlatesAssert.h"
 #include "global/IntrusivePointerZeroRefCountException.h"
+
+#include "utils/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesUtils
@@ -175,17 +177,14 @@ namespace GPlatesUtils
 	get_non_null_pointer(
 			U *reference_count_derived)
 	{
-		if (reference_count_derived->get_reference_count() == 0)
-		{
-			throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
-					reference_count_derived);
-		}
+		GPlatesGlobal::Assert<GPlatesGlobal::IntrusivePointerZeroRefCountException>(
+				reference_count_derived->get_reference_count() != 0,
+				GPLATES_ASSERTION_SOURCE,
+				reference_count_derived);
 
 		// This instance is already managed by intrusive-pointers, so we can simply return
 		// another intrusive-pointer to this instance.
-		return GPlatesUtils::non_null_intrusive_ptr<U>(
-				reference_count_derived,
-				GPlatesUtils::NullIntrusivePointerHandler());
+		return GPlatesUtils::non_null_intrusive_ptr<U>(reference_count_derived);
 	}
 }
 

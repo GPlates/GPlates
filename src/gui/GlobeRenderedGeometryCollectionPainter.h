@@ -34,6 +34,9 @@
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "RenderSettings.h"
 
+#include "opengl/GLRenderGraphInternalNode.h"
+#include "opengl/GLUNurbsRenderer.h"
+
 #include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
@@ -50,7 +53,6 @@ namespace GPlatesGui
 {
 	class GlobeRenderedGeometryLayerPainter;
 	class GlobeVisibilityTester;
-	class NurbsRenderer;
 
 	/**
 	 * Draws rendered geometries (in a @a RenderedGeometryCollection) onto a
@@ -71,17 +73,16 @@ namespace GPlatesGui
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 		/**
-		 * Draw the rendered geometries into the depth range specified by
-		 * @a depth_range_near and @a depth_range_far.
-		 * The full depth range is [0,1].
-		 * @a viewport_zoom_factor is used for rendering view-dependent geometries.
+		 * Draw the rendered geometries.
+		 *
+		 * @param render_graph_node the render graph node that all rendering should be attached to.
+		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
 		 */
 		void
 		paint(
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 				const double &viewport_zoom_factor,
-				GPlatesGui::NurbsRenderer &nurbs_renderer,
-				double depth_range_near,
-				double depth_range_far);
+				const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer);
 
 		void
 		set_scale(
@@ -91,19 +92,37 @@ namespace GPlatesGui
 		}
 
 	private:
-
 		virtual
 		bool
 		visit_rendered_geometry_layer(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer);
 
+		/**
+		 * Parameters that are only available when @a paint is called.
+		 */
+		struct PaintParams
+		{
+			PaintParams(
+					const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_collection_node,
+					const double &viewport_zoom_factor,
+					const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer) :
+				d_render_collection_node(render_collection_node),
+				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
+				d_nurbs_renderer(nurbs_renderer)
+			{  }
+
+			GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type d_render_collection_node;
+			double d_inverse_viewport_zoom_factor;
+			GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs_renderer;
+		};
+
+
+		//! Parameters that are only available when @a paint is called.
+		boost::optional<PaintParams> d_paint_params;
+
 		const GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
-
-		double d_current_layer_far_depth;
-
-		double d_depth_range_per_layer;
 
 		//! Rendering flags to determine what gets shown
 		RenderSettings &d_render_settings;
@@ -114,31 +133,11 @@ namespace GPlatesGui
 		//! Used for determining whether a particular point on the globe is visible
 		GlobeVisibilityTester d_visibility_tester;
 
-		//! Parameters that are only available when @a paint is called.
-		struct PaintParams
-		{
-			PaintParams(
-					const double &viewport_zoom_factor,
-					GPlatesGui::NurbsRenderer &nurbs_renderer) :
-				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
-				d_nurbs_renderer(&nurbs_renderer)
-			{  }
-
-			double d_inverse_viewport_zoom_factor;
-			GPlatesGui::NurbsRenderer *d_nurbs_renderer;
-		};
-		boost::optional<PaintParams> d_paint_params;
-
-		//! Sets the depth range for the next rendered layer.
-		void
-		move_to_next_rendered_layer_depth_range_and_set();
-
 		//! For assigning colours to RenderedGeometry
 		ColourScheme::non_null_ptr_type d_colour_scheme;
 
 		//! When rendering globes that are meant to be a scale copy of another
 		float d_scale;
-
 	};
 }
 

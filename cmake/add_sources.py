@@ -24,6 +24,7 @@ GPLATES_SUB_DIRECTORIES = [
     'gui',
     'maths',
     'model',
+    'opengl',
     'property-values',
     'presentation',
     'qt-resources',

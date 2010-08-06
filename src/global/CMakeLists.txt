@@ -15,6 +15,7 @@ set(srcs
     AbortException.h
     AssertionFailureException.cc
     AssertionFailureException.h
+    CompilerWarnings.h
     config.h
     Constants.cc
     Constants.h

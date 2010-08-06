@@ -33,12 +33,13 @@
 #include <QObject>
 #include <QString>
 
+#include "Texture.h"
+
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 
-#include "OpenGLBadAllocException.h"
-#include "OpenGLException.h"
-#include "Texture.h"
+#include "opengl/OpenGLBadAllocException.h"
+#include "opengl/OpenGLException.h"
 
 // RGBA_SIZE is the number of bytes required to store an RGBA value. RGBA is the only format we deal with at the moment. 
 const int RGBA_SIZE = 4;
@@ -219,7 +220,7 @@ namespace
 		if (width_out == 0)
 		{
 			QString message = QString("Cannot render texture of size %1 by %2").arg(width).arg(height);
-			throw GPlatesGui::OpenGLException(
+			throw GPlatesOpenGL::OpenGLException(
 					GPLATES_EXCEPTION_SOURCE,
 					message.toStdString().c_str());
 		}
@@ -244,7 +245,7 @@ namespace
 		{
 			std::cout << message << ": openGL error: " << gluErrorString(error) << std::endl;
 			glDeleteTextures(1, &texture_name);
-			throw GPlatesGui::OpenGLException(
+			throw GPlatesOpenGL::OpenGLException(
 					GPLATES_EXCEPTION_SOURCE,
 					"OpenGL error in Texture.cc");
 		}
@@ -260,7 +261,7 @@ namespace
 		if (error == GLU_OUT_OF_MEMORY)
 		{
 			glDeleteTextures(1, &texture_name);
-			throw GPlatesGui::OpenGLBadAllocException(
+			throw GPlatesOpenGL::OpenGLBadAllocException(
 					GPLATES_EXCEPTION_SOURCE,
 					"There was insufficient memory to load the requested texture.");
 		}
@@ -269,7 +270,7 @@ namespace
 		{
 			std::cout << " GLU error: " << gluErrorString(error) << std::endl;
 			glDeleteTextures(1, &texture_name);
-			throw GPlatesGui::OpenGLException(
+			throw GPlatesOpenGL::OpenGLException(
 					GPLATES_EXCEPTION_SOURCE,
 					"GLU error in Texture.cc");
 		}

@@ -57,6 +57,7 @@ namespace GPlatesAppLogic
 	// Forward declarations of ReconstructionGeometry derived types.
 	class ReconstructedFeatureGeometry;
 	class ReconstructedVirtualGeomagneticPole;
+	class ResolvedRaster;
 	class ResolvedTopologicalBoundary;
 	class ResolvedTopologicalNetwork;
 
@@ -87,6 +88,11 @@ namespace GPlatesAppLogic
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ReconstructedVirtualGeomagneticPole>::type
 						reconstructed_virtual_geomagnetic_pole_type;
+
+		//! Typedef for @a ResolvedRaster of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, ResolvedRaster>::type
+						resolved_raster_type;
 
 		//! Typedef for @a ResolvedTopologicalBoundary of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -124,6 +130,16 @@ namespace GPlatesAppLogic
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
+		{  }
+
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr)
 		{  }
 
 

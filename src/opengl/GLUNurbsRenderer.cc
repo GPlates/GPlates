@@ -31,7 +31,10 @@
 #include <QDebug>
 #include "boost/optional.hpp"
 
-#include "NurbsRenderer.h"
+#include "GLUNurbsRenderer.h"
+
+#include "GLCompositeDrawable.h"
+#include "GLUNurbsRendererDrawable.h"
 #include "OpenGLBadAllocException.h"
 
 #include "maths/GenericVectorOps3D.h"
@@ -43,11 +46,22 @@
 #include "maths/Vector3D.h"
 
 
-
-using namespace GPlatesGui;
-
 namespace
 {
+	/**
+	 *  We need different sampling tolerances for great circles and small circles.
+	 *  Great circles will always appear quite big in GPlates, because we can't zoom
+	 *  the globe out beyond 100%, so a sampling tolerance of 25 is OK; the curves will
+	 *  still appear smooth.
+	 *
+	 *  For small circles this can make the circle appear to have jagged edges.
+	 *  (Small circles are, after all, small).
+	 *  So we use a lower sampling tolerance to ensure a smooth appearance.
+	 */
+	static const double GREAT_CIRCLE_SAMPLING_TOLERANCE = 25.;
+	static const double SMALL_CIRCLE_SAMPLING_TOLERANCE = 5.;
+
+
 	// Handle GLU NURBS errors
 	GLvoid __CONVENTION__
 	NurbsError()
@@ -64,11 +78,25 @@ namespace
 }
 
 
-GPlatesGui::NurbsRenderer::NurbsRenderer()
+GPlatesOpenGL::GLUNurbsRenderer::GLUNurbsRenderer()
 {
-	d_nurbs_ptr = gluNewNurbsRenderer();
-	if (d_nurbs_ptr == 0) {
+	// Increase the resolution so we get smoother curves:
+	//  -  Even though it's the default, we force GLU_SAMPLING_METHOD
+	//    to be GLU_PATH_LENGTH.
+	d_current_parameters.sampling_method = GLU_PATH_LENGTH;
+	//  -  The default GLU_SAMPLING_TOLERANCE is 50.0 pixels.  The OpenGL
+	//    API notes that this is rather conservative, so we halve it.
+	d_current_parameters.sampling_tolerance = GREAT_CIRCLE_SAMPLING_TOLERANCE;
+}
 
+
+void
+GPlatesOpenGL::GLUNurbsRenderer::create_nurbs_obj()
+{
+	// Create a new 'GLUnurbsObj'.
+	d_nurbs.reset(gluNewNurbsRenderer(), gluDeleteNurbsRenderer);
+	if (d_nurbs.get() == 0)
+	{
 		// not enough memory to allocate object
 		throw OpenGLBadAllocException(GPLATES_EXCEPTION_SOURCE,
 		 "Not enough memory for OpenGL to create new NURBS renderer.");
@@ -80,24 +108,17 @@ GPlatesGui::NurbsRenderer::NurbsRenderer()
 	// All non apple platforms use this path.
 	// Also MacOS X using OS X version 10.5 and greater (or g++ 4.2 and greater)
 	// use this code path.
-	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR, &NurbsError);
+	gluNurbsCallback(d_nurbs.get(), GLU_ERROR, &NurbsError);
 #else
 	// A few OS X platforms need this instead - could be OS X 10.4 or
 	// gcc 4.0.0 or PowerPC Macs ?
 	// Update: it seems after many installations on different Macs that
 	// Mac OSX versions 10.4 using the default compiler g++ 4.0 require this code path.
-	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR,
+	gluNurbsCallback(d_nurbs.get(), GLU_ERROR,
 		reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&NurbsError));
 #endif
-
-	// Increase the resolution so we get smoother curves:
-	//  -  Even though it's the default, we force GLU_SAMPLING_METHOD
-	//    to be GLU_PATH_LENGTH.
-	gluNurbsProperty(d_nurbs_ptr, GLU_SAMPLING_METHOD, GLU_PATH_LENGTH);
-	//  -  The default GLU_SAMPLING_TOLERANCE is 50.0 pixels.  The OpenGL
-	//    API notes that this is rather conservative, so we halve it.
-	gluNurbsProperty(d_nurbs_ptr, GLU_SAMPLING_TOLERANCE, GREAT_CIRCLE_SAMPLING_TOLERANCE);
 }
+
 
 namespace
 {
@@ -191,67 +212,103 @@ namespace
 }
 
 
-void
-GPlatesGui::NurbsRenderer::draw_great_circle_arc(
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUNurbsRenderer::draw_curve(
+		GLint num_knots,
+		const boost::shared_array<GLfloat> &knots,
+		GLint stride,
+		const boost::shared_array<GLfloat> &ctrl_pts,
+		GLint order,
+		GLenum curve_type,
+		const GPlatesGui::Colour &colour)
+{
+	// Create GLUnurbsObj if it hasn't been created yet.
+	//
+	// We do this here because this is a draw call and we know that
+	// the OpenGL context is current and hence creation of a
+	// GLUnurbsObj should succeed.
+	if (d_nurbs.get() == NULL)
+	{
+		create_nurbs_obj();
+	}
+
+	boost::shared_ptr<GLUNurbsGeometry> curve(
+			new GLUNurbsCurve(num_knots, knots, stride, ctrl_pts, order, curve_type));
+
+	return GLUNurbsRendererDrawable::create(d_nurbs, curve, d_current_parameters, colour);
+}
+
+
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUNurbsRenderer::draw_great_circle_arc(
 		const GPlatesMaths::PointOnSphere &start,
-		const GPlatesMaths::PointOnSphere &end)
+		const GPlatesMaths::PointOnSphere &end,
+		const GPlatesGui::Colour &colour)
 {
 	const GPlatesMaths::UnitVector3D &start_pt = start.position_vector();
 	const GPlatesMaths::UnitVector3D &end_pt = end.position_vector();
 
 	const GPlatesMaths::real_t dot_of_endpoints = dot(start_pt, end_pt);
 
-	draw_great_circle_arc(start_pt, end_pt, dot_of_endpoints);
+	return draw_great_circle_arc(start_pt, end_pt, dot_of_endpoints, colour);
 }
 
 
-void
-GPlatesGui::NurbsRenderer::draw_great_circle_arc(
-		const GPlatesMaths::GreatCircleArc &arc)
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUNurbsRenderer::draw_great_circle_arc(
+		const GPlatesMaths::GreatCircleArc &arc,
+		const GPlatesGui::Colour &colour)
 {
 	const GPlatesMaths::UnitVector3D &start_pt = arc.start_point().position_vector();
 	const GPlatesMaths::UnitVector3D &end_pt = arc.end_point().position_vector();
 
 	const GPlatesMaths::real_t dot_of_endpoints = dot(start_pt, end_pt);
 
-	draw_great_circle_arc(start_pt, end_pt, dot_of_endpoints);
+	return draw_great_circle_arc(start_pt, end_pt, dot_of_endpoints, colour);
 }
 
 
-void
-GPlatesGui::NurbsRenderer::draw_great_circle_arc(
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUNurbsRenderer::draw_great_circle_arc(
 		const GPlatesMaths::UnitVector3D &start_pt,
 		const GPlatesMaths::UnitVector3D &end_pt,
-		const GPlatesMaths::real_t &dot_of_endpoints)
+		const GPlatesMaths::real_t &dot_of_endpoints,
+		const GPlatesGui::Colour &colour)
 {
 	if (dot_of_endpoints < 0.0) {
 		// arc is bigger than 90 degrees.
 		GPlatesMaths::UnitVector3D mid_pt = mid_point_of(start_pt, end_pt);
 
+		GLCompositeDrawable::non_null_ptr_type composite_drawable = GLCompositeDrawable::create();
+
 		// A great circle arc is always less than 180 degress, so if we split it
 		// into two pieces, we definitely get two arcs of less than 90 degress.
-		draw_great_circle_arc_smaller_than_ninety_degrees(start_pt, mid_pt);
-		draw_great_circle_arc_smaller_than_ninety_degrees(mid_pt, end_pt);
+		composite_drawable->add_drawable(
+				draw_great_circle_arc_smaller_than_ninety_degrees(start_pt, mid_pt, colour));
+
+		composite_drawable->add_drawable(
+				draw_great_circle_arc_smaller_than_ninety_degrees(mid_pt, end_pt, colour));
+
+		return composite_drawable;
 	} else {
-		draw_great_circle_arc_smaller_than_ninety_degrees(start_pt, end_pt);
+		return draw_great_circle_arc_smaller_than_ninety_degrees(start_pt, end_pt, colour);
 	}
 }
 
 
-void
-GPlatesGui::NurbsRenderer::draw_great_circle_arc_smaller_than_ninety_degrees(
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUNurbsRenderer::draw_great_circle_arc_smaller_than_ninety_degrees(
 		const GPlatesMaths::UnitVector3D &start_pt,
-		const GPlatesMaths::UnitVector3D &end_pt)
+		const GPlatesMaths::UnitVector3D &end_pt,
+		const GPlatesGui::Colour &colour)
 {
 	static const GLint STRIDE = 4;
 	static const GLint ORDER = 3;
 	static const GLsizei NUM_CONTROL_POINTS = 3;
 	static const GLsizei KNOT_SIZE = 6;
-	static GLfloat KNOTS[KNOT_SIZE] = 
-	{
-		0.0, 0.0, 0.0, 
-		1.0, 1.0, 1.0
-	};
+	boost::shared_array<GLfloat> KNOTS(new GLfloat[KNOT_SIZE]);
+	KNOTS[0] = KNOTS[1] = KNOTS[2] = 0.0f;
+	KNOTS[3] = KNOTS[4] = KNOTS[5] = 1.0f;
 
 	ControlPointData mid_ctrl_pt_data = calc_great_circle_arc_control_point_data(
 			GPlatesMaths::Vector3D(start_pt), 
@@ -260,61 +317,57 @@ GPlatesGui::NurbsRenderer::draw_great_circle_arc_smaller_than_ninety_degrees(
 	const GPlatesMaths::Vector3D &mid_ctrl_pt = mid_ctrl_pt_data.first;
 	const GLfloat &weight = mid_ctrl_pt_data.second;
 
-	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
-		{
-			static_cast<GLfloat>(start_pt.x().dval()),
-				static_cast<GLfloat>(start_pt.y().dval()),        
-					static_cast<GLfloat>(start_pt.z().dval()), 
-						1.0
-		}, 
-		{
-			static_cast<GLfloat>(weight*mid_ctrl_pt.x().dval()),
-				static_cast<GLfloat>(weight*mid_ctrl_pt.y().dval()),
-					static_cast<GLfloat>(weight*mid_ctrl_pt.z().dval()), 
-						static_cast<GLfloat>(weight)
-		},
-		{
-			static_cast<GLfloat>(end_pt.x().dval()),
-				static_cast<GLfloat>(end_pt.y().dval()),
-					static_cast<GLfloat>(end_pt.z().dval()),      
-						1.0
-		}
-	};
+	boost::shared_array<GLfloat> ctrl_points(new GLfloat[NUM_CONTROL_POINTS * STRIDE]);
+	ctrl_points[0 * STRIDE + 0] = static_cast<GLfloat>(start_pt.x().dval());
+	ctrl_points[0 * STRIDE + 1] = static_cast<GLfloat>(start_pt.y().dval());
+	ctrl_points[0 * STRIDE + 2] = static_cast<GLfloat>(start_pt.z().dval());
+	ctrl_points[0 * STRIDE + 3] = 1.0f;
+	ctrl_points[1 * STRIDE + 0] = static_cast<GLfloat>(weight*mid_ctrl_pt.x().dval());
+	ctrl_points[1 * STRIDE + 1] = static_cast<GLfloat>(weight*mid_ctrl_pt.y().dval());
+	ctrl_points[1 * STRIDE + 2] = static_cast<GLfloat>(weight*mid_ctrl_pt.z().dval());
+	ctrl_points[1 * STRIDE + 3] = static_cast<GLfloat>(weight);
+	ctrl_points[2 * STRIDE + 0] = static_cast<GLfloat>(end_pt.x().dval());
+	ctrl_points[2 * STRIDE + 1] = static_cast<GLfloat>(end_pt.y().dval());
+	ctrl_points[2 * STRIDE + 2] = static_cast<GLfloat>(end_pt.z().dval());
+	ctrl_points[2 * STRIDE + 3] = 1.0f;
 
-	draw_curve(KNOT_SIZE, &KNOTS[0], STRIDE,
-			&ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
+	return draw_curve(KNOT_SIZE, KNOTS, STRIDE,
+			ctrl_points, ORDER, GL_MAP1_VERTEX_4, colour);
 }
 
-void
-GPlatesGui::NurbsRenderer::draw_small_circle(
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUNurbsRenderer::draw_small_circle(
 	const GPlatesMaths::PointOnSphere &point_on_sphere,
-	const GPlatesMaths::Real &radius_in_radians)
+	const GPlatesMaths::Real &radius_in_radians,
+	const GPlatesGui::Colour &colour)
 {
 	using namespace GPlatesMaths;
 	
 	const UnitVector3D axis = point_on_sphere.position_vector();
 	const Real cos_colat = cos(radius_in_radians);
 	
-	draw_small_circle(axis,cos_colat);
-
+	return draw_small_circle(axis, cos_colat, colour);
 }
 
 
-void
-GPlatesGui::NurbsRenderer::draw_small_circle_arc(
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUNurbsRenderer::draw_small_circle_arc(
 	const GPlatesMaths::PointOnSphere &centre,
 	const GPlatesMaths::PointOnSphere &first_point_on_arc,
-	const GPlatesMaths::Real &arc_length_in_radians)
+	const GPlatesMaths::Real &arc_length_in_radians,
+	const GPlatesGui::Colour &colour)
 {
 	GPlatesMaths::UnitVector3D uv_centre = centre.position_vector();
 	GPlatesMaths::UnitVector3D uv_point_on_arc = first_point_on_arc.position_vector();
 
+	GLCompositeDrawable::non_null_ptr_type composite_drawable = GLCompositeDrawable::create();
+
 	double remaining_radians = arc_length_in_radians.dval();
 	while (remaining_radians > GPlatesMaths::HALF_PI)
 	{
-		draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(uv_centre,
-																	uv_point_on_arc,
-																	GPlatesMaths::HALF_PI);
+		composite_drawable->add_drawable(
+				draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(
+						uv_centre, uv_point_on_arc, GPlatesMaths::HALF_PI, colour));
 		
 		GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			uv_centre,
@@ -325,18 +378,20 @@ GPlatesGui::NurbsRenderer::draw_small_circle_arc(
 		remaining_radians -= GPlatesMaths::HALF_PI;		
 	}
 
-	draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(
-			uv_centre,
-			uv_point_on_arc,
-			remaining_radians);
+	composite_drawable->add_drawable(
+			draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(
+					uv_centre, uv_point_on_arc, remaining_radians, colour));
+
+	return composite_drawable;
 
 }
 
-void
-GPlatesGui::NurbsRenderer::draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUNurbsRenderer::draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(
 	const GPlatesMaths::UnitVector3D &centre_pt,
 	const GPlatesMaths::UnitVector3D &start_pt,
-	const GPlatesMaths::Real &arc_length_in_radians)
+	const GPlatesMaths::Real &arc_length_in_radians,
+	const GPlatesGui::Colour &colour)
 {
 
 	GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
@@ -350,11 +405,9 @@ GPlatesGui::NurbsRenderer::draw_small_circle_arc_smaller_than_or_equal_to_ninety
 	static const GLint ORDER = 3;
 	static const GLsizei NUM_CONTROL_POINTS = 3;
 	static const GLsizei KNOT_SIZE = 6;
-	static GLfloat KNOTS[KNOT_SIZE] = 
-	{
-		0.0, 0.0, 0.0, 
-		1.0, 1.0, 1.0
-	};
+	boost::shared_array<GLfloat> KNOTS(new GLfloat[KNOT_SIZE]);
+	KNOTS[0] = KNOTS[1] = KNOTS[2] = 0.0f;
+	KNOTS[3] = KNOTS[4] = KNOTS[5] = 1.0f;
 	
 	ControlPointData control_point_data = calculate_small_circle_arc_control_point_data(
 											centre_pt,
@@ -365,38 +418,34 @@ GPlatesGui::NurbsRenderer::draw_small_circle_arc_smaller_than_or_equal_to_ninety
 	const GPlatesMaths::Vector3D &mid_ctrl_pt = control_point_data.first;
 	const GLfloat &weight = control_point_data.second;
 
-	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
-		{
-			static_cast<GLfloat>(start_pt.x().dval()),
-				static_cast<GLfloat>(start_pt.y().dval()),        
-				static_cast<GLfloat>(start_pt.z().dval()), 
-				1.0
-		}, 
-		{
-			static_cast<GLfloat>(weight*mid_ctrl_pt.x().dval()),
-				static_cast<GLfloat>(weight*mid_ctrl_pt.y().dval()),
-				static_cast<GLfloat>(weight*mid_ctrl_pt.z().dval()), 
-				static_cast<GLfloat>(weight)
-			},
-		{
-			static_cast<GLfloat>(end_pt.x().dval()),
-				static_cast<GLfloat>(end_pt.y().dval()),
-				static_cast<GLfloat>(end_pt.z().dval()),      
-				1.0
-		}
-	};
+	boost::shared_array<GLfloat> ctrl_points(new GLfloat[NUM_CONTROL_POINTS * STRIDE]);
+	ctrl_points[0 * STRIDE + 0] = static_cast<GLfloat>(start_pt.x().dval());
+	ctrl_points[0 * STRIDE + 1] = static_cast<GLfloat>(start_pt.y().dval());
+	ctrl_points[0 * STRIDE + 2] = static_cast<GLfloat>(start_pt.z().dval());
+	ctrl_points[0 * STRIDE + 3] = 1.0f;
+	ctrl_points[1 * STRIDE + 0] = static_cast<GLfloat>(weight*mid_ctrl_pt.x().dval());
+	ctrl_points[1 * STRIDE + 1] = static_cast<GLfloat>(weight*mid_ctrl_pt.y().dval());
+	ctrl_points[1 * STRIDE + 2] = static_cast<GLfloat>(weight*mid_ctrl_pt.z().dval());
+	ctrl_points[1 * STRIDE + 3] = static_cast<GLfloat>(weight);
+	ctrl_points[2 * STRIDE + 0] = static_cast<GLfloat>(end_pt.x().dval());
+	ctrl_points[2 * STRIDE + 1] = static_cast<GLfloat>(end_pt.y().dval());
+	ctrl_points[2 * STRIDE + 2] = static_cast<GLfloat>(end_pt.z().dval());
+	ctrl_points[2 * STRIDE + 3] = 1.0f;
 
-	gluNurbsProperty(d_nurbs_ptr, GLU_SAMPLING_TOLERANCE, SMALL_CIRCLE_SAMPLING_TOLERANCE);
-	draw_curve(KNOT_SIZE, &KNOTS[0], STRIDE,
-		&ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);	
-	gluNurbsProperty(d_nurbs_ptr, GLU_SAMPLING_TOLERANCE, GREAT_CIRCLE_SAMPLING_TOLERANCE);
+	d_current_parameters.sampling_tolerance = SMALL_CIRCLE_SAMPLING_TOLERANCE;
+	GLDrawable::non_null_ptr_to_const_type drawable = draw_curve(
+			KNOT_SIZE, KNOTS, STRIDE, ctrl_points, ORDER, GL_MAP1_VERTEX_4, colour);
+	d_current_parameters.sampling_tolerance = GREAT_CIRCLE_SAMPLING_TOLERANCE;
+
+	return drawable;
 
 }
 
-void
-GPlatesGui::NurbsRenderer::draw_small_circle(
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUNurbsRenderer::draw_small_circle(
 	const GPlatesMaths::UnitVector3D &axis, 
-	const GPlatesMaths::Real &cos_colatitude)
+	const GPlatesMaths::Real &cos_colatitude,
+	const GPlatesGui::Colour &colour)
 {
 	using namespace GPlatesMaths;
 
@@ -408,13 +457,12 @@ GPlatesGui::NurbsRenderer::draw_small_circle(
 	static const GLint ORDER = 3;
 	static const GLsizei NUM_CONTROL_POINTS = 9;
 	static const GLsizei KNOT_SIZE = 12;
-	static GLfloat KNOTS[KNOT_SIZE] = {
-		0.0, 0.0, 0.0,
-		0.25, 0.25,
-		0.5, 0.5,
-		0.75, 0.75,
-		1.0, 1.0, 1.0
-	};
+	boost::shared_array<GLfloat> KNOTS(new GLfloat[KNOT_SIZE]);
+	KNOTS[0] = KNOTS[1] = KNOTS[2] = 0.0f;
+	KNOTS[3] = KNOTS[4] = 0.25f;
+	KNOTS[5] = KNOTS[6] = 0.5f;
+	KNOTS[7] = KNOTS[8] = 0.75f;
+	KNOTS[9] = KNOTS[10] = KNOTS[11] = 1.0f;
 
 	// Define the height, radius, and control points as they would be defined
 	// for a line of latitude, then rotate them according to the llp of the 
@@ -499,49 +547,40 @@ GPlatesGui::NurbsRenderer::draw_small_circle(
 		}	
 	}
 
-	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
+	boost::shared_array<GLfloat> ctrl_points(new GLfloat[NUM_CONTROL_POINTS * STRIDE]);
+	for (unsigned int n = 0; n < 4; ++n)
+	{
+		const unsigned int even_index = 2 * n;
+		ctrl_points[even_index * STRIDE + 0] = GLfloat(control_vectors[even_index].x().dval());
+		ctrl_points[even_index * STRIDE + 1] = GLfloat(control_vectors[even_index].y().dval());
+		ctrl_points[even_index * STRIDE + 2] = GLfloat(control_vectors[even_index].z().dval());
+		ctrl_points[even_index * STRIDE + 3] = 1.0f;
 
-		{	GLfloat(control_vectors[0].x().dval()),
-		GLfloat(control_vectors[0].y().dval()),
-		GLfloat(control_vectors[0].z().dval()), 1.0 },
+		const unsigned int odd_index = even_index + 1;
+		ctrl_points[odd_index * STRIDE + 0] = GLfloat(control_vectors[odd_index].x().dval());
+		ctrl_points[odd_index * STRIDE + 1] = GLfloat(control_vectors[odd_index].y().dval());
+		ctrl_points[odd_index * STRIDE + 2] = GLfloat(control_vectors[odd_index].z().dval());
+		ctrl_points[odd_index * STRIDE + 3] = WEIGHT;
+	}
+	ctrl_points[8 * STRIDE + 0] = GLfloat(control_vectors[8].x().dval());
+	ctrl_points[8 * STRIDE + 1] = GLfloat(control_vectors[8].y().dval());
+	ctrl_points[8 * STRIDE + 2] = GLfloat(control_vectors[8].z().dval());
+	ctrl_points[8 * STRIDE + 3] = 1.0f;
 
-		{	GLfloat(control_vectors[1].x().dval()),
-		GLfloat(control_vectors[1].y().dval()),
-		GLfloat(control_vectors[1].z().dval()), WEIGHT },
-
-		{	GLfloat(control_vectors[2].x().dval()),
-		GLfloat(control_vectors[2].y().dval()),
-		GLfloat(control_vectors[2].z().dval()), 1.0 },
-
-		{	GLfloat(control_vectors[3].x().dval()),
-		GLfloat(control_vectors[3].y().dval()),
-		GLfloat(control_vectors[3].z().dval()), WEIGHT },
-
-		{	GLfloat(control_vectors[4].x().dval()),
-		GLfloat(control_vectors[4].y().dval()),
-		GLfloat(control_vectors[4].z().dval()), 1.0 },
-
-		{	GLfloat(control_vectors[5].x().dval()),
-		GLfloat(control_vectors[5].y().dval()),
-		GLfloat(control_vectors[5].z().dval()), WEIGHT },
-
-		{	GLfloat(control_vectors[6].x().dval()),
-		GLfloat(control_vectors[6].y().dval()),
-		GLfloat(control_vectors[6].z().dval()), 1.0 },
-
-		{	GLfloat(control_vectors[7].x().dval()),
-		GLfloat(control_vectors[7].y().dval()),
-		GLfloat(control_vectors[7].z().dval()), WEIGHT },
-
-		{	GLfloat(control_vectors[8].x().dval()),
-		GLfloat(control_vectors[8].y().dval()),
-		GLfloat(control_vectors[8].z().dval()), 1.0 }
-	};	
 
 	// Use a smaller sampling tolerance for small circles, so that they appear smooth
 	// even when small.
-	gluNurbsProperty(d_nurbs_ptr, GLU_SAMPLING_TOLERANCE, SMALL_CIRCLE_SAMPLING_TOLERANCE);
-	draw_curve(KNOT_SIZE, &KNOTS[0], STRIDE, &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
-	gluNurbsProperty(d_nurbs_ptr, GLU_SAMPLING_TOLERANCE, GREAT_CIRCLE_SAMPLING_TOLERANCE);
+	d_current_parameters.sampling_tolerance = SMALL_CIRCLE_SAMPLING_TOLERANCE;
+	GLDrawable::non_null_ptr_to_const_type drawable = draw_curve(
+			KNOT_SIZE, KNOTS, STRIDE, ctrl_points, ORDER, GL_MAP1_VERTEX_4, colour);
+	d_current_parameters.sampling_tolerance = GREAT_CIRCLE_SAMPLING_TOLERANCE;
+
+	return drawable;
 }
-	
+
+
+GPlatesOpenGL::GLUNurbsRenderer::Parameters::Parameters() :
+	sampling_method(GLU_PATH_LENGTH),
+	sampling_tolerance(50.0f)
+{
+}

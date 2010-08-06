@@ -29,6 +29,7 @@
 
 #include "LayerTask.h"
 #include "LayerTaskRegistry.h"
+#include "RasterLayerTask.h"
 #include "ReconstructionLayerTask.h"
 #include "ReconstructLayerTask.h"
 #include "TopologyBoundaryResolverLayerTask.h"
@@ -244,6 +245,13 @@ GPlatesAppLogic::register_default_layer_task_types(
 					&ReconstructLayerTask::create_layer_task,
 					&ReconstructLayerTask::can_process_feature_collection,
 					&ReconstructLayerTask::is_primary_layer_task_type);
+
+	// Layer task that reconstructs rasters.
+	const LayerTaskRegistry::LayerTaskType raster_layer_task_type =
+			layer_task_registry.register_layer_task_type(
+					&RasterLayerTask::create_layer_task,
+					&RasterLayerTask::can_process_feature_collection,
+					&RasterLayerTask::is_primary_layer_task_type);
 
 	// Layer task to resolve topological closed plate boundaries.
 	layer_task_registry.register_layer_task_type(

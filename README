@@ -48,6 +48,7 @@ Compiling GPlates on Windows
 To compile GPlates on Microsoft Windows, you will need the programs and libraries
 as documented in the "Program and library dependencies" section in the "DEPS.Windows"
 file in this directory.
+ * GLEW library (the OpenGL Extension Wrangler Library)
 
 To compile on Windows:
  * Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for

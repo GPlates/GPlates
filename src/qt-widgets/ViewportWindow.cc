@@ -110,14 +110,13 @@
 #include "gui/GuiDebug.h"
 #include "gui/MapCanvasToolAdapter.h"
 #include "gui/MapCanvasToolChoice.h"
-#include "gui/OpenGLBadAllocException.h"
-#include "gui/OpenGLException.h"
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
 #include "gui/TopologySectionsContainer.h"
 #include "gui/TopologySectionsTable.h"
 #include "gui/TrinketArea.h"
 #include "gui/UnsavedChangesTracker.h"
+#include "gui/ViewportProjection.h"
 
 #include "maths/PolylineIntersections.h"
 #include "maths/PointOnSphere.h"
@@ -128,7 +127,8 @@
 #include "model/Model.h"
 #include "model/types.h"
 
-#include "gui/ViewportProjection.h"
+#include "opengl/OpenGLBadAllocException.h"
+#include "opengl/OpenGLException.h"
 
 #include "presentation/Application.h"
 #include "presentation/ViewState.h"
@@ -1830,7 +1830,7 @@ GPlatesQtWidgets::ViewportWindow::load_raster(
 					result = true;
 				}
 			}
-			catch (const GPlatesGui::OpenGLBadAllocException &)
+			catch (const GPlatesOpenGL::OpenGLBadAllocException &)
 			{
 				read_errors.d_failures_to_begin.push_back(
 						GPlatesFileIO::make_read_error_occurrence(
@@ -1840,7 +1840,7 @@ GPlatesQtWidgets::ViewportWindow::load_raster(
 							GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
 							GPlatesFileIO::ReadErrors::FileNotLoaded));
 			}
-			catch (const GPlatesGui::OpenGLException &)
+			catch (const GPlatesOpenGL::OpenGLException &)
 			{
 				read_errors.d_failures_to_begin.push_back(
 						GPlatesFileIO::make_read_error_occurrence(

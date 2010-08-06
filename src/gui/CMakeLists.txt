@@ -119,20 +119,13 @@ set(srcs
     MapTransform.cc
     MapTransform.h
     Mipmapper.h
-    NurbsRenderer.cc
-    NurbsRenderer.h
     OpaqueSphere.cc
     OpaqueSphere.h
-    OpenGL.h
-    OpenGLBadAllocException.h
-    OpenGLException.h
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
     ProjectionException.h
     QGLWidgetTextRenderer.cc
     QGLWidgetTextRenderer.h
-    Quadrics.cc
-    Quadrics.h
     RasterColourPalette.cc
     RasterColourPalette.h
     ReconstructionGeometrySequence.h

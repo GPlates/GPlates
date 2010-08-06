@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,8 +25,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_OPENGL_H
-#define GPLATES_GUI_OPENGL_H
+#ifndef GPLATES_OPENGL_OPENGL_H
+#define GPLATES_OPENGL_OPENGL_H
+
+// NOTE: We're not including the OpenGL Extension Wrangler Library (GLEW) library here
+// even though it complains if it's not included before the regular OpenGL headers.
+// This is because other modules include this "opengl/OpenGL.h" header and they also
+// include Qt headers which in turn include regular OpenGL headers.
+// So getting the order of includes correct throughout the application becomes quite difficult.
+// A better way is to only include GLEW headers in the GPlates' OpenGL module (which is the
+// only place it should be used) and provide enough of an interface to limit exposure
+// of internals in order to eliminate exposure any GLEW "#include"s to outside modules.
+//
+//#include <GL/glew.h>
 
 extern "C" {
 #if defined(__APPLE__)
@@ -48,4 +59,4 @@ extern "C" {
 #endif
 }
 
-#endif  // GPLATES_GUI_OPENGL_H
+#endif  // GPLATES_OPENGL_OPENGL_H

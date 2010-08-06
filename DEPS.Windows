@@ -77,6 +77,11 @@ Qt
       * Executable files: \bin
   6. Add the Qt \bin and \qmake directories to the PATH environment variable
      (see above).
+	 
+GLEW
+  1. Download and extract glew-1.5.4-win32.zip from: http://glew.sourceforge.net/
+  2. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
+  3. Add the GLEW \Bin directory to the PATH environment variable (see above).
 
 Boost
 

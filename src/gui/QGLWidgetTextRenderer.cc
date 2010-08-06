@@ -25,9 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "QGLWidgetTextRenderer.h"
-#include "OpenGL.h"
 #include <cmath>
+#include <opengl/OpenGL.h>
+
+#include "QGLWidgetTextRenderer.h"
+
 
 namespace
 {
@@ -77,9 +79,9 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 {
 	glColor3fv(colour);
 	// need to change to GL_MODULATE for a moment otherwise the text will be rendered as white
+	// GL_MODULATE is the default OpenGL state so we'll leave it that way when we're finished.
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	d_gl_widget_ptr->renderText(x, y, string, scale_font(font, scale));
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 }
 
 void

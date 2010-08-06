@@ -34,6 +34,7 @@
 #include "ReconstructionGeometryCollection.h"
 
 #include "global/AssertionFailureException.h"
+#include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
@@ -317,9 +318,7 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::~Layer()
 
 
 // gcc isn't liking the BOOST_MPL_ASSERT.
-#if defined(__GNUC__)
-#	pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
+DISABLE_GCC_WARNING("-Wold-style-cast")
 void
 GPlatesAppLogic::ReconstructGraphImpl::Layer::execute(
 		Reconstruction &reconstruction,
@@ -394,9 +393,7 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::execute(
 		}
 	}
 }
-#if defined(__GNUC__)
-#	pragma GCC diagnostic error "-Wold-style-cast"
-#endif
+ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void

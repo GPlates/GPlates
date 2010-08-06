@@ -29,15 +29,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// On some versions of g++ with some versions of Qt, it's not liking at() and
-// operator[] in QStringList.
-#if defined(__GNUC__)
-#	pragma GCC diagnostic ignored "-Wstrict-overflow"
-#endif
-
 #include "CptReader.h"
 
+#include "global/CompilerWarnings.h"
+
 #include "gui/GMTColourNames.h"
+
+// On some versions of g++ with some versions of Qt, it's not liking at() and
+// operator[] in QStringList.
+DISABLE_GCC_WARNING("-Wstrict-overflow")
 
 
 using boost::tuples::get;

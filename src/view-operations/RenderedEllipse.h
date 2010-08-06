@@ -74,14 +74,6 @@ namespace GPlatesViewOperations
 			return NULL;
 		}
 		
-		virtual
-		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
-		test_vertex_proximity(
-			const GPlatesMaths::ProximityCriteria &criteria) const
-		{
-			return NULL;
-		}			
-		
 		const GPlatesMaths::PointOnSphere &
 		get_centre() const
 		{

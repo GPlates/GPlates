@@ -38,10 +38,11 @@
 # include <boost/python.hpp>
 #endif
 
-#include <QtOpenGL/qgl.h>
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
+#include <opengl/OpenGL.h>
+#include <QtOpenGL/qgl.h>
 
 #include "gui/ColourScheme.h"
 #include "gui/Globe.h"
@@ -51,6 +52,13 @@
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+
+#include "opengl/GLClearBuffers.h"
+#include "opengl/GLClearBuffersState.h"
+#include "opengl/GLContext.h"
+#include "opengl/GLRenderGraph.h"
+#include "opengl/GLTransform.h"
+#include "opengl/GLViewport.h"
 
 #include "qt-widgets/SceneView.h"
 #include "view-operations/QueryProximityThreshold.h"
@@ -523,8 +531,27 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 	private:
-
 		GPlatesPresentation::ViewState &d_view_state;
+
+
+		/**
+		 * Shadows some OpenGL state to allow faster OpenGL queries and
+		 * to minimise state changes.
+		 */
+		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
+
+		//! The OpenGL frame buffer clear values (colour, depth, etc).
+		GPlatesOpenGL::GLClearBuffersState::non_null_ptr_type d_gl_clear_buffers_state;
+
+		//! An OpenGL drawable to clear the frame buffers (colour, depth, etc).
+		GPlatesOpenGL::GLClearBuffers::non_null_ptr_type d_gl_clear_buffers;
+
+		//! The OpenGL viewport used to render the main scene into this canvas.
+		GPlatesOpenGL::GLViewport d_gl_viewport;
+
+		//! The current projection transform for OpenGL.
+		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform;
+
 
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
@@ -630,6 +657,17 @@ namespace GPlatesQtWidgets
 		void
 		clear_canvas(
 				const QColor& color = Qt::black);
+
+		/**
+		 * Creates a render graph and sets up some state in preparation for globe drawing.
+		 */
+		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
+		initialise_render_graph(
+				GPlatesOpenGL::GLRenderGraph &render_graph);
+
+		void
+		draw_render_graph(
+				GPlatesOpenGL::GLRenderGraph &render_graph);
 
 		//! Calculates scaling for lines, points and text based on size of canvas
 		float

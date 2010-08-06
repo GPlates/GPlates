@@ -25,18 +25,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_GUI_OPENGLEXCEPTION_H_
-#define _GPLATES_GUI_OPENGLEXCEPTION_H_
+#ifndef _GPLATES_OPENGL_OPENGLEXCEPTION_H_
+#define _GPLATES_OPENGL_OPENGLEXCEPTION_H_
 
-#include "GuiException.h"
+#include "global/GPlatesException.h"
 
-namespace GPlatesGui
+
+namespace GPlatesOpenGL
 {
 	/**
 	 * A general openGL-error exception.
 	 */
 	class OpenGLException
-		: public GuiException
+		: public GPlatesGlobal::Exception
 	{
 		public:
 			/**
@@ -46,7 +47,7 @@ namespace GPlatesGui
 			OpenGLException(
 					const GPlatesUtils::CallStack::Trace &exception_source,
 					const char *msg) :
-				GuiException(exception_source),
+				GPlatesGlobal::Exception(exception_source),
 				_msg(msg)
 			{  }
 
@@ -70,5 +71,5 @@ namespace GPlatesGui
 	};
 }
 
-#endif  // _GPLATES_GUI_OPENGLEXCEPTION_H_
+#endif  // _GPLATES_OPENGL_OPENGLEXCEPTION_H_
 

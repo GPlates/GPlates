@@ -36,6 +36,7 @@ namespace GPlatesViewOperations
 	class RenderedPolygonOnSphere;
 	class RenderedDirectionArrow;
 	class RenderedReconstructionGeometry;
+	class RenderedResolvedRaster;
 	class RenderedSmallCircle;
 	class RenderedSmallCircleArc;	
 	class RenderedString;
@@ -82,6 +83,12 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_polygon_on_sphere(
 				const RenderedPolygonOnSphere &)
+		{  }
+		
+		virtual
+		void
+		visit_resolved_raster(
+				const RenderedResolvedRaster &)
 		{  }
 
 		virtual

@@ -42,6 +42,8 @@
 #include "FunctionDomainException.h"
 #include "MathsUtils.h"
 
+#include "global/CompilerWarnings.h"
+
 /**
  * Warnings relating to floating point == and != being unsafe have to be
  * turned off when implementing NaN and infinity comparisons (because there's
@@ -51,12 +53,9 @@
  *
  * The warnings are turned back on after the anonymous namespace scope.
  */
-#if defined(__GNUC__)
-#	pragma GCC diagnostic ignored "-Wfloat-equal"
-#elif defined(__WINDOWS__)
-#	pragma warning( push )
-#	pragma warning( disable : 4723 )
-#endif
+DISABLE_GCC_WARNING("-Wfloat-equal")
+PUSH_MSVC_WARNINGS
+DISABLE_MSVC_WARNING(4723)
 
 namespace
 {
@@ -181,11 +180,8 @@ namespace
 /**
  * Re-enable the warnings we disabled above
  */
-#if defined(__GNUC__)
-#	pragma GCC diagnostic error "-Wfloat-equal"
-#elif defined(__WINDOWS__)
-#	pragma warning( pop )
-#endif
+ENABLE_GCC_WARNING("-Wfloat-equal")
+POP_MSVC_WARNINGS
 
 /*
  * FIXME: the value below was just a guess. Discover what this value should be.

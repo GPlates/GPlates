@@ -44,6 +44,10 @@
 #include "maths/MultiPointOnSphere.h"
 #include "maths/SmallCircle.h"
 
+#include "property-values/Georeferencing.h"
+#include "property-values/RawRaster.h"
+
+
 namespace GPlatesMaths
 {
 	class Vector3D;
@@ -152,6 +156,14 @@ namespace GPlatesViewOperations
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
 				float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+
+		/**
+		 * Creates a @a RenderedGeometry for a resolved raster.
+		 */
+		RenderedGeometry
+		create_rendered_resolved_raster(
+				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster);
 
 		/**
 		 * Creates a single direction arrow consisting of an arc line segment on the globe's surface

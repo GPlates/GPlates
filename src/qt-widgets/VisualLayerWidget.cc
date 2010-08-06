@@ -59,6 +59,7 @@ namespace
 
 		static const Colour RECONSTRUCTION_COLOUR = *html_colours.get_colour("gold");
 		static const Colour RECONSTRUCT_COLOUR = *html_colours.get_colour("yellowgreen");
+		static const Colour RASTER_COLOUR = *html_colours.get_colour("tomato1");
 		static const Colour TOPOLOGY_BOUNDARY_RESOLVER_COLOUR = *html_colours.get_colour("powderblue");
 		static const Colour TOPOLOGY_NETWORK_RESOLVER_COLOUR = *html_colours.get_colour("plum");
 
@@ -73,6 +74,9 @@ namespace
 
 			case RECONSTRUCT:
 				return RECONSTRUCT_COLOUR;
+
+			case RASTER:
+				return RASTER_COLOUR;
 
 			case TOPOLOGY_BOUNDARY_RESOLVER:
 				return TOPOLOGY_BOUNDARY_RESOLVER_COLOUR;

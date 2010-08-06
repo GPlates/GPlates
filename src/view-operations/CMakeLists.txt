@@ -64,6 +64,7 @@ set(srcs
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
     RenderedReconstructionGeometry.h
+    RenderedResolvedRaster.h
     RenderedSmallCircle.h
     RenderedSmallCircleArc.h
     RenderedString.h

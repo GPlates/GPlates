@@ -30,6 +30,7 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
+#include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/PlateVelocityUtils.h"
@@ -167,11 +168,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 		GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const StyleParams &style_params,
 		const boost::optional<GPlatesGui::Colour> &colour,
-		const boost::optional<GPlatesMaths::Rotation> &rfg_rotation) :
+		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_style_params(style_params),
 	d_colour(colour),
-	d_rfg_rotation(rfg_rotation)
+	d_reconstruction_adjustment(reconstruction_adjustment)
 {
 }
 
@@ -182,7 +183,29 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
-					rfg->geometry(), rfg, d_style_params, d_colour, d_rfg_rotation);
+					rfg->geometry(), rfg, d_style_params, d_colour, d_reconstruction_adjustment);
+
+	// Add to the rendered geometry layer.
+	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr)
+{
+	// Create a RenderedGeometry for drawing the resolved raster.
+	GPlatesViewOperations::RenderedGeometry rendered_resolved_raster =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
+					rr->get_georeferencing(),
+					rr->get_raster());
+
+	// Create a RenderedGeometry for storing the ReconstructionGeometry and
+	// a RenderedGeometry associated with it.
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+					rr,
+					rendered_resolved_raster);
 
 	// Add to the rendered geometry layer.
 	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -199,19 +222,23 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_vgp_point =
 				create_rendered_reconstruction_geometry(
-						*rvgp->vgp_params().d_vgp_point, rvgp, d_style_params, d_colour, d_rfg_rotation);
+						*rvgp->vgp_params().d_vgp_point,
+						rvgp,
+						d_style_params,
+						d_colour,
+						d_reconstruction_adjustment);
 		// Add to the rendered geometry layer.
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_vgp_point);
 	}
 
 	boost::optional<GPlatesMaths::PointOnSphere> pole_point = boost::none;
 	boost::optional<GPlatesMaths::PointOnSphere> site_point = boost::none;
-	if(d_rfg_rotation)
+	if(d_reconstruction_adjustment)
 	{
-		pole_point = (*d_rfg_rotation) * (**rvgp->vgp_params().d_vgp_point);
+		pole_point = (*d_reconstruction_adjustment) * (**rvgp->vgp_params().d_vgp_point);
 		if(rvgp->vgp_params().d_site_point)
 		{
-			site_point = (*d_rfg_rotation) * (**rvgp->vgp_params().d_site_point);
+			site_point = (*d_reconstruction_adjustment) * (**rvgp->vgp_params().d_site_point);
 		}
 	}
 	else

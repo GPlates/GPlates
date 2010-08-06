@@ -25,10 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL.h>
+
 #include "Colour.h"
 #include "Map.h"
 #include "MapCanvasPainter.h"
-#include "OpenGL.h"
 
 #include "maths/LatLonPoint.h"
 

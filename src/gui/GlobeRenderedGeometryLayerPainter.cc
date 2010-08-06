@@ -25,17 +25,29 @@
 
 #include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#include <opengl/OpenGL.h>
 
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
-#include "NurbsRenderer.h"
-#include "OpenGL.h"
 
 #include "maths/EllipseGenerator.h"
 #include "maths/Real.h"
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
 #include "maths/MathsUtils.h"
+
+#include "opengl/GLBlendState.h"
+#include "opengl/GLCompositeDrawable.h"
+#include "opengl/GLCompositeStateSet.h"
+#include "opengl/GLDrawable.h"
+#include "opengl/GLMaskBuffersState.h"
+#include "opengl/GLPointLinePolygonState.h"
+#include "opengl/GLRenderGraphDrawableNode.h"
+#include "opengl/GLText3DNode.h"
+#include "opengl/GLUNurbsRenderer.h"
+#include "opengl/GLVertexArray.h"
+#include "opengl/GLVertexElementArray.h"
 
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
@@ -57,232 +69,6 @@ namespace
 	 */
 	const double GCA_DISTANCE_THRESHOLD_DOT = std::cos(GPlatesMaths::PI / 36.0);
 	const double TWO_PI = 2. * GPlatesMaths::PI;
-
-	inline
-	void
-	draw_vertex(
-			const GPlatesMaths::PointOnSphere &p)
-	{
-		const GPlatesMaths::UnitVector3D &uv = p.position_vector();
-		glVertex3d(uv.x().dval(), uv.y().dval(), uv.z().dval());
-	}
-
-
-	void
-	draw_points_for_multi_point(
-			const GPlatesMaths::MultiPointOnSphere::const_iterator &begin,
-			const GPlatesMaths::MultiPointOnSphere::const_iterator &end)
-	{
-		GPlatesMaths::MultiPointOnSphere::const_iterator iter = begin;
-
-		glBegin(GL_POINTS);
-			for ( ; iter != end; ++iter) {
-				draw_vertex(*iter);
-			}
-		glEnd();
-	}
-
-
-	void
-	draw_great_circle_arc(
-			const GPlatesMaths::PointOnSphere &start,
-			const GPlatesMaths::PointOnSphere &end,
-			const GPlatesMaths::real_t &dot_of_endpoints,
-			GPlatesGui::NurbsRenderer &nurbs_renderer)
-	{
-		// Draw a NURBS if the two endpoints of the arc are far enough apart.
-		if (dot_of_endpoints < GCA_DISTANCE_THRESHOLD_DOT)
-		{
-			nurbs_renderer.draw_great_circle_arc(start, end);
-		}
-		else
-		{
-			glBegin(GL_LINES);
-				draw_vertex(start);
-				draw_vertex(end);
-			glEnd();
-		}
-	}
-
-
-	inline
-	void
-	draw_great_circle_arc(
-			const GPlatesMaths::PointOnSphere &start,
-			const GPlatesMaths::PointOnSphere &end,
-			GPlatesGui::NurbsRenderer &nurbs_renderer)
-	{
-		draw_great_circle_arc(start, end,
-				dot(start.position_vector(), end.position_vector()),
-				nurbs_renderer);
-	}
-
-
-	inline
-	void
-	draw_great_circle_arc(
-			const GPlatesMaths::GreatCircleArc &gca,
-			GPlatesGui::NurbsRenderer &nurbs_renderer)
-	{
-		draw_great_circle_arc(gca.start_point(), gca.end_point(),
-				gca.dot_of_endpoints(), nurbs_renderer);
-	}
-
-
-	void
-	draw_arcs_for_polygon(
-			const GPlatesMaths::PolygonOnSphere::const_iterator &begin, 
-			const GPlatesMaths::PolygonOnSphere::const_iterator &end,
-			GPlatesGui::NurbsRenderer &nurbs_renderer)
-	{
-		GPlatesMaths::PolygonOnSphere::const_iterator iter = begin;
-
-		for ( ; iter != end; ++iter)
-		{
-			draw_great_circle_arc(*iter, nurbs_renderer);
-		}
-	}
-
-
-	void
-	draw_arcs_for_polyline(
-			const GPlatesMaths::PolylineOnSphere::const_iterator &begin, 
-			const GPlatesMaths::PolylineOnSphere::const_iterator &end,
-			GPlatesGui::NurbsRenderer &nurbs_renderer)
-	{
-		GPlatesMaths::PolylineOnSphere::const_iterator iter = begin;
-
-		for ( ; iter != end; ++iter)
-		{
-			draw_great_circle_arc(*iter, nurbs_renderer);
-		}
-	}
-
-
-	void
-	draw_cone(
-			const GPlatesMaths::Vector3D &apex,
-			const GPlatesMaths::Vector3D &cone_axis)
-	{
-		const GPlatesMaths::Vector3D centre_base_circle = apex - cone_axis;
-
-		const GPlatesMaths::real_t cone_axis_mag = cone_axis.magnitude();
-
-		// Avoid divide-by-zero - and if cone length is near zero it won't be visible.
-		if (cone_axis_mag == 0)
-		{
-			return;
-		}
-
-		const GPlatesMaths::UnitVector3D cone_zaxis( (1 / cone_axis_mag) * cone_axis );
-
-		// Find an orthonormal basis using 'cone_axis'.
-		const GPlatesMaths::UnitVector3D cone_yaxis = generate_perpendicular(cone_zaxis);
-		const GPlatesMaths::UnitVector3D cone_xaxis( cross(cone_yaxis, cone_zaxis) );
-
-		static const int NUM_VERTICES_IN_BASE_UNIT_CIRCLE = 6;
-		static const double s_vertex_angle =
-				2 * GPlatesMaths::PI / NUM_VERTICES_IN_BASE_UNIT_CIRCLE;
-		static const GPlatesMaths::real_t s_base_unit_circle[NUM_VERTICES_IN_BASE_UNIT_CIRCLE][2] =
-				{
-					{ GPlatesMaths::cos(0 * s_vertex_angle), GPlatesMaths::sin(0 * s_vertex_angle) },
-					{ GPlatesMaths::cos(1 * s_vertex_angle), GPlatesMaths::sin(1 * s_vertex_angle) },
-					{ GPlatesMaths::cos(2 * s_vertex_angle), GPlatesMaths::sin(2 * s_vertex_angle) },
-					{ GPlatesMaths::cos(3 * s_vertex_angle), GPlatesMaths::sin(3 * s_vertex_angle) },
-					{ GPlatesMaths::cos(4 * s_vertex_angle), GPlatesMaths::sin(4 * s_vertex_angle) },
-					{ GPlatesMaths::cos(5 * s_vertex_angle), GPlatesMaths::sin(5 * s_vertex_angle) }
-				};
-
-		// Radius of cone base circle is proportional to the distance from the apex to
-		// the centre of the base circle.
-		const float ratio_cone_radius_to_axis = 0.5f;
-		const GPlatesMaths::real_t radius_cone_circle = ratio_cone_radius_to_axis * cone_axis_mag;
-
-		// Generate the cone vertices in the frame of reference of the cone axis.
-		// We could use an OpenGL transformation matrix to do this for us but that's
-		// overkill since cone only needs to be transformed once.
-		const GPlatesMaths::Vector3D cone_base_circle[NUM_VERTICES_IN_BASE_UNIT_CIRCLE] =
-				{
-					centre_base_circle + radius_cone_circle * (
-							s_base_unit_circle[0][0] * cone_xaxis +
-							s_base_unit_circle[0][1] * cone_yaxis),
-					centre_base_circle + radius_cone_circle * (
-							s_base_unit_circle[1][0] * cone_xaxis +
-							s_base_unit_circle[1][1] * cone_yaxis),
-					centre_base_circle + radius_cone_circle * (
-							s_base_unit_circle[2][0] * cone_xaxis +
-							s_base_unit_circle[2][1] * cone_yaxis),
-					centre_base_circle + radius_cone_circle * (
-							s_base_unit_circle[3][0] * cone_xaxis +
-							s_base_unit_circle[3][1] * cone_yaxis),
-					centre_base_circle + radius_cone_circle * (
-							s_base_unit_circle[4][0] * cone_xaxis +
-							s_base_unit_circle[4][1] * cone_yaxis),
-					centre_base_circle + radius_cone_circle * (
-							s_base_unit_circle[5][0] * cone_xaxis +
-							s_base_unit_circle[5][1] * cone_yaxis)
-				};
-
-		glBegin(GL_TRIANGLE_FAN);
-			glVertex3d(apex.x().dval(), apex.y().dval(), apex.z().dval());
-
-			for (int vertex_index = 0;
-				vertex_index < NUM_VERTICES_IN_BASE_UNIT_CIRCLE;
-				++vertex_index)
-			{
-				const GPlatesMaths::Vector3D &vertex = cone_base_circle[vertex_index];
-				glVertex3d(vertex.x().dval(), vertex.y().dval(), vertex.z().dval());
-			}
-			const GPlatesMaths::Vector3D &last_circle_vertex = cone_base_circle[0];
-			glVertex3d(last_circle_vertex.x().dval(), last_circle_vertex.y().dval(),
-					last_circle_vertex.z().dval());
-		glEnd();
-	}
-	
-	void
-	draw_ellipse(
-		const GPlatesViewOperations::RenderedEllipse &rendered_ellipse,
-		const double &inverse_zoom_factor)
-	{
-	// We could make this zoom dependent, but:
-	// For an ellipse with fairly tight curvature, at maximum zoom (10000%),
-	// 128 steps gives a just-about-noticeable jagged appearance; 256 steps
-	// appears pretty smooth (to me, at least).  We could reduce this at lower
-	// zooms, but anything below about 64 steps makes large ellipses (e.g. one which
-	// is effectively a great circle) appear jagged at minimum zoom (100%).
-	// So we could make the number of steps vary from (say) 64 at 100% zoom to
-	// 256 at 10000% zoom.
-	// The inverse zoom factor varies from 1 at 100% zoom to 0.01 at 10000% zoom. 
-	// Using the sqrt of the inverse zoom factor, we could use 64 steps at min zoom
-	// and 640 steps at max zoom, for example.
-
-		static const unsigned int nsteps = 256;
-		static const double dt = TWO_PI/nsteps;
-
-		if ((rendered_ellipse.get_semi_major_axis_radians() == 0.)
-			|| (rendered_ellipse.get_semi_minor_axis_radians() == 0.))
-		{
-			return;	
-		}
-		
-		GPlatesMaths::EllipseGenerator ellipse_generator(
-			rendered_ellipse.get_centre(),
-			rendered_ellipse.get_semi_major_axis_radians(),
-			rendered_ellipse.get_semi_minor_axis_radians(),
-			rendered_ellipse.get_axis());
-					
-		glBegin(GL_LINE_LOOP);
-		
-		for (double i = 0 ; i < TWO_PI ; i += dt)
-		{
-
-			GPlatesMaths::UnitVector3D uv = ellipse_generator.get_point_on_ellipse(i);
-			glVertex3d(uv.x().dval(),uv.y().dval(),uv.z().dval());
-		}
-		glEnd();
-	
-	}
-	
 } // anonymous namespace
 
 
@@ -290,30 +76,204 @@ const float GPlatesGui::GlobeRenderedGeometryLayerPainter::POINT_SIZE_ADJUSTMENT
 const float GPlatesGui::GlobeRenderedGeometryLayerPainter::LINE_WIDTH_ADJUSTMENT = 1.0f;
 
 
+template <typename GreatCircleArcForwardIter>
 void
-GPlatesGui::GlobeRenderedGeometryLayerPainter::paint()
+GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
+		const GreatCircleArcForwardIter &begin_arcs,
+		const GreatCircleArcForwardIter &end_arcs,
+		const Colour &colour,
+		LineDrawables &line_drawables,
+		GPlatesOpenGL::GLUNurbsRenderer &nurbs_renderer)
 {
-	// First pass over rendered geometry layer draws opaque primitives such
-	// as 3d meshes.
-	d_draw_opaque_primitives = true;
-	// Enable depth buffer writes.
-	glDepthMask(GL_TRUE);
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
+
+	// Used to add line strips to the stream.
+	GPlatesOpenGL::GLStreamLineStrips<Vertex> stream_line_strips(*line_drawables.stream);
+
+	stream_line_strips.begin_line_strip();
+
+	// Iterate over the great circle arcs.
+	for (GreatCircleArcForwardIter gca_iter = begin_arcs ; gca_iter != end_arcs; ++gca_iter)
+	{
+		const GPlatesMaths::GreatCircleArc &gca = *gca_iter;
+
+		// Draw a NURBS if the two endpoints of the arc are far enough apart.
+		if (gca.dot_of_endpoints() < GCA_DISTANCE_THRESHOLD_DOT)
+		{
+			// We've interrupted our regular line strip so we need to end any current strip.
+			stream_line_strips.end_line_strip();
+
+			line_drawables.nurbs_drawables.push_back(
+					d_nurbs_renderer->draw_great_circle_arc(
+							gca.start_point(), gca.end_point(), colour));
+
+			// Start a new line strip.
+			stream_line_strips.begin_line_strip();
+		}
+		else
+		{
+			if (stream_line_strips.is_start_of_strip())
+			{
+				// Get the start position of the great circle arc.
+				const GPlatesMaths::UnitVector3D &start = gca.start_point().position_vector();
+
+				// Vertex representing the start point's position and colour.
+				const Vertex start_vertex = {
+						start.x().dval(), start.y().dval(), start.z().dval(), rgba8_color };
+
+				stream_line_strips.add_vertex(start_vertex);
+			}
+
+			// Get the end position of the great circle arc.
+			const GPlatesMaths::UnitVector3D &end = gca.end_point().position_vector();
+
+			// Vertex representing the end point's position and colour.
+			const Vertex end_vertex = {
+					end.x().dval(), end.y().dval(), end.z().dval(), rgba8_color };
+
+			stream_line_strips.add_vertex(end_vertex);
+		}
+	}
+
+	stream_line_strips.end_line_strip();
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
+		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &rendered_layer_node)
+{
+	//
+	// Create one render graph node to parent all primitives whose geometry is constrained
+	// to the sphere (regardless of whether they are opaque or translucent).
+	// Create another render graph node to parent any primitives whose geometry is not
+	// constrained to the sphere.
+	//
+	// Primitives *on* the sphere include those that don't map exactly to the sphere because
+	// of their finite tessellation level but are nonetheless considered as spherical geometries.
+	// For example a polyline has individual great circle arc segments that are tessellated
+	// into straight lines in 3D space (for rendering) and these lines dip slightly below
+	// the surface of the sphere.
+	// 
+	// Primitives *off* the sphere include rendered direction arrows whose geometry is
+	// meant to leave the surface of the sphere.
+	//
+	// Primitives *on* the sphere will have depth testing turned on but depth writes turned *off*.
+	// The reason for this is we want geometries *on* the sphere not to depth occlude each other
+	// which is something that depends on their tessellation levels. For example a mesh geometry
+	// that draws a filled polygon will have parts of its mesh dip below the surface (between
+	// the mesh vertices) and a separate polyline geometry will show through at these locations
+	// (if the polyline geometry had had depth writes turned on). Ideally either the filled polygon
+	// or the polyline should be drawn on top in its entirely depending on the order they are
+	// drawn. And this will only happen reliably if their depth writes are turned off.
+	//
+	// Primitives *off* the sphere will have both depth testing and depth writes turned *on*.
+	// The reason for this is we don't want subsequent rendered geometry layers (containing
+	// primitives *on* the sphere) to overwrite (in the colour buffer) primitives *off* the sphere.
+	// So for rendered direction arrows poking out of the sphere at tangents, they should always
+	// be visible. Since primitives *on* the sphere still have depth testing turned on, they will
+	// fail the depth test where pixels have already been written due to the rendered direction
+	// arrows and hence will not overdraw the rendered direction arrows.
+	//
+	// Primitives *off* the sphere should not be translucent. In other words they should not
+	// be anti-aliased points, lines, etc. This is because they write to the depth buffer and
+	// this will leave blending artifacts near the translucent edges of fat lines, etc.
+	// These blending artifacts are typically avoided in other systems by rendering translucent
+	// objects in back-to-front order (ie, render distant objects first). However that can be
+	// difficult and in our case most of the primitives are *on* the sphere so for the few that
+	// are *off* the sphere we can limit them to being opaque.
+	//
+
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type primitives_on_the_sphere_node =
+			GPlatesOpenGL::GLRenderGraphInternalNode::create();
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type primitives_off_the_sphere_node =
+			GPlatesOpenGL::GLRenderGraphInternalNode::create();
+
+	//
+	// Note: only setting depth write state here as parent nodes have already
+	// turned on depth testing.
+	//
+
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type primitives_on_the_sphere_depth_mask_state =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	primitives_on_the_sphere_depth_mask_state->gl_depth_mask(GL_FALSE);
+	primitives_on_the_sphere_node->set_state_set(primitives_on_the_sphere_depth_mask_state);
+
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type primitives_off_the_sphere_depth_mask_state =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	primitives_off_the_sphere_depth_mask_state->gl_depth_mask(GL_TRUE);
+	primitives_off_the_sphere_node->set_state_set(primitives_off_the_sphere_depth_mask_state);
+
+	// Add each node as a child of the render layer node.
+	// The order they are rendered does not matter.
+	rendered_layer_node->add_child_node(primitives_off_the_sphere_node);
+	rendered_layer_node->add_child_node(primitives_on_the_sphere_node);
+
+
+	//
+	// To further complicate matters we also separate the primitives *on* the sphere into
+	// two groups, opaque and translucent. This is because they have different alpha-blending and
+	// point/line anti-aliasing states. By adding primitives to each group (render graph node)
+	// we minimise changing OpenGL state back and forth (which can be costly).
+	//
+	// We don't need two groups for the primitives *off* the sphere because they should
+	// consist only of opaque primitives (see comments above).
+	//
+
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type opaque_primitives_on_the_sphere_node =
+			GPlatesOpenGL::GLRenderGraphInternalNode::create();
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type translucent_primitives_on_the_sphere_node =
+			GPlatesOpenGL::GLRenderGraphInternalNode::create();
+
+	set_translucent_state(*translucent_primitives_on_the_sphere_node);
+
+	// Add each node as a child of the primitives *on* the sphere node.
+	// The order they are rendered does not matter.
+	primitives_on_the_sphere_node->add_child_node(opaque_primitives_on_the_sphere_node);
+	primitives_on_the_sphere_node->add_child_node(translucent_primitives_on_the_sphere_node);
+
+	// Create a special node for adding 3D text.
+	// This is because the text is converted from 3D space to 2D window coordinates and hence
+	// is effectively *off* the sphere but it can't have depth writes enabled (because we don't
+	// know the depth since its rendered as 2D).
+	// We add it last so it gets drawn last for this layer which should put it on top.
+	// However if another rendered layer is drawn after this one then the text will be overwritten
+	// and not appear to hover in 3D space - currently is looks like the only layer that uses
+	// text is the Measure Distance tool layer and that's the last layer.
+	// Also it depends on how the text is meant to interact with other *off* the sphere geometries
+	// such as rendered arrows (should it be on top or interleave depending on depth).
+	// FIXME: We might be able to draw text as 3D and turn depth writes on (however the
+	// alpha-blending could cause some visual artifacts as described above).
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type text_off_the_sphere_node =
+			GPlatesOpenGL::GLRenderGraphInternalNode::create();
+	rendered_layer_node->add_child_node(text_off_the_sphere_node);
+
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type text_off_the_sphere_depth_mask_state =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	text_off_the_sphere_depth_mask_state->gl_depth_mask(GL_FALSE);
+	text_off_the_sphere_node->set_state_set(text_off_the_sphere_depth_mask_state);
+
+
+	// Initialise our paint parameters so our visit methods can access them.
+	d_paint_params = PaintParams(text_off_the_sphere_node);
+
+	// Visit the rendered geometries in the rendered layer.
 	visit_rendered_geoms();
 
-	// Second pass over rendered geometry layer draws the transparent primitives
-	// such as antialiased lines and points. These must be drawn second to
-	// avoid blending artifacts due to the depth buffer such as opaque primitives
-	// having transparent lines through them caused by drawing an antialiased line
-	// first and a filled polygon second (where the polygon is at a greater depth
-	// than the line).
-	d_draw_opaque_primitives = false;
-	// Disable depth buffer writes to avoid blending artifacts caused if
-	// a transparent primitive writes to the depth buffer and the next primitive
-	// is behind it and hence fails the depth test leaving a partially transparent
-	// pixel in the colour buffer (if pixel is near edge of first primitive where
-	// transparency blending shows through).
-	glDepthMask(GL_FALSE);
-	visit_rendered_geoms();
+	//
+	// Collect the point, line and polygon drawables and add them to the render graph
+	// with the appropriate state (such as point size, line width).
+	//
+	d_paint_params->drawables_off_the_sphere.add_drawables(
+			*primitives_off_the_sphere_node);
+	d_paint_params->opaque_drawables_on_the_sphere.add_drawables(
+			*opaque_primitives_on_the_sphere_node);
+	d_paint_params->translucent_drawables_on_the_sphere.add_drawables(
+			*translucent_primitives_on_the_sphere_node);
+
+	// These parameters are only used for the duration of this 'paint()' method.
+	d_paint_params = boost::none;
 }
 
 
@@ -346,21 +306,34 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 		return;
 	}
 
-	if (d_draw_opaque_primitives)
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_point_on_sphere);
+	if (!colour)
 	{
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_point_on_sphere);
-	if (colour)
-	{
-		glColor3fv(*colour);
-		glPointSize(rendered_point_on_sphere.get_point_size_hint() *
-				POINT_SIZE_ADJUSTMENT * d_scale);
-		glBegin(GL_POINTS);
-			draw_vertex(rendered_point_on_sphere.get_point_on_sphere());
-		glEnd();
-	}
+	const float point_size =
+			rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
+
+	// Get the stream for points of the current point size.
+	GPlatesOpenGL::GLStreamPrimitives<Vertex> &stream =
+			d_paint_params->translucent_drawables_on_the_sphere.get_point_drawables(point_size);
+
+	// Get the point position.
+	const GPlatesMaths::UnitVector3D &pos =
+			rendered_point_on_sphere.get_point_on_sphere().position_vector();
+
+	// Vertex representing the point's position and colour.
+	// Convert colour from floats to bytes to use less vertex memory.
+	const Vertex vertex = {
+			pos.x().dval(), pos.y().dval(), pos.z().dval(), Colour::to_rgba8(*colour) };
+
+	// Used to add points to the stream.
+	GPlatesOpenGL::GLStreamPoints<Vertex> stream_points(stream);
+
+	stream_points.begin_points();
+	stream_points.add_vertex(vertex);
+	stream_points.end_points();
 }
 
 
@@ -373,25 +346,44 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 		return;
 	}
 
-	if (d_draw_opaque_primitives)
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_multi_point_on_sphere);
+	if (!colour)
 	{
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_multi_point_on_sphere);
-	if (colour)
-	{
-		glColor3fv(*colour);
-		glPointSize(rendered_multi_point_on_sphere.get_point_size_hint() *
-				POINT_SIZE_ADJUSTMENT * d_scale);
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(*colour);
 
-		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
+	const float point_size =
+			rendered_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
+
+	// Get the stream for points of the current point size.
+	GPlatesOpenGL::GLStreamPrimitives<Vertex> &stream =
+			d_paint_params->translucent_drawables_on_the_sphere.get_point_drawables(point_size);
+
+	// Used to add points to the stream.
+	GPlatesOpenGL::GLStreamPoints<Vertex> stream_points(stream);
+
+	stream_points.begin_points();
+
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
 			rendered_multi_point_on_sphere.get_multi_point_on_sphere();
 
-		draw_points_for_multi_point(
-				multi_point_on_sphere->begin(),
-				multi_point_on_sphere->end());
+	GPlatesMaths::MultiPointOnSphere::const_iterator point_iter = multi_point_on_sphere->begin();
+	GPlatesMaths::MultiPointOnSphere::const_iterator point_end = multi_point_on_sphere->end();
+	for ( ; point_iter != point_end; ++point_iter)
+	{
+		// Get the point position.
+		const GPlatesMaths::UnitVector3D &pos = point_iter->position_vector();
+
+		// Vertex representing the point's position and colour.
+		const Vertex vertex = { pos.x().dval(), pos.y().dval(), pos.z().dval(), rgba8_color };
+
+		stream_points.add_vertex(vertex);
 	}
+
+	stream_points.end_points();
 }
 
 
@@ -404,26 +396,28 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 		return;
 	}
 
-	if (d_draw_opaque_primitives)
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_polyline_on_sphere);
+	if (!colour)
 	{
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_polyline_on_sphere);
-	if (colour)
-	{
-		glColor3fv(*colour);
-		glLineWidth(rendered_polyline_on_sphere.get_line_width_hint() *
-				LINE_WIDTH_ADJUSTMENT * d_scale);
+	const float line_width =
+			rendered_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
+	// Get the drawables for lines of the current line width.
+	LineDrawables &line_drawables =
+			d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
 			rendered_polyline_on_sphere.get_polyline_on_sphere();
 
-		draw_arcs_for_polyline(
-				polyline_on_sphere->begin(),
-				polyline_on_sphere->end(),
-				*d_nurbs_renderer);
-	}
+	paint_great_circle_arcs(
+			polyline_on_sphere->begin(),
+			polyline_on_sphere->end(),
+			colour.get(),
+			line_drawables,
+			*d_nurbs_renderer);
 }
 
 
@@ -435,27 +429,36 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 	{
 		return;
 	}
-
-	if (d_draw_opaque_primitives)
+	
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_polygon_on_sphere);
+	if (!colour)
 	{
 		return;
 	}
-	
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_polygon_on_sphere);
-	if (colour)
-	{
-		glColor3fv(*colour);
-		glLineWidth(rendered_polygon_on_sphere.get_line_width_hint() *
-				LINE_WIDTH_ADJUSTMENT * d_scale);
 
-		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
+	const float line_width =
+			rendered_polygon_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	// Get the drawables for lines of the current line width.
+	LineDrawables &line_drawables =
+			d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 			rendered_polygon_on_sphere.get_polygon_on_sphere();
 
-		draw_arcs_for_polygon(
-				polygon_on_sphere->begin(),
-				polygon_on_sphere->end(),
-				*d_nurbs_renderer);
-	}
+	paint_great_circle_arcs(
+			polygon_on_sphere->begin(),
+			polygon_on_sphere->end(),
+			colour.get(),
+			line_drawables,
+			*d_nurbs_renderer);
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
+		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
+{
 }
 
 
@@ -470,67 +473,81 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 
 	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_direction_arrow);
 
-	if (colour)
+	if (!colour)
 	{
-		const GPlatesMaths::Vector3D start(
-				rendered_direction_arrow.get_start_position().position_vector());
-
-		// Calculate position from start point along tangent direction to
-		// end point off the globe. The length of the arrow in world space
-		// is inversely proportional to the zoom or magnification.
-		const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
-				d_inverse_zoom_factor * rendered_direction_arrow.get_arrow_direction();
-
-		glColor3fv(*colour);
-
-		if (d_draw_opaque_primitives)
-		{
-			const GPlatesMaths::Vector3D arrowline = end - start;
-			const GPlatesMaths::real_t arrowline_length = arrowline.magnitude();
-
-			// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
-			if (arrowline_length == 0)
-			{
-				return;
-			}
-
-			GPlatesMaths::real_t arrowhead_size =
-					d_inverse_zoom_factor * rendered_direction_arrow.get_arrowhead_projected_size();
-
-			const float min_ratio_arrowhead_to_arrowline =
-					rendered_direction_arrow.get_min_ratio_arrowhead_to_arrowline();
-
-			// We want to keep the projected arrowhead size constant regardless of the
-			// the length of the arrowline, except...
-			//
-			// ...if the ratio of arrowhead size to arrowline length is large enough then
-			// we need to start scaling the arrowhead size by the arrowline length so
-			// that the arrowhead disappears as the arrowline disappears.
-			if (arrowhead_size > min_ratio_arrowhead_to_arrowline * arrowline_length)
-			{
-				arrowhead_size = min_ratio_arrowhead_to_arrowline * arrowline_length;
-			}
-			
-			const GPlatesMaths::Vector3D arrowline_unit_vector = (1.0 / arrowline_length) * arrowline;
-
-			// Specify end of arrowhead and direction of arrow.
-			draw_cone(
-					end,
-					arrowhead_size * arrowline_unit_vector);
-		}
-		else
-		{
-			glLineWidth(rendered_direction_arrow.get_arrowline_width_hint() *
-					LINE_WIDTH_ADJUSTMENT * d_scale);
-
-			// Render a single line segment for the arrow body.
-			glBegin(GL_LINES);
-				glVertex3d(start.x().dval(), start.y().dval(), start.z().dval());
-				glVertex3d(end.x().dval(), end.y().dval(), end.z().dval());
-			glEnd();
-		}
+		return;
 	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(*colour);
+
+	const GPlatesMaths::Vector3D start(
+			rendered_direction_arrow.get_start_position().position_vector());
+
+	// Calculate position from start point along tangent direction to
+	// end point off the globe. The length of the arrow in world space
+	// is inversely proportional to the zoom or magnification.
+	const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
+			d_inverse_zoom_factor * rendered_direction_arrow.get_arrow_direction();
+
+	const GPlatesMaths::Vector3D arrowline = end - start;
+	const GPlatesMaths::real_t arrowline_length = arrowline.magnitude();
+
+	// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
+	if (arrowline_length > 0)
+	{
+		GPlatesMaths::real_t arrowhead_size =
+				d_inverse_zoom_factor * rendered_direction_arrow.get_arrowhead_projected_size();
+
+		const float min_ratio_arrowhead_to_arrowline =
+				rendered_direction_arrow.get_min_ratio_arrowhead_to_arrowline();
+
+		// We want to keep the projected arrowhead size constant regardless of the
+		// the length of the arrowline, except...
+		//
+		// ...if the ratio of arrowhead size to arrowline length is large enough then
+		// we need to start scaling the arrowhead size by the arrowline length so
+		// that the arrowhead disappears as the arrowline disappears.
+		if (arrowhead_size > min_ratio_arrowhead_to_arrowline * arrowline_length)
+		{
+			arrowhead_size = min_ratio_arrowhead_to_arrowline * arrowline_length;
+		}
+		
+		const GPlatesMaths::Vector3D arrowline_unit_vector = (1.0 / arrowline_length) * arrowline;
+
+		// Specify end of arrowhead and direction of arrow.
+		paint_cone(
+				end,
+				arrowhead_size * arrowline_unit_vector,
+				rgba8_color,
+				d_paint_params->drawables_off_the_sphere.get_triangle_drawables());
+	}
+
+
+	const float line_width =
+			rendered_direction_arrow.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	// Get the drawables for lines of the current line width.
+	LineDrawables &line_drawables =
+			d_paint_params->drawables_off_the_sphere.get_line_drawables(line_width);
+
+	// Render a single line segment for the arrow body.
+
+	// Used to add lines to the stream.
+	GPlatesOpenGL::GLStreamLines<Vertex> stream_lines(*line_drawables.stream);
+
+	stream_lines.begin_lines();
+
+	// Vertex representing the start and end point's position and colour.
+	const Vertex start_vertex = { start.x().dval(), start.y().dval(), start.z().dval(), rgba8_color };
+	const Vertex end_vertex = { end.x().dval(), end.y().dval(), end.z().dval(), rgba8_color };
+
+	stream_lines.add_vertex(start_vertex);
+	stream_lines.add_vertex(end_vertex);
+
+	stream_lines.end_lines();
 }
+
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
@@ -550,32 +567,40 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
 				d_colour_scheme);
 		if (shadow_colour)
 		{
-			d_text_renderer_ptr->render_text(
-					uv.x().dval(),
-					uv.y().dval(),
-					uv.z().dval(),
-					rendered_string.get_string(),
-					*shadow_colour,
-					rendered_string.get_x_offset() + 1, // right 1px
-					rendered_string.get_y_offset() - 1, // down 1px
-					rendered_string.get_font(),
-					d_scale);
+			GPlatesOpenGL::GLText3DNode::non_null_ptr_type shadow_text_3d_node =
+					GPlatesOpenGL::GLText3DNode::create(
+						d_text_renderer_ptr,
+						uv.x().dval(),
+						uv.y().dval(),
+						uv.z().dval(),
+						rendered_string.get_string(),
+						*shadow_colour,
+						rendered_string.get_x_offset() + 1, // right 1px
+						rendered_string.get_y_offset() - 1, // down 1px
+						rendered_string.get_font(),
+						d_scale);
+
+			d_paint_params->text_off_the_sphere_node->add_child_node(shadow_text_3d_node);
 		}
 
 		// render main text
 		boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_string);
 		if (colour)
 		{
-			d_text_renderer_ptr->render_text(
-					uv.x().dval(),
-					uv.y().dval(),
-					uv.z().dval(),
-					rendered_string.get_string(),
-					*colour,
-					rendered_string.get_x_offset(),
-					rendered_string.get_y_offset(),
-					rendered_string.get_font(),
-					d_scale);
+			GPlatesOpenGL::GLText3DNode::non_null_ptr_type text_3d_node =
+					GPlatesOpenGL::GLText3DNode::create(
+						d_text_renderer_ptr,
+						uv.x().dval(),
+						uv.y().dval(),
+						uv.z().dval(),
+						rendered_string.get_string(),
+						*colour,
+						rendered_string.get_x_offset(),
+						rendered_string.get_y_offset(),
+						rendered_string.get_font(),
+						d_scale);
+
+			d_paint_params->text_off_the_sphere_node->add_child_node(text_3d_node);
 		}
 	}
 }
@@ -585,65 +610,499 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle(
 		const GPlatesViewOperations::RenderedSmallCircle &rendered_small_circle)
 {
-	if (d_draw_opaque_primitives)
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle);
+	if (!colour)
 	{
 		return;
 	}
-	
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle);
-	if (colour)
-	{
-		glColor3fv(*colour);
-		glLineWidth(rendered_small_circle.get_line_width_hint() *
-				LINE_WIDTH_ADJUSTMENT * d_scale);
 
-		d_nurbs_renderer->draw_small_circle(
-			rendered_small_circle.get_centre(),
-			rendered_small_circle.get_radius_in_radians());
-	}
+	const float line_width =
+			rendered_small_circle.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	// Get the drawables for lines of the current line width.
+	LineDrawables &line_drawables =
+			d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+	line_drawables.nurbs_drawables.push_back(
+			d_nurbs_renderer->draw_small_circle(
+					rendered_small_circle.get_centre(),
+					rendered_small_circle.get_radius_in_radians(),
+					colour.get()));
 }
+
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
 		const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc)
 {
-	if (d_draw_opaque_primitives)
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle_arc);
+	if (!colour)
 	{
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle_arc);
-	if (colour)
-	{
-		glColor3fv(*colour);
-		glLineWidth(rendered_small_circle_arc.get_line_width_hint() *
-				LINE_WIDTH_ADJUSTMENT * d_scale);
+	const float line_width =
+			rendered_small_circle_arc.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
-		d_nurbs_renderer->draw_small_circle_arc(
-				rendered_small_circle_arc.get_centre(),
-				rendered_small_circle_arc.get_start_point(),
-				rendered_small_circle_arc.get_arc_length_in_radians());
-	}
+	// Get the drawables for lines of the current line width.
+	LineDrawables &line_drawables =
+			d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+	line_drawables.nurbs_drawables.push_back(
+			d_nurbs_renderer->draw_small_circle_arc(
+					rendered_small_circle_arc.get_centre(),
+					rendered_small_circle_arc.get_start_point(),
+					rendered_small_circle_arc.get_arc_length_in_radians(),
+					colour.get()));
 }
+
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_ellipse(
 		const GPlatesViewOperations::RenderedEllipse &rendered_ellipse)
 {
-	if (d_draw_opaque_primitives)
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_ellipse);
+	if (!colour)
 	{
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_ellipse);
-	if (colour)
+	const float line_width =
+			rendered_ellipse.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	// Get the drawables for lines of the current line width.
+	LineDrawables &line_drawables =
+			d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+	paint_ellipse(rendered_ellipse, colour.get(), line_drawables);
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
+		const GPlatesViewOperations::RenderedEllipse &rendered_ellipse,
+		const Colour &colour,
+		LineDrawables &line_drawables)
+{
+	// We could make this zoom dependent, but:
+	// For an ellipse with fairly tight curvature, at maximum zoom (10000%),
+	// 128 steps gives a just-about-noticeable jagged appearance; 256 steps
+	// appears pretty smooth (to me, at least).  We could reduce this at lower
+	// zooms, but anything below about 64 steps makes large ellipses (e.g. one which
+	// is effectively a great circle) appear jagged at minimum zoom (100%).
+	// So we could make the number of steps vary from (say) 64 at 100% zoom to
+	// 256 at 10000% zoom.
+	// The inverse zoom factor varies from 1 at 100% zoom to 0.01 at 10000% zoom. 
+	// Using the sqrt of the inverse zoom factor, we could use 64 steps at min zoom
+	// and 640 steps at max zoom, for example.
+
+	static const unsigned int nsteps = 256;
+	static const double dt = TWO_PI/nsteps;
+
+	if ((rendered_ellipse.get_semi_major_axis_radians() == 0.)
+		|| (rendered_ellipse.get_semi_minor_axis_radians() == 0.))
 	{
-		glColor3fv(*colour);
-		glLineWidth(rendered_ellipse.get_line_width_hint() *
-				LINE_WIDTH_ADJUSTMENT * d_scale);	
-		
-		draw_ellipse(rendered_ellipse,d_inverse_zoom_factor);
+		return;	
+	}
+	
+	GPlatesMaths::EllipseGenerator ellipse_generator(
+			rendered_ellipse.get_centre(),
+			rendered_ellipse.get_semi_major_axis_radians(),
+			rendered_ellipse.get_semi_minor_axis_radians(),
+			rendered_ellipse.get_axis());
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
+
+	// Used to add line loops to the stream.
+	GPlatesOpenGL::GLStreamLineLoops<Vertex> stream_line_loops(*line_drawables.stream);
+
+	stream_line_loops.begin_line_loop();
+
+	for (double i = 0 ; i < TWO_PI ; i += dt)
+	{
+		GPlatesMaths::UnitVector3D uv = ellipse_generator.get_point_on_ellipse(i);
+
+		// Vertex representing the ellipse point position and colour.
+		const Vertex vertex = { uv.x().dval(), uv.y().dval(), uv.z().dval(), rgba8_color };
+
+		stream_line_loops.add_vertex(vertex);
+	}
+
+	stream_line_loops.end_line_loop();
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
+		const GPlatesMaths::Vector3D &apex,
+		const GPlatesMaths::Vector3D &cone_axis,
+		rgba8_t rgba8_color,
+		GPlatesOpenGL::GLStreamPrimitives<Vertex> &stream)
+{
+	const GPlatesMaths::Vector3D centre_base_circle = apex - cone_axis;
+
+	const GPlatesMaths::real_t cone_axis_mag = cone_axis.magnitude();
+
+	// Avoid divide-by-zero - and if cone length is near zero it won't be visible.
+	if (cone_axis_mag == 0)
+	{
+		return;
+	}
+
+	const GPlatesMaths::UnitVector3D cone_zaxis( (1 / cone_axis_mag) * cone_axis );
+
+	// Find an orthonormal basis using 'cone_axis'.
+	const GPlatesMaths::UnitVector3D cone_yaxis = generate_perpendicular(cone_zaxis);
+	const GPlatesMaths::UnitVector3D cone_xaxis( cross(cone_yaxis, cone_zaxis) );
+
+	static const int NUM_VERTICES_IN_BASE_UNIT_CIRCLE = 6;
+	static const double s_vertex_angle =
+			2 * GPlatesMaths::PI / NUM_VERTICES_IN_BASE_UNIT_CIRCLE;
+	static const GPlatesMaths::real_t s_base_unit_circle[NUM_VERTICES_IN_BASE_UNIT_CIRCLE][2] =
+			{
+				{ GPlatesMaths::cos(0 * s_vertex_angle), GPlatesMaths::sin(0 * s_vertex_angle) },
+				{ GPlatesMaths::cos(1 * s_vertex_angle), GPlatesMaths::sin(1 * s_vertex_angle) },
+				{ GPlatesMaths::cos(2 * s_vertex_angle), GPlatesMaths::sin(2 * s_vertex_angle) },
+				{ GPlatesMaths::cos(3 * s_vertex_angle), GPlatesMaths::sin(3 * s_vertex_angle) },
+				{ GPlatesMaths::cos(4 * s_vertex_angle), GPlatesMaths::sin(4 * s_vertex_angle) },
+				{ GPlatesMaths::cos(5 * s_vertex_angle), GPlatesMaths::sin(5 * s_vertex_angle) }
+			};
+
+	// Radius of cone base circle is proportional to the distance from the apex to
+	// the centre of the base circle.
+	const float ratio_cone_radius_to_axis = 0.5f;
+	const GPlatesMaths::real_t radius_cone_circle = ratio_cone_radius_to_axis * cone_axis_mag;
+
+	// Generate the cone vertices in the frame of reference of the cone axis.
+	// We could use an OpenGL transformation matrix to do this for us but that's
+	// overkill since cone only needs to be transformed once.
+	const GPlatesMaths::Vector3D cone_base_circle[NUM_VERTICES_IN_BASE_UNIT_CIRCLE] =
+			{
+				centre_base_circle + radius_cone_circle * (
+						s_base_unit_circle[0][0] * cone_xaxis +
+						s_base_unit_circle[0][1] * cone_yaxis),
+				centre_base_circle + radius_cone_circle * (
+						s_base_unit_circle[1][0] * cone_xaxis +
+						s_base_unit_circle[1][1] * cone_yaxis),
+				centre_base_circle + radius_cone_circle * (
+						s_base_unit_circle[2][0] * cone_xaxis +
+						s_base_unit_circle[2][1] * cone_yaxis),
+				centre_base_circle + radius_cone_circle * (
+						s_base_unit_circle[3][0] * cone_xaxis +
+						s_base_unit_circle[3][1] * cone_yaxis),
+				centre_base_circle + radius_cone_circle * (
+						s_base_unit_circle[4][0] * cone_xaxis +
+						s_base_unit_circle[4][1] * cone_yaxis),
+				centre_base_circle + radius_cone_circle * (
+						s_base_unit_circle[5][0] * cone_xaxis +
+						s_base_unit_circle[5][1] * cone_yaxis)
+			};
+
+	// We draw both sides of polygons to avoid having to close the 3d mesh
+	// used to render the arrow head.
+	// This is the default state for OpenGL so we don't need to set it.
+
+	// Used to add triangle fan to the stream.
+	GPlatesOpenGL::GLStreamTriangleFans<Vertex> stream_triangle_fans(stream);
+
+	stream_triangle_fans.begin_triangle_fan();
+
+	const Vertex apex_vertex = { apex.x().dval(), apex.y().dval(), apex.z().dval(), rgba8_color };
+	stream_triangle_fans.add_vertex(apex_vertex);
+
+	for (int vertex_index = 0;
+		vertex_index < NUM_VERTICES_IN_BASE_UNIT_CIRCLE;
+		++vertex_index)
+	{
+		const GPlatesMaths::Vector3D &boundary = cone_base_circle[vertex_index];
+		const Vertex boundary_vertex = {
+				boundary.x().dval(), boundary.y().dval(), boundary.z().dval(), rgba8_color };
+		stream_triangle_fans.add_vertex(boundary_vertex);
+	}
+	const GPlatesMaths::Vector3D &last_circle = cone_base_circle[0];
+	const Vertex last_circle_vertex = {
+			last_circle.x().dval(), last_circle.y().dval(), last_circle.z().dval(), rgba8_color };
+	stream_triangle_fans.add_vertex(last_circle_vertex);
+
+	stream_triangle_fans.end_triangle_fan();
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::set_translucent_state(
+		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node)
+{
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type translucent_state =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
+	// Set the alpha-blend state.
+	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
+			GPlatesOpenGL::GLBlendState::create();
+	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	translucent_state->add_state_set(blend_state);
+
+	// Set the anti-aliased point state.
+	GPlatesOpenGL::GLPointState::non_null_ptr_type point_state = GPlatesOpenGL::GLPointState::create();
+	point_state->gl_enable_point_smooth(GL_TRUE).gl_hint_point_smooth(GL_NICEST);
+	translucent_state->add_state_set(point_state);
+
+	// Set the anti-aliased line state.
+	GPlatesOpenGL::GLLineState::non_null_ptr_type line_state = GPlatesOpenGL::GLLineState::create();
+	line_state->gl_enable_line_smooth(GL_TRUE).gl_hint_line_smooth(GL_NICEST);
+	translucent_state->add_state_set(line_state);
+
+	render_graph_node.set_state_set(translucent_state);
+}
+
+
+GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::PointLinePolygonDrawables() :
+	d_triangle_drawables(create_stream()),
+	d_quad_drawables(create_stream())
+{
+}
+
+
+GPlatesOpenGL::GLStreamPrimitives<GPlatesGui::GlobeRenderedGeometryLayerPainter::Vertex> &
+GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::get_point_drawables(
+		float point_size)
+{
+	// Get the stream for points of the current point size.
+	point_size_to_drawables_map_type::iterator stream_iter = d_point_drawables_map.find(point_size);
+	if (stream_iter != d_point_drawables_map.end())
+	{
+		return *stream_iter->second;
+	}
+
+	// Create a new stream.
+	GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type stream = create_stream();
+	
+	d_point_drawables_map.insert(
+			point_size_to_drawables_map_type::value_type(point_size, stream));
+
+	return *stream;
+}
+
+
+GPlatesGui::GlobeRenderedGeometryLayerPainter::LineDrawables &
+GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::get_line_drawables(
+		float line_width)
+{
+	// Get the stream for lines of the current line width.
+	line_width_to_drawables_map_type::iterator stream_iter = d_line_drawables_map.find(line_width);
+	if (stream_iter != d_line_drawables_map.end())
+	{
+		return stream_iter->second;
+	}
+
+	// Create a new stream.
+	GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type stream = create_stream();
+
+	std::pair<line_width_to_drawables_map_type::iterator, bool> insert_result =
+			d_line_drawables_map.insert(
+					line_width_to_drawables_map_type::value_type(
+							line_width, LineDrawables(stream)));
+
+	return insert_result.first->second;
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::add_drawables(
+		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_parent_node)
+{
+	//
+	// Get the drawables representing all point primitives (if any).
+	//
+
+	// Iterate over the point size groups and add a render graph node for each.
+	BOOST_FOREACH(point_size_to_drawables_map_type::value_type &point_size_entry, d_point_drawables_map)
+	{
+		GPlatesOpenGL::GLStreamPrimitives<Vertex> &points_stream = *point_size_entry.second;
+		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> points_drawable =
+				points_stream.get_drawable();
+		if (points_drawable)
+		{
+			const float point_size = point_size_entry.first.dval();
+
+			add_points_drawable(point_size, points_drawable.get(), render_graph_parent_node);
+		}
+	}
+
+	//
+	// Get the drawables representing all line primitives (if any).
+	//
+
+	// Iterate over the line width groups and add a render graph node for each.
+	BOOST_FOREACH(line_width_to_drawables_map_type::value_type &line_width_entry, d_line_drawables_map)
+	{
+		LineDrawables &line_drawables = line_width_entry.second;
+
+		// Get a drawable representing all regular lines and nurbs line curves combined.
+		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> all_lines_drawable =
+				get_lines_drawable(line_drawables);
+
+		if (all_lines_drawable)
+		{
+			const float line_width = line_width_entry.first.dval();
+
+			add_lines_drawable(line_width, all_lines_drawable.get(), render_graph_parent_node);
+		}
+	}
+
+	//
+	// Get the drawable representing all triangle primitives (if any).
+	//
+
+	boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> triangle_drawable =
+			d_triangle_drawables->get_drawable();
+	if (triangle_drawable)
+	{
+		// Create a drawable render graph node and add it to the parent node.
+		GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type triangle_drawable_node =
+				GPlatesOpenGL::GLRenderGraphDrawableNode::create(triangle_drawable.get());
+		// No state set needed for polygons - the default state is sufficient.
+
+		render_graph_parent_node.add_child_node(triangle_drawable_node);
+	}
+
+	//
+	// Get the drawable representing all quad primitives (if any).
+	//
+
+	boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> quad_drawable =
+			d_quad_drawables->get_drawable();
+	if (quad_drawable)
+	{
+		// Create a drawable render graph node and add it to the parent node.
+		GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type quad_drawable_node =
+				GPlatesOpenGL::GLRenderGraphDrawableNode::create(quad_drawable.get());
+		// No state set needed for polygons - the default state is sufficient.
+
+		render_graph_parent_node.add_child_node(quad_drawable_node);
 	}
 }
 
 
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::add_points_drawable(
+		float point_size,
+		const GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type &points_drawable,
+		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_parent_node)
+{
+	// Create a drawable render graph node and add it to the parent node.
+	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type points_drawable_node =
+			GPlatesOpenGL::GLRenderGraphDrawableNode::create(points_drawable.get());
+
+	// Create a state set for the current point size.
+	GPlatesOpenGL::GLPointState::non_null_ptr_type point_state = GPlatesOpenGL::GLPointState::create();
+	point_state->gl_point_size(point_size);
+	points_drawable_node->set_state_set(point_state);
+
+	render_graph_parent_node.add_child_node(points_drawable_node);
+}
+
+
+boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type>
+GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::get_lines_drawable(
+		LineDrawables &line_drawables)
+{
+	boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> non_nurbs_line_drawable =
+			line_drawables.stream->get_drawable();
+	if (non_nurbs_line_drawable)
+	{
+		// If there's no nurbs drawables then there's only the single non-nurbs drawable
+		// so we can just return it.
+		if (line_drawables.nurbs_drawables.empty())
+		{
+			return non_nurbs_line_drawable.get();
+		}
+
+		// Create a composite drawable to hold the nurbs and non-nurbs drawables.
+		GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type composite_drawable =
+				GPlatesOpenGL::GLCompositeDrawable::create();
+		composite_drawable->add_drawable(non_nurbs_line_drawable.get());
+
+		BOOST_FOREACH(
+				const GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type &nurbs_drawable,
+				line_drawables.nurbs_drawables)
+		{
+			composite_drawable->add_drawable(nurbs_drawable);
+		}
+
+		return static_cast<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type>(composite_drawable);
+	}
+	// If we get here then there was no non-nurbs drawable.
+
+	if (line_drawables.nurbs_drawables.empty())
+	{
+		return boost::none;
+	}
+
+	// If there's a single nurbs drawable then return it.
+	if (line_drawables.nurbs_drawables.size() == 1)
+	{
+		return line_drawables.nurbs_drawables[0];
+	}
+
+	// Create a composite drawable to hold the nurbs drawables.
+	GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type composite_drawable =
+			GPlatesOpenGL::GLCompositeDrawable::create();
+
+	BOOST_FOREACH(
+			const GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type &nurbs_drawable,
+			line_drawables.nurbs_drawables)
+	{
+		composite_drawable->add_drawable(nurbs_drawable);
+	}
+
+	return static_cast<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type>(composite_drawable);
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::add_lines_drawable(
+		float line_width,
+		const GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type &lines_drawable,
+		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_parent_node)
+{
+	// Create a drawable render graph node and add it to the parent node.
+	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type lines_drawable_node =
+			GPlatesOpenGL::GLRenderGraphDrawableNode::create(lines_drawable.get());
+
+	// Create a state set for the current line width.
+	GPlatesOpenGL::GLLineState::non_null_ptr_type line_state = GPlatesOpenGL::GLLineState::create();
+	line_state->gl_line_width(line_width);
+	lines_drawable_node->set_state_set(line_state);
+
+	render_graph_parent_node.add_child_node(lines_drawable_node);
+}
+
+
+GPlatesOpenGL::GLStreamPrimitives<GPlatesGui::GlobeRenderedGeometryLayerPainter::Vertex>::non_null_ptr_type
+GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::create_stream()
+{
+	//
+	// The following reflects the structure of 'struct Vertex'.
+	// It defines how the elements of the vertex are packed together in the vertex.
+	// It's an OpenGL thing.
+	//
+
+	const GPlatesOpenGL::GLVertexArray::VertexPointer vertex_pointer = {
+			3, GL_FLOAT, sizeof(Vertex), 0 };
+
+	const GPlatesOpenGL::GLVertexArray::ColorPointer colour_pointer = {
+			4, GL_UNSIGNED_BYTE, sizeof(Vertex), 3 * sizeof(GLfloat) };
+
+	GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type stream =
+			GPlatesOpenGL::GLStreamPrimitives<Vertex>::create(vertex_pointer, colour_pointer);
+
+	return stream;
+}
+
+
+GPlatesGui::GlobeRenderedGeometryLayerPainter::LineDrawables::LineDrawables(
+		const GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type &stream_) :
+	stream(stream_)
+{
+}

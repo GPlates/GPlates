@@ -28,10 +28,11 @@
 #ifndef GPLATES_GUI_QGLWIDGETTEXTRENDERER_H
 #define GPLATES_GUI_QGLWIDGETTEXTRENDERER_H
 
+#include <opengl/OpenGL.h>
+#include <QGLWidget>
+
 #include "TextRenderer.h"
 
-#include <QGLWidget>
-#include "OpenGL.h"
 
 namespace GPlatesGui
 {

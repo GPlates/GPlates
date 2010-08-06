@@ -385,6 +385,9 @@ namespace GPlatesAppLogic
 				public ConstReconstructionGeometryVisitor
 		{
 		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
 			const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
 			get_feature_ref() const
 			{
@@ -451,6 +454,9 @@ namespace GPlatesAppLogic
 				public ConstReconstructionGeometryVisitor
 		{
 		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
 			const boost::optional<GPlatesModel::FeatureHandle::iterator> &
 			get_property() const
 			{
@@ -517,6 +523,9 @@ namespace GPlatesAppLogic
 				public ConstReconstructionGeometryVisitor
 		{
 		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
 			const boost::optional<GPlatesModel::integer_plate_id_type> &
 			get_plate_id() const
 			{
@@ -575,6 +584,9 @@ namespace GPlatesAppLogic
 				public ConstReconstructionGeometryVisitor
 		{
 		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
 			const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
 			get_time_of_formation() const
 			{

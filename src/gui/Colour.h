@@ -31,9 +31,8 @@
 #include <algorithm>
 #include <iosfwd>
 #include <boost/cstdint.hpp>
+#include <opengl/OpenGL.h>
 #include <QColor>
-
-#include "OpenGL.h"
 
 namespace GPlatesGui
 {

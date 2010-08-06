@@ -35,9 +35,11 @@
 #include <QSvgGenerator>
 #include <QtOpenGL/qgl.h>
 
-#include "qt-widgets/SceneView.h"
-#include "OpenGLException.h"
 #include "SvgExport.h"
+
+#include "opengl/OpenGLException.h"
+
+#include "qt-widgets/SceneView.h"
 
 
 namespace
@@ -61,7 +63,7 @@ namespace
 		if (error != GL_NO_ERROR)
 		{
 			std::cerr << message << ": openGL error: " << gluErrorString(error) << std::endl;
-			throw GPlatesGui::OpenGLException(GPLATES_EXCEPTION_SOURCE,
+			throw GPlatesOpenGL::OpenGLException(GPLATES_EXCEPTION_SOURCE,
 					"OpenGL error in SvgExport");
 		}
 		return error;
@@ -588,7 +590,7 @@ GPlatesGui::SvgExport::create_svg_output(
 		draw_to_svg_file(filename, feedback_buffer);
 
 	}
-	catch (const OpenGLException &e){
+	catch (const GPlatesOpenGL::OpenGLException &e){
 		e.write(std::cerr);
 		return false;
 	}

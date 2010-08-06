@@ -78,8 +78,8 @@ namespace GPlatesPresentation
 		 *
 		 * @a style_params controls various rendering options.
 		 *
-		 * @a rfg_rotation is used only to rotate @a ReconstructedFeatureGeometry objects
-		 * (or instances of classes derived from it).
+		 * @a reconstruction_adjustment is only used to rotate derived @a ReconstructionGeometry
+		 * objects that are reconstructed. Ignored by types not explicitly reconstructed.
 		 *
 		 * It is the caller's responsibility to handle tasks such as clearing rendered geometries
 		 * from the layer and activating the layer.
@@ -88,7 +88,7 @@ namespace GPlatesPresentation
 				GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const StyleParams &style_params = StyleParams(),
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
-				const boost::optional<GPlatesMaths::Rotation> &rfg_rotation = boost::none);
+				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none);
 
 
 		virtual
@@ -104,6 +104,11 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr);
+
+		virtual
+		void
+		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb);
 
 		virtual
@@ -115,7 +120,7 @@ namespace GPlatesPresentation
 		GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 		StyleParams d_style_params;
 		boost::optional<GPlatesGui::Colour> d_colour;
-		boost::optional<GPlatesMaths::Rotation> d_rfg_rotation;
+		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
 	};
 }
 

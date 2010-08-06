@@ -33,6 +33,7 @@ namespace GPlatesAppLogic
 {
 	class ReconstructedFeatureGeometry;
 	class ReconstructedVirtualGeomagneticPole;
+	class ResolvedRaster;
 	class ResolvedTopologicalBoundary;
 	class ResolvedTopologicalNetwork;
 }
@@ -149,6 +150,19 @@ namespace GPlatesModel
 		visit_reconstructed_virtual_geomagnetic_pole(
 				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
 		{  }
+
+		// FIXME: Add this back when ResolvedRaster becomes a weak observer
+		// (which is when raster is a property/band of a feature).
+#if 0
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_resolved_raster(
+				GPlatesAppLogic::ResolvedRaster &rr)
+		{  }
+#endif
 
 		/**
 		 * Override this function in your own derived class.

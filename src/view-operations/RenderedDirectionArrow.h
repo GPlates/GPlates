@@ -79,21 +79,6 @@ namespace GPlatesViewOperations
 			// Always return the equivalent of false.
 			return NULL;
 		}
-		
-		/**
-		* No hit detection performed because a rendered arrow is not meant to be picked
-		* or selected by the user.
-		* So if the user wants to pick or select a velocity vector for example then
-		* they can select the point or multipoint geometry that this arrow is decorating.
-		*/
-		virtual
-		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
-		test_vertex_proximity(
-			const GPlatesMaths::ProximityCriteria &criteria) const
-		{
-			// Always return the equivalent of false.
-			return NULL;
-		}		
 
 
 		const GPlatesMaths::PointOnSphere &

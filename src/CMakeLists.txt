@@ -1,5 +1,5 @@
 # Find our required libraries.
-set(required_libs "Qt4" "OpenGL" "ICU" "GDAL" "GZIP" "PROJ4" "CGAL")
+set(required_libs "Qt4" "OpenGL" "GLEW" "ICU" "GDAL" "GZIP" "PROJ4" "CGAL")
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
@@ -142,12 +142,16 @@ endif (ADD_UNIT_TEST_TARGET)
 # specified is significant.  For example, model must come before
 # feature-visitors.  (This stops weird "undefined reference to 
 # vtable for blah" error messages occurring.)
+#
+# NOTE: 'opengl' is an app library since it can be used to reconstruct
+# floating-point rasters using an off-screen context (can be used by
+# command-line version of GPlates to export reconstructed rasters for example).
 set(gui_LIBS
 	qt-widgets qt-resources)
 set(presentation_LIBS
 	view-operations presentation gui canvas-tools)
 set(app_LIBS
-	app-logic file-io feature-visitors property-values model)
+	app-logic file-io feature-visitors opengl property-values model)
 set(util_LIBS
 	maths utils global)
 
@@ -207,7 +211,8 @@ set(generated_headers_INCLUDE_DIRS
 # External include directories:
 # NOTE: Qt, ICU and CGAL includes are taken care of by including QT_USE_FILE, ICU_USE_FILE and CGAL_USE_FILE.
 set(external_INCLUDE_DIRS
-	${OPENGL_INCLUDE_DIR} 
+	${OPENGL_INCLUDE_DIR}
+	${GLEW_INCLUDE_DIR}
 	${GDAL_INCLUDE_DIR}
 	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
 	${Boost_INCLUDE_DIR}
@@ -245,6 +250,7 @@ endforeach(dir)
 #
 add_executable(gplates-extract-svn-info
 	gplates_extract_svn_info_main.cc)
+GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-extract-svn-info FALSE)
 target_link_libraries(gplates-extract-svn-info ${QT_LIBRARIES})
 set(GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/global/SubversionInfo.cc)
 if (WIN32)
@@ -382,6 +388,7 @@ set(dependency_LIBS
 	${GDAL_LIBRARY}
 	${ICU_LIBRARIES}
 	${QT_LIBRARIES}
+	${GLEW_LIBRARY}
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
 	${ImageMagick_LIBRARIES})

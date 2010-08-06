@@ -25,30 +25,66 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_GUI_QUADRICS_H_
-#define _GPLATES_GUI_QUADRICS_H_
+#ifndef _GPLATES_OPENGL_GLUQUADRIC_H_
+#define _GPLATES_OPENGL_GLUQUADRIC_H_
 
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
+#include <opengl/OpenGL.h>
 
-#include "OpenGL.h"
+#include "GLDrawable.h"
 
-namespace GPlatesGui
+#include "gui/Colour.h"
+
+#include "utils/non_null_intrusive_ptr.h"
+#include "utils/ReferenceCount.h"
+
+
+namespace GPlatesOpenGL
 {
 	/**
-	 * A wrapper around the GLU quadrics type.
-	 *
-	 * Performs resource management and provides a nice class interface.
+	 * A wrapper around the GLU quadric type.
 	 */
-	class Quadrics :
-		private boost::noncopyable
+	class GLUQuadric :
+			public GPlatesUtils::ReferenceCount<GLUQuadric>
 	{
 		public:
-			Quadrics();
+			//! A convenience typedef for a shared pointer to a non-const @a GLUQuadric.
+			typedef GPlatesUtils::non_null_intrusive_ptr<GLUQuadric> non_null_ptr_type;
 
-			~Quadrics()
+			//! A convenience typedef for a shared pointer to a const @a GLUQuadric.
+			typedef GPlatesUtils::non_null_intrusive_ptr<const GLUQuadric> non_null_ptr_to_const_type;
+
+			//! Typedef for a shared pointer to a 'GLUquadricObj'.
+			typedef boost::shared_ptr<GLUquadricObj> glu_quadric_obj_type;
+
+
+			/**
+			 * Creates a @a GLUQuadric object.
+			 */
+			static
+			non_null_ptr_type
+			create()
 			{
-				gluDeleteQuadric(d_quadric);
+				return non_null_ptr_type(new GLUQuadric());
 			}
+
+
+			/**
+			 * Parameters that determine the appearance of a quadric.
+			 */
+			struct Parameters
+			{
+				//! Constructor sets parameters to GLU defaults.
+				Parameters();
+
+				GLenum normals;
+				GLboolean texture_coords;
+				GLenum orientation;
+				GLenum draw_style;
+			};
+
 
 			/**
 			 * Specify what kind of normals are desired for
@@ -60,17 +96,16 @@ namespace GPlatesGui
 			 * @param normals the desired type of normal.
 			 *
 			 * Valid values for @a normals are as follows:
-			 * - GLU_NONE: No normals are generated.
+			 * - GLU_NONE: No normals are generated.  This is the default.
 			 * - GLU_FLAT: One normal is generated for every facet
 			 *    of a quadric.
 			 * - GLU_SMOOTH: One normal is generated for every
-			 *    vertex of a quadric.  This is the default.
+			 *    vertex of a quadric.
 			 */
 			void
 			set_normals(GLenum normals)
 			{
-
-				gluQuadricNormals(d_quadric, normals);
+				d_current_parameters.normals = normals;
 			}
 
 
@@ -93,8 +128,7 @@ namespace GPlatesGui
 			void
 			set_generate_texture(GLboolean texture_coords)
 			{
-
-				gluQuadricTexture(d_quadric, texture_coords);
+				d_current_parameters.texture_coords = texture_coords;
 			}
 
 
@@ -116,8 +150,7 @@ namespace GPlatesGui
 			void
 			set_orientation(GLenum orientation)
 			{
-
-				gluQuadricOrientation(d_quadric, orientation);
+				d_current_parameters.orientation = orientation;
 			}
 
 
@@ -135,6 +168,7 @@ namespace GPlatesGui
 			 *    primitives.  The polygons are drawn in a
 			 *    counterclockwise fashion with respect to
 			 *    their normals (as defined by @a set_orientation).
+			 *    This is the default.
 			 * - GLU_LINE: quadrics are rendered as a set of lines.
 			 * - GLU_SILHOUETTE: quadrics are rendered as a set of
 			 *    lines, except that edges separating coplanar
@@ -145,8 +179,7 @@ namespace GPlatesGui
 			void
 			set_draw_style(GLenum draw_style)
 			{
-
-				gluQuadricDrawStyle(d_quadric, draw_style);
+				d_current_parameters.draw_style = draw_style;
 			}
 
 
@@ -174,21 +207,35 @@ namespace GPlatesGui
 			 * Otherwise, they point toward the center of the
 			 * sphere.
 			 */
-			void
-			draw_sphere(GLdouble radius,
+			GLDrawable::non_null_ptr_to_const_type
+			draw_sphere(
+					GLdouble radius,
 					GLint num_slices,
-					GLint num_stacks)
-			{
-
-				gluSphere(d_quadric, radius, num_slices, num_stacks);
-			}
+					GLint num_stacks,
+					const GPlatesGui::Colour &colour);
 
 		private:
 			/**
 			 * GLU quadrics object
 			 */
-			GLUquadricObj *d_quadric;
+			glu_quadric_obj_type d_quadric;
+
+			Parameters d_current_parameters;
+
+
+			//! Constructor.
+			GLUQuadric()
+			{  }
+
+			/**
+			 * Creates our 'GLUquadricObj' in 'd_quadric'.
+			 *
+			 * Creation is delayed until something is drawn because when something
+			 * is drawn we know the OpenGL context is current.
+			 */
+			void
+			create_quadric_obj();
 	};
 }
 
-#endif /* _GPLATES_GUI_QUADRICS_H_ */
+#endif /* _GPLATES_OPENGL_GLUQUADRIC_H_ */

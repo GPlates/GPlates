@@ -43,9 +43,10 @@
 #include "ReadErrorAccumulation.h"
 #include "RasterReader.h"
 
-#include "gui/OpenGLBadAllocException.h"
-#include "gui/OpenGLException.h"
 #include "gui/Texture.h"
+
+#include "opengl/OpenGLBadAllocException.h"
+#include "opengl/OpenGLException.h"
 
 #include "utils/OverloadResolution.h"
 

@@ -25,14 +25,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_NURBSRENDERER_H
-#define GPLATES_GUI_NURBSRENDERER_H
+#ifndef GPLATES_OPENGL_GLUNURBSRENDERER_H
+#define GPLATES_OPENGL_GLUNURBSRENDERER_H
 
 #include <boost/noncopyable.hpp>
+#include <boost/shared_array.hpp>
+#include <boost/shared_ptr.hpp>
+#include <opengl/OpenGL.h>
 
-#include "OpenGL.h"
+#include "GLDrawable.h"
+
+#include "gui/Colour.h"
 
 #include "maths/types.h"
+
+#include "utils/non_null_intrusive_ptr.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesMaths
@@ -43,37 +51,48 @@ namespace GPlatesMaths
 	class UnitVector3D;
 }
 
-namespace GPlatesGui
+namespace GPlatesOpenGL
 {
 	/**
-	 *  We need different sampling tolerances for great circles and small circles.
-	 *  Great circles will always appear quite big in GPlates, because we can't zoom
-	 *  the globe out beyond 100%, so a sampling tolerance of 25 is OK; the curves will
-	 *  still appear smooth.
-	 *
-	 *  For small circles this can make the circle appear to have jagged edges.
-	 *  (Small circles are, after all, small).
-	 *  So we use a lower sampling tolerance to ensure a smooth appearance.
-	 */
-	static const double GREAT_CIRCLE_SAMPLING_TOLERANCE = 25.;
-	static const double SMALL_CIRCLE_SAMPLING_TOLERANCE = 5.;
-
-	/**
 	 * A wrapper around the GLU nurbs renderer type.
-	 *
-	 * Performs resource management and provides a nice class interface.
 	 */
-	class NurbsRenderer :
-			// Noncopyable because there doesn't seem to be a way to duplicate a GLUnurbsObj resource.
-			private boost::noncopyable
+	class GLUNurbsRenderer :
+			public GPlatesUtils::ReferenceCount<GLUNurbsRenderer>
 	{
 		public:
-			NurbsRenderer();
+			//! A convenience typedef for a shared pointer to a non-const @a GLUNurbsRenderer.
+			typedef GPlatesUtils::non_null_intrusive_ptr<GLUNurbsRenderer> non_null_ptr_type;
 
-			~NurbsRenderer()
+			//! A convenience typedef for a shared pointer to a const @a GLUNurbsRenderer.
+			typedef GPlatesUtils::non_null_intrusive_ptr<const GLUNurbsRenderer> non_null_ptr_to_const_type;
+
+			//! Typedef for a shared pointer to a 'GLUnurbsObj'.
+			typedef boost::shared_ptr<GLUnurbsObj> glu_nurbs_obj_type;
+
+
+			/**
+			 * Creates a @a GLUNurbsRenderer object.
+			 */
+			static
+			non_null_ptr_type
+			create()
 			{
-				gluDeleteNurbsRenderer(d_nurbs_ptr);
+				return non_null_ptr_type(new GLUNurbsRenderer());
 			}
+
+
+			/**
+			 * Parameters that determine the appearance of a quadric.
+			 */
+			struct Parameters
+			{
+				//! Constructor sets parameters to GLU defaults.
+				Parameters();
+
+				GLfloat sampling_method;
+				GLfloat sampling_tolerance;
+			};
+
 
 			/**
 			 * Draw a general NURBS curve.
@@ -95,21 +114,15 @@ namespace GPlatesGui
 			 * of the curve plus the number of control points
 			 * (the length of the array @a ctrl_pts).
 			 */
-			void
+			GLDrawable::non_null_ptr_to_const_type
 			draw_curve(
 					GLint num_knots,
-					GLfloat *knots,
+					const boost::shared_array<GLfloat> &knots,
 					GLint stride,
-					GLfloat *ctrl_pts,
+					const boost::shared_array<GLfloat> &ctrl_pts,
 					GLint order,
-					GLenum curve_type)
-			{
-				gluBeginCurve(d_nurbs_ptr);
-				gluNurbsCurve(d_nurbs_ptr, num_knots, knots, stride,
-						ctrl_pts, order, curve_type);
-				gluEndCurve(d_nurbs_ptr);
-			}
-
+					GLenum curve_type,
+					const GPlatesGui::Colour &colour);
 
 			/**
 			 * Draw a great circle arc on a sphere of radius one.
@@ -117,9 +130,10 @@ namespace GPlatesGui
 			 * The angle spanned by the endpoints of the GreatCircleArc
 			 * must be strictly less than PI.
 			 */
-			void
+			GLDrawable::non_null_ptr_to_const_type
 			draw_great_circle_arc(
-					const GPlatesMaths::GreatCircleArc &arc);
+					const GPlatesMaths::GreatCircleArc &arc,
+					const GPlatesGui::Colour &colour);
 
 
 			/**
@@ -128,29 +142,32 @@ namespace GPlatesGui
 			 * The angle spanned by points @a start and @a end
 			 * must be strictly less than PI.
 			 */
-			void
+			GLDrawable::non_null_ptr_to_const_type
 			draw_great_circle_arc(
 					const GPlatesMaths::PointOnSphere &start,
-					const GPlatesMaths::PointOnSphere &end);
+					const GPlatesMaths::PointOnSphere &end,
+					const GPlatesGui::Colour &colour);
 					
 					
 			/**
 			 *  Draw a small circle centred at @a centre with radius @a radius_in_degrees 
 			 *  degrees of arc.                                                                     
 			 */
-			void
+			GLDrawable::non_null_ptr_to_const_type
 			draw_small_circle(
 					const GPlatesMaths::PointOnSphere &centre,
-					const GPlatesMaths::Real &radius_in_radians);
+					const GPlatesMaths::Real &radius_in_radians,
+					const GPlatesGui::Colour &colour);
 					
 			/**
 			*  Draw a small circle centred determined by @a axis and with 
 			*  radius determined by @a cos_colatitude .
 			*/
-			void
+			GLDrawable::non_null_ptr_to_const_type
 			draw_small_circle(
 					const GPlatesMaths::UnitVector3D &axis,
-					const GPlatesMaths::Real &cos_colatitude);					
+					const GPlatesMaths::Real &cos_colatitude,
+					const GPlatesGui::Colour &colour);					
 				
 			/**
 			 *  Draw a small circle arc with
@@ -160,11 +177,12 @@ namespace GPlatesGui
 			 *	The arc will be drawn anti-clockwise around the centre of the small circle when 
 			 *	looking down onto the surface of globe.                                             
 			 */	
-			void
+			GLDrawable::non_null_ptr_to_const_type
 			draw_small_circle_arc(
 					const GPlatesMaths::PointOnSphere &centre,
 					const GPlatesMaths::PointOnSphere &first_point_on_circle,
-					const GPlatesMaths::Real &arc_length_in_radians);
+					const GPlatesMaths::Real &arc_length_in_radians,
+					const GPlatesGui::Colour &colour);
 					
 			
 
@@ -172,26 +190,45 @@ namespace GPlatesGui
 			/**
 			 * GLU nurbs renderer object
 			 */
-			GLUnurbsObj *d_nurbs_ptr;
+			glu_nurbs_obj_type d_nurbs;
+
+			Parameters d_current_parameters;
 
 
+			//! Constructor.
+			GLUNurbsRenderer();
+
+
+			/**
+			 * Creates our 'GLUnurbsObj' in 'd_nurbs'.
+			 *
+			 * Creation is delayed until something is drawn because when something
+			 * is drawn we know the OpenGL context is current.
+			 */
 			void
+			create_nurbs_obj();
+
+
+			GLDrawable::non_null_ptr_to_const_type
 			draw_great_circle_arc(
 					const GPlatesMaths::UnitVector3D &start_pt,
 					const GPlatesMaths::UnitVector3D &end_pt,
-					const GPlatesMaths::real_t &dot_of_endpoints);
+					const GPlatesMaths::real_t &dot_of_endpoints,
+					const GPlatesGui::Colour &colour);
 
-			void
+			GLDrawable::non_null_ptr_to_const_type
 			draw_great_circle_arc_smaller_than_ninety_degrees(
 					const GPlatesMaths::UnitVector3D &start_pt,
-					const GPlatesMaths::UnitVector3D &end_pt);
+					const GPlatesMaths::UnitVector3D &end_pt,
+					const GPlatesGui::Colour &colour);
 					
-			void
+			GLDrawable::non_null_ptr_to_const_type
 			draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(
 					const GPlatesMaths::UnitVector3D &centre_pt,
 					const GPlatesMaths::UnitVector3D &start_pt, 
-					const GPlatesMaths::Real &arc_length_in_radians);
+					const GPlatesMaths::Real &arc_length_in_radians,
+					const GPlatesGui::Colour &colour);
 	};
 }
 
-#endif  // GPLATES_GUI_NURBSRENDERER_H
+#endif  // GPLATES_OPENGL_GLUNURBSRENDERER_H

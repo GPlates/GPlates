@@ -72,14 +72,6 @@ namespace GPlatesViewOperations
 		{
 			return NULL; // we don't want strings to be clickable
 		}
-		
-		virtual
-		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
-		test_vertex_proximity(
-			const GPlatesMaths::ProximityCriteria &criteria) const
-		{
-			return NULL; // we don't want strings to be clickable
-		}		
 
 		const GPlatesMaths::PointOnSphere &
 		get_point_on_sphere() const
