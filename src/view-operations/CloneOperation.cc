@@ -100,6 +100,7 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature()
 
 	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 	feature_collection_ref->add(new_feature_ptr);
+	d_view_state.get_application_state().reconstruct();
 	// transaction.commit();
 
 #if 0
