@@ -2,8 +2,10 @@
 
 /**
  * \file 
- * $Revision$
- * $Date$
+ * File specific comments.
+ *
+ * Most recent change:
+ *   $Date$
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
  *
@@ -22,57 +24,22 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#ifndef GPLATES_UNIT_TEST_REAL_TEST_H
-#define GPLATES_UNIT_TEST_REAL_TEST_H
 
-#include <boost/test/unit_test.hpp>
-
-#include "GPlatesTestSuite.h"
+#include "MipmappedRasterFormatReader.h"
 
 
-namespace GPlatesUnitTest
+namespace GPlatesFileIO
 {
-	class MipmapperTest
+	namespace MipmappedRasterFormatReaderInternals
 	{
-	public:
-
+		template<>
 		void
-		test_extend_raster1();
-
-		void
-		test_extend_raster2();
-		
-		void
-		test_extend_raster3();
-
-		void
-		test_extend_raster4();
-
-		void
-		test_rgba_mipmapper();
-
-		void
-		test_float_mipmapper();
-
-		void
-		test_int_mipmapper();
-	};
-
-	
-	class MipmapperTestSuite : 
-			public GPlatesUnitTest::GPlatesTestSuite
-	{
-	public:
-
-		MipmapperTestSuite(
-				unsigned depth);
-
-	protected:
-
-		void 
-		construct_maps();
-	};
+		read<GPlatesGui::rgba8_t>(
+				QDataStream &in,
+				GPlatesGui::rgba8_t &value)
+		{
+			in >> value.red >> value.green >> value.blue >> value.alpha;
+		}
+	}
 }
-
-#endif //GPLATES_UNIT_TEST_REAL_TEST_H 
 

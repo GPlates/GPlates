@@ -33,6 +33,8 @@
 #include "gui/Colour.h"
 #include "gui/Mipmapper.h"
 
+#include "maths/Real.h"
+
 #include "property-values/RawRaster.h"
 
 
@@ -60,6 +62,8 @@ GPlatesUnitTest::MipmapperTestSuite::construct_maps()
 	ADD_TESTCASE(MipmapperTest, test_extend_raster3);
 	ADD_TESTCASE(MipmapperTest, test_extend_raster4);
 	ADD_TESTCASE(MipmapperTest, test_rgba_mipmapper);
+	ADD_TESTCASE(MipmapperTest, test_float_mipmapper);
+	ADD_TESTCASE(MipmapperTest, test_int_mipmapper);
 }
 
 
@@ -175,7 +179,8 @@ GPlatesUnitTest::MipmapperTest::test_rgba_mipmapper()
 	BOOST_CHECK(
 			mipmapper.generate_next() &&
 			mipmapper.get_current_mipmap()->height() == 2 &&
-			mipmapper.get_current_mipmap()->width() == 3);
+			mipmapper.get_current_mipmap()->width() == 3 &&
+			mipmapper.get_current_coverage() == boost::none);
 
 #if 0
 	const rgba8_t *bits = mipmapper.get_current_mipmap()->data();
@@ -189,13 +194,119 @@ GPlatesUnitTest::MipmapperTest::test_rgba_mipmapper()
 	BOOST_CHECK(
 			mipmapper.generate_next() &&
 			mipmapper.get_current_mipmap()->height() == 1 &&
-			mipmapper.get_current_mipmap()->width() == 2);
+			mipmapper.get_current_mipmap()->width() == 2 &&
+			mipmapper.get_current_coverage() == boost::none);
 
 	// Level 3 should be 1x1.
 	BOOST_CHECK(
 			mipmapper.generate_next() &&
 			mipmapper.get_current_mipmap()->height() == 1 &&
-			mipmapper.get_current_mipmap()->width() == 1);
+			mipmapper.get_current_mipmap()->width() == 1 &&
+			mipmapper.get_current_coverage() == boost::none);
+
+	// And there should be no more levels after that.
+	BOOST_CHECK(!mipmapper.generate_next());
+}
+
+
+void
+GPlatesUnitTest::MipmapperTest::test_float_mipmapper()
+{
+	// Let's mipmap a 3x5 raster.
+	FloatRawRaster::non_null_ptr_type raster = FloatRawRaster::create(5, 3);
+	float nan = static_cast<float>(GPlatesMaths::nan());
+	float raster_data[] = {
+		/* 1st row */ nan, nan, 2.0f, 3.0f, 4.0f,
+		/* 2nd row */ nan, nan, 12.0f, 13.0f, 14.0f,
+		/* 3rd row */ 20.0f, 21.0f, 22.0f, 23.0f, 24.0f
+	};
+	std::memcpy(raster->data(), raster_data, sizeof(raster_data));
+
+	GPlatesGui::Mipmapper<FloatRawRaster> mipmapper(raster);
+
+	// Level 1 should be 2x3 with no coverage raster.
+	BOOST_CHECK(
+			mipmapper.generate_next() &&
+			mipmapper.get_current_mipmap()->height() == 2 &&
+			mipmapper.get_current_mipmap()->width() == 3 &&
+			mipmapper.get_current_coverage() == boost::none);
+
+	// Level 2 should be 1x2 with coverage raster.
+	BOOST_CHECK(
+			mipmapper.generate_next() &&
+			mipmapper.get_current_mipmap()->height() == 1 &&
+			mipmapper.get_current_mipmap()->width() == 2 &&
+			mipmapper.get_current_coverage());
+
+#if 0
+	const float *bits = (*mipmapper.get_current_coverage())->data();
+	for (int i = 0; i != 2; ++i)
+	{
+		std::cout << *(bits + i) << std::endl;
+	}
+#endif
+
+	// Level 3 should be 1x1 with coverage raster.
+	BOOST_CHECK(
+			mipmapper.generate_next() &&
+			mipmapper.get_current_mipmap()->height() == 1 &&
+			mipmapper.get_current_mipmap()->width() == 1 &&
+			mipmapper.get_current_coverage());
+#if 0
+	std::cout << *(*mipmapper.get_current_coverage())->data() << std::endl;
+#endif
+
+	// And there should be no more levels after that.
+	BOOST_CHECK(!mipmapper.generate_next());
+}
+
+
+void
+GPlatesUnitTest::MipmapperTest::test_int_mipmapper()
+{
+	// Let's mipmap a 3x5 raster.
+	Int32RawRaster::non_null_ptr_type raster = Int32RawRaster::create(5, 3);
+	int raster_data[] = {
+		/* 1st row */ 0, 0, 2, 3, 4,
+		/* 2nd row */ 0, 0, 12, 13, 14,
+		/* 3rd row */ 20, 21, 22, 23, 24
+	};
+	std::memcpy(raster->data(), raster_data, sizeof(raster_data));
+	raster->set_no_data_value(boost::optional<boost::int32_t>(0));
+
+	GPlatesGui::Mipmapper<Int32RawRaster> mipmapper(raster);
+
+	// Level 1 should be 2x3 with no coverage raster.
+	BOOST_CHECK(
+			mipmapper.generate_next() &&
+			mipmapper.get_current_mipmap()->height() == 2 &&
+			mipmapper.get_current_mipmap()->width() == 3 &&
+			mipmapper.get_current_coverage() == boost::none);
+
+	// Level 2 should be 1x2 with coverage raster.
+	BOOST_CHECK(
+			mipmapper.generate_next() &&
+			mipmapper.get_current_mipmap()->height() == 1 &&
+			mipmapper.get_current_mipmap()->width() == 2 &&
+			mipmapper.get_current_coverage());
+
+#if 0
+	const float *bits = (*mipmapper.get_current_coverage())->data();
+	for (int i = 0; i != 2; ++i)
+	{
+		std::cout << *(bits + i) << std::endl;
+	}
+#endif
+
+	// Level 3 should be 1x1 with coverage raster.
+	BOOST_CHECK(
+			mipmapper.generate_next() &&
+			mipmapper.get_current_mipmap()->height() == 1 &&
+			mipmapper.get_current_mipmap()->width() == 1 &&
+			mipmapper.get_current_coverage());
+#if 0
+	std::cout << *(*mipmapper.get_current_coverage())->data() << std::endl;
+#endif
 
 	// And there should be no more levels after that.
 	BOOST_CHECK(!mipmapper.generate_next());

@@ -135,6 +135,7 @@
 
 #include "property-values/Georeferencing.h"
 #include "property-values/GmlMultiPoint.h"
+#include "property-values/ProxiedRasterResolver.h" // FIXME: For testing only.
 #include "property-values/RawRasterUtils.h"
 
 #include "qt-widgets/MapCanvas.h"
@@ -1781,12 +1782,13 @@ GPlatesQtWidgets::ViewportWindow::load_raster(
 	d_read_errors_dialog_ptr->clear();
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog_ptr->read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
-	GPlatesFileIO::FileInfo file_info(filename);
 
 	try
 	{
+		GPlatesFileIO::RasterReader::non_null_ptr_type raster_reader =
+			GPlatesFileIO::RasterReader::create(filename, &read_errors);
 		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> raw_raster =
-			GPlatesFileIO::RasterReader::read_file(file_info, read_errors);
+			raster_reader->get_proxied_raw_raster(1, &read_errors);
 		if (raw_raster)
 		{
 			try

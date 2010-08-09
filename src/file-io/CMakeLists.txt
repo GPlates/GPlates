@@ -37,10 +37,10 @@ set(srcs
     FileInfo.h
     FileLoadAbortedException.h
     Gdal.h
-    GdalReader.cc
-    GdalReader.h
-    GdalReaderUtils.cc
-    GdalReaderUtils.h
+    GdalRasterReader.cc
+    GdalRasterReader.h
+    GdalUtils.cc
+    GdalUtils.h
     GeometryExporter.h
     GmapReader.cc
     GmapReader.h
@@ -60,8 +60,15 @@ set(srcs
     GpmlOnePointSixReader.h
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
+    ImageMagickRasterReader.cc
+    ImageMagickRasterReader.h
     LineReader.h
+    MipmappedRasterFormat.cc
     MipmappedRasterFormat.h
+    MipmappedRasterFormatReader.cc
+    MipmappedRasterFormatReader.h
+    MipmappedRasterFormatWriter.cc
+    MipmappedRasterFormatWriter.h
     OgrException.h
     OgrWriter.cc
     OgrWriter.h
@@ -82,6 +89,10 @@ set(srcs
     PropertyCreationUtils.cc
     PropertyCreationUtils.h
     PropertyMapper.h
+    RasterBandReader.cc
+    RasterBandReader.h
+    RasterBandReaderHandle.cc
+    RasterBandReaderHandle.h
     RasterReader.cc
     RasterReader.h
     ReadErrorAccumulation.h
@@ -108,6 +119,8 @@ set(srcs
     ShapefileXmlWriter.h
     StructurePropertyCreatorMap.cc
     StructurePropertyCreatorMap.h
+    TemporaryFileRegistry.cc
+    TemporaryFileRegistry.h
     XmlOutputInterface.cc
     XmlOutputInterface.h
     XmlWriter.cc

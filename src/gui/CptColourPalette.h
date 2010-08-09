@@ -31,6 +31,8 @@
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/enable_if.hpp>
+#include <boost/type_traits/is_integral.hpp>
 #include <QString>
 
 #include "Colour.h"
@@ -224,17 +226,21 @@ namespace GPlatesGui
 			ColourSlice::value_type value,
 			const ColourSlice &colour_slice);
 
-
 	/**
 	 * ColourEntry stores a mapping from one value to one colour.
 	 *
 	 * These are used to store entries from categorical CPT files.
-	 *
-	 * In the unspecialised version of ColourEntry, the label is used as the value
+	 */
+	template<typename T, class Enable = void>
+	class ColourEntry;
+		// This is intentionally not defined.
+
+	/**
+	 * In the version of ColourEntry for non-ints, the label is used as the value
 	 * that is mapped to the colour.
 	 */
 	template<typename T>
-	class ColourEntry
+	class ColourEntry<T, typename boost::disable_if<boost::is_integral<T> >::type>
 	{
 	public:
 
@@ -323,12 +329,12 @@ namespace GPlatesGui
 	 * value that is mapped to the colour, and the label is used as a text label
 	 * for rendering purposes.
 	 */
-	template<>
-	class ColourEntry<int>
+	template<typename IntType>
+	class ColourEntry<IntType, typename boost::enable_if<boost::is_integral<IntType> >::type>
 	{
 	public:
 
-		typedef int value_type;
+		typedef IntType value_type;
 
 		enum
 		{
@@ -336,7 +342,7 @@ namespace GPlatesGui
 		};
 
 		ColourEntry(
-				int key_,
+				IntType key_,
 				Colour colour_,
 				const boost::optional<QString> &label_) :
 			d_key(key_),
@@ -347,7 +353,7 @@ namespace GPlatesGui
 
 		bool
 		can_handle(
-				int value) const
+				IntType value) const
 		{
 			return d_key == value;
 		}
@@ -357,12 +363,12 @@ namespace GPlatesGui
 		// colour() is the accessor to the instance variable.
 		const Colour &
 		get_colour(
-				int value) const
+				IntType value) const
 		{
 			return d_colour;
 		}
 
-		int
+		IntType
 		key() const
 		{
 			return d_key;
@@ -370,7 +376,7 @@ namespace GPlatesGui
 
 		void
 		set_key(
-				int key_)
+				IntType key_)
 		{
 			d_key = key_;
 		}
@@ -403,46 +409,89 @@ namespace GPlatesGui
 
 	private:
 
-		int d_key;
+		IntType d_key;
 		Colour d_colour;
 		boost::optional<QString> d_label;
 	};
 
 
+	template<typename IntType>
 	bool
 	operator<(
-			int value,
-			const ColourEntry<int> &colour_entry);
+			typename boost::enable_if<boost::is_integral<IntType>, IntType>::type value,
+			const ColourEntry<IntType> &colour_entry)
+	{
+		return value < colour_entry.key();
+	}
 
-	
+
+	template<typename IntType>
 	bool
 	operator>(
-			int value,
-			const ColourEntry<int> &colour_entry);
+			typename boost::enable_if<boost::is_integral<IntType>, IntType>::type value,
+			const ColourEntry<IntType> &colour_entry)
+	{
+		return value > colour_entry.key();
+	}
+
+
+	namespace CptColourPaletteInternals
+	{
+		template<typename T, class Enable = void>
+		class MakeColourEntry;
+
+		template<typename T>
+		class MakeColourEntry<T, typename boost::disable_if<boost::is_integral<T> >::type>
+		{
+		public:
+
+			typedef int key_type;
+
+			static
+			ColourEntry<T>
+			make_colour_entry(
+					int key,
+					const Colour &colour,
+					const boost::optional<QString> &label)
+			{
+				if (!label)
+				{
+					throw GPlatesUtils::ParseError();
+				}
+				GPlatesUtils::Parse<T> parse;
+				return ColourEntry<T>(key, colour, parse(*label));
+			}
+		};
+
+		template<typename IntType>
+		class MakeColourEntry<IntType, typename boost::enable_if<boost::is_integral<IntType> >::type>
+		{
+		public:
+
+			typedef IntType key_type;
+
+			static
+			ColourEntry<IntType>
+			make_colour_entry(
+					IntType key,
+					const Colour &colour,
+					const boost::optional<QString> &label)
+			{
+				return ColourEntry<IntType>(key, colour, label);
+			}
+		};
+	}
 
 
 	template<typename T>
 	ColourEntry<T>
 	make_colour_entry(
-			int key,
+			typename CptColourPaletteInternals::MakeColourEntry<T>::key_type key,
 			const Colour &colour,
 			const boost::optional<QString> &label)
 	{
-		if (!label)
-		{
-			throw GPlatesUtils::ParseError();
-		}
-		GPlatesUtils::Parse<T> parse;
-		return ColourEntry<T>(key, colour, parse(*label));
+		return CptColourPaletteInternals::MakeColourEntry<T>::make_colour_entry(key, colour, label);
 	}
-
-
-	template<>
-	ColourEntry<int>
-	make_colour_entry<int>(
-			int key,
-			const Colour &colour,
-			const boost::optional<QString> &label);
 
 
 	/**
@@ -690,8 +739,12 @@ namespace GPlatesGui
 	/**
 	 * A colour palette that stores entries from a categorical CPT file.
 	 */
+	template<typename T, class Enable = void>
+	class CategoricalCptColourPalette;
+		// This is intentionally not defined.
+
 	template<typename T>
-	class CategoricalCptColourPalette :
+	class CategoricalCptColourPalette<T, typename boost::disable_if<boost::is_integral<T> >::type> :
 			public CptColourPalette<ColourEntry<T> >
 	{
 	public:
@@ -749,13 +802,16 @@ namespace GPlatesGui
 	 * The specialisation enables the use of the background and foreground colours,
 	 * which are not used in the general case for categorical CPT files.
 	 */
-	template<>
-	class CategoricalCptColourPalette<int> :
-			public CptColourPalette<ColourEntry<int> >
+	template<typename IntType>
+	class CategoricalCptColourPalette<IntType, typename boost::enable_if<boost::is_integral<IntType> >::type> :
+			public CptColourPalette<ColourEntry<IntType> >
 	{
+		typedef CptColourPalette<ColourEntry<IntType> > base_type;
+		typedef typename base_type::value_type value_type;
+
 	public:
 
-		typedef CategoricalCptColourPalette<int> this_type;
+		typedef CategoricalCptColourPalette<IntType> this_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
 		typedef boost::intrusive_ptr<this_type> maybe_null_ptr_type;
@@ -765,7 +821,7 @@ namespace GPlatesGui
 		non_null_ptr_type
 		create()
 		{
-			return new CategoricalCptColourPalette<int>();
+			return new CategoricalCptColourPalette<IntType>();
 		}
 
 	protected:
@@ -793,6 +849,8 @@ namespace GPlatesGui
 		CategoricalCptColourPalette()
 		{
 		}
+
+		using base_type::d_entries;
 	};
 }
 

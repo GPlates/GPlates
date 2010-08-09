@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_GDALREADERUTILS_H
-#define GPLATES_FILEIO_GDALREADERUTILS_H
+#ifndef GPLATES_FILEIO_GDALUTILS_H
+#define GPLATES_FILEIO_GDALUTILS_H
 
 #include <QString>
 
@@ -36,7 +36,7 @@ namespace GPlatesFileIO
 {
 	struct ReadErrorAccumulation;
 
-	namespace GdalReaderUtils
+	namespace GdalUtils
 	{
 		/**
 		 * A convenience function that wraps around GDALOpen. The file with
@@ -51,8 +51,8 @@ namespace GPlatesFileIO
 		GDALDataset *
 		gdal_open(
 				const QString &filename,
-				ReadErrorAccumulation &read_errors);
+				ReadErrorAccumulation *read_errors = NULL);
 	}
 }
 
-#endif // GPLATES_FILEIO_GDALREADERUTILS_H
+#endif // GPLATES_FILEIO_GDALUTILS_H

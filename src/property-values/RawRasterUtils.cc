@@ -25,127 +25,77 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "global/CompilerWarnings.h"
+
+PUSH_MSVC_WARNINGS
+DISABLE_MSVC_WARNING( 4251 )
+#include <Magick++.h>
+POP_MSVC_WARNINGS
+
 #include "RawRasterUtils.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/AssertionFailureException.h"
+
 #include "utils/TypeTraits.h"
+
 
 namespace
 {
 	using namespace GPlatesPropertyValues;
 
-	template<class ImplType>
-	class TemplatedRawRasterVisitor :
-			public RawRasterVisitor,
-			public ImplType
-	{
-	public:
-
-		virtual
-		void
-		visit(
-				UninitialisedRawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-
-		virtual
-		void
-		visit(
-				Int8RawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-
-		virtual
-		void
-		visit(
-				UInt8RawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-
-		virtual
-		void
-		visit(
-				Int16RawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-
-		virtual
-		void
-		visit(
-				UInt16RawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-
-		virtual
-		void
-		visit(
-				Int32RawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-
-		virtual
-		void
-		visit(
-				UInt32RawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-
-		virtual
-		void
-		visit(
-				FloatRawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-
-		virtual
-		void
-		visit(
-				DoubleRawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-
-		virtual
-		void
-		visit(
-				Rgba8RawRaster &raster)
-		{
-			ImplType::do_visit(raster);
-		}
-	};
-
 	class RawRasterSizeVisitorImpl
 	{
 	public:
 
-		template<typename T>
-		void
-		do_visit(
-				RawRasterInternals::WithData<T> &with_data)
-		{
-			d_raster_size = std::make_pair(with_data.width(), with_data.height());
-		}
-
-		template<typename T>
-		void
-		do_visit(
-				RawRasterInternals::WithoutData<T> &without_data)
-		{  }
-
-		boost::optional<std::pair<unsigned int, unsigned int > >
+		const boost::optional<std::pair<unsigned int, unsigned int> > &
 		get_raster_size() const
 		{
 			return d_raster_size;
 		}
 
 	private:
+
+		template<class RawRasterType, bool has_size>
+		class ExtractRasterSize
+		{
+		public:
+
+			static
+			void
+			extract_raster_size(
+					RawRasterType &raster,
+					boost::optional<std::pair<unsigned int, unsigned int> > &raster_size)
+			{
+				// Nothing to do; has_size = false case handled here.
+			}
+		};
+
+		template<class RawRasterType>
+		class ExtractRasterSize<RawRasterType, true>
+		{
+		public:
+
+			static
+			void
+			extract_raster_size(
+					RawRasterType &raster,
+					boost::optional<std::pair<unsigned int, unsigned int> > &raster_size)
+			{
+				raster_size = std::make_pair(raster.width(), raster.height());
+			}
+		};
+
+		template<class RawRasterType>
+		void
+		do_visit(
+				RawRasterType &raster)
+		{
+			ExtractRasterSize<RawRasterType, RawRasterType::has_data || RawRasterType::has_proxied_data>::
+				extract_raster_size(raster, d_raster_size);
+		}
+
+		friend class TemplatedRawRasterVisitor<RawRasterSizeVisitorImpl>;
 
 		boost::optional<std::pair<unsigned int, unsigned int> > d_raster_size;
 	};
@@ -163,18 +113,6 @@ namespace
 			d_raster_statistics(NULL)
 		{  }
 
-		void
-		do_visit(
-				RawRasterInternals::WithStatistics &with_statistics)
-		{
-			d_raster_statistics = &with_statistics.statistics();
-		}
-
-		void
-		do_visit(
-				RawRasterInternals::WithoutStatistics &without_statistics)
-		{  }
-
 		RasterStatistics *
 		get_raster_statistics() const
 		{
@@ -182,7 +120,21 @@ namespace
 		}
 
 	private:
-		
+
+		void
+		do_visit(
+				RawRasterStatisticsPolicies::WithStatistics &with_statistics)
+		{
+			d_raster_statistics = &with_statistics.statistics();
+		}
+
+		void
+		do_visit(
+				RawRasterStatisticsPolicies::WithoutStatistics &without_statistics)
+		{  }
+
+		friend class TemplatedRawRasterVisitor<RawRasterStatisticsVisitorImpl>;
+
 		RasterStatistics *d_raster_statistics;
 	};
 
@@ -195,10 +147,18 @@ namespace
 	{
 	public:
 
+		boost::optional<double>
+		get_no_data_value() const
+		{
+			return d_no_data_value;
+		}
+
+	private:
+
 		template<typename T>
 		void
 		do_visit(
-				RawRasterInternals::WithNoDataValue<T> &with_no_data_value)
+				RawRasterNoDataValuePolicies::WithNoDataValue<T> &with_no_data_value)
 		{
 			boost::optional<T> no_data_value = with_no_data_value.no_data_value();
 			if (no_data_value)
@@ -210,24 +170,18 @@ namespace
 		template<typename T>
 		void
 		do_visit(
-				RawRasterInternals::NanNoDataValue<T> &nan_no_data_value)
+				RawRasterNoDataValuePolicies::NanNoDataValue<T> &nan_no_data_value)
 		{
-			d_no_data_value = GPlatesMaths::Real::nan().dval();
+			d_no_data_value = GPlatesMaths::nan();
 		}
 
 		template<typename T>
 		void
 		do_visit(
-				RawRasterInternals::WithoutNoDataValue<T> &without_no_data_value)
+				RawRasterNoDataValuePolicies::WithoutNoDataValue<T> &without_no_data_value)
 		{  }
 
-		boost::optional<double>
-		get_no_data_value() const
-		{
-			return d_no_data_value;
-		}
-
-	private:
+		friend class TemplatedRawRasterVisitor<RawRasterNoDataValueVisitorImpl>;
 
 		boost::optional<double> d_no_data_value;
 	};
@@ -236,6 +190,84 @@ namespace
 	 * This is a visitor that pulls out the no-data value from a RawRaster.
 	 */
 	typedef TemplatedRawRasterVisitor<RawRasterNoDataValueVisitorImpl> RawRasterNoDataValueVisitor;
+
+	class RawRasterHasDataVisitorImpl
+	{
+	public:
+
+		RawRasterHasDataVisitorImpl() :
+			d_has_data(false),
+			d_has_proxied_data(false)
+		{
+		}
+
+		bool
+		has_data() const
+		{
+			return d_has_data;
+		}
+
+		bool
+		has_proxied_data() const
+		{
+			return d_has_proxied_data;
+		}
+
+	private:
+
+		template<class RawRasterType>
+		void
+		do_visit(
+				RawRasterType &)
+		{
+			d_has_data = RawRasterType::has_data;
+			d_has_proxied_data = RawRasterType::has_proxied_data;
+		}
+
+		friend class TemplatedRawRasterVisitor<RawRasterHasDataVisitorImpl>;
+
+		bool d_has_data;
+		bool d_has_proxied_data;
+	};
+
+	/**
+	 * This is a visitor that determines whether a raster has data / proxied data.
+	 */
+	typedef TemplatedRawRasterVisitor<RawRasterHasDataVisitorImpl> RawRasterHasDataVisitor;
+
+	class RawRasterTypeInfoVisitorImpl
+	{
+	public:
+
+		RawRasterTypeInfoVisitorImpl() :
+			d_type(RasterType::UNKNOWN)
+		{  }
+
+		RasterType::Type
+		get_type() const
+		{
+			return d_type;
+		}
+
+	private:
+
+		template<class RawRasterType>
+		void
+		do_visit(
+				RawRasterType &raster)
+		{
+			d_type = RasterType::get_type_as_enum<typename RawRasterType::element_type>();
+		}
+
+		friend class TemplatedRawRasterVisitor<RawRasterTypeInfoVisitorImpl>;
+
+		RasterType::Type d_type;
+	};
+
+	/**
+	 * This is a visitor that extracts the data type of a raster as an enumerated value.
+	 */
+	typedef TemplatedRawRasterVisitor<RawRasterTypeInfoVisitorImpl> RawRasterTypeInfoVisitor;
 }
 
 
@@ -269,6 +301,14 @@ GPlatesPropertyValues::RawRasterUtils::try_rgba8_raster_cast(
 }
 
 
+boost::optional<GPlatesPropertyValues::ProxiedRgba8RawRaster::non_null_ptr_type>
+GPlatesPropertyValues::RawRasterUtils::try_proxied_rgba8_raster_cast(
+		RawRaster &raster)
+{
+	return try_raster_cast<ProxiedRgba8RawRaster>(raster);
+}
+
+
 boost::optional<double>
 GPlatesPropertyValues::RawRasterUtils::get_no_data_value(
 		RawRaster &raster)
@@ -277,5 +317,81 @@ GPlatesPropertyValues::RawRasterUtils::get_no_data_value(
 	raster.accept_visitor(visitor);
 
 	return visitor.get_no_data_value();
+}
+
+
+bool
+GPlatesPropertyValues::RawRasterUtils::has_data(
+		RawRaster &raster)
+{
+	RawRasterHasDataVisitor visitor;
+	raster.accept_visitor(visitor);
+
+	return visitor.has_data();
+}
+
+
+bool
+GPlatesPropertyValues::RawRasterUtils::has_proxied_data(
+		RawRaster &raster)
+{
+	RawRasterHasDataVisitor visitor;
+	raster.accept_visitor(visitor);
+
+	return visitor.has_proxied_data();
+}
+
+
+GPlatesPropertyValues::RasterType::Type
+GPlatesPropertyValues::RawRasterUtils::get_raster_type(
+		RawRaster &raster)
+{
+	RawRasterTypeInfoVisitor visitor;
+	raster.accept_visitor(visitor);
+
+	return visitor.get_type();
+}
+
+
+void
+GPlatesPropertyValues::RawRasterUtils::apply_coverage_raster(
+		const Rgba8RawRaster::non_null_ptr_type &source_raster,
+		const CoverageRawRaster::non_null_ptr_type &coverage_raster)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			source_raster->width() == coverage_raster->width() &&
+			source_raster->height() == coverage_raster->height(),
+			GPLATES_ASSERTION_SOURCE);
+
+	Rgba8RawRaster::element_type *source_data = source_raster->data();
+	Rgba8RawRaster::element_type * const source_data_end = source_data + source_raster->width() * source_raster->height();
+	CoverageRawRaster::element_type *coverage_data = coverage_raster->data();
+
+	while (source_data != source_data_end)
+	{
+		CoverageRawRaster::element_type coverage_value = *coverage_data;
+		if (coverage_value < 0.0)
+		{
+			coverage_value = 0.0;
+		}
+		if (coverage_value > 1.0)
+		{
+			coverage_value = 1.0;
+		}
+		source_data->alpha = static_cast<boost::uint8_t>(source_data->alpha * coverage_value);
+
+		++source_data;
+		++coverage_data;
+	}
+}
+
+
+void
+GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster(
+		const Rgba8RawRaster::non_null_ptr_type &raster,
+		const QString &filename)
+{
+	Magick::Image image(raster->width(), raster->height(), "RGBA", Magick::CharPixel, raster->data());
+	image.write(filename.toStdString());
 }
 

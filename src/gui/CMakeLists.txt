@@ -128,6 +128,8 @@ set(srcs
     QGLWidgetTextRenderer.h
     RasterColourPalette.cc
     RasterColourPalette.h
+    RasterColourScheme.cc
+    RasterColourScheme.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
     SimpleGlobeOrientation.cc

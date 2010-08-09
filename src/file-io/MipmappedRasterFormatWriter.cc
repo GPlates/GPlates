@@ -7,7 +7,6 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -26,39 +25,30 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_GDALREADER_H
-#define GPLATES_FILEIO_GDALREADER_H
+#include "MipmappedRasterFormatWriter.h"
 
-#include <boost/noncopyable.hpp>
-
-#include "ReadErrorAccumulation.h"
-
-#include "property-values/RawRaster.h"
-
-class GDALDataset; 
 
 namespace GPlatesFileIO
 {
-	struct ErrorReadingGDALBand {  };
-
-	class GdalReader :
-			public boost::noncopyable
+	namespace MipmappedRasterFormatWriterInternals
 	{
-	public:
-
-		GdalReader();
-
-		~GdalReader();
-
-		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
-		read_file(
-				const QString &filename,
-				ReadErrorAccumulation &read_errors);
-
-	private:
-
-		GDALDataset *d_dataset_ptr;
-	};
+		template<>
+		void
+		write<GPlatesGui::rgba8_t>(
+				QDataStream &out,
+				const GPlatesGui::rgba8_t *data,
+				unsigned int len)
+		{
+			const GPlatesGui::rgba8_t *end = data + len;
+			while (data != end)
+			{
+				out << static_cast<quint8>(data->red)
+					<< static_cast<quint8>(data->green)
+					<< static_cast<quint8>(data->blue)
+					<< static_cast<quint8>(data->alpha);
+				++data;
+			}
+		}
+	}
 }
 
-#endif  // GPLATES_FILEIO_GDALREADER_H

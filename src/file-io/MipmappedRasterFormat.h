@@ -29,6 +29,9 @@
 #define GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
 
 #include <boost/cstdint.hpp>
+#include <QDataStream>
+
+#include "gui/Colour.h"
 
 
 namespace GPlatesFileIO
@@ -64,12 +67,12 @@ namespace GPlatesFileIO
 	 * the mipmap that is non-sentinel in the original raster.
 	 *
 	 * The header consists of the following fields, in order:
-	 *  - A magic number that identifies a file as a GPlates mipmapped raster.
-	 *  - The version number of the GPlates mipmapped raster format used.
-	 *  - The time when the original raster file was last modified.
-	 *  - The type of the mipmaps: RGBA, float or double.
-	 *  - The number of levels.
-	 *  - For each level:
+	 *  - ( 0) A magic number that identifies a file as a GPlates mipmapped raster.
+	 *  - ( 4) The version number of the GPlates mipmapped raster format used.
+	 *  - ( 8) The time when the original raster file was last modified.
+	 *  - (12) The type of the mipmaps: RGBA, float or double.
+	 *  - (16) The number of levels.
+	 *  - (20) For each level:
 	 *     - The width of the mipmap in this level.
 	 *     - The height of the mipmap in this level.
 	 *     - The starting position, in bytes, of the mipmap in the file.
@@ -78,9 +81,13 @@ namespace GPlatesFileIO
 	 *       mipmap does not have any pixels that are part sentinel and part
 	 *       non-sentinel.
 	 *
-	 * Each of the fields in the header are 4 bytes wide. The byte order of the
-	 * entire mipmapped raster file is big endian. The file format is independent
-	 * of the operating system and CPU.
+	 * Each of the fields in the header is an unsigned 32-bit integer.
+	 * Each RGBA component is stored as an unsigned 8-bit integer.
+	 * The byte order of the entire mipmapped raster file is big endian
+	 * (the QDataStream default).
+	 * The file format is independent of the operating system and CPU, with one
+	 * qualification: float is assumed to be 32-bit and double is assumed to be
+	 * 64-bit.
 	 */
 	namespace MipmappedRasterFormat
 	{
@@ -109,11 +116,38 @@ namespace GPlatesFileIO
 			NUM_TYPES // must be the last entry
 		};
 
+		template<typename T>
+		Type
+		get_type_as_enum();
+
+		template<>
+		Type
+		get_type_as_enum<GPlatesGui::rgba8_t>();
+
+		template<>
+		Type
+		get_type_as_enum<float>();
+
+		template<>
+		Type
+		get_type_as_enum<double>();
+
 		/**
 		 * The threshold size is the value such that the greatest dimension in the
 		 * lowest level is less than or equal to this.
 		 */
 		const unsigned int THRESHOLD_SIZE = 64;
+
+		/**
+		 * The QDataStream serialisation version.
+		 */
+		const int Q_DATA_STREAM_VERSION = QDataStream::Qt_4_4;
+	
+		struct LevelInfo
+		{
+			quint32 width, height, main_offset, coverage_offset;
+			static const quint32 NUM_COMPONENTS = 4;
+		};
 	}
 }
 

@@ -87,7 +87,11 @@ set(srcs
     InMemoryRaster.h
     PropertyValues.cc
     PropertyValues.h
+    ProxiedRasterResolver.cc
+    ProxiedRasterResolver.h
     RasterStatistics.h
+    RasterType.cc
+    RasterType.h
     RawRaster.cc
     RawRaster.h
     RawRasterUtils.cc

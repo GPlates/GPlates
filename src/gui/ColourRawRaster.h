@@ -30,6 +30,8 @@
 
 #include <algorithm>
 #include <boost/optional.hpp>
+#include <boost/type_traits/is_floating_point.hpp>
+#include <QDebug>
 
 #include "ColourPalette.h"
 #include "ColourPaletteAdapter.h"
@@ -39,6 +41,7 @@
 #include "property-values/RawRaster.h"
 
 #include "utils/TypeTraits.h"
+
 
 namespace GPlatesGui
 {
@@ -97,6 +100,10 @@ namespace GPlatesGui
 		/**
 		 * Colours a RawRaster of type RawRasterType with the given @a colour_palette,
 		 * which must be of the correct type for the raster that you want to colour.
+		 *
+		 * If you don't have a colour palette of the correct type, consider using
+		 * the other overload of @a colour_raw_raster, which will deduce the
+		 * raster type and convert the colour palette to be of the correct type.
 		 */
 		template<class RawRasterType>
 		GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type
@@ -138,86 +145,17 @@ namespace GPlatesGui
 			using namespace GPlatesPropertyValues;
 
 			/**
-			 * A visitor that attempts to colour a raster of unknown type.
-			 *
-			 * The template parameter T is the type of the colour palette.
+			 * Contains the logic of ColourRawRasterVisitor.
 			 */
 			template<typename T>
-			class ColourRawRasterVisitor :
-					public GPlatesPropertyValues::RawRasterVisitor
+			class ColourRawRasterVisitorImpl
 			{
 			public:
 
-				using GPlatesPropertyValues::RawRasterVisitor::visit;
-
-				ColourRawRasterVisitor(
+				ColourRawRasterVisitorImpl(
 						const typename ColourPalette<T>::non_null_ptr_type &colour_palette) :
 					d_colour_palette(colour_palette)
 				{  }
-
-				void
-				visit(
-						Int8RawRaster &raster)
-				{
-					do_visit(raster);
-				}
-
-				void
-				visit(
-						UInt8RawRaster &raster)
-				{
-					do_visit(raster);
-				}
-
-				void
-				visit(
-						Int16RawRaster &raster)
-				{
-					do_visit(raster);
-				}
-
-				void
-				visit(
-						UInt16RawRaster &raster)
-				{
-					do_visit(raster);
-				}
-
-				void
-				visit(
-						Int32RawRaster &raster)
-				{
-					do_visit(raster);
-				}
-
-				void
-				visit(
-						UInt32RawRaster &raster)
-				{
-					do_visit(raster);
-				}
-
-				void
-				visit(
-						FloatRawRaster &raster)
-				{
-					// We can only colour real-valued rasters with real-valued palettes.
-					if (GPlatesUtils::TypeTraits<T>::is_floating_point)
-					{
-						do_visit(raster);
-					}
-				}
-
-				void
-				visit(
-						DoubleRawRaster &raster)
-				{
-					// We can only colour real-valued rasters with real-valued palettes.
-					if (GPlatesUtils::TypeTraits<T>::is_floating_point)
-					{
-						do_visit(raster);
-					}
-				}
 
 				boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type>
 				coloured_raster() const
@@ -227,29 +165,103 @@ namespace GPlatesGui
 
 			private:
 
+				template<class RawRasterType, bool can_colour>
+				class ColourRawRaster
+				{
+				public:
+
+					ColourRawRaster(
+							const typename ColourPalette<T>::non_null_ptr_type &colour_palette,
+							boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> &coloured_raster)
+					{  }
+
+					void
+					do_visit(
+							RawRasterType &source)
+					{
+						// Do nothing; can_colour = false case handled here.
+					}
+				};
+
+				template<class RawRasterType>
+				class ColourRawRaster<RawRasterType, /* can_colour = */ true>
+				{
+				public:
+
+					ColourRawRaster(
+							const typename ColourPalette<T>::non_null_ptr_type &colour_palette,
+							boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> &coloured_raster) :
+						d_colour_palette(colour_palette),
+						d_coloured_raster(coloured_raster)
+					{  }
+
+					void
+					do_visit(
+							RawRasterType &source)
+					{
+						d_coloured_raster = colour_raw_raster(source);
+					}
+
+				private:
+
+					GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type
+					colour_raw_raster(
+							RawRasterType &source)
+					{
+						// Convert the colour palette to take the right type.
+						typedef typename RawRasterType::element_type element_type;
+						typename ColourPalette<element_type>::non_null_ptr_type colour_palette =
+							GPlatesGui::convert_colour_palette<T, element_type>(d_colour_palette);
+
+						return GPlatesGui::ColourRawRaster::colour_raw_raster(source, colour_palette);
+					}
+
+					const typename ColourPalette<T>::non_null_ptr_type &d_colour_palette;
+					boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> &d_coloured_raster;
+				};
+
 				template<class RawRasterType>
 				void
 				do_visit(
 						RawRasterType &source)
 				{
-					d_coloured_raster = colour_raw_raster(source);
-				}
-
-				template<class RawRasterType>
-				GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type
-				colour_raw_raster(
-						RawRasterType &source)
-				{
-					// Convert the colour palette to take the right type.
+					// Can only colour if:
+					//  - RawRasterType has data, and
+					//  - RawRasterType has a no-data value, and
+					//  - The raster's type is integral or
+					//    (the raster's type is floating point and the palette's type is also floating point)
 					typedef typename RawRasterType::element_type element_type;
-					typename ColourPalette<element_type>::non_null_ptr_type colour_palette =
-						GPlatesGui::convert_colour_palette<T, element_type>(d_colour_palette);
-
-					return GPlatesGui::ColourRawRaster::colour_raw_raster(source, colour_palette);
+					ColourRawRaster<RawRasterType,
+						RawRasterType::has_data &&
+						RawRasterType::has_no_data_value &&
+						(boost::is_integral<element_type>::value || (boost::is_floating_point<element_type>::value && boost::is_floating_point<T>::value))
+					> colour_raw_raster(d_colour_palette, d_coloured_raster);
+					colour_raw_raster.do_visit(source);
 				}
+
+				friend class GPlatesPropertyValues::TemplatedRawRasterVisitor<ColourRawRasterVisitorImpl<T> >;
 
 				typename ColourPalette<T>::non_null_ptr_type d_colour_palette;
 				boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> d_coloured_raster;
+			};
+
+			/**
+			 * A visitor that attempts to colour a raster of unknown type.
+			 *
+			 * The template parameter T is the type of the colour palette.
+			 */
+			template<typename T>
+			class ColourRawRasterVisitor :
+					public GPlatesPropertyValues::TemplatedRawRasterVisitor<ColourRawRasterVisitorImpl<T> >
+			{
+
+				typedef GPlatesPropertyValues::TemplatedRawRasterVisitor<ColourRawRasterVisitorImpl<T> > base_type;
+			public:
+
+				ColourRawRasterVisitor(
+						const typename ColourPalette<T>::non_null_ptr_type &colour_palette) :
+					base_type(colour_palette)
+				{  }
 			};
 		}
 

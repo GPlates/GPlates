@@ -39,6 +39,7 @@
 
 #include "presentation/ViewState.h"
 
+#include "property-values/RasterType.h"
 #include "property-values/RawRaster.h"
 #include "property-values/RawRasterUtils.h"
 
@@ -308,104 +309,63 @@ namespace
 {
 	using namespace GPlatesPropertyValues;
 
-	/**
-	 * This visitor looks at a RawRaster and comes up with a human readable name for it.
-	 */
-	class RawRasterFormatVisitor :
-			public RawRasterVisitor
+	const QString &
+	get_raster_type_name(
+			GPlatesPropertyValues::RasterType::Type type)
 	{
-	public:
+		static const QString UNINITIALISED_STRING = "Uninitialised";
+		static const QString INT8_STRING = "8-bit signed integer";
+		static const QString UINT8_STRING = "8-bit unsigned integer";
+		static const QString INT16_STRING = "16-bit signed integer";
+		static const QString UINT16_STRING = "16-bit unsigned integer";
+		static const QString INT32_STRING = "32-bit signed integer";
+		static const QString UINT32_STRING = "32-bit unsigned integer";
+		static const QString FLOAT_STRING = "32-bit float";
+		static const QString DOUBLE_STRING = "64-bit float";
+		static const QString RGBA8_STRING = "RGBA8";
+		static const QString UNKNOWN_STRING = "Unknown";
 
-		virtual
-		void
-		visit(
-				UninitialisedRawRaster &raster)
+		switch (type)
 		{
-			d_format_name = "Uninitialised";
+			case GPlatesPropertyValues::RasterType::UNINITIALISED:
+				return UNINITIALISED_STRING;
+
+			case GPlatesPropertyValues::RasterType::INT8:
+				return INT8_STRING;
+
+			case GPlatesPropertyValues::RasterType::UINT8:
+				return UINT8_STRING;
+
+			case GPlatesPropertyValues::RasterType::INT16:
+				return INT16_STRING;
+
+			case GPlatesPropertyValues::RasterType::UINT16:
+				return UINT16_STRING;
+
+			case GPlatesPropertyValues::RasterType::INT32:
+				return INT32_STRING;
+
+			case GPlatesPropertyValues::RasterType::UINT32:
+				return UINT32_STRING;
+
+			case GPlatesPropertyValues::RasterType::FLOAT:
+				return FLOAT_STRING;
+
+			case GPlatesPropertyValues::RasterType::DOUBLE:
+				return DOUBLE_STRING;
+
+			case GPlatesPropertyValues::RasterType::RGBA8:
+				return RGBA8_STRING;
+
+			case GPlatesPropertyValues::RasterType::UNKNOWN:
+				return UNKNOWN_STRING;
 		}
 
-		virtual
-		void
-		visit(
-				Int8RawRaster &raster)
-		{
-			d_format_name = "8-bit signed integer";
-		}
-
-		virtual
-		void
-		visit(
-				UInt8RawRaster &raster)
-		{
-			d_format_name = "8-bit unsigned integer";
-		}
-
-		virtual
-		void
-		visit(
-				Int16RawRaster &raster)
-		{
-			d_format_name = "16-bit signed integer";
-		}
-
-		virtual
-		void
-		visit(
-				UInt16RawRaster &raster)
-		{
-			d_format_name = "16-bit unsigned integer";
-		}
-
-		virtual
-		void
-		visit(
-				Int32RawRaster &raster)
-		{
-			d_format_name = "32-bit signed integer";
-		}
-
-		virtual
-		void
-		visit(
-				UInt32RawRaster &raster)
-		{
-			d_format_name = "32-bit unsigned integer";
-		}
-
-		virtual
-		void
-		visit(
-				FloatRawRaster &raster)
-		{
-			d_format_name = "32-bit float";
-		}
-
-		virtual
-		void
-		visit(
-				DoubleRawRaster &raster)
-		{
-			d_format_name = "64-bit float";
-		}
-
-		virtual
-		void
-		visit(
-				Rgba8RawRaster &raster)
-		{
-			d_format_name = "RGBA8";
-		}
-
-		const QString &
-		format_name() const
-		{
-			return d_format_name;
-		}
-
-	private:
-
-		QString d_format_name;
-	};
+		// We don't use "default" in the switch above, so that if a new raster type is
+		// added, the compiler will flag the missing case as an error.
+		static const QString DEFAULT_STRING = "";
+		return DEFAULT_STRING;
+	}
 
 
 	QTreeWidgetItem *
@@ -464,17 +424,17 @@ GPlatesQtWidgets::RasterPropertiesDialog::populate_from_data()
 				true));
 
 	// Display the raster's format.
-	RawRasterFormatVisitor format_visitor;
-	raw_raster->accept_visitor(format_visitor);
+	GPlatesPropertyValues::RasterType::Type raster_type =
+		GPlatesPropertyValues::RawRasterUtils::get_raster_type(*raw_raster);
 	properties_treewidget->addTopLevelItem(
 			create_treewidget_item(
 				"Format",
-				format_visitor.format_name()));
+				get_raster_type_name(raster_type)));
 
 	// Display the no-data value.
 	properties_treewidget->addTopLevelItem(
 			create_numeric_treewidget_item(
-				"No-data Value",
+				"No-Data Value",
 				GPlatesPropertyValues::RawRasterUtils::get_no_data_value(*raw_raster),
 				"N/A"));
 

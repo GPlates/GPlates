@@ -2,8 +2,10 @@
 
 /**
  * \file 
- * $Revision$
- * $Date$
+ * File specific comments.
+ *
+ * Most recent change:
+ *   $Date$
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
  *
@@ -22,57 +24,27 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#ifndef GPLATES_UNIT_TEST_REAL_TEST_H
-#define GPLATES_UNIT_TEST_REAL_TEST_H
 
-#include <boost/test/unit_test.hpp>
+#include <boost/foreach.hpp>
+#include <QFile>
 
-#include "GPlatesTestSuite.h"
+#include "TemporaryFileRegistry.h"
 
 
-namespace GPlatesUnitTest
+GPlatesFileIO::TemporaryFileRegistry::~TemporaryFileRegistry()
 {
-	class MipmapperTest
+	BOOST_FOREACH(const QString &filename, d_filenames)
 	{
-	public:
-
-		void
-		test_extend_raster1();
-
-		void
-		test_extend_raster2();
-		
-		void
-		test_extend_raster3();
-
-		void
-		test_extend_raster4();
-
-		void
-		test_rgba_mipmapper();
-
-		void
-		test_float_mipmapper();
-
-		void
-		test_int_mipmapper();
-	};
-
-	
-	class MipmapperTestSuite : 
-			public GPlatesUnitTest::GPlatesTestSuite
-	{
-	public:
-
-		MipmapperTestSuite(
-				unsigned depth);
-
-	protected:
-
-		void 
-		construct_maps();
-	};
+		QFile file(filename);
+		file.remove();
+	}
 }
 
-#endif //GPLATES_UNIT_TEST_REAL_TEST_H 
+
+void
+GPlatesFileIO::TemporaryFileRegistry::add_file(
+		const QString &filename)
+{
+	d_filenames.push_back(filename);
+}
 

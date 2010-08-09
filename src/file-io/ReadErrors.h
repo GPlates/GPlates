@@ -116,17 +116,16 @@ namespace GPlatesFileIO
 			InvalidShapefilePolyline,
 			InvalidShapefilePolygon,
 			
-			// The following relate to raster files.
+			// The following relate to raster files in general.
 			InsufficientTextureMemory,
 			ErrorGeneratingTexture,
 			UnrecognisedRasterFileType,
+			ErrorReadingRasterFile,
+			ErrorReadingRasterBand,
+			InvalidRegionInRaster,
 
-			// The following relate to GDAL-readable Raster files.
-			ErrorReadingGDALBand,
+			// The following relate to GDAL-readable raster files.
 			ErrorInSystemLibraries,
-
-			// The following relate to QImage-readable image files.
-			ErrorReadingQImageFile,
 
 			// The following relate to time-dependent raster file sets.
 			NoRasterSetsFound,

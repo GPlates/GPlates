@@ -24,6 +24,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDebug>
+
 #include "ViewState.h"
 
 #include "VisualLayers.h"
@@ -33,6 +35,7 @@
 
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
+#include "file-io/TemporaryFileRegistry.h"
 
 #include "gui/ColourRawRaster.h"
 #include "gui/ColourSchemeContainer.h"
@@ -51,6 +54,7 @@
 #include "maths/Real.h"
 
 #include "property-values/Georeferencing.h"
+#include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRaster.h"
 #include "property-values/RawRasterUtils.h"
 
@@ -325,9 +329,25 @@ GPlatesPresentation::ViewState::set_raw_raster(
 		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::RawRaster>::non_null_ptr_type raw_raster)
 {
 	d_raw_raster = raw_raster;
+
+	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
+		GPlatesPropertyValues::ProxiedRasterResolver::create(*raw_raster);
+	if (proxy_resolver_opt)
+	{
+		const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_resolver = *proxy_resolver_opt;
+		if (!proxy_resolver->ensure_mipmaps_available())
+		{
+			qDebug() << "mipmaps were not generated";
+		}
+	}
+	else
+	{
+		qDebug() << "proxy resolver could not be created";
+	}
 }
 
 
+#if 0
 namespace
 {
 	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type>
@@ -370,10 +390,10 @@ namespace
 		// For real-valued rasters, we must use a regular CPT file to colour it.
 		// For int-valued rasters, we can use either a regular or categorical CPT file
 		// (we can use IntegerCptReader, which abstracts away the difference for us).
-		GPlatesPropertyValues::RawRasterUtils::RawRasterTypeInfoVisitor visitor;
-		raw_raster.accept_visitor(visitor);
+		GPlatesPropertyValues::RasterType::Type raster_type =
+			GPlatesPropertyValues::RawRasterUtils::get_raster_type(raw_raster);
 
-		if (visitor.is_floating_point())
+		if (GPlatesPropertyValues::RasterType::is_floating_point(raster_type))
 		{
 			// Attempt to read the CPT file.
 			GPlatesFileIO::RegularCptReader cpt_reader;
@@ -393,7 +413,7 @@ namespace
 			return GPlatesGui::ColourRawRaster::colour_raw_raster<double>(
 					raw_raster, adapted_palette);
 		}
-		else if (visitor.is_integer())
+		else if (GPlatesPropertyValues::RasterType::is_integer(raster_type))
 		{
 			// FIXME: Differentiate between signed/unsigned integer rasters.
 
@@ -417,48 +437,13 @@ namespace
 		}
 	}
 }
+#endif
 
 
 bool
 GPlatesPresentation::ViewState::update_texture_from_raw_raster()
 {
-	// See whether it's an Rgba8RawRaster.
-	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> rgba8_raster_opt =
-		GPlatesPropertyValues::RawRasterUtils::try_rgba8_raster_cast(*d_raw_raster);
-	if (!rgba8_raster_opt)
-	{
-		if (!d_raster_colour_map_filename.isEmpty())
-		{
-			// If there's a CPT file set, let's try to colour using it.
-			rgba8_raster_opt = colour_raw_raster_using_cpt(
-					*d_raw_raster, d_raster_colour_map_filename);
-			if (rgba8_raster_opt)
-			{
-				d_is_raster_colour_map_invalid = false;
-			}
-			else
-			{
-				d_is_raster_colour_map_invalid = true;
-
-				// Colour using the default raster colour palette instead.
-				rgba8_raster_opt = colour_raw_raster_using_default(*d_raw_raster);
-			}
-		}
-		else
-		{
-			// Otherwise, just colour using the default raster colour palette.
-			rgba8_raster_opt = colour_raw_raster_using_default(*d_raw_raster);
-
-			d_is_raster_colour_map_invalid = false;
-		}
-
-		if (!rgba8_raster_opt)
-		{
-			return false;
-		}
-	}
-
-	// Image size.
+	// Get the image size.
 	boost::optional<std::pair<unsigned int, unsigned int> > image_size =
 		GPlatesPropertyValues::RawRasterUtils::get_raster_size(*d_raw_raster);
 	if (!image_size)
@@ -466,6 +451,58 @@ GPlatesPresentation::ViewState::update_texture_from_raw_raster()
 		return false;
 	}
 	QSize qsize(image_size->first, image_size->second);
+
+	// Get the entire level 0 out from the proxy as RGBA.
+	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
+		GPlatesPropertyValues::ProxiedRasterResolver::create(*d_raw_raster);
+	if (!proxy_resolver_opt)
+	{
+		return false;
+	}
+	const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_resolver = *proxy_resolver_opt;
+	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> rgba8_raster_opt, level1_opt;
+
+	GPlatesPropertyValues::RasterStatistics *statistics_ptr =
+		GPlatesPropertyValues::RawRasterUtils::get_raster_statistics(*d_raw_raster);
+	if (statistics_ptr)
+	{
+		GPlatesPropertyValues::RasterStatistics &statistics = *statistics_ptr;
+		if (!statistics.mean || !statistics.standard_deviation)
+		{
+			return false;
+		}
+		double mean = *statistics.mean;
+		double std_dev = *statistics.standard_deviation;
+		GPlatesGui::DefaultRasterColourPalette::non_null_ptr_type rgba8_palette =
+			GPlatesGui::DefaultRasterColourPalette::create(mean, std_dev);
+		rgba8_raster_opt = proxy_resolver->get_coloured_region_from_level(0, 0, 0, image_size->first, image_size->second,
+			GPlatesGui::RasterColourScheme::create<double>("band name", rgba8_palette));
+
+		// For testing only...
+		level1_opt = proxy_resolver->get_coloured_region_from_level(1, 0, 0, image_size->first / 2, image_size->second / 2,
+			GPlatesGui::RasterColourScheme::create<double>("band name", rgba8_palette));
+	}
+	else
+	{
+		rgba8_raster_opt = proxy_resolver->get_coloured_region_from_level(0, 0, 0, image_size->first, image_size->second);
+
+		// For testing only...
+		level1_opt = proxy_resolver->get_coloured_region_from_level(1, 0, 0, image_size->first / 2, image_size->second / 2);
+	}
+
+	if (!rgba8_raster_opt)
+	{
+		return false;
+	}
+
+	// For testing only...
+	GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster(*rgba8_raster_opt, "temp.jpg");
+	GPlatesFileIO::TemporaryFileRegistry::instance().add_file("temp.jpg");
+	if (level1_opt)
+	{
+		GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster(*level1_opt, "level1.jpg");
+		GPlatesFileIO::TemporaryFileRegistry::instance().add_file("level1.jpg");
+	}
 
 	// Feed the bytes into Texture.
 	GPlatesGui::Texture &texture = *get_texture();

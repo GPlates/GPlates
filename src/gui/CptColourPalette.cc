@@ -25,8 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
-
 #include "CptColourPalette.h"
 
 
@@ -89,37 +87,5 @@ GPlatesGui::operator>(
 		const ColourSlice &colour_slice)
 {
 	return value > colour_slice.upper_value();
-}
-
-
-bool
-GPlatesGui::operator<(
-		int value,
-		const ColourEntry<int> &colour_entry)
-{
-	return value < colour_entry.key();
-}
-
-
-bool
-GPlatesGui::operator>(
-		int value,
-		const ColourEntry<int> &colour_entry)
-{
-	return value > colour_entry.key();
-}
-
-
-namespace GPlatesGui
-{
-	template<>
-	ColourEntry<int>
-	make_colour_entry<int>(
-			int key,
-			const Colour &colour,
-			const boost::optional<QString> &label)
-	{
-		return ColourEntry<int>(key, colour, label);
-	}
 }
 

@@ -28,7 +28,7 @@
 #include <QtGlobal>
 
 #include "Gdal.h"
-#include "GdalReaderUtils.h"
+#include "GdalUtils.h"
 #include "ReadErrorAccumulation.h"
 #include "ReadErrorOccurrence.h"
 
@@ -65,7 +65,7 @@ namespace
 	GDALDataset *
 	do_gdal_open(
 			const QString &filename,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			GPlatesFileIO::ReadErrorAccumulation *read_errors)
 	{
 		// Set a handler for SIGSEGV in case the call to GDALOpen does a segfault.
 		struct sigaction action;
@@ -90,15 +90,18 @@ namespace
 		// Add errors as necessary.
 		if (!result)
 		{
-			read_errors.d_failures_to_begin.push_back(
-					make_read_error_occurrence(
-						filename,
-						DataFormats::RasterImage,
-						0,
-						segfaulted ?
-							ReadErrors::ErrorInSystemLibraries :
-							ReadErrors::ErrorOpeningFileForReading,
-						ReadErrors::FileNotLoaded));
+			if (read_errors)
+			{
+				read_errors->d_failures_to_begin.push_back(
+						make_read_error_occurrence(
+							filename,
+							DataFormats::RasterImage,
+							0,
+							segfaulted ?
+								ReadErrors::ErrorInSystemLibraries :
+								ReadErrors::ErrorReadingRasterFile,
+							ReadErrors::FileNotLoaded));
+			}
 		}
 
 		return result;
@@ -114,20 +117,23 @@ namespace
 	GDALDataset *
 	do_gdal_open(
 			const QString &filename,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			GPlatesFileIO::ReadErrorAccumulation *read_errors)
 	{
 		GDALDataset *result = static_cast<GDALDataset *>(GDALOpen(filename.toStdString().c_str(), GA_ReadOnly));
 
 		// Add errors as necessary.
 		if (!result)
 		{
-			read_errors.d_failures_to_begin.push_back(
-					make_read_error_occurrence(
-						filename,
-						DataFormats::RasterImage,
-						0,
-						ReadErrors::ErrorOpeningFileForReading,
-						ReadErrors::FileNotLoaded));
+			if (read_errors)
+			{
+				read_errors->d_failures_to_begin.push_back(
+						make_read_error_occurrence(
+							filename,
+							DataFormats::RasterImage,
+							0,
+							ReadErrors::ErrorReadingRasterFile,
+							ReadErrors::FileNotLoaded));
+			}
 		}
 
 		return result;
@@ -137,10 +143,11 @@ namespace
 #endif  // Q_WS_X11
 
 GDALDataset *
-GPlatesFileIO::GdalReaderUtils::gdal_open(
+GPlatesFileIO::GdalUtils::gdal_open(
 		const QString &filename,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation *read_errors)
 {
+	GDALAllRegister();
 	return do_gdal_open(filename, read_errors);
 }
 

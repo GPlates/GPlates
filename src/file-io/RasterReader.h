@@ -30,26 +30,41 @@
 #define GPLATES_FILEIO_RASTERREADER_H
 
 #include <map>
+#include <boost/scoped_ptr.hpp>
+#include <QRect>
 #include <QString>
 
-#include "FileInfo.h"
+#include "RasterBandReaderHandle.h"
 #include "ReadErrorAccumulation.h"
+#include "ReadErrorOccurrence.h"
 
+#include "property-values/RasterType.h"
 #include "property-values/RawRaster.h"
+
+#include "utils/ReferenceCount.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesFileIO
 {
-	class RasterReader
+	// Forward declarations.
+	class RasterBandReader;
+	class RasterReaderImpl;
+
+	class RasterReader :
+			public GPlatesUtils::ReferenceCount<RasterReader>
 	{
 	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<RasterReader> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const RasterReader> non_null_ptr_to_const_type;
 
 		/**
 		 * Libraries that we use to read in rasters.
 		 */
 		enum FormatHandler
 		{
-			Q_IMAGE_READER,
+			IMAGEMAGICK,
 			GDAL,
 			UNKNOWN
 		};
@@ -72,16 +87,97 @@ namespace GPlatesFileIO
 		};
 
 		/**
-		 * Reads a raster image file and loads a raster in the corresponding InMemoryRaster
-		 * instance.
+		 * Returns a RasterReader to read data from @a filename.
 		 *
-		 * Returns boost::none if the raster was not successfully read.
+		 * Errors encountered are added to @a read_errors if it is not NULL.
+		 * @a read_errors is *not* stored in the RasterReader for reporting of
+		 * errors in subsequent method calls.
 		 */
 		static
+		non_null_ptr_type
+		create(
+				const QString &filename,
+				ReadErrorAccumulation *read_errors = NULL);
+
+		/**
+		 * Returns the filename of the file that the RasterReader was created with.
+		 */
+		const QString &
+		get_filename() const;
+
+		/**
+		 * Returns whether the file, as given in the constructor, is capable of
+		 * yielding any raster data at all.
+		 */
+		bool
+		can_read();
+
+		/**
+		 * Returns the number of bands in the raster.
+		 *
+		 * For single-band rasters, the number of bands is always 1.
+		 *
+		 * Returns 0 in case of error.
+		 */
+		unsigned int
+		get_number_of_bands(
+				ReadErrorAccumulation *read_errors = NULL);
+
+		/**
+		 * Returns a proxied RawRaster, that can be used to get actual data
+		 * from the given @a band_number at a later time.
+		 *
+		 * @a band_number must be between 1 and @a get_number_of_bands inclusive.
+		 *
+		 * Returns boost::none if the given @a band_number could not be read.
+		 */
 		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
-		read_file(
-				const FileInfo &file_info,
-				ReadErrorAccumulation &read_errors);
+		get_proxied_raw_raster(
+				unsigned int band_number,
+				ReadErrorAccumulation *read_errors = NULL);
+
+		/**
+		 * Returns a non-proxied RawRaster, that contains data from the given
+		 * @a region in the given @a band_number.
+		 *
+		 * If @a region is a null region (default), the entire band is returned
+		 * without cropping.
+		 *
+		 * @a band_number must be between 1 and @a get_number_of_bands inclusive.
+		 *
+		 * Returns boost::none if the given @a band_number could not be read.
+		 */
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+		get_raw_raster(
+				unsigned int band_number,
+				const QRect &region = QRect(),
+				ReadErrorAccumulation *read_errors = NULL);
+
+		/**
+		 * Retrieves information about formats supported when reading rasters.
+		 *
+		 * The returned map is a mapping from file extension to information about the format.
+		 * Note that "jpg" and "jpeg" appear as two separate elements in the map.
+		 */
+		static
+		const std::map<QString, FormatInfo> &
+		get_supported_formats();
+
+		/**
+		 * Gets a string that can be used as the filter string in a QFileDialog.
+		 *
+		 * The first filter is an all-inclusive filter that matches all supported
+		 * raster formats. The other filters are for the other formats, sorted in
+		 * alphabetic order by description.
+		 */
+		static
+		const QString &
+		get_file_dialog_filters();
+
+
+		///////////////////////////////////////////////////////////////////////
+		// The following static functions are deprecated.
+		///////////////////////////////////////////////////////////////////////
 
 		/**
 		 * Fill the time_dependent_raster_map with <time, filename> pairs. 
@@ -108,26 +204,93 @@ namespace GPlatesFileIO
 				const QMap<int, QString> &raster_map,
 				double time);
 
-		/**
-		 * Retrieves information about formats supported when reading rasters.
-		 *
-		 * The returned map is a mapping from file extension to information about the format.
-		 * Note that "jpg" and "jpeg" appear as two separate elements in the map.
-		 */
-		static
-		const std::map<QString, FormatInfo> &
-		get_supported_formats();
+	private:
+
+		RasterReader(
+				const QString &filename,
+				ReadErrorAccumulation *read_errors);
 
 		/**
-		 * Gets a string that can be used as the filter string in a QFileDialog.
+		 * Returns the data type of the given @a band_number.
 		 *
-		 * The first filter is an all-inclusive filter that matches all supported
-		 * raster formats. The other filters are for the other formats, sorted in
-		 * alphabetic order by description.
+		 * @a band_number must be between 1 and @a get_number_of_bands inclusive.
+		 *
+		 * Returns UNKNOWN if the given @a band_number could not be read.
 		 */
-		static
-		const QString &
-		get_file_dialog_filters();
+		GPlatesPropertyValues::RasterType::Type
+		get_type(
+				unsigned int band_number,
+				ReadErrorAccumulation *read_errors = NULL);
+
+		/**
+		 * Returns a pointer to a copy of the data contained within the given
+		 * @a region in the given @a band_number.
+		 *
+		 * Ownership of the memory passes to the caller of this function.
+		 *
+		 * @a band_number must be between 1 and @a get_number_of_bands inclusive.
+		 *
+		 * Returns NULL if the band could not be read.
+		 */
+		void *
+		get_data(
+				unsigned int band_number,
+				const QRect &region = QRect(),
+				ReadErrorAccumulation *read_errors = NULL);
+
+		RasterBandReaderHandle
+		create_raster_band_reader_handle(
+				unsigned int band_number);
+
+		boost::scoped_ptr<RasterReaderImpl> d_impl;
+		QString d_filename;
+
+		friend class RasterBandReader;
+	};
+
+
+	class RasterReaderImpl :
+			public boost::noncopyable
+	{
+	public:
+
+		virtual
+		~RasterReaderImpl();
+
+		virtual
+		bool
+		can_read() = 0;
+
+		virtual
+		unsigned int
+		get_number_of_bands(
+				ReadErrorAccumulation *read_errors) = 0;
+
+		virtual
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+		get_proxied_raw_raster(
+				unsigned int band_number,
+				ReadErrorAccumulation *read_errors) = 0;
+
+		virtual
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+		get_raw_raster(
+				unsigned int band_number,
+				const QRect &region,
+				ReadErrorAccumulation *read_errors) = 0;
+
+		virtual
+		GPlatesPropertyValues::RasterType::Type
+		get_type(
+				unsigned int band_number,
+				ReadErrorAccumulation *read_errors) = 0;
+
+		virtual
+		void *
+		get_data(
+				unsigned int band_number,
+				const QRect &region,
+				ReadErrorAccumulation *read_errors) = 0;
 	};
 }
 

@@ -28,10 +28,19 @@
 #ifndef GPLATES_PROPERTYVALUES_RAWRASTERUTILS_H
 #define GPLATES_PROPERTYVALUES_RAWRASTERUTILS_H
 
+#include <algorithm>
+#include <functional>
 #include <utility>
 #include <boost/optional.hpp>
+#include <boost/utility/enable_if.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 
+#include "RasterType.h"
 #include "RawRaster.h"
+
+#include "maths/Real.h"
+
 
 namespace GPlatesPropertyValues
 {
@@ -70,6 +79,80 @@ namespace GPlatesPropertyValues
 			private:
 
 				boost::optional<raster_ptr_type> d_raster_ptr;
+			};
+
+
+			// A dummy function for use by get_is_no_data_value_function.
+			template<typename T>
+			bool
+			always_false(
+					T value)
+			{
+				return false;
+			}
+
+
+			/**
+			 * Returns a function that takes one argument and returns a boolean value
+			 * indicating whether that argument is the no-data value of @a raster.
+			 *
+			 * This overload is called if @a RawRasterType has a no-data value.
+			 */
+			template<class RawRasterType>
+			boost::function<bool (typename RawRasterType::element_type)>
+			get_is_no_data_value_function(
+					const RawRasterType &raster,
+					typename boost::enable_if_c<RawRasterType::has_no_data_value>::type *dummy = NULL)
+			{
+				return boost::bind(&RawRasterType::is_no_data_value, boost::cref(raster), _1);
+			}
+
+
+			// This overload is called if @a RawRasterType does not have a no-data value.
+			template<class RawRasterType>
+			boost::function<bool (typename RawRasterType::element_type)>
+			get_is_no_data_value_function(
+					const RawRasterType &raster,
+					typename boost::enable_if_c<!RawRasterType::has_no_data_value>::type *dummy = NULL)
+			{
+				return &always_false<typename RawRasterType::element_type>;
+			}
+
+
+			/**
+			 * Helper class to support @a convert_integer_raster_to_float_raster.
+			 */
+			template<typename IntType, typename FloatType>
+			class IntegerToFloat :
+					public std::unary_function<IntType, FloatType>
+			{
+			public:
+
+				IntegerToFloat(
+						boost::function<bool (IntType)> is_no_data_value) :
+					d_is_no_data_value(is_no_data_value)
+				{
+				}
+
+				FloatType
+				operator()(
+						IntType value)
+				{
+					static const FloatType NAN_VALUE = static_cast<FloatType>(GPlatesMaths::nan());
+
+					if (d_is_no_data_value(value))
+					{
+						return NAN_VALUE;
+					}
+					else
+					{
+						return static_cast<FloatType>(value);
+					}
+				}
+
+			private:
+
+				boost::function<bool (IntType)> d_is_no_data_value;
 			};
 		}
 
@@ -119,6 +202,15 @@ namespace GPlatesPropertyValues
 
 
 		/**
+		 * Returns a pointer to a ProxiedRgba8RawRaster if @a raster is indeed
+		 * a ProxiedRgba8RawRaster.
+		 */
+		boost::optional<ProxiedRgba8RawRaster::non_null_ptr_type>
+		try_proxied_rgba8_raster_cast(
+				RawRaster &raster);
+
+
+		/**
 		 * Returns the no-data value for @a raster, if available.
 		 */
 		boost::optional<double>
@@ -127,155 +219,85 @@ namespace GPlatesPropertyValues
 
 
 		/**
-		 * An enumeration of raw raster types.
+		 * Returns whether the @a raster has data.
+		 *
+		 * Note this returns false if the @a raster contains proxied data.
 		 */
-		enum RawRasterType
-		{
-			UNINITIALISED,
-			INT8,
-			UINT8,
-			INT16,
-			UINT16,
-			INT32,
-			UINT32,
-			FLOAT,
-			DOUBLE,
-			RGBA8,
-			UNKNOWN
-		};
+		bool
+		has_data(
+				RawRaster &raster);
 
 
 		/**
-		 * This visitor allows you to query information about a RawRaster of unknown type.
+		 * Returns whether the @a raster has proxied data.
 		 */
-		class RawRasterTypeInfoVisitor :
-				public RawRasterVisitor
+		bool
+		has_proxied_data(
+				RawRaster &raster);
+
+
+		/**
+		 * Returns the data type of the raster as an enumerated value.
+		 */
+		RasterType::Type
+		get_raster_type(
+				RawRaster &raster);
+
+
+		/**
+		 * Converts the integer @a source_raster into a floating-point raw raster.
+		 *
+		 * The @a element_type of @a FromRawRasterType must be an integral type.
+		 * The @a element_type of @a ToRawRasterType must be a floating-point type
+		 * (i.e. either float or double).
+		 *
+		 * If @a source_raster has a no-data value, these values are converted to NaN.
+		 */
+		template<class FromRawRasterType, class ToRawRasterType>
+		typename ToRawRasterType::non_null_ptr_type
+		convert_integer_raster_to_float_raster(
+				const FromRawRasterType &source_raster)
 		{
-		public:
+			typename ToRawRasterType::non_null_ptr_type result = ToRawRasterType::create(
+					source_raster.width(), source_raster.height());
+			
+			typedef RawRasterUtilsInternals::IntegerToFloat<
+				typename FromRawRasterType::element_type,
+				typename ToRawRasterType::element_type
+			> unary_operator;
+			unary_operator op(RawRasterUtilsInternals::get_is_no_data_value_function(source_raster));
 
-			RawRasterTypeInfoVisitor() :
-				d_type(UNKNOWN)
-			{  }
+			std::transform(
+					source_raster.data(),
+					source_raster.data() + source_raster.width() * source_raster.height(),
+					result->data(),
+					op);
 
-			virtual
-			void
-			visit(
-					UninitialisedRawRaster &raster)
-			{
-				d_type = UNINITIALISED;
-			}
+			return result;
+		}
 
-			virtual
-			void
-			visit(
-					Int8RawRaster &raster)
-			{
-				d_type = INT8;
-			}
 
-			virtual
-			void
-			visit(
-					UInt8RawRaster &raster)
-			{
-				d_type = UINT8;
-			}
+		/**
+		 * Applies a coverage raster to an RGBA raster, in place.
+		 *
+		 * The @a source_raster and the @a coverage_raster must be of the same
+		 * dimensions. For each pixel in the @a source_raster, the alpha channel
+		 * is multiplied by the value of the corresponding pixel in the
+		 * @a coverage_raster.
+		 */
+		void
+		apply_coverage_raster(
+				const Rgba8RawRaster::non_null_ptr_type &source_raster,
+				const CoverageRawRaster::non_null_ptr_type &coverage_raster);
 
-			virtual
-			void
-			visit(
-					Int16RawRaster &raster)
-			{
-				d_type = INT16;
-			}
 
-			virtual
-			void
-			visit(
-					UInt16RawRaster &raster)
-			{
-				d_type = UINT16;
-			}
-
-			virtual
-			void
-			visit(
-					Int32RawRaster &raster)
-			{
-				d_type = INT32;
-			}
-
-			virtual
-			void
-			visit(
-					UInt32RawRaster &raster)
-			{
-				d_type = UINT32;
-			}
-
-			virtual
-			void
-			visit(
-					FloatRawRaster &raster)
-			{
-				d_type = FLOAT;
-			}
-
-			virtual
-			void
-			visit(
-					DoubleRawRaster &raster)
-			{
-				d_type = DOUBLE;
-			}
-
-			virtual
-			void
-			visit(
-					Rgba8RawRaster &raster)
-			{
-				d_type = RGBA8;
-			}
-
-			RawRasterType
-			get_type() const
-			{
-				return d_type;
-			}
-
-			bool
-			is_signed_integer() const
-			{
-				return d_type == INT8 ||
-					d_type == INT16 ||
-					d_type == INT32;
-			}
-
-			bool
-			is_unsigned_integer() const
-			{
-				return d_type == UINT8 ||
-					d_type == UINT16 ||
-					d_type == UINT32;
-			}
-
-			bool
-			is_integer() const
-			{
-				return is_signed_integer() || is_unsigned_integer();
-			}
-
-			bool
-			is_floating_point() const
-			{
-				return d_type == FLOAT ||
-					d_type == DOUBLE;
-			}
-
-		private:
-
-			RawRasterType d_type;
-		};
+		/**
+		 * Writes @a raster out to @a filename.
+		 */
+		void
+		write_rgba8_raster(
+				const Rgba8RawRaster::non_null_ptr_type &raster,
+				const QString &filename);
 	}
 }
 

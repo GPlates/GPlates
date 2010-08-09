@@ -358,7 +358,7 @@ namespace
 				QT_TR_NOOP("Invalid polygon."),
 				QT_TR_NOOP("An invalid polygon geometry was found.") },
 
-		// Errors relating to raster files
+		// Errors relating to raster files in general
 		{ GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
 				QT_TR_NOOP("Insufficient texture memory."),
 				QT_TR_NOOP("There was insufficient memory to load the requested raster.") },
@@ -368,20 +368,21 @@ namespace
 		{ GPlatesFileIO::ReadErrors::UnrecognisedRasterFileType,
 				QT_TR_NOOP("Unrecognised raster file type."),
 				QT_TR_NOOP("The raster file was of an unrecognised type.") },
+		{ GPlatesFileIO::ReadErrors::ErrorReadingRasterFile,
+				QT_TR_NOOP("Error reading raster file."),
+				QT_TR_NOOP("An error was encountered while opening a raster file for reading.") },
+		{ GPlatesFileIO::ReadErrors::ErrorReadingRasterBand,
+				QT_TR_NOOP("Error reading raster band."),
+				QT_TR_NOOP("An error was encountered while reading a band from a raster file.") },
+		{ GPlatesFileIO::ReadErrors::InvalidRegionInRaster,
+				QT_TR_NOOP("Invalid region in raster."),
+				QT_TR_NOOP("The region requested from the raster exceeded the raster's boundaries.") },
 
-		// Errors relating to GDAL-readable Raster files
-		{ GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
-				QT_TR_NOOP("Error reading GDAL band."),
-				QT_TR_NOOP("Error reading GDAL band.") },
+		// Errors relating to GDAL-readable raster files
 		{ GPlatesFileIO::ReadErrors::ErrorInSystemLibraries,
 				QT_TR_NOOP("Error in system libraries."),
 				QT_TR_NOOP("An error was encountered while using this system's version of GDAL to read the raster file. "
 					"Upgrading GDAL or compiling GDAL from source may fix this error.") },
-
-		// Errors relating to QImage-readable image files
-		{ GPlatesFileIO::ReadErrors::ErrorReadingQImageFile,
-				QT_TR_NOOP("Error reading QImage file."),
-				QT_TR_NOOP("Error reading QImage file.") },
 
 		// Errors relating to time-dependent raster file sets
 		{ GPlatesFileIO::ReadErrors::NoRasterSetsFound,
