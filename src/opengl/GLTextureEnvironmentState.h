@@ -24,73 +24,91 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_OPENGL_GLBINDTEXTURESTATE_H
-#define GPLATES_OPENGL_GLBINDTEXTURESTATE_H
+#ifndef GPLATES_OPENGL_GLTEXTUREENVIRONMENTSTATE_H
+#define GPLATES_OPENGL_GLTEXTUREENVIRONMENTSTATE_H
 
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
 #include "GLStateSet.h"
-#include "GLTexture.h"
+
+#include "gui/Colour.h"
 
 
 namespace GPlatesOpenGL
 {
 	/**
-	 * Used to bind a texture to a texture unit.
+	 * Sets 'glTexEnv' state.
 	 */
-	class GLBindTextureState :
+	class GLTextureEnvironmentState :
 			public GLStateSet
 	{
 	public:
-		typedef GPlatesUtils::non_null_intrusive_ptr<GLBindTextureState> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GLBindTextureState> non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GLTextureEnvironmentState> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GLTextureEnvironmentState> non_null_ptr_to_const_type;
 
 
 		/**
-		 * Creates a @a GLBindTextureState object with no bound texture.
+		 * Creates a @a GLTextureEnvironmentState object with no state.
 		 *
-		 * Call @a gl_bind_texture (and optionally @a gl_active_texture_ARB) to
-		 * specify a texture to be bound.
+		 * Call @a gl_enable_texture_2D, etc to initialise the state.
+		 * For example:
+		 *   blend_state->gl_enable_texture_2D(GL_TRUE);
 		 */
 		static
 		non_null_ptr_type
 		create()
 		{
-			return non_null_ptr_type(new GLBindTextureState());
+			return non_null_ptr_type(new GLTextureEnvironmentState());
 		}
 
 
 		/**
-		 * Selects the current texture unit that @a gl_bind_texture should apply to.
+		 * Selects the current texture unit that the other 'gl_...' calls apply to.
 		 *
 		 * Like the other 'gl*()' methods in this class the same-named call to OpenGL
 		 * is not made here (it is delayed until @a enter_state_set is called).
 		 *
 		 * The default texture unit is texture unit 0, in which case it is not necessary
-		 * to call this before calling @a gl_bind_texture. The default is texture unit 0
-		 * regardless of the currently active unit for some other @a GLBindTextureState object.
+		 * to call this method. The default is texture unit 0 regardless of the currently
+		 * active unit for some other @a GLTextureEnvironmentState object.
 		 *
 		 * If the runtime system doesn't support the GL_ARB_multitexture extension
 		 * (and hence only supports one texture unit) then it is not necessary
 		 * to call this function.
 		 *
-		 * If doesn't matter if you call this before or after @a gl_bind_texture.
+		 * If doesn't matter if you call this before or after the other 'gl_...' methods.
 		 */
 		void
 		gl_active_texture_ARB(
 				GLenum texture);
 
 
-		/**
-		 * Binds @a texture to the current texture unit (see @a gl_active_texture_ARB).
-		 *
-		 * The same-named call to OpenGL is delayed until @a enter_state_set is called.
-		 */
-		void
-		gl_bind_texture(
-				GLenum target,
-				const GLTexture::shared_ptr_to_const_type &texture);
+		GLTextureEnvironmentState &
+		gl_enable_texture_2D(
+				GLboolean enable)
+		{
+			d_enable_texture_2D = enable;
+			return *this;
+		}
+
+
+		GLTextureEnvironmentState &
+		gl_tex_env_mode(
+				GLint mode = GL_MODULATE)
+		{
+			d_tex_env_mode = mode;
+			return *this;
+		}
+
+
+		GLTextureEnvironmentState &
+		gl_tex_env_colour(
+				const GPlatesGui::Colour &colour)
+		{
+			d_tex_env_colour = colour;
+			return *this;
+		}
 
 
 		virtual
@@ -98,26 +116,21 @@ namespace GPlatesOpenGL
 		enter_state_set() const;
 
 
-		/**
-		 * Leaves the active texture unit as the default (first texture unit), but
-		 * does not unbind the texture.
-		 */
 		virtual
 		void
 		leave_state_set() const;
 
 	private:
-		//! The texture target (eg, GL_TEXTURE_2D).
-		GLenum d_target;
-
 		//! The texture unit we are setting state for.
 		GLenum d_active_texture_ARB;
 
-		boost::optional<GLTexture::shared_ptr_to_const_type> d_bind_texture;
+		boost::optional<GLboolean> d_enable_texture_2D;
+		boost::optional<GLint> d_tex_env_mode;
+		boost::optional<GPlatesGui::Colour> d_tex_env_colour;
 
-
-		GLBindTextureState();
+		//! Constructor.
+		GLTextureEnvironmentState();
 	};
 }
 
-#endif // GPLATES_OPENGL_GLBINDTEXTURESTATE_H
+#endif // GPLATES_OPENGL_GLTEXTUREENVIRONMENTSTATE_H

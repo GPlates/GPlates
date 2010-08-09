@@ -27,6 +27,7 @@
 #ifndef GPLATES_OPENGL_GLCONTEXT_H
 #define GPLATES_OPENGL_GLCONTEXT_H
 
+#include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
 #include "GLResourceManager.h"
@@ -154,28 +155,59 @@ namespace GPlatesOpenGL
 			return d_state;
 		}
 
+
 		/**
-		 * Returns the maximum number of texture units supported by the
-		 * GL_ARB_multitexture extension (or one if it's not supported).
+		 * Parameters related to texture mapping.
+		 */
+		struct TextureParameters
+		{
+			/**
+			 * Simply GL_TEXTURE0_ARB.
+			 *
+			 * This is here solely so we can include <GL/glew.h>, which defines
+			 * GL_TEXTURE0_ARB, in "GLContext.cc" and hence avoid problems caused by
+			 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
+			 * before OpenGL headers which means before Qt headers which is difficult).
+			 */
+			GLenum gl_texture0_ARB; // GL_TEXTURE0_ARB
+
+			/**
+			 * The minimum texture size (dimension) that all OpenGL implementations
+			 * are required to support - this is without texture borders.
+			 */
+			static const GLint gl_min_texture_size = 64;
+
+			/**
+			 * The maximum texture size (dimension) this OpenGL implementation/driver will support.
+			 * This is without texture borders and will be a power-of-two.
+			 *
+			 * NOTE: This doesn't necessarily mean it will be hardware accelerated but
+			 * it probably will be, especially if we use standard formats like GL_RGBA8.
+			 */
+			GLint gl_max_texture_size; // GL_MAX_TEXTURE_SIZE query result
+
+			/**
+			 * The maximum number of texture units supported by the
+			 * GL_ARB_multitexture extension (or one if it's not supported).
+			 */
+			GLint gl_max_texture_units_ARB; // GL_MAX_TEXTURE_UNITS_ARB query result
+
+			/**
+			 * The maximum texture filtering anisotropy supported by the
+			 * GL_EXT_texture_filter_anisotropic extension (or 1.0 if it's not supported).
+			 */
+			GLfloat gl_texture_max_anisotropy_EXT; // GL_TEXTURE_MAX_ANISOTROPY_EXT query result
+		};
+
+		/**
+		 * Function to return some convenient texture parameters.
 		 *
 		 * @throws PreconditionViolationError if @a initialise not yet called.
 		 * This method is static only to avoid having to pass around a @a GLContext.
 		 */
 		static
-		std::size_t
-		get_max_texture_units_ARB();
-
-		/**
-		 * Simply returns GL_TEXTURE0_ARB.
-		 *
-		 * This method is here solely so we can include <GL/glew.h>, which defines
-		 * GL_TEXTURE0_ARB, in "GLContext.cc" and hence avoid problems caused by
-		 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
-		 * before OpenGL headers which means before Qt headers which is difficult).
-		 */
-		static
-		GLenum
-		get_GL_TEXTURE0_ARB();
+		const TextureParameters &
+		get_texture_parameters();
 
 	private:
 		/**
@@ -194,10 +226,9 @@ namespace GPlatesOpenGL
 		static bool s_initialised_GLEW;
 
 		/**
-		 * The maximum number of texture units supported by the
-		 * GL_ARB_multitexture extension (or one if it's not supported).
+		 * Various convenient texture parameters.
 		 */
-		static GLint s_max_texture_units;
+		static boost::optional<TextureParameters> s_texture_parameters;
 
 
 		//! Default constructor.

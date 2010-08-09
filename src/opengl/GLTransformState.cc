@@ -34,7 +34,9 @@
 
 GPlatesOpenGL::GLTransformState::GLTransformState() :
 	d_current_matrix_mode(GL_MODELVIEW),
-	d_current_matrix_stack(&d_model_view_matrix_stack)
+	d_current_matrix_stack(&d_model_view_matrix_stack),
+	d_current_frustum_planes(initialise_frustum_planes()),
+	d_current_frustum_planes_valid(true)
 {
 	// Load both GL_MODELVIEW and GL_PROJECTION matrix stacks with identity matrices.
 	d_model_view_matrix_stack.push(GLMatrix::create());
@@ -83,6 +85,9 @@ GPlatesOpenGL::GLTransformState::gl_pop_matrix()
 			GPLATES_ASSERTION_SOURCE);
 
 	d_current_matrix_stack->pop();
+
+	// We might need to recalculate the frustum planes.
+	d_current_frustum_planes_valid = false;
 }
 
 
@@ -90,6 +95,9 @@ void
 GPlatesOpenGL::GLTransformState::gl_load_identity()
 {
 	d_current_matrix_stack->top()->gl_load_identity();
+
+	// The currently cached frustum planes are no longer valid.
+	d_current_frustum_planes_valid = false;
 }
 
 
@@ -98,6 +106,9 @@ GPlatesOpenGL::GLTransformState::gl_load_matrix(
 		const GLMatrix &matrix)
 {
 	d_current_matrix_stack->top()->gl_load_matrix(matrix.get_matrix());
+
+	// The currently cached frustum planes are no longer valid.
+	d_current_frustum_planes_valid = false;
 }
 
 
@@ -106,6 +117,9 @@ GPlatesOpenGL::GLTransformState::gl_mult_matrix(
 		const GLMatrix &matrix)
 {
 	d_current_matrix_stack->top()->gl_mult_matrix(matrix);
+
+	// The currently cached frustum planes are no longer valid.
+	d_current_frustum_planes_valid = false;
 }
 
 
@@ -334,4 +348,107 @@ GPlatesOpenGL::GLTransformState::project_window_coords_onto_unit_sphere(
 
 	// Return the point on the sphere where the ray first intersects.
 	return ray.get_point_on_ray(ray_distance.get());
+}
+
+
+GPlatesOpenGL::GLTransformState::FrustumPlanes
+GPlatesOpenGL::GLTransformState::initialise_frustum_planes()
+{
+	// Initialise the frustum planes using identity model-view and projection matrices.
+	// See 'get_current_frustum_planes_in_model_space()' for explanation of how they are initialised.
+	const FrustumPlanes frustum_planes =
+	{
+		{
+			GLIntersect::Plane(1, 0, 0, 1),  // left plane
+			GLIntersect::Plane(-1, 0, 0, 1), // right plane
+			GLIntersect::Plane(0, 1, 0, 1),  // bottom plane
+			GLIntersect::Plane(0, -1, 0, 1), // top plane
+			GLIntersect::Plane(0, 0, 1, 1),  // near plane
+			GLIntersect::Plane(0, 0, -1, 1)  // far plane
+		}
+	};
+
+	return frustum_planes;
+}
+
+
+const GPlatesOpenGL::GLTransformState::FrustumPlanes &
+GPlatesOpenGL::GLTransformState::get_current_frustum_planes_in_model_space() const
+{
+	// If the model-view and projection matrices haven't changed since the last time
+	// this method was called then just returned the cached results from last time.
+	if (d_current_frustum_planes_valid)
+	{
+		return d_current_frustum_planes;
+	}
+
+	// Multiply the current model-view and projection matrices.
+	// When we extract frustum planes from this combined matrix they will be
+	// in model-space (also called object-space).
+	GLMatrix mvp(get_current_projection_matrix()->get_matrix());
+	mvp.gl_mult_matrix(*get_current_model_view_matrix());
+
+	//
+	// From "Fast extraction of viewing frustum planes from the world-view-projection matrix"
+	// by Gil Gribb and Klaus Hartmann.
+	//
+
+	// NOTE: The plane normals point towards the *inside* of the view frustum
+	// volume and hence the view frustum is defined by the intersection of the
+	// positive half-spaces of these planes.
+
+	// NOTE: These planes do not have *unit* vector normals.
+
+	// Left clipping plane.
+	d_current_frustum_planes.planes[0] =
+			GLIntersect::Plane(
+					mvp.get_element(3,0) + mvp.get_element(0,0),
+					mvp.get_element(3,1) + mvp.get_element(0,1),
+					mvp.get_element(3,2) + mvp.get_element(0,2),
+					mvp.get_element(3,3) + mvp.get_element(0,3));
+
+	// Right clipping plane.
+	d_current_frustum_planes.planes[1] =
+			GLIntersect::Plane(
+					mvp.get_element(3,0) - mvp.get_element(0,0),
+					mvp.get_element(3,1) - mvp.get_element(0,1),
+					mvp.get_element(3,2) - mvp.get_element(0,2),
+					mvp.get_element(3,3) - mvp.get_element(0,3));
+
+	// Bottom clipping plane.
+	d_current_frustum_planes.planes[2] =
+			GLIntersect::Plane(
+					mvp.get_element(3,0) + mvp.get_element(1,0),
+					mvp.get_element(3,1) + mvp.get_element(1,1),
+					mvp.get_element(3,2) + mvp.get_element(1,2),
+					mvp.get_element(3,3) + mvp.get_element(1,3));
+
+	// Top clipping plane.
+	d_current_frustum_planes.planes[3] =
+			GLIntersect::Plane(
+					mvp.get_element(3,0) - mvp.get_element(1,0),
+					mvp.get_element(3,1) - mvp.get_element(1,1),
+					mvp.get_element(3,2) - mvp.get_element(1,2),
+					mvp.get_element(3,3) - mvp.get_element(1,3));
+
+	// Near clipping plane.
+	d_current_frustum_planes.planes[4] =
+			GLIntersect::Plane(
+					mvp.get_element(3,0) + mvp.get_element(2,0),
+					mvp.get_element(3,1) + mvp.get_element(2,1),
+					mvp.get_element(3,2) + mvp.get_element(2,2),
+					mvp.get_element(3,3) + mvp.get_element(2,3));
+
+	// Far clipping plane.
+	d_current_frustum_planes.planes[5] =
+			GLIntersect::Plane(
+					mvp.get_element(3,0) - mvp.get_element(2,0),
+					mvp.get_element(3,1) - mvp.get_element(2,1),
+					mvp.get_element(3,2) - mvp.get_element(2,2),
+					mvp.get_element(3,3) - mvp.get_element(2,3));
+
+	// The currently cached frustum planes are now valid.
+	d_current_frustum_planes_valid = true;
+
+	return d_current_frustum_planes;
 }

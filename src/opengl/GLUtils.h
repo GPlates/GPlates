@@ -1,5 +1,6 @@
 /* $Id$ */
- 
+
+
 /**
  * \file 
  * $Revision$
@@ -22,13 +23,28 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+ 
+#ifndef GPLATES_OPENGL_GLUTILS_H
+#define GPLATES_OPENGL_GLUTILS_H
 
-#include "GLTexture.h"
+#include "utils/CallStackTracker.h"
 
 
-void
-GPlatesOpenGL::GLTexture::gl_bind_texture(
-		GLenum target) const
+namespace GPlatesOpenGL
 {
-	glBindTexture(target, d_texture_resource->get_resource());
+	namespace GLUtils
+	{
+		/**
+		 * Asserts that no OpenGL errors (see glGetError) have been recorded.
+		 *
+		 * If an error is detected then this function aborts for debug builds and
+		 * throws @a OpenGLException (with the specific OpenGL error message) for release builds.
+		 */
+		void
+		assert_no_gl_errors(
+				const GPlatesUtils::CallStack::Trace &assert_location);
+	}
 }
+
+
+#endif // GPLATES_OPENGL_GLUTILS_H

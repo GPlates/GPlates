@@ -29,6 +29,7 @@
 
 #include "GLMatrix.h"
 #include "GLRenderOperationsTarget.h"
+#include "GLUtils.h"
 
 #include "global/CompilerWarnings.h"
 
@@ -193,6 +194,9 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
+
+	// Check there are no OpenGL errors.
+	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 	// Stop rendering to the render target.
 	d_render_target->end_render_to_target();

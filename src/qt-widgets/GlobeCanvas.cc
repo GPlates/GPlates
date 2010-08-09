@@ -443,7 +443,10 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
 		// Fill up the render graph with more nodes.
 		d_globe.paint_vector_output(
-				globe_render_graph_node, viewport_zoom_factor, calculate_scale());
+				d_gl_context->get_shared_state(),
+				globe_render_graph_node,
+				viewport_zoom_factor,
+				calculate_scale());
 
 		draw_render_graph(*render_graph);
 
@@ -560,7 +563,11 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 
 		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
 		// Fill up the render graph with more nodes.
-		d_globe.paint(globe_render_graph_node, viewport_zoom_factor, calculate_scale());
+		d_globe.paint(
+				d_gl_context->get_shared_state(),
+				globe_render_graph_node,
+				viewport_zoom_factor,
+				calculate_scale());
 
 		draw_render_graph(*render_graph);
 

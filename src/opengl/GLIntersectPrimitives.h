@@ -39,12 +39,118 @@ namespace GPlatesOpenGL
 	/**
 	 * Contains primitives used in intersection routines.
 	 *
-	 * FIXME: Some of these primitive types should probably eventually be moved to the
+	 * TODO: Some of these primitive types should probably eventually be moved to the
 	 * "maths/" directory as they might be useful for implementing spatial trees
 	 * (used to speed up object co-registration in the data mining preprocessor).
 	 */
 	namespace GLIntersect
 	{
+		/**
+		 * A 3D infinite plane defined by a normal vector and any point on the plane.
+		 */
+		class Plane
+		{
+		public:
+			//! The half space result when testing a point against a plane.
+			enum HalfSpaceType
+			{
+				NEGATIVE = -1,
+				ON_PLANE = 0,
+				POSITIVE = 1
+			};
+
+
+			/**
+			 * Define a plane with a normal vector and any point on the plane.
+			 *
+			 * NOTE: The normal does not have to be a unit vector.
+			 */
+			Plane(
+					const GPlatesMaths::Vector3D &normal,
+					const GPlatesMaths::Vector3D &point_on_plane);
+
+			/**
+			 * Define a plane using plane coefficients (a,b,c,d).
+			 *
+			 * The plane satisfies the equation:
+			 *   a*x + b*y + c*z + d = 0
+			 *
+			 * @a a, @a b and @a c effectively define the plane normal and
+			 * @a d effectively defines the signed distance of the plane *to* the origin
+			 * multiplied by the magnitude of the vector (a,b,c).
+			 */
+			Plane(
+					const double &a,
+					const double &b,
+					const double &c,
+					const double &d) :
+				d_normal(a, b, c),
+				d_signed_distance_to_origin(d)
+			{  }
+
+
+			/**
+			 * Returns whether @a point is in negative or positive half space or on the plane.
+			 */
+			HalfSpaceType
+			classify_point(
+					const GPlatesMaths::Vector3D& point) const;
+
+
+			/**
+			 * Returns the signed distance of @a point to 'this' plane *multiplied*
+			 * by the magnitude of 'this' plane's normal vector.
+			 *
+			 * NOTE: If the normal vector is a unit vector then this returns the 'true' distance.
+			 *
+			 * Distance is positive if point is in positive half-space of this plane,
+			 * otherwise it's negative.
+			 */
+			double
+			signed_distance(
+					const GPlatesMaths::Vector3D& point) const
+			{
+				return (dot(point, d_normal) + d_signed_distance_to_origin).dval();
+			}
+
+
+			/**
+			 * Returns the plane normal vector.
+			 */
+			const GPlatesMaths::Vector3D &
+			get_normal() const
+			{
+				return d_normal;
+			}
+
+			/**
+			 * Returns the signed distance of the plane *to* the origin *multiplied*
+			 * by the magnitude of the plane's normal vector.
+			 *
+			 * If you think of the plane equation as a*x + b*y + c*z + d = 0, then
+			 * this method returns 'd'.
+			 */
+			const double &
+			get_signed_distance_to_origin() const
+			{
+				return d_signed_distance_to_origin.dval();
+			}
+
+		private:
+			GPlatesMaths::Vector3D d_normal;
+
+			/**
+			 * The signed distance *from* the plane *to* the origin multiplied.
+			 * by the magnitude of the plane's normal vector.
+			 *
+			 * This is the dot product:
+			 * - of a vector *from* any point on the plane *to* the origin, with
+			 * - the normal.
+			 */
+			GPlatesMaths::real_t d_signed_distance_to_origin;
+		};
+
+
 		/**
 		 * A ray with an origin point and a unit vector direction.
 		 */

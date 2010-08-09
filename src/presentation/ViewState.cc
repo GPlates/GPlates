@@ -469,13 +469,7 @@ GPlatesPresentation::ViewState::update_texture_from_raw_raster()
 
 	// Feed the bytes into Texture.
 	GPlatesGui::Texture &texture = *get_texture();
-	GPlatesGui::rgba8_t *rgba8_buf = (*rgba8_raster_opt)->data();
-	GPlatesPropertyValues::InMemoryRaster::ColourFormat format =
-		GPlatesPropertyValues::InMemoryRaster::RgbaFormat;
-	texture.generate_raster(
-			reinterpret_cast<unsigned char *>(rgba8_buf),
-			qsize,
-			format);
+	texture.set_raster(rgba8_raster_opt.get());
 	texture.set_enabled(true);
 	
 	return true;
@@ -498,21 +492,7 @@ GPlatesPresentation::ViewState::update_texture_extents()
 		GPlatesPropertyValues::RawRasterUtils::get_raster_size(*d_raw_raster);
 	if (size)
 	{
-		boost::optional<GPlatesPropertyValues::Georeferencing::lat_lon_extents_type> extents =
-			d_georeferencing->lat_lon_extents(size->first, size->second);
-		if (extents)
-		{
-			// Sanity check because the current raster rendering code is quite picky.
-			if (GPlatesMaths::Real(extents->left) > GPlatesMaths::Real(extents->right))
-			{
-				return;
-			}
-
-			QRectF extents_as_rect(
-					QPointF(extents->left, extents->top),
-					QPointF(extents->right, extents->bottom));
-			get_texture()->set_extent(extents_as_rect);
-		}
+		get_texture()->set_georeferencing(d_georeferencing);
 	}
 }
 

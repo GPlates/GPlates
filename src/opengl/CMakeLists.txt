@@ -79,6 +79,8 @@ set(srcs
     GLTexture.cc
     GLTexture.h
     GLTextureCache.h
+    GLTextureEnvironmentState.cc
+    GLTextureEnvironmentState.h
     GLTransform.cc
     GLTransform.h
     GLTransformState.cc
@@ -91,6 +93,8 @@ set(srcs
     GLUQuadric.h
     GLUQuadricDrawable.cc
     GLUQuadricDrawable.h
+    GLUtils.cc
+    GLUtils.h
     GLVertexArray.cc
     GLVertexArray.h
     GLVertexArrayCache.h

@@ -213,6 +213,18 @@ namespace GPlatesOpenGL
 			return reinterpret_cast<const GLdouble *>(d_matrix[0]);
 		}
 
+		/**
+		 * Returns the matrix element of the specified row and column.
+		 */
+		const GLdouble &
+		get_element(
+				unsigned int row,
+				unsigned int column) const
+		{
+			// 'row' and 'column' are in reversed order since matrix is stored as column-major.
+			return d_matrix[column][row];
+		}
+
 	private:
 		//! Typedef for a contiguous array of 16 doubles (in 4x4 format).
 		typedef GLdouble matrix_type[4][4];

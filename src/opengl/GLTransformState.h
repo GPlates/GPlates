@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
+#include "GLIntersectPrimitives.h"
 #include "GLMatrix.h"
 #include "GLViewport.h"
 
@@ -248,9 +249,41 @@ namespace GPlatesOpenGL
 		double
 		get_min_pixel_size_on_unit_sphere() const;
 
+
+		/**
+		 * An array of the six frustum planes that bound the viewing volume.
+		 */
+		struct FrustumPlanes
+		{
+			/**
+			 * The left, right, bottom, top, near and far frustum planes.
+			 *
+			 * NOTE: The plane normals point towards the *inside* of the view frustum
+			 * volume and hence the view frustum is defined by the intersection of the
+			 * positive half-spaces of these planes.
+			 *
+			 * NOTE: These planes do *not* have *unit* vector normals.
+			 */
+			GLIntersect::Plane planes[6];
+		};
+
+		/**
+		 * Returns the *six* frustum planes represented by the current model-view and
+		 * projection matrices.
+		 *
+		 * These frustum planes are in model-space (before any model-view or projection
+		 * transformations are applied) also called object-space.
+		 *
+		 * The returned planes can be used for frustum culling (culling objects not
+		 * visible inside the current view frustum).
+		 */
+		const FrustumPlanes &
+		get_current_frustum_planes_in_model_space() const;
+
 	private:
 		//! Typedef for a stack of matrices.
 		typedef std::stack<GLMatrix::non_null_ptr_type> matrix_stack_type;
+
 
 		GLenum d_current_matrix_mode;
 
@@ -266,6 +299,17 @@ namespace GPlatesOpenGL
 		 * The most recent call to @a gl_viewport sets this otherwise it's undefined.
 		 */
 		boost::optional<GLViewport> d_current_viewport;
+
+		/**
+		 * The frustum planes of the current model-view and projection matrices.
+		 */
+		mutable FrustumPlanes d_current_frustum_planes;
+
+		/**
+		 * Whether @a d_current_frustum_planes is valid for the current model-view and
+		 * projection matrices.
+		 */
+		mutable bool d_current_frustum_planes_valid;
 
 
 		/**
@@ -297,6 +341,13 @@ namespace GPlatesOpenGL
 		project_window_coords_onto_unit_sphere(
 				const double &window_x,
 				const double &window_y) const;
+
+		/**
+		 * Returns frustum planes corresponding to identity model-view and projection matrices.
+		 */
+		static
+		FrustumPlanes
+		initialise_frustum_planes();
 	};
 }
 

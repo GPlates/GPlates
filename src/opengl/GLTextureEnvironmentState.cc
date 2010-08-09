@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -30,7 +31,8 @@
  */
 #include <GL/glew.h>
 
-#include "GLBindTextureState.h"
+#include "GLTextureEnvironmentState.h"
+
 #include "GLContext.h"
 
 #include "global/CompilerWarnings.h"
@@ -38,15 +40,14 @@
 #include "global/PreconditionViolationError.h"
 
 
-GPlatesOpenGL::GLBindTextureState::GLBindTextureState() :
-	d_target(GL_TEXTURE_2D),
+GPlatesOpenGL::GLTextureEnvironmentState::GLTextureEnvironmentState() :
 	d_active_texture_ARB(GL_TEXTURE0_ARB)
 {
 }
 
 
 void
-GPlatesOpenGL::GLBindTextureState::gl_active_texture_ARB(
+GPlatesOpenGL::GLTextureEnvironmentState::gl_active_texture_ARB(
 		GLenum texture)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -58,43 +59,68 @@ GPlatesOpenGL::GLBindTextureState::gl_active_texture_ARB(
 }
 
 
-void
-GPlatesOpenGL::GLBindTextureState::gl_bind_texture(
-		GLenum target,
-		const GLTexture::shared_ptr_to_const_type &texture)
-{
-	d_target = target;
-	d_bind_texture = texture;
-}
-
-
 // We use macros in <GL/glew.h> that contain old-style casts.
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
-GPlatesOpenGL::GLBindTextureState::enter_state_set() const
+GPlatesOpenGL::GLTextureEnvironmentState::enter_state_set() const
 {
-	if (d_bind_texture)
+	if (GLEW_ARB_multitexture)
 	{
-		if (GLEW_ARB_multitexture)
-		{
-			// Select the texture unit we want to bind the texture on.
-			glActiveTextureARB(d_active_texture_ARB);
-		}
+		// Select the texture unit we want to set texture environment state on.
+		glActiveTextureARB(d_active_texture_ARB);
+	}
 
-		// Bind the texture.
-		d_bind_texture.get()->gl_bind_texture(d_target);
+	if (d_enable_texture_2D)
+	{
+		if (d_enable_texture_2D.get())
+		{
+			glEnable(GL_TEXTURE_2D);
+		}
+		else
+		{
+			glDisable(GL_TEXTURE_2D);
+		}
+	}
+
+	if (d_tex_env_mode)
+	{
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, d_tex_env_mode.get());
+	}
+
+	if (d_tex_env_colour)
+	{
+		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, d_tex_env_colour.get());
 	}
 }
 
 
 void
-GPlatesOpenGL::GLBindTextureState::leave_state_set() const
+GPlatesOpenGL::GLTextureEnvironmentState::leave_state_set() const
 {
-	// Leave the texture bound to the texture unit.
-	// When we delete textures or switch OpenGL contexts we'll unbind textures.
+	if (GLEW_ARB_multitexture)
+	{
+		// Select the texture unit that we initially set the texture environment state on.
+		glActiveTextureARB(d_active_texture_ARB);
+	}
 
-	// But switch the active texture unit back to the default.
+	// Set states back to the default state.
+	if (d_enable_texture_2D)
+	{
+		glDisable(GL_TEXTURE_2D);
+	}
+
+	if (d_tex_env_mode)
+	{
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	}
+
+	if (d_tex_env_colour)
+	{
+		const GLfloat default_colour[4] = { 0, 0, 0, 0 };
+		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, default_colour);
+	}
+
 	if (GLEW_ARB_multitexture)
 	{
 		if (d_active_texture_ARB != GL_TEXTURE0_ARB)

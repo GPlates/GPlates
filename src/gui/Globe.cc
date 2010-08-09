@@ -114,6 +114,7 @@ GPlatesGui::Globe::orient(
 
 void
 GPlatesGui::Globe::paint(
+		const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 		const double &viewport_zoom_factor,
 		float scale)
@@ -130,7 +131,7 @@ GPlatesGui::Globe::paint(
 	// Render the global texture.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type texture_node =
 			create_rendered_layer_node(globe_orientation_transform_node);
-	d_texture->paint(/*texture_node*/);
+	d_texture->paint(texture_node, gl_context_shared_state->get_texture_resource_manager());
 
 	// Render the grid lines on the sphere.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_node =
@@ -140,6 +141,7 @@ GPlatesGui::Globe::paint(
 	// Draw the rendered geometries.
 	d_rendered_geom_collection_painter.set_scale(scale);
 	d_rendered_geom_collection_painter.paint(
+			gl_context_shared_state,
 			globe_orientation_transform_node,
 			viewport_zoom_factor,
 			d_nurbs_renderer);
@@ -147,6 +149,7 @@ GPlatesGui::Globe::paint(
 
 void
 GPlatesGui::Globe::paint_vector_output(
+		const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 		const double &viewport_zoom_factor,
 		float scale)
@@ -183,6 +186,7 @@ GPlatesGui::Globe::paint_vector_output(
 	// Draw the rendered geometries in the depth range [0, 0.7].
 	d_rendered_geom_collection_painter.set_scale(scale);
 	d_rendered_geom_collection_painter.paint(
+			gl_context_shared_state,
 			globe_orientation_transform_node,
 			viewport_zoom_factor,
 			d_nurbs_renderer);

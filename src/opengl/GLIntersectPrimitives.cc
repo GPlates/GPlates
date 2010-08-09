@@ -31,6 +31,36 @@
 #include "global/PreconditionViolationError.h"
 
 
+GPlatesOpenGL::GLIntersect::Plane::Plane(
+		const GPlatesMaths::Vector3D &normal,
+		const GPlatesMaths::Vector3D &point_on_plane) :
+	d_normal(normal),
+	d_signed_distance_to_origin(-dot(point_on_plane, normal))
+{
+}
+
+
+GPlatesOpenGL::GLIntersect::Plane::HalfSpaceType
+GPlatesOpenGL::GLIntersect::Plane::classify_point(
+		const GPlatesMaths::Vector3D& point) const
+{
+	const GPlatesMaths::real_t d =
+			dot(point, d_normal) + d_signed_distance_to_origin;
+
+	if (is_strictly_positive(d))
+	{
+		return POSITIVE;
+	}
+
+	if (is_strictly_negative(d))
+	{
+		return NEGATIVE;
+	}
+
+	return ON_PLANE;
+}
+
+
 GPlatesOpenGL::GLIntersect::Ray::Ray(
 		const GPlatesMaths::Vector3D &ray_origin,
 		const GPlatesMaths::UnitVector3D &ray_direction) :
@@ -78,11 +108,11 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::OrientedBoundingBoxBuild
 	// from stuffing numeric_limits' min/max. Using 'float' instead of 'double'
 	// in case 'real_t' changes its internal type for some reason.
 	d_min_dot_x_axis((std::numeric_limits<float>::max)()),
-	d_max_dot_x_axis((std::numeric_limits<float>::min)()),
+	d_max_dot_x_axis(-(std::numeric_limits<float>::max)()),
 	d_min_dot_y_axis((std::numeric_limits<float>::max)()),
-	d_max_dot_y_axis((std::numeric_limits<float>::min)()),
+	d_max_dot_y_axis(-(std::numeric_limits<float>::max)()),
 	d_min_dot_z_axis((std::numeric_limits<float>::max)()),
-	d_max_dot_z_axis((std::numeric_limits<float>::min)())
+	d_max_dot_z_axis(-(std::numeric_limits<float>::max)())
 {
 }
 

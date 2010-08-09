@@ -27,7 +27,12 @@
 #ifndef GPLATES_OPENGL_GLRASTERPROXY_H
 #define GPLATES_OPENGL_GLRASTERPROXY_H
 
+#include <cstddef> // For std::size_t
+#include <vector>
+
 #include "property-values/RawRaster.h"
+
+#include "global/GPlatesException.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -35,6 +40,61 @@
 
 namespace GPlatesOpenGL
 {
+	class UninitialisedRasterException :
+			public GPlatesGlobal::Exception
+	{
+		public:
+			explicit
+			UninitialisedRasterException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				GPlatesGlobal::Exception(exception_source)
+			{  }
+
+		private:
+			virtual const char *
+			exception_name() const
+			{
+				return "UninitialisedRasterException";
+			}
+	};
+
+	class RasterHasNoStatisticsException :
+			public GPlatesGlobal::Exception
+	{
+		public:
+			explicit
+			RasterHasNoStatisticsException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				GPlatesGlobal::Exception(exception_source)
+			{  }
+
+		private:
+			virtual const char *
+			exception_name() const
+			{
+				return "RasterHasNoStatisticsException";
+			}
+	};
+
+	class ColourPaletteNotSuitableForRasterException :
+			public GPlatesGlobal::Exception
+	{
+		public:
+			explicit
+			ColourPaletteNotSuitableForRasterException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				GPlatesGlobal::Exception(exception_source)
+			{  }
+
+		private:
+			virtual const char *
+			exception_name() const
+			{
+				return "ColourPaletteNotSuitableForRasterException";
+			}
+	};
+
+
 	/**
 	 * A temporary raster proxy class that works only with RGBA8 rasters and brute-force
 	 * generates all levels of detail for the entire raster when it is constructed.
@@ -63,9 +123,10 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster)
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				std::size_t tile_texel_dimension)
 		{
-			return non_null_ptr_type(new GLRasterProxy(raster));
+			return non_null_ptr_type(new GLRasterProxy(raster, tile_texel_dimension));
 		}
 
 
@@ -149,10 +210,84 @@ namespace GPlatesOpenGL
 				unsigned int num_y_texels) const;
 
 	private:
+		/**
+		 * A mipmap level of the original raster data.
+		 */
+		struct Mipmap
+		{
+			Mipmap(
+					unsigned int width_,
+					unsigned int height_,
+					const GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type &rgba8_raster_) :
+				rgba8_raster(rgba8_raster_),
+				width(width_),
+				height(height_)
+			{  }
 
+			//! The mipmapped raster data.
+			GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type rgba8_raster;
+
+			//! Mipmap width.
+			unsigned int width;
+
+			//! Mipmap height.
+			unsigned int height;
+		};
+
+
+		//! Typedef for a pyramid of mipmaps.
+		typedef std::vector<Mipmap> mipmap_pyramid_type;
+
+
+		mipmap_pyramid_type d_mipmap_pyramid;
+
+		//! The lowest resolution mipmap must have both dimensions less than or equal to this.
+		std::size_t d_max_dimension_for_lowest_res_mipmap;
+
+
+		//! Constructor.
 		explicit
 		GLRasterProxy(
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				std::size_t tile_texel_dimension);
+
+		//! Converts a raster to rgba8 format if necessary.
+		GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type
+		convert_to_rgba8_raster(
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster);
+
+		//! Generate mipmaps.
+		void
+		generate_mipmaps();
+
+		void
+		filter_mipmap(
+				const GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type &src_mipmap_raster,
+				const unsigned int src_mipmap_width,
+				const unsigned int src_mipmap_height,
+				const GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type &dst_mipmap_raster,
+				const unsigned int dst_mipmap_width,
+				const unsigned int dst_mipmap_height);
+
+		void
+		copy_and_pad_block(
+				const unsigned int src_mipmap_width,
+				const GPlatesGui::rgba8_t *const src_block,
+				const unsigned int src_block_width,
+				const unsigned int src_block_height,
+				GPlatesGui::rgba8_t *const src_block_padded,
+				const unsigned int src_block_padded_width,
+				const unsigned int src_block_padded_height);
+
+		//! Filter (4x4 box) a source mipmap block into a destination mipmap block.
+		void
+		filter_block(
+				const GPlatesGui::rgba8_t *const src_block,
+				const unsigned int src_mipmap_width,
+				GPlatesGui::rgba8_t *const dst_block,
+				const unsigned int dst_block_width,
+				const unsigned int dst_block_height,
+				const unsigned int dst_mipmap_width);
 	};
 }
 

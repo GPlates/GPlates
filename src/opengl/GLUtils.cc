@@ -23,12 +23,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "GLTexture.h"
+#include <OpenGL.h>
+#include <QDebug>
+
+#include "GLUtils.h"
+
+#include "OpenGLException.h"
+
+#include "global/GPlatesAssert.h"
 
 
 void
-GPlatesOpenGL::GLTexture::gl_bind_texture(
-		GLenum target) const
+GPlatesOpenGL::GLUtils::assert_no_gl_errors(
+		const GPlatesUtils::CallStack::Trace &assert_location)
 {
-	glBindTexture(target, d_texture_resource->get_resource());
+	const GLenum error = glGetError();
+	if (error != GL_NO_ERROR)
+	{
+		const char *gl_error_string = reinterpret_cast<const char *>(gluErrorString(error));
+
+		qWarning() << "OpenGL error: " << gl_error_string;
+
+#ifdef GPLATES_DEBUG
+		GPlatesGlobal::Abort(assert_location);
+#else
+		throw GPlatesOpenGL::OpenGLException(assert_location, gl_error_string);
+#endif
+	}
 }

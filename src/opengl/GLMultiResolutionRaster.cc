@@ -24,6 +24,8 @@
  */
 
 #include <limits>
+#include <boost/cast.hpp>
+#include <boost/foreach.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -34,7 +36,10 @@
 
 #include "GLMultiResolutionRaster.h"
 
+#include "GLContext.h"
+#include "GLIntersect.h"
 #include "GLTransformState.h"
+#include "GLUtils.h"
 #include "GLVertexArrayDrawable.h"
 
 #include "global/AssertionFailureException.h"
@@ -66,46 +71,72 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
 		std::size_t tile_texel_dimension) :
 	d_georeferencing(georeferencing),
-	d_raster_proxy(GLRasterProxy::create(raster)),
-	d_raster_width(0),
-	d_raster_height(0),
-	d_tile_texel_dimension(tile_texel_dimension),
+	d_tile_texel_dimension( // Make sure our tile size does not exceed the maximum texture size...
+			(std::min)(
+					boost::numeric_cast<GLint>(tile_texel_dimension),
+					GLContext::get_texture_parameters().gl_max_texture_size)),
+	d_raster_proxy(GLRasterProxy::create(raster, d_tile_texel_dimension)),
+	// The raster dimensions (the highest resolution level-of-detail).
+	d_raster_width(d_raster_proxy->get_texel_width(0/*level of detail*/)),
+	d_raster_height(d_raster_proxy->get_texel_height(0/*level of detail*/)),
 	// FIXME: Change the max number cached textures to a value that reflects
 	// the tile dimensions and the viewport dimensions - the latter will vary so
 	// we'll need to have the ability to change the max number cached textures dynamically
 	// or perhaps just support the maximum screen resolution of any monitor (not a good idea).
-	d_texture_cache(create_texture_cache(10, texture_resource_manager)),
+	// For now it's 200 which is about 50Mb...
+	d_texture_cache(create_texture_cache(200, texture_resource_manager)),
 	// FIXME: Change the max number of cached vertex arrays to a value that reflects the
 	// memory used to stored vertices for a tile - should also balance memory used for
 	// textures with memory used for vertices.
-	d_vertex_array_cache(create_vertex_array_cache(10))
+	// For now it's 400 which is about 9Mb...
+	d_vertex_array_cache(create_vertex_array_cache(400))
 {
 	// Make sure tile_texel_dimension is a power-of-two.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			tile_texel_dimension > 0 &&
-					(tile_texel_dimension & (tile_texel_dimension - 1)) == 0,
+			d_tile_texel_dimension > 0 &&
+					(d_tile_texel_dimension & (d_tile_texel_dimension - 1)) == 0,
 			GPLATES_ASSERTION_SOURCE);
-
-#if 0
-	// Get the raster dimensions.
-	boost::optional<std::pair<unsigned int, unsigned int> > raster_dimensions =
-			GPlatesPropertyValues::RawRasterUtils::get_raster_size(*d_raster_proxy);
-
-	// If raster happens to be uninitialised then just return early.
-	if (!raster_dimensions)
-	{
-		return;
-	}
-#endif
-
-	// The raster dimensions (the highest resolution level-of-detail).
-	d_raster_width = d_raster_proxy->get_texel_width(0/*level of detail*/);
-	d_raster_height = d_raster_proxy->get_texel_height(0/*level of detail*/);
 
 	// Create the levels of details and within each one create an oriented bounding box
 	// tree (used to quickly find visible tiles) where the drawable tiles are in the
 	// leaf nodes of the OBB tree.
 	initialise_level_of_detail_pyramid();
+}
+
+
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::change_raster(
+		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_raw_raster)
+{
+	// Get the raster dimensions.
+	boost::optional<std::pair<unsigned int, unsigned int> > new_raster_dimensions =
+			GPlatesPropertyValues::RawRasterUtils::get_raster_size(*new_raw_raster);
+
+	// If raster happens to be uninitialised then return false.
+	if (!new_raster_dimensions)
+	{
+		return false;
+	}
+
+	// If the new raster dimensions don't match our current internal raster then return false.
+	if (new_raster_dimensions->first != d_raster_width ||
+		new_raster_dimensions->second != d_raster_height)
+	{
+		return false;
+	}
+
+	// Create a new raster proxy to perform region queries for raster data.
+	d_raster_proxy = GLRasterProxy::create(new_raw_raster, d_tile_texel_dimension);
+
+	// Invalidate all volatile textures for all tiles.
+	// When it comes time to draw this raster they'll be regenerated as needed.
+	BOOST_FOREACH(const LevelOfDetailTile::non_null_ptr_type &lod_tile, d_tiles)
+	{
+		lod_tile->texture.invalidate();
+	}
+
+	// Successfully changed to a new raster of the same dimensions as the previous one.
+	return true;
 }
 
 
@@ -120,9 +151,26 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 		return;
 	}
 
-#if 0
+	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
 	const LevelOfDetail &lod = get_level_of_detail(transform_state);
-#endif
+
+	//
+	// Traverse the OBB tree of the level-of-detail and gather of list of tiles that
+	// are visible in the view frustum (as defined by 'transform_state').
+	//
+
+	// First get the view frustum planes.
+	const GLTransformState::FrustumPlanes &frustum_planes =
+			transform_state.get_current_frustum_planes_in_model_space();
+	// There are six frustum planes initially active.
+	const boost::uint32_t frustum_plane_mask = 0x3f; // 111111 in binary
+
+	// Get the root OBB tree node of the level-of-detail.
+	const LevelOfDetail::OBBTreeNode &lod_root_obb_tree_node =
+			lod.get_obb_tree_node(lod.obb_tree_root_node_index);
+
+	// Recursively traverse the OBB tree to find visible tiles.
+	get_visible_tiles(frustum_planes, frustum_plane_mask, lod, lod_root_obb_tree_node, visible_tiles);
 }
 
 
@@ -159,6 +207,63 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_level_of_detail(
 	// since its the highest resolution we have to offer.
 	// This is where the user will start to see magnification of the raster.
 	return *d_level_of_detail_pyramid[0];
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
+		const GLTransformState::FrustumPlanes &frustum_planes,
+		boost::uint32_t frustum_plane_mask,
+		const LevelOfDetail &lod,
+		const LevelOfDetail::OBBTreeNode &obb_tree_node,
+		std::vector<tile_handle_type> &visible_tiles) const
+{
+	// If the frustum plane mask is zero then it means we are entirely inside the view frustum.
+	// So only test for intersection if the mask is non-zero.
+	if (frustum_plane_mask != 0)
+	{
+		// See if the OBB of the current OBB tree node intersects the view frustum.
+		boost::optional<boost::uint32_t> out_frustum_plane_mask =
+				GLIntersect::intersect_OBB_frustum(
+						obb_tree_node.bounding_box,
+						frustum_planes.planes,
+						frustum_plane_mask);
+		if (!out_frustum_plane_mask)
+		{
+			// No intersection so OBB is outside the view frustum and we can cull it.
+			return;
+		}
+
+		// Update the frustum plane mask so we only test against those planes that
+		// the current bounding box intersects. The bounding box is entirely inside
+		// the planes with a zero bit and so its child nodes are also entirely inside
+		// those planes too and so they won't need to test against them.
+		frustum_plane_mask = out_frustum_plane_mask.get();
+	}
+
+	// See if it's a OBB tree *leaf* node.
+	if (obb_tree_node.is_leaf_node)
+	{
+		// This leaf node is visible in the view frustum so
+		// add its tile to the list of visible tiles.
+		visible_tiles.push_back(obb_tree_node.tile);
+		return;
+	}
+	// It's an *internal* OBB tree node.
+
+	// Traverse the child nodes.
+	get_visible_tiles(
+			frustum_planes,
+			frustum_plane_mask,
+			lod,
+			lod.get_obb_tree_node(obb_tree_node.child_node_indices[0]),
+			visible_tiles);
+	get_visible_tiles(
+			frustum_planes,
+			frustum_plane_mask,
+			lod,
+			lod.get_obb_tree_node(obb_tree_node.child_node_indices[1]),
+			visible_tiles);
 }
 
 
@@ -263,10 +368,28 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	// Pointer to the Rgba8 data.
 	const GPlatesGui::rgba8_t *rgba8_data = raster_region->data();
 
-	// Each row of texels not aligned to 4 bytes.
+	//
+	// NOTE: Direct calls to OpenGL are made below.
+	//
+	// Below we make direct calls to OpenGL once we've bound the texture.
+	// This is in contrast to storing OpenGL commands in the render graph to be
+	// executed later. The reason for this is the calls we make affect the
+	// bound texture object's state and not the general OpenGL state. Texture object's
+	// are one of those places in OpenGL where you can set state and then subsequent
+	// binds of that texture object will set all that state into OpenGL.
+	//
+
+	// Each row of texels, in the raster image, is not aligned to 4 bytes.
+	// This is a direct call to OpenGL but it only affects how images are unpacked
+	// from CPU memory so its really a client side state (rather than a graphics card state).
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	// Bind the texture so its the current texture.
+	// Here we actually make a direct OpenGL call to bind the texture to the currently
+	// active texture unit. It doesn't matter what the current texture unit is because
+	// the only reason we're binding the texture object is so we can set its state =
+	// so that subsequent binds of this texture object, when we render the scene graph,
+	// will set that state to OpenGL.
 	texture->gl_bind_texture(GL_TEXTURE_2D);
 
 	// Now that its the current texture, any OpenGL calls that affect texture object state
@@ -301,13 +424,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	// No mipmap filter for the GL_TEXTURE_MAG_FILTER filter regardless.
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-#if 0
 	// Specify anisotropic filtering if it's supported since rasters near the north or
 	// south pole will exhibit squashing along the longitude, but not the latitude, direction.
+	// Regular isotropic filtering will just reduce texel resolution equally along both
+	// directions and reduce the visual sharpness that we want to retain in the latitude direction.
 	if (GL_EXT_texture_filter_anisotropic)
 	{
+		const GLfloat anisotropy = GLContext::get_texture_parameters().gl_texture_max_anisotropy_EXT;
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
-#endif
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -336,6 +461,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 				0, 0, lod_tile.num_u_lod_texels, lod_tile.num_v_lod_texels,
 				GL_RGBA, GL_UNSIGNED_BYTE, rgba8_data);
 	}
+
+	// Check there are no OpenGL errors.
+	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -363,11 +491,11 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_array(
 	const double inverse_x_num_quads = 1.0 / (lod_tile.x_num_vertices - 1);
 	const double inverse_y_num_quads = 1.0 / (lod_tile.y_num_vertices - 1);
 	const double x_pixels_per_quad =
-			inverse_x_num_quads * (lod_tile.x_pixel_end - lod_tile.x_pixel_start);
+			inverse_x_num_quads * (lod_tile.x_geo_end - lod_tile.x_geo_start);
 	const double y_pixels_per_quad =
-			inverse_y_num_quads * (lod_tile.y_pixel_end - lod_tile.y_pixel_start);
-	const double u_increment_per_quad = inverse_x_num_quads * lod_tile.u_tile_coverage;
-	const double v_increment_per_quad = inverse_y_num_quads * lod_tile.v_tile_coverage;
+			inverse_y_num_quads * (lod_tile.y_geo_end - lod_tile.y_geo_start);
+	const double u_increment_per_quad = inverse_x_num_quads * (lod_tile.u_end - lod_tile.u_start);
+	const double v_increment_per_quad = inverse_y_num_quads * (lod_tile.v_end - lod_tile.v_start);
 
 	// Calculate the vertices.
 	for (unsigned int j = 0; j < lod_tile.y_num_vertices; ++j)
@@ -377,11 +505,11 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_array(
 		// cracks will appear in the raster along tile edges and
 		// missing pixels can show up intermittently.
 		const double y = (j == lod_tile.y_num_vertices - 1)
-				? lod_tile.y_pixel_end
-				: lod_tile.y_pixel_start + j * y_pixels_per_quad;
+				? lod_tile.y_geo_end
+				: lod_tile.y_geo_start + j * y_pixels_per_quad;
 
 		// The 'v' texture coordinate.
-		const double v = j * v_increment_per_quad;
+		const double v = lod_tile.v_start + j * v_increment_per_quad;
 
 		for (unsigned int i = 0; i < lod_tile.x_num_vertices; ++i)
 		{
@@ -390,8 +518,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_array(
 			// cracks will appear in the raster along tile edges and
 			// missing pixels can show up intermittently.
 			const double x = (i == lod_tile.x_num_vertices - 1)
-					? lod_tile.x_pixel_end
-					: lod_tile.x_pixel_start + i * x_pixels_per_quad;
+					? lod_tile.x_geo_end
+					: lod_tile.x_geo_start + i * x_pixels_per_quad;
 
 			// Convert from pixel coordinates to a position on the unit globe.
 			const GPlatesMaths::PointOnSphere vertex_position =
@@ -403,7 +531,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_array(
 			vertices->z = vertex_position.position_vector().z().dval();
 
 			// The 'u' texture coordinate.
-			const double u = i * u_increment_per_quad;
+			const double u = lod_tile.u_start + i * u_increment_per_quad;
 
 			// Store the texture coordinates in the vertex array.
 			vertices->u = u;
@@ -444,8 +572,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::initialise_level_of_detail_pyramid()
 	for (unsigned int lod_level = 0; ; ++lod_level)
 	{
 		// Create a level-of-detail.
-		LevelOfDetail::non_null_ptr_type level_of_detail =
-				create_level_of_detail(lod_level, lod_texel_width, lod_texel_height);
+		LevelOfDetail::non_null_ptr_type level_of_detail = create_level_of_detail(lod_level);
 
 		// Add to our level-of-detail pyramid.
 		d_level_of_detail_pyramid.push_back(level_of_detail);
@@ -479,9 +606,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::initialise_level_of_detail_pyramid()
 
 GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetail::non_null_ptr_type
 GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail(
-		const unsigned int lod_level,
-		unsigned int lod_texel_width,
-		unsigned int lod_texel_height)
+		const unsigned int lod_level)
 {
 	// Allocate on the heap to avoid lots of copying when it's put in a std::vector.
 	LevelOfDetail::non_null_ptr_type level_of_detail = LevelOfDetail::create(lod_level);
@@ -511,8 +636,16 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail(
 	 * are a different size for each level-of-detail and so the partitioning line between
 	 * two child nodes (of any parent internal node) will differ.
 	 */
+
+	// The root OBB tree node covers the entire raster.
+	const unsigned int x_geo_start = 0;
+	const unsigned int x_geo_end = d_raster_width;
+	const unsigned int y_geo_start = 0;
+	const unsigned int y_geo_end = d_raster_height;
+
+	// Recursively create an OBB tree starting at the root.
 	level_of_detail->obb_tree_root_node_index = create_obb_tree(
-			*level_of_detail, 0, lod_texel_width, 0, lod_texel_height);
+			*level_of_detail, x_geo_start, x_geo_end, y_geo_start, y_geo_end);
 
 	return level_of_detail;
 }
@@ -521,30 +654,42 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail(
 std::size_t
 GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree(
 		LevelOfDetail &level_of_detail,
-		const unsigned int x_texel_start,
-		const unsigned int x_texel_end,
-		const unsigned int y_texel_start,
-		const unsigned int y_texel_end)
+		const unsigned int x_geo_start,
+		const unsigned int x_geo_end,
+		const unsigned int y_geo_start,
+		const unsigned int y_geo_end)
 {
-	// The start texel coordinates should be an integer multiple
-	// of the tile texel dimension. Most of the time the end coordinates
-	// will be too (except near the bottom or right of the raster).
+	// Level-of-detail.
+	const unsigned int lod_level = level_of_detail.lod_level;
+
+	// Texels in this level-of-detail have dimensions 'lod_factor' times larger than the
+	// original raster pixels when projected on the globe (they cover a larger area on the globe).
+	const unsigned int lod_factor = 1 << lod_level;
+
+	// The size of a tile (at the current level-of-detail) in units of pixels of
+	// the original raster. Pixels and geo coordinates are the same.
+	const unsigned int tile_geo_dimension = d_tile_texel_dimension * lod_factor;
+
+	// The start x coordinate should be an integer multiple of the tile dimension.
+	// The raster height minus the end y coordinate should be also be an integer multiple.
+	// The inverted y is a result of the geo coordinates starting at the top-left but
+	// the raster data starting at the bottom-left.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			(x_texel_start % d_tile_texel_dimension) == 0 &&
-				(y_texel_start % d_tile_texel_dimension) == 0,
+			(x_geo_start % tile_geo_dimension) == 0 &&
+				((d_raster_height - y_geo_end) % tile_geo_dimension) == 0,
 			GPLATES_ASSERTION_SOURCE);
 
-	// The width and height of this node in level-of-detail texels.
-	const unsigned int node_texel_width = x_texel_end - x_texel_start;
-	const unsigned int node_texel_height = y_texel_end - y_texel_start;
+	// The width and height of this node.
+	const unsigned int node_geo_width = x_geo_end - x_geo_start;
+	const unsigned int node_geo_height = y_geo_end - y_geo_start;
 
 	// Determine if this node should be a leaf node (referencing a tile).
-	if (node_texel_width <= d_tile_texel_dimension &&
-		node_texel_height <= d_tile_texel_dimension)
+	if (node_geo_width <= tile_geo_dimension &&
+		node_geo_height <= tile_geo_dimension)
 	{
 		// Return the node index so the parent node can reference this node.
 		return create_obb_tree_leaf_node(level_of_detail,
-				x_texel_start, x_texel_end, y_texel_start, y_texel_end);
+				x_geo_start, x_geo_end, y_geo_start, y_geo_end);
 	}
 
 	//
@@ -560,7 +705,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree(
 	// Divide this node into two child nodes along the raster x or y direction
 	// depending on whether this node is longer (in units of pixels) along
 	// the x or y direction.
-	if (node_texel_width > node_texel_height)
+	if (node_geo_width > node_geo_height)
 	{
 		// Divide along the x direction.
 		//
@@ -569,22 +714,28 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree(
 		// covered by this node and then divide by two and round down (truncate) -
 		// this gives the most even balance across the two child nodes.
 		const unsigned int num_tiles_in_left_child =
-				(node_texel_width + d_tile_texel_dimension - 1) / d_tile_texel_dimension / 2;
+				(node_geo_width + tile_geo_dimension - 1) / tile_geo_dimension / 2;
 
+		// Left child node.
 		child_node_indices[0] = create_obb_tree(
 				level_of_detail,
-				x_texel_start, x_texel_start + num_tiles_in_left_child * d_tile_texel_dimension,
-				y_texel_start, y_texel_end);
+				x_geo_start,
+				x_geo_start + num_tiles_in_left_child * tile_geo_dimension,
+				y_geo_start,
+				y_geo_end);
 
-		// 'node_texel_width' is greater than 'd_tile_texel_dimension' so we should
+		// 'node_geo_width' is greater than 'tile_geo_dimension' so we should
 		// have texels remaining for the right child node.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				x_texel_end > x_texel_start + num_tiles_in_left_child * d_tile_texel_dimension,
+				x_geo_end > x_geo_start + num_tiles_in_left_child * tile_geo_dimension,
 				GPLATES_ASSERTION_SOURCE);
+		// Right child node.
 		child_node_indices[1] = create_obb_tree(
 				level_of_detail,
-				x_texel_start + num_tiles_in_left_child * d_tile_texel_dimension, x_texel_end,
-				y_texel_start, y_texel_end);
+				x_geo_start + num_tiles_in_left_child * tile_geo_dimension,
+				x_geo_end,
+				y_geo_start,
+				y_geo_end);
 	}
 	else
 	{
@@ -594,41 +745,35 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree(
 		// give to each child node. Round up the number of tiles (possibly non-integer)
 		// covered by this node and then divide by two and round down (truncate) -
 		// this gives the most even balance across the two child nodes.
-		const unsigned int num_tiles_in_top_child =
-				(node_texel_height + d_tile_texel_dimension - 1) / d_tile_texel_dimension / 2;
+		const unsigned int num_tiles_in_bottom_child =
+				(node_geo_height + tile_geo_dimension - 1) / tile_geo_dimension / 2;
 
+		// 'node_geo_height' is greater than 'tile_geo_dimension' so we should
+		// have texels remaining for the top child node.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				y_geo_start < y_geo_end - num_tiles_in_bottom_child * tile_geo_dimension,
+				GPLATES_ASSERTION_SOURCE);
+		// Top child node.
 		child_node_indices[0] = create_obb_tree(
 				level_of_detail,
-				x_texel_start, x_texel_end,
-				y_texel_start, y_texel_start + num_tiles_in_top_child * d_tile_texel_dimension);
+				x_geo_start,
+				x_geo_end,
+				y_geo_start,
+				y_geo_end - num_tiles_in_bottom_child * tile_geo_dimension);
 
-		// 'node_texel_height' is greater than 'd_tile_texel_dimension' so we should
-		// have texels remaining for the bottom child node.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				y_texel_end > y_texel_start + num_tiles_in_top_child * d_tile_texel_dimension,
-				GPLATES_ASSERTION_SOURCE);
+		// Bottom child node.
 		child_node_indices[1] = create_obb_tree(
 				level_of_detail,
-				x_texel_start, x_texel_end,
-				y_texel_start + num_tiles_in_top_child * d_tile_texel_dimension, y_texel_end);
+				x_geo_start,
+				x_geo_end,
+				y_geo_end - num_tiles_in_bottom_child * tile_geo_dimension,
+				y_geo_end);
 	}
-
-	// Level-of-detail.
-	const unsigned int lod_level = level_of_detail.lod_level;
-
-	// Texels in this level-of-detail have dimensions 'lod_factor' times larger than the
-	// original raster pixels when projected on the globe (they cover a larger area on the globe).
-	const unsigned int lod_factor = 1 << lod_level;
 
 	// Each OBB in the tree has one axis oriented radially outward from the globe at the
 	// centre point of its bounding domain as this should generate the tightest bounding box.
-	const double node_centre_x_pixel_coord =
-			(x_texel_start + 0.5 * (x_texel_end - x_texel_start)) * lod_factor;
-	const double node_centre_y_pixel_coord =
-			(y_texel_start + 0.5 * (y_texel_end - y_texel_start)) * lod_factor;
-	// ...NOTE: 'x_texel_end' and 'y_texel_end' do not necessarily align exactly with
-	// the edge of the raster on the globe for the right and bottom raster edges but it's
-	// good enough for the purpose of calculating this node's OBB axes.
+	const double node_centre_x_pixel_coord = x_geo_start + 0.5 * (x_geo_end - x_geo_start);
+	const double node_centre_y_pixel_coord = y_geo_start + 0.5 * (y_geo_end - y_geo_start);
 
 	GLIntersect::OrientedBoundingBoxBuilder obb_builder = create_oriented_bounding_box_builder(
 			node_centre_x_pixel_coord, node_centre_y_pixel_coord);
@@ -640,7 +785,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree(
 			level_of_detail.get_obb_tree_node(child_node_indices[1]).bounding_box);
 
 	// Create an OBB tree node.
-	LevelOfDetail::OBBTreeNode obb_node(obb_builder.get_oriented_bounding_box());
+	LevelOfDetail::OBBTreeNode obb_node(
+			obb_builder.get_oriented_bounding_box(),
+			false/*is_leaf_node*/);
 
 	// Set the child node indices.
 	obb_node.child_node_indices[0] = child_node_indices[0];
@@ -658,14 +805,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree(
 std::size_t
 GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree_leaf_node(
 		LevelOfDetail &level_of_detail,
-		const unsigned int x_texel_start,
-		const unsigned int x_texel_end,
-		const unsigned int y_texel_start,
-		const unsigned int y_texel_end)
+		const unsigned int x_geo_start,
+		const unsigned int x_geo_end,
+		const unsigned int y_geo_start,
+		const unsigned int y_geo_end)
 {
 	// Create the level-of-detail tile that this OBB tree leaf node will reference.
 	const tile_handle_type lod_tile_handle = create_level_of_detail_tile(
-			level_of_detail, x_texel_start, x_texel_end, y_texel_start, y_texel_end);
+			level_of_detail, x_geo_start, x_geo_end, y_geo_start, y_geo_end);
 
 	// Get the level-of-detail tile structure just created.
 	const LevelOfDetailTile &lod_tile = *d_tiles[lod_tile_handle];
@@ -685,7 +832,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree_leaf_node(
 	}
 
 	// Create an OBB tree node.
-	LevelOfDetail::OBBTreeNode obb_node(obb);
+	LevelOfDetail::OBBTreeNode obb_node(obb, true/*is_leaf_node*/);
 
 	// Set the level-of-detail tile for this OBB node.
 	obb_node.tile = lod_tile_handle;
@@ -702,10 +849,10 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree_leaf_node(
 GPlatesOpenGL::GLMultiResolutionRaster::tile_handle_type
 GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 		LevelOfDetail &level_of_detail,
-		const unsigned int x_texel_start,
-		const unsigned int x_texel_end,
-		const unsigned int y_texel_start,
-		const unsigned int y_texel_end)
+		const unsigned int x_geo_start,
+		const unsigned int x_geo_end,
+		const unsigned int y_geo_start,
+		const unsigned int y_geo_end)
 {
 	// Level-of-detail.
 	const unsigned int lod_level = level_of_detail.lod_level;
@@ -714,6 +861,10 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 	// original raster pixels when projected on the globe (they cover a larger area on the globe).
 	const unsigned int lod_factor = 1 << lod_level;
 
+	// The size of a tile (at the current level-of-detail) in units of pixels of
+	// the original raster. Pixels and geo coordinates are the same.
+	const unsigned int tile_geo_dimension = d_tile_texel_dimension * lod_factor;
+
 	//
 	// In each tile store enough information to be able to generate the
 	// vertex and texture data as needed when rendering the raster.
@@ -721,52 +872,42 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 
 	// Make sure neighbouring tiles, of the same resolution level, have exactly
 	// matching boundaries to avoid cracks appearing between adjacent tiles.
-	// We do this by making the corner pixel coordinates of the tile match those
-	// of adjacent tiles - this is no problem since we're using integer pixel coordinates.
+	// We do this by making the corner geo (pixel) coordinates of the tile match those
+	// of adjacent tiles - this is no problem since we're using integer geo coordinates.
 	// They will get converted to floating-point when georeferenced but as long as they go
 	// through the same code path for all tiles then the final positions of the unit sphere
 	// should match up identically (ie, bitwise equality of the floating-point xyz coordinates).
 
-	// Convert from texels, in the current level-of-detail, to pixel sizes in the original raster.
-	// The start pixel coordinates for the current tile.
-	const unsigned int x_pixel_start = x_texel_start * lod_factor;
-	const unsigned int y_pixel_start = y_texel_start * lod_factor;
 	// The start of the tile should be inside the raster.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			x_pixel_start < d_raster_width && y_pixel_start < d_raster_height,
+			x_geo_start < d_raster_width && y_geo_start < d_raster_height,
 			GPLATES_ASSERTION_SOURCE);
 
-	// The end pixel coordinates for the current tile.
-	unsigned int x_pixel_end = x_texel_end * lod_factor;
-	unsigned int y_pixel_end = y_texel_end * lod_factor;
+	// The start x coordinate should be an integer multiple of the tile dimension.
+	// The raster height minus the end y coordinate should be also be an integer multiple.
+	// The inverted y is a result of the geo coordinates starting at the top-left but
+	// the raster data starting at the bottom-left.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			(x_geo_start % tile_geo_dimension) == 0 &&
+				((d_raster_height - y_geo_end) % tile_geo_dimension) == 0,
+			GPLATES_ASSERTION_SOURCE);
 
-	// Most tiles cover the entire tile of square dimensions 'd_tile_texel_dimension'.
-	float u_tile_coverage = 1.0f;
-	float v_tile_coverage = 1.0f;
 	// The number of texels needed to cover the tile.
-	unsigned int num_u_texels = x_texel_end - x_texel_start;
-	unsigned int num_v_texels = y_texel_end - y_texel_start;
+	// Round this up so that the level-of-details texels cover the range of geo coordinates.
+	unsigned int num_u_texels = (x_geo_end - x_geo_start + lod_factor - 1) / lod_factor;
+	unsigned int num_v_texels = (y_geo_end - y_geo_start + lod_factor - 1) / lod_factor;
 
-	// Clip tiles along the right edge of the raster.
-	// See the comment for data member 'num_u_texels' for an explanation.
-	if (x_pixel_end > d_raster_width)
-	{
-		// This tile is along the right edge of the raster and is not a full tile.
-		// We need to clip it along the x (and u) direction.
-		x_pixel_end = d_raster_width;
-		u_tile_coverage = static_cast<float>(x_pixel_end - x_pixel_start) /
-				(lod_factor * d_tile_texel_dimension);
-	}
-	// Clip tiles along the bottom edge of the raster.
-	// See the comment for data member 'num_v_texels' for an explanation.
-	if (y_pixel_end > d_raster_height)
-	{
-		// This tile is along the bottom edge of the raster and is not a full tile.
-		// We need to clip it along the y (and v) direction.
-		y_pixel_end = d_raster_height;
-		u_tile_coverage = static_cast<float>(y_pixel_end - y_pixel_start) /
-				(lod_factor * d_tile_texel_dimension);
-	}
+	// The texel offsets into the raster data.
+	// Note we need to invert in the 'v' or 'y' direction because
+	// our georeferencing starts at the top-left of the image but our
+	// raster data starts at the bottom-left.
+	// Both of the divisions here are exactly divisible.
+	const unsigned int u_lod_texel_offset = x_geo_start / lod_factor;
+	const unsigned int v_lod_texel_offset = (d_raster_height - y_geo_end) / lod_factor;
+	const float u_start = 0; // x_geo_start begins exactly on a texel boundary
+	const float u_end = static_cast<float>(x_geo_end - x_geo_start) / tile_geo_dimension;
+	const float v_start = static_cast<float>(y_geo_end - y_geo_start) / tile_geo_dimension;
+	const float v_end = 0; // y_geo_end begins exactly on a texel boundary
 
 	// Determine the number of quads along each tile edge.
 	unsigned int num_quads_along_tile_x_edge = num_u_texels / NUM_TEXELS_PER_VERTEX;
@@ -804,14 +945,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 	// Create the level-of-detail tile now that we have all the information we need.
 	LevelOfDetailTile::non_null_ptr_type lod_tile = LevelOfDetailTile::create(
 			lod_level,
-			x_pixel_start, x_pixel_end, y_pixel_start, y_pixel_end,
+			x_geo_start, x_geo_end,
+			y_geo_start, y_geo_end,
 			x_num_vertices, y_num_vertices,
-			u_tile_coverage,
-			v_tile_coverage,
-			x_texel_start,
-			y_texel_start,
-			num_u_texels,
-			num_v_texels,
+			u_start, u_end,
+			v_start, v_end,
+			u_lod_texel_offset, v_lod_texel_offset,
+			num_u_texels, num_v_texels,
 			vertex_element_array);
 
 	// Add the tile to the sequence of all tiles.
@@ -831,13 +971,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::bound_level_of_detail_tile(
 	//
 	// Each OBB in the tree has one axis oriented radially outward from the globe at the
 	// centre point of its bounding domain as this should generate the tightest bounding box.
-	const double tile_centre_x_pixel_coord =
-			lod_tile.x_pixel_start + 0.5 * (lod_tile.x_pixel_end - lod_tile.x_pixel_start);
-	const double tile_centre_y_pixel_coord =
-			lod_tile.y_pixel_start + 0.5 * (lod_tile.y_pixel_end - lod_tile.y_pixel_start);
+	const double tile_centre_x_geo_coord =
+			lod_tile.x_geo_start + 0.5 * (lod_tile.x_geo_end - lod_tile.x_geo_start);
+	const double tile_centre_y_geo_coord =
+			lod_tile.y_geo_start + 0.5 * (lod_tile.y_geo_end - lod_tile.y_geo_start);
 
 	GLIntersect::OrientedBoundingBoxBuilder obb_builder = create_oriented_bounding_box_builder(
-			tile_centre_x_pixel_coord, tile_centre_y_pixel_coord);
+			tile_centre_x_geo_coord, tile_centre_y_geo_coord);
 
 	// Expand the oriented bounding box to include all vertices of the current tile.
 	// We only need the boundary vertices to accomplish this because the interior
@@ -848,31 +988,31 @@ GPlatesOpenGL::GLMultiResolutionRaster::bound_level_of_detail_tile(
 
 	// Set up some variables before calculating the boundary vertices.
 	const double x_pixels_per_quad =
-			static_cast<double>(lod_tile.x_pixel_end - lod_tile.x_pixel_start) /
+			static_cast<double>(lod_tile.x_geo_end - lod_tile.x_geo_start) /
 					(lod_tile.x_num_vertices - 1);
 	const double y_pixels_per_quad =
-			static_cast<double>(lod_tile.y_pixel_end - lod_tile.y_pixel_start) /
+			static_cast<double>(lod_tile.y_geo_end - lod_tile.y_geo_start) /
 					(lod_tile.y_num_vertices - 1);
 
 	// Bound the tile's top and bottom edge vertices.
 	for (unsigned int i = 0; i < lod_tile.x_num_vertices; ++i)
 	{
 		obb_builder.add(convert_pixel_coord_to_geographic_coord(
-				lod_tile.x_pixel_start + i * x_pixels_per_quad,
-				lod_tile.y_pixel_start));
+				lod_tile.x_geo_start + i * x_pixels_per_quad,
+				lod_tile.y_geo_start));
 		obb_builder.add(convert_pixel_coord_to_geographic_coord(
-				lod_tile.x_pixel_start + i * x_pixels_per_quad,
-				lod_tile.y_pixel_end));
+				lod_tile.x_geo_start + i * x_pixels_per_quad,
+				lod_tile.y_geo_end));
 	}
 	// Bound the tile's left and right edge vertices (excluding corner points already bounded).
 	for (unsigned int j = 1; j < lod_tile.y_num_vertices - 1; ++j)
 	{
 		obb_builder.add(convert_pixel_coord_to_geographic_coord(
-				lod_tile.x_pixel_start,
-				lod_tile.y_pixel_start + j * y_pixels_per_quad));
+				lod_tile.x_geo_start,
+				lod_tile.y_geo_start + j * y_pixels_per_quad));
 		obb_builder.add(convert_pixel_coord_to_geographic_coord(
-				lod_tile.x_pixel_end,
-				lod_tile.y_pixel_start + j * y_pixels_per_quad));
+				lod_tile.x_geo_end,
+				lod_tile.y_geo_start + j * y_pixels_per_quad));
 	}
 
 	return obb_builder.get_oriented_bounding_box();
@@ -916,10 +1056,10 @@ GPlatesOpenGL::GLMultiResolutionRaster::calc_max_texel_size_on_unit_sphere(
 
 	// Set up some variables before calculating sample positions on the globe.
 	const double x_pixels_per_quad =
-			static_cast<double>(lod_tile.x_pixel_end - lod_tile.x_pixel_start) /
+			static_cast<double>(lod_tile.x_geo_end - lod_tile.x_geo_start) /
 					num_sample_segments_along_tile_x_edge;
 	const double y_pixels_per_quad =
-			static_cast<double>(lod_tile.y_pixel_end - lod_tile.y_pixel_start) /
+			static_cast<double>(lod_tile.y_geo_end - lod_tile.y_geo_start) /
 					num_sample_segments_along_tile_y_edge;
 
 	// Number of samples along each tile edge.
@@ -932,7 +1072,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calc_max_texel_size_on_unit_sphere(
 	// Iterate over the sample points.
 	for (unsigned int j = 0; j < num_samples_along_tile_y_edge; ++j)
 	{
-		const double y = lod_tile.y_pixel_start + j * y_pixels_per_quad;
+		const double y = lod_tile.y_geo_start + j * y_pixels_per_quad;
 
 		// We try to avoid sampling outside the raster pixel range because we don't
 		// know if that will cause problems with the inverse map projection (if any
@@ -942,7 +1082,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calc_max_texel_size_on_unit_sphere(
 
 		for (unsigned int i = 0; i < num_samples_along_tile_x_edge; ++i)
 		{
-			const double x = lod_tile.x_pixel_start + i * x_pixels_per_quad;
+			const double x = lod_tile.x_geo_start + i * x_pixels_per_quad;
 
 			// The main sample point.
 			const GPlatesMaths::PointOnSphere sample_point =
@@ -993,15 +1133,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::calc_max_texel_size_on_unit_sphere(
 
 GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder
 GPlatesOpenGL::GLMultiResolutionRaster::create_oriented_bounding_box_builder(
-		const double &x_pixel_coord,
-		const double &y_pixel_coord) const
+		const double &x_geo_coord,
+		const double &y_geo_coord) const
 {
 	// Convert the pixel coordinates to a point on the sphere.
 	const GPlatesMaths::PointOnSphere point_on_sphere =
-			convert_pixel_coord_to_geographic_coord(x_pixel_coord, y_pixel_coord);
+			convert_pixel_coord_to_geographic_coord(x_geo_coord, y_geo_coord);
 
 	// The OBB z-axis is the vector from globe origin to point on sphere.
-	const GPlatesMaths::UnitVector3D obb_z_axis = point_on_sphere.position_vector();
+	const GPlatesMaths::UnitVector3D &obb_z_axis = point_on_sphere.position_vector();
 
 	// Calculate the OBB x axis by taking the centre pixel coordinate and doing a finite
 	// difference in the x direction.
@@ -1010,11 +1150,11 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_oriented_bounding_box_builder(
 	//
 	// The reason for getting the OBB x-axis tangential to the raster is so the OBB
 	// will align with, and hence bound, the raster tile(s) tightly.
-	const double delta = 1e-2;
+	const double delta = 1; // Make it +/- one pixel of delta.
 	const GPlatesMaths::PointOnSphere centre_point_minus_x_delta =
-			convert_pixel_coord_to_geographic_coord(x_pixel_coord - delta, y_pixel_coord);
+			convert_pixel_coord_to_geographic_coord(x_geo_coord - delta, y_geo_coord);
 	const GPlatesMaths::PointOnSphere centre_point_plus_x_delta =
-			convert_pixel_coord_to_geographic_coord(x_pixel_coord + delta, y_pixel_coord);
+			convert_pixel_coord_to_geographic_coord(x_geo_coord + delta, y_geo_coord);
 
 	// The vector difference between these two points is the x-axis.
 	GPlatesMaths::Vector3D obb_x_axis_unnormalised =
@@ -1167,23 +1307,42 @@ GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 
 	// Use the georeferencing information to convert
 	// from pixel coordinates to geographic coordinates.
-	const double x_geo =
+	double x_geo =
 			x_pixel_coord * georef.x_component_of_pixel_width +
 			y_pixel_coord * georef.x_component_of_pixel_height +
 			georef.top_left_x_coordinate;
-	const double y_geo =
+	double y_geo =
 			x_pixel_coord * georef.y_component_of_pixel_width +
 			y_pixel_coord * georef.y_component_of_pixel_height +
 			georef.top_left_y_coordinate;
 
 	// TODO: This is where the inverse map projection will go when we add
 	// the map projection to the georeferencing information.
-	// It will transform from map coordinates (x_geo, y_geo) to (latitude, longitude).
+	// It will transform from map coordinates (x_geo, y_geo) to (longitude, latitude).
 	// Right now we assume no map projection in which case (x_geo, y_geo)
-	// are already in (latitude, longitude).
+	// are already in (longitude, latitude).
 
-	// Finally convert from (latitude, longitude) to cartesian (x,y,z).
-	const GPlatesMaths::LatLonPoint x_lat_lon(x_geo, y_geo);
+	// Sometimes due to numerical precision the latitude is slightly less then -90 degrees
+	// or slightly greater than 90 degrees.
+	// If it's only slightly outside the valid range then we'll be lenient and correct it.
+	// Otherwise we'll do nothing and let GPlatesMaths::LatLonPoint throw an exception.
+	if (y_geo < -90)
+	{
+		if (y_geo > -90 - 1e-6)
+		{
+			y_geo = -90;
+		}
+	}
+	else if (y_geo > 90)
+	{
+		if (y_geo < 90 + 1e-6)
+		{
+			y_geo = 90;
+		}
+	}
+
+	// Finally convert from (longitude, latitude) to cartesian (x,y,z).
+	const GPlatesMaths::LatLonPoint x_lat_lon(y_geo, x_geo);
 
 	return make_point_on_sphere(x_lat_lon);
 }
@@ -1201,28 +1360,32 @@ GPlatesOpenGL::GLMultiResolutionRaster::Tile::Tile(
 
 GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetailTile::LevelOfDetailTile(
 		unsigned int lod_level_,
-		unsigned int x_pixel_start_,
-		unsigned int x_pixel_end_,
-		unsigned int y_pixel_start_,
-		unsigned int y_pixel_end_,
+		unsigned int x_geo_start_,
+		unsigned int x_geo_end_,
+		unsigned int y_geo_start_,
+		unsigned int y_geo_end_,
 		unsigned int x_num_vertices_,
 		unsigned int y_num_vertices_,
-		float u_tile_coverage_,
-		float v_tile_coverage_,
+		float u_start_,
+		float u_end_,
+		float v_start_,
+		float v_end_,
 		unsigned int u_lod_texel_offset_,
 		unsigned int v_lod_texel_offset_,
 		unsigned int num_u_lod_texels_,
 		unsigned int num_v_lod_texels_,
 		const GLVertexElementArray::non_null_ptr_to_const_type &vertex_element_array_) :
 	lod_level(lod_level_),
-	x_pixel_start(x_pixel_start_),
-	x_pixel_end(x_pixel_end_),
-	y_pixel_start(y_pixel_start_),
-	y_pixel_end(y_pixel_end_),
+	x_geo_start(x_geo_start_),
+	x_geo_end(x_geo_end_),
+	y_geo_start(y_geo_start_),
+	y_geo_end(y_geo_end_),
 	x_num_vertices(x_num_vertices_),
 	y_num_vertices(y_num_vertices_),
-	u_tile_coverage(u_tile_coverage_),
-	v_tile_coverage(v_tile_coverage_),
+	u_start(u_start_),
+	u_end(u_end_),
+	v_start(v_start_),
+	v_end(v_end_),
 	u_lod_texel_offset(u_lod_texel_offset_),
 	v_lod_texel_offset(v_lod_texel_offset_),
 	num_u_lod_texels(num_u_lod_texels_),

@@ -34,6 +34,7 @@
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "RenderSettings.h"
 
+#include "opengl/GLContext.h"
 #include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLUNurbsRenderer.h"
 
@@ -80,6 +81,7 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
+				const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 				const double &viewport_zoom_factor,
 				const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer);

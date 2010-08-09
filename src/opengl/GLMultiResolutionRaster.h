@@ -35,8 +35,10 @@
 #include "GLDrawable.h"
 #include "GLIntersectPrimitives.h"
 #include "GLRasterProxy.h"
+#include "GLResourceManager.h"
 #include "GLTexture.h"
 #include "GLTextureCache.h"
+#include "GLTransformState.h"
 #include "GLVertexArray.h"
 #include "GLVertexArrayCache.h"
 #include "GLVertexElementArray.h"
@@ -52,8 +54,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GLTransformState;
-
 	/**
 	 * An arbitrary dimension raster image represented as a multi-resolution pyramid
 	 * of tiled OpenGL textures and associated vertex meshes.
@@ -137,10 +137,22 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * The default tile dimension is 256.
+		 *
+		 * This size gives us a small enough tile region on the globe to make good use
+		 * of view frustum culling of tiles.
+		 */
+		static const std::size_t DEFAULT_TILE_TEXEL_DIMENSION = 256;
+
+
+		/**
 		 * Creates a @a GLMultiResolutionRaster object.
 		 *
-		 * @a tile_size must be a power-of-two - it is the OpenGL square texture dimension
-		 * to use for the tiled textures that represent the multi-resolution raster.
+		 * @a tile_texel_dimension must be a power-of-two - it is the OpenGL square texture
+		 * dimension to use for the tiled textures that represent the multi-resolution raster.
+		 *
+		 * If @a tile_texel_dimension is greater than the maximum texture size supported
+		 * by the run-time system then it will be reduced to the maximum texture size.
 		 */
 		static
 		non_null_ptr_type
@@ -148,11 +160,30 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-				std::size_t tile_texel_dimension)
+				std::size_t tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION)
 		{
 			return non_null_ptr_type(new GLMultiResolutionRaster(
 					georeferencing, raster, texture_resource_manager, tile_texel_dimension));
 		}
+
+
+		/**
+		 * Change to a new raster of the same dimensions as the current internal raster.
+		 *
+		 * This will invalidate all cached textures but will not invalidate any cached vertices.
+		 *
+		 * This method is useful for time-dependent rasters sharing the same georeferencing
+		 * and raster dimensions.
+		 *
+		 * Returns false if @a raster has different dimensions than the current internal raster.
+		 * In this case you'll need to create a new @a GLMultiResolutionRaster.
+		 *
+		 * NOTE: The opposite, changing the georeferencing without changing the raster,
+		 * will require creating a new @a GLMultiResolutionRaster object.
+		 */
+		bool
+		change_raster(
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster);
 
 
 		/**
@@ -183,21 +214,6 @@ namespace GPlatesOpenGL
 		get_tile(
 				tile_handle_type tile_handle) const;
 
-
-		/**
-		 * Change the georeferencing without changing the raster.
-		 *
-		 * This won't invalidate any cached textures but will invalidate any cached vertices.
-		 * However, regenerating vertices is a lot cheaper than regenerating textures since the
-		 * latter have to be read from disk.
-		 *
-		 * NOTE: The opposite, changing the raster without changing the georeferencing,
-		 * will require creating a new @a GLMultiResolutionRaster object.
-		 */
-		void
-		set_georeferencing(
-				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing);
-
 	private:
 		/**
 		 * Retains information to build a single tile of the raster.
@@ -214,14 +230,16 @@ namespace GPlatesOpenGL
 			non_null_ptr_type
 			create(
 					unsigned int lod_level_,
-					unsigned int x_pixel_start_,
-					unsigned int x_pixel_end_,
-					unsigned int y_pixel_start_,
-					unsigned int y_pixel_end_,
+					unsigned int x_geo_start_,
+					unsigned int x_geo_end_,
+					unsigned int y_geo_start_,
+					unsigned int y_geo_end_,
 					unsigned int x_num_vertices_,
 					unsigned int y_num_vertices_,
-					float u_tile_coverage_,
-					float v_tile_coverage_,
+					float u_start_,
+					float u_end_,
+					float v_start_,
+					float v_end_,
 					unsigned int u_lod_texel_offset_,
 					unsigned int v_lod_texel_offset_,
 					unsigned int num_u_lod_texels_,
@@ -230,8 +248,8 @@ namespace GPlatesOpenGL
 			{
 				return non_null_ptr_type(new LevelOfDetailTile(
 						lod_level_,
-						x_pixel_start_, x_pixel_end_, y_pixel_start_, y_pixel_end_,
-						x_num_vertices_, y_num_vertices_, u_tile_coverage_, v_tile_coverage_,
+						x_geo_start_, x_geo_end_, y_geo_start_, y_geo_end_,
+						x_num_vertices_, y_num_vertices_, u_start_, u_end_, v_start_, v_end_,
 						u_lod_texel_offset_, v_lod_texel_offset_, num_u_lod_texels_, num_v_lod_texels_,
 						vertex_element_array_));
 			}
@@ -243,36 +261,36 @@ namespace GPlatesOpenGL
 			unsigned int lod_level;
 
 
-			// NOTE: 'x_pixel_start', 'x_pixel_end', 'y_pixel_start' and 'y_pixel_end'
-			// are pixel coordinates of the original high-resolution raster and not
-			// the pixels of this level-of-detail (unless, of course, this
+			// NOTE: 'x_geo_start', 'x_geo_end', 'y_geo_start' and 'y_geo_end'
+			// are georeference coordinates of the original high-resolution raster and not
+			// the texels of this level-of-detail (unless, of course, this
 			// level-of-detail is the highest resolution).
 			//
 			// This is because georeferencing works with the highest resolution pixel coordinates.
 
 			/**
-			 * The start pixel x coordinate of this tile.
+			 * The start georeference x coordinate of this tile.
 			 * The left edge of the first pixel (not the pixel centre).
 			 */
-			unsigned int x_pixel_start;
+			unsigned int x_geo_start;
 
 			/**
-			 * The end pixel x coordinate of this tile.
+			 * The end georeference x coordinate of this tile.
 			 * The right edge of the last pixel (not the pixel centre).
 			 */
-			unsigned int x_pixel_end;
+			unsigned int x_geo_end;
 
 			/**
-			 * The start pixel y coordinate of this tile.
+			 * The start georeference y coordinate of this tile.
 			 * The top edge of the first pixel (not the pixel centre).
 			 */
-			unsigned int y_pixel_start;
+			unsigned int y_geo_start;
 
 			/**
-			 * The end pixel y coordinate of this tile.
+			 * The end georeference y coordinate of this tile.
 			 * The bottom edge of the last pixel (not the pixel centre).
 			 */
-			unsigned int y_pixel_end;
+			unsigned int y_geo_end;
 
 			/**
 			 * The number of vertices along the x direction of this tile.
@@ -284,23 +302,20 @@ namespace GPlatesOpenGL
 			 */
 			unsigned int y_num_vertices;
 
-			/*
-			 * The fraction of the texture of size:
-			 *   'tile_texel_dimension' x 'tile_texel_dimension'
-			 * covered by this tile.
-			 *
-			 * This will be 1.0 for all tiles except those along the
-			 * bottom and right edges of the raster.
-			 * This is because not all of the texture is covered by the tile and
-			 * hence the texture coordinates need to be scaled.
-			 */
-			float u_tile_coverage;
-			float v_tile_coverage;
+			//! The 'u' texture coordinate corresponding to @a x_start.
+			float u_start;
+			//! The 'u' texture coordinate corresponding to @a x_end.
+			float u_end;
+
+			//! The 'v' texture coordinate corresponding to @a y_start.
+			float v_start;
+			//! The 'v' texture coordinate corresponding to @a y_end.
+			float v_end;
 
 			/*
 			 * Offsets to the first texel in the region covered by this tile.
-			 *
-			 * These are the same as (x_pixel_start << lod_level) and (y_pixel_start << lod_level).
+			 * Note that the 'y' and the 'v' directions are inverted wrt each other -
+			 * this is reflected in the 'v' texture coordinates.
 			 */
 			unsigned int u_lod_texel_offset;
 			unsigned int v_lod_texel_offset;
@@ -308,8 +323,6 @@ namespace GPlatesOpenGL
 			/*
 			 * The number of texels that we need to load from the raster image in order
 			 * to cover the tile.
-			 *
-			 * NOTE: This is subtly different than @a u_tile_coverage and @a v_tile_coverage:
 			 *
 			 * For example, the texels needed by a 5x5 raster image are:
 			 * Level 0: 5x5
@@ -363,14 +376,16 @@ namespace GPlatesOpenGL
 			//! Constructor.
 			LevelOfDetailTile(
 					unsigned int lod_level_,
-					unsigned int x_pixel_start_,
-					unsigned int x_pixel_end_,
-					unsigned int y_pixel_start_,
-					unsigned int y_pixel_end_,
+					unsigned int x_geo_start_,
+					unsigned int x_geo_end_,
+					unsigned int y_geo_start_,
+					unsigned int y_geo_end_,
 					unsigned int x_num_vertices_,
 					unsigned int y_num_vertices_,
-					float u_tile_coverage_,
-					float v_tile_coverage_,
+					float u_start_,
+					float u_end_,
+					float v_start_,
+					float v_end_,
 					unsigned int u_lod_texel_offset_,
 					unsigned int v_lod_texel_offset_,
 					unsigned int num_u_lod_texels_,
@@ -398,10 +413,12 @@ namespace GPlatesOpenGL
 			 */
 			struct OBBTreeNode
 			{
-				explicit
+				//! Constructor.
 				OBBTreeNode(
-						const GLIntersect::OrientedBoundingBox &bounding_box_) :
-					bounding_box(bounding_box_)
+						const GLIntersect::OrientedBoundingBox &bounding_box_,
+						bool is_leaf_node_) :
+					bounding_box(bounding_box_),
+					is_leaf_node(is_leaf_node_)
 				{  }
 
 				/**
@@ -411,11 +428,20 @@ namespace GPlatesOpenGL
 				 */
 				GLIntersect::OrientedBoundingBox bounding_box;
 
-				//! The child indices if this is *not* a leaf node.
-				boost::optional<std::size_t> child_node_indices[2];
+				//! Structure containing internal or leaf node information.
+				struct
+				{
+					bool is_leaf_node;
 
-				//! The tile handle if this *is* a leaf node.
-				boost::optional<tile_handle_type> tile;
+					union
+					{
+						//! The child indices if this is *not* a leaf node.
+						std::size_t child_node_indices[2];
+
+						//! The tile handle if this *is* a leaf node.
+						tile_handle_type tile;
+					};
+				};
 			};
 
 			//! Typedef for the container of all OBB tree nodes belonging to a level-of-detail.
@@ -496,6 +522,11 @@ namespace GPlatesOpenGL
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
 
 		/**
+		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
+		 */
+		unsigned int d_tile_texel_dimension;
+
+		/**
 		 * The original raster as a mipmap pyramid.
 		 */
 		GLRasterProxy::non_null_ptr_to_const_type d_raster_proxy;
@@ -505,11 +536,6 @@ namespace GPlatesOpenGL
 
 		//! Original raster height.
 		unsigned int d_raster_height;
-
-		/**
-		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
-		 */
-		unsigned int d_tile_texel_dimension;
 
 		/**
 		 * All tiles of all resolution are grouped into one array for easy lookup for clients.
@@ -589,9 +615,7 @@ namespace GPlatesOpenGL
 		 */
 		LevelOfDetail::non_null_ptr_type
 		create_level_of_detail(
-				const unsigned int lod_level,
-				unsigned int lod_texel_width,
-				unsigned int lod_texel_height);
+				const unsigned int lod_level);
 
 
 		/**
@@ -600,10 +624,10 @@ namespace GPlatesOpenGL
 		std::size_t
 		create_obb_tree(
 				LevelOfDetail &level_of_detail,
-				const unsigned int x_texel_start,
-				const unsigned int x_texel_end,
-				const unsigned int y_texel_start,
-				const unsigned int y_texel_end);
+				const unsigned int x_geo_start,
+				const unsigned int x_geo_end,
+				const unsigned int y_geo_start,
+				const unsigned int y_geo_end);
 
 
 		/**
@@ -612,10 +636,10 @@ namespace GPlatesOpenGL
 		std::size_t
 		create_obb_tree_leaf_node(
 				LevelOfDetail &level_of_detail,
-				const unsigned int x_texel_start,
-				const unsigned int x_texel_end,
-				const unsigned int y_texel_start,
-				const unsigned int y_texel_end);
+				const unsigned int x_geo_start,
+				const unsigned int x_geo_end,
+				const unsigned int y_geo_start,
+				const unsigned int y_geo_end);
 
 
 		/**
@@ -625,10 +649,10 @@ namespace GPlatesOpenGL
 		tile_handle_type
 		create_level_of_detail_tile(
 				LevelOfDetail &level_of_detail,
-				const unsigned int x_texel_start,
-				const unsigned int x_texel_end,
-				const unsigned int y_texel_start,
-				const unsigned int y_texel_end);
+				const unsigned int x_geo_start,
+				const unsigned int x_geo_end,
+				const unsigned int y_geo_start,
+				const unsigned int y_geo_end);
 
 
 		/**
@@ -649,8 +673,8 @@ namespace GPlatesOpenGL
 		 */
 		GLIntersect::OrientedBoundingBoxBuilder
 		create_oriented_bounding_box_builder(
-				const double &x_pixel_coord,
-				const double &y_pixel_coord) const;
+				const double &x_geo_coord,
+				const double &y_geo_coord) const;
 
 
 		/**
@@ -681,6 +705,17 @@ namespace GPlatesOpenGL
 		const LevelOfDetail &
 		get_level_of_detail(
 				const GLTransformState &transform_state) const;
+
+		/**
+		 * Recursively traverses OBB tree to find visible tiles.
+		 */
+		void
+		get_visible_tiles(
+				const GLTransformState::FrustumPlanes &frustum_planes,
+				boost::uint32_t frustum_plane_mask,
+				const LevelOfDetail &lod,
+				const LevelOfDetail::OBBTreeNode &obb_tree_node,
+				std::vector<tile_handle_type> &visible_tiles) const;
 
 		/**
 		 * Returns the texture for the tile @a lod_tile.

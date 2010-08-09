@@ -28,49 +28,24 @@
 #ifndef GPLATES_GUI_TEXTURE_H
 #define GPLATES_GUI_TEXTURE_H
 
+#include <boost/optional.hpp>
 #include <QtOpenGL/qgl.h>
 #include <QString>
 #include <QObject>
 
+#include "opengl/GLMultiResolutionRaster.h"
+#include "opengl/GLRenderGraphInternalNode.h"
+#include "opengl/GLResourceManager.h"
+
+#include "property-values/Georeferencing.h"
 #include "property-values/InMemoryRaster.h"
+#include "property-values/RawRaster.h"
 
 #include "utils/VirtualProxy.h"
 
 
 namespace GPlatesGui
 {
-	/**
-	 *	NUM_STRIPS_S and NUM_STRIPS_T are the number of strips that the texure is divided up into.
-	 *  The edges of these strips define coordinates in texture space (s,t). 
-	 *  Each of these coordinates will be mapped to a 3D coordinate on the sphere surface. 
-	 * 
-	 *  NUM_STRIPS_S is the number of strips in the texture's "s" direction (i.e. our longitude).
-	 *  NUM_STRIPS_T is the number of strips in the texture's "t" direction (i.e. latitude). 
-	 */
-
-	const int NUM_STRIPS_S = 64;
-	const int NUM_STRIPS_T = 32;
-
-	const float LON_START = -180.0f;
-	const float LON_END = 180.0f;
-	const float LAT_START = -90.0f;
-	const float LAT_END = 90.0f;
-
-	const QRectF INITIAL_EXTENT(-180.,90.,360.,-180.);
-
-	struct texture_vertex
-	{
-		float s;
-		float t;
-	};
-
-	struct sphere_vertex
-	{
-		float x;
-		float y;
-		float z;
-	};
-
 	class Texture :
 			public QObject,
 			public GPlatesPropertyValues::InMemoryRaster
@@ -78,47 +53,41 @@ namespace GPlatesGui
 		Q_OBJECT
 
 	public:
+		//! Constructor.
+		Texture();
 
-		Texture() :
-			d_image_data(0),
-			d_image_width(0),
-			d_image_height(0),
-			d_texture_name(0),
-			d_enabled(false),
-			d_extent(INITIAL_EXTENT),
-			d_should_be_remapped(false),
-			d_is_loaded(false)
-		{ }
-
-		~Texture();
 
 		/**
-		 * Generates a texture using the data pointed to by unsigned_byte_type *data.
+		 * Return the georeferencing.
+		 */ 
+		const GPlatesPropertyValues::Georeferencing::non_null_ptr_type &
+		get_georeferencing()
+		{
+			return d_georeferencing;
+		}
+
+		/**
+		 * Set the coordinate range over which the texture will be mapped.
 		 */
 		void
-		generate_raster(
-				unsigned_byte_type *data,
-				QSize &size,
-				ColourFormat format);
+		set_georeferencing(
+				const GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing);
 
 		/**
-		 * Generates a checker-board pattern in memory, and creates a texture from this.
+		 * Specify raster data.
 		 */
 		void
-		generate_test_texture();
+		set_raster(
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raw_raster);
 
 
 		/**
-		 * Binds the texture so that it will be mapped to the sphere quadric.
+		 * Adds multi-resolution raster to render graph.
 		 */
 		void
-		paint();
-
-		/**
-		 * Returns the openGL texture name.
-		 */
-		GLuint
-		get_texture_name();
+		paint(
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
+				const GPlatesOpenGL::GLTextureResourceManager::shared_ptr_type &texture_resource_manager);
 
 		/**
 		 * Returns the value of d_enabled, which determines whether or not the texture
@@ -145,22 +114,6 @@ namespace GPlatesGui
 		void
 		toggle();
 
-		/**
-		 * Set the coordinate range over which the texture will be mapped.
-		 */
-		void
-		set_extent(
-				const QRectF &rect);
-
-		/**
-		 * Return the coordinate range over which the texture is mapped.
-		 */ 
-		const QRectF &
-		get_extent()
-		{
-			return d_extent;
-		}
-
 		bool
 		is_loaded()
 		{
@@ -174,78 +127,28 @@ namespace GPlatesGui
 		texture_changed();
 
 	private:
-
-		/** 
-		 * Maps 2D points in the texture coordinate system to 3D vertices in the sphere coordinate system. 
+		/**
+		 * The georeferencing.
 		 */
-		void
-		generate_mapping_coordinates();
-
-		/** 
-		 * Maps 2D points in the texture coordinate system to 3D vertices in the sphere coordinate system,
-		 * over a region with corners given by x_start, y_start, x_end, y_end.
-		 */
-		void
-		generate_mapping_coordinates(
-				QRectF &extent);
+		GPlatesPropertyValues::Georeferencing::non_null_ptr_type d_georeferencing;
 
 		/**
-		 * Re-maps an existing texture to the portion of the sphere surface given by extent.
+		 * The raster data. 
 		 */
-		void
-		remap_texture();
+		GPlatesPropertyValues::RawRaster::non_null_ptr_type d_raster;
 
 		/**
-		 * A pointer to image data. 
+		 * Rendering is done with this OpenGL raster.
 		 */
-		unsigned_byte_type *d_image_data;
+		boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
 
-		/**
-		 * The width of the image.
-		 */ 
-		int d_image_width;
-
-		/**
-		 * The height of the image.
-		 */
-		int d_image_height;
-
-#if 0
-		/**
-		 * The width of the texture, which should be a power of 2.
-		 */
-		int d_texture_width;
-
-		/**
-		 * The height of the texture, which should be a power of 2. 
-		 */
-		int d_texture_height;
-#endif
-		/**
-		 * The openGL texture name.
-		 */
-		GLuint d_texture_name;
+		bool d_updated_georeferencing;
+		bool d_updated_raster;
 
 		/**
 		 * Whether or not the texture is displayed.
 		 */
 		bool d_enabled;
-
-		/**
-		 * The vertices used for mapping the texture to the sphere. 
-		 */
-		texture_vertex d_texture_vertices[NUM_STRIPS_S + 1][NUM_STRIPS_T + 1];
-		sphere_vertex d_sphere_vertices[NUM_STRIPS_S + 1][NUM_STRIPS_T + 1];
-
-		/**
-		 * The lat-lon extent over which the texture should be mapped.
-		 */
-		QRectF d_extent;
-		
-		/**
-		 * Whether or not the texture needs to be remapped.                                                                     
-		 */
-		bool d_should_be_remapped;
 
 		/**
 		 * Whether a raster has been loaded.

@@ -290,6 +290,7 @@ namespace GPlatesGui
 	}
 
 
+	inline
 	void
 	MipmapperInternals::convert_rgba_to_argb(
 			rgba8_t *array,

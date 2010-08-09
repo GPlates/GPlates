@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/cast.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -65,7 +66,8 @@ GPlatesOpenGL::GLVertexArray::gl_client_active_texture_ARB(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture >= GL_TEXTURE0_ARB &&
-					texture < GL_TEXTURE0_ARB + GLContext::get_max_texture_units_ARB(),
+					boost::numeric_cast<GLint>(texture) < GL_TEXTURE0_ARB +
+							GLContext::get_texture_parameters().gl_max_texture_units_ARB,
 			GPLATES_ASSERTION_SOURCE);
 
 	d_client_active_texture_ARB = texture;
@@ -225,7 +227,7 @@ GPlatesOpenGL::GLVertexArray::bind_normal_pointer() const
 void
 GPlatesOpenGL::GLVertexArray::bind_tex_coord_pointers() const
 {
-	const std::size_t MAX_TEXTURE_UNITS = GLContext::get_max_texture_units_ARB();
+	const std::size_t MAX_TEXTURE_UNITS = GLContext::get_texture_parameters().gl_max_texture_units_ARB;
 
 	if (MAX_TEXTURE_UNITS == 1)
 	{

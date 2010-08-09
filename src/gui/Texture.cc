@@ -35,417 +35,124 @@
 
 #include "Texture.h"
 
-#include "maths/LatLonPoint.h"
-#include "maths/PointOnSphere.h"
-
+#include "opengl/GLBlendState.h"
+#include "opengl/GLCompositeStateSet.h"
+#include "opengl/GLMultiResolutionRasterNode.h"
+#include "opengl/GLTextureEnvironmentState.h"
 #include "opengl/OpenGLBadAllocException.h"
 #include "opengl/OpenGLException.h"
 
-// RGBA_SIZE is the number of bytes required to store an RGBA value. RGBA is the only format we deal with at the moment. 
-const int RGBA_SIZE = 4;
-
-namespace
-{
-	GLuint
-	translate_colour_format_to_gl(
-			GPlatesPropertyValues::InMemoryRaster::ColourFormat format)
-	{
-		switch (format)
-		{
-			case GPlatesPropertyValues::InMemoryRaster::RgbFormat:
-				return GL_RGB;
-
-			case GPlatesPropertyValues::InMemoryRaster::RgbaFormat:
-				return GL_RGBA;
-		}
-
-		// As long as the supplied colour format is valid (and this function is kept up-to-date
-		// with GL-format values which correspond to the abstract colour format values), the end of
-		// the function will never be reached.  However, since we unfortunately can't express this
-		// to GCC, and GCC hence complains "control reaches end of non-void function", let's just
-		// return a value.
-		return GL_RGB;
-	}
+#include "maths/PointOnSphere.h"
 
 
-	/**
-	 * Rounds up to the nearest power of two. 
-	 */
-	int
-	next_power_of_two(
-			int n)
-	{
-		// Check if it's already a power of 2. 
-		if ((n & (n - 1)) == 0)
-		{
-			return n;
-		}
+GPlatesGui::Texture::Texture() :
+	d_georeferencing(
+			GPlatesPropertyValues::Georeferencing::create()),
+	d_raster(
+			GPlatesPropertyValues::UninitialisedRawRaster::create()),
+	d_updated_georeferencing(false),
+	d_updated_raster(false),
+	d_enabled(false),
+	d_is_loaded(false)
+{ }
 
-		// It's not a power of 2, so find the next power of 2.
-		int count = 1;
-		while (n > 1)
-		{
-			n = n / 2;
-			++count;
-		}
-
-		return static_cast<int>(pow(2., count));
-	}
-
-
-	/**
-	 * Pads the image out to power of two dimensions without stretching the image data. 
-	 */ 
-	void
-	expand_to_power_two(
-			std::vector<unsigned char> &data,
-			int image_width,
-			int image_height,
-			int &texture_width,
-			int &texture_height)
-	{
-		int new_width = next_power_of_two(image_width);
-		int new_height = next_power_of_two(image_height);
-
-		std::vector<unsigned char> padded_data;
-
-		try
-		{
-			padded_data.resize(new_width * new_height * RGBA_SIZE);
-		}
-		catch (...)
-		{
-			std::cerr << "Unable to allocate memory for expanded texture." << std::endl;
-			texture_width = image_width;
-			texture_height = image_height;
-			return;
-		}
-
-		texture_width = new_width;
-		texture_height = new_height;
-
-		std::vector<unsigned char>::iterator it = data.begin();
-		std::vector<unsigned char>::iterator p_it = padded_data.begin();
-
-		int offset = (texture_width - image_width)*RGBA_SIZE;
-
-		int total_width = image_width*RGBA_SIZE;
-
-		for (int h = 0; h < image_height; ++h)
-		{
-			for (int w = 0; w < total_width; ++w)
-			{
-				*p_it = *it;
-				p_it++;
-				it++;
-			}
-
-			p_it += offset;	
-		}
-
-		data.swap(padded_data);
-	}
-
-
-	/**
-	 * Pads the image out to power of two dimensions without stretching the image data. 
-	 */ 
-	void
-	expand_to_power_two(
-			unsigned char *data,
-			std::vector<unsigned char> &expanded_data,
-			int image_width,
-			int image_height,
-			int &texture_width,
-			int &texture_height)
-	{
-		int new_width = next_power_of_two(image_width);
-		int new_height = next_power_of_two(image_height);
-
-		try
-		{
-			expanded_data.resize(new_width * new_height * RGBA_SIZE);
-		}
-		catch (...)
-		{
-			std::cerr << "Unable to allocate memory for expanded texture." << std::endl;
-			return;
-		}
-
-		texture_width = new_width;
-		texture_height = new_height;
-
-		unsigned char *data_ptr = data;
-		unsigned char *padded_ptr = &expanded_data[0];
-
-		int offset = (texture_width - image_width) * RGBA_SIZE;
-
-		int total_width = image_width * RGBA_SIZE;
-
-		for (int h = 0; h < image_height; ++h)
-		{
-			std::memcpy(padded_ptr, data_ptr, total_width);
-			data_ptr += total_width;
-			padded_ptr += total_width + offset;
-		}
-	}
-
-
-	/**
-	 * Checks if we have enough resources to accomodate the given size and format of texture. 
-	 */
-	void
-	check_texture_size(
-			GPlatesPropertyValues::InMemoryRaster::ColourFormat format,
-			int width,
-			int height)
-	{
-		GLint width_out;
-		glTexImage2D(
-				GL_PROXY_TEXTURE_2D,
-				0,
-				translate_colour_format_to_gl(format),
-				width,
-				height,
-				0,
-				translate_colour_format_to_gl(format),
-				GL_UNSIGNED_BYTE,
-				NULL);
-		glGetTexLevelParameteriv(
-				GL_PROXY_TEXTURE_2D,
-				0,
-				GL_TEXTURE_INTERNAL_FORMAT,
-				&width_out);
-
-		if (width_out == 0)
-		{
-			QString message = QString("Cannot render texture of size %1 by %2").arg(width).arg(height);
-			throw GPlatesOpenGL::OpenGLException(
-					GPLATES_EXCEPTION_SOURCE,
-					message.toStdString().c_str());
-		}
-	}
-		
-
-	void
-	clear_gl_errors()
-	{	
-		while (glGetError() != GL_NO_ERROR)
-			;
-	}
-
-
-	GLenum
-	check_gl_errors(
-			GLuint &texture_name,
-			const char *message = "")
-	{
-		GLenum error = glGetError();
-		if (error != GL_NO_ERROR)
-		{
-			std::cout << message << ": openGL error: " << gluErrorString(error) << std::endl;
-			glDeleteTextures(1, &texture_name);
-			throw GPlatesOpenGL::OpenGLException(
-					GPLATES_EXCEPTION_SOURCE,
-					"OpenGL error in Texture.cc");
-		}
-
-		return error;
-	}
-
-	void
-	check_glu_errors(
-			GLuint error,
-			GLuint &texture_name)
-	{
-		if (error == GLU_OUT_OF_MEMORY)
-		{
-			glDeleteTextures(1, &texture_name);
-			throw GPlatesOpenGL::OpenGLBadAllocException(
-					GPLATES_EXCEPTION_SOURCE,
-					"There was insufficient memory to load the requested texture.");
-		}
-
-		if (error != GL_NO_ERROR)
-		{
-			std::cout << " GLU error: " << gluErrorString(error) << std::endl;
-			glDeleteTextures(1, &texture_name);
-			throw GPlatesOpenGL::OpenGLException(
-					GPLATES_EXCEPTION_SOURCE,
-					"GLU error in Texture.cc");
-		}
-	}
-}
-
-
-GPlatesGui::Texture::~Texture()
-{
-	if (d_image_data != NULL)
-	{
-		delete[] d_image_data;
-	}
-
-	glDeleteTextures(1, &d_texture_name);
-}
 
 void
-GPlatesGui::Texture::generate_test_texture()
+GPlatesGui::Texture::set_georeferencing(
+		const GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing)
 {
-	if (d_image_data != NULL)
-	{
-		delete[] d_image_data;
-	}
-	glDeleteTextures(1, &d_texture_name);
+	d_georeferencing = georeferencing;
+	d_updated_georeferencing = true;
+	emit texture_changed();
+}
 
-	d_image_width = 2048;
-	d_image_height = 1024;
 
-	int size = d_image_width * d_image_height;
-
-	d_image_data = new GLubyte[size * 4];
-
-	GLubyte *image_ptr = d_image_data;
-	int i, j;
-	int a;
-
-	GLubyte value1, value2;
-
-	for (i = 0; i < d_image_height; ++i)
-	{
-		int check = (i / 16) % 2;
-		if (check == 0)
-		{
-			value1 = 0;
-			value2 = 255;
-		}
-		else
-		{
-			value1 = 255;
-			value2 = 0;
-		}
-
-		for (j = 0; j < d_image_width; j += 16)
-		{	
-			for (a = 0; a < 8; ++a)
-			{
-				*image_ptr++ = value1;
-				*image_ptr++ = value1;
-				*image_ptr++ = value1;
-				*image_ptr++ = value1;
-			}
-			for (a = 0; a < 8; ++a)
-			{
-				*image_ptr++ = value2;
-				*image_ptr++ = value2;
-				*image_ptr++ = value2;
-				*image_ptr++ = value2;
-			}
-		}
-	}
-
-	glGenTextures(1, &d_texture_name);
-	glBindTexture(GL_TEXTURE_2D, d_texture_name);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	gluBuild2DMipmaps(
-			GL_TEXTURE_2D,
-			GL_LUMINANCE,
-			d_image_width,
-			d_image_height,
-			GL_LUMINANCE,
-			GL_UNSIGNED_BYTE,
-			d_image_data);
-
-	glEnable(GL_TEXTURE_2D);
-
-	delete[] d_image_data;
-	d_image_data = NULL;
+void
+GPlatesGui::Texture::set_raster(
+		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raw_raster)
+{
+	d_raster = raw_raster;
+	d_updated_raster = true;
+	
+	d_is_loaded = true;
 
 	emit texture_changed();
 }
 
 
-GLuint
-GPlatesGui::Texture::get_texture_name()
-{
-	return d_texture_name;
-}
-
-
 void
-GPlatesGui::Texture::paint()
+GPlatesGui::Texture::paint(
+		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
+		const GPlatesOpenGL::GLTextureResourceManager::shared_ptr_type &texture_resource_manager)
 {
-	if (d_enabled)
+	if (!d_enabled)
 	{
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, d_texture_name);
+		return;
+	}
 
-		// When the globe is cloned, this doesn't get set
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-		if (d_should_be_remapped)
+	if (d_updated_raster)
+	{
+		if (d_multi_resolution_raster)
 		{
-			remap_texture();
-			d_should_be_remapped = false;
-		}
-
-		int i, j;
-		for (j = 0; j < NUM_STRIPS_T; ++j)
-		{
-			glBegin(GL_QUAD_STRIP);
-
-			for (i = 0; i < NUM_STRIPS_S; ++i)
+			// We already have a raster so see if we can just update the raster data.
+			// This will return false if the raster dimensions differ.
+			if (!d_multi_resolution_raster.get()->change_raster(d_raster))
 			{
-				glTexCoord2f(
-						d_texture_vertices[i][j].s, 
-						d_texture_vertices[i][j].t);
-
-				glVertex3f(
-						d_sphere_vertices[i][j].x,
-						d_sphere_vertices[i][j].y,
-						d_sphere_vertices[i][j].z);
-
-				glTexCoord2f(
-						d_texture_vertices[i][j+1].s, 
-						d_texture_vertices[i][j+1].t);
-
-				glVertex3f(
-						d_sphere_vertices[i][j+1].x,
-						d_sphere_vertices[i][j+1].y,
-						d_sphere_vertices[i][j+1].z);
-
-				glTexCoord2f(
-						d_texture_vertices[i+1][j].s, 
-						d_texture_vertices[i+1][j].t);
-
-				glVertex3f(
-						d_sphere_vertices[i+1][j].x,
-						d_sphere_vertices[i+1][j].y,
-						d_sphere_vertices[i+1][j].z);
-
-				glTexCoord2f(
-						d_texture_vertices[i+1][j+1].s, 
-						d_texture_vertices[i+1][j+1].t);
-
-				glVertex3f(
-						d_sphere_vertices[i+1][j+1].x,
-						d_sphere_vertices[i+1][j+1].y,
-						d_sphere_vertices[i+1][j+1].z);	
+				// The raster dimensions differ so create a new multi-resolution raster.
+				d_multi_resolution_raster = GPlatesOpenGL::GLMultiResolutionRaster::create(
+						d_georeferencing, d_raster, texture_resource_manager);
 			}
-			glEnd();
+		}
+		else
+		{
+			// Haven't created a multi-resolution raster yet so create one.
+			d_multi_resolution_raster = GPlatesOpenGL::GLMultiResolutionRaster::create(
+					d_georeferencing, d_raster, texture_resource_manager);
 		}
 
-		glDisable(GL_TEXTURE_2D);
+		d_updated_raster = false;
+		d_updated_georeferencing = false;
 	}
-	else
+	else if (d_updated_georeferencing)
 	{
-		glBindTexture(GL_TEXTURE_2D, 0);
+		if (d_multi_resolution_raster)
+		{
+			// Just create a new multi-resolution raster if the georeferencing has been updated.
+			d_multi_resolution_raster = GPlatesOpenGL::GLMultiResolutionRaster::create(
+					d_georeferencing, d_raster, texture_resource_manager);
+		}
+
+		d_updated_georeferencing = false;
 	}
+
+	if (!d_multi_resolution_raster)
+	{
+		return;
+	}
+
+	GPlatesOpenGL::GLMultiResolutionRasterNode::non_null_ptr_type multi_resolution_raster_node =
+			GPlatesOpenGL::GLMultiResolutionRasterNode::create(d_multi_resolution_raster.get());
+
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
+	// Enable texturing and set the texture function.
+	GPlatesOpenGL::GLTextureEnvironmentState::non_null_ptr_type tex_env_state =
+			GPlatesOpenGL::GLTextureEnvironmentState::create();
+	tex_env_state->gl_enable_texture_2D(GL_TRUE);
+	tex_env_state->gl_tex_env_mode(GL_REPLACE);
+	state_set->add_state_set(tex_env_state);
+
+	// Enable alpha-blending in case texture has partial transparency.
+	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
+			GPlatesOpenGL::GLBlendState::create();
+	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	state_set->add_state_set(blend_state);
+
+	// Set the state on the multi-resolution raster node.
+	multi_resolution_raster_node->set_state_set(state_set);
+
+	render_graph_parent_node->add_child_node(multi_resolution_raster_node);
 }
 
 
@@ -464,234 +171,3 @@ GPlatesGui::Texture::toggle()
 	d_enabled = !d_enabled;
 	emit texture_changed();
 }
-
-
-void
-GPlatesGui::Texture::generate_raster(
-		unsigned_byte_type *data, 
-		QSize &size, 
-		ColourFormat format)
-{
-	clear_gl_errors();
-
-	glDeleteTextures(1, &d_texture_name);
-	glGenTextures(1, &d_texture_name);
-	glBindTexture(GL_TEXTURE_2D, d_texture_name);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-	d_image_width = size.width();
-	d_image_height = size.height();
-
-	generate_mapping_coordinates(d_extent);
-
-	check_gl_errors(d_texture_name);
-
-	GLenum error = gluBuild2DMipmaps(
-			GL_TEXTURE_2D,
-			translate_colour_format_to_gl(format),
-			d_image_width,
-			d_image_height,
-			translate_colour_format_to_gl(format),
-			GL_UNSIGNED_BYTE,
-			data);
-
-	check_glu_errors(error, d_texture_name);
-
-	check_gl_errors(d_texture_name);
-	
-	d_is_loaded = true;
-
-	emit texture_changed();
-}
-
-
-void
-GPlatesGui::Texture::generate_mapping_coordinates()
-{
-	float s_coord, t_coord;
-	float lat, lon;
-	for (int j = 0; j <= NUM_STRIPS_T; ++j)
-	{
-		t_coord = static_cast<float>(j) / static_cast<float>(NUM_STRIPS_T);
-		lat = LAT_START + (LAT_END - LAT_START) * t_coord;
-		for (int i = 0; i <= NUM_STRIPS_S; ++i)
-		{
-			s_coord = static_cast<float>(i) / static_cast<float>(NUM_STRIPS_S);
-			lon = LON_START + (LON_END - LON_START) * s_coord;
-
-			GPlatesMaths::LatLonPoint latlon(lat, lon);
-			GPlatesMaths::PointOnSphere p =
-				GPlatesMaths::make_point_on_sphere(latlon);
-
-			d_texture_vertices[i][j].s = s_coord;
-			d_texture_vertices[i][j].t = t_coord;
-
-			d_sphere_vertices[i][j].x = static_cast<float>(p.position_vector().x().dval());
-			d_sphere_vertices[i][j].y = static_cast<float>(p.position_vector().y().dval());
-			d_sphere_vertices[i][j].z = static_cast<float>(p.position_vector().z().dval());
-		}
-	}
-}
-
-
-void
-GPlatesGui::Texture::generate_mapping_coordinates(
-		QRectF &extent)
-{
-	float lon_start = extent.left();
-	float lat_start = extent.bottom();
-	float width = extent.width();
-	float height = extent.height();
-
-	// The height, as stored in the QRectF d_extent, should be negative. 
-	// We want to make it positive for the mapping algorithm below. 
-	//
-	// A positive height in the QRectF corresponds to an invalid range for mapping - 
-	// unless we interpret it as a request to vertically flip the image. I'm not 
-	// going to allow vertical flipping, and so if we get a positive height, return. 
-	if (height < 0.)
-	{
-		height = -height;
-	}
-	else
-	{
-		return;
-	}
-
-	// A negative width means we've gone over the date line, and that's OK, we
-	// just need to correct it. 
-	if (width < 0.) 
-	{
-		width += 360.;
-	}
-
-	// A width > 360 means we've gone round the globe more than once. 
-	if (width > 360.)
-	{
-		width -= 360.;
-	}
-
-	// FIXME: Do some optimisation on these loops...
-	float s_coord, t_coord;
-	float lat, lon;
-	for (int j = 0; j <= NUM_STRIPS_T; ++j)
-	{
-		t_coord = static_cast<float>(j) / static_cast<float>(NUM_STRIPS_T);
-		lat = lat_start + height * t_coord;
-		for (int i = 0; i <= NUM_STRIPS_S; ++i)
-		{
-			s_coord = static_cast<float>(i) / static_cast<float>(NUM_STRIPS_S);
-			lon = lon_start + width * s_coord;
-
-			GPlatesMaths::LatLonPoint latlon(lat, lon);
-			GPlatesMaths::PointOnSphere p =
-				GPlatesMaths::make_point_on_sphere(latlon);
-
-			d_texture_vertices[i][j].s = s_coord;
-			d_texture_vertices[i][j].t = t_coord;
-
-			d_sphere_vertices[i][j].x = static_cast<float>(p.position_vector().x().dval());
-			d_sphere_vertices[i][j].y = static_cast<float>(p.position_vector().y().dval());
-			d_sphere_vertices[i][j].z = static_cast<float>(p.position_vector().z().dval());
-		}
-	}
-}
-
-
-void
-GPlatesGui::Texture::remap_texture()
-{
-	// Check that a texture already exists. 
-	if (!d_is_loaded)
-	{
-		return;
-	}
-
-	clear_gl_errors();
-
-	// The dimensions of the image in texture memory may differ from those of the original image, 
-	// so we need to query openGL to get the current width and height. 
-	GLint width, height;
-	
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-
-	// Allocate memory to store the image which we'll later grab from texture memory
-	std::vector<unsigned_byte_type> texture_data(width * height * RGBA_SIZE);
-
-	// Grab the texture from texture memory, stick it in texture_data.
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texture_data[0]);
-
-	glDeleteTextures(1, &d_texture_name);
-	glGenTextures(1, &d_texture_name);
-	glBindTexture(GL_TEXTURE_2D, d_texture_name);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-	generate_mapping_coordinates(d_extent);
-
-	check_gl_errors(d_texture_name);
-
-	GPlatesPropertyValues::InMemoryRaster::ColourFormat format =
-		GPlatesPropertyValues::InMemoryRaster::RgbaFormat;
-
-	GLenum error = gluBuild2DMipmaps(
-			GL_TEXTURE_2D,
-			translate_colour_format_to_gl(format),
-			width,
-			height,
-			translate_colour_format_to_gl(format),
-			GL_UNSIGNED_BYTE,
-			&texture_data[0]);
-
-	check_glu_errors(error,d_texture_name);
-
-	check_gl_errors(d_texture_name);
-}
-
-
-void
-GPlatesGui::Texture::set_extent(
-		const QRectF &rect)
-{
-	d_extent = rect;
-	d_should_be_remapped = true;
-	emit texture_changed();
-}
-
-
-/*
-bool
-GPlatesGui::Texture::texture_is_loaded()
-{
-
-	if (! glIsTexture(d_texture_name))
-	{
-		return false;
-	}
-
-	GLint width, height;
-	
-	glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_WIDTH,&width);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_HEIGHT,&height);
-
-	if ((width == 0) || (height == 0))
-	{
-		return false;
-	}
-
-	return true;
-}
-*/
-

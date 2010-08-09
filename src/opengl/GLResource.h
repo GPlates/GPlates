@@ -32,6 +32,9 @@
 
 #include "GLResourceManager.h"
 
+#include "utils/non_null_intrusive_ptr.h"
+#include "utils/ReferenceCount.h"
+
 
 namespace GPlatesOpenGL
 {
@@ -40,9 +43,19 @@ namespace GPlatesOpenGL
 	 * that schedules the resource to be deallocated when its destructor is called.
 	 */
 	template <typename ResourceType, class ResourceAllocatorType>
-	class GLResource
+	class GLResource :
+			public GPlatesUtils::ReferenceCount<GLResource<ResourceType,ResourceAllocatorType> >
 	{
 	public:
+		//! Typedef for this class type.
+		typedef GLResource<ResourceType,ResourceAllocatorType> this_type;
+
+		//! A convenience typedef for a shared pointer to a non-const @a GLResource.
+		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
+
+		//! A convenience typedef for a shared pointer to a const @a GLResource.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
+
 		//! Typedef for the manager of this resource type.
 		typedef GLResourceManager<ResourceType, ResourceAllocatorType> resource_manager_type;
 
@@ -51,13 +64,14 @@ namespace GPlatesOpenGL
 		 * Creates a @a GLResource from a resource manager.
 		 */
 		static
-		GLResource<ResourceType, ResourceAllocatorType>
+		non_null_ptr_type
 		create(
 				const typename resource_manager_type::shared_ptr_type &resource_manager)
 		{
-			return GLResource(
-					resource_manager->allocate_resource(),
-					resource_manager);
+			return non_null_ptr_type(
+					new GLResource(
+							resource_manager->allocate_resource(),
+							resource_manager));
 		}
 
 

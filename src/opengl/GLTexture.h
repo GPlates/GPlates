@@ -76,13 +76,13 @@ namespace GPlatesOpenGL
 				GLenum target) const;
 
 	private:
-		GLTextureResource d_texture_resource;
+		GLTextureResource::non_null_ptr_to_const_type d_texture_resource;
 
 
 		//! Constructor.
 		explicit
 		GLTexture(
-				const GLTextureResource &texture_resource) :
+				const GLTextureResource::non_null_ptr_to_const_type &texture_resource) :
 			d_texture_resource(texture_resource)
 		{  }
 	};

@@ -31,6 +31,8 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 
+#include "property-values/RawRaster.h"
+
 
 namespace GPlatesPropertyValues
 {
@@ -62,14 +64,12 @@ namespace GPlatesPropertyValues
 		{  }
 
 		/**
-		 * Generate a texture using the data pointed to by unsigned_byte_type *data.
+		 * Specify raster data.
 		 */
 		virtual
 		void
-		generate_raster(
-				unsigned_byte_type *data,
-				QSize &size,
-				ColourFormat format) = 0;
+		set_raster(
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raw_raster) = 0;
 
 		/**
 		 * Sets the value of the boolean d_enabled, which determines whether or not the texture

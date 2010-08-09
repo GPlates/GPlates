@@ -42,7 +42,7 @@
 
 
 bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
-GLint GPlatesOpenGL::GLContext::s_max_texture_units = 1;
+boost::optional<GPlatesOpenGL::GLContext::TextureParameters> GPlatesOpenGL::GLContext::s_texture_parameters;
 
 
 // We use macros in <GL/glew.h> that contain old-style casts.
@@ -75,33 +75,46 @@ GPlatesOpenGL::GLContext::initialise()
 
 		s_initialised_GLEW = true;
 
+		// Initialise texture parameters with default values.
+		TextureParameters texture_parameters =
+		{
+			GL_TEXTURE0_ARB,
+			64, // Minimum size texture that must be supported by all OpenGL implementations
+			1, // GL_MAX_TEXTURE_UNITS_ARB
+			1.0f // GL_TEXTURE_MAX_ANISOTROPY_EXT
+		};
+
+		// Get the maximum texture size (dimension).
+		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texture_parameters.gl_max_texture_size);  
+
 		// Get the maximum number of texture units supported.
 		if (GLEW_ARB_multitexture)
 		{
-			glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &s_max_texture_units);
+			glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &texture_parameters.gl_max_texture_units_ARB);
 		}
+
+		// Get the maximum texture anisotropy supported.
+		if (GL_EXT_texture_filter_anisotropic)
+		{
+			glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &texture_parameters.gl_texture_max_anisotropy_EXT);
+		}
+
+		s_texture_parameters = texture_parameters;
 	}
 }
 
 ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
-std::size_t
-GPlatesOpenGL::GLContext::get_max_texture_units_ARB()
+const GPlatesOpenGL::GLContext::TextureParameters &
+GPlatesOpenGL::GLContext::get_texture_parameters()
 {
 	// GLEW must have been initialised.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			s_initialised_GLEW,
+			s_initialised_GLEW && s_texture_parameters,
 			GPLATES_ASSERTION_SOURCE);
 
-	return s_max_texture_units;
-}
-
-
-GLenum
-GPlatesOpenGL::GLContext::get_GL_TEXTURE0_ARB()
-{
-	return GL_TEXTURE0_ARB;
+	return s_texture_parameters.get();
 }
 
 

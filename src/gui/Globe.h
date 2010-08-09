@@ -43,6 +43,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
 
+#include "opengl/GLContext.h"
 #include "opengl/GLUNurbsRenderer.h"
 #include "opengl/GLRenderGraphInternalNode.h"
 
@@ -111,7 +112,9 @@ namespace GPlatesGui
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
 		 */
-		void paint(
+		void
+		paint(
+				const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 				const double &viewport_zoom_factor,
 				float scale);
@@ -125,7 +128,9 @@ namespace GPlatesGui
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
 		 */
-		void paint_vector_output(
+		void
+		paint_vector_output(
+				const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 				const double &viewport_zoom_factor,
 				float scale);

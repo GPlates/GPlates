@@ -51,7 +51,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Call @a gl_enable, gl_blend_func, etc to initialise the state.
 		 * For example:
-		 *   blend_state->gl_enable().gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		 *   blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		 */
 		static
 		non_null_ptr_type

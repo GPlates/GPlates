@@ -89,6 +89,13 @@ namespace GPlatesOpenGL
 		boost::optional<typename ObjectType::shared_ptr_type>
 		get_object();
 
+
+		/**
+		 * Marks this object as invalid so that @a get_object will return false.
+		 */
+		void
+		invalidate();
+
 	private:
 		typename ObjectType::weak_ptr_type d_object;
 		boost::weak_ptr<void> d_volatile_token;
@@ -107,7 +114,8 @@ namespace GPlatesOpenGL
 	GLVolatileObject<ObjectType>::GLVolatileObject(
 			const typename ObjectType::shared_ptr_type &object,
 			const boost::shared_ptr<void> &volatile_token) :
-		d_object(object)
+		d_object(object),
+		d_volatile_token(volatile_token)
 	{
 	}
 
@@ -132,6 +140,14 @@ namespace GPlatesOpenGL
 		}
 
 		return object;
+	}
+
+
+	template <typename ObjectType>
+	void
+	GLVolatileObject<ObjectType>::invalidate()
+	{
+		d_volatile_token.reset();
 	}
 }
 
