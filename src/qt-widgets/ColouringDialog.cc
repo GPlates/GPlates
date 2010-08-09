@@ -283,14 +283,14 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	categories_table->verticalHeader()->hide();
 
 	// Set up the list of colour schemes.
-	colour_schemes_list->setViewMode(QListWidget::IconMode);
-	colour_schemes_list->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-	colour_schemes_list->setSpacing(SPACING);
-	colour_schemes_list->setMovement(QListView::Static);
-	colour_schemes_list->setWrapping(true);
-	colour_schemes_list->setResizeMode(QListView::Adjust);
-	colour_schemes_list->setUniformItemSizes(true);
-	colour_schemes_list->setWordWrap(true);
+ 	colour_schemes_list->setViewMode(QListWidget::IconMode);
+ 	colour_schemes_list->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
+ //	colour_schemes_list->setSpacing(SPACING); //Due to a qt bug, the setSpacing doesn't work well in IconMode.
+ 	colour_schemes_list->setMovement(QListView::Static);
+ 	colour_schemes_list->setWrapping(true);
+ 	colour_schemes_list->setResizeMode(QListView::Adjust);
+ 	colour_schemes_list->setUniformItemSizes(true);
+ 	colour_schemes_list->setWordWrap(true);
 	
 	// Change the background colour of the right hand side.
 	QPalette right_palette = right_side_frame->palette();
