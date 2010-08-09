@@ -241,7 +241,7 @@ namespace
 		{
 			// Process couldn't start, e.g. `svn` not found.
 			std::cerr << program_name << ": warning: svn could not start" << std::endl;
-			return QString();
+			return QString("internal release");
 		}
 
 		// Commence reading from the process's standard output.
