@@ -1471,8 +1471,16 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	action_Edit_Feature->setEnabled(enable_canvas_tool_actions);
 	action_Delete_Feature->setEnabled(enable_canvas_tool_actions);
 	action_Clear_Selection->setEnabled(enable_canvas_tool_actions);
-	action_Clone_Geometry->setEnabled(enable_canvas_tool_actions);
 	action_Clone_Feature->setEnabled(enable_canvas_tool_actions);
+
+	if (enable_canvas_tool_actions && d_focused_feature_geometry_builder->has_geometry())
+	{
+		action_Clone_Geometry->setEnabled(true);
+	}
+	else
+	{
+		action_Clone_Geometry->setEnabled(false);
+	}
 
 #if 0
 	// FIXME: Add to Selection is unimplemented and should stay disabled for now.
