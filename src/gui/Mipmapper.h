@@ -165,10 +165,12 @@ namespace GPlatesGui
 			 */
 			BasicMipmapper(
 					const typename output_raster_type::non_null_ptr_to_const_type &source_raster,
-					unsigned int threshold_size) :
+					unsigned int threshold_size,
+					const boost::function<bool ()> &generate_next_function) :
 				d_current_mipmap(source_raster),
 				d_current_coverage_has_fractional_values(false),
-				d_threshold_size(threshold_size)
+				d_threshold_size(threshold_size),
+				d_generate_next_function(generate_next_function)
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 						threshold_size >= 1,
@@ -198,7 +200,7 @@ namespace GPlatesGui
 					return false;
 				}
 
-				return static_cast<MipmapperType *>(this)->do_generate_next();
+				return d_generate_next_function();
 			}
 
 			/**
@@ -280,6 +282,7 @@ namespace GPlatesGui
 		private:
 
 			unsigned int d_threshold_size;
+			boost::function<bool ()> d_generate_next_function;
 		};
 
 		/**
@@ -351,7 +354,8 @@ namespace GPlatesGui
 		Mipmapper(
 				const typename RawRasterType::non_null_ptr_to_const_type &source_raster,
 				unsigned int threshold_size = 1) :
-			base_type(source_raster, threshold_size)
+			base_type(source_raster, threshold_size,
+				boost::bind(&Mipmapper::do_generate_next, boost::ref(*this)))
 		{
 		}
 
@@ -383,7 +387,6 @@ namespace GPlatesGui
 			return true;
 		}
 
-		friend class MipmapperInternals::BasicMipmapper<RawRasterType, Mipmapper<RawRasterType> >;
 		using base_type::d_current_mipmap;
 	};
 
@@ -416,7 +419,8 @@ namespace GPlatesGui
 		Mipmapper(
 				const typename RawRasterType::non_null_ptr_to_const_type &source_raster,
 				unsigned int threshold_size = 1) :
-			base_type(source_raster, threshold_size),
+			base_type(source_raster, threshold_size,
+				boost::bind(&Mipmapper::do_generate_next, boost::ref(*this))),
 			d_source_raster(source_raster),
 			d_fraction_in_source_raster(
 				get_initial_fraction_in_source_raster(
@@ -572,7 +576,6 @@ namespace GPlatesGui
 		 */
 		GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_to_const_type d_fraction_in_source_raster;
 
-		friend class MipmapperInternals::BasicMipmapper<RawRasterType, Mipmapper<RawRasterType> >;
 		using base_type::d_current_mipmap;
 		using base_type::d_current_coverage;
 		using base_type::d_current_coverage_has_fractional_values;
