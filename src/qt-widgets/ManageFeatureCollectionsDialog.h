@@ -53,6 +53,11 @@ namespace GPlatesGui
 	class FileIOFeedback;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 
 namespace GPlatesQtWidgets
 {
@@ -73,6 +78,7 @@ namespace GPlatesQtWidgets
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				GPlatesGui::FileIOFeedback &gui_file_io_feedback,
+				GPlatesPresentation::ViewState& d_view_state,
 				QWidget *parent_ = NULL);
 		
 
@@ -290,6 +296,7 @@ namespace GPlatesQtWidgets
 		 */
 		QPointer<GPlatesGui::FileIOFeedback> d_gui_file_io_feedback_ptr;
 
+		GPlatesPresentation::ViewState& d_view_state;
 
 		/**
 		 * Connect to signals from a @a FeatureCollectionFileState object.

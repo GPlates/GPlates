@@ -243,6 +243,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_application_state().get_feature_collection_file_state(),
 				get_application_state().get_feature_collection_file_io(),
 				*d_file_io_feedback_ptr,
+				get_view_state(),
 				this)),
 	d_mesh_dialog_ptr(NULL),
 	d_read_errors_dialog_ptr(

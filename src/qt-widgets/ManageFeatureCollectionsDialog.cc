@@ -33,6 +33,7 @@
 #include <QDropEvent>
 #include <QDebug>
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "file-io/FileInfo.h"
@@ -47,6 +48,7 @@
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "gui/FileIOFeedback.h"
 #include "model/FeatureCollectionHandle.h"
+#include "presentation/ViewState.h"
 #include "ManageFeatureCollectionsActionWidget.h"
 #include "ManageFeatureCollectionsStateWidget.h"
 
@@ -180,11 +182,13 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 		GPlatesGui::FileIOFeedback &gui_file_io_feedback,
+		GPlatesPresentation::ViewState &view_state, 
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
 	d_file_state(file_state),
 	d_feature_collection_file_io(&feature_collection_file_io),
-	d_gui_file_io_feedback_ptr(&gui_file_io_feedback)
+	d_gui_file_io_feedback_ptr(&gui_file_io_feedback),
+	d_view_state(view_state)
 {
 	setupUi(this);
 	
@@ -296,6 +300,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_file(
 			action_widget_ptr->get_file_reference();
 	
 	d_gui_file_io_feedback_ptr->reload_file(file_it);
+	d_view_state.get_application_state().reconstruct();
 }
 
 
