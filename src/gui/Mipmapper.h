@@ -582,6 +582,21 @@ namespace GPlatesGui
 	};
 
 
+#if _MSC_VER <= 1400
+	namespace MipmapperInternals
+	{
+		// MSVC2005 has trouble finding the base class for Mipmapper<RawRaster>,
+		// where RawRaster is an integer raster (this is the specialisation
+		// immediately below this). This hack forces the Mipmapper for float
+		// rasters to get instantiated here.
+		class IgnoreMe
+		{
+			Mipmapper<GPlatesPropertyValues::FloatRawRaster> d_mipmapper;
+		};
+	}
+#endif
+
+
 	/**
 	 * This specialisation is for rasters that have an integral element_type
 	 * and that have a no-data value.
