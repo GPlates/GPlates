@@ -146,6 +146,16 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * The order of scanlines or rows of data in the raster as visualised in the image.
+		 */
+		enum RasterScanlineOrderType
+		{
+			TOP_TO_BOTTOM, // the first row of data in the raster is for the *top* of the image
+			BOTTOM_TO_TOP  // the first row of data in the raster is for the *bottom* of the image
+		};
+
+
+		/**
 		 * Creates a @a GLMultiResolutionRaster object.
 		 *
 		 * @a tile_texel_dimension must be a power-of-two - it is the OpenGL square texture
@@ -160,10 +170,12 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-				std::size_t tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION)
+				std::size_t tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
+				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM)
 		{
 			return non_null_ptr_type(new GLMultiResolutionRaster(
-					georeferencing, raster, texture_resource_manager, tile_texel_dimension));
+					georeferencing, raster, texture_resource_manager,
+					tile_texel_dimension, raster_scanline_order));
 		}
 
 
@@ -175,7 +187,8 @@ namespace GPlatesOpenGL
 		 * This method is useful for time-dependent rasters sharing the same georeferencing
 		 * and raster dimensions.
 		 *
-		 * Returns false if @a raster has different dimensions than the current internal raster.
+		 * Returns false if @a raster has different dimensions than the current internal raster or
+		 * if the raster scanline order differs.
 		 * In this case you'll need to create a new @a GLMultiResolutionRaster.
 		 *
 		 * NOTE: The opposite, changing the georeferencing without changing the raster,
@@ -183,7 +196,8 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		change_raster(
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster);
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM);
 
 
 		/**
@@ -527,6 +541,11 @@ namespace GPlatesOpenGL
 		unsigned int d_tile_texel_dimension;
 
 		/**
+		 * The scanline order of the raster (whether first row of data is at top or bottom of image).
+		 */
+		RasterScanlineOrderType d_raster_scanline_order;
+
+		/**
 		 * The original raster as a mipmap pyramid.
 		 */
 		GLRasterProxy::non_null_ptr_to_const_type d_raster_proxy;
@@ -600,7 +619,8 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-				std::size_t tile_texel_dimension);
+				std::size_t tile_texel_dimension,
+				RasterScanlineOrderType raster_scanline_order);
 
 		/**
 		 * Creates the level-of-detail pyramid structures.

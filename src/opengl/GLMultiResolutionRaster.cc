@@ -69,12 +69,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
 		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-		std::size_t tile_texel_dimension) :
+		std::size_t tile_texel_dimension,
+		RasterScanlineOrderType raster_scanline_order) :
 	d_georeferencing(georeferencing),
 	d_tile_texel_dimension( // Make sure our tile size does not exceed the maximum texture size...
 			(std::min)(
 					boost::numeric_cast<GLint>(tile_texel_dimension),
 					GLContext::get_texture_parameters().gl_max_texture_size)),
+	d_raster_scanline_order(raster_scanline_order),
 	d_raster_proxy(GLRasterProxy::create(raster, d_tile_texel_dimension)),
 	// The raster dimensions (the highest resolution level-of-detail).
 	d_raster_width(d_raster_proxy->get_texel_width(0/*level of detail*/)),
@@ -106,8 +108,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 
 bool
 GPlatesOpenGL::GLMultiResolutionRaster::change_raster(
-		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_raw_raster)
+		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_raw_raster,
+		RasterScanlineOrderType raster_scanline_order)
 {
+	// The scanline order should be the same as the current internal raster.
+	if (raster_scanline_order != d_raster_scanline_order)
+	{
+		return false;
+	}
+
 	// Get the raster dimensions.
 	boost::optional<std::pair<unsigned int, unsigned int> > new_raster_dimensions =
 			GPlatesPropertyValues::RawRasterUtils::get_raster_size(*new_raw_raster);
@@ -671,13 +680,25 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree(
 	const unsigned int tile_geo_dimension = d_tile_texel_dimension * lod_factor;
 
 	// The start x coordinate should be an integer multiple of the tile dimension.
-	// The raster height minus the end y coordinate should be also be an integer multiple.
-	// The inverted y is a result of the geo coordinates starting at the top-left but
-	// the raster data starting at the bottom-left.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			(x_geo_start % tile_geo_dimension) == 0 &&
-				((d_raster_height - y_geo_end) % tile_geo_dimension) == 0,
+			(x_geo_start % tile_geo_dimension) == 0,
 			GPLATES_ASSERTION_SOURCE);
+	if (d_raster_scanline_order == TOP_TO_BOTTOM)
+	{
+		// The start y coordinate should be an integer multiple of the tile dimension.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				(y_geo_start % tile_geo_dimension) == 0,
+				GPLATES_ASSERTION_SOURCE);
+	}
+	else // BOTTOM_TO_TOP ...
+	{
+		// The raster height minus the end y coordinate should be also be an integer multiple.
+		// The inverted y is a result of the geo coordinates starting at the top-left but
+		// the raster data starting at the bottom-left.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				((d_raster_height - y_geo_end) % tile_geo_dimension) == 0,
+				GPLATES_ASSERTION_SOURCE);
+	}
 
 	// The width and height of this node.
 	const unsigned int node_geo_width = x_geo_end - x_geo_start;
@@ -745,29 +766,59 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree(
 		// give to each child node. Round up the number of tiles (possibly non-integer)
 		// covered by this node and then divide by two and round down (truncate) -
 		// this gives the most even balance across the two child nodes.
-		const unsigned int num_tiles_in_bottom_child =
-				(node_geo_height + tile_geo_dimension - 1) / tile_geo_dimension / 2;
 
-		// 'node_geo_height' is greater than 'tile_geo_dimension' so we should
-		// have texels remaining for the top child node.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				y_geo_start < y_geo_end - num_tiles_in_bottom_child * tile_geo_dimension,
-				GPLATES_ASSERTION_SOURCE);
-		// Top child node.
-		child_node_indices[0] = create_obb_tree(
-				level_of_detail,
-				x_geo_start,
-				x_geo_end,
-				y_geo_start,
-				y_geo_end - num_tiles_in_bottom_child * tile_geo_dimension);
+		if (d_raster_scanline_order == TOP_TO_BOTTOM)
+		{
+			const unsigned int num_tiles_in_top_child =
+					(node_geo_height + tile_geo_dimension - 1) / tile_geo_dimension / 2;
 
-		// Bottom child node.
-		child_node_indices[1] = create_obb_tree(
-				level_of_detail,
-				x_geo_start,
-				x_geo_end,
-				y_geo_end - num_tiles_in_bottom_child * tile_geo_dimension,
-				y_geo_end);
+			// Top child node.
+			child_node_indices[0] = create_obb_tree(
+					level_of_detail,
+					x_geo_start,
+					x_geo_end,
+					y_geo_start,
+					y_geo_start + num_tiles_in_top_child * tile_geo_dimension);
+
+			// 'node_geo_height' is greater than 'tile_geo_dimension' so we should
+			// have texels remaining for the bottom child node.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					y_geo_end > y_geo_start + num_tiles_in_top_child * tile_geo_dimension,
+					GPLATES_ASSERTION_SOURCE);
+			// Bottom child node.
+			child_node_indices[1] = create_obb_tree(
+					level_of_detail,
+					x_geo_start,
+					x_geo_end,
+					y_geo_start + num_tiles_in_top_child * tile_geo_dimension,
+					y_geo_end);
+		}
+		else // BOTTOM_TO_TOP ...
+		{
+			const unsigned int num_tiles_in_bottom_child =
+					(node_geo_height + tile_geo_dimension - 1) / tile_geo_dimension / 2;
+
+			// 'node_geo_height' is greater than 'tile_geo_dimension' so we should
+			// have texels remaining for the top child node.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					y_geo_start < y_geo_end - num_tiles_in_bottom_child * tile_geo_dimension,
+					GPLATES_ASSERTION_SOURCE);
+			// Top child node.
+			child_node_indices[0] = create_obb_tree(
+					level_of_detail,
+					x_geo_start,
+					x_geo_end,
+					y_geo_start,
+					y_geo_end - num_tiles_in_bottom_child * tile_geo_dimension);
+
+			// Bottom child node.
+			child_node_indices[1] = create_obb_tree(
+					level_of_detail,
+					x_geo_start,
+					x_geo_end,
+					y_geo_end - num_tiles_in_bottom_child * tile_geo_dimension,
+					y_geo_end);
+		}
 	}
 
 	// Each OBB in the tree has one axis oriented radially outward from the globe at the
@@ -888,9 +939,20 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 	// The inverted y is a result of the geo coordinates starting at the top-left but
 	// the raster data starting at the bottom-left.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			(x_geo_start % tile_geo_dimension) == 0 &&
-				((d_raster_height - y_geo_end) % tile_geo_dimension) == 0,
+			(x_geo_start % tile_geo_dimension) == 0,
 			GPLATES_ASSERTION_SOURCE);
+	if (d_raster_scanline_order == TOP_TO_BOTTOM)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				(y_geo_start % tile_geo_dimension) == 0,
+				GPLATES_ASSERTION_SOURCE);
+	}
+	else // BOTTOM_TO_TOP ...
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				((d_raster_height - y_geo_end) % tile_geo_dimension) == 0,
+				GPLATES_ASSERTION_SOURCE);
+	}
 
 	// The number of texels needed to cover the tile.
 	// Round this up so that the level-of-details texels cover the range of geo coordinates.
@@ -903,11 +965,24 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 	// raster data starts at the bottom-left.
 	// Both of the divisions here are exactly divisible.
 	const unsigned int u_lod_texel_offset = x_geo_start / lod_factor;
-	const unsigned int v_lod_texel_offset = (d_raster_height - y_geo_end) / lod_factor;
+	const unsigned int v_lod_texel_offset = (d_raster_scanline_order == TOP_TO_BOTTOM)
+			? y_geo_start / lod_factor
+			: (d_raster_height - y_geo_end) / lod_factor;
+
 	const float u_start = 0; // x_geo_start begins exactly on a texel boundary
 	const float u_end = static_cast<float>(x_geo_end - x_geo_start) / tile_geo_dimension;
-	const float v_start = static_cast<float>(y_geo_end - y_geo_start) / tile_geo_dimension;
-	const float v_end = 0; // y_geo_end begins exactly on a texel boundary
+
+	float v_start, v_end;
+	if (d_raster_scanline_order == TOP_TO_BOTTOM)
+	{
+		v_start = 0; // y_geo_start begins exactly on a texel boundary
+		v_end = static_cast<float>(y_geo_end - y_geo_start) / tile_geo_dimension;
+	}
+	else // BOTTOM_TO_TOP ...
+	{
+		v_start = static_cast<float>(y_geo_end - y_geo_start) / tile_geo_dimension;
+		v_end = 0; // y_geo_end begins exactly on a texel boundary
+	}
 
 	// Determine the number of quads along each tile edge.
 	unsigned int num_quads_along_tile_x_edge = num_u_texels / NUM_TEXELS_PER_VERTEX;
