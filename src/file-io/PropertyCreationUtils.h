@@ -204,6 +204,12 @@ namespace GPlatesFileIO
 
 		AS_PROP_VAL(create_gpml_continental_boundary_side_enumeration)
 
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_reconstruction_method_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_reconstruction_method_enumeration)
+
 
 		GPlatesPropertyValues::Enumeration::non_null_ptr_type
 		create_gpml_dip_side_enumeration(

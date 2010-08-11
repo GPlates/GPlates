@@ -621,6 +621,8 @@ namespace
 			GET_PROP_VAL_NAME(create_plate_id);
 		map[ PropertyName::create_gpml("conjugatePlateId") ] = 
 			GET_PROP_VAL_NAME(create_plate_id);
+		map[ PropertyName::create_gpml("reconstructionMethod") ] = 
+			GET_PROP_VAL_NAME(create_reconstruction_method_enumeration);
 
 		return map;
 	}

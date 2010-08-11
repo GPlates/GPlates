@@ -30,12 +30,14 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/Enumeration.h"
 
 
 GPlatesAppLogic::ReconstructionFeatureProperties::ReconstructionFeatureProperties(
 		const double &recon_time) :
 	d_recon_time(recon_time),
-	d_feature_is_defined_at_recon_time(true)
+	d_feature_is_defined_at_recon_time(true),
+	d_recon_method(GPlatesAppLogic::BY_PLATE_ID)
 {
 }
 
@@ -92,10 +94,51 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gpml_plate_id(
 	static GPlatesModel::PropertyName reconstruction_plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
+	static GPlatesModel::PropertyName right_plate_id_property_name =
+		GPlatesModel::PropertyName::create_gpml("rightPlate");
+
+	static GPlatesModel::PropertyName left_plate_id_property_name =
+		GPlatesModel::PropertyName::create_gpml("leftPlate");
+
 	// Note that we're going to assume that we're in a property...
 	if (current_top_level_propname() == reconstruction_plate_id_property_name)
 	{
 		// This plate ID is the reconstruction plate ID.
 		d_recon_plate_id = gpml_plate_id.value();
 	}
+
+	if (current_top_level_propname() == right_plate_id_property_name)
+	{
+		d_right_plate_id = gpml_plate_id.value();
+	}
+
+	if (current_top_level_propname() == left_plate_id_property_name)
+	{
+		d_left_plate_id = gpml_plate_id.value();
+	}
 }
+
+void
+GPlatesAppLogic::ReconstructionFeatureProperties::visit_enumeration(
+		const enumeration_type &enumeration)
+{
+	static GPlatesModel::PropertyName reconstruction_method_name =
+		GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
+
+	d_recon_method = GPlatesAppLogic::BY_PLATE_ID;
+	// Note that we're going to assume that we're in a property...
+	if (current_top_level_propname() == reconstruction_method_name)
+	{
+		if(enumeration.value().get() == 
+			GPlatesUtils::make_icu_string_from_qstring(
+					(*GPlatesAppLogic::recon_method_map.find(
+							GPlatesAppLogic::HALF_STAGE_ROTATION)).second))
+		{
+			d_recon_method = GPlatesAppLogic::HALF_STAGE_ROTATION;
+		}
+
+	}
+	return;
+}
+
+

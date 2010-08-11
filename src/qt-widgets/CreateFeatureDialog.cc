@@ -67,6 +67,10 @@
 
 #include "utils/UnicodeStringUtils.h"
 
+#include "property-values/Enumeration.h"
+
+
+#define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
 namespace
 {
@@ -224,7 +228,11 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 			new ChooseFeatureCollectionWidget(
 				d_file_state,
 				d_file_io,
-				this))
+				this)),
+	d_recon_method_combobox(new QComboBox(this)),
+	d_right_plate_id(new EditPlateIdWidget(this)),
+	d_left_plate_id(new EditPlateIdWidget(this)),
+	d_recon_method(GPlatesAppLogic::BY_PLATE_ID)
 {
 	setupUi(this);
 
@@ -303,6 +311,8 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 			d_name_widget, SLOT(setFocus()));
 	QObject::connect(d_name_widget, SIGNAL(enter_pressed()),
 			button_next, SLOT(setFocus()));
+	QObject::connect(d_recon_method_combobox, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(recon_method_changed(int)));
 	
 	// Reconfigure some accelerator keys that conflict.
 	d_plate_id_widget->label()->setText(tr("Plate &ID:"));
@@ -314,6 +324,19 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	d_name_widget->label()->setText(tr("&Name:"));
 	d_name_widget->label()->setHidden(false);
 	
+	//Add reconstruction method combobox
+	QHBoxLayout *recon_method_layout;
+	QLabel * recon_method_label;
+	recon_method_label = new QLabel(this);
+	d_recon_method_combobox->insertItem(GPlatesAppLogic::BY_PLATE_ID, tr("By Plate ID"));
+	d_recon_method_combobox->insertItem(GPlatesAppLogic::HALF_STAGE_ROTATION, tr("Half Stage Rotation"));
+	recon_method_layout = new QHBoxLayout;
+	QSizePolicy sizePolicy1(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	d_recon_method_combobox->setSizePolicy(sizePolicy1);
+	recon_method_label->setText(tr("Reconstruction Method:"));
+	recon_method_layout->addWidget(recon_method_label);
+	recon_method_layout->addWidget(d_recon_method_combobox);
+
 	// Create the edit widgets we'll need, and add them to the Designer-created widgets.
 	QHBoxLayout *plate_id_layout;
 	plate_id_layout = new QHBoxLayout;
@@ -322,9 +345,24 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	plate_id_layout->addWidget(d_plate_id_widget);
 	plate_id_layout->addWidget(d_conjugate_plate_id_widget);
 
+	//Add right and left plate id widgets
+	//these widgets are invisible by default
+	QHBoxLayout *right_and_left_plate_id_layout;
+	right_and_left_plate_id_layout = new QHBoxLayout;
+	right_and_left_plate_id_layout->setSpacing(2);
+	right_and_left_plate_id_layout->setMargin(0);
+	d_left_plate_id->label()->setText(tr("&Left Plate ID:"));
+	d_right_plate_id->label()->setText(tr("&Right Plate ID:"));
+	right_and_left_plate_id_layout->addWidget(d_right_plate_id);
+	right_and_left_plate_id_layout->addWidget(d_left_plate_id);
+	d_left_plate_id->setVisible(false);
+	d_right_plate_id->setVisible(false);
+
 	QVBoxLayout *edit_layout;
 	edit_layout = new QVBoxLayout;
+	edit_layout->addItem(recon_method_layout);
 	edit_layout->addItem(plate_id_layout);
+	edit_layout->addItem(right_and_left_plate_id_layout);
 	edit_layout->addWidget(d_time_period_widget);
 	edit_layout->addWidget(d_name_widget);
 	edit_layout->insertStretch(-1);
@@ -593,6 +631,32 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 					GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
 
+	//if we are using half stage rotation, add right and left plate id
+	if(GPlatesAppLogic::HALF_STAGE_ROTATION == d_recon_method)
+	{
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("rightPlate"),
+						d_right_plate_id->create_property_value_from_widget()));
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("leftPlate"),
+						d_left_plate_id->create_property_value_from_widget()));
+
+		const GPlatesPropertyValues::Enumeration::non_null_ptr_type recon_method_value =
+				GPlatesPropertyValues::Enumeration::create(
+						"gpml:ReconstructionMethodEnumeration", "HalfStageRotation");
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
+						recon_method_value));
+	}
+
+	// Add a gml:validTime Property.
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("validTime"),
+				d_time_period_widget->create_property_value_from_widget()));
 		// Add a gpml:conjugatePlateId Property.
 		if (!topological)
 		{
@@ -639,4 +703,33 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_and_save()
 	// and now open the manage feature collections dialog
 	d_viewport_window_ptr->pop_up_manage_feature_collections_dialog();
 }
+
+void 
+GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
+{
+	switch(index)
+	{
+		case GPlatesAppLogic::HALF_STAGE_ROTATION:
+			d_plate_id_widget->setVisible(false);
+			d_conjugate_plate_id_widget->setVisible(false);
+			d_right_plate_id->setVisible(true);
+			d_left_plate_id->setVisible(true);
+			d_recon_method = GPlatesAppLogic::HALF_STAGE_ROTATION;
+		break;
+		
+		case GPlatesAppLogic::BY_PLATE_ID:
+		default:	
+			d_right_plate_id->setVisible(false);
+			d_left_plate_id->setVisible(false);
+			d_plate_id_widget->setVisible(true);
+			d_conjugate_plate_id_widget->setVisible(
+					should_offer_conjugate_plate_id_prop(
+							d_choose_feature_type_widget));
+			d_recon_method = GPlatesAppLogic::BY_PLATE_ID;
+		break;
+	}
+	return;
+}
+
+
 

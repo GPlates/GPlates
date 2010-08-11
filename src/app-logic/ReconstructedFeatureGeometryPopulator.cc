@@ -268,32 +268,32 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 
 	GPlatesModel::FeatureHandle::iterator property = *current_top_level_propiter();
 
-	if (d_reconstruction_params.get_recon_plate_id()) {
-		const FiniteRotation &r = *d_recon_rotation;
-		PolylineOnSphere::non_null_ptr_to_const_type reconstructed_polyline =
-				r * gml_line_string.polyline();
+	PolylineOnSphere::non_null_ptr_to_const_type reconstructed_polyline =
+				gml_line_string.polyline();
+	boost::optional<GPlatesModel::integer_plate_id_type> plate_id = d_reconstruction_params.get_recon_plate_id();
 
-		ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
-				ReconstructedFeatureGeometry::create(
-						d_reconstruction_tree,
-						reconstructed_polyline,
-						*(current_top_level_propiter()->handle_weak_ref()),
-						*(current_top_level_propiter()),
-						d_reconstruction_params.get_recon_plate_id(),
-						d_reconstruction_params.get_time_of_appearance());
-		d_reconstruction_geometry_collection.add_reconstruction_geometry(rfg_ptr);
-	} else {
-		// We must be reconstructing using the identity rotation.
-		ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
-				ReconstructedFeatureGeometry::create(
-						d_reconstruction_tree,
-						gml_line_string.polyline(),
-						*(current_top_level_propiter()->handle_weak_ref()),
-						*(current_top_level_propiter()),
-						boost::none,
-						d_reconstruction_params.get_time_of_appearance());
-		d_reconstruction_geometry_collection.add_reconstruction_geometry(rfg_ptr);
+	if(d_reconstruction_params.get_reconstruction_method() == GPlatesAppLogic::HALF_STAGE_ROTATION)
+	{
+		boost::optional<FiniteRotation> rot;
+		if(rot = get_half_stage_rotation())
+		{
+			reconstructed_polyline = (*rot) * reconstructed_polyline;
+		}
+	} 
+	else if(plate_id) 
+	{
+		reconstructed_polyline = (*d_recon_rotation) * reconstructed_polyline;
 	}
+		
+	ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+			ReconstructedFeatureGeometry::create(
+					d_reconstruction_tree,
+					reconstructed_polyline,
+					*(current_top_level_propiter()->handle_weak_ref()),
+					*(current_top_level_propiter()),
+					plate_id,
+					d_reconstruction_params.get_time_of_appearance());
+	d_reconstruction_geometry_collection.add_reconstruction_geometry(rfg_ptr);
 }
 
 
@@ -582,6 +582,38 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::finalise_post_feature_pr
 						d_reconstruction_params.get_recon_plate_id(),
 						d_reconstruction_params.get_time_of_appearance());
 		d_reconstruction_geometry_collection.add_reconstruction_geometry(rfg_ptr);
+	}
+}
+
+boost::optional<GPlatesMaths::FiniteRotation>
+GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::get_half_stage_rotation()
+{
+	using namespace GPlatesMaths;
+	FiniteRotation right_rotation = d_reconstruction_tree->get_composed_absolute_rotation(
+			*d_reconstruction_params.get_right_plate_id()).first;
+
+	FiniteRotation left_rotation = d_reconstruction_tree->get_composed_absolute_rotation(
+			*d_reconstruction_params.get_left_plate_id()).first;
+
+	const FiniteRotation& r = compose(left_rotation, get_reverse(right_rotation));
+	UnitQuaternion3D quat = r.unit_quat();
+	if(!represents_identity_rotation(quat))
+	{
+		UnitQuaternion3D::RotationParams params = quat.get_rotation_params(r.axis_hint());
+		real_t half_angle = 0.5 * params.angle;
+		
+		FiniteRotation half_rotation = 
+			FiniteRotation::create(
+					UnitQuaternion3D::create_rotation(
+							params.axis, 
+							half_angle),
+					r.axis_hint());
+
+		return compose(half_rotation,right_rotation);
+	}
+	else
+	{
+		return boost::none;
 	}
 }
 

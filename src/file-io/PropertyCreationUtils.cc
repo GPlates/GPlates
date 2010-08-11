@@ -812,6 +812,12 @@ GPlatesFileIO::PropertyCreationUtils::create_gpml_continental_boundary_side_enum
 	return create_enumeration(elem, "gpml:ContinentalBoundarySideEnumeration");
 }
 
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_reconstruction_method_enumeration(
+	const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:ReconstructionMethodEnumeration");
+}
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_dip_side_enumeration(

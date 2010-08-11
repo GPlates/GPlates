@@ -128,6 +128,9 @@ namespace GPlatesAppLogic
 		visit_xs_double(
 				GPlatesPropertyValues::XsDouble &xs_double);
 
+		boost::optional<GPlatesMaths::FiniteRotation>
+		get_half_stage_rotation();
+
 	private:
 		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
 		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;

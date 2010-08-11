@@ -72,6 +72,8 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_gpml_continental_boundary_edge_enumeration);
 	d_map[TemplateTypeParameterType::create_gpml("ContinentalBoundarySideEnumeration")] = 
 		GET_PROP_VAL_NAME(create_gpml_continental_boundary_side_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("ReconstructionMethodEnumeration")] = 
+		GET_PROP_VAL_NAME(create_reconstruction_method_enumeration);
 	d_map[TemplateTypeParameterType::create_gpml("DipSideEnumeration")] = 
 		GET_PROP_VAL_NAME(create_gpml_dip_side_enumeration);
 	d_map[TemplateTypeParameterType::create_gpml("DipSlipEnumeration")] = 

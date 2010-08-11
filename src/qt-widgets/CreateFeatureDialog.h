@@ -30,11 +30,13 @@
 
 #include "CreateFeatureDialogUi.h"
 
+#include "app-logic/ReconstructionMethodId.h"
+
 #include "maths/GeometryOnSphere.h"
 #include "model/ModelInterface.h"
 #include "model/FeatureHandle.h"
 
-
+class QComboBox;
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -120,6 +122,10 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_create_and_save();
+
+		void
+		recon_method_changed(
+				int index);		
 		
 	private:
 	
@@ -137,7 +143,7 @@ namespace GPlatesQtWidgets
 		
 		void
 		set_up_geometric_property_list();
-		
+
 		/**
 		 * The Model interface, used to create new features.
 		 */
@@ -223,7 +229,23 @@ namespace GPlatesQtWidgets
 		 * The newly created feature.
 		 */
 		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
+
+		/**
+		* reconstruction method combox
+		*/
+		QComboBox *d_recon_method_combobox;
 		
+		/**
+		* right plate id
+		*/
+		EditPlateIdWidget *d_right_plate_id;
+		
+		/**
+		* left plate id
+		*/
+		EditPlateIdWidget *d_left_plate_id;
+
+		GPlatesAppLogic::ReconstructionMethod d_recon_method;
 	};
 }
 

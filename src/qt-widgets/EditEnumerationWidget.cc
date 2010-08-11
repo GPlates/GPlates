@@ -106,6 +106,10 @@ namespace
 		{ "gpml:AbsoluteReferenceFrameEnumeration", "Mantle" },
 		{ "gpml:AbsoluteReferenceFrameEnumeration", "NoNetTorque" },
 		{ "gpml:AbsoluteReferenceFrameEnumeration", "Other" },
+
+		{ "gpml:ReconstructionMethodEnumeration", "HalfStageRotation" },
+		{ "gpml:ReconstructionMethodEnumeration", "ByPlateId" },
+		
 	};
 		
 	
