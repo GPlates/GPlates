@@ -35,6 +35,8 @@
 
 #include "Texture.h"
 
+#include "RasterColourPalette.h"
+
 #include "opengl/GLBlendState.h"
 #include "opengl/GLCompositeStateSet.h"
 #include "opengl/GLMultiResolutionRasterNode.h"
@@ -48,7 +50,7 @@
 GPlatesGui::Texture::Texture() :
 	d_georeferencing(
 			GPlatesPropertyValues::Georeferencing::create()),
-	d_raster(
+	d_raw_raster(
 			GPlatesPropertyValues::UninitialisedRawRaster::create()),
 	d_updated_georeferencing(false),
 	d_updated_raster(false),
@@ -71,7 +73,28 @@ void
 GPlatesGui::Texture::set_raster(
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raw_raster)
 {
-	d_raster = raw_raster;
+	d_raw_raster = raw_raster;
+
+	// Setup a default colour scheme for non-RGBA rasters...
+	// This should work for all raster types.
+	GPlatesPropertyValues::RasterStatistics *statistics_ptr =
+		GPlatesPropertyValues::RawRasterUtils::get_raster_statistics(*d_raw_raster);
+	if (statistics_ptr)
+	{
+		GPlatesPropertyValues::RasterStatistics &statistics = *statistics_ptr;
+		if (!statistics.mean || !statistics.standard_deviation)
+		{
+			return;
+		}
+		double mean = *statistics.mean;
+		double std_dev = *statistics.standard_deviation;
+		GPlatesGui::DefaultRasterColourPalette::non_null_ptr_type rgba8_palette =
+			GPlatesGui::DefaultRasterColourPalette::create(mean, std_dev);
+
+		d_raster_colour_scheme =
+				GPlatesGui::RasterColourScheme::create<double>("band name", rgba8_palette);
+	}
+
 	d_updated_raster = true;
 	
 	d_is_loaded = true;
@@ -96,18 +119,18 @@ GPlatesGui::Texture::paint(
 		{
 			// We already have a raster so see if we can just update the raster data.
 			// This will return false if the raster dimensions differ.
-			if (!d_multi_resolution_raster.get()->change_raster(d_raster))
+			if (!d_multi_resolution_raster.get()->change_raster(d_raw_raster, d_raster_colour_scheme))
 			{
 				// The raster dimensions differ so create a new multi-resolution raster.
 				d_multi_resolution_raster = GPlatesOpenGL::GLMultiResolutionRaster::create(
-						d_georeferencing, d_raster, texture_resource_manager);
+						d_georeferencing, d_raw_raster, d_raster_colour_scheme, texture_resource_manager);
 			}
 		}
 		else
 		{
 			// Haven't created a multi-resolution raster yet so create one.
 			d_multi_resolution_raster = GPlatesOpenGL::GLMultiResolutionRaster::create(
-					d_georeferencing, d_raster, texture_resource_manager);
+					d_georeferencing, d_raw_raster, d_raster_colour_scheme, texture_resource_manager);
 		}
 
 		d_updated_raster = false;
@@ -119,7 +142,7 @@ GPlatesGui::Texture::paint(
 		{
 			// Just create a new multi-resolution raster if the georeferencing has been updated.
 			d_multi_resolution_raster = GPlatesOpenGL::GLMultiResolutionRaster::create(
-					d_georeferencing, d_raster, texture_resource_manager);
+					d_georeferencing, d_raw_raster, d_raster_colour_scheme, texture_resource_manager);
 		}
 
 		d_updated_georeferencing = false;

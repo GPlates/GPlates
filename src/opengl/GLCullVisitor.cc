@@ -145,7 +145,7 @@ GPlatesOpenGL::GLCullVisitor::visit(
 	GLMatrix::non_null_ptr_to_const_type projection_transform =
 			d_current_render_target_state->d_transform_state->get_current_projection_matrix();
 
-	GLMultiResolutionRaster::non_null_ptr_to_const_type raster =
+	GLMultiResolutionRaster::non_null_ptr_type raster =
 			raster_node->get_multi_resolution_raster();
 
 	// Get the currently visible raster tiles.

@@ -33,6 +33,8 @@
 #include <QString>
 #include <QObject>
 
+#include "RasterColourScheme.h"
+
 #include "opengl/GLMultiResolutionRaster.h"
 #include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLResourceManager.h"
@@ -135,7 +137,12 @@ namespace GPlatesGui
 		/**
 		 * The raster data. 
 		 */
-		GPlatesPropertyValues::RawRaster::non_null_ptr_type d_raster;
+		GPlatesPropertyValues::RawRaster::non_null_ptr_type d_raw_raster;
+
+		/**
+		 * The optional raster colour scheme (not needed for RGBA rasters).
+		 */
+		boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> d_raster_colour_scheme;
 
 		/**
 		 * Rendering is done with this OpenGL raster.

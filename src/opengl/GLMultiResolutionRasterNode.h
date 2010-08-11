@@ -59,7 +59,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const GLMultiResolutionRaster::non_null_ptr_to_const_type &raster)
+				const GLMultiResolutionRaster::non_null_ptr_type &raster)
 		{
 			return non_null_ptr_type(new GLMultiResolutionRasterNode(raster));
 		}
@@ -68,7 +68,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns multi-resolution raster.
 		 */
-		GLMultiResolutionRaster::non_null_ptr_to_const_type
+		GLMultiResolutionRaster::non_null_ptr_type
 		get_multi_resolution_raster() const
 		{
 			return d_raster;
@@ -99,13 +99,13 @@ namespace GPlatesOpenGL
 		}
 
 	private:
-		GLMultiResolutionRaster::non_null_ptr_to_const_type d_raster;
+		GLMultiResolutionRaster::non_null_ptr_type d_raster;
 
 
 		//! Constructor.
 		explicit
 		GLMultiResolutionRasterNode(
-				const GLMultiResolutionRaster::non_null_ptr_to_const_type &raster) :
+				const GLMultiResolutionRaster::non_null_ptr_type &raster) :
 			d_raster(raster)
 		{  }
 	};

@@ -506,7 +506,7 @@ GPlatesPresentation::ViewState::update_texture_from_raw_raster()
 
 	// Feed the bytes into Texture.
 	GPlatesGui::Texture &texture = *get_texture();
-	texture.set_raster(rgba8_raster_opt.get());
+	texture.set_raster(d_raw_raster);
 	texture.set_enabled(true);
 	
 	return true;

@@ -34,7 +34,6 @@
 
 #include "GLDrawable.h"
 #include "GLIntersectPrimitives.h"
-#include "GLRasterProxy.h"
 #include "GLResourceManager.h"
 #include "GLTexture.h"
 #include "GLTextureCache.h"
@@ -43,13 +42,23 @@
 #include "GLVertexArrayCache.h"
 #include "GLVertexElementArray.h"
 
+#include "gui/RasterColourScheme.h"
+
 #include "maths/PointOnSphere.h"
 
 #include "property-values/Georeferencing.h"
+#include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRaster.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
+
+
+// For debugging only...
+#define USE_OLD_GL_RASTER_PROXY
+#ifdef USE_OLD_GL_RASTER_PROXY
+#include "GLRasterProxy.h"
+#endif
 
 
 namespace GPlatesOpenGL
@@ -165,18 +174,14 @@ namespace GPlatesOpenGL
 		 * by the run-time system then it will be reduced to the maximum texture size.
 		 */
 		static
-		non_null_ptr_type
+		boost::optional<non_null_ptr_type>
 		create(
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
 				std::size_t tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
-				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM)
-		{
-			return non_null_ptr_type(new GLMultiResolutionRaster(
-					georeferencing, raster, texture_resource_manager,
-					tile_texel_dimension, raster_scanline_order));
-		}
+				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM);
 
 
 		/**
@@ -197,6 +202,8 @@ namespace GPlatesOpenGL
 		bool
 		change_raster(
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &
+						raster_colour_scheme,
 				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM);
 
 
@@ -226,7 +233,7 @@ namespace GPlatesOpenGL
 		 */
 		Tile
 		get_tile(
-				tile_handle_type tile_handle) const;
+				tile_handle_type tile_handle);
 
 	private:
 		/**
@@ -536,25 +543,39 @@ namespace GPlatesOpenGL
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
 
 		/**
-		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
+		 * The proxied raster resolver to get region/level data from raster and
+		 * optionally converted to RGBA (using @a d_raster_colour_scheme).
 		 */
-		unsigned int d_tile_texel_dimension;
+		GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type d_proxied_raster_resolver;
+
+#ifdef USE_OLD_GL_RASTER_PROXY
+		//! Old raster proxy for testing only...
+		boost::optional<GLRasterProxy::non_null_ptr_to_const_type> d_gl_raster_proxy;
+#endif
 
 		/**
-		 * The scanline order of the raster (whether first row of data is at top or bottom of image).
+		 * The colour palette used to convert non-RGBA raster data to RGBA.
+		 *
+		 * It is optional since it is only needed if the raw raster is non-RGBA.
 		 */
-		RasterScanlineOrderType d_raster_scanline_order;
-
-		/**
-		 * The original raster as a mipmap pyramid.
-		 */
-		GLRasterProxy::non_null_ptr_to_const_type d_raster_proxy;
+		boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> d_raster_colour_scheme;
 
 		//! Original raster width.
 		unsigned int d_raster_width;
 
 		//! Original raster height.
 		unsigned int d_raster_height;
+
+		/**
+		 * The scanline order of the raster (whether first row of data is at top or bottom of image).
+		 */
+		RasterScanlineOrderType d_raster_scanline_order;
+
+
+		/**
+		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
+		 */
+		unsigned int d_tile_texel_dimension;
 
 		/**
 		 * All tiles of all resolution are grouped into one array for easy lookup for clients.
@@ -617,7 +638,13 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		GLMultiResolutionRaster(
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
+#ifdef USE_OLD_GL_RASTER_PROXY
+				const GLRasterProxy::non_null_ptr_to_const_type &gl_raster_proxy,
+#endif
+				const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
+				unsigned int raster_width,
+				unsigned int raster_height,
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
 				std::size_t tile_texel_dimension,
 				RasterScanlineOrderType raster_scanline_order);
@@ -742,14 +769,14 @@ namespace GPlatesOpenGL
 		 */
 		GLTexture::shared_ptr_to_const_type
 		get_tile_texture(
-				const LevelOfDetailTile &lod_tile) const;
+				const LevelOfDetailTile &lod_tile);
 
 		/**
 		 * Returns the vertex array for the tile @a lod_tile.
 		 */
 		GLVertexArray::shared_ptr_to_const_type
 		get_tile_vertex_array(
-				const LevelOfDetailTile &lod_tile) const;
+				const LevelOfDetailTile &lod_tile);
 
 		/**
 		 * Loads raster data into @a lod_tile.
@@ -758,7 +785,7 @@ namespace GPlatesOpenGL
 		load_raster_data_into_tile_texture(
 				const LevelOfDetailTile &lod_tile,
 				const GLTexture::shared_ptr_type &tile_texture,
-				bool texture_was_recycled) const;
+				bool texture_was_recycled);
 
 		/**
 		 * Loads vertex data into @a lod_tile.
@@ -767,7 +794,7 @@ namespace GPlatesOpenGL
 		load_vertices_into_tile_vertex_array(
 				const LevelOfDetailTile &lod_tile,
 				const GLVertexArray::shared_ptr_type &vertex_array,
-				bool vertex_array_was_recycled) const;
+				bool vertex_array_was_recycled);
 
 
 		/**
