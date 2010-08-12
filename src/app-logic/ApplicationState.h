@@ -35,6 +35,7 @@
 
 #include "FeatureCollectionFileState.h"
 #include "Layer.h"
+#include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
@@ -126,6 +127,10 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructGraph &
 		get_reconstruct_graph();
+
+		void
+		update_layers(
+				const FeatureCollectionFileState::file_reference &input_file_ref);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -285,6 +290,11 @@ namespace GPlatesAppLogic
 		create_layer_tasks(
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &input_feature_collection);
 
+		inline
+		boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> >
+		create_layer_task(
+				LayerTaskRegistry::LayerTaskType&);
+
 		/**
 		 * Creates new layer(s) that can process the feature collection in @a input_file_ref and
 		 * connects the feature collection to the main input of each new layer.
@@ -292,7 +302,29 @@ namespace GPlatesAppLogic
 		void
 		create_layers(
 				const FeatureCollectionFileState::file_reference &input_file_ref);
+
+		void
+		create_layer(
+				const FeatureCollectionFileState::file_reference&,
+				boost::shared_ptr<LayerTask>);
 	};
+
+	boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> >
+	ApplicationState::create_layer_task(
+			LayerTaskRegistry::LayerTaskType& layer_task_type) 
+	{
+		// Ignore layer task types that are not primary.
+		// Primary task types are the set of orthogonal task types that we can
+		// create without user interaction. The other types can be selected specifically
+		// by the user but will never be created automatically when a file is first loaded.
+		if (!layer_task_type.is_primary_task_type())
+		{
+			return boost::none;
+		}
+
+		// Create the layer task.
+		return layer_task_type.create_layer_task();
+	}
 }
 
 #endif // GPLATES_APP_LOGIC_APPLICATIONSTATE_H

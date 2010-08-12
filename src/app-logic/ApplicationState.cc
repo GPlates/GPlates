@@ -30,6 +30,7 @@
 #include "AppLogicUtils.h"
 #include "FeatureCollectionFileIO.h"
 #include "Layer.h"
+#include "LayerTask.h"
 #include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructUtils.h"
@@ -426,20 +427,12 @@ GPlatesAppLogic::ApplicationState::create_layer_tasks(
 	// Iterate over the compatible layer task types and create layer tasks.
 	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, layer_task_types)
 	{
-		// Ignore layer task types that are not primary.
-		// Primary task types are the set of orthogonal task types that we can
-		// create without user interaction. The other types can be selected specifically
-		// by the user but will never be created automatically when a file is first loaded.
-		if (!layer_task_type.is_primary_task_type())
+		boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task;
+		if(layer_task = create_layer_task(layer_task_type))
 		{
-			continue;
+			// Add to sequence returned to the caller.
+			layer_tasks.push_back(*layer_task);
 		}
-
-		// Create the layer task.
-		const boost::shared_ptr<LayerTask> layer_task = layer_task_type.create_layer_task();
-
-		// Add to sequence returned to the caller.
-		layer_tasks.push_back(layer_task);
 	}
 
 	// There should be at least one primary layer task type that is a catch-all.
@@ -450,6 +443,88 @@ GPlatesAppLogic::ApplicationState::create_layer_tasks(
 	return layer_tasks;
 }
 
+namespace
+{
+	using namespace GPlatesAppLogic;
+	bool
+	is_the_layer_task_in_the_layer_list(
+			const LayerTask& layer_task, 
+			const std::list<Layer>& layer_list)
+	{
+		BOOST_FOREACH(Layer layer,layer_list)
+		{
+			if(layer.get_type() == layer_task.get_layer_type())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
+void
+GPlatesAppLogic::ApplicationState::update_layers(
+		const FeatureCollectionFileState::file_reference &input_file_ref)
+{
+	const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
+			input_file_ref.get_file().get_feature_collection();
+	const std::vector<LayerTaskRegistry::LayerTaskType> new_layer_task_types =
+			d_layer_task_registry->get_layer_task_types_that_can_process_feature_collection(
+					feature_collection);
+
+	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, new_layer_task_types)
+	{
+		boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task;
+		if(layer_task = create_layer_task(layer_task_type))
+		{
+			if(
+				!is_the_layer_task_in_the_layer_list(
+						*(*layer_task), 
+						d_file_to_layers_mapping[input_file_ref]))
+			{
+				create_layer(input_file_ref,*layer_task);
+			}
+		}
+		continue;
+	}
+	reconstruct();
+}
+
+void
+GPlatesAppLogic::ApplicationState::create_layer(
+		const FeatureCollectionFileState::file_reference &input_file_ref,
+		boost::shared_ptr<LayerTask> layer_task)
+{
+	// Create a new layer using the layer task.
+	// This will emit a signal in ReconstructGraph to notify clients of a new layer.
+	Layer new_layer = d_reconstruct_graph->add_layer(layer_task);
+
+	//
+	// Connect the feature collection to the input of the new layer.
+	//
+
+	// Get the main feature collection input channel for our layer.
+	const QString main_input_feature_collection_channel =
+			new_layer.get_main_input_feature_collection_channel();
+
+	// Get an input file object from the reconstruct graph.
+	const Layer::InputFile input_file = d_reconstruct_graph->get_input_file(input_file_ref);
+	// Connect the input file to the main input channel.
+	new_layer.connect_input_to_file(
+			input_file,
+			main_input_feature_collection_channel);
+
+	/*
+	 * It's ugly cause it's gonna get removed soon.
+	 *
+	 * FIXME: This is temporary until file activation in
+	 * ManageFeatureCollectionsDialog is removed and layer activation is provided
+	 * in the layers GUI. We could keep both but it might be confusing for the user.
+	 */
+	{
+		d_file_to_layers_mapping[input_file_ref].push_back(new_layer);
+	}
+}
 
 void
 GPlatesAppLogic::ApplicationState::create_layers(
@@ -458,42 +533,13 @@ GPlatesAppLogic::ApplicationState::create_layers(
 	const GPlatesModel::FeatureCollectionHandle::weak_ref new_feature_collection =
 			input_file_ref.get_file().get_feature_collection();
 
-	// Get an input file object from the reconstruct graph.
-	const Layer::InputFile input_file = d_reconstruct_graph->get_input_file(input_file_ref);
-
 	// Create the layer tasks that can processes the feature collection in the input file.
 	const std::vector< boost::shared_ptr<LayerTask> > layer_tasks =
 			create_layer_tasks(new_feature_collection);
 
 	BOOST_FOREACH(boost::shared_ptr<LayerTask> layer_task, layer_tasks)
 	{
-		// Create a new layer using the layer task.
-		// This will emit a signal in ReconstructGraph to notify clients of a new layer.
-		Layer new_layer = d_reconstruct_graph->add_layer(layer_task);
-
-		//
-		// Connect the feature collection to the input of the new layer.
-		//
-
-		// Get the main feature collection input channel for our layer.
-		const QString main_input_feature_collection_channel =
-				new_layer.get_main_input_feature_collection_channel();
-
-		// Connect the input file to the main input channel.
-		new_layer.connect_input_to_file(
-				input_file,
-				main_input_feature_collection_channel);
-
-		/*
-		 * It's ugly cause it's gonna get removed soon.
-		 *
-		 * FIXME: This is temporary until file activation in
-		 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-		 * in the layers GUI. We could keep both but it might be confusing for the user.
-		 */
-		{
-			d_file_to_layers_mapping[input_file_ref].push_back(new_layer);
-		}
+		create_layer(input_file_ref,layer_task);
 	}
 
 	/*
@@ -507,3 +553,4 @@ GPlatesAppLogic::ApplicationState::create_layers(
 		handle_setting_default_reconstruction_tree_layer(input_file_ref);
 	}
 }
+

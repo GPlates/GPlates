@@ -521,6 +521,22 @@ GPlatesAppLogic::get_feature_collection_containing_feature(
 		FeatureCollectionFileState &file_state_ref,
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
+	boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_ref;
+	if(file_ref = get_file_reference_containing_feature(file_state_ref,feature_ref))
+	{
+		return (*file_ref).get_file().get_feature_collection();
+	}
+	else
+	{
+		return boost::none;
+	}
+}
+
+boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
+GPlatesAppLogic::get_file_reference_containing_feature(
+		FeatureCollectionFileState &file_state_ref,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
 	const std::vector<FeatureCollectionFileState::file_reference> file_references =
 			file_state_ref.get_loaded_files();
 
@@ -531,9 +547,10 @@ GPlatesAppLogic::get_feature_collection_containing_feature(
 
 		if (feature_collection_contains_feature(feature_collection_ref, feature_ref)) 
 		{
-			return feature_collection_ref;
+			return file_ref;
 		}
 	}
 
 	return boost::none;
 }
+
