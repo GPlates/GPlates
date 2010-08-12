@@ -388,6 +388,33 @@ GPlatesGui::EnableCanvasTool::update_delete_vertex_tool()
 	d_viewport_window->enable_delete_vertex_tool(enable);
 }
 
+bool
+GPlatesGui::EnableCanvasTool::is_focused_feature_topological_boundary_or_network()
+{
+	if (d_feature_focus->is_valid())
+	{
+		// Check feature type via qstrings
+		//
+		// FIXME: Do this check based on feature properties rather than feature type.
+		// So if something looks like a TCPB (because it has a topology polygon property)
+		// then treat it like one. For this to happen we first need TopologicalNetwork to
+		// use a property type different than TopologicalPolygon.
+		//
+		static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
+		static const QString topology_network_type_name ("TopologicalNetwork");
+		QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+				d_feature_focus->focused_feature()->feature_type().get_name() );
+
+		// Only activate for topologies.
+		if (feature_type_name == topology_boundary_type_name ||
+			feature_type_name == topology_network_type_name)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 void
 GPlatesGui::EnableCanvasTool::update_manipulate_pole_tool()
 {
@@ -402,7 +429,18 @@ GPlatesGui::EnableCanvasTool::update_manipulate_pole_tool()
 		return;
 	}
 
-	d_viewport_window->enable_manipulate_pole_tool(d_feature_geom_is_in_focus);
+	bool enable_manipulate_topology_tool = true;
+
+	if (d_feature_geom_is_in_focus)
+	{
+		if(is_focused_feature_topological_boundary_or_network())
+		{
+			enable_manipulate_topology_tool = false;
+		}
+	}
+	d_viewport_window->enable_manipulate_pole_tool(
+			d_feature_geom_is_in_focus			&& 
+			enable_manipulate_topology_tool);
 }
 
 void
@@ -449,27 +487,7 @@ GPlatesGui::EnableCanvasTool::update_edit_topology_tool()
 	// topological closed plate polygon.
 	else if (d_feature_geom_is_in_focus)
 	{
-		if (d_feature_focus->is_valid())
-		{
-			// Check feature type via qstrings
-			//
-			// FIXME: Do this check based on feature properties rather than feature type.
-			// So if something looks like a TCPB (because it has a topology polygon property)
-			// then treat it like one. For this to happen we first need TopologicalNetwork to
-			// use a property type different than TopologicalPolygon.
-			//
-			static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
-			static const QString topology_network_type_name ("TopologicalNetwork");
-			QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-					d_feature_focus->focused_feature()->feature_type().get_name() );
-
-			// Only activate for topologies.
-			if (feature_type_name == topology_boundary_type_name ||
-				feature_type_name == topology_network_type_name)
-			{
-				enable_edit_topology_tool = true;
-			}
-		}
+		enable_edit_topology_tool = is_focused_feature_topological_boundary_or_network();
 	}
 
 	d_viewport_window->enable_edit_topology_tool(enable_edit_topology_tool);

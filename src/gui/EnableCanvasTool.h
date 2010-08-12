@@ -178,6 +178,9 @@ namespace GPlatesGui
 		void
 		update_edit_topology_tool();
 
+		bool
+		is_focused_feature_topological_boundary_or_network();
+
 		/**
 		 * Gets the number of vertices and geometry type of geometry that will
 		 * be targeted if @a next_canvas_tool is chosen as the next canvas tool.

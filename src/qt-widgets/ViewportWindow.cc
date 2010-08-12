@@ -1268,7 +1268,7 @@ void
 GPlatesQtWidgets::ViewportWindow::enable_manipulate_pole_tool(
 		bool enable)
 {
-	action_Manipulate_Pole->setEnabled(enable && d_focused_feature_geometry_builder->has_geometry());
+	action_Manipulate_Pole->setEnabled(enable);
 }
 
 void
