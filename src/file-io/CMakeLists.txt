@@ -65,9 +65,7 @@ set(srcs
     LineReader.h
     MipmappedRasterFormat.cc
     MipmappedRasterFormat.h
-    MipmappedRasterFormatReader.cc
     MipmappedRasterFormatReader.h
-    MipmappedRasterFormatWriter.cc
     MipmappedRasterFormatWriter.h
     OgrException.h
     OgrWriter.cc

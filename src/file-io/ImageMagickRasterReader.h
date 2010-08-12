@@ -33,6 +33,8 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <QSize>
+#include <QFile>
+#include <QDataStream>
 
 #include "global/CompilerWarnings.h"
 
@@ -97,10 +99,26 @@ namespace GPlatesFileIO
 
 	private:
 
-		boost::optional<std::pair<Magick::Image, QSize> >
-		get_region_as_image(
-				const QRect &region,
-				ReadErrorAccumulation *read_errors);
+		/**
+		 * Reads a region from a RGBA file.
+		 *
+		 * Returns NULL if @a region exceeds the boundaries of the source raster.
+		 */
+		GPlatesGui::rgba8_t *
+		read_rgba_file(
+				const QRect &region);
+
+		/**
+		 * This function ensures that there is a file, either in the same directory as
+		 * the source raster or in the temp directory, that is an uncompressed RGBA
+		 * representation of the source raster.
+		 *
+		 * This is to allow quicker lookups of regions of the source raster.
+		 *
+		 * Returns true if at the conclusion of the function such a file is available.
+		 */
+		bool
+		ensure_rgba_file_available();
 
 		void
 		report_recoverable_error(
@@ -113,8 +131,11 @@ namespace GPlatesFileIO
 				ReadErrors::Description description);
 
 		QString d_filename;
-		std::string d_filename_as_std_string;
 		boost::function<RasterBandReaderHandle (unsigned int)> d_proxy_handle_function;
+		QFile d_rgba_file;
+		QDataStream d_rgba_in;
+		unsigned int d_source_width;
+		unsigned int d_source_height;
 		bool d_can_read;
 	};
 }

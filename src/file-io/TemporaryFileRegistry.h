@@ -62,6 +62,17 @@ namespace GPlatesFileIO
 		add_file(
 				const QString &filename);
 
+		/**
+		 * Takes a @a filename (which may have a directory path) and returns the
+		 * absolute filename of a file in the temp directory with the same name.
+		 *
+		 * e.g. "../bar/foo.txt" => "/tmp/foo.txt"
+		 */
+		static
+		QString
+		make_filename_in_tmp_directory(
+				const QString &filename);
+
 	private:
 
 		std::vector<QString> d_filenames;

@@ -55,7 +55,7 @@
 
 
 // For debugging only...
-#define USE_OLD_GL_RASTER_PROXY
+// #define USE_OLD_GL_RASTER_PROXY
 #ifdef USE_OLD_GL_RASTER_PROXY
 #include "GLRasterProxy.h"
 #endif

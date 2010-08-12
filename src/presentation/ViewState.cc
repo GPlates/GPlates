@@ -330,8 +330,9 @@ GPlatesPresentation::ViewState::set_raw_raster(
 {
 	d_raw_raster = raw_raster;
 
+	// FIXME: Remove later, but for now, this is where we ensure that mipmaps are available.
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
-		GPlatesPropertyValues::ProxiedRasterResolver::create(*raw_raster);
+		GPlatesPropertyValues::ProxiedRasterResolver::create(raw_raster);
 	if (proxy_resolver_opt)
 	{
 		const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_resolver = *proxy_resolver_opt;
@@ -443,6 +444,7 @@ namespace
 bool
 GPlatesPresentation::ViewState::update_texture_from_raw_raster()
 {
+#if 0
 	// Get the image size.
 	boost::optional<std::pair<unsigned int, unsigned int> > image_size =
 		GPlatesPropertyValues::RawRasterUtils::get_raster_size(*d_raw_raster);
@@ -454,7 +456,7 @@ GPlatesPresentation::ViewState::update_texture_from_raw_raster()
 
 	// Get the entire level 0 out from the proxy as RGBA.
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
-		GPlatesPropertyValues::ProxiedRasterResolver::create(*d_raw_raster);
+		GPlatesPropertyValues::ProxiedRasterResolver::create(d_raw_raster);
 	if (!proxy_resolver_opt)
 	{
 		return false;
@@ -473,6 +475,7 @@ GPlatesPresentation::ViewState::update_texture_from_raw_raster()
 		}
 		double mean = *statistics.mean;
 		double std_dev = *statistics.standard_deviation;
+
 		GPlatesGui::DefaultRasterColourPalette::non_null_ptr_type rgba8_palette =
 			GPlatesGui::DefaultRasterColourPalette::create(mean, std_dev);
 		rgba8_raster_opt = proxy_resolver->get_coloured_region_from_level(0, 0, 0, image_size->first, image_size->second,
@@ -503,6 +506,7 @@ GPlatesPresentation::ViewState::update_texture_from_raw_raster()
 		GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster(*level1_opt, "level1.jpg");
 		GPlatesFileIO::TemporaryFileRegistry::instance().add_file("level1.jpg");
 	}
+#endif
 
 	// Feed the bytes into Texture.
 	GPlatesGui::Texture &texture = *get_texture();

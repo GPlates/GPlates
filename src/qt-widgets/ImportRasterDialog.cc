@@ -2,12 +2,10 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * $Revision$
+ * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney
  *
  * This file is part of GPlates.
  *
@@ -25,21 +23,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "MipmappedRasterFormatReader.h"
+#include "ImportRasterDialog.h"
+
+#include "RasterBandPage.h"
 
 
-namespace GPlatesFileIO
+GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
+		QWidget *parent_) :
+	QWizard(parent_)
 {
-	namespace MipmappedRasterFormatReaderInternals
-	{
-		template<>
-		void
-		read<GPlatesGui::rgba8_t>(
-				QDataStream &in,
-				GPlatesGui::rgba8_t &value)
-		{
-			in >> value.red >> value.green >> value.blue >> value.alpha;
-		}
-	}
+	addPage(new RasterBandPage(this));
+	setWindowTitle("Import Raster");
+	setModal(true);
 }
-

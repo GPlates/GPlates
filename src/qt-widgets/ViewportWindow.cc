@@ -60,6 +60,7 @@
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
 #include "GlobeAndMapWidget.h"
+#include "ImportRasterDialog.h"
 #include "InformationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -238,6 +239,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new FeaturePropertiesDialog(
 				get_view_state(),
 				this)),
+	d_import_raster_dialog_ptr(NULL),
 	d_manage_feature_collections_dialog_ptr(
 			new ManageFeatureCollectionsDialog(
 				get_application_state().get_feature_collection_file_state(),
@@ -606,6 +608,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(open_raster()));
 	QObject::connect(action_Open_Time_Dependent_Raster_Sequence, SIGNAL(triggered()),
 			this, SLOT(open_time_dependent_raster_sequence()));
+	QObject::connect(action_Import_Raster, SIGNAL(triggered()),
+			this, SLOT(pop_up_import_raster_dialog()));
+	QObject::connect(action_Import_Time_Dependent_Raster, SIGNAL(triggered()),
+			this, SLOT(pop_up_import_time_dependent_raster_dialog()));
 	QObject::connect(action_File_Errors, SIGNAL(triggered()),
 			this, SLOT(pop_up_read_errors_dialog()));
 	// ---
@@ -1608,6 +1614,10 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_feature_properties_dialog_ptr->reject();
 	}
+	if (d_import_raster_dialog_ptr)
+	{
+		d_import_raster_dialog_ptr->reject();
+	}
 	if (d_manage_feature_collections_dialog_ptr)
 	{
 		d_manage_feature_collections_dialog_ptr->reject();
@@ -1911,6 +1921,23 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 
 		update_time_dependent_raster();
 	}
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog()
+{
+	if (!d_import_raster_dialog_ptr)
+	{
+		d_import_raster_dialog_ptr.reset(new ImportRasterDialog(this));
+	}
+
+	d_import_raster_dialog_ptr->show();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
+{
+	// TODO.
 }
 
 void

@@ -386,12 +386,40 @@ GPlatesPropertyValues::RawRasterUtils::apply_coverage_raster(
 }
 
 
-void
+bool
 GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster(
 		const Rgba8RawRaster::non_null_ptr_type &raster,
 		const QString &filename)
 {
-	Magick::Image image(raster->width(), raster->height(), "RGBA", Magick::CharPixel, raster->data());
-	image.write(filename.toStdString());
+	try
+	{
+		Magick::Image image(raster->width(), raster->height(), "RGBA", Magick::CharPixel, raster->data());
+		image.write(filename.toStdString());
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+
+bool
+GPlatesPropertyValues::RawRasterUtils::has_fully_transparent_pixels(
+		const Rgba8RawRaster::non_null_ptr_type &raster)
+{
+	GPlatesGui::rgba8_t *data = raster->data();
+	GPlatesGui::rgba8_t *data_end = data + raster->width() * raster->height();
+
+	while (data != data_end)
+	{
+		if (data->alpha == 0)
+		{
+			return true;
+		}
+		++data;
+	}
+
+	return false;
 }
 

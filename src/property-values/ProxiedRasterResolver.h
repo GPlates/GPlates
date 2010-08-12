@@ -32,9 +32,9 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/is_integral.hpp>
-#include <QDir>
 #include <QFileInfo>
 #include <QDateTime>
+#include <QDebug>
 
 #include "RawRaster.h"
 
@@ -88,7 +88,7 @@ namespace GPlatesPropertyValues
 		static
 		boost::optional<non_null_ptr_type>
 		create(
-				RawRaster &raster);
+				const RawRaster::non_null_ptr_type &raster);
 
 		/**
 		 * Returns a region from a mipmap level, coloured using the given colour palette.
@@ -157,6 +157,91 @@ namespace GPlatesPropertyValues
 				boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette =
 					boost::none) = 0;
 
+		/**
+		 * Retrieves a region from a level in the mipmapped raster file, in the data
+		 * type of the mipmapped raster file (i.e. not coloured into RGBA).
+		 *
+		 * If source raster is RGBA8:
+		 *  - Returns RGBA8 raster.
+		 *
+		 * If source raster is float/double:
+		 *  - Returns float/double raster.
+		 *
+		 * If source raster is integral:
+		 *  - Returns float raster.
+		 *
+		 * Returns boost::none if an error is encountered when reading from disk.
+		 */
+		virtual
+		boost::optional<RawRaster::non_null_ptr_type>
+		get_region_from_level(
+				unsigned int level,
+				unsigned int region_x_offset,
+				unsigned int region_y_offset,
+				unsigned int region_width,
+				unsigned int region_height) = 0;
+
+		/**
+		 * Retrieves the coverage raster (the raster that specifies, at each pixel,
+		 * how much of that pixel is not the sentinel value in the source raster) for
+		 * the given level and the given region.
+		 *
+		 * Returns boost::none on error. Also returns boost::none if all pixels in the
+		 * given level are composed of fully sentinel or fully non-sentinel values.
+		 *
+		 * @see get_coverage_from_level.
+		 */
+		virtual
+		boost::optional<CoverageRawRaster::non_null_ptr_type>
+		get_coverage_from_level_if_necessary(
+				unsigned int level,
+				unsigned int region_x_offset,
+				unsigned int region_y_offset,
+				unsigned int region_width,
+				unsigned int region_height) = 0;
+
+		/**
+		 * Retrieves the coverage raster (the raster that specifies, at each pixel,
+		 * how much of that pixel is not the sentinel value in the source raster) for
+		 * the given level and the given region.
+		 *
+		 * Returns boost::none on error only. Unlike @a get_coverage_from_level_if_necessary,
+		 * if all pixels in the given level are composed of fully sentinel or fully
+		 * non-sentinel values, this function will return a valid coverage raster,
+		 * generated on the fly.
+		 */
+		virtual
+		boost::optional<CoverageRawRaster::non_null_ptr_type>
+		get_coverage_from_level(
+				unsigned int level,
+				unsigned int region_x_offset,
+				unsigned int region_y_offset,
+				unsigned int region_width,
+				unsigned int region_height) = 0;
+
+		/**
+		 * Retrieves a region from the source raster, in the data type of the source
+		 * raster (i.e. not coloured into RGBA).
+		 *
+		 * If source raster is RGBA8:
+		 *  - Returns RGBA8 raster.
+		 *
+		 * If source raster is float/double:
+		 *  - Returns float/double raster.
+		 *
+		 * If source raster is integral:
+		 *  - Returns integral raster.
+		 *
+		 * Returns boost::none if an error was encountered reading from disk.
+		 */
+		virtual
+		boost::optional<RawRaster::non_null_ptr_type>
+		get_region_from_source(
+				unsigned int region_x_offset,
+				unsigned int region_y_offset,
+				unsigned int region_width,
+				unsigned int region_height) = 0;
+
 	protected:
 
 		ProxiedRasterResolver();
@@ -198,14 +283,6 @@ namespace GPlatesPropertyValues
 				const QString &source_filename,
 				unsigned int band_number,
 				size_t colour_palette_id = 0);
-
-		/**
-		 * Returns the absolute path to the system's temporary directory.
-		 *
-		 * The return string always ends with the directory separator.
-		 */
-		QString
-		construct_tmp_directory_path();
 		
 		/**
 		 * Returns the filename of a file that can be used for writing out a
@@ -316,6 +393,95 @@ namespace GPlatesPropertyValues
 				const GPlatesGui::RasterColourScheme::non_null_ptr_type &colour_palette);
 
 		/**
+		 * Used by @a get_main_mipmap_reader and @a get_coloured_mipmap_reader,
+		 * to reduce code duplication.
+		 */
+		template<class MipmappedRasterType>
+		GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType> *
+		get_mipmap_reader(
+				boost::scoped_ptr<GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType> > &cached_mipmap_reader,
+				size_t colour_palette_id,
+				const GPlatesFileIO::RasterBandReaderHandle &raster_band_reader_handle,
+				const boost::function<bool ()> &ensure_mipmaps_available_function,
+				size_t *cached_colour_palette_id = NULL)
+		{
+			try
+			{
+				const QString &source_filename = raster_band_reader_handle.get_filename();
+
+				// If it is already open, check the last modified time of
+				// the source raster - in case the user modified the source
+				// raster since the mipmaps file was open.
+				QDateTime source_last_modified = QFileInfo(source_filename).lastModified();
+				if (cached_mipmap_reader &&
+						cached_mipmap_reader->get_file_info().lastModified() < source_last_modified)
+				{
+					// Close the mipmap reader and delete the file.
+					QString mipmap_filename = cached_mipmap_reader->get_filename();
+					cached_mipmap_reader.reset(NULL);
+					QFile(mipmap_filename).remove();
+				}
+
+				// Open the mipmaps file if it is not already open or if it is open,
+				// it is open for another colour palette.
+				if (!cached_mipmap_reader ||
+						(cached_colour_palette_id && *cached_colour_palette_id != colour_palette_id))
+				{
+					// Create the mipmaps file if not yet available.
+					if (!ensure_mipmaps_available_function())
+					{
+						return NULL;
+					}
+
+					unsigned int source_band_number = raster_band_reader_handle.get_band_number();
+					QString mipmap_filename = get_existing_mipmap_filename(
+							source_filename,
+							source_band_number,
+							colour_palette_id);
+					cached_mipmap_reader.reset(
+							new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
+								mipmap_filename));
+
+					// Check the last modified time of the source raster.
+					// If the user has modified the source raster since the
+					// mipmaps file was created, close the reader, delete
+					// the file and attempt to open it again.
+					if (cached_mipmap_reader->get_file_info().lastModified() < source_last_modified)
+					{
+						cached_mipmap_reader.reset(NULL);
+						QFile(mipmap_filename).remove();
+
+						if (!ensure_mipmaps_available_function())
+						{
+							return NULL;
+						}
+
+						cached_mipmap_reader.reset(
+								new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
+									mipmap_filename));
+
+						// Check again, but give up if it's still wrong.
+						if (cached_mipmap_reader->get_file_info().lastModified() < source_last_modified)
+						{
+							cached_mipmap_reader.reset(NULL);
+						}
+					}
+
+					if (cached_colour_palette_id)
+					{
+						*cached_colour_palette_id = colour_palette_id;
+					}
+				}
+
+				return cached_mipmap_reader.get();
+			}
+			catch (...)
+			{
+				return NULL;
+			}
+		}
+
+		/**
 		 * BaseProxiedRasterResolver resolves proxied rasters, but only using
 		 * the "main", not-colour-palette-specific, mipmap file.
 		 *
@@ -423,13 +589,13 @@ namespace GPlatesPropertyValues
 						boost::none)
 			{
 				// Get the raster data and coverage.
-				boost::optional<typename mipmapped_raster_type::non_null_ptr_type> region_raster = get_region_from_level(
+				boost::optional<typename mipmapped_raster_type::non_null_ptr_type> region_raster = get_region_from_level_as_mipmapped_type(
 						level, region_x_offset, region_y_offset, region_width, region_height);
 				if (!region_raster)
 				{
 					return boost::none;
 				}
-				boost::optional<CoverageRawRaster::non_null_ptr_type> region_coverage = get_coverage_from_level(
+				boost::optional<CoverageRawRaster::non_null_ptr_type> region_coverage = get_coverage_from_level_if_necessary(
 						level, region_x_offset, region_y_offset, region_width, region_height);
 
 				return ColourRegionIfNecessary<mipmapped_raster_type, boost::is_same<mipmapped_raster_type, Rgba8RawRaster>::value>::
@@ -448,7 +614,7 @@ namespace GPlatesPropertyValues
 
 				if (mipmap_reader)
 				{
-					return mipmap_reader->get_number_of_levels();
+					return mipmap_reader->get_number_of_levels() + 1;
 				}
 				else
 				{
@@ -526,9 +692,11 @@ namespace GPlatesPropertyValues
 			 *
 			 * If source raster is integral:
 			 *  - Returns float raster.
+			 *
+			 * Returns boost::none if an error is encountered when reading from disk.
 			 */
 			boost::optional<typename mipmapped_raster_type::non_null_ptr_type>
-			get_region_from_level(
+			get_region_from_level_as_mipmapped_type(
 					unsigned int level,
 					unsigned int region_x_offset,
 					unsigned int region_y_offset,
@@ -539,7 +707,7 @@ namespace GPlatesPropertyValues
 				{
 					// Level 0 is not stored in the mipmap file.
 					boost::optional<typename source_raster_type::non_null_ptr_type> result =
-						get_region_from_source(
+						get_region_from_source_as_source_type(
 								region_x_offset,
 								region_y_offset,
 								region_width,
@@ -573,15 +741,38 @@ namespace GPlatesPropertyValues
 			}
 
 			/**
-			 * Retrieves the coverage raster (the raster that specifies, at each pixel,
-			 * how much of that pixel is not the sentinel value in the source raster) for
-			 * the given level and the given region.
+			 * Implementation of pure virtual function defined in base.
 			 *
-			 * Returns boost::none on error. Also returns boost::none if all pixels in the
-			 * given level are fully composed of sentinel or fully non-sentinel values.
+			 * Returns @a get_region_from_level_as_mipmapped_type but as pointer to RawRaster.
 			 */
+			virtual
+			boost::optional<RawRaster::non_null_ptr_type>
+			get_region_from_level(
+					unsigned int level,
+					unsigned int region_x_offset,
+					unsigned int region_y_offset,
+					unsigned int region_width,
+					unsigned int region_height)
+			{
+				boost::optional<typename mipmapped_raster_type::non_null_ptr_type> region_raster =
+					get_region_from_level_as_mipmapped_type(
+							level, region_x_offset, region_y_offset, region_width, region_height);
+				if (region_raster)
+				{
+					return RawRaster::non_null_ptr_type(region_raster->get());
+				}
+				else
+				{
+					return boost::none;
+				}
+			}
+
+			/**
+			 * Implementation of pure virtual function defined in base.
+			 */
+			virtual
 			boost::optional<CoverageRawRaster::non_null_ptr_type>
-			get_coverage_from_level(
+			get_coverage_from_level_if_necessary(
 					unsigned int level,
 					unsigned int region_x_offset,
 					unsigned int region_y_offset,
@@ -613,6 +804,62 @@ namespace GPlatesPropertyValues
 				}
 			}
 
+
+			/**
+			 * Implementation of pure virtual function defined in base.
+			 */
+			virtual
+			boost::optional<CoverageRawRaster::non_null_ptr_type>
+			get_coverage_from_level(
+					unsigned int level,
+					unsigned int region_x_offset,
+					unsigned int region_y_offset,
+					unsigned int region_width,
+					unsigned int region_height)
+			{
+				boost::optional<CoverageRawRaster::non_null_ptr_type> coverage_from_mipmap_file =
+					get_coverage_from_level_if_necessary(
+							level, region_x_offset, region_y_offset, region_width, region_height);
+				if (coverage_from_mipmap_file)
+				{
+					// Great, it's there in the file already.
+					return coverage_from_mipmap_file;
+				}
+
+				// Otherwise, retrieve the data from region.
+				boost::optional<typename mipmapped_raster_type::non_null_ptr_type> region_raster_opt =
+					get_region_from_level_as_mipmapped_type(
+							level, region_x_offset, region_y_offset, region_width, region_height);
+				if (!region_raster_opt)
+				{
+					return boost::none;
+				}
+				const typename mipmapped_raster_type::non_null_ptr_type &region_raster = *region_raster_opt;
+
+				// Create the coverage raster.
+				CoverageRawRaster::non_null_ptr_type coverage = CoverageRawRaster::create(
+						region_width, region_height);
+				CoverageRawRaster::element_type *coverage_data = coverage->data();
+				CoverageRawRaster::element_type *coverage_data_end = coverage_data +
+					coverage->width() * coverage->height();
+				typename mipmapped_raster_type::element_type *region_data = region_raster->data();
+
+				boost::function<bool (typename mipmapped_raster_type::element_type)> is_no_data_value_function =
+					RawRasterUtils::get_is_no_data_value_function(*region_raster);
+
+				while (coverage_data != coverage_data_end)
+				{
+					// If it is the no-data value, put 0.0, else put 1.0.
+					*coverage_data = is_no_data_value_function(*region_data) ? 0.0 : 1.0;
+					
+					++coverage_data;
+					++region_data;
+				}
+
+				return coverage;
+			}
+
+
 			/**
 			 * Retrieves a region from the source raster, in the data type of the source
 			 * raster (i.e. not coloured into RGBA).
@@ -625,9 +872,11 @@ namespace GPlatesPropertyValues
 			 *
 			 * If source raster is integral:
 			 *  - Returns integral raster.
+			 *
+			 * Returns boost::none if an error was encountered reading from disk.
 			 */
 			boost::optional<typename source_raster_type::non_null_ptr_type>
-			get_region_from_source(
+			get_region_from_source_as_source_type(
 					unsigned int region_x_offset,
 					unsigned int region_y_offset,
 					unsigned int region_width,
@@ -659,11 +908,37 @@ namespace GPlatesPropertyValues
 				}
 			}
 
+			/**
+			 * Implementation of pure virtual function defined in base.
+			 *
+			 * Returns @a get_region_from_source_as_source_type but as pointer to RawRaster.
+			 */
+			virtual
+			boost::optional<RawRaster::non_null_ptr_type>
+			get_region_from_source(
+					unsigned int region_x_offset,
+					unsigned int region_y_offset,
+					unsigned int region_width,
+					unsigned int region_height)
+			{
+				boost::optional<typename source_raster_type::non_null_ptr_type> region_raster =
+					get_region_from_source_as_source_type(
+							region_x_offset, region_y_offset, region_width, region_height);
+				if (region_raster)
+				{
+					return RawRaster::non_null_ptr_type(region_raster->get());
+				}
+				else
+				{
+					return boost::none;
+				}
+			}
+
 		protected:
 
 			BaseProxiedRasterResolver(
-					RawRasterType &raster) :
-				d_proxied_raw_raster(&raster),
+					const typename RawRasterType::non_null_ptr_type &raster) :
+				d_proxied_raw_raster(raster),
 				d_main_mipmap_reader(NULL)
 			{  }
 
@@ -739,35 +1014,14 @@ namespace GPlatesPropertyValues
 			GPlatesFileIO::MipmappedRasterFormatReader<mipmapped_raster_type> *
 			get_main_mipmap_reader()
 			{
-				// Create main mipmaps file if not yet available.
-				if (!ensure_main_mipmaps_available())
-				{
-					return NULL;
-				}
-
-				// Get the filename of the mipmaps file.
-				GPlatesFileIO::RasterBandReaderHandle raster_band_reader_handle =
-					get_raster_band_reader_handle(*d_proxied_raw_raster);
-				QString mipmap_filename = get_existing_mipmap_filename(
-						raster_band_reader_handle.get_filename(),
-						raster_band_reader_handle.get_band_number());
-
-				try
-				{
-					// Open the mipmaps file if it is not already open.
-					if (!d_main_mipmap_reader)
-					{
-						d_main_mipmap_reader.reset(
-								new GPlatesFileIO::MipmappedRasterFormatReader<mipmapped_raster_type>(
-									mipmap_filename));
-					}
-
-					return d_main_mipmap_reader.get();
-				}
-				catch (...)
-				{
-					return NULL;
-				}
+				return ProxiedRasterResolverInternals::get_mipmap_reader(
+						d_main_mipmap_reader,
+						0 /* no colour palette id */,
+						get_raster_band_reader_handle(*d_proxied_raw_raster),
+						boost::bind(
+							&BaseProxiedRasterResolver::ensure_main_mipmaps_available,
+							boost::ref(*this)),
+						NULL /* no colour palette id */);
 			}
 
 			// Cached so that we don't have to open and close it all the time.
@@ -797,7 +1051,7 @@ namespace GPlatesPropertyValues
 		static
 		non_null_ptr_type
 		create(
-				RawRasterType &raster)
+				const typename RawRasterType::non_null_ptr_type &raster)
 		{
 			return new ProxiedRasterResolverImpl(raster);
 		}
@@ -807,7 +1061,7 @@ namespace GPlatesPropertyValues
 		typedef ProxiedRasterResolverInternals::BaseProxiedRasterResolver<RawRasterType> base_type;
 
 		ProxiedRasterResolverImpl(
-				RawRasterType &raster) :
+				const typename RawRasterType::non_null_ptr_type &raster) :
 			base_type(raster)
 		{  }
 	};
@@ -829,7 +1083,7 @@ namespace GPlatesPropertyValues
 		static
 		non_null_ptr_type
 		create(
-				RawRasterType &raster)
+				const typename RawRasterType::non_null_ptr_type &raster)
 		{
 			return new ProxiedRasterResolverImpl(raster);
 		}
@@ -868,7 +1122,7 @@ namespace GPlatesPropertyValues
 			{
 				// Get the integer data from the source raster and colour it.
 				boost::optional<typename source_raster_type::non_null_ptr_type> region_raster =
-					base_type::get_region_from_source(region_x_offset, region_y_offset, region_width, region_height);
+					base_type::get_region_from_source_as_source_type(region_x_offset, region_y_offset, region_width, region_height);
 				if (!region_raster)
 				{
 					return boost::none;
@@ -914,7 +1168,7 @@ namespace GPlatesPropertyValues
 	private:
 
 		ProxiedRasterResolverImpl(
-				RawRasterType &raster) :
+				const typename RawRasterType::non_null_ptr_type &raster) :
 			base_type(raster),
 			d_coloured_mipmap_reader(NULL),
 			d_colour_palette_id_of_coloured_mipmap_reader(0)
@@ -1012,46 +1266,15 @@ namespace GPlatesPropertyValues
 		get_coloured_mipmap_reader(
 				const GPlatesGui::RasterColourScheme::non_null_ptr_type &colour_palette)
 		{
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					colour_palette->get_type() != GPlatesGui::RasterColourScheme::DOUBLE,
-					GPLATES_ASSERTION_SOURCE);
-
-			// Create the mipmaps file if not yet available.
-			if (!ensure_coloured_mipmaps_available(colour_palette))
-			{
-				return NULL;
-			}
-
-			// Get the name of the mipmaps file.
-			GPlatesFileIO::RasterBandReaderHandle raster_band_reader_handle =
-				get_raster_band_reader_handle(*d_proxied_raw_raster);
-			size_t colour_palette_id = ProxiedRasterResolverInternals::get_colour_palette_id(colour_palette);
-			QString mipmap_filename = ProxiedRasterResolverInternals::get_existing_mipmap_filename(
-					raster_band_reader_handle.get_filename(),
-					raster_band_reader_handle.get_band_number(),
-					colour_palette_id);
-
-			try
-			{
-				// Open the mipmaps file if it is not already open or if it is open,
-				// it is open for another colour palette.
-				if (!d_coloured_mipmap_reader ||
-						d_colour_palette_id_of_coloured_mipmap_reader != colour_palette_id)
-				{
-					d_coloured_mipmap_reader.reset(
-							new GPlatesFileIO::MipmappedRasterFormatReader<Rgba8RawRaster>(
-								mipmap_filename));
-					d_colour_palette_id_of_coloured_mipmap_reader = colour_palette_id;
-				}
-
-				return d_coloured_mipmap_reader.get();
-			}
-			catch (...)
-			{
-				return NULL;
-			}
-
-			return NULL;
+			return ProxiedRasterResolverInternals::get_mipmap_reader<Rgba8RawRaster>(
+					d_coloured_mipmap_reader,
+					ProxiedRasterResolverInternals::get_colour_palette_id(colour_palette),
+					get_raster_band_reader_handle(*d_proxied_raw_raster),
+					boost::bind(
+						&ProxiedRasterResolverImpl::ensure_coloured_mipmaps_available,
+						boost::ref(*this),
+						colour_palette),
+					&d_colour_palette_id_of_coloured_mipmap_reader);
 		}
 
 		boost::scoped_ptr<GPlatesFileIO::MipmappedRasterFormatReader<Rgba8RawRaster> >

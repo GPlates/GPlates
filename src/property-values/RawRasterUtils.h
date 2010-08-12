@@ -93,33 +93,6 @@ namespace GPlatesPropertyValues
 
 
 			/**
-			 * Returns a function that takes one argument and returns a boolean value
-			 * indicating whether that argument is the no-data value of @a raster.
-			 *
-			 * This overload is called if @a RawRasterType has a no-data value.
-			 */
-			template<class RawRasterType>
-			boost::function<bool (typename RawRasterType::element_type)>
-			get_is_no_data_value_function(
-					const RawRasterType &raster,
-					typename boost::enable_if_c<RawRasterType::has_no_data_value>::type *dummy = NULL)
-			{
-				return boost::bind(&RawRasterType::is_no_data_value, boost::cref(raster), _1);
-			}
-
-
-			// This overload is called if @a RawRasterType does not have a no-data value.
-			template<class RawRasterType>
-			boost::function<bool (typename RawRasterType::element_type)>
-			get_is_no_data_value_function(
-					const RawRasterType &raster,
-					typename boost::enable_if_c<!RawRasterType::has_no_data_value>::type *dummy = NULL)
-			{
-				return &always_false<typename RawRasterType::element_type>;
-			}
-
-
-			/**
 			 * Helper class to support @a convert_integer_raster_to_float_raster.
 			 */
 			template<typename IntType, typename FloatType>
@@ -219,6 +192,33 @@ namespace GPlatesPropertyValues
 
 
 		/**
+		 * Returns a function that takes one argument and returns a boolean value
+		 * indicating whether that argument is the no-data value of @a raster.
+		 *
+		 * This overload is called if @a RawRasterType has a no-data value.
+		 */
+		template<class RawRasterType>
+		boost::function<bool (typename RawRasterType::element_type)>
+		get_is_no_data_value_function(
+				const RawRasterType &raster,
+				typename boost::enable_if_c<RawRasterType::has_no_data_value>::type *dummy = NULL)
+		{
+			return boost::bind(&RawRasterType::is_no_data_value, boost::cref(raster), _1);
+		}
+
+
+		// This overload is called if @a RawRasterType does not have a no-data value.
+		template<class RawRasterType>
+		boost::function<bool (typename RawRasterType::element_type)>
+		get_is_no_data_value_function(
+				const RawRasterType &raster,
+				typename boost::enable_if_c<!RawRasterType::has_no_data_value>::type *dummy = NULL)
+		{
+			return &RawRasterUtilsInternals::always_false<typename RawRasterType::element_type>;
+		}
+
+
+		/**
 		 * Returns whether the @a raster has data.
 		 *
 		 * Note this returns false if the @a raster contains proxied data.
@@ -265,7 +265,7 @@ namespace GPlatesPropertyValues
 				typename FromRawRasterType::element_type,
 				typename ToRawRasterType::element_type
 			> unary_operator;
-			unary_operator op(RawRasterUtilsInternals::get_is_no_data_value_function(source_raster));
+			unary_operator op(get_is_no_data_value_function(source_raster));
 
 			std::transform(
 					source_raster.data(),
@@ -293,11 +293,22 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Writes @a raster out to @a filename.
+		 *
+		 * Returns whether the write was successful.
 		 */
-		void
+		bool
 		write_rgba8_raster(
 				const Rgba8RawRaster::non_null_ptr_type &raster,
 				const QString &filename);
+
+
+		/**
+		 * Returns true if @a raster has any pixels with an alpha value of 255.
+		 */
+		bool
+		has_fully_transparent_pixels(
+				const Rgba8RawRaster::non_null_ptr_type &raster);
+
 	}
 }
 

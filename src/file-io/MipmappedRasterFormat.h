@@ -69,10 +69,9 @@ namespace GPlatesFileIO
 	 * The header consists of the following fields, in order:
 	 *  - ( 0) A magic number that identifies a file as a GPlates mipmapped raster.
 	 *  - ( 4) The version number of the GPlates mipmapped raster format used.
-	 *  - ( 8) The time when the original raster file was last modified.
-	 *  - (12) The type of the mipmaps: RGBA, float or double.
-	 *  - (16) The number of levels.
-	 *  - (20) For each level:
+	 *  - ( 8) The type of the mipmaps: RGBA, float or double.
+	 *  - (12) The number of levels.
+	 *  - (16) For each level:
 	 *     - The width of the mipmap in this level.
 	 *     - The height of the mipmap in this level.
 	 *     - The starting position, in bytes, of the mipmap in the file.

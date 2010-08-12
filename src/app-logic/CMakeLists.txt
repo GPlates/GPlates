@@ -82,6 +82,7 @@ set(srcs
     ReconstructionGraph.h
     ReconstructionLayerTask.cc
     ReconstructionLayerTask.h
+    ReconstructionMethodId.h
     ReconstructionTree.cc
     ReconstructionTree.h
     ReconstructionTreeEdge.cc

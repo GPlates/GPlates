@@ -26,9 +26,26 @@
  */
 
 #include <boost/foreach.hpp>
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 
 #include "TemporaryFileRegistry.h"
+
+
+namespace
+{
+	QString
+	construct_tmp_directory_path()
+	{
+		QString result = QDir::tempPath();
+		if (!result.endsWith("/")) /* Qt uses / for separator on all platforms */
+		{
+			result.append("/");
+		}
+		return result;
+	}
+}
 
 
 GPlatesFileIO::TemporaryFileRegistry::~TemporaryFileRegistry()
@@ -46,5 +63,14 @@ GPlatesFileIO::TemporaryFileRegistry::add_file(
 		const QString &filename)
 {
 	d_filenames.push_back(filename);
+}
+
+
+QString
+GPlatesFileIO::TemporaryFileRegistry::make_filename_in_tmp_directory(
+		const QString &filename)
+{
+	static const QString TMP_DIRECTORY_PATH = construct_tmp_directory_path();
+	return TMP_DIRECTORY_PATH + QFileInfo(filename).fileName();
 }
 

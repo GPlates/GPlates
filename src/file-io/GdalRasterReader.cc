@@ -240,7 +240,7 @@ namespace
 		{
 			// Check that region lies within the source raster.
 			if (region.x() < 0 || region.y() < 0 ||
-				region.width() == 0 || region.height() == 0 ||
+				region.width() <= 0 || region.height() <= 0 ||
 					(region.x() + region.width()) > full_width ||
 					(region.y() + region.height()) > full_height)
 			{
@@ -350,7 +350,7 @@ GPlatesFileIO::GDALRasterReader::GDALRasterReader(
 	d_dataset(GdalUtils::gdal_open(filename, read_errors)),
 	d_proxy_handle_function(proxy_handle_function),
 	d_flip(d_dataset
-			&& std::strcmp(d_dataset->GetDriver()->GetDescription(), "GMT") == 0)
+			&& std::strcmp(d_dataset->GetDriver()->GetDescription(), "GMT") != 0)
 {  }
 
 

@@ -32,7 +32,6 @@
 #include <QString>
 #include <QFile>
 #include <QDataStream>
-#include <QDateTime>
 #include <QDebug>
 
 #include "ErrorOpeningFileForWritingException.h"
@@ -64,13 +63,6 @@ namespace GPlatesFileIO
 				++data;
 			}
 		}
-
-		template<>
-		void
-		write<GPlatesGui::rgba8_t>(
-				QDataStream &out,
-				const GPlatesGui::rgba8_t *data,
-				unsigned int len);
 	}
 
 	template<class RawRasterType>
@@ -96,7 +88,7 @@ namespace GPlatesFileIO
 		{
 			// Open the file for writing.
 			QFile file(filename);
-			if (!file.open(QIODevice::WriteOnly))
+			if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
 			{
 				throw ErrorOpeningFileForWritingException(
 						GPLATES_EXCEPTION_SOURCE, filename);
@@ -107,9 +99,6 @@ namespace GPlatesFileIO
 			out << static_cast<quint32>(MipmappedRasterFormat::MAGIC_NUMBER);
 			out << static_cast<quint32>(MipmappedRasterFormat::VERSION_NUMBER);
 			out.setVersion(MipmappedRasterFormat::Q_DATA_STREAM_VERSION);
-
-			// Write last modified time.
-			out << static_cast<quint32>(last_modified.toTime_t());
 			
 			typedef GPlatesGui::Mipmapper<RawRasterType> mipmapper_type;
 			typedef typename mipmapper_type::output_raster_type mipmapped_raster_type;

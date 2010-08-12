@@ -120,6 +120,11 @@ namespace GPlatesFileIO
 		 * GMT style GRDs are stored, and imported, upside-down.
 		 * See for example http://trac.osgeo.org/gdal/ticket/1926
 		 *
+		 * However, when we say that they are upside down, we mean upside down with
+		 * respect to the convention that the first row of the raster is stored in the
+		 * last scanline. In GPlates, we store rasters from top to bottom.
+		 * Therefore, @a d_flip is false iff the GRD is GMT-style.
+		 *
 		 * Note that this is a setting that applies to the entire file, not to
 		 * each band.
 		 */

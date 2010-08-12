@@ -35,7 +35,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDataStream>
-#include <QDateTime>
 #include <QDebug>
 
 #include "ErrorOpeningFileForReadingException.h"
@@ -49,24 +48,6 @@
 
 namespace GPlatesFileIO
 {
-	namespace MipmappedRasterFormatReaderInternals
-	{
-		template<typename T>
-		void
-		read(
-				QDataStream &in,
-				T &value)
-		{
-			in >> value;
-		}
-
-		template<>
-		void
-		read<GPlatesGui::rgba8_t>(
-				QDataStream &in,
-				GPlatesGui::rgba8_t &value);
-	}
-
 	/**
 	 * MipmappedRasterFormatReader reads mipmapped images from a mipmapped raster
 	 * file. It is able to read a given region of a given mipmap level.
@@ -151,17 +132,6 @@ namespace GPlatesFileIO
 		}
 
 		/**
-		 * Returns the last-modified timestamp as stored in the mipmapped raster file.
-		 * This is the time of last modification of the source raster, not the
-		 * mipmapped raster file.
-		 */
-		QDateTime
-		get_last_modified_timestamp() const
-		{
-			return d_impl->get_last_modified_timestamp();
-		}
-
-		/**
 		 * Returns the number of levels in the current mipmapped raster file.
 		 */
 		unsigned int
@@ -239,6 +209,15 @@ namespace GPlatesFileIO
 			return QFileInfo(d_file);
 		}
 
+		/**
+		 * Returns the filename of the file that we are reading.
+		 */
+		QString
+		get_filename() const
+		{
+			return d_file.fileName();
+		}
+
 	private:
 
 		class ReaderImpl
@@ -253,10 +232,6 @@ namespace GPlatesFileIO
 			virtual
 			unsigned int
 			get_number_of_levels() = 0;
-
-			virtual
-			QDateTime
-			get_last_modified_timestamp() = 0;
 
 			virtual
 			boost::optional<typename RawRasterType::non_null_ptr_type>
@@ -291,9 +266,11 @@ namespace GPlatesFileIO
 				d_file(file),
 				d_in(in)
 			{
+				d_in.setVersion(MipmappedRasterFormat::Q_DATA_STREAM_VERSION);
+
 				// Check that the file is big enough to hold at least a v1 header.
 				QFileInfo file_info(d_file);
-				static const qint64 MINIMUM_HEADER_SIZE = 20;
+				static const qint64 MINIMUM_HEADER_SIZE = 16;
 				if (file_info.size() < MINIMUM_HEADER_SIZE)
 				{
 					throw FileFormatNotSupportedException(
@@ -302,7 +279,7 @@ namespace GPlatesFileIO
 
 				// Check that the type of raster stored in the file is as requested.
 				quint32 type;
-				static const qint64 TYPE_OFFSET = 12;
+				static const qint64 TYPE_OFFSET = 8;
 				d_file.seek(TYPE_OFFSET);
 				d_in >> type;
 				if (type != static_cast<quint32>(MipmappedRasterFormat::get_type_as_enum<
@@ -314,8 +291,8 @@ namespace GPlatesFileIO
 
 				// Read the number of levels.
 				quint32 num_levels;
-				static const qint64 NUM_LEVELS_OFFSET = 16;
-				static const qint64 LEVEL_INFO_OFFSET = 20;
+				static const qint64 NUM_LEVELS_OFFSET = 12;
+				static const qint64 LEVEL_INFO_OFFSET = 16;
 				static const qint64 LEVEL_INFO_SIZE = 16;
 				d_file.seek(NUM_LEVELS_OFFSET);
 				d_in >> num_levels;
@@ -347,18 +324,6 @@ namespace GPlatesFileIO
 			}
 
 			virtual
-			QDateTime
-			get_last_modified_timestamp()
-			{
-				quint32 last_modified;
-				static const qint64 LAST_MODIFIED_OFFSET = 8;
-				d_file.seek(LAST_MODIFIED_OFFSET);
-				d_in >> last_modified;
-
-				return QDateTime::fromTime_t(last_modified);
-			}
-
-			virtual
 			boost::optional<typename RawRasterType::non_null_ptr_type>
 			read_level(
 					unsigned int level,
@@ -372,9 +337,9 @@ namespace GPlatesFileIO
 					return boost::none;
 				}
 
+				const MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[level];
 				typename RawRasterType::non_null_ptr_type result = RawRasterType::create(
 						width, height);
-				const MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[level];
 				copy_region(
 						level_info.main_offset,
 						level_info.width,
@@ -401,9 +366,14 @@ namespace GPlatesFileIO
 					return boost::none;
 				}
 
+				const MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[level];
+				if (level_info.coverage_offset == 0)
+				{
+					// No coverage for this level.
+					return boost::none;
+				}
 				GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type result =
 					GPlatesPropertyValues::CoverageRawRaster::create(width, height);
-				const MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[level];
 				copy_region(
 						level_info.coverage_offset,
 						level_info.width,
@@ -453,13 +423,13 @@ namespace GPlatesFileIO
 					unsigned int source_row = dest_y_offset_in_source + i;
 					d_file.seek(offset_in_file +
 							(source_row * level_width + dest_x_offset_in_source) * sizeof(T));
-					T *dest_row = dest_data + i * dest_width;
-					T *dest_row_end = dest_row + dest_width;
+					T *dest = dest_data + i * dest_width;
+					T *dest_end = dest + dest_width;
 
-					while (dest_row != dest_row_end)
+					while (dest != dest_end)
 					{
-						MipmappedRasterFormatReaderInternals::read(d_in, *dest_row);
-						++dest_row;
+						d_in >> *dest;
+						++dest;
 					}
 				}
 			}

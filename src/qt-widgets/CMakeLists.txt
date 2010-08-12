@@ -137,6 +137,8 @@ set(srcs
     GMTHeaderFormatDialog.cc
     GMTHeaderFormatDialog.h
     GMTHeaderFormatDialogUi.ui
+    ImportRasterDialog.cc
+    ImportRasterDialog.h
     InformationDialog.cc
     InformationDialog.h
     InformationDialogUi.ui
@@ -192,6 +194,9 @@ set(srcs
     QueryFeaturePropertiesWidget.cc
     QueryFeaturePropertiesWidget.h
     QueryFeaturePropertiesWidgetUi.ui
+    RasterBandPage.cc
+    RasterBandPage.h
+    RasterBandPageUi.ui
     RasterPropertiesDialog.cc
     RasterPropertiesDialog.h
     RasterPropertiesDialogUi.ui

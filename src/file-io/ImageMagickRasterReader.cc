@@ -25,9 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QFileInfo>
+#include <QDateTime>
+
 #include "ImageMagickRasterReader.h"
 
-#include <QDebug>
+#include "TemporaryFileRegistry.h"
 
 
 GPlatesFileIO::ImageMagickRasterReader::ImageMagickRasterReader(
@@ -35,16 +38,23 @@ GPlatesFileIO::ImageMagickRasterReader::ImageMagickRasterReader(
 		const boost::function<RasterBandReaderHandle (unsigned int)> &proxy_handle_function,
 		ReadErrorAccumulation *read_errors) :
 	d_filename(filename),
-	d_filename_as_std_string(filename.toStdString()),
 	d_proxy_handle_function(proxy_handle_function),
+	d_source_width(0),
+	d_source_height(0),
 	d_can_read(false)
 {
 	try
 	{
 		Magick::Image image;
-		image.ping(d_filename_as_std_string); // ping() loads size but not the actual data.
+		image.ping(d_filename.toStdString()); // ping() loads size but not the actual data.
 		Magick::Geometry size = image.size();
-		d_can_read = size.width() > 0 && size.height() > 0;
+		d_source_width = size.width();
+		d_source_height = size.height();
+
+		if (d_source_width > 0 && d_source_height > 0)
+		{
+			d_can_read = ensure_rgba_file_available();
+		}
 	}
 	catch (const Magick::Exception &)
 	{
@@ -100,29 +110,10 @@ GPlatesFileIO::ImageMagickRasterReader::get_proxied_raw_raster(
 		return boost::none;
 	}
 
-	// Because ProxiedRgba8RawRaster doesn't store statistics or a no-data value,
-	// the only thing we need to get from the file for now is the size.
-	try
-	{
-		Magick::Image image;
-		image.ping(d_filename_as_std_string); // ping() loads size but not the actual data.
-		Magick::Geometry size = image.size();
-		if (size.width() > 0 && size.height() > 0)
-		{
-			GPlatesPropertyValues::ProxiedRgba8RawRaster::non_null_ptr_type result =
-				GPlatesPropertyValues::ProxiedRgba8RawRaster::create(
-						size.width(), size.height(), d_proxy_handle_function(band_number));
-			return GPlatesPropertyValues::RawRaster::non_null_ptr_type(result.get());
-		}
-		else
-		{
-			return boost::none;
-		}
-	}
-	catch (const Magick::Geometry &)
-	{
-		return boost::none;
-	}
+	GPlatesPropertyValues::ProxiedRgba8RawRaster::non_null_ptr_type result =
+		GPlatesPropertyValues::ProxiedRgba8RawRaster::create(
+				d_source_width, d_source_height, d_proxy_handle_function(band_number));
+	return GPlatesPropertyValues::RawRaster::non_null_ptr_type(result.get());
 }
 
 
@@ -143,17 +134,16 @@ GPlatesFileIO::ImageMagickRasterReader::get_raw_raster(
 		return boost::none;
 	}
 
-	boost::optional<std::pair<Magick::Image, QSize> > image_info = get_region_as_image(region, read_errors);
-	if (!image_info)
+	GPlatesGui::rgba8_t *data = read_rgba_file(region);
+	if (!data)
 	{
-		return boost::none;
+		report_recoverable_error(read_errors, ReadErrors::InvalidRegionInRaster);
 	}
 
-	Magick::Image &image = image_info->first;
-	QSize &size = image_info->second;
 	GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type result =
-		GPlatesPropertyValues::Rgba8RawRaster::create(size.width(), size.height());
-	image.write(0, 0, size.width(), size.height(), "RGBA", Magick::CharPixel, result->data());
+		region.isValid() ?
+		GPlatesPropertyValues::Rgba8RawRaster::create(region.width(), region.height(), data) :
+		GPlatesPropertyValues::Rgba8RawRaster::create(d_source_width, d_source_height, data);
 
 	return GPlatesPropertyValues::RawRaster::non_null_ptr_type(result.get());
 }
@@ -197,70 +187,13 @@ GPlatesFileIO::ImageMagickRasterReader::get_data(
 		return NULL;
 	}
 
-	boost::optional<std::pair<Magick::Image, QSize> > image_info = get_region_as_image(region, read_errors);
-	if (!image_info)
+	GPlatesGui::rgba8_t *data = read_rgba_file(region);
+	if (!data)
 	{
-		return NULL;
+		report_recoverable_error(read_errors, ReadErrors::InvalidRegionInRaster);
 	}
 
-	Magick::Image &image = image_info->first;
-	QSize &size = image_info->second;
-	GPlatesGui::rgba8_t *result_buf = new GPlatesGui::rgba8_t[size.width() * size.height()];
-	image.write(0, 0, size.width(), size.height(), "RGBA", Magick::CharPixel, result_buf);
-
-	return result_buf;
-}
-
-
-boost::optional<std::pair<Magick::Image, QSize> >
-GPlatesFileIO::ImageMagickRasterReader::get_region_as_image(
-		const QRect &region,
-		ReadErrorAccumulation *read_errors)
-{
-	try
-	{
-		if (region.isValid())
-		{
-			Magick::Image full_image;
-			full_image.ping(d_filename_as_std_string); // ping() loads size but not the actual data.
-			Magick::Geometry full_image_size = full_image.size();
-
-			if (full_image_size.width() > 0 && full_image_size.height() > 0 &&
-				region.x() >= 0 && region.y() >= 0 &&
-				region.width() > 0 && region.height() > 0 &&
-				static_cast<size_t>(region.x() + region.width()) <= full_image_size.width() &&
-				static_cast<size_t>(region.y() + region.height()) <= full_image_size.height())
-			{
-				Magick::Image clipped_image;
-				Magick::Geometry region_as_geometry(
-						region.width(), region.height(), region.x(), region.y());
-				clipped_image.read(region_as_geometry, d_filename_as_std_string);
-				return std::make_pair(
-						clipped_image,
-						QSize(region.width(), region.height()));
-			}
-		}
-		else
-		{
-			Magick::Image full_image;
-			full_image.read(d_filename_as_std_string);
-			Magick::Geometry full_image_size = full_image.size();
-
-			if (full_image_size.width() > 0 && full_image_size.height() > 0)
-			{
-				return std::make_pair(
-						full_image,
-						QSize(full_image_size.width(), full_image_size.height()));
-			}
-		}
-	}
-	catch (const Magick::Exception &)
-	{
-		// Fall through...
-	}
-
-	report_recoverable_error(read_errors, ReadErrors::ErrorReadingRasterBand);
-	return boost::none;
+	return data;
 }
 
 
@@ -296,6 +229,146 @@ GPlatesFileIO::ImageMagickRasterReader::report_failure_to_begin(
 					0,
 					description,
 					ReadErrors::FileNotLoaded));
+	}
+}
+
+
+GPlatesGui::rgba8_t *
+GPlatesFileIO::ImageMagickRasterReader::read_rgba_file(
+		const QRect &region)
+{
+	unsigned int region_width, region_height, region_x_offset, region_y_offset;
+
+	// Check the region.
+	if (region.isValid())
+	{
+		if (region.x() < 0 || region.y() < 0 ||
+				region.width() <= 0 || region.height() <= 0 ||
+				static_cast<unsigned int>(region.x() + region.width()) > d_source_width ||
+				static_cast<unsigned int>(region.y() + region.height()) > d_source_height)
+		{
+			return NULL;
+		}
+
+		region_width = static_cast<unsigned int>(region.width());
+		region_height = static_cast<unsigned int>(region.height());
+		region_x_offset = static_cast<unsigned int>(region.x());
+		region_y_offset = static_cast<unsigned int>(region.y());
+	}
+	else
+	{
+		region_width = d_source_width;
+		region_height = d_source_height;
+		region_x_offset = 0;
+		region_y_offset = 0;
+	}
+
+	GPlatesGui::rgba8_t * const dest_buf = new GPlatesGui::rgba8_t[region_width * region_height];
+	GPlatesGui::rgba8_t *dest_ptr = dest_buf;
+
+	// Read the bytes in from the file.
+	for (unsigned int y = 0; y != region_height; ++y)
+	{
+		unsigned int row_in_file = y + region_y_offset;
+		d_rgba_file.seek((row_in_file * d_source_width + region_x_offset) * sizeof(GPlatesGui::rgba8_t));
+		
+		for (unsigned int x = 0; x != region_width; ++x)
+		{
+			d_rgba_in >> *dest_ptr;
+			++dest_ptr;
+		}
+	}
+
+	return dest_buf;
+}
+
+
+bool
+GPlatesFileIO::ImageMagickRasterReader::ensure_rgba_file_available()
+{
+	// Is there such a file in the same directory?
+	static const QString EXTENSION = ".mipmap-level0";
+	QString rgba_filename;
+	QString in_same_directory = d_filename + EXTENSION;
+	QString in_tmp_directory = TemporaryFileRegistry::make_filename_in_tmp_directory(
+			in_same_directory);
+	if (QFile(in_same_directory).exists())
+	{
+		rgba_filename = in_same_directory;
+	}
+	else if (QFile(in_tmp_directory).exists())
+	{
+		rgba_filename = in_tmp_directory;
+	}
+
+	if (!rgba_filename.isEmpty())
+	{
+		// Check whether the RGBA file was created after the source file.
+		if (QFileInfo(rgba_filename).lastModified() >
+				QFileInfo(d_filename).lastModified())
+		{
+			// Attempt to open it.
+			d_rgba_file.setFileName(rgba_filename);
+			if (d_rgba_file.open(QIODevice::ReadOnly))
+			{
+				d_rgba_in.setDevice(&d_rgba_file);
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		// It's too old, delete it.
+		QFile(rgba_filename).remove();
+	}
+
+	// Try to open an RGBA file in the same directory for writing.
+	d_rgba_file.setFileName(in_same_directory);
+	bool can_open = d_rgba_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+
+	// If that fails, try and open an RGBA file in the tmp directory for writing.
+	if (!can_open)
+	{
+		d_rgba_file.setFileName(in_tmp_directory);
+		can_open = d_rgba_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+
+		if (!can_open)
+		{
+			return false;
+		}
+	}
+
+	// Read the entire source raster into memory.
+	Magick::Image image;
+	image.read(d_filename.toStdString());
+	GPlatesGui::rgba8_t * const data_buf = new GPlatesGui::rgba8_t[d_source_width * d_source_height];
+	image.write(0, 0, d_source_width, d_source_height, "RGBA", Magick::CharPixel, data_buf);
+
+	// Write buffer to disk.
+	QDataStream out(&d_rgba_file);
+	GPlatesGui::rgba8_t *data_ptr = data_buf;
+	GPlatesGui::rgba8_t *data_end = data_ptr + d_source_width * d_source_height;
+	while (data_ptr != data_end)
+	{
+		out << *data_ptr;
+		++data_ptr;
+	}
+
+	// Erase buffer and close file.
+	delete[] data_buf;
+	d_rgba_file.close();
+
+	// Open the same file again for reading.
+	if (d_rgba_file.open(QIODevice::ReadOnly))
+	{
+		d_rgba_in.setDevice(&d_rgba_file);
+		return true;
+	}
+	else
+	{
+		return false;
 	}
 }
 

@@ -34,6 +34,10 @@
 #include <opengl/OpenGL.h>
 #include <QColor>
 
+
+// Forward declaration.
+class QDataStream;
+
 namespace GPlatesGui
 {
 	struct HSVColour
@@ -120,7 +124,40 @@ namespace GPlatesGui
 			blue(blue_),
 			alpha(alpha_)
 		{  }
+
+		bool
+		operator==(
+				const rgba8_t &other)
+		{
+			return int32_value == other.int32_value;
+		}
+
+		bool
+		operator!=(
+				const rgba8_t &other)
+		{
+			return int32_value != other.int32_value;
+		}
 	};
+
+
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const rgba8_t &c);
+
+
+	QDataStream &
+	operator<<(
+			QDataStream &out,
+			const rgba8_t &c);
+
+
+	QDataStream &
+	operator>>(
+			QDataStream &in,
+			rgba8_t &c);
+
 
 	class Colour
 	{
@@ -356,11 +393,6 @@ namespace GPlatesGui
 	operator<<(
 			std::ostream &os,
 			const Colour &c);
-
-	std::ostream &
-	operator<<(
-			std::ostream &os,
-			const rgba8_t &c);
 }
 
 #endif  // GPLATES_GUI_COLOUR_H

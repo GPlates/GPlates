@@ -2,10 +2,8 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * $Revision$
+ * $Date$ 
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
  *
@@ -24,31 +22,45 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+ 
+#ifndef GPLATES_QTWIDGETS_RASTERBANDPAGE_H
+#define GPLATES_QTWIDGETS_RASTERBANDPAGE_H
 
-#include "MipmappedRasterFormatWriter.h"
+#include <QWizardPage>
+
+#include "RasterBandPageUi.h"
 
 
-namespace GPlatesFileIO
+namespace GPlatesQtWidgets
 {
-	namespace MipmappedRasterFormatWriterInternals
+	class RasterBandPage: 
+			public QWizardPage,
+			protected Ui_RasterBandPage
 	{
-		template<>
+		Q_OBJECT
+		
+	public:
+
+		explicit
+		RasterBandPage(
+				QWidget *parent_ = NULL);
+
+		virtual
 		void
-		write<GPlatesGui::rgba8_t>(
-				QDataStream &out,
-				const GPlatesGui::rgba8_t *data,
-				unsigned int len)
-		{
-			const GPlatesGui::rgba8_t *end = data + len;
-			while (data != end)
-			{
-				out << static_cast<quint8>(data->red)
-					<< static_cast<quint8>(data->green)
-					<< static_cast<quint8>(data->blue)
-					<< static_cast<quint8>(data->alpha);
-				++data;
-			}
-		}
-	}
+		initializePage();
+
+		virtual
+		void
+		cleanupPage();
+
+		virtual
+		int
+		nextId() const;
+
+		virtual
+		bool
+		isComplete() const;
+	};
 }
 
+#endif  // GPLATES_QTWIDGETS_RASTERBANDPAGE_H

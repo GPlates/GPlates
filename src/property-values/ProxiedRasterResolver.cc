@@ -70,7 +70,7 @@ namespace
 					RawRasterType &raster)
 			{
 				boost::optional<typename ProxiedRasterResolverImpl<RawRasterType>::non_null_ptr_type> result =
-					ProxiedRasterResolverImpl<RawRasterType>::create(raster);
+					ProxiedRasterResolverImpl<RawRasterType>::create(&raster);
 				if (result)
 				{
 					return result_type(*result);
@@ -97,6 +97,28 @@ namespace
 
 	typedef TemplatedRawRasterVisitor<CreateProxiedRasterResolverVisitorImpl>
 		CreateProxiedRasterResolverVisitor;
+
+	/**
+	 * Returns whether a file is writable by actually attempting to open the
+	 * file for writing.
+	 *
+	 * We do this because QFileInfo::isWritable() sometimes gives the wrong
+	 * answer, especially on Windows.
+	 *
+	 * Note: this will create the file if it doesn't already exist.
+	 */
+	bool
+	is_writable(
+			const QString &filename)
+	{
+		QFile file(filename);
+		bool can_open = file.open(QIODevice::WriteOnly | QIODevice::Append);
+		if (can_open)
+		{
+			file.close();
+		}
+		return can_open;
+	}
 }
 
 
@@ -110,10 +132,10 @@ GPlatesPropertyValues::ProxiedRasterResolver::~ProxiedRasterResolver()
 
 boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type>
 GPlatesPropertyValues::ProxiedRasterResolver::create(
-		RawRaster &raster)
+		const RawRaster::non_null_ptr_type &raster)
 {
 	CreateProxiedRasterResolverVisitor visitor;
-	raster.accept_visitor(visitor);
+	raster->accept_visitor(visitor);
 
 	return visitor.get_result();
 }
@@ -150,37 +172,9 @@ GPlatesPropertyValues::ProxiedRasterResolverInternals::make_mipmap_filename_in_t
 		unsigned int band_number,
 		size_t colour_palette_id)
 {
-	static const QString TMP_DIRECTORY_PATH = construct_tmp_directory_path();
-	static const QString FORMAT = TMP_DIRECTORY_PATH + "%1.%2.mipmaps";
-	static const QString FORMAT_WITH_COLOUR_PALETTE = TMP_DIRECTORY_PATH + "%1.%2.%3.mipmaps";
-	
-	QFileInfo file_info(source_filename);
-	
-	if (colour_palette_id)
-	{
-		return FORMAT_WITH_COLOUR_PALETTE.
-			arg(file_info.fileName()).
-			arg(band_number).
-			arg(colour_palette_id);
-	}
-	else
-	{
-		return FORMAT.
-			arg(file_info.fileName()).
-			arg(band_number);
-	}
-}
-
-
-QString
-GPlatesPropertyValues::ProxiedRasterResolverInternals::construct_tmp_directory_path()
-{
-	QString result = QDir::tempPath();
-	if (!result.endsWith("/")) /* Qt uses / for separators on Unix and Windows. */
-	{
-		result.append("/");
-	}
-	return result;
+	return GPlatesFileIO::TemporaryFileRegistry::make_filename_in_tmp_directory(
+			make_mipmap_filename_in_same_directory(
+				source_filename, band_number, colour_palette_id));
 }
 
 
@@ -192,15 +186,17 @@ GPlatesPropertyValues::ProxiedRasterResolverInternals::get_writable_mipmap_filen
 {
 	QString in_same_directory = make_mipmap_filename_in_same_directory(
 			source_filename, band_number, colour_palette_id);
-	if (QFileInfo(in_same_directory).isWritable())
+	if (is_writable(in_same_directory))
 	{
+		// qDebug() << in_same_directory;
 		return in_same_directory;
 	}
 
 	QString in_tmp_directory = make_mipmap_filename_in_tmp_directory(
 			source_filename, band_number, colour_palette_id);
-	if (QFileInfo(in_tmp_directory).isWritable())
+	if (is_writable(in_tmp_directory))
 	{
+		// qDebug() << in_tmp_directory;
 		return in_tmp_directory;
 	}
 

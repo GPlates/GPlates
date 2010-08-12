@@ -72,7 +72,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create(
 		RasterScanlineOrderType raster_scanline_order)
 {
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
-			GPlatesPropertyValues::ProxiedRasterResolver::create(*raster);
+			GPlatesPropertyValues::ProxiedRasterResolver::create(raster);
 	if (!proxy_resolver_opt)
 	{
 		return boost::none;
@@ -201,7 +201,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::change_raster(
 
 	// Create a new proxied raster resolver to perform region queries for the new raster data.
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
-			GPlatesPropertyValues::ProxiedRasterResolver::create(*new_raw_raster);
+			GPlatesPropertyValues::ProxiedRasterResolver::create(new_raw_raster);
 	if (!proxy_resolver_opt)
 	{
 		return false;

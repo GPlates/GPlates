@@ -112,6 +112,7 @@ namespace GPlatesQtWidgets
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
+	class ImportRasterDialog;
 	class ManageFeatureCollectionsDialog;
 	class MeshDialog;
 	class ReadErrorAccumulationDialog;
@@ -393,9 +394,11 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_animate_dialog();
 
+		// FIXME: Remove.
 		void
 		open_raster();
 
+		// FIXME: Remove.
 		void
 		open_time_dependent_raster_sequence();
 
@@ -473,6 +476,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
+		boost::scoped_ptr<ImportRasterDialog> d_import_raster_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
 		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
@@ -701,6 +705,12 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_colour_scheme_delegator_changed();
+		
+		void
+		pop_up_import_raster_dialog();
+
+		void
+		pop_up_import_time_dependent_raster_dialog();
 
 	protected:
 	
