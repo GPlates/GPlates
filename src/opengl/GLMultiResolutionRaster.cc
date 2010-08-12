@@ -41,13 +41,11 @@
 #include "GLTransformState.h"
 #include "GLUtils.h"
 #include "GLVertexArrayDrawable.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 #include "property-values/RawRasterUtils.h"
-
 namespace
 {
 	/**
@@ -94,7 +92,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 #ifdef USE_OLD_GL_RASTER_PROXY
-	boost::optional<Rgba8RawRaster::non_null_ptr_type> rgba_raster_opt =
+	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> rgba_raster_opt =
 			proxy_resolver_opt.get()->get_coloured_region_from_level(
 					0, 0, 0, raster_width, raster_height, raster_colour_scheme);
 	if (!rgba_raster_opt)
@@ -214,7 +212,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::change_raster(
 	d_raster_colour_scheme = raster_colour_scheme;
 
 #ifdef USE_OLD_GL_RASTER_PROXY
-	boost::optional<Rgba8RawRaster::non_null_ptr_type> rgba_raster_opt =
+	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> rgba_raster_opt =
 			d_proxied_raster_resolver->get_coloured_region_from_level(
 					0, 0, 0, d_raster_width, d_raster_height, raster_colour_scheme);
 	if (!rgba_raster_opt)
