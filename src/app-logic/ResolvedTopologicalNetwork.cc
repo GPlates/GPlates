@@ -48,28 +48,41 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::get_feature_ref() const
 }
 
 
-const GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type
-GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry() const
+const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type>
+GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries() const
 {
-#if 1
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-#else
-	// Get geometry-on-sphere.
-	const geometry_ptr_type geom_on_sphere = geometry();
+	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
+	// Iterate over the individual faces of the triangulation and create a
+	// ResolvedTopologicalNetwork for each one.
+	CgalUtils::cgal_finite_faces_iterator finite_faces_iter =
+			d_cgal_triangulation->finite_faces_begin();
+	CgalUtils::cgal_finite_faces_iterator finite_faces_end =
+			d_cgal_triangulation->finite_faces_end();
+	for ( ; finite_faces_iter != finite_faces_end; ++finite_faces_iter)
+	{
+		std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
+		network_triangle_points.reserve(3);
 
-	// We know the geometry is always a polygon-on-sphere since this class created it
-	// so we can dynamic cast it.
-	const resolved_topology_geometry_ptr_type::element_type *poly_on_sphere =
-			dynamic_cast<const resolved_topology_geometry_ptr_type::element_type *>(
-					geom_on_sphere.get());
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			poly_on_sphere, GPLATES_ASSERTION_SOURCE);
+		for (int index = 0; index != 3 ; ++index)
+		{
+			const CgalUtils::cgal_point_2_type cgal_triangle_point =
+					finite_faces_iter->vertex( index )->point();
+			const float lon = cgal_triangle_point.x();
+			const float lat = cgal_triangle_point.y();
 
-	// Increment reference count to same geometry and return smart pointer.
-	return resolved_topology_geometry_ptr_type(
-			poly_on_sphere,
-			GPlatesUtils::NullIntrusivePointerHandler());
-#endif
+			// convert coordinates
+			const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
+			const GPlatesMaths::PointOnSphere triangle_point =
+					GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
+			network_triangle_points.push_back(triangle_point);
+		}
+
+		// create a PolygonOnSphere
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
+				GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
+		ret.push_back(resolved_topology_network_triangle);
+	}
+	return ret;
 }
 
 

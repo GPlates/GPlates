@@ -305,16 +305,21 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
-#if 1
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-#else
-	GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			create_rendered_reconstruction_geometry(
-					rtn->resolved_topology_geometry(), rtn, d_style_params, d_colour);
+	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
+		geometries = rtn->resolved_topology_geometries();
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		it = geometries.begin();
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		it_end = geometries.end();
+	for(; it !=it_end; it++)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						*it, rtn, d_style_params, d_colour);
 
-	// Add to the rendered geometry layer.
-	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+		// Add to the rendered geometry layer.
+		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+	}
 
 	render_topological_network_velocities(rtn, d_rendered_geometry_layer, d_style_params, d_colour);
-#endif
 }

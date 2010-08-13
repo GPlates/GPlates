@@ -414,8 +414,8 @@ namespace GPlatesAppLogic
 		 * returns it as a @a resolved_topology_geometry_ptr_type instead
 		 * of a @a geometry_ptr_type.
 		 */
-		const resolved_topology_geometry_ptr_type
-		resolved_topology_geometry() const;
+		const std::vector<resolved_topology_geometry_ptr_type>
+		resolved_topology_geometries() const;
 
 		/**
 		 * Access the cached plate ID, if it exists.
