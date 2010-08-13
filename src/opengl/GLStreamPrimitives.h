@@ -632,6 +632,8 @@ namespace GPlatesOpenGL
 	GLStreamPrimitives<VertexType>::add_point(
 			const VertexType &vertex)
 	{
+		// It's a new point so flush the currently batched primitives
+		// if it's a new type of primitive.
 		if (d_current_primitive_type != PRIMITIVE_POINT)
 		{
 			flush_primitives();
@@ -660,6 +662,8 @@ namespace GPlatesOpenGL
 			const VertexType &start_vertex,
 			const VertexType &end_vertex)
 	{
+		// It's a new line segment so flush the currently batched primitives
+		// if it's a new type of primitive.
 		if (d_current_primitive_type != PRIMITIVE_LINE)
 		{
 			flush_primitives();
@@ -691,6 +695,8 @@ namespace GPlatesOpenGL
 			const VertexType &end_vertex)
 	{
 		// Our start vertex is the end of the last line added.
+
+		// Where in the middle of a line so the primitive type should not have changed.
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				d_current_primitive_type == PRIMITIVE_LINE,
 				GPLATES_ASSERTION_SOURCE);
@@ -723,6 +729,8 @@ namespace GPlatesOpenGL
 			const VertexType &second_vertex,
 			const VertexType &third_vertex)
 	{
+		// It's a new triangle so flush the currently batched primitives
+		// if it's a new type of primitive.
 		if (d_current_primitive_type != PRIMITIVE_TRIANGLE)
 		{
 			flush_primitives();
@@ -754,11 +762,10 @@ namespace GPlatesOpenGL
 	GLStreamPrimitives<VertexType>::add_triangle(
 			const VertexType &third_vertex)
 	{
-		if (d_current_primitive_type != PRIMITIVE_TRIANGLE)
-		{
-			flush_primitives();
-			d_current_primitive_type = PRIMITIVE_TRIANGLE;
-		}
+		// Where in the middle of a triangle so the primitive type should not have changed.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_current_primitive_type == PRIMITIVE_TRIANGLE,
+				GPLATES_ASSERTION_SOURCE);
 
 		// Need space for at least one vertex.
 		if (d_current_vertices.size() > MAX_NUM_VERTICES_PER_DRAWABLE - 1)
@@ -784,11 +791,10 @@ namespace GPlatesOpenGL
 	GLStreamPrimitives<VertexType>::add_triangle_reversed(
 			const VertexType &third_vertex)
 	{
-		if (d_current_primitive_type != PRIMITIVE_TRIANGLE)
-		{
-			flush_primitives();
-			d_current_primitive_type = PRIMITIVE_TRIANGLE;
-		}
+		// Where in the middle of a triangle so the primitive type should not have changed.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_current_primitive_type == PRIMITIVE_TRIANGLE,
+				GPLATES_ASSERTION_SOURCE);
 
 		// Need space for at least one vertex.
 		if (d_current_vertices.size() > MAX_NUM_VERTICES_PER_DRAWABLE - 1)
@@ -816,11 +822,10 @@ namespace GPlatesOpenGL
 			const VertexType &first_vertex,
 			const VertexType &third_vertex)
 	{
-		if (d_current_primitive_type != PRIMITIVE_TRIANGLE)
-		{
-			flush_primitives();
-			d_current_primitive_type = PRIMITIVE_TRIANGLE;
-		}
+		// Where in the middle of a triangle so the primitive type should not have changed.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_current_primitive_type == PRIMITIVE_TRIANGLE,
+				GPLATES_ASSERTION_SOURCE);
 
 		// Need space for at least two vertices.
 		if (d_current_vertices.size() > MAX_NUM_VERTICES_PER_DRAWABLE - 2)
@@ -1006,8 +1011,6 @@ namespace GPlatesOpenGL
 
 		// Clear the vertex indices.
 		d_current_vertex_elements.clear();
-
-		d_current_primitive_type = PRIMITIVE_NONE;
 	}
 
 
