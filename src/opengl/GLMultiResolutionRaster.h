@@ -632,7 +632,14 @@ namespace GPlatesOpenGL
 		 * NOTE: This means there are NUM_TEXELS_PER_VERTEX * NUM_TEXELS_PER_VERTEX
 		 * texels between four adjacent vertices that form a quad (two mesh triangles).
 		 */
-		static const unsigned int NUM_TEXELS_PER_VERTEX = 8;
+		static const unsigned int NUM_TEXELS_PER_VERTEX = 16;
+
+
+		/**
+		 * We also need to make sure there are enough vertices to follow the curvature of the
+		 * globe, otherwise the mesh segments will dip too far below the surface of the sphere.
+		 */
+		static const unsigned int MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES = 5;
 
 
 		//! Constructor.
@@ -731,6 +738,19 @@ namespace GPlatesOpenGL
 		calc_max_texel_size_on_unit_sphere(
 				const unsigned int lod_level,
 				const LevelOfDetailTile &lod_tile) const;
+
+
+		/**
+		 * Calculates the number of vertices required for the specified tile.
+		 */
+		const std::pair<unsigned int, unsigned int>
+		calculate_num_vertices_along_tile_edges(
+				const unsigned int x_geo_start,
+				const unsigned int x_geo_end,
+				const unsigned int y_geo_start,
+				const unsigned int y_geo_end,
+				const unsigned int num_u_texels,
+				const unsigned int num_v_texels);
 
 
 		/**

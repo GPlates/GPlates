@@ -266,6 +266,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 
 	// Recursively traverse the OBB tree to find visible tiles.
 	get_visible_tiles(frustum_planes, frustum_plane_mask, lod, lod_root_obb_tree_node, visible_tiles);
+
+	//std::cout << "Num visible tiles: " << visible_tiles.size() << std::endl;
 }
 
 
@@ -451,7 +453,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 		const GLTexture::shared_ptr_type &texture,
 		bool texture_was_recycled)
 {
-	std::cout << "About to read raster region..." << std::endl;
 	// Get the region of the raster covered by this tile at the level-of-detail of this tile.
 #ifdef USE_OLD_GL_RASTER_PROXY
 	GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type raster_region =
@@ -474,6 +475,16 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	// If there was an error accessing raster data then black out the texture.
 	if (!raster_region_opt)
 	{
+		qWarning() << "Unable to load data into raster tile.";
+
+		std::cout << "level, uoffset, voffset, u_num_texels, v_num_texels: "
+				<< lod_tile.lod_level << ", "
+				<< lod_tile.u_lod_texel_offset << ", "
+				<< lod_tile.v_lod_texel_offset << ", "
+				<< lod_tile.num_u_lod_texels << ", "
+				<< lod_tile.num_v_lod_texels << ", "
+				<< std::endl;
+
 		// TODO: print a text error message over the tile.
 
 		// Create a black raster to load into the texture.
@@ -494,7 +505,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	const GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type &raster_region =
 			raster_region_opt.get();
 #endif
-	std::cout << "...finished reading raster region." << std::endl;
 
 	// Pointer to the Rgba8 data.
 	const GPlatesGui::rgba8_t *rgba8_data = raster_region->data();
@@ -732,6 +742,17 @@ GPlatesOpenGL::GLMultiResolutionRaster::initialise_level_of_detail_pyramid()
 		lod_texel_width = (lod_texel_width + 1) / 2;
 		lod_texel_height = (lod_texel_height + 1) / 2;
 	}
+
+	std::cout << "georeferencing: top-left (x,y), x (height, width), y (height, width) " << std::endl
+		<< d_georeferencing->parameters().top_left_x_coordinate << ", "
+		<< d_georeferencing->parameters().top_left_y_coordinate << ", "
+		<< d_georeferencing->parameters().x_component_of_pixel_height << ", "
+		<< d_georeferencing->parameters().x_component_of_pixel_width << ", "
+		<< d_georeferencing->parameters().y_component_of_pixel_height << ", "
+		<< d_georeferencing->parameters().y_component_of_pixel_width << ", "
+		<< std::endl;
+
+	std::cout << "Num levels in pyramid: " << d_level_of_detail_pyramid.size() << std::endl;
 }
 
 
@@ -945,11 +966,11 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree(
 
 	// Each OBB in the tree has one axis oriented radially outward from the globe at the
 	// centre point of its bounding domain as this should generate the tightest bounding box.
-	const double node_centre_x_pixel_coord = x_geo_start + 0.5 * (x_geo_end - x_geo_start);
-	const double node_centre_y_pixel_coord = y_geo_start + 0.5 * (y_geo_end - y_geo_start);
+	const double x_geo_centre = 0.5 * (x_geo_start + x_geo_end);
+	const double y_geo_centre = 0.5 * (y_geo_start + y_geo_end);
 
-	GLIntersect::OrientedBoundingBoxBuilder obb_builder = create_oriented_bounding_box_builder(
-			node_centre_x_pixel_coord, node_centre_y_pixel_coord);
+	GLIntersect::OrientedBoundingBoxBuilder obb_builder =
+			create_oriented_bounding_box_builder(x_geo_centre, y_geo_centre);
 
 	// Expand the oriented bounding box to include the child node bounding boxes.
 	obb_builder.add(
@@ -1106,32 +1127,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 		v_end = 0; // y_geo_end begins exactly on a texel boundary
 	}
 
-	// Determine the number of quads along each tile edge.
-	unsigned int num_quads_along_tile_x_edge = num_u_texels / NUM_TEXELS_PER_VERTEX;
-	if (num_quads_along_tile_x_edge == 0)
-	{
-		num_quads_along_tile_x_edge = 1;
-	}
-	unsigned int num_quads_along_tile_y_edge = num_v_texels / NUM_TEXELS_PER_VERTEX;
-	if (num_quads_along_tile_y_edge == 0)
-	{
-		num_quads_along_tile_y_edge = 1;
-	}
-
-	// The number of vertices each edge is the number of quads along each edge "+1".
-	//
-	// -------
-	// | | | |
-	// -------
-	// | | | |
-	// -------
-	// | | | |
-	// -------
-	//
-	// ...the above shows 3x3=9 quads but there's 4x4=16 vertices.
-	//
-	const unsigned int x_num_vertices = num_quads_along_tile_x_edge + 1;
-	const unsigned int y_num_vertices = num_quads_along_tile_y_edge + 1;
+	// Determine the number of vertices required for the tile.
+	const std::pair<unsigned int, unsigned int> num_vertices_along_tile_edges =
+			calculate_num_vertices_along_tile_edges(
+					x_geo_start, x_geo_end,
+					y_geo_start, y_geo_end,
+					num_u_texels, num_v_texels);
+	const unsigned int x_num_vertices = num_vertices_along_tile_edges.first;
+	const unsigned int y_num_vertices = num_vertices_along_tile_edges.second;
 
 	// Get the vertex indices for this tile.
 	// Since most tiles can share these indices we store them in a map keyed on
@@ -1168,10 +1171,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::bound_level_of_detail_tile(
 	//
 	// Each OBB in the tree has one axis oriented radially outward from the globe at the
 	// centre point of its bounding domain as this should generate the tightest bounding box.
-	const double tile_centre_x_geo_coord =
-			lod_tile.x_geo_start + 0.5 * (lod_tile.x_geo_end - lod_tile.x_geo_start);
-	const double tile_centre_y_geo_coord =
-			lod_tile.y_geo_start + 0.5 * (lod_tile.y_geo_end - lod_tile.y_geo_start);
+	const double tile_centre_x_geo_coord = 0.5 * (lod_tile.x_geo_start + lod_tile.x_geo_end);
+	const double tile_centre_y_geo_coord = 0.5 * (lod_tile.y_geo_start + lod_tile.y_geo_end);
 
 	GLIntersect::OrientedBoundingBoxBuilder obb_builder = create_oriented_bounding_box_builder(
 			tile_centre_x_geo_coord, tile_centre_y_geo_coord);
@@ -1213,6 +1214,129 @@ GPlatesOpenGL::GLMultiResolutionRaster::bound_level_of_detail_tile(
 	}
 
 	return obb_builder.get_oriented_bounding_box();
+}
+
+
+const std::pair<unsigned int, unsigned int>
+GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_vertices_along_tile_edges(
+		const unsigned int x_geo_start,
+		const unsigned int x_geo_end,
+		const unsigned int y_geo_start,
+		const unsigned int y_geo_end,
+		const unsigned int num_u_texels,
+		const unsigned int num_v_texels)
+{
+	// Centre point of the tile.
+	const double x_geo_centre = 0.5 * (x_geo_start + x_geo_end);
+	const double y_geo_centre = 0.5 * (y_geo_start + y_geo_end);
+
+	// The nine boundary points including corners and midpoints and one centre point.
+	const GPlatesMaths::PointOnSphere tile_points[3][3] =
+	{
+		{
+			convert_pixel_coord_to_geographic_coord(x_geo_start, y_geo_start),
+			convert_pixel_coord_to_geographic_coord(x_geo_centre, y_geo_start),
+			convert_pixel_coord_to_geographic_coord(x_geo_end, y_geo_start)
+		},
+		{
+			convert_pixel_coord_to_geographic_coord(x_geo_start, y_geo_centre),
+			convert_pixel_coord_to_geographic_coord(x_geo_centre, y_geo_centre),
+			convert_pixel_coord_to_geographic_coord(x_geo_end, y_geo_centre)
+		},
+		{
+			convert_pixel_coord_to_geographic_coord(x_geo_start, y_geo_end),
+			convert_pixel_coord_to_geographic_coord(x_geo_centre, y_geo_end),
+			convert_pixel_coord_to_geographic_coord(x_geo_end, y_geo_end)
+		}
+	};
+
+	// Calculate the maximum angle spanned by the current tile in the x direction.
+	GPlatesMaths::real_t x_tile_min_half_span = 1;
+
+	// Iterate over the half segments and calculate dot products in the x direction.
+	for (unsigned int i = 0; i < 3; ++i)
+	{
+		for (unsigned int j = 0; j < 2; ++j)
+		{
+			GPlatesMaths::real_t x_tile_half_span = dot(
+					tile_points[i][j].position_vector(), tile_points[i][j+1].position_vector());
+			if (x_tile_half_span < x_tile_min_half_span)
+			{
+				x_tile_min_half_span = x_tile_half_span;
+			}
+		}
+	}
+
+	// Calculate the maximum angle spanned by the current tile in the y direction.
+	GPlatesMaths::real_t y_tile_min_half_span = 1;
+
+	// Iterate over the half segments and calculate dot products in the y direction.
+	for (unsigned int j = 0; j < 3; ++j)
+	{
+		for (unsigned int i = 0; i < 2; ++i)
+		{
+			GPlatesMaths::real_t y_tile_half_span = dot(
+					tile_points[i][j].position_vector(), tile_points[i+1][j].position_vector());
+			if (y_tile_half_span < y_tile_min_half_span)
+			{
+				y_tile_min_half_span = y_tile_half_span;
+			}
+		}
+	}
+
+	// Convert from dot product to angle.
+	const GPlatesMaths::real_t x_tile_max_spanned_angle_in_radians = 2 * acos(x_tile_min_half_span);
+	const GPlatesMaths::real_t y_tile_max_spanned_angle_in_radians = 2 * acos(y_tile_min_half_span);
+
+	// Determine number of quads (segments) along each edge.
+	const GPlatesMaths::real_t x_num_quads_based_on_distance_real =
+			GPlatesMaths::convert_rad_to_deg(x_tile_max_spanned_angle_in_radians) /
+					MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES;
+	const GPlatesMaths::real_t y_num_quads_based_on_distance_real =
+			GPlatesMaths::convert_rad_to_deg(y_tile_max_spanned_angle_in_radians) /
+					MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES;
+
+	// Rounded up to integer.
+	const unsigned int x_num_quads_based_on_distance =
+			static_cast<unsigned int>(x_num_quads_based_on_distance_real.dval() + 0.99);
+	const unsigned int y_num_quads_based_on_distance =
+			static_cast<unsigned int>(y_num_quads_based_on_distance_real.dval() + 0.99);
+
+	// Determine the number of quads along each tile edge based on the texel resolution.
+	const unsigned int x_num_quads_based_on_texels = num_u_texels / NUM_TEXELS_PER_VERTEX;
+	const unsigned int y_num_quads_based_on_texels = num_v_texels / NUM_TEXELS_PER_VERTEX;
+
+	unsigned int x_num_quads = (std::max)(x_num_quads_based_on_distance, x_num_quads_based_on_texels);
+	unsigned int y_num_quads = (std::max)(y_num_quads_based_on_distance, y_num_quads_based_on_texels);
+
+	// Make sure non-zero.
+	if (x_num_quads == 0)
+	{
+		x_num_quads = 1;
+	}
+	if (y_num_quads == 0)
+	{
+		y_num_quads = 1;
+	}
+
+	// The number of vertices each edge is the number of quads along each edge "+1".
+	//
+	// -------
+	// | | | |
+	// -------
+	// | | | |
+	// -------
+	// | | | |
+	// -------
+	//
+	// ...the above shows 3x3=9 quads but there's 4x4=16 vertices.
+	//
+	const unsigned int x_num_vertices = x_num_quads + 1;
+	const unsigned int y_num_vertices = y_num_quads + 1;
+
+	//std::cout << "Num vertices: " << x_num_vertices << ", " << y_num_vertices << std::endl;
+
+	return std::make_pair(x_num_vertices, y_num_vertices);
 }
 
 
