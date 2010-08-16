@@ -838,5 +838,11 @@ GPlatesGui::TopologySectionsTable::reset_row(
 
 	// Undo any effect the Insertion Point row may have caused.
 	const int description_column = TopologySectionsTableColumns::COLUMN_ACTIONS + 1;
-	d_table->setSpan(row, description_column, 1, 1);
+	
+	if(d_table->columnSpan(row, description_column) != 1 ||
+	   d_table->rowSpan(row, description_column) !=1 )
+	{
+		//only reset span when there is any span
+		d_table->setSpan(row, description_column, 1, 1);
+	}
 }
