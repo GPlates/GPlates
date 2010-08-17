@@ -631,32 +631,27 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 					GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
 
-	//if we are using half stage rotation, add right and left plate id
-	if(GPlatesAppLogic::HALF_STAGE_ROTATION == d_recon_method)
-	{
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-						GPlatesModel::PropertyName::create_gpml("rightPlate"),
-						d_right_plate_id->create_property_value_from_widget()));
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-						GPlatesModel::PropertyName::create_gpml("leftPlate"),
-						d_left_plate_id->create_property_value_from_widget()));
+		//if we are using half stage rotation, add right and left plate id
+		if(GPlatesAppLogic::HALF_STAGE_ROTATION == d_recon_method)
+		{
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							GPlatesModel::PropertyName::create_gpml("rightPlate"),
+							d_right_plate_id->create_property_value_from_widget()));
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							GPlatesModel::PropertyName::create_gpml("leftPlate"),
+							d_left_plate_id->create_property_value_from_widget()));
 
-		const GPlatesPropertyValues::Enumeration::non_null_ptr_type recon_method_value =
-				GPlatesPropertyValues::Enumeration::create(
-						"gpml:ReconstructionMethodEnumeration", "HalfStageRotation");
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-						GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
-						recon_method_value));
-	}
+			const GPlatesPropertyValues::Enumeration::non_null_ptr_type recon_method_value =
+					GPlatesPropertyValues::Enumeration::create(
+							"gpml:ReconstructionMethodEnumeration", "HalfStageRotation");
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
+							recon_method_value));
+		}
 
-	// Add a gml:validTime Property.
-	feature->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				GPlatesModel::PropertyName::create_gml("validTime"),
-				d_time_period_widget->create_property_value_from_widget()));
 		// Add a gpml:conjugatePlateId Property.
 		if (!topological)
 		{
