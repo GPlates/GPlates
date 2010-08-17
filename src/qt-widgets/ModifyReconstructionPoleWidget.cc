@@ -75,6 +75,7 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::activate()
 {
 	d_is_active = true;
+	set_focus(d_view_state_ptr->get_feature_focus());
 	draw_initial_geometries_at_activation();
 }
 
@@ -639,12 +640,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 		return;
 	}
 
+	d_reconstruction_tree = focused_geometry->reconstruction_tree();
+
 	if (d_plate_id == rfg.get()->reconstruction_plate_id()) {
 		// The plate ID hasn't changed, so there's nothing to do.
 		return;
 	}
-
-	d_reconstruction_tree = focused_geometry->reconstruction_tree();
 
 	reset_adjustment();
 	d_reconstructed_feature_geometries.clear();
@@ -665,6 +666,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_reconstruction()
 {
+	set_focus(d_view_state_ptr->get_feature_focus());
 	if (d_is_active) {
 		draw_initial_geometries();
 		draw_dragged_geometries();
@@ -747,6 +749,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 {
+	
 	static const GPlatesModel::PropertyName vgp_prop_name =
 		GPlatesModel::PropertyName::create_gpml("polePosition");
 
