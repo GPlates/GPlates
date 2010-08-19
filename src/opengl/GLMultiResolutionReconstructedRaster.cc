@@ -24,7 +24,13 @@
  */
 
 #include <cmath>
+
+#include "global/CompilerWarnings.h"
+PUSH_MSVC_WARNINGS
+DISABLE_MSVC_WARNING(4503)
 #include <map>
+POP_MSVC_WARNINGS
+
 #include <boost/cast.hpp>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
@@ -50,8 +56,6 @@
 #include "GLTransformState.h"
 #include "GLUtils.h"
 #include "GLVertexArrayDrawable.h"
-
-#include "global/CompilerWarnings.h"
 
 #include "gui/Colour.h"
 
