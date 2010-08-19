@@ -47,6 +47,7 @@
 
 namespace GPlatesAppLogic
 {
+	class Layer;
 	class LayerTask;
 	class ReconstructGraph;
 
@@ -300,6 +301,7 @@ namespace GPlatesAppLogic
 			 */
 			void
 			execute(
+					const GPlatesAppLogic::Layer &layer_handle /* handle used by clients */,
 					Reconstruction &reconstruction,
 					GPlatesModel::integer_plate_id_type anchored_plate_id);
 

@@ -28,7 +28,7 @@
 #define GPLATES_OPENGL_GLRENDEROPERATION_H
 
 #include "GLDrawable.h"
-#include "GLMatrix.h"
+#include "GLTransform.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -58,8 +58,8 @@ namespace GPlatesOpenGL
 		non_null_ptr_type
 		create(
 				const GLDrawable::non_null_ptr_to_const_type &drawable,
-				const GLMatrix::non_null_ptr_to_const_type &model_view_matrix,
-				const GLMatrix::non_null_ptr_to_const_type &projection_matrix)
+				const GLTransform::non_null_ptr_to_const_type &model_view_matrix,
+				const GLTransform::non_null_ptr_to_const_type &projection_matrix)
 		{
 			return non_null_ptr_type(new GLRenderOperation(
 					drawable, model_view_matrix, projection_matrix));
@@ -71,13 +71,13 @@ namespace GPlatesOpenGL
 			return d_drawable;
 		}
 
-		const GLMatrix::non_null_ptr_to_const_type &
+		const GLTransform::non_null_ptr_to_const_type &
 		get_model_view_matrix() const
 		{
 			return d_model_view_matrix;
 		}
 
-		const GLMatrix::non_null_ptr_to_const_type &
+		const GLTransform::non_null_ptr_to_const_type &
 		get_projection_matrix() const
 		{
 			return d_projection_matrix;
@@ -85,15 +85,15 @@ namespace GPlatesOpenGL
 
 	private:
 		GLDrawable::non_null_ptr_to_const_type d_drawable;
-		GLMatrix::non_null_ptr_to_const_type d_model_view_matrix;
-		GLMatrix::non_null_ptr_to_const_type d_projection_matrix;
+		GLTransform::non_null_ptr_to_const_type d_model_view_matrix;
+		GLTransform::non_null_ptr_to_const_type d_projection_matrix;
 
 
 		//! Constructor.
 		GLRenderOperation(
 				const GLDrawable::non_null_ptr_to_const_type &drawable,
-				const GLMatrix::non_null_ptr_to_const_type &model_view_matrix,
-				const GLMatrix::non_null_ptr_to_const_type &projection_matrix) :
+				const GLTransform::non_null_ptr_to_const_type &model_view_matrix,
+				const GLTransform::non_null_ptr_to_const_type &projection_matrix) :
 			d_drawable(drawable),
 			d_model_view_matrix(model_view_matrix),
 			d_projection_matrix(projection_matrix)

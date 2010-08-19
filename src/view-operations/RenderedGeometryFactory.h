@@ -35,6 +35,7 @@
 #include "RenderedGeometry.h"
 
 #include "app-logic/ReconstructionGeometry.h"
+#include "app-logic/ReconstructRasterPolygons.h"
 #include "gui/Colour.h"
 #include "gui/ColourProxy.h"
 #include "maths/GeometryOnSphere.h"
@@ -47,6 +48,11 @@
 #include "property-values/Georeferencing.h"
 #include "property-values/RawRaster.h"
 
+
+namespace GPlatesAppLogic
+{
+	class Layer;
+}
 
 namespace GPlatesMaths
 {
@@ -159,11 +165,17 @@ namespace GPlatesViewOperations
 
 		/**
 		 * Creates a @a RenderedGeometry for a resolved raster.
+		 *
+		 * @a layer is the layer the resolved raster was created in.
+		 * FIXME: This is a temporary solution to tracking persistent OpenGL objects.
 		 */
 		RenderedGeometry
 		create_rendered_resolved_raster(
+				const GPlatesAppLogic::Layer &layer,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster);
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
+						reconstruct_raster_polygons = boost::none);
 
 		/**
 		 * Creates a single direction arrow consisting of an arc line segment on the globe's surface

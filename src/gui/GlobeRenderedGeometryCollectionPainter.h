@@ -32,6 +32,7 @@
 
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
+#include "PersistentOpenGLObjects.h"
 #include "RenderSettings.h"
 
 #include "opengl/GLContext.h"
@@ -67,6 +68,7 @@ namespace GPlatesGui
 
 		GlobeRenderedGeometryCollectionPainter(
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
@@ -81,7 +83,6 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
-				const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 				const double &viewport_zoom_factor,
 				const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer);
@@ -123,6 +124,11 @@ namespace GPlatesGui
 		boost::optional<PaintParams> d_paint_params;
 
 		const GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
+
+		/**
+		 * Keeps track of OpenGL-related objects that persist from one render to the next.
+		 */
+		PersistentOpenGLObjects::non_null_ptr_type d_persistent_opengl_objects;
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 

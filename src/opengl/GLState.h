@@ -29,7 +29,6 @@
 
 #include <vector>
 
-#include "GLDrawable.h"
 #include "GLStateSet.h"
 
 
@@ -80,21 +79,6 @@ namespace GPlatesOpenGL
 		 */
 		state_set_stack_type d_state_set_stack;
 	};
-
-
-	/**
-	 * Utility function to render a drawable using a state set.
-	 *
-	 * Calls:
-	 * - 'push_state_set()' on @a state, then
-	 * - 'bind_and_draw()' on drawable, then
-	 * - 'pop_state_set()' on @a state.
-	 */
-	void
-	draw(
-			const GLDrawable::non_null_ptr_to_const_type &drawable,
-			const GLStateSet::non_null_ptr_to_const_type &state_set,
-			GLState &state);
 }
 
 #endif // GPLATES_OPENGL_GLSTATE_H

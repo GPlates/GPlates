@@ -473,9 +473,9 @@ namespace GPlatesAppLogic
 		 * Determines an order of layers that will not violate the dependency graph -
 		 * in other words does not execute a layer before its input layers have been executed.
 		 */
-		std::vector<ReconstructGraphImpl::Layer *>
+		std::vector<layer_ptr_type>
 		get_layer_dependency_order(
-				ReconstructGraphImpl::Layer *default_reconstruction_tree_layer) const;
+				const layer_ptr_type &default_reconstruction_tree_layer) const;
 
 		/**
 		 * Partitions all layers into:
@@ -484,16 +484,16 @@ namespace GPlatesAppLogic
 		 */
 		void
 		partition_topological_layers_and_their_dependency_ancestors(
-				std::set<ReconstructGraphImpl::Layer *> &topological_layers_and_ancestors,
-				std::set<ReconstructGraphImpl::Layer *> &other_layers) const;
+				std::set<layer_ptr_type> &topological_layers_and_ancestors,
+				std::set<layer_ptr_type> &other_layers) const;
 
 		/**
 		 * Find dependency ancestors of @a layer and appends them to @a ancestor_layers.
 		 */
 		void
 		find_dependency_ancestors_of_layer(
-				const ReconstructGraphImpl::Layer *layer,
-				std::set<ReconstructGraphImpl::Layer *> &ancestor_layers) const;
+				const layer_ptr_type &layer,
+				std::set<layer_ptr_type> &ancestor_layers) const;
 
 		/**
 		 * Determines a dependency ordering of the dependency graph rooted at @a layer and
@@ -503,9 +503,9 @@ namespace GPlatesAppLogic
 		 */
 		void
 		find_layer_dependency_order(
-				ReconstructGraphImpl::Layer *layer,
-				std::vector<ReconstructGraphImpl::Layer *> &dependency_ordered_layers,
-				std::set<ReconstructGraphImpl::Layer *> &all_layers_visited) const;
+				const layer_ptr_type &layer,
+				std::vector<layer_ptr_type> &dependency_ordered_layers,
+				std::set<layer_ptr_type> &all_layers_visited) const;
 	};
 }
 

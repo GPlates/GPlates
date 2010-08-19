@@ -33,58 +33,47 @@
 
 
 GPlatesOpenGL::GLTransformState::GLTransformState() :
-	d_current_matrix_mode(GL_MODELVIEW),
-	d_current_matrix_stack(&d_model_view_matrix_stack),
 	d_current_frustum_planes(initialise_frustum_planes()),
 	d_current_frustum_planes_valid(true)
 {
 	// Load both GL_MODELVIEW and GL_PROJECTION matrix stacks with identity matrices.
-	d_model_view_matrix_stack.push(GLMatrix::create());
-	d_projection_matrix_stack.push(GLMatrix::create());
+	d_model_view_transform_stack.push(GLTransform::create(GL_MODELVIEW));
+	d_projection_transform_stack.push(GLTransform::create(GL_PROJECTION));
 }
 
 
 void
-GPlatesOpenGL::GLTransformState::gl_matrix_mode(
-		GLenum mode)
+GPlatesOpenGL::GLTransformState::push_transform(
+		const GLTransform &transform)
 {
-	switch (mode)
+	transform_stack_type *current_transform_stack;
+
+	switch (transform.get_matrix_mode())
 	{
 	case GL_MODELVIEW:
-		d_current_matrix_stack = &d_model_view_matrix_stack;
+		current_transform_stack = &d_model_view_transform_stack;
 		break;
 
 	case GL_PROJECTION:
-		d_current_matrix_stack = &d_projection_matrix_stack;
+		current_transform_stack = &d_projection_transform_stack;
 		break;
 
 	// NOTE: GL_TEXTURE is not included (see the header file for the reasons).
 
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		break;
+		return;
 	}
 
-	d_current_matrix_mode = mode;
-}
+	// Copy the current top of the matrix stack, multiply by 'transform' and
+	// push that onto the same stack.
+	GLTransform::non_null_ptr_type new_transform = current_transform_stack->top()->clone();
+	new_transform->get_matrix().gl_mult_matrix(transform.get_matrix());
 
+	current_transform_stack->push(new_transform);
 
-void
-GPlatesOpenGL::GLTransformState::gl_push_matrix()
-{
-	// Clone the current top of the matrix stack and push that onto the stack.
-	d_current_matrix_stack->push(d_current_matrix_stack->top()->clone());
-}
-
-
-void
-GPlatesOpenGL::GLTransformState::gl_pop_matrix()
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			!d_current_matrix_stack->empty(),
-			GPLATES_ASSERTION_SOURCE);
-
-	d_current_matrix_stack->pop();
+	// Keep track of which matrix stack we pushed on for when 'pop_transform()' is called.
+	d_current_transform_stack.push(current_transform_stack);
 
 	// We might need to recalculate the frustum planes.
 	d_current_frustum_planes_valid = false;
@@ -92,9 +81,53 @@ GPlatesOpenGL::GLTransformState::gl_pop_matrix()
 
 
 void
-GPlatesOpenGL::GLTransformState::gl_load_identity()
+GPlatesOpenGL::GLTransformState::pop_transform()
 {
-	d_current_matrix_stack->top()->gl_load_identity();
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_current_transform_stack.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Find out which transform stack to pop.
+	transform_stack_type *current_transform_stack = d_current_transform_stack.top();
+	d_current_transform_stack.pop();
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!current_transform_stack->empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Pop the transform off the transform stack.
+	current_transform_stack->pop();
+
+	// We might need to recalculate the frustum planes.
+	d_current_frustum_planes_valid = false;
+}
+
+
+void
+GPlatesOpenGL::GLTransformState::load_transform(
+		const GLTransform &transform)
+{
+	transform_stack_type *current_transform_stack;
+
+	switch (transform.get_matrix_mode())
+	{
+	case GL_MODELVIEW:
+		current_transform_stack = &d_model_view_transform_stack;
+		break;
+
+	case GL_PROJECTION:
+		current_transform_stack = &d_projection_transform_stack;
+		break;
+
+	// NOTE: GL_TEXTURE is not included (see the header file for the reasons).
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		return;
+	}
+
+	// Change the matrix of the transform at the top of the transform stack.
+	current_transform_stack->top()->get_matrix() = transform.get_matrix();
 
 	// The currently cached frustum planes are no longer valid.
 	d_current_frustum_planes_valid = false;
@@ -102,46 +135,10 @@ GPlatesOpenGL::GLTransformState::gl_load_identity()
 
 
 void
-GPlatesOpenGL::GLTransformState::gl_load_matrix(
-		const GLMatrix &matrix)
-{
-	d_current_matrix_stack->top()->gl_load_matrix(matrix.get_matrix());
-
-	// The currently cached frustum planes are no longer valid.
-	d_current_frustum_planes_valid = false;
-}
-
-
-void
-GPlatesOpenGL::GLTransformState::gl_mult_matrix(
-		const GLMatrix &matrix)
-{
-	d_current_matrix_stack->top()->gl_mult_matrix(matrix);
-
-	// The currently cached frustum planes are no longer valid.
-	d_current_frustum_planes_valid = false;
-}
-
-
-void
-GPlatesOpenGL::GLTransformState::gl_viewport(
+GPlatesOpenGL::GLTransformState::set_viewport(
 		const GLViewport &viewport)
 {
 	d_current_viewport = viewport;
-}
-
-
-GPlatesOpenGL::GLMatrix::non_null_ptr_to_const_type
-GPlatesOpenGL::GLTransformState::get_current_model_view_matrix() const
-{
-	return d_model_view_matrix_stack.top();
-}
-
-
-GPlatesOpenGL::GLMatrix::non_null_ptr_to_const_type
-GPlatesOpenGL::GLTransformState::get_current_projection_matrix() const
-{
-	return d_projection_matrix_stack.top();
 }
 
 
@@ -149,6 +146,20 @@ boost::optional<GPlatesOpenGL::GLViewport>
 GPlatesOpenGL::GLTransformState::get_current_viewport() const
 {
 	return d_current_viewport;
+}
+
+
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLTransformState::get_current_model_view_transform() const
+{
+	return d_model_view_transform_stack.top();
+}
+
+
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLTransformState::get_current_projection_transform() const
+{
+	return d_projection_transform_stack.top();
 }
 
 
@@ -168,8 +179,8 @@ GPlatesOpenGL::GLTransformState::glu_project(
 
 	return gluProject(
 			objx, objy, objz,
-			d_model_view_matrix_stack.top()->get_matrix(),
-			d_projection_matrix_stack.top()->get_matrix(),
+			d_model_view_transform_stack.top()->get_matrix().get_matrix(),
+			d_projection_transform_stack.top()->get_matrix().get_matrix(),
 			d_current_viewport->viewport(),
 			winx, winy, winz);
 }
@@ -191,8 +202,8 @@ GPlatesOpenGL::GLTransformState::glu_un_project(
 
 	return gluUnProject(
 			winx, winy, winz,
-			d_model_view_matrix_stack.top()->get_matrix(),
-			d_projection_matrix_stack.top()->get_matrix(),
+			d_model_view_transform_stack.top()->get_matrix().get_matrix(),
+			d_projection_transform_stack.top()->get_matrix().get_matrix(),
 			d_current_viewport->viewport(),
 			objx, objy, objz);
 }
@@ -385,8 +396,8 @@ GPlatesOpenGL::GLTransformState::get_current_frustum_planes_in_model_space() con
 	// Multiply the current model-view and projection matrices.
 	// When we extract frustum planes from this combined matrix they will be
 	// in model-space (also called object-space).
-	GLMatrix mvp(get_current_projection_matrix()->get_matrix());
-	mvp.gl_mult_matrix(*get_current_model_view_matrix());
+	GLMatrix mvp(get_current_projection_transform()->get_matrix());
+	mvp.gl_mult_matrix(get_current_model_view_transform()->get_matrix());
 
 	//
 	// From "Fast extraction of viewing frustum planes from the world-view-projection matrix"
@@ -400,7 +411,7 @@ GPlatesOpenGL::GLTransformState::get_current_frustum_planes_in_model_space() con
 	// NOTE: These planes do not have *unit* vector normals.
 
 	// Left clipping plane.
-	d_current_frustum_planes.planes[0] =
+	d_current_frustum_planes.planes[FrustumPlanes::LEFT_PLANE] =
 			GLIntersect::Plane(
 					mvp.get_element(3,0) + mvp.get_element(0,0),
 					mvp.get_element(3,1) + mvp.get_element(0,1),
@@ -408,7 +419,7 @@ GPlatesOpenGL::GLTransformState::get_current_frustum_planes_in_model_space() con
 					mvp.get_element(3,3) + mvp.get_element(0,3));
 
 	// Right clipping plane.
-	d_current_frustum_planes.planes[1] =
+	d_current_frustum_planes.planes[FrustumPlanes::RIGHT_PLANE] =
 			GLIntersect::Plane(
 					mvp.get_element(3,0) - mvp.get_element(0,0),
 					mvp.get_element(3,1) - mvp.get_element(0,1),
@@ -416,7 +427,7 @@ GPlatesOpenGL::GLTransformState::get_current_frustum_planes_in_model_space() con
 					mvp.get_element(3,3) - mvp.get_element(0,3));
 
 	// Bottom clipping plane.
-	d_current_frustum_planes.planes[2] =
+	d_current_frustum_planes.planes[FrustumPlanes::BOTTOM_PLANE] =
 			GLIntersect::Plane(
 					mvp.get_element(3,0) + mvp.get_element(1,0),
 					mvp.get_element(3,1) + mvp.get_element(1,1),
@@ -424,7 +435,7 @@ GPlatesOpenGL::GLTransformState::get_current_frustum_planes_in_model_space() con
 					mvp.get_element(3,3) + mvp.get_element(1,3));
 
 	// Top clipping plane.
-	d_current_frustum_planes.planes[3] =
+	d_current_frustum_planes.planes[FrustumPlanes::TOP_PLANE] =
 			GLIntersect::Plane(
 					mvp.get_element(3,0) - mvp.get_element(1,0),
 					mvp.get_element(3,1) - mvp.get_element(1,1),
@@ -432,7 +443,7 @@ GPlatesOpenGL::GLTransformState::get_current_frustum_planes_in_model_space() con
 					mvp.get_element(3,3) - mvp.get_element(1,3));
 
 	// Near clipping plane.
-	d_current_frustum_planes.planes[4] =
+	d_current_frustum_planes.planes[FrustumPlanes::NEAR_PLANE] =
 			GLIntersect::Plane(
 					mvp.get_element(3,0) + mvp.get_element(2,0),
 					mvp.get_element(3,1) + mvp.get_element(2,1),
@@ -440,7 +451,7 @@ GPlatesOpenGL::GLTransformState::get_current_frustum_planes_in_model_space() con
 					mvp.get_element(3,3) + mvp.get_element(2,3));
 
 	// Far clipping plane.
-	d_current_frustum_planes.planes[5] =
+	d_current_frustum_planes.planes[FrustumPlanes::FAR_PLANE] =
 			GLIntersect::Plane(
 					mvp.get_element(3,0) - mvp.get_element(2,0),
 					mvp.get_element(3,1) - mvp.get_element(2,1),

@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <OpenGL.h>
+#include <opengl/OpenGL.h>
 #include <QDebug>
 
 #include "GLUtils.h"

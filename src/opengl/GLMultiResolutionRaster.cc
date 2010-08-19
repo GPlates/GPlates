@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <limits>
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
@@ -36,16 +37,21 @@
 
 #include "GLMultiResolutionRaster.h"
 
+#include "GLBindTextureState.h"
 #include "GLContext.h"
 #include "GLIntersect.h"
+#include "GLRenderer.h"
 #include "GLTransformState.h"
 #include "GLUtils.h"
 #include "GLVertexArrayDrawable.h"
+
 #include "global/AssertionFailureException.h"
+#include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 #include "property-values/RawRasterUtils.h"
+
 namespace
 {
 	/**
@@ -59,6 +65,9 @@ namespace
 		//! Vertex texture coordinates.
 		GLfloat u, v;
 	};
+
+	//! The inverse of log(2.0).
+	const float INVERSE_LOG2 = 1.0 / std::log(2.0);
 }
 
 
@@ -82,7 +91,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create(
 	boost::optional<std::pair<unsigned int, unsigned int> > raster_dimensions =
 			GPlatesPropertyValues::RawRasterUtils::get_raster_size(*raster);
 
-	// If raster happens to be uninitialised then throw an exception.
+	// If raster happens to be uninitialised then return false.
 	if (!raster_dimensions)
 	{
 		return boost::none;
@@ -145,6 +154,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 			(std::min)(
 					boost::numeric_cast<GLint>(tile_texel_dimension),
 					GLContext::get_texture_parameters().gl_max_texture_size)),
+	// The parentheses around min are to prevent the windows min macros
+	// from stuffing numeric_limits' min.
+	d_max_highest_resolution_texel_size_on_unit_sphere((std::numeric_limits<float>::min)()),
 	// FIXME: Change the max number cached textures to a value that reflects
 	// the tile dimensions and the viewport dimensions - the latter will vary so
 	// we'll need to have the ability to change the max number cached textures dynamically
@@ -236,18 +248,60 @@ GPlatesOpenGL::GLMultiResolutionRaster::change_raster(
 
 
 void
+GPlatesOpenGL::GLMultiResolutionRaster::render(
+		GLRenderer &renderer,
+		float level_of_detail_bias)
+{
+	// Get the tiles visible in the view frustum of the render target in 'renderer'.
+	std::vector<tile_handle_type> visible_tiles;
+	get_visible_tiles(renderer.get_transform_state(), visible_tiles, level_of_detail_bias);
+
+	render(renderer, visible_tiles);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRaster::render(
+		GLRenderer &renderer,
+		const std::vector<tile_handle_type> &tiles)
+{
+	// Create a render operation for each visible tile.
+	BOOST_FOREACH(GLMultiResolutionRaster::tile_handle_type tile_handle, tiles)
+	{
+		Tile tile = get_tile(tile_handle);
+
+		// Create a state set that binds the tile texture to the specified texture 0.
+		GLBindTextureState::non_null_ptr_type bind_tile_texture = GLBindTextureState::create();
+		bind_tile_texture->gl_bind_texture(GL_TEXTURE_2D, tile.get_texture());
+
+		// Push the state set onto the state graph.
+		renderer.push_state_set(bind_tile_texture);
+
+		// Add the drawable to the current render target.
+		renderer.add_drawable(tile.get_drawable());
+
+		// Pop the state set.
+		renderer.pop_state_set();
+	}
+}
+
+
+float
 GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 		const GLTransformState &transform_state,
-		std::vector<tile_handle_type> &visible_tiles) const
+		std::vector<tile_handle_type> &visible_tiles,
+		float level_of_detail_bias) const
 {
-	// If there's no raster then there are no tiles.
-	if (d_level_of_detail_pyramid.empty())
-	{
-		return;
-	}
+	// There should be levels of detail.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_level_of_detail_pyramid.empty(),
+			GPLATES_ASSERTION_SOURCE);
 
 	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
-	const LevelOfDetail &lod = get_level_of_detail(transform_state);
+	float level_of_detail_factor;
+	const unsigned int level_of_detail =
+			get_level_of_detail(transform_state, level_of_detail_bias, level_of_detail_factor);
+	const LevelOfDetail &lod = *d_level_of_detail_pyramid[level_of_detail];
 
 	//
 	// Traverse the OBB tree of the level-of-detail and gather of list of tiles that
@@ -267,43 +321,61 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 	// Recursively traverse the OBB tree to find visible tiles.
 	get_visible_tiles(frustum_planes, frustum_plane_mask, lod, lod_root_obb_tree_node, visible_tiles);
 
-	//std::cout << "Num visible tiles: " << visible_tiles.size() << std::endl;
+	return level_of_detail_factor;
 }
 
 
-const GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetail &
+unsigned int
 GPlatesOpenGL::GLMultiResolutionRaster::get_level_of_detail(
-		const GLTransformState &transform_state) const
+		const GLTransformState &transform_state,
+		float level_of_detail_bias,
+		float &level_of_detail_factor) const
 {
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
 	const double min_pixel_size_on_unit_sphere =
 			transform_state.get_min_pixel_size_on_unit_sphere();
 
-	// Iterate over the levels-of-detail starting with the lowest resolution and see if its
-	// texel resolution is enough to get at least a one-to-one texel-to-pixel ratio.
-	// This means a single texel will not cover more than one pixel in the viewport and
-	// hence presents the highest resolution necessary but no higher.
-	level_of_detail_seq_type::const_reverse_iterator lod_riter = d_level_of_detail_pyramid.rbegin();
-	level_of_detail_seq_type::const_reverse_iterator lod_rend = d_level_of_detail_pyramid.rend();
-	for ( ; lod_riter != lod_rend; ++lod_riter)
-	{
-		const LevelOfDetail &lod = **lod_riter;
+	// Calculate the level-of-detail.
+	// This is the equivalent of:
+	//
+	//    t = t0 * 2 ^ (lod - lod_bias)
+	//
+	// ...where 't0' is the texel size of the *highest* resolution level-of-detail and
+	// 't' is the projected size of a pixel of the viewport. And 'lod_bias' is used
+	// by clients to allow a the largest texel in a drawn texture to be larger than
+	// a pixel in the viewport (which can result in blockiness in places in the rendered scene).
+	//
+	// Note: we return the un-clamped floating-point level-of-detail so clients of this class
+	// can see if they need a higher resolution render-texture, for example, to render
+	// our raster into - so in that case they'd keep increasing their render-target
+	// resolution or decreasing their render target view frustum until the level-of-detail
+	// became negative.
+	level_of_detail_factor = level_of_detail_bias + INVERSE_LOG2 *
+			(std::log(min_pixel_size_on_unit_sphere) -
+					std::log(d_max_highest_resolution_texel_size_on_unit_sphere));
 
-		// If the smallest projected pixel in the viewport is larger than the largest
-		// projected texel of the current level-of-detail then we have satisfied
-		// the resolution requirement of the current viewport and projection.
-		if (min_pixel_size_on_unit_sphere >= lod.max_texel_size_on_unit_sphere)
-		{
-			return lod;
-		}
+	// Truncate level-of-detail factor and clamp to the range of our levels of details.
+	int level_of_detail = static_cast<int>(level_of_detail_factor);
+	// Clamp to highest resolution level of detail.
+	if (level_of_detail < 0)
+	{
+		// LOD bias aside, if we get here then even the highest resolution level-of-detail did not
+		// have enough resolution for the current viewport and projection but it'll have to do
+		// since its the highest resolution we have to offer.
+		// This is where the user will start to see magnification of the raster.
+		level_of_detail = 0;
+	}
+	// Clamp to lowest resolution level of detail.
+	if (level_of_detail >= boost::numeric_cast<int>(d_level_of_detail_pyramid.size()))
+	{
+		// LOD bias aside, if we get there then even our lowest resolution level of detail
+		// had too much resolution - but this is pretty unlikely for all but the very
+		// smallest of viewports.
+		level_of_detail = d_level_of_detail_pyramid.size() - 1;
 	}
 
-	// If we get this far then even the highest resolution level-of-detail did not
-	// have enough resolution for the current viewport and projection but it'll have to do
-	// since its the highest resolution we have to offer.
-	// This is where the user will start to see magnification of the raster.
-	return *d_level_of_detail_pyramid[0];
+	return level_of_detail;
 }
 
 
@@ -447,6 +519,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertex_array(
 }
 
 
+// We use macros in <GL/glew.h> that contain old-style casts.
+DISABLE_GCC_WARNING("-Wold-style-cast")
+
 void
 GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 		const LevelOfDetailTile &lod_tile,
@@ -551,7 +626,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	// automatically for us and specify a mipmap minification filter,
 	// otherwise don't use mipmaps (and instead specify a non-mipmap minification filter).
 	// A lot of cards have support for this extension.
-	if (GL_SGIS_generate_mipmap)
+	if (GLEW_SGIS_generate_mipmap)
 	{
 		// Mipmaps will be generated automatically when the level 0 image is modified.
 		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
@@ -569,7 +644,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	// south pole will exhibit squashing along the longitude, but not the latitude, direction.
 	// Regular isotropic filtering will just reduce texel resolution equally along both
 	// directions and reduce the visual sharpness that we want to retain in the latitude direction.
-	if (GL_EXT_texture_filter_anisotropic)
+	if (GLEW_EXT_texture_filter_anisotropic)
 	{
 		const GLfloat anisotropy = GLContext::get_texture_parameters().gl_texture_max_anisotropy_EXT;
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
@@ -606,6 +681,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
+
+ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void
@@ -1015,14 +1092,22 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_obb_tree_leaf_node(
 	const GLIntersect::OrientedBoundingBox obb = bound_level_of_detail_tile(lod_tile);
 
 	// Get the maximum size of any texel in the level-of-detail tile.
-	const float max_texel_size_on_unit_sphere =
-			calc_max_texel_size_on_unit_sphere(level_of_detail.lod_level, lod_tile);
-
-	// The maximum texel size for the entire level-of-detail is the maximum texel
-	// of all its tiles.
-	if (max_texel_size_on_unit_sphere > level_of_detail.max_texel_size_on_unit_sphere)
+	// We only really need to do this for the highest resolution level because
+	// the maximum texel size of the lower resolution levels will be very close to a
+	// power-of-two factor of the highest resolution level (not exactly a power-of-two
+	// because warping due to the map projection but it'll be close enough for our
+	// purpose of level-of-detail selection).
+	if (level_of_detail.lod_level == 0)
 	{
-		level_of_detail.max_texel_size_on_unit_sphere = max_texel_size_on_unit_sphere;
+		const float max_texel_size_on_unit_sphere =
+				calc_max_texel_size_on_unit_sphere(level_of_detail.lod_level, lod_tile);
+
+		// The maximum texel size for the entire original raster is the maximum texel of all
+		// its highest resolution tiles.
+		if (max_texel_size_on_unit_sphere > d_max_highest_resolution_texel_size_on_unit_sphere)
+		{
+			d_max_highest_resolution_texel_size_on_unit_sphere = max_texel_size_on_unit_sphere;
+		}
 	}
 
 	// Create an OBB tree node.
@@ -1482,22 +1567,11 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_oriented_bounding_box_builder(
 			GPlatesMaths::Vector3D(centre_point_minus_x_delta.position_vector()) -
 					GPlatesMaths::Vector3D(centre_point_plus_x_delta.position_vector());
 
-	// Create the OBB x-axis.
-	const GPlatesMaths::UnitVector3D obb_x_axis = (obb_x_axis_unnormalised.magSqrd() <= 0)
-			// Length of vector is too close to zero so need to pick another x-axis.
-			// Perhaps the two points were too close to a pole.
-			// Choose an arbitrary axis.
-			? generate_perpendicular(obb_z_axis)
-			// Remove any projection of 'obb_x_axis_unnormalised' onto 'obb_z_axis' and
-			// then normalise the result.
-			: (obb_x_axis_unnormalised - GPlatesMaths::Vector3D(
-					dot(obb_x_axis_unnormalised, obb_z_axis) * obb_z_axis)).get_normalisation();
-
-	// The OBB y-axis is orthogonal to 'obb_x_axis' and 'obb_z_axis'.
-	const GPlatesMaths::UnitVector3D obb_y_axis(cross(obb_z_axis, obb_x_axis));
-
 	// Return a builder using the orthonormal axes.
-	GLIntersect::OrientedBoundingBoxBuilder obb_builder(obb_x_axis, obb_y_axis, obb_z_axis);
+	// We're using our x-axis as a y-axis in this function call but it doesn't matter -
+	// just an axis label really.
+	GLIntersect::OrientedBoundingBoxBuilder obb_builder =
+			GLIntersect::create_oriented_bounding_box_builder(obb_x_axis_unnormalised, obb_z_axis);
 
 	// The point of sphere of the pixel coordinates is the most extremal point along
 	// the OBB's z-axis so add it to the OBB to set the maximum extent of the OBB
@@ -1719,9 +1793,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetailTile::LevelOfDetailTile(
 GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetail::LevelOfDetail(
 		unsigned int lod_level_) :
 	lod_level(lod_level_),
-	// The parentheses around min are to prevent the windows min macros
-	// from stuffing numeric_limits' min.
-	max_texel_size_on_unit_sphere((std::numeric_limits<float>::min)()),
 	obb_tree_root_node_index(0)
 {
 }

@@ -96,6 +96,13 @@ namespace GPlatesOpenGL
 			classify_point(
 					const GPlatesMaths::Vector3D& point) const;
 
+			/**
+			 * Same as the other overloaded method but for unit vector points.
+			 */
+			HalfSpaceType
+			classify_point(
+					const GPlatesMaths::UnitVector3D& point) const;
+
 
 			/**
 			 * Returns the signed distance of @a point to 'this' plane *multiplied*
@@ -109,6 +116,16 @@ namespace GPlatesOpenGL
 			double
 			signed_distance(
 					const GPlatesMaths::Vector3D& point) const
+			{
+				return (dot(point, d_normal) + d_signed_distance_to_origin).dval();
+			}
+
+			/**
+			 * Same as the other overloaded method but for unit vector points.
+			 */
+			double
+			signed_distance(
+					const GPlatesMaths::UnitVector3D& point) const
 			{
 				return (dot(point, d_normal) + d_signed_distance_to_origin).dval();
 			}
@@ -315,7 +332,17 @@ namespace GPlatesOpenGL
 			 */
 			void
 			add(
-					const GPlatesMaths::PointOnSphere &point);
+					const GPlatesMaths::UnitVector3D &point);
+
+			/**
+			 * Expand the current bounding box (if necessary) to include @a point.
+			 */
+			void
+			add(
+					const GPlatesMaths::PointOnSphere &point)
+			{
+				add(point.position_vector());
+			}
 
 			/**
 			 * Expand the current bounding box (if necessary) to include another
@@ -372,6 +399,32 @@ namespace GPlatesOpenGL
 					GPlatesMaths::real_t &min_dot_axis,
 					GPlatesMaths::real_t &max_dot_axis);
 		};
+
+
+		/**
+		 * Creates a oriented bounding box builder when you have the OBB z-axis and
+		 * a y-axis direction that is not necessarily orthogonal to the z-axis.
+		 *
+		 * If @a obb_y_axis is parallel to the z-axis, or has zero magnitude, then arbitrary
+		 * x and y axes are created that are orthonormal with each other and the z-axis.
+		 *
+		 * @a obb_y_axis is first made orthogonal to @a obb_z_axis and then normalised.
+		 * Then the OBB x-axis is generated as a cross product.
+		 */
+		OrientedBoundingBoxBuilder
+		create_oriented_bounding_box_builder(
+				const GPlatesMaths::Vector3D &obb_y_axis,
+				const GPlatesMaths::UnitVector3D &obb_z_axis);
+
+
+		/**
+		 * Creates a oriented bounding box builder when you only have the OBB z-axis.
+		 *
+		 * Arbitrary x and y axes are created that are orthonormal with each other and the z-axis.
+		 */
+		OrientedBoundingBoxBuilder
+		create_oriented_bounding_box_builder(
+				const GPlatesMaths::UnitVector3D &obb_z_axis);
 	}
 }
 

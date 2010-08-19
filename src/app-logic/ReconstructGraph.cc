@@ -186,26 +186,30 @@ GPlatesAppLogic::ReconstructGraph::execute_layer_tasks(
 					d_application_state.get_current_anchored_plate_id());
 
 	// Get a shared reference to the default reconstruction tree layer if there is one.
-	ReconstructGraphImpl::Layer *default_reconstruction_tree_layer = NULL;
+	layer_ptr_type default_reconstruction_tree_layer;
 	if (d_default_reconstruction_tree_layer.is_valid() &&
 		// FIXME: Should probably handle this elsewhere so we don't have to check here...
 		d_default_reconstruction_tree_layer.get_output_definition() ==
 			Layer::OUTPUT_RECONSTRUCTION_TREE_DATA)
 	{
 		default_reconstruction_tree_layer =
-				layer_ptr_type(d_default_reconstruction_tree_layer.get_impl()).get();
+				layer_ptr_type(d_default_reconstruction_tree_layer.get_impl());
 	}
 
 	// Traverse the dependency graph to determine the order in which layers should be executed
 	// to that layers requiring input from other layers get executed later.
-	const std::vector<ReconstructGraphImpl::Layer *> dependency_ordered_layers =
+	const std::vector<layer_ptr_type> dependency_ordered_layers =
 			get_layer_dependency_order(default_reconstruction_tree_layer);
 
 	// Iterate over the layers and execute them in the correct order.
-	BOOST_FOREACH(ReconstructGraphImpl::Layer *layer, dependency_ordered_layers)
+	BOOST_FOREACH(const layer_ptr_type &layer, dependency_ordered_layers)
 	{
+		// Pass a layer handle, that clients can use, when executing layer tasks.
+		const Layer layer_handle(layer);
+
 		// Execute the layer task.
 		layer->execute(
+				layer_handle,
 				*reconstruction,
 				d_application_state.get_current_anchored_plate_id());
 
@@ -234,9 +238,9 @@ GPlatesAppLogic::ReconstructGraph::execute_layer_tasks(
 }
 
 
-std::vector<GPlatesAppLogic::ReconstructGraphImpl::Layer *>
+std::vector<GPlatesAppLogic::ReconstructGraph::layer_ptr_type>
 GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
-		ReconstructGraphImpl::Layer *default_reconstruction_tree_layer) const
+		const layer_ptr_type &default_reconstruction_tree_layer) const
 {
 	//
 	// Iterate over the layers traverse the dependency graph to determine execution order.
@@ -250,17 +254,17 @@ GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
 	// can reference features in other layers even though the layers are not connected.
 	// Dependency ancestors of topological layers are grouped with the topological layers because
 	// they explicitly depend on the topological layers and hence must be executed after them.
-	std::set<ReconstructGraphImpl::Layer *> topological_layers_and_ancestors;
-	std::set<ReconstructGraphImpl::Layer *> other_layers;
+	std::set<layer_ptr_type> topological_layers_and_ancestors;
+	std::set<layer_ptr_type> other_layers;
 	partition_topological_layers_and_their_dependency_ancestors(
 			topological_layers_and_ancestors, other_layers);
 
 	// The final sequence of dependency ordered layers to return to the caller.
-	std::vector<ReconstructGraphImpl::Layer *> dependency_ordered_layers;
+	std::vector<layer_ptr_type> dependency_ordered_layers;
 	dependency_ordered_layers.reserve(num_layers);
 
 	// Keep track of all layers visited when traversing dependency graph below.
-	std::set<ReconstructGraphImpl::Layer *> all_layers_visited;
+	std::set<layer_ptr_type> all_layers_visited;
 
 	// If there's a default reconstruction tree layer then it should get executed first
 	// since layer's can be implicitly connected to it (that is they can be connected to
@@ -269,7 +273,7 @@ GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
 	if (default_reconstruction_tree_layer)
 	{
 		// The default reconstruction tree layer will be in the non-topological layers.
-		std::set<ReconstructGraphImpl::Layer *>::iterator default_recon_tree_layer_iter =
+		std::set<layer_ptr_type>::iterator default_recon_tree_layer_iter =
 				other_layers.find(default_reconstruction_tree_layer);
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				default_recon_tree_layer_iter != other_layers.end(),
@@ -283,7 +287,7 @@ GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
 	}
 
 	// Next iterate iterate over the other layers to build a dependency ordering.
-	BOOST_FOREACH(ReconstructGraphImpl::Layer *layer, other_layers)
+	BOOST_FOREACH(const layer_ptr_type &layer, other_layers)
 	{
 		find_layer_dependency_order(layer, dependency_ordered_layers, all_layers_visited);
 	}
@@ -292,7 +296,7 @@ GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
 	// to build a dependency ordering.
 	// This is done after the other layers since features in the topological layers
 	// can implicitly reference features in the other layers.
-	BOOST_FOREACH(ReconstructGraphImpl::Layer *layer, topological_layers_and_ancestors)
+	BOOST_FOREACH(const layer_ptr_type &layer, topological_layers_and_ancestors)
 	{
 		find_layer_dependency_order(layer, dependency_ordered_layers, all_layers_visited);
 	}
@@ -308,8 +312,8 @@ GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
 
 void
 GPlatesAppLogic::ReconstructGraph::partition_topological_layers_and_their_dependency_ancestors(
-		std::set<ReconstructGraphImpl::Layer *> &topological_layers_and_ancestors,
-		std::set<ReconstructGraphImpl::Layer *> &other_layers) const
+		std::set<layer_ptr_type> &topological_layers_and_ancestors,
+		std::set<layer_ptr_type> &other_layers) const
 {
 	// First search all layers for any topological layers.
 	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
@@ -317,21 +321,21 @@ GPlatesAppLogic::ReconstructGraph::partition_topological_layers_and_their_depend
 		if (layer->get_layer_task()->is_topological_layer_task())
 		{
 			// Add the current layer to the list of topological layers and their dependency ancestors.
-			topological_layers_and_ancestors.insert(layer.get());
+			topological_layers_and_ancestors.insert(layer);
 
 			// Add any dependency ancestor layers.
 			find_dependency_ancestors_of_layer(
-					layer.get(), topological_layers_and_ancestors);
+					layer, topological_layers_and_ancestors);
 		}
 	}
 
 	// Insert the other remaining layers into the caller's sequence.
 	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
 	{
-		if (topological_layers_and_ancestors.find(layer.get()) ==
+		if (topological_layers_and_ancestors.find(layer) ==
 			topological_layers_and_ancestors.end())
 		{
-			other_layers.insert(layer.get());
+			other_layers.insert(layer);
 		}
 	}
 }
@@ -339,8 +343,8 @@ GPlatesAppLogic::ReconstructGraph::partition_topological_layers_and_their_depend
 
 void
 GPlatesAppLogic::ReconstructGraph::find_dependency_ancestors_of_layer(
-		const ReconstructGraphImpl::Layer *layer,
-		std::set<ReconstructGraphImpl::Layer *> &ancestor_layers) const
+		const layer_ptr_type &layer,
+		std::set<layer_ptr_type> &ancestor_layers) const
 {
 	// Iterate over the output connections of 'layer'.
 	const ReconstructGraphImpl::Data::connection_seq_type &layer_output_connections =
@@ -349,27 +353,26 @@ GPlatesAppLogic::ReconstructGraph::find_dependency_ancestors_of_layer(
 			const ReconstructGraphImpl::LayerInputConnection *layer_output_connection,
 			layer_output_connections)
 	{
-		const boost::shared_ptr<ReconstructGraphImpl::Layer> parent_layer(
-				layer_output_connection->get_layer_receiving_input());
+		const layer_ptr_type parent_layer(layer_output_connection->get_layer_receiving_input());
 
 		// Insert the current parent layer into the sequence of ancestor layers.
 		// If it has already been visited/inserted then continue to the next parent layer.
-		if (!ancestor_layers.insert(parent_layer.get()).second)
+		if (!ancestor_layers.insert(parent_layer).second)
 		{
 			continue;
 		}
 
 		// Traverse ancestor graph of the current parent layer.
-		find_dependency_ancestors_of_layer(parent_layer.get(), ancestor_layers);
+		find_dependency_ancestors_of_layer(parent_layer, ancestor_layers);
 	}
 }
 
 
 void
 GPlatesAppLogic::ReconstructGraph::find_layer_dependency_order(
-		ReconstructGraphImpl::Layer *layer,
-		std::vector<ReconstructGraphImpl::Layer *> &dependency_ordered_layers,
-		std::set<ReconstructGraphImpl::Layer *> &all_layers_visited) const
+		const layer_ptr_type &layer,
+		std::vector<layer_ptr_type> &dependency_ordered_layers,
+		std::set<layer_ptr_type> &all_layers_visited) const
 {
 	// Attempt to add the current layer to list of all layers visited.
 	if (!all_layers_visited.insert(layer).second)
@@ -394,7 +397,7 @@ GPlatesAppLogic::ReconstructGraph::find_layer_dependency_order(
 
 			// Traverse the dependency graph of the current child layer.
 			find_layer_dependency_order(
-					layer_child.get(), dependency_ordered_layers, all_layers_visited);
+					layer_child, dependency_ordered_layers, all_layers_visited);
 		}
 	}
 

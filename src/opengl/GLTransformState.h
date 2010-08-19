@@ -32,7 +32,7 @@
 #include <opengl/OpenGL.h>
 
 #include "GLIntersectPrimitives.h"
-#include "GLMatrix.h"
+#include "GLTransform.h"
 #include "GLViewport.h"
 
 #include "maths/Vector3D.h"
@@ -43,8 +43,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GLTransform;
-
 	/**
 	 * Shadow the OpenGL transform state so that we can query
 	 * the frustum clip planes in model space (for visibility culling) and
@@ -79,74 +77,36 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Sets the current matrix mode.
+		 * Pushes @a transform onto the stack indicated by its @a get_matrix_mode method.
 		 *
-		 * NOTE: This does not call OpenGL directly - just provides a familiar interface.
+		 * First a copy of the top of the specified matrix stack and then post-multiplies
+		 * the specified transform and pushes that onto the top of the same stack.
 		 *
-		 * @a mode must be one of GL_MODELVIEW or GL_PROJECTION.
-		 *
-		 * NOTE: GL_TEXTURE is *not* included here because:
-		 * - it is bound to the currently active texture unit unlike GL_MODELVIEW and GL_PROJECTION,
-		 * - it does not normally follow a hierarchy of transformations like GL_MODELVIEW tends to,
-		 * - it is infrequently used when rendering drawables.
-		 * So for these reasons it is better to set it in a @a GLStateSet by doing the following
-		 * in GLStateSet::enter_state_set():
-		 * - call glMatrixMode(GL_TEXTURE),
-		 * - explicitly set the active texture unit to the desired texture unit number,
-		 * - call glLoadMatrix() to load the texture matrix,
-		 * and doing the following in GLStateSet::leave_state_set():
-		 * - call glMatrixMode(GL_MODELVIEW) // to restore the default matrix mode
+		 * This effectively simulates glMatrixMode(), then glPushMatrix and then glMultMatrix()
+		 * where the matrix mode is specified inside @a transform.
 		 */
 		void
-		gl_matrix_mode(
-				GLenum mode);
+		push_transform(
+				const GLTransform &transform);
 
 
 		/**
-		 * Performs function of similarly named OpenGL function.
+		 * Pops the most recently pushed transform off its corresponding matrix stack.
 		 *
-		 * NOTE: This does not call OpenGL directly - just provides a familiar interface.
+		 * This effectively simulates glMatrixMode() and then glPopMatrix where the
+		 * matrix mode is that associated with the most recent call to @a push_transform.
 		 */
 		void
-		gl_push_matrix();
+		pop_transform();
 
 
 		/**
-		 * Performs function of similarly named OpenGL function.
-		 *
-		 * NOTE: This does not call OpenGL directly - just provides a familiar interface.
+		 * Replaces the transform at the top of the transform stack specified by @a transform
+		 * with the matrix inside @a transform.
 		 */
 		void
-		gl_pop_matrix();
-
-
-		/**
-		 * Performs function of similarly named OpenGL function.
-		 *
-		 * NOTE: This does not call OpenGL directly - just provides a familiar interface.
-		 */
-		void
-		gl_load_identity();
-
-
-		/**
-		 * Performs function of similarly named OpenGL function.
-		 *
-		 * NOTE: This does not call OpenGL directly - just provides a familiar interface.
-		 */
-		void
-		gl_load_matrix(
-				const GLMatrix &matrix);
-
-
-		/**
-		 * Performs function of similarly named OpenGL function (including post-multiplication).
-		 *
-		 * NOTE: This does not call OpenGL directly - just provides a familiar interface.
-		 */
-		void
-		gl_mult_matrix(
-				const GLMatrix &matrix);
+		load_transform(
+				const GLTransform &transform);
 
 
 		/**
@@ -158,29 +118,8 @@ namespace GPlatesOpenGL
 		 * (such as @a glu_project, @a glu_un_project and @a get_min_pixel_size_on_unit_sphere).
 		 */
 		void
-		gl_viewport(
+		set_viewport(
 				const GLViewport &viewport);
-
-
-		/**
-		 * Returns the matrix currently at the top of the GL_MODELVIEW stack.
-		 *
-		 * This is the equivalent of calling:
-		 *   glGetDoublev(GL_MODELVIEW_MATRIX, matrix);
-		 * ...in OpenGL.
-		 */
-		GLMatrix::non_null_ptr_to_const_type
-		get_current_model_view_matrix() const;
-
-		/**
-		 * Returns the matrix currently at the top of the GL_PROJECTION stack.
-		 *
-		 * This is the equivalent of calling:
-		 *   glGetDoublev(GL_PROJECTION_MATRIX, matrix);
-		 * ...in OpenGL.
-		 */
-		GLMatrix::non_null_ptr_to_const_type
-		get_current_projection_matrix() const;
 
 
 		/**
@@ -191,6 +130,27 @@ namespace GPlatesOpenGL
 		 */
 		boost::optional<GLViewport>
 		get_current_viewport() const;
+
+
+		/**
+		 * Returns the matrix currently at the top of the GL_MODELVIEW stack.
+		 *
+		 * This is the equivalent of calling:
+		 *   glGetDoublev(GL_MODELVIEW_MATRIX, matrix);
+		 * ...in OpenGL.
+		 */
+		GLTransform::non_null_ptr_to_const_type
+		get_current_model_view_transform() const;
+
+		/**
+		 * Returns the matrix currently at the top of the GL_PROJECTION stack.
+		 *
+		 * This is the equivalent of calling:
+		 *   glGetDoublev(GL_PROJECTION_MATRIX, matrix);
+		 * ...in OpenGL.
+		 */
+		GLTransform::non_null_ptr_to_const_type
+		get_current_projection_transform() const;
 
 
 		/**
@@ -256,6 +216,22 @@ namespace GPlatesOpenGL
 		struct FrustumPlanes
 		{
 			/**
+			 * These can be used as indices into @a planes to get specific frustum planes.
+			 */
+			enum PlaneType
+			{
+				LEFT_PLANE = 0,
+				RIGHT_PLANE,
+				BOTTOM_PLANE,
+				TOP_PLANE,
+				NEAR_PLANE,
+				FAR_PLANE,
+
+				NUM_PLANES
+			};
+
+
+			/**
 			 * The left, right, bottom, top, near and far frustum planes.
 			 *
 			 * NOTE: The plane normals point towards the *inside* of the view frustum
@@ -281,19 +257,20 @@ namespace GPlatesOpenGL
 		get_current_frustum_planes_in_model_space() const;
 
 	private:
-		//! Typedef for a stack of matrices.
-		typedef std::stack<GLMatrix::non_null_ptr_type> matrix_stack_type;
+		//! Typedef for a stack of transforms.
+		typedef std::stack<GLTransform::non_null_ptr_type> transform_stack_type;
+
+		//! Typedef for a stack of pointers to transform stacks.
+		typedef std::stack<transform_stack_type *> transform_stack_ptr_stack_type;
 
 
-		GLenum d_current_matrix_mode;
-
-		matrix_stack_type d_model_view_matrix_stack;
-		matrix_stack_type d_projection_matrix_stack;
+		transform_stack_type d_model_view_transform_stack;
+		transform_stack_type d_projection_transform_stack;
 
 		/**
-		 * Points to the current matrix stack as determined by the current matrix mode.
+		 * A stack whose top entry points to the most recently pushed stack.
 		 */
-		matrix_stack_type *d_current_matrix_stack;
+		transform_stack_ptr_stack_type d_current_transform_stack;
 
 		/**
 		 * The most recent call to @a gl_viewport sets this otherwise it's undefined.

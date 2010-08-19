@@ -40,6 +40,7 @@
 
 
 GPlatesGui::Globe::Globe(
+		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		ProxiedTexture &texture_,
@@ -47,6 +48,7 @@ GPlatesGui::Globe::Globe(
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
+	d_persistent_opengl_objects(persistent_opengl_objects),
 	d_render_settings(render_settings),
 	d_rendered_geom_collection(rendered_geom_collection),
 	d_visual_layers(visual_layers),
@@ -57,6 +59,7 @@ GPlatesGui::Globe::Globe(
 	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
 	d_rendered_geom_collection_painter(
 			rendered_geom_collection,
+			persistent_opengl_objects,
 			visual_layers,
 			d_render_settings,
 			text_renderer_ptr,
@@ -67,12 +70,16 @@ GPlatesGui::Globe::Globe(
 
 GPlatesGui::Globe::Globe(
 		Globe &existing_globe,
+		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
+	d_persistent_opengl_objects(persistent_opengl_objects),
 	d_render_settings(existing_globe.d_render_settings),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
 	d_visual_layers(existing_globe.d_visual_layers),
+	// FIXME: This assumes textures are shared across OpenGL contexts.
+	// The Texture class will get removed soon anyway.
 	d_texture(existing_globe.d_texture),
 	d_nurbs_renderer(GPlatesOpenGL::GLUNurbsRenderer::create()),
 	d_sphere(Colour(0.35f, 0.35f, 0.35f)),
@@ -80,6 +87,7 @@ GPlatesGui::Globe::Globe(
 	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
 	d_rendered_geom_collection_painter(
 			d_rendered_geom_collection,
+			persistent_opengl_objects,
 			d_visual_layers,
 			d_render_settings,
 			text_renderer_ptr,
@@ -114,7 +122,6 @@ GPlatesGui::Globe::orient(
 
 void
 GPlatesGui::Globe::paint(
-		const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 		const double &viewport_zoom_factor,
 		float scale)
@@ -131,7 +138,10 @@ GPlatesGui::Globe::paint(
 	// Render the global texture.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type texture_node =
 			create_rendered_layer_node(globe_orientation_transform_node);
-	d_texture->paint(texture_node, gl_context_shared_state->get_texture_resource_manager());
+	d_texture->paint(
+			texture_node,
+			d_persistent_opengl_objects->get_list_objects().get_opengl_shared_state()
+				->get_texture_resource_manager());
 
 	// Render the grid lines on the sphere.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_node =
@@ -141,7 +151,6 @@ GPlatesGui::Globe::paint(
 	// Draw the rendered geometries.
 	d_rendered_geom_collection_painter.set_scale(scale);
 	d_rendered_geom_collection_painter.paint(
-			gl_context_shared_state,
 			globe_orientation_transform_node,
 			viewport_zoom_factor,
 			d_nurbs_renderer);
@@ -186,7 +195,6 @@ GPlatesGui::Globe::paint_vector_output(
 	// Draw the rendered geometries in the depth range [0, 0.7].
 	d_rendered_geom_collection_painter.set_scale(scale);
 	d_rendered_geom_collection_painter.paint(
-			gl_context_shared_state,
 			globe_orientation_transform_node,
 			viewport_zoom_factor,
 			d_nurbs_renderer);
@@ -226,7 +234,7 @@ GPlatesGui::Globe::setup_globe_orientation_transform(
 
 	GPlatesOpenGL::GLTransform::non_null_ptr_type globe_orientation_transform =
 			GPlatesOpenGL::GLTransform::create(GL_MODELVIEW);
-	globe_orientation_transform->gl_rotate(
+	globe_orientation_transform->get_matrix().gl_rotate(
 			angle_in_deg.dval(), axis.x().dval(), axis.y().dval(), axis.z().dval());
 	
 	// Create an internal node to store the globe orientation transform.

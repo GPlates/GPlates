@@ -32,7 +32,7 @@
 
 #include "GLRenderOperationsTarget.h"
 #include "GLRenderPass.h"
-#include "GLRenderTarget.h"
+#include "GLRenderTargetType.h"
 #include "GLStateGraph.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -41,7 +41,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLState;
+	class GLRenderTargetManager;
 
 	/**
 	 * Orders the render passes so that all textures are rendered to
@@ -79,7 +79,7 @@ namespace GPlatesOpenGL
 		 */
 		GLRenderOperationsTarget::non_null_ptr_type
 		push_render_target(
-				const GLRenderTarget::non_null_ptr_type &render_target,
+				const GLRenderTargetType::non_null_ptr_type &render_target_type,
 				const GLStateGraph::non_null_ptr_type &render_target_state_graph);
 
 
@@ -97,7 +97,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		draw(
-				GLState &state);
+				GLRenderTargetManager &render_target_manager);
 
 	private:
 		//! Typedef for a sequence of render passes.

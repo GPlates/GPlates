@@ -27,15 +27,19 @@
 #ifndef GPLATES_APP_LOGIC_RASTERLAYERTASK_H
 #define GPLATES_APP_LOGIC_RASTERLAYERTASK_H
 
-
 #include <utility>
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
 #include "LayerTask.h"
+#include "ReconstructRasterPolygons.h"
+#include "ReconstructionTree.h"
 
 #include "model/FeatureCollectionHandle.h"
+
+#include "presentation/ViewState.h"
 
 #include "property-values/Georeferencing.h"
 #include "property-values/RawRaster.h"
@@ -124,25 +128,42 @@ namespace GPlatesAppLogic
 		virtual
 		boost::optional<layer_task_data_type>
 		process(
+				const Layer &layer_handle /* the layer invoking this */,
 				const input_data_type &input_data,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
 				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
 
+
 	private:
 		static const char *RASTER_FEATURE_CHANNEL_NAME;
 		static const char *POLYGON_FEATURES_CHANNEL_NAME;
 
-		// FIXME: Remove these when raster is a property/band of a feature...
-		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> d_georeferencing;
-		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> d_raster;
+		/**
+		 * The polygons used to reconstruct the raster.
+		 *
+		 * These are present-day polygons that have their finite rotations updated
+		 * on reconstruction instead of generating new reconstructed polygon geometry.
+		 */
+		boost::optional<ReconstructRasterPolygons::non_null_ptr_type> d_reconstruct_raster_polygons;
 
-#if 0 // FIXME: Use this when raster is a property/band of a feature...
+		/**
+		 * The feature collections currently connected to our 'POLYGON_FEATURES_CHANNEL_NAME' channel.
+		 *
+		 * When this changes we create a new @a d_reconstruct_raster_polygons which also
+		 * gets stored in the output @a ResolvedRaster and hence a new @a d_reconstruct_raster_polygons
+		 * indicates to clients a new set of polygons just as a new @a Georeferencing or a new
+		 * @a RawRaster indicate to clients changed raster position/data.
+		 */
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_polygon_features_collection;
+
 		RasterLayerTask()
 		{  }
-#else
-		RasterLayerTask();
-#endif
+
+		void
+		update_reconstruct_raster_polygons(
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const input_data_type &input_data);
 	};
 }
 

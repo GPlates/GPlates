@@ -75,6 +75,17 @@ namespace GPlatesOpenGL
 		gl_bind_texture(
 				GLenum target) const;
 
+
+		/**
+		 * Returns the texture resource so it can be bound to a render-target for example.
+		 */
+		const GLTextureResource &
+		get_texture_resource() const
+		{
+			return *d_texture_resource;
+		}
+
+
 	private:
 		GLTextureResource::non_null_ptr_to_const_type d_texture_resource;
 

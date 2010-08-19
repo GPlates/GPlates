@@ -24,7 +24,6 @@
  */
 
 #include <cstddef> // For std::size_t
-#include <iostream>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -43,7 +42,10 @@
 
 bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
 boost::optional<GPlatesOpenGL::GLContext::TextureParameters> GPlatesOpenGL::GLContext::s_texture_parameters;
+boost::optional<GPlatesOpenGL::GLRenderTargetFactory::non_null_ptr_type> GPlatesOpenGL::GLContext::s_render_target_factory;
 
+// Set the GL_TEXTURE0_ARB constant.
+const GLenum GPlatesOpenGL::GLContext::TextureParameters::gl_texture0_ARB = GL_TEXTURE0_ARB;
 
 // We use macros in <GL/glew.h> that contain old-style casts.
 DISABLE_GCC_WARNING("-Wold-style-cast")
@@ -78,7 +80,6 @@ GPlatesOpenGL::GLContext::initialise()
 		// Initialise texture parameters with default values.
 		TextureParameters texture_parameters =
 		{
-			GL_TEXTURE0_ARB,
 			64, // Minimum size texture that must be supported by all OpenGL implementations
 			1, // GL_MAX_TEXTURE_UNITS_ARB
 			1.0f // GL_TEXTURE_MAX_ANISOTROPY_EXT
@@ -94,12 +95,33 @@ GPlatesOpenGL::GLContext::initialise()
 		}
 
 		// Get the maximum texture anisotropy supported.
-		if (GL_EXT_texture_filter_anisotropic)
+		if (GLEW_EXT_texture_filter_anisotropic)
 		{
 			glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &texture_parameters.gl_texture_max_anisotropy_EXT);
 		}
 
 		s_texture_parameters = texture_parameters;
+
+		//
+		// Create the render target factory based on the capabilities of the run-time system.
+		//
+
+		if (GLFrameBufferObjectRenderTargetFactory::is_supported())
+		{
+			qDebug() << "Using frame buffer object support for render targets";
+			s_render_target_factory = GLFrameBufferObjectRenderTargetFactory::create();
+		}
+		else if (GLPBufferRenderTargetFactory::is_supported())
+		{
+			qDebug() << "Using pbuffer support for render targets";
+			QGLWidget *qgl_widget = &static_cast<QGLWidgetImpl *>(d_context_impl.get())->d_qgl_widget;
+			s_render_target_factory = GLPBufferRenderTargetFactory::create(qgl_widget);
+		}
+		else
+		{
+			qDebug() << "Falling back to main frame buffer for render targets";
+			s_render_target_factory = GLMainFrameBufferRenderTargetFactory::create();
+		}
 	}
 }
 
@@ -115,6 +137,18 @@ GPlatesOpenGL::GLContext::get_texture_parameters()
 			GPLATES_ASSERTION_SOURCE);
 
 	return s_texture_parameters.get();
+}
+
+
+GPlatesOpenGL::GLRenderTargetFactory &
+GPlatesOpenGL::GLContext::get_render_target_factory()
+{
+	// GLEW must have been initialised.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			s_initialised_GLEW && s_render_target_factory,
+			GPLATES_ASSERTION_SOURCE);
+
+	return *s_render_target_factory.get();
 }
 
 

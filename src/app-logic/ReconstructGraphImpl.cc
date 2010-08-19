@@ -321,6 +321,7 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::~Layer()
 DISABLE_GCC_WARNING("-Wold-style-cast")
 void
 GPlatesAppLogic::ReconstructGraphImpl::Layer::execute(
+		const GPlatesAppLogic::Layer &layer_handle /* handle used by clients */,
 		Reconstruction &reconstruction,
 		GPlatesModel::integer_plate_id_type anchored_plate_id)
 {
@@ -364,6 +365,7 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::execute(
 	// Process the layer's task.
 	boost::optional<layer_task_data_type> layer_task_output =
 			d_layer_task->process(
+					layer_handle,
 					input_data_collection,
 					reconstruction.get_reconstruction_time(),
 					anchored_plate_id,

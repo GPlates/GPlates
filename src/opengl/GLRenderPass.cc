@@ -27,16 +27,14 @@
 
 #include "GLRenderPass.h"
 
-#include "GLState.h"
-
 
 GPlatesOpenGL::GLRenderOperationsTarget::non_null_ptr_type
 GPlatesOpenGL::GLRenderPass::add_render_target(
-		const GLRenderTarget::non_null_ptr_type &render_target,
+		const GLRenderTargetType::non_null_ptr_type &render_target_type,
 		const GLStateGraph::non_null_ptr_type &state_graph)
 {
 	GLRenderOperationsTarget::non_null_ptr_type render_operations_target =
-			GLRenderOperationsTarget::create(render_target, state_graph);
+			GLRenderOperationsTarget::create(render_target_type, state_graph);
 
 	d_render_operations_target_seq.push_back(render_operations_target);
 
@@ -44,15 +42,21 @@ GPlatesOpenGL::GLRenderPass::add_render_target(
 }
 
 
-void
+GPlatesOpenGL::GLRenderTarget::non_null_ptr_type
 GPlatesOpenGL::GLRenderPass::draw(
-		GLState &state)
+		GLRenderTargetManager &render_target_manager,
+		const GLRenderTarget::non_null_ptr_type &previous_render_target)
 {
+	GLRenderTarget::non_null_ptr_type current_render_target = previous_render_target;
+
 	// Iterate over the render operations targets and draw each one.
 	BOOST_FOREACH(
 			const GLRenderOperationsTarget::non_null_ptr_type &render_operations_target,
 			d_render_operations_target_seq)
 	{
-		render_operations_target->draw(state);
+		current_render_target =
+				render_operations_target->draw(render_target_manager, current_render_target);
 	}
+
+	return current_render_target;
 }

@@ -72,6 +72,7 @@ GPlatesAppLogic::ReconstructionLayerTask::get_output_definition() const
 
 boost::optional<GPlatesAppLogic::layer_task_data_type>
 GPlatesAppLogic::ReconstructionLayerTask::process(
+		const Layer &layer_handle /* the layer invoking this */,
 		const input_data_type &input_data,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plate_id,

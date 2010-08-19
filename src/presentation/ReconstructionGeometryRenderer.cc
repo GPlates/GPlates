@@ -197,8 +197,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// Create a RenderedGeometry for drawing the resolved raster.
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_raster =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
+					rr->get_layer(),
 					rr->get_georeferencing(),
-					rr->get_raster());
+					rr->get_raster(),
+					rr->get_reconstruct_raster_polygons());
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and
 	// a RenderedGeometry associated with it.

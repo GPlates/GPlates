@@ -28,10 +28,12 @@
 #define GPLATES_OPENGL_GLCONTEXT_H
 
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <opengl/OpenGL.h>
+#include <QGLWidget>
 
+#include "GLRenderTargetFactory.h"
 #include "GLResourceManager.h"
-#include "GLState.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -55,6 +57,48 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Used to delegate to the real OpenGL context.
+		 */
+		class Impl
+		{
+		public:
+			virtual
+			~Impl()
+			{  }
+
+			//! Make this context the current context.
+			virtual
+			void
+			make_current() = 0;
+		};
+
+		/**
+		 * A derivation of @a Impl for QGLWidget.
+		 */
+		class QGLWidgetImpl :
+				public Impl
+		{
+		public:
+			explicit
+			QGLWidgetImpl(
+					QGLWidget &qgl_widget) :
+				d_qgl_widget(qgl_widget)
+			{  }
+
+			virtual
+			void
+			make_current()
+			{
+				d_qgl_widget.makeCurrent();
+			}
+
+		private:
+			QGLWidget &d_qgl_widget;
+			friend class GLContext;
+		};
+
+
+		/**
 		 * OpenGL state that can be shared between contexts (such as display lists,
 		 * texture objects, vertex buffer objects, etc).
 		 */
@@ -67,7 +111,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns the texture resource manager.
 			 */
-			boost::shared_ptr<GLTextureResourceManager>
+			const boost::shared_ptr<GLTextureResourceManager> &
 			get_texture_resource_manager()
 			{
 				return d_texture_resource_manager;
@@ -83,9 +127,10 @@ namespace GPlatesOpenGL
 		 */
 		static
 		non_null_ptr_type
-		create()
+		create(
+				const boost::shared_ptr<Impl> &context_impl)
 		{
-			return non_null_ptr_type(new GLContext());
+			return non_null_ptr_type(new GLContext(context_impl));
 		}
 
 
@@ -95,9 +140,10 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLContext &context)
+				const boost::shared_ptr<Impl> &context_impl,
+				GLContext &shared_context)
 		{
-			return non_null_ptr_type(new GLContext(context.get_shared_state()));
+			return non_null_ptr_type(new GLContext(context_impl, shared_context.get_shared_state()));
 		}
 
 
@@ -108,6 +154,16 @@ namespace GPlatesOpenGL
 		 */
 		void
 		initialise();
+
+
+		/**
+		 * Sets this context as the active OpenGL context.
+		 */
+		void
+		make_current()
+		{
+			d_context_impl->make_current();
+		}
 
 
 		/**
@@ -130,29 +186,28 @@ namespace GPlatesOpenGL
 		}
 
 
+		/**
+		 * Returns the OpenGL state that can be shared with other OpenGL contexts.
+		 *
+		 * You can compare the pointers returned by @a get_shared_state on two
+		 * different contexts to see if they are sharing or not.
+		 */
 		boost::shared_ptr<const SharedState>
 		get_shared_state() const
 		{
 			return d_shared_state;
 		}
 
+		/**
+		 * Returns the OpenGL state that can be shared with other OpenGL contexts.
+		 *
+		 * You can compare the pointers returned by @a get_shared_state on two
+		 * different contexts to see if they are sharing or not.
+		 */
 		boost::shared_ptr<SharedState>
 		get_shared_state()
 		{
 			return d_shared_state;
-		}
-
-
-		const GLState &
-		get_state() const
-		{
-			return d_state;
-		}
-
-		GLState &
-		get_state()
-		{
-			return d_state;
 		}
 
 
@@ -169,7 +224,7 @@ namespace GPlatesOpenGL
 			 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
 			 * before OpenGL headers which means before Qt headers which is difficult).
 			 */
-			GLenum gl_texture0_ARB; // GL_TEXTURE0_ARB
+			static const GLenum gl_texture0_ARB; // GL_TEXTURE0_ARB
 
 			/**
 			 * The minimum texture size (dimension) that all OpenGL implementations
@@ -209,11 +264,23 @@ namespace GPlatesOpenGL
 		const TextureParameters &
 		get_texture_parameters();
 
+
+		/**
+		 * Returns the render target factory.
+		 *
+		 * The type of factory returned will depend on the run-time OpenGL capabilities.
+		 *
+		 * @throws PreconditionViolationError if @a initialise not yet called.
+		 */
+		static
+		GLRenderTargetFactory &
+		get_render_target_factory();
+
 	private:
 		/**
-		 * OpenGL state that not shared between contexts.
+		 * For delegating to the real OpenGL context.
 		 */
-		GLState d_state;
+		boost::shared_ptr<Impl> d_context_impl;
 
 		/**
 		 * OpenGL state that can be shared with another context.
@@ -230,16 +297,25 @@ namespace GPlatesOpenGL
 		 */
 		static boost::optional<TextureParameters> s_texture_parameters;
 
+		/**
+		 * Factory for creating render targets.
+		 */
+		static boost::optional<GLRenderTargetFactory::non_null_ptr_type> s_render_target_factory;
+
 
 		//! Default constructor.
-		GLContext() :
+		GLContext(
+				const boost::shared_ptr<Impl> &context_impl) :
+			d_context_impl(context_impl),
 			d_shared_state(new SharedState())
 		{  }
 
 		//! Constructor.
 		explicit
 		GLContext(
+				const boost::shared_ptr<Impl> &context_impl,
 				const boost::shared_ptr<SharedState> &shared_state) :
+			d_context_impl(context_impl),
 			d_shared_state(shared_state)
 		{  }
 	};

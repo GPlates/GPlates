@@ -62,7 +62,6 @@
 
 #include "view-operations/RenderedGeometryCollection.h"
 
-
 GPlatesPresentation::ViewState::ViewState(
 		GPlatesAppLogic::ApplicationState &application_state) :
 	d_application_state(application_state),

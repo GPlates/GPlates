@@ -46,11 +46,13 @@ bool
 GPlatesAppLogic::ReconstructionFeatureProperties::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	d_recon_plate_id = boost::none;
 	d_feature_is_defined_at_recon_time = true;
-	d_recon_plate_id = boost::none;
 	d_time_of_appearance = boost::none;
 	d_time_of_dissappearance = boost::none;
+
+	d_recon_method = GPlatesAppLogic::BY_PLATE_ID;
+	d_right_plate_id = boost::none;
+	d_left_plate_id = boost::none;
 
 	return true;
 }

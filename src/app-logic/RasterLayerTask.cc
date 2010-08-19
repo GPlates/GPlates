@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+
 #include "RasterLayerTask.h"
 
 #include "ResolvedRaster.h"
@@ -44,37 +46,6 @@ GPlatesAppLogic::RasterLayerTask::can_process_feature_collection(
 	// FIXME: Visit features in 'feature_collection' and return true if any
 	// have a raster property.
 	return false;
-}
-
-
-GPlatesAppLogic::RasterLayerTask::RasterLayerTask()
-{
-	// FIXME: When raster is a property/band of a feature then visit the feature
-	// to get the raster and georeferencing instead of what's done below...
-
-#if 1
-	// Instead of temporarily getting the raster from the ViewState we'll just create
-	// a simple raster covering the entire globe.
-	const unsigned int raster_width = 32;
-	const unsigned int raster_height = 64;
-	d_georeferencing = GPlatesPropertyValues::Georeferencing::create(raster_width, raster_height);
-
-	// Create the raster data (just a checkerboard pattern).
-	const GPlatesGui::rgba8_t red(255, 0, 0, 255);
-	const GPlatesGui::rgba8_t blue(0, 0, 255, 255);
-	GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type rgba8_raster =
-			GPlatesPropertyValues::Rgba8RawRaster::create(raster_width, raster_height);
-	GPlatesGui::rgba8_t *const rgba8_raster_buf = rgba8_raster->data();
-	for (unsigned int j = 0; j < raster_height; ++j)
-	{
-		for (unsigned int i = 0; i < raster_width; ++i)
-		{
-			rgba8_raster_buf[j * raster_width + i] = (i ^ j) ? red : blue;
-		}
-	}
-
-	d_raster = rgba8_raster;
-#endif
 }
 
 
@@ -117,6 +88,7 @@ GPlatesAppLogic::RasterLayerTask::get_output_definition() const
 
 boost::optional<GPlatesAppLogic::layer_task_data_type>
 GPlatesAppLogic::RasterLayerTask::process(
+		const Layer &layer_handle /* the layer invoking this */,
 		const input_data_type &input_data,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plate_id,
@@ -147,6 +119,50 @@ GPlatesAppLogic::RasterLayerTask::process(
 			RASTER_FEATURE_CHANNEL_NAME,
 			input_data);
 
+
+	// Update the polygon rotations using the new reconstruction tree.
+	update_reconstruct_raster_polygons(reconstruction_tree.get(), input_data);
+
+	// Create a reconstruction geometry collection to store the resolved raster in.
+	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geometry_collection =
+			ReconstructionGeometryCollection::create(reconstruction_tree.get());
+
+	// FIXME: When raster is a property/band of a feature then visit the feature
+	// to get the raster and georeferencing instead of what's done below which will crash.
+	GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type georeferencing(NULL);
+	GPlatesPropertyValues::RawRaster::non_null_ptr_type raster(NULL);
+
+	// Need to cast boost::optional containing non_null_ptr_type to
+	// a boost::optional containing non_null_ptr_to_const_type.
+	boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type>
+			reconstruct_raster_polygons;
+	if (d_reconstruct_raster_polygons)
+	{
+		reconstruct_raster_polygons = d_reconstruct_raster_polygons.get();
+	}
+
+	// Create a resolved raster.
+	ResolvedRaster::non_null_ptr_type resolved_raster =
+			ResolvedRaster::create(
+					layer_handle,
+					reconstruction_tree.get(),
+					georeferencing,
+					raster,
+					reconstruct_raster_polygons);
+
+	reconstruction_geometry_collection->add_reconstruction_geometry(resolved_raster);
+
+	return layer_task_data_type(
+			static_cast<ReconstructionGeometryCollection::non_null_ptr_to_const_type>(
+					reconstruction_geometry_collection));
+}
+
+
+void
+GPlatesAppLogic::RasterLayerTask::update_reconstruct_raster_polygons(
+		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		const input_data_type &input_data)
+{
 	//
 	// Get the polygon features collection input (used to reconstruct the raster).
 	//
@@ -156,33 +172,39 @@ GPlatesAppLogic::RasterLayerTask::process(
 			POLYGON_FEATURES_CHANNEL_NAME,
 			input_data);
 
+	bool reconstruct_raster_polygons_have_changed = false;
 
-	// Create a reconstruction geometry collection to store the resolved raster in.
+	// Sort the sequence so we can compare with out current sequence of feature collections.
+	std::sort(polygon_features_collection.begin(), polygon_features_collection.end());
+
+	// See if any feature collections have been added or removed.
 	//
-	// NOTE: We're not using a reconstruction tree since we're not reconstructing anything
-	// so just specify the default reconstruction tree.
-	//
-	// FIXME: Probably need to fix it so that reconstruction geometry's don't have to
-	// specify a reconstruction tree (since not all reconstruction geometry's are actually
-	// reconstructed - they might simply be resolved from a time-dependent property value).
-	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geometry_collection =
-			ReconstructionGeometryCollection::create(default_reconstruction_tree);
+	// TODO: Also need to listen for changes in the model in case an existing
+	// feature collection has been modified since we were last called.
+	if (d_current_polygon_features_collection != polygon_features_collection)
+	{
+		d_current_polygon_features_collection = polygon_features_collection;
+		reconstruct_raster_polygons_have_changed = true;
+	}
 
-	// FIXME: When raster is a property/band of a feature then visit the feature
-	// to get the raster and georeferencing instead of what's done below...
-#if 1
-	GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type georeferencing =
-			d_georeferencing.get();
-	GPlatesPropertyValues::RawRaster::non_null_ptr_type raster = d_raster.get();
-#endif
+	// If there are no polygon features then we cannot reconstruct the raster.
+	if (d_current_polygon_features_collection.empty())
+	{
+		d_reconstruct_raster_polygons = boost::none;
+		return;
+	}
 
-	// Create a resolved raster.
-	ResolvedRaster::non_null_ptr_type resolved_raster =
-			ResolvedRaster::create(default_reconstruction_tree, georeferencing, raster);
+	// If the polygon features have changed then create a new 'ReconstructRasterPolygons' object.
+	if (reconstruct_raster_polygons_have_changed)
+	{
+		d_reconstruct_raster_polygons = ReconstructRasterPolygons::create(
+				d_current_polygon_features_collection.begin(),
+				d_current_polygon_features_collection.end(),
+				reconstruction_tree);
+		return;
+	}
 
-	reconstruction_geometry_collection->add_reconstruction_geometry(resolved_raster);
-
-	return layer_task_data_type(
-			static_cast<ReconstructionGeometryCollection::non_null_ptr_to_const_type>(
-					reconstruction_geometry_collection));
+	// The polygon features have not changed so just update the rotations in the
+	// existing 'ReconstructRasterPolygons' object using the new reconstruction tree.
+	d_reconstruct_raster_polygons.get()->update_rotations(reconstruction_tree);
 }

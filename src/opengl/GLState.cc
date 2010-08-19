@@ -57,15 +57,3 @@ GPlatesOpenGL::GLState::pop_state_set()
 	// Actually pop the state set off the stack.
 	d_state_set_stack.pop_back();
 }
-
-
-void
-GPlatesOpenGL::draw(
-		const GLDrawable::non_null_ptr_to_const_type &drawable,
-		const GLStateSet::non_null_ptr_to_const_type &state_set,
-		GLState &state)
-{
-	state.push_state_set(state_set);
-	drawable->bind_and_draw();
-	state.pop_state_set();
-}

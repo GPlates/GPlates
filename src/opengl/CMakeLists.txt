@@ -24,6 +24,8 @@ set(srcs
     GLCompositeStateSet.h
     GLContext.cc
     GLContext.h
+    GLCubeSubdivision.cc
+    GLCubeSubdivision.h
     GLCullVisitor.cc
     GLCullVisitor.h
     GLDepthRangeState.h
@@ -37,13 +39,20 @@ set(srcs
     GLMaskBuffersState.h
     GLMatrix.cc
     GLMatrix.h
+    GLMultiResolutionCubeRaster.cc
+    GLMultiResolutionCubeRaster.h
     GLMultiResolutionRaster.cc
     GLMultiResolutionRaster.h
     GLMultiResolutionRasterNode.h
+    GLMultiResolutionReconstructedRaster.cc
+    GLMultiResolutionReconstructedRaster.h
+    GLMultiResolutionReconstructedRasterNode.h
     GLPointLinePolygonState.cc
     GLPointLinePolygonState.h
     GLRasterProxy.cc
     GLRasterProxy.h
+    GLRenderer.cc
+    GLRenderer.h
     GLRenderGraph.cc
     GLRenderGraph.h
     GLRenderGraphDrawableNode.cc
@@ -59,7 +68,12 @@ set(srcs
     GLRenderPass.h
     GLRenderQueue.cc
     GLRenderQueue.h
+    GLRenderTarget.cc
     GLRenderTarget.h
+    GLRenderTargetFactory.h
+    GLRenderTargetManager.cc
+    GLRenderTargetManager.h
+    GLRenderTargetType.h
     GLResource.h
     GLResourceManager.h
     GLShadeModelState.h
@@ -81,6 +95,8 @@ set(srcs
     GLTextureCache.h
     GLTextureEnvironmentState.cc
     GLTextureEnvironmentState.h
+    GLTextureTransformState.cc
+    GLTextureTransformState.h
     GLTransform.cc
     GLTransform.h
     GLTransformState.cc

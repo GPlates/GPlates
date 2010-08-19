@@ -61,6 +61,27 @@ GPlatesOpenGL::GLIntersect::Plane::classify_point(
 }
 
 
+GPlatesOpenGL::GLIntersect::Plane::HalfSpaceType
+GPlatesOpenGL::GLIntersect::Plane::classify_point(
+		const GPlatesMaths::UnitVector3D& point) const
+{
+	const GPlatesMaths::real_t d =
+			dot(point, d_normal) + d_signed_distance_to_origin;
+
+	if (is_strictly_positive(d))
+	{
+		return POSITIVE;
+	}
+
+	if (is_strictly_negative(d))
+	{
+		return NEGATIVE;
+	}
+
+	return ON_PLANE;
+}
+
+
 GPlatesOpenGL::GLIntersect::Ray::Ray(
 		const GPlatesMaths::Vector3D &ray_origin,
 		const GPlatesMaths::UnitVector3D &ray_direction) :
@@ -119,14 +140,12 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::OrientedBoundingBoxBuild
 
 void
 GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
-		const GPlatesMaths::PointOnSphere &point_on_sphere)
+		const GPlatesMaths::UnitVector3D &point)
 {
 	//
 	// Project the point onto each axis of the oriented bounding box and
 	// expand min/max projections if necessary.
 	//
-
-	const GPlatesMaths::UnitVector3D &point = point_on_sphere.position_vector();
 
 	const GPlatesMaths::real_t dot_x_axis = dot(point, d_x_axis);
 	if (dot_x_axis < d_min_dot_x_axis)
@@ -252,4 +271,44 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::get_oriented_bounding_bo
 			half_length_x_axis * d_x_axis,
 			half_length_y_axis * d_y_axis,
 			half_length_z_axis * d_z_axis);
+}
+
+
+GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder
+GPlatesOpenGL::GLIntersect::create_oriented_bounding_box_builder(
+		const GPlatesMaths::Vector3D &obb_y_axis_unnormalised,
+		const GPlatesMaths::UnitVector3D &obb_z_axis)
+{
+	// Remove any projection of 'obb_y_axis_unnormalised' onto 'obb_z_axis' and
+	// then normalise the result.
+	const GPlatesMaths::real_t y_proj_onto_z = dot(obb_y_axis_unnormalised, obb_z_axis);
+	const GPlatesMaths::Vector3D y_orthogonal_to_z =
+			obb_y_axis_unnormalised - y_proj_onto_z * obb_z_axis;
+	if (y_orthogonal_to_z.magSqrd() <= 0)
+	{
+		// y-axis is parallel to the z-axis or is zero length to start with.
+		return create_oriented_bounding_box_builder(obb_z_axis);
+	}
+
+	const GPlatesMaths::UnitVector3D obb_y_axis = y_orthogonal_to_z.get_normalisation();
+
+	// The OBB x-axis is orthogonal to 'obb_y_axis' and 'obb_z_axis'.
+	const GPlatesMaths::UnitVector3D obb_x_axis(cross(obb_y_axis, obb_z_axis));
+
+	// Return a builder using the orthonormal axes.
+	return OrientedBoundingBoxBuilder(obb_x_axis, obb_y_axis, obb_z_axis);
+}
+
+
+GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder
+GPlatesOpenGL::GLIntersect::create_oriented_bounding_box_builder(
+		const GPlatesMaths::UnitVector3D &obb_z_axis)
+{
+	const GPlatesMaths::UnitVector3D obb_y_axis = generate_perpendicular(obb_z_axis);
+
+	// The OBB x-axis is orthogonal to 'obb_y_axis' and 'obb_z_axis'.
+	const GPlatesMaths::UnitVector3D obb_x_axis(cross(obb_y_axis, obb_z_axis));
+
+	// Return a builder using the orthonormal axes.
+	return OrientedBoundingBoxBuilder(obb_x_axis, obb_y_axis, obb_z_axis);
 }

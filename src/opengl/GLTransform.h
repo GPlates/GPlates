@@ -55,12 +55,20 @@ namespace GPlatesOpenGL
 		//! A convenience typedef for a shared pointer to a const @a GLTransform.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLTransform> non_null_ptr_to_const_type;
 
+		/*
+		 * The methods accepting 'GLenum matrix_mode' only accept GL_MODELVIEW and GL_PROJECTION.
+		 *
+		 * GL_TEXTURE is *not* included here because:
+		 * - it is bound to the currently active texture unit unlike GL_MODELVIEW and GL_PROJECTION,
+		 * - it does not normally follow a hierarchy of transformations like GL_MODELVIEW tends to,
+		 * - it is infrequently used when rendering drawables.
+		 * So for these reasons GL_TEXTURE is implemented in class @a GLTextureTransformState.
+		 */
 
 		/**
 		 * Constructs identity matrix.
 		 *
-		 * @a matrix_mode must be one of GL_MODELVIEW or GL_PROJECTION.
-		 * NOTE: GL_TEXTURE is *not* included here (see @a GLTransformState for the reasons).
+		 * @a matrix_mode must be GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
 		 */
 		static
 		non_null_ptr_type
@@ -73,8 +81,21 @@ namespace GPlatesOpenGL
 		/**
 		 * Constructs arbitrary matrix.
 		 *
-		 * @a matrix_mode must be one of GL_MODELVIEW or GL_PROJECTION.
-		 * NOTE: GL_TEXTURE is *not* included here (see @a GLTransformState for the reasons).
+		 * @a matrix_mode must be GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
+		 */
+		static
+		non_null_ptr_type
+		create(
+				GLenum matrix_mode,
+				const GLMatrix &matrix)
+		{
+			return non_null_ptr_type(new GLTransform(matrix_mode, matrix));
+		}
+
+		/**
+		 * Constructs arbitrary matrix.
+		 *
+		 * @a matrix_mode must be GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
 		 *
 		 * The format of @a m must be column-major:
 		 *
@@ -96,8 +117,7 @@ namespace GPlatesOpenGL
 		 * Constructs 4x4 matrix from specified unit quaternion (note only the 3x3 rotation
 		 * part of the matrix is initialised - the rest is set to zero).
 		 *
-		 * @a matrix_mode must be one of GL_MODELVIEW or GL_PROJECTION.
-		 * NOTE: GL_TEXTURE is *not* included here (see @a GLTransformState for the reasons).
+		 * @a matrix_mode must be GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
 		 */
 		static
 		non_null_ptr_type
@@ -109,144 +129,20 @@ namespace GPlatesOpenGL
 		}
 
 
-		//! Performs function of similarly named OpenGL function.
-		GLTransform &
-		gl_load_identity()
-		{
-			d_matrix.gl_load_identity();
-			return *this;
-		}
-
-
 		/**
-		 * Constructs an arbitrary 4x4 matrix.
-		 *
-		 * The format of @a m must be column-major:
-		 *
-		 * | m0 m4 m8  m12 |
-		 * | m1 m5 m9  m13 |
-		 * | m2 m6 m10 m14 |
-		 * | m3 m7 m11 m15 |
+		 * Returns a clone of 'this' transform.
 		 */
-		GLTransform &
-		gl_load_matrix(
-				const GLdouble *matrix)
+		non_null_ptr_type
+		clone() const
 		{
-			d_matrix.gl_load_matrix(matrix);
-			return *this;
+			// This class is not copy-constructable due to ReferenceCount base class
+			// so use a non-copy constructor instead that achieves the same effect.
+			return non_null_ptr_type(new GLTransform(d_matrix_mode, d_matrix));
 		}
 
 
 		/**
-		 * Converts @a quaternion to a 3x3 OpenGL format matrix and post-multiplies it
-		 * with the current internal matrix.
-		 */
-		GLTransform &
-		gl_mult_matrix(
-				const GPlatesMaths::UnitQuaternion3D &quaternion)
-		{
-			const GLMatrix quat_matrix(quaternion);
-			d_matrix.gl_mult_matrix(quat_matrix);
-			return *this;
-		}
-
-		/**
-		 * Post-multiplies matrix @a matrix with the current internal matrix.
-		 *
-		 * Format of @a m is OpenGL column-major matrix format
-		 * (column 0 stored in first 4 elements, column 1 in next 4, etc).
-		 */
-		GLTransform &
-		gl_mult_matrix(
-				const GLMatrix &matrix)
-		{
-			d_matrix.gl_mult_matrix(matrix);
-			return *this;
-		}
-
-
-		//! Performs function of similarly named OpenGL function (including post-multiplication).
-		GLTransform &
-		gl_translate(
-				double x,
-				double y,
-				double z);
-
-		//! Performs function of similarly named OpenGL function (including post-multiplication).
-		GLTransform &
-		gl_rotate(
-				double angle,
-				double x,
-				double y,
-				double z);
-
-		//! Performs function of similarly named OpenGL function (including post-multiplication).
-		GLTransform &
-		gl_scale(
-				double x,
-				double y,
-				double z);
-
-		//! Performs function of similarly named OpenGL function (including post-multiplication).
-		GLTransform &
-		gl_ortho(
-				double left,
-				double right,
-				double bottom,
-				double top,
-				double zNear,
-				double zFar);
-
-		//! Performs function of similarly named OpenGL function (including post-multiplication).
-		GLTransform &
-		gl_frustum(
-				double left,
-				double right,
-				double bottom,
-				double top,
-				double zNear,
-				double zFar);
-
-		//! Performs function of similarly named OpenGL function (including post-multiplication).
-		GLTransform &
-		glu_look_at(
-				double eyex,
-				double eyey,
-				double eyez,
-				double centerx,
-				double centery,
-				double centerz,
-				double upx,
-				double upy,
-				double upz);
-
-		//! Performs function of similarly named OpenGL function (including post-multiplication).
-		GLTransform &
-		glu_ortho_2D(
-				double left,
-				double right,
-				double bottom,
-				double top)
-		{
-			return gl_ortho(left, right, bottom, top, -1.0, 1.0);
-		}
-
-		//! Performs function of similarly named OpenGL function (including post-multiplication).
-		GLTransform &
-		glu_perspective(
-				double fovy,
-				double aspect,
-				double zNear,
-				double zFar);
-
-
-		////////////////////////////
-		// Used by implementation //
-		////////////////////////////
-
-		/**
-		 * Returns one of GL_MODELVIEW or GL_PROJECTION.
-		 * NOTE: GL_TEXTURE is *not* included here (see @a GLTransformState for the reasons).
+		 * Returns one of GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
 		 */
 		GLenum
 		get_matrix_mode() const
@@ -254,7 +150,20 @@ namespace GPlatesOpenGL
 			return d_matrix_mode;
 		}
 
-		//! Returns the 4x4 matrix of 'this' transform in OpenGL format.
+		/**
+		 * Returns the 4x4 matrix of 'this' transform in OpenGL format.
+		 *
+		 * This can be used to alter the matrix via methods in @a GLMatrix.
+		 */
+		GLMatrix &
+		get_matrix()
+		{
+			return d_matrix;
+		}
+
+		/**
+		 * Returns the 4x4 matrix of 'this' transform in OpenGL format.
+		 */
 		const GLMatrix &
 		get_matrix() const
 		{
@@ -270,6 +179,12 @@ namespace GPlatesOpenGL
 		explicit
 		GLTransform(
 				GLenum matrix_mode);
+
+		//! Constructor.
+		explicit
+		GLTransform(
+				GLenum matrix_mode,
+				const GLMatrix &matrix);
 
 		//! Constructor.
 		GLTransform(

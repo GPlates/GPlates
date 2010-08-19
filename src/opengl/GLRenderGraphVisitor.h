@@ -57,6 +57,7 @@ namespace GPlatesOpenGL
 
 	// Forward declarations of visitable concrete render graph types.
 	class GLMultiResolutionRasterNode;
+	class GLMultiResolutionReconstructedRasterNode;
 	class GLRenderGraphDrawableNode;
 	class GLRenderGraphInternalNode;
 	class GLText3DNode;
@@ -102,6 +103,11 @@ namespace GPlatesOpenGL
 		typedef typename GPlatesUtils::CopyConst<
 				GLRenderGraphType, GLMultiResolutionRasterNode>::type
 						multi_resolution_raster_node_type;
+
+		//! Typedef for @a GLMultiResolutionReconstructedRasterNode of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				GLRenderGraphType, GLMultiResolutionReconstructedRasterNode>::type
+						multi_resolution_reconstructed_raster_node_type;
 
 		//! Typedef for @a GLText3DNode of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -163,6 +169,16 @@ namespace GPlatesOpenGL
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<multi_resolution_raster_node_type> &)
+		{  }
+
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<multi_resolution_reconstructed_raster_node_type> &)
 		{  }
 
 

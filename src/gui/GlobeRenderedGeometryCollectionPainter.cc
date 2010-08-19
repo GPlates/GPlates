@@ -32,7 +32,6 @@
 #include "GlobeRenderedGeometryCollectionPainter.h"
 
 #include "opengl/GLEnterOrLeaveStateSet.h"
-#include "opengl/GLFragmentTestStates.h"
 #include "opengl/GLStateSet.h"
 #include "opengl/GLUNurbsRenderer.h"
 
@@ -43,12 +42,14 @@
 
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollectionPainter(
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
+	d_persistent_opengl_objects(persistent_opengl_objects),
 	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
 	d_text_renderer_ptr(text_renderer_ptr),
@@ -61,7 +62,6 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 
 void
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint(
-		const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 		const double &viewport_zoom_factor,
 		const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer)
@@ -96,16 +96,9 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type rendered_layer_node =
 			GPlatesOpenGL::GLRenderGraphInternalNode::create();
 
-	// Turn on depth testing - it's off by default.
-	//
-	// NOTE: We don't set the depth write state here because
-	// GlobeRenderedGeometryLayerPainter will do that.
-	GPlatesOpenGL::GLDepthTestState::non_null_ptr_type state_set =
-			GPlatesOpenGL::GLDepthTestState::create();
-	state_set->gl_enable(GL_TRUE);
-
 	// Create a state set that ensures this rendered layer will form a render sub group
 	// that will not get reordered with other layers by the renderer (to minimise state changes).
+	GPlatesOpenGL::GLStateSet::non_null_ptr_type state_set = GPlatesOpenGL::GLStateSet::create();
 	state_set->set_enable_render_sub_group();
 
 	rendered_layer_node->set_state_set(state_set);
@@ -116,6 +109,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 	// Draw the current rendered geometry layer.
 	GlobeRenderedGeometryLayerPainter rendered_geom_layer_painter(
 			rendered_geometry_layer,
+			d_persistent_opengl_objects,
 			d_paint_params->d_inverse_viewport_zoom_factor,
 			d_paint_params->d_nurbs_renderer,
 			d_render_settings,

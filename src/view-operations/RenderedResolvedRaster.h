@@ -27,8 +27,13 @@
 #ifndef GPLATES_VIEWOPERATIONS_RENDEREDRESOLVEDRASTER_H
 #define GPLATES_VIEWOPERATIONS_RENDEREDRESOLVEDRASTER_H
 
+#include <boost/optional.hpp>
+
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
+
+#include "app-logic/Layer.h"
+#include "app-logic/ReconstructRasterPolygons.h"
 
 #include "property-values/Georeferencing.h"
 #include "property-values/RawRaster.h"
@@ -42,10 +47,15 @@ namespace GPlatesViewOperations
 	public:
 		explicit
 		RenderedResolvedRaster(
+				const GPlatesAppLogic::Layer &layer,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster) :
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
+						reconstruct_raster_polygons = boost::none) :
+		d_created_from_layer(layer),
 		d_georeferencing(georeferencing),
-		d_raster(raster)
+		d_raster(raster),
+		d_reconstruct_raster_polygons(reconstruct_raster_polygons)
 		{  }
 
 		virtual
@@ -65,6 +75,15 @@ namespace GPlatesViewOperations
 			return GPlatesMaths::ProximityHitDetail::null;
 		}
 
+		/**
+		 * Returns the layer that this resolved raster was created in.
+		 */
+		const GPlatesAppLogic::Layer &
+		get_layer() const
+		{
+			return d_created_from_layer;
+		}
+
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &
 		get_georeferencing() const
 		{
@@ -77,9 +96,29 @@ namespace GPlatesViewOperations
 			return d_raster;
 		}
 
+		/**
+		 * Returns the optional polygon set used to reconstruct the raster.
+		 */
+		const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
+		get_reconstruct_raster_polygons() const
+		{
+			return d_reconstruct_raster_polygons;
+		}
+
 	private:
+		/**
+		 * The layer that this resolved raster was created in.
+		 */
+		GPlatesAppLogic::Layer d_created_from_layer;
+
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
 		GPlatesPropertyValues::RawRaster::non_null_ptr_type d_raster;
+
+		/**
+		 * The optional polygon set used to reconstruct the raster.
+		 */
+		boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type>
+				d_reconstruct_raster_polygons;
 	};
 }
 

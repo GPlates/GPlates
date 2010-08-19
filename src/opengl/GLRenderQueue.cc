@@ -26,6 +26,8 @@
 #include <boost/cast.hpp>
 
 #include "GLRenderQueue.h"
+#include "GLRenderTarget.h"
+#include "GLRenderTargetManager.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -40,7 +42,7 @@ GPlatesOpenGL::GLRenderQueue::GLRenderQueue() :
 
 GPlatesOpenGL::GLRenderOperationsTarget::non_null_ptr_type
 GPlatesOpenGL::GLRenderQueue::push_render_target(
-		const GLRenderTarget::non_null_ptr_type &render_target,
+		const GLRenderTargetType::non_null_ptr_type &render_target_type,
 		const GLStateGraph::non_null_ptr_type &render_target_state_graph)
 {
 	++d_current_render_pass_depth;
@@ -55,7 +57,7 @@ GPlatesOpenGL::GLRenderQueue::push_render_target(
 	d_current_render_pass = &*d_render_passes[d_current_render_pass_depth];
 
 	// Add the new render target onto the current render pass.
-	return d_current_render_pass->add_render_target(render_target, render_target_state_graph);
+	return d_current_render_pass->add_render_target(render_target_type, render_target_state_graph);
 }
 
 
@@ -68,15 +70,28 @@ GPlatesOpenGL::GLRenderQueue::pop_render_target()
 
 	--d_current_render_pass_depth;
 
-	// Point to the previous render pass.
-	d_current_render_pass = &*d_render_passes[d_current_render_pass_depth];
+	if (d_current_render_pass_depth < 0)
+	{
+		// Point to no render pass.
+		d_current_render_pass = NULL;
+	}
+	else
+	{
+		// Point to the previous render pass.
+		d_current_render_pass = &*d_render_passes[d_current_render_pass_depth];
+	}
 }
 
 
 void
 GPlatesOpenGL::GLRenderQueue::draw(
-		GLState &state)
+		GLRenderTargetManager &render_target_manager)
 {
+	GLRenderTarget::non_null_ptr_type initial_render_target =
+			render_target_manager.get_frame_buffer_render_target();
+
+	GLRenderTarget::non_null_ptr_type current_render_target = initial_render_target;
+
 	// Draw the render passes in reverse order to how they were pushed.
 	// This is because the render passes pushed first depend on the render passes pushed later.
 	render_pass_seq_type::reverse_iterator render_pass_iter = d_render_passes.rbegin();
@@ -85,6 +100,12 @@ GPlatesOpenGL::GLRenderQueue::draw(
 	{
 		const GLRenderPass::non_null_ptr_type &render_pass = *render_pass_iter;
 
-		render_pass->draw(state);
+		current_render_target = render_pass->draw(render_target_manager, current_render_target);
+	}
+
+	// Restore render target to the initial render target which is the main frame buffer.
+	if (current_render_target != initial_render_target)
+	{
+		initial_render_target->bind();
 	}
 }

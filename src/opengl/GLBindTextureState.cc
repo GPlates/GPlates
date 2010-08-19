@@ -51,7 +51,7 @@ GPlatesOpenGL::GLBindTextureState::gl_active_texture_ARB(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture >= GL_TEXTURE0_ARB &&
-					texture < GL_TEXTURE0_ARB + GLContext::get_texture_parameters().gl_texture0_ARB,
+					texture < GL_TEXTURE0_ARB + GLContext::TextureParameters::gl_texture0_ARB,
 			GPLATES_ASSERTION_SOURCE);
 
 	d_active_texture_ARB = texture;
@@ -63,6 +63,10 @@ GPlatesOpenGL::GLBindTextureState::gl_bind_texture(
 		GLenum target,
 		const GLTexture::shared_ptr_to_const_type &texture)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			texture,
+			GPLATES_ASSERTION_SOURCE);
+
 	d_target = target;
 	d_bind_texture = texture;
 }

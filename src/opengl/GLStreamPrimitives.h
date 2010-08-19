@@ -930,7 +930,7 @@ namespace GPlatesOpenGL
 				if (tex_coord_pointer)
 				{
 					vertex_array->gl_client_active_texture_ARB(
-							GLContext::get_texture_parameters().gl_texture0_ARB + n);
+							GLContext::TextureParameters::gl_texture0_ARB + n);
 					vertex_array->gl_tex_coord_pointer(tex_coord_pointer.get());
 				}
 			}

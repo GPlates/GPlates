@@ -21,7 +21,6 @@ set(srcs
     CgalUtils.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
-    CubeQuadTree.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
@@ -91,6 +90,8 @@ set(srcs
     ReconstructionTreePopulator.h
     ReconstructLayerTask.cc
     ReconstructLayerTask.h
+    ReconstructRasterPolygons.cc
+    ReconstructRasterPolygons.h
     ReconstructUtils.cc
     ReconstructUtils.h
     ResolvedRaster.cc

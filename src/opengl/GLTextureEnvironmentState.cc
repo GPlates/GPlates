@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -52,7 +51,7 @@ GPlatesOpenGL::GLTextureEnvironmentState::gl_active_texture_ARB(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture >= GL_TEXTURE0_ARB &&
-					texture < GL_TEXTURE0_ARB + GLContext::get_texture_parameters().gl_texture0_ARB,
+					texture < GL_TEXTURE0_ARB + GLContext::TextureParameters::gl_texture0_ARB,
 			GPLATES_ASSERTION_SOURCE);
 
 	d_active_texture_ARB = texture;

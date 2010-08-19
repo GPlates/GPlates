@@ -63,6 +63,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+
 	/**
 	 * An arbitrary dimension raster image represented as a multi-resolution pyramid
 	 * of tiled OpenGL textures and associated vertex meshes.
@@ -172,6 +174,8 @@ namespace GPlatesOpenGL
 		 *
 		 * If @a tile_texel_dimension is greater than the maximum texture size supported
 		 * by the run-time system then it will be reduced to the maximum texture size.
+		 *
+		 * Returns false if @a raster is not a proxy raster or if it's uninitialised.
 		 */
 		static
 		boost::optional<non_null_ptr_type>
@@ -208,21 +212,76 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Renders all tiles visible in the view frustum of the current render target
+		 * of @a renderer.
+		 *
+		 * NOTE: The only OpenGL state set by this method is binding the individual
+		 * tile textures to texture unit zero.
+		 * The caller is responsible for everything else including enabling texturing.
+		 *
+		 * A positive @a level_of_detail_bias can be used to relax the constraint that
+		 * the rendered raster have texels that are less or equal to the size of a pixel
+		 * of the viewport (to avoid blockiness or blurriness of the rendered raster).
+		 * The @a level_of_detail_bias is a log2 so 1.0 means use a level of detail texture
+		 * that requires half the resolution (eg, 256x256 instead of 512x512) of what would
+		 * normally be used if a LOD bias of zero were used, and 2.0 means a quarter
+		 * (eg, 128x128 instead of 512x512). Fractional values are allowed (and more useful).
+		 */
+		void
+		render(
+				GLRenderer &renderer,
+				float level_of_detail_bias = 0.0f);
+
+
+		/**
+		 * Renders the specified tiles to the current render target of @a renderer.
+		 */
+		void
+		render(
+				GLRenderer &renderer,
+				const std::vector<tile_handle_type> &tiles);
+
+
+		/**
+		 * Returns the number of levels of detail.
+		 *
+		 * The highest resolution (original raster) is level 0 and the lowest
+		 * resolution level is 'N-1' where 'N' is the number of levels.
+		 */
+		std::size_t
+		get_num_levels_of_detail() const
+		{
+			return d_level_of_detail_pyramid.size();
+		}
+
+
+		/**
 		 * Returns a list of tiles  that are visible the inside the view frustum planes defined
 		 * by the transform state @a transform_state.
 		 *
 		 * All returned tiles are from the same level-of-detail in the multi-resolution raster.
 		 *
-		 * Returns the lowest resolution level-of-detail that adequately fulfills the resolution
+		 * Returns the lowest resolution tiles that adequately fulfill the resolution
 		 * needs of the current render target (or the highest level-of-detail if none of the
 		 * level-of-details is adequate).
 		 * The required resolution is determined by the current viewport dimensions and the
 		 * current model-view-projection transform (both provided by @a transform_state).
+		 *
+		 * See @a render for a description of @a level_of_detail_bias.
+		 *
+		 * Also returns the unclamped exact floating-point level-of-detail factor that theoretically
+		 * represents the exact level-of-detail that would be required to fulfill the resolution
+		 * needs of the current render target (as defined by @a transform_state).
+		 * Since tiles are only at integer level-of-detail factors, and are clamped to lie
+		 * in the range [0,N) where 'N' is the integer returned by @a get_num_levels_of_detail,
+		 * an unclampled floating-point number is only useful to determine if the current
+		 * render target is big enough or if it's too big, ie, if it's outside the range [0,N).
 		 */
-		void
+		float
 		get_visible_tiles(
 				const GLTransformState &transform_state,
-				std::vector<tile_handle_type> &visible_tiles) const;
+				std::vector<tile_handle_type> &visible_tiles,
+				float level_of_detail_bias = 0.0f) const;
 
 
 		/**
@@ -503,12 +562,6 @@ namespace GPlatesOpenGL
 			unsigned int lod_level;
 
 			/**
-			 * The maximum size of any texel in this level-of-detail
-			 * projected onto the unit sphere.
-			 */
-			float max_texel_size_on_unit_sphere;
-
-			/**
 			 * The OBB tree nodes are stored here.
 			 */
 			obb_tree_node_seq_type obb_tree_nodes;
@@ -583,6 +636,14 @@ namespace GPlatesOpenGL
 		level_of_detail_tile_seq_type d_tiles;
 
 		level_of_detail_seq_type d_level_of_detail_pyramid;
+
+		/**
+		 * The maximum size of any texel in the original raster (the highest resolution
+		 * level-of-detail) when projected onto the unit sphere.
+		 *
+		 * This is used for level-of-detail selection.
+		 */
+		float d_max_highest_resolution_texel_size_on_unit_sphere;
 
 		/**
 		 * This raster has its own cache of textures which gets reused/recycled as the
@@ -769,9 +830,11 @@ namespace GPlatesOpenGL
 		 * Returns the level-of-detail that fulfills the resolution requirements, and no more,
 		 * of the current viewport and projection of @a transform_state.
 		 */
-		const LevelOfDetail &
+		unsigned int
 		get_level_of_detail(
-				const GLTransformState &transform_state) const;
+				const GLTransformState &transform_state,
+				float level_of_detail_bias,
+				float &level_of_detail_factor) const;
 
 		/**
 		 * Recursively traverses OBB tree to find visible tiles.
@@ -826,6 +889,5 @@ namespace GPlatesOpenGL
 				const double &y_pixel_coord) const;
 	};
 }
-
 
 #endif // GPLATES_OPENGL_GLMULTIRESOLUTIONRASTER_H

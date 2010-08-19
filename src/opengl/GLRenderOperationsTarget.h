@@ -32,7 +32,7 @@
 #include <vector>
 
 #include "GLRenderOperation.h"
-#include "GLRenderTarget.h"
+#include "GLRenderTargetType.h"
 #include "GLStateGraph.h"
 #include "GLStateGraphNode.h"
 #include "GLStateSet.h"
@@ -43,7 +43,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLState;
+	class GLRenderTargetManager;
 
 	/**
 	 * All render operations that contribute to a render target as added to this class.
@@ -67,15 +67,16 @@ namespace GPlatesOpenGL
 		 * The state graph is stored here to keep the nodes in the state graph
 		 * alive until @a draw is called.
 		 *
-		 * Drawing will be done to @a render_target when @a draw is called.
+		 * Drawing will be done to a render target matching @a render_target_type
+		 * when @a draw is called.
 		 */
 		static
 		non_null_ptr_type
 		create(
-				const GLRenderTarget::non_null_ptr_type &render_target,
+				const GLRenderTargetType::non_null_ptr_type &render_target_type,
 				const GLStateGraph::non_null_ptr_type &state_graph)
 		{
-			return non_null_ptr_type(new GLRenderOperationsTarget(render_target, state_graph));
+			return non_null_ptr_type(new GLRenderOperationsTarget(render_target_type, state_graph));
 		}
 
 
@@ -103,10 +104,13 @@ namespace GPlatesOpenGL
 		 *
 		 * Render operations belong to render groups and the render groups are drawn
 		 * in the order of their integer render group number.
+		 *
+		 * Returns the most recently bound render target.
 		 */
-		void
+		GLRenderTarget::non_null_ptr_type
 		draw(
-				GLState &state);
+				GLRenderTargetManager &render_target_manager,
+				const GLRenderTarget::non_null_ptr_type &current_render_target);
 
 
 	private:
@@ -151,9 +155,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The render target destination into which render operations are drawn.
+		 * The type of render target destination into which render operations are drawn.
 		 */
-		GLRenderTarget::non_null_ptr_type d_render_target;
+		GLRenderTargetType::non_null_ptr_type d_render_target_type;
 
 		/**
 		 * This state graph contains the state graph nodes referenced by the render operations.
@@ -192,7 +196,7 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLRenderOperationsTarget(
-				const GLRenderTarget::non_null_ptr_type &render_target,
+				const GLRenderTargetType::non_null_ptr_type &render_target_type,
 				const GLStateGraph::non_null_ptr_type &state_graph);
 	};
 }

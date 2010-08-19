@@ -26,18 +26,27 @@
 #include <boost/foreach.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/optional.hpp>
+/*
+ * The OpenGL Extension Wrangler Library (GLEW).
+ * Must be included before the OpenGL headers (which also means before Qt headers).
+ * For this reason it's best to try and include it in ".cc" files only.
+ */
+#include <GL/glew.h>
+#include <QDebug>
 
+#include "GLContext.h"
 #include "GLMatrix.h"
 #include "GLRenderOperationsTarget.h"
+#include "GLState.h"
 #include "GLUtils.h"
 
 #include "global/CompilerWarnings.h"
 
 
 GPlatesOpenGL::GLRenderOperationsTarget::GLRenderOperationsTarget(
-		const GLRenderTarget::non_null_ptr_type &render_target,
+		const GLRenderTargetType::non_null_ptr_type &render_target_type,
 		const GLStateGraph::non_null_ptr_type &state_graph) :
-	d_render_target(render_target),
+	d_render_target_type(render_target_type),
 	d_state_graph(state_graph),
 	d_current_render_group_id( // Set to a value that should never be valid
 			boost::integer_traits<GLStateSet::render_group_type>::const_max),
@@ -107,12 +116,25 @@ GPlatesOpenGL::GLRenderOperationsTarget::add_render_operation(
 // cause GCC to warn about shadowed declarations.
 DISABLE_GCC_WARNING("-Wshadow")
 
-void
+GPlatesOpenGL::GLRenderTarget::non_null_ptr_type
 GPlatesOpenGL::GLRenderOperationsTarget::draw(
-		GLState &state)
+		GLRenderTargetManager &render_target_manager,
+		const GLRenderTarget::non_null_ptr_type &previous_render_target)
 {
-	// Start rendering to the render target.
-	d_render_target->begin_render_to_target();
+	GLRenderTarget::non_null_ptr_type current_render_target =
+			d_render_target_type->get_render_target(render_target_manager);
+
+	// If the render target has changed then bind the new render target.
+	if (current_render_target != previous_render_target)
+	{
+		current_render_target->bind();
+	}
+
+	// About to start rendering to the render target.
+	current_render_target->begin_render_to_target();
+
+	// Used to apply the state directly to OpenGL.
+	GLState state;
 
 	// Save the current model-view and projection matrices since we'll be loading
 	// them as we draw.
@@ -123,8 +145,8 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 
 	// Start the model-view and projection matrices off as identity - doesn't really matter
 	// as long as they point to a matrix other than those referenced by the render operations.
-	GLMatrix::non_null_ptr_to_const_type current_model_view_matrix = GLMatrix::create();
-	GLMatrix::non_null_ptr_to_const_type current_projection_matrix = GLMatrix::create();
+	GLTransform::non_null_ptr_to_const_type current_model_view_matrix = GLTransform::create(GL_MODELVIEW);
+	GLTransform::non_null_ptr_to_const_type current_projection_matrix = GLTransform::create(GL_PROJECTION);
 
 	// The current drawable.
 	boost::optional<GLDrawable::non_null_ptr_to_const_type> current_drawable;
@@ -147,22 +169,22 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 					render_sequence->render_operations)
 			{
 				// Load the model-view matrix into OpenGL if it's changed.
-				const GLMatrix::non_null_ptr_to_const_type &model_view_matrix =
+				const GLTransform::non_null_ptr_to_const_type &model_view_matrix =
 						render_operation->get_model_view_matrix();
 				if (model_view_matrix != current_model_view_matrix)
 				{
 					glMatrixMode(GL_MODELVIEW);
-					glLoadMatrixd(model_view_matrix->get_matrix());
+					glLoadMatrixd(model_view_matrix->get_matrix().get_matrix());
 					current_model_view_matrix = model_view_matrix;
 				}
 
 				// Load the projection matrix into OpenGL if it's changed.
-				const GLMatrix::non_null_ptr_to_const_type &projection_matrix =
+				const GLTransform::non_null_ptr_to_const_type &projection_matrix =
 						render_operation->get_projection_matrix();
 				if (projection_matrix != current_projection_matrix)
 				{
 					glMatrixMode(GL_PROJECTION);
-					glLoadMatrixd(projection_matrix->get_matrix());
+					glLoadMatrixd(projection_matrix->get_matrix().get_matrix());
 					current_projection_matrix = projection_matrix;
 				}
 
@@ -195,11 +217,13 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 
+	// Finished rendering to the render target.
+	current_render_target->end_render_to_target();
+
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 
-	// Stop rendering to the render target.
-	d_render_target->end_render_to_target();
+	return current_render_target;
 }
 
 // See above

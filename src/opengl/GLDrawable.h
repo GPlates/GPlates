@@ -27,6 +27,8 @@
 #ifndef GPLATES_OPENGL_GLDRAWABLE_H
 #define GPLATES_OPENGL_GLDRAWABLE_H
 
+#include "GLStateSet.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
 
@@ -93,6 +95,26 @@ namespace GPlatesOpenGL
 			draw();
 		}
 	};
+
+
+	/**
+	 * Utility function to render a drawable using a state set.
+	 *
+	 * The effect is the same as:
+	 * - 'push_state_set()' on a @a GLState, then
+	 * - 'bind_and_draw()' on drawable, then
+	 * - 'pop_state_set() on @a GLState'.
+	 */
+	inline
+	void
+	draw(
+			const GLDrawable::non_null_ptr_to_const_type &drawable,
+			const GLStateSet::non_null_ptr_to_const_type &state_set)
+	{
+		state_set->enter_state_set();
+		drawable->bind_and_draw();
+		state_set->leave_state_set();
+	}
 }
 
 #endif // GPLATES_OPENGL_GLDRAWABLE_H

@@ -37,6 +37,7 @@
 #include "Colour.h"
 #include "ColourScheme.h"
 #include "GlobeVisibilityTester.h"
+#include "PersistentOpenGLObjects.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
 
@@ -69,6 +70,7 @@ namespace GPlatesGui
 	public:
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
+				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				const double &inverse_viewport_zoom_factor,
 				const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer,
 				RenderSettings &render_settings,
@@ -76,6 +78,7 @@ namespace GPlatesGui
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme) :
 			d_rendered_geometry_layer(rendered_geometry_layer),
+			d_persistent_opengl_objects(persistent_opengl_objects),
 			d_nurbs_renderer(nurbs_renderer),
 			d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 			d_render_settings(render_settings),
@@ -295,7 +298,10 @@ namespace GPlatesGui
 		public:
 			PaintParams(
 					const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &
+							raster_primitives_on_the_sphere_node_,
+					const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &
 							text_off_the_sphere_node_) :
+				raster_primitives_on_the_sphere_node(raster_primitives_on_the_sphere_node_),
 				text_off_the_sphere_node(text_off_the_sphere_node_)
 			{  }
 
@@ -303,6 +309,7 @@ namespace GPlatesGui
 			PointLinePolygonDrawables opaque_drawables_on_the_sphere;
 			PointLinePolygonDrawables translucent_drawables_on_the_sphere;
 
+			GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type raster_primitives_on_the_sphere_node;
 			GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type text_off_the_sphere_node;
 		};
 
@@ -311,6 +318,12 @@ namespace GPlatesGui
 		boost::optional<PaintParams> d_paint_params;
 
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
+
+		/**
+		 * Keeps track of OpenGL-related objects that persist from one render to the next.
+		 */
+		PersistentOpenGLObjects::non_null_ptr_type d_persistent_opengl_objects;
+
 		GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs_renderer;
 		const double d_inverse_zoom_factor;
 
@@ -340,6 +353,18 @@ namespace GPlatesGui
 		 */
 		void
 		visit_rendered_geoms();
+
+		void
+		set_state_for_primitives_off_the_sphere(
+				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+
+		void
+		set_state_for_non_raster_primitives_on_the_sphere(
+				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+
+		void
+		set_state_for_text_off_the_sphere(
+				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
 
 		/**
 		 * Sets up alpha-blending and point/line anti-aliasing state.

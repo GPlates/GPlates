@@ -27,7 +27,12 @@
 #ifndef GPLATES_APP_LOGIC_RESOLVEDRASTER_H
 #define GPLATES_APP_LOGIC_RESOLVEDRASTER_H
 
+#include <boost/optional.hpp>
+
 #include "ReconstructionGeometry.h"
+
+#include "Layer.h"
+#include "ReconstructRasterPolygons.h"
 
 #include "model/FeatureHandle.h"
 #include "model/types.h"
@@ -70,21 +75,45 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Create a @a ResolvedRaster.
+		 *
+		 * @a created_from_layer is the layer this resolved raster was created in.
+		 * This is currently used so we can keep track of which persistent OpenGL objects
+		 * were created for which layer so that we can destroy them when the layer is destroyed.
+		 * FIXME: This is temporary until we implement a better way to handle persistent
+		 * objects downstream from the reconstruction process.
 		 */
 		static
 		const non_null_ptr_type
 		create(
+				const Layer &created_from_layer_,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> &
+						reconstruct_raster_polygons = boost::none
 				// FIXME: Add this back when raster is a property/band of a feature
 // 				GPlatesModel::FeatureHandle &feature_handle,
 // 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 		)
 		{
 			return non_null_ptr_type(
-					new ResolvedRaster(reconstruction_tree_, georeferencing, raster),
+					new ResolvedRaster(
+							created_from_layer_,
+							reconstruction_tree_,
+							georeferencing,
+							raster,
+							reconstruct_raster_polygons),
 					GPlatesUtils::NullIntrusivePointerHandler());
+		}
+
+
+		/**
+		 * Returns the layer that this resolved raster was created in.
+		 */
+		const Layer &
+		get_layer() const
+		{
+			return d_created_from_layer;
 		}
 
 
@@ -105,6 +134,16 @@ namespace GPlatesAppLogic
 		get_raster() const
 		{
 			return d_raster;
+		}
+
+
+		/**
+		 * Returns the optional polygon set used to reconstruct the raster.
+		 */
+		const boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> &
+		get_reconstruct_raster_polygons() const
+		{
+			return d_reconstruct_raster_polygons;
 		}
 
 
@@ -142,15 +181,25 @@ namespace GPlatesAppLogic
 		 * instantiation of this type on the stack.
 		 */
 		ResolvedRaster(
+				const Layer &created_from_layer_,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster) :
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> &
+						reconstruct_raster_polygons) :
 			ReconstructionGeometry(reconstruction_tree_),
+			d_created_from_layer(created_from_layer_),
 			d_georeferencing(georeferencing),
-			d_raster(raster)
+			d_raster(raster),
+			d_reconstruct_raster_polygons(reconstruct_raster_polygons)
 		{  }
 
 	private:
+		/**
+		 * The layer that this resolved raster was created in.
+		 */
+		Layer d_created_from_layer;
+
 		/**
 		 * The georeferencing parameters to position the raster onto the globe.
 		 */
@@ -160,6 +209,11 @@ namespace GPlatesAppLogic
 		 * The raster data.
 		 */
 		GPlatesPropertyValues::RawRaster::non_null_ptr_type d_raster;
+
+		/**
+		 * The optional polygon set used to reconstruct the raster.
+		 */
+		boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> d_reconstruct_raster_polygons;
 	};
 }
 

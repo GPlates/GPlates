@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "GLRenderOperationsTarget.h"
+#include "GLRenderTargetType.h"
 #include "GLStateGraph.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -38,7 +39,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLState;
+	class GLRenderTargetManager;
 
 	/**
 	 * A render pass is a grouping of render operations that need to be drawn before
@@ -80,16 +81,19 @@ namespace GPlatesOpenGL
 		 */
 		GLRenderOperationsTarget::non_null_ptr_type
 		add_render_target(
-				const GLRenderTarget::non_null_ptr_type &render_target,
+				const GLRenderTargetType::non_null_ptr_type &render_target_type,
 				const GLStateGraph::non_null_ptr_type &render_target_state_graph);
 
 
 		/**
 		 * Draws all render operations of all added render targets in the appropriate order.
+		 *
+		 * Returns the most recently bound render target.
 		 */
-		void
+		GLRenderTarget::non_null_ptr_type
 		draw(
-				GLState &state);
+				GLRenderTargetManager &render_target_manager,
+				const GLRenderTarget::non_null_ptr_type &current_render_target);
 
 	private:
 		//! Typedef for a sequence of render operations targets.

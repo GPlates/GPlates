@@ -46,6 +46,7 @@
 
 #include "gui/ColourScheme.h"
 #include "gui/Globe.h"
+#include "gui/PersistentOpenGLObjects.h"
 #include "gui/Texture.h"
 #include "gui/ViewportZoom.h"
 
@@ -57,6 +58,7 @@
 #include "opengl/GLClearBuffersState.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLRenderGraph.h"
+#include "opengl/GLRenderTargetManager.h"
 #include "opengl/GLTransform.h"
 #include "opengl/GLViewport.h"
 
@@ -540,6 +542,11 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 
+		/**
+		 * Manages render targets and creates them as needed.
+		 */
+		GPlatesOpenGL::GLRenderTargetManager::non_null_ptr_type d_gl_render_target_manager;
+
 		//! The OpenGL frame buffer clear values (colour, depth, etc).
 		GPlatesOpenGL::GLClearBuffersState::non_null_ptr_type d_gl_clear_buffers_state;
 
@@ -551,6 +558,9 @@ namespace GPlatesQtWidgets
 
 		//! The current projection transform for OpenGL.
 		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform;
+
+		//! Keeps track of OpenGL objects that persist from one render to another.
+		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
 
 
 		/**

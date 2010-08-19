@@ -198,17 +198,28 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
-	QGLWidget(parent_),
+	QGLWidget(
+			// We need an alpha channel in case falling back to main frame buffer for render textures...
+			QGLFormat(QGL::AlphaChannel),
+			parent_),
 	d_view_state(view_state),
-	d_gl_context(GPlatesOpenGL::GLContext::create()),
+	d_gl_context(
+			GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
+	d_gl_render_target_manager(GPlatesOpenGL::GLRenderTargetManager::create(d_gl_context)),
 	d_gl_clear_buffers_state(GPlatesOpenGL::GLClearBuffersState::create()),
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
 	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_persistent_objects(
+			GPlatesGui::PersistentOpenGLObjects::create(
+					d_gl_context, view_state.get_application_state())),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
 	d_globe(
+			d_gl_persistent_objects,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
 			view_state.get_texture(),
@@ -233,19 +244,37 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		bool mouse_wheel_enabled_,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
-	QGLWidget(parent_, existing_globe_canvas /* share display lists and texture objects */),
+	QGLWidget(
+			// We need an alpha channel in case falling back to main frame buffer for render textures...
+			QGLFormat(QGL::AlphaChannel),
+			// Share display lists and texture objects...
+			parent_, existing_globe_canvas),
 	d_view_state(view_state_),
 	d_gl_context(isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
-			? GPlatesOpenGL::GLContext::create(*existing_globe_canvas->d_gl_context)
-			: GPlatesOpenGL::GLContext::create()),
+			? GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)),
+					*existing_globe_canvas->d_gl_context)
+			: GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
+	d_gl_render_target_manager(GPlatesOpenGL::GLRenderTargetManager::create(d_gl_context)),
 	d_gl_clear_buffers_state(GPlatesOpenGL::GLClearBuffersState::create()),
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
 	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_persistent_objects(
+			// Attempt to share OpenGL resources across contexts.
+			// This will depend on whether the two 'GLContext's share any state.
+			GPlatesGui::PersistentOpenGLObjects::create(
+					d_gl_context,
+					existing_globe_canvas->d_gl_persistent_objects,
+					view_state_.get_application_state())),
 	d_virtual_mouse_pointer_pos_on_globe(virtual_mouse_pointer_pos_on_globe_),
 	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
 	d_globe(
 			existing_globe_,
+			d_gl_persistent_objects,
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme_),
@@ -564,7 +593,6 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
 		// Fill up the render graph with more nodes.
 		d_globe.paint(
-				d_gl_context->get_shared_state(),
 				globe_render_graph_node,
 				viewport_zoom_factor,
 				calculate_scale());
@@ -775,15 +803,15 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// This is used for the coordinate of the further clipping plane in the depth dimension.
 	GLdouble depth_far_clipping = fabsf(EYE_Z);
 
-	d_gl_projection_transform->gl_load_identity();
+	d_gl_projection_transform->get_matrix().gl_load_identity();
 
 	if (d_canvas_screen_width <= d_canvas_screen_height) {
-		d_gl_projection_transform->gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,
+		d_gl_projection_transform->get_matrix().gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,
 			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
 			depth_far_clipping);
 
 	} else {
-		d_gl_projection_transform->gl_ortho(-larger_dim_clipping, larger_dim_clipping,
+		d_gl_projection_transform->get_matrix().gl_ortho(-larger_dim_clipping, larger_dim_clipping,
 			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
 			depth_far_clipping);
 	}
@@ -868,7 +896,7 @@ GPlatesQtWidgets::GlobeCanvas::clear_canvas(
 	d_gl_clear_buffers_state->gl_clear_color(c.red(), c.green(), c.blue(), c.alpha());
 	// Apply the clear buffers colour (and depth, etc) to OpenGL and
 	// then clear the buffers.
-	draw(d_gl_clear_buffers, d_gl_clear_buffers_state, d_gl_context->get_state());
+	draw(d_gl_clear_buffers, d_gl_clear_buffers_state);
 }
 
 
@@ -902,13 +930,13 @@ GPlatesQtWidgets::GlobeCanvas::initialise_render_graph(
 	//
 	GPlatesOpenGL::GLTransform::non_null_ptr_type model_view_transform =
 			GPlatesOpenGL::GLTransform::create(GL_MODELVIEW);
-	model_view_transform->gl_translate(EYE_X, EYE_Y, EYE_Z);
+	model_view_transform->get_matrix().gl_translate(EYE_X, EYE_Y, EYE_Z);
 	// Set up our universe coordinate system (the standard geometric one):
 	//   Z points up
 	//   Y points right
 	//   X points out of the screen
-	model_view_transform->gl_rotate(-90.0, 1.0, 0.0, 0.0);
-	model_view_transform->gl_rotate(-90.0, 0.0, 0.0, 1.0);
+	model_view_transform->get_matrix().gl_rotate(-90.0, 1.0, 0.0, 0.0);
+	model_view_transform->get_matrix().gl_rotate(-90.0, 0.0, 0.0, 1.0);
 
 	// Create an internal node to store the model-view transform.
 	// Only one transform can be stored on a node so just create a new child node.
@@ -935,7 +963,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_render_graph(
 			render_graph_culler.get_render_queue();
 
 	// Draw the render queue.
-	render_queue->draw(d_gl_context->get_state());
+	render_queue->draw(*d_gl_render_target_manager);
 }
 
 

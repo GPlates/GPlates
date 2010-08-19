@@ -25,7 +25,6 @@
 
 #include "GLStateGraphBuilder.h"
 
-#include "GLState.h"
 #include "GLStateGraphNode.h"
 
 #include "global/GPlatesAssert.h"

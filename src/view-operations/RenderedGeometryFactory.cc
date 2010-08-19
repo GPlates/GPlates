@@ -189,11 +189,14 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_spher
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
+		const GPlatesAppLogic::Layer &layer,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster)
+		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+		const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
+						reconstruct_raster_polygons)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
-			new RenderedResolvedRaster(georeferencing, raster));
+			new RenderedResolvedRaster(layer, georeferencing, raster, reconstruct_raster_polygons));
 
 	return RenderedGeometry(rendered_geom_impl);
 }

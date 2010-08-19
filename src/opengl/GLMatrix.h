@@ -29,9 +29,6 @@
 
 #include <opengl/OpenGL.h>
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/ReferenceCount.h"
-
 
 namespace GPlatesMaths
 {
@@ -62,60 +59,9 @@ namespace GPlatesOpenGL
 	 * Any matrix transformations done by @a GLMatrix instead of a quaternion are purely
 	 * view/visual related such as changing the view position, rotating the globe, etc.
 	 */
-	class GLMatrix :
-			public GPlatesUtils::ReferenceCount<GLMatrix>
+	class GLMatrix
 	{
 	public:
-		//! A convenience typedef for a shared pointer to a non-const @a GLMatrix.
-		typedef GPlatesUtils::non_null_intrusive_ptr<GLMatrix> non_null_ptr_type;
-
-		//! A convenience typedef for a shared pointer to a const @a GLMatrix.
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GLMatrix> non_null_ptr_to_const_type;
-
-
-		/**
-		 * Creates a @a GLMatrix object - creates identity matrix.
-		 */
-		static
-		non_null_ptr_type
-		create()
-		{
-			return non_null_ptr_type(new GLMatrix());
-		}
-
-		/**
-		 * Creates a @a GLMatrix object - creates arbitrary 4x4 matrix.
-		 *
-		 * The format of @a m must be column-major:
-		 *
-		 * | m0 m4 m8  m12 |
-		 * | m1 m5 m9  m13 |
-		 * | m2 m6 m10 m14 |
-		 * | m3 m7 m11 m15 |
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const GLdouble *matrix)
-		{
-			return non_null_ptr_type(new GLMatrix(matrix));
-		}
-
-		/**
-		 * Creates a @a GLMatrix object - creates matrix from a quaternion.
-		 *
-		 * Constructs 4x4 matrix from specified unit quaternion (note only the 3x3 rotation
-		 * part of the matrix is initialised - the rest is set to zero).
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const GPlatesMaths::UnitQuaternion3D &quaternion)
-		{
-			return non_null_ptr_type(new GLMatrix(quaternion));
-		}
-
-
 		//! Constructor - creates identity matrix.
 		GLMatrix()
 		{
@@ -146,17 +92,6 @@ namespace GPlatesOpenGL
 		explicit
 		GLMatrix(
 				const GPlatesMaths::UnitQuaternion3D &quaternion);
-
-		/**
-		 * Returns a clone of 'this' matrix.
-		 */
-		non_null_ptr_type
-		clone()
-		{
-			// This class is not copy-constructable due to ReferenceCount base class
-			// so use a non-copy constructor instead that achieves the same effect.
-			return non_null_ptr_type(new GLMatrix(get_matrix()));
-		}
 
 
 		//! Performs function of similarly named OpenGL function.
@@ -200,6 +135,94 @@ namespace GPlatesOpenGL
 		GLMatrix &
 		gl_mult_matrix(
 				const GLdouble *matrix);
+
+		/**
+		 * Converts @a quaternion to a 3x3 OpenGL format matrix and post-multiplies it
+		 * with the current internal matrix.
+		 */
+		GLMatrix &
+		gl_mult_matrix(
+				const GPlatesMaths::UnitQuaternion3D &quaternion)
+		{
+			const GLMatrix quat_matrix(quaternion);
+			gl_mult_matrix(quat_matrix);
+			return *this;
+		}
+
+
+		//! Performs function of similarly named OpenGL function (including post-multiplication).
+		GLMatrix &
+		gl_translate(
+				double x,
+				double y,
+				double z);
+
+		//! Performs function of similarly named OpenGL function (including post-multiplication).
+		GLMatrix &
+		gl_rotate(
+				double angle,
+				double x,
+				double y,
+				double z);
+
+		//! Performs function of similarly named OpenGL function (including post-multiplication).
+		GLMatrix &
+		gl_scale(
+				double x,
+				double y,
+				double z);
+
+		//! Performs function of similarly named OpenGL function (including post-multiplication).
+		GLMatrix &
+		gl_ortho(
+				double left,
+				double right,
+				double bottom,
+				double top,
+				double zNear,
+				double zFar);
+
+		//! Performs function of similarly named OpenGL function (including post-multiplication).
+		GLMatrix &
+		gl_frustum(
+				double left,
+				double right,
+				double bottom,
+				double top,
+				double zNear,
+				double zFar);
+
+		//! Performs function of similarly named OpenGL function (including post-multiplication).
+		GLMatrix &
+		glu_look_at(
+				double eyex,
+				double eyey,
+				double eyez,
+				double centerx,
+				double centery,
+				double centerz,
+				double upx,
+				double upy,
+				double upz);
+
+		//! Performs function of similarly named OpenGL function (including post-multiplication).
+		GLMatrix &
+		glu_ortho_2D(
+				double left,
+				double right,
+				double bottom,
+				double top)
+		{
+			return gl_ortho(left, right, bottom, top, -1.0, 1.0);
+		}
+
+		//! Performs function of similarly named OpenGL function (including post-multiplication).
+		GLMatrix &
+		glu_perspective(
+				double fovy,
+				double aspect,
+				double zNear,
+				double zFar);
 
 
 		////////////////////////////

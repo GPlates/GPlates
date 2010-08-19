@@ -34,6 +34,7 @@
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryCollectionPainter.h"
 #include "OpaqueSphere.h"
+#include "PersistentOpenGLObjects.h"
 #include "SphericalGrid.h"
 #include "SimpleGlobeOrientation.h"
 #include "TextRenderer.h"
@@ -68,6 +69,7 @@ namespace GPlatesGui
 	public:
 
 		Globe(
+				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				ProxiedTexture &texture_,
@@ -79,6 +81,7 @@ namespace GPlatesGui
 		//! To clone a Globe
 		Globe(
 				Globe &existing_globe,
+				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -114,7 +117,6 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
-				const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 				const double &viewport_zoom_factor,
 				float scale);
@@ -151,6 +153,10 @@ namespace GPlatesGui
 		}
 
 	private:
+		/**
+		 * Keeps track of OpenGL-related objects that persist from one render to the next.
+		 */
+		const PersistentOpenGLObjects::non_null_ptr_type d_persistent_opengl_objects;
 			
 		//! Flags to determine what data to show
 		RenderSettings &d_render_settings;

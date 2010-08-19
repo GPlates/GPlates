@@ -121,6 +121,8 @@ set(srcs
     Mipmapper.h
     OpaqueSphere.cc
     OpaqueSphere.h
+    PersistentOpenGLObjects.cc
+    PersistentOpenGLObjects.h
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
     ProjectionException.h

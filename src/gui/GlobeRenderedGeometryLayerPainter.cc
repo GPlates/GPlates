@@ -31,6 +31,9 @@
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 
+#include "RasterColourPalette.h"
+#include "RasterColourScheme.h"
+
 #include "maths/EllipseGenerator.h"
 #include "maths/Real.h"
 #include "maths/Rotation.h"
@@ -41,6 +44,7 @@
 #include "opengl/GLCompositeDrawable.h"
 #include "opengl/GLCompositeStateSet.h"
 #include "opengl/GLDrawable.h"
+#include "opengl/GLFragmentTestStates.h"
 #include "opengl/GLMaskBuffersState.h"
 #include "opengl/GLPointLinePolygonState.h"
 #include "opengl/GLRenderGraphDrawableNode.h"
@@ -49,15 +53,19 @@
 #include "opengl/GLVertexArray.h"
 #include "opengl/GLVertexElementArray.h"
 
+#include "property-values/RawRaster.h"
+#include "property-values/RawRasterUtils.h"
+
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
+#include "view-operations/RenderedGeometryCollectionVisitor.h"
+#include "view-operations/RenderedGeometryUtils.h"
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
+#include "view-operations/RenderedResolvedRaster.h"
 #include "view-operations/RenderedString.h"
-#include "view-operations/RenderedGeometryCollectionVisitor.h"
-#include "view-operations/RenderedGeometryUtils.h"
 #include "view-operations/RenderedSmallCircle.h"
 #include "view-operations/RenderedSmallCircleArc.h"
 
@@ -69,6 +77,32 @@ namespace
 	 */
 	const double GCA_DISTANCE_THRESHOLD_DOT = std::cos(GPlatesMaths::PI / 36.0);
 	const double TWO_PI = 2. * GPlatesMaths::PI;
+
+	// Setup a default colour scheme for non-RGBA rasters...
+	// This should work for all raster types.
+	boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type>
+	create_default_raster_colour_scheme(
+			const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raw_raster)
+	{
+		GPlatesPropertyValues::RasterStatistics *statistics_ptr =
+			GPlatesPropertyValues::RawRasterUtils::get_raster_statistics(*raw_raster);
+		if (!statistics_ptr)
+		{
+			return boost::none;
+		}
+
+		GPlatesPropertyValues::RasterStatistics &statistics = *statistics_ptr;
+		if (!statistics.mean || !statistics.standard_deviation)
+		{
+			return boost::none;
+		}
+		double mean = *statistics.mean;
+		double std_dev = *statistics.standard_deviation;
+		GPlatesGui::DefaultRasterColourPalette::non_null_ptr_type rgba8_palette =
+				GPlatesGui::DefaultRasterColourPalette::create(mean, std_dev);
+
+		return GPlatesGui::RasterColourScheme::create<double>("band name", rgba8_palette);
+	}
 } // anonymous namespace
 
 
@@ -185,34 +219,27 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 	// are *off* the sphere we can limit them to being opaque.
 	//
 
-	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type primitives_on_the_sphere_node =
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type non_raster_primitives_on_the_sphere_node =
+			GPlatesOpenGL::GLRenderGraphInternalNode::create();
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type raster_primitives_on_the_sphere_node =
 			GPlatesOpenGL::GLRenderGraphInternalNode::create();
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type primitives_off_the_sphere_node =
 			GPlatesOpenGL::GLRenderGraphInternalNode::create();
 
-	//
-	// Note: only setting depth write state here as parent nodes have already
-	// turned on depth testing.
-	//
+	// Only setting for non-raster primitives - the raster primitives will handle their own state.
+	set_state_for_non_raster_primitives_on_the_sphere(*non_raster_primitives_on_the_sphere_node);
 
-	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type primitives_on_the_sphere_depth_mask_state =
-			GPlatesOpenGL::GLMaskBuffersState::create();
-	primitives_on_the_sphere_depth_mask_state->gl_depth_mask(GL_FALSE);
-	primitives_on_the_sphere_node->set_state_set(primitives_on_the_sphere_depth_mask_state);
-
-	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type primitives_off_the_sphere_depth_mask_state =
-			GPlatesOpenGL::GLMaskBuffersState::create();
-	primitives_off_the_sphere_depth_mask_state->gl_depth_mask(GL_TRUE);
-	primitives_off_the_sphere_node->set_state_set(primitives_off_the_sphere_depth_mask_state);
+	set_state_for_primitives_off_the_sphere(*primitives_off_the_sphere_node);
 
 	// Add each node as a child of the render layer node.
 	// The order they are rendered does not matter.
 	rendered_layer_node->add_child_node(primitives_off_the_sphere_node);
-	rendered_layer_node->add_child_node(primitives_on_the_sphere_node);
+	rendered_layer_node->add_child_node(non_raster_primitives_on_the_sphere_node);
+	rendered_layer_node->add_child_node(raster_primitives_on_the_sphere_node);
 
 
 	//
-	// To further complicate matters we also separate the primitives *on* the sphere into
+	// To further complicate matters we also separate the non-raster primitives *on* the sphere into
 	// two groups, opaque and translucent. This is because they have different alpha-blending and
 	// point/line anti-aliasing states. By adding primitives to each group (render graph node)
 	// we minimise changing OpenGL state back and forth (which can be costly).
@@ -230,8 +257,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 
 	// Add each node as a child of the primitives *on* the sphere node.
 	// The order they are rendered does not matter.
-	primitives_on_the_sphere_node->add_child_node(opaque_primitives_on_the_sphere_node);
-	primitives_on_the_sphere_node->add_child_node(translucent_primitives_on_the_sphere_node);
+	non_raster_primitives_on_the_sphere_node->add_child_node(opaque_primitives_on_the_sphere_node);
+	non_raster_primitives_on_the_sphere_node->add_child_node(translucent_primitives_on_the_sphere_node);
 
 	// Create a special node for adding 3D text.
 	// This is because the text is converted from 3D space to 2D window coordinates and hence
@@ -249,14 +276,12 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 			GPlatesOpenGL::GLRenderGraphInternalNode::create();
 	rendered_layer_node->add_child_node(text_off_the_sphere_node);
 
-	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type text_off_the_sphere_depth_mask_state =
-			GPlatesOpenGL::GLMaskBuffersState::create();
-	text_off_the_sphere_depth_mask_state->gl_depth_mask(GL_FALSE);
-	text_off_the_sphere_node->set_state_set(text_off_the_sphere_depth_mask_state);
-
+	set_state_for_text_off_the_sphere(*text_off_the_sphere_node);
 
 	// Initialise our paint parameters so our visit methods can access them.
-	d_paint_params = PaintParams(text_off_the_sphere_node);
+	d_paint_params = PaintParams(
+			raster_primitives_on_the_sphere_node,
+			text_off_the_sphere_node);
 
 	// Visit the rendered geometries in the rendered layer.
 	visit_rendered_geoms();
@@ -459,6 +484,24 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
 {
+	static const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> raster_colour_scheme =
+			create_default_raster_colour_scheme(rendered_resolved_raster.get_raster());
+
+	// We don't want to rebuild the OpenGL structures that render the raster each frame
+	// so those structures need to persist from one render to the next.
+	boost::optional<GPlatesOpenGL::GLRenderGraphNode::non_null_ptr_type> raster_render_graph_node =
+			d_persistent_opengl_objects->get_list_objects().get_or_create_raster_render_graph_node(
+					rendered_resolved_raster.get_layer(),
+					rendered_resolved_raster.get_georeferencing(),
+					rendered_resolved_raster.get_raster(),
+					raster_colour_scheme,
+					rendered_resolved_raster.get_reconstruct_raster_polygons());
+	if (!raster_render_graph_node)
+	{
+		return;
+	}
+
+	d_paint_params->raster_primitives_on_the_sphere_node->add_child_node(raster_render_graph_node.get());
 }
 
 
@@ -828,6 +871,73 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
 	stream_triangle_fans.end_triangle_fan();
 }
 
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_primitives_off_the_sphere(
+		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node)
+{
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
+	// Turn on depth testing.
+	GPlatesOpenGL::GLDepthTestState::non_null_ptr_type depth_test_state_set =
+			GPlatesOpenGL::GLDepthTestState::create();
+	depth_test_state_set->gl_enable(GL_TRUE);
+	state_set->add_state_set(depth_test_state_set);
+
+	// Turn on depth writes.
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type depth_mask_state_set =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	depth_mask_state_set->gl_depth_mask(GL_TRUE);
+	state_set->add_state_set(depth_mask_state_set);
+
+	render_graph_node.set_state_set(state_set);
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_non_raster_primitives_on_the_sphere(
+		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node)
+{
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
+	// Turn on depth testing.
+	GPlatesOpenGL::GLDepthTestState::non_null_ptr_type depth_test_state_set =
+			GPlatesOpenGL::GLDepthTestState::create();
+	depth_test_state_set->gl_enable(GL_TRUE);
+	state_set->add_state_set(depth_test_state_set);
+
+	// Turn off depth writes.
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type depth_mask_state_set =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	depth_mask_state_set->gl_depth_mask(GL_FALSE);
+	state_set->add_state_set(depth_mask_state_set);
+
+	render_graph_node.set_state_set(state_set);
+}
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_text_off_the_sphere(
+		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node)
+{
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
+	// Turn on depth testing.
+	GPlatesOpenGL::GLDepthTestState::non_null_ptr_type depth_test_state_set =
+			GPlatesOpenGL::GLDepthTestState::create();
+	depth_test_state_set->gl_enable(GL_TRUE);
+	state_set->add_state_set(depth_test_state_set);
+
+	// Turn off depth writes.
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type depth_mask_state_set =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	depth_mask_state_set->gl_depth_mask(GL_FALSE);
+	state_set->add_state_set(depth_mask_state_set);
+
+	render_graph_node.set_state_set(state_set);
+}
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::set_translucent_state(

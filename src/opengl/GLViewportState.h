@@ -53,10 +53,10 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const boost::optional<GLViewport> &old_viewport,
-				const GLViewport &new_viewport)
+				const GLViewport &new_viewport,
+				const boost::optional<GLViewport> &old_viewport = boost::none)
 		{
-			return non_null_ptr_type(new GLViewportState(old_viewport, new_viewport));
+			return non_null_ptr_type(new GLViewportState(new_viewport, old_viewport));
 		}
 
 
@@ -89,16 +89,16 @@ namespace GPlatesOpenGL
 		}
 
 	private:
-		boost::optional<GLViewport> d_old_viewport;
 		GLViewport d_new_viewport;
+		boost::optional<GLViewport> d_old_viewport;
 
 
 		//! Constructor
 		GLViewportState(
-				const boost::optional<GLViewport> &old_viewport,
-				const GLViewport &new_viewport) :
-			d_old_viewport(old_viewport),
-			d_new_viewport(new_viewport)
+				const GLViewport &new_viewport,
+				const boost::optional<GLViewport> &old_viewport) :
+			d_new_viewport(new_viewport),
+			d_old_viewport(old_viewport)
 		{  }
 	};
 }
