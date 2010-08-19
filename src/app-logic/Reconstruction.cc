@@ -101,16 +101,14 @@ GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::create_beg
 	reconstruction_tree_map_type::const_iterator lower_bound_iter =
 			reconstruction.d_reconstruction_tree_map.lower_bound(reconstruction_tree);
 
-	if (lower_bound_iter == reconstruction.d_reconstruction_tree_map.end())
-	{
-		return ConstReconstructionGeometryIterator(
-				&reconstruction,
+	boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator> iter =
+		get_next_valid_reconstruction_geometry_collection_iterator(
+				reconstruction,
 				lower_bound_iter);
-	}
 	return ConstReconstructionGeometryIterator(
-			&reconstruction,
-			lower_bound_iter,
-			lower_bound_iter->second->begin());
+				&reconstruction,
+				lower_bound_iter,
+				iter);
 }
 
 
@@ -122,16 +120,14 @@ GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::create_end
 	reconstruction_tree_map_type::const_iterator upper_bound_iter =
 			reconstruction.d_reconstruction_tree_map.upper_bound(reconstruction_tree);
 
-	if (upper_bound_iter == reconstruction.d_reconstruction_tree_map.end())
-	{
-		return ConstReconstructionGeometryIterator(
-				&reconstruction,
+	boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator> iter =
+		get_next_valid_reconstruction_geometry_collection_iterator(
+				reconstruction,
 				upper_bound_iter);
-	}
 	return ConstReconstructionGeometryIterator(
-			&reconstruction,
-			upper_bound_iter,
-			upper_bound_iter->second->begin());
+				&reconstruction,
+				upper_bound_iter,
+				iter);
 }
 
 
@@ -156,21 +152,39 @@ GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::operator++
 	if (d_reconstruction_geometry_collection_iterator ==
 		d_reconstruction_tree_map_iterator->second->end())
 	{
-		// See if we were at the last ReconstructionGeometryCollection in the map.
 		++d_reconstruction_tree_map_iterator;
-		if (d_reconstruction_tree_map_iterator !=
-			d_reconstruction->d_reconstruction_tree_map.end())
-		{
-			d_reconstruction_geometry_collection_iterator =
-					d_reconstruction_tree_map_iterator->second->begin();
-		}
-		else
-		{
-			d_reconstruction_geometry_collection_iterator = boost::none;
-		}
+		d_reconstruction_geometry_collection_iterator = 
+			get_next_valid_reconstruction_geometry_collection_iterator(
+					*d_reconstruction,
+					d_reconstruction_tree_map_iterator);
 	}
 
 	return *this;
+}
+
+boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
+GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::get_next_valid_reconstruction_geometry_collection_iterator(
+		const Reconstruction &reconstruction,	
+		reconstruction_tree_map_type::const_iterator map_iter)
+{
+	while(1)
+	{
+		if (map_iter == reconstruction.d_reconstruction_tree_map.end())
+		{
+			return boost::none;
+		}
+		
+		if(map_iter->second->begin() != map_iter->second->end())
+		{
+	
+			return map_iter->second->begin();
+		}
+		else
+		{
+			continue;
+		}
+		++map_iter;
+	}
 }
 
 

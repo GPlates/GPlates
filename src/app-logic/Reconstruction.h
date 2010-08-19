@@ -140,6 +140,14 @@ namespace GPlatesAppLogic
 							rhs.d_reconstruction_geometry_collection_iterator);
 			}
 
+		protected:
+			
+			static
+			boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
+			get_next_valid_reconstruction_geometry_collection_iterator(
+					const Reconstruction &reconstruction,
+					reconstruction_tree_map_type::const_iterator map_iter);
+
 		private:
 			const Reconstruction *d_reconstruction;
 			reconstruction_tree_map_type::const_iterator d_reconstruction_tree_map_iterator;
@@ -232,6 +240,7 @@ namespace GPlatesAppLogic
 			{
 				return lhs.d_reconstruction_tree_map_iterator == rhs.d_reconstruction_tree_map_iterator;
 			}
+		
 
 		private:
 			reconstruction_tree_map_type::const_iterator d_reconstruction_tree_map_iterator;
