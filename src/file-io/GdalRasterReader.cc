@@ -392,6 +392,43 @@ GPlatesFileIO::GDALRasterReader::get_number_of_bands(
 }
 
 
+std::pair<unsigned int, unsigned int>
+GPlatesFileIO::GDALRasterReader::get_size(
+		ReadErrorAccumulation *read_errors)
+{
+	unsigned int number_of_bands = get_number_of_bands(read_errors);
+	if (number_of_bands == 0)
+	{
+		return std::make_pair(0, 0);
+	}
+
+
+	// Note: GDAL bands are 1-based.
+	GDALRasterBand *band = get_raster_band(1, read_errors);
+	if (!band)
+	{
+		return std::make_pair(0, 0);
+	}
+
+	int width = band->GetXSize();
+	int height = band->GetYSize();
+
+	// Make sure all bands are the same size.
+	for (unsigned int i = 2; i != number_of_bands + 1; ++i)
+	{
+		band = get_raster_band(i, read_errors);
+		if (band &&
+				(band->GetXSize() != width ||
+				 band->GetYSize() != height))
+		{
+			return std::make_pair(0, 0);
+		}
+	}
+
+	return std::make_pair(width, height);
+}
+
+
 boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 GPlatesFileIO::GDALRasterReader::get_proxied_raw_raster(
 		unsigned int band_number,

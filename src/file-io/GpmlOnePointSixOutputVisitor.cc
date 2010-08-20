@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <utility>
+#include <boost/foreach.hpp>
 #include <QDir>
 #include <QDebug>
 #include <QFile>
@@ -47,11 +48,14 @@
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlDataBlock.h"
+#include "property-values/GmlFile.h"
+#include "property-values/GmlGridEnvelope.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
+#include "property-values/GmlRectifiedGrid.h"
 #include "property-values/GpmlPolarityChronId.h"
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GmlTimeInstant.h"
@@ -68,6 +72,7 @@
 #include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlRasterBandNames.h"
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTopologicalPolygon.h"
@@ -254,17 +259,32 @@ namespace
 	void
 	write_gml_point(
 			GPlatesFileIO::XmlWriter &xml_output,
-			const GPlatesMaths::PointOnSphere &point)
+			const GPlatesMaths::PointOnSphere &point,
+			GPlatesPropertyValues::GmlPoint::GmlProperty gml_property)
 	{
 		xml_output.writeStartGmlElement("Point");
-			xml_output.writeStartGmlElement("pos");
+			if (gml_property == GPlatesPropertyValues::GmlPoint::POS)
+			{
+				xml_output.writeStartGmlElement("pos");
 
-				GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
-				// NOTE: We are assuming GPML is using (lat,lon) ordering.
-				// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
-				xml_output.writeDecimalPair(llp.latitude(), llp.longitude());
+					GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+					// NOTE: We are assuming GPML is using (lat,lon) ordering.
+					// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+					xml_output.writeDecimalPair(llp.latitude(), llp.longitude());
 
-			xml_output.writeEndElement();  // </gml:pos>
+				xml_output.writeEndElement();  // </gml:pos>
+			}
+			else // GmlPoint::COORDINATES
+			{
+				xml_output.writeStartGmlElement("coordinates");
+
+					GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+					// NOTE: We are assuming GPML is using (lat,lon) ordering.
+					// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+					xml_output.writeCommaSeparatedDecimalPair(llp.latitude(), llp.longitude());
+
+				xml_output.writeEndElement();  // </gml:coordinates>
+			}
 		xml_output.writeEndElement();  // </gml:Point>
 	}
 
@@ -674,20 +694,20 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_data_block(
 
 	// First, output the <gml:CompositeValue> in the <gml:rangeParameters> (to mimic the
 	// example on p.251 of the GML book).
-	d_output.writeStartGmlElement("rangeParameters");
-	d_output.writeStartGmlElement("CompositeValue");
+		d_output.writeStartGmlElement("rangeParameters");
+			d_output.writeStartGmlElement("CompositeValue");
 
-	// Output each value-component in the composite-value.
-	// If the tuple-list is empty, the body of the for-loop will never be entered, so the
-	// <gml:CompositeValue> will be empty.
-	GmlDataBlock::tuple_list_type::const_iterator iter = gml_data_block.tuple_list_begin();
-	GmlDataBlock::tuple_list_type::const_iterator end = gml_data_block.tuple_list_end();
-	for ( ; iter != end; ++iter) {
-		write_gml_data_block_value_component_value_object_template(d_output, *iter);
-	}
+			// Output each value-component in the composite-value.
+			// If the tuple-list is empty, the body of the for-loop will never be entered, so the
+			// <gml:CompositeValue> will be empty.
+			GmlDataBlock::tuple_list_type::const_iterator iter = gml_data_block.tuple_list_begin();
+			GmlDataBlock::tuple_list_type::const_iterator end = gml_data_block.tuple_list_end();
+			for ( ; iter != end; ++iter) {
+				write_gml_data_block_value_component_value_object_template(d_output, *iter);
+			}
 
-	d_output.writeEndElement(); // </gml:CompositeValue>
-	d_output.writeEndElement(); // </gml:rangeParameters>
+			d_output.writeEndElement(); // </gml:CompositeValue>
+		d_output.writeEndElement(); // </gml:rangeParameters>
 
 	// Now output the <gml:tupleList>.
 	d_output.writeStartGmlElement("tupleList");
@@ -696,6 +716,91 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_data_block(
 	d_output.writeEndElement(); // </gml:tupleList>
 
 	d_output.writeEndElement(); // </gml:DataBlock>
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_file(
+		const GPlatesPropertyValues::GmlFile &gml_file)
+{
+	using namespace GPlatesPropertyValues;
+
+	d_output.writeStartGmlElement("File");
+
+	// First, output the <gml:CompositeValue> in the <gml:rangeParameters> (to mimic the
+	// example on p.252 of the GML book).
+		d_output.writeStartGmlElement("rangeParameters");
+			d_output.writeStartGmlElement("CompositeValue");
+
+				// Output each value-component in the composite-value with its attributes.
+				// The following code is based on write_gml_data_block_value_component_value_object_template
+				// in the anonymous namespace above; see the comments there for an explanation.
+				const GmlFile::composite_value_type &range_parameters = gml_file.range_parameters();
+				BOOST_FOREACH(const GmlFile::value_component_type &value_component, range_parameters)
+				{
+					d_output.writeStartGmlElement("valueComponent");
+						d_output.writeStartElement(value_component.first);
+						d_output.writeAttributes(
+								value_component.second.begin(),
+								value_component.second.end());
+
+							static const QString t("template");
+							d_output.writeText(t);
+
+						d_output.writeEndElement(); // close XML element tag of value-object.
+					d_output.writeEndElement(); // </gml:valueComponent>
+				}
+
+			d_output.writeEndElement();
+		d_output.writeEndElement(); // </gml:rangeParameters>
+
+		d_output.writeStartGmlElement("fileName");
+			d_output.writeRelativeFilePath(gml_file.file_name()->value().get());
+		d_output.writeEndElement(); // </gml:fileName>
+
+		d_output.writeStartGmlElement("fileStructure");
+			visit_xs_string(*gml_file.file_structure());
+		d_output.writeEndElement(); // </gml:fileStructure>
+
+		// The next two are optional.
+		const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type = gml_file.mime_type();
+		if (mime_type)
+		{
+			d_output.writeStartGmlElement("mimeType");
+				visit_xs_string(**mime_type);
+			d_output.writeEndElement(); // </gml:mimeType>
+		}
+
+		const boost::optional<XsString::non_null_ptr_to_const_type> &compression = gml_file.compression();
+		if (compression)
+		{
+			d_output.writeStartGmlElement("compression");
+				visit_xs_string(**compression);
+			d_output.writeEndElement(); // </gml:compression>
+		}
+
+	d_output.writeEndElement(); // </gml:File>
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_grid_envelope(
+		const GPlatesPropertyValues::GmlGridEnvelope &gml_grid_envelope)
+{
+	d_output.writeStartGmlElement("GridEnvelope");
+
+	const GPlatesPropertyValues::GmlGridEnvelope::integer_list_type &low = gml_grid_envelope.low();
+	const GPlatesPropertyValues::GmlGridEnvelope::integer_list_type &high = gml_grid_envelope.high();
+
+	d_output.writeStartGmlElement("low");
+	d_output.writeNumericalSequence(low.begin(), low.end());
+	d_output.writeEndElement(); // </gml:low>
+
+	d_output.writeStartGmlElement("high");
+	d_output.writeNumericalSequence(high.begin(), high.end());
+	d_output.writeEndElement(); // </gml:high>
+
+	d_output.writeEndElement(); // </gml:GridEnvelope>
 }
 
 
@@ -765,13 +870,19 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_multi_point(
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multipoint_ptr =
 			gml_multi_point.multipoint();
+	typedef std::vector<GPlatesPropertyValues::GmlPoint::GmlProperty> gml_properties_type;
+	const gml_properties_type &gml_properties = gml_multi_point.gml_properties();
 
 	GPlatesMaths::MultiPointOnSphere::const_iterator iter = multipoint_ptr->begin();
 	GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint_ptr->end();
-	for ( ; iter != end; ++iter) 
+
+	// gml_properties should have the same length as the multipoint.
+	gml_properties_type::const_iterator gml_properties_iter = gml_properties.begin();
+
+	for ( ; iter != end; ++iter, ++gml_properties_iter) 
 	{
 		d_output.writeStartGmlElement("pointMember");
-		write_gml_point(d_output, *iter);
+		write_gml_point(d_output, *iter, *gml_properties_iter);
 		d_output.writeEndElement(); // </gml:pointMember>
 	}
 
@@ -800,7 +911,7 @@ void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point) 
 {
-	write_gml_point(d_output, *gml_point.point());
+	write_gml_point(d_output, *gml_point.point(), gml_point.gml_property());
 }
 
 
@@ -825,6 +936,45 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_polygon(
 	}
 
 	d_output.writeEndElement(); // </gml:Polygon>
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_rectified_grid(
+		const GPlatesPropertyValues::GmlRectifiedGrid &gml_rectified_grid)
+{
+	using namespace GPlatesPropertyValues;
+
+	d_output.writeStartGmlElement("RectifiedGrid");
+	const GmlRectifiedGrid::xml_attributes_type &xml_attributes = gml_rectified_grid.xml_attributes();
+	d_output.writeAttributes(xml_attributes.begin(), xml_attributes.end());
+
+		d_output.writeStartGmlElement("limits");
+			visit_gml_grid_envelope(*gml_rectified_grid.limits());
+		d_output.writeEndElement(); // </gml:limits>
+
+		const GmlRectifiedGrid::axes_list_type &axes = gml_rectified_grid.axes();
+		BOOST_FOREACH(const XsString::non_null_ptr_to_const_type &axis, axes)
+		{
+			d_output.writeStartGmlElement("axisName");
+				visit_xs_string(*axis);
+			d_output.writeEndElement(); // </gml:axisName>
+		}
+
+		d_output.writeStartGmlElement("origin");
+			visit_gml_point(*gml_rectified_grid.origin());
+		d_output.writeEndElement(); // </gml:origin>
+
+		const GmlRectifiedGrid::offset_vector_list_type offset_vectors =
+			gml_rectified_grid.offset_vectors();
+		BOOST_FOREACH(const GmlRectifiedGrid::offset_vector_type &offset_vector, offset_vectors)
+		{
+			d_output.writeStartGmlElement("offsetVector");
+				d_output.writeNumericalSequence(offset_vector.begin(), offset_vector.end());
+			d_output.writeEndElement(); // </gml:offsetVector>
+		}
+
+	d_output.writeEndElement(); // </gml:RectifiedGrid>
 }
 
 
@@ -1229,6 +1379,25 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	d_output.writeInteger(gpml_plate_id.value());
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_raster_band_names(
+		const GPlatesPropertyValues::GpmlRasterBandNames &gpml_raster_band_names)
+{
+	d_output.writeStartGpmlElement("RasterBandNames");
+
+		const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &band_names =
+			gpml_raster_band_names.band_names();
+		BOOST_FOREACH(const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &band_name, band_names)
+		{
+			d_output.writeStartGpmlElement("bandName");
+				visit_xs_string(*band_name);
+			d_output.writeEndElement(); // <gpml:bandName>
+		}
+
+	d_output.writeEndElement(); // </gpml:RasterBandNames>
 }
 
 

@@ -49,12 +49,12 @@
     <addaction name="action_Open_Feature_Collection"/>
     <addaction name="action_Open_Raster"/>
     <addaction name="action_Open_Time_Dependent_Raster_Sequence"/>
-    <addaction name="action_File_Errors"/>
     <addaction name="separator"/>
     <addaction name="action_Import_Raster"/>
     <addaction name="action_Import_Time_Dependent_Raster"/>
     <addaction name="separator"/>
     <addaction name="action_Manage_Feature_Collections"/>
+    <addaction name="action_File_Errors"/>
     <addaction name="action_View_Shapefile_Attributes"/>
     <addaction name="separator"/>
     <addaction name="action_Quit"/>
@@ -87,9 +87,9 @@
     <addaction name="separator"/>
     <addaction name="action_Query_Feature"/>
     <addaction name="action_Edit_Feature"/>
-    <addaction name="action_Delete_Feature"/>
     <addaction name="action_Clone_Geometry"/>
     <addaction name="action_Clone_Feature"/>
+    <addaction name="action_Delete_Feature"/>
     <addaction name="separator"/>
     <addaction name="action_Clear_Selection"/>
    </widget>
@@ -615,6 +615,10 @@
    </property>
   </action>
   <action name="action_Open_Feature_Collection">
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/tango_document_open_16.png</normaloff>:/tango_document_open_16.png</iconset>
+   </property>
    <property name="text">
     <string>Open &amp;Feature Collection...</string>
    </property>
@@ -748,7 +752,7 @@
   </action>
   <action name="action_Open_Raster">
    <property name="text">
-    <string>Open &amp;Raster...</string>
+    <string>Open &amp;Raster (deprecated)...</string>
    </property>
   </action>
   <action name="action_Show_Point_Features">
@@ -834,7 +838,7 @@
   </action>
   <action name="action_Open_Time_Dependent_Raster_Sequence">
    <property name="text">
-    <string>Open &amp;Time-dependent Raster Sequence...</string>
+    <string>Open &amp;Time-dependent Raster Sequence (deprecated)...</string>
    </property>
   </action>
   <action name="action_Digitise_New_Polyline">

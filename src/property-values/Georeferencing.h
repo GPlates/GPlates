@@ -36,6 +36,7 @@
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
 
+
 namespace GPlatesPropertyValues
 {
 	/**
@@ -57,8 +58,6 @@ namespace GPlatesPropertyValues
 	 * coordinates for specific pixels in the raster. Pixels around the control
 	 * points are mapped to geographic coordinates using some arbitrary
 	 * interpolation function.
-	 *
-	 * FIXME: Turn this into a PropertyValue derivation!
 	 */
 	class Georeferencing :
 			public GPlatesUtils::ReferenceCount<Georeferencing>
@@ -151,7 +150,7 @@ namespace GPlatesPropertyValues
 					double top; // Max lat
 					double bottom; // Min lat
 					double left; // Min lon
-					double right; // Mat lon
+					double right; // Max lon
 				};
 			};
 		};
@@ -177,8 +176,8 @@ namespace GPlatesPropertyValues
 		static
 		non_null_ptr_type
 		create(
-				int raster_width,
-				int raster_height)
+				unsigned int raster_width,
+				unsigned int raster_height)
 		{
 			return new Georeferencing(
 					create_global_extents(
@@ -231,8 +230,16 @@ namespace GPlatesPropertyValues
 		 */
 		boost::optional<lat_lon_extents_type>
 		lat_lon_extents(
-				int raster_width,
-				int raster_height) const;
+				unsigned int raster_width,
+				unsigned int raster_height) const;
+
+		enum ConversionFromLatLonExtentsError
+		{
+			NONE,
+			BOTTOM_ABOVE_TOP,
+			TOP_EQUALS_BOTTOM,
+			LEFT_EQUALS_RIGHT
+		};
 
 		/**
 		 * Sets the affine transform parameters using lat-lon extents.
@@ -243,30 +250,30 @@ namespace GPlatesPropertyValues
 		 * If the latitude extents are outside of [-90, +90], the extents are clamped
 		 * to the nearest value in that range.
 		 *
-		 * Returns true if the extents were successfully set, false otherwise.
-		 * Extents cannot be set if the bottom is greater than the top.
+		 * Returns NONE if the extents were successfully set; returns an error code
+		 * if the extents were not set for any particular reason.
 		 */
-		bool
+		ConversionFromLatLonExtentsError
 		set_lat_lon_extents(
 				lat_lon_extents_type extents,
-				int raster_width,
-				int raster_height);
+				unsigned int raster_width,
+				unsigned int raster_height);
 
 		/**
 		 * Resets the affine transform so that the raster covers the entire globe.
 		 */
 		void
 		reset_to_global_extents(
-				int raster_width,
-				int raster_height);
+				unsigned int raster_width,
+				unsigned int raster_height);
 
 	private:
 
 		static
 		parameters_type
 		create_global_extents(
-				int raster_width,
-				int raster_height)
+				unsigned int raster_width,
+				unsigned int raster_height)
 		{
 			parameters_type result = {{{
 				-180 /* Top left x coordinate */,

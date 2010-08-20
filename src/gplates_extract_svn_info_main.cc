@@ -224,8 +224,9 @@ namespace
 	 * Where the branch name has a date in the above format at the end (this is not
 	 * required, but it is GPlates convention), the date is removed.
 	 *
-	 * If the working directory is trunk, or an error occurred while processing,
-	 * the empty string is returned.
+	 * If the working directory is trunk, the string "trunk" is returned.
+	 *
+	 * If an error was encountered, the string "internal release" is returned.
 	 */
 	QString
 	get_branch_name(
@@ -395,7 +396,12 @@ namespace
  * a compact version number for that working directory.
  *
  * Secondly, this program will run `svn info` on the working directory to obtain
- * the URL, from which the branch name (or trunk) is extracted.
+ * the URL, from which the branch name (or trunk) is extracted. Upon error, the
+ * branch name is set to "internal release". If you're reading these comments to
+ * work out why you have "internal release" plastered across the top of the
+ * GPlates main window, make sure that you have the command-line version of
+ * Subversion installed. If you're doing a public release, make sure
+ * CUSTOM_VERSION_NUMBER is set (see below).
  *
  * `svnversion` and `svn` are invoked without a full path. Thus, both of these
  * executables must reside in a directory in the system path.

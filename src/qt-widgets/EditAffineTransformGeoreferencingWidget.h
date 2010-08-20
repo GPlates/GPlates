@@ -34,10 +34,6 @@
 
 #include "property-values/Georeferencing.h"
 
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
 
 namespace GPlatesQtWidgets
 {
@@ -51,14 +47,32 @@ namespace GPlatesQtWidgets
 
 		explicit
 		EditAffineTransformGeoreferencingWidget(
-				GPlatesPresentation::ViewState *view_state,
+				GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
 				QWidget *parent_ = NULL);
 
+		/**
+		 * Repopulates the spinboxes depending on which page is currently visible.
+		 */
 		void
-		populate_from_data(
-				GPlatesPropertyValues::Georeferencing::non_null_ptr_type georeferencing,
-				int raster_width,
-				int raster_height);
+		refresh();
+
+		void
+		set_raster_size(
+				unsigned int raster_width,
+				unsigned int raster_height)
+		{
+			d_raster_width = raster_width;
+			d_raster_height = raster_height;
+		}
+
+	signals:
+
+		void
+		warning_visible_changed(
+				bool visible);
+
+		void
+		georeferencing_changed();
 
 	private slots:
 
@@ -91,23 +105,14 @@ namespace GPlatesQtWidgets
 		populate_affine_transform_spinboxes(
 				const affine_transform_type &parameters);
 
-		/**
-		 * Repopulates the spinboxes depending on which page is currently visible.
-		 */
-		void
-		refresh();
-
-		// FIXME: Remove this after we get rasters out of ViewState.
-		GPlatesPresentation::ViewState *d_view_state;
-
 		QDoubleSpinBox *d_extents_spinboxes[lat_lon_extents_type::NUM_COMPONENTS];
 		QDoubleSpinBox *d_affine_transform_spinboxes[affine_transform_type::NUM_COMPONENTS];
 
 		double d_last_known_extents_values[lat_lon_extents_type::NUM_COMPONENTS];
 		double d_last_known_affine_transform_values[affine_transform_type::NUM_COMPONENTS];
 
-		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_type> d_georeferencing;
-		int d_raster_width, d_raster_height;
+		GPlatesPropertyValues::Georeferencing::non_null_ptr_type &d_georeferencing;
+		unsigned int d_raster_width, d_raster_height;
 	};
 }
 

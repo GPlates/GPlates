@@ -71,7 +71,7 @@ The following tasks are required to add a new property type:
    GPlatesModel::PropertyValue::non_null_ptr_type  which is a copy of
    this  SignificantOther.
 
-   e) It's constructor(s) should be private.
+   e) Its constructor(s) should be private.
 
    f) The copy assignment operator should be declared private, but NOT
    defined.

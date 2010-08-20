@@ -28,6 +28,7 @@
 #define GPLATES_FILEIO_PROPERTYCREATIONUTILS_H
 
 #include <map>
+#include <boost/foreach.hpp>
 #include <QtXml/QXmlStreamReader>
 #include "model/PropertyName.h"
 #include "model/PropertyValue.h"
@@ -43,11 +44,14 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GmlFile.h"
+#include "property-values/GmlGridEnvelope.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlRectifiedGrid.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlTimeSample.h"
@@ -62,6 +66,7 @@
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlMeasure.h"
+#include "property-values/GpmlRasterBandNames.h"
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
@@ -471,6 +476,30 @@ namespace GPlatesFileIO
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
 
 		AS_PROP_VAL(create_key_value_dictionary)
+
+		GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
+		create_grid_envelope(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_grid_envelope)
+
+		GPlatesPropertyValues::GmlRectifiedGrid::non_null_ptr_type
+		create_rectified_grid(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_rectified_grid)
+
+		GPlatesPropertyValues::GmlFile::non_null_ptr_type
+		create_file(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_file)
+
+		GPlatesPropertyValues::GpmlRasterBandNames::non_null_ptr_type
+		create_raster_band_names(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_raster_band_names)
 	}
 }
 

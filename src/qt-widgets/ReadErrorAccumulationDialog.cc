@@ -286,6 +286,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::UnexpectedNonEmptyAttributeList,
 				QT_TR_NOOP("Unexpected attributes found"),
 				QT_TR_NOOP("XML attributes were encountered on a Feature element where none were expected.") },
+		{ GPlatesFileIO::ReadErrors::DuplicateRasterBandName,
+				QT_TR_NOOP("Duplicate raster band name found"),
+				QT_TR_NOOP("The list of band names in a raster Feature element contained duplicates.") },
 
 		// The following descriptions are related to ESRI shapefile input errors:
 		{ GPlatesFileIO::ReadErrors::NoLayersFoundInFile,

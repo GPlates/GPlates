@@ -169,6 +169,7 @@ namespace GPlatesFileIO
 			IncorrectVersionAttribute,
 			ParseError,
 			UnexpectedNonEmptyAttributeList,
+			DuplicateRasterBandName,
 
 			// The following are specific to GMAP vgp files
 			// FIXME: This is a generic GmapError, we should add more field-specific errors.

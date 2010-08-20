@@ -29,24 +29,25 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <QFile>
+#include <QFileInfo>
+#include <QDir>
 #include <QProcess>
 #include <QtXml/QXmlStreamReader>
-#include <boost/bind.hpp>
+
 
 #include "FileInfo.h"
 #include "ReadErrors.h"
 #include "ReadErrorOccurrence.h"
 #include "ExternalProgram.h"
-#include "global/GPlatesAssert.h"
 #include "PropertyCreationUtils.h"
 #include "FeaturePropertiesMap.h"
 #include "ErrorOpeningPipeFromGzipException.h"
 #include "ErrorOpeningFileForReadingException.h"
 
-#include "utils/StringUtils.h"
-#include "utils/UnicodeStringUtils.h"
+#include "global/GPlatesAssert.h"
 
 #include "maths/LatLonPoint.h"
 
@@ -72,6 +73,9 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/XsBoolean.h"
+
+#include "utils/StringUtils.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 const GPlatesFileIO::ExternalProgram &
@@ -457,6 +461,76 @@ namespace
 }
 
 
+namespace
+{
+	/**
+	 * Turns the relative file paths in the GPML into absolute file paths in the model.
+	 */
+	class MakeFilePathsAbsoluteVisitor :
+			public GPlatesModel::FeatureVisitor
+	{
+	public:
+
+		MakeFilePathsAbsoluteVisitor(
+				const QString &absolute_path) :
+			d_absolute_path(absolute_path)
+		{
+			if (!d_absolute_path.endsWith("/"))
+			{
+				d_absolute_path.append("/");
+			}
+		}
+
+		virtual
+		void
+		visit_gml_file(
+				GPlatesPropertyValues::GmlFile &gml_file)
+		{
+			const UnicodeString &filename = gml_file.file_name()->value().get();
+			QString filename_qstring = GPlatesUtils::make_qstring_from_icu_string(filename);
+			
+			// Only fix if the filename in the GPML is relative.
+			// Even if GPlates only ever writes relative filenames, there's
+			// nothing to stop an absolute filename appearing
+			if (QFileInfo(filename_qstring).isRelative())
+			{
+				QString result_qstring = QDir::cleanPath(d_absolute_path + filename_qstring);
+
+				// qDebug() << result_qstring;
+
+				UnicodeString result = GPlatesUtils::make_icu_string_from_qstring(result_qstring);
+				gml_file.set_file_name(GPlatesPropertyValues::XsString::create(result));
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		{
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+				gpml_piecewise_aggregation.time_windows();
+			BOOST_FOREACH(GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+			{
+				time_window.time_dependent_value()->accept_visitor(*this);
+			}
+		}
+
+	private:
+
+		QString d_absolute_path;
+	};
+}
+
+
 void
 GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		const File::Reference &file,
@@ -550,6 +624,14 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 						ReadErrors::ParseError, 
 						ReadErrors::ParsingStoppedPrematurely));
 		}
+	}
+
+	// Turns relative paths into absolute paths in all GmlFile instances.
+	MakeFilePathsAbsoluteVisitor visitor(fileinfo.get_qfileinfo().absolutePath());
+	for (GPlatesModel::FeatureCollectionHandle::iterator iter = collection->begin();
+			iter != collection->end(); ++iter)
+	{
+		visitor.visit_feature(iter);
 	}
 }
 

@@ -112,7 +112,6 @@ namespace GPlatesQtWidgets
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
-	class ImportRasterDialog;
 	class ManageFeatureCollectionsDialog;
 	class MeshDialog;
 	class ReadErrorAccumulationDialog;
@@ -476,7 +475,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
-		boost::scoped_ptr<ImportRasterDialog> d_import_raster_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
 		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
@@ -570,6 +568,13 @@ namespace GPlatesQtWidgets
 
 		//! The last path used for opening raster files.
 		QString d_open_file_path; 
+
+		/**
+		 * To help users adjust to the new layers system, we'll open up the layers
+		 * dialog the first time (and only the first time) a new layer gets added.
+		 * This variable is true iff that has already happened.
+		 */
+		bool d_layering_dialog_opened_automatically_once;
 
 		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
@@ -710,7 +715,15 @@ namespace GPlatesQtWidgets
 		pop_up_import_raster_dialog();
 
 		void
+		pop_up_import_raster_dialog(
+				bool time_dependent_raster);
+
+		void
 		pop_up_import_time_dependent_raster_dialog();
+
+		void
+		handle_visual_layer_added(
+				size_t index);
 
 	protected:
 	

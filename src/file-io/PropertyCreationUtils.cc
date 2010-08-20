@@ -28,27 +28,40 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <utility>
+#include <set>
+#include <boost/optional.hpp>
+#include <boost/bind.hpp>
+#include <boost/current_function.hpp>
+#include <boost/foreach.hpp>
+#include <QTextStream>
+#include <QStringList>
+
 #include "PropertyCreationUtils.h"
-#include "StructurePropertyCreatorMap.h"
+
 #include "GpmlReaderUtils.h"
-#include "utils/UnicodeStringUtils.h"
+#include "StructurePropertyCreatorMap.h"
+
+#include "global/GPlatesException.h"
+
 #include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+
 #include "model/types.h"
+
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/TemplateTypeParameterType.h"
-#include <boost/optional.hpp>
-#include <boost/bind.hpp>
-#include <boost/current_function.hpp>
-#include <iostream>
-#include <iterator>
-#include <QTextStream>
-#include "global/GPlatesException.h"
+
+#include "utils/Parse.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 #define EXCEPTION_SOURCE BOOST_CURRENT_FUNCTION
@@ -155,7 +168,7 @@ namespace
 	{
 		boost::optional<T> res = find_and_create_optional(elem, creation_fn, prop_name);
 		if ( ! res) {
-			// Cound't find the property!
+			// Couldn't find the property!
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
 					EXCEPTION_SOURCE);
 		}
@@ -390,6 +403,32 @@ namespace
 	}
 
 
+	std::vector<double>
+	create_double_list(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+	{
+		QStringList tokens = create_string(elem).split(" ", QString::SkipEmptyParts);
+
+		std::vector<double> result;
+		result.reserve(tokens.count());
+		GPlatesUtils::Parse<double> parse;
+		try
+		{
+			BOOST_FOREACH(const QString &token, tokens)
+			{
+				result.push_back(parse(token));
+			}
+			
+			return result;
+		}
+		catch (const GPlatesUtils::ParseError &)
+		{
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidDouble,
+					EXCEPTION_SOURCE);
+		}
+	}
+
+
 	unsigned long
 	create_ulong(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
@@ -438,6 +477,32 @@ namespace
 					EXCEPTION_SOURCE);
 		}
 		return res;
+	}
+
+
+	std::vector<int>
+	create_int_list(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+	{
+		QStringList tokens = create_string(elem).split(" ", QString::SkipEmptyParts);
+
+		std::vector<int> result;
+		result.reserve(tokens.count());
+		GPlatesUtils::Parse<int> parse;
+		try
+		{
+			BOOST_FOREACH(const QString &token, tokens)
+			{
+				result.push_back(parse(token));
+			}
+			
+			return result;
+		}
+		catch (const GPlatesUtils::ParseError &)
+		{
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidInt,
+					EXCEPTION_SOURCE);
+		}
 	}
 
 
@@ -507,6 +572,45 @@ namespace
 					EXCEPTION_SOURCE);
 		}
 		return GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat, lon));
+	}
+
+
+	/**
+	 * The same as @a create_pos, except that there's a comma between the two
+	 * values instead of whitespace.
+	 */
+	GPlatesMaths::PointOnSphere
+	create_coordinates(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+	{
+		QString str = create_nonempty_string(elem);
+
+		// XXX: Currently assuming srsDimension is 2!!
+
+		QStringList tokens = str.split(",");
+
+		if (tokens.count() == 2)
+		{
+			try
+			{
+				GPlatesUtils::Parse<double> parse;
+				double lat = parse(tokens.at(0));
+				double lon = parse(tokens.at(1));
+
+				if (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
+						GPlatesMaths::LatLonPoint::is_valid_longitude(lon))
+				{
+					return GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat, lon));
+				}
+			}
+			catch (...)
+			{
+				// Do nothing, fall through.
+			}
+		}
+
+		throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
+				EXCEPTION_SOURCE);
 	}
 
 
@@ -729,21 +833,143 @@ namespace
 	 * This function is used by create_point and create_gml_multi_point to do the
 	 * common work of creating a GPlatesMaths::PointOnSphere.
 	 */
-	GPlatesMaths::PointOnSphere
+	std::pair<GPlatesMaths::PointOnSphere, GPlatesPropertyValues::GmlPoint::GmlProperty>
 	create_point_on_sphere(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
 	{
 		static const GPlatesModel::PropertyName
 			STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("Point"),
-			POS = GPlatesModel::PropertyName::create_gml("pos");
+			POS = GPlatesModel::PropertyName::create_gml("pos"),
+			COORDINATES = GPlatesModel::PropertyName::create_gml("coordinates");
 
 		GPlatesModel::XmlElementNode::non_null_ptr_type
 			elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
-		GPlatesMaths::PointOnSphere point = find_and_create_one(elem, &create_pos, POS);
 		// FIXME: We need to give the srsName et al. attributes from the pos 
 		// (or the gml:FeatureCollection tag?) to the GmlPoint or GmlMultiPoint.
-		return point;
+		boost::optional<GPlatesMaths::PointOnSphere> point_as_pos =
+			find_and_create_optional(elem, &create_pos, POS);
+		boost::optional<GPlatesMaths::PointOnSphere> point_as_coordinates =
+			find_and_create_optional(elem, &create_coordinates, COORDINATES);
+
+		// The gml:Point needs one of gml:pos and gml:coordinates, but not both.
+		if (point_as_pos && point_as_coordinates)
+		{
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::DuplicateProperty,
+					EXCEPTION_SOURCE);
+		}
+		if (!point_as_pos && !point_as_coordinates)
+		{
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
+					EXCEPTION_SOURCE);
+		}
+
+		if (point_as_pos)
+		{
+			return std::make_pair(*point_as_pos, GPlatesPropertyValues::GmlPoint::POS);
+		}
+		else
+		{
+			return std::make_pair(*point_as_coordinates, GPlatesPropertyValues::GmlPoint::COORDINATES);
+		}
+	}
+
+
+	class ValueObjectTemplateVisitor :
+			public GPlatesModel::XmlNodeVisitor
+	{
+	public:
+
+		virtual
+		void
+		visit_text_node(
+				const GPlatesModel::XmlTextNode::non_null_ptr_type &text)
+		{
+			// Do nothing; we don't want text nodes.
+		}
+
+		virtual
+		void
+		visit_element_node(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		{
+			GPlatesPropertyValues::GmlFile::xml_attributes_type xml_attributes(
+					elem->attributes_begin(), elem->attributes_end());
+			d_result = std::make_pair(elem->get_name(), xml_attributes);
+		}
+
+		const boost::optional<GPlatesPropertyValues::GmlFile::value_component_type> &
+		get_result() const
+		{
+			return d_result;
+		}
+
+	private:
+
+		boost::optional<GPlatesPropertyValues::GmlFile::value_component_type> d_result;
+	};
+
+
+	/**
+	 * Extracts out the value object template, i.e. the app:Temperature part of the
+	 * example on p.253 of the GML book.
+	 */
+	GPlatesPropertyValues::GmlFile::value_component_type
+	create_gml_file_value_component(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+	{
+		if (parent->number_of_children() > 1)
+		{
+			// Properties with multiple inline structural elements are not (yet) handled!
+			throw GpmlReaderException(parent, GPlatesFileIO::ReadErrors::NonUniqueStructuralElement,
+					EXCEPTION_SOURCE);
+		}
+		else if (parent->number_of_children() == 0)
+		{
+			// Could not locate structural element template!
+			throw GpmlReaderException(parent, GPlatesFileIO::ReadErrors::StructuralElementNotFound,
+					EXCEPTION_SOURCE);
+		}
+
+		// Pull the answer out of the child if it is an XmlElementNode.
+		GPlatesModel::XmlNode::non_null_ptr_type elem = *parent->children_begin();
+		ValueObjectTemplateVisitor visitor;
+		elem->accept_visitor(visitor);
+
+		if (visitor.get_result())
+		{
+			return *visitor.get_result();
+		}
+		else
+		{
+			// It must have been a text element inside the <gml:valueComponent>.
+			throw GpmlReaderException(parent, GPlatesFileIO::ReadErrors::StructuralElementNotFound,
+					EXCEPTION_SOURCE);
+		}
+	}
+
+
+	/**
+	 * Used by create_file to create the gml:CompositeValue structural type inside
+	 * a gml:File.
+	 */
+	GPlatesPropertyValues::GmlFile::composite_value_type
+	create_gml_file_composite_value(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+	{
+		using namespace GPlatesPropertyValues;
+
+		static const GPlatesModel::PropertyName
+			STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("CompositeValue"),
+			VALUE_COMPONENT = GPlatesModel::PropertyName::create_gml("valueComponent");
+
+		GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+			get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+		GmlFile::composite_value_type result;
+		find_and_create_zero_or_more(elem, &create_gml_file_value_component, VALUE_COMPONENT, result);
+
+		return result;
 	}
 }
 
@@ -1260,11 +1486,12 @@ GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_point(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
 {
-	GPlatesMaths::PointOnSphere point = create_point_on_sphere(parent);
+	std::pair<GPlatesMaths::PointOnSphere, GPlatesPropertyValues::GmlPoint::GmlProperty> point =
+		create_point_on_sphere(parent);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// to the line string!
-	return GPlatesPropertyValues::GmlPoint::create(point);
+	return GPlatesPropertyValues::GmlPoint::create(point.first, point.second);
 }
 
 
@@ -1301,15 +1528,27 @@ GPlatesFileIO::PropertyCreationUtils::create_gml_multi_point(
 
 	// GmlMultiPoint has multiple gml:pointMember properties each containing a
 	// single gml:Point.
+	typedef std::pair<GPlatesMaths::PointOnSphere, GPlatesPropertyValues::GmlPoint::GmlProperty> point_and_property_type;
+	std::vector<point_and_property_type> points_and_properties;
+	find_and_create_one_or_more(elem, &create_point_on_sphere, POINT_MEMBER, points_and_properties);
+
+	// Unpack the vector of pairs into two vectors.
 	std::vector<GPlatesMaths::PointOnSphere> points;
-	find_and_create_one_or_more(elem, &create_point_on_sphere, POINT_MEMBER, points);
-	
+	points.reserve(points_and_properties.size());
+	std::vector<GPlatesPropertyValues::GmlPoint::GmlProperty> properties;
+	properties.reserve(points_and_properties.size());
+	BOOST_FOREACH(const point_and_property_type &point_and_property, points_and_properties)
+	{
+		points.push_back(point_and_property.first);
+		properties.push_back(point_and_property.second);
+	}
+
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 		multipoint = GPlatesMaths::MultiPointOnSphere::create_on_heap(points);
 
 	// FIXME: We need to give the srsName et al. attributes from the gml:Point
 	// (or the gml:FeatureCollection tag?) to the GmlMultiPoint (or the FeatureCollection)!
-	return GPlatesPropertyValues::GmlMultiPoint::create(multipoint);
+	return GPlatesPropertyValues::GmlMultiPoint::create(multipoint, properties);
 }
 
 
@@ -1800,4 +2039,148 @@ GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary(
 	return GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements);
 }
 
+
+GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_grid_envelope(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("GridEnvelope"),
+		LOW = GPlatesModel::PropertyName::create_gml("low"),
+		HIGH = GPlatesModel::PropertyName::create_gml("high");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+		get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	std::vector<int> low = find_and_create_one(elem, &create_int_list, LOW);
+	std::vector<int> high = find_and_create_one(elem, &create_int_list, HIGH);
+
+	return GPlatesPropertyValues::GmlGridEnvelope::create(low, high);
+}
+
+
+GPlatesPropertyValues::GmlRectifiedGrid::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_rectified_grid(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	using namespace GPlatesPropertyValues;
+
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("RectifiedGrid"),
+		LIMITS = GPlatesModel::PropertyName::create_gml("limits"),
+		AXIS_NAME = GPlatesModel::PropertyName::create_gml("axisName"),
+		ORIGIN = GPlatesModel::PropertyName::create_gml("origin"),
+		OFFSET_VECTOR = GPlatesModel::PropertyName::create_gml("offsetVector");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+		get_structural_type_element(parent, STRUCTURAL_TYPE);
+	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes(
+			elem->attributes_begin(), elem->attributes_end());
+
+	// <gml:limits>
+	GmlGridEnvelope::non_null_ptr_type limits = find_and_create_one(elem, &create_grid_envelope, LIMITS);
+
+	// <gml:axisName>
+	std::vector<XsString::non_null_ptr_type> non_const_axes;
+	find_and_create_one_or_more(elem, &create_xs_string, AXIS_NAME, non_const_axes);
+	GmlRectifiedGrid::axes_list_type axes(non_const_axes.begin(), non_const_axes.end());
+
+	// <gml:origin>
+	GmlPoint::non_null_ptr_type origin = find_and_create_one(elem, &create_point, ORIGIN);
+
+	// <gml:offsetVector>
+	GmlRectifiedGrid::offset_vector_list_type offset_vectors;
+	find_and_create_one_or_more(elem, &create_double_list, OFFSET_VECTOR, offset_vectors);
+
+	return GmlRectifiedGrid::create(limits, axes, origin, offset_vectors, xml_attributes);
+}
+
+
+namespace
+{
+	template<typename T>
+	boost::optional<GPlatesUtils::non_null_intrusive_ptr<const T> >
+	to_optional_of_ptr_to_const(
+			const boost::optional<GPlatesUtils::non_null_intrusive_ptr<T> > &opt)
+	{
+		if (opt)
+		{
+			return GPlatesUtils::non_null_intrusive_ptr<const T>(*opt);
+		}
+		else
+		{
+			return boost::none;
+		}
+	}
+}
+
+
+GPlatesPropertyValues::GmlFile::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_file(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	using namespace GPlatesPropertyValues;
+
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("File"),
+		RANGE_PARAMETERS = GPlatesModel::PropertyName::create_gml("rangeParameters"),
+		FILE_NAME = GPlatesModel::PropertyName::create_gml("fileName"),
+		FILE_STRUCTURE = GPlatesModel::PropertyName::create_gml("fileStructure"),
+		MIME_TYPE = GPlatesModel::PropertyName::create_gml("mimeType"),
+		COMPRESSION = GPlatesModel::PropertyName::create_gml("compression");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+		get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	// <gml:rangeParameters>
+	GmlFile::composite_value_type range_parameters =
+		find_and_create_one(elem, &create_gml_file_composite_value, RANGE_PARAMETERS);
+	
+	// <gml:fileName>
+	XsString::non_null_ptr_type file_name = find_and_create_one(elem, &create_xs_string, FILE_NAME);
+
+	// <gml:fileStructure>
+	XsString::non_null_ptr_type file_structure = find_and_create_one(elem, &create_xs_string, FILE_STRUCTURE);
+
+	// <gml:mimeType>
+	boost::optional<XsString::non_null_ptr_to_const_type> mime_type = to_optional_of_ptr_to_const(
+			find_and_create_optional(elem, &create_xs_string, MIME_TYPE));
+
+	// <gml:compression>
+	boost::optional<XsString::non_null_ptr_to_const_type> compression = to_optional_of_ptr_to_const(
+			find_and_create_optional(elem, &create_xs_string, COMPRESSION));
+
+	return GmlFile::create(range_parameters, file_name, file_structure, mime_type, compression);
+}
+
+
+GPlatesPropertyValues::GpmlRasterBandNames::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_raster_band_names(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	using namespace GPlatesPropertyValues;
+
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("RasterBandNames"),
+		BAND_NAME = GPlatesModel::PropertyName::create_gpml("bandName");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+		get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	std::vector<XsString::non_null_ptr_type> band_names;
+	find_and_create_zero_or_more(elem, &create_xs_string, BAND_NAME, band_names);
+
+	// Check for uniqueness of band names.
+	std::set<UnicodeString> band_name_set;
+	BOOST_FOREACH(const XsString::non_null_ptr_type &band_name, band_names)
+	{
+		if (!band_name_set.insert(band_name->value().get()).second)
+		{
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::DuplicateRasterBandName,
+					EXCEPTION_SOURCE);
+		}
+	}
+
+	return GpmlRasterBandNames::create(band_names.begin(), band_names.end());
+}
 

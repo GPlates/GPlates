@@ -74,16 +74,12 @@ namespace GPlatesFileIO
 		 * Creates mipmaps for @a raster, and writes a Mipmapped Raster Format file
 		 * at @a filename.
 		 *
-		 * @a last_modified is the time of last modification of the source
-		 * raster file.
-		 *
 		 * Throws @a ErrorOpeningFileForWritingException if the file could not
 		 * be opened for writing.
 		 */
 		void
 		write(
 				const typename RawRasterType::non_null_ptr_to_const_type &raster,
-				const QDateTime &last_modified,
 				const QString &filename)
 		{
 			// Open the file for writing.
@@ -285,12 +281,9 @@ namespace GPlatesFileIO
 		void
 		write(
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
-				const QDateTime &last_modified,
 				const QString &filename)
 		{
-			d_last_modified = last_modified;
 			d_filename = filename;
-
 			raster->accept_visitor(*this);
 		}
 
@@ -302,11 +295,9 @@ namespace GPlatesFileIO
 				const RawRasterType &raster)
 		{
 			MipmappedRasterFormatWriter<RawRasterType> writer;
-			writer.write(typename RawRasterType::non_null_ptr_to_const_type(&raster),
-					d_last_modified, d_filename);
+			writer.write(typename RawRasterType::non_null_ptr_to_const_type(&raster), d_filename);
 		}
 
-		QDateTime d_last_modified;
 		QString d_filename;
 	};
 }

@@ -28,13 +28,13 @@
 #include "Georeferencing.h"
 
 #include "maths/Real.h"
+#include "maths/MathsUtils.h"
 
 
-#include <QDebug>
 boost::optional<GPlatesPropertyValues::Georeferencing::lat_lon_extents_type>
 GPlatesPropertyValues::Georeferencing::lat_lon_extents(
-		int raster_width,
-		int raster_height) const
+		unsigned int raster_width,
+		unsigned int raster_height) const
 {
 	if (GPlatesMaths::are_almost_exactly_equal(
 				d_parameters.x_component_of_pixel_height,
@@ -87,16 +87,16 @@ GPlatesPropertyValues::Georeferencing::lat_lon_extents(
 }
 
 
-bool
+GPlatesPropertyValues::Georeferencing::ConversionFromLatLonExtentsError
 GPlatesPropertyValues::Georeferencing::set_lat_lon_extents(
 		lat_lon_extents_type extents,
-		int raster_width,
-		int raster_height)
+		unsigned int raster_width,
+		unsigned int raster_height)
 {
 	// Check whether the bottom is greater than the top.
-	if (extents.bottom > extents.top)
+	if (GPlatesMaths::Real(extents.bottom) > GPlatesMaths::Real(extents.top))
 	{
-		return false;
+		return BOTTOM_ABOVE_TOP;
 	}
 
 	// Check that the longitudes are in range.
@@ -105,12 +105,12 @@ GPlatesPropertyValues::Georeferencing::set_lat_lon_extents(
 	static const double LONGITUDE_RANGE = MAX_LONGITUDE - MIN_LONGITUDE;
 	if (extents.left < MIN_LONGITUDE)
 	{
-		int steps = (MAX_LONGITUDE - extents.left) / LONGITUDE_RANGE;
+		int steps = static_cast<int>((MAX_LONGITUDE - extents.left) / LONGITUDE_RANGE);
 		extents.left += steps * LONGITUDE_RANGE;
 	}
 	if (extents.right > MAX_LONGITUDE)
 	{
-		int steps = (extents.right - MIN_LONGITUDE) / LONGITUDE_RANGE;
+		int steps = static_cast<int>((extents.right - MIN_LONGITUDE) / LONGITUDE_RANGE);
 		extents.right -= steps * LONGITUDE_RANGE;
 	}
 
@@ -124,6 +124,16 @@ GPlatesPropertyValues::Georeferencing::set_lat_lon_extents(
 	if (extents.top > MAX_LATITUDE)
 	{
 		extents.top = MAX_LATITUDE;
+	}
+
+	// Finally, check that top != bottom and left != right.
+	if (GPlatesMaths::are_almost_exactly_equal(extents.top, extents.bottom))
+	{
+		return TOP_EQUALS_BOTTOM;
+	}
+	if (GPlatesMaths::are_almost_exactly_equal(extents.left, extents.right))
+	{
+		return LEFT_EQUALS_RIGHT;
 	}
 
 	// Convert to affine transform parameters.
@@ -144,14 +154,15 @@ GPlatesPropertyValues::Georeferencing::set_lat_lon_extents(
 	}}};
 
 	d_parameters = converted;
-	return true;
+
+	return NONE;
 }
 
 
 void
 GPlatesPropertyValues::Georeferencing::reset_to_global_extents(
-		int raster_width,
-		int raster_height)
+		unsigned int raster_width,
+		unsigned int raster_height)
 {
 	d_parameters = create_global_extents(raster_width, raster_height);
 }

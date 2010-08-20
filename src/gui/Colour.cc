@@ -120,46 +120,6 @@ GPlatesGui::operator<<(
 }
 
 
-std::ostream &
-GPlatesGui::operator<<(
-		std::ostream &os,
-		const rgba8_t &c)
-{
-	os << "("
-			<< static_cast<int>(c.red) << ", "
-			<< static_cast<int>(c.green) << ", "
-			<< static_cast<int>(c.blue) << ", "
-			<< static_cast<int>(c.alpha) << ")";
-
-	return os;
-}
-
-
-QDataStream &
-GPlatesGui::operator<<(
-		QDataStream &out,
-		const rgba8_t &c)
-{
-	out << static_cast<quint8>(c.red)
-		<< static_cast<quint8>(c.green)
-		<< static_cast<quint8>(c.blue)
-		<< static_cast<quint8>(c.alpha);
-
-	return out;
-}
-
-
-QDataStream &
-GPlatesGui::operator>>(
-		QDataStream &in,
-		rgba8_t &c)
-{
-	in >> c.red >> c.green >> c.blue >> c.alpha;
-
-	return in;
-}
-
-
 GPlatesGui::Colour
 GPlatesGui::Colour::linearly_interpolate(
 		GPlatesGui::Colour first,

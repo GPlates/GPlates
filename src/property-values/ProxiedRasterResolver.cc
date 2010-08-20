@@ -104,19 +104,25 @@ namespace
 	 *
 	 * We do this because QFileInfo::isWritable() sometimes gives the wrong
 	 * answer, especially on Windows.
-	 *
-	 * Note: this will create the file if it doesn't already exist.
 	 */
 	bool
 	is_writable(
 			const QString &filename)
 	{
 		QFile file(filename);
+		bool exists = file.exists();
 		bool can_open = file.open(QIODevice::WriteOnly | QIODevice::Append);
 		if (can_open)
 		{
 			file.close();
+
+			// Clean up: file.open() creates the file if it doesn't exist.
+			if (!exists)
+			{
+				file.remove();
+			}
 		}
+
 		return can_open;
 	}
 }
@@ -214,14 +220,26 @@ GPlatesPropertyValues::ProxiedRasterResolverInternals::get_existing_mipmap_filen
 			source_filename, band_number, colour_palette_id);
 	if (QFileInfo(in_same_directory).exists())
 	{
-		return in_same_directory;
+		// Check whether we can open it for reading.
+		QFile file(in_same_directory);
+		if (file.open(QIODevice::ReadOnly))
+		{
+			file.close();
+			return in_same_directory;
+		}
 	}
 
 	QString in_tmp_directory = make_mipmap_filename_in_tmp_directory(
 			source_filename, band_number, colour_palette_id);
 	if (QFileInfo(in_tmp_directory).exists())
 	{
-		return in_tmp_directory;
+		// Check whether we can open it for reading.
+		QFile file(in_tmp_directory);
+		if (file.open(QIODevice::ReadOnly))
+		{
+			file.close();
+			return in_tmp_directory;
+		}
 	}
 
 	return QString();

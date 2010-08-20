@@ -120,7 +120,6 @@ namespace
 	}
 
 
-	// FIXME
 	std::map<QString, RasterReader::FormatInfo>
 	create_supported_formats_map()
 	{
@@ -129,68 +128,70 @@ namespace
 		typedef std::map<QString, RasterReader::FormatInfo> formats_map_type;
 		formats_map_type formats;
 
-		// Build a map from file extension to human-readable description for formats
-		// read by QImageReader.
-		// ico and mng are left out because surely no-one sane would use those for rasters.
+		// Add formats that we support via ImageMagick.
 		// Note: The descriptions are those used by the GIMP.
-		typedef std::map<QString, QString> descriptions_map_type;
-		std::map<QString, QString> descriptions;
-		descriptions.insert(std::make_pair("bmp", "Windows BMP image"));
-		descriptions.insert(std::make_pair("gif", "GIF image"));
-		descriptions.insert(std::make_pair("jpg", "JPEG image"));
-		descriptions.insert(std::make_pair("jpeg", "JPEG image"));
-		descriptions.insert(std::make_pair("pbm", "PNM image"));
-		descriptions.insert(std::make_pair("pgm", "PNM image"));
-		descriptions.insert(std::make_pair("png", "PNG image"));
-		descriptions.insert(std::make_pair("ppm", "PNM image"));
-		descriptions.insert(std::make_pair("svg", "SVG image"));
-		descriptions.insert(std::make_pair("tif", "TIFF image"));
-		descriptions.insert(std::make_pair("tiff", "TIFF image"));
-		descriptions.insert(std::make_pair("xbm", "X BitMap image"));
-		descriptions.insert(std::make_pair("xpm", "X PixMap image"));
+		formats.insert(std::make_pair(
+				"bmp",
+				RasterReader::FormatInfo(
+					"Windows BMP image",
+					"image/bmp",
+					RasterReader::IMAGEMAGICK)));
+		formats.insert(std::make_pair(
+				"gif",
+				RasterReader::FormatInfo(
+					"GIF image",
+					"image/gif",
+					RasterReader::IMAGEMAGICK)));
+		formats.insert(std::make_pair(
+				"jpg",
+				RasterReader::FormatInfo(
+					"JPEG image",
+					"image/jpeg",
+					RasterReader::IMAGEMAGICK)));
+		formats.insert(std::make_pair(
+				"jpeg",
+				RasterReader::FormatInfo(
+					"JPEG image",
+					"image/jpeg",
+					RasterReader::IMAGEMAGICK)));
+		formats.insert(std::make_pair(
+				"png",
+				RasterReader::FormatInfo(
+					"PNG image",
+					"image/png",
+					RasterReader::IMAGEMAGICK)));
+		formats.insert(std::make_pair(
+				"svg",
+				RasterReader::FormatInfo(
+					"SVG image",
+					"image/svg+xml",
+					RasterReader::IMAGEMAGICK)));
+		formats.insert(std::make_pair(
+				"tif",
+				RasterReader::FormatInfo(
+					"TIFF image",
+					"image/tiff",
+					RasterReader::IMAGEMAGICK)));
+		formats.insert(std::make_pair(
+				"tiff",
+				RasterReader::FormatInfo(
+					"TIFF image",
+					"image/tiff",
+					RasterReader::IMAGEMAGICK)));
 
-		// Add the formats that will be read using QImageReader.
-		QList<QByteArray> qt_formats = QImageReader::supportedImageFormats();
-
-		transform_if(
-				qt_formats.begin(),
-				qt_formats.end(),
-				std::inserter(formats, formats.begin()),
-
-				// We insert into the formats map ...
-				boost::lambda::bind(
-					boost::lambda::constructor<std::pair<QString, RasterReader::FormatInfo> >(),
-					boost::lambda::_1, // ... a key of the file extension ...
-					boost::lambda::bind(
-						boost::lambda::constructor<RasterReader::FormatInfo>(), // ... and a corresponding FormatInfo value.
-						boost::lambda::bind(
-							&descriptions_map_type::operator[],
-							boost::ref(descriptions),
-							boost::lambda::_1),
-						RasterReader::IMAGEMAGICK)),
-
-				// We only expose those formats for which we have a textual description.
-				boost::lambda::bind(
-					resolve<mem_fn_types<descriptions_map_type>::const_find>(&descriptions_map_type::find),
-					boost::cref(descriptions),
-					boost::lambda::_1) != descriptions.end());
-
-		// Also add GMT grid files, read by GDAL.
-
-		formats.insert(
-				std::make_pair(
-					"grd",
-					RasterReader::FormatInfo(
-						"GMT grid image",
-						RasterReader::GDAL)));
-
-#if 0
-		for (std::map<QString, RasterReader::FormatInfo>::iterator iter = formats.begin();
-				iter != formats.end(); ++iter)
-		{
-			qDebug() << iter->first << iter->second.description;
-		}
-#endif
+		// Also add GMT grid/NetCDF files, read by GDAL.
+		formats.insert(std::make_pair(
+				"grd",
+				RasterReader::FormatInfo(
+					"NetCDF/GMT grid data",
+					"application/x-netcdf",
+					RasterReader::GDAL)));
+		formats.insert(std::make_pair(
+				"nc",
+				RasterReader::FormatInfo(
+					"NetCDF/GMT grid data",
+					"application/x-netcdf",
+					RasterReader::GDAL)));
 
 		return formats;
 	}
@@ -450,7 +451,7 @@ GPlatesFileIO::RasterReader::RasterReader(
 	d_filename(filename)
 {
 	QFileInfo file_info(filename);
-	QString suffix = file_info.suffix();
+	QString suffix = file_info.suffix().toLower();
 
 	const std::map<QString, FormatInfo> &supported_formats = get_supported_formats();
 	std::map<QString, FormatInfo>::const_iterator iter = supported_formats.find(suffix);
@@ -517,6 +518,21 @@ GPlatesFileIO::RasterReader::get_number_of_bands(
 	else
 	{
 		return 0;
+	}
+}
+
+
+std::pair<unsigned int, unsigned int>
+GPlatesFileIO::RasterReader::get_size(
+		ReadErrorAccumulation *read_errors)
+{
+	if (d_impl)
+	{
+		return d_impl->get_size(read_errors);
+	}
+	else
+	{
+		return std::make_pair(0, 0);
 	}
 }
 

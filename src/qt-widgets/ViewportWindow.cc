@@ -239,7 +239,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new FeaturePropertiesDialog(
 				get_view_state(),
 				this)),
-	d_import_raster_dialog_ptr(NULL),
 	d_manage_feature_collections_dialog_ptr(
 			new ManageFeatureCollectionsDialog(
 				get_application_state().get_feature_collection_file_state(),
@@ -315,7 +314,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_view_state())),
 	d_task_panel_ptr(NULL),
 	d_georeferencing_needs_to_be_reset(true),
-	d_open_file_path("")
+	d_open_file_path(""),
+	d_layering_dialog_opened_automatically_once(false)
 {
 	setupUi(this);
 
@@ -527,6 +527,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SIGNAL(changed()),
 			this,
 			SLOT(handle_colour_scheme_delegator_changed()));
+
+	// Get notified about visual layers being added so we can open the layers dialog.
+	QObject::connect(
+			&(get_view_state().get_visual_layers()),
+			SIGNAL(layer_added(size_t)),
+			this,
+			SLOT(handle_visual_layer_added(size_t)));
 
 	set_internal_release_window_title();
 }
@@ -925,13 +932,13 @@ GPlatesQtWidgets::ViewportWindow::set_up_task_panel_actions()
 
 	feature_actions.add_action(action_Query_Feature);
 	feature_actions.add_action(action_Edit_Feature);
-	feature_actions.add_action(action_Delete_Feature);
 #if 0
 	// Commenting this out for the time being because we can only fit 5 buttons on one row.
 	feature_actions.add_action(action_Clear_Selection);
 #endif
 	feature_actions.add_action(action_Clone_Geometry);
 	feature_actions.add_action(action_Clone_Feature);
+	feature_actions.add_action(action_Delete_Feature);
 }
 
 
@@ -1614,10 +1621,6 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_feature_properties_dialog_ptr->reject();
 	}
-	if (d_import_raster_dialog_ptr)
-	{
-		d_import_raster_dialog_ptr->reject();
-	}
 	if (d_manage_feature_collections_dialog_ptr)
 	{
 		d_manage_feature_collections_dialog_ptr->reject();
@@ -1924,20 +1927,40 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 }
 
 void
+GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog(
+		bool time_dependent_raster)
+{
+	// Note: the ImportRasterDialog needs to be reconstructed each time we want to
+	// use it, unlike the other dialogs, otherwise the pages are incorrectly initialised.
+	ImportRasterDialog import_raster_dialog(
+			get_application_state(),
+			d_open_file_path,
+			d_unsaved_changes_tracker_ptr.data(),
+			this);
+
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog_ptr->read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
+
+	import_raster_dialog.display(time_dependent_raster, &read_errors);
+
+	d_read_errors_dialog_ptr->update();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors)
+	{
+		d_read_errors_dialog_ptr->show();
+	}
+}
+
+void
 GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog()
 {
-	if (!d_import_raster_dialog_ptr)
-	{
-		d_import_raster_dialog_ptr.reset(new ImportRasterDialog(this));
-	}
-
-	d_import_raster_dialog_ptr->show();
+	pop_up_import_raster_dialog(false);
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
 {
-	// TODO.
+	pop_up_import_raster_dialog(true);
 }
 
 void
@@ -2211,6 +2234,18 @@ GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
 		}
 
 		setWindowTitle(window_title);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_visual_layer_added(
+		size_t added)
+{
+	if (!d_layering_dialog_opened_automatically_once)
+	{
+		d_layering_dialog_opened_automatically_once = true;
+		pop_up_layering_dialog();
 	}
 }
 

@@ -26,11 +26,112 @@
 #ifndef GPLATES_QTWIDGETS_IMPORTRASTERDIALOG_H
 #define GPLATES_QTWIDGETS_IMPORTRASTERDIALOG_H
 
+#include <vector>
+#include <boost/optional.hpp>
 #include <QWizard>
+#include <QString>
 
+#include "model/PropertyValue.h"
+
+#include "property-values/Georeferencing.h"
+#include "property-values/RasterType.h"
+
+
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
+namespace GPlatesFileIO
+{
+	struct ReadErrorAccumulation;
+}
+
+namespace GPlatesGui
+{
+	class UnsavedChangesTracker;
+}
 
 namespace GPlatesQtWidgets
 {
+	class TimeDependentRasterSequence
+	{
+	public:
+
+		struct FileInfo
+		{
+			FileInfo(
+					const boost::optional<double> &time_,
+					const QString &absolute_file_path_,
+					const QString &file_name_,
+					const std::vector<GPlatesPropertyValues::RasterType::Type> &band_types_,
+					unsigned width_,
+					unsigned height_) :
+				time(time_),
+				absolute_file_path(absolute_file_path_),
+				file_name(file_name_),
+				band_types(band_types_),
+				width(width_),
+				height(height_)
+			{  }
+
+			boost::optional<double> time;
+			QString absolute_file_path;
+			QString file_name;
+			std::vector<GPlatesPropertyValues::RasterType::Type> band_types;
+			unsigned int width;
+			unsigned int height;
+		};
+
+		typedef FileInfo element_type;
+		typedef std::vector<element_type> sequence_type;
+
+		const sequence_type &
+		get_sequence() const
+		{
+			return d_sequence;
+		}
+
+		bool
+		empty() const;
+
+		void
+		push_back(
+				boost::optional<double> time,
+				const QString &absolute_file_path,
+				const QString &file_name,
+				const std::vector<GPlatesPropertyValues::RasterType::Type> &band_types_,
+				unsigned int width,
+				unsigned int height);
+
+		void
+		add_all(
+				const TimeDependentRasterSequence &other);
+
+		void
+		clear();
+
+		void
+		erase(
+				unsigned int begin_index,
+				unsigned int end_index);
+
+		void
+		set_time(
+				unsigned int index,
+				const boost::optional<double> &time);
+
+		void
+		sort_by_time();
+
+		void
+		sort_by_file_name();
+
+	private:
+
+		sequence_type d_sequence;
+	};
+
 	class ImportRasterDialog :
 			public QWizard
 	{
@@ -40,8 +141,54 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ImportRasterDialog(
+				GPlatesAppLogic::ApplicationState &application_state,
+				QString &open_file_path,
+				GPlatesGui::UnsavedChangesTracker *unsaved_changes_tracker,
 				QWidget *parent_ = NULL);
 
+		/**
+		 * Call this to open the import raster wizard, instead of @a show().
+		 */
+		void
+		display(
+				bool time_dependent_raster,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors = NULL);
+
+	private:
+
+		void
+		set_number_of_bands(
+				unsigned int number_of_bands);
+
+		// Note: this sorts d_raster_sequence, in place.
+		GPlatesModel::PropertyValue::non_null_ptr_type
+		create_range_set(
+				bool time_dependent_raster);
+
+		GPlatesModel::PropertyValue::non_null_ptr_type
+		create_band_names() const;
+
+		GPlatesModel::PropertyValue::non_null_ptr_type
+		create_domain_set() const;
+
+		QString
+		create_gpml_file_path(
+				bool time_dependent_raster) const;
+
+		GPlatesAppLogic::ApplicationState &d_application_state;
+		QString &d_open_file_path;
+		GPlatesGui::UnsavedChangesTracker *d_unsaved_changes_tracker;
+
+		// For communication between pages.
+		TimeDependentRasterSequence d_raster_sequence;
+		std::vector<QString> d_band_names;
+		GPlatesPropertyValues::Georeferencing::non_null_ptr_type d_georeferencing;
+		bool d_save_after_finish;
+
+		int d_time_dependent_raster_page_id;
+		int d_raster_band_page_id;
+		int d_georeferencing_page_id;
+		int d_raster_feature_collection_page_id;
 	};
 }
 

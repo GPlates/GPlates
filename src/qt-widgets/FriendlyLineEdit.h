@@ -28,9 +28,12 @@
 #ifndef GPLATES_QTWIDGETS_FRIENDLYLINEEDIT_H
 #define GPLATES_QTWIDGETS_FRIENDLYLINEEDIT_H
 
+#include <boost/function.hpp>
 #include <QWidget>
 #include <QLineEdit>
 #include <QString>
+#include <QValidator>
+
 
 namespace GPlatesQtWidgets
 {
@@ -44,8 +47,9 @@ namespace GPlatesQtWidgets
 		public:
 
 			InternalLineEdit(
-					const QString &contents,
 					const QString &message_on_empty_string,
+					const boost::function<void (QFocusEvent *)> &parent_focus_in_event_function,
+					const boost::function<void (QFocusEvent *)> &parent_focus_out_event_function,
 					QWidget *parent_ = NULL);
 
 			// text is not virtual but we'll override it anyway.
@@ -78,6 +82,8 @@ namespace GPlatesQtWidgets
 			handle_focus_out();
 
 			QString d_message_on_empty_string;
+			boost::function<void (QFocusEvent *)> d_parent_focus_in_event_function;
+			boost::function<void (QFocusEvent *)> d_parent_focus_out_event_function;
 
 			QPalette d_default_palette;
 			QPalette d_empty_string_palette;
@@ -128,6 +134,20 @@ namespace GPlatesQtWidgets
 		setReadOnly(
 				bool read_only);
 
+		void
+		setValidator(
+				const QValidator *v);
+
+		const QValidator *
+		validator() const;
+
+		void
+		setAlignment(
+				Qt::Alignment flag);
+
+		Qt::Alignment
+		alignment() const;
+
 	signals:
 
 		// Using Qt naming conventions here.
@@ -135,12 +155,34 @@ namespace GPlatesQtWidgets
 		void
 		editingFinished();
 
+		void
+		textEdited(
+				const QString &text_);
+
+	protected:
+
+		virtual
+		void
+		handle_text_edited(
+				const QString &text_)
+		{
+			// Default implementation: does nothing.
+		}
+
 	private slots:
 
 		void
 		handle_internal_line_edit_editing_finished()
 		{
 			emit editingFinished();
+		}
+
+		void
+		handle_internal_line_edit_text_edited(
+				const QString &text_)
+		{
+			emit textEdited(text_);
+			handle_text_edited(text_);
 		}
 
 	private:

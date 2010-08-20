@@ -34,7 +34,8 @@
 
 const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlPoint::create(
-		const std::pair<double, double> &gml_pos)
+		const std::pair<double, double> &gml_pos,
+		GmlProperty gml_property_)
 {
 	using namespace ::GPlatesMaths;
 
@@ -46,19 +47,20 @@ GPlatesPropertyValues::GmlPoint::create(
 	PointOnSphere p = make_point_on_sphere(llp);
 
 	non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())));
+			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()), gml_property_));
 	return point_ptr;
 }
 
 
 const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlPoint::create(
-		const GPlatesMaths::PointOnSphere &p)
+		const GPlatesMaths::PointOnSphere &p,
+		GmlProperty gml_property_)
 {
 	using namespace ::GPlatesMaths;
 
 	GmlPoint::non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())));
+			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()), gml_property_));
 	return point_ptr;
 }
 

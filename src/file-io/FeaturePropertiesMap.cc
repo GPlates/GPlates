@@ -861,6 +861,22 @@ namespace
 
 		return map;
 	}
+
+	
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_raster_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_abstract_feature_properties();
+
+		map[ PropertyName::create_gpml("domainSet") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("rangeSet") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("bandNames") ] =
+			GET_PROP_VAL_NAME(create_raster_band_names);
+
+		return map;
+	}
 }
 
 
@@ -1012,6 +1028,10 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_virtual_geomagnetic_pole_properties();
 	d_map[ FeatureType::create_gpml("UnclassifiedFeature") ] =
 		get_unclassified_feature_properties();
+
+	// Rasters.
+	d_map[ FeatureType::create_gpml("Raster") ] =
+		get_raster_properties();
 
 	// Time variant features.
 }

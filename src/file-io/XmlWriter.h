@@ -189,15 +189,21 @@ namespace GPlatesFileIO
 
 		void
 		writeDecimal(
-				const double &val) {
+				double val) {
 			d_writer.writeCharacters(QString::number(val));
 		}
 
 
 		void
 		writeDecimalPair(
-				const double &val1,
-				const double &val2);
+				double val1,
+				double val2);
+
+
+		void
+		writeCommaSeparatedDecimalPair(
+				double val1,
+				double val2);
 
 
 		void
@@ -225,6 +231,17 @@ namespace GPlatesFileIO
 		writeNumericalSequence(
 				const DecimalIterator &begin,
 				const DecimalIterator &end);
+
+
+		/**
+		 * Dereferencing a StringIterator should return a QString,
+		 * or something that can be upcast to such.
+		 */
+		template<typename StringIterator>
+		void
+		writeStringSequence(
+				const StringIterator &begin,
+				const StringIterator &end);
 
 
 		void
@@ -272,6 +289,25 @@ namespace GPlatesFileIO
 				const QString &name,
 				const QString &value) {
 			writeAttribute(GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING, name, value);
+		}
+
+
+		/**
+		 * Writes the @a absolute_file_path as a path relative to the directory that
+		 * contains the file that we are outputting XML to (if any).
+		 *
+		 * If we are not outputting to a file, it just writes @a absolute_file_path.
+		 */
+		void
+		writeRelativeFilePath(
+				const QString &absolute_file_path);
+
+
+		void
+		writeRelativeFilePath(
+				const UnicodeString &absolute_file_path)
+		{
+			writeRelativeFilePath(GPlatesUtils::make_qstring_from_icu_string(absolute_file_path));
 		}
 
 
@@ -331,6 +367,20 @@ namespace GPlatesFileIO
 		for (DecimalIterator iter = begin; iter != end; ++iter) 
 		{
 			writeDecimal(*iter);
+			d_writer.writeCharacters(" ");
+		}
+	}
+
+
+	template<typename StringIterator>
+	void
+	XmlWriter::writeStringSequence(
+			const StringIterator &begin,
+			const StringIterator &end)
+	{
+		for (StringIterator iter = begin; iter != end; ++iter)
+		{
+			writeText(*iter);
 			d_writer.writeCharacters(" ");
 		}
 	}

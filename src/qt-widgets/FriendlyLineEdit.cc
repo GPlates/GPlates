@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/bind.hpp>
 #include <QObject>
 #include <QPalette>
 #include <QFont>
@@ -40,8 +41,15 @@ GPlatesQtWidgets::FriendlyLineEdit::FriendlyLineEdit(
 	QWidget(parent_),
 	d_line_edit(
 			new FriendlyLineEditInternals::InternalLineEdit(
-				contents,
 				message_on_empty_string,
+				boost::bind(
+					&FriendlyLineEdit::focusInEvent,
+					boost::ref(*this),
+					_1),
+				boost::bind(
+					&FriendlyLineEdit::focusOutEvent,
+					boost::ref(*this),
+					_1),
 				this))
 {
 	QtWidgetUtils::add_widget_to_placeholder(d_line_edit, this);
@@ -51,6 +59,13 @@ GPlatesQtWidgets::FriendlyLineEdit::FriendlyLineEdit(
 			SIGNAL(editingFinished()),
 			this,
 			SLOT(handle_internal_line_edit_editing_finished()));
+	QObject::connect(
+			d_line_edit,
+			SIGNAL(textEdited(const QString &)),
+			this,
+			SLOT(handle_internal_line_edit_text_edited(const QString &)));
+
+	setText(contents);
 }
 
 
@@ -84,17 +99,50 @@ GPlatesQtWidgets::FriendlyLineEdit::setReadOnly(
 }
 
 
+void
+GPlatesQtWidgets::FriendlyLineEdit::setValidator(
+		const QValidator *v)
+{
+	d_line_edit->setValidator(v);
+}
+
+
+const QValidator *
+GPlatesQtWidgets::FriendlyLineEdit::validator() const
+{
+	return d_line_edit->validator();
+}
+
+
+void
+GPlatesQtWidgets::FriendlyLineEdit::setAlignment(
+		Qt::Alignment flag)
+{
+	d_line_edit->setAlignment(flag);
+}
+
+
+Qt::Alignment
+GPlatesQtWidgets::FriendlyLineEdit::alignment() const
+{
+	return d_line_edit->alignment();
+}
+
+
 GPlatesQtWidgets::FriendlyLineEditInternals::InternalLineEdit::InternalLineEdit(
-		const QString &contents,
 		const QString &message_on_empty_string,
+		const boost::function<void (QFocusEvent *)> &parent_focus_in_event_function,
+		const boost::function<void (QFocusEvent *)> &parent_focus_out_event_function,
 		QWidget *parent_) :
 	QLineEdit(parent_),
 	d_message_on_empty_string(message_on_empty_string),
+	d_parent_focus_in_event_function(parent_focus_in_event_function),
+	d_parent_focus_out_event_function(parent_focus_out_event_function),
 	d_default_palette(palette()),
 	d_empty_string_palette(d_default_palette),
 	d_default_font(font()),
 	d_empty_string_font(d_default_font),
-	d_is_empty_string(contents.isEmpty())
+	d_is_empty_string(true)
 {
 	d_empty_string_palette.setColor(
 			QPalette::Text, QColor(128, 128, 128));
@@ -138,6 +186,10 @@ GPlatesQtWidgets::FriendlyLineEditInternals::InternalLineEdit::focusInEvent(
 {
 	QLineEdit::focusInEvent(event_);
 	handle_focus_in();
+
+	// Call the focusInEvent of the parent widget, so that subclasses of
+	// FriendlyLineEdit can hook into such events as well.
+	d_parent_focus_in_event_function(event_);
 }
 
 
@@ -147,6 +199,10 @@ GPlatesQtWidgets::FriendlyLineEditInternals::InternalLineEdit::focusOutEvent(
 {
 	QLineEdit::focusOutEvent(event_);
 	handle_focus_out();
+
+	// Call the focusOutEvent of the parent widget, so that subclasses of
+	// FriendlyLineEdit can hook into such events as well.
+	d_parent_focus_out_event_function(event_);
 }
 
 

@@ -66,6 +66,29 @@ namespace GPlatesPropertyValues
 		{  }
 
 		/**
+		 * In GML 3.0, the whereabouts of a gml:Point can be specified using the "pos"
+		 * property or the "coordinates" property.
+		 *
+		 * There are minor semantic differences between the two so it's probably best
+		 * to preserve which property was used originally in the file.
+		 *
+		 * Examples:
+		 *
+		 *	<gml:Point>
+		 *		<gml:pos>12.3 45.6</gml:pos>
+		 *	</gml:Point>
+		 *
+		 *	<gml:Point>
+		 *		<gml:coordinates>2,1</gml:coordinates>
+		 *	</gml:Point>
+		 */
+		enum GmlProperty
+		{
+			POS,
+			COORDINATES
+		};
+
+		/**
 		 * Create a GmlPoint instance from a (longitude, latitude) coordinate duple.
 		 *
 		 * This coordinate duple corresponds to the contents of the "gml:pos" property in a
@@ -81,7 +104,8 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const std::pair<double, double> &gml_pos);
+				const std::pair<double, double> &gml_pos,
+				GmlProperty gml_property_ = POS);
 
 		/**
 		 * Create a GmlPoint instance from a GPlatesMaths::PointOnSphere instance.
@@ -89,7 +113,8 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesMaths::PointOnSphere &p);
+				const GPlatesMaths::PointOnSphere &p,
+				GmlProperty gml_property_ = POS);
 
 		/**
 		 * Create a GmlPoint instance from a non-null-intrusive-pointer to a
@@ -98,10 +123,11 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p)
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
+				GmlProperty gml_property_ = POS)
 		{
 			GmlPoint::non_null_ptr_type point_ptr(
-					new GmlPoint(p));
+					new GmlPoint(p, gml_property_));
 			return point_ptr;
 		}
 
@@ -153,6 +179,19 @@ namespace GPlatesPropertyValues
 			update_instance_id();
 		}
 
+		GmlProperty
+		gml_property() const
+		{
+			return d_gml_property;
+		}
+
+		void
+		set_gml_property(
+				GmlProperty gml_property_)
+		{
+			d_gml_property = gml_property_;
+		}
+
 		/**
 		 * Accept a ConstFeatureVisitor instance.
 		 *
@@ -192,9 +231,11 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GmlPoint(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> point_):
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> point_,
+				GmlProperty gml_property_):
 			PropertyValue(),
-			d_point(point_)
+			d_point(point_),
+			d_gml_property(gml_property_)
 		{  }
 
 
@@ -206,12 +247,14 @@ namespace GPlatesPropertyValues
 		GmlPoint(
 				const GmlPoint &other):
 			PropertyValue(other), /* share instance id */
-			d_point(other.d_point)
+			d_point(other.d_point),
+			d_gml_property(other.d_gml_property)
 		{  }
 
 	private:
 
 		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> d_point;
+		GmlProperty d_gml_property;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

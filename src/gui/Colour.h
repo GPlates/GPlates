@@ -141,22 +141,47 @@ namespace GPlatesGui
 	};
 
 
+	inline
 	std::ostream &
 	operator<<(
 			std::ostream &os,
-			const rgba8_t &c);
+			const rgba8_t &c)
+	{
+		os << "("
+				<< static_cast<int>(c.red) << ", "
+				<< static_cast<int>(c.green) << ", "
+				<< static_cast<int>(c.blue) << ", "
+				<< static_cast<int>(c.alpha) << ")";
+
+		return os;
+	}
 
 
+	inline
 	QDataStream &
 	operator<<(
 			QDataStream &out,
-			const rgba8_t &c);
+			const rgba8_t &c)
+	{
+		out << static_cast<quint8>(c.red)
+			<< static_cast<quint8>(c.green)
+			<< static_cast<quint8>(c.blue)
+			<< static_cast<quint8>(c.alpha);
+
+		return out;
+	}
 
 
+	inline
 	QDataStream &
 	operator>>(
 			QDataStream &in,
-			rgba8_t &c);
+			rgba8_t &c)
+	{
+		in >> c.red >> c.green >> c.blue >> c.alpha;
+
+		return in;
+	}
 
 
 	class Colour

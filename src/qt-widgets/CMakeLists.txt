@@ -127,6 +127,9 @@ set(srcs
     FeatureSummaryWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
+    GeoreferencingPage.cc
+    GeoreferencingPage.h
+    GeoreferencingPageUi.ui
     GlobeAndMapWidget.cc
     GlobeAndMapWidget.h
     GlobeCanvas.cc
@@ -197,6 +200,9 @@ set(srcs
     RasterBandPage.cc
     RasterBandPage.h
     RasterBandPageUi.ui
+    RasterFeatureCollectionPage.cc
+    RasterFeatureCollectionPage.h
+    RasterFeatureCollectionPageUi.ui
     RasterPropertiesDialog.cc
     RasterPropertiesDialog.h
     RasterPropertiesDialogUi.ui
@@ -249,6 +255,9 @@ set(srcs
     TimeControlWidget.cc
     TimeControlWidget.h
     TimeControlWidgetUi.ui
+    TimeDependentRasterPage.cc
+    TimeDependentRasterPage.h
+    TimeDependentRasterPageUi.ui
     TopologyToolsWidget.cc
     TopologyToolsWidget.h
     TopologyToolsWidgetUi.ui

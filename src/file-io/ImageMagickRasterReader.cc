@@ -25,8 +25,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <QFile>
 #include <QFileInfo>
 #include <QDateTime>
+#ifdef GPLATES_DEBUG
+#include <QImageReader>
+#endif
 
 #include "ImageMagickRasterReader.h"
 
@@ -43,22 +48,45 @@ GPlatesFileIO::ImageMagickRasterReader::ImageMagickRasterReader(
 	d_source_height(0),
 	d_can_read(false)
 {
+#ifndef GPLATES_DEBUG
 	try
 	{
 		Magick::Image image;
-		image.ping(d_filename.toStdString()); // ping() loads size but not the actual data.
+		try
+		{
+			image.ping(d_filename.toStdString()); // ping() loads size but not the actual data.
+		}
+		catch (const Magick::Warning &warning)
+		{
+			std::cerr << "ImageMagick warning: " << warning.what() << std::endl;
+			// It should be safe to continue after a warning.
+		}
 		Magick::Geometry size = image.size();
 		d_source_width = size.width();
 		d_source_height = size.height();
-
-		if (d_source_width > 0 && d_source_height > 0)
-		{
-			d_can_read = ensure_rgba_file_available();
-		}
 	}
 	catch (const Magick::Exception &)
 	{
-		// Do nothing.
+		// Do nothing, just fall through.
+	}
+#else
+	// Note: ImageMagick seems to be having a bit of trouble in debug mode,
+	// so we go back to Qt here.
+	// As long as you've opened the image you want to open at least once in
+	// a release build, the uncompressed RGBA file will have been created
+	// and ImageMagick is totally bypassed in debug mode.
+	QImageReader reader(d_filename);
+	if (reader.canRead())
+	{
+		QSize size = reader.size();
+		d_source_width = size.width();
+		d_source_height = size.height();
+	}
+#endif
+
+	if (d_source_width > 0 && d_source_height > 0)
+	{
+		d_can_read = true;
 	}
 
 	// Do all the failure to begin reporting here, so that there's only one
@@ -94,6 +122,14 @@ GPlatesFileIO::ImageMagickRasterReader::get_number_of_bands(
 }
 
 
+std::pair<unsigned int, unsigned int>
+GPlatesFileIO::ImageMagickRasterReader::get_size(
+		ReadErrorAccumulation *read_errors)
+{
+	return std::make_pair(d_source_width, d_source_height);
+}
+
+
 boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 GPlatesFileIO::ImageMagickRasterReader::get_proxied_raw_raster(
 		unsigned int band_number,
@@ -107,6 +143,11 @@ GPlatesFileIO::ImageMagickRasterReader::get_proxied_raw_raster(
 	if (band_number != 1)
 	{
 		report_recoverable_error(read_errors, ReadErrors::ErrorReadingRasterBand);
+		return boost::none;
+	}
+
+	if (!ensure_rgba_file_available())
+	{
 		return boost::none;
 	}
 
@@ -131,6 +172,11 @@ GPlatesFileIO::ImageMagickRasterReader::get_raw_raster(
 	if (band_number != 1)
 	{
 		report_recoverable_error(read_errors, ReadErrors::ErrorReadingRasterBand);
+		return boost::none;
+	}
+
+	if (!ensure_rgba_file_available())
+	{
 		return boost::none;
 	}
 
@@ -184,6 +230,11 @@ GPlatesFileIO::ImageMagickRasterReader::get_data(
 	if (band_number != 1)
 	{
 		report_recoverable_error(read_errors, ReadErrors::ErrorReadingRasterBand);
+		return NULL;
+	}
+
+	if (!ensure_rgba_file_available())
+	{
 		return NULL;
 	}
 
@@ -286,6 +337,12 @@ GPlatesFileIO::ImageMagickRasterReader::read_rgba_file(
 bool
 GPlatesFileIO::ImageMagickRasterReader::ensure_rgba_file_available()
 {
+	if (d_rgba_in.device())
+	{
+		// The RGBA file exists and is already open.
+		return true;
+	}
+
 	// Is there such a file in the same directory?
 	static const QString EXTENSION = ".mipmap-level0";
 	QString rgba_filename;
@@ -314,15 +371,35 @@ GPlatesFileIO::ImageMagickRasterReader::ensure_rgba_file_available()
 				d_rgba_in.setDevice(&d_rgba_file);
 				return true;
 			}
-			else
-			{
-				return false;
-			}
-		}
 
-		// It's too old, delete it.
-		QFile(rgba_filename).remove();
+			// Fall through, it should then attempt to write one in the temp directory.
+		}
+		else
+		{
+			// It's too old, delete it.
+			QFile(rgba_filename).remove();
+		}
 	}
+
+	// Read the entire source raster into memory.
+	Magick::Image image;
+	try
+	{
+		image.read(d_filename.toStdString());
+	}
+	catch (const Magick::Warning &warning)
+	{
+		std::cerr << "ImageMagick warning: " << warning.what() << std::endl;
+		// It should be safe to continue after a warning.
+	}
+	catch (const Magick::Error &error)
+	{
+		std::cerr << "ImageMagick error: " << error.what() << std::endl;
+		// It is not safe to continue after an error.
+		return false;
+	}
+	GPlatesGui::rgba8_t * const data_buf = new GPlatesGui::rgba8_t[d_source_width * d_source_height];
+	image.write(0, 0, d_source_width, d_source_height, "RGBA", Magick::CharPixel, data_buf);
 
 	// Try to open an RGBA file in the same directory for writing.
 	d_rgba_file.setFileName(in_same_directory);
@@ -340,12 +417,6 @@ GPlatesFileIO::ImageMagickRasterReader::ensure_rgba_file_available()
 		}
 	}
 
-	// Read the entire source raster into memory.
-	Magick::Image image;
-	image.read(d_filename.toStdString());
-	GPlatesGui::rgba8_t * const data_buf = new GPlatesGui::rgba8_t[d_source_width * d_source_height];
-	image.write(0, 0, d_source_width, d_source_height, "RGBA", Magick::CharPixel, data_buf);
-
 	// Write buffer to disk.
 	QDataStream out(&d_rgba_file);
 	GPlatesGui::rgba8_t *data_ptr = data_buf;
@@ -359,6 +430,9 @@ GPlatesFileIO::ImageMagickRasterReader::ensure_rgba_file_available()
 	// Erase buffer and close file.
 	delete[] data_buf;
 	d_rgba_file.close();
+
+	// Copy the file permissions from the source raster to the RGBA file.
+	d_rgba_file.setPermissions(QFile::permissions(d_filename));
 
 	// Open the same file again for reading.
 	if (d_rgba_file.open(QIODevice::ReadOnly))

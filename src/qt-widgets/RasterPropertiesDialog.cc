@@ -105,8 +105,11 @@ GPlatesQtWidgets::RasterPropertiesDialog::RasterPropertiesDialog(
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_view_state(view_state),
+#if 0
 	d_georeferencing_widget(
 			new EditAffineTransformGeoreferencingWidget(view_state, this)),
+#endif
+	d_georeferencing_widget(NULL),
 	d_colour_map_lineedit(
 			new FriendlyLineEdit(
 				QString(),
@@ -118,9 +121,11 @@ GPlatesQtWidgets::RasterPropertiesDialog::RasterPropertiesDialog(
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_colour_map_lineedit,
 			colour_map_placeholder_widget);
+#if 0
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_georeferencing_widget,
 			georeferencing_placeholder_widget);
+#endif
 	invalid_cpt_file_label->hide();
 	properties_treewidget->header()->setResizeMode(QHeaderView::ResizeToContents);
 	main_buttonbox->setFocus();
@@ -464,6 +469,7 @@ GPlatesQtWidgets::RasterPropertiesDialog::populate_from_data()
 		properties_treewidget->addTopLevelItem(statistics_item);
 	}
 
+#if 0
 	// Populate the georeferencing groupbox.
 	boost::optional<std::pair<unsigned int, unsigned int> > raster_size =
 		GPlatesPropertyValues::RawRasterUtils::get_raster_size(*raw_raster);
@@ -479,6 +485,7 @@ GPlatesQtWidgets::RasterPropertiesDialog::populate_from_data()
 	{
 		d_georeferencing_widget->setEnabled(false);
 	}
+#endif
 
 	// Populate the colour map groupbox.
 	d_colour_map_lineedit->setText(d_view_state->get_raster_colour_map_filename());

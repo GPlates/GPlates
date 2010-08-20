@@ -40,7 +40,6 @@
 #include "opengl/GLResourceManager.h"
 
 #include "property-values/Georeferencing.h"
-#include "property-values/InMemoryRaster.h"
 #include "property-values/RawRaster.h"
 
 #include "utils/VirtualProxy.h"
@@ -49,8 +48,7 @@
 namespace GPlatesGui
 {
 	class Texture :
-			public QObject,
-			public GPlatesPropertyValues::InMemoryRaster
+			public QObject
 	{
 		Q_OBJECT
 

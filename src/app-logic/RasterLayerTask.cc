@@ -24,13 +24,171 @@
  */
 
 #include <algorithm>
+#include <boost/foreach.hpp>
 
 #include "RasterLayerTask.h"
 
 #include "ResolvedRaster.h"
 
+#include "model/FeatureVisitor.h"
+
 #include "property-values/Georeferencing.h"
+#include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/RawRaster.h"
+
+
+namespace
+{
+	/**
+	 * Visits a feature collection and determines whether the feature collection
+	 * contains any raster features.
+	 *
+	 * The heuristic that we're using here is that it is a raster feature if there
+	 * is all of the following:
+	 *  - GmlRectifiedGrid inside a GpmlConstantValue inside a gpml:domainSet
+	 *    top level property.
+	 *  - GmlFile inside a GpmlConstantValue or a GpmlPiecewiseAggregation inside
+	 *    a gpml:rangeSet top level property.
+	 *  - GpmlRasterBandNames (not inside any time dependent structure) inside a
+	 *    gpml:bandNames top level property.
+	 */
+	class RasterFeatureCollectionVisitor :
+			public GPlatesModel::ConstFeatureVisitor
+	{
+	public:
+
+		RasterFeatureCollectionVisitor() :
+			d_seen_gml_rectified_grid(false),
+			d_seen_gml_file(false),
+			d_seen_gpml_raster_band_names(false),
+			d_inside_constant_value(false),
+			d_inside_piecewise_aggregation(false),
+			d_collection_has_raster_feature(false)
+		{  }
+
+		bool
+		collection_has_raster_feature() const
+		{
+			return d_collection_has_raster_feature;
+		}
+
+		virtual
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle)
+		{
+			d_seen_gml_rectified_grid = false;
+			d_seen_gml_file = false;
+			d_seen_gpml_raster_band_names = false;
+
+			return true;
+		}
+
+		virtual
+		void
+		finalise_post_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle)
+		{
+			if (d_seen_gml_rectified_grid &&
+					d_seen_gml_file &&
+					d_seen_gpml_raster_band_names)
+			{
+				d_collection_has_raster_feature = true;
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		{
+			d_inside_constant_value = true;
+			gpml_constant_value.value()->accept_visitor(*this);
+			d_inside_constant_value = false;
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{
+			d_inside_piecewise_aggregation = true;
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
+				gpml_piecewise_aggregation.time_windows();
+			BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+			{
+				time_window.time_dependent_value()->accept_visitor(*this);
+			}
+			d_inside_piecewise_aggregation = false;
+		}
+
+		virtual
+		void
+		visit_gml_rectified_grid(
+				const GPlatesPropertyValues::GmlRectifiedGrid &gml_rectified_grid)
+		{
+			static const GPlatesModel::PropertyName DOMAIN_SET =
+				GPlatesModel::PropertyName::create_gpml("domainSet");
+
+			if (d_inside_constant_value)
+			{
+				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
+				if (propname && *propname == DOMAIN_SET)
+				{
+					d_seen_gml_rectified_grid = true;
+				}
+			}
+		}
+
+		virtual
+		void
+		visit_gml_file(
+				const GPlatesPropertyValues::GmlFile &gml_file)
+		{
+			static const GPlatesModel::PropertyName RANGE_SET =
+				GPlatesModel::PropertyName::create_gpml("rangeSet");
+
+			if (d_inside_constant_value || d_inside_piecewise_aggregation)
+			{
+				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
+				if (propname && *propname == RANGE_SET)
+				{
+					d_seen_gml_file = true;
+				}
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_raster_band_names(
+				const GPlatesPropertyValues::GpmlRasterBandNames &gpml_raster_band_names)
+		{
+			static const GPlatesModel::PropertyName BAND_NAMES =
+				GPlatesModel::PropertyName::create_gpml("bandNames");
+
+			if (!d_inside_constant_value && !d_inside_piecewise_aggregation)
+			{
+				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
+				if (propname && *propname == BAND_NAMES)
+				{
+					d_seen_gpml_raster_band_names = true;
+				}
+			}
+		}
+
+	private:
+
+		bool d_seen_gml_rectified_grid;
+		bool d_seen_gml_file;
+		bool d_seen_gpml_raster_band_names;
+
+		bool d_inside_constant_value;
+		bool d_inside_piecewise_aggregation;
+		
+		bool d_collection_has_raster_feature;
+	};
+}
 
 
 const char *GPlatesAppLogic::RasterLayerTask::RASTER_FEATURE_CHANNEL_NAME =
@@ -43,9 +201,13 @@ bool
 GPlatesAppLogic::RasterLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
-	// FIXME: Visit features in 'feature_collection' and return true if any
-	// have a raster property.
-	return false;
+	RasterFeatureCollectionVisitor visitor;
+	for (GPlatesModel::FeatureCollectionHandle::const_iterator iter = feature_collection->begin();
+			iter != feature_collection->end(); ++iter)
+	{
+		visitor.visit_feature(iter);
+	}
+	return visitor.collection_has_raster_feature();
 }
 
 

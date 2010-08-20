@@ -29,6 +29,7 @@
 #ifndef GPLATES_FILEIO_RASTERREADER_H
 #define GPLATES_FILEIO_RASTERREADER_H
 
+#include <utility>
 #include <map>
 #include <boost/scoped_ptr.hpp>
 #include <QRect>
@@ -76,13 +77,15 @@ namespace GPlatesFileIO
 		{
 			FormatInfo(
 					const QString &description_,
+					const QString &mime_type_,
 					FormatHandler handler_) :
 				description(description_),
+				mime_type(mime_type_),
 				handler(handler_)
-			{
-			}
+			{  }
 
 			QString description;
+			QString mime_type;
 			FormatHandler handler;
 		};
 
@@ -121,6 +124,28 @@ namespace GPlatesFileIO
 		 */
 		unsigned int
 		get_number_of_bands(
+				ReadErrorAccumulation *read_errors = NULL);
+
+		/**
+		 * Returns the size (width by height) of the raster.
+		 *
+		 * Returns (0, 0) in case of error, or if the bands in the raster have
+		 * different sizes.
+		 */
+		std::pair<unsigned int, unsigned int>
+		get_size(
+				ReadErrorAccumulation *read_errors = NULL);
+
+		/**
+		 * Returns the data type of the given @a band_number.
+		 *
+		 * @a band_number must be between 1 and @a get_number_of_bands inclusive.
+		 *
+		 * Returns UNKNOWN if the given @a band_number could not be read.
+		 */
+		GPlatesPropertyValues::RasterType::Type
+		get_type(
+				unsigned int band_number,
 				ReadErrorAccumulation *read_errors = NULL);
 
 		/**
@@ -211,18 +236,6 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation *read_errors);
 
 		/**
-		 * Returns the data type of the given @a band_number.
-		 *
-		 * @a band_number must be between 1 and @a get_number_of_bands inclusive.
-		 *
-		 * Returns UNKNOWN if the given @a band_number could not be read.
-		 */
-		GPlatesPropertyValues::RasterType::Type
-		get_type(
-				unsigned int band_number,
-				ReadErrorAccumulation *read_errors = NULL);
-
-		/**
 		 * Returns a pointer to a copy of the data contained within the given
 		 * @a region in the given @a band_number.
 		 *
@@ -264,6 +277,11 @@ namespace GPlatesFileIO
 		virtual
 		unsigned int
 		get_number_of_bands(
+				ReadErrorAccumulation *read_errors) = 0;
+
+		virtual
+		std::pair<unsigned int, unsigned int>
+		get_size(
 				ReadErrorAccumulation *read_errors) = 0;
 
 		virtual

@@ -72,6 +72,11 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation *read_errors);
 
 		virtual
+		std::pair<unsigned int, unsigned int>
+		get_size(
+				ReadErrorAccumulation *read_errors);
+
+		virtual
 		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 		get_proxied_raw_raster(
 				unsigned int band_number,

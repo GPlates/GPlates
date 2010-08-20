@@ -26,7 +26,10 @@
 #ifndef GPLATES_QTWIDGETS_RASTERBANDPAGE_H
 #define GPLATES_QTWIDGETS_RASTERBANDPAGE_H
 
+#include <vector>
 #include <QWizardPage>
+#include <QString>
+#include <QComboBox>
 
 #include "RasterBandPageUi.h"
 
@@ -43,6 +46,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		RasterBandPage(
+				std::vector<QString> &band_names,
 				QWidget *parent_ = NULL);
 
 		virtual
@@ -50,17 +54,57 @@ namespace GPlatesQtWidgets
 		initializePage();
 
 		virtual
-		void
-		cleanupPage();
-
-		virtual
-		int
-		nextId() const;
-
-		virtual
 		bool
 		isComplete() const;
+
+	private slots:
+
+		void
+		handle_table_cell_changed(
+				int row,
+				int column);
+
+	private:
+
+		void
+		make_signal_slot_connections();
+
+		void
+		populate_table();
+
+		std::vector<QString> &d_band_names;
 	};
+
+
+	namespace RasterBandPageInternals
+	{
+		class BandNameComboBox :
+				public QComboBox
+		{
+			Q_OBJECT
+
+		public:
+
+			BandNameComboBox(
+					QTableWidget *table,
+					QWidget *parent_);
+
+			void
+			set_model_index(
+					const QModelIndex &model_index);
+
+		private slots:
+
+			void
+			handle_text_changed(
+					const QString &text);
+
+		private:
+
+			QTableWidget *d_table;
+			QModelIndex d_model_index;
+		};
+	}
 }
 
 #endif  // GPLATES_QTWIDGETS_RASTERBANDPAGE_H
