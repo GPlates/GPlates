@@ -413,8 +413,14 @@ GPlatesQtWidgets::ColouringDialog::repopulate_feature_collections()
 				loaded_file_ref.get_file().get_feature_collection().handle_ptr();
 		QVariant qv;
 		qv.setValue(GPlatesModel::FeatureCollectionHandle::const_weak_ref(*fh));
+		QString display_name = loaded_file_ref.get_file().get_file_info().get_display_name(false);
+		if (display_name.isEmpty())
+		{
+			static const QString NEW_FEATURE_COLLECTION = "New Feature Collection";
+			display_name = NEW_FEATURE_COLLECTION;
+		}
 		feature_collections_combobox->addItem(
-					loaded_file_ref.get_file().get_file_info().get_display_name(false),
+					display_name,
 					qv);
 	}
 }
