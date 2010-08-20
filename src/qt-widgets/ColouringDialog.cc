@@ -409,9 +409,13 @@ GPlatesQtWidgets::ColouringDialog::repopulate_feature_collections()
 			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &loaded_file_ref,
 			loaded_file_refs)
 	{
+		const GPlatesModel::FeatureCollectionHandle* fh = 
+				loaded_file_ref.get_file().get_feature_collection().handle_ptr();
+		QVariant qv;
+		qv.setValue(GPlatesModel::FeatureCollectionHandle::const_weak_ref(*fh));
 		feature_collections_combobox->addItem(
 					loaded_file_ref.get_file().get_file_info().get_display_name(false),
-					QVariant(loaded_file_ref.get_file().get_feature_collection()));
+					qv);
 	}
 }
 
