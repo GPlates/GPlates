@@ -32,6 +32,8 @@
 
 #include "ColourPalette.h"
 
+#include "property-values/TextContent.h"
+
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -52,6 +54,9 @@ namespace GPlatesGui
 
 		typedef GPlatesUtils::non_null_intrusive_ptr<RasterColourScheme> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const RasterColourScheme> non_null_ptr_to_const_type;
+
+		typedef GPlatesPropertyValues::TextContent band_name_string_type;
+
 
 		/**
 		 * The type of the ColourPalette encapsulated by RasterColourScheme.
@@ -81,7 +86,7 @@ namespace GPlatesGui
 			return new RasterColourScheme(band_name, colour_palette);
 		}
 
-		const UnicodeString &
+		const band_name_string_type &
 		get_band_name() const;
 
 		template<typename PaletteKeyType>
@@ -124,7 +129,7 @@ namespace GPlatesGui
 			ColourPalette<double>::non_null_ptr_type
 		> variant_type;
 
-		UnicodeString d_band_name;
+		band_name_string_type d_band_name;
 		variant_type d_colour_palette;
 		ColourPaletteType d_colour_palette_type;
 	};

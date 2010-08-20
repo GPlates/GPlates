@@ -27,6 +27,7 @@
 #ifndef GPLATES_APP_LOGIC_RESOLVEDRASTER_H
 #define GPLATES_APP_LOGIC_RESOLVEDRASTER_H
 
+#include <vector>
 #include <boost/optional.hpp>
 
 #include "ReconstructionGeometry.h"
@@ -39,6 +40,7 @@
 #include "model/WeakObserver.h"
 
 #include "property-values/Georeferencing.h"
+#include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
 
 
@@ -52,9 +54,8 @@ namespace GPlatesAppLogic
 	 * is rotated independently according to its plate id).
 	 */
 	class ResolvedRaster :
-			public ReconstructionGeometry
-			// FIXME: Add this back when raster is a property/band of a feature
-			//public GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle>
+			public ReconstructionGeometry,
+			public GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle>
 	{
 	public:
 		/**
@@ -85,23 +86,23 @@ namespace GPlatesAppLogic
 		static
 		const non_null_ptr_type
 		create(
+				GPlatesModel::FeatureHandle &feature_handle,
 				const Layer &created_from_layer_,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
+				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
 				const boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-						reconstruct_raster_polygons = boost::none
-				// FIXME: Add this back when raster is a property/band of a feature
-// 				GPlatesModel::FeatureHandle &feature_handle,
-// 				GPlatesModel::FeatureHandle::iterator property_iterator_,
-		)
+						reconstruct_raster_polygons = boost::none)
 		{
 			return non_null_ptr_type(
 					new ResolvedRaster(
+							feature_handle,
 							created_from_layer_,
 							reconstruction_tree_,
 							georeferencing,
-							raster,
+							proxied_rasters,
+							raster_band_names,
 							reconstruct_raster_polygons),
 					GPlatesUtils::NullIntrusivePointerHandler());
 		}
@@ -127,13 +128,17 @@ namespace GPlatesAppLogic
 		}
 
 
-		/**
-		 * Returns the raster data.
-		 */
-		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &
-		get_raster() const
+		const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
+		get_proxied_rasters() const
 		{
-			return d_raster;
+			return d_proxied_rasters;
+		}
+
+
+		const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &
+		get_raster_band_names() const
+		{
+			return d_raster_band_names;
 		}
 
 
@@ -163,9 +168,6 @@ namespace GPlatesAppLogic
 		accept_visitor(
 				ReconstructionGeometryVisitor &visitor);
 
-		// FIXME: Add this back when ResolvedRaster becomes a weak observer
-		// (which is when raster is a property/band of a feature).
-#if 0
 		/**
 		 * Accept a WeakObserverVisitor instance.
 		 */
@@ -173,7 +175,6 @@ namespace GPlatesAppLogic
 		void
 		accept_weak_observer_visitor(
 				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor);
-#endif
 
 	protected:
 		/**
@@ -181,16 +182,20 @@ namespace GPlatesAppLogic
 		 * instantiation of this type on the stack.
 		 */
 		ResolvedRaster(
+				GPlatesModel::FeatureHandle &feature_handle,
 				const Layer &created_from_layer_,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
+				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
 				const boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> &
 						reconstruct_raster_polygons) :
 			ReconstructionGeometry(reconstruction_tree_),
+			WeakObserverType(feature_handle),
 			d_created_from_layer(created_from_layer_),
 			d_georeferencing(georeferencing),
-			d_raster(raster),
+			d_proxied_rasters(proxied_rasters),
+			d_raster_band_names(raster_band_names),
 			d_reconstruct_raster_polygons(reconstruct_raster_polygons)
 		{  }
 
@@ -206,9 +211,17 @@ namespace GPlatesAppLogic
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
 
 		/**
-		 * The raster data.
+		 * The proxied rasters of the time-resolved GmlFile (in the case of time-dependent rasters).
+		 *
+		 * The band name will be used to look up the correct raster in the presentation code.
+		 * The user-selected band name is not accessible here since this is app-logic code.
 		 */
-		GPlatesPropertyValues::RawRaster::non_null_ptr_type d_raster;
+		std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> d_proxied_rasters;
+
+		/**
+		 * The list of band names - one for each proxied raster.
+		 */
+		GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type d_raster_band_names;
 
 		/**
 		 * The optional polygon set used to reconstruct the raster.

@@ -46,6 +46,7 @@
 #include "maths/SmallCircle.h"
 
 #include "property-values/Georeferencing.h"
+#include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
 
 
@@ -173,7 +174,8 @@ namespace GPlatesViewOperations
 		create_rendered_resolved_raster(
 				const GPlatesAppLogic::Layer &layer,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
+				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
 				const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
 						reconstruct_raster_polygons = boost::none);
 

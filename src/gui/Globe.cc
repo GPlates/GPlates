@@ -135,6 +135,7 @@ GPlatesGui::Globe::paint(
 			create_rendered_layer_node(globe_orientation_transform_node);
 	d_sphere.paint(sphere_node);
 
+#if 0
 	// Render the global texture.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type texture_node =
 			create_rendered_layer_node(globe_orientation_transform_node);
@@ -142,6 +143,7 @@ GPlatesGui::Globe::paint(
 			texture_node,
 			d_persistent_opengl_objects->get_list_objects().get_opengl_shared_state()
 				->get_texture_resource_manager());
+#endif
 
 	// Render the grid lines on the sphere.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_node =

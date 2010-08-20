@@ -484,8 +484,20 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
 {
+	// Get the proxied rasters.
+	// We'll look these up using a raster band name from the colouring options.
+	// For now just use the first raster proxy.
+	const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters =
+			rendered_resolved_raster.get_proxied_rasters();
+	if (proxied_rasters.empty())
+	{
+		// No rasters so nothing we can do.
+		return;
+	}
+	const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster = proxied_rasters[0];
+
 	static const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> raster_colour_scheme =
-			create_default_raster_colour_scheme(rendered_resolved_raster.get_raster());
+			create_default_raster_colour_scheme(raster);
 
 	// We don't want to rebuild the OpenGL structures that render the raster each frame
 	// so those structures need to persist from one render to the next.
@@ -493,7 +505,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 			d_persistent_opengl_objects->get_list_objects().get_or_create_raster_render_graph_node(
 					rendered_resolved_raster.get_layer(),
 					rendered_resolved_raster.get_georeferencing(),
-					rendered_resolved_raster.get_raster(),
+					raster,
 					raster_colour_scheme,
 					rendered_resolved_raster.get_reconstruct_raster_polygons());
 	if (!raster_render_graph_node)

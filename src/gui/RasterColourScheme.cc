@@ -53,7 +53,7 @@ GPlatesGui::RasterColourScheme::RasterColourScheme(
 {  }
 
 
-const UnicodeString &
+const GPlatesGui::RasterColourScheme::band_name_string_type &
 GPlatesGui::RasterColourScheme::get_band_name() const
 {
 	return d_band_name;

@@ -199,7 +199,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 					rr->get_layer(),
 					rr->get_georeferencing(),
-					rr->get_raster(),
+					rr->get_proxied_rasters(),
+					rr->get_raster_band_names(),
 					rr->get_reconstruct_raster_polygons());
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and

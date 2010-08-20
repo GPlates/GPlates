@@ -151,9 +151,6 @@ namespace GPlatesModel
 				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
 		{  }
 
-		// FIXME: Add this back when ResolvedRaster becomes a weak observer
-		// (which is when raster is a property/band of a feature).
-#if 0
 		/**
 		 * Override this function in your own derived class.
 		 */
@@ -162,7 +159,6 @@ namespace GPlatesModel
 		visit_resolved_raster(
 				GPlatesAppLogic::ResolvedRaster &rr)
 		{  }
-#endif
 
 		/**
 		 * Override this function in your own derived class.

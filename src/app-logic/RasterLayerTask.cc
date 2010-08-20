@@ -33,8 +33,11 @@
 #include "model/FeatureVisitor.h"
 
 #include "property-values/Georeferencing.h"
+#include "property-values/GmlFile.h"
+#include "property-values/GmlRectifiedGrid.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlTimeWindow.h"
 #include "property-values/RawRaster.h"
 
 
@@ -53,12 +56,12 @@ namespace
 	 *  - GpmlRasterBandNames (not inside any time dependent structure) inside a
 	 *    gpml:bandNames top level property.
 	 */
-	class RasterFeatureCollectionVisitor :
+	class CanResolveRasterFeature :
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
-		RasterFeatureCollectionVisitor() :
+		CanResolveRasterFeature() :
 			d_seen_gml_rectified_grid(false),
 			d_seen_gml_file(false),
 			d_seen_gpml_raster_band_names(false),
@@ -188,6 +191,181 @@ namespace
 		
 		bool d_collection_has_raster_feature;
 	};
+
+
+	/**
+	 * Visits a raster feature and extracts property information required to resolve the raster.
+	 *
+	 * The heuristic that we're using here is that it is a raster feature if there
+	 * is all of the following:
+	 *  - GmlRectifiedGrid inside a GpmlConstantValue inside a gpml:domainSet
+	 *    top level property.
+	 *  - GmlFile inside a GpmlConstantValue or a GpmlPiecewiseAggregation inside
+	 *    a gpml:rangeSet top level property.
+	 *  - GpmlRasterBandNames (not inside any time dependent structure) inside a
+	 *    gpml:bandNames top level property.
+	 */
+	class ExtractRasterProperties :
+			public GPlatesModel::ConstFeatureVisitor
+	{
+	public:
+		ExtractRasterProperties(
+				const double &reconstruction_time) :
+			d_reconstruction_time(reconstruction_time),
+			d_inside_constant_value(false),
+			d_inside_piecewise_aggregation(false)
+		{  }
+
+
+		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+		get_georeferencing() const
+		{
+			return d_georeferencing;
+		}
+
+		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+		get_proxied_rasters() const
+		{
+			return d_proxied_rasters;
+		}
+
+		const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
+		get_raster_band_names() const
+		{
+			return d_raster_band_names;
+		}
+
+
+		virtual
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle)
+		{
+			d_georeferencing = boost::none;
+
+			return true;
+		}
+
+		virtual
+		void
+		finalise_post_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle)
+		{
+		}
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		{
+			d_inside_constant_value = true;
+			gpml_constant_value.value()->accept_visitor(*this);
+			d_inside_constant_value = false;
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{
+			d_inside_piecewise_aggregation = true;
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
+				gpml_piecewise_aggregation.time_windows();
+			BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+			{
+				const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
+						time_window.valid_time();
+
+				// If the time window period contains the current reconstruction time then visit.
+				// The time periods should be mutually exclusive - if we happen to be it
+				// two time periods then we're probably right on the boundary between the two
+				// and then it doesn't really matter which one we choose.
+				if (time_period->contains(d_reconstruction_time))
+				{
+					time_window.time_dependent_value()->accept_visitor(*this);
+				}
+			}
+			d_inside_piecewise_aggregation = false;
+		}
+
+		virtual
+		void
+		visit_gml_rectified_grid(
+				const GPlatesPropertyValues::GmlRectifiedGrid &gml_rectified_grid)
+		{
+			static const GPlatesModel::PropertyName DOMAIN_SET =
+				GPlatesModel::PropertyName::create_gpml("domainSet");
+
+			if (d_inside_constant_value)
+			{
+				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
+				if (propname && *propname == DOMAIN_SET)
+				{
+					d_georeferencing = gml_rectified_grid.convert_to_georeferencing();
+				}
+			}
+		}
+
+		virtual
+		void
+		visit_gml_file(
+				const GPlatesPropertyValues::GmlFile &gml_file)
+		{
+			static const GPlatesModel::PropertyName RANGE_SET =
+				GPlatesModel::PropertyName::create_gpml("rangeSet");
+
+			if (d_inside_constant_value || d_inside_piecewise_aggregation)
+			{
+				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
+				if (propname && *propname == RANGE_SET)
+				{
+					d_proxied_rasters = gml_file.proxied_raw_rasters();
+				}
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_raster_band_names(
+				const GPlatesPropertyValues::GpmlRasterBandNames &gpml_raster_band_names)
+		{
+			static const GPlatesModel::PropertyName BAND_NAMES =
+				GPlatesModel::PropertyName::create_gpml("bandNames");
+
+			if (!d_inside_constant_value && !d_inside_piecewise_aggregation)
+			{
+				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
+				if (propname && *propname == BAND_NAMES)
+				{
+					d_raster_band_names = gpml_raster_band_names.band_names();
+				}
+			}
+		}
+
+	private:
+		GPlatesPropertyValues::GeoTimeInstant d_reconstruction_time;
+
+		/**
+		 * The georeferencing for the raster - currently treated as a constant value over time.
+		 */
+		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> d_georeferencing;
+
+		/**
+		 * The proxied rasters of the time-resolved GmlFile (in the case of time-dependent rasters).
+		 *
+		 * The band name will be used to look up the correct raster in the presentation code.
+		 * The user-selected band name is not accessible here since this is app-logic code.
+		 */
+		boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > d_proxied_rasters;
+
+		/**
+		 * The list of band names - one for each proxied raster.
+		 */
+		boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> d_raster_band_names;
+
+		bool d_inside_constant_value;
+		bool d_inside_piecewise_aggregation;
+	};
 }
 
 
@@ -201,7 +379,7 @@ bool
 GPlatesAppLogic::RasterLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
-	RasterFeatureCollectionVisitor visitor;
+	CanResolveRasterFeature visitor;
 	for (GPlatesModel::FeatureCollectionHandle::const_iterator iter = feature_collection->begin();
 			iter != feature_collection->end(); ++iter)
 	{
@@ -281,6 +459,42 @@ GPlatesAppLogic::RasterLayerTask::process(
 			RASTER_FEATURE_CHANNEL_NAME,
 			input_data);
 
+	if (raster_feature_collection.size() != 1 ||
+		raster_feature_collection[0]->size() != 1)
+	{
+		// Expecting a single raster feature.
+		return boost::none;
+	}
+	GPlatesModel::FeatureHandle::weak_ref raster_feature =
+			(*raster_feature_collection[0]->begin())->reference();
+
+	// Extract the georeferencing and raster data.
+	ExtractRasterProperties extract_raster_properties(reconstruction_time);
+	extract_raster_properties.visit_feature(raster_feature);
+
+	const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+			georeferencing = extract_raster_properties.get_georeferencing();
+	if (!georeferencing)
+	{
+		// We need georeferencing information to display rasters.
+		return boost::none;
+	}
+
+	const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+			proxied_rasters = extract_raster_properties.get_proxied_rasters();
+	if (!proxied_rasters || proxied_rasters->empty())
+	{
+		// We at least one proxied raster.
+		return boost::none;
+	}
+
+	const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
+			raster_band_names = extract_raster_properties.get_raster_band_names();
+	if (!raster_band_names || raster_band_names->empty())
+	{
+		// We at least one band name.
+		return boost::none;
+	}
 
 	// Update the polygon rotations using the new reconstruction tree.
 	update_reconstruct_raster_polygons(reconstruction_tree.get(), input_data);
@@ -288,11 +502,6 @@ GPlatesAppLogic::RasterLayerTask::process(
 	// Create a reconstruction geometry collection to store the resolved raster in.
 	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geometry_collection =
 			ReconstructionGeometryCollection::create(reconstruction_tree.get());
-
-	// FIXME: When raster is a property/band of a feature then visit the feature
-	// to get the raster and georeferencing instead of what's done below which will crash.
-	GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type georeferencing(NULL);
-	GPlatesPropertyValues::RawRaster::non_null_ptr_type raster(NULL);
 
 	// Need to cast boost::optional containing non_null_ptr_type to
 	// a boost::optional containing non_null_ptr_to_const_type.
@@ -306,10 +515,12 @@ GPlatesAppLogic::RasterLayerTask::process(
 	// Create a resolved raster.
 	ResolvedRaster::non_null_ptr_type resolved_raster =
 			ResolvedRaster::create(
+					*raster_feature.handle_ptr(),
 					layer_handle,
 					reconstruction_tree.get(),
-					georeferencing,
-					raster,
+					georeferencing.get(),
+					proxied_rasters.get(),
+					raster_band_names.get(),
 					reconstruct_raster_polygons);
 
 	reconstruction_geometry_collection->add_reconstruction_geometry(resolved_raster);

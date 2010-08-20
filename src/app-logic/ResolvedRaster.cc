@@ -46,13 +46,9 @@ GPlatesAppLogic::ResolvedRaster::accept_visitor(
 }
 
 
-// FIXME: Add this back when ResolvedRaster becomes a weak observer
-// (which is when raster is a property/band of a feature).
-#if 0
 void
 GPlatesAppLogic::ResolvedRaster::accept_weak_observer_visitor(
 		GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor)
 {
 	visitor.visit_resolved_raster(*this);
 }
-#endif
