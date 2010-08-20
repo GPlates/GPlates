@@ -435,11 +435,6 @@ GPlatesAppLogic::ApplicationState::create_layer_tasks(
 		}
 	}
 
-	// There should be at least one primary layer task type that is a catch-all.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!layer_tasks.empty(),
-			GPLATES_ASSERTION_SOURCE);
-
 	return layer_tasks;
 }
 
