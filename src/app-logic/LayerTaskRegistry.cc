@@ -131,8 +131,13 @@ GPlatesAppLogic::LayerTaskRegistry::get_layer_task_types_that_can_process_featur
 		}
 	}
 
-	// Use the default layer task type if no other types can be found.
-	if (filtered_layer_task_types.empty())
+	// Use the default layer task type if no other types can be found and
+	// if the feature collection is *not* empty.
+	// An empty feature collection can mean a feature collection has been created but
+	// no features have been added yet - when they do this code will get called again
+	// and return the matching layer tasks.
+	if (filtered_layer_task_types.empty() &&
+		feature_collection->size() != 0)
 	{
 		filtered_layer_task_types.push_back(d_default_layer_task_type);
 	}
@@ -178,10 +183,32 @@ GPlatesAppLogic::LayerTaskRegistry::get_layer_task_types_that_can_process_featur
 		}
 	}
 
-	// Use the default layer task type if no other types can be found.
+	// Use the default layer task type if no other types can be found and
+	// if not all feature collections are empty.
+	// This is perhaps not quite the right thing to do - in fact this whole method
+	// is a bit questionable.
+	// The singular version of this method (ie, get_layer_task_types_that_can_process_feature_collection)
+	// is more useful as it processes only a single feature collection so it's more
+	// obvious what to do there.
 	if (filtered_layer_task_types.empty())
 	{
-		filtered_layer_task_types.push_back(d_default_layer_task_type);
+		bool are_all_feature_collections_empty = true;
+
+		BOOST_FOREACH(
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				feature_collections)
+		{
+			if (feature_collection->size() != 0)
+			{
+				are_all_feature_collections_empty = false;
+				break;
+			}
+		}
+
+		if (!are_all_feature_collections_empty)
+		{
+			filtered_layer_task_types.push_back(d_default_layer_task_type);
+		}
 	}
 
 	return filtered_layer_task_types;
