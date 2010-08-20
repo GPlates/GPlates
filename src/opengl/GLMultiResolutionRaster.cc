@@ -1402,8 +1402,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_vertices_along_tile_edges(
 	const unsigned int x_num_quads_based_on_texels = num_u_texels / NUM_TEXELS_PER_VERTEX;
 	const unsigned int y_num_quads_based_on_texels = num_v_texels / NUM_TEXELS_PER_VERTEX;
 
+#if 1
+	unsigned int x_num_quads = x_num_quads_based_on_texels;
+	unsigned int y_num_quads = y_num_quads_based_on_texels;
+#else
 	unsigned int x_num_quads = (std::max)(x_num_quads_based_on_distance, x_num_quads_based_on_texels);
 	unsigned int y_num_quads = (std::max)(y_num_quads_based_on_distance, y_num_quads_based_on_texels);
+#endif
 
 	// Make sure non-zero.
 	if (x_num_quads == 0)
