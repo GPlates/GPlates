@@ -134,33 +134,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 		bool texture_was_recycled,
 		GLRenderer &renderer)
 {
-#if 0
-	if (texture_was_recycled)
-	{
-		return;
-	}
-
-	texture->gl_bind_texture(GL_TEXTURE_2D);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-	GPlatesGui::rgba8_t white(255, 255, 255, 255);
-	GPlatesGui::rgba8_t white_buffer[256 * 256];
-	for (int n = 256 * 256; --n >= 0; )
-	{
-		white_buffer[n] = white;
-	}
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
-			d_tile_texel_dimension, d_tile_texel_dimension,
-			0, GL_RGBA, GL_UNSIGNED_BYTE, white_buffer);
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
-#else
 	if (!texture_was_recycled)
 	{
 		// If texture just allocated then we need to create it in OpenGL.
@@ -190,26 +163,12 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	renderer.push_transform(*tile.projection_transform);
 	renderer.push_transform(*tile.view_transform);
 
-	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
-			GPlatesOpenGL::GLCompositeStateSet::create();
-
-	// Enable texturing and set the texture function.
-	GPlatesOpenGL::GLTextureEnvironmentState::non_null_ptr_type tex_env_state =
-			GPlatesOpenGL::GLTextureEnvironmentState::create();
-	tex_env_state->gl_enable_texture_2D(GL_TRUE);
-	tex_env_state->gl_tex_env_mode(GL_REPLACE);
-	state_set->add_state_set(tex_env_state);
-
-	renderer.push_state_set(state_set);
-
 	// Get the source raster to render into the render target using the view frustum
 	// we have provided. We have already cached the visible source raster tiles that need to be
 	// rendered into our frustum to save it a bit of culling work.
 	d_multi_resolution_raster->render(
 			renderer,
 			tile.src_raster_tiles);
-
-	renderer.pop_state_set();
 
 	renderer.pop_transform();
 	renderer.pop_transform();
@@ -218,7 +177,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	renderer.pop_state_set();
 
 	renderer.pop_render_target();
-#endif
 }
 
 

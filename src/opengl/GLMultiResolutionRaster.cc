@@ -41,6 +41,7 @@
 #include "GLContext.h"
 #include "GLIntersect.h"
 #include "GLRenderer.h"
+#include "GLTextureEnvironmentState.h"
 #include "GLTransformState.h"
 #include "GLUtils.h"
 #include "GLVertexArrayDrawable.h"
@@ -265,6 +266,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 		GLRenderer &renderer,
 		const std::vector<tile_handle_type> &tiles)
 {
+	// Enable texturing and set the texture function on texture unit 0.
+	GPlatesOpenGL::GLTextureEnvironmentState::non_null_ptr_type state_set =
+			GPlatesOpenGL::GLTextureEnvironmentState::create();
+	state_set->gl_enable_texture_2D(GL_TRUE);
+	state_set->gl_tex_env_mode(GL_REPLACE);
+
+	renderer.push_state_set(state_set);
+
 	// Create a render operation for each visible tile.
 	BOOST_FOREACH(GLMultiResolutionRaster::tile_handle_type tile_handle, tiles)
 	{
@@ -283,6 +292,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 		// Pop the state set.
 		renderer.pop_state_set();
 	}
+
+	renderer.pop_state_set();
 }
 
 
@@ -1721,19 +1732,23 @@ GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 	// or slightly greater than 90 degrees.
 	// If it's only slightly outside the valid range then we'll be lenient and correct it.
 	// Otherwise we'll do nothing and let GPlatesMaths::LatLonPoint throw an exception.
+	// UPDATE: Actually we'll hard clamp it - there's no guarantee that the georeferencing
+	// is correct in which case the raster will just be displayed incorrectly.
 	if (y_geo < -90)
 	{
-		if (y_geo > -90 - 1e-6)
-		{
-			y_geo = -90;
-		}
+		y_geo = -90;
 	}
 	else if (y_geo > 90)
 	{
-		if (y_geo < 90 + 1e-6)
-		{
-			y_geo = 90;
-		}
+		y_geo = 90;
+	}
+	if (x_geo < -360)
+	{
+		x_geo = -360;
+	}
+	else if (x_geo > 360)
+	{
+		x_geo = 360;
 	}
 
 	// Finally convert from (longitude, latitude) to cartesian (x,y,z).
