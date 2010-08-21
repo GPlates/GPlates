@@ -132,13 +132,6 @@ namespace GPlatesQtWidgets
 		void
 		edit_current_colour_scheme();
 
-	protected:
-			
-		bool 
-		eventFilter( 
-				QObject *o, 
-				QEvent *e );
-
 	private:
 
 		/**
@@ -204,9 +197,6 @@ namespace GPlatesQtWidgets
 
 		void
 		populate_feature_collections();
-
-		void
-		repopulate_feature_collections();
 
 		void
 		load_category(

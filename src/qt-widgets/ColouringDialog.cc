@@ -275,7 +275,6 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 
 	// Set up the list of feature collections.
 	populate_feature_collections();
-	feature_collections_combobox->installEventFilter( this );
 
 	// Set up the table of colour scheme categories.
 	populate_colour_scheme_categories();
@@ -382,46 +381,6 @@ GPlatesQtWidgets::ColouringDialog::populate_feature_collections()
 		add_feature_collection_to_combobox(
 				(*iter)->reference(),
 				feature_collections_combobox);
-	}
-}
-
-
-void
-GPlatesQtWidgets::ColouringDialog::repopulate_feature_collections()
-{
-	feature_collections_combobox->clear();
-	// Note that we store a weak-ref to the feature collection as the combobox item userData.
-	
-	// First, we add a special entry for "all feature collections", to allow the
-	// user to change the colour scheme for all feature collections without a
-	// special colour scheme chosen.
-	feature_collections_combobox->addItem(
-			"(All)",
-			QVariant(GPlatesModel::FeatureCollectionHandle::const_weak_ref()));
-
-	GPlatesAppLogic::FeatureCollectionFileState& feature_collection_file_state =
-	d_application_state.get_feature_collection_file_state();
-
-
-	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_file_refs =
-			feature_collection_file_state.get_loaded_files();
-	BOOST_FOREACH(
-			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &loaded_file_ref,
-			loaded_file_refs)
-	{
-		const GPlatesModel::FeatureCollectionHandle* fh = 
-				loaded_file_ref.get_file().get_feature_collection().handle_ptr();
-		QVariant qv;
-		qv.setValue(GPlatesModel::FeatureCollectionHandle::const_weak_ref(*fh));
-		QString display_name = loaded_file_ref.get_file().get_file_info().get_display_name(false);
-		if (display_name.isEmpty())
-		{
-			static const QString NEW_FEATURE_COLLECTION = "New Feature Collection";
-			display_name = NEW_FEATURE_COLLECTION;
-		}
-		feature_collections_combobox->addItem(
-					display_name,
-					qv);
 	}
 }
 
@@ -1036,20 +995,6 @@ GPlatesQtWidgets::ColouringDialog::handle_use_global_changed(
 
 	// Force a refresh of the dialog's contents.
 	handle_feature_collections_combobox_index_changed(feature_collections_combobox->currentIndex());
-}
-
-
-bool 
-GPlatesQtWidgets::ColouringDialog::eventFilter( 
-		QObject *o, 
-		QEvent *e )
-{
-	if( o == feature_collections_combobox &&
-		e->type() == QEvent::MouseButtonPress)
-	{
-		repopulate_feature_collections();
-	}
-	return false;
 }
 
 
