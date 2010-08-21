@@ -1392,12 +1392,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_vertices_along_tile_edges(
 			GPlatesMaths::convert_rad_to_deg(y_tile_max_spanned_angle_in_radians) /
 					MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES;
 
-	// Rounded up to integer.
-	const unsigned int x_num_quads_based_on_distance =
-			static_cast<unsigned int>(x_num_quads_based_on_distance_real.dval() + 0.99);
-	const unsigned int y_num_quads_based_on_distance =
-			static_cast<unsigned int>(y_num_quads_based_on_distance_real.dval() + 0.99);
-
 	// Determine the number of quads along each tile edge based on the texel resolution.
 	const unsigned int x_num_quads_based_on_texels = num_u_texels / NUM_TEXELS_PER_VERTEX;
 	const unsigned int y_num_quads_based_on_texels = num_v_texels / NUM_TEXELS_PER_VERTEX;
@@ -1406,6 +1400,12 @@ GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_vertices_along_tile_edges(
 	unsigned int x_num_quads = x_num_quads_based_on_texels;
 	unsigned int y_num_quads = y_num_quads_based_on_texels;
 #else
+	// Rounded up to integer.
+	const unsigned int x_num_quads_based_on_distance =
+			static_cast<unsigned int>(x_num_quads_based_on_distance_real.dval() + 0.99);
+	const unsigned int y_num_quads_based_on_distance =
+			static_cast<unsigned int>(y_num_quads_based_on_distance_real.dval() + 0.99);
+
 	unsigned int x_num_quads = (std::max)(x_num_quads_based_on_distance, x_num_quads_based_on_texels);
 	unsigned int y_num_quads = (std::max)(y_num_quads_based_on_distance, y_num_quads_based_on_texels);
 #endif
