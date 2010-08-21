@@ -1943,6 +1943,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog(
 			get_application_state(),
 			d_open_file_path,
 			d_unsaved_changes_tracker_ptr.data(),
+			d_file_io_feedback_ptr.data(),
 			this);
 
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog_ptr->read_errors();

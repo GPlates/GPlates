@@ -34,11 +34,11 @@ namespace
 	// These colours are arbitrary - maybe replace them with colours appropriate
 	// for the type of raster that we have.
 	const Colour DEFAULT_RASTER_COLOURS[] = {
-		Colour(0, 0, 1) /* blue - low */,
-		Colour(0, 1, 1) /* cyan */,
-		Colour(0, 1, 0) /* green - middle */,
+		Colour(1, 0, 0) /* red - low */,
 		Colour(1, 1, 0) /* yellow */,
-		Colour(1, 0, 0) /* red - high */
+		Colour(0, 1, 0) /* green - middle */,
+		Colour(0, 1, 1) /* cyan */,
+		Colour(0, 0, 1) /* blue - high */
 	};
 
 	const unsigned int NUM_DEFAULT_RASTER_COLOURS =

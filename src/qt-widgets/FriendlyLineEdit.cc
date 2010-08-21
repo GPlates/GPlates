@@ -129,6 +129,21 @@ GPlatesQtWidgets::FriendlyLineEdit::alignment() const
 }
 
 
+void
+GPlatesQtWidgets::FriendlyLineEdit::setLineEditSizePolicy(
+		QSizePolicy policy)
+{
+	d_line_edit->setSizePolicy(policy);
+}
+
+
+QSizePolicy
+GPlatesQtWidgets::FriendlyLineEdit::lineEditSizePolicy() const
+{
+	return d_line_edit->sizePolicy();
+}
+
+
 GPlatesQtWidgets::FriendlyLineEditInternals::InternalLineEdit::InternalLineEdit(
 		const QString &message_on_empty_string,
 		const boost::function<void (QFocusEvent *)> &parent_focus_in_event_function,

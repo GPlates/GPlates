@@ -165,6 +165,9 @@ namespace GPlatesPropertyValues
 				const GmlPoint::non_null_ptr_to_const_type &origin_)
 		{
 			d_origin = origin_;
+
+			// Invalidate the georeferencing cache because that's calculated using the origin.
+			d_cached_georeferencing = boost::none;
 		}
 
 		const offset_vector_list_type &
@@ -178,6 +181,10 @@ namespace GPlatesPropertyValues
 				const offset_vector_list_type &offset_vectors_)
 		{
 			d_offset_vectors = offset_vectors_;
+
+			// Invalidate the georeferencing cache because that's calculated using the
+			// offset vectors.
+			d_cached_georeferencing = boost::none;
 		}
 
 		const xml_attributes_type &
@@ -261,7 +268,8 @@ namespace GPlatesPropertyValues
 			d_axes(other.d_axes),
 			d_origin(other.d_origin),
 			d_offset_vectors(other.d_offset_vectors),
-			d_xml_attributes(other.d_xml_attributes)
+			d_xml_attributes(other.d_xml_attributes),
+			d_cached_georeferencing(other.d_cached_georeferencing)
 		{  }
 
 	private:

@@ -33,6 +33,7 @@
 #include <QLineEdit>
 #include <QString>
 #include <QValidator>
+#include <QSizePolicy>
 
 
 namespace GPlatesQtWidgets
@@ -147,6 +148,13 @@ namespace GPlatesQtWidgets
 
 		Qt::Alignment
 		alignment() const;
+
+		void
+		setLineEditSizePolicy(
+				QSizePolicy policy);
+
+		QSizePolicy
+		lineEditSizePolicy() const;
 
 	signals:
 

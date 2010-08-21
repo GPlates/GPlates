@@ -28,6 +28,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QString>
+#include <QStringList>
 #include <QFileDialog>
 #include <QMessageBox>
 
@@ -55,6 +56,7 @@
 #include "global/AssertionFailureException.h"
 #include "global/PreconditionViolationError.h"
 
+#include "gui/FileIOFeedback.h"
 #include "gui/UnsavedChangesTracker.h"
 
 #include "maths/MathsUtils.h"
@@ -76,6 +78,10 @@
 
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h"
+
+
+const QString
+GPlatesQtWidgets::ImportRasterDialog::GPML_EXT = ".gpml";
 
 
 bool
@@ -166,11 +172,13 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 		GPlatesAppLogic::ApplicationState &application_state,
 		QString &open_file_path,
 		GPlatesGui::UnsavedChangesTracker *unsaved_changes_tracker,
+		GPlatesGui::FileIOFeedback *file_io_feedback,
 		QWidget *parent_) :
 	QWizard(parent_, Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_application_state(application_state),
 	d_open_file_path(open_file_path),
 	d_unsaved_changes_tracker(unsaved_changes_tracker),
+	d_file_io_feedback(file_io_feedback),
 	d_georeferencing(
 			GPlatesPropertyValues::Georeferencing::create()),
 	d_save_after_finish(true),
@@ -247,6 +255,38 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 
 		d_open_file_path = filename;
 
+		// Check whether there is a GPML file of the same name in the same directory.
+		// If so, ask the user if they actually meant to open that.
+		QFileInfo file_info(filename);
+		QString base_gpml_filename = file_info.completeBaseName() + GPML_EXT;
+		QString dir = file_info.absolutePath();
+		if (!dir.endsWith("/"))
+		{
+			dir.append("/");
+		}
+		QString gpml_filename = dir + base_gpml_filename;
+		if (QFile(gpml_filename).exists())
+		{
+			static const QString QUESTION =
+					"There is a GPML file %1 in the same directory as the raster file that you selected. "
+					"Do you wish to open this existing GPML file instead of importing the raster file?";
+			QMessageBox::StandardButton answer = QMessageBox::question(
+					parentWidget(),
+					"Import Raster",
+					QUESTION.arg(base_gpml_filename),
+					QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+			if (answer == QMessageBox::Yes)
+			{
+				d_file_io_feedback->open_files(QStringList(gpml_filename));
+				return;
+			}
+			else if (answer == QMessageBox::Cancel)
+			{
+				return;
+			}
+			// else fall through.
+		}
+
 		// Read the number of bands and their type in the raster file.
 		GPlatesFileIO::RasterReader::non_null_ptr_type reader =
 			GPlatesFileIO::RasterReader::create(filename, read_errors);
@@ -283,7 +323,6 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 		// Save all of this information for later.
 		// We pretend that this is a time-dependent raster sequence of length 1,
 		// with the time set to boost::none.
-		QFileInfo file_info(filename);
 		d_raster_sequence.push_back(
 				boost::none,
 				file_info.absoluteFilePath(),
@@ -629,8 +668,6 @@ QString
 GPlatesQtWidgets::ImportRasterDialog::create_gpml_file_path(
 		bool time_dependent_raster) const
 {
-	static const QString GPML_EXT = ".gpml";
-
 	const TimeDependentRasterSequence::element_type &first_file =
 		d_raster_sequence.get_sequence()[0];
 	QString base_name = QFileInfo(first_file.file_name).completeBaseName();

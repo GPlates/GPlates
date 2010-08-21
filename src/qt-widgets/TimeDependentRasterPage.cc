@@ -35,6 +35,7 @@
 #include <QLineEdit>
 #include <QDoubleValidator>
 #include <QKeyEvent>
+#include <QSizePolicy>
 #include <QDebug>
 
 #include "TimeDependentRasterPage.h"
@@ -69,7 +70,11 @@ namespace
 				QWidget *parent_ = NULL) :
 			FriendlyLineEdit(contents, message_on_empty_string, parent_),
 			d_table(table)
-		{  }
+		{
+			QSizePolicy policy = lineEditSizePolicy();
+			policy.setVerticalPolicy(QSizePolicy::Preferred);
+			setLineEditSizePolicy(policy);
+		}
 
 		void
 		set_model_index(

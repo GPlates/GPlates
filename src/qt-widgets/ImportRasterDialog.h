@@ -49,6 +49,7 @@ namespace GPlatesFileIO
 
 namespace GPlatesGui
 {
+	class FileIOFeedback;
 	class UnsavedChangesTracker;
 }
 
@@ -144,6 +145,7 @@ namespace GPlatesQtWidgets
 				GPlatesAppLogic::ApplicationState &application_state,
 				QString &open_file_path,
 				GPlatesGui::UnsavedChangesTracker *unsaved_changes_tracker,
+				GPlatesGui::FileIOFeedback *file_io_feedback,
 				QWidget *parent_ = NULL);
 
 		/**
@@ -175,9 +177,12 @@ namespace GPlatesQtWidgets
 		create_gpml_file_path(
 				bool time_dependent_raster) const;
 
+		static const QString GPML_EXT;
+
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		QString &d_open_file_path;
 		GPlatesGui::UnsavedChangesTracker *d_unsaved_changes_tracker;
+		GPlatesGui::FileIOFeedback *d_file_io_feedback;
 
 		// For communication between pages.
 		TimeDependentRasterSequence d_raster_sequence;
