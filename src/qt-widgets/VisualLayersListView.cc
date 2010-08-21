@@ -32,6 +32,10 @@
 
 GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
 		GPlatesGui::VisualLayersProxy &visual_layers,
+		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state,
+		QString &open_file_path,
+		ReadErrorAccumulationDialog *read_errors_dialog,
 		QWidget *parent_) :
 	QListView(parent_)
 {
@@ -47,7 +51,13 @@ GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
 	GPlatesGui::VisualLayersListModel *list_model =
 		new GPlatesGui::VisualLayersListModel(visual_layers, this);
 	setModel(list_model);
-	VisualLayersDelegate *delegate = new VisualLayersDelegate(visual_layers, this);
+	VisualLayersDelegate *delegate = new VisualLayersDelegate(
+			visual_layers,
+			application_state,
+			view_state,
+			open_file_path,
+			read_errors_dialog,
+			this);
 	setItemDelegate(delegate);
 
 	// Open the persistent editor for all rows in existence at creation.

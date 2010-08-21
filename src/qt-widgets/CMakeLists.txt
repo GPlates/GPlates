@@ -203,6 +203,9 @@ set(srcs
     RasterFeatureCollectionPage.cc
     RasterFeatureCollectionPage.h
     RasterFeatureCollectionPageUi.ui
+    RasterLayerOptionsWidget.cc
+    RasterLayerOptionsWidget.h
+    RasterLayerOptionsWidgetUi.ui
     RasterPropertiesDialog.cc
     RasterPropertiesDialog.h
     RasterPropertiesDialogUi.ui

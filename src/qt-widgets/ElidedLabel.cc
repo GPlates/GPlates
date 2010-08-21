@@ -27,6 +27,7 @@
 #include <QToolTip>
 #include <QFrame>
 #include <QFontInfo>
+#include <QLayout>
 
 #include "ElidedLabel.h"
 

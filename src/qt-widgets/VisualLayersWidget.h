@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_VISUALLAYERSWIDGET_H
 #define GPLATES_QTWIDGETS_VISUALLAYERSWIDGET_H
 
+#include <QString>
 #include <QWidget>
 
 #include "VisualLayersWidgetUi.h"
@@ -33,13 +34,22 @@
 #include "gui/VisualLayersProxy.h"
 
 
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
 namespace GPlatesPresentation
 {
+	class ViewState;
 	class VisualLayers;
 }
 
 namespace GPlatesQtWidgets
 {
+	// Forward declaration.
+	class ReadErrorAccumulationDialog;
+
 	/**
 	 * VisualLayersWidget displays the contents of VisualLayers. It displays a
 	 * widget for each visual layer, as well as tools to manipulate those layers.
@@ -55,6 +65,10 @@ namespace GPlatesQtWidgets
 		explicit
 		VisualLayersWidget(
 				GPlatesPresentation::VisualLayers &visual_layers,
+				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesPresentation::ViewState &view_state,
+				QString &open_file_path,
+				ReadErrorAccumulationDialog *read_errors_dialog,
 				QWidget *parent_ = NULL);
 
 	private:

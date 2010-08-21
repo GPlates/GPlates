@@ -63,10 +63,29 @@ namespace GPlatesGui
 		 */
 		enum ColourPaletteType
 		{
+			USE_DEFAULT, // Use default colour palette instead of user supplied one.
 			INT32,
 			UINT32,
 			DOUBLE
 		};
+
+		/**
+		 * Creates a new instance of RasterColourScheme, to colour rasters according
+		 * to the given @a band_name, using the default colour palette for rasters.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				const UnicodeString &band_name);
+
+		/**
+		 * Creates a new instance of RasterColourScheme, to colour rasters according
+		 * to the given @a band_name, using the default colour palette for rasters.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				const band_name_string_type &band_name);
 
 		/**
 		 * Creates a new instance of RasterColourScheme, to colour rasters according
@@ -85,6 +104,16 @@ namespace GPlatesGui
 		{
 			return new RasterColourScheme(band_name, colour_palette);
 		}
+
+		/**
+		 * Creates a new instance of RasterColourScheme, using the same colour
+		 * palette as @a existing, but using the new @a band_name.
+		 */
+		static
+		non_null_ptr_type
+		create_from_existing(
+				const non_null_ptr_type &existing,
+				const UnicodeString &band_name);
 
 		const band_name_string_type &
 		get_band_name() const;
@@ -111,6 +140,9 @@ namespace GPlatesGui
 	private:
 
 		RasterColourScheme(
+				const band_name_string_type &band_name);
+
+		RasterColourScheme(
 				const UnicodeString &band_name,
 				const ColourPalette<boost::int32_t>::non_null_ptr_type &colour_palette);
 
@@ -124,6 +156,7 @@ namespace GPlatesGui
 
 		typedef boost::variant
 		<
+			int, // Just so that we can default construct d_colour_palette.
 			ColourPalette<boost::int32_t>::non_null_ptr_type,
 			ColourPalette<boost::uint32_t>::non_null_ptr_type,
 			ColourPalette<double>::non_null_ptr_type

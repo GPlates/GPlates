@@ -46,6 +46,7 @@
 #include "gui/GeometryFocusHighlight.h"
 #include "gui/MapTransform.h"
 #include "gui/RasterColourPalette.h"
+#include "gui/RasterColourSchemeMap.h"
 #include "gui/RenderSettings.h"
 #include "gui/Texture.h"
 #include "gui/ViewportProjection.h"
@@ -109,7 +110,10 @@ GPlatesPresentation::ViewState::ViewState(
 			GPlatesPropertyValues::UninitialisedRawRaster::create()),
 	d_georeferencing(
 			GPlatesPropertyValues::Georeferencing::create()),
-	d_is_raster_colour_map_invalid(false)
+	d_is_raster_colour_map_invalid(false),
+	d_raster_colour_scheme_map(
+			new GPlatesGui::RasterColourSchemeMap(
+				application_state.get_reconstruct_graph()))
 {
 	connect_to_viewport_zoom();
 
@@ -564,5 +568,19 @@ GPlatesPresentation::ViewState::set_raster_colour_map_filename(
 		const QString &filename)
 {
 	d_raster_colour_map_filename = filename;
+}
+
+
+GPlatesGui::RasterColourSchemeMap &
+GPlatesPresentation::ViewState::get_raster_colour_scheme_map()
+{
+	return *d_raster_colour_scheme_map;
+}
+
+
+const GPlatesGui::RasterColourSchemeMap &
+GPlatesPresentation::ViewState::get_raster_colour_scheme_map() const
+{
+	return *d_raster_colour_scheme_map;
 }
 

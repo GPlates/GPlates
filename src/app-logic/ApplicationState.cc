@@ -408,6 +408,25 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
 			this,
 			SLOT(reconstruct()));
+
+	//
+	// Perform a new reconstruction whenever layer input connections are modified.
+	//
+	QObject::connect(
+			d_reconstruct_graph.get(),
+			SIGNAL(layer_added_input_connection(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::Layer::InputConnection)),
+			this,
+			SLOT(reconstruct()));
+	QObject::connect(
+			d_reconstruct_graph.get(),
+			SIGNAL(layer_removed_input_connection(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer)),
+			this,
+			SLOT(reconstruct()));
 }
 
 

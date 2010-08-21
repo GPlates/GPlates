@@ -315,6 +315,10 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 				GPlatesAppLogic::Layer layer);
 
+		void
+		handle_file_state_changed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state);
+
 	private:
 
 		/**

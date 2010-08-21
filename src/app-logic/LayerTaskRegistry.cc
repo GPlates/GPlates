@@ -27,6 +27,7 @@
 
 #include "LayerTaskRegistry.h"
 
+#include "AgeGridLayerTask.h"
 #include "LayerTask.h"
 #include "LayerTaskRegistry.h"
 #include "RasterLayerTask.h"
@@ -278,6 +279,12 @@ GPlatesAppLogic::register_default_layer_task_types(
 			&RasterLayerTask::create_layer_task,
 			&RasterLayerTask::can_process_feature_collection,
 			&RasterLayerTask::is_primary_layer_task_type);
+
+	// Layer task that processes age grids.
+	layer_task_registry.register_layer_task_type(
+			&AgeGridLayerTask::create_layer_task,
+			&AgeGridLayerTask::can_process_feature_collection,
+			&AgeGridLayerTask::is_primary_layer_task_type);
 
 	// Layer task to resolve topological closed plate boundaries.
 	layer_task_registry.register_layer_task_type(

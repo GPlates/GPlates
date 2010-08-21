@@ -41,6 +41,7 @@
 
 #include "ColouringDialog.h"
 #include "GlobeAndMapWidget.h"
+#include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
 
 #include "app-logic/ApplicationState.h"
@@ -321,27 +322,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 void
 GPlatesQtWidgets::ColouringDialog::reposition()
 {
-	// Reposition to halfway down the right side of the parent window.
-	QWidget *par = parentWidget();
-	if (par)
-	{
-		int new_x = par->pos().x() + par->frameGeometry().width();
-		int new_y = par->pos().y() + (par->frameGeometry().height() - frameGeometry().height()) / 2;
-
-		// Ensure the dialog is not off-screen.
-		QDesktopWidget *desktop = QApplication::desktop();
-		QRect screen_geometry = desktop->screenGeometry(par);
-		if (new_x + frameGeometry().width() > screen_geometry.right())
-		{
-			new_x = screen_geometry.right() - frameGeometry().width();
-		}
-		if (new_y + frameGeometry().height() > screen_geometry.bottom())
-		{
-			new_y = screen_geometry.bottom() - frameGeometry().height();
-		}
-
-		move(new_x, new_y);
-	}
+	QtWidgetUtils::reposition_to_side_of_parent(this);
 }
 
 

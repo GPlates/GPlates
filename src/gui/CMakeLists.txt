@@ -132,6 +132,8 @@ set(srcs
     RasterColourPalette.h
     RasterColourScheme.cc
     RasterColourScheme.h
+    RasterColourSchemeMap.cc
+    RasterColourSchemeMap.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
     SimpleGlobeOrientation.cc

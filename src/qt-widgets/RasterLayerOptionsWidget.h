@@ -23,21 +23,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_VISUALLAYERSLISTVIEW_H
-#define GPLATES_QTWIDGETS_VISUALLAYERSLISTVIEW_H
+#ifndef GPLATES_QTWIDGETS_RASTERLAYEROPTIONSWIDGET_H
+#define GPLATES_QTWIDGETS_RASTERLAYEROPTIONSWIDGET_H
 
+#include <vector>
+#include <boost/optional.hpp>
+#include <QWidget>
 #include <QString>
-#include <QListView>
+
+#include "RasterLayerOptionsWidgetUi.h"
+
+#include "app-logic/Layer.h"
 
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
-}
-
-namespace GPlatesGui
-{
-	class VisualLayersProxy;
 }
 
 namespace GPlatesPresentation
@@ -48,47 +49,64 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declaration.
+	class FriendlyLineEdit;
 	class ReadErrorAccumulationDialog;
 
-	class VisualLayersListView :
-			public QListView
+	/**
+	 * RasterLayerOptionsWidget is used to show additional options for raster and
+	 * age grid layers in the visual layers widget.
+	 */
+	class RasterLayerOptionsWidget :
+			public QWidget,
+			protected Ui_RasterLayerOptionsWidget
 	{
+		Q_OBJECT
+		
 	public:
 
-		VisualLayersListView(
-				GPlatesGui::VisualLayersProxy &visual_layers,
+		explicit
+		RasterLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
 				QString &open_file_path,
 				ReadErrorAccumulationDialog *read_errors_dialog,
 				QWidget *parent_ = NULL);
 
-		virtual
 		void
-		dropEvent(QDropEvent *event_);
+		set_data(
+				const GPlatesAppLogic::Layer &layer);
 
-	protected slots:
+	private slots:
 
-		virtual
 		void
-		rowsInserted(
-				const QModelIndex &parent_,
-				int start,
-				int end);
+		handle_band_combobox_activated(
+				const QString &text);
+
+		void
+		handle_select_palette_filename_button_clicked();
+
+		void
+		handle_use_default_palette_button_clicked();
 
 	private:
 
-		/**
-		 * Opens the persistent editor for entries in the list from @a begin_row up
-		 * to the entry before @a end_row (i.e. half-open range).
-		 */
 		void
-		open_persistent_editors(
-				int begin_row,
-				int end_row);
-	};
+		make_signal_slot_connections();
 
+		static const QString PALETTE_FILENAME_BLANK_TEXT;
+
+		GPlatesAppLogic::ApplicationState &d_application_state;
+		GPlatesPresentation::ViewState &d_view_state;
+		QString &d_open_file_path;
+		ReadErrorAccumulationDialog *d_read_errors_dialog;
+
+		FriendlyLineEdit *d_palette_filename_lineedit;
+
+		/**
+		 * The layer that we're currently displaying.
+		 */
+		GPlatesAppLogic::Layer d_current_layer;
+	};
 }
 
-
-#endif	// GPLATES_QTWIDGETS_VISUALLAYERSLISTVIEW_H
+#endif  // GPLATES_QTWIDGETS_RASTERLAYEROPTIONSWIDGET_H

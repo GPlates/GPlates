@@ -26,6 +26,57 @@
 #include "RasterColourScheme.h"
 
 
+GPlatesGui::RasterColourScheme::non_null_ptr_type
+GPlatesGui::RasterColourScheme::create(
+		const UnicodeString &band_name)
+{
+	return new RasterColourScheme(GPlatesPropertyValues::TextContent(band_name));
+}
+
+
+GPlatesGui::RasterColourScheme::non_null_ptr_type
+GPlatesGui::RasterColourScheme::create(
+		const band_name_string_type &band_name)
+{
+	return new RasterColourScheme(band_name);
+}
+
+
+GPlatesGui::RasterColourScheme::non_null_ptr_type
+GPlatesGui::RasterColourScheme::create_from_existing(
+		const non_null_ptr_type &existing,
+		const UnicodeString &band_name)
+{
+	switch (existing->d_colour_palette_type)
+	{
+		case INT32:
+			return create<boost::int32_t>(
+					band_name,
+					existing->get_colour_palette<boost::int32_t>());
+
+		case UINT32:
+			return create<boost::uint32_t>(
+					band_name,
+					existing->get_colour_palette<boost::uint32_t>());
+
+		case DOUBLE:
+			return create<double>(
+					band_name,
+					existing->get_colour_palette<double>());
+
+		default:
+			return create(band_name);
+	}
+}
+
+
+GPlatesGui::RasterColourScheme::RasterColourScheme(
+		const band_name_string_type &band_name) :
+	d_band_name(band_name),
+	d_colour_palette_type(USE_DEFAULT)
+{  }
+
+
 GPlatesGui::RasterColourScheme::RasterColourScheme(
 		const UnicodeString &band_name,
 		const ColourPalette<boost::int32_t>::non_null_ptr_type &colour_palette) :

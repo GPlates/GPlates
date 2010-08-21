@@ -341,15 +341,7 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 
 		// Create a new raster layer.
 		// FIXME: We should not have to do this here explicitly!
-		GPlatesAppLogic::ReconstructGraph &reconstruct_graph =
-			d_application_state.get_reconstruct_graph();
-		boost::shared_ptr<GPlatesAppLogic::LayerTask> raster_layer =
-			GPlatesAppLogic::RasterLayerTask::create_layer_task();
-		GPlatesAppLogic::Layer raster_layer_handle = reconstruct_graph.add_layer(raster_layer);
-		QString main_input_channel = raster_layer_handle.get_main_input_feature_collection_channel();
-		raster_layer_handle.connect_input_to_file(
-				reconstruct_graph.get_input_file(app_logic_file_ref),
-				main_input_channel);
+		d_application_state.update_layers(app_logic_file_ref);
 
 		// Then save the file.
 		if (d_save_after_finish)

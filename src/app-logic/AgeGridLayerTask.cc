@@ -23,12 +23,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <algorithm>
 #include <boost/foreach.hpp>
 
-#include "RasterLayerTask.h"
-
-#include "ResolvedRaster.h"
+#include "AgeGridLayerTask.h"
 
 #include "model/FeatureVisitor.h"
 
@@ -37,6 +34,7 @@
 #include "property-values/GmlRectifiedGrid.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlRasterBandNames.h"
 #include "property-values/GpmlTimeWindow.h"
 #include "property-values/RawRaster.h"
 #include "property-values/TextContent.h"
@@ -44,6 +42,13 @@
 
 namespace
 {
+	// NOTE: The following is copied verbatim from RasterLayerTask.cc - some
+	// refactoring is in order!
+	// The only difference is that the following says it can process the raster
+	// feature only if it contains an "age" band and the RasterLayerTask version
+	// says it can process the raster feature only if it doesn't contain an
+	// "age" band.
+
 	/**
 	 * Visits a feature collection and determines whether the feature collection
 	 * contains any raster features.
@@ -175,7 +180,7 @@ namespace
 			{
 				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
 				if (propname && *propname == BAND_NAMES &&
-					!contains_age_band_name(gpml_raster_band_names.band_names()))
+					contains_age_band_name(gpml_raster_band_names.band_names())) // differs from RasterLayerTask here.
 				{
 					d_seen_gpml_raster_band_names = true;
 				}
@@ -389,14 +394,12 @@ namespace
 }
 
 
-const char *GPlatesAppLogic::RasterLayerTask::RASTER_FEATURE_CHANNEL_NAME =
-		"Raster feature";
-const char *GPlatesAppLogic::RasterLayerTask::POLYGON_FEATURES_CHANNEL_NAME =
-		"Polygon features";
+const char *GPlatesAppLogic::AgeGridLayerTask::AGE_GRID_FEATURE_CHANNEL_NAME =
+		"Age grid feature";
 
 
 bool
-GPlatesAppLogic::RasterLayerTask::can_process_feature_collection(
+GPlatesAppLogic::AgeGridLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
 	CanResolveRasterFeature visitor;
@@ -410,194 +413,43 @@ GPlatesAppLogic::RasterLayerTask::can_process_feature_collection(
 
 
 std::vector<GPlatesAppLogic::Layer::input_channel_definition_type>
-GPlatesAppLogic::RasterLayerTask::get_input_channel_definitions() const
+GPlatesAppLogic::AgeGridLayerTask::get_input_channel_definitions() const
 {
 	std::vector<Layer::input_channel_definition_type> input_channel_definitions;
 
 	// Channel definition for the raster feature.
 	input_channel_definitions.push_back(
 			boost::make_tuple(
-					RASTER_FEATURE_CHANNEL_NAME,
+					AGE_GRID_FEATURE_CHANNEL_NAME,
 					Layer::INPUT_FEATURE_COLLECTION_DATA,
 					Layer::ONE_DATA_IN_CHANNEL));
-	
-	// Channel definition for the polygon features (used to reconstruct the raster).
-	input_channel_definitions.push_back(
-			boost::make_tuple(
-					POLYGON_FEATURES_CHANNEL_NAME,
-					Layer::INPUT_FEATURE_COLLECTION_DATA,
-					Layer::MULTIPLE_DATAS_IN_CHANNEL));
 
 	return input_channel_definitions;
 }
 
 
 QString
-GPlatesAppLogic::RasterLayerTask::get_main_input_feature_collection_channel() const
+GPlatesAppLogic::AgeGridLayerTask::get_main_input_feature_collection_channel() const
 {
-	return RASTER_FEATURE_CHANNEL_NAME;
+	return AGE_GRID_FEATURE_CHANNEL_NAME;
 }
 
 
 GPlatesAppLogic::Layer::LayerOutputDataType
-GPlatesAppLogic::RasterLayerTask::get_output_definition() const
+GPlatesAppLogic::AgeGridLayerTask::get_output_definition() const
 {
 	return Layer::OUTPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA;
 }
 
 
 boost::optional<GPlatesAppLogic::layer_task_data_type>
-GPlatesAppLogic::RasterLayerTask::process(
+GPlatesAppLogic::AgeGridLayerTask::process(
 		const Layer &layer_handle /* the layer invoking this */,
 		const input_data_type &input_data,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plate_id,
 		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
 {
-	//
-	// Get the reconstruction tree input.
-	//
-	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree =
-			extract_reconstruction_tree(
-					input_data,
-					default_reconstruction_tree);
-	if (!reconstruction_tree)
-	{
-		// Expecting a single reconstruction tree.
-		return boost::none;
-	}
-
-	//
-	// Get the raster features collection input.
-	//
-	// NOTE: Raster layers are special in that only one raster feature should exist
-	// in the input feature collection.
-	//
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> raster_feature_collection;
-	extract_input_channel_data(
-			raster_feature_collection,
-			RASTER_FEATURE_CHANNEL_NAME,
-			input_data);
-
-	if (raster_feature_collection.size() != 1 ||
-		raster_feature_collection[0]->size() != 1)
-	{
-		// Expecting a single raster feature.
-		return boost::none;
-	}
-	GPlatesModel::FeatureHandle::weak_ref raster_feature =
-			(*raster_feature_collection[0]->begin())->reference();
-
-	// Extract the georeferencing and raster data.
-	ExtractRasterProperties extract_raster_properties(reconstruction_time);
-	extract_raster_properties.visit_feature(raster_feature);
-
-	const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-			georeferencing = extract_raster_properties.get_georeferencing();
-	if (!georeferencing)
-	{
-		// We need georeferencing information to display rasters.
-		return boost::none;
-	}
-
-	const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-			proxied_rasters = extract_raster_properties.get_proxied_rasters();
-	if (!proxied_rasters || proxied_rasters->empty())
-	{
-		// We at least one proxied raster.
-		return boost::none;
-	}
-
-	const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
-			raster_band_names = extract_raster_properties.get_raster_band_names();
-	if (!raster_band_names || raster_band_names->empty())
-	{
-		// We at least one band name.
-		return boost::none;
-	}
-
-	// Update the polygon rotations using the new reconstruction tree.
-	update_reconstruct_raster_polygons(reconstruction_tree.get(), input_data);
-
-	// Create a reconstruction geometry collection to store the resolved raster in.
-	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geometry_collection =
-			ReconstructionGeometryCollection::create(reconstruction_tree.get());
-
-	// Need to cast boost::optional containing non_null_ptr_type to
-	// a boost::optional containing non_null_ptr_to_const_type.
-	boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type>
-			reconstruct_raster_polygons;
-	if (d_reconstruct_raster_polygons)
-	{
-		reconstruct_raster_polygons = d_reconstruct_raster_polygons.get();
-	}
-
-	// Create a resolved raster.
-	ResolvedRaster::non_null_ptr_type resolved_raster =
-			ResolvedRaster::create(
-					*raster_feature.handle_ptr(),
-					layer_handle,
-					reconstruction_tree.get(),
-					georeferencing.get(),
-					proxied_rasters.get(),
-					raster_band_names.get(),
-					reconstruct_raster_polygons);
-
-	reconstruction_geometry_collection->add_reconstruction_geometry(resolved_raster);
-
-	return layer_task_data_type(
-			static_cast<ReconstructionGeometryCollection::non_null_ptr_to_const_type>(
-					reconstruction_geometry_collection));
+	return boost::none;
 }
 
-
-void
-GPlatesAppLogic::RasterLayerTask::update_reconstruct_raster_polygons(
-		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-		const input_data_type &input_data)
-{
-	//
-	// Get the polygon features collection input (used to reconstruct the raster).
-	//
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> polygon_features_collection;
-	extract_input_channel_data(
-			polygon_features_collection,
-			POLYGON_FEATURES_CHANNEL_NAME,
-			input_data);
-
-	bool reconstruct_raster_polygons_have_changed = false;
-
-	// Sort the sequence so we can compare with out current sequence of feature collections.
-	std::sort(polygon_features_collection.begin(), polygon_features_collection.end());
-
-	// See if any feature collections have been added or removed.
-	//
-	// TODO: Also need to listen for changes in the model in case an existing
-	// feature collection has been modified since we were last called.
-	if (d_current_polygon_features_collection != polygon_features_collection)
-	{
-		d_current_polygon_features_collection = polygon_features_collection;
-		reconstruct_raster_polygons_have_changed = true;
-	}
-
-	// If there are no polygon features then we cannot reconstruct the raster.
-	if (d_current_polygon_features_collection.empty())
-	{
-		d_reconstruct_raster_polygons = boost::none;
-		return;
-	}
-
-	// If the polygon features have changed then create a new 'ReconstructRasterPolygons' object.
-	if (reconstruct_raster_polygons_have_changed)
-	{
-		d_reconstruct_raster_polygons = ReconstructRasterPolygons::create(
-				d_current_polygon_features_collection.begin(),
-				d_current_polygon_features_collection.end(),
-				reconstruction_tree);
-		return;
-	}
-
-	// The polygon features have not changed so just update the rotations in the
-	// existing 'ReconstructRasterPolygons' object using the new reconstruction tree.
-	d_reconstruct_raster_polygons.get()->update_rotations(reconstruction_tree);
-}

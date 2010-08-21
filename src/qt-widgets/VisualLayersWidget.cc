@@ -755,6 +755,10 @@ namespace
 
 GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 		GPlatesPresentation::VisualLayers &visual_layers,
+		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state,
+		QString &open_file_path,
+		ReadErrorAccumulationDialog *read_errors_dialog,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers)
@@ -783,7 +787,14 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 		list->openPersistentEditor(model->index(i, 0));
 	}
 #else
-	QListView *list = new VisualLayersListView(d_visual_layers, this);
+	QListView *list = new VisualLayersListView(
+			d_visual_layers,
+			application_state,
+			view_state,
+			open_file_path,
+			read_errors_dialog,
+			this);
+	add_new_layer_frame->hide(); // not implemented yet.
 #endif
 
 	QtWidgetUtils::add_widget_to_placeholder(list, layers_list_placeholder_widget);

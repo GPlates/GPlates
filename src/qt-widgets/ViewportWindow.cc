@@ -63,6 +63,7 @@
 #include "ImportRasterDialog.h"
 #include "InformationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
+#include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "SaveFileDialog.h"
 #include "SetCameraViewpointDialog.h"
@@ -1119,10 +1120,16 @@ GPlatesQtWidgets::ViewportWindow::pop_up_layering_dialog()
 		dialog_layout->addWidget(
 				new VisualLayersWidget(
 					get_view_state().get_visual_layers(),
+					get_application_state(),
+					get_view_state(),
+					d_open_file_path,
+					d_read_errors_dialog_ptr.get(),
 					dialog));
 		dialog->setLayout(dialog_layout);
 		dialog->setWindowTitle("Layers");
-		dialog->resize(250, 450);
+		dialog->resize(375, 600);
+
+		QtWidgetUtils::reposition_to_side_of_parent(dialog);
 
 		d_layering_dialog_ptr.reset(dialog);
 	}
@@ -1795,7 +1802,7 @@ GPlatesQtWidgets::ViewportWindow::load_raster(
 
 	d_read_errors_dialog_ptr->clear();
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog_ptr->read_errors();
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
 
 	try
 	{

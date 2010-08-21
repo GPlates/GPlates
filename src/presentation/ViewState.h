@@ -69,6 +69,7 @@ namespace GPlatesGui
 	class GeometryFocusHighlight;
 	class FeatureFocus;
 	class MapTransform;
+	class RasterColourSchemeMap;
 	class RenderSettings;
 	class Texture;
 	typedef GPlatesUtils::VirtualProxy<Texture> ProxiedTexture;
@@ -270,6 +271,14 @@ namespace GPlatesPresentation
 		}
 
 
+		GPlatesGui::RasterColourSchemeMap &
+		get_raster_colour_scheme_map();
+
+
+		const GPlatesGui::RasterColourSchemeMap &
+		get_raster_colour_scheme_map() const;
+
+
 	private slots:
 
 
@@ -399,6 +408,11 @@ namespace GPlatesPresentation
 		 * raster loaded at any time.
 		 */
 		bool d_is_raster_colour_map_invalid;
+
+		/**
+		 * Stores the mapping of Layer to RasterColourSchemes.
+		 */
+		boost::scoped_ptr<GPlatesGui::RasterColourSchemeMap> d_raster_colour_scheme_map;
 
 		void
 		connect_to_viewport_zoom();

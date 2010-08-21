@@ -31,12 +31,19 @@
 #include <QLabel>
 #include <QPixmap>
 #include <QWidget>
-#include <QVBoxLayout>
+#include <QFormLayout>
+#include <QToolButton>
+#include <QMenu>
 
 #include "app-logic/Layer.h"
 
 #include "VisualLayerWidgetUi.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
 
 namespace GPlatesGui
 {
@@ -45,12 +52,16 @@ namespace GPlatesGui
 
 namespace GPlatesPresentation
 {
+	class ViewState;
 	class VisualLayer;
 }
 
 namespace GPlatesQtWidgets
 {
+	// Forward declarations.
 	class ElidedLabel;
+	class RasterLayerOptionsWidget;
+	class ReadErrorAccumulationDialog;
 
 	namespace VisualLayerWidgetInternals
 	{
@@ -121,39 +132,7 @@ namespace GPlatesQtWidgets
 		 */
 		const QPixmap &
 		get_hidden_icon();
-	}
 
-
-	/**
-	 * The VisualLayerWidget displays information about a single VisualLayer, and
-	 * is contained within a VisualLayersWidget.
-	 */
-	class VisualLayerWidget :
-			public QWidget,
-			protected Ui_VisualLayerWidget
-	{
-		Q_OBJECT
-		
-	public:
-
-		explicit
-		VisualLayerWidget(
-				GPlatesGui::VisualLayersProxy &visual_layers,
-				QWidget *parent_ = NULL);
-
-		void
-		set_data(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
-
-	private slots:
-
-		void
-		handle_expand_icon_clicked();
-
-		void
-		handle_visibility_icon_clicked();
-
-	private:
 
 		/**
 		 * Displays an existing input connection.
@@ -176,9 +155,15 @@ namespace GPlatesQtWidgets
 
 		private:
 
-			GPlatesGui::VisualLayersProxy &d_visual_layers;
+			static
+			const QPixmap &
+			get_disconnect_pixmap();
 
+			GPlatesGui::VisualLayersProxy &d_visual_layers;
 			ElidedLabel *d_input_connection_label;
+			QLabel *d_disconnect_icon;
+
+			GPlatesAppLogic::Layer::InputConnection d_current_input_connection;
 		};
 
 
@@ -189,10 +174,13 @@ namespace GPlatesQtWidgets
 		class InputChannelWidget :
 				public QWidget
 		{
+			Q_OBJECT
+
 		public:
 
 			InputChannelWidget(
 					GPlatesGui::VisualLayersProxy &visual_layers,
+					GPlatesAppLogic::ApplicationState &file_state,
 					QWidget *parent_ = NULL);
 
 			/**
@@ -201,20 +189,46 @@ namespace GPlatesQtWidgets
 			 */
 			void
 			set_data(
+					const GPlatesAppLogic::Layer &layer,
 					const GPlatesAppLogic::Layer::input_channel_definition_type &input_channel_definition,
 					const std::vector<GPlatesAppLogic::Layer::InputConnection> &input_connections);
 
+		private slots:
+
+			void
+			handle_menu_triggered(
+					QAction *action);
+
 		private:
+
+			void
+			populate_with_feature_collections(
+					const GPlatesAppLogic::Layer &layer,
+					const QString &input_data_channel,
+					QMenu *menu);
+
+			void
+			populate_with_layers(
+					const GPlatesAppLogic::Layer &layer,
+					const QString &input_data_channel,
+					GPlatesAppLogic::Layer::LayerInputDataType input_data_type,
+					QMenu *menu);
 
 			GPlatesGui::VisualLayersProxy &d_visual_layers;
 
+			GPlatesAppLogic::ApplicationState &d_application_state;
+
 			ElidedLabel *d_input_channel_name_label;
+
+			QWidget *d_input_connection_widgets_container;
+
+			QToolButton *d_add_new_connection_widget;
 
 			/**
 			 * A pointer to the layout of the Qt container that holds the widgets that
 			 * display input connections.
 			 */
-			QVBoxLayout *d_input_connection_widgets_layout;
+			QFormLayout *d_input_connection_widgets_layout;
 
 			/**
 			 * A pool of InputConnectionWidgets that can be used to display information
@@ -229,6 +243,43 @@ namespace GPlatesQtWidgets
 			 */
 			std::vector<InputConnectionWidget *> d_input_connection_widgets;
 		};
+	}
+
+
+	/**
+	 * The VisualLayerWidget displays information about a single VisualLayer, and
+	 * is contained within a VisualLayersWidget.
+	 */
+	class VisualLayerWidget :
+			public QWidget,
+			protected Ui_VisualLayerWidget
+	{
+		Q_OBJECT
+		
+	public:
+
+		explicit
+		VisualLayerWidget(
+				GPlatesGui::VisualLayersProxy &visual_layers,
+				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesPresentation::ViewState &view_state,
+				QString &open_file_path,
+				ReadErrorAccumulationDialog *read_errors_dialog,
+				QWidget *parent_ = NULL);
+
+		void
+		set_data(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+
+	private slots:
+
+		void
+		handle_expand_icon_clicked();
+
+		void
+		handle_visibility_icon_clicked();
+
+	private:
 
 		void
 		make_signal_slot_connections();
@@ -241,6 +292,10 @@ namespace GPlatesQtWidgets
 				const GPlatesAppLogic::Layer &layer);
 
 		GPlatesGui::VisualLayersProxy &d_visual_layers;
+		GPlatesAppLogic::ApplicationState &d_application_state;
+		GPlatesPresentation::ViewState &d_view_state;
+		QString &d_open_file_path;
+		ReadErrorAccumulationDialog *d_read_errors_dialog;
 
 		/**
 		 * A weak pointer to the visual layer that we're currently displaying.
@@ -275,7 +330,7 @@ namespace GPlatesQtWidgets
 		 *
 		 * Memory managed by Qt.
 		 */
-		QVBoxLayout *d_input_channels_widget_layout;
+		QFormLayout *d_input_channels_widget_layout;
 
 		/**
 		 * A pool of InputChannelWidgets that can be used to display information about
@@ -289,7 +344,9 @@ namespace GPlatesQtWidgets
 		 *
 		 * InputChannelWidget memory managed by Qt.
 		 */
-		std::vector<InputChannelWidget *> d_input_channel_widgets;
+		std::vector<VisualLayerWidgetInternals::InputChannelWidget *> d_input_channel_widgets;
+
+		RasterLayerOptionsWidget *d_raster_layer_options_widget;
 	};
 }
 

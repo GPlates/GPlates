@@ -23,6 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QApplication>
+#include <QDesktopWidget>
+#include <QHBoxLayout>
+#include <QRect>
+#include <QSize>
+
 #include "QtWidgetUtils.h"
 
 
@@ -34,5 +40,33 @@ GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
 	QHBoxLayout *layout = new QHBoxLayout(placeholder);
 	layout->addWidget(widget);
 	layout->setContentsMargins(0, 0, 0, 0);
+}
+
+
+void
+GPlatesQtWidgets::QtWidgetUtils::reposition_to_side_of_parent(
+		QDialog *dialog)
+{
+	QWidget *par = dialog->parentWidget();
+	if (par)
+	{
+		QRect frame_geometry = dialog->frameGeometry();
+		int new_x = par->pos().x() + par->frameGeometry().width();
+		int new_y = par->pos().y() + (par->frameGeometry().height() - frame_geometry.height()) / 2;
+
+		// Ensure the dialog is not off-screen.
+		QDesktopWidget *desktop = QApplication::desktop();
+		QRect screen_geometry = desktop->screenGeometry(par);
+		if (new_x + frame_geometry.width() > screen_geometry.right())
+		{
+			new_x = screen_geometry.right() - frame_geometry.width();
+		}
+		if (new_y + frame_geometry.height() > screen_geometry.bottom())
+		{
+			new_y = screen_geometry.bottom() - frame_geometry.height();
+		}
+
+		dialog->move(new_x, new_y);
+	}
 }
 

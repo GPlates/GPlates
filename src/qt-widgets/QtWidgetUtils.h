@@ -27,7 +27,8 @@
 #define GPLATES_QTWIDGETS_QTWIDGETUTILS_H
 
 #include <QWidget>
-#include <QHBoxLayout>
+#include <QDialog>
+
 
 namespace GPlatesQtWidgets
 {
@@ -41,6 +42,13 @@ namespace GPlatesQtWidgets
 		add_widget_to_placeholder(
 				QWidget *widget,
 				QWidget *placeholder);
+
+		/**
+		 * Repositions @a dialog to the side of its parent.
+		 */
+		void
+		reposition_to_side_of_parent(
+				QDialog *dialog);
 	}
 }
 

@@ -227,6 +227,25 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
 					GPlatesAppLogic::Layer::InputConnection)));
+	QObject::connect(
+			reconstruct_graph,
+			SIGNAL(layer_removed_input_connection(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer)),
+			this,
+			SLOT(handle_layer_removed_input_connection(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer)));
+
+	// Connect to FeatureCollectionFileState signals.
+	GPlatesAppLogic::FeatureCollectionFileState *file_state = &d_application_state.get_feature_collection_file_state();
+	QObject::connect(
+			file_state,
+			SIGNAL(file_state_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &)),
+			this,
+			SLOT(handle_file_state_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &)));
 }
 
 
@@ -478,6 +497,20 @@ GPlatesPresentation::VisualLayers::handle_layer_removed_input_connection(
 
 
 void
+GPlatesPresentation::VisualLayers::handle_file_state_changed(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state)
+{
+	// FIXME: This probably isn't the most efficient way to handle things, but
+	// when anything happens to the file state, we tell all layers to go and
+	// refresh themselves.
+	for (size_t i = 0; i != d_layer_order.size(); ++i)
+	{
+		emit layer_modified(i);
+	}
+}
+
+
+void
 GPlatesPresentation::VisualLayers::handle_layer_modified(
 		const GPlatesAppLogic::Layer &layer)
 {
@@ -498,7 +531,7 @@ GPlatesPresentation::VisualLayers::emit_layer_modified(
 		std::find(d_layer_order.begin(), d_layer_order.end(), index);
 	if (iter != d_layer_order.end())
 	{
-		emit layer_modified(*iter);
+		emit layer_modified(iter - d_layer_order.begin());
 	}
 }
 
