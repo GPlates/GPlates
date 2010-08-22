@@ -575,6 +575,39 @@ namespace
 	}
 
 
+	// Similar to create_pos but returns it as (lon, lat) pair.
+	// This is to ensure that the longitude doesn't get wiped when reading in a
+	// point physically at the north pole.
+	std::pair<double, double>
+	create_lon_lat_pos(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+	{
+		QString str = create_nonempty_string(elem);
+
+		// XXX: Currently assuming srsDimension is 2!!
+
+		QTextStream is(&str, QIODevice::ReadOnly);
+
+		double lat = 0.0;
+		double lon = 0.0;
+
+		// FIXME: What should I do if one (or both) of these are screwed?
+		// NOTE: We are assuming GPML is using (lat,lon) ordering.
+		// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+		is >> lat;
+		// FIXME: Check is.status() here!
+		is >> lon;
+
+		if ( ! (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
+				GPlatesMaths::LatLonPoint::is_valid_longitude(lon))) {
+			// Bad coordinates.
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
+					EXCEPTION_SOURCE);
+		}
+		return std::make_pair(lon, lat);
+	}
+
+
 	/**
 	 * The same as @a create_pos, except that there's a comma between the two
 	 * values instead of whitespace.
@@ -601,6 +634,41 @@ namespace
 						GPlatesMaths::LatLonPoint::is_valid_longitude(lon))
 				{
 					return GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat, lon));
+				}
+			}
+			catch (...)
+			{
+				// Do nothing, fall through.
+			}
+		}
+
+		throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
+				EXCEPTION_SOURCE);
+	}
+
+
+	std::pair<double, double>
+	create_lon_lat_coordinates(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+	{
+		QString str = create_nonempty_string(elem);
+
+		// XXX: Currently assuming srsDimension is 2!!
+
+		QStringList tokens = str.split(",");
+
+		if (tokens.count() == 2)
+		{
+			try
+			{
+				GPlatesUtils::Parse<double> parse;
+				double lat = parse(tokens.at(0));
+				double lon = parse(tokens.at(1));
+
+				if (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
+						GPlatesMaths::LatLonPoint::is_valid_longitude(lon))
+				{
+					return std::make_pair(lon, lat);
 				}
 			}
 			catch (...)
@@ -851,6 +919,48 @@ namespace
 			find_and_create_optional(elem, &create_pos, POS);
 		boost::optional<GPlatesMaths::PointOnSphere> point_as_coordinates =
 			find_and_create_optional(elem, &create_coordinates, COORDINATES);
+
+		// The gml:Point needs one of gml:pos and gml:coordinates, but not both.
+		if (point_as_pos && point_as_coordinates)
+		{
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::DuplicateProperty,
+					EXCEPTION_SOURCE);
+		}
+		if (!point_as_pos && !point_as_coordinates)
+		{
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
+					EXCEPTION_SOURCE);
+		}
+
+		if (point_as_pos)
+		{
+			return std::make_pair(*point_as_pos, GPlatesPropertyValues::GmlPoint::POS);
+		}
+		else
+		{
+			return std::make_pair(*point_as_coordinates, GPlatesPropertyValues::GmlPoint::COORDINATES);
+		}
+	}
+
+
+	std::pair<std::pair<double, double>, GPlatesPropertyValues::GmlPoint::GmlProperty>
+	create_lon_lat_point_on_sphere(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+	{
+		static const GPlatesModel::PropertyName
+			STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("Point"),
+			POS = GPlatesModel::PropertyName::create_gml("pos"),
+			COORDINATES = GPlatesModel::PropertyName::create_gml("coordinates");
+
+		GPlatesModel::XmlElementNode::non_null_ptr_type
+			elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+		// FIXME: We need to give the srsName et al. attributes from the pos 
+		// (or the gml:FeatureCollection tag?) to the GmlPoint or GmlMultiPoint.
+		boost::optional<std::pair<double, double> > point_as_pos =
+			find_and_create_optional(elem, &create_lon_lat_pos, POS);
+		boost::optional<std::pair<double, double> > point_as_coordinates =
+			find_and_create_optional(elem, &create_lon_lat_coordinates, COORDINATES);
 
 		// The gml:Point needs one of gml:pos and gml:coordinates, but not both.
 		if (point_as_pos && point_as_coordinates)
@@ -1486,8 +1596,8 @@ GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_point(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
 {
-	std::pair<GPlatesMaths::PointOnSphere, GPlatesPropertyValues::GmlPoint::GmlProperty> point =
-		create_point_on_sphere(parent);
+	std::pair<std::pair<double, double>, GPlatesPropertyValues::GmlPoint::GmlProperty> point =
+		create_lon_lat_point_on_sphere(parent);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// to the line string!

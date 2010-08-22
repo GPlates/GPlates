@@ -263,11 +263,11 @@ namespace
 			GPlatesPropertyValues::GmlPoint::GmlProperty gml_property)
 	{
 		xml_output.writeStartGmlElement("Point");
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 			if (gml_property == GPlatesPropertyValues::GmlPoint::POS)
 			{
 				xml_output.writeStartGmlElement("pos");
 
-					GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 					// NOTE: We are assuming GPML is using (lat,lon) ordering.
 					// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
 					xml_output.writeDecimalPair(llp.latitude(), llp.longitude());
@@ -278,7 +278,45 @@ namespace
 			{
 				xml_output.writeStartGmlElement("coordinates");
 
-					GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+					// NOTE: We are assuming GPML is using (lat,lon) ordering.
+					// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+					xml_output.writeCommaSeparatedDecimalPair(llp.latitude(), llp.longitude());
+
+				xml_output.writeEndElement();  // </gml:coordinates>
+			}
+		xml_output.writeEndElement();  // </gml:Point>
+	}
+
+
+	/**
+	 * Similar to write_gml_point() but retrieves the lat-lon version of the point
+	 * using GmlPoint::point_in_lat_lon().
+	 *
+	 * See the comments above GmlPoint::point_in_lat_lon for the rationale behind
+	 * this special case.
+	 */
+	void
+	write_gml_point_in_lat_lon(
+			GPlatesFileIO::XmlWriter &xml_output,
+			const GPlatesPropertyValues::GmlPoint &gml_point)
+	{
+		xml_output.writeStartGmlElement("Point");
+			GPlatesMaths::LatLonPoint llp = gml_point.point_in_lat_lon();
+			qDebug() << llp.latitude() << llp.longitude();
+			if (gml_point.gml_property() == GPlatesPropertyValues::GmlPoint::POS)
+			{
+				xml_output.writeStartGmlElement("pos");
+
+					// NOTE: We are assuming GPML is using (lat,lon) ordering.
+					// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+					xml_output.writeDecimalPair(llp.latitude(), llp.longitude());
+
+				xml_output.writeEndElement();  // </gml:pos>
+			}
+			else
+			{
+				xml_output.writeStartGmlElement("coordinates");
+
 					// NOTE: We are assuming GPML is using (lat,lon) ordering.
 					// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
 					xml_output.writeCommaSeparatedDecimalPair(llp.latitude(), llp.longitude());
@@ -911,7 +949,7 @@ void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point) 
 {
-	write_gml_point(d_output, *gml_point.point(), gml_point.gml_property());
+	write_gml_point_in_lat_lon(d_output, gml_point);
 }
 
 

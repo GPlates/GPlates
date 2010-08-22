@@ -126,7 +126,7 @@ GPlatesPropertyValues::GmlRectifiedGrid::convert_to_georeferencing() const
 	const offset_vector_type &longitude_offset_vector = d_offset_vectors[0];
 	const offset_vector_type &latitude_offset_vector = d_offset_vectors[1];
 
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*d_origin->point());
+	GPlatesMaths::LatLonPoint llp = d_origin->point_in_lat_lon();
 
 	Georeferencing::parameters_type params = {{{
 		llp.longitude(),

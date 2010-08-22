@@ -29,10 +29,14 @@
 #define GPLATES_PROPERTYVALUES_GMLPOINT_H
 
 #include <utility>  /* std::pair */
+#include <boost/optional.hpp>
 
 #include "feature-visitors/PropertyValueFinder.h"
-#include "model/PropertyValue.h"
+
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
+
+#include "model/PropertyValue.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -165,6 +169,18 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
+		 * Returns the point as a lat-lon point.
+		 *
+		 * Prefer using this where possible instead of calling point() and then
+		 * converting it using GPlatesMaths::make_lat_lon_point. This is because, if
+		 * the point was constructed using lat-lon and the lat is 90 or -90, the
+		 * longitude information is lost in the conversion. This function, however,
+		 * will use the saved longitude where possible.
+		 */
+		GPlatesMaths::LatLonPoint
+		point_in_lat_lon() const;
+
+		/**
 		 * Set the point within this instance to @a p.
 		 *
 		 * FIXME: when we have undo/redo, this act should cause
@@ -176,6 +192,7 @@ namespace GPlatesPropertyValues
 				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p)
 		{
 			d_point = p;
+			d_original_longitude = boost::none;
 			update_instance_id();
 		}
 
@@ -255,6 +272,19 @@ namespace GPlatesPropertyValues
 
 		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> d_point;
 		GmlProperty d_gml_property;
+
+		/**
+		 * This is a hack to remember the original longitude that we were given in the
+		 * version of create() that takes a std::pair<double, double>.
+		 *
+		 * This is necessary when the latitude is 90 or -90, because we lose longitude
+		 * information when the lat-lon gets converted to a 3D vector (all points with
+		 * latitude of 90 are the exact same point on the 3D sphere, the north pole).
+		 * While this might not matter in many cases, there are times when we care
+		 * about the original longitude, in particular in storing the origin of a
+		 * georeferenced raster.
+		 */
+		boost::optional<double> d_original_longitude;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
