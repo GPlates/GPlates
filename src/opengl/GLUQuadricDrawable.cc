@@ -53,7 +53,7 @@ GPlatesOpenGL::GLUQuadricDrawable::draw() const
 	// The colour is here instead of in a @a GLStateSet because it's really part
 	// of the vertex data. On some systems the colour will get stored with each
 	// vertex assembled by the quadric.
-	glColor3fv(d_colour);
+	glColor4fv(d_colour);
 
 	d_glu_quadric_geometry->draw(d_glu_quadric_obj.get());
 }

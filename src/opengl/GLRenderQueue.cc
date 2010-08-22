@@ -106,6 +106,7 @@ GPlatesOpenGL::GLRenderQueue::draw(
 	// Restore render target to the initial render target which is the main frame buffer.
 	if (current_render_target != initial_render_target)
 	{
+		current_render_target->unbind();
 		initial_render_target->bind();
 	}
 }

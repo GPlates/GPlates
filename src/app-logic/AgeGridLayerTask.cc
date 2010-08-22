@@ -27,6 +27,8 @@
 
 #include "AgeGridLayerTask.h"
 
+#include "AgeGridRaster.h"
+
 #include "model/FeatureVisitor.h"
 
 #include "property-values/Georeferencing.h"
@@ -450,6 +452,86 @@ GPlatesAppLogic::AgeGridLayerTask::process(
 		GPlatesModel::integer_plate_id_type anchored_plate_id,
 		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
 {
-	return boost::none;
-}
+	//
+	// Get the reconstruction tree input.
+	//
+	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree =
+			extract_reconstruction_tree(
+					input_data,
+					default_reconstruction_tree);
+	if (!reconstruction_tree)
+	{
+		// Expecting a single reconstruction tree.
+		return boost::none;
+	}
 
+	//
+	// Get the raster features collection input.
+	//
+	// NOTE: Raster layers are special in that only one raster feature should exist
+	// in the input feature collection.
+	//
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> age_grid_feature_collection;
+	extract_input_channel_data(
+			age_grid_feature_collection,
+			AGE_GRID_FEATURE_CHANNEL_NAME,
+			input_data);
+
+	if (age_grid_feature_collection.size() != 1 ||
+		age_grid_feature_collection[0]->size() != 1)
+	{
+		// Expecting a single raster feature.
+		return boost::none;
+	}
+	GPlatesModel::FeatureHandle::weak_ref age_grid_feature =
+			(*age_grid_feature_collection[0]->begin())->reference();
+
+	// Extract the georeferencing and raster data.
+	ExtractRasterProperties extract_raster_properties(reconstruction_time);
+	extract_raster_properties.visit_feature(age_grid_feature);
+
+	const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+			georeferencing = extract_raster_properties.get_georeferencing();
+	if (!georeferencing)
+	{
+		// We need georeferencing information to display rasters.
+		return boost::none;
+	}
+
+	const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+			proxied_rasters = extract_raster_properties.get_proxied_rasters();
+	if (!proxied_rasters || proxied_rasters->empty())
+	{
+		// We at least one proxied raster.
+		return boost::none;
+	}
+
+	const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
+			raster_band_names = extract_raster_properties.get_raster_band_names();
+	if (!raster_band_names || raster_band_names->empty())
+	{
+		// We at least one band name.
+		return boost::none;
+	}
+
+	// Create a reconstruction geometry collection to store the age grid raster in.
+	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geometry_collection =
+			ReconstructionGeometryCollection::create(reconstruction_tree.get());
+
+	// Create a resolved raster.
+	AgeGridRaster::non_null_ptr_type 
+		age_grid_raster =
+			AgeGridRaster::create(
+					*age_grid_feature.handle_ptr(),
+					layer_handle,
+					reconstruction_tree.get(),
+					georeferencing.get(),
+					proxied_rasters.get(),
+					raster_band_names.get());
+
+	reconstruction_geometry_collection->add_reconstruction_geometry(age_grid_raster);
+
+	return layer_task_data_type(
+			static_cast<ReconstructionGeometryCollection::non_null_ptr_to_const_type>(
+					reconstruction_geometry_collection));
+}

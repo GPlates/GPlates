@@ -194,7 +194,7 @@ namespace GPlatesOpenGL
 			// If we get here then we were unable to recycle any existing objects
 			// because clients had shared references to all of them.
 			// So we'll have to create a new object.
-			qWarning() << "GLCache: cache limit exceeded";
+			//qWarning() << "GLCache: cache limit exceeded";
 		}
 
 		// Create a new object.

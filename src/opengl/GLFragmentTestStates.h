@@ -125,6 +125,106 @@ namespace GPlatesOpenGL
 		GLDepthTestState()
 		{  }
 	};
+
+
+	/**
+	 * Sets 'GL_ALPHA_TEST' state.
+	 */
+	class GLAlphaTestState :
+			public GLStateSet
+	{
+	public:
+		typedef GPlatesUtils::non_null_intrusive_ptr<GLAlphaTestState> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GLAlphaTestState> non_null_ptr_to_const_type;
+
+
+		/**
+		 * Creates a @a GLAlphaTestState object with no state.
+		 *
+		 * Call @a gl_enable, gl_alpha_func, etc to initialise the state.
+		 * For example:
+		 *   alpha_test_state->gl_enable().gl_alpha_func(GL_LESS, GLclampf(0.5));
+		 */
+		static
+		non_null_ptr_type
+		create()
+		{
+			return non_null_ptr_type(new GLAlphaTestState());
+		}
+
+		GLAlphaTestState &
+		gl_enable(
+				GLboolean enable)
+		{
+			d_enable = enable;
+			return *this;
+		}
+
+		//! Stores 'glAlphaFunc' state.
+		GLAlphaTestState &
+		gl_alpha_func(
+				GLenum func = GL_ALWAYS,
+				GLclampf ref = GLclampf(0))
+		{
+			const Func func_and_ref = { func, ref };
+			d_func = func_and_ref;
+			return *this;
+		}
+
+
+		virtual
+		void
+		enter_state_set() const
+		{
+			if (d_enable)
+			{
+				if (d_enable.get())
+				{
+					glEnable(GL_ALPHA_TEST);
+				}
+				else
+				{
+					glDisable(GL_ALPHA_TEST);
+				}
+			}
+
+			if (d_func)
+			{
+				glAlphaFunc(d_func->func, d_func->ref);
+			}
+		}
+
+
+		virtual
+		void
+		leave_state_set() const
+		{
+			// Set states back to the default state.
+			if (d_enable)
+			{
+				glDisable(GL_ALPHA_TEST);
+			}
+
+			if (d_func)
+			{
+				glAlphaFunc(GL_ALWAYS, GLclampf(0));
+			}
+		}
+
+	private:
+		struct Func
+		{
+			GLenum func;
+			GLclampf ref;
+		};
+
+		boost::optional<GLboolean> d_enable;
+		boost::optional<Func> d_func;
+
+		//! Constructor.
+		GLAlphaTestState()
+		{  }
+	};
 }
 
 #endif // GPLATES_OPENGL_GLFRAGMENTTESTSTATES_H

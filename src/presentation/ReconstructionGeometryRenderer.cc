@@ -198,10 +198,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_raster =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 					rr->get_layer(),
+					rr->get_reconstruction_time(),
 					rr->get_georeferencing(),
 					rr->get_proxied_rasters(),
 					rr->get_raster_band_names(),
-					rr->get_reconstruct_raster_polygons());
+					rr->get_reconstruct_raster_polygons(),
+					rr->get_age_grid_georeferencing(),
+					rr->get_age_grid_proxied_rasters(),
+					rr->get_age_grid_raster_band_names());
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and
 	// a RenderedGeometry associated with it.
@@ -212,6 +216,15 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	// Add to the rendered geometry layer.
 	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<age_grid_raster_type> &agr)
+{
+	// Nothing to do for age grid rasters - they aren't curently displayed and they are
+	// only used to generate an age mask (at each reconstruction time) for other layers.
 }
 
 

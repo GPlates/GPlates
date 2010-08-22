@@ -55,6 +55,7 @@ namespace GPlatesAppLogic
 
 
 	// Forward declarations of ReconstructionGeometry derived types.
+	class AgeGridRaster;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
@@ -93,6 +94,11 @@ namespace GPlatesAppLogic
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ResolvedRaster>::type
 						resolved_raster_type;
+
+		//! Typedef for @a AgeGridRaster of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, AgeGridRaster>::type
+						age_grid_raster_type;
 
 		//! Typedef for @a ResolvedTopologicalBoundary of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -140,6 +146,16 @@ namespace GPlatesAppLogic
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr)
+		{  }
+
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<age_grid_raster_type> &agr)
 		{  }
 
 

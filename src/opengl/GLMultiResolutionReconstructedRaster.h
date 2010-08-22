@@ -28,16 +28,26 @@
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONRECONSTRUCTEDRASTER_H
 
 #include <vector>
+#include <boost/intrusive_ptr.hpp>
+#include <boost/optional.hpp>
 
 #include "GLMultiResolutionCubeRaster.h"
 
+#include "GLClearBuffers.h"
+#include "GLClearBuffersState.h"
+#include "GLCompositeStateSet.h"
 #include "GLCubeSubdivision.h"
+#include "GLMaskBuffersState.h"
 #include "GLIntersectPrimitives.h"
 #include "GLResourceManager.h"
+#include "GLStateSet.h"
 #include "GLTextureCache.h"
+#include "GLTextureUtils.h"
 #include "GLTransform.h"
 #include "GLVertexArray.h"
 #include "GLVertexElementArray.h"
+#include "GLViewport.h"
+#include "GLViewportState.h"
 
 #include "app-logic/ReconstructRasterPolygons.h"
 
@@ -87,11 +97,14 @@ namespace GPlatesOpenGL
 		create(
 				const GLMultiResolutionCubeRaster::non_null_ptr_type &raster_to_reconstruct,
 				const GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type &reconstructing_polygons,
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager)
+				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
+				const boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> &age_grid_mask_raster = boost::none,
+				const boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> &age_grid_coverage_raster = boost::none)
 		{
 			return non_null_ptr_type(
 					new GLMultiResolutionReconstructedRaster(
-							raster_to_reconstruct, reconstructing_polygons, texture_resource_manager));
+							raster_to_reconstruct, reconstructing_polygons, texture_resource_manager,
+							age_grid_mask_raster, age_grid_coverage_raster));
 		}
 
 
@@ -106,6 +119,7 @@ namespace GPlatesOpenGL
 	private:
 		typedef GPlatesAppLogic::ReconstructRasterPolygons::RotationGroup source_rotation_group_type;
 		typedef GPlatesAppLogic::ReconstructRasterPolygons::ReconstructablePolygonRegion source_polygon_region_type;
+
 
 		/**
 		 * Represents a the part of a polygon covering a single cube face.
@@ -157,22 +171,61 @@ namespace GPlatesOpenGL
 			{  }
 		};
 
+
 		//! Typedef for a sequence of @a Polygon objects.
 		typedef std::vector<Polygon::non_null_ptr_type> polygon_seq_type;
 
-		struct PolygonMesh
+		struct PartitionedMesh
 		{
+			PartitionedMesh(
+					const Polygon::non_null_ptr_to_const_type &polygon_,
+					const GLVertexElementArray::non_null_ptr_to_const_type &vertex_element_array_) :
+				polygon(polygon_),
+				vertex_element_array(vertex_element_array_)
+			{  }
+
 			Polygon::non_null_ptr_to_const_type polygon;
 			GLVertexElementArray::non_null_ptr_to_const_type vertex_element_array;
 		};
 
-		typedef std::vector<PolygonMesh> polygon_mesh_seq_type;
+		typedef std::vector<PartitionedMesh> partitioned_mesh_seq_type;
 
-		struct AgeGridTile
+
+		/**
+		 * Partitioned polygons from the same rotation group (ie, same plate id and hence the same rotation matrix).
+		 */
+		struct PartitionedRotationGroup :
+				public GPlatesUtils::ReferenceCount<PartitionedRotationGroup>
 		{
-			GLMultiResolutionCubeRaster::tile_handle_type age_grid_source_tile;
-			GLMultiResolutionCubeRaster::tile_handle_type age_grid_coverage_tile;
+			typedef boost::intrusive_ptr<PartitionedRotationGroup> maybe_null_ptr_type;
+
+
+			static
+			maybe_null_ptr_type
+			create(
+					const GLIntersect::OrientedBoundingBox &bounding_box_)
+			{
+				return maybe_null_ptr_type(new PartitionedRotationGroup(bounding_box_));
+			}
+
+			//! Oriented box bounding the meshes of this partition.
+			GLIntersect::OrientedBoundingBox bounding_box;
+
+			//! The parts of the polygons' meshes that cover this tile.
+			partitioned_mesh_seq_type partitioned_meshes;
+
+		private:
+			PartitionedRotationGroup(
+					const GLIntersect::OrientedBoundingBox &bounding_box_) :
+				bounding_box(bounding_box_)
+			{  }
 		};
+
+		/**
+		 * Typedef for a sequence of @a PartitionedRotationGroup object pointers.
+		 */
+		typedef std::vector<PartitionedRotationGroup::maybe_null_ptr_type> partitioned_rotation_group_seq_type;
+
 
 		struct QuadTreeNode :
 				public GPlatesUtils::ReferenceCount<QuadTreeNode>
@@ -186,11 +239,10 @@ namespace GPlatesOpenGL
 			create(
 					GLMultiResolutionCubeRaster::tile_handle_type raster_tile_,
 					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
-					const GLTransform::non_null_ptr_to_const_type &view_transform_,
-					const GLIntersect::OrientedBoundingBox &bounding_box_)
+					const GLTransform::non_null_ptr_to_const_type &view_transform_)
 			{
 				return non_null_ptr_type(new QuadTreeNode(
-						raster_tile_, projection_transform_, view_transform_, bounding_box_));
+						raster_tile_, projection_transform_, view_transform_));
 			}
 
 
@@ -205,40 +257,51 @@ namespace GPlatesOpenGL
 			//! Tile representing raster to be reconstructed.
 			GLMultiResolutionCubeRaster::tile_handle_type source_raster_tile;
 
+			//! Optional age grid and associated coverage tile if using age grid.
+			boost::optional<GLMultiResolutionCubeRaster::tile_handle_type> age_grid_mask_tile;
+			boost::optional<GLMultiResolutionCubeRaster::tile_handle_type> age_grid_coverage_tile;
+
 			//! Projection matrix defining perspective frustum of this tile.
 			GLTransform::non_null_ptr_to_const_type projection_transform;
 
 			//! View matrix defining orientation of frustum of this tile.
 			GLTransform::non_null_ptr_to_const_type view_transform;
 
-			//! Oriented box bounding the mesh of this quad tree node.
-			GLIntersect::OrientedBoundingBox bounding_box;
-
-			//! The parts of the polygons' meshes that cover this tile.
-			polygon_mesh_seq_type polygon_meshes;
-
-			//! Optional age grid and associated coverage tile if using age grid.
-			boost::optional<AgeGridTile> age_grid_tile;
+			/**
+			 * The polygon mesh information for each rotation group.
+			 *
+			 * NOTE: Some rotation groups won't cover the current quad tree node tile in which
+			 * case their respective pointer in this sequence will be NULL.
+			 */
+			partitioned_rotation_group_seq_type partitioned_rotation_groups;
 
 			/**
 			 * The texture representation of the raster data for this tile.
-			 * Only required if using an age grid since need to combine raster
-			 * and age grid to a render texture before can use for scene rendering.
+			 *
+			 * NOTE: It's only used if we're using an age grid since we need to combine source
+			 * raster and age grid to a render texture before we can render the scene.
 			 */
-			boost::optional<GLVolatileTexture> render_texture;
+			GLVolatileTexture age_masked_render_texture;
+
+			/*
+			 * Keeps tracks of whether the source data has changed underneath us
+			 * and we need to reload our texture.
+			 */
+			GLTextureUtils::ValidToken source_texture_valid_token;
+			GLTextureUtils::ValidToken age_grid_mask_texture_valid_token;
+			GLTextureUtils::ValidToken age_grid_coverage_texture_valid_token;
 
 		private:
 			QuadTreeNode(
 					GLMultiResolutionCubeRaster::tile_handle_type raster_tile_,
 					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
-					const GLTransform::non_null_ptr_to_const_type &view_transform_,
-					const GLIntersect::OrientedBoundingBox &bounding_box_) :
+					const GLTransform::non_null_ptr_to_const_type &view_transform_) :
 				source_raster_tile(raster_tile_),
 				projection_transform(projection_transform_),
-				view_transform(view_transform_),
-				bounding_box(bounding_box_)
+				view_transform(view_transform_)
 			{  }
 		};
+
 
 		struct QuadTree
 		{
@@ -246,15 +309,18 @@ namespace GPlatesOpenGL
 			boost::optional<QuadTreeNode::non_null_ptr_type> root_node;
 		};
 
+
 		struct CubeFace
 		{
 			QuadTree quad_tree;
 		};
 
+
 		struct Cube
 		{
 			CubeFace faces[6];
 		};
+
 
 		/**
 		 * All polygons in a rotation group have the same plate id and hence the same rotation matrix.
@@ -269,7 +335,6 @@ namespace GPlatesOpenGL
 			{  }
 
 			GPlatesAppLogic::ReconstructRasterPolygons::RotationGroup::non_null_ptr_to_const_type rotation;
-			Cube cube;
 
 			/**
 			 * Polygons clipped to this cube face and then meshed.
@@ -282,17 +347,39 @@ namespace GPlatesOpenGL
 		//! Typedef for a sequence of @a RotationGroup objects.
 		typedef std::vector<RotationGroup> rotation_group_seq_type;
 
+
 		/**
 		 * This is used only when building a quadtree.
 		 */
-		struct PartitionedMesh
+		struct PartitionedMeshBuilder
 		{
+			explicit
+			PartitionedMeshBuilder(
+					const Polygon::non_null_ptr_to_const_type &polygon_) :
+				polygon(polygon_)
+			{  }
+
 			Polygon::non_null_ptr_to_const_type polygon;
 			std::vector<GLuint> vertex_element_array_data;
 		};
 
-		//! Typedef for a sequence of @a PartitionedMesh objects.
-		typedef std::vector<PartitionedMesh> partition_mesh_seq_type;
+		//! Typedef for a sequence of @a PartitionedMeshBuilder objects.
+		typedef std::vector<PartitionedMeshBuilder> partitioned_mesh_builder_seq_type;
+
+
+		/**
+		 * This is used only when building a quadtree.
+		 */
+		struct PartitionedRotationGroupBuilder
+		{
+			/**
+			 * Used to build the parts of the polygons' meshes as we traverse down the quad tree.
+			 */
+			partitioned_mesh_builder_seq_type partitioned_mesh_builders;
+		};
+
+		//! Typedef for a sequence of @a PartitionedRotationGroupBuilder objects.
+		typedef std::vector<PartitionedRotationGroupBuilder> partitioned_rotation_group_builder_seq_type;
 
 
 		/**
@@ -304,6 +391,16 @@ namespace GPlatesOpenGL
 		 * Defines the quadtree subdivision of each cube face and any overlaps of extents.
 		 */
 		GLCubeSubdivision::non_null_ptr_to_const_type d_cube_subdivision;
+
+		/**
+		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
+		 */
+		std::size_t d_tile_texel_dimension;
+
+		/**
+		 * Contains a quad tree for each face of the cube.
+		 */
+		Cube d_cube;
 
 		/**
 		 * Keeping a reference to the original source of polygons in case we need to rebuild
@@ -323,12 +420,74 @@ namespace GPlatesOpenGL
 		 */
 		GLTexture::shared_ptr_type d_clip_texture;
 
+		/**
+		 * Convenient boolean flag to indicate whether we're using an age grid or not.
+		 * This is true if we have both an age grid coverage raster and an age grid raster -
+		 * we'll either have neither or both since they're both sourced from a single proxied raster.
+		 */
+		bool d_using_age_grid;
+
+		// Since the age grid mask changes dynamically as the reconstruction time changes
+		// we don't need to worry about caching so much - just enough caching so that panning
+		// the view doesn't mean every tile on screen needs to be regenerated - just the ones
+		// near the edges.
+		// This can be achieved by setting the cache size to one and just letting it grow as needed.
+		boost::optional<GLTextureCache::non_null_ptr_type> d_age_masked_raster_texture_cache;
+
+		/**
+		 * Optional age grid raster have per-texel age masking instead of per-polygon.
+		 */
+		boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_age_grid_mask_raster;
+
+		/**
+		 * Optional age grid coverage raster (is zero where there are no age values in age grid raster).
+		 */
+		boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_age_grid_coverage_raster;
+
+		/**
+		 * Used to determine if we need to rebuild any cached age-masked textures due to source data changing.
+		 *
+		 * NOTE: This is only needed if we're using an age grid because otherwise we don't
+		 * cache anything.
+		 */
+		GLTextureUtils::ValidToken d_source_raster_valid_token;
+
+		/**
+		 * Used to determine if we need to rebuild any cached age-masked textures due to changed age grid mask.
+		 */
+		GLTextureUtils::ValidToken d_age_grid_mask_raster_valid_token;
+
+		/**
+		 * Used to determine if we need to rebuild any cached age-masked textures due to changed age grid coverage.
+		 */
+		GLTextureUtils::ValidToken d_age_grid_coverage_raster_valid_token;
+
+		//
+		// Various state used when rendering to age grid mask render texture.
+		//
+		GLClearBuffersState::non_null_ptr_type d_clear_buffers_state;
+		GLClearBuffers::non_null_ptr_type d_clear_buffers;
+		GLViewport d_viewport;
+		GLViewportState::non_null_ptr_type d_viewport_state;
+
+		// Used to draw a textured full-screen quad into render texture.
+		GLVertexArray::shared_ptr_type d_full_screen_quad_vertex_array;
+		GLVertexElementArray::non_null_ptr_type d_full_screen_quad_vertex_element_array;
+
+		// The composite state sets used for each of the three render passes required to
+		// render an age grid mask.
+		GLCompositeStateSet::non_null_ptr_type d_first_age_mask_render_pass_state;
+		GLCompositeStateSet::non_null_ptr_type d_second_age_mask_render_pass_state;
+		GLCompositeStateSet::non_null_ptr_type d_third_age_mask_render_pass_state;
+
 
 		//! Constructor.
 		GLMultiResolutionReconstructedRaster(
 				const GLMultiResolutionCubeRaster::non_null_ptr_type &raster_to_reconstruct,
 				const GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type &reconstructing_polygons,
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager);
+				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
+				const boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> &age_grid_mask_raster,
+				const boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> &age_grid_coverage_raster);
 
 
 		void
@@ -340,6 +499,10 @@ namespace GPlatesOpenGL
 		initialise_cube_quad_trees();
 
 		void
+		create_age_masked_tile_texture(
+				const GLTexture::shared_ptr_type &texture);
+
+		void
 		create_clip_texture();
 
 		unsigned int
@@ -349,16 +512,30 @@ namespace GPlatesOpenGL
 		boost::optional<QuadTreeNode::non_null_ptr_type>
 		create_quad_tree_node(
 				GLCubeSubdivision::CubeFaceType cube_face,
-				const partition_mesh_seq_type &parent_partitioned_meshes,
+				const partitioned_rotation_group_builder_seq_type &parent_partitioned_rotation_group_builders,
 				const GLMultiResolutionCubeRaster::QuadTreeNode &source_raster_quad_tree_node,
+				const boost::optional<GLMultiResolutionCubeRaster::QuadTreeNode> &age_grid_mask_raster_quad_tree_node,
+				const boost::optional<GLMultiResolutionCubeRaster::QuadTreeNode> &age_grid_coverage_raster_quad_tree_node,
 				unsigned int level_of_detail,
 				unsigned int tile_u_offset,
 				unsigned int tile_v_offset);
 
+		PartitionedRotationGroup::maybe_null_ptr_type
+		partition_rotation_group(
+				const PartitionedRotationGroupBuilder &parent_partitioned_rotation_group_builder,
+				// The partitioned mesh builders for the current partition (if any polygons intersect our partition).
+				PartitionedRotationGroupBuilder &partitioned_rotation_group_builder,
+				const GLTransformState::FrustumPlanes &frustum_planes,
+				const GLIntersect::OrientedBoundingBoxBuilder &initial_bounding_box_builder);
+
+		void
+		update_input_rasters_valid_tokens();
+
 		void
 		render_quad_tree(
 				GLRenderer &renderer,
-				const QuadTreeNode &quad_tree_node,
+				QuadTreeNode &quad_tree_node,
+				unsigned int rotation_group_index,
 				unsigned int level_of_detail,
 				unsigned int render_level_of_detail,
 				const GLTransformState::FrustumPlanes &frustum_planes,
@@ -367,7 +544,21 @@ namespace GPlatesOpenGL
 		void
 		render_quad_tree_node_tile(
 				GLRenderer &renderer,
-				const QuadTreeNode &quad_tree_node);
+				QuadTreeNode &quad_tree_node,
+				const PartitionedRotationGroup &partitioned_rotation_group);
+
+		void
+		render_age_masked_source_raster_into_tile(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_to_const_type &age_mask_tile_texture,
+				QuadTreeNode &quad_tree_node);
+
+		void
+		render_tile_to_scene(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_to_const_type &source_raster_texture,
+				QuadTreeNode &quad_tree_node,
+				const PartitionedRotationGroup &partitioned_rotation_group);
 	};
 }
 

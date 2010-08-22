@@ -61,6 +61,7 @@ namespace GPlatesViewOperations
 namespace GPlatesGui
 {
 	class GlobeVisibilityTester;
+	class RasterColourSchemeMap;
 	class Texture;
 	typedef GPlatesUtils::VirtualProxy<Texture> ProxiedTexture;
 
@@ -74,6 +75,7 @@ namespace GPlatesGui
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				ProxiedTexture &texture_,
 				RenderSettings &render_settings,
+				RasterColourSchemeMap &raster_colour_scheme_map,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -82,6 +84,7 @@ namespace GPlatesGui
 		Globe(
 				Globe &existing_globe,
 				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+				RasterColourSchemeMap &raster_colour_scheme_map,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);

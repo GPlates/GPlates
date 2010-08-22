@@ -74,6 +74,17 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Some derived classes require an unbind on the last render target instead
+		 * of a bind on the next render target.
+		 *
+		 * This only needs to be called when changing render targets.
+		 */
+		virtual
+		void
+		unbind() = 0;
+
+
+		/**
 		 * Call before rendering to 'this' render target.
 		 *
 		 * Does any pre-rendering tasks (such as binding render target to a texture).
@@ -150,7 +161,13 @@ namespace GPlatesOpenGL
 
 		virtual
 		void
-		bind();
+		bind()
+		{  }
+
+		virtual
+		void
+		unbind()
+		{  }
 
 		virtual
 		void
@@ -184,6 +201,10 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		bind();
+
+		virtual
+		void
+		unbind();
 
 		virtual
 		void
@@ -234,6 +255,11 @@ namespace GPlatesOpenGL
 
 		virtual
 		void
+		unbind()
+		{  }
+
+		virtual
+		void
 		begin_render_to_target()
 		{  }
 
@@ -271,6 +297,11 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		bind();
+
+		virtual
+		void
+		unbind()
+		{  }
 
 		virtual
 		void
@@ -322,6 +353,11 @@ namespace GPlatesOpenGL
 
 		virtual
 		void
+		unbind()
+		{  }
+
+		virtual
+		void
 		begin_render_to_target()
 		{  }
 
@@ -352,6 +388,11 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		bind()
+		{  }
+
+		virtual
+		void
+		unbind()
 		{  }
 
 		virtual

@@ -190,16 +190,30 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_spher
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 		const GPlatesAppLogic::Layer &layer,
+		const double &reconstruction_time,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
 		const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
 		const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-						reconstruct_raster_polygons)
+				reconstruct_raster_polygons,
+		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+				age_grid_georeferencing,
+		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+				age_grid_proxied_rasters,
+		const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
+				age_grid_raster_band_names)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
 			new RenderedResolvedRaster(
-					layer, georeferencing, proxied_rasters,
-					raster_band_names, reconstruct_raster_polygons));
+					layer,
+					reconstruction_time,
+					georeferencing,
+					proxied_rasters,
+					raster_band_names,
+					reconstruct_raster_polygons,
+					age_grid_georeferencing,
+					age_grid_proxied_rasters,
+					age_grid_raster_band_names));
 
 	return RenderedGeometry(rendered_geom_impl);
 }

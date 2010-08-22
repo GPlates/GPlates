@@ -36,10 +36,13 @@
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/ReconstructRasterPolygons.h"
 
+#include "opengl/GLAgeGridCoverageSource.h"
+#include "opengl/GLAgeGridMaskSource.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLMultiResolutionCubeRaster.h"
 #include "opengl/GLMultiResolutionRaster.h"
 #include "opengl/GLMultiResolutionReconstructedRaster.h"
+#include "opengl/GLProxiedRasterSource.h"
 #include "opengl/GLRenderGraphNode.h"
 
 #include "property-values/Georeferencing.h"
@@ -115,13 +118,25 @@ namespace GPlatesGui
 			 * Returns false if no multi-resolution raster could be created.
 			 */
 			boost::optional<GPlatesOpenGL::GLRenderGraphNode::non_null_ptr_type>
-			get_or_create_raster_render_graph_node(
+			get_raster_render_graph_node(
 					const GPlatesAppLogic::Layer &layer,
-					const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+					const double &reconstruction_time,
+					const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &source_georeferencing,
 					const GPlatesPropertyValues::RawRaster::non_null_ptr_type &source_raster,
 					const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
 					const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-							reconstruct_raster_polygons);
+							reconstruct_raster_polygons = boost::none,
+					const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+							age_grid_georeferencing = boost::none,
+					const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
+							age_grid_raster = boost::none);
+
+			/**
+			 * Release objects associated with the specified layer (as it's about to be destroyed).
+			 */
+			void
+			release_layer(
+					const GPlatesAppLogic::Layer &layer);
 
 		private:
 			/**
@@ -134,19 +149,40 @@ namespace GPlatesGui
 				{
 					struct Input
 					{
-						boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> georeferencing;
+						boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
+								source_georeferencing;
 						boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> source_raster;
-						boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> raster_colour_scheme;
+						boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> source_raster_colour_scheme;
 						boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type>
 								reconstruct_raster_polygons;
+						boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
+								age_grid_georeferencing;
+						boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> age_grid_raster;
 					};
 
 					struct Output
 					{
+						boost::optional<GPlatesOpenGL::GLProxiedRasterSource::non_null_ptr_type>
+								source_proxied_raster;
 						boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
 								source_multi_resolution_raster;
 						boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 								source_multi_resolution_cube_raster;
+
+						boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type>
+								age_grid_mask_multi_resolution_source;
+						boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
+								age_grid_mask_multi_resolution_raster;
+						boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+								age_grid_mask_multi_resolution_cube_raster;
+
+						boost::optional<GPlatesOpenGL::GLAgeGridCoverageSource::non_null_ptr_type>
+								age_grid_coverage_multi_resolution_source;
+						boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
+								age_grid_coverage_multi_resolution_raster;
+						boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+								age_grid_coverage_multi_resolution_cube_raster;
+
 						boost::optional<GPlatesOpenGL::GLMultiResolutionReconstructedRaster::non_null_ptr_type>
 								source_multi_resolution_reconstructed_raster;
 					};
@@ -169,8 +205,7 @@ namespace GPlatesGui
 
 
 			bool
-			update_source_multi_resolution_raster(
-					const RasterBuilder::Raster &old_raster,
+			create_source_multi_resolution_raster(
 					RasterBuilder::Raster &new_raster);
 		};
 

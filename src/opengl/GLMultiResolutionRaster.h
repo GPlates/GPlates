@@ -34,31 +34,22 @@
 
 #include "GLDrawable.h"
 #include "GLIntersectPrimitives.h"
+#include "GLMultiResolutionRasterSource.h"
 #include "GLResourceManager.h"
 #include "GLTexture.h"
 #include "GLTextureCache.h"
+#include "GLTextureUtils.h"
 #include "GLTransformState.h"
 #include "GLVertexArray.h"
 #include "GLVertexArrayCache.h"
 #include "GLVertexElementArray.h"
 
-#include "gui/RasterColourScheme.h"
-
 #include "maths/PointOnSphere.h"
 
 #include "property-values/Georeferencing.h"
-#include "property-values/ProxiedRasterResolver.h"
-#include "property-values/RawRaster.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
-
-
-// For debugging only...
-// #define USE_OLD_GL_RASTER_PROXY
-#ifdef USE_OLD_GL_RASTER_PROXY
-#include "GLRasterProxy.h"
-#endif
 
 
 namespace GPlatesOpenGL
@@ -99,64 +90,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * A tile represents an arbitrary patch of the raster that is
-		 * covered by a single OpenGL texture.
-		 *
-		 * This tile has valid vertices and a valid texture and is ready
-		 * to draw - as long as this @a Tile object exists the vertices and texture
-		 * will be valid.
-		 */
-		class Tile
-		{
-		public:
-			Tile(
-					const GLVertexArray::shared_ptr_to_const_type &vertex_array,
-					const GLVertexElementArray::non_null_ptr_to_const_type &vertex_element_array,
-					const GLTexture::shared_ptr_to_const_type &texture);
-
-			/**
-			 * Returns the drawable for this tile.
-			 *
-			 * NOTE: The returned shared pointer should only be used for rendering
-			 * and then discarded. This is because the vertex array inside the drawable
-			 * is part of a vertex array cache and so the vertex array cannot be recycled
-			 * if a shared pointer is holding onto it.
-			 */
-			GLDrawable::non_null_ptr_to_const_type
-			get_drawable() const
-			{
-				return d_drawable;
-			}
-
-			/**
-			 * Returns texture of tile.
-			 *
-			 * NOTE: The returned shared pointer should only be used for rendering
-			 * and then discarded. This is because the texture is part of a texture cache
-			 * and so it cannot be recycled if a shared pointer is holding onto it.
-			 */
-			GLTexture::shared_ptr_to_const_type
-			get_texture() const
-			{
-				return d_texture;
-			}
-
-		private:
-			GLDrawable::non_null_ptr_to_const_type d_drawable;
-			GLTexture::shared_ptr_to_const_type d_texture;
-		};
-
-
-		/**
-		 * The default tile dimension is 256.
-		 *
-		 * This size gives us a small enough tile region on the globe to make good use
-		 * of view frustum culling of tiles.
-		 */
-		static const std::size_t DEFAULT_TILE_TEXEL_DIMENSION = 256;
-
-
-		/**
 		 * The order of scanlines or rows of data in the raster as visualised in the image.
 		 */
 		enum RasterScanlineOrderType
@@ -178,37 +111,20 @@ namespace GPlatesOpenGL
 		 * Returns false if @a raster is not a proxy raster or if it's uninitialised.
 		 */
 		static
-		boost::optional<non_null_ptr_type>
+		non_null_ptr_type
 		create(
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
-				const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
+				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-				std::size_t tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
 				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM);
 
 
 		/**
-		 * Change to a new raster of the same dimensions as the current internal raster.
-		 *
-		 * This will invalidate all cached textures but will not invalidate any cached vertices.
-		 *
-		 * This method is useful for time-dependent rasters sharing the same georeferencing
-		 * and raster dimensions.
-		 *
-		 * Returns false if @a raster has different dimensions than the current internal raster or
-		 * if the raster scanline order differs.
-		 * In this case you'll need to create a new @a GLMultiResolutionRaster.
-		 *
-		 * NOTE: The opposite, changing the georeferencing without changing the raster,
-		 * will require creating a new @a GLMultiResolutionRaster object.
+		 * Returns a token that clients can store with any cached data we render for them and
+		 * compare against their current token to determine if they need us to re-render.
 		 */
-		bool
-		change_raster(
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
-				const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &
-						raster_colour_scheme,
-				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM);
+		GLTextureUtils::ValidToken
+		get_current_valid_token();
 
 
 		/**
@@ -283,18 +199,56 @@ namespace GPlatesOpenGL
 				std::vector<tile_handle_type> &visible_tiles,
 				float level_of_detail_bias = 0.0f) const;
 
-
-		/**
-		 * Returns the tile corresponding to @a tile_handle.
-		 *
-		 * Discard the returned tile after rendering so that it's vertices and texture
-		 * can be recycled for subsequent scene renders.
-		 */
-		Tile
-		get_tile(
-				tile_handle_type tile_handle);
-
 	private:
+		/**
+		 * A tile represents an arbitrary patch of the raster that is
+		 * covered by a single OpenGL texture.
+		 *
+		 * This tile has valid vertices and a valid texture and is ready
+		 * to draw - as long as this @a Tile object exists the vertices and texture
+		 * will be valid.
+		 */
+		class Tile
+		{
+		public:
+			Tile(
+					const GLVertexArray::shared_ptr_to_const_type &vertex_array,
+					const GLVertexElementArray::non_null_ptr_to_const_type &vertex_element_array,
+					const GLTexture::shared_ptr_to_const_type &texture);
+
+			/**
+			 * Returns the drawable for this tile.
+			 *
+			 * NOTE: The returned shared pointer should only be used for rendering
+			 * and then discarded. This is because the vertex array inside the drawable
+			 * is part of a vertex array cache and so the vertex array cannot be recycled
+			 * if a shared pointer is holding onto it.
+			 */
+			GLDrawable::non_null_ptr_to_const_type
+			get_drawable() const
+			{
+				return d_drawable;
+			}
+
+			/**
+			 * Returns texture of tile.
+			 *
+			 * NOTE: The returned shared pointer should only be used for rendering
+			 * and then discarded. This is because the texture is part of a texture cache
+			 * and so it cannot be recycled if a shared pointer is holding onto it.
+			 */
+			GLTexture::shared_ptr_to_const_type
+			get_texture() const
+			{
+				return d_texture;
+			}
+
+		private:
+			GLDrawable::non_null_ptr_to_const_type d_drawable;
+			GLTexture::shared_ptr_to_const_type d_texture;
+		};
+
+
 		/**
 		 * Retains information to build a single tile of the raster.
 		 */
@@ -452,6 +406,12 @@ namespace GPlatesOpenGL
 			 */
 			mutable GLVolatileTexture texture;
 
+			/**
+			 * Keeps tracks of whether the source data has changed underneath us
+			 * and we need to reload our texture.
+			 */
+			mutable GLTextureUtils::ValidToken source_texture_valid_token;
+
 		private:
 			//! Constructor.
 			LevelOfDetailTile(
@@ -596,22 +556,14 @@ namespace GPlatesOpenGL
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
 
 		/**
-		 * The proxied raster resolver to get region/level data from raster and
-		 * optionally converted to RGBA (using @a d_raster_colour_scheme).
+		 * The source of multi-resolution raster data.
 		 */
-		GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type d_proxied_raster_resolver;
-
-#ifdef USE_OLD_GL_RASTER_PROXY
-		//! Old raster proxy for testing only...
-		boost::optional<GLRasterProxy::non_null_ptr_to_const_type> d_gl_raster_proxy;
-#endif
+		GLMultiResolutionRasterSource::non_null_ptr_type d_raster_source;
 
 		/**
-		 * The colour palette used to convert non-RGBA raster data to RGBA.
-		 *
-		 * It is optional since it is only needed if the raw raster is non-RGBA.
+		 * Used to determine if we need to rebuild any cached textures due to source data changing.
 		 */
-		boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> d_raster_colour_scheme;
+		GLTextureUtils::ValidToken d_raster_source_valid_token;
 
 		//! Original raster width.
 		unsigned int d_raster_width;
@@ -706,15 +658,8 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		GLMultiResolutionRaster(
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
-#ifdef USE_OLD_GL_RASTER_PROXY
-				const GLRasterProxy::non_null_ptr_to_const_type &gl_raster_proxy,
-#endif
-				const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
-				unsigned int raster_width,
-				unsigned int raster_height,
+				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-				std::size_t tile_texel_dimension,
 				RasterScanlineOrderType raster_scanline_order);
 
 		/**
@@ -847,12 +792,32 @@ namespace GPlatesOpenGL
 				const LevelOfDetail::OBBTreeNode &obb_tree_node,
 				std::vector<tile_handle_type> &visible_tiles) const;
 
+
+		/**
+		 * Updates our valid token to match that of our raster source.
+		 */
+		void
+		update_raster_source_valid_token();
+
+
+		/**
+		 * Returns the tile corresponding to @a tile_handle.
+		 *
+		 * Discard the returned tile after rendering so that it's vertices and texture
+		 * can be recycled for subsequent scene renders.
+		 */
+		Tile
+		get_tile(
+				tile_handle_type tile_handle,
+				GLRenderer &renderer);
+
 		/**
 		 * Returns the texture for the tile @a lod_tile.
 		 */
 		GLTexture::shared_ptr_to_const_type
 		get_tile_texture(
-				const LevelOfDetailTile &lod_tile);
+				const LevelOfDetailTile &lod_tile,
+				GLRenderer &renderer);
 
 		/**
 		 * Returns the vertex array for the tile @a lod_tile.
@@ -868,7 +833,14 @@ namespace GPlatesOpenGL
 		load_raster_data_into_tile_texture(
 				const LevelOfDetailTile &lod_tile,
 				const GLTexture::shared_ptr_type &tile_texture,
-				bool texture_was_recycled);
+				GLRenderer &renderer);
+
+		/**
+		 * Creates a texture in OpenGL but doesn't load any image data into it.
+		 */
+		void
+		create_tile_texture(
+				const GLTexture::shared_ptr_type &texture);
 
 		/**
 		 * Loads vertex data into @a lod_tile.

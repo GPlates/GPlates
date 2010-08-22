@@ -173,11 +173,18 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_resolved_raster(
 				const GPlatesAppLogic::Layer &layer,
+				const double &reconstruction_time,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
 				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
 				const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-						reconstruct_raster_polygons = boost::none);
+						reconstruct_raster_polygons = boost::none,
+				const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+						age_grid_georeferencing = boost::none,
+				const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+						age_grid_proxied_rasters = boost::none,
+				const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
+						age_grid_raster_band_names = boost::none);
 
 		/**
 		 * Creates a single direction arrow consisting of an arc line segment on the globe's surface

@@ -59,7 +59,7 @@ namespace GPlatesAppLogic
 		 */
 		typedef std::multimap<
 				QString,
-				const layer_task_data_type *> input_data_type;
+				layer_task_data_type> input_data_type;
 
 
 		virtual
@@ -189,7 +189,7 @@ namespace GPlatesAppLogic
 			const input_data_type::const_iterator data_end = input_chanel_name_range.second;
 			for ( ; data_iter != data_end; ++data_iter)
 			{
-				const layer_task_data_type &layer_data = *data_iter->second;
+				const layer_task_data_type &layer_data = data_iter->second;
 
 				// The type to be stored in the caller's container.
 				typedef typename ContainerType::value_type variant_bounded_type;

@@ -36,6 +36,7 @@
 #include "RasterColourScheme.h"
 
 #include "opengl/GLMultiResolutionRaster.h"
+#include "opengl/GLProxiedRasterSource.h"
 #include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLResourceManager.h"
 
@@ -141,6 +142,8 @@ namespace GPlatesGui
 		 * The optional raster colour scheme (not needed for RGBA rasters).
 		 */
 		boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> d_raster_colour_scheme;
+
+		boost::optional<GPlatesOpenGL::GLProxiedRasterSource::non_null_ptr_type> d_proxied_raster_source;
 
 		/**
 		 * Rendering is done with this OpenGL raster.

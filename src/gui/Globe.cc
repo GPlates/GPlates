@@ -45,6 +45,7 @@ GPlatesGui::Globe::Globe(
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		ProxiedTexture &texture_,
 		RenderSettings &render_settings,
+		RasterColourSchemeMap &raster_colour_scheme_map,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
@@ -62,6 +63,7 @@ GPlatesGui::Globe::Globe(
 			persistent_opengl_objects,
 			visual_layers,
 			d_render_settings,
+			raster_colour_scheme_map,
 			text_renderer_ptr,
 			visibility_tester,
 			colour_scheme)
@@ -71,6 +73,7 @@ GPlatesGui::Globe::Globe(
 GPlatesGui::Globe::Globe(
 		Globe &existing_globe,
 		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+		RasterColourSchemeMap &raster_colour_scheme_map,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
@@ -90,6 +93,7 @@ GPlatesGui::Globe::Globe(
 			persistent_opengl_objects,
 			d_visual_layers,
 			d_render_settings,
+			raster_colour_scheme_map,
 			text_renderer_ptr,
 			visibility_tester,
 			colour_scheme)
@@ -145,17 +149,19 @@ GPlatesGui::Globe::paint(
 				->get_texture_resource_manager());
 #endif
 
-	// Render the grid lines on the sphere.
-	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_node =
-			create_rendered_layer_node(globe_orientation_transform_node);
-	d_grid.paint(grid_node, Colour::get_silver());
-
 	// Draw the rendered geometries.
 	d_rendered_geom_collection_painter.set_scale(scale);
 	d_rendered_geom_collection_painter.paint(
 			globe_orientation_transform_node,
 			viewport_zoom_factor,
 			d_nurbs_renderer);
+
+	// Render the grid lines on the sphere.
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_node =
+			create_rendered_layer_node(globe_orientation_transform_node);
+	Colour grid_colour = Colour::get_silver();
+	grid_colour.alpha() = 0.5f;
+	d_grid.paint(grid_node, grid_colour);
 }
 
 void

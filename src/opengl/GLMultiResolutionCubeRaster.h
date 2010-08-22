@@ -38,6 +38,7 @@
 #include "GLResourceManager.h"
 #include "GLTexture.h"
 #include "GLTextureCache.h"
+#include "GLTextureUtils.h"
 #include "GLTransform.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -138,6 +139,14 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns a token that clients can store with any cached data we render for them and
+		 * compare against their current token to determine if they need us to re-render.
+		 */
+		GLTextureUtils::ValidToken
+		get_current_valid_token();
+
+
+		/**
 		 * Get the root quad tree node of the specified face.
 		 *
 		 * Returns false if source raster does not cover any part of the specified cube face.
@@ -204,6 +213,12 @@ namespace GPlatesOpenGL
 			std::vector<GLMultiResolutionRaster::tile_handle_type> src_raster_tiles;
 
 			/**
+			 * Keeps tracks of whether the source data has changed underneath us
+			 * and we need to reload our texture.
+			 */
+			mutable GLTextureUtils::ValidToken source_texture_valid_token;
+
+			/**
 			 * The texture representation of the raster data for this tile.
 			 */
 			GLVolatileTexture render_texture;
@@ -243,6 +258,12 @@ namespace GPlatesOpenGL
 		 * The raster we are re-sampling into our cube map.
 		 */
 		GLMultiResolutionRaster::non_null_ptr_type d_multi_resolution_raster;
+
+		/**
+		 * Used to determine if we need to rebuild any cached textures due to source data changing.
+		 */
+		GLTextureUtils::ValidToken d_source_raster_valid_token;
+
 
 		/**
 		 * Defines the quadtree subdivision of each cube face and any overlaps of extents.
@@ -298,8 +319,10 @@ namespace GPlatesOpenGL
 		render_raster_data_into_tile_texture(
 				const QuadTreeNodeImpl &tile,
 				const GLTexture::shared_ptr_type &texture,
-				bool texture_was_recycled,
 				GLRenderer &renderer);
+
+		void
+		update_raster_source_valid_token();
 
 		void
 		create_tile_texture(

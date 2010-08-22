@@ -70,7 +70,7 @@ GPlatesOpenGL::GLUNurbsRendererDrawable::draw() const
 	// The colour is here instead of in a @a GLStateSet because it's really part
 	// of the vertex data. On most systems the OpenGL driver will store the colour
 	// with each vertex assembled by the nurbs renderer.
-	glColor3fv(d_colour);
+	glColor4fv(d_colour);
 
 	d_glu_nurbs_geometry->draw(d_glu_nurbs_obj.get());
 }

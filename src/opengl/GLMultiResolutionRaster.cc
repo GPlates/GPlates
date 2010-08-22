@@ -38,6 +38,8 @@
 #include "GLMultiResolutionRaster.h"
 
 #include "GLBindTextureState.h"
+#include "GLBlendState.h"
+#include "GLCompositeStateSet.h"
 #include "GLContext.h"
 #include "GLIntersect.h"
 #include "GLRenderer.h"
@@ -51,7 +53,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "property-values/RawRasterUtils.h"
+#include "utils/Profile.h"
 
 namespace
 {
@@ -72,89 +74,34 @@ namespace
 }
 
 
-boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
+GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type
 GPlatesOpenGL::GLMultiResolutionRaster::create(
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
-		const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
+		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-		std::size_t tile_texel_dimension,
 		RasterScanlineOrderType raster_scanline_order)
 {
-	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
-			GPlatesPropertyValues::ProxiedRasterResolver::create(raster);
-	if (!proxy_resolver_opt)
-	{
-		return boost::none;
-	}
-
-	// Get the raster dimensions.
-	boost::optional<std::pair<unsigned int, unsigned int> > raster_dimensions =
-			GPlatesPropertyValues::RawRasterUtils::get_raster_size(*raster);
-
-	// If raster happens to be uninitialised then return false.
-	if (!raster_dimensions)
-	{
-		return boost::none;
-	}
-
-	const unsigned int raster_width = raster_dimensions->first;
-	const unsigned int raster_height = raster_dimensions->second;
-
-#ifdef USE_OLD_GL_RASTER_PROXY
-	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> rgba_raster_opt =
-			proxy_resolver_opt.get()->get_coloured_region_from_level(
-					0, 0, 0, raster_width, raster_height, raster_colour_scheme);
-	if (!rgba_raster_opt)
-	{
-		return boost::none;
-	}
-
-	GLRasterProxy::non_null_ptr_to_const_type gl_raster_proxy =
-			GLRasterProxy::create(rgba_raster_opt.get(), tile_texel_dimension);
-#endif
-
 	return non_null_ptr_type(new GLMultiResolutionRaster(
 			georeferencing,
-			proxy_resolver_opt.get(),
-#ifdef USE_OLD_GL_RASTER_PROXY
-			gl_raster_proxy,
-#endif
-			raster_colour_scheme,
-			raster_width,
-			raster_height,
+			raster_source,
 			texture_resource_manager,
-			tile_texel_dimension,
 			raster_scanline_order));
 }
 
 
 GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-		const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
-#ifdef USE_OLD_GL_RASTER_PROXY
-		const GLRasterProxy::non_null_ptr_to_const_type &gl_raster_proxy,
-#endif
-		const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
-		unsigned int raster_width,
-		unsigned int raster_height,
+		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-		std::size_t tile_texel_dimension,
 		RasterScanlineOrderType raster_scanline_order) :
 	d_georeferencing(georeferencing),
-	d_proxied_raster_resolver(proxy_raster_resolver),
-#ifdef USE_OLD_GL_RASTER_PROXY
-	d_gl_raster_proxy(gl_raster_proxy),
-#endif
-	d_raster_colour_scheme(raster_colour_scheme),
+	d_raster_source(raster_source),
+	d_raster_source_valid_token(raster_source->get_current_valid_token()),
 	// The raster dimensions (the highest resolution level-of-detail).
-	d_raster_width(raster_width),
-	d_raster_height(raster_height),
+	d_raster_width(raster_source->get_raster_width()),
+	d_raster_height(raster_source->get_raster_height()),
 	d_raster_scanline_order(raster_scanline_order),
-	d_tile_texel_dimension( // Make sure our tile size does not exceed the maximum texture size...
-			(std::min)(
-					boost::numeric_cast<GLint>(tile_texel_dimension),
-					GLContext::get_texture_parameters().gl_max_texture_size)),
+	d_tile_texel_dimension(raster_source->get_tile_texel_dimension()),
 	// The parentheses around min are to prevent the windows min macros
 	// from stuffing numeric_limits' min.
 	d_max_highest_resolution_texel_size_on_unit_sphere((std::numeric_limits<float>::min)()),
@@ -170,12 +117,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	// For now it's 400 which is about 9Mb...
 	d_vertex_array_cache(create_vertex_array_cache(400))
 {
-	// Make sure tile_texel_dimension is a power-of-two.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_tile_texel_dimension > 0 &&
-					(d_tile_texel_dimension & (d_tile_texel_dimension - 1)) == 0,
-			GPLATES_ASSERTION_SOURCE);
-
 	// Create the levels of details and within each one create an oriented bounding box
 	// tree (used to quickly find visible tiles) where the drawable tiles are in the
 	// leaf nodes of the OBB tree.
@@ -183,68 +124,21 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 }
 
 
-bool
-GPlatesOpenGL::GLMultiResolutionRaster::change_raster(
-		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_raw_raster,
-		const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
-		RasterScanlineOrderType raster_scanline_order)
+GPlatesOpenGL::GLTextureUtils::ValidToken
+GPlatesOpenGL::GLMultiResolutionRaster::get_current_valid_token()
 {
-	// The scanline order should be the same as the current internal raster.
-	if (raster_scanline_order != d_raster_scanline_order)
-	{
-		return false;
-	}
+	update_raster_source_valid_token();
 
-	// Get the raster dimensions.
-	boost::optional<std::pair<unsigned int, unsigned int> > new_raster_dimensions =
-			GPlatesPropertyValues::RawRasterUtils::get_raster_size(*new_raw_raster);
+	// We'll just use the valid token of the raster source - if they don't change then neither do we.
+	// If we had two inputs sources then we'd have to have our own valid token.
+	return d_raster_source_valid_token;
+}
 
-	// If raster happens to be uninitialised then return false.
-	if (!new_raster_dimensions)
-	{
-		return false;
-	}
 
-	// If the new raster dimensions don't match our current internal raster then return false.
-	if (new_raster_dimensions->first != d_raster_width ||
-		new_raster_dimensions->second != d_raster_height)
-	{
-		return false;
-	}
-
-	// Create a new proxied raster resolver to perform region queries for the new raster data.
-	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
-			GPlatesPropertyValues::ProxiedRasterResolver::create(new_raw_raster);
-	if (!proxy_resolver_opt)
-	{
-		return false;
-	}
-	d_proxied_raster_resolver = proxy_resolver_opt.get();
-
-	// New raster colour scheme.
-	d_raster_colour_scheme = raster_colour_scheme;
-
-#ifdef USE_OLD_GL_RASTER_PROXY
-	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> rgba_raster_opt =
-			d_proxied_raster_resolver->get_coloured_region_from_level(
-					0, 0, 0, d_raster_width, d_raster_height, raster_colour_scheme);
-	if (!rgba_raster_opt)
-	{
-		return false;
-	}
-
-	d_gl_raster_proxy = GLRasterProxy::create(rgba_raster_opt.get(), d_tile_texel_dimension);
-#endif
-
-	// Invalidate all volatile textures for all tiles.
-	// When it comes time to draw this raster they'll be regenerated as needed.
-	BOOST_FOREACH(const LevelOfDetailTile::non_null_ptr_type &lod_tile, d_tiles)
-	{
-		lod_tile->texture.invalidate();
-	}
-
-	// Successfully changed to a new raster of the same dimensions as the previous one.
-	return true;
+void
+GPlatesOpenGL::GLMultiResolutionRaster::update_raster_source_valid_token()
+{
+	d_raster_source_valid_token = d_raster_source->get_current_valid_token();
 }
 
 
@@ -266,20 +160,33 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 		GLRenderer &renderer,
 		const std::vector<tile_handle_type> &tiles)
 {
+	// Make sure our cached version of the raster source's valid token is up to date
+	// so our texture tiles can decide whether they need to reload their caches.
+	update_raster_source_valid_token();
+
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
 	// Enable texturing and set the texture function on texture unit 0.
-	GPlatesOpenGL::GLTextureEnvironmentState::non_null_ptr_type state_set =
+	GPlatesOpenGL::GLTextureEnvironmentState::non_null_ptr_type tex_env_state =
 			GPlatesOpenGL::GLTextureEnvironmentState::create();
-	state_set->gl_enable_texture_2D(GL_TRUE);
-	state_set->gl_tex_env_mode(GL_REPLACE);
+	tex_env_state->gl_enable_texture_2D(GL_TRUE).gl_tex_env_mode(GL_REPLACE);
+	state_set->add_state_set(tex_env_state);
+
+	// Set the alpha-blend state in case texture has transparency.
+	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
+			GPlatesOpenGL::GLBlendState::create();
+	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	state_set->add_state_set(blend_state);
 
 	renderer.push_state_set(state_set);
 
 	// Create a render operation for each visible tile.
 	BOOST_FOREACH(GLMultiResolutionRaster::tile_handle_type tile_handle, tiles)
 	{
-		Tile tile = get_tile(tile_handle);
+		Tile tile = get_tile(tile_handle, renderer);
 
-		// Create a state set that binds the tile texture to the specified texture 0.
+		// Create a state set that binds the tile texture to texture unit 0.
 		GLBindTextureState::non_null_ptr_type bind_tile_texture = GLBindTextureState::create();
 		bind_tile_texture->gl_bind_texture(GL_TEXTURE_2D, tile.get_texture());
 
@@ -449,7 +356,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 
 GPlatesOpenGL::GLMultiResolutionRaster::Tile
 GPlatesOpenGL::GLMultiResolutionRaster::get_tile(
-		tile_handle_type tile_handle)
+		tile_handle_type tile_handle,
+		GLRenderer &renderer)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			tile_handle < d_tiles.size(),
@@ -458,7 +366,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile(
 	const LevelOfDetailTile &lod_tile = *d_tiles[tile_handle];
 
 	// Get the texture for the tile.
-	GLTexture::shared_ptr_to_const_type texture = get_tile_texture(lod_tile);
+	GLTexture::shared_ptr_to_const_type texture =
+			get_tile_texture(lod_tile, renderer);
 
 	// Get the vertices for the tile.
 	GLVertexArray::shared_ptr_to_const_type vertex_array = get_tile_vertex_array(lod_tile);
@@ -471,7 +380,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile(
 
 GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
 GPlatesOpenGL::GLMultiResolutionRaster::get_tile_texture(
-		const LevelOfDetailTile &lod_tile)
+		const LevelOfDetailTile &lod_tile,
+		GLRenderer &renderer)
 {
 	// See if we've previously created our tile texture and
 	// see if it hasn't been recycled by the texture cache.
@@ -492,41 +402,53 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_texture(
 				tile_texture,
 				GPLATES_ASSERTION_SOURCE);
 
-		load_raster_data_into_tile_texture(lod_tile, tile_texture.get(), texture_was_recycled);
+		// If the texture is not recycled then its a newly allocated texture so we need
+		// to create it in OpenGL before we can load data into it.
+		if (!texture_was_recycled)
+		{
+			create_tile_texture(tile_texture.get());
+		}
+
+		load_raster_data_into_tile_texture(
+				lod_tile,
+				tile_texture.get(),
+				renderer);
+
+		return tile_texture.get();
+	}
+
+	// Our texture wasn't recycled but see if it's still valid in case the source
+	// raster changed the data underneath us.
+	if (!lod_tile.source_texture_valid_token.is_still_valid(d_raster_source_valid_token))
+	{
+		// Load the data into the texture.
+		load_raster_data_into_tile_texture(
+				lod_tile, tile_texture.get(),
+				renderer);
 	}
 
 	return tile_texture.get();
 }
 
 
-GPlatesOpenGL::GLVertexArray::shared_ptr_to_const_type
-GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertex_array(
-		const LevelOfDetailTile &lod_tile)
+void
+GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
+		const LevelOfDetailTile &lod_tile,
+		const GLTexture::shared_ptr_type &texture,
+		GLRenderer &renderer)
 {
-	// See if we've previously created our tile vertices and
-	// see if they haven't been recycled by the vertex array cache.
-	boost::optional<GLVertexArray::shared_ptr_type> tile_vertices =
-			lod_tile.vertex_array.get_object();
-	if (!tile_vertices)
-	{
-		// We need to allocate a new vertex array from the cache and fill it with data.
-		const std::pair<GLVolatileVertexArray, bool/*recycled*/> volatile_vertex_array_result =
-				d_vertex_array_cache->allocate_object();
+	// Get our source to load data into the texture.
+	d_raster_source->load_tile(
+			lod_tile.lod_level,
+			lod_tile.u_lod_texel_offset,
+			lod_tile.v_lod_texel_offset,
+			lod_tile.num_u_lod_texels,
+			lod_tile.num_v_lod_texels,
+			texture,
+			renderer);
 
-		// Extract allocation results.
-		lod_tile.vertex_array = volatile_vertex_array_result.first;
-		const bool vertex_array_was_recycled = volatile_vertex_array_result.second;
-
-		// Get the tile vertices again - this time it should have a valid vertex array.
-		tile_vertices = lod_tile.vertex_array.get_object();
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				tile_vertices,
-				GPLATES_ASSERTION_SOURCE);
-
-		load_vertices_into_tile_vertex_array(lod_tile, tile_vertices.get(), vertex_array_was_recycled);
-	}
-
-	return tile_vertices.get();
+	// This tile texture is now update-to-date.
+	lod_tile.source_texture_valid_token = d_raster_source_valid_token;
 }
 
 
@@ -534,67 +456,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertex_array(
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
-GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
-		const LevelOfDetailTile &lod_tile,
-		const GLTexture::shared_ptr_type &texture,
-		bool texture_was_recycled)
+GPlatesOpenGL::GLMultiResolutionRaster::create_tile_texture(
+		const GLTexture::shared_ptr_type &texture)
 {
-	// Get the region of the raster covered by this tile at the level-of-detail of this tile.
-#ifdef USE_OLD_GL_RASTER_PROXY
-	GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type raster_region =
-			d_gl_raster_proxy.get()->get_raster_region(
-					lod_tile.lod_level,
-					lod_tile.u_lod_texel_offset,
-					lod_tile.num_u_lod_texels,
-					lod_tile.v_lod_texel_offset,
-					lod_tile.num_v_lod_texels);
-#else
-	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> raster_region_opt =
-			d_proxied_raster_resolver->get_coloured_region_from_level(
-					lod_tile.lod_level,
-					lod_tile.u_lod_texel_offset,
-					lod_tile.v_lod_texel_offset,
-					lod_tile.num_u_lod_texels,
-					lod_tile.num_v_lod_texels,
-					d_raster_colour_scheme);
-
-	// If there was an error accessing raster data then black out the texture.
-	if (!raster_region_opt)
-	{
-		qWarning() << "Unable to load data into raster tile.";
-
-		std::cout << "level, uoffset, voffset, u_num_texels, v_num_texels: "
-				<< lod_tile.lod_level << ", "
-				<< lod_tile.u_lod_texel_offset << ", "
-				<< lod_tile.v_lod_texel_offset << ", "
-				<< lod_tile.num_u_lod_texels << ", "
-				<< lod_tile.num_v_lod_texels << ", "
-				<< std::endl;
-
-		// TODO: print a text error message over the tile.
-
-		// Create a black raster to load into the texture.
-		GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type black_raster_region =
-			GPlatesPropertyValues::Rgba8RawRaster::create(
-					lod_tile.num_u_lod_texels, lod_tile.num_v_lod_texels);
-
-		GPlatesGui::rgba8_t *const raster_data = black_raster_region->data();
-		const GPlatesGui::rgba8_t black(0, 0, 0, 0);
-		for (int n = lod_tile.num_u_lod_texels * lod_tile.num_v_lod_texels; --n >= 0; )
-		{
-			raster_data[n] = black;
-		}
-
-		raster_region_opt = black_raster_region;
-	}
-
-	const GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type &raster_region =
-			raster_region_opt.get();
-#endif
-
-	// Pointer to the Rgba8 data.
-	const GPlatesGui::rgba8_t *rgba8_data = raster_region->data();
-
 	//
 	// NOTE: Direct calls to OpenGL are made below.
 	//
@@ -606,11 +470,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	// binds of that texture object will set all that state into OpenGL.
 	//
 
-	// Each row of texels, in the raster image, is not aligned to 4 bytes.
-	// This is a direct call to OpenGL but it only affects how images are unpacked
-	// from CPU memory so its really a client side state (rather than a graphics card state).
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
 	// Bind the texture so its the current texture.
 	// Here we actually make a direct OpenGL call to bind the texture to the currently
 	// active texture unit. It doesn't matter what the current texture unit is because
@@ -618,20 +477,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	// so that subsequent binds of this texture object, when we render the scene graph,
 	// will set that state to OpenGL.
 	texture->gl_bind_texture(GL_TEXTURE_2D);
-
-	// Now that its the current texture, any OpenGL calls that affect texture object state
-	// will be directed to the texture.
-	if (texture_was_recycled)
-	{
-		// Texture has been recycled so we can use faster texture upload functions that
-		// don't respecify the entire texture (such as its dimensions).
-		glTexSubImage2D(GL_TEXTURE_2D, 0,
-				0, 0, lod_tile.num_u_lod_texels, lod_tile.num_v_lod_texels,
-				GL_RGBA, GL_UNSIGNED_BYTE, rgba8_data);
-
-		// All the other texture object state remains so we don't need to set it again.
-		return;
-	}
 
 	// If the auto-generate mipmaps OpenGL extension is supported then have mipmaps generated
 	// automatically for us and specify a mipmap minification filter,
@@ -664,36 +509,48 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-	// This is a new texture so we need to call the texture upload function glTexImage2D()
-	// that specifies the entire texture, including its size.
-
-	if (lod_tile.num_u_lod_texels == d_tile_texel_dimension &&
-		lod_tile.num_v_lod_texels == d_tile_texel_dimension)
-	{
-		// The current tile uses the entire texture so upload it in one call.
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
-				d_tile_texel_dimension, d_tile_texel_dimension,
-				0, GL_RGBA, GL_UNSIGNED_BYTE, rgba8_data);
-	}
-	else
-	{
-		// The current tile does *not* use the entire texture so define the texture
-		// with no data and then upload a sub-region of the texture.
-		// This is because all our textures are square with dimension 'd_tile_texel_dimension'.
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
-				d_tile_texel_dimension, d_tile_texel_dimension,
-				0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		// Part of the texture will be undefined but it won't be accessed anyway.
-		glTexSubImage2D(GL_TEXTURE_2D, 0,
-				0, 0, lod_tile.num_u_lod_texels, lod_tile.num_v_lod_texels,
-				GL_RGBA, GL_UNSIGNED_BYTE, rgba8_data);
-	}
+	// Create the texture in OpenGL - this actually creates the texture without any data.
+	// We'll be getting our raster source to load image data into the texture.
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+			d_tile_texel_dimension, d_tile_texel_dimension,
+			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 ENABLE_GCC_WARNING("-Wold-style-cast")
+
+
+GPlatesOpenGL::GLVertexArray::shared_ptr_to_const_type
+GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertex_array(
+		const LevelOfDetailTile &lod_tile)
+{
+	// See if we've previously created our tile vertices and
+	// see if they haven't been recycled by the vertex array cache.
+	boost::optional<GLVertexArray::shared_ptr_type> tile_vertices =
+			lod_tile.vertex_array.get_object();
+	if (!tile_vertices)
+	{
+		// We need to allocate a new vertex array from the cache and fill it with data.
+		const std::pair<GLVolatileVertexArray, bool/*recycled*/> volatile_vertex_array_result =
+				d_vertex_array_cache->allocate_object();
+
+		// Extract allocation results.
+		lod_tile.vertex_array = volatile_vertex_array_result.first;
+		const bool vertex_array_was_recycled = volatile_vertex_array_result.second;
+
+		// Get the tile vertices again - this time it should have a valid vertex array.
+		tile_vertices = lod_tile.vertex_array.get_object();
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				tile_vertices,
+				GPLATES_ASSERTION_SOURCE);
+
+		load_vertices_into_tile_vertex_array(lod_tile, tile_vertices.get(), vertex_array_was_recycled);
+	}
+
+	return tile_vertices.get();
+}
 
 
 void
@@ -830,17 +687,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::initialise_level_of_detail_pyramid()
 		lod_texel_width = (lod_texel_width + 1) / 2;
 		lod_texel_height = (lod_texel_height + 1) / 2;
 	}
-
-	std::cout << "georeferencing: top-left (x,y), x (height, width), y (height, width) " << std::endl
-		<< d_georeferencing->parameters().top_left_x_coordinate << ", "
-		<< d_georeferencing->parameters().top_left_y_coordinate << ", "
-		<< d_georeferencing->parameters().x_component_of_pixel_height << ", "
-		<< d_georeferencing->parameters().x_component_of_pixel_width << ", "
-		<< d_georeferencing->parameters().y_component_of_pixel_height << ", "
-		<< d_georeferencing->parameters().y_component_of_pixel_width << ", "
-		<< std::endl;
-
-	std::cout << "Num levels in pyramid: " << d_level_of_detail_pyramid.size() << std::endl;
 }
 
 

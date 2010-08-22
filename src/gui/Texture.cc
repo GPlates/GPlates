@@ -46,6 +46,8 @@
 
 #include "maths/PointOnSphere.h"
 
+#include "property-values/RawRasterUtils.h"
+
 
 GPlatesGui::Texture::Texture() :
 	d_georeferencing(
@@ -119,18 +121,22 @@ GPlatesGui::Texture::paint(
 		{
 			// We already have a raster so see if we can just update the raster data.
 			// This will return false if the raster dimensions differ.
-			if (!d_multi_resolution_raster.get()->change_raster(d_raw_raster, d_raster_colour_scheme))
+			if (!d_proxied_raster_source.get()->change_raster(d_raw_raster, d_raster_colour_scheme))
 			{
 				// The raster dimensions differ so create a new multi-resolution raster.
+				d_proxied_raster_source = GPlatesOpenGL::GLProxiedRasterSource::create(
+						d_raw_raster, d_raster_colour_scheme);
 				d_multi_resolution_raster = GPlatesOpenGL::GLMultiResolutionRaster::create(
-						d_georeferencing, d_raw_raster, d_raster_colour_scheme, texture_resource_manager);
+						d_georeferencing, d_proxied_raster_source.get(), texture_resource_manager);
 			}
 		}
 		else
 		{
 			// Haven't created a multi-resolution raster yet so create one.
+			d_proxied_raster_source = GPlatesOpenGL::GLProxiedRasterSource::create(
+					d_raw_raster, d_raster_colour_scheme);
 			d_multi_resolution_raster = GPlatesOpenGL::GLMultiResolutionRaster::create(
-					d_georeferencing, d_raw_raster, d_raster_colour_scheme, texture_resource_manager);
+					d_georeferencing, d_proxied_raster_source.get(), texture_resource_manager);
 		}
 
 		d_updated_raster = false;
@@ -141,8 +147,10 @@ GPlatesGui::Texture::paint(
 		if (d_multi_resolution_raster)
 		{
 			// Just create a new multi-resolution raster if the georeferencing has been updated.
+			d_proxied_raster_source = GPlatesOpenGL::GLProxiedRasterSource::create(
+					d_raw_raster, d_raster_colour_scheme);
 			d_multi_resolution_raster = GPlatesOpenGL::GLMultiResolutionRaster::create(
-					d_georeferencing, d_raw_raster, d_raster_colour_scheme, texture_resource_manager);
+					d_georeferencing, d_proxied_raster_source.get(), texture_resource_manager);
 		}
 
 		d_updated_georeferencing = false;

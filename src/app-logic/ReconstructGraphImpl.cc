@@ -358,7 +358,7 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::execute(
 				layer_input_connection->get_input_data()->get_data();
 		if (input_data)
 		{
-			input_data_collection.insert(std::make_pair(input_channel_name, &input_data.get()));
+			input_data_collection.insert(std::make_pair(input_channel_name, input_data.get()));
 		}
 	}
 

@@ -56,6 +56,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
 		float source_raster_level_of_detail_bias) :
 	d_multi_resolution_raster(multi_resolution_raster),
+	d_source_raster_valid_token(multi_resolution_raster->get_current_valid_token()),
 	d_cube_subdivision(cube_subdivision),
 	d_tile_texel_dimension(cube_subdivision->get_tile_texel_dimension()),
 	d_source_raster_level_of_detail_bias(source_raster_level_of_detail_bias),
@@ -85,11 +86,33 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_root_quad_tree_node(
 }
 
 
+GPlatesOpenGL::GLTextureUtils::ValidToken
+GPlatesOpenGL::GLMultiResolutionCubeRaster::get_current_valid_token()
+{
+	update_raster_source_valid_token();
+
+	// We'll just use the valid token of the raster source - if they don't change then neither do we.
+	// If we had two inputs sources then we'd have to have our own valid token.
+	return d_source_raster_valid_token;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionCubeRaster::update_raster_source_valid_token()
+{
+	d_source_raster_valid_token = d_multi_resolution_raster->get_current_valid_token();
+}
+
+
 GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
 GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 		tile_handle_type tile_handle,
 		GLRenderer &renderer)
 {
+	// Make sure our cached version of the raster source's valid token is up to date
+	// so our texture tiles can decide whether they need to reload their caches.
+	update_raster_source_valid_token();
+
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			tile_handle < d_tiles.size(),
 			GPLATES_ASSERTION_SOURCE);
@@ -119,8 +142,28 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 				tile_texture,
 				GPLATES_ASSERTION_SOURCE);
 
+		if (!texture_was_recycled)
+		{
+			// If texture just allocated then we need to create it in OpenGL.
+			create_tile_texture(tile_texture.get());
+		}
+
 		// Render the source raster into our tile texture.
-		render_raster_data_into_tile_texture(*tile, tile_texture.get(), texture_was_recycled, renderer);
+		render_raster_data_into_tile_texture(
+				*tile,
+				tile_texture.get(),
+				renderer);
+	}
+
+	// Our texture wasn't recycled but see if it's still valid in case the source
+	// raster changed the data underneath us.
+	if (!tile->source_texture_valid_token.is_still_valid(d_source_raster_valid_token))
+	{
+		// Render the source raster into our tile texture.
+		render_raster_data_into_tile_texture(
+				*tile,
+				tile_texture.get(),
+				renderer);
 	}
 
 	return tile_texture.get();
@@ -131,15 +174,8 @@ void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture(
 		const QuadTreeNodeImpl &tile,
 		const GLTexture::shared_ptr_type &texture,
-		bool texture_was_recycled,
 		GLRenderer &renderer)
 {
-	if (!texture_was_recycled)
-	{
-		// If texture just allocated then we need to create it in OpenGL.
-		create_tile_texture(texture);
-	}
-
 	// Push a render target that will render to the tile texture.
 	renderer.push_render_target(
 			GLTextureRenderTargetType::create(
@@ -177,6 +213,9 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	renderer.pop_state_set();
 
 	renderer.pop_render_target();
+
+	// This tile texture is now update-to-date.
+	tile.source_texture_valid_token = d_source_raster_valid_token;
 }
 
 

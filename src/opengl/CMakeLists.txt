@@ -11,6 +11,10 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    GLAgeGridCoverageSource.cc
+    GLAgeGridCoverageSource.h
+    GLAgeGridMaskSource.cc
+    GLAgeGridMaskSource.h
     GLArray.h
     GLBindTextureState.cc
     GLBindTextureState.h
@@ -44,11 +48,14 @@ set(srcs
     GLMultiResolutionRaster.cc
     GLMultiResolutionRaster.h
     GLMultiResolutionRasterNode.h
+    GLMultiResolutionRasterSource.h
     GLMultiResolutionReconstructedRaster.cc
     GLMultiResolutionReconstructedRaster.h
     GLMultiResolutionReconstructedRasterNode.h
     GLPointLinePolygonState.cc
     GLPointLinePolygonState.h
+    GLProxiedRasterSource.cc
+    GLProxiedRasterSource.h
     GLRasterProxy.cc
     GLRasterProxy.h
     GLRenderer.cc
@@ -97,6 +104,8 @@ set(srcs
     GLTextureEnvironmentState.h
     GLTextureTransformState.cc
     GLTextureTransformState.h
+    GLTextureUtils.cc
+    GLTextureUtils.h
     GLTransform.cc
     GLTransform.h
     GLTransformState.cc

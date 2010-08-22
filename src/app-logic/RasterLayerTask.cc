@@ -28,6 +28,8 @@
 
 #include "RasterLayerTask.h"
 
+#include "AgeGridRaster.h"
+#include "ReconstructionGeometryUtils.h"
 #include "ResolvedRaster.h"
 
 #include "model/FeatureVisitor.h"
@@ -393,6 +395,8 @@ const char *GPlatesAppLogic::RasterLayerTask::RASTER_FEATURE_CHANNEL_NAME =
 		"Raster feature";
 const char *GPlatesAppLogic::RasterLayerTask::POLYGON_FEATURES_CHANNEL_NAME =
 		"Polygon features";
+const char *GPlatesAppLogic::RasterLayerTask::AGE_GRID_RASTER_CHANNEL_NAME =
+		"Age grid feature";
 
 
 bool
@@ -427,6 +431,13 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_definitions() const
 					POLYGON_FEATURES_CHANNEL_NAME,
 					Layer::INPUT_FEATURE_COLLECTION_DATA,
 					Layer::MULTIPLE_DATAS_IN_CHANNEL));
+	
+	// Channel definition for the age grid feature.
+	input_channel_definitions.push_back(
+			boost::make_tuple(
+					AGE_GRID_RASTER_CHANNEL_NAME,
+					Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA,
+					Layer::ONE_DATA_IN_CHANNEL));
 
 	return input_channel_definitions;
 }
@@ -516,8 +527,52 @@ GPlatesAppLogic::RasterLayerTask::process(
 		return boost::none;
 	}
 
+
+	//
+	// Get the age grid raster input.
+	//
+	std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> age_grid_rasters;
+	extract_input_channel_data(
+			age_grid_rasters,
+			AGE_GRID_RASTER_CHANNEL_NAME,
+			input_data);
+
+	// The optional age grid variables we extract if we find an age grid raster input.
+	boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> age_grid_georeferencing;
+	boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > age_grid_proxied_rasters;
+	boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> age_grid_raster_band_names;
+
+	if (age_grid_rasters.size() == 1)
+	{
+		ReconstructionGeometryCollection::const_iterator recon_geom_iter = age_grid_rasters[0]->begin();
+		ReconstructionGeometryCollection::const_iterator recon_geom_end = age_grid_rasters[0]->end();
+		if (recon_geom_iter != recon_geom_end)
+		{
+			// Make sure the reconstruction geometry is an age grid raster.
+			ReconstructionGeometry::non_null_ptr_to_const_type recon_geom = *recon_geom_iter;
+
+			// We're expecting only one age grid raster.
+			++recon_geom_iter;
+			if (recon_geom_iter == recon_geom_end)
+			{
+				boost::optional<const AgeGridRaster *> age_grid_raster_opt =
+						ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+								const AgeGridRaster>(recon_geom);
+				if (age_grid_raster_opt)
+				{
+					const AgeGridRaster *age_grid_raster = age_grid_raster_opt.get();
+
+					age_grid_georeferencing = age_grid_raster->get_georeferencing();
+					age_grid_proxied_rasters = age_grid_raster->get_proxied_rasters();
+					age_grid_raster_band_names = age_grid_raster->get_raster_band_names();
+				}
+			}
+		}
+	}
+
 	// Update the polygon rotations using the new reconstruction tree.
 	update_reconstruct_raster_polygons(reconstruction_tree.get(), input_data);
+
 
 	// Create a reconstruction geometry collection to store the resolved raster in.
 	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geometry_collection =
@@ -537,11 +592,15 @@ GPlatesAppLogic::RasterLayerTask::process(
 			ResolvedRaster::create(
 					*raster_feature.handle_ptr(),
 					layer_handle,
+					reconstruction_time,
 					reconstruction_tree.get(),
 					georeferencing.get(),
 					proxied_rasters.get(),
 					raster_band_names.get(),
-					reconstruct_raster_polygons);
+					reconstruct_raster_polygons,
+					age_grid_georeferencing,
+					age_grid_proxied_rasters,
+					age_grid_raster_band_names);
 
 	reconstruction_geometry_collection->add_reconstruction_geometry(resolved_raster);
 

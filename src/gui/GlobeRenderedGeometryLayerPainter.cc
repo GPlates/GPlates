@@ -33,6 +33,7 @@
 
 #include "RasterColourPalette.h"
 #include "RasterColourScheme.h"
+#include "RasterColourSchemeMap.h"
 
 #include "maths/EllipseGenerator.h"
 #include "maths/Real.h"
@@ -55,6 +56,7 @@
 
 #include "property-values/RawRaster.h"
 #include "property-values/RawRasterUtils.h"
+#include "property-values/XsString.h"
 
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
@@ -77,32 +79,6 @@ namespace
 	 */
 	const double GCA_DISTANCE_THRESHOLD_DOT = std::cos(GPlatesMaths::PI / 36.0);
 	const double TWO_PI = 2. * GPlatesMaths::PI;
-
-	// Setup a default colour scheme for non-RGBA rasters...
-	// This should work for all raster types.
-	boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type>
-	create_default_raster_colour_scheme(
-			const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raw_raster)
-	{
-		GPlatesPropertyValues::RasterStatistics *statistics_ptr =
-			GPlatesPropertyValues::RawRasterUtils::get_raster_statistics(*raw_raster);
-		if (!statistics_ptr)
-		{
-			return boost::none;
-		}
-
-		GPlatesPropertyValues::RasterStatistics &statistics = *statistics_ptr;
-		if (!statistics.mean || !statistics.standard_deviation)
-		{
-			return boost::none;
-		}
-		double mean = *statistics.mean;
-		double std_dev = *statistics.standard_deviation;
-		GPlatesGui::DefaultRasterColourPalette::non_null_ptr_type rgba8_palette =
-				GPlatesGui::DefaultRasterColourPalette::create(mean, std_dev);
-
-		return GPlatesGui::RasterColourScheme::create<double>("band name", rgba8_palette);
-	}
 } // anonymous namespace
 
 
@@ -484,30 +460,93 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
 {
+	// Get the user-selected raster colour scheme for the layer that this raster came from.
+	// NOTE: If it's boost::none (indicating the user hasn't set any colour scheme) then
+	// we won't create a default colour scheme here because the raster will think it
+	// has changed colours and will invalidate its textures every render slowing down
+	// rendering unnecessarily. Instead we'll store a default colour scheme with each layer
+	// and reuse it each render frame.
+	boost::optional<RasterColourScheme::non_null_ptr_type> raster_colour_scheme =
+			d_raster_colour_scheme_map.get_colour_scheme(rendered_resolved_raster.get_layer());
+
+	// Look up the raster band name in the raster colour scheme selected by the user and
+	// find a match in the list of band names in the raster.
+	// Use this to find the correct proxied raster.
+	unsigned int source_proxied_raster_index = 0;
+	if (raster_colour_scheme)
+	{
+		const RasterColourScheme::band_name_string_type &raster_band_name =
+				raster_colour_scheme.get()->get_band_name();
+
+		unsigned int band_name_index = 0;
+		BOOST_FOREACH(
+				const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &band_name,
+				rendered_resolved_raster.get_raster_band_names())
+		{
+			if (band_name->value() == raster_band_name)
+			{
+				source_proxied_raster_index = band_name_index;
+				break;
+			}
+			++band_name_index;
+		}
+	}
+
 	// Get the proxied rasters.
 	// We'll look these up using a raster band name from the colouring options.
 	// For now just use the first raster proxy.
 	const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters =
 			rendered_resolved_raster.get_proxied_rasters();
-	if (proxied_rasters.empty())
+	if (source_proxied_raster_index >= proxied_rasters.size())
 	{
-		// No rasters so nothing we can do.
+		// Cannot index into raster array so nothing we can do.
 		return;
 	}
-	const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster = proxied_rasters[0];
+	const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster =
+			proxied_rasters[source_proxied_raster_index];
 
-	static const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> raster_colour_scheme =
-			create_default_raster_colour_scheme(raster);
+
+	// Look for the age grid proxied raster if there's an age grid.
+	boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> age_grid_raster;
+	if (rendered_resolved_raster.get_age_grid_raster_band_names())
+	{
+		static const GPlatesPropertyValues::TextContent AGE_BAND_NAME(UnicodeString("age"));
+
+		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+				age_grid_proxied_rasters = rendered_resolved_raster.get_age_grid_proxied_rasters();
+		if (age_grid_proxied_rasters)
+		{
+			unsigned int age_grid_band_name_index = 0;
+			BOOST_FOREACH(
+					const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &band_name,
+					rendered_resolved_raster.get_age_grid_raster_band_names().get())
+			{
+				if (band_name->value() == AGE_BAND_NAME)
+				{
+					if (age_grid_band_name_index < age_grid_proxied_rasters->size())
+					{
+						age_grid_raster = age_grid_proxied_rasters.get()[age_grid_band_name_index];
+					}
+					break;
+				}
+				++age_grid_band_name_index;
+			}
+		}
+	}
+
 
 	// We don't want to rebuild the OpenGL structures that render the raster each frame
 	// so those structures need to persist from one render to the next.
 	boost::optional<GPlatesOpenGL::GLRenderGraphNode::non_null_ptr_type> raster_render_graph_node =
-			d_persistent_opengl_objects->get_list_objects().get_or_create_raster_render_graph_node(
+			d_persistent_opengl_objects->get_list_objects().get_raster_render_graph_node(
 					rendered_resolved_raster.get_layer(),
+					rendered_resolved_raster.get_reconstruction_time(),
 					rendered_resolved_raster.get_georeferencing(),
 					raster,
 					raster_colour_scheme,
-					rendered_resolved_raster.get_reconstruct_raster_polygons());
+					rendered_resolved_raster.get_reconstruct_raster_polygons(),
+					rendered_resolved_raster.get_age_grid_georeferencing(),
+					age_grid_raster);
 	if (!raster_render_graph_node)
 	{
 		return;

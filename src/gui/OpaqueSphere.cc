@@ -35,8 +35,8 @@ namespace
 {
 	static const GLdouble RADIUS = 1.0;
 
-	static const GLint NUM_SLICES = 36;
-	static const GLint NUM_STACKS = 18;
+	static const GLint NUM_SLICES = 72;
+	static const GLint NUM_STACKS = 36;
 }
 
 

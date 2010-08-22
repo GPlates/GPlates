@@ -109,6 +109,11 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<age_grid_raster_type> &agr);
+
+		virtual
+		void
+		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb);
 
 		virtual

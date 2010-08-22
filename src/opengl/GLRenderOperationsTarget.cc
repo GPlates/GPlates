@@ -127,6 +127,7 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 	// If the render target has changed then bind the new render target.
 	if (current_render_target != previous_render_target)
 	{
+		previous_render_target->unbind();
 		current_render_target->bind();
 	}
 

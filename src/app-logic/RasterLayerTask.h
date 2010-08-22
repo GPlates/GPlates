@@ -138,6 +138,7 @@ namespace GPlatesAppLogic
 	private:
 		static const char *RASTER_FEATURE_CHANNEL_NAME;
 		static const char *POLYGON_FEATURES_CHANNEL_NAME;
+		static const char *AGE_GRID_RASTER_CHANNEL_NAME;
 
 		/**
 		 * The polygons used to reconstruct the raster.

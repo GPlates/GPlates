@@ -43,20 +43,6 @@
 ////////////////////////////////////////
 
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
-void
-GPlatesOpenGL::GLFrameBufferObjectFrameBufferRenderTarget::bind()
-{
-	if (GLEW_EXT_framebuffer_object)
-	{
-		// Bind back to the main frame buffer.
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-	}
-}
-
-
 GPlatesOpenGL::GLFrameBufferObjectTextureRenderTarget::GLFrameBufferObjectTextureRenderTarget(
 		unsigned int width,
 		unsigned int height) :
@@ -64,6 +50,9 @@ GPlatesOpenGL::GLFrameBufferObjectTextureRenderTarget::GLFrameBufferObjectTextur
 {
 }
 
+
+// We use macros in <GL/glew.h> that contain old-style casts.
+DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
 GPlatesOpenGL::GLFrameBufferObjectTextureRenderTarget::begin_render_to_target()
@@ -87,6 +76,14 @@ void
 GPlatesOpenGL::GLFrameBufferObjectTextureRenderTarget::bind()
 {
 	d_frame_buffer_object->bind();
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObjectTextureRenderTarget::unbind()
+{
+	// Release back to the main frame buffer.
+	d_frame_buffer_object->release();
 }
 
 ////////////////////////////////////////

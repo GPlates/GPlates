@@ -31,6 +31,7 @@
 
 namespace GPlatesAppLogic
 {
+	class AgeGridRaster;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
@@ -158,6 +159,15 @@ namespace GPlatesModel
 		void
 		visit_resolved_raster(
 				GPlatesAppLogic::ResolvedRaster &rr)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_age_grid_raster(
+				GPlatesAppLogic::AgeGridRaster &agr)
 		{  }
 
 		/**

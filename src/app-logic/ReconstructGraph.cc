@@ -449,9 +449,6 @@ GPlatesAppLogic::ReconstructGraph::handle_file_state_file_about_to_be_removed(
 	// Get the input file to disconnect all connections that use it as input.
 	input_file_impl->disconnect_output_connections();
 
-	// Remove the input file object.
-	d_input_files.erase(input_file_iter);
-
 	// Iterate over all layers and remove any layer that now has no inputs on its main channel.
 	layer_ptr_seq_type::iterator layers_iter = d_layers.begin();
 	layer_ptr_seq_type::iterator layers_end = d_layers.end();
@@ -469,6 +466,9 @@ GPlatesAppLogic::ReconstructGraph::handle_file_state_file_about_to_be_removed(
 			remove_layer(layer);
 		}
 	}
+
+	// Remove the input file object.
+	d_input_files.erase(input_file_iter);
 }
 
 

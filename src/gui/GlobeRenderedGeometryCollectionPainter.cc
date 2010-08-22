@@ -45,6 +45,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
+		RasterColourSchemeMap &raster_colour_scheme_map,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
@@ -52,6 +53,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 	d_persistent_opengl_objects(persistent_opengl_objects),
 	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
+	d_raster_colour_scheme_map(raster_colour_scheme_map),
 	d_text_renderer_ptr(text_renderer_ptr),
 	d_visibility_tester(visibility_tester),
 	d_colour_scheme(colour_scheme),
@@ -113,6 +115,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 			d_paint_params->d_inverse_viewport_zoom_factor,
 			d_paint_params->d_nurbs_renderer,
 			d_render_settings,
+			d_raster_colour_scheme_map,
 			d_text_renderer_ptr,
 			d_visibility_tester,
 			d_colour_scheme);

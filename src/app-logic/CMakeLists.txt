@@ -13,6 +13,8 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     AgeGridLayerTask.cc
     AgeGridLayerTask.h
+    AgeGridRaster.cc
+    AgeGridRaster.h
     ApplicationState.cc
     ApplicationState.h
     AppLogicUtils.cc

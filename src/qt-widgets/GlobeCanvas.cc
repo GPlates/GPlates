@@ -224,6 +224,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			view_state.get_visual_layers(),
 			view_state.get_texture(),
 			view_state.get_render_settings(),
+			view_state.get_raster_colour_scheme_map(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme),
@@ -275,6 +276,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_globe(
 			existing_globe_,
 			d_gl_persistent_objects,
+			view_state_.get_raster_colour_scheme_map(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme_),
