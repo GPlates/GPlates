@@ -1141,6 +1141,11 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::create_clip_texture()
 }
 
 
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
+
 void
 GPlatesOpenGL::GLMultiResolutionReconstructedRaster::initialise_cube_quad_trees()
 {
@@ -1235,6 +1240,9 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::initialise_cube_quad_trees(
 		quad_tree.root_node = quad_tree_root_node;
 	}
 }
+
+// See above.
+ENABLE_GCC_WARNING("-Wshadow")
 
 
 boost::optional<GPlatesOpenGL::GLMultiResolutionReconstructedRaster::QuadTreeNode::non_null_ptr_type>
@@ -1427,6 +1435,11 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::create_quad_tree_node(
 }
 
 
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
+
 GPlatesOpenGL::GLMultiResolutionReconstructedRaster::PartitionedRotationGroup::maybe_null_ptr_type
 GPlatesOpenGL::GLMultiResolutionReconstructedRaster::partition_rotation_group(
 		const PartitionedRotationGroupBuilder &parent_partitioned_rotation_group_builder,
@@ -1588,6 +1601,9 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::partition_rotation_group(
 
 	return partitioned_rotation_group;
 }
+
+// See above.
+ENABLE_GCC_WARNING("-Wshadow")
 
 
 void
