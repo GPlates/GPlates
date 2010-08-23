@@ -677,6 +677,9 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gml("name"),
 					d_name_widget->create_property_value_from_widget()));
+
+		// Ensure a layer gets created for the new feature.
+		d_application_state_ptr->update_layers(collection_file_iter.first);
 		
 		emit feature_created(feature);
 		accept();
