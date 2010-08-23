@@ -411,8 +411,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 		// Reconstruct the exterior PolygonOnSphere,
 		// then add it to the d_reconstruction_geometries_to_populate vector.
 		rot = d_recon_rotation;
-		PolygonOnSphere::non_null_ptr_to_const_type reconstructed_exterior =
-				(*rot) * gml_polygon.exterior();
+		reconstructed_exterior = (*rot) * gml_polygon.exterior();
 	}
 
 	ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
