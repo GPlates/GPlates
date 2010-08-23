@@ -113,7 +113,7 @@ GPlatesOpenGL::GLMatrix &
 GPlatesOpenGL::GLMatrix::gl_load_matrix(
 		const GLdouble *matrix)
 {
-	GLdouble * const m = reinterpret_cast<GLdouble *>(d_matrix[0]);
+	GLdouble * const m = reinterpret_cast<GLdouble *>(d_matrix);
 
 	for (int i = 0; i < 16; ++i)
 	{
@@ -145,8 +145,8 @@ GPlatesOpenGL::GLMatrix::gl_mult_matrix(
 	}
 
 	// Copy result back to our internal matrix.
-	GLdouble * const m = reinterpret_cast<GLdouble *>(d_matrix[0]);
-	const GLdouble * const r = reinterpret_cast<GLdouble *>(result[0]);
+	GLdouble * const m = reinterpret_cast<GLdouble *>(d_matrix);
+	const GLdouble * const r = reinterpret_cast<GLdouble *>(result);
 	for (int c = 0; c < 16; ++c)
 	{
 		m[c] = r[c];
