@@ -60,8 +60,6 @@ set(srcs
     GpmlOnePointSixReader.h
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
-    ImageMagickRasterReader.cc
-    ImageMagickRasterReader.h
     LineReader.h
     MipmappedRasterFormat.cc
     MipmappedRasterFormat.h
@@ -101,6 +99,8 @@ set(srcs
     ReconstructedFeatureGeometryExport.h
     ReconstructedFeatureGeometryExportImpl.cc
     ReconstructedFeatureGeometryExportImpl.h
+    RgbaRasterReader.cc
+    RgbaRasterReader.h
     ShapefileFormatReconstructedFeatureGeometryExport.cc
     ShapefileFormatReconstructedFeatureGeometryExport.h
     ShapefileGeometryExporter.cc

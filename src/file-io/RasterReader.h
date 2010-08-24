@@ -65,7 +65,7 @@ namespace GPlatesFileIO
 		 */
 		enum FormatHandler
 		{
-			IMAGEMAGICK,
+			RGBA,
 			GDAL,
 			UNKNOWN
 		};

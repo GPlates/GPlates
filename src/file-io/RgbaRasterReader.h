@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_IMAGEMAGICKRASTERREADER_H
-#define GPLATES_FILEIO_IMAGEMAGICKRASTERREADER_H
+#ifndef GPLATES_FILEIO_RGBARASTERREADER_H
+#define GPLATES_FILEIO_RGBARASTERREADER_H
 
 #include <string>
 #include <utility>
@@ -36,13 +36,6 @@
 #include <QFile>
 #include <QDataStream>
 
-#include "global/CompilerWarnings.h"
-
-PUSH_MSVC_WARNINGS
-DISABLE_MSVC_WARNING( 4251 )
-#include <Magick++.h>
-POP_MSVC_WARNINGS
-
 #include "RasterReader.h"
 #include "RasterBandReaderHandle.h"
 
@@ -50,14 +43,14 @@ POP_MSVC_WARNINGS
 namespace GPlatesFileIO
 {
 	/**
-	 * Reads rasters using ImageMagick.
+	 * Reads RGBA rasters.
 	 */
-	class ImageMagickRasterReader :
+	class RgbaRasterReader :
 			public RasterReaderImpl
 	{
 	public:
 
-		ImageMagickRasterReader(
+		RgbaRasterReader(
 				const QString &filename,
 				const boost::function<RasterBandReaderHandle (unsigned int)> &proxy_handle_function,
 				ReadErrorAccumulation *read_errors);
@@ -145,4 +138,4 @@ namespace GPlatesFileIO
 	};
 }
 
-#endif  // GPLATES_FILEIO_QIMAGERASTERREADER_H
+#endif  // GPLATES_FILEIO_RGBARASTERREADER_H

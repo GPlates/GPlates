@@ -40,13 +40,13 @@
 #include <QFileInfo>
 #include <QStringList>
 #include <QDebug>
-#include <QImageReader> // FIXME: Remove
+
+#include "RasterReader.h"
 
 #include "ErrorOpeningFileForReadingException.h"
 #include "GdalRasterReader.h"
-#include "ImageMagickRasterReader.h"
+#include "RgbaRasterReader.h"
 #include "ReadErrorAccumulation.h"
-#include "RasterReader.h"
 
 #include "gui/Texture.h"
 
@@ -128,56 +128,56 @@ namespace
 		typedef std::map<QString, RasterReader::FormatInfo> formats_map_type;
 		formats_map_type formats;
 
-		// Add formats that we support via ImageMagick.
+		// Add formats that we support via the RGBA reader.
 		// Note: The descriptions are those used by the GIMP.
 		formats.insert(std::make_pair(
 				"bmp",
 				RasterReader::FormatInfo(
 					"Windows BMP image",
 					"image/bmp",
-					RasterReader::IMAGEMAGICK)));
+					RasterReader::RGBA)));
 		formats.insert(std::make_pair(
 				"gif",
 				RasterReader::FormatInfo(
 					"GIF image",
 					"image/gif",
-					RasterReader::IMAGEMAGICK)));
+					RasterReader::RGBA)));
 		formats.insert(std::make_pair(
 				"jpg",
 				RasterReader::FormatInfo(
 					"JPEG image",
 					"image/jpeg",
-					RasterReader::IMAGEMAGICK)));
+					RasterReader::RGBA)));
 		formats.insert(std::make_pair(
 				"jpeg",
 				RasterReader::FormatInfo(
 					"JPEG image",
 					"image/jpeg",
-					RasterReader::IMAGEMAGICK)));
+					RasterReader::RGBA)));
 		formats.insert(std::make_pair(
 				"png",
 				RasterReader::FormatInfo(
 					"PNG image",
 					"image/png",
-					RasterReader::IMAGEMAGICK)));
+					RasterReader::RGBA)));
 		formats.insert(std::make_pair(
 				"svg",
 				RasterReader::FormatInfo(
 					"SVG image",
 					"image/svg+xml",
-					RasterReader::IMAGEMAGICK)));
+					RasterReader::RGBA)));
 		formats.insert(std::make_pair(
 				"tif",
 				RasterReader::FormatInfo(
 					"TIFF image",
 					"image/tiff",
-					RasterReader::IMAGEMAGICK)));
+					RasterReader::RGBA)));
 		formats.insert(std::make_pair(
 				"tiff",
 				RasterReader::FormatInfo(
 					"TIFF image",
 					"image/tiff",
-					RasterReader::IMAGEMAGICK)));
+					RasterReader::RGBA)));
 
 		// Also add GMT grid/NetCDF files, read by GDAL.
 		formats.insert(std::make_pair(
@@ -463,8 +463,8 @@ GPlatesFileIO::RasterReader::RasterReader(
 
 	switch (handler)
 	{
-		case IMAGEMAGICK:
-			d_impl.reset(new ImageMagickRasterReader(filename, proxy_handle_function, read_errors));
+		case RGBA:
+			d_impl.reset(new RgbaRasterReader(filename, proxy_handle_function, read_errors));
 			break;
 		
 		case GDAL:

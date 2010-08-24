@@ -29,16 +29,15 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDateTime>
-#ifdef GPLATES_DEBUG
 #include <QImageReader>
-#endif
+#include <QGLWidget>
 
-#include "ImageMagickRasterReader.h"
+#include "RgbaRasterReader.h"
 
 #include "TemporaryFileRegistry.h"
 
 
-GPlatesFileIO::ImageMagickRasterReader::ImageMagickRasterReader(
+GPlatesFileIO::RgbaRasterReader::RgbaRasterReader(
 		const QString &filename,
 		const boost::function<RasterBandReaderHandle (unsigned int)> &proxy_handle_function,
 		ReadErrorAccumulation *read_errors) :
@@ -48,33 +47,6 @@ GPlatesFileIO::ImageMagickRasterReader::ImageMagickRasterReader(
 	d_source_height(0),
 	d_can_read(false)
 {
-#ifndef GPLATES_DEBUG
-	try
-	{
-		Magick::Image image;
-		try
-		{
-			image.ping(d_filename.toStdString()); // ping() loads size but not the actual data.
-		}
-		catch (const Magick::Warning &warning)
-		{
-			std::cerr << "ImageMagick warning: " << warning.what() << std::endl;
-			// It should be safe to continue after a warning.
-		}
-		Magick::Geometry size = image.size();
-		d_source_width = size.width();
-		d_source_height = size.height();
-	}
-	catch (const Magick::Exception &)
-	{
-		// Do nothing, just fall through.
-	}
-#else
-	// Note: ImageMagick seems to be having a bit of trouble in debug mode,
-	// so we go back to Qt here.
-	// As long as you've opened the image you want to open at least once in
-	// a release build, the uncompressed RGBA file will have been created
-	// and ImageMagick is totally bypassed in debug mode.
 	QImageReader reader(d_filename);
 	if (reader.canRead())
 	{
@@ -82,7 +54,6 @@ GPlatesFileIO::ImageMagickRasterReader::ImageMagickRasterReader(
 		d_source_width = size.width();
 		d_source_height = size.height();
 	}
-#endif
 
 	if (d_source_width > 0 && d_source_height > 0)
 	{
@@ -99,14 +70,14 @@ GPlatesFileIO::ImageMagickRasterReader::ImageMagickRasterReader(
 
 
 bool
-GPlatesFileIO::ImageMagickRasterReader::can_read()
+GPlatesFileIO::RgbaRasterReader::can_read()
 {
 	return d_can_read;
 }
 
 
 unsigned int
-GPlatesFileIO::ImageMagickRasterReader::get_number_of_bands(
+GPlatesFileIO::RgbaRasterReader::get_number_of_bands(
 		ReadErrorAccumulation *read_errors)
 {
 	if (d_can_read)
@@ -123,7 +94,7 @@ GPlatesFileIO::ImageMagickRasterReader::get_number_of_bands(
 
 
 std::pair<unsigned int, unsigned int>
-GPlatesFileIO::ImageMagickRasterReader::get_size(
+GPlatesFileIO::RgbaRasterReader::get_size(
 		ReadErrorAccumulation *read_errors)
 {
 	return std::make_pair(d_source_width, d_source_height);
@@ -131,7 +102,7 @@ GPlatesFileIO::ImageMagickRasterReader::get_size(
 
 
 boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
-GPlatesFileIO::ImageMagickRasterReader::get_proxied_raw_raster(
+GPlatesFileIO::RgbaRasterReader::get_proxied_raw_raster(
 		unsigned int band_number,
 		ReadErrorAccumulation *read_errors)
 {
@@ -159,7 +130,7 @@ GPlatesFileIO::ImageMagickRasterReader::get_proxied_raw_raster(
 
 
 boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
-GPlatesFileIO::ImageMagickRasterReader::get_raw_raster(
+GPlatesFileIO::RgbaRasterReader::get_raw_raster(
 		unsigned int band_number,
 		const QRect &region,
 		ReadErrorAccumulation *read_errors)
@@ -196,7 +167,7 @@ GPlatesFileIO::ImageMagickRasterReader::get_raw_raster(
 
 
 GPlatesPropertyValues::RasterType::Type
-GPlatesFileIO::ImageMagickRasterReader::get_type(
+GPlatesFileIO::RgbaRasterReader::get_type(
 		unsigned int band_number,
 		ReadErrorAccumulation *read_errors)
 {
@@ -217,7 +188,7 @@ GPlatesFileIO::ImageMagickRasterReader::get_type(
 
 
 void *
-GPlatesFileIO::ImageMagickRasterReader::get_data(
+GPlatesFileIO::RgbaRasterReader::get_data(
 		unsigned int band_number,
 		const QRect &region,
 		ReadErrorAccumulation *read_errors)
@@ -249,7 +220,7 @@ GPlatesFileIO::ImageMagickRasterReader::get_data(
 
 
 void
-GPlatesFileIO::ImageMagickRasterReader::report_recoverable_error(
+GPlatesFileIO::RgbaRasterReader::report_recoverable_error(
 		ReadErrorAccumulation *read_errors,
 		ReadErrors::Description description)
 {
@@ -267,7 +238,7 @@ GPlatesFileIO::ImageMagickRasterReader::report_recoverable_error(
 
 
 void
-GPlatesFileIO::ImageMagickRasterReader::report_failure_to_begin(
+GPlatesFileIO::RgbaRasterReader::report_failure_to_begin(
 		ReadErrorAccumulation *read_errors,
 		ReadErrors::Description description)
 {
@@ -285,7 +256,7 @@ GPlatesFileIO::ImageMagickRasterReader::report_failure_to_begin(
 
 
 GPlatesGui::rgba8_t *
-GPlatesFileIO::ImageMagickRasterReader::read_rgba_file(
+GPlatesFileIO::RgbaRasterReader::read_rgba_file(
 		const QRect &region)
 {
 	unsigned int region_width, region_height, region_x_offset, region_y_offset;
@@ -335,7 +306,7 @@ GPlatesFileIO::ImageMagickRasterReader::read_rgba_file(
 
 
 bool
-GPlatesFileIO::ImageMagickRasterReader::ensure_rgba_file_available()
+GPlatesFileIO::RgbaRasterReader::ensure_rgba_file_available()
 {
 	if (d_rgba_in.device())
 	{
@@ -381,26 +352,6 @@ GPlatesFileIO::ImageMagickRasterReader::ensure_rgba_file_available()
 		}
 	}
 
-	// Read the entire source raster into memory.
-	Magick::Image image;
-	try
-	{
-		image.read(d_filename.toStdString());
-	}
-	catch (const Magick::Warning &warning)
-	{
-		std::cerr << "ImageMagick warning: " << warning.what() << std::endl;
-		// It should be safe to continue after a warning.
-	}
-	catch (const Magick::Error &error)
-	{
-		std::cerr << "ImageMagick error: " << error.what() << std::endl;
-		// It is not safe to continue after an error.
-		return false;
-	}
-	GPlatesGui::rgba8_t * const data_buf = new GPlatesGui::rgba8_t[d_source_width * d_source_height];
-	image.write(0, 0, d_source_width, d_source_height, "RGBA", Magick::CharPixel, data_buf);
-
 	// Try to open an RGBA file in the same directory for writing.
 	d_rgba_file.setFileName(in_same_directory);
 	bool can_open = d_rgba_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
@@ -417,18 +368,26 @@ GPlatesFileIO::ImageMagickRasterReader::ensure_rgba_file_available()
 		}
 	}
 
-	// Write buffer to disk.
-	QDataStream out(&d_rgba_file);
-	GPlatesGui::rgba8_t *data_ptr = data_buf;
-	GPlatesGui::rgba8_t *data_end = data_ptr + d_source_width * d_source_height;
-	while (data_ptr != data_end)
+	// Read the entire image into memory and then write it out as RGBA.
+	// Note that Qt reads images with the first scanline as the bottom of the image.
+	QImageReader reader(d_filename);
+	if (!reader.canRead())
 	{
-		out << *data_ptr;
-		++data_ptr;
+		return false;
 	}
+	QImage rgba_image = QGLWidget::convertToGLFormat(reader.read());
 
-	// Erase buffer and close file.
-	delete[] data_buf;
+	QDataStream out(&d_rgba_file);
+	for (unsigned int i = d_source_height; i != 0; --i)
+	{
+		GPlatesGui::rgba8_t *data_ptr = reinterpret_cast<GPlatesGui::rgba8_t *>(rgba_image.scanLine(i - 1));
+		GPlatesGui::rgba8_t *data_end = data_ptr + d_source_width;
+		while (data_ptr != data_end)
+		{
+			out << *data_ptr;
+			++data_ptr;
+		}
+	}
 	d_rgba_file.close();
 
 	// Copy the file permissions from the source raster to the RGBA file.
