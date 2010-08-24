@@ -1005,7 +1005,9 @@ namespace
 		{
 			GPlatesPropertyValues::GmlFile::xml_attributes_type xml_attributes(
 					elem->attributes_begin(), elem->attributes_end());
-			d_result = std::make_pair(elem->get_name(), xml_attributes);
+			d_result = GPlatesPropertyValues::GmlFile::value_component_type(
+					GPlatesPropertyValues::ValueObjectType(elem->get_name()),
+					xml_attributes);
 		}
 
 		const boost::optional<GPlatesPropertyValues::GmlFile::value_component_type> &

@@ -414,74 +414,65 @@ namespace
 	{
 		if (band_type == RasterType::INT8)
 		{
-			static const GmlFile::value_component_type VALUE_OBJECT =
-				std::make_pair(
-						ValueObjectType::create_xsi("byte"),
-						GmlFile::xml_attributes_type());
+			static const GmlFile::value_component_type VALUE_OBJECT(
+					ValueObjectType::create_xsi("byte"),
+					GmlFile::xml_attributes_type());
 			return VALUE_OBJECT;
 		}
 		else if (band_type == RasterType::UINT8)
 		{
-			static const GmlFile::value_component_type VALUE_OBJECT =
-				std::make_pair(
-						ValueObjectType::create_xsi("unsignedByte"),
-						GmlFile::xml_attributes_type());
+			static const GmlFile::value_component_type VALUE_OBJECT(
+					ValueObjectType::create_xsi("unsignedByte"),
+					GmlFile::xml_attributes_type());
 			return VALUE_OBJECT;
 		}
 		else if (band_type == RasterType::INT16)
 		{
-			static const GmlFile::value_component_type VALUE_OBJECT =
-				std::make_pair(
-						ValueObjectType::create_xsi("short"),
-						GmlFile::xml_attributes_type());
+			static const GmlFile::value_component_type VALUE_OBJECT(
+					ValueObjectType::create_xsi("short"),
+					GmlFile::xml_attributes_type());
 			return VALUE_OBJECT;
 		}
 		else if (band_type == RasterType::UINT16)
 		{
-			static const GmlFile::value_component_type VALUE_OBJECT =
-				std::make_pair(
-						ValueObjectType::create_xsi("unsignedShort"),
-						GmlFile::xml_attributes_type());
+			static const GmlFile::value_component_type VALUE_OBJECT(
+					ValueObjectType::create_xsi("unsignedShort"),
+					GmlFile::xml_attributes_type());
 			return VALUE_OBJECT;
 		}
 		else if (band_type == RasterType::INT32)
 		{
-			static const GmlFile::value_component_type VALUE_OBJECT =
-				std::make_pair(
-						ValueObjectType::create_xsi("int"),
-						GmlFile::xml_attributes_type());
+			static const GmlFile::value_component_type VALUE_OBJECT(
+					ValueObjectType::create_xsi("int"),
+					GmlFile::xml_attributes_type());
 			return VALUE_OBJECT;
 		}
 		else if (band_type == RasterType::UINT32)
 		{
-			static const GmlFile::value_component_type VALUE_OBJECT =
-				std::make_pair(
-						ValueObjectType::create_xsi("unsignedInt"),
-						GmlFile::xml_attributes_type());
+			static const GmlFile::value_component_type VALUE_OBJECT(
+					ValueObjectType::create_xsi("unsignedInt"),
+					GmlFile::xml_attributes_type());
 			return VALUE_OBJECT;
 		}
 		else if (band_type == RasterType::FLOAT)
 		{
-			static const GmlFile::value_component_type VALUE_OBJECT =
-				std::make_pair(
-						ValueObjectType::create_xsi("float"),
-						GmlFile::xml_attributes_type());
+			static const GmlFile::value_component_type VALUE_OBJECT(
+					ValueObjectType::create_xsi("float"),
+					GmlFile::xml_attributes_type());
 			return VALUE_OBJECT;
 		}
 		else if (band_type == RasterType::DOUBLE)
 		{
-			static const GmlFile::value_component_type VALUE_OBJECT =
-				std::make_pair(
-						ValueObjectType::create_xsi("double"),
-						GmlFile::xml_attributes_type());
+			static const GmlFile::value_component_type VALUE_OBJECT(
+					ValueObjectType::create_xsi("double"),
+					GmlFile::xml_attributes_type());
 			return VALUE_OBJECT;
 		}
 		else if (band_type == RasterType::RGBA8)
 		{
-			static const GmlFile::value_component_type VALUE_OBJECT =
-				std::make_pair(
-						ValueObjectType::create_gpml("Rgba"), // I made this up.
-						GmlFile::xml_attributes_type());
+			static const GmlFile::value_component_type VALUE_OBJECT(
+					ValueObjectType::create_gpml("Rgba"), // I made this up.
+					GmlFile::xml_attributes_type());
 			return VALUE_OBJECT;
 		}
 
