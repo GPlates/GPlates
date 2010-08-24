@@ -24,6 +24,8 @@
  */
 
 #include <QApplication>
+#include <QFontMetrics>
+#include <QLocale>
 #include <QDebug>
 #include <QMenuBar>
 #include <QMenu>
@@ -214,3 +216,22 @@ GPlatesGui::GuiDebug::debug_set_all_files_clean()
 	}
 }
 
+
+void
+GPlatesGui::GuiDebug::debug_font_metrics()
+{
+	QFontMetrics fm = QApplication::fontMetrics();
+
+	qDebug() << "\nFONT METRICS DEBUGGING:";
+	qDebug() << "QApplication::style() == " << QApplication::style()->metaObject()->className();
+	qDebug() << "QApplication::font().toString() == " << QApplication::font().toString();
+	qDebug() << "QLocale().name() == " << QLocale().name();
+	qDebug() << "fm.ascent() == " << fm.ascent();
+	qDebug() << "fm.descent() == " << fm.descent();
+	qDebug() << "fm.boundingRect(Q) == " << fm.boundingRect('Q');
+	qDebug() << "fm.boundingRect(y) == " << fm.boundingRect('y');
+	qDebug() << "fm.boundingRect(QylLj!|[]`~_) == " << fm.boundingRect("QylLj!|[]`~_");
+	qDebug() << "fm.height() == " << fm.height();
+	qDebug() << "fm.lineSpacing() == " << fm.lineSpacing();
+	qDebug() << "fm.leading() == " << fm.leading();
+}

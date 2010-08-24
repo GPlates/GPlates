@@ -31,8 +31,8 @@
 #include <QHeaderView>
 #include <QString>
 #include <QLocale>
+#include <QDateTime>
 #include <QFont>
-#include <QFontMetrics>
 #include <QDebug>
 #include <boost/none.hpp>
 
@@ -56,6 +56,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/XsString.h"
+#include "utils/QtFormattingUtils.h"
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -484,6 +485,22 @@ namespace
 	}
 
 
+	const QVariant
+	get_creation_time(
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
+	{
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref_opt =
+				get_feature_weak_ref_if_valid(geometry);
+		if (weak_ref_opt) {
+			// Convert raw time_t into a more useful QDateTime.
+			QDateTime created = QDateTime::fromTime_t((*weak_ref_opt)->creation_time());
+			return GPlatesUtils::qdatetime_to_elapsed_duration(created);
+		}
+		return QVariant();
+	}
+			
+
+
 	// The dispatch table for the above functions:
 	
 	static const ColumnHeadingInfo column_heading_info_table[] = {
@@ -510,6 +527,10 @@ namespace
 		{ QT_TR_NOOP("End"), QT_TR_NOOP("The time of disappearance (Ma)"),
 				60, QHeaderView::ResizeToContents, // Note: used to be Fixed.
 				get_time_end, Qt::AlignCenter }, 
+
+		{ QT_TR_NOOP("Created"), QT_TR_NOOP("How long ago the feature data was created (or loaded into GPlates)"),
+				140, QHeaderView::ResizeToContents,
+				get_creation_time, Qt::AlignCenter },
 
 		{ QT_TR_NOOP("Present-day geometry (lat ; lon)"), QT_TR_NOOP("A summary of the present-day coordinates"),
 				240, QHeaderView::ResizeToContents,
@@ -629,24 +650,6 @@ GPlatesGui::FeatureTableModel::headerData(
 {
 	// The new way we are attempting to return an appropriate vertical
 	// and horizontal size in the Qt::SizeHintRole for the header!
-#if 0
-	QFontMetrics fm = QApplication::fontMetrics();
-#endif
-	
-#if 0
-	qDebug() << "\nFONT METRICS DEBUGGING:";
-	qDebug() << "QApplication::style() == " << QApplication::style()->metaObject()->className();
-	qDebug() << "QApplication::font().toString() == " << QApplication::font().toString();
-	qDebug() << "QLocale().name() == " << QLocale().name();
-	qDebug() << "fm.ascent() == " << fm.ascent();
-	qDebug() << "fm.descent() == " << fm.descent();
-	qDebug() << "fm.boundingRect(Q) == " << fm.boundingRect('Q');
-	qDebug() << "fm.boundingRect(y) == " << fm.boundingRect('y');
-	qDebug() << "fm.boundingRect(QylLj!|[]`~_) == " << fm.boundingRect("QylLj!|[]`~_");
-	qDebug() << "fm.height() == " << fm.height();
-	qDebug() << "fm.lineSpacing() == " << fm.lineSpacing();
-	qDebug() << "fm.leading() == " << fm.leading();
-#endif
 	
 	// We are only interested in modifying the horizontal header.
 	if (orientation == Qt::Horizontal) {
@@ -891,17 +894,16 @@ GPlatesGui::FeatureTableModel::set_default_resize_modes(
 }
 
 
-#if 0
 QModelIndex
-GPlatesGui::FeatureTableModel::get_index_for_feature(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+GPlatesGui::FeatureTableModel::get_index_for_geometry(
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry)
 {
-	// Figure out which row of the table (if any) contains the target feature.
-	FeatureWeakRefSequence::const_iterator it = d_sequence_ptr->begin();
-	FeatureWeakRefSequence::const_iterator end = d_sequence_ptr->end();
+	// Figure out which row of the table (if any) contains the target geometry.
+	geometry_sequence_type::const_iterator it = d_sequence.begin();
+	geometry_sequence_type::const_iterator end = d_sequence.end();
 	int row = 0;
 	for ( ; it != end; ++it, ++row) {
-		if (*it == feature_ref) {
+		if (it->reconstruction_geometry == reconstruction_geometry) {
 			QModelIndex idx = index(row, 0);
 			return idx;
 		}
@@ -910,4 +912,3 @@ GPlatesGui::FeatureTableModel::get_index_for_feature(
 	// No such feature exists in our table, return an invalid index.
 	return QModelIndex();
 }
-#endif

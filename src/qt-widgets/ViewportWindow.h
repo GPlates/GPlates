@@ -186,15 +186,6 @@ namespace GPlatesQtWidgets
 		create_svg_file(
 				const QString &filename);
 
-		void	
-		change_tab(int i) {
-			tabWidget->setCurrentIndex( i );
-		}
-
-		int
-		get_tab() {
-			return tabWidget->currentIndex();
-		}
 
 		GPlatesGui::FeatureTableModel &
 		feature_table_model() 
@@ -238,6 +229,12 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		highlight_first_clicked_feature_table_row() const;
+
+		/**
+		 * Highlights the row of the table that corresponds to the focused feature.
+		 */
+		void
+		highlight_focused_feature_in_table();
 
 		void
 		handle_reconstruction();
@@ -355,12 +352,6 @@ namespace GPlatesQtWidgets
 		choose_clicked_geometry_table() const
 		{
 			tabWidget->setCurrentWidget(tab_clicked);
-		}
-
-		void
-		choose_selected_feature_table()
-		{
-			tabWidget->setCurrentWidget(tab_selected);
 		}
 
 		void

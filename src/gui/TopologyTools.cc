@@ -1115,8 +1115,8 @@ GPlatesGui::TopologyTools::handle_add_feature()
 		return;
 	}
 
-	// Flip to Topology Sections Table
-	d_viewport_window_ptr->change_tab( 2 );
+	// Flip the ViewportWindow to the Topology Sections Table
+	d_viewport_window_ptr->choose_topology_sections_table();
 
 	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type rg_ptr =
 			d_feature_focus_ptr->associated_reconstruction_geometry();

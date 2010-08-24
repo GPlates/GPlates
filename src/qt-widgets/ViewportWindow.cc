@@ -102,6 +102,7 @@
 #include "global/SubversionInfo.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
+#include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "gui/ChooseCanvasTool.h"
 #include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
@@ -394,21 +395,28 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	connect_feature_collection_file_io_signals();
 
-	// Set up the Clicked table.
-	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
-	table_view_clicked_geometries->setModel(d_feature_table_model_ptr.get());
-	table_view_clicked_geometries->verticalHeader()->hide();
-	table_view_clicked_geometries->resizeColumnsToContents();
-	GPlatesGui::FeatureTableModel::set_default_resize_modes(*table_view_clicked_geometries->horizontalHeader());
-	table_view_clicked_geometries->horizontalHeader()->setMinimumSectionSize(60);
-	table_view_clicked_geometries->horizontalHeader()->setMovable(true);
-	table_view_clicked_geometries->horizontalHeader()->setHighlightSections(false);
+	// Set up the Clicked table (which is now actually a tree in disguise).
+	// FIXME: All the Clicked Table stuff (the below, the d_feature_table_model_ptr,
+	//        FeatureTableModel::handle_selection_change,
+	//        ViewportWindow::highlight_first_clicked_feature_table_row() ) should
+	//        be put in their own class.
+	tree_view_clicked_geometries->setRootIsDecorated(false);
+	tree_view_clicked_geometries->setModel(d_feature_table_model_ptr.get());
+	GPlatesGui::FeatureTableModel::set_default_resize_modes(*tree_view_clicked_geometries->header());
+	tree_view_clicked_geometries->header()->setMinimumSectionSize(60);
+	tree_view_clicked_geometries->header()->setMovable(true);
 	// When the user selects a row of the table, we should focus that feature.
 	// RJW: This is what triggers the highlighting of the geometry on the canvas.
-	QObject::connect(table_view_clicked_geometries->selectionModel(),
+	QObject::connect(tree_view_clicked_geometries->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_feature_table_model_ptr.get(),
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+	// And if the focus is changed programatically, from e.g. Clone Feature, ensure the Clicked
+	// Table still displays it
+	QObject::connect(&get_view_state().get_feature_focus(),
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(highlight_focused_feature_in_table()));
 
 	// Set up the Topology Sections Table, now that the table widget has been created.
 	d_topology_sections_table_ptr.reset(
@@ -975,18 +983,52 @@ void
 GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() const
 {
 	QModelIndex idx = d_feature_table_model_ptr->index(0, 0);
-	
+
 	if (idx.isValid()) {
-		table_view_clicked_geometries->selectionModel()->clear();
-		table_view_clicked_geometries->selectionModel()->select(idx,
+		tree_view_clicked_geometries->selectionModel()->clear();
+		tree_view_clicked_geometries->selectionModel()->select(idx,
 				QItemSelectionModel::Select |
 				QItemSelectionModel::Current |
 				QItemSelectionModel::Rows);
 	}
-	table_view_clicked_geometries->scrollToTop();
-	table_view_clicked_geometries->resizeColumnsToContents();
+	tree_view_clicked_geometries->scrollToTop();
+	// The columns of the table (especially the last column) tend not to adjust
+	// properly for some reason, unless we force them to:-
+	for (int i=0; i<d_feature_table_model_ptr->columnCount(); ++i) {
+		tree_view_clicked_geometries->resizeColumnToContents(i);
+	}
 }
 
+
+void
+GPlatesQtWidgets::ViewportWindow::highlight_focused_feature_in_table()
+{
+	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type rg_maybe_ptr = 
+			get_view_state().get_feature_focus().associated_reconstruction_geometry();
+	if ( ! rg_maybe_ptr) {
+		return;
+	}
+	GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type rg_ptr(rg_maybe_ptr.get());
+	
+	// Check to see if this newly focused feature is in the Clicked table already.
+	QModelIndex idx = d_feature_table_model_ptr->get_index_for_geometry(rg_ptr);
+	if (idx.isValid()) {
+		// It is. Move the highlight to that line (if we've been good, this won't cause
+		// an infinite loop of 'change' signals because FeatureFocus won't emit anything
+		// if we tell it to focus something that's already focused)
+		tree_view_clicked_geometries->selectionModel()->clear();
+		tree_view_clicked_geometries->selectionModel()->select(idx,
+				QItemSelectionModel::Select |
+				QItemSelectionModel::Current |
+				QItemSelectionModel::Rows);
+	} else {
+		// It is not in there. Most likely this is from the Clone Feature action setting
+		// the focus directly. 'Unshift' it onto the start of the Clicked list.
+		GPlatesGui::add_geometry_to_top_of_feature_table(rg_ptr, *d_feature_table_model_ptr,
+				get_application_state().get_reconstruct_graph());
+		highlight_first_clicked_feature_table_row();
+	}
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_reconstruction()

@@ -43,6 +43,7 @@ set(srcs
     Parse.h
     Profile.cc
     Profile.h
+    QtFormattingUtils.h
     ReferenceCount.h
     SafeBool.h
     Select.h

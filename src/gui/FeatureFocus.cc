@@ -156,6 +156,29 @@ GPlatesGui::FeatureFocus::set_focus(
 
 
 void
+GPlatesGui::FeatureFocus::set_focus(
+		GPlatesModel::FeatureHandle::weak_ref new_feature_ref)
+{
+	if ( ! new_feature_ref.is_valid())
+	{
+		unset_focus();
+		return;
+	}
+	
+	// Locate a geometry property within the feature.
+	GPlatesAppLogic::ReconstructionGeometryFinder finder;
+	finder.find_rgs_of_feature(new_feature_ref);
+	if (finder.found_rgs_begin() != finder.found_rgs_end()) {
+		// Found something, just focus the first one.
+		set_focus(new_feature_ref, *finder.found_rgs_begin());
+	} else {
+		// None found, we cannot focus this.
+		unset_focus();
+	}
+}
+
+
+void
 GPlatesGui::FeatureFocus::unset_focus()
 {
 	d_focused_feature = GPlatesModel::FeatureHandle::weak_ref();

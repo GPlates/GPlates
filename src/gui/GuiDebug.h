@@ -85,6 +85,13 @@ namespace GPlatesGui
 		void
 		debug_set_all_files_clean();
 
+		/**
+		 * To use when fonts aren't behaving.
+		 */
+		void
+		debug_font_metrics();
+
+
 	private:
 
 		/**

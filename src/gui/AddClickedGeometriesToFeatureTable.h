@@ -105,6 +105,18 @@ namespace GPlatesGui
 			const GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 			filter_reconstruction_geometry_predicate_type filter_recon_geom_predicate =
 					&default_filter_reconstruction_geometry_predicate);
+
+
+	/**
+	 * Inserts a new feature/geometry entry @a reconstruction_geometry_ptr into the
+	 * @a clicked_table_model at the top (row 0) of the table, moving all other
+	 * entries down one row.
+	 */
+	void
+	add_geometry_to_top_of_feature_table(
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_ptr,
+			GPlatesGui::FeatureTableModel &clicked_table_model,
+			const GPlatesAppLogic::ReconstructGraph &reconstruct_graph);
 }
 
 #endif // GPLATES_GUI_ADDCLICKEDGEOMETRIESTOFEATURETABLE_H

@@ -107,7 +107,7 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 	clicked_table_model.begin_insert_features(
 			0, static_cast<int>(new_recon_geom_seq.size()) - 1);
 
-	// The sequence of ReconstructionGeometry's were going to add to.
+	// The sequence of ReconstructionGeometry we are going to add to.
 	GPlatesGui::FeatureTableModel::geometry_sequence_type &clicked_table_recon_geom_seq =
 		clicked_table_model.geometry_sequence();
 
@@ -143,3 +143,22 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 
 	view_state.highlight_first_clicked_feature_table_row();
 }
+
+
+void
+GPlatesGui::add_geometry_to_top_of_feature_table(
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_ptr,
+		GPlatesGui::FeatureTableModel &clicked_table_model,
+		const GPlatesAppLogic::ReconstructGraph &reconstruct_graph)
+{
+	// Construct the new row.
+	FeatureTableModel::ReconstructionGeometryRow rg_row(reconstruction_geometry_ptr, reconstruct_graph);
+
+	// Add it, calling Qt Model/View methods before and after to ensure everyone gets notified.
+	clicked_table_model.begin_insert_features(0, 0);
+	GPlatesGui::FeatureTableModel::geometry_sequence_type &geom_seq =
+			clicked_table_model.geometry_sequence();
+	geom_seq.insert(geom_seq.begin(), rg_row);
+	clicked_table_model.end_insert_features();
+}
+

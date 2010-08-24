@@ -140,6 +140,23 @@ namespace GPlatesGui
 				GPlatesModel::FeatureHandle::iterator new_associated_property);
 
 		/**
+		 * Change which feature is currently focused, @em without specifying any geometry property.
+		 *
+		 * Will emit focus_changed() to anyone who cares, provided that @a new_feature_ref
+		 * is actually different to the previous feature.
+		 *
+		 * This method will set the focus to the first (if any!) geometry found within the
+		 * supplied feature. While it may seem counterproductive to set this so arbitrarily,
+		 * it is sometimes desirable to focus an entire feature rather than a specific geometry
+		 * within it, such as after using the Clone Feature button.
+		 * Also, finding exactly one geometry should be the most common case.
+		 * If no geometry can be found, this method behaves as @a unset_focus().
+		 */
+		void
+		set_focus(
+				GPlatesModel::FeatureHandle::weak_ref new_feature_ref);
+
+		/**
 		 * Clear the focus.
 		 *
 		 * Future calls to focused_feature() will return an invalid weak_ref.
