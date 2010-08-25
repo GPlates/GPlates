@@ -31,7 +31,6 @@
 #include <utility>
 #include <boost/foreach.hpp>
 #include <QDir>
-#include <QDebug>
 #include <QFile>
 #include <QtCore/QUuid>
 #include <QtGlobal> 
@@ -302,7 +301,6 @@ namespace
 	{
 		xml_output.writeStartGmlElement("Point");
 			GPlatesMaths::LatLonPoint llp = gml_point.point_in_lat_lon();
-			qDebug() << llp.latitude() << llp.longitude();
 			if (gml_point.gml_property() == GPlatesPropertyValues::GmlPoint::POS)
 			{
 				xml_output.writeStartGmlElement("pos");

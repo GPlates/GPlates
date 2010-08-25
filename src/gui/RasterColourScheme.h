@@ -40,6 +40,8 @@
 
 namespace GPlatesGui
 {
+	// FIXME: Decouple the storage of the colour palette from the band name.
+
 	/**
 	 * RasterColourScheme stores a band name and a colour palette to be applied to
 	 * non-RGBA rasters.

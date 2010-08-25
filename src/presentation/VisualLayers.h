@@ -316,8 +316,9 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::Layer layer);
 
 		void
-		handle_file_state_changed(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state);
+		handle_file_state_file_info_changed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
 
@@ -357,6 +358,9 @@ namespace GPlatesPresentation
 		void
 		handle_layer_modified(
 				const GPlatesAppLogic::Layer &layer);
+
+		void
+		refresh_all_layers();
 
 		/**
 		 * Returns the visual layer that owns the rendered geometry layer with the

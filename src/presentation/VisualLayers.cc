@@ -241,11 +241,13 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 	GPlatesAppLogic::FeatureCollectionFileState *file_state = &d_application_state.get_feature_collection_file_state();
 	QObject::connect(
 			file_state,
-			SIGNAL(file_state_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &)),
+			SIGNAL(file_state_file_info_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
 			this,
-			SLOT(handle_file_state_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &)));
+			SLOT(handle_file_state_file_info_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
 }
 
 
@@ -483,7 +485,10 @@ GPlatesPresentation::VisualLayers::handle_layer_added_input_connection(
 		GPlatesAppLogic::Layer layer,
 		GPlatesAppLogic::Layer::InputConnection input_connection)
 {
-	handle_layer_modified(layer);
+	// When an input connection has been added, all layers need to be refreshed,
+	// because a change in input connections can result in a change in the name of
+	// a visual layer.
+	refresh_all_layers();
 }
 
 
@@ -492,21 +497,22 @@ GPlatesPresentation::VisualLayers::handle_layer_removed_input_connection(
 		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		GPlatesAppLogic::Layer layer)
 {
-	handle_layer_modified(layer);
+	// When an input connection has been removed, all layers need to be refreshed,
+	// because a change in input connections can result in a change in the name of
+	// a visual layer.
+	refresh_all_layers();
 }
 
 
 void
-GPlatesPresentation::VisualLayers::handle_file_state_changed(
-		GPlatesAppLogic::FeatureCollectionFileState &file_state)
+GPlatesPresentation::VisualLayers::handle_file_state_file_info_changed(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
-	// FIXME: This probably isn't the most efficient way to handle things, but
-	// when anything happens to the file state, we tell all layers to go and
-	// refresh themselves.
-	for (size_t i = 0; i != d_layer_order.size(); ++i)
-	{
-		emit layer_modified(i);
-	}
+	// When the file info for a file has changed, we need to get all the layers to
+	// refresh themselves, not just the layer corresponding to the file that has
+	// been modified - because other layers could be using that file as input.
+	refresh_all_layers();
 }
 
 
@@ -518,6 +524,16 @@ GPlatesPresentation::VisualLayers::handle_layer_modified(
 	if (iter != d_visual_layers.end())
 	{
 		emit_layer_modified(iter->second->get_rendered_geometry_layer_index());
+	}
+}
+
+
+void
+GPlatesPresentation::VisualLayers::refresh_all_layers()
+{
+	for (size_t i = 0; i != d_layer_order.size(); ++i)
+	{
+		emit layer_modified(i);
 	}
 }
 

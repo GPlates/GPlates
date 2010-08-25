@@ -34,6 +34,7 @@
 
 #include "ColouringDialogUi.h"
 
+#include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "gui/ColourSchemeDelegator.h"
@@ -131,6 +132,11 @@ namespace GPlatesQtWidgets
 
 		void
 		edit_current_colour_scheme();
+
+		void
+		handle_file_info_changed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
 

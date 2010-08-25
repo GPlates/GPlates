@@ -120,6 +120,8 @@ GPlatesPresentation::ViewState::ViewState(
 	// Connect to signals from FeatureFocus.
 	connect_to_feature_focus();
 
+	connect_to_raster_colour_scheme_map();
+
 	// Setup RenderedGeometryCollection.
 	setup_rendered_geometry_collection();
 }
@@ -582,5 +584,16 @@ const GPlatesGui::RasterColourSchemeMap &
 GPlatesPresentation::ViewState::get_raster_colour_scheme_map() const
 {
 	return *d_raster_colour_scheme_map;
+}
+
+
+void
+GPlatesPresentation::ViewState::connect_to_raster_colour_scheme_map()
+{
+	QObject::connect(
+			d_raster_colour_scheme_map.get(),
+			SIGNAL(colour_scheme_changed(const GPlatesAppLogic::Layer &)),
+			&d_application_state,
+			SLOT(reconstruct()));
 }
 

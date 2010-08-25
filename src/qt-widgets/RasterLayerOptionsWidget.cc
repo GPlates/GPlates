@@ -238,12 +238,20 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_band_combobox_activated(
 	}
 	else
 	{
+#if 0
 		GPlatesGui::RasterColourScheme::non_null_ptr_type new_colour_scheme =
 			GPlatesGui::RasterColourScheme::create(band_name);
 		map.set_colour_scheme(
 				d_current_layer,
 				new_colour_scheme,
 				palette_file_name);
+#endif
+		// Do nothing, which means that if there is currently no entry in the map for
+		// the layer, there still won't be an entry in the map for this layer.
+		// The raster painting code will then paint the first band using the default
+		// colour scheme, not whichever band the user has selected. This is because
+		// the raster painting code doesn't know about the RasterColourScheme
+		// enumeration value of USE_DEFAULT.
 	}
 }
 
@@ -300,6 +308,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 void
 GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_default_palette_button_clicked()
 {
+#if 0
 	QString palette_file_name; // empty string.
 	UnicodeString band_name = GPlatesUtils::make_icu_string_from_qstring(
 			band_combobox->currentText());
@@ -312,6 +321,16 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_default_palette_button_cl
 			colour_scheme,
 			palette_file_name);
 
+	d_palette_filename_lineedit->setText(QString());
+#endif
+
+	// This is not quite correct, but we do this because the raster painting code
+	// doesn't know about the RasterColourScheme enumeration value of USE_DEFAULT.
+	// This is not correct because the raster painting code will end up painting
+	// the first band (using the default colour scheme) instead of whichever band
+	// the user has selected.
+	GPlatesGui::RasterColourSchemeMap &map = d_view_state.get_raster_colour_scheme_map();
+	map.unset_colour_scheme(d_current_layer);
 	d_palette_filename_lineedit->setText(QString());
 }
 

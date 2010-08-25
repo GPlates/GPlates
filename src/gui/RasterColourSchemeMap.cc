@@ -59,6 +59,18 @@ GPlatesGui::RasterColourSchemeMap::set_colour_scheme(
 	{
 		iter->second = layer_info;
 	}
+
+	emit colour_scheme_changed(layer);
+}
+
+
+void
+GPlatesGui::RasterColourSchemeMap::unset_colour_scheme(
+		const GPlatesAppLogic::Layer &layer)
+{
+	d_map.erase(layer);
+
+	emit colour_scheme_changed(layer);
 }
 
 

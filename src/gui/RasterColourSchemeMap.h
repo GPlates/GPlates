@@ -85,6 +85,13 @@ namespace GPlatesGui
 				const QString &palette_file_name);
 
 		/**
+		 * Removes the entry in this map for the given @a layer.
+		 */
+		void
+		unset_colour_scheme(
+				const GPlatesAppLogic::Layer &layer);
+
+		/**
 		 * Returns the colour scheme for the particular @a layer.
 		 *
 		 * Returns boost::none if the layer is not in the map.
@@ -100,6 +107,12 @@ namespace GPlatesGui
 		 */
 		boost::optional<layer_info_type>
 		get_layer_info(
+				const GPlatesAppLogic::Layer &layer);
+
+	signals:
+
+		void
+		colour_scheme_changed(
 				const GPlatesAppLogic::Layer &layer);
 
 	private slots:

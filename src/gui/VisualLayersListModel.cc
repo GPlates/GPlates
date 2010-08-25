@@ -244,6 +244,13 @@ GPlatesGui::VisualLayersListModel::handle_visual_layer_added(
 		size_t row)
 {
 	endInsertRows();
+
+	// Need to refresh all visual layers after visual layer added, to make sure
+	// widgets for adding new connections get refreshed.
+	for (size_t i = 0; i != d_visual_layers.size(); ++i)
+	{
+		handle_visual_layer_modified(i);
+	}
 }
 
 
@@ -260,6 +267,13 @@ GPlatesGui::VisualLayersListModel::handle_visual_layer_removed(
 		size_t row)
 {
 	endRemoveRows();
+
+	// Need to refresh all visual layers after visual layer removed, to make sure
+	// widgets for adding new connections get refreshed.
+	for (size_t i = 0; i != d_visual_layers.size(); ++i)
+	{
+		handle_visual_layer_modified(i);
+	}
 }
 
 

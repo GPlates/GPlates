@@ -421,6 +421,9 @@ namespace GPlatesPresentation
 		connect_to_feature_focus();
 
 		void
+		connect_to_raster_colour_scheme_map();
+
+		void
 		setup_rendered_geometry_collection();
 	};
 }

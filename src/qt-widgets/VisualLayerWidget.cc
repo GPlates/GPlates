@@ -33,6 +33,8 @@
 #include <QFont>
 #include <QString>
 #include <QMetaType>
+#include <QIcon>
+#include <QPixmap>
 #include <QDebug>
 
 #include "VisualLayerWidget.h"
@@ -59,6 +61,8 @@
 namespace
 {
 	using namespace GPlatesGui;
+
+	static const QString NEW_FEATURE_COLLECTION = "New Feature Collection";
 
 	const Colour &
 	get_layer_colour(
@@ -99,6 +103,72 @@ namespace
 
 			default:
 				return DEFAULT_COLOUR;
+		}
+	}
+
+	QPixmap
+	get_filled_pixmap(
+			int width,
+			int height,
+			const Colour &colour)
+	{
+		QPixmap result(width, height);
+		result.fill(colour);
+		return result;
+	}
+
+	const QIcon &
+	get_feature_collection_icon()
+	{
+		static const QIcon FEATURE_COLLECTION_ICON(":/gnome_text_x_preview_16.png");
+		return FEATURE_COLLECTION_ICON;
+	}
+
+	const QIcon &
+	get_layer_icon(
+			GPlatesAppLogic::LayerTaskType::Type layer_type)
+	{
+		using namespace GPlatesAppLogic::LayerTaskType;
+
+		static const int ICON_SIZE = 16;
+
+		static const QIcon RECONSTRUCTION_ICON(get_filled_pixmap(
+					ICON_SIZE, ICON_SIZE, get_layer_colour(RECONSTRUCTION)));
+		static const QIcon RECONSTRUCT_ICON(get_filled_pixmap(
+					ICON_SIZE, ICON_SIZE, get_layer_colour(RECONSTRUCT)));
+		static const QIcon RASTER_ICON(get_filled_pixmap(
+					ICON_SIZE, ICON_SIZE, get_layer_colour(RASTER)));
+		static const QIcon AGE_GRID_ICON(get_filled_pixmap(
+					ICON_SIZE, ICON_SIZE, get_layer_colour(AGE_GRID)));
+		static const QIcon TOPOLOGY_BOUNDARY_RESOLVER_ICON(get_filled_pixmap(
+					ICON_SIZE, ICON_SIZE, get_layer_colour(TOPOLOGY_BOUNDARY_RESOLVER)));
+		static const QIcon TOPOLOGY_NETWORK_RESOLVER_ICON(get_filled_pixmap(
+					ICON_SIZE, ICON_SIZE, get_layer_colour(TOPOLOGY_NETWORK_RESOLVER)));
+
+		static const QIcon DEFAULT_ICON;
+
+		switch (layer_type)
+		{
+			case RECONSTRUCTION:
+				return RECONSTRUCTION_ICON;
+
+			case RECONSTRUCT:
+				return RECONSTRUCT_ICON;
+
+			case RASTER:
+				return RASTER_ICON;
+
+			case AGE_GRID:
+			 	return AGE_GRID_ICON;
+
+			case TOPOLOGY_BOUNDARY_RESOLVER:
+				return TOPOLOGY_BOUNDARY_RESOLVER_ICON;
+
+			case TOPOLOGY_NETWORK_RESOLVER:
+			 	return TOPOLOGY_NETWORK_RESOLVER_ICON;
+
+			default:
+				return DEFAULT_ICON;
 		}
 	}
 }
@@ -505,7 +575,6 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputConnectionWidget::set_data(
 		QString filename = input_file->get_file_info().get_display_name(false /* no absolute path */);
 		if (filename.isEmpty())
 		{
-			static const QString NEW_FEATURE_COLLECTION = "New Feature Collection";
 			filename = NEW_FEATURE_COLLECTION;
 		}
 		d_input_connection_label->setText(filename);
@@ -711,6 +780,10 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 	BOOST_FOREACH(const file_reference &loaded_file, loaded_files)
 	{
 		QString display_name = loaded_file.get_file().get_file_info().get_display_name(false);
+		if (display_name.isEmpty())
+		{
+			display_name = NEW_FEATURE_COLLECTION;
+		}
 		QAction *action = new QAction(display_name, menu);
 		boost::function<void ()> fn = boost::bind(
 				&GPlatesAppLogic::Layer::connect_input_to_file,
@@ -720,6 +793,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 		QVariant qv;
 		qv.setValue(fn);
 		action->setData(qv);
+		action->setIcon(get_feature_collection_icon());
 		menu->addAction(action);
 	}
 }
@@ -768,6 +842,9 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 				QVariant qv;
 				qv.setValue(fn);
 				action->setData(qv);
+				action->setIcon(
+						get_layer_icon(
+							locked_outputting_visual_layer->get_reconstruct_graph_layer().get_type()));
 				menu->addAction(action);
 			}
 		}
