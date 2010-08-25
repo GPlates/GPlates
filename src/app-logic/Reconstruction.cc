@@ -167,13 +167,8 @@ GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::get_next_v
 		const Reconstruction &reconstruction,	
 		reconstruction_tree_map_type::const_iterator map_iter)
 {
-	while(1)
+	for(; map_iter != reconstruction.d_reconstruction_tree_map.end(); map_iter++)
 	{
-		if (map_iter == reconstruction.d_reconstruction_tree_map.end())
-		{
-			return boost::none;
-		}
-		
 		if(map_iter->second->begin() != map_iter->second->end())
 		{
 	
@@ -183,8 +178,8 @@ GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::get_next_v
 		{
 			continue;
 		}
-		++map_iter;
 	}
+	return boost::none;
 }
 
 
