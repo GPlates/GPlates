@@ -482,6 +482,20 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_tile_texture(
 	// automatically for us and specify a mipmap minification filter,
 	// otherwise don't use mipmaps (and instead specify a non-mipmap minification filter).
 	// A lot of cards have support for this extension.
+	//
+	// UPDATE: Generating mipmaps is causing problems when the input source is an age grid mask.
+	// This is probably because that input is not a regularly loaded texture (loaded from CPU).
+	// Instead it is a texture that's been rendered to by the GPU (via a render target).
+	// In this case the auto generation of mipmaps is probably a little less clear since it
+	// interacts with other specifications on mipmap rendering such as the frame buffer object
+	// extension (used by GPlates where possible for render targets) which has its own
+	// mipmap support.
+	// Best to avoid auto generation of mipmaps - we don't really need it anyway since
+	// our texture already matches pretty closely texel-to-pixel (texture -> viewport) since
+	// we have our own mipmapped raster tiles via proxied rasters. Also we turn on anisotropic
+	// filtering which will reduce any aliasing near the horizon of the globe.
+	// Turning off auto-mipmap-generation will also give us a small speed boost.
+#if 0
 	if (GLEW_SGIS_generate_mipmap)
 	{
 		// Mipmaps will be generated automatically when the level 0 image is modified.
@@ -492,6 +506,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_tile_texture(
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	}
+#else
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+#endif
 
 	// No mipmap filter for the GL_TEXTURE_MAG_FILTER filter regardless.
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

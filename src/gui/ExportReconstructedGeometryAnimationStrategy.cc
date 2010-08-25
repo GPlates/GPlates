@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -44,7 +45,7 @@ const QString
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::DEFAULT_RECONSTRUCTED_GEOMETRIES_SHP_FILENAME_TEMPLATE
 		="reconstructed_%u_%0.2f.shp";
 const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC
-		=FORMAT_CODE_DESC;
+		= FORMAT_CODE_DESC;
 const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC
 		="Export reconstructed geometries.";
 
@@ -61,7 +62,7 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::create(
 					cfg.filename_template());
 
 	ptr->d_file_format=format;
-	
+
 	return non_null_ptr_type(
 			ptr,
 			GPlatesUtils::NullIntrusivePointerHandler());
@@ -122,12 +123,21 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	// given frame_index, filename, reconstructable files and geoms, and target_dir. Etc.
 	try {
 
-		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries(
-				full_filename,
-				d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
-				d_active_files,
-				d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
-				d_export_animation_context_ptr->view_time());
+		
+		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries_as_single_file(
+			full_filename,
+			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
+			d_active_files,
+			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
+			d_export_animation_context_ptr->view_time());
+
+
+		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries_per_collection(
+			full_filename,
+			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
+			d_active_files,
+			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
+			d_export_animation_context_ptr->view_time());
 
 	} catch (...) {
 		// FIXME: Catch all proper exceptions we might get here.

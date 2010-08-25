@@ -1829,3 +1829,9 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::generate_polygon_mesh(
 
 	rotation_group.polygons.push_back(polygon);
 }
+
+// NOTE: Do not remove this.
+// This is here to avoid CGAL related compile errors on MacOS.
+// It seems we only need this at the end of the file - perhaps it's something to do with
+// template instantiations happening at the end of the translation unit.
+DISABLE_GCC_WARNING("-Wshadow")

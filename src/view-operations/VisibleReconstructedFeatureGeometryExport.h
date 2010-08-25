@@ -56,7 +56,28 @@ namespace GPlatesViewOperations
 		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
-		export_visible_geometries(
+		export_visible_geometries_as_single_file(
+				const QString &filename,
+				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				const files_collection_type &active_files,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time);
+
+
+		/**
+		 * Collects visible @a ReconstructedFeatureGeometry objects that are displayed
+		 * using @a rendered_geom_collection and exports to a file depending on the
+		 * file extension of @a filename.
+		 *
+		 * @param active_files used to determine which files the RFGs came from.
+		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
+		 * @param reconstruction_time time at which the reconstruction took place.
+		 *
+		 * @throws ErrorOpeningFileForWritingException if file is not writable.
+		 * @throws FileFormatNotSupportedException if file format not supported.
+		 */
+		void
+		export_visible_geometries_per_collection(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const files_collection_type &active_files,

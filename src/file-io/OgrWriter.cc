@@ -327,6 +327,8 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 
 	QFileInfo q_file_info_original(d_filename);
 
+
+
 	if (!multiple_layers)
 	{
 		// For single geometry types, we export to a single shapefile; the ogr driver requires 

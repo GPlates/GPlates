@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -78,6 +79,7 @@ namespace GPlatesGui
 			SHAPEFILE,
 			GMT
 		};
+
 
 		static
 		const non_null_ptr_type

@@ -1200,10 +1200,10 @@ namespace GPlatesFileIO
 						d_reader_thread.reset(new ReaderThread(
 								d_level_infos,
 								boost::bind(
-									&VersionOneReader::copy_region<typename RawRasterType::element_type>,
+									&VersionOneReader::template copy_region<typename RawRasterType::element_type>,
 									boost::ref(*this), _1, _2, _3, _4, _5, _6, _7),
 								boost::bind(
-									&VersionOneReader::copy_region<GPlatesPropertyValues::CoverageRawRaster::element_type>,
+									&VersionOneReader::template copy_region<GPlatesPropertyValues::CoverageRawRaster::element_type>,
 									boost::ref(*this), _1, _2, _3, _4, _5, _6, _7)));
 
 						// Calculate the maximum number of blocks possible.

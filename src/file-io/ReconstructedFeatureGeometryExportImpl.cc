@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -36,7 +37,7 @@ POP_MSVC_WARNINGS
 #include "ReconstructedFeatureGeometryExportImpl.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
-
+#include "file-io/File.h"
 
 namespace
 {
@@ -52,16 +53,33 @@ namespace
 	typedef GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::reconstructed_feature_geom_seq_type
 			reconstructed_feature_geom_seq_type;
 
-	/**
-	 * Typedef for mapping from @a FeatureHandle to the feature collection file it came from.
-	 */
-	typedef std::map<const GPlatesModel::FeatureHandle *, const GPlatesFileIO::File::Reference *>
+	//! Convenience typedef for feature-handle-to-collection map.
+	typedef GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::feature_handle_to_collection_map_type
 			feature_handle_to_collection_map_type;
 
 	//! Convenience typedef for a sequence of grouped RFGs.
 	typedef GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::feature_geometry_group_seq_type
 			feature_geometry_group_seq_type;
 
+	class ContainsSameFilePointerPredicate: public std::unary_function<
+		GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::FeatureCollectionFeatureGroup,bool>
+	{
+	public:
+		bool 
+		operator()(
+			const GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::FeatureCollectionFeatureGroup& elem) const
+		{
+			return elem.file_ptr == file_ptr;
+		}
+
+
+		explicit
+		ContainsSameFilePointerPredicate(const GPlatesFileIO::File::Reference * file_ptr_):
+			file_ptr(file_ptr_){}
+
+	private:
+		const GPlatesFileIO::File::Reference *file_ptr;
+	};
 
 	/**
 	 * Populates mapping of feature handle to feature collection file.
@@ -152,9 +170,9 @@ void
 GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::get_files_referenced_by_geometries(
 		referenced_files_collection_type &referenced_files,
 		const reconstructed_feature_geom_seq_type &reconstructed_feature_geometry_seq,
-		const files_collection_type &reconstructable_files)
+		const files_collection_type &reconstructable_files,
+		feature_handle_to_collection_map_type &feature_handle_to_collection_map)
 {
-	feature_handle_to_collection_map_type feature_handle_to_collection_map;
 
 	populate_feature_handle_to_collection_map(
 			feature_handle_to_collection_map,
@@ -211,4 +229,46 @@ GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::group_rfgs_with_their_fea
 		// Add the current RFG to the current feature.
 		grouped_rfgs_seq.back().recon_feature_geoms.push_back(rfg);
 	}
+}
+
+void
+GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::group_feature_geom_groups_with_their_collection(
+	const feature_handle_to_collection_map_type &feature_handle_to_collection_map,
+	feature_collection_feature_group_seq_type &grouped_features_seq,
+	const feature_geometry_group_seq_type &grouped_rfgs_seq)
+{
+
+	feature_geometry_group_seq_type::const_iterator feature_iter = grouped_rfgs_seq.begin();
+	for (; feature_iter != grouped_rfgs_seq.end() ; ++feature_iter)
+	{
+
+
+		GPlatesModel::FeatureHandle::const_weak_ref handle_ref = feature_iter->feature_ref;
+
+		// Need a pointer to use the map. 
+		const GPlatesModel::FeatureHandle *handle_ptr = handle_ref.handle_ptr();
+		const feature_handle_to_collection_map_type::const_iterator map_iter =
+			feature_handle_to_collection_map.find(handle_ptr);
+		if (map_iter != feature_handle_to_collection_map.end())
+		{
+			const GPlatesFileIO::File::Reference *file_ptr = map_iter->second;
+			
+			ContainsSameFilePointerPredicate predicate(file_ptr);
+			feature_collection_feature_group_seq_type::iterator it =
+					std::find_if(grouped_features_seq.begin(),grouped_features_seq.end(),predicate);
+			if (it != grouped_features_seq.end())
+			{
+				// We found the file_ref in the FeatureCollectionFeatureGroup, so add this grouped_refs_seq to it.
+				it->feature_geometry_groups.push_back(*feature_iter);
+			}
+			else
+			{
+				// We have found a new collection, so create an entry in the feature_collection_feature_group_seq
+				FeatureCollectionFeatureGroup group_of_features(file_ptr);
+				group_of_features.feature_geometry_groups.push_back(*feature_iter);
+				grouped_features_seq.push_back(group_of_features);
+			}
+		}
+	}
+
 }

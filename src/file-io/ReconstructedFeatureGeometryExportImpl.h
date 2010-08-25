@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -69,6 +70,7 @@ namespace GPlatesFileIO
 			reconstructed_feature_geom_seq_type recon_feature_geoms;
 		};
 
+
 		/**
 		 * Typedef for a sequence of @a FeatureGeometryGroup objects.
 		 */
@@ -78,6 +80,34 @@ namespace GPlatesFileIO
 		typedef std::vector<const GPlatesFileIO::File::Reference *> referenced_files_collection_type;
 
 
+
+		/**
+		 * Groups @a FeatureGeometryGroup objects with their feature collection.                                                                     
+		 */
+		struct FeatureCollectionFeatureGroup
+		{
+			FeatureCollectionFeatureGroup(
+				const GPlatesFileIO::File::Reference *file_ptr_):
+				file_ptr(file_ptr_)
+			{}
+
+			const GPlatesFileIO::File::Reference *file_ptr;
+			feature_geometry_group_seq_type feature_geometry_groups;
+		};
+
+
+		/**
+		 * Typedef for a sequence of @a FeatureCollectionFeatureGroup objects. 
+		 */
+		typedef std::list<FeatureCollectionFeatureGroup> feature_collection_feature_group_seq_type;
+
+
+		/**
+		 * Typedef for mapping from @a FeatureHandle to the feature collection file it came from.
+		 */
+		typedef std::map<const GPlatesModel::FeatureHandle *, const GPlatesFileIO::File::Reference *>
+			feature_handle_to_collection_map_type;
+
 		/**
 		 * Returns a list of files that reference the RFGs.
 		 * Result is stored in @a referenced_files.
@@ -86,7 +116,8 @@ namespace GPlatesFileIO
 		get_files_referenced_by_geometries(
 				referenced_files_collection_type &referenced_files,
 				const reconstructed_feature_geom_seq_type &reconstructed_feature_geometry_seq,
-				const files_collection_type &reconstructable_files);
+				const files_collection_type &reconstructable_files,
+				feature_handle_to_collection_map_type &feature_to_collection_map);
 
 
 		/**
@@ -97,6 +128,18 @@ namespace GPlatesFileIO
 		group_rfgs_with_their_feature(
 				feature_geometry_group_seq_type &grouped_rfgs_seq,
 				const reconstructed_feature_geom_seq_type &reconstructed_feature_geometry_seq);
+
+
+		/**
+		 * Fills @a grouped_features_seq with the sorted contents of @a grouped_rfgs_seq.
+		 * 
+		 * @a grouped_rfgs_seq is sorted by feature collection. 
+		 */
+		void
+		group_feature_geom_groups_with_their_collection(
+				const feature_handle_to_collection_map_type &feature_handle_to_collection_map,
+				feature_collection_feature_group_seq_type &grouped_features_seq,
+				const feature_geometry_group_seq_type &grouped_rfgs_seq);
 	}
 }
 

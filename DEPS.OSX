@@ -116,8 +116,9 @@ instead if one exists (ie, for GDAL, Qt and CMake).
   • Install Boost with 'sudo port install boost' if you don't have Boost.
   • Install ICU with 'sudo port install icu' if you don't have ICU.
   • Install CGAL with 'sudo port install cgal' if you don't have CGAL.
-  • Install GDAL with 'sudo port install gdal' if you don't have GDAL. Note that the installers
-    at "http://www.kyngchaos.com/software:frameworks" are easier than using
-    Macports due to the large number of software dependencies required by GDAL.
+  • Install GDAL with 'sudo port install gdal +netcdf' if you don't have GDAL - note the additional "+netcdf".
+    You may have to use 'sudo port upgrade --enforce-variants gdal +netcdf' if your GDAL is already up to date. 
+    Note that the installers at "http://www.kyngchaos.com/software:frameworks" are easier than
+    using Macports due to the large number of software dependencies required by GDAL.
   • Make sure you don't have multiple installations of the same library.
     For example, /opt/local/include/gdal* and /Library/Frameworks/GDAL.framework.
