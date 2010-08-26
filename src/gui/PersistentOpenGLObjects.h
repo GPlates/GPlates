@@ -149,10 +149,15 @@ namespace GPlatesGui
 				{
 					struct Input
 					{
+						Input() :
+								is_default_raster_colour_scheme(false)
+						{  }
+
 						boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
 								source_georeferencing;
 						boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> source_raster;
 						boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> source_raster_colour_scheme;
+						bool is_default_raster_colour_scheme;
 						boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type>
 								reconstruct_raster_polygons;
 						boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>

@@ -146,6 +146,7 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 	new_raster.input.source_georeferencing = source_georeferencing;
 	new_raster.input.source_raster = source_raster;
 	new_raster.input.source_raster_colour_scheme = source_raster_colour_scheme;
+	new_raster.input.is_default_raster_colour_scheme = false;
 	new_raster.input.reconstruct_raster_polygons = reconstruct_raster_polygons;
 	new_raster.input.age_grid_georeferencing = age_grid_georeferencing;
 	new_raster.input.age_grid_raster = age_grid_raster;
@@ -161,14 +162,22 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 	// Instead they'll see the same default colour scheme each frame.
 	if (!new_raster.input.source_raster_colour_scheme)
 	{
-		if (new_raster.input.source_raster != old_raster.input.source_raster)
+		// The default colour scheme depends on the raster (on its statistics) so it
+		// needs to be changed when the raster changes.
+		if (new_raster.input.source_raster != old_raster.input.source_raster ||
+			// If the previous colour scheme was not a default colour scheme then we need to
+			// create a default colour scheme regardless of whether the raster changed or not...
+			!old_raster.input.is_default_raster_colour_scheme)
 		{
+			//qDebug() << "Creating default raster colour scheme.";
 			new_raster.input.source_raster_colour_scheme =
 					create_default_raster_colour_scheme(new_raster.input.source_raster.get());
+			new_raster.input.is_default_raster_colour_scheme = true;
 		}
 		else
 		{
 			new_raster.input.source_raster_colour_scheme = old_raster.input.source_raster_colour_scheme;
+			new_raster.input.is_default_raster_colour_scheme = old_raster.input.is_default_raster_colour_scheme;
 		}
 	}
 
@@ -177,6 +186,7 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 	if (!old_raster.output.source_multi_resolution_raster ||
 		new_raster.input.source_georeferencing != old_raster.input.source_georeferencing)
 	{
+		//qDebug() << "Georeferencing changed - creating new multi-resolution raster.";
 		if (!create_source_multi_resolution_raster(new_raster))
 		{
 			raster = new_raster; // Write back any changes made during update.
@@ -197,6 +207,7 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 		new_raster.output.source_proxied_raster = old_raster.output.source_proxied_raster;
 		new_raster.output.source_multi_resolution_raster = old_raster.output.source_multi_resolution_raster;
 
+		//qDebug() << "Raster colour scheme or raster changed - creating new multi-resolution raster.";
 		// If we weren't able to change the raster then we'll need to rebuild it from scratch.
 		// This should succeed if the raster dimensions haven't changed (note also that we're
 		// only here because the georeferencing hasn't changed either).
