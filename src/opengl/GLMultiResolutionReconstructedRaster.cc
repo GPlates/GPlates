@@ -1624,6 +1624,7 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::update_input_rasters_valid_
 	}
 }
 
+DISABLE_GCC_WARNING("-Wshadow")
 
 void
 GPlatesOpenGL::GLMultiResolutionReconstructedRaster::generate_polygon_mesh(
