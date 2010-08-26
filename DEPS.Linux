@@ -172,6 +172,7 @@ installed manually:
 Program/library Corresponding Fedora packages
 cmake           cmake
 g++             gcc-c++
+GLEW            glew-devel
 ICU             libicu-devel
 Boost           boost-devel
 Qt              qt-devel
