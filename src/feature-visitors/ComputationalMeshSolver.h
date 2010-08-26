@@ -1,10 +1,11 @@
+/* $Id$ */
 
 /**
- * \file 
- * File specific comments.
+ * @file 
+ * Contains the definition of class ComputationalMeshSolver, which is a FeatureVisitor.
  *
  * Most recent change:
- *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
+ *   $Date$
  * 
  * Copyright (C) 2008, 2010 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
@@ -33,18 +34,14 @@
 #include <boost/noncopyable.hpp>
 
 #include "app-logic/Reconstruction.h"
+#include "app-logic/MultiPointVectorField.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "global/types.h"
 
 #include "gui/PlateIdColourPalettes.h"
 
-#include "maths/types.h"
 #include "maths/FiniteRotation.h"
-#include "maths/PointOnSphere.h"
-#include "maths/PolylineOnSphere.h"
-#include "maths/PolygonOnSphere.h"
-#include "maths/LatLonPoint.h"
 
 #include "model/types.h"
 #include "model/FeatureVisitor.h"
@@ -65,7 +62,13 @@ namespace GPlatesGui
 
 namespace GPlatesMaths
 {
+	class PointOnSphere;
 	class VectorColatitudeLongitude;
+}
+
+namespace GPlatesAppLogic
+{
+	class ReconstructionGeometryCollection;
 }
 
 namespace GPlatesFeatureVisitors
@@ -109,27 +112,28 @@ namespace GPlatesFeatureVisitors
 		};
 
 
-		typedef std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
-				reconstruction_geometries_type;
-
 		//
 		// the ComputationalMeshSolver class
 		//
 
 		// This is a mimic of ReconstructedFeatureGeometryPopulator()
 
+		/**
+		 * Construct a computational mesh solver for reconstruction time @a recon_time.
+		 *
+		 * The reconstruction tree at this time is @a recon_tree.  @a recon_tree_2 is the
+		 * reconstruction tree at a small time delta.
+		 */
 		ComputationalMeshSolver(
 			const double &recon_time,
-			unsigned long root_plate_id,
-			GPlatesAppLogic::ReconstructionTree &recon_tree,
-			GPlatesAppLogic::ReconstructionTree &recon_tree_2,
+			GPlatesModel::integer_plate_id_type root_plate_id,
+			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &recon_tree,
+			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &recon_tree_2,
 			const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 					resolved_boundaries_for_partitioning_geometry_query,
 			const GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type &
 					resolved_networks_for_velocity_interpolation,
-			//reconstruction_geometries_type &reconstructed_geometries,
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type point_layer,
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type arrow_layer,
+			GPlatesAppLogic::ReconstructionGeometryCollection &velocity_fields_to_populate,
 			bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
@@ -161,13 +165,6 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
-#if 0
-		virtual
-		void
-		visit_gml_data_block(
-				const GPlatesPropertyValues::GmlDataBlock &gml_data_block);
-#endif
-
 		void
 		report();
 
@@ -176,11 +173,24 @@ namespace GPlatesFeatureVisitors
 		//
 		// from ReconstructedFeatureGeometryPopulator.h
 		//
+
+		/**
+		 * The reconstruction time at which the mesh is being solved.
+		 */
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
+
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
 
-		GPlatesAppLogic::ReconstructionTree *d_recon_tree_ptr;
-		GPlatesAppLogic::ReconstructionTree *d_recon_tree_2_ptr;
+		/**
+		 * The reconstruction tree at the reconstruction time.
+		 */
+		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type d_recon_tree_ptr;
+
+		/**
+		 * The reconstruction tree at a small time delta from the reconstruction time.
+		 */
+		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type d_recon_tree_2_ptr;
+
 		GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type
 				d_resolved_boundaries_for_partitioning_geometry_query;
 
@@ -188,12 +198,7 @@ namespace GPlatesFeatureVisitors
 		GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type
 				d_resolved_networks_for_velocity_interpolation;
 
-		//reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
-
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_rendered_point_layer;
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_rendered_arrow_layer;
+		GPlatesAppLogic::ReconstructionGeometryCollection *d_velocity_fields_to_populate;
 
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;
 		bool d_should_keep_features_without_recon_plate_id;
@@ -214,34 +219,31 @@ namespace GPlatesFeatureVisitors
 		int d_num_meshes;
 		int d_num_points;
 
-		/** used to set the color of the points found on a plate */
-		GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_type d_colour_palette;
-
-		/** vectors to hold computed values */
-		std::vector<double> d_velocity_colat_values;
-		std::vector<double> d_velocity_lon_values;
+		/**
+		 * A pointer to the current feature handle.
+		 *
+		 * We expect this to be non-NULL while we're visiting a feature handle.
+		 */
+		GPlatesModel::FeatureHandle *d_feature_handle_ptr;
 
 
 		void
 		process_point(
-				const GPlatesMaths::PointOnSphere &point);
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element);
 
 		void
 		process_point_in_network(
-				const GPlatesMaths::PointOnSphere &point, 
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
 				const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon);
 
 		void
 		process_point_in_plate_polygon(
 				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
 				GPlatesAppLogic::TopologyUtils::resolved_topological_boundary_seq_type
 						resolved_topological_boundaries_containing_point);
-
-		void
-		render_velocity(
-				const GPlatesMaths::PointOnSphere &point,
-				const GPlatesMaths::Vector3D &velocity,
-				const GPlatesGui::Colour &colour);
 	};
 
 }

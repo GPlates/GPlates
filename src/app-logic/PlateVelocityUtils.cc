@@ -28,7 +28,7 @@
 #include <boost/lambda/lambda.hpp>
 
 #include "PlateVelocityUtils.h"
-
+#include "ReconstructUtils.h"
 #include "AppLogicUtils.h"
 #include "ReconstructionTree.h"
 #include "ResolvedTopologicalNetwork.h"
@@ -267,7 +267,7 @@ namespace
 
 bool
 GPlatesAppLogic::PlateVelocityUtils::detect_velocity_mesh_nodes(
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
 	if (!feature_collection.is_valid())
 	{
@@ -312,24 +312,70 @@ GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
 }
 
 
-void
+const GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type
 GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
-		ReconstructionGeometryCollection &reconstruction_geometry_collection,
-		ReconstructionTree &reconstruction_tree_1,
-		ReconstructionTree &reconstruction_tree_2,
+		ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &mesh_point_feature_collections,
+		const ReconstructionGeometryCollection &reconstructed_polygons)
+{
+	ReconstructionGeometryCollection::non_null_ptr_type velocity_fields =
+			ReconstructionGeometryCollection::create(reconstruction_tree);
+
+	// Return if there are no mesh-point feature collections on which to solve velocities.
+	if (mesh_point_feature_collections.empty())
+	{
+		// Velocity fields is empty, but it's valid, so we can return it anyway.
+		return velocity_fields;
+	}
+
+	// FIXME:  Should this '1' should be user controllable?
+	const double reconstruction_time_2 = reconstruction_time + 1;
+
+	// Our two reconstruction trees for velocity calculations.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 = 
+			GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+					reconstruction_time_2,
+					reconstruction_anchored_plate_id,
+					reconstruction_tree->get_reconstruction_features());
+
+	// Iterate over all mesh-point feature collections and solve velocities.
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator iter = mesh_point_feature_collections.begin();
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator end = mesh_point_feature_collections.end();
+	for ( ; iter != end; ++iter) {
+		solve_velocities_inner(
+			*velocity_fields,
+			*iter,
+			reconstructed_polygons,
+			reconstruction_tree,
+			reconstruction_tree_2,
+			reconstruction_time,
+			reconstruction_time_2,
+			reconstruction_anchored_plate_id);
+	}
+
+	return velocity_fields;
+}
+
+
+void
+GPlatesAppLogic::PlateVelocityUtils::solve_velocities_inner(
+		ReconstructionGeometryCollection &velocity_fields_to_populate,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &mesh_point_feature_collection,
+		const ReconstructionGeometryCollection &reconstructed_polygons,
+		ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_1,
+		ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_2,
 		const double &reconstruction_time_1,
 		const double &reconstruction_time_2,
-		GPlatesModel::integer_plate_id_type reconstruction_root,
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_point_layer,
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer)
+		GPlatesModel::integer_plate_id_type reconstruction_root)
 {
 	// Get the resolved topological boundaries in the reconstruction and optimise them
 	// for point-in-polygon tests.
 	// Later the velocity solver will query the boundaries at various points and
 	// then calculate velocities using the best matching boundary.
 	const TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type resolved_boundaries_query =
-			TopologyUtils::query_resolved_topologies_for_geometry_partitioning(reconstruction_geometry_collection);
+			TopologyUtils::query_resolved_topologies_for_geometry_partitioning(reconstructed_polygons);
 
 	// Get the resolved topological networks in the reconstruction.
 	// This effectively goes through all the node points in all topological networks
@@ -338,7 +384,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 	// at various points.
 
 	const InfoForVelocityCalculations velocity_calc_info(
-			reconstruction_tree_1, reconstruction_tree_2);
+			*reconstruction_tree_1, *reconstruction_tree_2);
 
 	/*
 	 * The following callback function will take a ResolvedTopologicalNetworkImpl pointer
@@ -360,7 +406,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 	// Fill the topological network with velocities data at all the network points.
 	const TopologyUtils::resolved_networks_for_interpolation_query_type resolved_networks_query =
 			TopologyUtils::query_resolved_topology_networks_for_interpolation(
-					reconstruction_geometry_collection,
+					reconstructed_polygons,
 					&calc_velocity_vector_for_interpolation,
 					// Two scalars per velocity...
 					NUM_TOPOLOGICAL_NETWORK_VELOCITY_COMPONENTS,
@@ -372,18 +418,17 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 	// Visit the feature collections and fill computational meshes with 
 	// nice juicy velocity data
 	GPlatesFeatureVisitors::ComputationalMeshSolver velocity_solver( 
-			reconstruction_time_1,
+			reconstruction_time_1,  // "the" reconstruction time
 			reconstruction_root,
-			reconstruction_tree_1,
+			reconstruction_tree_1,  // "the" reconstruction tree
 			reconstruction_tree_2,
 			resolved_boundaries_query,
 			resolved_networks_query,
-			comp_mesh_point_layer,
-			comp_mesh_arrow_layer,
+			velocity_fields_to_populate,
 			true); // keep features without recon plate id
 
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-			velocity_field_feature_collection,
+			mesh_point_feature_collection,
 			static_cast<GPlatesModel::FeatureVisitor &>(velocity_solver));
 }
 

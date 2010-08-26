@@ -114,7 +114,7 @@ namespace GPlatesUtils
 
 		static
 		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
-		create_MESH_VILOCITIES_GPML(
+		create_MESH_VELOCITIES_GPML(
 				GPlatesGui::ExportAnimationContext& export_context,			
 				const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
 		{

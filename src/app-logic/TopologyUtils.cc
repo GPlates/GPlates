@@ -97,14 +97,14 @@ namespace GPlatesAppLogic
 		{
 		public:
 			ResolvedNetworkForInterpolationQuery(
-					ResolvedTopologicalNetwork *network_) :
+					const ResolvedTopologicalNetwork *network_) :
 				network(network_)
 			{  }
 
 			typedef boost::shared_ptr<CgalUtils::cgal_map_point_to_value_type> scalar_map_ptr_type;
 			typedef std::vector<scalar_map_ptr_type> scalar_map_seq_type;
 
-			ResolvedTopologicalNetwork *network;
+			const ResolvedTopologicalNetwork *network;
 			scalar_map_seq_type scalar_map_seq;
 		};
 		/**
@@ -176,10 +176,10 @@ GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(
 	// So if something looks like a TCPB (because it has a topology polygon property)
 	// then treat it like one. For this to happen we first need TopologicalNetwork to
 	// use a property type different than TopologicalPolygon.
-	//
-	static const QString type("TopologicalClosedPlateBoundary");
 
-	return type == GPlatesUtils::make_qstring_from_icu_string(feature.feature_type().get_name());
+	static const GPlatesModel::FeatureType topo_closed_plate_boundary_type =
+			GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
+	return (feature.feature_type() == topo_closed_plate_boundary_type);
 }
 
 
@@ -419,11 +419,37 @@ GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_bound
 }
 
 
-boost::optional<GPlatesModel::integer_plate_id_type>
+namespace
+{
+	struct PlateIdLessThanComparison
+	{
+		typedef std::pair<GPlatesModel::integer_plate_id_type,
+				const GPlatesAppLogic::ResolvedTopologicalBoundary *> plate_id_and_boundary_type;
+
+		PlateIdLessThanComparison()
+		{  }
+
+		bool
+		operator()(
+				const plate_id_and_boundary_type &a,
+				const plate_id_and_boundary_type &b) const
+		{
+			return (a.first < b.first);
+		}
+	};
+}
+
+
+boost::optional< std::pair<
+		GPlatesModel::integer_plate_id_type,
+		const GPlatesAppLogic::ResolvedTopologicalBoundary * > >
 GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 		const resolved_topological_boundary_seq_type &resolved_boundaries)
 {
-	std::vector<GPlatesModel::integer_plate_id_type> reconstruction_plate_ids;
+	typedef std::pair<GPlatesModel::integer_plate_id_type,
+			const ResolvedTopologicalBoundary *> plate_id_and_boundary_type;
+
+	std::vector<plate_id_and_boundary_type> reconstruction_plate_ids;
 	reconstruction_plate_ids.reserve(resolved_boundaries.size());
 
 	// Loop over the resolved topological boundaries.
@@ -437,17 +463,18 @@ GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_ancho
 		if (rtb->plate_id())
 		{
 			// The resolved boundary feature has a reconstruction plate ID.
-			reconstruction_plate_ids.push_back(*rtb->plate_id());
+			reconstruction_plate_ids.push_back(
+					std::make_pair(*rtb->plate_id(), rtb));
 		}
 	}
 
-	if (reconstruction_plate_ids.empty())
-	{
+	if (reconstruction_plate_ids.empty()) {
 		return boost::none;
 	}
 
 	// Sort the plate ids.
-	std::sort(reconstruction_plate_ids.begin(), reconstruction_plate_ids.end());
+	std::sort(reconstruction_plate_ids.begin(), reconstruction_plate_ids.end(),
+			PlateIdLessThanComparison());
 
 	// Get the highest numeric plate id - which is at the back of the sorted sequence.
 	return reconstruction_plate_ids.back();
@@ -521,7 +548,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 
 GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type
 GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolation(
-		ReconstructionGeometryCollection &reconstruction_geometry_collection,
+		const ReconstructionGeometryCollection &reconstruction_geometry_collection,
 		const map_point_to_scalars_function_type &map_point_to_scalars_function,
 		const unsigned int num_mapped_scalars_per_point,
 		const boost::any &map_point_to_scalars_user_data,
@@ -553,7 +580,7 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 	resolved_topological_network_seq_type::const_iterator network_end = resolved_networks.end();
 	for ( ; network_iter != network_end; ++network_iter)
 	{
-		ResolvedTopologicalNetwork *network = *network_iter;
+		const ResolvedTopologicalNetwork *network = *network_iter;
 
 		resolved_network_for_interpolation_query_type resolved_network_query(
 				new ResolvedNetworkForInterpolationQuery(network));

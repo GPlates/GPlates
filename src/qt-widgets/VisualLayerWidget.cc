@@ -82,6 +82,7 @@ namespace
 		static const Colour AGE_GRID_COLOUR = *html_colours.get_colour("darkturquoise");
 		static const Colour TOPOLOGY_BOUNDARY_RESOLVER_COLOUR = *html_colours.get_colour("plum");
 		static const Colour TOPOLOGY_NETWORK_RESOLVER_COLOUR = *html_colours.get_colour("darkkhaki");
+		static const Colour VELOCITY_FIELD_CALCULATOR_COLOUR = *html_colours.get_colour("aquamarine");
 
 		static const Colour DEFAULT_COLOUR = Colour::get_white();
 
@@ -106,6 +107,9 @@ namespace
 
 			case TOPOLOGY_NETWORK_RESOLVER:
 				return TOPOLOGY_NETWORK_RESOLVER_COLOUR;
+
+			case VELOCITY_FIELD_CALCULATOR:
+				return VELOCITY_FIELD_CALCULATOR_COLOUR;
 
 			default:
 				return DEFAULT_COLOUR;

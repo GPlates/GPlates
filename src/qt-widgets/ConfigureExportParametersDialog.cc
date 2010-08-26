@@ -93,7 +93,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_name_and_type
 	//TODO: these maps should be integrated into exporter classes.
 	d_name_map[RECONSTRUCTED_GEOMETRIES]=QObject::tr("Reconstructed Geometries");
 	d_name_map[PROJECTED_GEOMETRIES]    =QObject::tr("Projected Geometries");
-	d_name_map[MESH_VILOCITIES]         =QObject::tr("Colat/lon Mesh Velocities");
+	d_name_map[MESH_VELOCITIES]         =QObject::tr("Colat/lon Mesh Velocities");
 	d_name_map[RESOLVED_TOPOLOGIES]     =QObject::tr("Resolved Topologies");
 	d_name_map[RELATIVE_ROTATION]       =QObject::tr("Relative Total Rotation");
 	d_name_map[EQUIVALENT_ROTATION]     =QObject::tr("Equivalent Total Rotation");
@@ -127,8 +127,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_desc_map()
 		GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC;
 	d_desc_map[PROJECTED_GEOMETRIES]     =
 		GPlatesGui::ExportSvgAnimationStrategy::PROJECTED_GEOMETRIES_DESC;
-	d_desc_map[MESH_VILOCITIES]          =
-		GPlatesGui::ExportVelocityAnimationStrategy::MESH_VILOCITIES_DESC;
+	d_desc_map[MESH_VELOCITIES]          =
+		GPlatesGui::ExportVelocityAnimationStrategy::MESH_VELOCITIES_DESC;
 	d_desc_map[RESOLVED_TOPOLOGIES]      = 
 		GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLOVED_TOPOLOGIES_DESC;
 	d_desc_map[RELATIVE_ROTATION]        = 
@@ -174,8 +174,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_map()
 	REGISTER_EXPORT_ITEM(RECONSTRUCTED_GEOMETRIES,SHAPEFILE);
 	//PROJECTED_GEOMETRIES_SVG
 	REGISTER_EXPORT_ITEM(PROJECTED_GEOMETRIES,SVG);
-	//MESH_VILOCITIES_GPML
-	REGISTER_EXPORT_ITEM(MESH_VILOCITIES,GPML);
+	//MESH_VELOCITIES_GPML
+	REGISTER_EXPORT_ITEM(MESH_VELOCITIES,GPML);
 	//RESOLVED_TOPOLOGIES_GMT
 	REGISTER_EXPORT_ITEM(RESOLVED_TOPOLOGIES,GMT);
 	//RELATIVE_ROTATION_CSV_COMMA

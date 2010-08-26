@@ -35,6 +35,7 @@
 #include "ReconstructLayerTask.h"
 #include "TopologyBoundaryResolverLayerTask.h"
 #include "TopologyNetworkResolverLayerTask.h"
+#include "VelocityFieldCalculatorLayerTask.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -297,6 +298,12 @@ GPlatesAppLogic::register_default_layer_task_types(
 			&TopologyNetworkResolverLayerTask::create_layer_task,
 			&TopologyNetworkResolverLayerTask::can_process_feature_collection,
 			&TopologyNetworkResolverLayerTask::is_primary_layer_task_type);
+
+	// Layer task to calculate velocity fields.
+	layer_task_registry.register_layer_task_type(
+			&VelocityFieldCalculatorLayerTask::create_layer_task,
+			&VelocityFieldCalculatorLayerTask::can_process_feature_collection,
+			&VelocityFieldCalculatorLayerTask::is_primary_layer_task_type);
 
 	//
 	// Set the layer task type to use when no registered layer task types can process

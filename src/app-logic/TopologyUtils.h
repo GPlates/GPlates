@@ -209,7 +209,9 @@ namespace GPlatesAppLogic
 		 * they all should unless the TopologicalClosedPlateBoundary feature they reference
 		 * does not have one for some reason.
 		 */
-		boost::optional<GPlatesModel::integer_plate_id_type>
+		boost::optional< std::pair<
+				GPlatesModel::integer_plate_id_type,
+				const ResolvedTopologicalBoundary * > >
 		find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 				const resolved_topological_boundary_seq_type &resolved_boundaries);
 
@@ -219,7 +221,7 @@ namespace GPlatesAppLogic
 		//
 
 		//! Typedef for a sequence of resolved topological networks.
-		typedef std::vector<ResolvedTopologicalNetwork *>
+		typedef std::vector<const ResolvedTopologicalNetwork *>
 				resolved_topological_network_seq_type;
 
 		class ResolvedNetworkForInterpolationQuery;
@@ -260,7 +262,7 @@ namespace GPlatesAppLogic
 		 * the second argument.
 		 */
 		typedef void network_interpolation_query_callback_signature(
-				ResolvedTopologicalNetwork *,
+				const ResolvedTopologicalNetwork *,
 				const resolved_network_for_interpolation_query_type &);
 		typedef boost::function<network_interpolation_query_callback_signature>
 				network_interpolation_query_callback_type;
@@ -334,7 +336,7 @@ namespace GPlatesAppLogic
 		 */
 		resolved_networks_for_interpolation_query_type
 		query_resolved_topology_networks_for_interpolation(
-				ReconstructionGeometryCollection &reconstruction_geometry_collection,
+				const ReconstructionGeometryCollection &reconstruction_geometry_collection,
 				const map_point_to_scalars_function_type &map_point_to_scalars_function,
 				const unsigned int num_mapped_scalars_per_point,
 				const boost::any &map_point_to_scalars_user_data,

@@ -28,6 +28,7 @@
 #include "ReconstructionGeometryRenderer.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/MultiPointVectorField.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedRaster.h"
@@ -41,6 +42,7 @@
 #include "global/NotYetImplementedException.h"
 
 #include "gui/Colour.h"
+#include "gui/PlateIdColourPalettes.h"
 
 #include "presentation/ViewState.h"
 
@@ -174,6 +176,80 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment)
 {
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+{
+	using GPlatesAppLogic::MultiPointVectorField;
+
+	GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = mpvf->multi_point()->begin();
+	GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = mpvf->multi_point()->end();
+
+	MultiPointVectorField::codomain_type::const_iterator codomain_iter = mpvf->begin();
+
+	for ( ; domain_iter != domain_end; ++domain_iter, ++codomain_iter)
+	{
+		if ( ! *codomain_iter) {
+			// There is no codomain element at this position.
+			continue;
+		}
+		const GPlatesMaths::PointOnSphere &point = *domain_iter;
+		const MultiPointVectorField::CodomainElement &velocity = **codomain_iter;
+
+		if (velocity.d_reason == MultiPointVectorField::CodomainElement::InDeformationNetwork) {
+			// The point was in a deformation network.
+			// The arrow should be rendered black.
+			const GPlatesViewOperations::RenderedGeometry rendered_arrow =
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+							point,
+							velocity.d_vector,
+							d_style_params.velocity_ratio_unit_vector_direction_to_globe_radius,
+							GPlatesGui::Colour::get_black());
+			d_rendered_geometry_layer.add_rendered_geometry(rendered_arrow);
+
+		} else if (velocity.d_reason == MultiPointVectorField::CodomainElement::InPlateBoundary) {
+			// The point was in a plate boundary.
+			// Colour the arrow according to the plate ID, etc, of the PLATE BOUNDARY
+			// in which the point lies.
+			//
+			// Note that this is DIFFERENT to the usual practice of colouring
+			// according to the plate ID of the originating feature (in this case,
+			// the feature that contained the mesh points).
+			//
+			// Hence, the ReconstructionGeometry passed into the ColourProxy is the
+			// ReconstructionGeometry of the plate boundary, not of the originating
+			// feature.
+
+			using namespace GPlatesAppLogic;
+
+			const ReconstructionGeometry::maybe_null_ptr_to_const_type &plate_boundary =
+					velocity.d_enclosing_boundary;
+			if (plate_boundary) {
+				ReconstructionGeometry::non_null_ptr_to_const_type pb_non_null_ptr =
+						plate_boundary.get();
+
+				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+								point,
+								velocity.d_vector,
+								d_style_params.velocity_ratio_unit_vector_direction_to_globe_radius,
+								GPlatesGui::ColourProxy(pb_non_null_ptr));
+				d_rendered_geometry_layer.add_rendered_geometry(rendered_arrow);
+			} else {
+				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+								point,
+								velocity.d_vector,
+								d_style_params.velocity_ratio_unit_vector_direction_to_globe_radius,
+								GPlatesGui::Colour::get_olive());
+				d_rendered_geometry_layer.add_rendered_geometry(rendered_arrow);
+			}
+		}
+		// else, don't render (if it's in neither boundary nor network)
+	}
 }
 
 

@@ -45,6 +45,8 @@ set(srcs
     LayerTaskType.h
     MeshGenerator.cc
     MeshGenerator.h
+    MultiPointVectorField.cc
+    MultiPointVectorField.h
     PartitionFeatureTask.cc
     PartitionFeatureTask.h
     PartitionFeatureUtils.cc
@@ -118,6 +120,8 @@ set(srcs
     TopologyNetworkResolverLayerTask.h
     TopologyUtils.cc
     TopologyUtils.h
+    VelocityFieldCalculatorLayerTask.cc
+    VelocityFieldCalculatorLayerTask.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h
     VGPRenderSettings.cc

@@ -318,7 +318,7 @@ namespace GPlatesAppLogic
 		void
 		set_network_velocities(
 				const GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworkVelocities &
-						topological_network_velocities)
+						topological_network_velocities) const
 		{
 			d_network_velocities = topological_network_velocities;
 		}
@@ -506,7 +506,7 @@ namespace GPlatesAppLogic
 		 * Stores the velocity data at the points of this network and
 		 * can be used to interpolate velocities at arbitrary points within the network.
 		 */
-		GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworkVelocities d_network_velocities;
+		mutable GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworkVelocities d_network_velocities;
 
 		/**
 		 * Instantiate a network with an optional reconstruction plate ID and

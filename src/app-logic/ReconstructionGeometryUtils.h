@@ -34,6 +34,7 @@
 	
 #include "model/FeatureVisitor.h"
 
+#include "MultiPointVectorField.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionGeometry.h"
@@ -397,6 +398,15 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+			{
+				// A MultiPointVectorField instance does not reference a feature,
+				// so nothing to do here.
+			}
+
+			virtual
+			void
+			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 			{
 				d_feature_ref = rfg->get_feature_ref();
@@ -461,6 +471,15 @@ namespace GPlatesAppLogic
 			get_property() const
 			{
 				return d_property;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+			{
+				// A MultiPointVectorField instance does not correspond to a
+				// property of any single feature, so nothing to do here.
 			}
 
 			virtual
@@ -535,6 +554,16 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+			{
+				// A MultiPointVectorField instance does not correspond to any
+				// single plate, and hence does not contain a plate ID, so nothing
+				// to do here.
+			}
+
+			virtual
+			void
+			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 			{
 				d_plate_id = rfg->reconstruction_plate_id();
@@ -591,6 +620,15 @@ namespace GPlatesAppLogic
 			get_time_of_formation() const
 			{
 				return d_time_of_formation;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+			{
+				// A MultiPointVectorField instance does not reference a feature,
+				// and hence there is no time of formation, so nothing to do here.
 			}
 
 			virtual

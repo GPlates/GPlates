@@ -47,7 +47,7 @@ GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
 						new ExportSvgFileNameTemplateValidator());
 	}
 	
-	if(id == GPlatesUtils::MESH_VILOCITIES_GPML)
+	if(id == GPlatesUtils::MESH_VELOCITIES_GPML)
 	{
 		return boost::shared_ptr<
 				GPlatesUtils::ExportFileNameTemplateValidator >(

@@ -1,9 +1,11 @@
+/* $Id$ */
+
 /**
- * \file 
- * File specific comments.
+ * @file 
+ * Contains the definitions of member functions of class ComputationalMeshSolver.
  *
  * Most recent change:
- *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
+ *   $Date$
  * 
  * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
@@ -33,8 +35,6 @@
 
 #include <QLocale>
 #include <QDebug>
-#include <QList>
-#include <QString>
 #include <boost/none.hpp>
 
 #include "ComputationalMeshSolver.h"
@@ -44,6 +44,7 @@
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/TopologyUtils.h"
+#include "app-logic/ReconstructionGeometryCollection.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -95,29 +96,25 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			const double &recon_time,
 			unsigned long root_plate_id,
 			//GPlatesAppLogic::Reconstruction &recon,
-			GPlatesAppLogic::ReconstructionTree &recon_tree,
-			GPlatesAppLogic::ReconstructionTree &recon_tree_2,
+			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &recon_tree,
+			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &recon_tree_2,
 			const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 					resolved_boundaries_for_partitioning_geometry_query,
 			const GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type &
 					resolved_networks_for_velocity_interpolation,
-			//reconstruction_geometries_type &reconstructed_geometries,
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type point_layer,
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type arrow_layer,
+			GPlatesAppLogic::ReconstructionGeometryCollection &velocity_fields_to_populate,
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
-	d_recon_tree_ptr(&recon_tree),
-	d_recon_tree_2_ptr(&recon_tree_2),
+	d_recon_tree_ptr(recon_tree),
+	d_recon_tree_2_ptr(recon_tree_2),
 	d_resolved_boundaries_for_partitioning_geometry_query(
 			resolved_boundaries_for_partitioning_geometry_query),
 	d_resolved_networks_for_velocity_interpolation(
 			resolved_networks_for_velocity_interpolation),
-	//d_reconstruction_geometries_to_populate(&reconstructed_geometries),
-	d_rendered_point_layer(point_layer),
-	d_rendered_arrow_layer(arrow_layer),
+	d_velocity_fields_to_populate(&velocity_fields_to_populate),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id),
-	d_colour_palette(GPlatesGui::DefaultPlateIdColourPalette::create())
+	d_feature_handle_ptr(NULL)
 {  
 	d_num_features = 0;
 	d_num_meshes = 0;
@@ -132,23 +129,25 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 {
 	d_num_features += 1;
 
+	// FIXME:  We should use property names rather than feature types to trigger behaviour.
+	// What property name would serve this purpose?
 
-	QString type_name( GPlatesUtils::make_qstring_from_icu_string(
-		feature_handle.feature_type().get_name() ) );
-
-	//
-	// super short-cut for non-mesh features
-	//
-	QString type_mesh_node("VelocityField");
-
-	if ( ! (type_name == type_mesh_node) )
-	{
-		// Quick-out: No need to continue.
-		return; 
+	// The following statement is an O(L log N) map-insertion, where N is the number of feature
+	// types currently loaded in GPlates and L is the average length of a feature-type string. 
+	// Because the local variable is static, the statement will be executed at most once in the
+	// run-time of the program.
+	static const GPlatesModel::FeatureType mesh_node_feature_type =
+			GPlatesModel::FeatureType::create_gpml("MeshNode");
+	// The following is an O(1) iterator comparison.
+	if (feature_handle.feature_type() != mesh_node_feature_type) {
+		// Not a velocity field feature, so nothing to do here.
+		return;
 	}
 	d_num_meshes += 1;
 
 	// else process this feature:
+
+	d_feature_handle_ptr = &feature_handle;
 
 #if 0
 	// this holds the name of the output file 
@@ -202,6 +201,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	if ( ! d_accumulator->d_feature_is_defined_at_recon_time) {
 		// Quick-out: No need to continue.
 		d_accumulator = boost::none;
+		d_feature_handle_ptr = NULL;
 		return;
 	}
 
@@ -215,6 +215,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 		// the client code has already told us how it wants us to behave...
 		if ( ! d_should_keep_features_without_recon_plate_id) {
 			d_accumulator = boost::none;
+			d_feature_handle_ptr = NULL;
 			return;
 		}
 	}
@@ -226,14 +227,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 			d_recon_tree_ptr->get_composed_absolute_rotation(*(d_accumulator->d_recon_plate_id)).first;
 	}
 
-
-	// Clear out old data
-	d_velocity_colat_values.clear();
-	d_velocity_lon_values.clear();
-
-	// output the data
-	//
-
 	// Now for the second pass through the properties of the feature:  
 	// This time we reconstruct any geometries we find.
 	d_accumulator->d_perform_reconstructions = true;
@@ -243,85 +236,9 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	//
 	visit_feature_properties( feature_handle );
 
-
-	//
-	// Set up GmlDataBlock 
-	//
-	GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
-			GPlatesPropertyValues::GmlDataBlock::create();
-
-	GPlatesPropertyValues::ValueObjectType velocity_colat_type =
-			GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityColat");
-	GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type xml_attrs_velocity_colat;
-	GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
-	GPlatesModel::XmlAttributeValue cm_per_year("urn:x-si:v1999:uom:cm_per_year");
-	xml_attrs_velocity_colat.insert(std::make_pair(uom, cm_per_year));
-
-	GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type velocity_colat =
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
-					velocity_colat_type, xml_attrs_velocity_colat,
-					d_velocity_colat_values.begin(), d_velocity_colat_values.end() );
-
-	GPlatesPropertyValues::ValueObjectType velocity_lon_type =
-			GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityLon");
-	GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type xml_attrs_velocity_lon;
-	xml_attrs_velocity_lon.insert(std::make_pair(uom, cm_per_year));
-
-	GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type velocity_lon =
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
-					velocity_lon_type, xml_attrs_velocity_lon,
-					d_velocity_lon_values.begin(), d_velocity_lon_values.end() );
-
-	gml_data_block->tuple_list_push_back( velocity_colat );
-	gml_data_block->tuple_list_push_back( velocity_lon );
-
-	//
-	// append the GmlDataBlock property 
-	//
-
-	// find the old prop to remove
-	GPlatesModel::PropertyName range_set_prop_name =
-		GPlatesModel::PropertyName::create_gml("rangeSet");
-
-	GPlatesModel::FeatureHandle::const_iterator iter = feature_handle.begin();
-	GPlatesModel::FeatureHandle::const_iterator end = feature_handle.end();
-
-	// loop over properties
-	for ( ; iter != end; ++iter)
-	{
-		/*
-		// double check for validity and nullness
-		if(! iter.is_valid() ){ continue; }
-		if(! (*iter) )   { continue; }
-		*/
-
-		// passed all checks, make the name and test
-		GPlatesModel::PropertyName test_name = (*iter)->property_name();
-
-		if ( test_name == range_set_prop_name )
-		{
-			// Delete the old boundary 
-			// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-			feature_handle.remove(iter);
-			// transaction.commit();
-			// FIXME: this seems to create NULL pointers in the properties collection
-			// see FIXME note above to check for NULL? 
-			// Or is this to be expected?
-			break;
-		}
-	} // loop over properties
-
-	// create a weak ref to make next function happy:
-	GPlatesModel::FeatureHandle::weak_ref feature_ref = feature_handle.reference();
-
-	// add the new gml::rangeSet property
-	feature_ref->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				range_set_prop_name,
-				gml_data_block));
-
 	// disable the accumulator
 	d_accumulator = boost::none;
+	d_feature_handle_ptr = NULL;
 }
 
 
@@ -339,20 +256,33 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 	
 	GPlatesMaths::MultiPointOnSphere::const_iterator iter = multipoint_ptr->begin();
 	GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint_ptr->end();
-	for ( ; iter != end; ++iter)
-	{
+
+	GPlatesAppLogic::MultiPointVectorField::non_null_ptr_type vector_field_ptr =
+			GPlatesAppLogic::MultiPointVectorField::create_empty(
+					d_recon_tree_ptr,
+					multipoint_ptr,
+					*d_feature_handle_ptr,
+					*current_top_level_propiter());
+	GPlatesAppLogic::MultiPointVectorField::codomain_type::iterator field_iter =
+			vector_field_ptr->begin();
+
+	for ( ; iter != end; ++iter, ++field_iter) {
 		d_num_points += 1;
-		process_point(*iter);
+		process_point(*iter, *field_iter);
 	}
+
+	// Having created and populated the MultiPointVectorField, let's store it in the collection
+	// of velocity fields.
+	d_velocity_fields_to_populate->add_reconstruction_geometry(vector_field_ptr);
 }
+
 
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
-		const GPlatesMaths::PointOnSphere &point )
+		const GPlatesMaths::PointOnSphere &point,
+		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element)
 {
-	//
-	// First see if point is inside any topological networks.
-	//
+	// First check whether point is inside any topological networks.
 
 	boost::optional< std::vector<double> > interpolated_velocity_scalars =
 			GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
@@ -365,7 +295,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 				GPlatesAppLogic::PlateVelocityUtils::convert_velocity_scalars_to_colatitude_longitude(
 						*interpolated_velocity_scalars);
 
-		process_point_in_network(point, velocity_colat_lon);
+		process_point_in_network(point, range_element, velocity_colat_lon);
 		return;
 	}
 
@@ -385,17 +315,25 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 	if (!resolved_topological_boundaries_containing_point.empty())
 	{
 		process_point_in_plate_polygon(
-				point, resolved_topological_boundaries_containing_point);
+				point, range_element, resolved_topological_boundaries_containing_point);
 		return;
 	}
 
     // else, point not found in any topology set the velocity values to 0 
-	d_velocity_colat_values.push_back( 0 );
-	d_velocity_lon_values.push_back( 0 );
+	using namespace GPlatesAppLogic;
 
+	GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
+	MultiPointVectorField::CodomainElement::Reason reason =
+			MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
+	range_element = MultiPointVectorField::CodomainElement(zero_velocity, reason);
+
+	// In the previous code, the point wasn't rendered if it wasn't in any boundary or network.
+
+#ifdef DEBUG
     // report a warning 
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 	std::cout << "WARNING: mesh point not in any Topology! point = " << llp << std::endl;
+#endif
 
 }
 
@@ -403,25 +341,24 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_network(
 		const GPlatesMaths::PointOnSphere &point, 
+		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
 		const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon)
 {
-	const double &colat_v = velocity_colat_lon.get_vector_colatitude().dval();
-	const double &lon_v = velocity_colat_lon.get_vector_longitude().dval();
-
-	// save the data in the lists 
-	d_velocity_colat_values.push_back( colat_v );
-	d_velocity_lon_values.push_back( lon_v );
-
 	const GPlatesMaths::Vector3D velocity_vector =
 			GPlatesMaths::convert_vector_from_colat_lon_to_xyz(point, velocity_colat_lon);
+	using namespace GPlatesAppLogic;
 
-	render_velocity(point, velocity_vector, GPlatesGui::Colour::get_black());
+	MultiPointVectorField::CodomainElement::Reason reason =
+			MultiPointVectorField::CodomainElement::InDeformationNetwork;
+	range_element = MultiPointVectorField::CodomainElement(velocity_vector, reason);
+	// In the previous code, the point was rendered black if it was in a deformation network.
 }
 
 
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_plate_polygon(
 		const GPlatesMaths::PointOnSphere &point,
+		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
 		GPlatesAppLogic::TopologyUtils::resolved_topological_boundary_seq_type
 				resolved_topological_boundaries_containing_point)
 {
@@ -431,48 +368,46 @@ GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 #endif
 
-	const boost::optional<GPlatesModel::integer_plate_id_type> recon_plate_id_opt =
+	boost::optional< std::pair<
+			GPlatesModel::integer_plate_id_type,
+			const GPlatesAppLogic::ResolvedTopologicalBoundary * > > recon_plate_id_opt =
 			GPlatesAppLogic::TopologyUtils::
 					find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 							resolved_topological_boundaries_containing_point);
 	if (!recon_plate_id_opt)
 	{
 		// FIXME: do not paint the point any color ; leave it ?
-		// save the data 
-		d_velocity_colat_values.push_back( 0 );
-		d_velocity_lon_values.push_back( 0 );
+
+		using namespace GPlatesAppLogic;
+
+		GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
+		MultiPointVectorField::CodomainElement::Reason reason =
+				MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
+		range_element = MultiPointVectorField::CodomainElement(zero_velocity, reason);
+
+		// In the previous code, the point wasn't rendered if it wasn't in any boundary or
+		// network.
+
 		return; 
 	}
 
-	const GPlatesModel::integer_plate_id_type recon_plate_id = *recon_plate_id_opt;
-
-	// get the color for the highest numeric id 
-	const boost::optional<GPlatesGui::Colour> plate_id_colour_opt =
-			d_colour_palette->get_colour(recon_plate_id);
-	const GPlatesGui::Colour &plate_id_colour = plate_id_colour_opt
-			? *plate_id_colour_opt
-			: GPlatesGui::Colour::get_olive();
+	GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt->first;
+	const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_topo_boundary = recon_plate_id_opt->second;
 
 	// compute the velocity for this point
 	const GPlatesMaths::Vector3D vector_xyz =
 			GPlatesAppLogic::PlateVelocityUtils::calc_velocity_vector(
 					point, *d_recon_tree_ptr, *d_recon_tree_2_ptr, recon_plate_id);
 
-	const GPlatesMaths::VectorColatitudeLongitude velocity_colat_lon = 
-			GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
+	using namespace GPlatesAppLogic;
 
-#ifdef DEBUG
-	std::cout
-			<< "colat_v = " << velocity_colat_lon.get_vector_colatitude()
-			<< " ; "
-			<< "lon_v = " << velocity_colat_lon.get_vector_longitude() << " ; " << std::endl;
-#endif
+	MultiPointVectorField::CodomainElement::Reason reason =
+			MultiPointVectorField::CodomainElement::InPlateBoundary;
+	range_element = MultiPointVectorField::CodomainElement(vector_xyz, reason,
+			recon_plate_id, resolved_topo_boundary);
 
-	// save the data 
-	d_velocity_colat_values.push_back( velocity_colat_lon.get_vector_colatitude().dval() );
-	d_velocity_lon_values.push_back( velocity_colat_lon.get_vector_longitude().dval() );
-
-	render_velocity(point, vector_xyz, plate_id_colour);
+	// In the previous code, the point was rendered according to the plate ID if it was in a
+	// plate boundary.
 }
 
 
@@ -524,45 +459,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id(
 			d_accumulator->d_recon_plate_id = gpml_plate_id.value();
 		}
 	}
-}
-
-
-#if 0
-void
-GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_data_block(
-		GPlatesPropertyValues::GmlDataBlock &gml_data_block)
-{
-
-}
-#endif
-
-
-void
-GPlatesFeatureVisitors::ComputationalMeshSolver::render_velocity(
-		const GPlatesMaths::PointOnSphere &point,
-		const GPlatesMaths::Vector3D &velocity,
-		const GPlatesGui::Colour &colour)
-{
-	// Create a RenderedGeometry using the reconstructed geometry.
-	const GPlatesViewOperations::RenderedGeometry rendered_point =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-					point,
-					colour,
-					GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT);
-
-	// Add to the rendered layer.
-	d_rendered_point_layer->add_rendered_geometry(rendered_point);
-
-	// Create a RenderedGeometry using the vector
-	const GPlatesViewOperations::RenderedGeometry rendered_vector =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
-					point,
-					velocity,
-					0.05f,
-					colour);
-
-	// Add to the rendered layer.
-	d_rendered_arrow_layer->add_rendered_geometry( rendered_vector );
 }
 
 

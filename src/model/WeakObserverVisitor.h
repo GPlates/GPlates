@@ -32,6 +32,7 @@
 namespace GPlatesAppLogic
 {
 	class AgeGridRaster;
+	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
@@ -139,6 +140,24 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
+		visit_age_grid_raster(
+				GPlatesAppLogic::AgeGridRaster &agr)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_multi_point_vector_field(
+				GPlatesAppLogic::MultiPointVectorField &mpvf)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
 		visit_reconstructed_feature_geometry(
 				GPlatesAppLogic::ReconstructedFeatureGeometry &rfg)
 		{  }
@@ -159,15 +178,6 @@ namespace GPlatesModel
 		void
 		visit_resolved_raster(
 				GPlatesAppLogic::ResolvedRaster &rr)
-		{  }
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_age_grid_raster(
-				GPlatesAppLogic::AgeGridRaster &agr)
 		{  }
 
 		/**

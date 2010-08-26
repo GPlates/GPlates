@@ -94,6 +94,11 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
+
+		virtual
+		void
+		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
 		virtual

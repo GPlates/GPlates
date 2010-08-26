@@ -976,6 +976,12 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 					resolved_geom_seq);
 	}
 
+	// Temporarily patch a small bug relating to the 'd_reconstruction_tree_map' member in
+	// class Reconstruction.  This bug results in duplicate pointers in 'resolved_geom_seq'.
+	std::set<const GPlatesAppLogic::ResolvedTopologicalBoundary *> unique_resolved_geom_set(
+			resolved_geom_seq.begin(), resolved_geom_seq.end());
+	resolved_geom_seq.assign(unique_resolved_geom_set.begin(), unique_resolved_geom_set.end());
+
 	// Export the various files.
 	export_files(resolved_geom_seq, reconstruction_time, output_filebasename);
 	

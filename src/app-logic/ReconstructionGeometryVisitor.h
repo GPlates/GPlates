@@ -1,13 +1,13 @@
 /* $Id$ */
 
 /**
- * \file 
- * File specific comments.
+ * @file 
+ * Contains the definition of the template class ReconstructionGeometryVisitorBase.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -56,6 +56,7 @@ namespace GPlatesAppLogic
 
 	// Forward declarations of ReconstructionGeometry derived types.
 	class AgeGridRaster;
+	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
@@ -80,6 +81,11 @@ namespace GPlatesAppLogic
 	class ReconstructionGeometryVisitorBase
 	{
 	public:
+		//! Typedef for @a MultiPointVectorField of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, MultiPointVectorField>::type
+						multi_point_vector_field_type;
+
 		//! Typedef for @a ReconstructedFeatureGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ReconstructedFeatureGeometry>::type
@@ -118,6 +124,16 @@ namespace GPlatesAppLogic
 		~ReconstructionGeometryVisitorBase() = 0;
 
 		// Please keep these reconstruction geometry derivations ordered alphabetically.
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+		{  }
+
 
 		/**
 		 * Override this function in your own derived class.

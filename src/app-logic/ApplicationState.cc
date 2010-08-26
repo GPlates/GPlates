@@ -61,6 +61,34 @@ namespace
 	{
 		return old_anchor_plate_id != new_anchor_plate_id;
 	}
+
+	void
+	connect_input_channels_for_velocity_field_calculator_layer(
+			GPlatesAppLogic::Layer& layer,
+			GPlatesAppLogic::ReconstructGraph* graph)
+	{
+		GPlatesAppLogic::ReconstructGraph::LayerConstIterator it = graph->begin();
+		GPlatesAppLogic::ReconstructGraph::LayerConstIterator it_end = graph->end();
+		for(; it != it_end; it++)
+		{
+			if(it->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&
+			   it->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
+			{
+				continue;
+			}
+			std::vector<GPlatesAppLogic::Layer::input_channel_definition_type> input_channel_definitions = 
+				layer.get_input_channel_definitions();
+			QString channel_name;
+			BOOST_FOREACH(GPlatesAppLogic::Layer::input_channel_definition_type channel_def,input_channel_definitions)
+			{
+				if(boost::tuples::get<1>(channel_def) == GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
+				{
+					channel_name = boost::tuples::get<0>(channel_def);
+				}
+			}
+			layer.connect_input_to_layer_output(*it,channel_name);
+		}
+	}
 }
 
 
@@ -527,6 +555,13 @@ GPlatesAppLogic::ApplicationState::create_layer(
 	new_layer.connect_input_to_file(
 			input_file,
 			main_input_feature_collection_channel);
+
+	if(new_layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
+	{
+		connect_input_channels_for_velocity_field_calculator_layer(
+				new_layer, 
+				d_reconstruct_graph.get());
+	}
 
 	/*
 	 * It's ugly cause it's gonna get removed soon.

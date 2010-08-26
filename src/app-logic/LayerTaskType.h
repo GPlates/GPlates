@@ -45,6 +45,7 @@ namespace GPlatesAppLogic
 			AGE_GRID,
 			TOPOLOGY_BOUNDARY_RESOLVER,
 			TOPOLOGY_NETWORK_RESOLVER,
+			VELOCITY_FIELD_CALCULATOR,
 
 			NUM_TYPES // This must be the last entry.
 		};
