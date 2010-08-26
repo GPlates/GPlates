@@ -456,12 +456,12 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd_for_export =
 			GPlatesPropertyValues::GpmlKeyValueDictionary::create();
 
-		GPlatesFeatureVisitors::KeyValueDictionaryFinder finder;
-		finder.visit_feature(feature_ref);
-		if (finder.number_of_found_dictionaries() != 0)
+		GPlatesFeatureVisitors::KeyValueDictionaryFinder kvd_finder;
+		kvd_finder.visit_feature(feature_ref);
+		if (kvd_finder.number_of_found_dictionaries() != 0)
 		{
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type found_kvd =
-				*(finder.found_key_value_dictionaries_begin());
+				*(kvd_finder.found_key_value_dictionaries_begin());
 			add_feature_fields_to_kvd(kvd_for_export,found_kvd);
 		}
 
@@ -490,5 +490,5 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 			geom_exporter.export_geometry(rfg->geometry(),kvd_for_export); 
 		}
 	}
-
 }
+
