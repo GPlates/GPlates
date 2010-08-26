@@ -75,7 +75,7 @@ endif (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
 # Include CGAL.
 include(${CGAL_USE_FILE})
 if ( NOT WIN32 )
-	# The system-provided CGAL CMake scripts so something silly: they insert
+	# The system-provided CGAL CMake scripts do something silly: they insert
 	# -g and -O<something> into CMAKE_CXX_FLAGS, which means that even if you
 	# want a Release build, you get debug symbols, and the optimisation level
 	# might conflict with the optimisation level you want for the particular

@@ -103,3 +103,4 @@ GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible
 		reconstruction_anchor_plate_id,
 		reconstruction_time);
 }
+

@@ -18,60 +18,6 @@
 # configures (which overrides our settings in this file) but in the second configure
 # (there appears to be two configure stages in cmake) CGAL does not override and then we add to CGAL's settings here.
 
-# Mac OSX specific configuration options:
-if(APPLE)
-    # Detect Mac OSX version.
-    execute_process(COMMAND "sw_vers" "-productVersion"
-        OUTPUT_VARIABLE OSX_VERSION
-        RESULT_VARIABLE OSX_VERSION_RESULT)
-    if (NOT OSX_VERSION_RESULT)
-        # Convert 10.4.11 to 10.4 for example.
-        string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" OSX_MAJOR_MINOR_VERSION ${OSX_VERSION})
-        string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" OSX_MAJOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
-        string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" OSX_MINOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
-        add_definitions(-DMAC_OSX_MAJOR_VERSION=${OSX_MAJOR_VERSION})
-        add_definitions(-DMAC_OSX_MINOR_VERSION=${OSX_MINOR_VERSION})
-        if (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
-            message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Tiger)")
-            add_definitions(-DMAC_OSX_TIGER)
-        elseif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.5")
-            message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Leopard)")
-            add_definitions(-DMAC_OSX_LEOPARD)
-        endif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
-    endif (NOT OSX_VERSION_RESULT)
-
-    # Detect g++ compiler version.
-    # Generate a fatal error if the version is not 4.2 or above.
-    # This is required by the CGAL dependency library because apparently there is a bug in g++ 4.0 on MacOS X
-    # that causes CGAL to fail (see http://www.cgal.org/FAQ.html#mac_optimization_bug).
-    execute_process(COMMAND "${CMAKE_CXX_COMPILER}" "-dumpversion"
-        OUTPUT_VARIABLE CXX_VERSION
-        RESULT_VARIABLE CXX_VERSION_RESULT)
-    if (NOT CXX_VERSION_RESULT)
-		message("g++ version=${CXX_VERSION}")
-        # Convert 4.2.1 to 4.2 for example.
-        string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" CXX_MAJOR_MINOR_VERSION ${CXX_VERSION})
-        string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" CXX_MAJOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
-        string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" CXX_MINOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
-        add_definitions(-DCXX_MAJOR_VERSION=${CXX_MAJOR_VERSION})
-        add_definitions(-DCXX_MINOR_VERSION=${CXX_MINOR_VERSION})
-        if (CXX_MAJOR_VERSION STRLESS "4")
-			message(FATAL_ERROR "g++ compiler version less than 4.0.")
-        elseif (CXX_MINOR_VERSION STRLESS "2")
-			message(FATAL_ERROR "Require g++ compiler version 4.2 or above for GPlates on MacOS X. "
-					"Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
-        endif (CXX_MAJOR_VERSION STRLESS "4")
-    endif (NOT CXX_VERSION_RESULT)
-
-    # Automatically adds compiler definitions to all subdirectories too.
-    add_definitions(-D__APPLE__)
-
-    # Mac OSX uses CMAKE_COMPILER_IS_GNUCXX compiler (always?) which is set later below.
-    # 'bind_at_load' causes undefined symbols to be referenced at load/launch.
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -bind_at_load")
-endif(APPLE)
-
-
 # Our Visual Studio configuration:
 if(MSVC)
     # Automatically adds compiler definitions to all subdirectories too.
@@ -117,6 +63,62 @@ endif(MSVC)
 
 # Our G++ configuration:
 if(CMAKE_COMPILER_IS_GNUCXX)
+
+	# Mac OSX specific configuration options:
+	if(APPLE)
+		# Detect Mac OSX version.
+		execute_process(COMMAND "sw_vers" "-productVersion"
+			OUTPUT_VARIABLE OSX_VERSION
+			RESULT_VARIABLE OSX_VERSION_RESULT)
+		if (NOT OSX_VERSION_RESULT)
+			# Convert 10.4.11 to 10.4 for example.
+			string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" OSX_MAJOR_MINOR_VERSION ${OSX_VERSION})
+			string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" OSX_MAJOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
+			string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" OSX_MINOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
+			add_definitions(-DMAC_OSX_MAJOR_VERSION=${OSX_MAJOR_VERSION})
+			add_definitions(-DMAC_OSX_MINOR_VERSION=${OSX_MINOR_VERSION})
+			if (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
+				message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Tiger)")
+				add_definitions(-DMAC_OSX_TIGER)
+			elseif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.5")
+				message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Leopard)")
+				add_definitions(-DMAC_OSX_LEOPARD)
+			endif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
+		endif (NOT OSX_VERSION_RESULT)
+
+		# Automatically adds compiler definitions to all subdirectories too.
+		add_definitions(-D__APPLE__)
+
+		# Mac OSX uses CMAKE_COMPILER_IS_GNUCXX compiler (always?) which is set later below.
+		# 'bind_at_load' causes undefined symbols to be referenced at load/launch.
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -bind_at_load")
+	endif(APPLE)
+
+	# Detect g++ compiler version.
+	# Generate a fatal error if the version is not 4.2 or above on MacOS X.
+	# This is required by the CGAL dependency library because apparently there is a bug in g++ 4.0 on MacOS X
+	# that causes CGAL to fail (see http://www.cgal.org/FAQ.html#mac_optimization_bug).
+	execute_process(COMMAND "${CMAKE_CXX_COMPILER}" "-dumpversion"
+		OUTPUT_VARIABLE CXX_VERSION
+		RESULT_VARIABLE CXX_VERSION_RESULT)
+	if (NOT CXX_VERSION_RESULT)
+		# Convert 4.2.1 to 4.2 for example.
+		string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" CXX_MAJOR_MINOR_VERSION ${CXX_VERSION})
+		string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" CXX_MAJOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
+		string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" CXX_MINOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
+		add_definitions(-DCXX_MAJOR_VERSION=${CXX_MAJOR_VERSION})
+		add_definitions(-DCXX_MINOR_VERSION=${CXX_MINOR_VERSION})
+		if(APPLE)
+			message("g++ version=${CXX_VERSION}")
+			if (CXX_MAJOR_VERSION STRLESS "4")
+				message(FATAL_ERROR "g++ compiler version less than 4.0.")
+			elseif (CXX_MINOR_VERSION STRLESS "2")
+				message(FATAL_ERROR "Require g++ compiler version 4.2 or above for GPlates on MacOS X. "
+						"Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
+			endif (CXX_MAJOR_VERSION STRLESS "4")
+		endif(APPLE)
+	endif (NOT CXX_VERSION_RESULT)
+
     if(APPLE)
         # The compilers under OSX seem to behave oddly with '-isystem'.
         # Headers in system include paths (and '-isystem' paths) should not generate warnings.
@@ -145,6 +147,13 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 		add_definitions(-DGPLATES_PUBLIC_RELEASE)
     else (GPLATES_PUBLIC_RELEASE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings_flags}")
+		# G++ 4.2 is not respecting pragmas turning off -Wuninitialized so we'll just
+		# shut it up here.
+		if (CXX_MAJOR_VERSION EQUAL "4")
+			if (CXX_MINOR_VERSION STRLESS "4")
+				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
+			endif (CXX_MINOR_VERSION STRLESS "4")
+		endif (CXX_MAJOR_VERSION EQUAL "4")
     endif (GPLATES_PUBLIC_RELEASE)
 
     #set(CMAKE_EXE_LINKER_FLAGS )
