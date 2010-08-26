@@ -145,8 +145,6 @@ set(srcs
     SvgExport.cc
     SvgExport.h
     TextRenderer.h
-    Texture.cc
-    Texture.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h
     TopologySectionsTable.cc

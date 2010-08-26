@@ -65,7 +65,13 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
-		dropEvent(QDropEvent *event_);
+		dragEnterEvent(
+				QDragEnterEvent *event_);
+
+		virtual
+		void
+		dropEvent(
+				QDropEvent *event_);
 
 	protected slots:
 

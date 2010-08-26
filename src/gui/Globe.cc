@@ -26,7 +26,6 @@
  */
 
 #include "Globe.h"
-#include "Texture.h"
 
 #include "maths/MathsUtils.h"
 
@@ -43,7 +42,6 @@ GPlatesGui::Globe::Globe(
 		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		ProxiedTexture &texture_,
 		RenderSettings &render_settings,
 		RasterColourSchemeMap &raster_colour_scheme_map,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
@@ -53,7 +51,6 @@ GPlatesGui::Globe::Globe(
 	d_render_settings(render_settings),
 	d_rendered_geom_collection(rendered_geom_collection),
 	d_visual_layers(visual_layers),
-	d_texture(texture_),
 	d_nurbs_renderer(GPlatesOpenGL::GLUNurbsRenderer::create()),
 	d_sphere(Colour(0.35f, 0.35f, 0.35f)),
 	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
@@ -81,9 +78,6 @@ GPlatesGui::Globe::Globe(
 	d_render_settings(existing_globe.d_render_settings),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
 	d_visual_layers(existing_globe.d_visual_layers),
-	// FIXME: This assumes textures are shared across OpenGL contexts.
-	// The Texture class will get removed soon anyway.
-	d_texture(existing_globe.d_texture),
 	d_nurbs_renderer(GPlatesOpenGL::GLUNurbsRenderer::create()),
 	d_sphere(Colour(0.35f, 0.35f, 0.35f)),
 	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
@@ -138,16 +132,6 @@ GPlatesGui::Globe::paint(
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type sphere_node =
 			create_rendered_layer_node(globe_orientation_transform_node);
 	d_sphere.paint(sphere_node);
-
-#if 0
-	// Render the global texture.
-	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type texture_node =
-			create_rendered_layer_node(globe_orientation_transform_node);
-	d_texture->paint(
-			texture_node,
-			d_persistent_opengl_objects->get_list_objects().get_opengl_shared_state()
-				->get_texture_resource_manager());
-#endif
 
 	// Draw the rendered geometries.
 	d_rendered_geom_collection_painter.set_scale(scale);
@@ -210,25 +194,6 @@ GPlatesGui::Globe::paint_vector_output(
 	// Restore previous rendered layer active state.
 	d_rendered_geom_collection.restore_main_layer_active_state(
 		prev_rendered_layer_active_state);
-}
-
-
-void
-GPlatesGui::Globe::toggle_raster_display()
-{
-	d_texture->toggle();
-}
-
-void
-GPlatesGui::Globe::enable_raster_display()
-{
-	d_texture->set_enabled(true);
-}
-
-void
-GPlatesGui::Globe::disable_raster_display()
-{
-	d_texture->set_enabled(false);
 }
 
 

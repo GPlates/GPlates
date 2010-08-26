@@ -174,6 +174,13 @@ GPlatesPresentation::VisualLayers::order_end() const
 }
 
 
+const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &
+GPlatesPresentation::VisualLayers::get_layer_order() const
+{
+	return d_layer_order;
+}
+
+
 void
 GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 {
@@ -295,6 +302,10 @@ GPlatesPresentation::VisualLayers::handle_layer_about_to_be_removed(
 		GPlatesAppLogic::Layer layer)
 {
 	remove_layer(layer);
+
+	// We need to refresh all layers now in case other layers were referencing the
+	// layer that just got removed.
+	refresh_all_layers();
 }
 
 
@@ -466,6 +477,9 @@ GPlatesPresentation::VisualLayers::move_layer(
 		emit layer_order_changed(to_index, from_index);
 	}
 
+	// FIXME: There has to be a better way, but let's just do a full reconstruction
+	// so the changes in layer ordering get reflected in the main window.
+	d_application_state.reconstruct();
 }
 
 

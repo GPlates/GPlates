@@ -148,6 +148,7 @@ namespace GPlatesPropertyValues
 				const composite_value_type &range_parameters_)
 		{
 			d_range_parameters = range_parameters_;
+			update_instance_id();
 		}
 
 		const XsString::non_null_ptr_to_const_type &
@@ -162,6 +163,7 @@ namespace GPlatesPropertyValues
 		{
 			d_file_name = file_name_;
 			d_proxied_raster_cache->set_file_name(file_name_->value());
+			update_instance_id();
 		}
 
 		const XsString::non_null_ptr_to_const_type &
@@ -175,6 +177,7 @@ namespace GPlatesPropertyValues
 				const XsString::non_null_ptr_to_const_type &file_structure_)
 		{
 			d_file_structure = file_structure_;
+			update_instance_id();
 		}
 
 		const boost::optional<XsString::non_null_ptr_to_const_type> &
@@ -188,6 +191,7 @@ namespace GPlatesPropertyValues
 				const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_)
 		{
 			d_mime_type = mime_type_;
+			update_instance_id();
 		}
 
 		const boost::optional<XsString::non_null_ptr_to_const_type> &
@@ -201,6 +205,7 @@ namespace GPlatesPropertyValues
 				const boost::optional<XsString::non_null_ptr_to_const_type> &compression_)
 		{
 			d_compression = compression_;
+			update_instance_id();
 		}
 
 		/**

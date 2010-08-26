@@ -118,7 +118,6 @@ namespace GPlatesQtWidgets
 	class SaveFileDialog;
 	class SetCameraViewpointDialog;
 	class SetProjectionDialog;
-	class RasterPropertiesDialog;
 	class SetVGPVisibilityDialog;
 	class ShapefileAttributeViewerDialog;
 	class SpecifyAnchoredPlateIdDialog;
@@ -384,14 +383,6 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_animate_dialog();
 
-		// FIXME: Remove.
-		void
-		open_raster();
-
-		// FIXME: Remove.
-		void
-		open_time_dependent_raster_sequence();
-
 		void
 		update_tools_and_status_message();
 
@@ -471,7 +462,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
-		boost::scoped_ptr<RasterPropertiesDialog> d_raster_properties_dialog_ptr;
 		boost::scoped_ptr<SetVGPVisibilityDialog> d_set_vgp_visibility_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
@@ -549,14 +539,6 @@ namespace GPlatesQtWidgets
 		 */
 		TaskPanel *d_task_panel_ptr;
 
-		// FIXME: Remove these out of ViewportWindow.
-
-		//!  map a time value to a raster filename
-		QMap<int,QString> d_time_dependent_raster_map;
-
-		//! If true, the georeferencing will be reset when load_raster is next called.
-		bool d_georeferencing_needs_to_be_reset;
-
 		//! The last path used for opening raster files.
 		QString d_open_file_path; 
 
@@ -600,13 +582,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_dock_context_menus();
-
-		bool
-		load_raster(
-				QString filename);
-
-		void
-		update_time_dependent_raster();
 
 		void
 		set_internal_release_window_title();
@@ -653,12 +628,6 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_strings_display();
-
-		void
-		enable_raster_display();
-
-		void
-		pop_up_raster_properties_dialog();
 
 		void
 		pop_up_shapefile_attribute_viewer_dialog();

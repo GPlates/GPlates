@@ -90,9 +90,11 @@ namespace GPlatesGui
 		QStringList
 		mimeTypes() const;
 
+#if 0
 		QMimeData *
 		mimeData(
 				const QModelIndexList &indices) const;
+#endif
 
 		virtual
 		bool

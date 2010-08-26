@@ -1,170 +1,159 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>SnapNearbyVerticesWidget</class>
- <widget class="QWidget" name="SnapNearbyVerticesWidget" >
-  <property name="geometry" >
+ <widget class="QWidget" name="SnapNearbyVerticesWidget">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>179</width>
-    <height>163</height>
+    <width>200</width>
+    <height>170</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QGridLayout" >
-   <property name="leftMargin" >
+  <layout class="QGridLayout">
+   <property name="margin">
     <number>2</number>
    </property>
-   <property name="topMargin" >
-    <number>2</number>
-   </property>
-   <property name="rightMargin" >
-    <number>2</number>
-   </property>
-   <property name="bottomMargin" >
-    <number>2</number>
-   </property>
-   <property name="horizontalSpacing" >
+   <property name="spacing">
     <number>4</number>
    </property>
-   <property name="verticalSpacing" >
-    <number>4</number>
-   </property>
-   <item row="0" column="0" >
-    <widget class="QGroupBox" name="groupbox_vertices" >
-     <property name="title" >
-      <string>Snap nearby vertices</string>
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupbox_vertices">
+     <property name="title">
+      <string>Snap Nearby Vertices</string>
      </property>
-     <property name="flat" >
+     <property name="flat">
       <bool>true</bool>
      </property>
-     <layout class="QGridLayout" >
-      <item row="0" column="0" >
-       <widget class="QCheckBox" name="checkbox_vertices" >
-        <property name="toolTip" >
+     <layout class="QGridLayout">
+      <property name="leftMargin">
+       <number>2</number>
+      </property>
+      <property name="rightMargin">
+       <number>2</number>
+      </property>
+      <property name="horizontalSpacing">
+       <number>6</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>2</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="checkbox_vertices">
+        <property name="toolTip">
          <string>Snap the nearest vertex of non-focussed geometries to the new focussed vertex position</string>
         </property>
-        <property name="text" >
+        <property name="text">
          <string>S&amp;nap nearby vertices</string>
         </property>
-        <property name="autoRepeat" >
+        <property name="autoRepeat">
          <bool>false</bool>
         </property>
        </widget>
       </item>
-      <item row="1" column="0" >
-       <widget class="QFrame" name="frame_vertices" >
-        <property name="frameShape" >
-         <enum>QFrame::StyledPanel</enum>
+      <item row="1" column="0">
+       <widget class="QFrame" name="frame_vertices">
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
         </property>
-        <property name="frameShadow" >
+        <property name="frameShadow">
          <enum>QFrame::Plain</enum>
         </property>
-        <property name="lineWidth" >
+        <property name="lineWidth">
          <number>1</number>
         </property>
-        <property name="midLineWidth" >
+        <property name="midLineWidth">
          <number>1</number>
         </property>
-        <layout class="QGridLayout" >
-         <property name="leftMargin" >
+        <layout class="QGridLayout">
+         <property name="verticalSpacing">
           <number>2</number>
          </property>
-         <property name="topMargin" >
+         <property name="margin">
           <number>2</number>
          </property>
-         <property name="rightMargin" >
-          <number>2</number>
-         </property>
-         <property name="bottomMargin" >
-          <number>2</number>
-         </property>
-         <item row="0" column="0" >
-          <layout class="QHBoxLayout" >
+         <item row="0" column="0">
+          <layout class="QHBoxLayout">
+           <property name="spacing">
+            <number>6</number>
+           </property>
            <item>
-            <widget class="QLabel" name="label_threshold" >
-             <property name="text" >
-              <string>Threshold</string>
+            <widget class="QLabel" name="label_threshold">
+             <property name="text">
+              <string>Threshold:</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="spinbox_threshold" >
-             <property name="minimumSize" >
-              <size>
-               <width>90</width>
-               <height>0</height>
-              </size>
+            <widget class="QDoubleSpinBox" name="spinbox_threshold">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
-             <property name="suffix" >
+             <property name="suffix">
               <string>°</string>
              </property>
             </widget>
            </item>
           </layout>
          </item>
-         <item row="1" column="0" >
-          <widget class="QCheckBox" name="checkbox_plate_id" >
-           <property name="toolTip" >
+         <item row="1" column="0">
+          <widget class="QCheckBox" name="checkbox_plate_id">
+           <property name="toolTip">
             <string>Only snap nearby geometries with the specified plate id</string>
            </property>
-           <property name="text" >
-            <string>Restri&amp;ct to plate id</string>
+           <property name="text">
+            <string>Restri&amp;ct to plate ID</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="0" >
-          <widget class="QFrame" name="frame_plate_id" >
-           <property name="frameShape" >
-            <enum>QFrame::StyledPanel</enum>
+         <item row="2" column="0">
+          <widget class="QFrame" name="frame_plate_id">
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
            </property>
-           <property name="frameShadow" >
+           <property name="frameShadow">
             <enum>QFrame::Raised</enum>
            </property>
-           <layout class="QGridLayout" >
-            <property name="leftMargin" >
+           <layout class="QGridLayout">
+            <property name="horizontalSpacing">
              <number>1</number>
             </property>
-            <property name="topMargin" >
-             <number>1</number>
-            </property>
-            <property name="rightMargin" >
-             <number>1</number>
-            </property>
-            <property name="bottomMargin" >
-             <number>1</number>
-            </property>
-            <property name="horizontalSpacing" >
-             <number>1</number>
-            </property>
-            <property name="verticalSpacing" >
+            <property name="verticalSpacing">
              <number>0</number>
             </property>
-            <item row="0" column="0" >
-             <layout class="QHBoxLayout" >
-              <property name="spacing" >
-               <number>0</number>
+            <property name="margin">
+             <number>1</number>
+            </property>
+            <item row="0" column="0">
+             <layout class="QHBoxLayout">
+              <property name="spacing">
+               <number>6</number>
               </property>
               <item>
-               <widget class="QLabel" name="label_plate_id" >
-                <property name="text" >
-                 <string>Plate id</string>
+               <widget class="QLabel" name="label_plate_id">
+                <property name="text">
+                 <string>Plate ID:</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="spinbox_plate_id" >
-                <property name="minimumSize" >
-                 <size>
-                  <width>90</width>
-                  <height>0</height>
-                 </size>
+               <widget class="QSpinBox" name="spinbox_plate_id">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
                 </property>
-                <property name="wrapping" >
+                <property name="wrapping">
                  <bool>false</bool>
                 </property>
-                <property name="maximum" >
+                <property name="maximum">
                  <number>999999999</number>
                 </property>
                </widget>

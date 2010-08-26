@@ -207,6 +207,7 @@ namespace GPlatesPropertyValues
 				GmlProperty gml_property_)
 		{
 			d_gml_property = gml_property_;
+			update_instance_id();
 		}
 
 		/**

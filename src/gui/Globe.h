@@ -62,8 +62,6 @@ namespace GPlatesGui
 {
 	class GlobeVisibilityTester;
 	class RasterColourSchemeMap;
-	class Texture;
-	typedef GPlatesUtils::VirtualProxy<Texture> ProxiedTexture;
 
 	class Globe
 	{
@@ -73,7 +71,6 @@ namespace GPlatesGui
 				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				ProxiedTexture &texture_,
 				RenderSettings &render_settings,
 				RasterColourSchemeMap &raster_colour_scheme_map,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
@@ -149,12 +146,6 @@ namespace GPlatesGui
 		void
 		disable_raster_display();
 
-		Texture &
-		texture()
-		{
-			return *d_texture;
-		}
-
 	private:
 		/**
 		 * Keeps track of OpenGL-related objects that persist from one render to the next.
@@ -168,8 +159,6 @@ namespace GPlatesGui
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
-
-		ProxiedTexture &d_texture;
 
 		/**
 		 * The GLUNurbsRenderer used to draw large GreatCircleArcs.

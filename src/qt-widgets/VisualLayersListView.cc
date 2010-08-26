@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDropEvent>
+
 #include "VisualLayersListView.h"
 
 #include "VisualLayersDelegate.h"
@@ -66,7 +68,24 @@ GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
 
 
 void
-GPlatesQtWidgets::VisualLayersListView::dropEvent(QDropEvent *event_)
+GPlatesQtWidgets::VisualLayersListView::dragEnterEvent(
+		QDragEnterEvent *event_)
+{
+	QListView::dragEnterEvent(event_);
+
+	// Check that we're being dropped on from a target in the same application.
+	// source() returns NULL if it's being dragged from another application,
+	// including the case where that other application is another instance of GPlates.
+	if (!event_->source())
+	{
+		event_->ignore();
+	}
+}
+
+
+void
+GPlatesQtWidgets::VisualLayersListView::dropEvent(
+		QDropEvent *event_)
 {
 	QListView::dropEvent(event_);
 }

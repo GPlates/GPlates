@@ -706,15 +706,3 @@ GPlatesQtWidgets::ReconstructionViewWidget::map_is_active()
 	return d_globe_and_map_widget_ptr->get_map_view().isVisible();
 }
 
-void
-GPlatesQtWidgets::ReconstructionViewWidget::enable_raster_display()
-{
-	d_globe_and_map_widget_ptr->get_globe_canvas().enable_raster_display();
-}
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::disable_raster_display()
-{
-	d_globe_and_map_widget_ptr->get_globe_canvas().disable_raster_display();
-}
-

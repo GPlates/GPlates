@@ -56,6 +56,8 @@ GPlatesPropertyValues::GmlGridEnvelope::set_low_and_high(
 
 	d_low = low_;
 	d_high = high_;
+
+	update_instance_id();
 }
 
 

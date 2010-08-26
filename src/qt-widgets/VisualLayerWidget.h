@@ -31,7 +31,7 @@
 #include <QLabel>
 #include <QPixmap>
 #include <QWidget>
-#include <QFormLayout>
+#include <QVBoxLayout>
 #include <QToolButton>
 #include <QMenu>
 
@@ -205,14 +205,14 @@ namespace GPlatesQtWidgets
 			populate_with_feature_collections(
 					const GPlatesAppLogic::Layer &layer,
 					const QString &input_data_channel,
-					QMenu *menu);
+					QToolButton *button);
 
 			void
 			populate_with_layers(
 					const GPlatesAppLogic::Layer &layer,
 					const QString &input_data_channel,
 					GPlatesAppLogic::Layer::LayerInputDataType input_data_type,
-					QMenu *menu);
+					QToolButton *button);
 
 			GPlatesGui::VisualLayersProxy &d_visual_layers;
 
@@ -228,7 +228,7 @@ namespace GPlatesQtWidgets
 			 * A pointer to the layout of the Qt container that holds the widgets that
 			 * display input connections.
 			 */
-			QFormLayout *d_input_connection_widgets_layout;
+			QVBoxLayout *d_input_connection_widgets_layout;
 
 			/**
 			 * A pool of InputConnectionWidgets that can be used to display information
@@ -269,7 +269,8 @@ namespace GPlatesQtWidgets
 
 		void
 		set_data(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
+				int row);
 
 	private slots:
 
@@ -280,6 +281,28 @@ namespace GPlatesQtWidgets
 		handle_visibility_icon_clicked();
 
 	private:
+
+		class DraggableWidget:
+				public QWidget
+		{
+		public:
+
+			DraggableWidget(
+					QWidget *parent_ = NULL);
+
+			virtual
+			void
+			mousePressEvent(
+					QMouseEvent *event_);
+
+			void
+			set_row(
+					int row);
+
+		private:
+
+			int d_row;
+		};
 
 		void
 		make_signal_slot_connections();
@@ -304,6 +327,8 @@ namespace GPlatesQtWidgets
 		 * a visual layer.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
+
+		DraggableWidget *d_left_widget;
 
 		/**
 		 * A pointer to the expand/collapse icon on the left. For this icon, 'on'
@@ -330,7 +355,7 @@ namespace GPlatesQtWidgets
 		 *
 		 * Memory managed by Qt.
 		 */
-		QFormLayout *d_input_channels_widget_layout;
+		QVBoxLayout *d_input_channels_widget_layout;
 
 		/**
 		 * A pool of InputChannelWidgets that can be used to display information about

@@ -110,6 +110,14 @@ namespace GPlatesPropertyValues
 			return d_band_names;
 		}
 
+		void
+		set_band_names(
+				const band_names_list_type &band_names_)
+		{
+			d_band_names = band_names_;
+			update_instance_id();
+		}
+
 		/**
 		 * Accept a ConstFeatureVisitor instance.
 		 *

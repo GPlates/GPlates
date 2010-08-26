@@ -196,11 +196,13 @@ void
 GPlatesQtWidgets::RasterPropertiesDialog::set_raster_colour_map_filename(
 		const QString &filename)
 {
+#if 0
 	d_view_state->set_raster_colour_map_filename(filename);
 	d_view_state->update_texture_from_raw_raster();
 
 	// Let the user know if the CPT file is invalid.
 	invalid_cpt_file_label->setVisible(d_view_state->is_raster_colour_map_invalid());
+#endif
 }
 
 
@@ -413,6 +415,7 @@ namespace
 void
 GPlatesQtWidgets::RasterPropertiesDialog::populate_from_data()
 {
+#if 0
 	enable_all_groupboxes(true);
 
 	GPlatesPropertyValues::RawRaster::non_null_ptr_type raw_raster =
@@ -469,7 +472,6 @@ GPlatesQtWidgets::RasterPropertiesDialog::populate_from_data()
 		properties_treewidget->addTopLevelItem(statistics_item);
 	}
 
-#if 0
 	// Populate the georeferencing groupbox.
 	boost::optional<std::pair<unsigned int, unsigned int> > raster_size =
 		GPlatesPropertyValues::RawRasterUtils::get_raster_size(*raw_raster);
@@ -485,7 +487,6 @@ GPlatesQtWidgets::RasterPropertiesDialog::populate_from_data()
 	{
 		d_georeferencing_widget->setEnabled(false);
 	}
-#endif
 
 	// Populate the colour map groupbox.
 	d_colour_map_lineedit->setText(d_view_state->get_raster_colour_map_filename());
@@ -497,5 +498,6 @@ GPlatesQtWidgets::RasterPropertiesDialog::populate_from_data()
 	{
 		colour_map_groupbox->setEnabled(true);
 	}
+#endif
 }
 

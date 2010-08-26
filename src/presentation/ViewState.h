@@ -71,8 +71,6 @@ namespace GPlatesGui
 	class MapTransform;
 	class RasterColourSchemeMap;
 	class RenderSettings;
-	class Texture;
-	typedef GPlatesUtils::VirtualProxy<Texture> ProxiedTexture;
 	class ViewportProjection;
 	class ViewportZoom;
 }
@@ -219,57 +217,6 @@ namespace GPlatesPresentation
 		GPlatesAppLogic::VGPRenderSettings &
 		get_vgp_render_settings();
 
-		// FIXME: Remove all raster/texture related stuff out of ViewState.
-
-		GPlatesGui::ProxiedTexture &
-		get_texture();
-
-
-		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::RawRaster>::non_null_ptr_type
-		get_raw_raster();
-
-
-		void
-		set_raw_raster(
-				GPlatesGlobal::PointerTraits<GPlatesPropertyValues::RawRaster>::non_null_ptr_type raw_raster);
-
-
-		bool
-		update_texture_from_raw_raster();
-
-
-		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::Georeferencing>::non_null_ptr_type
-		get_georeferencing();
-
-
-		void
-		update_texture_extents();
-
-
-		const QString &
-		get_raster_filename() const;
-
-
-		void
-		set_raster_filename(
-				const QString &filename);
-
-
-		const QString &
-		get_raster_colour_map_filename() const;
-
-
-		void
-		set_raster_colour_map_filename(
-				const QString &filename);
-
-
-		bool
-		is_raster_colour_map_invalid() const
-		{
-			return d_is_raster_colour_map_invalid;
-		}
-
 
 		GPlatesGui::RasterColourSchemeMap &
 		get_raster_colour_scheme_map();
@@ -357,12 +304,6 @@ namespace GPlatesPresentation
 		 * Stores render settings for VirtualGeomagneticPole features.                                                                     
 		 */
 		boost::scoped_ptr<GPlatesAppLogic::VGPRenderSettings> d_vgp_render_settings;
-
-		/**
-		 * A (single) texture to be texture-mapped over the sphere surface.
-		 * Delay creation until it's used.
-		 */
-		boost::scoped_ptr<GPlatesGui::ProxiedTexture> d_texture;
 
 		/**
 		 * Stores the raw bits in the currently loaded raster.

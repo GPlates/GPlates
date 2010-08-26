@@ -61,38 +61,20 @@ namespace GPlatesModel
 
 
 const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
-GPlatesModel::FeatureCollectionHandle::create(
-		const boost::optional<UnicodeString> &filename_)
+GPlatesModel::FeatureCollectionHandle::create()
 {
-	return non_null_ptr_type(
-			new FeatureCollectionHandle(
-				filename_));
+	return non_null_ptr_type(new FeatureCollectionHandle());
 }
 
 
 const GPlatesModel::FeatureCollectionHandle::weak_ref
 GPlatesModel::FeatureCollectionHandle::create(
-		const WeakReference<FeatureStoreRootHandle> &feature_store_root,
-		const boost::optional<UnicodeString> &filename_)
+		const WeakReference<FeatureStoreRootHandle> &feature_store_root)
 {
-	non_null_ptr_type feature_collection = create(filename_);
+	non_null_ptr_type feature_collection = create();
 	FeatureStoreRootHandle::iterator iter = feature_store_root->add(feature_collection);
 
 	return (*iter)->reference();
-}
-
-
-boost::optional<UnicodeString> &
-GPlatesModel::FeatureCollectionHandle::filename()
-{
-	return d_filename;
-}
-
-
-const boost::optional<UnicodeString> &
-GPlatesModel::FeatureCollectionHandle::filename() const
-{
-	return d_filename;
 }
 
 
@@ -124,12 +106,10 @@ GPlatesModel::FeatureCollectionHandle::tags() const
 }
 
 
-GPlatesModel::FeatureCollectionHandle::FeatureCollectionHandle(
-		const boost::optional<UnicodeString> &filename_) :
+GPlatesModel::FeatureCollectionHandle::FeatureCollectionHandle() :
 	BasicHandle<FeatureCollectionHandle>(
 			this,
 			revision_type::create()),
-	d_filename(filename_),
 	d_contains_unsaved_changes(false),
 	d_weak_ref_to_self(WeakReference<FeatureCollectionHandle>(*this))
 {

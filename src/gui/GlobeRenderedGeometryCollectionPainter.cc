@@ -125,3 +125,20 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 	// We've already visited the rendered geometry layer so don't visit its rendered geometries.
 	return false;
 }
+
+
+void
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::set_scale(
+		float scale)
+{
+	d_scale = scale;
+}
+
+
+const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type *
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::get_custom_child_layers_order(
+		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer)
+{
+	return &d_visual_layers.get_layer_order();
+}
+

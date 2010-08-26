@@ -139,6 +139,7 @@ namespace GPlatesPropertyValues
 				const GmlGridEnvelope::non_null_ptr_to_const_type &limits_)
 		{
 			d_limits = limits_;
+			update_instance_id();
 		}
 
 		const axes_list_type &
@@ -152,6 +153,7 @@ namespace GPlatesPropertyValues
 				const axes_list_type &axes_)
 		{
 			d_axes = axes_;
+			update_instance_id();
 		}
 
 		const GmlPoint::non_null_ptr_to_const_type &
@@ -168,6 +170,8 @@ namespace GPlatesPropertyValues
 
 			// Invalidate the georeferencing cache because that's calculated using the origin.
 			d_cached_georeferencing = boost::none;
+
+			update_instance_id();
 		}
 
 		const offset_vector_list_type &
@@ -185,6 +189,8 @@ namespace GPlatesPropertyValues
 			// Invalidate the georeferencing cache because that's calculated using the
 			// offset vectors.
 			d_cached_georeferencing = boost::none;
+
+			update_instance_id();
 		}
 
 		const xml_attributes_type &
@@ -198,6 +204,7 @@ namespace GPlatesPropertyValues
 				const xml_attributes_type &xml_attributes_)
 		{
 			d_xml_attributes = xml_attributes_;
+			update_instance_id();
 		}
 
 		const boost::optional<Georeferencing::non_null_ptr_to_const_type> &

@@ -119,10 +119,18 @@ GPlatesQtWidgets::VisualLayersDelegate::setEditorData(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Remember that the visual_layer_editor is editing visual_layer.
-	d_editor_ptrs.insert(std::make_pair(visual_layer, visual_layer_editor));
+	editor_ptr_map_type::iterator iter = d_editor_ptrs.find(visual_layer);
+	if (iter == d_editor_ptrs.end())
+	{
+		d_editor_ptrs.insert(std::make_pair(visual_layer, visual_layer_editor));
+	}
+	else
+	{
+		iter->second = visual_layer_editor;
+	}
 
 	// Update the edit widget.
-	visual_layer_editor->set_data(visual_layer);
+	visual_layer_editor->set_data(visual_layer, index.row());
 
 	// The sizeHint of the editor widget may well have changed because we updated
 	// the data displayed in it, so let's tell any views attached about this.

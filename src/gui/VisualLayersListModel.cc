@@ -135,7 +135,7 @@ GPlatesGui::VisualLayersListModel::mimeTypes() const
 	return QStringList(VISUAL_LAYERS_MIME_TYPE);
 }
 
-
+#if 0
 QMimeData *
 GPlatesGui::VisualLayersListModel::mimeData(
 		const QModelIndexList &indices) const
@@ -161,7 +161,7 @@ GPlatesGui::VisualLayersListModel::mimeData(
 
 	return mime_data;
 }
-
+#endif
 
 bool
 GPlatesGui::VisualLayersListModel::dropMimeData(

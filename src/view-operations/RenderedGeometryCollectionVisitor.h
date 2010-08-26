@@ -73,6 +73,9 @@ namespace GPlatesViewOperations
 					main_rendered_layer_type);
 		}
 
+		// FIXME: The following virtual function should return a boost::optional of
+		// ForwardReadableRange, to avoid having to deal with memory issues.
+
 		/**
 		 * Returns a sequence of child layer indices used for custom order of
 		 * visitation of child layers for the given main layer.

@@ -43,7 +43,6 @@
 
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
 
-#include <QGLWidget>
 
 namespace GPlatesViewOperations
 {
@@ -62,7 +61,8 @@ namespace GPlatesGui
 	 * 3D orthographic view of the globe using OpenGL.
 	 */
 	class GlobeRenderedGeometryCollectionPainter :
-			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<>,
+			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
+				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>,
 			private boost::noncopyable
 	{
 	public:
@@ -91,10 +91,12 @@ namespace GPlatesGui
 
 		void
 		set_scale(
-				float scale)
-		{
-			d_scale = scale;
-		}
+				float scale);
+
+		virtual
+		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type *
+		get_custom_child_layers_order(
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer);
 
 	private:
 		virtual

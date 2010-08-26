@@ -50,7 +50,6 @@
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/QGLWidgetTextRenderer.h"
 #include "gui/SvgExport.h"
-#include "gui/Texture.h"
 
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
@@ -222,7 +221,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			d_gl_persistent_objects,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
-			view_state.get_texture(),
 			view_state.get_render_settings(),
 			view_state.get_raster_colour_scheme_map(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
@@ -332,13 +330,6 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	QObject::connect(
 			&(d_view_state.get_render_settings()),
 			SIGNAL(settings_changed()),
-			this,
-			SLOT(update_canvas()));
-
-	// Update canvas whenever Texture gets changed.
-	QObject::connect(
-			&(d_globe.texture()),
-			SIGNAL(texture_changed()),
 			this,
 			SLOT(update_canvas()));
 
@@ -966,28 +957,6 @@ GPlatesQtWidgets::GlobeCanvas::draw_render_graph(
 
 	// Draw the render queue.
 	render_queue->draw(*d_gl_render_target_manager);
-}
-
-
-// raster display
-void
-GPlatesQtWidgets::GlobeCanvas::toggle_raster_image()
-{
-	d_globe.toggle_raster_display();
-	update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::enable_raster_display()
-{
-	d_globe.enable_raster_display();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::disable_raster_display()
-{
-	d_globe.disable_raster_display();
 }
 
 

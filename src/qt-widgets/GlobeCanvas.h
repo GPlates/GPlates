@@ -47,7 +47,6 @@
 #include "gui/ColourScheme.h"
 #include "gui/Globe.h"
 #include "gui/PersistentOpenGLObjects.h"
-#include "gui/Texture.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -79,10 +78,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesQtWidgets 
 {
-	// Remove this when there is a ViewState class.
-	class ViewportWindow;
-	class Texture;
-
 	class GlobeCanvas:
 			public QGLWidget,
 			public GPlatesViewOperations::QueryProximityThreshold,
@@ -224,22 +219,6 @@ namespace GPlatesQtWidgets
 		{
 			return d_mouse_pointer_is_on_globe;
 		}
-
-		void
-		toggle_raster_image();
-
-		void
-		enable_raster_display();
-
-		void
-		disable_raster_display();
-
-#if 0
-		void
-		draw_colour_legend(
-			QPainter *painter,
-			GPlatesGui::Texture &texture);
-#endif
 
 		virtual
 		void

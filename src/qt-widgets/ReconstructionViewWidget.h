@@ -146,12 +146,6 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesMaths::LatLonPoint>
 		camera_llp();
 
-		void
-		enable_raster_display();
-
-		void
-		disable_raster_display();
-
 	public slots:
 
 		void

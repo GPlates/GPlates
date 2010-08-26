@@ -35,6 +35,11 @@
 #include <QMetaType>
 #include <QIcon>
 #include <QPixmap>
+#include <QMessageBox>
+#include <QMimeData>
+#include <QByteArray>
+#include <QDataStream>
+#include <QDrag>
 #include <QDebug>
 
 #include "VisualLayerWidget.h"
@@ -53,6 +58,7 @@
 #include "gui/Colour.h"
 #include "gui/HTMLColourNames.h"
 #include "gui/LayerTaskTypeInfo.h"
+#include "gui/VisualLayersListModel.h"
 #include "gui/VisualLayersProxy.h"
 
 #include "presentation/VisualLayer.h"
@@ -253,6 +259,8 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 	d_view_state(view_state),
 	d_open_file_path(open_file_path),
 	d_read_errors_dialog(read_errors_dialog),
+	d_left_widget(
+			new DraggableWidget(this)),
 	d_expand_icon(
 			new VisualLayerWidgetInternals::ToggleIcon(
 				VisualLayerWidgetInternals::get_expanded_icon(),
@@ -273,8 +281,8 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 	setupUi(this);
 
 	// Give the input_channels_widget a layout.
-	d_input_channels_widget_layout = new QFormLayout(input_channels_widget);
-	d_input_channels_widget_layout->setContentsMargins(0, 6, 0, 0);
+	d_input_channels_widget_layout = new QVBoxLayout(input_channels_widget);
+	d_input_channels_widget_layout->setContentsMargins(2, 6, 2, 0);
 
 	// Install labels for the layer name and type.
 	QtWidgetUtils::add_widget_to_placeholder(
@@ -287,21 +295,23 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 			d_type_label,
 			type_label_placeholder_widget);
 
-	// Install the icons into their placeholders.
+	// Create the left widget, which shows the stripe of colour.
 	QtWidgetUtils::add_widget_to_placeholder(
-			d_expand_icon,
-			expand_icon_placeholder_widget);
+			d_left_widget,
+			left_placeholder_widget);
+	d_left_widget->setAutoFillBackground(true);
+	QVBoxLayout *left_layout = new QVBoxLayout(d_left_widget);
+	left_layout->setContentsMargins(2, 5, 2, 2);
+	left_layout->addWidget(d_expand_icon);
+	QWidget *left_filler_widget = new QWidget(this);
+	left_filler_widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+	left_layout->addWidget(left_filler_widget);
+
+	// Install the icons into their placeholders.
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_visibility_icon,
 			visibility_icon_placeholder_widget);
 	d_visibility_icon->setFrameStyle(QFrame::Panel | QFrame::Sunken);
-
-#if 0
-	// Set background colour of top_widget to usual window background colour.
-	QPalette widget_palette = palette();
-	widget_palette.setColor(QPalette::Base, widget_palette.color(QPalette::Window));
-	setPalette(widget_palette);
-#endif
 
 	make_signal_slot_connections();
 
@@ -313,7 +323,8 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 
 void
 GPlatesQtWidgets::VisualLayerWidget::set_data(
-		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
+		int row)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			visual_layer.lock())
@@ -328,10 +339,11 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 		bool expanded = locked_visual_layer->is_expanded();
 		d_expand_icon->show_icon(expanded);
 
-		// Set the background colour of left_widget depending on what type of layer it is.
+		// Set the background colour of d_left_widget depending on what type of layer it is.
 		QPalette left_widget_palette;
 		left_widget_palette.setColor(QPalette::Base, get_layer_colour(layer_type));
-		left_widget->setPalette(left_widget_palette);
+		d_left_widget->setPalette(left_widget_palette);
+		d_left_widget->set_row(row);
 
 		// Set the hide/show icon.
 		d_visibility_icon->show_icon(locked_visual_layer->is_visible());
@@ -351,8 +363,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 			set_input_channel_data(locked_visual_layer->get_reconstruct_graph_layer());
 
 			// Show or hide the special groupbox for raster layers.
-			if (layer_type == GPlatesAppLogic::LayerTaskType::RASTER ||
-				layer_type == GPlatesAppLogic::LayerTaskType::AGE_GRID)
+			if (layer_type == GPlatesAppLogic::LayerTaskType::RASTER)
 			{
 				if (!d_raster_layer_options_widget)
 				{
@@ -444,6 +455,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_input_channel_data(
 				layer,
 				input_channel_definition,
 				layer.get_channel_inputs(input_channel_definition.get<0>()));
+		input_channel_widget->show();
 	}
 
 	// Hide the excess widgets in the pool.
@@ -650,12 +662,12 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::InputChannelWi
 	this_layout->setSpacing(4);
 	this_layout->addWidget(d_input_channel_name_label);
 	this_layout->addWidget(yet_another_container);
+	this_layout->addStretch();
 
 	// Create a layout for the input connection widgets container.
-	d_input_connection_widgets_layout = new QFormLayout(d_input_connection_widgets_container);
+	d_input_connection_widgets_layout = new QVBoxLayout(d_input_connection_widgets_container);
 	d_input_connection_widgets_layout->setContentsMargins(0, 0, 0, 0);
-	d_input_connection_widgets_layout->setVerticalSpacing(4);
-	d_input_connection_widgets_layout->setHorizontalSpacing(0);
+	d_input_connection_widgets_layout->setSpacing(4);
 
 	QObject::connect(
 			add_new_connection_menu,
@@ -680,21 +692,18 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 			input_connections.size() >= 1)
 	{
 		d_add_new_connection_widget->setEnabled(false);
-		static const QString DISABLED_ADD_NEW_CONNECTION_TOOLTIP = tr("This input channel only accepts one connection.");
-		d_add_new_connection_widget->setToolTip(DISABLED_ADD_NEW_CONNECTION_TOOLTIP);
+		static const QString ONLY_ONE_CONNECTION_TOOLTIP = tr("This input channel only accepts one connection.");
+		d_add_new_connection_widget->setToolTip(ONLY_ONE_CONNECTION_TOOLTIP);
 	}
 	else
 	{
-		d_add_new_connection_widget->setEnabled(true);
-		d_add_new_connection_widget->setToolTip(QString());
-
 		GPlatesAppLogic::Layer::LayerInputDataType input_data_type = input_channel_definition.get<1>();
 		if (input_data_type == GPlatesAppLogic::Layer::INPUT_FEATURE_COLLECTION_DATA)
 		{
 			populate_with_feature_collections(
 					layer,
 					input_channel_definition.get<0>(),
-					d_add_new_connection_widget->menu());
+					d_add_new_connection_widget);
 		}
 		else
 		{
@@ -702,7 +711,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 					layer,
 					input_channel_definition.get<0>(),
 					input_data_type,
-					d_add_new_connection_widget->menu());
+					d_add_new_connection_widget);
 		}
 	}
 
@@ -736,6 +745,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 		const GPlatesAppLogic::Layer::InputConnection &input_connection = *connection_iter;
 		InputConnectionWidget *input_connection_widget = *widget_iter;
 		input_connection_widget->set_data(input_connection);
+		input_connection_widget->show();
 	}
 
 	// Hide the excess widgets in the pool.
@@ -760,7 +770,18 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::handle_menu_tr
 	if (qv.canConvert<fn_type>())
 	{
 		fn_type fn = qv.value<fn_type>();
-		fn();
+
+		try
+		{
+			fn();
+		}
+		catch (const GPlatesAppLogic::Layer::CycleDetectedInReconstructGraph &)
+		{
+			QMessageBox::critical(
+					this,
+					"Add new connection",
+					"The requested connection could not be made because it would introduce a cycle.");
+		}
 	}
 }
 
@@ -769,12 +790,26 @@ void
 GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_feature_collections(
 		const GPlatesAppLogic::Layer &layer,
 		const QString &input_data_channel,
-		QMenu *menu)
+		QToolButton *button)
 {
+	QMenu *menu = button->menu();
 	menu->clear();
 
 	typedef GPlatesAppLogic::FeatureCollectionFileState::file_reference file_reference;
 	std::vector<file_reference> loaded_files = d_application_state.get_feature_collection_file_state().get_loaded_files();
+	if (loaded_files.size() == 0)
+	{
+		button->setEnabled(false);
+		static const QString NO_FEATURE_COLLECTIONS_TOOLTIP = tr("No feature collections have been loaded.");
+		button->setToolTip(NO_FEATURE_COLLECTIONS_TOOLTIP);
+		return;
+	}
+	else
+	{
+		button->setEnabled(true);
+		button->setToolTip(QString());
+	}
+
 	GPlatesAppLogic::ReconstructGraph &reconstruct_graph = d_application_state.get_reconstruct_graph();
 
 	BOOST_FOREACH(const file_reference &loaded_file, loaded_files)
@@ -804,8 +839,9 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 		const GPlatesAppLogic::Layer &layer,
 		const QString &input_data_channel,
 		GPlatesAppLogic::Layer::LayerInputDataType input_data_type,
-		QMenu *menu)
+		QToolButton *button)
 {
+	QMenu *menu = button->menu();
 	menu->clear();
 
 	GPlatesAppLogic::Layer::LayerOutputDataType output_data_type;
@@ -823,6 +859,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 	}
 
 	const GPlatesAppLogic::ReconstructGraph &reconstruct_graph = d_application_state.get_reconstruct_graph();
+	unsigned int count = 0;
 	BOOST_FOREACH(const GPlatesAppLogic::Layer &outputting_layer, reconstruct_graph)
 	{
 		if (outputting_layer.get_output_definition() == output_data_type)
@@ -846,8 +883,55 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 						get_layer_icon(
 							locked_outputting_visual_layer->get_reconstruct_graph_layer().get_type()));
 				menu->addAction(action);
+
+				++count;
 			}
 		}
 	}
+
+	if (count == 0)
+	{
+		button->setEnabled(false);
+		static const QString NO_APPROPRIATE_LAYERS_TOOLTIP = tr("There are no layers that can supply input to this connection.");
+		button->setToolTip(NO_APPROPRIATE_LAYERS_TOOLTIP);
+	}
+	else
+	{
+		button->setEnabled(true);
+		button->setToolTip(QString());
+	}
+}
+
+
+GPlatesQtWidgets::VisualLayerWidget::DraggableWidget::DraggableWidget(
+		QWidget *parent_) :
+	QWidget(parent_),
+	d_row(-1)
+{
+	setCursor(QCursor(Qt::OpenHandCursor));
+}
+
+
+void
+GPlatesQtWidgets::VisualLayerWidget::DraggableWidget::mousePressEvent(
+		QMouseEvent *event_)
+{
+	QMimeData *mime_data = new QMimeData(); // Qt responsible for memory.
+	QByteArray encoded_data;
+	QDataStream stream(&encoded_data, QIODevice::WriteOnly);
+	stream << d_row;
+	mime_data->setData(GPlatesGui::VisualLayersListModel::VISUAL_LAYERS_MIME_TYPE, encoded_data);
+
+	QDrag *drag = new QDrag(this);
+	drag->setMimeData(mime_data);
+	drag->exec();
+}
+
+
+void
+GPlatesQtWidgets::VisualLayerWidget::DraggableWidget::set_row(
+		int row)
+{
+	d_row = row;
 }
 

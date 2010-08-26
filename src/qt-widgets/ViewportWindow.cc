@@ -68,7 +68,6 @@
 #include "SaveFileDialog.h"
 #include "SetCameraViewpointDialog.h"
 #include "SetProjectionDialog.h"
-#include "RasterPropertiesDialog.h"
 #include "SetVGPVisibilityDialog.h"
 #include "ShapefileAttributeViewerDialog.h"
 #include "ShapefilePropertyMapper.h"
@@ -135,11 +134,6 @@
 
 #include "presentation/Application.h"
 #include "presentation/ViewState.h"
-
-#include "property-values/Georeferencing.h"
-#include "property-values/GmlMultiPoint.h"
-#include "property-values/ProxiedRasterResolver.h" // FIXME: For testing only.
-#include "property-values/RawRasterUtils.h"
 
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ShapefilePropertyMapper.h"
@@ -253,7 +247,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new ReadErrorAccumulationDialog(this)),
 	d_set_camera_viewpoint_dialog_ptr(NULL),
 	d_set_projection_dialog_ptr(NULL),
-	d_raster_properties_dialog_ptr(NULL),
 	d_set_vgp_visibility_dialog_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog_ptr(
 			new ShapefileAttributeViewerDialog(
@@ -315,8 +308,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::FeatureTableModel(
 				get_view_state())),
 	d_task_panel_ptr(NULL),
-	d_georeferencing_needs_to_be_reset(true),
-	d_open_file_path(""),
+	d_open_file_path(QString()),
 	d_layering_dialog_opened_automatically_once(false)
 {
 	setupUi(this);
@@ -516,11 +508,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// Render everything on the screen in present-day positions.
 	get_application_state().reconstruct();
 
-	// Disable the Show Background Raster and Edit Raster Properties menu items until raster is loaded
-	action_Show_Raster->setEnabled(false);
-	action_Show_Raster->setCheckable(false);
-	action_Edit_Raster_Properties->setEnabled(false);
-
 	// Synchronise the "Show X Features" menu items with RenderSettings
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
 	action_Show_Point_Features->setChecked(render_settings.show_points());
@@ -620,10 +607,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
 			d_file_io_feedback_ptr, SLOT(open_files()));
-	QObject::connect(action_Open_Raster, SIGNAL(triggered()),
-			this, SLOT(open_raster()));
-	QObject::connect(action_Open_Time_Dependent_Raster_Sequence, SIGNAL(triggered()),
-			this, SLOT(open_time_dependent_raster_sequence()));
 	QObject::connect(action_Import_Raster, SIGNAL(triggered()),
 			this, SLOT(pop_up_import_raster_dialog()));
 	QObject::connect(action_Import_Time_Dependent_Raster, SIGNAL(triggered()),
@@ -711,11 +694,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 		this, SLOT(generate_mesh_cap()));
 	
 	// View Menu:
-	QObject::connect(action_Show_Raster, SIGNAL(triggered()),
-			this, SLOT(enable_raster_display()));
-	QObject::connect(action_Edit_Raster_Properties, SIGNAL(triggered()),
-			this, SLOT(pop_up_raster_properties_dialog()));
-	// ----
 	QObject::connect(action_Show_Point_Features, SIGNAL(triggered()),
 			this, SLOT(enable_point_display()));
 	QObject::connect(action_Show_Line_Features, SIGNAL(triggered()),
@@ -1037,11 +1015,6 @@ GPlatesQtWidgets::ViewportWindow::handle_reconstruction()
 	if (d_total_reconstruction_poles_dialog_ptr->isVisible())
 	{
 		d_total_reconstruction_poles_dialog_ptr->update();
-	}
-
-	if (action_Show_Raster->isChecked() && ! d_time_dependent_raster_map.isEmpty())
-	{	
-		update_time_dependent_raster();
 	}
 }
 
@@ -1686,10 +1659,6 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_set_projection_dialog_ptr->reject();
 	}
-	if (d_raster_properties_dialog_ptr)
-	{
-		d_raster_properties_dialog_ptr->reject();
-	}
 	if (d_set_vgp_visibility_dialog_ptr)
 	{
 		d_set_vgp_visibility_dialog_ptr->reject();
@@ -1800,182 +1769,6 @@ GPlatesQtWidgets::ViewportWindow::enable_strings_display()
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_raster_display()
-{
-	if (action_Show_Raster->isChecked())
-	{
-		d_reconstruction_view_widget.enable_raster_display();
-	}
-	else
-	{
-		d_reconstruction_view_widget.disable_raster_display();
-	}
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::open_raster()
-{
-	QString filename = QFileDialog::getOpenFileName(
-			this,
-			QObject::tr("Open Raster"),
-			d_open_file_path,
-			GPlatesFileIO::RasterReader::get_file_dialog_filters() );
-
-	if (filename.isEmpty())
-	{
-		return;
-	}
-
-	d_georeferencing_needs_to_be_reset = true;
-	if (load_raster(filename))
-	{
-		// If we've successfully loaded a single raster, clear the raster_map.
-		d_time_dependent_raster_map.clear();
-	}
-	QFileInfo last_opened_file(filename);
-	d_open_file_path = last_opened_file.path();
-}
-
-bool
-GPlatesQtWidgets::ViewportWindow::load_raster(
-		QString filename)
-{
-	bool result = false;
-
-	d_read_errors_dialog_ptr->clear();
-	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog_ptr->read_errors();
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
-
-	try
-	{
-		GPlatesFileIO::RasterReader::non_null_ptr_type raster_reader =
-			GPlatesFileIO::RasterReader::create(filename, &read_errors);
-		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> raw_raster =
-			raster_reader->get_proxied_raw_raster(1, &read_errors);
-		if (raw_raster)
-		{
-			try
-			{
-				// FIXME: Rip this up once when we get rasters out of ViewState.
-
-				GPlatesPresentation::ViewState &view_state = get_view_state();
-
-				// Set georeferencing if required.
-				bool georeferencing_was_reset = false;
-				if (d_georeferencing_needs_to_be_reset)
-				{
-					boost::optional<std::pair<unsigned int, unsigned int> > raster_size =
-						GPlatesPropertyValues::RawRasterUtils::get_raster_size(**raw_raster);
-					if (raster_size)
-					{
-						GPlatesPropertyValues::Georeferencing::non_null_ptr_type georeferencing =
-							view_state.get_georeferencing();
-						georeferencing->reset_to_global_extents(raster_size->first, raster_size->second);
-
-						georeferencing_was_reset = true;
-						d_georeferencing_needs_to_be_reset = false;
-					}
-				}
-
-				view_state.set_raw_raster(*raw_raster);
-				if (georeferencing_was_reset)
-				{
-					view_state.update_texture_extents();
-				}
-				view_state.set_raster_filename(filename);
-
-				// This call can throw the two OpenGL exceptions we catch below.
-				if (view_state.update_texture_from_raw_raster())
-				{
-					action_Show_Raster->setEnabled(true);
-					action_Show_Raster->setCheckable(true);
-					action_Show_Raster->setChecked(true);
-					action_Edit_Raster_Properties->setEnabled(true);
-					globe_canvas().update_canvas();
-
-					// Refresh raster properties dialog if visible.
-					if (d_raster_properties_dialog_ptr &&
-							d_raster_properties_dialog_ptr->isVisible())
-					{
-						d_raster_properties_dialog_ptr->populate_from_data();
-					}
-
-					result = true;
-				}
-			}
-			catch (const GPlatesOpenGL::OpenGLBadAllocException &)
-			{
-				read_errors.d_failures_to_begin.push_back(
-						GPlatesFileIO::make_read_error_occurrence(
-							filename,
-							GPlatesFileIO::DataFormats::RasterImage,
-							0,
-							GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
-							GPlatesFileIO::ReadErrors::FileNotLoaded));
-			}
-			catch (const GPlatesOpenGL::OpenGLException &)
-			{
-				read_errors.d_failures_to_begin.push_back(
-						GPlatesFileIO::make_read_error_occurrence(
-							filename,
-							GPlatesFileIO::DataFormats::RasterImage,
-							0,
-							GPlatesFileIO::ReadErrors::ErrorGeneratingTexture,
-							GPlatesFileIO::ReadErrors::FileNotLoaded));
-			}
-		}
-	}
-	catch (...)
-	{
-		std::cerr << "Caught exception loading raster file." << std::endl;
-	}
-	
-	d_read_errors_dialog_ptr->update();
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-	if (num_initial_errors != num_final_errors)
-	{
-		d_read_errors_dialog_ptr->show();
-	}
-
-	return result;
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
-{
-	d_read_errors_dialog_ptr->clear();
-	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog_ptr->read_errors();
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
-
-	QString directory = QFileDialog::getExistingDirectory(this, "Choose Folder Containing Time-Dependent Rasters", d_open_file_path);
-
-	if (directory.length() > 0) // i.e. the user did not click cancel
-	{
-		GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(d_time_dependent_raster_map,directory,read_errors);
-		d_open_file_path = directory;
-		d_read_errors_dialog_ptr->update();
-
-		// Pop up errors only if appropriate.
-		GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-		if (num_initial_errors != num_final_errors) {
-			d_read_errors_dialog_ptr->show();
-		}
-	}
-
-	if (!d_time_dependent_raster_map.isEmpty())
-	{
-		action_Show_Raster->setEnabled(true);
-		action_Show_Raster->setCheckable(true);
-		action_Show_Raster->setChecked(true);
-		action_Edit_Raster_Properties->setEnabled(true);
-		
-		d_georeferencing_needs_to_be_reset = true;
-
-		update_time_dependent_raster();
-	}
-}
-
-void
 GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog(
 		bool time_dependent_raster)
 {
@@ -2014,54 +1807,13 @@ GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
-{
-	QString filename = GPlatesFileIO::RasterReader::get_nearest_raster_filename(
-			d_time_dependent_raster_map,
-			get_application_state().get_current_reconstruction_time());
-
-	load_raster(filename);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_raster_properties_dialog()
-{
-	if (!d_raster_properties_dialog_ptr)
-	{
-		d_raster_properties_dialog_ptr.reset(
-				new RasterPropertiesDialog(&get_view_state(), this));
-	}
-
-	d_raster_properties_dialog_ptr->show();
-	d_raster_properties_dialog_ptr->populate_from_data();
-
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_raster_properties_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_raster_properties_dialog_ptr->raise();
-}
-
-void
 GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 {
 	// These calls ensure that the correct status message is displayed. 
 	d_map_canvas_tool_choice_ptr->tool_choice().handle_activation();
 	d_globe_canvas_tool_choice_ptr->tool_choice().handle_activation();
 	
-	// Only enable raster-related menu items when the globe is active. 
 	bool globe_is_active = d_reconstruction_view_widget.globe_is_active();
-	action_Open_Raster->setEnabled(globe_is_active);
-	action_Open_Time_Dependent_Raster_Sequence->setEnabled(globe_is_active);
-	GPlatesGui::Texture &texture = globe_canvas().globe().texture();
-	bool enable_show_raster = globe_is_active && texture.is_loaded();
-	action_Show_Raster->setEnabled(enable_show_raster);
-	action_Show_Raster->setCheckable(enable_show_raster);
-	action_Show_Raster->setChecked(texture.is_enabled());
-	action_Edit_Raster_Properties->setEnabled(enable_show_raster);
 	action_Show_Arrow_Decorations->setEnabled(globe_is_active);
 	
 	// Grey-out the modify pole tab when in map mode. 

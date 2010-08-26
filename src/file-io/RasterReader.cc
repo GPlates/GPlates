@@ -48,8 +48,6 @@
 #include "RgbaRasterReader.h"
 #include "ReadErrorAccumulation.h"
 
-#include "gui/Texture.h"
-
 #include "opengl/OpenGLBadAllocException.h"
 #include "opengl/OpenGLException.h"
 

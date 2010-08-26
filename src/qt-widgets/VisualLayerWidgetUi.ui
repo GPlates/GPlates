@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>VisualLayerWidget</class>
- <widget class="QWidget" name="VisualLayerWidget" >
-  <property name="geometry" >
+ <widget class="QWidget" name="VisualLayerWidget">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,152 +10,115 @@
     <height>431</height>
    </rect>
   </property>
-  <property name="focusPolicy" >
+  <property name="focusPolicy">
    <enum>Qt::StrongFocus</enum>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Layer</string>
   </property>
-  <property name="autoFillBackground" >
+  <property name="autoFillBackground">
    <bool>true</bool>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_4" >
-   <property name="spacing" >
+  <layout class="QHBoxLayout" name="horizontalLayout_4">
+   <property name="spacing">
     <number>0</number>
    </property>
-   <property name="margin" >
+   <property name="margin">
     <number>0</number>
    </property>
    <item>
-    <widget class="QFrame" name="widget_frame" >
-     <layout class="QVBoxLayout" name="verticalLayout_2" >
-      <property name="spacing" >
+    <widget class="QFrame" name="widget_frame">
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
        <number>0</number>
       </property>
-      <property name="margin" >
+      <property name="margin">
        <number>0</number>
       </property>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_3" >
-        <property name="spacing" >
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <property name="spacing">
          <number>0</number>
         </property>
         <item>
-         <widget class="QWidget" native="1" name="left_widget" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+         <widget class="QWidget" name="left_placeholder_widget" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="autoFillBackground" >
+          <property name="autoFillBackground">
            <bool>true</bool>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_3" >
-           <property name="spacing" >
-            <number>2</number>
-           </property>
-           <property name="leftMargin" >
-            <number>2</number>
-           </property>
-           <property name="topMargin" >
-            <number>5</number>
-           </property>
-           <property name="rightMargin" >
-            <number>2</number>
-           </property>
-           <property name="bottomMargin" >
-            <number>2</number>
-           </property>
-           <item>
-            <widget class="QWidget" native="1" name="expand_icon_placeholder_widget" >
-             <property name="sizePolicy" >
-              <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QWidget" native="1" name="left_filler_widget" >
-             <property name="sizePolicy" >
-              <sizepolicy vsizetype="MinimumExpanding" hsizetype="Preferred" >
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-            </widget>
-           </item>
-          </layout>
          </widget>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="right_layout" >
-          <property name="spacing" >
+         <layout class="QVBoxLayout" name="right_layout">
+          <property name="spacing">
            <number>0</number>
           </property>
           <item>
-           <widget class="QWidget" native="1" name="top_widget" >
-            <property name="sizePolicy" >
-             <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+           <widget class="QWidget" name="top_widget" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <layout class="QGridLayout" name="gridLayout" >
-             <property name="leftMargin" >
+            <layout class="QGridLayout" name="gridLayout">
+             <property name="leftMargin">
               <number>4</number>
              </property>
-             <property name="topMargin" >
+             <property name="topMargin">
               <number>5</number>
              </property>
-             <property name="rightMargin" >
+             <property name="rightMargin">
               <number>4</number>
              </property>
-             <property name="bottomMargin" >
+             <property name="bottomMargin">
               <number>5</number>
              </property>
-             <property name="horizontalSpacing" >
+             <property name="horizontalSpacing">
               <number>6</number>
              </property>
-             <property name="verticalSpacing" >
+             <property name="verticalSpacing">
               <number>2</number>
              </property>
-             <item row="0" column="0" >
-              <widget class="QWidget" native="1" name="visibility_icon_placeholder_widget" >
-               <property name="sizePolicy" >
-                <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
+             <item row="0" column="0">
+              <widget class="QWidget" name="visibility_icon_placeholder_widget" native="true">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
               </widget>
              </item>
-             <item row="0" column="1" >
-              <widget class="QWidget" native="1" name="name_label_placeholder_widget" >
-               <property name="sizePolicy" >
-                <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+             <item row="0" column="1">
+              <widget class="QWidget" name="name_label_placeholder_widget" native="true">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
               </widget>
              </item>
-             <item row="1" column="0" >
-              <widget class="QWidget" native="1" name="default_icon_placeholder_widget" >
-               <property name="sizePolicy" >
-                <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
+             <item row="1" column="0">
+              <widget class="QWidget" name="default_icon_placeholder_widget" native="true">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
               </widget>
              </item>
-             <item row="1" column="1" >
-              <widget class="QWidget" native="1" name="type_label_placeholder_widget" >
-               <property name="sizePolicy" >
-                <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+             <item row="1" column="1">
+              <widget class="QWidget" name="type_label_placeholder_widget" native="true">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
@@ -165,105 +129,105 @@
            </widget>
           </item>
           <item>
-           <widget class="QWidget" native="1" name="details_placeholder_widget" >
-            <property name="sizePolicy" >
-             <sizepolicy vsizetype="Expanding" hsizetype="Preferred" >
+           <widget class="QWidget" name="details_placeholder_widget" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
               <horstretch>0</horstretch>
               <verstretch>1</verstretch>
              </sizepolicy>
             </property>
-            <property name="autoFillBackground" >
+            <property name="autoFillBackground">
              <bool>false</bool>
             </property>
-            <property name="styleSheet" >
-             <string notr="true" />
+            <property name="styleSheet">
+             <string notr="true"/>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_5" >
-             <property name="leftMargin" >
+            <layout class="QVBoxLayout" name="verticalLayout_5">
+             <property name="leftMargin">
               <number>5</number>
              </property>
-             <property name="topMargin" >
+             <property name="topMargin">
               <number>0</number>
              </property>
-             <property name="rightMargin" >
+             <property name="rightMargin">
               <number>5</number>
              </property>
              <item>
-              <widget class="QGroupBox" name="input_channels_widget" >
-               <property name="sizePolicy" >
-                <sizepolicy vsizetype="Expanding" hsizetype="Preferred" >
+              <widget class="QGroupBox" name="input_channels_widget">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
-               <property name="title" >
+               <property name="title">
                 <string>Input channels</string>
                </property>
-               <property name="flat" >
+               <property name="flat">
                 <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QGroupBox" name="raster_groupbox" >
-               <property name="title" >
+              <widget class="QGroupBox" name="raster_groupbox">
+               <property name="title">
                 <string>Raster options</string>
                </property>
-               <property name="flat" >
+               <property name="flat">
                 <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QGroupBox" name="colouring_groupbox" >
-               <property name="title" >
+              <widget class="QGroupBox" name="colouring_groupbox">
+               <property name="title">
                 <string>Colouring</string>
                </property>
-               <property name="flat" >
+               <property name="flat">
                 <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QGroupBox" name="advanced_options_groupbox" >
-               <property name="title" >
+              <widget class="QGroupBox" name="advanced_options_groupbox">
+               <property name="title">
                 <string>Advanced options</string>
                </property>
-               <property name="flat" >
+               <property name="flat">
                 <bool>true</bool>
                </property>
-               <layout class="QVBoxLayout" name="verticalLayout_4" >
-                <property name="leftMargin" >
+               <layout class="QVBoxLayout" name="verticalLayout_4">
+                <property name="leftMargin">
                  <number>0</number>
                 </property>
-                <property name="topMargin" >
+                <property name="topMargin">
                  <number>6</number>
                 </property>
-                <property name="rightMargin" >
+                <property name="rightMargin">
                  <number>0</number>
                 </property>
-                <property name="bottomMargin" >
+                <property name="bottomMargin">
                  <number>0</number>
                 </property>
                 <item>
-                 <widget class="QWidget" native="1" name="additional_options_widget" >
-                  <layout class="QHBoxLayout" name="horizontalLayout" >
-                   <property name="margin" >
+                 <widget class="QWidget" name="additional_options_widget" native="true">
+                  <layout class="QHBoxLayout" name="horizontalLayout">
+                   <property name="margin">
                     <number>0</number>
                    </property>
                    <item>
-                    <widget class="QPushButton" name="disable_button" >
-                     <property name="text" >
+                    <widget class="QPushButton" name="disable_button">
+                     <property name="text">
                       <string>Disable layer</string>
                      </property>
                     </widget>
                    </item>
                    <item>
-                    <spacer name="horizontalSpacer" >
-                     <property name="orientation" >
+                    <spacer name="horizontalSpacer">
+                     <property name="orientation">
                       <enum>Qt::Horizontal</enum>
                      </property>
-                     <property name="sizeHint" stdset="0" >
+                     <property name="sizeHint" stdset="0">
                       <size>
                        <width>40</width>
                        <height>20</height>
@@ -285,23 +249,23 @@
        </layout>
       </item>
       <item>
-       <widget class="QLabel" name="border_label" >
-        <property name="minimumSize" >
+       <widget class="QLabel" name="border_label">
+        <property name="minimumSize">
          <size>
           <width>0</width>
           <height>1</height>
          </size>
         </property>
-        <property name="maximumSize" >
+        <property name="maximumSize">
          <size>
           <width>16777215</width>
           <height>1</height>
          </size>
         </property>
-        <property name="styleSheet" >
-         <string notr="true" >border: 1px dotted black;</string>
+        <property name="styleSheet">
+         <string notr="true">border: 1px dotted black;</string>
         </property>
-        <property name="text" >
+        <property name="text">
          <string/>
         </property>
        </widget>
@@ -312,7 +276,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections/>
 </ui>

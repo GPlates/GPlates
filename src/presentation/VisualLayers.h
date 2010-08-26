@@ -135,15 +135,17 @@ namespace GPlatesPresentation
 		get_visual_layer(
 				const GPlatesAppLogic::Layer &layer);
 
-	private:
-
 		/**
 		 * Typedef for the container that stores the visual layers ordering.
 		 */
 		typedef std::vector<GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type>
 			rendered_geometry_layer_seq_type;
 
-	public:
+		/**
+		 * Returns the visual layers ordering as a sequence of rendered geometry layers indices.
+		 */
+		const rendered_geometry_layer_seq_type &
+		get_layer_order() const;
 
 		/**
 		 * Typedef for const iterator over the ordering of visual layers.
