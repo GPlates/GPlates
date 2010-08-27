@@ -78,13 +78,20 @@ namespace
 			}
 			std::vector<GPlatesAppLogic::Layer::input_channel_definition_type> input_channel_definitions = 
 				layer.get_input_channel_definitions();
+		
 			QString channel_name;
-			BOOST_FOREACH(GPlatesAppLogic::Layer::input_channel_definition_type channel_def,input_channel_definitions)
+			GPlatesAppLogic::Layer::LayerInputDataType input_type;
+			
+			BOOST_FOREACH(boost::tie(channel_name,input_type,boost::tuples::ignore),input_channel_definitions)
 			{
-				if(boost::tuples::get<1>(channel_def) == GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
+				if(input_type == GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
 				{
-					channel_name = boost::tuples::get<0>(channel_def);
+					break;
 				}
+			}
+			if(input_type != GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
+			{
+				channel_name.clear();
 			}
 			layer.connect_input_to_layer_output(*it,channel_name);
 		}
