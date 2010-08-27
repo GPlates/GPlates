@@ -80,7 +80,8 @@ namespace
 				layer.get_input_channel_definitions();
 		
 			QString channel_name;
-			GPlatesAppLogic::Layer::LayerInputDataType input_type;
+			GPlatesAppLogic::Layer::LayerInputDataType input_type = GPlatesAppLogic::Layer::INPUT_FEATURE_COLLECTION_DATA;
+				// It needs to be uninitialised otherwise g++ complains.
 			
 			BOOST_FOREACH(boost::tie(channel_name,input_type,boost::tuples::ignore),input_channel_definitions)
 			{
