@@ -266,7 +266,7 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 				"Save a copy of the file with a different name",
 				GPlatesQtWidgets::SaveFileDialog::filter_list_type())),
 	d_gzip_available(false),
-	d_open_file_path("")
+	d_open_file_path(QDir::currentPath())
 {
 	setObjectName("FileIOFeedback");
 
