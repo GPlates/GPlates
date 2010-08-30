@@ -263,7 +263,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 	QString palette_file_name = QFileDialog::getOpenFileName(
 			this,
 			"Open CPT File",
-			QString(),
+			QDir::currentPath(),
 			"CPT file (*.cpt);;All files (*)");
 	if (!palette_file_name.isEmpty())
 	{

@@ -308,7 +308,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::FeatureTableModel(
 				get_view_state())),
 	d_task_panel_ptr(NULL),
-	d_open_file_path(QString()),
+	d_open_file_path(QDir::currentPath()),
 	d_layering_dialog_opened_automatically_once(false)
 {
 	setupUi(this);
