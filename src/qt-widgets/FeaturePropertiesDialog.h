@@ -52,6 +52,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+
 		explicit
 		FeaturePropertiesDialog(
 				GPlatesPresentation::ViewState &view_state_,
@@ -97,9 +98,8 @@ namespace GPlatesQtWidgets
 		 * enough - the default buttonbox "Close" button only appears to hide the dialog.
 		 */
 		void
-		setVisible(bool visible);
-
-	signals:
+		setVisible(
+				bool visible);
 	
 	private slots:
 		
@@ -107,10 +107,16 @@ namespace GPlatesQtWidgets
 		handle_tab_change(
 				int index);
 
+		void
+		handle_feature_type_changed();
+
 	private:
 		
 		void
 		pop_up();
+
+		void
+		populate_feature_types();
 
 		/**
 		 * The Feature observed by the dialog.

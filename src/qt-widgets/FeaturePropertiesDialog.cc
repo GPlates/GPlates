@@ -24,13 +24,74 @@
  */
 
 #include <QString>
+#include <QStringList>
+#include <QValidator>
+
 #include "FeaturePropertiesDialog.h"
 
 #include "model/FeatureType.h"
 #include "model/FeatureId.h"
 #include "model/FeatureRevision.h"
-#include "utils/UnicodeStringUtils.h"
+#include "model/GPGIMInfo.h"
+
 #include "presentation/ViewState.h"
+
+#include "utils/UnicodeStringUtils.h"
+
+
+namespace
+{
+	class FeatureTypeValidator :
+			public QValidator
+	{
+	public:
+
+		FeatureTypeValidator(
+				QObject *parent_ = NULL) :
+			QValidator(parent_)
+		{  }
+
+		virtual
+		QValidator::State
+		validate(
+				QString &input,
+				int &pos) const
+		{
+			QStringList tokens = input.split(":");
+			if (tokens.count() > 2)
+			{
+				return QValidator::Invalid;
+			}
+
+			if (tokens.count() == 2)
+			{
+				// We'll only let the user enter gpml, gml and xsi namespaces.
+				const QString &namespace_alias = tokens.at(0);
+				if (namespace_alias == "gpml" ||
+					namespace_alias == "gml" ||
+					namespace_alias == "xsi")
+				{
+					if (tokens.at(1).length() > 0)
+					{
+						return QValidator::Acceptable;
+					}
+					else
+					{
+						return QValidator::Intermediate;
+					}
+				}
+				else
+				{
+					return QValidator::Intermediate;
+				}
+			}
+			else
+			{
+				return QValidator::Intermediate;
+			}
+		}
+	};
+}
 
 
 GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
@@ -69,6 +130,16 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
 			SLOT(display_feature(GPlatesGui::FeatureFocus &)));
+
+	// Handle feature type changes.
+	QObject::connect(
+			combobox_feature_type->lineEdit(),
+			SIGNAL(editingFinished()),
+			this,
+			SLOT(handle_feature_type_changed()));
+
+	populate_feature_types();
+	combobox_feature_type->setValidator(new FeatureTypeValidator(this));
 	
 	// Refresh display - since the feature ref is invalid at this point,
 	// the dialog should lock everything down that might otherwise cause problems.
@@ -92,20 +163,20 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 {
 	if ( ! d_feature_ref.is_valid()) {
 		// Disable everything except the Close button.
-		lineedit_feature_type->setEnabled(false);
+		combobox_feature_type->setEnabled(false);
 		tabwidget_query_edit->setEnabled(false);
-		lineedit_feature_type->clear();
+		combobox_feature_type->lineEdit()->clear();
 		return;
 	}
 
 	//PROFILE_FUNC();
 
 	// Ensure everything is enabled.
-	lineedit_feature_type->setEnabled(true);
+	combobox_feature_type->setEnabled(true);
 	tabwidget_query_edit->setEnabled(true);
 	
 	// Update our text fields at the top.
-	lineedit_feature_type->setText(
+	combobox_feature_type->lineEdit()->setText(
 			GPlatesUtils::make_qstring_from_icu_string(
 				d_feature_ref->feature_type().build_aliased_name()));
 	
@@ -154,7 +225,28 @@ GPlatesQtWidgets::FeaturePropertiesDialog::pop_up()
 
 
 void
-GPlatesQtWidgets::FeaturePropertiesDialog::setVisible(bool visible)
+GPlatesQtWidgets::FeaturePropertiesDialog::populate_feature_types()
+{
+	for (int i = 0; i != 2; ++i)
+	{
+		typedef GPlatesModel::GPGIMInfo::feature_set_type feature_set_type;
+		const feature_set_type &list = GPlatesModel::GPGIMInfo::get_feature_set(
+				static_cast<bool>(i)); // first time, non-topological; second time, topological.
+
+		for (feature_set_type::const_iterator iter = list.begin();
+				iter != list.end(); ++iter)
+		{
+			combobox_feature_type->addItem(
+					GPlatesUtils::make_qstring_from_icu_string(
+						iter->build_aliased_name()));
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::FeaturePropertiesDialog::setVisible(
+		bool visible)
 {
 	if ( ! visible) {
 		// We are closing. Ensure things are left tidy.
@@ -176,5 +268,24 @@ GPlatesQtWidgets::FeaturePropertiesDialog::handle_tab_change(
 		d_query_feature_properties_widget->load_data_if_necessary();
 	}
 	setWindowIcon(icon);
+}
+
+
+void
+GPlatesQtWidgets::FeaturePropertiesDialog::handle_feature_type_changed()
+{
+	if (d_feature_ref.is_valid())
+	{
+		try
+		{
+			GPlatesUtils::Parse<GPlatesModel::FeatureType> parse;
+			const QString &feature_type = combobox_feature_type->currentText();
+			d_feature_ref->set_feature_type(parse(feature_type));
+		}
+		catch (const GPlatesUtils::ParseError &)
+		{
+			// ignore
+		}
+	}
 }
 

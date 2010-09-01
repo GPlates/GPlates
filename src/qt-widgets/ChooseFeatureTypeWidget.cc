@@ -72,7 +72,7 @@ namespace
 		// FIXME: For extra brownie points, filter -this- list based on features
 		// which you couldn't possibly create given the digitised geometry.
 		// E.g. no Cratons made from PolylineOnSphere!
-		typedef const GPlatesModel::GPGIMInfo::feature_set_type feature_set_type;
+		typedef GPlatesModel::GPGIMInfo::feature_set_type feature_set_type;
 		const feature_set_type &list = GPlatesModel::GPGIMInfo::get_feature_set(topological);
 
 		list_widget.clear();

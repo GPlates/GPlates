@@ -230,12 +230,16 @@ namespace GPlatesModel
 
 		/**
 		 * Returns the feature type of this feature.
-		 *
-		 * No "setter" method is provided because the feature type of a feature
-		 * should never be changed.
 		 */
 		const FeatureType &
 		feature_type() const;
+
+		/**
+		 * Changes the feature type of this feature to @a feature_type_.
+		 */
+		void
+		set_feature_type(
+				const FeatureType &feature_type_);
 
 		/**
 		 * Returns the feature ID of this feature.

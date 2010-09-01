@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ui version="4.0">
+<ui version="4.0" >
  <class>FeaturePropertiesDialog</class>
- <widget class="QDialog" name="FeaturePropertiesDialog">
-  <property name="geometry">
+ <widget class="QDialog" name="FeaturePropertiesDialog" >
+  <property name="geometry" >
    <rect>
     <x>0</x>
     <y>0</y>
@@ -10,60 +9,69 @@
     <height>600</height>
    </rect>
   </property>
-  <property name="windowTitle">
+  <property name="windowTitle" >
    <string>Feature Properties</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >
     <normaloff>:/gnome_edit_find_16.png</normaloff>:/gnome_edit_find_16.png</iconset>
   </property>
-  <property name="sizeGripEnabled">
+  <property name="sizeGripEnabled" >
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout">
+  <layout class="QVBoxLayout" >
    <item>
-    <layout class="QHBoxLayout">
+    <layout class="QHBoxLayout" >
      <item>
-      <widget class="QLabel" name="label">
-       <property name="text">
+      <widget class="QLabel" name="label" >
+       <property name="text" >
         <string>Feature Type:</string>
        </property>
-       <property name="alignment">
+       <property name="alignment" >
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineedit_feature_type">
-       <property name="readOnly">
+      <widget class="QComboBox" name="combobox_feature_type" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="editable" >
         <bool>true</bool>
+       </property>
+       <property name="maxVisibleItems" >
+        <number>20</number>
        </property>
       </widget>
      </item>
     </layout>
    </item>
    <item>
-    <widget class="QTabWidget" name="tabwidget_query_edit">
-     <property name="currentIndex">
+    <widget class="QTabWidget" name="tabwidget_query_edit" >
+     <property name="currentIndex" >
       <number>0</number>
      </property>
-     <widget class="QWidget" name="tab_dummy">
-      <attribute name="icon">
-       <iconset resource="../qt-resources/qt_widgets.qrc">
-        <normaloff>:/gnome_edit_find_16.png</normaloff>:/gnome_edit_find_16.png</iconset>
-      </attribute>
-      <attribute name="title">
+     <widget class="QWidget" name="tab_dummy" >
+      <attribute name="title" >
        <string>Dummy tab, see code.</string>
+      </attribute>
+      <attribute name="icon" >
+       <iconset resource="../qt-resources/qt_widgets.qrc" >
+        <normaloff>:/gnome_edit_find_16.png</normaloff>:/gnome_edit_find_16.png</iconset>
       </attribute>
      </widget>
     </widget>
    </item>
    <item>
-    <widget class="QDialogButtonBox" name="buttonbox">
-     <property name="orientation">
+    <widget class="QDialogButtonBox" name="buttonbox" >
+     <property name="orientation" >
       <enum>Qt::Horizontal</enum>
      </property>
-     <property name="standardButtons">
+     <property name="standardButtons" >
       <set>QDialogButtonBox::Close</set>
      </property>
     </widget>
@@ -71,7 +79,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_widgets.qrc" />
  </resources>
  <connections>
   <connection>
@@ -80,11 +88,11 @@
    <receiver>FeaturePropertiesDialog</receiver>
    <slot>accept()</slot>
    <hints>
-    <hint type="sourcelabel">
+    <hint type="sourcelabel" >
      <x>248</x>
      <y>254</y>
     </hint>
-    <hint type="destinationlabel">
+    <hint type="destinationlabel" >
      <x>157</x>
      <y>274</y>
     </hint>
@@ -96,11 +104,11 @@
    <receiver>FeaturePropertiesDialog</receiver>
    <slot>reject()</slot>
    <hints>
-    <hint type="sourcelabel">
+    <hint type="sourcelabel" >
      <x>316</x>
      <y>260</y>
     </hint>
-    <hint type="destinationlabel">
+    <hint type="destinationlabel" >
      <x>286</x>
      <y>274</y>
     </hint>
