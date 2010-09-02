@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_VISUALLAYERSWIDGET_H
 #define GPLATES_QTWIDGETS_VISUALLAYERSWIDGET_H
 
+#include <boost/scoped_ptr.hpp>
 #include <QString>
 #include <QWidget>
 
@@ -47,7 +48,8 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	// Forward declaration.
+	// Forward declarations.
+	class AddNewLayerDialog;
 	class ReadErrorAccumulationDialog;
 
 	/**
@@ -71,12 +73,24 @@ namespace GPlatesQtWidgets
 				ReadErrorAccumulationDialog *read_errors_dialog,
 				QWidget *parent_ = NULL);
 
+		virtual
+		~VisualLayersWidget();
+
+	private slots:
+
+		void
+		handle_add_new_layer_button_clicked();
+
 	private:
 
 		/**
 		 * A wrapper around VisualLayers to invert the ordering for the user interface.
 		 */
 		GPlatesGui::VisualLayersProxy d_visual_layers;
+
+		GPlatesAppLogic::ApplicationState &d_application_state;
+
+		boost::scoped_ptr<AddNewLayerDialog> d_add_new_layer_dialog;
 	};
 }
 

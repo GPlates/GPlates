@@ -27,6 +27,9 @@
 #define GPLATES_GUI_LAYERTASKTYPEINFO_H
 
 #include <QString>
+#include <QIcon>
+
+#include "Colour.h"
 
 #include "app-logic/LayerTaskType.h"
 
@@ -47,6 +50,20 @@ namespace GPlatesGui
 		 */
 		const QString &
 		get_description(
+				GPlatesAppLogic::LayerTaskType::Type layer_type);
+
+		/**
+		 * Returns the colour associated with the given layer task type.
+		 */
+		const Colour &
+		get_colour(
+				GPlatesAppLogic::LayerTaskType::Type layer_type);
+
+		/**
+		 * Returns an icon associated with the given layer task type.
+		 */
+		const QIcon &
+		get_icon(
 				GPlatesAppLogic::LayerTaskType::Type layer_type);
 	}
 }

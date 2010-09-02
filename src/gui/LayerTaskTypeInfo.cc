@@ -23,7 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QPixmap>
+
 #include "LayerTaskTypeInfo.h"
+
+#include "HTMLColourNames.h"
 
 
 const QString &
@@ -136,6 +140,123 @@ GPlatesGui::LayerTaskTypeInfo::get_description(
 
 		default:
 			return DEFAULT_DESCRIPTION;
+	}
+}
+
+
+const GPlatesGui::Colour &
+GPlatesGui::LayerTaskTypeInfo::get_colour(
+		GPlatesAppLogic::LayerTaskType::Type layer_type)
+{
+	static const HTMLColourNames &html_colours = HTMLColourNames::instance();
+
+	// If you add an entry here, don't forget to also add an entry in get_layer_icon below!
+	static const Colour RECONSTRUCTION_COLOUR = *html_colours.get_colour("gold");
+	static const Colour RECONSTRUCT_COLOUR = *html_colours.get_colour("yellowgreen");
+	static const Colour RASTER_COLOUR = *html_colours.get_colour("tomato");
+	static const Colour AGE_GRID_COLOUR = *html_colours.get_colour("darkturquoise");
+	static const Colour TOPOLOGY_BOUNDARY_RESOLVER_COLOUR = *html_colours.get_colour("plum");
+	static const Colour TOPOLOGY_NETWORK_RESOLVER_COLOUR = *html_colours.get_colour("darkkhaki");
+	static const Colour VELOCITY_FIELD_CALCULATOR_COLOUR = *html_colours.get_colour("aquamarine");
+
+	static const Colour DEFAULT_COLOUR = Colour::get_white();
+
+	using namespace GPlatesAppLogic::LayerTaskType;
+
+	switch (layer_type)
+	{
+		case RECONSTRUCTION:
+			return RECONSTRUCTION_COLOUR;
+
+		case RECONSTRUCT:
+			return RECONSTRUCT_COLOUR;
+
+		case RASTER:
+			return RASTER_COLOUR;
+
+		case AGE_GRID:
+			return AGE_GRID_COLOUR;
+
+		case TOPOLOGY_BOUNDARY_RESOLVER:
+			return TOPOLOGY_BOUNDARY_RESOLVER_COLOUR;
+
+		case TOPOLOGY_NETWORK_RESOLVER:
+			return TOPOLOGY_NETWORK_RESOLVER_COLOUR;
+
+		case VELOCITY_FIELD_CALCULATOR:
+			return VELOCITY_FIELD_CALCULATOR_COLOUR;
+
+		default:
+			return DEFAULT_COLOUR;
+	}
+}
+
+
+namespace
+{
+	QPixmap
+	get_filled_pixmap(
+			int width,
+			int height,
+			const GPlatesGui::Colour &colour)
+	{
+		QPixmap result(width, height);
+		result.fill(colour);
+		return result;
+	}
+}
+
+
+const QIcon &
+GPlatesGui::LayerTaskTypeInfo::get_icon(
+		GPlatesAppLogic::LayerTaskType::Type layer_type)
+{
+	using namespace GPlatesAppLogic::LayerTaskType;
+
+	static const int ICON_SIZE = 16;
+
+	static const QIcon RECONSTRUCTION_ICON(get_filled_pixmap(
+				ICON_SIZE, ICON_SIZE, get_colour(RECONSTRUCTION)));
+	static const QIcon RECONSTRUCT_ICON(get_filled_pixmap(
+				ICON_SIZE, ICON_SIZE, get_colour(RECONSTRUCT)));
+	static const QIcon RASTER_ICON(get_filled_pixmap(
+				ICON_SIZE, ICON_SIZE, get_colour(RASTER)));
+	static const QIcon AGE_GRID_ICON(get_filled_pixmap(
+				ICON_SIZE, ICON_SIZE, get_colour(AGE_GRID)));
+	static const QIcon TOPOLOGY_BOUNDARY_RESOLVER_ICON(get_filled_pixmap(
+				ICON_SIZE, ICON_SIZE, get_colour(TOPOLOGY_BOUNDARY_RESOLVER)));
+	static const QIcon TOPOLOGY_NETWORK_RESOLVER_ICON(get_filled_pixmap(
+				ICON_SIZE, ICON_SIZE, get_colour(TOPOLOGY_NETWORK_RESOLVER)));
+	static const QIcon VELOCITY_FIELD_CALCULATOR_ICON(get_filled_pixmap(
+				ICON_SIZE, ICON_SIZE, get_colour(VELOCITY_FIELD_CALCULATOR)));
+
+	static const QIcon DEFAULT_ICON;
+
+	switch (layer_type)
+	{
+		case RECONSTRUCTION:
+			return RECONSTRUCTION_ICON;
+
+		case RECONSTRUCT:
+			return RECONSTRUCT_ICON;
+
+		case RASTER:
+			return RASTER_ICON;
+
+		case AGE_GRID:
+			return AGE_GRID_ICON;
+
+		case TOPOLOGY_BOUNDARY_RESOLVER:
+			return TOPOLOGY_BOUNDARY_RESOLVER_ICON;
+
+		case TOPOLOGY_NETWORK_RESOLVER:
+			return TOPOLOGY_NETWORK_RESOLVER_ICON;
+
+		case VELOCITY_FIELD_CALCULATOR:
+			return VELOCITY_FIELD_CALCULATOR_ICON;
+
+		default:
+			return DEFAULT_ICON;
 	}
 }
 

@@ -18,6 +18,9 @@ set(srcs
     AbstractEditWidget.h
     ActionButtonBox.cc
     ActionButtonBox.h
+    AddNewLayerDialog.cc
+    AddNewLayerDialog.h
+    AddNewLayerDialogUi.ui
     AddPropertyDialog.cc
     AddPropertyDialog.h
     AddPropertyDialogUi.ui

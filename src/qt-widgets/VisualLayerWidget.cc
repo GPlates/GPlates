@@ -34,7 +34,6 @@
 #include <QString>
 #include <QMetaType>
 #include <QIcon>
-#include <QPixmap>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QByteArray>
@@ -55,8 +54,6 @@
 #include "file-io/File.h"
 #include "file-io/FileInfo.h"
 
-#include "gui/Colour.h"
-#include "gui/HTMLColourNames.h"
 #include "gui/LayerTaskTypeInfo.h"
 #include "gui/VisualLayersListModel.h"
 #include "gui/VisualLayersProxy.h"
@@ -66,120 +63,13 @@
 
 namespace
 {
-	using namespace GPlatesGui;
-
 	static const QString NEW_FEATURE_COLLECTION = "New Feature Collection";
-
-	const Colour &
-	get_layer_colour(
-			GPlatesAppLogic::LayerTaskType::Type layer_type)
-	{
-		static const HTMLColourNames &html_colours = HTMLColourNames::instance();
-
-		static const Colour RECONSTRUCTION_COLOUR = *html_colours.get_colour("gold");
-		static const Colour RECONSTRUCT_COLOUR = *html_colours.get_colour("yellowgreen");
-		static const Colour RASTER_COLOUR = *html_colours.get_colour("tomato");
-		static const Colour AGE_GRID_COLOUR = *html_colours.get_colour("darkturquoise");
-		static const Colour TOPOLOGY_BOUNDARY_RESOLVER_COLOUR = *html_colours.get_colour("plum");
-		static const Colour TOPOLOGY_NETWORK_RESOLVER_COLOUR = *html_colours.get_colour("darkkhaki");
-		static const Colour VELOCITY_FIELD_CALCULATOR_COLOUR = *html_colours.get_colour("aquamarine");
-
-		static const Colour DEFAULT_COLOUR = Colour::get_white();
-
-		using namespace GPlatesAppLogic::LayerTaskType;
-
-		switch (layer_type)
-		{
-			case RECONSTRUCTION:
-				return RECONSTRUCTION_COLOUR;
-
-			case RECONSTRUCT:
-				return RECONSTRUCT_COLOUR;
-
-			case RASTER:
-				return RASTER_COLOUR;
-
-			case AGE_GRID:
-				return AGE_GRID_COLOUR;
-
-			case TOPOLOGY_BOUNDARY_RESOLVER:
-				return TOPOLOGY_BOUNDARY_RESOLVER_COLOUR;
-
-			case TOPOLOGY_NETWORK_RESOLVER:
-				return TOPOLOGY_NETWORK_RESOLVER_COLOUR;
-
-			case VELOCITY_FIELD_CALCULATOR:
-				return VELOCITY_FIELD_CALCULATOR_COLOUR;
-
-			default:
-				return DEFAULT_COLOUR;
-		}
-	}
-
-	QPixmap
-	get_filled_pixmap(
-			int width,
-			int height,
-			const Colour &colour)
-	{
-		QPixmap result(width, height);
-		result.fill(colour);
-		return result;
-	}
 
 	const QIcon &
 	get_feature_collection_icon()
 	{
 		static const QIcon FEATURE_COLLECTION_ICON(":/gnome_text_x_preview_16.png");
 		return FEATURE_COLLECTION_ICON;
-	}
-
-	const QIcon &
-	get_layer_icon(
-			GPlatesAppLogic::LayerTaskType::Type layer_type)
-	{
-		using namespace GPlatesAppLogic::LayerTaskType;
-
-		static const int ICON_SIZE = 16;
-
-		static const QIcon RECONSTRUCTION_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(RECONSTRUCTION)));
-		static const QIcon RECONSTRUCT_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(RECONSTRUCT)));
-		static const QIcon RASTER_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(RASTER)));
-		static const QIcon AGE_GRID_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(AGE_GRID)));
-		static const QIcon TOPOLOGY_BOUNDARY_RESOLVER_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(TOPOLOGY_BOUNDARY_RESOLVER)));
-		static const QIcon TOPOLOGY_NETWORK_RESOLVER_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(TOPOLOGY_NETWORK_RESOLVER)));
-
-		static const QIcon DEFAULT_ICON;
-
-		switch (layer_type)
-		{
-			case RECONSTRUCTION:
-				return RECONSTRUCTION_ICON;
-
-			case RECONSTRUCT:
-				return RECONSTRUCT_ICON;
-
-			case RASTER:
-				return RASTER_ICON;
-
-			case AGE_GRID:
-			 	return AGE_GRID_ICON;
-
-			case TOPOLOGY_BOUNDARY_RESOLVER:
-				return TOPOLOGY_BOUNDARY_RESOLVER_ICON;
-
-			case TOPOLOGY_NETWORK_RESOLVER:
-			 	return TOPOLOGY_NETWORK_RESOLVER_ICON;
-
-			default:
-				return DEFAULT_ICON;
-		}
 	}
 }
 
@@ -345,7 +235,9 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 
 		// Set the background colour of d_left_widget depending on what type of layer it is.
 		QPalette left_widget_palette;
-		left_widget_palette.setColor(QPalette::Base, get_layer_colour(layer_type));
+		left_widget_palette.setColor(
+				QPalette::Base,
+				GPlatesGui::LayerTaskTypeInfo::get_colour(layer_type));
 		d_left_widget->setPalette(left_widget_palette);
 		d_left_widget->set_row(row);
 
@@ -884,7 +776,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 				qv.setValue(fn);
 				action->setData(qv);
 				action->setIcon(
-						get_layer_icon(
+						GPlatesGui::LayerTaskTypeInfo::get_icon(
 							locked_outputting_visual_layer->get_reconstruct_graph_layer().get_type()));
 				menu->addAction(action);
 
