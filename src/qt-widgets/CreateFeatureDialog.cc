@@ -30,7 +30,6 @@
 #include <QSet>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QListWidget>
 #include <QMessageBox>
 #include <QDebug>
 
@@ -59,7 +58,6 @@
 #include "model/PropertyName.h"
 #include "model/FeatureType.h"
 #include "model/FeatureCollectionHandle.h"
-#include "model/GPGIMInfo.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 
@@ -79,89 +77,6 @@ namespace
 	 * It is a boost::optional because creation of geometry may fail for various reasons.
 	 */
 	typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_opt_ptr_type;
-
-
-	/**
-	 * Subclass of QListWidgetItem so that we can display QualifiedXmlNames in the QListWidget
-	 * without converting them to a QString (and thus forgetting that we had a QualifiedXmlName
-	 * in the first place).
-	 */
-	class PropertyNameItem :
-			public QListWidgetItem
-	{
-	public:
-		PropertyNameItem(
-				const GPlatesModel::PropertyName name,
-				const QString &display_name,
-				bool expects_time_dependent_wrapper_):
-			QListWidgetItem(display_name),
-			d_name(name),
-			d_expects_time_dependent_wrapper(expects_time_dependent_wrapper_)
-		{  }
-	
-		const GPlatesModel::PropertyName
-		get_name()
-		{
-			return d_name;
-		}
-
-		bool
-		expects_time_dependent_wrapper()
-		{
-			return d_expects_time_dependent_wrapper;
-		}
-
-	private:
-		const GPlatesModel::PropertyName d_name;
-		bool d_expects_time_dependent_wrapper;
-	};
-
-
-	/**
-	 * Fill the list with possible property names we can assign geometry to.
-	 */
-	void
-	populate_geometry_destinations_list(
-			QListWidget &list_widget,
-			GPlatesModel::FeatureType target_feature_type)
-	{
-		typedef GPlatesModel::GPGIMInfo::geometry_prop_name_map_type geometry_prop_name_map_type;
-		static const geometry_prop_name_map_type geometry_prop_names =
-				GPlatesModel::GPGIMInfo::get_geometry_prop_name_map();
-		typedef GPlatesModel::GPGIMInfo::geometry_prop_timedependency_map_type geometry_prop_timedependency_map_type;
-		static const geometry_prop_timedependency_map_type geometry_time_dependencies =
-				GPlatesModel::GPGIMInfo::get_geometry_prop_timedependency_map();
-		// FIXME: This list should ideally be dynamic, depending on:
-		//  - the type of GeometryOnSphere we are given (e.g. gpml:position for gml:Point)
-		//  - the type of feature the user has selected in the first list (since different
-		//    feature types are supposed to have a different selection of valid properties)
-		list_widget.clear();
-		// Iterate over the feature_type_info_table, and add all property names
-		// that match our desired feature.
-		typedef GPlatesModel::GPGIMInfo::feature_geometric_prop_map_type feature_geometric_prop_map_type;
-		static const feature_geometric_prop_map_type map =
-			GPlatesModel::GPGIMInfo::get_feature_geometric_prop_map();
-		feature_geometric_prop_map_type::const_iterator it = map.lower_bound(target_feature_type);
-		feature_geometric_prop_map_type::const_iterator end = map.upper_bound(target_feature_type);
-		for ( ; it != end; ++it) {
-			GPlatesModel::PropertyName property = it->second;
-			// Display name defaults to the QualifiedXmlName.
-			QString display_name = GPlatesUtils::make_qstring_from_icu_string(property.build_aliased_name());
-			geometry_prop_name_map_type::const_iterator display_name_it = geometry_prop_names.find(property);
-			if (display_name_it != geometry_prop_names.end()) {
-				display_name = display_name_it->second;
-			}
-			// Now we have to look up the time-dependent flag somewhere, too.
-			bool expects_time_dependent_wrapper = true;
-			geometry_prop_timedependency_map_type::const_iterator time_dependency_it = geometry_time_dependencies.find(property);
-			if (time_dependency_it != geometry_time_dependencies.end()) {
-				expects_time_dependent_wrapper = time_dependency_it->second;
-			}
-			// Finally, add the item to the QListWidget.
-			list_widget.addItem(new PropertyNameItem(property, display_name, expects_time_dependent_wrapper));
-		}
-		list_widget.setCurrentRow(0);
-	}
 
 
 	/**
@@ -232,6 +147,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_recon_method_combobox(new QComboBox(this)),
 	d_right_plate_id(new EditPlateIdWidget(this)),
 	d_left_plate_id(new EditPlateIdWidget(this)),
+	d_listwidget_geometry_destinations(new GeometryDestinationsListWidget(this)),
 	d_recon_method(GPlatesAppLogic::BY_PLATE_ID)
 {
 	setupUi(this);
@@ -243,6 +159,9 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
 			d_choose_feature_collection_widget,
 			widget_choose_feature_collection_placeholder);
+	GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
+			d_listwidget_geometry_destinations,
+			listwidget_geometry_destinations_placeholder);
 	
 	set_up_button_box();
 	
@@ -302,7 +221,7 @@ void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 {
 	// Pushing Enter or double-clicking a geometric property should cause focus to advance.
-	QObject::connect(listwidget_geometry_destinations, SIGNAL(itemActivated(QListWidgetItem *)),
+	QObject::connect(d_listwidget_geometry_destinations, SIGNAL(itemActivated(QListWidgetItem *)),
 			d_plate_id_widget, SLOT(setFocus()));
 	// The various Edit widgets need pass focus along the chain if Enter is pressed.
 	QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
@@ -394,7 +313,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 		return;
 	}
 	// Populate the listwidget_geometry_destinations based on what is legal right now.
-	populate_geometry_destinations_list(*listwidget_geometry_destinations, *feature_type_opt);
+	d_listwidget_geometry_destinations->populate(*feature_type_opt);
 }
 
 
@@ -481,7 +400,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 	case 1:
 			// Populate the listwidget_geometry_destinations based on what is legal right now.
 			set_up_geometric_property_list();
-			listwidget_geometry_destinations->setFocus();
+			d_listwidget_geometry_destinations->setFocus();
 			d_button_create->setEnabled(false);
 			button_create_and_save->setEnabled(false);
 			d_conjugate_plate_id_widget->setVisible(
@@ -504,8 +423,8 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	bool topological = (d_creation_type == TOPOLOGICAL);
 
 	// Get the PropertyName the user has selected for geometry to go into.
-	PropertyNameItem *geom_prop_name_item = dynamic_cast<PropertyNameItem *>(
-			listwidget_geometry_destinations->currentItem());
+	PropertyNameItem *geom_prop_name_item =
+		d_listwidget_geometry_destinations->get_current_property_name_item();
 	if (geom_prop_name_item == NULL)
 	{
 		QMessageBox::critical(this, tr("No geometry destination selected"),

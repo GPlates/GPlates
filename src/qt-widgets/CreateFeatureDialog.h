@@ -30,6 +30,8 @@
 
 #include "CreateFeatureDialogUi.h"
 
+#include "GeometryDestinationsListWidget.h"
+
 #include "app-logic/ReconstructionMethodId.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -244,6 +246,11 @@ namespace GPlatesQtWidgets
 		* left plate id
 		*/
 		EditPlateIdWidget *d_left_plate_id;
+
+		/**
+		 * Allows the user to pick the property that will store the geometry.
+		 */
+		GeometryDestinationsListWidget *d_listwidget_geometry_destinations;
 
 		GPlatesAppLogic::ReconstructionMethod d_recon_method;
 	};

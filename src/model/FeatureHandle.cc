@@ -217,6 +217,7 @@ GPlatesModel::FeatureHandle::set_feature_type(
 		const FeatureType &feature_type_)
 {
 	d_feature_type = feature_type_;
+	notify_listeners_of_modification(true, false);
 }
 
 

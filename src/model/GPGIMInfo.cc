@@ -29,6 +29,8 @@
 #include "GPGIMInfo.h"
 
 
+#define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
+
 namespace
 {
 	using namespace GPlatesModel::GPGIMInfo;

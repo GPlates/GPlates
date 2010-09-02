@@ -34,8 +34,6 @@
 #include "FeatureType.h"
 
 
-#define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
-
 namespace GPlatesModel
 {
 	// The following is just code that used to live in CreateFeatureDialog.

@@ -127,6 +127,8 @@ set(srcs
     FeatureSummaryWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
+    GeometryDestinationsListWidget.cc
+    GeometryDestinationsListWidget.h
     GeoreferencingPage.cc
     GeoreferencingPage.h
     GeoreferencingPageUi.ui
