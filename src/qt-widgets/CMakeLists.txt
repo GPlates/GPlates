@@ -37,6 +37,9 @@ set(srcs
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
+    ChangeGeometryPropertyDialog.cc
+    ChangeGeometryPropertyDialog.h
+    ChangeGeometryPropertyDialogUi.ui
     ChooseFeatureCollectionWidget.cc
     ChooseFeatureCollectionWidget.h
     ChooseFeatureCollectionWidgetUi.ui

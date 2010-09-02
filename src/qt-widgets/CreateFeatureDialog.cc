@@ -40,6 +40,7 @@
 #include "EditPlateIdWidget.h"
 #include "EditTimePeriodWidget.h"
 #include "EditStringWidget.h"
+#include "GeometryDestinationsListWidget.h"
 #include "InformationDialog.h"
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"

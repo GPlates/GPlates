@@ -51,6 +51,7 @@ namespace GPlatesQtWidgets
 	{
 	public:
 
+		explicit
 		GeometryDestinationsListWidget(
 				QWidget *parent_ = NULL);
 
@@ -81,7 +82,7 @@ namespace GPlatesQtWidgets
 			d_expects_time_dependent_wrapper(expects_time_dependent_wrapper_)
 		{  }
 	
-		const GPlatesModel::PropertyName
+		const GPlatesModel::PropertyName &
 		get_name()
 		{
 			return d_name;

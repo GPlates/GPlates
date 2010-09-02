@@ -45,6 +45,8 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
+	class ChangeGeometryPropertyDialog;
+
 	class FeaturePropertiesDialog:
 			public QDialog,
 			protected Ui_FeaturePropertiesDialog
@@ -131,9 +133,15 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_rg;
 
-		GPlatesQtWidgets::QueryFeaturePropertiesWidget *d_query_feature_properties_widget;
-		GPlatesQtWidgets::EditFeaturePropertiesWidget *d_edit_feature_properties_widget;
-		GPlatesQtWidgets::ViewFeatureGeometriesWidget *d_view_feature_geometries_widget;
+		QueryFeaturePropertiesWidget *d_query_feature_properties_widget;
+		EditFeaturePropertiesWidget *d_edit_feature_properties_widget;
+		ViewFeatureGeometriesWidget *d_view_feature_geometries_widget;
+
+		/**
+		 * Prompts the user to change the geometry property if an existing geometry
+		 * property is no longer appropriate after a feature type change.
+		 */
+		ChangeGeometryPropertyDialog *d_change_geometry_property_dialog;
 	};
 }
 

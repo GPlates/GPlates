@@ -238,6 +238,12 @@ namespace GPlatesModel
 			return d_values.end();
 		}
 
+		size_t
+		size() const
+		{
+			return d_values.size();
+		}
+
 		virtual
 		void
 		accept_visitor(

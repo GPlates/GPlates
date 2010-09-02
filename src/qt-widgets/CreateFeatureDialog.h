@@ -30,8 +30,6 @@
 
 #include "CreateFeatureDialogUi.h"
 
-#include "GeometryDestinationsListWidget.h"
-
 #include "app-logic/ReconstructionMethodId.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -58,6 +56,7 @@ namespace GPlatesQtWidgets
 	class EditPlateIdWidget;
 	class EditTimePeriodWidget;
 	class EditStringWidget;
+	class GeometryDestinationsListWidget;
 	class InformationDialog;
 	class ViewportWindow;
 
