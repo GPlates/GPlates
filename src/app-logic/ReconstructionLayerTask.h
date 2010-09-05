@@ -32,6 +32,7 @@
 #include <QString>
 
 #include "LayerTask.h"
+#include "LayerTaskParams.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -112,9 +113,18 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
 				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
 
+
+		virtual
+		LayerTaskParams &
+		get_layer_params()
+		{
+			return d_layer_params;
+		}
+
 	private:
 		static const char *RECONSTRUCTION_FEATURES_CHANNEL_NAME;
 
+		LayerTaskParams d_layer_params;
 
 		ReconstructionLayerTask()
 		{  }

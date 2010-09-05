@@ -35,6 +35,8 @@
 #include <boost/weak_ptr.hpp>
 #include <QString>
 
+#include "LayerTaskType.h"
+
 #include "model/FeatureCollectionHandle.h"
 
 
@@ -97,6 +99,11 @@ namespace GPlatesAppLogic
 			boost::shared_ptr<LayerTask>
 			create_layer_task() const;
 
+			/**
+			 * Returns the type of the layer task as a member of an enumeration.
+			 */
+			GPlatesAppLogic::LayerTaskType::Type
+			get_layer_type() const;
 
 			//! Used by implementation.
 			const boost::weak_ptr<const LayerTaskTypeInfo> &
@@ -147,7 +154,8 @@ namespace GPlatesAppLogic
 				const create_layer_task_function_type &create_layer_task_function,
 				const can_layer_task_process_feature_collection_function_type &
 						can_layer_task_process_feature_collection_function,
-				const is_primary_layer_task_function_type &is_primary_layer_task_function);
+				const is_primary_layer_task_function_type &is_primary_layer_task_function,
+				GPlatesAppLogic::LayerTaskType::Type layer_type);
 
 
 		/**
@@ -225,7 +233,8 @@ namespace GPlatesAppLogic
 					const create_layer_task_function_type &create_layer_task_function_,
 					const can_layer_task_process_feature_collection_function_type &
 							can_layer_task_process_feature_collection_function_,
-					const is_primary_layer_task_function_type &is_primary_layer_task_function_);
+					const is_primary_layer_task_function_type &is_primary_layer_task_function_,
+					GPlatesAppLogic::LayerTaskType::Type layer_type_);
 
 			create_layer_task_function_type create_layer_task_function;
 
@@ -233,6 +242,8 @@ namespace GPlatesAppLogic
 					can_layer_task_process_feature_collection_function;
 
 			is_primary_layer_task_function_type is_primary_layer_task_function;
+
+			GPlatesAppLogic::LayerTaskType::Type layer_type;
 		};
 
 		//! Typedef for a sequence of layer task types.

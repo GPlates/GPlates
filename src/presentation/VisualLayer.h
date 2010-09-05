@@ -31,6 +31,8 @@
 #include <boost/optional.hpp>
 #include <QString>
 
+#include "VisualLayerType.h"
+
 #include "app-logic/Layer.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -80,6 +82,12 @@ namespace GPlatesPresentation
 		{
 			return d_rendered_geometry_layer_index;
 		}
+
+		/**
+		 * Returns the type of the visual layer as an enumeration.
+		 */
+		VisualLayerType::Type
+		get_layer_type() const;
 
 		/**
 		 * Creates rendered geometries for this visual layer.

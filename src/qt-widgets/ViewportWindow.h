@@ -539,9 +539,6 @@ namespace GPlatesQtWidgets
 		 */
 		TaskPanel *d_task_panel_ptr;
 
-		//! The last path used for opening raster files.
-		QString d_open_file_path; 
-
 		/**
 		 * To help users adjust to the new layers system, we'll open up the layers
 		 * dialog the first time (and only the first time) a new layer gets added.

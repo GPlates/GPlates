@@ -170,13 +170,13 @@ GPlatesQtWidgets::TimeDependentRasterSequence::sort_by_file_name()
 
 GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 		GPlatesAppLogic::ApplicationState &application_state,
-		QString &open_file_path,
+		GPlatesPresentation::ViewState &view_state,
 		GPlatesGui::UnsavedChangesTracker *unsaved_changes_tracker,
 		GPlatesGui::FileIOFeedback *file_io_feedback,
 		QWidget *parent_) :
 	QWizard(parent_, Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_application_state(application_state),
-	d_open_file_path(open_file_path),
+	d_view_state(view_state),
 	d_unsaved_changes_tracker(unsaved_changes_tracker),
 	d_file_io_feedback(file_io_feedback),
 	d_georeferencing(
@@ -184,7 +184,7 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 	d_save_after_finish(true),
 	d_time_dependent_raster_page_id(addPage(
 				new TimeDependentRasterPage(
-					d_open_file_path,
+					view_state.get_open_file_path(),
 					d_raster_sequence,
 					boost::bind(
 						&ImportRasterDialog::set_number_of_bands,
@@ -245,7 +245,7 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 		QString filename = QFileDialog::getOpenFileName(
 				parentWidget(),
 				QObject::tr("Import Raster"),
-				d_open_file_path,
+				d_view_state.get_open_file_path(),
 				GPlatesFileIO::RasterReader::get_file_dialog_filters());
 
 		if (filename.isEmpty())
@@ -253,7 +253,7 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 			return;
 		}
 
-		d_open_file_path = filename;
+		d_view_state.get_open_file_path() = filename;
 
 		// Check whether there is a GPML file of the same name in the same directory.
 		// If so, ask the user if they actually meant to open that.

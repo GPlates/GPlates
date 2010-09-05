@@ -46,13 +46,15 @@ GPlatesAppLogic::LayerTaskRegistry::register_layer_task_type(
 		const create_layer_task_function_type &create_layer_task_function,
 		const can_layer_task_process_feature_collection_function_type &
 				can_layer_task_process_feature_collection_function,
-		const is_primary_layer_task_function_type &is_primary_layer_task_function)
+		const is_primary_layer_task_function_type &is_primary_layer_task_function,
+		GPlatesAppLogic::LayerTaskType::Type layer_type)
 {
 	const boost::shared_ptr<const LayerTaskTypeInfo> layer_task_type(
 			new LayerTaskTypeInfo(
 					create_layer_task_function,
 					can_layer_task_process_feature_collection_function,
-					is_primary_layer_task_function));
+					is_primary_layer_task_function,
+					layer_type));
 
 	d_layer_task_types.push_back(layer_task_type);
 
@@ -245,15 +247,31 @@ GPlatesAppLogic::LayerTaskRegistry::LayerTaskType::create_layer_task() const
 }
 
 
+GPlatesAppLogic::LayerTaskType::Type
+GPlatesAppLogic::LayerTaskRegistry::LayerTaskType::get_layer_type() const
+{
+	// Throw our own exception to track location of throw.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+		is_valid(),
+		GPLATES_ASSERTION_SOURCE);
+
+	const boost::shared_ptr<const LayerTaskTypeInfo> layer_task_type(d_impl);
+
+	return layer_task_type->layer_type;
+}
+
+
 GPlatesAppLogic::LayerTaskRegistry::LayerTaskTypeInfo::LayerTaskTypeInfo(
 		const create_layer_task_function_type &create_layer_task_function_,
 		const can_layer_task_process_feature_collection_function_type &
 				can_layer_task_process_feature_collection_function_,
-		const is_primary_layer_task_function_type &is_primary_layer_task_function_) :
+		const is_primary_layer_task_function_type &is_primary_layer_task_function_,
+		GPlatesAppLogic::LayerTaskType::Type layer_type_) :
 	create_layer_task_function(create_layer_task_function_),
 	can_layer_task_process_feature_collection_function(
 			can_layer_task_process_feature_collection_function_),
-	is_primary_layer_task_function(is_primary_layer_task_function_)
+	is_primary_layer_task_function(is_primary_layer_task_function_),
+	layer_type(layer_type_)
 {
 }
 
@@ -266,44 +284,51 @@ GPlatesAppLogic::register_default_layer_task_types(
 	layer_task_registry.register_layer_task_type(
 			&ReconstructionLayerTask::create_layer_task,
 			&ReconstructionLayerTask::can_process_feature_collection,
-			&ReconstructionLayerTask::is_primary_layer_task_type);
+			&ReconstructionLayerTask::is_primary_layer_task_type,
+			GPlatesAppLogic::LayerTaskType::RECONSTRUCTION);
 
 	// Layer task that reconstructs geometries.
 	const LayerTaskRegistry::LayerTaskType reconstruct_layer_task_type =
 			layer_task_registry.register_layer_task_type(
 					&ReconstructLayerTask::create_layer_task,
 					&ReconstructLayerTask::can_process_feature_collection,
-					&ReconstructLayerTask::is_primary_layer_task_type);
+					&ReconstructLayerTask::is_primary_layer_task_type,
+					GPlatesAppLogic::LayerTaskType::RECONSTRUCT);
 
 	// Layer task that reconstructs rasters.
 	layer_task_registry.register_layer_task_type(
 			&RasterLayerTask::create_layer_task,
 			&RasterLayerTask::can_process_feature_collection,
-			&RasterLayerTask::is_primary_layer_task_type);
+			&RasterLayerTask::is_primary_layer_task_type,
+			GPlatesAppLogic::LayerTaskType::RASTER);
 
 	// Layer task that processes age grids.
 	layer_task_registry.register_layer_task_type(
 			&AgeGridLayerTask::create_layer_task,
 			&AgeGridLayerTask::can_process_feature_collection,
-			&AgeGridLayerTask::is_primary_layer_task_type);
+			&AgeGridLayerTask::is_primary_layer_task_type,
+			GPlatesAppLogic::LayerTaskType::AGE_GRID);
 
 	// Layer task to resolve topological closed plate boundaries.
 	layer_task_registry.register_layer_task_type(
 			&TopologyBoundaryResolverLayerTask::create_layer_task,
 			&TopologyBoundaryResolverLayerTask::can_process_feature_collection,
-			&TopologyBoundaryResolverLayerTask::is_primary_layer_task_type);
+			&TopologyBoundaryResolverLayerTask::is_primary_layer_task_type,
+			GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER);
 
 	// Layer task to resolve topological networks.
 	layer_task_registry.register_layer_task_type(
 			&TopologyNetworkResolverLayerTask::create_layer_task,
 			&TopologyNetworkResolverLayerTask::can_process_feature_collection,
-			&TopologyNetworkResolverLayerTask::is_primary_layer_task_type);
+			&TopologyNetworkResolverLayerTask::is_primary_layer_task_type,
+			GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 
 	// Layer task to calculate velocity fields.
 	layer_task_registry.register_layer_task_type(
 			&VelocityFieldCalculatorLayerTask::create_layer_task,
 			&VelocityFieldCalculatorLayerTask::can_process_feature_collection,
-			&VelocityFieldCalculatorLayerTask::is_primary_layer_task_type);
+			&VelocityFieldCalculatorLayerTask::is_primary_layer_task_type,
+			GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR);
 
 	//
 	// Set the layer task type to use when no registered layer task types can process

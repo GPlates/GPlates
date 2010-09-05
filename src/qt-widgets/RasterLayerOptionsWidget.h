@@ -27,13 +27,10 @@
 #define GPLATES_QTWIDGETS_RASTERLAYEROPTIONSWIDGET_H
 
 #include <vector>
-#include <boost/optional.hpp>
-#include <QWidget>
-#include <QString>
 
 #include "RasterLayerOptionsWidgetUi.h"
 
-#include "app-logic/Layer.h"
+#include "LayerOptionsWidget.h"
 
 
 namespace GPlatesAppLogic
@@ -48,33 +45,38 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	// Forward declaration.
+	// Forward declarations.
 	class FriendlyLineEdit;
 	class ReadErrorAccumulationDialog;
 
 	/**
-	 * RasterLayerOptionsWidget is used to show additional options for raster and
-	 * age grid layers in the visual layers widget.
+	 * RasterLayerOptionsWidget is used to show additional options for raster
+	 * layers in the visual layers widget.
 	 */
 	class RasterLayerOptionsWidget :
-			public QWidget,
+			public LayerOptionsWidget,
 			protected Ui_RasterLayerOptionsWidget
 	{
 		Q_OBJECT
 		
 	public:
 
-		explicit
-		RasterLayerOptionsWidget(
+		static
+		LayerOptionsWidget *
+		create(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				QString &open_file_path,
 				ReadErrorAccumulationDialog *read_errors_dialog,
-				QWidget *parent_ = NULL);
+				QWidget *parent_);
 
+		virtual
 		void
 		set_data(
-				const GPlatesAppLogic::Layer &layer);
+				const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer);
+
+		virtual
+		const QString &
+		get_title();
 
 	private slots:
 
@@ -90,6 +92,12 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		RasterLayerOptionsWidget(
+				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesPresentation::ViewState &view_state,
+				ReadErrorAccumulationDialog *read_errors_dialog,
+				QWidget *parent_);
+
 		void
 		make_signal_slot_connections();
 
@@ -97,15 +105,14 @@ namespace GPlatesQtWidgets
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
-		QString &d_open_file_path;
 		ReadErrorAccumulationDialog *d_read_errors_dialog;
 
 		FriendlyLineEdit *d_palette_filename_lineedit;
 
 		/**
-		 * The layer that we're currently displaying.
+		 * The visual layer for which we are currently displaying options.
 		 */
-		GPlatesAppLogic::Layer d_current_layer;
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
 	};
 }
 

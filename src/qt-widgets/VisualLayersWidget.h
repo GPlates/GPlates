@@ -27,7 +27,6 @@
 #define GPLATES_QTWIDGETS_VISUALLAYERSWIDGET_H
 
 #include <boost/scoped_ptr.hpp>
-#include <QString>
 #include <QWidget>
 
 #include "VisualLayersWidgetUi.h"
@@ -69,7 +68,6 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::VisualLayers &visual_layers,
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				QString &open_file_path,
 				ReadErrorAccumulationDialog *read_errors_dialog,
 				QWidget *parent_ = NULL);
 
@@ -87,8 +85,8 @@ namespace GPlatesQtWidgets
 		 * A wrapper around VisualLayers to invert the ordering for the user interface.
 		 */
 		GPlatesGui::VisualLayersProxy d_visual_layers;
-
 		GPlatesAppLogic::ApplicationState &d_application_state;
+		GPlatesPresentation::ViewState &d_view_state;
 
 		boost::scoped_ptr<AddNewLayerDialog> d_add_new_layer_dialog;
 	};

@@ -49,16 +49,17 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/LayerTaskType.h"
 
 #include "file-io/File.h"
 #include "file-io/FileInfo.h"
 
-#include "gui/LayerTaskTypeInfo.h"
 #include "gui/VisualLayersListModel.h"
 #include "gui/VisualLayersProxy.h"
 
+#include "presentation/ViewState.h"
 #include "presentation/VisualLayer.h"
+#include "presentation/VisualLayerType.h"
+#include "presentation/VisualLayerRegistry.h"
 
 
 namespace
@@ -144,14 +145,12 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 		GPlatesGui::VisualLayersProxy &visual_layers,
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		QString &open_file_path,
 		ReadErrorAccumulationDialog *read_errors_dialog,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_open_file_path(open_file_path),
 	d_read_errors_dialog(read_errors_dialog),
 	d_left_widget(
 			new DraggableWidget(this)),
@@ -170,7 +169,8 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 	d_type_label(
 			new ElidedLabel(Qt::ElideRight, this)),
 	d_input_channels_widget_layout(NULL),
-	d_raster_layer_options_widget(NULL)
+	d_current_layer_options_widget(NULL),
+	d_layer_options_groupbox_layout(NULL)
 {
 	setupUi(this);
 
@@ -207,6 +207,10 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 			visibility_icon_placeholder_widget);
 	d_visibility_icon->setFrameStyle(QFrame::Panel | QFrame::Sunken);
 
+	// Give the layer_options_groupbox a layout.
+	d_layer_options_groupbox_layout = new QVBoxLayout(layer_options_groupbox);
+	d_layer_options_groupbox_layout->setContentsMargins(0, 0, 0, 0);
+
 	make_signal_slot_connections();
 
 	// Hide things for now...
@@ -223,11 +227,9 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			visual_layer.lock())
 	{
-		const GPlatesAppLogic::Layer &layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::LayerTaskType::Type layer_type = layer.get_type();
-
-		// Store pointer to visual layer for later use.
-		d_visual_layer = visual_layer;
+		GPlatesPresentation::VisualLayerType::Type visual_layer_type = locked_visual_layer->get_layer_type();
+		const GPlatesPresentation::VisualLayerRegistry &visual_layer_registry =
+			d_view_state.get_visual_layer_registry();
 
 		// Set the expand/collapse icon.
 		bool expanded = locked_visual_layer->is_expanded();
@@ -237,7 +239,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 		QPalette left_widget_palette;
 		left_widget_palette.setColor(
 				QPalette::Base,
-				GPlatesGui::LayerTaskTypeInfo::get_colour(layer_type));
+				visual_layer_registry.get_colour(visual_layer_type));
 		d_left_widget->setPalette(left_widget_palette);
 		d_left_widget->set_row(row);
 
@@ -246,11 +248,39 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 
 		// Update the basic info.
 		d_name_label->setText(locked_visual_layer->get_name());
-		d_type_label->setText(GPlatesGui::LayerTaskTypeInfo::get_name(layer_type));
-		top_widget->setToolTip(GPlatesGui::LayerTaskTypeInfo::get_description(layer_type));
+		d_type_label->setText(visual_layer_registry.get_name(visual_layer_type));
+		top_widget->setToolTip(visual_layer_registry.get_description(visual_layer_type));
 
 		// Show or hide the details panel as necessary.
 		details_placeholder_widget->setVisible(expanded);
+
+		// Change the layers option widget if type changed since last time.
+		if (d_visual_layer.expired() || d_visual_layer.lock()->get_layer_type() != visual_layer_type)
+		{
+			// Remove the existing widget if there is one.
+			if (d_current_layer_options_widget)
+			{
+				d_layer_options_groupbox_layout->removeWidget(d_current_layer_options_widget);
+				delete d_current_layer_options_widget;
+			}
+
+			d_current_layer_options_widget = visual_layer_registry.create_options_widget(
+					visual_layer_type,
+					d_application_state,
+					d_view_state,
+					d_read_errors_dialog,
+					this);
+			if (d_current_layer_options_widget)
+			{
+				d_layer_options_groupbox_layout->addWidget(d_current_layer_options_widget);
+				layer_options_groupbox->setTitle(d_current_layer_options_widget->get_title());
+				layer_options_groupbox->show();
+			}
+			else
+			{
+				layer_options_groupbox->hide();
+			}
+		}
 
 		// Populate the details panel only if shown.
 		if (expanded)
@@ -258,30 +288,15 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 			// Update the input channel info.
 			set_input_channel_data(locked_visual_layer->get_reconstruct_graph_layer());
 
-			// Show or hide the special groupbox for raster layers.
-			if (layer_type == GPlatesAppLogic::LayerTaskType::RASTER)
+			// Update the layers option widget.
+			if (d_current_layer_options_widget)
 			{
-				if (!d_raster_layer_options_widget)
-				{
-					d_raster_layer_options_widget = new RasterLayerOptionsWidget(
-							d_application_state,
-							d_view_state,
-							d_open_file_path,
-							d_read_errors_dialog,
-							this);
-					QtWidgetUtils::add_widget_to_placeholder(
-							d_raster_layer_options_widget,
-							raster_groupbox);
-				}
-				d_raster_layer_options_widget->set_data(
-						locked_visual_layer->get_reconstruct_graph_layer());
-				raster_groupbox->show();
-			}
-			else
-			{
-				raster_groupbox->hide();
+				d_current_layer_options_widget->set_data(visual_layer);
 			}
 		}
+
+		// Store pointer to visual layer for later use.
+		d_visual_layer = visual_layer;
 	}
 }
 
@@ -328,7 +343,11 @@ GPlatesQtWidgets::VisualLayerWidget::set_input_channel_data(
 		for (unsigned int i = 0; i != num_new_widgets; ++i)
 		{
 			VisualLayerWidgetInternals::InputChannelWidget *new_widget =
-				new VisualLayerWidgetInternals::InputChannelWidget(d_visual_layers, d_application_state, this);
+				new VisualLayerWidgetInternals::InputChannelWidget(
+						d_visual_layers,
+						d_application_state,
+						d_view_state,
+						this);
 			d_input_channel_widgets.push_back(new_widget);
 			d_input_channels_widget_layout->addWidget(new_widget);
 		}
@@ -519,10 +538,12 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputConnectionWidget::get_disconn
 GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::InputChannelWidget(
 		GPlatesGui::VisualLayersProxy &visual_layers,
 		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
 	d_application_state(application_state),
+	d_view_state(view_state),
 	d_input_channel_name_label(
 			new ElidedLabel(Qt::ElideRight, this)),
 	d_input_connection_widgets_container(
@@ -755,6 +776,8 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 	}
 
 	const GPlatesAppLogic::ReconstructGraph &reconstruct_graph = d_application_state.get_reconstruct_graph();
+	const GPlatesPresentation::VisualLayerRegistry &visual_layer_registry =
+		d_view_state.get_visual_layer_registry();
 	unsigned int count = 0;
 	BOOST_FOREACH(const GPlatesAppLogic::Layer &outputting_layer, reconstruct_graph)
 	{
@@ -776,8 +799,8 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 				qv.setValue(fn);
 				action->setData(qv);
 				action->setIcon(
-						GPlatesGui::LayerTaskTypeInfo::get_icon(
-							locked_outputting_visual_layer->get_reconstruct_graph_layer().get_type()));
+						visual_layer_registry.get_icon(
+							locked_outputting_visual_layer->get_layer_type()));
 				menu->addAction(action);
 
 				++count;

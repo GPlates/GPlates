@@ -52,6 +52,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+
 		explicit
 		EditFeaturePropertiesWidget(
 				GPlatesPresentation::ViewState &view_state_,
@@ -78,6 +79,12 @@ namespace GPlatesQtWidgets
 		append_property_value_to_feature(
 				GPlatesModel::PropertyValue::non_null_ptr_type property_value,
 				const GPlatesModel::PropertyName &property_name);
+
+		const GPlatesModel::FeatureHandle::weak_ref &
+		current_feature() const
+		{
+			return d_feature_ref;
+		}
 
 	public slots:
 

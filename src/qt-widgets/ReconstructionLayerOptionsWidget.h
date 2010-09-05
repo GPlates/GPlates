@@ -23,10 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
-#define GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
+#ifndef GPLATES_QTWIDGETS_RECONSTRUCTIONLAYEROPTIONSWIDGET_H
+#define GPLATES_QTWIDGETS_RECONSTRUCTIONLAYEROPTIONSWIDGET_H
 
-#include "AddNewLayerDialogUi.h"
+#include "ReconstructionLayerOptionsWidgetUi.h"
+
+#include "LayerOptionsWidget.h"
 
 
 namespace GPlatesAppLogic
@@ -41,37 +43,53 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class AddNewLayerDialog: 
-			public QDialog,
-			protected Ui_AddNewLayerDialog 
+	// Forward declaration.
+	class ReadErrorAccumulationDialog;
+
+	/**
+	 * ReconstructionLayerOptionsWidget is used to show additional options for
+	 * reconstruction layers in the visual layers widget.
+	 */
+	class ReconstructionLayerOptionsWidget :
+			public LayerOptionsWidget,
+			protected Ui_ReconstructionLayerOptionsWidget
 	{
 		Q_OBJECT
 		
 	public:
 
-		explicit
-		AddNewLayerDialog(
+		static
+		LayerOptionsWidget *
+		create(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				QWidget *parent_ = NULL);
+				ReadErrorAccumulationDialog *read_errors_dialog,
+				QWidget *parent_);
 
-	private slots:
-
+		virtual
 		void
-		handle_accept();
+		set_data(
+				const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer);
 
-		void
-		handle_combobox_index_changed(
-				int index);
+		virtual
+		const QString &
+		get_title();
 
 	private:
 
-		void
-		populate_combobox();
+		ReconstructionLayerOptionsWidget(
+				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesPresentation::ViewState &view_state,
+				QWidget *parent_);
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
+
+		/**
+		 * The visual layer for which we are currently displaying options.
+		 */
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
+#endif  // GPLATES_QTWIDGETS_RASTERLAYEROPTIONSWIDGET_H

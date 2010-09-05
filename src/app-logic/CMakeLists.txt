@@ -40,6 +40,7 @@ set(srcs
     LayerTask.cc
     LayerTask.h
     LayerTaskDataType.h
+    LayerTaskParams.h
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
     LayerTaskType.h

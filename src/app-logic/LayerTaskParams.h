@@ -1,9 +1,10 @@
 /* $Id$ */
 
+
 /**
  * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
  *
@@ -23,55 +24,29 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
-#define GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
-
-#include "AddNewLayerDialogUi.h"
+#ifndef GPLATES_APP_LOGIC_LAYERTASKPARAMS_H
+#define GPLATES_APP_LOGIC_LAYERTASKPARAMS_H
 
 
 namespace GPlatesAppLogic
 {
-	class ApplicationState;
-}
-
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
-
-namespace GPlatesQtWidgets
-{
-	class AddNewLayerDialog: 
-			public QDialog,
-			protected Ui_AddNewLayerDialog 
+	/**
+	 * LayerTaskParams can be used to store additional parameters and
+	 * configuration options needed by a layer task to do its job.
+	 *
+	 * If a layer task does not need additional parameters, it may simply store
+	 * an instance of LayerTaskParams. If a layer task wishes to store
+	 * additional parameters, it can, instead, store an instance of a subclass
+	 * of LayerTaskParams.
+	 */
+	class LayerTaskParams
 	{
-		Q_OBJECT
-		
 	public:
 
-		explicit
-		AddNewLayerDialog(
-				GPlatesAppLogic::ApplicationState &application_state,
-				GPlatesPresentation::ViewState &view_state,
-				QWidget *parent_ = NULL);
-
-	private slots:
-
-		void
-		handle_accept();
-
-		void
-		handle_combobox_index_changed(
-				int index);
-
-	private:
-
-		void
-		populate_combobox();
-
-		GPlatesAppLogic::ApplicationState &d_application_state;
-		GPlatesPresentation::ViewState &d_view_state;
+		virtual
+		~LayerTaskParams()
+		{  }
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
+#endif // GPLATES_APP_LOGIC_LAYERTASKPARAMS_H

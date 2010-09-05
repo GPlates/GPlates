@@ -46,6 +46,8 @@
 
 namespace GPlatesAppLogic
 {
+	class LayerTaskParams;
+
 	/**
 	 * Abstract interface for processing input feature collections, reconstructed geometries
 	 * and/or reconstruction trees into a single output.
@@ -148,6 +150,14 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
 				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree) = 0;
+
+		/**
+		 * Returns a reference to the additional parameters and configuration
+		 * options of this layer task.
+		 */
+		virtual
+		LayerTaskParams &
+		get_layer_params() = 0;
 
 	protected:
 		/**

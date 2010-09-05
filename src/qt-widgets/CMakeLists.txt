@@ -161,6 +161,7 @@ set(srcs
     InvalidPropertyValueException.h
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h
+    LayerOptionsWidget.h
     LeaveFullScreenButton.h
     LeaveFullScreenButtonUi.ui
     LicenseDialog.cc
@@ -220,6 +221,9 @@ set(srcs
     ReadErrorAccumulationDialog.cc
     ReadErrorAccumulationDialog.h
     ReadErrorAccumulationDialogUi.ui
+    ReconstructionLayerOptionsWidget.cc
+    ReconstructionLayerOptionsWidget.h
+    ReconstructionLayerOptionsWidgetUi.ui
     ReconstructionPoleWidget.cc
     ReconstructionPoleWidget.h
     ReconstructionPoleWidgetUi.ui

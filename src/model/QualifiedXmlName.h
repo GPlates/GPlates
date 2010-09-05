@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,13 +28,15 @@
 #ifndef GPLATES_MODEL_QUALIFIEDXMLNAME_H
 #define GPLATES_MODEL_QUALIFIEDXMLNAME_H
 
-#include <QString>
 #include <boost/optional.hpp>
+#include <QString>
+#include <QStringList>
+
 #include "StringSetSingletons.h"
+
+#include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
 #include "utils/XmlNamespaces.h"
-
-
 
 
 namespace GPlatesModel
@@ -298,5 +300,33 @@ namespace GPlatesModel
 	}
 
 }
+
+
+namespace GPlatesUtils
+{
+	// Specialisation of Parse for the QualifiedXmlName.
+	template<typename SingletonType>
+	struct Parse<GPlatesModel::QualifiedXmlName<SingletonType> >
+	{
+		GPlatesModel::QualifiedXmlName<SingletonType>
+		operator()(
+				const QString &s)
+		{
+			QStringList tokens = s.split(':');
+			if (tokens.count() == 2)
+			{
+				return GPlatesModel::QualifiedXmlName<SingletonType>(
+						*GPlatesUtils::XmlNamespaces::get_namespace_for_standard_alias(
+							GPlatesUtils::make_icu_string_from_qstring(tokens.at(0))),
+						GPlatesUtils::make_icu_string_from_qstring(tokens.at(1)));
+			}
+			else
+			{
+				throw ParseError();
+			}
+		}
+	};
+}
+
 
 #endif  // GPLATES_MODEL_QUALIFIEDXMLNAME_H

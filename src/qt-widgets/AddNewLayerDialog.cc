@@ -24,45 +24,20 @@
  */
 
 #include <boost/foreach.hpp>
-#include <QMetaType>
 
 #include "AddNewLayerDialog.h"
 
-#include "app-logic/ApplicationState.h"
-#include "app-logic/LayerTask.h"
-#include "app-logic/LayerTaskRegistry.h"
-
-#include "gui/LayerTaskTypeInfo.h"
-
-
-namespace
-{
-	struct LayerTaskTypeInfo
-	{
-		LayerTaskTypeInfo()
-		{  }
-
-		LayerTaskTypeInfo(
-				const GPlatesAppLogic::LayerTaskRegistry::LayerTaskType &layer_task_type_,
-				GPlatesAppLogic::LayerTaskType::Type layer_enum_) :
-			layer_task_type(layer_task_type_),
-			layer_enum(layer_enum_)
-		{  }
-
-		GPlatesAppLogic::LayerTaskRegistry::LayerTaskType layer_task_type;
-		GPlatesAppLogic::LayerTaskType::Type layer_enum;
-	};
-}
-
-
-Q_DECLARE_METATYPE( LayerTaskTypeInfo )
+#include "presentation/ViewState.h"
+#include "presentation/VisualLayerRegistry.h"
 
 
 GPlatesQtWidgets::AddNewLayerDialog::AddNewLayerDialog(
 		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_application_state(application_state)
+	d_application_state(application_state),
+	d_view_state(view_state)
 {
 	setupUi(this);
 
@@ -94,10 +69,12 @@ GPlatesQtWidgets::AddNewLayerDialog::handle_accept()
 {
 	// Create a new layer task and add it to the reconstruct graph.
 	int index = layer_type_combobox->currentIndex();
-	GPlatesAppLogic::LayerTaskRegistry::LayerTaskType layer_task_type =
-		layer_type_combobox->itemData(index).value<LayerTaskTypeInfo>().layer_task_type;
-	boost::shared_ptr<GPlatesAppLogic::LayerTask> layer_task = layer_task_type.create_layer_task();
-	d_application_state.get_reconstruct_graph().add_layer(layer_task);
+	GPlatesPresentation::VisualLayerType::Type visual_layer_type =
+		static_cast<GPlatesPresentation::VisualLayerType::Type>(
+				layer_type_combobox->itemData(index).value<unsigned int>());
+	const GPlatesPresentation::VisualLayerRegistry &visual_layer_registry =
+		d_view_state.get_visual_layer_registry();
+	visual_layer_registry.create_visual_layer(visual_layer_type);
 
 	accept();
 }
@@ -107,30 +84,28 @@ void
 GPlatesQtWidgets::AddNewLayerDialog::handle_combobox_index_changed(
 		int index)
 {
-	GPlatesAppLogic::LayerTaskType::Type layer_enum =
-		layer_type_combobox->itemData(index).value<LayerTaskTypeInfo>().layer_enum;
-	layer_description_label->setText(
-			GPlatesGui::LayerTaskTypeInfo::get_description(layer_enum));
+	GPlatesPresentation::VisualLayerType::Type visual_layer_type =
+		static_cast<GPlatesPresentation::VisualLayerType::Type>(
+				layer_type_combobox->itemData(index).value<unsigned int>());
+	const GPlatesPresentation::VisualLayerRegistry &visual_layer_registry =
+		d_view_state.get_visual_layer_registry();
+	layer_description_label->setText(visual_layer_registry.get_description(visual_layer_type));
 }
 
 
 void
 GPlatesQtWidgets::AddNewLayerDialog::populate_combobox()
 {
-	GPlatesAppLogic::LayerTaskRegistry &layer_task_registry =
-		d_application_state.get_layer_task_registry();
-	std::vector<GPlatesAppLogic::LayerTaskRegistry::LayerTaskType> layer_task_types =
-		layer_task_registry.get_all_layer_task_types();
+	const GPlatesPresentation::VisualLayerRegistry &visual_layer_registry =
+		d_view_state.get_visual_layer_registry();
+	typedef GPlatesPresentation::VisualLayerRegistry::visual_layer_type_seq_type visual_layer_type_seq_type;
+	visual_layer_type_seq_type visual_layer_types = visual_layer_registry.get_registered_visual_layer_types();
 
-	BOOST_FOREACH(const GPlatesAppLogic::LayerTaskRegistry::LayerTaskType &layer_task_type, layer_task_types)
+	BOOST_FOREACH(visual_layer_type_seq_type::value_type visual_layer_type, visual_layer_types)
 	{
-		boost::shared_ptr<GPlatesAppLogic::LayerTask> layer_task = layer_task_type.create_layer_task();
-		GPlatesAppLogic::LayerTaskType::Type layer_enum = layer_task->get_layer_type();
-
-		const QString &layer_name = GPlatesGui::LayerTaskTypeInfo::get_name(layer_enum);
-		const QIcon &layer_icon = GPlatesGui::LayerTaskTypeInfo::get_icon(layer_enum);
-		QVariant qv;
-		qv.setValue(LayerTaskTypeInfo(layer_task_type, layer_enum));
+		const QString &layer_name = visual_layer_registry.get_name(visual_layer_type);
+		const QIcon &layer_icon = visual_layer_registry.get_icon(visual_layer_type);
+		QVariant qv(static_cast<unsigned int>(visual_layer_type));
 		layer_type_combobox->addItem(layer_icon, layer_name, qv);
 	}
 

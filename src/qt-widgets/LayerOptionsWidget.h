@@ -23,55 +23,53 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
-#define GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
+#ifndef GPLATES_QTWIDGETS_LAYEROPTIONSWIDGET_H
+#define GPLATES_QTWIDGETS_LAYEROPTIONSWIDGET_H
 
-#include "AddNewLayerDialogUi.h"
+#include <boost/weak_ptr.hpp>
+#include <QWidget>
+#include <QString>
 
-
-namespace GPlatesAppLogic
-{
-	class ApplicationState;
-}
 
 namespace GPlatesPresentation
 {
-	class ViewState;
+	class VisualLayer;
 }
 
 namespace GPlatesQtWidgets
 {
-	class AddNewLayerDialog: 
-			public QDialog,
-			protected Ui_AddNewLayerDialog 
+	/**
+	 * This is the abstract base class of widgets used to display options
+	 * particular to different visual layer types.
+	 */
+	class LayerOptionsWidget :
+			public QWidget
 	{
-		Q_OBJECT
-		
 	public:
 
-		explicit
-		AddNewLayerDialog(
-				GPlatesAppLogic::ApplicationState &application_state,
-				GPlatesPresentation::ViewState &view_state,
-				QWidget *parent_ = NULL);
+		LayerOptionsWidget(
+				QWidget *parent_) :
+			QWidget(parent_)
+		{  }
 
-	private slots:
+		virtual
+		~LayerOptionsWidget()
+		{  }
 
+		/**
+		 * Requests that the widget display options for the given @a visual_layer.
+		 */
+		virtual
 		void
-		handle_accept();
+		set_data(
+				const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer) = 0;
 
-		void
-		handle_combobox_index_changed(
-				int index);
+		virtual
+		const QString &
+		get_title() = 0;
 
-	private:
-
-		void
-		populate_combobox();
-
-		GPlatesAppLogic::ApplicationState &d_application_state;
-		GPlatesPresentation::ViewState &d_view_state;
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_ADDNEWLAYERDIALOG_H
+
+#endif	// GPLATES_QTWIDGETS_LAYEROPTIONSWIDGET_H

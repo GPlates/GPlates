@@ -35,9 +35,9 @@
 #include <QToolButton>
 #include <QMenu>
 
-#include "app-logic/Layer.h"
-
 #include "VisualLayerWidgetUi.h"
+
+#include "app-logic/Layer.h"
 
 
 namespace GPlatesAppLogic
@@ -60,7 +60,7 @@ namespace GPlatesQtWidgets
 {
 	// Forward declarations.
 	class ElidedLabel;
-	class RasterLayerOptionsWidget;
+	class LayerOptionsWidget;
 	class ReadErrorAccumulationDialog;
 
 	namespace VisualLayerWidgetInternals
@@ -180,7 +180,8 @@ namespace GPlatesQtWidgets
 
 			InputChannelWidget(
 					GPlatesGui::VisualLayersProxy &visual_layers,
-					GPlatesAppLogic::ApplicationState &file_state,
+					GPlatesAppLogic::ApplicationState &application_state,
+					GPlatesPresentation::ViewState &view_state,
 					QWidget *parent_ = NULL);
 
 			/**
@@ -215,13 +216,11 @@ namespace GPlatesQtWidgets
 					QToolButton *button);
 
 			GPlatesGui::VisualLayersProxy &d_visual_layers;
-
 			GPlatesAppLogic::ApplicationState &d_application_state;
+			GPlatesPresentation::ViewState &d_view_state;
 
 			ElidedLabel *d_input_channel_name_label;
-
 			QWidget *d_input_connection_widgets_container;
-
 			QToolButton *d_add_new_connection_widget;
 
 			/**
@@ -263,7 +262,6 @@ namespace GPlatesQtWidgets
 				GPlatesGui::VisualLayersProxy &visual_layers,
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				QString &open_file_path,
 				ReadErrorAccumulationDialog *read_errors_dialog,
 				QWidget *parent_ = NULL);
 
@@ -317,7 +315,6 @@ namespace GPlatesQtWidgets
 		GPlatesGui::VisualLayersProxy &d_visual_layers;
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
-		QString &d_open_file_path;
 		ReadErrorAccumulationDialog *d_read_errors_dialog;
 
 		/**
@@ -371,7 +368,8 @@ namespace GPlatesQtWidgets
 		 */
 		std::vector<VisualLayerWidgetInternals::InputChannelWidget *> d_input_channel_widgets;
 
-		RasterLayerOptionsWidget *d_raster_layer_options_widget;
+		LayerOptionsWidget *d_current_layer_options_widget;
+		QVBoxLayout *d_layer_options_groupbox_layout;
 	};
 }
 

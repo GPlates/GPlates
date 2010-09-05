@@ -65,6 +65,13 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 }
 
 
+GPlatesPresentation::VisualLayerType::Type
+GPlatesPresentation::VisualLayer::get_layer_type() const
+{
+	return static_cast<VisualLayerType::Type>(d_layer.get_type());
+}
+
+
 void
 GPlatesPresentation::VisualLayer::create_rendered_geometries()
 {

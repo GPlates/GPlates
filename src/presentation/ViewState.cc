@@ -24,10 +24,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDir>
 #include <QDebug>
 
 #include "ViewState.h"
 
+#include "VisualLayerRegistry.h"
 #include "VisualLayers.h"
 
 #include "app-logic/ApplicationState.h"
@@ -96,6 +98,8 @@ GPlatesPresentation::ViewState::ViewState(
 			new VisualLayers(
 				d_application_state,
 				*d_rendered_geometry_collection)),
+	d_visual_layer_registry(
+			new VisualLayerRegistry()),
 	d_render_settings(
 			new GPlatesGui::RenderSettings()),
 	d_map_transform(
@@ -103,14 +107,10 @@ GPlatesPresentation::ViewState::ViewState(
 	d_main_viewport_min_dimension(0),
 	d_vgp_render_settings(
 			GPlatesAppLogic::VGPRenderSettings::instance()),
-	d_raw_raster(
-			GPlatesPropertyValues::UninitialisedRawRaster::create()),
-	d_georeferencing(
-			GPlatesPropertyValues::Georeferencing::create()),
-	d_is_raster_colour_map_invalid(false),
 	d_raster_colour_scheme_map(
 			new GPlatesGui::RasterColourSchemeMap(
-				application_state.get_reconstruct_graph()))
+				application_state.get_reconstruct_graph())),
+	d_open_file_path(QDir::currentPath())
 {
 	connect_to_viewport_zoom();
 
@@ -119,8 +119,14 @@ GPlatesPresentation::ViewState::ViewState(
 
 	connect_to_raster_colour_scheme_map();
 
-	// Setup RenderedGeometryCollection.
+	// Set up RenderedGeometryCollection.
 	setup_rendered_geometry_collection();
+
+	// Set up VisualLayerRegistry.
+	register_default_visual_layers(
+			*d_visual_layer_registry,
+			d_application_state,
+			*this);
 }
 
 
@@ -189,6 +195,13 @@ GPlatesPresentation::VisualLayers &
 GPlatesPresentation::ViewState::get_visual_layers()
 {
 	return *d_visual_layers;
+}
+
+
+GPlatesPresentation::VisualLayerRegistry &
+GPlatesPresentation::ViewState::get_visual_layer_registry()
+{
+	return *d_visual_layer_registry;
 }
 
 
@@ -334,5 +347,19 @@ GPlatesPresentation::ViewState::connect_to_raster_colour_scheme_map()
 			SIGNAL(colour_scheme_changed(const GPlatesAppLogic::Layer &)),
 			&d_application_state,
 			SLOT(reconstruct()));
+}
+
+
+QString &
+GPlatesPresentation::ViewState::get_open_file_path()
+{
+	return d_open_file_path;
+}
+
+
+const QString &
+GPlatesPresentation::ViewState::get_open_file_path() const
+{
+	return d_open_file_path;
 }
 

@@ -46,6 +46,14 @@ namespace GPlatesAppLogic
 			TOPOLOGY_BOUNDARY_RESOLVER,
 			TOPOLOGY_NETWORK_RESOLVER,
 			VELOCITY_FIELD_CALCULATOR,
+			// Entries for new built-in layer task types should go here.
+
+			// The following two members should be the third-last and second-last,
+			// just before NUM_TYPES. Although we don't have user-defined layer
+			// tasks (yet), the intention is that user-defined layer tasks are
+			// identified with a value in the range [ MIN_USER, MAX_USER ].
+			MIN_USER = 32768,
+			MAX_USER = 65535,
 
 			NUM_TYPES // This must be the last entry.
 		};

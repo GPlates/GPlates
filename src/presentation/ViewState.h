@@ -75,12 +75,6 @@ namespace GPlatesGui
 	class ViewportZoom;
 }
 
-namespace GPlatesPropertyValues
-{
-	class Georeferencing;
-	class RawRaster;
-}
-
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
@@ -94,6 +88,7 @@ namespace GPlatesViewOperations
 
 namespace GPlatesPresentation
 {
+	class VisualLayerRegistry;
 	class VisualLayers;
 
 	class ViewState :
@@ -190,6 +185,10 @@ namespace GPlatesPresentation
 		get_visual_layers();
 
 
+		VisualLayerRegistry &
+		get_visual_layer_registry();
+
+
 		GPlatesGui::RenderSettings &
 		get_render_settings();
 
@@ -224,6 +223,12 @@ namespace GPlatesPresentation
 
 		const GPlatesGui::RasterColourSchemeMap &
 		get_raster_colour_scheme_map() const;
+
+		QString &
+		get_open_file_path();
+
+		const QString &
+		get_open_file_path() const;
 
 
 	private slots:
@@ -288,6 +293,11 @@ namespace GPlatesPresentation
 		 */
 		boost::scoped_ptr<VisualLayers> d_visual_layers;
 
+		/**
+		 * Stores information about the available visual layer types.
+		 */
+		boost::scoped_ptr<VisualLayerRegistry> d_visual_layer_registry;
+
 		//! What gets rendered and what doesn't
 		boost::scoped_ptr<GPlatesGui::RenderSettings> d_render_settings;
 
@@ -306,54 +316,17 @@ namespace GPlatesPresentation
 		boost::scoped_ptr<GPlatesAppLogic::VGPRenderSettings> d_vgp_render_settings;
 
 		/**
-		 * Stores the raw bits in the currently loaded raster.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::RawRaster>::non_null_ptr_type d_raw_raster;
-
-		/**
-		 * Stores the georeferencing information for the currently loaded raster
-		 * or time dependent raster sequence.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::Georeferencing>::non_null_ptr_type d_georeferencing;
-
-		/**
-		 * Stores the filename of the currently loaded raster.
-		 *
-		 * If it is the empty string, then no raster is currently loaded.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		QString d_raster_filename;
-
-		/**
-		 * Stores the filename of the CPT file used to colour the raster.
-		 *
-		 * If it is the empty string, the default in-built colour map is used.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		QString d_raster_colour_map_filename;
-
-		/**
-		 * True if d_raster_colour_map_filename is invalid.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		bool d_is_raster_colour_map_invalid;
-
-		/**
 		 * Stores the mapping of Layer to RasterColourSchemes.
 		 */
 		boost::scoped_ptr<GPlatesGui::RasterColourSchemeMap> d_raster_colour_scheme_map;
+
+		/**
+		 * Stores the file path of the last opened file, or the directory of the last
+		 * opened directory.
+		 *
+		 * NOTE: This is currently only used for rasters.
+		 */
+		QString d_open_file_path;
 
 		void
 		connect_to_viewport_zoom();

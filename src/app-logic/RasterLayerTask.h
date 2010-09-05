@@ -34,6 +34,7 @@
 #include <QString>
 
 #include "LayerTask.h"
+#include "LayerTaskParams.h"
 #include "ReconstructRasterPolygons.h"
 #include "ReconstructionTree.h"
 
@@ -134,6 +135,14 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
 				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
 
+		
+		virtual
+		LayerTaskParams &
+		get_layer_params()
+		{
+			return d_layer_params;
+		}
+
 
 	private:
 		static const char *RASTER_FEATURE_CHANNEL_NAME;
@@ -157,6 +166,8 @@ namespace GPlatesAppLogic
 		 * @a RawRaster indicate to clients changed raster position/data.
 		 */
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_polygon_features_collection;
+
+		LayerTaskParams d_layer_params;
 
 		RasterLayerTask()
 		{  }

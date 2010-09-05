@@ -23,63 +23,47 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "VisualLayersWidget.h"
-
-#include "AddNewLayerDialog.h"
-#include "QtWidgetUtils.h"
-#include "VisualLayersListView.h"
+#include "ReconstructionLayerOptionsWidget.h"
 
 
-GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
-		GPlatesPresentation::VisualLayers &visual_layers,
+GPlatesQtWidgets::ReconstructionLayerOptionsWidget::ReconstructionLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		ReadErrorAccumulationDialog *read_errors_dialog,
 		QWidget *parent_) :
-	QWidget(parent_),
-	d_visual_layers(visual_layers),
+	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
 	d_view_state(view_state)
 {
 	setupUi(this);
-
-	QListView *list = new VisualLayersListView(
-			d_visual_layers,
-			application_state,
-			view_state,
-			read_errors_dialog,
-			this);
-
-	QtWidgetUtils::add_widget_to_placeholder(list, layers_list_placeholder_widget);
-	list->setFocus();
-
-	QObject::connect(
-			add_new_layer_button,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_add_new_layer_button_clicked()));
-
-	// Hide things for now...
-	control_widget->hide();
 }
 
 
-GPlatesQtWidgets::VisualLayersWidget::~VisualLayersWidget()
-{  }
+GPlatesQtWidgets::LayerOptionsWidget *
+GPlatesQtWidgets::ReconstructionLayerOptionsWidget::create(
+		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state,
+		ReadErrorAccumulationDialog *read_errors_dialog,
+		QWidget *parent_)
+{
+	return new ReconstructionLayerOptionsWidget(
+			application_state,
+			view_state,
+			parent_);
+}
 
 
 void
-GPlatesQtWidgets::VisualLayersWidget::handle_add_new_layer_button_clicked()
+GPlatesQtWidgets::ReconstructionLayerOptionsWidget::set_data(
+		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
 {
-	if (!d_add_new_layer_dialog)
-	{
-		d_add_new_layer_dialog.reset(
-				new AddNewLayerDialog(
-					d_application_state,
-					d_view_state,
-					this));
-	}
+	d_current_visual_layer = visual_layer;
+}
 
-	d_add_new_layer_dialog->exec();
+
+const QString &
+GPlatesQtWidgets::ReconstructionLayerOptionsWidget::get_title()
+{
+	static const QString TITLE = "Reconstruction tree options";
+	return TITLE;
 }
 

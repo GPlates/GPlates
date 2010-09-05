@@ -308,7 +308,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::FeatureTableModel(
 				get_view_state())),
 	d_task_panel_ptr(NULL),
-	d_open_file_path(QDir::currentPath()),
 	d_layering_dialog_opened_automatically_once(false)
 {
 	setupUi(this);
@@ -1137,7 +1136,6 @@ GPlatesQtWidgets::ViewportWindow::pop_up_layering_dialog()
 					get_view_state().get_visual_layers(),
 					get_application_state(),
 					get_view_state(),
-					d_open_file_path,
 					d_read_errors_dialog_ptr.get(),
 					dialog));
 		dialog->setLayout(dialog_layout);
@@ -1776,7 +1774,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog(
 	// use it, unlike the other dialogs, otherwise the pages are incorrectly initialised.
 	ImportRasterDialog import_raster_dialog(
 			get_application_state(),
-			d_open_file_path,
+			get_view_state(),
 			d_unsaved_changes_tracker_ptr.data(),
 			d_file_io_feedback_ptr.data(),
 			this);
