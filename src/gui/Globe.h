@@ -37,6 +37,7 @@
 #include "PersistentOpenGLObjects.h"
 #include "SphericalGrid.h"
 #include "SimpleGlobeOrientation.h"
+#include "Stars.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
 
@@ -53,6 +54,11 @@
 #include "utils/VirtualProxy.h"
 
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
@@ -68,6 +74,7 @@ namespace GPlatesGui
 	public:
 
 		Globe(
+				GPlatesPresentation::ViewState &view_state,
 				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
@@ -147,6 +154,9 @@ namespace GPlatesGui
 		disable_raster_display();
 
 	private:
+
+		GPlatesPresentation::ViewState &d_view_state;
+
 		/**
 		 * Keeps track of OpenGL-related objects that persist from one render to the next.
 		 */
@@ -164,6 +174,11 @@ namespace GPlatesGui
 		 * The GLUNurbsRenderer used to draw large GreatCircleArcs.
 		 */
 		GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs_renderer;
+
+		/**
+		 * Stars in the background, behind the Earth.
+		 */
+		Stars d_stars;
 
 		/**
 		 * The solid earth.
@@ -209,7 +224,8 @@ namespace GPlatesGui
 		 */
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
 		create_rendered_layer_node(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &parent_render_graph_node);
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &parent_render_graph_node,
+				GLboolean depth_write_flag = GL_FALSE);
 	};
 }
 

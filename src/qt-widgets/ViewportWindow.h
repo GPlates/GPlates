@@ -627,6 +627,9 @@ namespace GPlatesQtWidgets
 		enable_strings_display();
 
 		void
+		enable_stars_display();
+
+		void
 		pop_up_shapefile_attribute_viewer_dialog();
 
 		void

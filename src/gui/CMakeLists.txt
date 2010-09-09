@@ -140,6 +140,8 @@ set(srcs
     SingleColourScheme.h
     SphericalGrid.cc
     SphericalGrid.h
+    Stars.cc
+    Stars.h
     SvgExport.cc
     SvgExport.h
     TextRenderer.h

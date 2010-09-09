@@ -53,6 +53,7 @@ POP_MSVC_WARNINGS
 #include "GLBlendState.h"
 #include "GLCompositeStateSet.h"
 #include "GLContext.h"
+#include "GLDepthRangeState.h"
 #include "GLFragmentTestStates.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
@@ -986,6 +987,15 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::render_tile_to_scene(
 	polygon_state->gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
 	state_set->add_state_set(polygon_state);
 #endif
+
+	// Enable depth testing but disable writing to the depth buffer.
+	GLDepthTestState::non_null_ptr_type depth_test_state = GLDepthTestState::create();
+	depth_test_state->gl_enable(GL_TRUE);
+	state_set->add_state_set(depth_test_state);
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type depth_mask_state =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	depth_mask_state->gl_depth_mask(GL_FALSE);
+	state_set->add_state_set(depth_mask_state);
 
 	// Push the state set onto the state graph.
 	renderer.push_state_set(state_set);

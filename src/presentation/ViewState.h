@@ -212,7 +212,8 @@ namespace GPlatesPresentation
 		{
 			return *d_vgp_render_settings;
 		}
-	
+
+
 		GPlatesAppLogic::VGPRenderSettings &
 		get_vgp_render_settings();
 
@@ -224,11 +225,22 @@ namespace GPlatesPresentation
 		const GPlatesGui::RasterColourSchemeMap &
 		get_raster_colour_scheme_map() const;
 
+
 		QString &
 		get_open_file_path();
 
+
 		const QString &
 		get_open_file_path() const;
+
+
+		bool
+		get_show_stars() const;
+
+
+		void
+		set_show_stars(
+				bool show_stars = true);
 
 
 	private slots:
@@ -327,6 +339,11 @@ namespace GPlatesPresentation
 		 * NOTE: This is currently only used for rasters.
 		 */
 		QString d_open_file_path;
+
+		/**
+		 * Whether to draw stars behind the 3D globe.
+		 */
+		bool d_show_stars;
 
 		void
 		connect_to_viewport_zoom();

@@ -214,6 +214,28 @@ namespace GPlatesOpenGL
 					GLint num_stacks,
 					const GPlatesGui::Colour &colour);
 
+
+			/**
+			 * Draw a quadric disk.
+			 *
+			 * A disk is rendered on the z = 0 plane. The disk has a radius of outer, and
+			 * contains a concentric circular hole with a radius of inner. If inner is 0,
+			 * then no hole is generated. The disk is subdivided around the z axis into
+			 * slices (like pizza slices), and also about the z axis into rings (as
+			 * specified by slices and loops, respectively).
+			 *
+			 * If the orientation is set to 'GLU_OUTSIDE' (with @a set_orientation), then
+			 * any normals generated point along the +z axis. Otherwise, they point along
+			 * the -z axis.
+			 */
+			GLDrawable::non_null_ptr_to_const_type
+			draw_disk(
+					GLdouble inner,
+					GLdouble outer,
+					GLint num_slices,
+					GLint num_loops,
+					const GPlatesGui::Colour &colour);
+
 		private:
 			/**
 			 * GLU quadrics object

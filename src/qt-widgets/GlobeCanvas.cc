@@ -70,20 +70,19 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
-/**
- * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
- * diameter of the Globe.  Obviously, when the GlobeCanvas is resized, the Globe will be scaled
- * accordingly.
- *
- * The value of this constant is purely cosmetic.
- */
-static const GLfloat FRAMING_RATIO = static_cast<GLfloat>(1.07);
-
-static const GLfloat EYE_X = 0.0, EYE_Y = 0.0, EYE_Z = -5.0;
-
-
 namespace 
 {
+	/**
+	 * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
+	 * diameter of the Globe.  Obviously, when the GlobeCanvas is resized, the Globe will be scaled
+	 * accordingly.
+	 *
+	 * The value of this constant is purely cosmetic.
+	 */
+	static const GLfloat FRAMING_RATIO = static_cast<GLfloat>(1.07);
+
+	static const GLfloat EYE_X = 0.0, EYE_Y = 0.0, EYE_Z = -5.0;
+
 	/**
 	 * Calculate the globe-position discriminant for the universe coordinates @a y and @a z.
 	 */
@@ -218,6 +217,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
 	d_globe(
+			view_state,
 			d_gl_persistent_objects,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
@@ -597,7 +597,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 	}
 	catch (const GPlatesGlobal::Exception &e)
 	{
-			std::cerr << e << std::endl;
+		std::cerr << e << std::endl;
 	}
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
@@ -774,7 +774,8 @@ GPlatesQtWidgets::GlobeCanvas::handle_zoom_change()
 void
 GPlatesQtWidgets::GlobeCanvas::set_view() 
 {
-	static const GLdouble depth_near_clipping = 0.5;
+	static const GLdouble depth_near_clipping = 3.5;
+	static const GLdouble depth_far_clipping = 15;
 
 	// Always fill up all of the available space.
 	update_dimensions();
@@ -793,10 +794,22 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	GLdouble dim_ratio = d_larger_dim / d_smaller_dim;
 	GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
 
-	// This is used for the coordinate of the further clipping plane in the depth dimension.
-	GLdouble depth_far_clipping = fabsf(EYE_Z);
-
 	d_gl_projection_transform->get_matrix().gl_load_identity();
+
+	//
+	// Note that the coordinate system, as set up in initialise_render_graph() is:
+	//   Z points up
+	//   Y points right
+	//   X points out of the screen
+	//
+	// The "camera" is effectively at (5, 0, 0), looking straight towards the origin.
+	// Previously, the far clipping plane was set as the x = 0 plane; this was used
+	// to ensure that the far side of the earth (which lies on the -X halfspace)
+	// does not get drawn (no depth testing was used).
+	// Now, so that we can draw pretty stars on the background, the far clipping
+	// plane has been pushed much further back. Depth testing is now used to ensure
+	// the far side of the earth does not get drawn.
+	//
 
 	if (d_canvas_screen_width <= d_canvas_screen_height) {
 		d_gl_projection_transform->get_matrix().gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,

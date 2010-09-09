@@ -41,7 +41,9 @@
 #include "GLBlendState.h"
 #include "GLCompositeStateSet.h"
 #include "GLContext.h"
+#include "GLFragmentTestStates.h"
 #include "GLIntersect.h"
+#include "GLMaskBuffersState.h"
 #include "GLRenderer.h"
 #include "GLTextureEnvironmentState.h"
 #include "GLTransformState.h"
@@ -172,6 +174,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 			GPlatesOpenGL::GLTextureEnvironmentState::create();
 	tex_env_state->gl_enable_texture_2D(GL_TRUE).gl_tex_env_mode(GL_REPLACE);
 	state_set->add_state_set(tex_env_state);
+
+	// Enable depth testing but disable writing to the depth buffer.
+	GLDepthTestState::non_null_ptr_type depth_test_state = GLDepthTestState::create();
+	depth_test_state->gl_enable(GL_TRUE);
+	state_set->add_state_set(depth_test_state);
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type depth_mask_state =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	depth_mask_state->gl_depth_mask(GL_FALSE);
+	state_set->add_state_set(depth_mask_state);
 
 	// Set the alpha-blend state in case texture has transparency.
 	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =

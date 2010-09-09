@@ -110,7 +110,8 @@ GPlatesPresentation::ViewState::ViewState(
 	d_raster_colour_scheme_map(
 			new GPlatesGui::RasterColourSchemeMap(
 				application_state.get_reconstruct_graph())),
-	d_open_file_path(QDir::currentPath())
+	d_open_file_path(QDir::currentPath()),
+	d_show_stars(true)
 {
 	connect_to_viewport_zoom();
 
@@ -361,5 +362,20 @@ const QString &
 GPlatesPresentation::ViewState::get_open_file_path() const
 {
 	return d_open_file_path;
+}
+
+
+bool
+GPlatesPresentation::ViewState::get_show_stars() const
+{
+	return d_show_stars;
+}
+
+
+void
+GPlatesPresentation::ViewState::set_show_stars(
+		bool show_stars)
+{
+	d_show_stars = show_stars;
 }
 

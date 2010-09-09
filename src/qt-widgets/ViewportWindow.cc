@@ -507,7 +507,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// Render everything on the screen in present-day positions.
 	get_application_state().reconstruct();
 
-	// Synchronise the "Show X Features" menu items with RenderSettings
+	// Synchronise the "Show X Features" menu items with RenderSettings.
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
 	action_Show_Point_Features->setChecked(render_settings.show_points());
 	action_Show_Line_Features->setChecked(render_settings.show_lines());
@@ -515,6 +515,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	action_Show_Multipoint_Features->setChecked(render_settings.show_multipoints());
 	action_Show_Arrow_Decorations->setChecked(render_settings.show_arrows());
 	action_Show_Strings->setChecked(render_settings.show_strings());
+
+	// Synchronise "Show Stars" with what's in ViewState.
+	action_Show_Stars->setChecked(get_view_state().get_show_stars());
 
 	// Repaint the globe/map when the colour scheme delegator's target changes.
 	QObject::connect(
@@ -705,6 +708,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(enable_arrows_display()));
 	QObject::connect(action_Show_Strings, SIGNAL(triggered()),
 			this, SLOT(enable_strings_display()));
+	QObject::connect(action_Show_Stars, SIGNAL(triggered()),
+			this, SLOT(enable_stars_display()));
 	// ----
 	QObject::connect(action_Set_Projection, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_projection_dialog()));
@@ -1764,6 +1769,13 @@ GPlatesQtWidgets::ViewportWindow::enable_strings_display()
 {
 	get_view_state().get_render_settings().set_show_strings(
 			action_Show_Strings->isChecked());
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_stars_display()
+{
+	get_view_state().set_show_stars(
+			action_Show_Stars->isChecked());
 }
 
 void

@@ -33,6 +33,8 @@
 
 #include "Colour.h"
 
+#include "maths/UnitVector3D.h"
+
 #include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLUQuadric.h"
 
@@ -40,27 +42,30 @@
 namespace GPlatesGui
 {
 	class OpaqueSphere :
-		public boost::noncopyable
+			public boost::noncopyable
 	{
-		public:
-			explicit
-			OpaqueSphere(
-					const Colour &colour);
+	public:
 
-			~OpaqueSphere()
-			{  }
+		explicit
+		OpaqueSphere(
+				const Colour &colour);
 
+		~OpaqueSphere()
+		{  }
 
-			/**
-			 * Creates child render graph node and attaches it to @a render_graph_parent_node.
-			 */
-			void paint(
-					const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &
-							render_graph_parent_node);
+		/**
+		 * Creates child render graph node and attaches it to @a render_graph_parent_node.
+		 */
+		void paint(
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &
+					render_graph_parent_node,
+				const GPlatesMaths::UnitVector3D &axis,
+				double angle_in_deg);
 
-		private:
-			GPlatesOpenGL::GLUQuadric::non_null_ptr_type d_quad;
-			Colour d_colour;
+	private:
+
+		GPlatesOpenGL::GLUQuadric::non_null_ptr_type d_quad;
+		Colour d_colour;
 	};
 }
 

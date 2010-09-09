@@ -38,7 +38,15 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
+namespace
+{
+	const GPlatesGui::Colour STARS_COLOUR(0.75f, 0.75f, 0.75f);
+	const GPlatesGui::Colour SPHERE_COLOUR(0.35f, 0.35f, 0.35f);
+}
+
+
 GPlatesGui::Globe::Globe(
+		GPlatesPresentation::ViewState &view_state,
 		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
@@ -47,12 +55,14 @@ GPlatesGui::Globe::Globe(
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
+	d_view_state(view_state),
 	d_persistent_opengl_objects(persistent_opengl_objects),
 	d_render_settings(render_settings),
 	d_rendered_geom_collection(rendered_geom_collection),
 	d_visual_layers(visual_layers),
 	d_nurbs_renderer(GPlatesOpenGL::GLUNurbsRenderer::create()),
-	d_sphere(Colour(0.35f, 0.35f, 0.35f)),
+	d_stars(view_state, STARS_COLOUR),
+	d_sphere(SPHERE_COLOUR),
 	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
 	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
 	d_rendered_geom_collection_painter(
@@ -74,12 +84,14 @@ GPlatesGui::Globe::Globe(
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
+	d_view_state(existing_globe.d_view_state),
 	d_persistent_opengl_objects(persistent_opengl_objects),
 	d_render_settings(existing_globe.d_render_settings),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
 	d_visual_layers(existing_globe.d_visual_layers),
 	d_nurbs_renderer(GPlatesOpenGL::GLUNurbsRenderer::create()),
-	d_sphere(Colour(0.35f, 0.35f, 0.35f)),
+	d_stars(d_view_state, STARS_COLOUR),
+	d_sphere(SPHERE_COLOUR),
 	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
 	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
 	d_rendered_geom_collection_painter(
@@ -128,10 +140,20 @@ GPlatesGui::Globe::paint(
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_orientation_transform_node =
 			setup_globe_orientation_transform(*render_graph_node);
 
-	// Render opaque sphere.
-	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type sphere_node =
+	// Render stars.
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type stars_node =
 			create_rendered_layer_node(globe_orientation_transform_node);
-	d_sphere.paint(sphere_node);
+	d_stars.paint(stars_node);
+
+	// Render opaque sphere.
+	// Note that this writes a disk cutting through the centre of the globe
+	// parallel to the *screen* to the depth buffer.
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type sphere_node =
+			create_rendered_layer_node(globe_orientation_transform_node, GL_TRUE);
+	d_sphere.paint(
+			sphere_node,
+			d_globe_orientation_ptr->rotation_axis(),
+			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
 
 	// Draw the rendered geometries.
 	d_rendered_geom_collection_painter.set_scale(scale);
@@ -159,12 +181,12 @@ GPlatesGui::Globe::paint_vector_output(
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_orientation_transform_node =
 			setup_globe_orientation_transform(*render_graph_node);
 
-	// Restrict the depth range.
+	// Paint the circumference of the Earth.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_circumference_node =
 			create_rendered_layer_node(globe_orientation_transform_node);
 	d_grid.paint_circumference(grid_circumference_node, GPlatesGui::Colour::get_grey());
 
-	// Restrict the depth range.
+	// Paint the grid lines.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_lines_node =
 			create_rendered_layer_node(globe_orientation_transform_node);
 	d_grid.paint(grid_lines_node, Colour::get_grey());
@@ -223,7 +245,8 @@ GPlatesGui::Globe::setup_globe_orientation_transform(
 
 GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
 GPlatesGui::Globe::create_rendered_layer_node(
-		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &parent_render_graph_node)
+		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &parent_render_graph_node,
+		GLboolean depth_write_flag)
 {
 	// Create an internal node to represent the depth range.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type rendered_layer_node =
@@ -249,11 +272,10 @@ GPlatesGui::Globe::create_rendered_layer_node(
 	depth_test_state->gl_enable(GL_TRUE);
 	state_set->add_state_set(depth_test_state);
 
-	// Turn depth writes off.
-	// This is the default state so we probably don't need to do it (but just in case).
+	// Turn depth writes on or off as specified.
 	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type depth_mask_state =
 			GPlatesOpenGL::GLMaskBuffersState::create();
-	depth_mask_state->gl_depth_mask(GL_FALSE);
+	depth_mask_state->gl_depth_mask(depth_write_flag);
 	state_set->add_state_set(depth_mask_state);
 
 	rendered_layer_node->set_state_set(state_set);
@@ -263,3 +285,4 @@ GPlatesGui::Globe::create_rendered_layer_node(
 
 	return rendered_layer_node;
 }
+

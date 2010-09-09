@@ -108,6 +108,31 @@ GPlatesOpenGL::GLUQuadric::draw_sphere(
 }
 
 
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+GPlatesOpenGL::GLUQuadric::draw_disk(
+		GLdouble inner,
+		GLdouble outer,
+		GLint num_slices,
+		GLint num_loops,
+		const GPlatesGui::Colour &colour)
+{
+	// Create GLUquadricObj if it hasn't been created yet.
+	//
+	// We do this here because this is a draw call and we know that
+	// the OpenGL context is current and hence creation of a
+	// GLUquadricObj should succeed.
+	if (d_quadric.get() == NULL)
+	{
+		create_quadric_obj();
+	}
+
+	boost::shared_ptr<GLUQuadricGeometry> disk(
+			new GLUQuadricDisk(inner, outer, num_slices, num_loops));
+
+	return GLUQuadricDrawable::create(d_quadric, disk, d_current_parameters, colour);
+}
+
+
 GPlatesOpenGL::GLUQuadric::Parameters::Parameters() :
 	normals(GLU_NONE),
 	texture_coords(GL_FALSE),
