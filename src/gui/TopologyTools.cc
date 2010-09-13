@@ -2254,7 +2254,7 @@ GPlatesGui::TopologyTools::is_section_visible(
 					d_visible_section_seq.begin(),
 					d_visible_section_seq.end(),
 					boost::lambda::bind(&VisibleSection::d_section_info_index, boost::lambda::_1) ==
-							section_index);
+							boost::cref(section_index));
 
 	if (visible_section_iter == d_visible_section_seq.end())
 	{
