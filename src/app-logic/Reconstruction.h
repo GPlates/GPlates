@@ -133,6 +133,17 @@ namespace GPlatesAppLogic
 					const ConstReconstructionGeometryIterator &lhs,
 					const ConstReconstructionGeometryIterator &rhs)
 			{
+				// If all the reconstruction geometry collections for a given reconstruction
+				// tree are all empty, d_reconstruction_geometry_collection_iterator for
+				// both the start and end iterators are boost::none, but
+				// d_reconstruction_tree_map_iterator are different. But both iterators
+				// represent, logically, the "end" of the sequence.
+				if (!lhs.d_reconstruction_geometry_collection_iterator &&
+						!rhs.d_reconstruction_geometry_collection_iterator)
+				{
+					return true;
+				}
+
 				return
 					(lhs.d_reconstruction_tree_map_iterator ==
 							rhs.d_reconstruction_tree_map_iterator) &&
