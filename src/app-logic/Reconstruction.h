@@ -161,6 +161,18 @@ namespace GPlatesAppLogic
 			}
 
 
+			/**
+			 * Returns whether this iterator is able to be dereferenced.
+			 *
+			 * FIXME: Remove this once we figure out why GPlates keeps crashing...
+			 */
+			bool
+			is_valid() const
+			{
+				return d_reconstruction_geometry_collection_iterator;
+			}
+
+
 		private:
 			const Reconstruction *d_reconstruction;
 			reconstruction_tree_map_type::const_iterator d_reconstruction_tree_map_iterator;

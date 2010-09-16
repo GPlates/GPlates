@@ -612,10 +612,22 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry =
 			feature_focus.associated_reconstruction_geometry();
 
-	if ( ! focused_geometry) {
-		// No RG, so nothing we can do.
+	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
+	// for instance, are used to assign plate ids to regular features so we probably only
+	// want to look at geometries of regular features).
+	// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
+	// from ReconstructedFeatureGeometry.
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
+			focused_geometry ?
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry) :
+			boost::none;
 
+	// Do the following if no RG or if RG is not RFG.
+	if (!rfg)
+	{
 		// Clear the plate ID and the plate ID field.
+		d_reconstruction_tree = boost::none;
 		d_plate_id = boost::none;
 		reset_adjustment();
 		d_reconstructed_feature_geometries.clear();
@@ -627,38 +639,27 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 		return;
 	}
 
-	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
-	// for instance, are used to assign plate ids to regular features so we probably only
-	// want to look at geometries of regular features).
-	// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
-	// from ReconstructedFeatureGeometry.
-	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry);
-	if (!rfg)
-	{
-		return;
-	}
-
 	d_reconstruction_tree = focused_geometry->reconstruction_tree();
 
-	if (d_plate_id == rfg.get()->reconstruction_plate_id()) {
-		// The plate ID hasn't changed, so there's nothing to do.
-		return;
-	}
-
-	reset_adjustment();
-	d_reconstructed_feature_geometries.clear();
-	d_plate_id = rfg.get()->reconstruction_plate_id();
-	if (d_plate_id) {
-		QLocale locale_;
-		// We need this static-cast because apparently QLocale's 'toString' member function
-		// doesn't have an overload for 'unsigned long', so the compiler complains about
-		// ambiguity.
-		field_moving_plate->setText(locale_.toString(static_cast<unsigned>(*d_plate_id)));
-	} else {
-		// Clear the plate ID field.
-		field_moving_plate->clear();
+	// Nothing to do if plate ID hasn't changed.
+	if (d_plate_id != rfg.get()->reconstruction_plate_id())
+	{
+		reset_adjustment();
+		d_reconstructed_feature_geometries.clear();
+		d_plate_id = rfg.get()->reconstruction_plate_id();
+		if (d_plate_id)
+		{
+			QLocale locale_;
+			// We need this static-cast because apparently QLocale's 'toString' member function
+			// doesn't have an overload for 'unsigned long', so the compiler complains about
+			// ambiguity.
+			field_moving_plate->setText(locale_.toString(static_cast<unsigned>(*d_plate_id)));
+		}
+		else
+		{
+			// Clear the plate ID field.
+			field_moving_plate->clear();
+		}
 	}
 }
 
@@ -706,6 +707,17 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 					*d_reconstruction_tree);
 	for ( ; iter != end; ++iter)
 	{
+		/**
+		 * FIXME: The following check should not be necessary, as the iterator, if it
+		 * has not reached the end, should always be valid. Remove this once we figure
+		 * out why GPlates keeps crashing...
+		 */
+		if ( ! iter.is_valid())
+		{
+			std::cerr << "Invalid iterator in ModifyReconstructionPoleWidget::populate_initial_geometries!" << std::endl;
+			continue;
+		}
+
 		const GPlatesAppLogic::ReconstructionGeometry *rg = (*iter).get();
 
 		// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
