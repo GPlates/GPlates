@@ -932,6 +932,8 @@ namespace GPlatesModel
 	{
 		Model *model = model_ptr();
 
+		// If there is a notification guard, we let d_was_active_before_pending_notifications
+		// drift out of sync with d_is_active.
 		if (!(model && model->has_notification_guard()))
 		{
 			d_was_active_before_pending_notifications = d_is_active;
@@ -958,6 +960,8 @@ namespace GPlatesModel
 	{
 		Model *model = model_ptr();
 
+		// If there is a notification guard, we let d_was_active_before_pending_notifications
+		// drift out of sync with d_is_active.
 		if (!(model && model->has_notification_guard()))
 		{
 			d_was_active_before_pending_notifications = d_is_active;
@@ -1036,23 +1040,18 @@ namespace GPlatesModel
 			d_pending_addition_notifications.reset(NULL);
 		}
 
-		// Deactivation and/or reactivation notifications:
-		if (d_was_active_before_pending_notifications)
+		// d_was_active_before_pending_notifications is usually kept in sync with
+		// d_is_active; if they are not in sync, this means that at least one
+		// deactivation/reactivation was performed when a NotificationGuard was active.
+		if (d_is_active && !d_was_active_before_pending_notifications)
 		{
-			// We were deactivated and/or reactivated, possibly multiple times.
-			// Our listeners need not be bothered with such trivialities, so we will
-			// only send a notification if d_is_active has changed.
-			if (d_is_active && !d_was_active_before_pending_notifications)
-			{
-				notify_listeners_of_reactivation();
-			}
-			else if (!d_is_active && d_was_active_before_pending_notifications)
-			{
-				notify_listeners_of_deactivation();
-			}
-
-			// Reset them to be the same again.
-			d_was_active_before_pending_notifications = d_is_active;
+			notify_listeners_of_reactivation();
+			d_was_active_before_pending_notifications = true;
+		}
+		else if (!d_is_active && d_was_active_before_pending_notifications)
+		{
+			notify_listeners_of_deactivation();
+			d_was_active_before_pending_notifications = false;
 		}
 	}
 
