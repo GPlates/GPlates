@@ -51,6 +51,7 @@
 #include "model/ModelUtils.h"
 
 #include "property-values/GmlMultiPoint.h"
+#include "property-values/GpmlPlateId.h"
 
 namespace
 {
@@ -277,6 +278,28 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("meshPoints"),
 					GPlatesPropertyValues::GmlMultiPoint::create(geometries[i])));
+
+
+		//add plateid and validtime to mesh points feature
+		//these two properties are needed to show mesh points on globe.
+		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_plate_id = 
+			GPlatesPropertyValues::GpmlPlateId::create(0);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					GPlatesModel::ModelUtils::create_gpml_constant_value(
+						gpml_plate_id,
+						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));
+
+
+		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time = 
+			GPlatesModel::ModelUtils::create_gml_time_period(
+			GPlatesPropertyValues::GeoTimeInstant::create_distant_past(),
+			GPlatesPropertyValues::GeoTimeInstant::create_distant_future());
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gml("validTime"),
+					gml_valid_time));
 
 		// Make a new FileInfo object to tell save_file() what the new name should be.
 		// This also copies any other info stored in the FileInfo.
