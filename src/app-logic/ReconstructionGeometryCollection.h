@@ -28,6 +28,9 @@
 #define GPLATES_APP_LOGIC_RECONSTRUCTIONGEOMETRYCOLLECTION_H
 
 #include <vector>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/lambda/construct.hpp>
+#include <boost/function.hpp>
 
 #include "ReconstructionGeometry.h"
 #include "ReconstructionTree.h"
@@ -69,93 +72,16 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Forward iterator over all @a ReconstructionGeometry objects.
-		 * Dereferencing iterator returns a 'ReconstructionGeometry::non_null_ptr_to_const_type'.
+		 * The type of a function that converts a pointer to non-const
+		 * ReconstructionGeometry to a pointer to const.
 		 */
-		class ConstIterator :
-				public std::iterator<
-						std::forward_iterator_tag,
-						ReconstructionGeometry::non_null_ptr_to_const_type>,
-				public boost::equality_comparable<ConstIterator>,
-				public boost::incrementable<ConstIterator>
-		{
-		public:
-			/**
-			 * Create a "begin" iterator over the reconstruction trees geometries.
-			 */
-			static
-			ConstIterator
-			create_begin(
-					const ReconstructionGeometryCollection &reconstruction_geometry_collection)
-			{
-				return ConstIterator(
-						reconstruction_geometry_collection.d_reconstruction_geometry_seq.begin());
-			}
-
-
-			/**
-			 * Create a "end" iterator over the reconstruction geometries.
-			 */
-			static
-			ConstIterator
-			create_end(
-					const ReconstructionGeometryCollection &reconstruction_geometry_collection)
-			{
-				return ConstIterator(
-						reconstruction_geometry_collection.d_reconstruction_geometry_seq.end());
-			}
-
-
-			/**
-			 * Dereference operator.
-			 * No 'operator->()' is provided since we're returning a temporary object.
-			 */
-			const ReconstructionGeometry::non_null_ptr_to_const_type
-			operator*() const
-			{
-				return *d_iterator;
-			}
-
-
-			/**
-			 * Pre-increment operator.
-			 * Post-increment operator provided by base class boost::incrementable.
-			 */
-			ConstIterator &
-			operator++()
-			{
-				++d_iterator;
-				return *this;
-			}
-
-
-			/**
-			 * Equality comparison for @a ConstIterator.
-			 * Inequality operator provided by base class boost::equality_comparable.
-			 */
-			friend
-			bool
-			operator==(
-					const ConstIterator &lhs,
-					const ConstIterator &rhs)
-			{
-				return lhs.d_iterator == rhs.d_iterator;
-			}
-
-		private:
-			reconstruction_geometry_seq_type::const_iterator d_iterator;
-
-
-			ConstIterator(
-					reconstruction_geometry_seq_type::const_iterator iterator) :
-				d_iterator(iterator)
-			{  }
-		};
+		typedef boost::function<ReconstructionGeometry::non_null_ptr_to_const_type (
+					ReconstructionGeometry::non_null_ptr_type)> make_const_ptr_fn_type;
 
 		/**
 		 * The type used to const_iterate over the reconstruction geometries.
 		 */
-		typedef ConstIterator const_iterator;
+		typedef boost::transform_iterator<make_const_ptr_fn_type, iterator> const_iterator;
 
 
 		~ReconstructionGeometryCollection();
@@ -182,7 +108,9 @@ namespace GPlatesAppLogic
 		const_iterator
 		begin() const
 		{
-			return const_iterator::create_begin(*this);
+			return boost::make_transform_iterator(
+					d_reconstruction_geometry_seq.begin(),
+					make_const_ptr_fn_type(boost::lambda::constructor<ReconstructionGeometry::non_null_ptr_to_const_type>()));
 		}
 
 
@@ -193,7 +121,10 @@ namespace GPlatesAppLogic
 		const_iterator
 		end() const
 		{
-			return const_iterator::create_end(*this);
+			return boost::make_transform_iterator(
+					d_reconstruction_geometry_seq.end(),
+					make_const_ptr_fn_type(boost::lambda::constructor<ReconstructionGeometry::non_null_ptr_to_const_type>()));
+
 		}
 
 

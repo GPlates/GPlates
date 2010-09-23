@@ -111,6 +111,12 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries()
 			*d_rendered_geometry_layer);
 
 	// Iterate over the reconstruction geometries in the collection.
+	BOOST_FOREACH(GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry,
+			**reconstruction_geometry_collection)
+	{
+		reconstruction_geometry->accept_visitor(reconstruction_geometry_renderer);
+	}
+#if 0
 	GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator reconstruction_geometry_iter =
 			reconstruction_geometry_collection.get()->begin();
 	GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator reconstruction_geometry_end =
@@ -122,6 +128,7 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries()
 
 		reconstruction_geometry->accept_visitor(reconstruction_geometry_renderer);
 	}
+#endif
 }
 
 
