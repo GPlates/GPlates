@@ -288,6 +288,26 @@ namespace GPlatesAppLogic
 		set_reconstruction_ptr(
 				Reconstruction *reconstruction_ptr) const;
 
+
+		/**
+		 * Returns the number of reconstruction geometries in this collection.
+		 */
+		std::size_t
+		size() const
+		{
+			return d_reconstruction_geometry_seq.size();
+		}
+
+
+		/**
+		 * Tests whether the reconstruction geometry collection is empty.
+		 */
+		bool
+		empty() const
+		{
+			return d_reconstruction_geometry_seq.empty();
+		}
+
 	private:
 		/**
 		 * The plate-reconstruction hierarchy of total reconstruction poles which was used

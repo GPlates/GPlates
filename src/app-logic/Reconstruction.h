@@ -133,6 +133,26 @@ namespace GPlatesAppLogic
 					const ConstReconstructionGeometryIterator &lhs,
 					const ConstReconstructionGeometryIterator &rhs)
 			{
+				//
+				// d_reconstruction_geometry_collection_iterator is boost::none
+				// if the reconstruction geometry collections belonging to the
+				// requested reconstruction tree (and all subsequent reconstruction
+				// trees) are empty. In this case, the "begin" and "end" iterators
+				// should both have d_reconstruction_tree_map_iterator set to the
+				// reconstruction tree map's end iterator. This check is,
+				// therefore, strictly unnecessary.
+				//
+				// However, given the number of crashes related to iterating
+				// over the reconstruction geometries for a given reconstruction
+				// tree, it doesn't hurt to treat all invalid iterators as equal
+				// irrespective of d_reconstruction_tree_map_iterator.
+				//
+				if (!lhs.d_reconstruction_geometry_collection_iterator &&
+						!rhs.d_reconstruction_geometry_collection_iterator)
+				{
+					return true;
+				}
+
 				return
 					(lhs.d_reconstruction_tree_map_iterator ==
 							rhs.d_reconstruction_tree_map_iterator) &&
@@ -140,13 +160,18 @@ namespace GPlatesAppLogic
 							rhs.d_reconstruction_geometry_collection_iterator);
 			}
 
-		protected:
-			
-			static
-			boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
-			get_next_valid_reconstruction_geometry_collection_iterator(
-					const Reconstruction &reconstruction,
-					reconstruction_tree_map_type::const_iterator map_iter);
+
+			/**
+			 * Returns whether this iterator is able to be dereferenced.
+			 *
+			 * FIXME: Remove this once we figure out why GPlates keeps crashing...
+			 */
+			bool
+			is_valid() const
+			{
+				return d_reconstruction_geometry_collection_iterator;
+			}
+
 
 		private:
 			const Reconstruction *d_reconstruction;
@@ -160,6 +185,29 @@ namespace GPlatesAppLogic
 					reconstruction_tree_map_type::const_iterator reconstruction_tree_map_iterator,
 					boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
 							reconstruction_geometry_collection_iterator = boost::none);
+
+
+			/**
+			 * Moves @a map_iter along until it is pointing to a non-empty
+			 * reconstruction geometry collection, and then returns the begin
+			 * iterator of that non-empty reconstruction geometry collection.
+			 *
+			 * If no non-empty reconstruction geometry collection is found,
+			 * @a map_iter will be the end iterator of the reconstruction tree
+			 * map and boost::none is returned.
+			 *
+			 * Note that @a map_iter is a non-const reference and may be
+			 * modified in this function. This is intentional; the
+			 * reconstruction geometry collection pointed to by the initial value of
+			 * @a map_iter may be empty, in which case the reconstruction
+			 * geometry collection iterator returned belongs to a subsequent
+			 * collection.
+			 */
+			static
+			boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
+			get_next_valid_reconstruction_geometry_collection_iterator(
+					const Reconstruction &reconstruction,
+					reconstruction_tree_map_type::const_iterator &map_iter);
 		};
 
 		/**

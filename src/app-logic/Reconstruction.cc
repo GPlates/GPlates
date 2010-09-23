@@ -165,20 +165,25 @@ GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::operator++
 boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
 GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::get_next_valid_reconstruction_geometry_collection_iterator(
 		const Reconstruction &reconstruction,	
-		reconstruction_tree_map_type::const_iterator map_iter)
+		reconstruction_tree_map_type::const_iterator &map_iter)
 {
-	for(; map_iter != reconstruction.d_reconstruction_tree_map.end(); map_iter++)
+	for (; map_iter != reconstruction.d_reconstruction_tree_map.end(); ++map_iter)
 	{
-		if(map_iter->second->begin() != map_iter->second->end())
+#if 0
+		if (map_iter->second->begin() != map_iter->second->end())
+#endif
+		if (!map_iter->second->empty())
 		{
-	
 			return map_iter->second->begin();
 		}
+#if 0
 		else
 		{
 			continue;
 		}
+#endif
 	}
+
 	return boost::none;
 }
 
