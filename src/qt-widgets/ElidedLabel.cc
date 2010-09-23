@@ -199,7 +199,8 @@ GPlatesQtWidgets::ElidedLabel::InternalLabel::enterEvent(
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::ElidedLabelToolTip() :
 	QDialog(NULL, Qt::Popup),
 	d_internal_label_frame(new QFrame(this)),
-	d_internal_label(new QLabel(this))
+	d_internal_label(new QLabel(this)),
+	d_inside_do_show(false)
 {
 	// Put the internal label into a frame.
 	d_internal_label_frame->setFrameStyle(QFrame::Box | QFrame::Plain);
@@ -251,6 +252,17 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 		const QPoint &global_pos,
 		int label_height)
 {
+	if (d_inside_do_show)
+	{
+		return;
+	}
+
+	// On MacOS, we're getting infinite loops. What's happening is that the hide()
+	// call below causes the tooltip to disappear, which sometimes causes the
+	// enter event of ElidedLabel to get triggered, which then calls this function,
+	// and then bad things happen.
+	d_inside_do_show = true;
+
 	d_internal_label->setText(text);
 
 	// Shift towards top-left because of frame.
@@ -266,6 +278,8 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 	QSize new_size = layout()->sizeHint();
 	new_size.setHeight(label_height + frame_width * 2);
 	resize(new_size);
+
+	d_inside_do_show = false;
 }
 
 
