@@ -79,7 +79,19 @@ namespace GPlatesModel
 	 */
 	template<class HandleType>
 	class RevisionAwareIterator :
-			public std::iterator<std::bidirectional_iterator_tag, typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type>
+			public std::iterator<
+				std::bidirectional_iterator_tag,
+				typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type,
+				ptrdiff_t,
+				// The 'pointer' inner type is set to void, because the dereference
+				// operator returns a temporary, and it is not desirable to take a pointer
+				// to a temporary.
+				void,
+				// The 'reference' inner type is not a reference, because the dereference
+				// operator returns a temporary, and it is not desirable to take a reference
+				// to a temporary.
+				typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type
+			>
 	{
 
 	public:
@@ -174,6 +186,7 @@ namespace GPlatesModel
 		value_type
 		operator*() const;
 
+#if 0
 		/**
 		 * The dereference operator.
 		 *
@@ -183,6 +196,7 @@ namespace GPlatesModel
 		 */
 		value_type
 		operator*();
+#endif
 
 		/**
 		 * The pre-increment operator.
@@ -349,14 +363,14 @@ namespace GPlatesModel
 		return current_element();
 	}
 
-
+#if 0
 	template<class HandleType>
 	typename RevisionAwareIterator<HandleType>::value_type
 	RevisionAwareIterator<HandleType>::operator*()
 	{
 		return current_element();
 	}
-
+#endif
 
 	template<class HandleType>
 	RevisionAwareIterator<HandleType> &
