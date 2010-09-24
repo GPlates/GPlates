@@ -799,7 +799,8 @@ namespace GPlatesModel
 		d_index_in_container(INVALID_INDEX),
 		d_is_active(true),
 		d_has_pending_publisher_modification_notification(false),
-		d_has_pending_child_modification_notification(false)
+		d_has_pending_child_modification_notification(false),
+		d_was_active_before_pending_notifications(true)
 	{
 	}
 
