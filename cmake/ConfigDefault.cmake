@@ -82,6 +82,11 @@ set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "")
 # Debian/RPM package manager to install Qt (and its plugins) on the target machine.
 set(GPLATES_QT_PLUGINS_MACOSX 
 	"imageformats/libqjpeg.dylib"
+	"imageformats/libqgif.dylib"
+	"imageformats/libqico.dylib"
+	"imageformats/libqmng.dylib"
+	"imageformats/libqsvg.dylib"
+	"imageformats/libqtiff.dylib"
 	)
 set(GPLATES_QT_PLUGINS_WIN32 
 	"imageformats/qjpeg4.dll"
