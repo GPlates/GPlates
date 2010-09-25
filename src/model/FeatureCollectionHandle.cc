@@ -32,34 +32,6 @@
 #include "WeakReferenceCallback.h"
 
 
-namespace GPlatesModel
-{
-	class FeatureCollectionHandleUnsavedChangesCallback :
-			public WeakReferenceCallback<FeatureCollectionHandle>
-	{
-	public:
-
-		explicit
-		FeatureCollectionHandleUnsavedChangesCallback(
-				bool &contains_unsaved_changes) :
-			d_contains_unsaved_changes(contains_unsaved_changes)
-		{
-		}
-
-		void
-		publisher_modified(
-				const WeakReferencePublisherModifiedEvent<FeatureCollectionHandle> &)
-		{
-			d_contains_unsaved_changes = true;
-		}
-
-	private:
-
-		bool &d_contains_unsaved_changes;
-	};
-}
-
-
 const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 GPlatesModel::FeatureCollectionHandle::create()
 {
@@ -75,20 +47,6 @@ GPlatesModel::FeatureCollectionHandle::create(
 	FeatureStoreRootHandle::iterator iter = feature_store_root->add(feature_collection);
 
 	return (*iter)->reference();
-}
-
-
-bool
-GPlatesModel::FeatureCollectionHandle::contains_unsaved_changes() const
-{
-	return d_contains_unsaved_changes;
-}
-
-
-void
-GPlatesModel::FeatureCollectionHandle::clear_unsaved_changes()
-{
-	d_contains_unsaved_changes = false;
 }
 
 
@@ -109,13 +67,6 @@ GPlatesModel::FeatureCollectionHandle::tags() const
 GPlatesModel::FeatureCollectionHandle::FeatureCollectionHandle() :
 	BasicHandle<FeatureCollectionHandle>(
 			this,
-			revision_type::create()),
-	d_contains_unsaved_changes(false),
-	d_weak_ref_to_self(WeakReference<FeatureCollectionHandle>(*this))
-{
-	// Attach callback to weak-ref.
-	d_weak_ref_to_self.attach_callback(
-			new FeatureCollectionHandleUnsavedChangesCallback(
-				d_contains_unsaved_changes));
-}
+			revision_type::create())
+{  }
 
