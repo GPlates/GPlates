@@ -1,6 +1,6 @@
 Copyright (C) 2003-2010 The University of Sydney, Australia.
 Copyright (C) 2007-2010 The Geological Survey of Norway.
-Copyright (C) 2008-2010 California Institute of Technology.
+Copyright (C) 2004-2010 California Institute of Technology.
 This is free software. You may redistribute copies of it under the terms of
 the GNU General Public License version 2 <http://www.gnu.org/licenses/gpl.html>.
 There is NO WARRANTY, to the extent permitted by law.
