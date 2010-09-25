@@ -216,6 +216,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				*this,
 				get_application_state().get_feature_collection_file_state(),
 				get_application_state().get_feature_collection_file_io(),
+				get_view_state().get_feature_focus(),
 				this)),
 	d_reconstruction_view_widget(
 			d_animation_controller,

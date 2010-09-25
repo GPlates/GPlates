@@ -23,17 +23,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <QDebug>
 #include <QString>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QCoreApplication>
-#include <iostream>
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
+
+#include "FileIOFeedback.h"
+
+#include "FeatureFocus.h"
+#include "UnsavedChangesTracker.h"
 
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/ClassifyFeatureCollection.h"
+
 #include "file-io/FileInfo.h"
 #include "file-io/ExternalProgram.h"
 #include "file-io/FeatureCollectionFileFormat.h"
@@ -43,16 +49,16 @@
 #include "file-io/FileFormatNotSupportedException.h"
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "file-io/OgrException.h"
+#include "file-io/File.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
-#include "gui/UnsavedChangesTracker.h"
+
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
 #include "qt-widgets/GMTHeaderFormatDialog.h"
-
-#include "FileIOFeedback.h"
 
 
 namespace
@@ -250,11 +256,13 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state_,
 		GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io_,
+		FeatureFocus &feature_focus_,
 		QObject *parent_):
 	QObject(parent_),
 	d_viewport_window_ptr(&viewport_window_),
 	d_file_state_ptr(&file_state_),
 	d_feature_collection_file_io_ptr(&feature_collection_file_io_),
+	d_feature_focus(feature_focus_),
 	d_save_file_as_dialog_ptr(
 			GPlatesQtWidgets::SaveFileDialog::get_save_file_dialog(
 				d_viewport_window_ptr,
@@ -346,11 +354,61 @@ void
 GPlatesGui::FileIOFeedback::reload_file(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference &file)
 {
+	// If the currently focused feature is in the feature collection that is to
+	// be reloaded, save the feature id and the property name of the focused
+	// geometry, so that the focus can remain on the same conceptual geometry.
+	boost::optional<GPlatesModel::FeatureId> focused_feature_id;
+	boost::optional<GPlatesModel::PropertyName> focused_property_name;
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
+			file.get_file().get_feature_collection();
+	GPlatesModel::FeatureHandle::weak_ref focused_feature =
+			d_feature_focus.focused_feature();
+	if (focused_feature.is_valid() &&
+			feature_collection.handle_ptr() == focused_feature->parent_ptr())
+	{
+		GPlatesModel::FeatureHandle::iterator prop_iter = d_feature_focus.associated_geometry_property();
+		if (prop_iter.is_still_valid())
+		{
+			focused_feature_id = focused_feature->feature_id();
+			focused_property_name = (*prop_iter)->property_name();
+		}
+	}
+
 	try_catch_file_load_with_feedback(
 			boost::bind(
 					&GPlatesAppLogic::FeatureCollectionFileIO::reload_file,
 					d_feature_collection_file_io_ptr,
 					file));
+
+	if (focused_property_name)
+	{
+		bool found = false;
+
+		// Go through the feature collection, and find the feature with the
+		// saved feature id. Then find the corresponding property inside that.
+		BOOST_FOREACH(GPlatesModel::FeatureHandle::non_null_ptr_type feature, *feature_collection)
+		{
+			if (feature->feature_id() == focused_feature_id)
+			{
+				for (GPlatesModel::FeatureHandle::iterator iter = feature->begin();
+						iter != feature->end(); ++iter)
+				{
+					if ((*iter)->property_name() == focused_property_name)
+					{
+						d_feature_focus.set_focus(feature->reference(), iter);
+						found = true;
+						break;
+					}
+				}
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			d_feature_focus.unset_focus();
+		}
+	}
 }
 
 
