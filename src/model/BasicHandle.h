@@ -76,6 +76,8 @@ namespace GPlatesModel
 		typedef typename HandleTraits<handle_type>::parent_type parent_type;
 		typedef typename HandleTraits<handle_type>::child_type child_type;
 
+		using typename HandleTraits<handle_type>::unsaved_changes_flag_policy::set_unsaved_changes;
+
 		/**
 		 * The type of this class.
 		 */
