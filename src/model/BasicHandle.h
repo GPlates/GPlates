@@ -55,13 +55,13 @@ namespace GPlatesModel
 	 * inheritance. For example, FeatureHandle is derived from
 	 * BasicHandle<FeatureHandle>. (Although delegation is usually preferred to
 	 * inheritance, the use of inheritance in this case significantlly simplifies
-	 * the Handle class interfaces.
+	 * the Handle class interfaces.)
 	 */
 	template<class HandleType> // HandleType is one of FeatureHandle, FeatureCollectionHandle or FeatureStoreRootHandle.
 	class BasicHandle :
-			public WeakObserverPublisher<HandleType>
+			public WeakObserverPublisher<HandleType>,
+			public HandleTraits<HandleType>::unsaved_changes_flag_policy
 	{
-
 	public:
 
 		// Get typedefs from HandleTraits.
@@ -469,7 +469,6 @@ namespace GPlatesModel
 
 		friend class RevisionAwareIterator<HandleType>;
 		friend class RevisionAwareIterator<const HandleType>;
-
 	};
 
 
@@ -598,7 +597,7 @@ namespace GPlatesModel
 		// changeset_ptr will be NULL if we're not connected to a model.
 		if (changeset_ptr)
 		{
-			// changeset_ptr might not point our changeset.
+			// changeset_ptr might not point to our changeset.
 			changeset_ptr->add_handle(d_handle_ptr);
 		}
 
@@ -819,6 +818,10 @@ namespace GPlatesModel
 			bool publisher_modified,
 			bool child_modified)
 	{
+		// We always set the unsaved changes flag immediately regardless of
+		// whether there is a NotificationGuard.
+		set_unsaved_changes();
+
 		Model *model = model_ptr();
 
 		if (model && model->has_notification_guard())
@@ -1003,7 +1006,7 @@ namespace GPlatesModel
 	{
 		if (d_parent_ptr)
 		{
-			BasicHandle<parent_type> &parent = *(dynamic_cast<BasicHandle<parent_type> *>(d_parent_ptr));
+			BasicHandle<parent_type> &parent = dynamic_cast<BasicHandle<parent_type> &>(*d_parent_ptr);
 			parent.handle_child_modified();
 		}
 	}
@@ -1063,7 +1066,7 @@ namespace GPlatesModel
 	{
 		for (iterator iter = begin(); iter != end(); ++iter)
 		{
-			BasicHandle<child_type> &child = *dynamic_cast<BasicHandle<child_type> *>((*iter).get());
+			BasicHandle<child_type> &child = dynamic_cast<BasicHandle<child_type> &>(**iter);
 			child.flush_pending_notifications();
 		}
 	}
