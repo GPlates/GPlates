@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,9 +29,11 @@
 #include <boost/noncopyable.hpp>
 #include <QObject>
 
-#include "gui/FeatureFocus.h"
-#include "GlobeCanvasTool.h"
+#include "CanvasToolChoice.h"
+#include "FeatureFocus.h"
 #include "FeatureTableModel.h"
+#include "GlobeCanvasTool.h"
+
 
 namespace GPlatesGui
 {
@@ -116,42 +118,66 @@ namespace GPlatesGui
 			return *d_tool_choice_ptr;
 		}
 
+		CanvasToolChoice::Type
+		tool_choice_as_enum() const
+		{
+			return d_tool_choice_as_enum;
+		}
+
+		void
+		set_tool_choice(
+				CanvasToolChoice::Type canvas_tool);
+
+	signals:
+
+		void
+		tool_choice_changed(
+				GPlatesGui::CanvasToolChoice::Type canvas_tool);
+
 	public slots:
+
 		void
 		choose_reorient_globe_tool()
 		{
 			change_tool_if_necessary(d_reorient_globe_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::REORIENT_GLOBE_OR_PAN_MAP);
 		}
 
 		void
 		choose_zoom_globe_tool()
 		{
 			change_tool_if_necessary(d_zoom_globe_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::ZOOM);
 		}
 
 		void
 		choose_click_geometry_tool()
 		{
 			change_tool_if_necessary(d_click_geometry_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::CLICK_GEOMETRY);
 		}
 
 		void
 		choose_digitise_polyline_tool()
 		{
 			change_tool_if_necessary(d_digitise_polyline_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::DIGITISE_POLYLINE);
 		}
 
 		void
 		choose_digitise_multipoint_tool()
 		{
 			change_tool_if_necessary(d_digitise_multipoint_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::DIGITISE_MULTIPOINT);
 		}
 
 		void
 		choose_digitise_polygon_tool()
 		{
 			change_tool_if_necessary(d_digitise_polygon_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::DIGITISE_POLYGON);
 		}
+
 #if 0
 		void
 		choose_move_geometry_tool()
@@ -159,52 +185,61 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_move_geometry_tool_ptr);
 		}
 #endif
+
 		void
 		choose_move_vertex_tool()
 		{
 			change_tool_if_necessary(d_move_vertex_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::MOVE_VERTEX);
 		}
 
 		void
 		choose_delete_vertex_tool()
 		{
 			change_tool_if_necessary(d_delete_vertex_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::DELETE_VERTEX);
 		}
 
 		void
 		choose_insert_vertex_tool()
 		{
 			change_tool_if_necessary(d_insert_vertex_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::INSERT_VERTEX);
 		}
 
 		void
 		choose_split_feature_tool()
 		{
 			change_tool_if_necessary(d_split_feature_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::SPLIT_FEATURE);
 		}
 
 		void
 		choose_manipulate_pole_tool()
 		{
 			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
-		}
-
-		void
-		choose_build_topology_tool()
-		{
-			change_tool_if_necessary(d_build_topology_tool_ptr);
-		}
-
-		void
-		choose_edit_topology_tool()
-		{
-			change_tool_if_necessary(d_edit_topology_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::MANIPULATE_POLE);
 		}
 
 		void
 		choose_measure_distance_tool()
 		{
 			change_tool_if_necessary(d_measure_distance_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::MEASURE_DISTANCE);
+		}
+
+		void
+		choose_build_topology_tool()
+		{
+			change_tool_if_necessary(d_build_topology_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::BUILD_TOPOLOGY);
+		}
+
+		void
+		choose_edit_topology_tool()
+		{
+			change_tool_if_necessary(d_edit_topology_tool_ptr);
+			set_enum_and_emit_signal(CanvasToolChoice::EDIT_TOPOLOGY);
 		}
 
 	private:
@@ -288,9 +323,18 @@ namespace GPlatesGui
 		 */
 		GlobeCanvasTool::non_null_ptr_type d_tool_choice_ptr;
 
+		/**
+		 * An enumerated value that represents the current choice of GlobeCanvasTool.
+		 */
+		CanvasToolChoice::Type d_tool_choice_as_enum;
+
 		void
 		change_tool_if_necessary(
 				GlobeCanvasTool::non_null_ptr_type new_tool_choice);
+
+		void
+		set_enum_and_emit_signal(
+				CanvasToolChoice::Type canvas_tool);
 	};
 }
 

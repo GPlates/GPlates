@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -172,7 +173,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 			map_view_,
 			view_state_,
 			map_transform_)),
-	d_tool_choice_ptr(d_pan_map_tool_ptr)
+	d_tool_choice_ptr(d_pan_map_tool_ptr),
+	d_tool_choice_as_enum(CanvasToolChoice::REORIENT_GLOBE_OR_PAN_MAP)
 {
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
@@ -183,6 +185,73 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
 	tool_choice().handle_activation();
+}
+
+
+void
+GPlatesGui::MapCanvasToolChoice::set_tool_choice(
+		CanvasToolChoice::Type canvas_tool)
+{
+	using namespace CanvasToolChoice;
+
+	switch (canvas_tool)
+	{
+		case REORIENT_GLOBE_OR_PAN_MAP:
+			choose_pan_map_tool();
+			break;
+
+		case ZOOM:
+			choose_zoom_map_tool();
+			break;
+
+		case CLICK_GEOMETRY:
+			choose_click_geometry_tool();
+			break;
+
+		case DIGITISE_POLYLINE:
+			choose_digitise_polyline_tool();
+			break;
+
+		case DIGITISE_MULTIPOINT:
+			choose_digitise_multipoint_tool();
+			break;
+
+		case DIGITISE_POLYGON:
+			choose_digitise_polygon_tool();
+			break;
+
+		case MOVE_VERTEX:
+			choose_move_vertex_tool();
+			break;
+
+		case DELETE_VERTEX:
+			choose_delete_vertex_tool();
+			break;
+
+		case INSERT_VERTEX:
+			choose_insert_vertex_tool();
+			break;
+
+		case SPLIT_FEATURE:
+		 	choose_split_feature_tool();
+		 	break;
+
+		case MANIPULATE_POLE:
+			choose_manipulate_pole_tool();
+			break;
+
+		case MEASURE_DISTANCE:
+			choose_measure_distance_tool();
+			break;
+
+		case BUILD_TOPOLOGY:
+			// Do nothing.
+			break;
+
+		case EDIT_TOPOLOGY:
+			// Do nothing.
+		 	break;
+	}
 }
 
 
@@ -207,3 +276,13 @@ GPlatesGui::MapCanvasToolChoice::change_tool_if_necessary(
 	d_tool_choice_ptr = new_tool_choice;
 	d_tool_choice_ptr->handle_activation();
 }
+
+
+void
+GPlatesGui::MapCanvasToolChoice::set_enum_and_emit_signal(
+		CanvasToolChoice::Type canvas_tool)
+{
+	d_tool_choice_as_enum = canvas_tool;
+	emit tool_choice_changed(canvas_tool);
+}
+

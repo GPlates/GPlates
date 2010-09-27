@@ -17,6 +17,7 @@ set(srcs
     AgeColourPalettes.h
     AnimationController.cc
     AnimationController.h
+    CanvasToolChoice.h
     ChooseCanvasTool.cc
     ChooseCanvasTool.h
     Colour.cc
