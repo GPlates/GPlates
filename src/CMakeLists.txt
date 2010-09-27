@@ -54,13 +54,6 @@ if (NOT APPLE)
 	set(SYSTEM_INCLUDE_FLAG SYSTEM)
 endif (NOT APPLE)
 
-# Tell Qt that we use QtXML.
-# NOTE: subdirectory 'CMakeList.txt' files will also see our QT_USE_* variables.
-SET(QT_USE_QTXML 1)
-SET(QT_USE_QTOPENGL 1)
-SET(QT_USE_QTSVG 1)
-include(${QT_USE_FILE})
-
 # Tell ICU which libraries we use.
 # Options are ICU_DONT_USE_ICU_CORE, ICU_USE_I18N, ICU_USE_IO, ICU_USE_DATA, ICU_USE_LE, ICU_USE_LX, ICU_USE_TU.
 SET(ICU_USE_I18N 1)
@@ -94,6 +87,13 @@ if ( NOT WIN32 )
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCGAL_DISABLE_ROUNDING_MATH_CHECK")
 	endif ( GPlates_CGAL_DISABLE_ROUNDING_MATH_CHECK )
 endif ( NOT WIN32 )
+
+# Tell Qt that we use QtXML.
+# NOTE: subdirectory 'CMakeList.txt' files will also see our QT_USE_* variables.
+SET(QT_USE_QTXML 1)
+SET(QT_USE_QTOPENGL 1)
+SET(QT_USE_QTSVG 1)
+include(${QT_USE_FILE})
 
 # Include compiler options for the C++ programming language.
 # NOTE: We do this after all dependency packages have been found because we are going to modify the
