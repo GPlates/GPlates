@@ -65,6 +65,13 @@ if (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
 	message(FATAL_ERROR "ICU library was not found - please make sure it is installed.")
 endif (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
 
+set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Build type: Release or Debug" FORCE)
+
+# The following is necessary otherwise CGAL is going to set the built type to
+# "Release" when running CMake for the first time, even if we set the build
+# type to be "Debug".
+set(CGAL_BUILD_TYPE_INIT ${CMAKE_BUILD_TYPE})
+
 # Include CGAL.
 include(${CGAL_USE_FILE})
 if ( NOT WIN32 )
