@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -196,8 +196,7 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 			globe,
 			globe_canvas,
 			viewport_window)),
-	d_tool_choice_ptr(d_reorient_globe_tool_ptr),
-	d_tool_choice_as_enum(CanvasToolChoice::REORIENT_GLOBE_OR_PAN_MAP)
+	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
@@ -208,73 +207,6 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
 	tool_choice().handle_activation();
-}
-
-
-void
-GPlatesGui::GlobeCanvasToolChoice::set_tool_choice(
-		CanvasToolChoice::Type canvas_tool)
-{
-	using namespace CanvasToolChoice;
-
-	switch (canvas_tool)
-	{
-		case REORIENT_GLOBE_OR_PAN_MAP:
-			choose_reorient_globe_tool();
-			break;
-
-		case ZOOM:
-			choose_zoom_globe_tool();
-			break;
-
-		case CLICK_GEOMETRY:
-			choose_click_geometry_tool();
-			break;
-
-		case DIGITISE_POLYLINE:
-			choose_digitise_polyline_tool();
-			break;
-
-		case DIGITISE_MULTIPOINT:
-			choose_digitise_multipoint_tool();
-			break;
-
-		case DIGITISE_POLYGON:
-			choose_digitise_polygon_tool();
-			break;
-
-		case MOVE_VERTEX:
-			choose_move_vertex_tool();
-			break;
-
-		case DELETE_VERTEX:
-			choose_delete_vertex_tool();
-			break;
-
-		case INSERT_VERTEX:
-			choose_insert_vertex_tool();
-			break;
-
-		case SPLIT_FEATURE:
-		 	choose_split_feature_tool();
-		 	break;
-
-		case MANIPULATE_POLE:
-			choose_manipulate_pole_tool();
-			break;
-
-		case MEASURE_DISTANCE:
-			choose_measure_distance_tool();
-			break;
-
-		case BUILD_TOPOLOGY:
-			choose_build_topology_tool();
-			break;
-
-		case EDIT_TOPOLOGY:
-		 	choose_edit_topology_tool();
-		 	break;
-	}
 }
 
 
@@ -298,14 +230,5 @@ GPlatesGui::GlobeCanvasToolChoice::change_tool_if_necessary(
 	d_tool_choice_ptr->handle_deactivation();
 	d_tool_choice_ptr = new_tool_choice;
 	d_tool_choice_ptr->handle_activation();
-}
-
-
-void
-GPlatesGui::GlobeCanvasToolChoice::set_enum_and_emit_signal(
-		CanvasToolChoice::Type canvas_tool)
-{
-	d_tool_choice_as_enum = canvas_tool;
-	emit tool_choice_changed(canvas_tool);
 }
 

@@ -6,7 +6,6 @@
  * $Date$ 
  * 
  * Copyright (C) 2008, 2009 Geological Survey of Norway
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,13 +26,11 @@
 #ifndef GPLATES_GUI_MAPCANVASTOOLCHOICE_H
 #define GPLATES_GUI_MAPCANVASTOOLCHOICE_H
 
-#include <boost/noncopyable.hpp>
 #include <QObject>
 
-#include "CanvasToolChoice.h"
-#include "FeatureFocus.h"
-#include "FeatureTableModel.h"
+#include "gui/FeatureFocus.h"
 #include "MapCanvasTool.h"
+#include "FeatureTableModel.h"
 
 
 namespace GPlatesAppLogic
@@ -82,8 +79,7 @@ namespace GPlatesGui
 	 * This serves the role of the Context class in the State Pattern in Gamma et al.
 	 */
 	class MapCanvasToolChoice:
-			public QObject,
-			public boost::noncopyable
+			public QObject
 	{
 		Q_OBJECT
 
@@ -123,64 +119,65 @@ namespace GPlatesGui
 			return *d_tool_choice_ptr;
 		}
 
-		CanvasToolChoice::Type
-		tool_choice_as_enum() const
-		{
-			return d_tool_choice_as_enum;
-		}
-
-		void
-		set_tool_choice(
-				CanvasToolChoice::Type canvas_tool);
-
-	signals:
-
-		void
-		tool_choice_changed(
-				GPlatesGui::CanvasToolChoice::Type canvas_tool);
-
 	public slots:
-
 		void
 		choose_pan_map_tool()
 		{
 			change_tool_if_necessary(d_pan_map_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::REORIENT_GLOBE_OR_PAN_MAP);
 		}
 
 		void
 		choose_zoom_map_tool()
 		{
 			change_tool_if_necessary(d_zoom_map_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::ZOOM);
 		}
 
 		void
 		choose_click_geometry_tool()
 		{
 			change_tool_if_necessary(d_click_geometry_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::CLICK_GEOMETRY);
 		}
 
 		void
 		choose_digitise_polyline_tool()
 		{
 			change_tool_if_necessary(d_digitise_polyline_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::DIGITISE_POLYLINE);
 		}
 
 		void
 		choose_digitise_multipoint_tool()
 		{
 			change_tool_if_necessary(d_digitise_multipoint_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::DIGITISE_MULTIPOINT);
 		}
 
 		void
 		choose_digitise_polygon_tool()
 		{
 			change_tool_if_necessary(d_digitise_polygon_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::DIGITISE_POLYGON);
+		}
+
+		void
+		choose_move_vertex_tool()
+		{
+			change_tool_if_necessary(d_move_vertex_tool_ptr);
+		}
+
+		void
+		choose_insert_vertex_tool()
+		{
+			change_tool_if_necessary(d_insert_vertex_tool_ptr);
+		}
+
+		void
+		choose_split_feature_tool()
+		{
+			change_tool_if_necessary(d_insert_vertex_tool_ptr);
+		}
+
+		void
+		choose_delete_vertex_tool()
+		{
+			change_tool_if_necessary(d_delete_vertex_tool_ptr);
 		}
 
 #if 0
@@ -189,48 +186,19 @@ namespace GPlatesGui
 		{
 			change_tool_if_necessary(d_move_geometry_tool_ptr);
 		}
+
 #endif
-
-		void
-		choose_move_vertex_tool()
-		{
-			change_tool_if_necessary(d_move_vertex_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::MOVE_VERTEX);
-		}
-
-		void
-		choose_delete_vertex_tool()
-		{
-			change_tool_if_necessary(d_delete_vertex_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::DELETE_VERTEX);
-		}
-
-		void
-		choose_insert_vertex_tool()
-		{
-			change_tool_if_necessary(d_insert_vertex_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::INSERT_VERTEX);
-		}
-
-		void
-		choose_split_feature_tool()
-		{
-			change_tool_if_necessary(d_insert_vertex_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::SPLIT_FEATURE);
-		}
 
 		void
 		choose_manipulate_pole_tool()
 		{
 			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::MANIPULATE_POLE);
 		}
 
 		void
 		choose_measure_distance_tool()
 		{
 			change_tool_if_necessary(d_measure_distance_tool_ptr);
-			set_enum_and_emit_signal(CanvasToolChoice::MEASURE_DISTANCE);
 		}
 
 	private:
@@ -302,18 +270,20 @@ namespace GPlatesGui
 		 */
 		MapCanvasTool::non_null_ptr_type d_tool_choice_ptr;
 
-		/**
-		 * An enumerated value that represents the current choice of GlobeCanvasTool.
-		 */
-		CanvasToolChoice::Type d_tool_choice_as_enum;
+		// This constructor should never be defined, because we don't want/need to allow
+		// copy-construction.
+		MapCanvasToolChoice(
+				const MapCanvasToolChoice &);
+
+		// This operator should never be defined, because we don't want/need to allow
+		// copy-assignment.
+		MapCanvasToolChoice &
+		operator=(
+				const MapCanvasToolChoice &);
 
 		void
 		change_tool_if_necessary(
 				MapCanvasTool::non_null_ptr_type new_tool_choice);
-
-		void
-		set_enum_and_emit_signal(
-				CanvasToolChoice::Type canvas_tool);
 	};
 }
 

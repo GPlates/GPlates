@@ -50,7 +50,6 @@
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "gui/AnimationController.h"
-#include "gui/CanvasToolChoice.h"
 #include "gui/FullScreenMode.h"
 
 
@@ -685,10 +684,6 @@ namespace GPlatesQtWidgets
 		void
 		handle_visual_layer_added(
 				size_t index);
-
-		void
-		handle_canvas_tool_choice_changed(
-				GPlatesGui::CanvasToolChoice::Type canvas_tool);
 
 	protected:
 	
