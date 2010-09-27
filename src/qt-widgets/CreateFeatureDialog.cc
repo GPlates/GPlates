@@ -604,6 +604,13 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		d_application_state_ptr->update_layers(collection_file_iter.first);
 		
 		emit feature_created(feature);
+
+		// If the user got into digitisation mode because they clicked the
+		// "Clone Geometry" button whilst in the Click Geometry tool, for
+		// example, they get taken back to the Click Geometry tool instead of
+		// remaining in a digitisation tool.
+		d_viewport_window_ptr->restore_canvas_tool_last_chosen_by_user();
+
 		accept();
 	}
 	catch (const ChooseFeatureCollectionWidget::NoFeatureCollectionSelectedException &)

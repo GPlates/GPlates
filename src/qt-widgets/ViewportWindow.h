@@ -49,6 +49,8 @@
 
 #include "app-logic/FeatureCollectionFileState.h"
 
+#include "canvas-tools/CanvasToolType.h"
+
 #include "gui/AnimationController.h"
 #include "gui/FullScreenMode.h"
 
@@ -212,6 +214,8 @@ namespace GPlatesQtWidgets
 			return d_task_panel_ptr;
 		}
 
+		void
+		restore_canvas_tool_last_chosen_by_user();
 
 	public slots:
 		
@@ -547,6 +551,17 @@ namespace GPlatesQtWidgets
 		bool d_layering_dialog_opened_automatically_once;
 
 		/**
+		 * The last canvas tool explicitly chosen by the user (i.e. not the
+		 * result of an automatic switch of canvas tool by GPlates code).
+		 *
+		 * In particular, this is used to switch back to the Click Geometry tool
+		 * after the user clicks "Clone Geometry" and completes the "Create
+		 * Feature" dialog; this is because "Clone Geometry" automatically takes
+		 * the user to a digitisation tool.
+		 */
+		GPlatesCanvasTools::CanvasToolType::Value d_canvas_tool_last_chosen_by_user;
+
+		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
 		 * buttons and menu items.
 		 */
@@ -684,6 +699,48 @@ namespace GPlatesQtWidgets
 		void
 		handle_visual_layer_added(
 				size_t index);
+
+		void
+		handle_drag_globe_triggered();
+
+		void
+		handle_zoom_globe_triggered();
+
+		void
+		handle_click_geometry_triggered();
+
+		void
+		handle_digitise_new_polyline_triggered();
+
+		void
+		handle_digitise_new_multipoint_triggered();
+
+		void
+		handle_digitise_new_polygon_triggered();
+
+		void
+		handle_move_vertex_triggered();
+
+		void
+		handle_delete_vertex_triggered();
+
+		void
+		handle_insert_vertex_triggered();
+
+		void
+		handle_split_feature_triggered();
+
+		void
+		handle_manipulate_pole_triggered();
+
+		void
+		handle_build_topology_triggered();
+
+		void
+		handle_edit_topology_triggered();
+
+		void
+		handle_measure_distance_triggered();
 
 	protected:
 	
