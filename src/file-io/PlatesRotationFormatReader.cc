@@ -223,6 +223,28 @@ namespace
 		std::string comment;
 		extract_comment(iss, comment, data_source, line_num, read_errors);
 
+		// Did the pole have valid lat and lon?
+		if ( ! GPlatesMaths::LatLonPoint::is_valid_latitude(pole_latitude))
+		{
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
+			ReadErrors::Description descr = ReadErrors::InvalidPoleLatitude;
+			ReadErrors::Result res = ReadErrors::PoleDiscarded;
+			ReadErrorOccurrence read_error(data_source, location, descr, res);
+			read_errors.d_recoverable_errors.push_back(read_error);
+
+			throw PoleParsingException();
+		}
+		if ( ! GPlatesMaths::LatLonPoint::is_valid_longitude(pole_longitude))
+		{
+			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
+			ReadErrors::Description descr = ReadErrors::InvalidPoleLongitude;
+			ReadErrors::Result res = ReadErrors::PoleDiscarded;
+			ReadErrorOccurrence read_error(data_source, location, descr, res);
+			read_errors.d_recoverable_errors.push_back(read_error);
+
+			throw PoleParsingException();
+		}
+
 		std::pair<double, double> lon_lat_euler_pole(pole_longitude, pole_latitude);
 		PropertyValue::non_null_ptr_type value =
 				GpmlFiniteRotation::create(lon_lat_euler_pole, rotation_angle);
