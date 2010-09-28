@@ -145,13 +145,13 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 		GPlatesGui::VisualLayersProxy &visual_layers,
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		ReadErrorAccumulationDialog *read_errors_dialog,
+		ViewportWindow *viewport_window,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_read_errors_dialog(read_errors_dialog),
+	d_viewport_window(viewport_window),
 	d_left_widget(
 			new DraggableWidget(this)),
 	d_expand_icon(
@@ -268,7 +268,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 					visual_layer_type,
 					d_application_state,
 					d_view_state,
-					d_read_errors_dialog,
+					d_viewport_window,
 					this);
 			if (d_current_layer_options_widget)
 			{

@@ -49,7 +49,7 @@ namespace GPlatesQtWidgets
 {
 	// Forward declarations.
 	class AddNewLayerDialog;
-	class ReadErrorAccumulationDialog;
+	class ViewportWindow;
 
 	/**
 	 * VisualLayersWidget displays the contents of VisualLayers. It displays a
@@ -68,7 +68,7 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::VisualLayers &visual_layers,
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				ReadErrorAccumulationDialog *read_errors_dialog,
+				ViewportWindow *viewport_window,
 				QWidget *parent_ = NULL);
 
 		virtual

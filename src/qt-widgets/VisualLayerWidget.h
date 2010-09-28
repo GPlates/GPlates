@@ -61,7 +61,7 @@ namespace GPlatesQtWidgets
 	// Forward declarations.
 	class ElidedLabel;
 	class LayerOptionsWidget;
-	class ReadErrorAccumulationDialog;
+	class ViewportWindow;
 
 	namespace VisualLayerWidgetInternals
 	{
@@ -262,7 +262,7 @@ namespace GPlatesQtWidgets
 				GPlatesGui::VisualLayersProxy &visual_layers,
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				ReadErrorAccumulationDialog *read_errors_dialog,
+				ViewportWindow *viewport_window,
 				QWidget *parent_ = NULL);
 
 		void
@@ -315,7 +315,7 @@ namespace GPlatesQtWidgets
 		GPlatesGui::VisualLayersProxy &d_visual_layers;
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
-		ReadErrorAccumulationDialog *d_read_errors_dialog;
+		ViewportWindow *d_viewport_window;
 
 		/**
 		 * A weak pointer to the visual layer that we're currently displaying.

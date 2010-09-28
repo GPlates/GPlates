@@ -284,6 +284,16 @@ namespace GPlatesPresentation
 		layer_modified(
 				size_t index);
 
+		/**
+		 * @see layer_modified(size_t).
+		 *
+		 * Both layer_modified variations are emitted, so it should only be necessary
+		 * to connect to the signal with the most convenient form.
+		 */
+		void
+		layer_modified(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+
 	private slots:
 
 		// NOTE: all signals/slots should use namespace scope for all arguments

@@ -186,27 +186,3 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 	return feature;
 }
 
-bool
-GPlatesModel::ModelUtils::remove_feature(
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref,
-	GPlatesModel::FeatureHandle::weak_ref feature_ref)
-{
-
-	GPlatesModel::FeatureCollectionHandle::iterator
-		feature_iter = feature_collection_ref->begin();
-	GPlatesModel::FeatureCollectionHandle::iterator 
-		feature_end = feature_collection_ref->end();
-
-	for (; feature_iter != feature_end; ++feature_iter) 
-	{
-		if(feature_ref.handle_ptr() == (*feature_iter).get()) 
-		{
-			// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-			feature_collection_ref->remove(feature_iter);
-			// transaction.commit();
-			return true;
-		}
-	}
-	return false;
-}
-

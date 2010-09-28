@@ -36,7 +36,7 @@ GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
 		GPlatesGui::VisualLayersProxy &visual_layers,
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		ReadErrorAccumulationDialog *read_errors_dialog,
+		ViewportWindow *viewport_window,
 		QWidget *parent_) :
 	QListView(parent_)
 {
@@ -56,7 +56,7 @@ GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
 			visual_layers,
 			application_state,
 			view_state,
-			read_errors_dialog,
+			viewport_window,
 			this);
 	setItemDelegate(delegate);
 

@@ -48,6 +48,7 @@ namespace GPlatesQtWidgets
 	// Forward declarations.
 	class FriendlyLineEdit;
 	class ReadErrorAccumulationDialog;
+	class ViewportWindow;
 
 	/**
 	 * RasterLayerOptionsWidget is used to show additional options for raster
@@ -66,7 +67,7 @@ namespace GPlatesQtWidgets
 		create(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				ReadErrorAccumulationDialog *read_errors_dialog,
+				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
 		virtual
@@ -95,7 +96,7 @@ namespace GPlatesQtWidgets
 		RasterLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				ReadErrorAccumulationDialog *read_errors_dialog,
+				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
 		void

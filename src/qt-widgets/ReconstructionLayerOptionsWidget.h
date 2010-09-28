@@ -44,7 +44,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declaration.
-	class ReadErrorAccumulationDialog;
+	class ViewportWindow;
 
 	/**
 	 * ReconstructionLayerOptionsWidget is used to show additional options for
@@ -55,7 +55,7 @@ namespace GPlatesQtWidgets
 			protected Ui_ReconstructionLayerOptionsWidget
 	{
 		Q_OBJECT
-		
+
 	public:
 
 		static
@@ -63,7 +63,7 @@ namespace GPlatesQtWidgets
 		create(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				ReadErrorAccumulationDialog *read_errors_dialog,
+				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
 		virtual
@@ -75,15 +75,22 @@ namespace GPlatesQtWidgets
 		const QString &
 		get_title();
 
+	private slots:
+
+		void
+		handle_button_clicked();
+
 	private:
 
 		ReconstructionLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
+				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
+		ViewportWindow *d_viewport_window;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

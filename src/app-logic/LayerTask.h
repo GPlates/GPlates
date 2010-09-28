@@ -157,7 +157,7 @@ namespace GPlatesAppLogic
 		 */
 		virtual
 		LayerTaskParams &
-		get_layer_params() = 0;
+		get_layer_task_params() = 0;
 
 	protected:
 		/**

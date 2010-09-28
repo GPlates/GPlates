@@ -169,6 +169,14 @@ GPlatesGui::VisualLayersProxy::handle_layer_modified(
 
 
 void
+GPlatesGui::VisualLayersProxy::handle_layer_modified(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+{
+	emit layer_modified(visual_layer);
+}
+
+
+void
 GPlatesGui::VisualLayersProxy::make_signal_slot_connections()
 {
 	// Connect to VisualLayers signals so we can pass them on.
@@ -212,5 +220,10 @@ GPlatesGui::VisualLayersProxy::make_signal_slot_connections()
 			SIGNAL(layer_modified(size_t)),
 			this,
 			SLOT(handle_layer_modified(size_t)));
+	QObject::connect(
+			&d_visual_layers,
+			SIGNAL(layer_modified(boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
+			this,
+			SLOT(handle_layer_modified(boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
 }
 

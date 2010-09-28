@@ -25,16 +25,27 @@
 
 #include "ReconstructionLayerOptionsWidget.h"
 
+#include "TotalReconstructionPolesDialog.h"
+#include "ViewportWindow.h"
+
 
 GPlatesQtWidgets::ReconstructionLayerOptionsWidget::ReconstructionLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
+		ViewportWindow *viewport_window,
 		QWidget *parent_) :
 	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
-	d_view_state(view_state)
+	d_view_state(view_state),
+	d_viewport_window(viewport_window)
 {
 	setupUi(this);
+
+	QObject::connect(
+			view_total_reconstruction_poles_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_button_clicked()));
 }
 
 
@@ -42,12 +53,13 @@ GPlatesQtWidgets::LayerOptionsWidget *
 GPlatesQtWidgets::ReconstructionLayerOptionsWidget::create(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		ReadErrorAccumulationDialog *read_errors_dialog,
+		ViewportWindow *viewport_window,
 		QWidget *parent_)
 {
 	return new ReconstructionLayerOptionsWidget(
 			application_state,
 			view_state,
+			viewport_window,
 			parent_);
 }
 
@@ -65,5 +77,12 @@ GPlatesQtWidgets::ReconstructionLayerOptionsWidget::get_title()
 {
 	static const QString TITLE = "Reconstruction tree options";
 	return TITLE;
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionLayerOptionsWidget::handle_button_clicked()
+{
+	d_viewport_window->pop_up_total_reconstruction_poles_dialog(d_current_visual_layer);
 }
 

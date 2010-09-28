@@ -47,7 +47,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declaration.
-	class ReadErrorAccumulationDialog;
+	class ViewportWindow;
 
 	class VisualLayersListView :
 			public QListView
@@ -58,7 +58,7 @@ namespace GPlatesQtWidgets
 				GPlatesGui::VisualLayersProxy &visual_layers,
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				ReadErrorAccumulationDialog *read_errors_dialog,
+				ViewportWindow *viewport_window,
 				QWidget *parent_ = NULL);
 
 		virtual

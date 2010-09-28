@@ -101,7 +101,7 @@ namespace
 	no_widget(
 			GPlatesAppLogic::ApplicationState &application_state,
 			GPlatesPresentation::ViewState &view_state,
-			GPlatesQtWidgets::ReadErrorAccumulationDialog *read_errors_dialog,
+			GPlatesQtWidgets::ViewportWindow *viewport_window,
 			QWidget *parent)
 	{
 		return NULL;
@@ -238,7 +238,7 @@ GPlatesPresentation::VisualLayerRegistry::create_options_widget(
 		VisualLayerType::Type visual_layer_type,
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		GPlatesQtWidgets::ReadErrorAccumulationDialog *read_errors_dialog,
+		GPlatesQtWidgets::ViewportWindow *viewport_window,
 		QWidget *parent) const
 {
 	visual_layer_info_map_type::const_iterator iter = d_visual_layer_info_map.find(visual_layer_type);
@@ -247,7 +247,7 @@ GPlatesPresentation::VisualLayerRegistry::create_options_widget(
 		return iter->second.create_options_widget_function(
 				application_state,
 				view_state,
-				read_errors_dialog,
+				viewport_window,
 				parent);
 	}
 	return NULL;

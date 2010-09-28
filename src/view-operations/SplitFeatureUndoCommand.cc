@@ -238,8 +238,11 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
 	(*d_old_feature)->add(*d_old_geometry_property);
 
+#if 0
 	GPlatesModel::ModelUtils::remove_feature(
 			d_feature_collection_ref, *d_new_feature);
+#endif
+	(*d_new_feature)->remove_from_parent();
 
 	//TODO: FIXME:
 	//The following code is a kind of hacking. But if we don't set_focus in undo,

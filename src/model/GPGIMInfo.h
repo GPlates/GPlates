@@ -70,11 +70,21 @@ namespace GPlatesModel
 		typedef std::set<FeatureType> feature_set_type;
 
 		/**
-		 * Returns a set of feature type.
+		 * Returns a set of feature types.
+		 *
+		 * Topological feature types are returned if @a topological is true; otherwise
+		 * non-topological feature types are returned.
 		 */
 		const feature_set_type &
 		get_feature_set(
 				bool topological);
+
+		/**
+		 * Returns true if @a feature_type is a topological feature type.
+		 */
+		bool
+		is_topological(
+				const FeatureType &feature_type);
 	}
 }
 

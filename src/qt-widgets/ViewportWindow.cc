@@ -1095,6 +1095,24 @@ GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog()
 }
 
 void
+GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+{
+	// note: this dialog is created in the constructor
+	
+	d_total_reconstruction_poles_dialog_ptr->update(visual_layer);
+
+	d_total_reconstruction_poles_dialog_ptr->show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_total_reconstruction_poles_dialog_ptr->activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_total_reconstruction_poles_dialog_ptr->raise();
+}
+
+void
 GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
 {
 	if (!d_animate_dialog_ptr)
@@ -1147,7 +1165,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_layering_dialog()
 					get_view_state().get_visual_layers(),
 					get_application_state(),
 					get_view_state(),
-					d_read_errors_dialog_ptr.get(),
+					this,
 					dialog));
 		dialog->setLayout(dialog_layout);
 		dialog->setWindowTitle("Layers");
@@ -1898,6 +1916,10 @@ GPlatesQtWidgets::ViewportWindow::enable_stars_display()
 {
 	get_view_state().set_show_stars(
 			action_Show_Stars->isChecked());
+	if (reconstruction_view_widget().globe_is_active())
+	{
+		globe_canvas().update_canvas();
+	}
 }
 
 void
@@ -1947,6 +1969,7 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 	
 	bool globe_is_active = d_reconstruction_view_widget.globe_is_active();
 	action_Show_Arrow_Decorations->setEnabled(globe_is_active);
+	action_Show_Stars->setEnabled(globe_is_active);
 	
 	// Grey-out the modify pole tab when in map mode. 
 	d_task_panel_ptr->set_tab_enabled(TaskPanel::MODIFY_POLE, globe_is_active);

@@ -55,6 +55,7 @@
 namespace GPlatesAppLogic
 {
 	class LayerTask;
+	class LayerTaskParams;
 
 	/**
 	 * Wrapper around a layer of @a ReconstructGraph that can be used to query the layer.
@@ -591,6 +592,14 @@ namespace GPlatesAppLogic
 		 */
 		std::vector<InputConnection>
 		get_all_inputs() const;
+
+
+		/**
+		 * Returns a non-const reference to the additional parameters and
+		 * configuration options of the associated layer task.
+		 */
+		LayerTaskParams &
+		get_layer_task_params();
 
 
 		/**

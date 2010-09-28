@@ -49,6 +49,7 @@ namespace GPlatesAppLogic
 {
 	class Layer;
 	class LayerTask;
+	class LayerTaskParams;
 	class ReconstructGraph;
 
 	namespace ReconstructGraphImpl
@@ -362,6 +363,9 @@ namespace GPlatesAppLogic
 			{
 				return *d_reconstruct_graph;
 			}
+
+			LayerTaskParams &
+			get_layer_task_params();
 
 		private:
 			ReconstructGraph *d_reconstruct_graph;

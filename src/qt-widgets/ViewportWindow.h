@@ -38,6 +38,7 @@
 #include <list>
 #include <memory>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <QtCore/QTimer>
 #include <QPointer>
 #include <QCloseEvent>
@@ -92,6 +93,7 @@ namespace GPlatesPresentation
 {
 	class Application;
 	class ViewState;
+	class VisualLayer;
 }
 
 namespace GPlatesViewOperations
@@ -212,6 +214,18 @@ namespace GPlatesQtWidgets
 		task_panel_ptr() const
 		{
 			return d_task_panel_ptr;
+		}
+
+		ReadErrorAccumulationDialog &
+		read_errors_dialog()
+		{
+			return *d_read_errors_dialog_ptr;
+		}
+
+		TotalReconstructionPolesDialog &
+		total_reconstruction_poles_dialog()
+		{
+			return *d_total_reconstruction_poles_dialog_ptr;
 		}
 
 		void
@@ -383,6 +397,10 @@ namespace GPlatesQtWidgets
 #endif
 		void
 		pop_up_total_reconstruction_poles_dialog();
+
+		void
+		pop_up_total_reconstruction_poles_dialog(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 	
 		void
 		pop_up_animate_dialog();

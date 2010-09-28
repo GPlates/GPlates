@@ -406,6 +406,13 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::activate(
 }
 
 
+GPlatesAppLogic::LayerTaskParams &
+GPlatesAppLogic::ReconstructGraphImpl::Layer::get_layer_task_params()
+{
+	return d_layer_task->get_layer_task_params();
+}
+
+
 bool
 GPlatesAppLogic::ReconstructGraphImpl::detect_cycle_in_graph(
 		const Layer *originating_layer,

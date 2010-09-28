@@ -49,7 +49,7 @@ namespace GPlatesAppLogic
 namespace GPlatesQtWidgets
 {
 	class LayerOptionsWidget;
-	class ReadErrorAccumulationDialog;
+	class ViewportWindow;
 }
 
 namespace GPlatesPresentation
@@ -81,7 +81,7 @@ namespace GPlatesPresentation
 		 * the visual layer's options.
 		 *
 		 * The function takes as arguments the ApplicationState, the ViewState,
-		 * a pointer to the ReadErrorAccumulationDialog and a pointer to the
+		 * a pointer to the ViewportWindow, and a pointer to the
 		 * parent QWidget, and returns a pointer to a LayerOptionsWidget subtype.
 		 * Returns NULL if there is no widget to edit the visual layer's options.
 		 */
@@ -89,7 +89,7 @@ namespace GPlatesPresentation
 			GPlatesQtWidgets::LayerOptionsWidget *(
 				GPlatesAppLogic::ApplicationState &,
 				GPlatesPresentation::ViewState &,
-				GPlatesQtWidgets::ReadErrorAccumulationDialog *,
+				GPlatesQtWidgets::ViewportWindow *,
 				QWidget *)
 		> create_options_widget_function_type;
 
@@ -164,7 +164,7 @@ namespace GPlatesPresentation
 				VisualLayerType::Type visual_layer_type,
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				GPlatesQtWidgets::ReadErrorAccumulationDialog *read_errors_dialog,
+				GPlatesQtWidgets::ViewportWindow *viewport_window,
 				QWidget *parent) const;
 
 	private:

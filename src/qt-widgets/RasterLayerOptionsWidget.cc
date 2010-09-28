@@ -34,6 +34,7 @@
 #include "FriendlyLineEdit.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
+#include "ViewportWindow.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Layer.h"
@@ -117,12 +118,12 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::PALETTE_FILENAME_BLANK_TEXT("Default
 GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		ReadErrorAccumulationDialog *read_errors_dialog,
+		ViewportWindow *viewport_window,
 		QWidget *parent_) :
 	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_read_errors_dialog(read_errors_dialog),
+	d_read_errors_dialog(&viewport_window->read_errors_dialog()),
 	d_palette_filename_lineedit(
 			new FriendlyLineEdit(
 				QString(),
@@ -144,13 +145,13 @@ GPlatesQtWidgets::LayerOptionsWidget *
 GPlatesQtWidgets::RasterLayerOptionsWidget::create(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		ReadErrorAccumulationDialog *read_errors_dialog,
+		ViewportWindow *viewport_window,
 		QWidget *parent_)
 {
 	return new RasterLayerOptionsWidget(
 			application_state,
 			view_state,
-			read_errors_dialog,
+			viewport_window,
 			parent_);
 }
 

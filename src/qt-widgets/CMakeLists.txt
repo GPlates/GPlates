@@ -48,7 +48,6 @@ set(srcs
     ChooseFeatureCollectionWidgetUi.ui
     ChooseFeatureTypeWidget.cc
     ChooseFeatureTypeWidget.h
-    ChooseFeatureTypeWidgetUi.ui
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
@@ -233,6 +232,8 @@ set(srcs
     SaveFileDialog.cc
     SaveFileDialog.h
     SceneView.h
+    SelectionWidget.cc
+    SelectionWidget.h
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui

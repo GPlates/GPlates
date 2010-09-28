@@ -115,9 +115,9 @@ namespace GPlatesAppLogic
 
 		virtual
 		LayerTaskParams &
-		get_layer_params()
+		get_layer_task_params()
 		{
-			return d_layer_params;
+			return d_layer_task_params;
 		}
 
 	private:
@@ -132,7 +132,7 @@ namespace GPlatesAppLogic
 		 */
 		static const char *POLYGON_FEATURES_CHANNEL_NAME;
 
-		LayerTaskParams d_layer_params;
+		LayerTaskParams d_layer_task_params;
 
 		VelocityFieldCalculatorLayerTask()
 		{  }

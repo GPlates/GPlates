@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>TotalReconstructionPolesDialog</class>
- <widget class="QWidget" name="TotalReconstructionPolesDialog" >
-  <property name="geometry" >
+ <widget class="QWidget" name="TotalReconstructionPolesDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,79 +10,80 @@
     <height>460</height>
    </rect>
   </property>
-  <property name="minimumSize" >
+  <property name="minimumSize">
    <size>
     <width>790</width>
     <height>0</height>
    </size>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Total Reconstruction Poles</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
+    <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
-  <layout class="QGridLayout" >
-   <item row="0" column="0" >
-    <layout class="QHBoxLayout" >
+  <layout class="QGridLayout">
+   <item row="2" column="0">
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QLabel" name="label_time" >
-       <property name="text" >
+      <widget class="QLabel" name="label_time">
+       <property name="text">
         <string>Total reconstruction poles generated at</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="field_time" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+      <widget class="QLineEdit" name="field_time">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="maximumSize" >
+       <property name="maximumSize">
         <size>
          <width>70</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="readOnly" >
+       <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_reference_plate" >
-       <property name="text" >
+      <widget class="QLabel" name="label_reference_plate">
+       <property name="text">
         <string>Ma, with anchored plate ID</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="field_reference_plate" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+      <widget class="QLineEdit" name="field_reference_plate">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="maximumSize" >
+       <property name="maximumSize">
         <size>
          <width>70</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="readOnly" >
+       <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
          <height>20</height>
@@ -91,90 +93,90 @@
      </item>
     </layout>
    </item>
-   <item row="1" column="0" >
-    <widget class="QTabWidget" name="tabWidget" >
-     <property name="minimumSize" >
+   <item row="3" column="0">
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="minimumSize">
       <size>
        <width>405</width>
        <height>0</height>
       </size>
      </property>
-     <property name="autoFillBackground" >
+     <property name="autoFillBackground">
       <bool>false</bool>
      </property>
-     <property name="tabShape" >
+     <property name="tabShape">
       <enum>QTabWidget::Rounded</enum>
      </property>
-     <property name="currentIndex" >
-      <number>0</number>
+     <property name="currentIndex">
+      <number>2</number>
      </property>
-     <widget class="QWidget" name="tab_table_relative" >
-      <attribute name="title" >
+     <widget class="QWidget" name="tab_table_relative">
+      <attribute name="title">
        <string>&amp;Relative Rotations</string>
       </attribute>
-      <layout class="QGridLayout" >
-       <item row="1" column="0" >
-        <widget class="QTableWidget" name="table_relative" >
-         <property name="sizePolicy" >
-          <sizepolicy vsizetype="Expanding" hsizetype="Minimum" >
+      <layout class="QGridLayout">
+       <item row="1" column="0">
+        <widget class="QTableWidget" name="table_relative">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <property name="minimumSize" >
+         <property name="minimumSize">
           <size>
            <width>505</width>
            <height>0</height>
           </size>
          </property>
-         <property name="horizontalScrollBarPolicy" >
+         <property name="horizontalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOff</enum>
          </property>
-         <property name="alternatingRowColors" >
+         <property name="alternatingRowColors">
           <bool>true</bool>
          </property>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Plate ID</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Latitude</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Longitude</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Angle</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Fixed Plate ID</string>
           </property>
          </column>
         </widget>
        </item>
-       <item row="0" column="0" >
-        <widget class="QLabel" name="label_relative_rotations" >
-         <property name="text" >
-          <string>Each rotation describes the motion of a plate relative to some other "fixed" plate.</string>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_relative_rotations">
+         <property name="text">
+          <string>Each rotation describes the motion of a plate relative to some other &quot;fixed&quot; plate.</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="0" >
-        <layout class="QHBoxLayout" >
+       <item row="2" column="0">
+        <layout class="QHBoxLayout">
          <item>
           <spacer>
-           <property name="orientation" >
+           <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
-           <property name="sizeHint" >
+           <property name="sizeHint" stdset="0">
             <size>
              <width>40</width>
              <height>20</height>
@@ -183,11 +185,11 @@
           </spacer>
          </item>
          <item>
-          <widget class="QPushButton" name="button_export_relative_rotations" >
-           <property name="text" >
+          <widget class="QPushButton" name="button_export_relative_rotations">
+           <property name="text">
             <string>E&amp;xport...</string>
            </property>
-           <property name="iconSize" >
+           <property name="iconSize">
             <size>
              <width>22</width>
              <height>22</height>
@@ -199,68 +201,68 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_table_composed" >
-      <attribute name="title" >
+     <widget class="QWidget" name="tab_table_composed">
+      <attribute name="title">
        <string>&amp;Equivalent Rotations rel. Anchored Plate</string>
       </attribute>
-      <layout class="QGridLayout" >
-       <item row="1" column="0" >
-        <widget class="QTableWidget" name="table_equivalent" >
-         <property name="sizePolicy" >
-          <sizepolicy vsizetype="Expanding" hsizetype="Minimum" >
+      <layout class="QGridLayout">
+       <item row="1" column="0">
+        <widget class="QTableWidget" name="table_equivalent">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <property name="minimumSize" >
+         <property name="minimumSize">
           <size>
            <width>405</width>
            <height>0</height>
           </size>
          </property>
-         <property name="horizontalScrollBarPolicy" >
+         <property name="horizontalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOff</enum>
          </property>
-         <property name="alternatingRowColors" >
+         <property name="alternatingRowColors">
           <bool>true</bool>
          </property>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Plate ID</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Latitude</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Longitude</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Angle</string>
           </property>
          </column>
         </widget>
        </item>
-       <item row="0" column="0" >
-        <widget class="QLabel" name="label_equivalent_rotations" >
-         <property name="text" >
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_equivalent_rotations">
+         <property name="text">
           <string>Each equivalent rotation describes the motion of a plate relative to the currently anchored plate ID.</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="0" >
-        <layout class="QHBoxLayout" >
+       <item row="2" column="0">
+        <layout class="QHBoxLayout">
          <item>
           <spacer>
-           <property name="orientation" >
+           <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
-           <property name="sizeHint" >
+           <property name="sizeHint" stdset="0">
             <size>
              <width>40</width>
              <height>20</height>
@@ -269,8 +271,8 @@
           </spacer>
          </item>
          <item>
-          <widget class="QPushButton" name="button_export_equiv_rotations" >
-           <property name="text" >
+          <widget class="QPushButton" name="button_export_equiv_rotations">
+           <property name="text">
             <string>E&amp;xport...</string>
            </property>
           </widget>
@@ -279,60 +281,60 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_tree" >
-      <attribute name="title" >
+     <widget class="QWidget" name="tab_tree">
+      <attribute name="title">
        <string>Reconstruction &amp;Tree</string>
       </attribute>
-      <layout class="QGridLayout" >
-       <item row="1" column="0" >
-        <widget class="QTreeWidget" name="tree_reconstruction" >
-         <property name="alternatingRowColors" >
+      <layout class="QGridLayout">
+       <item row="1" column="0">
+        <widget class="QTreeWidget" name="tree_reconstruction">
+         <property name="alternatingRowColors">
           <bool>true</bool>
          </property>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Plate ID</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Fixed Plate ID</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Rotation rel. fixed (parent) plate</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Equivalent rotation rel. anchored plate</string>
           </property>
          </column>
         </widget>
        </item>
-       <item row="2" column="0" >
-        <layout class="QHBoxLayout" >
+       <item row="2" column="0">
+        <layout class="QHBoxLayout">
          <item>
-          <widget class="QPushButton" name="button_expand_all" >
-           <property name="text" >
+          <widget class="QPushButton" name="button_expand_all">
+           <property name="text">
             <string>E&amp;xpand All</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="button_collapse_all" >
-           <property name="text" >
+          <widget class="QPushButton" name="button_collapse_all">
+           <property name="text">
             <string>&amp;Collapse All</string>
            </property>
           </widget>
          </item>
          <item>
           <spacer>
-           <property name="orientation" >
+           <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
-           <property name="sizeHint" >
+           <property name="sizeHint" stdset="0">
             <size>
              <width>40</width>
              <height>20</height>
@@ -342,69 +344,69 @@
          </item>
         </layout>
        </item>
-       <item row="0" column="0" >
-        <widget class="QLabel" name="label_reconstruction_tree" >
-         <property name="text" >
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_reconstruction_tree">
+         <property name="text">
           <string>A tree-like representation of the hierarchy of relative rotations at the current reconstruction time.</string>
          </property>
         </widget>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_path_to_root" >
-      <attribute name="title" >
+     <widget class="QWidget" name="tab_path_to_root">
+      <attribute name="title">
        <string>&amp;Plate Circuits to Anchored Plate</string>
       </attribute>
-      <layout class="QGridLayout" >
-       <item row="1" column="0" >
-        <widget class="QTreeWidget" name="tree_circuit" >
-         <property name="alternatingRowColors" >
+      <layout class="QGridLayout">
+       <item row="1" column="0">
+        <widget class="QTreeWidget" name="tree_circuit">
+         <property name="alternatingRowColors">
           <bool>true</bool>
          </property>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Plate ID / Circuit</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Fixed Plate ID</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Rotation rel. fixed (parent) plate</string>
           </property>
          </column>
          <column>
-          <property name="text" >
+          <property name="text">
            <string>Equivalent rotation rel. anchored plate</string>
           </property>
          </column>
         </widget>
        </item>
-       <item row="2" column="0" >
-        <layout class="QHBoxLayout" >
+       <item row="2" column="0">
+        <layout class="QHBoxLayout">
          <item>
-          <widget class="QPushButton" name="button_expand2" >
-           <property name="text" >
+          <widget class="QPushButton" name="button_expand2">
+           <property name="text">
             <string>E&amp;xpand All</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="button_collapse2" >
-           <property name="text" >
+          <widget class="QPushButton" name="button_collapse2">
+           <property name="text">
             <string>&amp;Collapse All</string>
            </property>
           </widget>
          </item>
          <item>
           <spacer>
-           <property name="orientation" >
+           <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
-           <property name="sizeHint" >
+           <property name="sizeHint" stdset="0">
             <size>
              <width>40</width>
              <height>20</height>
@@ -414,9 +416,9 @@
          </item>
         </layout>
        </item>
-       <item row="0" column="0" >
-        <widget class="QLabel" name="label_plate_circuits" >
-         <property name="text" >
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_plate_circuits">
+         <property name="text">
           <string>Each branch can be expanded to list the circuit of relative rotations from a plate to the anchored plate.</string>
          </property>
         </widget>
@@ -425,14 +427,14 @@
      </widget>
     </widget>
    </item>
-   <item row="2" column="0" >
-    <layout class="QHBoxLayout" >
+   <item row="4" column="0">
+    <layout class="QHBoxLayout">
      <item>
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
          <height>20</height>
@@ -441,21 +443,70 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="button_close" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_close">
+       <property name="text">
         <string>Close</string>
        </property>
-       <property name="default" >
+       <property name="default">
         <bool>true</bool>
        </property>
       </widget>
      </item>
     </layout>
    </item>
+   <item row="0" column="0">
+    <widget class="QWidget" name="widget" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="margin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label_reconstruction_tree_layer">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Reconstruction Tree:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="combobox_reconstruction_tree_layer">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>3</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="widget_2" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>2</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections>
   <connection>
@@ -464,11 +515,11 @@
    <receiver>TotalReconstructionPolesDialog</receiver>
    <slot>close()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>649</x>
      <y>437</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>424</x>
      <y>2</y>
     </hint>
@@ -480,11 +531,11 @@
    <receiver>tree_reconstruction</receiver>
    <slot>expandAll()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>32065</x>
      <y>32420</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>32172</x>
      <y>32300</y>
     </hint>
@@ -496,11 +547,11 @@
    <receiver>tree_reconstruction</receiver>
    <slot>collapseAll()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>32172</x>
      <y>32424</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>32232</x>
      <y>32377</y>
     </hint>
@@ -512,11 +563,11 @@
    <receiver>tree_circuit</receiver>
    <slot>expandAll()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>59</x>
      <y>392</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>129</x>
      <y>314</y>
     </hint>
@@ -528,11 +579,11 @@
    <receiver>tree_circuit</receiver>
    <slot>collapseAll()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>164</x>
      <y>391</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>199</x>
      <y>373</y>
     </hint>

@@ -335,6 +335,20 @@ GPlatesAppLogic::Layer::get_all_inputs() const
 }
 
 
+GPlatesAppLogic::LayerTaskParams &
+GPlatesAppLogic::Layer::get_layer_task_params()
+{
+	// Throw our own exception to track location of throw.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+		is_valid(),
+		GPLATES_ASSERTION_SOURCE);
+
+	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(d_impl);
+
+	return layer_impl->get_layer_task_params();
+}
+
+
 void
 GPlatesAppLogic::Layer::InputFile::activate(
 		bool active)

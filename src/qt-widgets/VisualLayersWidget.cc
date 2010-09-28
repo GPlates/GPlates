@@ -34,7 +34,7 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 		GPlatesPresentation::VisualLayers &visual_layers,
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		ReadErrorAccumulationDialog *read_errors_dialog,
+		ViewportWindow *viewport_window,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
@@ -47,7 +47,7 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 			d_visual_layers,
 			application_state,
 			view_state,
-			read_errors_dialog,
+			viewport_window,
 			this);
 
 	QtWidgetUtils::add_widget_to_placeholder(list, layers_list_placeholder_widget);

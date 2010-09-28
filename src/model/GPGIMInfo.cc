@@ -276,10 +276,10 @@ namespace
 	/**
 	 * Converts the above table into a set.
 	 */
-	const feature_set_type &
+	feature_set_type
 	build_normal_feature_set()
 	{
-		static feature_set_type set;
+		feature_set_type set;
 
 		// Add all feature types from the feature_type_info_table.
 		const FeatureTypeInfo *it = feature_type_info_table;
@@ -288,6 +288,7 @@ namespace
 		{
 			set.insert(GPlatesModel::FeatureType::create_gpml(it->gpml_type));
 		}
+
 		return set;
 	}
 
@@ -295,10 +296,10 @@ namespace
 	/**
 	 * Converts the above table into a set.
 	 */
-	const feature_set_type &
+	feature_set_type
 	build_topological_feature_set()
 	{
-		static feature_set_type set;
+		feature_set_type set;
 
 		// Add all feature types from the topological_feature_type_info_table.
 		const FeatureTypeInfo *it = topological_feature_type_info_table;
@@ -307,7 +308,24 @@ namespace
 		{
 			set.insert(GPlatesModel::FeatureType::create_gpml(it->gpml_type));
 		}
+
 		return set;
+	}
+
+
+	const feature_set_type &
+	normal_feature_set()
+	{
+		static const feature_set_type feature_set = build_normal_feature_set();
+		return feature_set;
+	}
+
+
+	const feature_set_type &
+	topological_feature_set()
+	{
+		static const feature_set_type feature_set = build_topological_feature_set();
+		return feature_set;
 	}
 }
 
@@ -340,16 +358,22 @@ const GPlatesModel::GPGIMInfo::feature_set_type &
 GPlatesModel::GPGIMInfo::get_feature_set(
 		bool topological)
 {
-	static const feature_set_type &normal_set = build_normal_feature_set();
-	static const feature_set_type &topological_set = build_topological_feature_set();
-
 	if (topological)
 	{
-		return topological_set;
+		return topological_feature_set();
 	}
 	else
 	{
-		return normal_set;
+		return normal_feature_set();
 	}
+}
+
+
+bool
+GPlatesModel::GPGIMInfo::is_topological(
+		const FeatureType &feature_type)
+{
+	const feature_set_type &topological_features = topological_feature_set();
+	return topological_features.find(feature_type) != topological_features.end();
 }
 

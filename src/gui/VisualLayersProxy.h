@@ -133,6 +133,10 @@ namespace GPlatesGui
 		handle_layer_modified(
 				size_t index);
 
+		void
+		handle_layer_modified(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+
 	signals:
 
 		void
@@ -167,6 +171,10 @@ namespace GPlatesGui
 		void
 		layer_modified(
 				size_t index);
+
+		void
+		layer_modified(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 
 	private:
 

@@ -109,7 +109,7 @@ namespace
 				build_feature_conjugate_plate_prop_set();
 		
 		// Get currently selected feature type
-		boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
+		boost::optional<GPlatesModel::FeatureType> feature_type_opt =
 				choose_feature_type_widget->get_feature_type();
 		if (feature_type_opt) {
 			QString t = GPlatesUtils::make_qstring_from_icu_string(feature_type_opt->build_aliased_name());
@@ -139,7 +139,10 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_conjugate_plate_id_widget(new EditPlateIdWidget(this)),
 	d_time_period_widget(new EditTimePeriodWidget(this)),
 	d_name_widget(new EditStringWidget(this)),
-	d_choose_feature_type_widget(new ChooseFeatureTypeWidget(this)),
+	d_choose_feature_type_widget(
+			new ChooseFeatureTypeWidget(
+				SelectionWidget::Q_LIST_WIDGET,
+				this)),
 	d_choose_feature_collection_widget(
 			new ChooseFeatureCollectionWidget(
 				d_file_state,
@@ -307,7 +310,7 @@ void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 {
 	// Get the FeatureType the user has selected.
-	boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
+	boost::optional<GPlatesModel::FeatureType> feature_type_opt =
 		d_choose_feature_type_widget->get_feature_type();
 	if ( ! feature_type_opt) {
 		QMessageBox::critical(this, tr("No feature type selected"),
@@ -437,7 +440,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	const GPlatesModel::PropertyName geom_prop_name = geom_prop_name_item->get_name();
 	
 	// Get the FeatureType the user has selected.
-	boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
+	boost::optional<GPlatesModel::FeatureType> feature_type_opt =
 			d_choose_feature_type_widget->get_feature_type();
 	if (!feature_type_opt)
 	{

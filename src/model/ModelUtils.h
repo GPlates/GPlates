@@ -100,14 +100,7 @@ namespace GPlatesModel
 				unsigned long fixed_plate_id,
 				unsigned long moving_plate_id,
 				const std::vector<TotalReconstructionPoleData> &five_tuples);
-
-		
-		bool
-		remove_feature(
-				GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref,
-				GPlatesModel::FeatureHandle::weak_ref feature_ref);
 	}
-
 }
 
 #endif  // GPLATES_MODEL_MODELUTILS_H

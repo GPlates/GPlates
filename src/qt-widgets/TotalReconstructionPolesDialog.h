@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,6 +33,8 @@
 
 #include "TotalReconstructionPolesDialogUi.h"
 
+#include "presentation/VisualLayers.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -47,22 +50,32 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	class TotalReconstructionPolesDialog:
-		public QDialog,
-		protected Ui_TotalReconstructionPolesDialog
+			public QDialog,
+			protected Ui_TotalReconstructionPolesDialog
 	{
 		Q_OBJECT
 
 	public:
+
 		TotalReconstructionPolesDialog(
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
+	public slots:
+
 		/**
-		 * Update the dialog. (After the reconstruction time/plate has been
+		 * Updates the dialog. (After the reconstruction time/plate has been
 		 * changed in the Viewport Window, for example). 
 		 */
 		void
 		update();
+
+		/**
+		 * Updates the dialog to show a particular @a visual_layer.
+		 */
+		void
+		update(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 
 	private slots:
 
@@ -78,12 +91,35 @@ namespace GPlatesQtWidgets
 		void
 		export_equivalent();
 
+		/**
+		 * When a visual layer has been added.
+		 */
+		void
+		handle_layer_added(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+
+		/**
+		 * When a visual layer is about to be removed.
+		 */
+		void
+		handle_layer_about_to_be_removed(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+
+		/**
+		 * When a visual layer or its underlying reconstruct graph layer is modified.
+		 */
+		void
+		handle_layer_modified(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+
 	private:
+
+		GPlatesPresentation::ViewState &d_view_state;
 
 		/**
 		 * To query the reconstruction.
 		 */
-		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
+		GPlatesAppLogic::ApplicationState &d_application_state;
 
 		/**
 		 * The stationary plate id.
@@ -146,6 +182,13 @@ namespace GPlatesQtWidgets
 		void
 		fill_circuit_tree(
 				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree);
+		
+		void
+		make_signal_slot_connections();
+
+		int
+		get_combobox_index(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 	};
 
 }

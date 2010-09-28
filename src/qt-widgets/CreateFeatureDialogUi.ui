@@ -27,7 +27,7 @@
    <item>
     <widget class="QStackedWidget" name="stack">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="page_feature_type">
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -35,7 +35,16 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QWidget" name="widget_choose_feature_type_placeholder" native="true"/>
+        <widget class="QGroupBox" name="groupbox_feature_type">
+         <property name="title">
+          <string>Feature Type</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QWidget" name="widget_choose_feature_type_placeholder" native="true"/>
+          </item>
+         </layout>
+        </widget>
        </item>
       </layout>
      </widget>

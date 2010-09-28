@@ -25,7 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <ctime>
 #include <cmath>
 #include <boost/function.hpp>
 #include <boost/random/mersenne_twister.hpp>
@@ -49,14 +48,16 @@
 
 namespace
 {
-	const GLfloat SMALL_STARS_SIZE = 1.3f;
-	const GLfloat LARGE_STARS_SIZE = 2.8f;
+	const GLfloat SMALL_STARS_SIZE = 1.4f;
+	const GLfloat LARGE_STARS_SIZE = 2.1f;
 
-	const unsigned int NUM_SMALL_STARS = 4000;
-	const unsigned int NUM_LARGE_STARS = 3500;
+	const unsigned int NUM_SMALL_STARS = 4250;
+	const unsigned int NUM_LARGE_STARS = 3750;
 
 	// Points sit on a sphere of this radius.
-	const GLfloat RADIUS = 8.0f;
+	// Note that ideally, we'd have these points at infinity - but we can't do
+	// that, because we use an orthographic projection for the globe...
+	const GLfloat RADIUS = 7.0f;
 
 	typedef GPlatesOpenGL::Vertex vertex_type;
 
@@ -94,7 +95,7 @@ namespace
 			double y = 2 * x_2 * sqrt_part;
 			double z = 1 - 2 * (x_1_sq + x_2_sq);
 
-			// Randomising the distance to the stars gives a more 3D effect.
+			// Randomising the distance to the stars gives a nicer 3D effect.
 			double radius = RADIUS + rand();
 
 			vertex_type vertex = { x * radius, y * radius, z * radius, colour };
@@ -143,7 +144,10 @@ GPlatesGui::Stars::Stars(
 {
 	// Set up the random number generator.
 	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
-	boost::mt19937 gen(std::time(NULL));
+	// Note that we use a fixed seed (0), so that the pattern of stars does not
+	// change between sessions. This is useful when trying to reproduce screenshots
+	// between sessions.
+	boost::mt19937 gen(0);
 	boost::uniform_real<> dist(-1.0, 1.0);
 	boost::function< double () > rand(
 			boost::variate_generator<boost::mt19937&, boost::uniform_real<> >(gen, dist));

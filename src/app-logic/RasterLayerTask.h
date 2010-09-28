@@ -138,9 +138,9 @@ namespace GPlatesAppLogic
 		
 		virtual
 		LayerTaskParams &
-		get_layer_params()
+		get_layer_task_params()
 		{
-			return d_layer_params;
+			return d_layer_task_params;
 		}
 
 
@@ -167,7 +167,7 @@ namespace GPlatesAppLogic
 		 */
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_polygon_features_collection;
 
-		LayerTaskParams d_layer_params;
+		LayerTaskParams d_layer_task_params;
 
 		RasterLayerTask()
 		{  }

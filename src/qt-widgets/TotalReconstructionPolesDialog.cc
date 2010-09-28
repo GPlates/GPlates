@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,18 +31,26 @@
 #include <QTableWidget>
 #include <QMap>
 #include <QMessageBox>
+#include <QVariant>
+#include <QMetaType>
 #include <QDebug>
 
 #include "TotalReconstructionPolesDialog.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/Layer.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeEdge.h"
+
 #include "gui/CsvExport.h"
+
 #include "maths/MathsUtils.h"
+
 #include "presentation/ViewState.h"
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
+
+Q_DECLARE_METATYPE( boost::weak_ptr<GPlatesPresentation::VisualLayer> )
 
 
 namespace ColumnNames
@@ -219,7 +228,8 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
-	d_application_state_ptr(&view_state.get_application_state())
+	d_view_state(view_state),
+	d_application_state(view_state.get_application_state())
 {
 	setupUi(this);
 
@@ -268,11 +278,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 	tree_circuit_header->resizeSection(2,270);
 	tree_circuit_header->resizeSection(3,270);
 
-	set_time(d_application_state_ptr->get_current_reconstruction_time());
-	set_plate(d_application_state_ptr->get_current_anchored_plate_id());
+	set_time(d_application_state.get_current_reconstruction_time());
+	set_plate(d_application_state.get_current_anchored_plate_id());
 
-	QObject::connect(button_export_relative_rotations,SIGNAL(clicked()),this,SLOT(export_relative()));
-	QObject::connect(button_export_equiv_rotations,SIGNAL(clicked()),this,SLOT(export_equivalent()));
+	make_signal_slot_connections();
 }
 
 void
@@ -304,9 +313,6 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
-	table_equivalent->clearContents();
-	table_equivalent->setRowCount(0);
-
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
@@ -381,9 +387,6 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
-	table_relative->clearContents();
-	table_relative->setRowCount(0);
-
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
@@ -468,8 +471,6 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
-	tree_reconstruction->clear();
-
 	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
 			reconstruction_tree.rootmost_edges_begin();
@@ -498,8 +499,6 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
-	tree_circuit->clear();
-
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
@@ -548,29 +547,53 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree(
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::update()
 {
-	const GPlatesAppLogic::Reconstruction &reconstruction =
-			d_application_state_ptr->get_current_reconstruction();
+	// Reset everything.
+	set_time(d_application_state.get_current_reconstruction_time());
+	set_plate(d_application_state.get_current_anchored_plate_id());
+	table_equivalent->clearContents();
+	table_equivalent->setRowCount(0);
+	table_relative->clearContents();
+	table_relative->setRowCount(0);
+	tree_reconstruction->clear();
+	tree_circuit->clear();
 
-	// If there are no reconstruction trees then return.
-	if (reconstruction.begin_reconstruction_trees() == reconstruction.end_reconstruction_trees())
+	// Extract the reconstruction tree from the currently selected layer.
+	if (combobox_reconstruction_tree_layer->currentIndex() == -1)
 	{
 		return;
 	}
+	typedef boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer_ptr;
+	visual_layer_ptr visual_layer = combobox_reconstruction_tree_layer->itemData(
+			combobox_reconstruction_tree_layer->currentIndex()).value<visual_layer_ptr>();
+	
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		typedef GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_ptr_type;
+		boost::optional<reconstruction_tree_ptr_type> reconstruction_tree =
+			layer.get_output_data<reconstruction_tree_ptr_type>();
 
-	// Use the first reconstruction tree - we are currently only expecting one reconstruction tree
-	// since loading a new reconstruction feature collection deactivates the previous one.
-	//
-	// FIXME: To support multiple reconstruction trees we'll need to add a widget to query
-	// the user for the reconstruction tree layer they're interested in displaying.
-	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree =
-			*reconstruction.begin_reconstruction_trees();
+		if (reconstruction_tree)
+		{
+			fill_equivalent_table(**reconstruction_tree);
+			fill_relative_table(**reconstruction_tree);
+			fill_reconstruction_tree(**reconstruction_tree);
+			fill_circuit_tree(**reconstruction_tree);
+		}
+	}
+}
 
-	set_time(d_application_state_ptr->get_current_reconstruction_time());
-	set_plate(d_application_state_ptr->get_current_anchored_plate_id());
-	fill_equivalent_table(*reconstruction_tree);
-	fill_relative_table(*reconstruction_tree);
-	fill_reconstruction_tree(*reconstruction_tree);
-	fill_circuit_tree(*reconstruction_tree);
+void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::update(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+{
+	// By moving the combobox to the correct index, the dialog should be updated
+	// via a signal emitted by the combobox.
+	int index = get_combobox_index(visual_layer);
+	if (index != -1)
+	{
+		combobox_reconstruction_tree_layer->setCurrentIndex(index);
+	}
 }
 
 void
@@ -611,6 +634,77 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::export_equivalent()
 
 
 void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_layer_added(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
+	{
+		if (locked_visual_layer->get_reconstruct_graph_layer().get_type() ==
+				GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)
+		{
+			QVariant qv;
+			qv.setValue(visual_layer);
+			combobox_reconstruction_tree_layer->addItem(locked_visual_layer->get_name(), qv);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_layer_about_to_be_removed(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+{
+	int index = get_combobox_index(visual_layer);
+	if (index != -1)
+	{
+		if (combobox_reconstruction_tree_layer->count() > 1)
+		{
+			combobox_reconstruction_tree_layer->setCurrentIndex(0);
+		}
+		combobox_reconstruction_tree_layer->removeItem(index);
+	}
+}
+
+
+void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_layer_modified(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+{
+	int index = get_combobox_index(visual_layer);
+	if (index != -1)
+	{
+		if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
+		{
+			combobox_reconstruction_tree_layer->setItemText(index, locked_visual_layer->get_name());
+		}
+	}
+}
+
+
+int
+GPlatesQtWidgets::TotalReconstructionPolesDialog::get_combobox_index(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
+	{
+		for (int i = 0; i != combobox_reconstruction_tree_layer->count(); ++i)
+		{
+			typedef boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer_ptr;
+			visual_layer_ptr curr = combobox_reconstruction_tree_layer->itemData(i).value<visual_layer_ptr>();
+			if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_curr = curr.lock())
+			{
+				if (locked_curr == locked_visual_layer)
+				{
+					return i;
+				}
+			}
+		}
+	}
+	return -1;
+}
+
+
+void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_export(
 		const QTableWidget &table)
 {
@@ -637,5 +731,53 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_export(
 			}
 		}
 	}
+}
+
+
+void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::make_signal_slot_connections()
+{
+	// VisualLayers signals.
+	GPlatesPresentation::VisualLayers *visual_layers = &d_view_state.get_visual_layers();
+	QObject::connect(
+			visual_layers,
+			SIGNAL(layer_added(
+					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
+			this,
+			SLOT(handle_layer_added(
+					boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
+	QObject::connect(
+			visual_layers,
+			SIGNAL(layer_about_to_be_removed(
+					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
+			this,
+			SLOT(handle_layer_about_to_be_removed(
+					boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
+	QObject::connect(
+			visual_layers,
+			SIGNAL(layer_modified(
+					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
+			this,
+			SLOT(handle_layer_modified(
+					boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
+
+	// Export buttons.
+	QObject::connect(
+			button_export_relative_rotations,
+			SIGNAL(clicked()),
+			this,
+			SLOT(export_relative()));
+	QObject::connect(
+			button_export_equiv_rotations,
+			SIGNAL(clicked()),
+			this,
+			SLOT(export_equivalent()));
+
+	// Layers combobox.
+	QObject::connect(
+			combobox_reconstruction_tree_layer,
+			SIGNAL(currentIndexChanged(int)),
+			this,
+			SLOT(update()));
 }
 

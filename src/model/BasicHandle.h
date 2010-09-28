@@ -162,9 +162,18 @@ namespace GPlatesModel
 		 * The "end" iterator will not be changed by this operation -- the length of the
 		 * sequence will not change, only a child-slot will become NULL.
 		 */
-		void
+		typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type
 		remove(
 				const_iterator iter);
+
+		/**
+		 * If this handle has a parent, removes this handle from the parent's collection.
+		 *
+		 * Returns a non_null_ptr_type to this handle, regardless of whether this
+		 * handle has a parent.
+		 */
+		typename GPlatesGlobal::PointerTraits<handle_type>::non_null_ptr_type
+		remove_from_parent();
 
 		/**
 		 * Gets the child indicated by @a iter in the collection.
@@ -583,7 +592,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	void
+	typename GPlatesGlobal::PointerTraits<typename BasicHandle<HandleType>::child_type>::non_null_ptr_type
 	BasicHandle<HandleType>::remove(
 			const_iterator iter)
 	{
@@ -592,8 +601,9 @@ namespace GPlatesModel
 		// Deactivate the child.
 		set_child_active(iter, false);
 
-		// Remove from Revision object (currently, this would destroy it in the C++ sense).
-		current_revision()->remove(iter.index());
+		// Remove from Revision object; assume return value is non-NULL.
+		typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type result =
+			current_revision()->remove(iter.index()).get();
 
 		ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
 		// changeset_ptr will be NULL if we're not connected to a model.
@@ -604,6 +614,27 @@ namespace GPlatesModel
 		}
 
 		notify_listeners_of_modification(true, false);
+
+		return result;
+	}
+
+
+	template<class HandleType>
+	typename GPlatesGlobal::PointerTraits<HandleType>::non_null_ptr_type
+	BasicHandle<HandleType>::remove_from_parent()
+	{
+		if (d_parent_ptr)
+		{
+			typedef typename HandleTraits<parent_type>::iterator parent_iterator_type;
+			parent_iterator_type iter(*d_parent_ptr, d_index_in_container);
+			BasicHandle<parent_type> &parent_handle =
+				dynamic_cast<BasicHandle<parent_type> &>(*d_parent_ptr);
+			return parent_handle.remove(iter);
+		}
+		else
+		{
+			return d_handle_ptr;
+		}
 	}
 
 

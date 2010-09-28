@@ -545,6 +545,14 @@ GPlatesPresentation::VisualLayers::handle_layer_modified(
 void
 GPlatesPresentation::VisualLayers::refresh_all_layers()
 {
+	// Emit version of layer_modified that provides a pointer to a VisualLayer.
+	for (index_map_type::const_iterator index_iter = d_index_map.begin();
+			index_iter != d_index_map.end(); ++index_iter)
+	{
+		emit layer_modified(index_iter->second);
+	}
+
+	// Emit version of layer_modified that provides an index.
 	for (size_t i = 0; i != d_layer_order.size(); ++i)
 	{
 		emit layer_modified(i);
@@ -556,12 +564,20 @@ void
 GPlatesPresentation::VisualLayers::emit_layer_modified(
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index)
 {
-	// Find the position of the rendered geometry layer index in the ordering.
-	rendered_geometry_layer_seq_type::const_iterator iter =
-		std::find(d_layer_order.begin(), d_layer_order.end(), index);
-	if (iter != d_layer_order.end())
+	// Find the corresponding visual layer.
+	index_map_type::const_iterator index_iter = d_index_map.find(index);
+	if (index_iter == d_index_map.end())
 	{
-		emit layer_modified(iter - d_layer_order.begin());
+		return;
+	}
+
+	// Find the position of the rendered geometry layer index in the ordering.
+	rendered_geometry_layer_seq_type::const_iterator order_iter =
+		std::find(d_layer_order.begin(), d_layer_order.end(), index);
+	if (order_iter != d_layer_order.end())
+	{
+		emit layer_modified(index_iter->second);
+		emit layer_modified(order_iter - d_layer_order.begin());
 	}
 }
 
