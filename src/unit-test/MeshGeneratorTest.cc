@@ -62,7 +62,7 @@ GPlatesUnitTest::MeshGeneratorTest::load_mesh_files(
 	
 	for(int i = 0; i < 12; i++)
 	{
-		std::string file_name = "unit-test-data/%r.mesh.%n.gpml";	
+		std::string file_name = "unit-test-data/%r.mesh.%n.gpml.gz";
 		QString i_str = QString::number(i);
 		file_name.replace(file_name.find("%r"), 2, res_str.toStdString());
 		file_name.replace(file_name.find("%n"), 2, i_str.toStdString());
