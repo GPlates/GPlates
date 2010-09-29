@@ -23,13 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_CHANGEGEOMETRYPROPERTYDIALOG_H
-#define GPLATES_QTWIDGETS_CHANGEGEOMETRYPROPERTYDIALOG_H
+#ifndef GPLATES_QTWIDGETS_GEOMETRYDESTINATIONSWIDGET_H
+#define GPLATES_QTWIDGETS_GEOMETRYDESTINATIONSWIDGET_H
 
 #include <utility>
 #include <boost/optional.hpp>
+#include <QWidget>
 
-#include "ChangeGeometryPropertyDialogUi.h"
+#include "SelectionWidget.h"
 
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
@@ -37,38 +38,56 @@
 
 namespace GPlatesQtWidgets
 {
-	class GeometryDestinationsWidget;
-	
-	class ChangeGeometryPropertyDialog: 
-			public QDialog,
-			protected Ui_ChangeGeometryPropertyDialog 
+	/**
+	 * GeometryDestinationsWidget encapsulates a widget that offers the user a
+	 * selection of geometry property names that can be used with a particular
+	 * feature type.
+	 *
+	 * It is used, for example, by the CreateFeatureDialog.
+	 */
+	class GeometryDestinationsWidget :
+			public QWidget
 	{
 		Q_OBJECT
-		
+
 	public:
 
 		explicit
-		ChangeGeometryPropertyDialog(
+		GeometryDestinationsWidget(
+				SelectionWidget::DisplayWidget display_widget,
 				QWidget *parent_ = NULL);
 
+		/**
+		 * Returns the currently selected PropertyName, together with a boolean value
+		 * indicating whether a time dependent wrapper is expected.
+		 */
 		boost::optional<std::pair<GPlatesModel::PropertyName, bool> >
-		get_property_name() const;
+		get_current_property_name() const;
 
+		/**
+		 * Causes this widget to show geometry properties appropriate for
+		 * @a target_feature_type.
+		 */
 		void
 		populate(
-				const GPlatesModel::FeatureType &feature_type,
-				const GPlatesModel::PropertyName &old_property_name);
+				const GPlatesModel::FeatureType &target_feature_type);
+
+	signals:
+
+		void
+		item_activated();
 
 	private slots:
 
 		void
-		handle_checkbox_state_changed(
-				int state);
+		handle_item_activated(
+				int index);
 
 	private:
 
-		GeometryDestinationsWidget *d_geometry_destinations_listwidget;
+		SelectionWidget *d_selection_widget;
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_CHANGEGEOMETRYPROPERTYDIALOG_H
+
+#endif	// GPLATES_QTWIDGETS_GEOMETRYDESTINATIONSWIDGET_H

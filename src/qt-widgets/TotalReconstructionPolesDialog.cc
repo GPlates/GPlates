@@ -47,6 +47,7 @@
 #include "maths/MathsUtils.h"
 
 #include "presentation/ViewState.h"
+#include "presentation/VisualLayerRegistry.h"
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -644,7 +645,11 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_layer_added(
 		{
 			QVariant qv;
 			qv.setValue(visual_layer);
-			combobox_reconstruction_tree_layer->addItem(locked_visual_layer->get_name(), qv);
+			combobox_reconstruction_tree_layer->addItem(
+					d_view_state.get_visual_layer_registry().get_icon(
+						static_cast<GPlatesPresentation::VisualLayerType::Type>(
+							GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)),
+					locked_visual_layer->get_name(), qv);
 		}
 	}
 }

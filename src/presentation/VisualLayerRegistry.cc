@@ -317,7 +317,10 @@ GPlatesPresentation::register_default_visual_layers(
 			"this layer is connected to a static plate polygon feature collection and "
 			"to a reconstruction tree layer",
 			*html_colours.get_colour("tomato"),
-			&do_nothing,
+			CreateAppLogicLayer(
+				reconstruct_graph,
+				layer_task_registry,
+				RASTER),
 			&GPlatesQtWidgets::RasterLayerOptionsWidget::create);
 
 	registry.register_visual_layer_type(

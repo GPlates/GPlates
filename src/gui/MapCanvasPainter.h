@@ -52,7 +52,8 @@ namespace GPlatesGui
 	 * This is a Visitor to paint geometries on the map canvas.
 	 */
 	class MapCanvasPainter:
-			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<>,
+			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
+				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>,
 			public boost::noncopyable
 	{
 	public:
@@ -130,10 +131,12 @@ namespace GPlatesGui
 
 		void
 		set_scale(
-				float scale)
-		{
-			d_scale = scale;
-		}
+				float scale);
+
+		virtual
+		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type *
+		get_custom_child_layers_order(
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer);
 
 	private:
 

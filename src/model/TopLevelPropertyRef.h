@@ -28,8 +28,7 @@
 #ifndef GPLATES_MODEL_TOPLEVELPROPERTYREF_H
 #define GPLATES_MODEL_TOPLEVELPROPERTYREF_H
 
-#include <boost/scoped_ptr.hpp>
-
+#include "WeakReference.h"
 #include "types.h"
 
 #include "global/PointerTraits.h"
@@ -132,8 +131,11 @@ namespace GPlatesModel
 		GPlatesGlobal::PointerTraits<const TopLevelProperty>::non_null_ptr_type
 		pointer() const;
 
-		//! An iterator that points to the TopLevelProperty that we're interested in.
-		boost::scoped_ptr<HandleTraits<FeatureHandle>::iterator> d_iterator_ptr;
+		//! The feature that contains the TopLevelProperty of interest.
+		WeakReference<FeatureHandle> d_feature_ref;
+
+		//! The index of the TopLevelProperty inside its parent feature.
+		container_size_type d_index;
 
 	};
 

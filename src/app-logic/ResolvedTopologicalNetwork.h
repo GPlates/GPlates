@@ -137,6 +137,7 @@ namespace GPlatesAppLogic
 		typedef std::vector<Node> node_seq_type;
 
 
+#if 0
 		/**
 		 * Forward iterator over export template filename sequence.
 		 * Dereferencing iterator returns a 'const Node &'.
@@ -227,12 +228,16 @@ namespace GPlatesAppLogic
 				d_node_index(sequence_index)
 			{  }
 		};
+#endif
 
 
 		/**
 		 * The type used to const_iterate over the nodes.
 		 */
+#if 0
 		typedef NodeConstIterator node_const_iterator;
+#endif
+		typedef node_seq_type::const_iterator node_const_iterator;
 
 
 		virtual
@@ -275,7 +280,10 @@ namespace GPlatesAppLogic
 		node_const_iterator
 		nodes_begin() const
 		{
+#if 0
 			return node_const_iterator::create_begin(d_node_seq);
+#endif
+			return d_node_seq.begin();
 		}
 
 		/**
@@ -284,7 +292,10 @@ namespace GPlatesAppLogic
 		node_const_iterator
 		nodes_end() const
 		{
+#if 0
 			return node_const_iterator::create_end(d_node_seq);
+#endif
+			return d_node_seq.end();
 		}
 
 		/**

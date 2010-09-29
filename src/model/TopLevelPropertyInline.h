@@ -32,8 +32,10 @@
 #define GPLATES_MODEL_TOPLEVELPROPERTYINLINE_H
 
 #include <vector>
-#include <iterator>
 #include <boost/optional.hpp>
+#include <boost/function.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/lambda/construct.hpp>
 #include <unicode/unistr.h>
 
 #include "TopLevelProperty.h"
@@ -41,99 +43,6 @@
 
 namespace GPlatesModel
 {
-	/**
-	 * The const-iterator over PropertyValue elements inside a TopLevelPropertyInline.
-	 *
-	 * The std::vector<PropertyValue::non_null_ptr_type>::const_iterator does not
-	 * suffice because while the pointer to the PropertyValue is const, the
-	 * PropertyValue itself is not.
-	 */
-	class TopLevelPropertyInlineConstIterator :
-			public std::iterator<std::bidirectional_iterator_tag, const PropertyValue::non_null_ptr_to_const_type>
-	{
-
-	public:
-
-		TopLevelPropertyInlineConstIterator(
-				const std::vector<PropertyValue::non_null_ptr_type>::const_iterator &iterator) :
-			d_iterator(iterator)
-		{
-		}
-
-		TopLevelPropertyInlineConstIterator(
-				const std::vector<PropertyValue::non_null_ptr_type>::iterator &iterator) :
-			d_iterator(iterator)
-		{
-		}
-
-		const PropertyValue::non_null_ptr_to_const_type &
-		operator*() const
-		{
-			d_temp_value = *d_iterator;
-			return *d_temp_value;
-		}
-
-		const PropertyValue::non_null_ptr_to_const_type *
-		operator->() const
-		{
-			d_temp_value = *d_iterator;
-			return &(*d_temp_value);
-		}
-
-		TopLevelPropertyInlineConstIterator &
-		operator++()
-		{
-			++d_iterator;
-			return *this;
-		}
-
-		TopLevelPropertyInlineConstIterator
-		operator++(int)
-		{
-			TopLevelPropertyInlineConstIterator dup(*this);
-			++d_iterator;
-			return dup;
-		}
-
-		TopLevelPropertyInlineConstIterator &
-		operator--()
-		{
-			--d_iterator;
-			return *this;
-		}
-
-		TopLevelPropertyInlineConstIterator
-		operator--(int)
-		{
-			TopLevelPropertyInlineConstIterator dup(*this);
-			--d_iterator;
-			return dup;
-		}
-
-		bool
-		operator==(
-				const TopLevelPropertyInlineConstIterator &other)
-		{
-			return d_iterator == other.d_iterator;
-		}
-
-		bool
-		operator!=(
-				const TopLevelPropertyInlineConstIterator &other)
-		{
-			return d_iterator != other.d_iterator;
-		}
-
-	private:
-
-		//! The iterator that we wrap around.
-		std::vector<PropertyValue::non_null_ptr_type>::const_iterator d_iterator;
-		
-		//! Just so we can convert to ptr_to_const_type.
-		mutable boost::optional<PropertyValue::non_null_ptr_to_const_type> d_temp_value;
-
-	};
-
 	/**
 	 * This class represents a top-level property of a feature, which is containing its
 	 * property-value inline.
@@ -165,11 +74,22 @@ namespace GPlatesModel
 		 */
 		typedef container_type::iterator iterator;
 
+	private:
+
+		/**
+		 * The type of a function that converts a pointer to non-const
+		 * PropertyValue to a pointer to const.
+		 */
+		typedef boost::function< PropertyValue::non_null_ptr_to_const_type (
+				PropertyValue::non_null_ptr_type) > make_const_ptr_fn_type;
+
+	public:
+
 		/**
 		 * The type of an iterator that const-iterates over the PropertyValue instances
 		 * contained in this TopLevelPropertyInline.
 		 */
-		typedef TopLevelPropertyInlineConstIterator const_iterator;
+		typedef boost::transform_iterator<make_const_ptr_fn_type, container_type::const_iterator> const_iterator;
 
 		virtual
 		~TopLevelPropertyInline()
@@ -217,13 +137,17 @@ namespace GPlatesModel
 		const_iterator
 		begin() const
 		{
-			return d_values.begin();
+			return boost::make_transform_iterator(
+					d_values.begin(),
+					make_const_ptr_fn_type(boost::lambda::constructor<PropertyValue::non_null_ptr_to_const_type>()));
 		}
 
 		const_iterator
 		end() const
 		{
-			return d_values.end();
+			return boost::make_transform_iterator(
+					d_values.end(),
+					make_const_ptr_fn_type(boost::lambda::constructor<PropertyValue::non_null_ptr_to_const_type>()));
 		}
 
 		iterator

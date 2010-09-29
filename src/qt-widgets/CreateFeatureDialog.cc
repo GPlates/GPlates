@@ -40,7 +40,7 @@
 #include "EditPlateIdWidget.h"
 #include "EditTimePeriodWidget.h"
 #include "EditStringWidget.h"
-#include "GeometryDestinationsListWidget.h"
+#include "GeometryDestinationsWidget.h"
 #include "InformationDialog.h"
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
@@ -151,7 +151,10 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_recon_method_combobox(new QComboBox(this)),
 	d_right_plate_id(new EditPlateIdWidget(this)),
 	d_left_plate_id(new EditPlateIdWidget(this)),
-	d_listwidget_geometry_destinations(new GeometryDestinationsListWidget(this)),
+	d_listwidget_geometry_destinations(
+			new GeometryDestinationsWidget(
+				SelectionWidget::Q_LIST_WIDGET,
+				this)),
 	d_recon_method(GPlatesAppLogic::BY_PLATE_ID)
 {
 	setupUi(this);
@@ -225,7 +228,7 @@ void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 {
 	// Pushing Enter or double-clicking a geometric property should cause focus to advance.
-	QObject::connect(d_listwidget_geometry_destinations, SIGNAL(itemActivated(QListWidgetItem *)),
+	QObject::connect(d_listwidget_geometry_destinations, SIGNAL(item_activated()),
 			d_plate_id_widget, SLOT(setFocus()));
 	// The various Edit widgets need pass focus along the chain if Enter is pressed.
 	QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
@@ -429,15 +432,16 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	bool topological = (d_creation_type == TOPOLOGICAL);
 
 	// Get the PropertyName the user has selected for geometry to go into.
-	PropertyNameItem *geom_prop_name_item =
-		d_listwidget_geometry_destinations->get_current_property_name_item();
-	if (geom_prop_name_item == NULL)
+	typedef std::pair<GPlatesModel::PropertyName, bool> pair_type;
+	boost::optional<pair_type> geom_prop_name_item =
+		d_listwidget_geometry_destinations->get_current_property_name();
+	if (!geom_prop_name_item)
 	{
 		QMessageBox::critical(this, tr("No geometry destination selected"),
 				tr("Please select a property name to use for your digitised geometry."));
 		return;
 	}
-	const GPlatesModel::PropertyName geom_prop_name = geom_prop_name_item->get_name();
+	const GPlatesModel::PropertyName geom_prop_name = geom_prop_name_item->first;
 	
 	// Get the FeatureType the user has selected.
 	boost::optional<GPlatesModel::FeatureType> feature_type_opt =
@@ -465,7 +469,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		// Geometry Property using present-day geometry.
 		if (!topological)
 		{
-			bool geom_prop_needs_constant_value = geom_prop_name_item->expects_time_dependent_wrapper();
+			bool geom_prop_needs_constant_value = geom_prop_name_item->second;
 
 			// Check we have a valid GeometryOnSphere supplied from the DigitisationWidget.
 			if (!d_geometry_opt_ptr)

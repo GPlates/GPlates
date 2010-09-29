@@ -36,7 +36,7 @@
 #include "FeaturePropertiesDialog.h"
 
 #include "ChangeGeometryPropertyDialog.h"
-#include "GeometryDestinationsListWidget.h"
+#include "GeometryDestinationsWidget.h"
 
 #include "model/FeatureType.h"
 #include "model/FeatureId.h"
@@ -631,14 +631,15 @@ GPlatesQtWidgets::FeaturePropertiesDialog::handle_feature_type_changed()
 					d_change_geometry_property_dialog->populate(feature_type, curr_property_name);
 					if (d_change_geometry_property_dialog->exec() == QDialog::Accepted)
 					{
-						PropertyNameItem *item = d_change_geometry_property_dialog->get_property_name_item();
+						typedef std::pair<GPlatesModel::PropertyName, bool> pair_type;
+						boost::optional<pair_type> item = d_change_geometry_property_dialog->get_property_name();
 						if (!item)
 						{
 							continue;
 						}
 
-						const GPlatesModel::PropertyName &new_property_name = item->get_name();
-						bool time_dependent = item->expects_time_dependent_wrapper();
+						const GPlatesModel::PropertyName &new_property_name = item->first;
+						bool time_dependent = item->second;
 						QString error_message;
 
 						boost::optional<GPlatesModel::TopLevelPropertyInline::non_null_ptr_type> new_property =

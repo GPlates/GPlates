@@ -477,7 +477,7 @@ namespace GPlatesModel
 	typename RevisionAwareIterator<HandleType>::value_type
 	RevisionAwareIterator<HandleType>::current_element() const
 	{
-		return d_handle_weak_ref->get(*this);
+		return d_handle_weak_ref->get(d_index);
 	}
 
 

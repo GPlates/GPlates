@@ -25,14 +25,17 @@
 
 #include "ChangeGeometryPropertyDialog.h"
 
-#include "GeometryDestinationsListWidget.h"
+#include "GeometryDestinationsWidget.h"
 #include "QtWidgetUtils.h"
 
 
 GPlatesQtWidgets::ChangeGeometryPropertyDialog::ChangeGeometryPropertyDialog(
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_geometry_destinations_listwidget(new GeometryDestinationsListWidget(this))
+	d_geometry_destinations_listwidget(
+			new GeometryDestinationsWidget(
+				SelectionWidget::Q_LIST_WIDGET,
+				this))
 {
 	setupUi(this);
 
@@ -61,16 +64,16 @@ GPlatesQtWidgets::ChangeGeometryPropertyDialog::ChangeGeometryPropertyDialog(
 }
 
 
-GPlatesQtWidgets::PropertyNameItem *
-GPlatesQtWidgets::ChangeGeometryPropertyDialog::get_property_name_item() const
+boost::optional<std::pair<GPlatesModel::PropertyName, bool> >
+GPlatesQtWidgets::ChangeGeometryPropertyDialog::get_property_name() const
 {
 	if (change_property_checkbox->checkState() == Qt::Checked)
 	{
-		return d_geometry_destinations_listwidget->get_current_property_name_item();
+		return d_geometry_destinations_listwidget->get_current_property_name();
 	}
 	else
 	{
-		return NULL;
+		return boost::none;
 	}
 }
 

@@ -30,12 +30,15 @@
 
 #include <cstddef>  // For std::size_t
 #include <vector>
-#include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <algorithm>  // std::swap
 #include <utility>  // std::pair
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
+
 #include "global/PreconditionViolationError.h"
 
 
@@ -134,253 +137,20 @@ namespace GPlatesMaths
 		 */
 		typedef seq_type::size_type size_type;
 
+	private:
 
 		/**
-		 * This class enables const_iteration over the vertices of a
-		 * PolygonOnSphere.
-		 *
-		 * An instance of this class @em actually iterates over the
-		 * sequence of GreatCircleArc by which a PolygonOnSphere is
-		 * implemented, but it pretends it's iterating over a sequence
-		 * of PointOnSphere.
-		 *
-		 * It is assumed that the sequence of GreatCircleArc over
-		 * which this iterator is iterating will always contain at
-		 * least three elements (and thus, at least three vertices). 
-		 * This assumption should be fulfilled by the PolygonOnSphere
-		 * invariant.
+		 * The type of a function that returns the start point of a GCA.
 		 */
-		class VertexConstIterator:
-				public std::iterator<std::bidirectional_iterator_tag, PointOnSphere>
-		{
-		
-			typedef PolygonOnSphere::const_iterator gca_const_iterator;
+		typedef boost::function< const GPlatesMaths::PointOnSphere & (
+				const GreatCircleArc &) > gca_start_point_fn_type;
 
-		public:
-
-			/**
-			 * Create the "begin" vertex const_iterator for @a poly.
-			 *
-			 * Note that it's intentional that the instance returned is non-const: If
-			 * the instance were const, it would not be possible to write an expression
-			 * like '++(polygon.vertex_begin())' to access the second vertex of the
-			 * polygon.
-			 */
-			static
-			VertexConstIterator
-			create_begin(
-					const PolygonOnSphere &poly);
-
-
-			/**
-			 * Create the "end" vertex const_iterator for @a poly.
-			 */
-			static
-			VertexConstIterator
-			create_end(
-					const PolygonOnSphere &poly);
-
-
-			/**
-			 * Default-construct a vertex iterator.
-			 *
-			 * A default-constructed iterator will be
-			 * uninitialised.  (I don't @em like providing a
-			 * constructor which leaves an object in an
-			 * uninitialised state, but the presence of a default
-			 * constructor is mandated by the
-			 * bidirectional_iterator interface.)
-			 *
-			 * If you attempt to dereference an uninitialised
-			 * iterator or access the members of a PointOnSphere
-			 * through an uninitialised iterator you will get a
-			 * GPlatesGlobal::UninitialisedIteratorException thrown
-			 * back at you.  (Hey, it's better than a segfault...)
-			 *
-			 * The following operations are OK for an uninitialised
-			 * iterator:
-			 *  - comparison for equality to another iterator;
-			 *  - comparison for inequality to another iterator;
-			 *  - being assigned-to by another iterator.
-			 *
-			 * The following operations are no-ops for an
-			 * uninitialised iterator:
-			 *  - increment;
-			 *  - decrement.
-			 */
-			VertexConstIterator():
-			 d_poly_ptr(NULL), 
-			 d_curr_gca() {  }
-
-
-			/**
-			 * Copy-construct a vertex iterator.
-			 */
-			VertexConstIterator(
-					const VertexConstIterator &other):
-				d_poly_ptr(other.d_poly_ptr),
-				d_curr_gca(other.d_curr_gca)
-			{  }
-
-
-			/**
-			 * Return the gca_const_iterator which points to the
-			 * current GreatCircleArc.
-			 */
-			gca_const_iterator
-			curr_gca() const
-			{
-				return d_curr_gca;
-			}
-
-
-			/**
-			 * Assign @a other to this.
-			 */
-			VertexConstIterator &
-			operator=(
-					const VertexConstIterator &other)
-			{
-				d_poly_ptr = other.d_poly_ptr;
-				d_curr_gca = other.d_curr_gca;
-
-				return *this;
-			}
-
-
-			/**
-			 * Dereference this iterator to obtain the
-			 * currently-pointed-at PointOnSphere.
-			 */
-			const PointOnSphere &
-			operator*() const
-			{
-				return current_point();
-			}
-
-
-			/**
-			 * Access a member of the PointOnSphere which is
-			 * currently being pointed-at by this iterator.
-			 */
-			const PointOnSphere *
-			operator->() const
-			{
-				return &(current_point());
-			}
-
-
-			/**
-			 * Pre-increment this iterator.
-			 */
-			VertexConstIterator &
-			operator++()
-			{
-				increment();
-				return *this;
-			}
-
-
-			/**
-			 * Post-increment this iterator.
-			 */
-			const VertexConstIterator
-			operator++(int)
-			{
-				VertexConstIterator old = *this;
-				increment();
-				return old;
-			}
-
-
-			/**
-			 * Pre-decrement this iterator.
-			 */
-			VertexConstIterator &
-			operator--()
-			{
-				decrement();
-				return *this;
-			}
-
-
-			/**
-			 * Post-decrement this iterator.
-			 */
-			const VertexConstIterator
-			operator--(int)
-			{
-				VertexConstIterator old = *this;
-				decrement();
-				return old;
-			}
-
-		private:
-
-			/**
-			 * Construct a VertexConstIterator instance to iterate over the vertices of
-			 * @a poly.
-			 *
-			 * The current position of the iterator is described by @a curr_gca_.
-			 *
-			 * This constructor should only be invoked by the @a create_begin and
-			 * @a create_end static member functions.
-			 */
-			VertexConstIterator(
-					const PolygonOnSphere &poly,
-					gca_const_iterator curr_gca_):
-				d_poly_ptr(&poly),
-				d_curr_gca(curr_gca_)
-			{  }
-
-
-			/**
-			 * This function performs the magic which is used to
-			 * obtain the currently-pointed-at PointOnSphere.
-			 */
-			const PointOnSphere &
-			current_point() const;
-
-
-			/**
-			 * This function performs the magic which is used to
-			 * increment this iterator.
-			 */
-			void
-			increment();
-
-
-			/**
-			 * This function performs the magic which is used to
-			 * decrement this iterator.
-			 */
-			void
-			decrement();
-
-
-			/**
-			 * This is the PolygonOnSphere instance which is being
-			 * traversed by this iterator.
-			 *
-			 * This pointer will be NULL in an uninitialised
-			 * (default-constructed) iterator.
-			 */
-			const PolygonOnSphere *d_poly_ptr;
-
-
-			/**
-			 * This points to the current GreatCircleArc in the
-			 * PolygonOnSphere.
-			 */
-			gca_const_iterator d_curr_gca;
-
-		};
-
+	public:
 
 		/**
 		 * The type used to const_iterate over the vertices.
 		 */
-		typedef VertexConstIterator vertex_const_iterator;
+		typedef boost::transform_iterator<gca_start_point_fn_type, const_iterator> vertex_const_iterator;
 
 
 		/**
@@ -676,7 +446,10 @@ namespace GPlatesMaths
 		vertex_const_iterator
 		vertex_begin() const
 		{
-			return vertex_const_iterator::create_begin(*this);
+			return boost::make_transform_iterator(
+					d_seq.begin(),
+					gca_start_point_fn_type(
+						boost::bind(&GreatCircleArc::start_point, _1)));
 		}
 
 
@@ -687,7 +460,10 @@ namespace GPlatesMaths
 		vertex_const_iterator
 		vertex_end() const
 		{
-			return vertex_const_iterator::create_end(*this);
+			return boost::make_transform_iterator(
+					d_seq.end(),
+					gca_start_point_fn_type(
+						boost::bind(&GreatCircleArc::start_point, _1)));
 		}
 
 
@@ -869,70 +645,6 @@ namespace GPlatesMaths
 		seq_type d_seq;
 
 	};
-
-
-	inline
-	PolygonOnSphere::VertexConstIterator
-	PolygonOnSphere::VertexConstIterator::create_begin(
-			const PolygonOnSphere &poly)
-	{
-		return VertexConstIterator(poly, poly.begin());
-	}
-	
-
-	inline
-	PolygonOnSphere::VertexConstIterator
-	PolygonOnSphere::VertexConstIterator::create_end(
-			const PolygonOnSphere &poly)
-	{
-		return VertexConstIterator(poly, poly.end());
-	}
-
-
-	inline
-	void
-	PolygonOnSphere::VertexConstIterator::increment()
-	{
-		if (d_poly_ptr != NULL) {
-			++d_curr_gca;
-		}
-	}
-
-
-	inline
-	void
-	PolygonOnSphere::VertexConstIterator::decrement()
-	{
-		if (d_poly_ptr != NULL) {
-			--d_curr_gca;
-		}
-	}
-
-
-	/**
-	 * Compare @a i1 and @a i2 for equality.
-	 */
-	inline
-	bool
-	operator==(
-			const PolygonOnSphere::VertexConstIterator &i1,
-			const PolygonOnSphere::VertexConstIterator &i2)
-	{
-		return (i1.curr_gca() == i2.curr_gca());
-	}
-
-
-	/**
-	 * Compare @a i1 and @a i2 for inequality.
-	 */
-	inline
-	bool
-	operator!=(
-			const PolygonOnSphere::VertexConstIterator &i1,
-			const PolygonOnSphere::VertexConstIterator &i2)
-	{
-		return (i1.curr_gca() != i2.curr_gca());
-	}
 
 
 	template<typename ForwardIter>

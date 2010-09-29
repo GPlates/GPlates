@@ -28,22 +28,11 @@
 #include <iostream>
 #include <typeinfo>
 #include <algorithm>
+#include <boost/lambda/lambda.hpp>
 
 #include "TopLevelPropertyInline.h"
 #include "FeatureVisitor.h"
 #include "utils/UnicodeStringUtils.h"
-
-
-namespace
-{
-	bool
-	prop_eq(
-			const GPlatesModel::PropertyValue::non_null_ptr_type &p1,
-			const GPlatesModel::PropertyValue::non_null_ptr_type &p2)
-	{
-		return *p1 == *p2;
-	}
-}
 
 
 const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
@@ -115,7 +104,7 @@ GPlatesModel::TopLevelPropertyInline::deep_clone() const
 			container_type(),
 			xml_attributes());
 
-	const_iterator iter = d_values.begin(), end_ = d_values.end();
+	container_type::const_iterator iter = d_values.begin(), end_ = d_values.end();
 	for ( ; iter != end_; ++iter)
 	{
 		PropertyValue::non_null_ptr_type cloned_pval = (*iter)->deep_clone_as_prop_val();
@@ -181,7 +170,8 @@ GPlatesModel::TopLevelPropertyInline::operator==(
 					d_values.begin(),
 					d_values.end(),
 					other_inline.d_values.begin(),
-					&prop_eq);
+					// Compare PropertyValues, not pointers to PropertyValues.
+					*boost::lambda::_1 == *boost::lambda::_2);
 		}
 		else
 		{

@@ -56,7 +56,7 @@ namespace GPlatesQtWidgets
 	class EditPlateIdWidget;
 	class EditTimePeriodWidget;
 	class EditStringWidget;
-	class GeometryDestinationsListWidget;
+	class GeometryDestinationsWidget;
 	class InformationDialog;
 	class ViewportWindow;
 
@@ -249,7 +249,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Allows the user to pick the property that will store the geometry.
 		 */
-		GeometryDestinationsListWidget *d_listwidget_geometry_destinations;
+		GeometryDestinationsWidget *d_listwidget_geometry_destinations;
 
 		GPlatesAppLogic::ReconstructionMethod d_recon_method;
 	};

@@ -67,8 +67,8 @@ namespace
 			GPlatesAppLogic::Layer& layer,
 			GPlatesAppLogic::ReconstructGraph* graph)
 	{
-		GPlatesAppLogic::ReconstructGraph::LayerConstIterator it = graph->begin();
-		GPlatesAppLogic::ReconstructGraph::LayerConstIterator it_end = graph->end();
+		GPlatesAppLogic::ReconstructGraph::const_iterator it = graph->begin();
+		GPlatesAppLogic::ReconstructGraph::const_iterator it_end = graph->end();
 		for(; it != it_end; it++)
 		{
 			if(it->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&

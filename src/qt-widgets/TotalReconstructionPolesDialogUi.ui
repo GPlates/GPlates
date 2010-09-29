@@ -469,7 +469,10 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Reconstruction Tree:</string>
+         <string>Show Reconstruction Tree &amp;Layer:</string>
+        </property>
+        <property name="buddy">
+         <cstring>combobox_reconstruction_tree_layer</cstring>
         </property>
        </widget>
       </item>

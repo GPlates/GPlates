@@ -70,13 +70,16 @@ namespace GPlatesAppLogic
 		 */
 		typedef reconstruction_geometry_seq_type::const_iterator iterator;
 
+	private:
 
 		/**
 		 * The type of a function that converts a pointer to non-const
 		 * ReconstructionGeometry to a pointer to const.
 		 */
-		typedef boost::function<ReconstructionGeometry::non_null_ptr_to_const_type (
-					ReconstructionGeometry::non_null_ptr_type)> make_const_ptr_fn_type;
+		typedef boost::function< ReconstructionGeometry::non_null_ptr_to_const_type (
+					ReconstructionGeometry::non_null_ptr_type) > make_const_ptr_fn_type;
+
+	public:
 
 		/**
 		 * The type used to const_iterate over the reconstruction geometries.

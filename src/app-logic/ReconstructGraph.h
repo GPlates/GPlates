@@ -40,6 +40,9 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/foreach.hpp>
+#include <boost/function.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/lambda/construct.hpp>
 #include <QObject>
 
 #include "FeatureCollectionFileState.h"
@@ -81,104 +84,16 @@ namespace GPlatesAppLogic
 		//! Typedef for a sequence of layers.
 		typedef std::list<layer_ptr_type> layer_ptr_seq_type;
 
+		//! Typedef for a function that creates a weak reference to a layer.
+		typedef boost::function< Layer (const boost::shared_ptr<ReconstructGraphImpl::Layer>) >
+			make_layer_fn_type;
+
 	public:
-		/**
-		 * Forward iterator over all layers in the graph.
-		 */
-		class LayerConstIterator :
-				public std::iterator<std::forward_iterator_tag, const Layer>,
-				public boost::equality_comparable<LayerConstIterator>,
-				public boost::incrementable<LayerConstIterator>
-		{
-		public:
-
-			//! Create a "begin" iterator.
-			static
-			LayerConstIterator
-			create_begin(
-					const ReconstructGraph &reconstruct_graph)
-			{
-				return LayerConstIterator(reconstruct_graph.d_layers.begin());
-			}
-
-			//! Create an "end" iterator.
-			static
-			LayerConstIterator
-			create_end(
-					const ReconstructGraph &reconstruct_graph)
-			{
-				return LayerConstIterator(reconstruct_graph.d_layers.end());
-			}
-
-			/**
-			 * Dereference operator.
-			 */
-			const Layer &
-			operator*() const
-			{
-				// Convert to a weak reference if current weak reference not valid.
-				d_current_layer_weak_ref = Layer(*d_layer_seq_iterator);
-				return d_current_layer_weak_ref;
-			}
-
-
-			/**
-			 * Arrow operator.
-			 */
-			const Layer *
-			operator->() const
-			{
-				// Convert to a weak reference if current weak reference not valid.
-				d_current_layer_weak_ref = Layer(*d_layer_seq_iterator);
-				return &d_current_layer_weak_ref;
-			}
-
-
-			/**
-			 * Pre-increment operator.
-			 * Post-increment operator provided by base class boost::incrementable.
-			 */
-			LayerConstIterator &
-			operator++()
-			{
-				++d_layer_seq_iterator;
-
-				// Invalidate current weak reference.
-				d_current_layer_weak_ref = Layer();
-
-				return *this;
-			}
-
-
-			/**
-			 * Equality comparison for @a LayerConstIterator.
-			 * Inequality operator provided by base class boost::equality_comparable.
-			 */
-			friend
-			bool
-			operator==(
-					const LayerConstIterator &lhs,
-					const LayerConstIterator &rhs)
-			{
-				return lhs.d_layer_seq_iterator == rhs.d_layer_seq_iterator;
-			}
-
-		private:
-
-			LayerConstIterator(
-					layer_ptr_seq_type::const_iterator layer_seq_iterator) :
-				d_layer_seq_iterator(layer_seq_iterator)
-			{  }
-
-			layer_ptr_seq_type::const_iterator d_layer_seq_iterator;
-
-			mutable Layer d_current_layer_weak_ref;
-		};
-
 		/**
 		 * Typedef for an iterator over the layers in the graph.
 		 */
-		typedef LayerConstIterator const_iterator;
+		typedef boost::transform_iterator<make_layer_fn_type,
+				layer_ptr_seq_type::const_iterator> const_iterator;
 
 
 		/**
@@ -298,7 +213,9 @@ namespace GPlatesAppLogic
 		const_iterator
 		begin() const
 		{
-			return const_iterator::create_begin(*this);
+			return boost::make_transform_iterator(
+					d_layers.begin(),
+					make_layer_fn_type(boost::lambda::constructor<Layer>()));
 		}
 
 
@@ -309,7 +226,9 @@ namespace GPlatesAppLogic
 		const_iterator
 		end() const
 		{
-			return const_iterator::create_end(*this);
+			return boost::make_transform_iterator(
+					d_layers.end(),
+					make_layer_fn_type(boost::lambda::constructor<Layer>()));
 		}
 
 
