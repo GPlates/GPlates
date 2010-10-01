@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <iostream>
 #include <boost/optional.hpp>
+#include <boost/lambda/lambda.hpp>
 #include <QByteArray>
 #include <QFile>
 #include <QProcess>
@@ -44,6 +45,7 @@ namespace
 	const char *SVNVERSION_EXECUTABLE = "svnversion";
 	const char *SVN_EXECUTABLE = "svn";
 	const char *BRANCHES_DIRECTORY_NAME = "branches";
+	const char *TAGS_DIRECTORY_NAME = "tags";
 
 	// NOTE! If this gets changed, make sure you update the two variables below.
 	const char *OUTPUT_TEMPLATE =
@@ -276,12 +278,13 @@ namespace
 					continue;
 				}
 
-				// Split the line up by '/', and search for the branches token.
+				// Split the line up by '/', and search for the "branches" or "tags" token.
 				QStringList tokens = line.split("/", QString::SkipEmptyParts);
-				QStringList::const_iterator iter = std::find(
+				QStringList::const_iterator iter = std::find_if(
 						tokens.begin(),
 						tokens.end(),
-						BRANCHES_DIRECTORY_NAME);
+						boost::lambda::_1 == BRANCHES_DIRECTORY_NAME ||
+							boost::lambda::_1 == TAGS_DIRECTORY_NAME);
 				if (iter == tokens.end())
 				{
 					// BRANCHES_DIRECTORY_NAME not found; we are probably looking at trunk.

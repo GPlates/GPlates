@@ -310,7 +310,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_view_state())),
 	d_task_panel_ptr(NULL),
 	d_open_file_path(QDir::currentPath()),
-	d_layering_dialog_opened_automatically_once(false)
+	d_layering_dialog_opened_automatically_once(false),
+	d_canvas_tool_last_chosen_by_user(
+			GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE)
 {
 	setupUi(this);
 
@@ -571,38 +573,41 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 
 	// Canvas Tool connections:
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_drag_globe_tool()));
+			this, SLOT(handle_drag_globe_triggered()));
 	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_zoom_globe_tool()));
+			this, SLOT(handle_zoom_globe_triggered()));
 	QObject::connect(action_Click_Geometry, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_click_geometry_tool()));
+			this, SLOT(handle_click_geometry_triggered()));
 	QObject::connect(action_Digitise_New_Polyline, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_digitise_polyline_tool()));
+			this, SLOT(handle_digitise_new_polyline_triggered()));
 	QObject::connect(action_Digitise_New_MultiPoint, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_digitise_multipoint_tool()));
+			this, SLOT(handle_digitise_new_multipoint_triggered()));
 	QObject::connect(action_Digitise_New_Polygon, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_digitise_polygon_tool()));
+			this, SLOT(handle_digitise_new_polygon_triggered()));
+#if 0
 	QObject::connect(action_Move_Geometry, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_move_geometry_tool()));
-	QObject::connect(action_Move_Vertex, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_move_vertex_tool()));
-	QObject::connect(action_Delete_Vertex, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_delete_vertex_tool()));
-	QObject::connect(action_Insert_Vertex, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_insert_vertex_tool()));
-	QObject::connect(action_Split_Feature, SIGNAL(triggered()),
-		d_choose_canvas_tool.get(), SLOT(choose_split_feature_tool()));
+			this, SLOT(choose_move_geometry_tool()));
+#else
 	// FIXME: The Move Geometry tool, although it has an awesome icon,
 	// is to be disabled until it can be implemented.
 	action_Move_Geometry->setVisible(false);
+#endif
+	QObject::connect(action_Move_Vertex, SIGNAL(triggered()),
+			this, SLOT(handle_move_vertex_triggered()));
+	QObject::connect(action_Delete_Vertex, SIGNAL(triggered()),
+			this, SLOT(handle_delete_vertex_triggered()));
+	QObject::connect(action_Insert_Vertex, SIGNAL(triggered()),
+			this, SLOT(handle_insert_vertex_triggered()));
+	QObject::connect(action_Split_Feature, SIGNAL(triggered()),
+			this, SLOT(handle_split_feature_triggered()));
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_manipulate_pole_tool()));
+			this, SLOT(handle_manipulate_pole_triggered()));
 	QObject::connect(action_Build_Topology, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_build_topology_tool()));
+			this, SLOT(handle_build_topology_triggered()));
 	QObject::connect(action_Edit_Topology, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_edit_topology_tool()));
+			this, SLOT(handle_edit_topology_triggered()));
 	QObject::connect(action_Measure_Distance, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_measure_distance_tool()));
+			this, SLOT(handle_measure_distance_triggered()));
 
 
 	// File Menu:
@@ -1328,6 +1333,15 @@ GPlatesQtWidgets::ViewportWindow::enable_measure_distance_tool(
 	action_Measure_Distance->setEnabled(enable);
 }
 
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_drag_globe_triggered()
+{
+	d_choose_canvas_tool->choose_drag_globe_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE;
+}
+
+
 void
 GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 {
@@ -1338,11 +1352,27 @@ GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::handle_zoom_globe_triggered()
+{
+	d_choose_canvas_tool->choose_zoom_globe_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::ZOOM_GLOBE;
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
 {
 	action_Zoom_Globe->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_zoom_globe_tool();
 	d_map_canvas_tool_choice_ptr->choose_zoom_map_tool();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_click_geometry_triggered()
+{
+	d_choose_canvas_tool->choose_click_geometry_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::CLICK_GEOMETRY;
 }
 
 
@@ -1358,6 +1388,14 @@ GPlatesQtWidgets::ViewportWindow::choose_click_geometry_tool()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::handle_digitise_new_polyline_triggered()
+{
+	d_choose_canvas_tool->choose_digitise_polyline_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE;
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
 {
 	action_Digitise_New_Polyline->setChecked(true);
@@ -1368,12 +1406,28 @@ GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::handle_digitise_new_multipoint_triggered()
+{
+	d_choose_canvas_tool->choose_digitise_multipoint_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT;
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_multipoint_tool()
 {
 	action_Digitise_New_MultiPoint->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_digitise_new_polygon_triggered()
+{
+	d_choose_canvas_tool->choose_digitise_polygon_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON;
 }
 
 
@@ -1400,6 +1454,14 @@ GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::handle_move_vertex_triggered()
+{
+	d_choose_canvas_tool->choose_move_vertex_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::MOVE_VERTEX;
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 {
 	action_Move_Vertex->setChecked(true);
@@ -1407,6 +1469,14 @@ GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 	d_map_canvas_tool_choice_ptr->choose_move_vertex_tool();
 	d_task_panel_ptr->choose_modify_geometry_tab();
 	d_task_panel_ptr->enable_move_nearby_vertices_widget(true);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_delete_vertex_triggered()
+{
+	d_choose_canvas_tool->choose_delete_vertex_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DELETE_VERTEX;
 }
 
 
@@ -1423,6 +1493,14 @@ GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::handle_insert_vertex_triggered()
+{
+	d_choose_canvas_tool->choose_insert_vertex_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::INSERT_VERTEX;
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
 {
 	action_Insert_Vertex->setChecked(true);
@@ -1432,6 +1510,15 @@ GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
 	d_task_panel_ptr->choose_modify_geometry_tab();
 	d_task_panel_ptr->enable_move_nearby_vertices_widget(false);	
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_split_feature_triggered()
+{
+	d_choose_canvas_tool->choose_split_feature_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::SPLIT_FEATURE;
+}
+
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_split_feature_tool()
@@ -1443,6 +1530,15 @@ GPlatesQtWidgets::ViewportWindow::choose_split_feature_tool()
 	d_task_panel_ptr->choose_modify_geometry_tab();
 }
 
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_measure_distance_triggered()
+{
+	d_choose_canvas_tool->choose_measure_distance_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::MEASURE_DISTANCE;
+}
+
+
 void
 GPlatesQtWidgets::ViewportWindow::choose_measure_distance_tool()
 {
@@ -1452,6 +1548,15 @@ GPlatesQtWidgets::ViewportWindow::choose_measure_distance_tool()
 
 	d_task_panel_ptr->choose_measure_distance_tab();
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_manipulate_pole_triggered()
+{
+	d_choose_canvas_tool->choose_manipulate_pole_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::MANIPULATE_POLE;
+}
+
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
@@ -1463,6 +1568,15 @@ GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 	d_map_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
 	d_task_panel_ptr->choose_modify_pole_tab();
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_build_topology_triggered()
+{
+	d_choose_canvas_tool->choose_build_topology_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::BUILD_TOPOLOGY;
+}
+
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
@@ -1482,6 +1596,14 @@ GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::handle_edit_topology_triggered()
+{
+	d_choose_canvas_tool->choose_edit_topology_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY;
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 {
 	action_Edit_Topology->setChecked(true);
@@ -1495,7 +1617,6 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 	}
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
-
 
 
 void
@@ -2037,6 +2158,80 @@ GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
 		}
 
 		setWindowTitle(window_title);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::restore_canvas_tool_last_chosen_by_user()
+{
+	using namespace GPlatesCanvasTools::CanvasToolType;
+
+	switch (d_canvas_tool_last_chosen_by_user)
+	{
+		case DRAG_GLOBE:
+			d_choose_canvas_tool->choose_drag_globe_tool();
+			break;
+
+		case ZOOM_GLOBE:
+			d_choose_canvas_tool->choose_zoom_globe_tool();
+			break;
+
+		case CLICK_GEOMETRY:
+			d_choose_canvas_tool->choose_click_geometry_tool();
+			break;
+
+		case DIGITISE_POLYLINE:
+			d_choose_canvas_tool->choose_digitise_polyline_tool();
+			break;
+
+		case DIGITISE_MULTIPOINT:
+			d_choose_canvas_tool->choose_digitise_multipoint_tool();
+			break;
+
+		case DIGITISE_POLYGON:
+			d_choose_canvas_tool->choose_digitise_polygon_tool();
+			break;
+
+		case MOVE_GEOMETRY:
+			d_choose_canvas_tool->choose_move_geometry_tool();
+			break;
+
+		case MOVE_VERTEX:
+			d_choose_canvas_tool->choose_move_vertex_tool();
+			break;
+
+		case DELETE_VERTEX:
+			d_choose_canvas_tool->choose_delete_vertex_tool();
+			break;
+
+		case INSERT_VERTEX:
+			d_choose_canvas_tool->choose_insert_vertex_tool();
+			break;
+
+		case SPLIT_FEATURE:
+			d_choose_canvas_tool->choose_split_feature_tool();
+			break;
+
+		case MANIPULATE_POLE:
+			d_choose_canvas_tool->choose_manipulate_pole_tool();
+			break;
+
+		case BUILD_TOPOLOGY:
+			d_choose_canvas_tool->choose_build_topology_tool();
+			break;
+
+		case EDIT_TOPOLOGY:
+			d_choose_canvas_tool->choose_edit_topology_tool();
+			break;
+
+		case MEASURE_DISTANCE:
+			d_choose_canvas_tool->choose_measure_distance_tool();
+			break;
+
+		default:
+			// Do nothing.
+			break;
 	}
 }
 
