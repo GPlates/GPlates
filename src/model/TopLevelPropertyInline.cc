@@ -32,6 +32,9 @@
 
 #include "TopLevelPropertyInline.h"
 #include "FeatureVisitor.h"
+
+#include "global/CompilerWarnings.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -155,6 +158,11 @@ GPlatesModel::TopLevelPropertyInline::print_to(
 }
 
 
+// Suppress warning being emitted from Boost 1.35 header.
+PUSH_MSVC_WARNINGS
+DISABLE_MSVC_WARNING(4181)
+
+
 bool
 GPlatesModel::TopLevelPropertyInline::operator==(
 		const TopLevelProperty &other) const
@@ -183,4 +191,8 @@ GPlatesModel::TopLevelPropertyInline::operator==(
 		return false;
 	}
 }
+
+
+// See above.
+POP_MSVC_WARNINGS
 
