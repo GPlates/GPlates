@@ -30,8 +30,6 @@
 #include <QWidget>
 #include <QFocusEvent>
 
-#include "ChooseFeatureTypeWidgetUi.h"
-
 #include "SelectionWidget.h"
 
 #include "model/FeatureType.h"
