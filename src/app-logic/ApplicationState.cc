@@ -81,20 +81,21 @@ namespace
 		
 			QString channel_name;
 			GPlatesAppLogic::Layer::LayerInputDataType input_type = GPlatesAppLogic::Layer::INPUT_FEATURE_COLLECTION_DATA;
-				// It needs to be uninitialised otherwise g++ complains.
+			// It needs to be uninitialised otherwise g++ complains.
 			
 			BOOST_FOREACH(boost::tie(channel_name,input_type,boost::tuples::ignore),input_channel_definitions)
 			{
 				if(input_type == GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
 				{
+					layer.connect_input_to_layer_output(*it,channel_name);
 					break;
 				}
+				else
+				{
+					//clear the channel_name varaible to make sure boost::tie binds to an empty QString each time.
+					channel_name.clear();
+				}
 			}
-			if(input_type != GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
-			{
-				channel_name.clear();
-			}
-			layer.connect_input_to_layer_output(*it,channel_name);
 		}
 	}
 }
