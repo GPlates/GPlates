@@ -90,11 +90,6 @@ namespace
 					layer.connect_input_to_layer_output(*it,channel_name);
 					break;
 				}
-				else
-				{
-					//clear the channel_name varaible to make sure boost::tie binds to an empty QString each time.
-					channel_name.clear();
-				}
 			}
 		}
 	}
