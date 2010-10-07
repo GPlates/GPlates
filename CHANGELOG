@@ -1,3 +1,60 @@
+GPlates 0.9.10.1
+================
+
+Changes since 0.9.10:
+
+ * fixed bug that caused various random crashes throughout GPlates, 
+ * fixed crash when unloading a feature collection, 
+ * fixed error exporting reconstruction geometries, 
+ * fixed points/lines not drawn when editing geometry, 
+ * fixed focused feature not being displayed, 
+ * fixed unknown error when reloading a feature collection, 
+ * fixed small globe window on Windows systems, 
+ * fixed tooltips in Layers dialog causing GPlates to hang on Mac OS X systems, 
+ * fixed display not updating during raster export (on Linux systems), 
+ * fixed velocity mesh points not displaying (for CitcomS meshes generated inside GPlates), 
+ * fixed conjugate-plate-id widget being displayed in "Create Feature" dialog for half-stage rotation, 
+ * fixed feature collection showing unsaved changes when it is reloaded, 
+ * after cloning geometry, and creating a new feature, GPlates now returns to the "Choose Feature" tool. 
+
+GPlates 0.9.10
+==============
+
+Changes since 0.9.9:
+
+TODO: Change this to list actual changes implemented (this is currently a copy of the release email).
+
+This release is a preview of raster reconstructions and layers. 
+We have implemented raster reconstructions to take advantage of
+the majority of graphics systems so please let us know if you are
+having difficulty on your system. 
+
+If you want to reconstruct a raster, and try out the new layers system, the sample data
+in this release contains the following files to demonstrate this: 
+ * present-day plate polygons (in "SampleData/FeatureCollections/StaticPolygons/") 
+   - "Global_Earthbyte_GPlates_PresentDay_PlatePolygons_20100826.gpml", 
+ * a rotation file (in "SampleData/FeatureCollections/Rotations/") 
+   - "Global_Earthbyte_GPlates_Rotation_20091015.rot", 
+ * a global marine gravity raster (in "SampleData/Rasters/") 
+   - "DNSC08GRA_6m.gpml", 
+ * an ocean-floor age grid (in "SampleData/Rasters/") 
+   - "agegrid_6m.gpml".
+To reconstruct the above gravity raster load all the above files into GPlates 
+using "Open Feature Collection" from the "File" menu. And then connect the 
+present-day plate polygons to the "Polygon features" input channel of the
+gravity raster. The gravity raster should now reconstruct.
+For a high-detail reconstruction you can also connect the age grid raster
+to the "Age grid feature" input channel of the gravity raster.
+You can see an example screenshot of the layers window used for
+this purpose at http://www.gplates.org/screenshots.html
+(see http://www.gplates.org/screenshots/0.9.10/LayersWindow.png).
+Note that you may also need to import a raster if it does not have
+an associated ".gpml" file.
+Also note that the age grid raster does not display since it has been
+imported as an age grid rather than a regular raster - this is so it
+can be used to assist the reconstruction of other rasters.
+
+
 GPlates 0.9.9.1
 ===============
 
