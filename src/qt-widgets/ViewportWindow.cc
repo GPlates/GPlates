@@ -44,6 +44,8 @@
 #include <QActionGroup>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QCoreApplication>
+#include <QProcess>
 #include <QDebug>
 
 #include "ViewportWindow.h"
@@ -613,6 +615,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 
 
 	// File Menu:
+	QObject::connect(action_New_Window, SIGNAL(triggered()),
+			this, SLOT(open_new_window()));
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
 			d_file_io_feedback_ptr, SLOT(open_files()));
 	QObject::connect(action_Import_Raster, SIGNAL(triggered()),
@@ -2279,4 +2283,13 @@ GPlatesQtWidgets::ViewportWindow::handle_visual_layer_added(
 		pop_up_layering_dialog();
 	}
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::open_new_window()
+{
+	QString file_path = QCoreApplication::applicationFilePath();
+	QProcess::startDetached(file_path);
+}
+
 

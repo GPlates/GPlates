@@ -760,6 +760,9 @@ namespace GPlatesQtWidgets
 		void
 		handle_measure_distance_triggered();
 
+		void
+		open_new_window();
+
 	protected:
 	
 		/**
