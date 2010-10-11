@@ -1227,6 +1227,10 @@
    </property>
   </action>
   <action name="action_Export">
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/gnome_stock_export_16.png</normaloff>:/gnome_stock_export_16.png</iconset>
+   </property>
    <property name="text">
     <string>&amp;Export...</string>
    </property>
@@ -1347,6 +1351,10 @@
   <action name="action_Show_Layers">
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/gnome_stock_view_details_16.png</normaloff>:/gnome_stock_view_details_16.png</iconset>
    </property>
    <property name="text">
     <string>Show &amp;Layers</string>

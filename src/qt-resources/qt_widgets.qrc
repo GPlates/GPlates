@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="/">
+    <file>gnome_stock_export_16.png</file>
+    <file>gnome_stock_view_details_16.png</file>
+    <file>tango_window_new_16.png</file>
     <file>gnome_text_x_preview_16.png</file>
     <file>slash.png</file>
     <file>gnome_stock_sort_column_ascending_16.png</file>
