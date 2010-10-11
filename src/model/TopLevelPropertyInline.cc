@@ -24,16 +24,18 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <iostream>
 #include <typeinfo>
 #include <algorithm>
+
+// Suppress warning being emitted from Boost 1.35 header.
+#include "global/CompilerWarnings.h"
+PUSH_MSVC_WARNINGS
+DISABLE_MSVC_WARNING(4181)
 #include <boost/lambda/lambda.hpp>
 
 #include "TopLevelPropertyInline.h"
 #include "FeatureVisitor.h"
-
-#include "global/CompilerWarnings.h"
 
 #include "utils/UnicodeStringUtils.h"
 
@@ -156,11 +158,6 @@ GPlatesModel::TopLevelPropertyInline::print_to(
 
 	return os;
 }
-
-
-// Suppress warning being emitted from Boost 1.35 header.
-PUSH_MSVC_WARNINGS
-DISABLE_MSVC_WARNING(4181)
 
 
 bool
