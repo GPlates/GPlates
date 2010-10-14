@@ -28,11 +28,13 @@
 #define GPLATES_FILEIO_PLATESLINEFORMATHEADERVISITOR_H
 
 #include <boost/optional.hpp>
-#include <unicode/unistr.h>
+
+#include "global/unicode.h"
 
 #include "model/FeatureVisitor.h"
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 

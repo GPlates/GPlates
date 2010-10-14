@@ -28,6 +28,7 @@
 #include "CanvasToolAdapterForGlobe.h"
 
 #include "maths/PointOnSphere.h"
+
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 

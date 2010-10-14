@@ -29,7 +29,14 @@
 #define GPLATES_MODEL_PROPERTYVALUE_H
 
 #include <iosfwd>
+#if _MSC_VER == 1600
+#	undef UINT8_C
+#endif
 #include <boost/cstdint.hpp>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#	include <cstdint>
+#endif
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"

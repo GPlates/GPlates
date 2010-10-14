@@ -29,7 +29,8 @@
 #define GPLATES_UTILS_UNIQUEID_H
 
 #include <string>
-#include <unicode/unistr.h>
+
+#include "global/unicode.h"
 
 namespace GPlatesUtils
 {

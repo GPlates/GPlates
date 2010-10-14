@@ -30,9 +30,16 @@
 
 #include <string>
 #include <map>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#endif
 #include <boost/any.hpp>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#	include <cstdint>
+#endif
 
 #include "BasicHandle.h"
 #include "FeatureCollectionRevision.h"

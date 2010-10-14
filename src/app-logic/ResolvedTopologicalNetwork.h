@@ -29,8 +29,15 @@
 #include <cstddef>
 #include <iterator>
 #include <vector>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#endif
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#	include <cstdint>
+#endif
 
 #include "CgalUtils.h"
 #include "PlateVelocityUtils.h"

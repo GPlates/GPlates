@@ -32,13 +32,16 @@
 #include <ctime>
 #include <string>
 #include <sstream>
-#include <unicode/unistr.h>
 
 #include "TextContent.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
+
+#include "global/unicode.h"
+
 #include "model/PropertyValue.h"
 #include "model/types.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 

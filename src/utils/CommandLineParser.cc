@@ -23,18 +23,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
 #include <fstream>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#endif
 #include <boost/bind.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
-#include <iostream>
-#include "utils/CommandLineParser.h"
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#	include <cstdint>
+#endif
+
+#include "CommandLineParser.h"
+
+#include "Profile.h"
+
 #include "file-io/ErrorOpeningFileForReadingException.h"
+
 #include "global/Constants.h"
 #include "global/GPlatesException.h"
 #include "global/NotYetImplementedException.h"
-
-#include "utils/Profile.h"
 
 namespace
 {

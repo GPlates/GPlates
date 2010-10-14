@@ -26,7 +26,6 @@
  */
 
 #include <iostream>
-#include <unicode/ustream.h>
 
 #include "XmlOutputInterface.h"
 

@@ -29,7 +29,8 @@
 #define GPLATES_FILEIO_XMLOUTPUTINTERFACE_H
 
 #include <iosfwd>
-#include <unicode/unistr.h>
+
+#include "global/unicode.h"
 
 // Even though we only pass XmlAttributeName and XmlAttributeValue by reference in this header, we
 // can't just forward-declare the class, since XmlAttributeName and XmlAttributeValue are typedefs

@@ -29,9 +29,12 @@
 #define GPLATES_MODEL_IDTYPEGENERATOR_H
 
 #include <vector>
-#include <unicode/unistr.h>
 #include <boost/scoped_ptr.hpp>
+
 #include "StringSetSingletons.h"
+
+#include "global/unicode.h"
+
 #include "utils/UniqueId.h"
 
 

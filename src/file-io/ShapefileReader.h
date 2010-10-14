@@ -54,7 +54,6 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 
-
 namespace GPlatesFileIO
 {
 	const double SHAPE_NO_DATA = -1e38; 

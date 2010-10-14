@@ -36,9 +36,10 @@
 #include <set>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/optional.hpp>
-#include <unicode/unistr.h>
 
 #include "ReferenceCount.h"
+
+#include "global/unicode.h"
 
 
 namespace GPlatesUtils

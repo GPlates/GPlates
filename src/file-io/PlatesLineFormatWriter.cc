@@ -29,7 +29,6 @@
 #include <fstream>
 #include <vector>
 #include <numeric>
-#include <unicode/ustream.h>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 
@@ -37,6 +36,9 @@
 #include "PlatesLineFormatHeaderVisitor.h"
 #include "PlatesLineFormatGeometryExporter.h"
 #include "ErrorOpeningFileForWritingException.h"
+
+#include "global/unicode.h"
+
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
 

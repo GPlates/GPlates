@@ -30,6 +30,9 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#endif
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/contains.hpp>
 #include <boost/operators.hpp>
@@ -38,6 +41,10 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/utility/enable_if.hpp>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#	include <cstdint>
+#endif
 #include <QString>
 
 #include "FeatureCollectionFileState.h"

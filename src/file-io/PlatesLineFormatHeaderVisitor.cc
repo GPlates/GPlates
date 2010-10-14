@@ -24,8 +24,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <unicode/ustream.h>
-
 #include "PlatesLineFormatHeaderVisitor.h"
 #include "PlatesFormatUtils.h"
 

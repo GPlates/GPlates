@@ -149,7 +149,7 @@ GPlatesGui::GPlatesQtMsgHandler::should_install_message_handler()
 		// Convert to lower case.
 		const std::locale loc("C");
 		std::transform(override_value.begin(), override_value.end(), override_value.begin(),
-				bind(&std::tolower<std::string::value_type>, _1, boost::cref(loc)));
+				boost::bind(&std::tolower<std::string::value_type>, _1, boost::cref(loc)));
 
 		if (override_value == "1" || override_value == "true" ||
 				override_value == "yes" || override_value == "on")

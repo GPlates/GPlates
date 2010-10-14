@@ -26,9 +26,12 @@
  */
 
 #include "GlobeManipulatePole.h"
+
 #include "maths/LatLonPoint.h"
+
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 

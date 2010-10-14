@@ -26,6 +26,7 @@
  */
 
 #include "FeatureCollectionFileFormat.h"
+
 #include "FileInfo.h"
 
 #include "global/GPlatesAssert.h"

@@ -28,9 +28,9 @@
 #ifndef GPLATES_MODEL_REVISIONID_H
 #define GPLATES_MODEL_REVISIONID_H
 
-#include <unicode/unistr.h>
-#include "utils/UniqueId.h"
+#include "global/unicode.h"
 
+#include "utils/UniqueId.h"
 #include "utils/UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
 
 

@@ -24,11 +24,17 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include "global/CompilerWarnings.h"
+
+PUSH_MSVC_WARNINGS
+DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/operators.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/bind.hpp>
+POP_MSVC_WARNINGS
+
 #include <stack>
 #include <vector>
 #include <string>
@@ -43,6 +49,7 @@
 #include <functional>
 
 #include "Profile.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 

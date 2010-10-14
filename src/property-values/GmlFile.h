@@ -30,7 +30,6 @@
 
 #include <vector>
 #include <boost/optional.hpp>
-#include <unicode/unistr.h>
 
 #include "ProxiedRasterCache.h"
 #include "RasterType.h"
@@ -38,6 +37,8 @@
 #include "XsString.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
+
+#include "global/unicode.h"
 
 #include "model/PropertyValue.h"
 #include "model/XmlAttributeName.h"

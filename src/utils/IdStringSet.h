@@ -37,10 +37,11 @@
 #include <boost/intrusive_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
-#include <unicode/unistr.h>
 
 #include "SmartNodeLinkedList.h"
 #include "ReferenceCount.h"
+
+#include "global/unicode.h"
 
 
 namespace GPlatesUtils

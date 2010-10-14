@@ -26,7 +26,6 @@
  */
 
 #include <vector>
-#include <unicode/schriter.h>  // ICU's StringCharacterIterator
 #include <iostream>
 
 #include "UnicodeStringUtils.h"

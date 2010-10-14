@@ -28,13 +28,12 @@
 #ifndef GPLATES_UTILS_UNICODESTRINGUTILS_H
 #define GPLATES_UTILS_UNICODESTRINGUTILS_H
 
-#include <unicode/unistr.h>  // ICU's UnicodeString
-#include <unicode/ustream.h> // operator<<
 #include <functional>
 #include <string>
 #include <iosfwd>
 #include <QString>
 
+#include "global/unicode.h"
 
 #ifndef GPLATES_ICU_BOOL
 #define GPLATES_ICU_BOOL(b) ((b) != 0)

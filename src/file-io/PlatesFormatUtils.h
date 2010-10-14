@@ -27,7 +27,7 @@
 #ifndef GPLATES_FILE_IO_PLATESFORMATUTILS_H
 #define GPLATES_FILE_IO_PLATESFORMATUTILS_H
 
-#include <unicode/unistr.h>
+#include "global/unicode.h"
 
 #include "model/FeatureHandle.h"
 

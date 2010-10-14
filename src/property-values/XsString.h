@@ -31,7 +31,9 @@
 #include "TextContent.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 

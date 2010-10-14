@@ -28,9 +28,10 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/variant.hpp>
-#include <unicode/unistr.h>
 
 #include "ColourPalette.h"
+
+#include "global/unicode.h"
 
 #include "property-values/TextContent.h"
 

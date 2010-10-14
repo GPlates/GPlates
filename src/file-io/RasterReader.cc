@@ -30,12 +30,19 @@
 #include <iterator>
 #include <utility>
 #include <vector>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#endif
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/construct.hpp>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#	include <cstdint>
+#endif
 #include <QDir>
 #include <QFileInfo>
 #include <QStringList>

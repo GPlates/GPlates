@@ -32,14 +32,22 @@
 #define GPLATES_MODEL_TOPLEVELPROPERTYINLINE_H
 
 #include <vector>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#endif
 #include <boost/optional.hpp>
 #include <boost/function.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/lambda/construct.hpp>
-#include <unicode/unistr.h>
+#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
+#	undef UINT8_C
+#	include <cstdint>
+#endif
 
 #include "TopLevelProperty.h"
 #include "PropertyValue.h"
+
+#include "global/unicode.h"
 
 namespace GPlatesModel
 {

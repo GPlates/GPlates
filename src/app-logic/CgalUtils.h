@@ -31,13 +31,18 @@
 #include <vector>
 #include <boost/optional.hpp>
 
+#include "global/CompilerWarnings.h"
+
+PUSH_MSVC_WARNINGS
+DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-//#include <CGAL/Triangulation_2.h>
+// #include <CGAL/Triangulation_2.h>
 #include <CGAL/Delaunay_triangulation_2.h>
 // #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Interpolation_traits_2.h>
 #include <CGAL/natural_neighbor_coordinates_2.h>
 #include <CGAL/interpolation_functions.h>
+POP_MSVC_WARNINGS
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"

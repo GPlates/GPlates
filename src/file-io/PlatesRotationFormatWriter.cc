@@ -29,8 +29,9 @@
 
 #include <ostream>
 #include <vector>
-#include <unicode/ustream.h>
 #include <boost/none.hpp>
+
+#include "global/unicode.h"
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
