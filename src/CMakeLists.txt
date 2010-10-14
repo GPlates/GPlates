@@ -65,19 +65,22 @@ if (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
 	message(FATAL_ERROR "ICU library was not found - please make sure it is installed.")
 endif (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
 
-# CGAL expects that the build type is "Release" or "Debug".
-# If it is set to "profilegprof" or "profilegplates", we temporarily set the
-# build type to "Debug" and "Release", respectively, and set it back after
-# CGAL has finished setting itself up.
-set(CMAKE_BUILD_TYPE_BEFORE_CGAL ${CMAKE_BUILD_TYPE})
-if (CMAKE_BUILD_TYPE STREQUAL "profilegprof")
-	# "profilegprof" build type is closest to a "Debug" build.
-	set(CMAKE_BUILD_TYPE "Debug")
-endif (CMAKE_BUILD_TYPE STREQUAL "profilegprof")
-if (CMAKE_BUILD_TYPE STREQUAL "profilegplates")
-	# "profilegplates" build type is closest to a "Release" build.
-	set(CMAKE_BUILD_TYPE "Release")
-endif (CMAKE_BUILD_TYPE STREQUAL "profilegplates")
+if ( NOT WIN32 )
+	# CGAL expects that the build type is "Release" or "Debug".
+	# If it is set to "profilegprof" or "profilegplates", we temporarily set the
+	# build type to "Debug" and "Release", respectively, and set it back after
+	# CGAL has finished setting itself up.
+	# Note that "profilegprof" and "profilegplates" cannot be used on Windows.
+	set(CMAKE_BUILD_TYPE_BEFORE_CGAL ${CMAKE_BUILD_TYPE})
+	if (CMAKE_BUILD_TYPE STREQUAL "profilegprof")
+		# "profilegprof" build type is closest to a "Debug" build.
+		set(CMAKE_BUILD_TYPE "Debug")
+	endif (CMAKE_BUILD_TYPE STREQUAL "profilegprof")
+	if (CMAKE_BUILD_TYPE STREQUAL "profilegplates")
+		# "profilegplates" build type is closest to a "Release" build.
+		set(CMAKE_BUILD_TYPE "Release")
+	endif (CMAKE_BUILD_TYPE STREQUAL "profilegplates")
+endif ( NOT WIN32 )
 
 # The following is necessary otherwise CGAL is going to set the built type to
 # "Release" when running CMake for the first time, even if we set the build
@@ -107,9 +110,11 @@ if ( NOT WIN32 )
 	endif ( GPlates_CGAL_DISABLE_ROUNDING_MATH_CHECK )
 endif ( NOT WIN32 )
 
-# Restore CMAKE_BUILD_TYPE before we kludged it for CGAL.
-set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_BEFORE_CGAL})
-message("-- Build type: ${CMAKE_BUILD_TYPE}")
+if ( NOT WIN32 )
+	# Restore CMAKE_BUILD_TYPE before we kludged it for CGAL (see above).
+	set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_BEFORE_CGAL})
+	message("-- Build type: ${CMAKE_BUILD_TYPE}")
+endif ( NOT WIN32 )
 
 # Tell Qt that we use QtXML.
 # NOTE: subdirectory 'CMakeList.txt' files will also see our QT_USE_* variables.
