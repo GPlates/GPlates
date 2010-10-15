@@ -2289,7 +2289,19 @@ void
 GPlatesQtWidgets::ViewportWindow::open_new_window()
 {
 	QString file_path = QCoreApplication::applicationFilePath();
-	QProcess::startDetached(file_path);
+
+	// Note that even if we are not interested in passing arguments to the new
+	// instance, we need to use this overload:
+	//     bool QProcess::startDetached ( const QString & program, const QStringList & arguments )
+	// instead of
+	//     bool QProcess::startDetached ( const QString & program )
+	// because with the latter, the program string contains both the program
+	// name and the arguments, separated by whitespace. Thus, it does the wrong
+	// thing if the path to the executable has whitespace, e.g. on Windows.
+	if (!QProcess::startDetached(file_path, QStringList()))
+	{
+		qDebug() << "ViewportWindow::open_new_window: new instance could not be started";
+	}
 }
 
 
