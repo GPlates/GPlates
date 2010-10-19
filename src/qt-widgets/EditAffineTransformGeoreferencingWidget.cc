@@ -168,34 +168,39 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::update_extents_if_nec
 		{
 			new_extents.components[i] = d_extents_spinboxes[i]->value();
 		}
-		Georeferencing::ConversionFromLatLonExtentsError error =
+		Georeferencing::SetLatLonExtentsError error =
 			d_georeferencing->set_lat_lon_extents(
 					new_extents,
 					d_raster_width,
 					d_raster_height);
 
-		if (error == Georeferencing::NONE)
+		switch (error)
 		{
-			// FIXME: Remove this after we get rasters out of ViewState.
-			// d_view_state->update_texture_extents();
-			emit georeferencing_changed();
+			case Georeferencing::NONE:
+				emit georeferencing_changed();
 
-			// Read it back into the spinboxes.
-			boost::optional<lat_lon_extents_type> extents =
-					d_georeferencing->lat_lon_extents(d_raster_width, d_raster_height);
-			populate_lat_lon_extents_spinboxes(*extents);
-		}
-		else if (error == Georeferencing::BOTTOM_ABOVE_TOP)
-		{
-			warning_label->setText(tr("Invalid extents: bottom cannot be north of top."));
-		}
-		else if (error == Georeferencing::TOP_EQUALS_BOTTOM)
-		{
-			warning_label->setText(tr("Invalid extents: height cannot be zero."));
-		}
-		else if (error == Georeferencing::LEFT_EQUALS_RIGHT)
-		{
-			warning_label->setText(tr("Invalid extents: width cannot be zero."));
+				// Read it back into the spinboxes.
+				populate_lat_lon_extents_spinboxes(
+						*d_georeferencing->lat_lon_extents(
+							d_raster_width,
+							d_raster_height));
+				break;
+
+			case Georeferencing::ZERO_WIDTH:
+				warning_label->setText(tr("Invalid extents: width cannot be zero."));
+				break;
+
+			case Georeferencing::ZERO_HEIGHT:
+				warning_label->setText(tr("Invalid extents: height cannot be zero."));
+				break;
+
+			case Georeferencing::TOP_OUT_OF_RANGE:
+				warning_label->setText(tr("Invalid extents: top cannot be greater than 90.0"));
+				break;
+
+			case Georeferencing::BOTTOM_OUT_OF_RANGE:
+				warning_label->setText(tr("Invalid extents: bottom cannot be less than -90.0"));
+				break;
 		}
 
 		bool show_warning = (error != Georeferencing::NONE);

@@ -31,6 +31,14 @@
 #include "maths/MathsUtils.h"
 
 
+namespace
+{
+	const double MIN_LATITUDE = -90.0;
+	const double MAX_LATITUDE = 90.0;
+	const double LATITUDE_EPISLON = 0.9; // Very generous.
+}
+
+
 boost::optional<GPlatesPropertyValues::Georeferencing::lat_lon_extents_type>
 GPlatesPropertyValues::Georeferencing::lat_lon_extents(
 		unsigned int raster_width,
@@ -43,41 +51,40 @@ GPlatesPropertyValues::Georeferencing::lat_lon_extents(
 				d_parameters.y_component_of_pixel_width,
 				0.0))
 	{
-		if (d_parameters.x_component_of_pixel_width > 0.0 &&
-			d_parameters.y_component_of_pixel_height < 0.0)
+		double extents_width = d_parameters.x_component_of_pixel_width * raster_width;
+		double extents_height = d_parameters.y_component_of_pixel_height * raster_height;
+
+		double top = d_parameters.top_left_y_coordinate;
+		double bottom = d_parameters.top_left_y_coordinate + extents_height;
+		double left = d_parameters.top_left_x_coordinate;
+		double right = d_parameters.top_left_x_coordinate + extents_width;
+
+		// Clamp top and bottom to [-90, +90] if within epsilon.
+		if (top > MAX_LATITUDE)
 		{
-			double extents_width = d_parameters.x_component_of_pixel_width * raster_width;
-			double extents_height = d_parameters.y_component_of_pixel_height * raster_height;
-
-			double bottom = d_parameters.top_left_y_coordinate + extents_height;
-
-			if (GPlatesMaths::Real(extents_width) <= GPlatesMaths::Real(360.0) &&
-					GPlatesMaths::Real(bottom) >= GPlatesMaths::Real(-90.0))
+			if (top > MAX_LATITUDE + LATITUDE_EPISLON)
 			{
-				double right = d_parameters.top_left_x_coordinate + extents_width;
-				if (GPlatesMaths::Real(right) > GPlatesMaths::Real(180.0))
-				{
-					right -= 360.0;
-				}
-				lat_lon_extents_type result = {{{
-					d_parameters.top_left_y_coordinate,
-					bottom,
-					d_parameters.top_left_x_coordinate,
-					right
-				}}};
-				return result;
-			}
-			else
-			{
-				// Bounds out of range.
 				return boost::none;
 			}
+			top = MAX_LATITUDE;
 		}
-		else
+		if (bottom < MIN_LATITUDE)
 		{
-			// The raster is flipped horizontally or vertically.
-			return boost::none;
+			if (bottom < MIN_LATITUDE - LATITUDE_EPISLON)
+			{
+				return boost::none;
+			}
+			bottom = MIN_LATITUDE;
 		}
+
+		lat_lon_extents_type result = {{{
+			top,
+			bottom,
+			left,
+			right
+		}}};
+
+		return result;
 	}
 	else
 	{
@@ -87,62 +94,42 @@ GPlatesPropertyValues::Georeferencing::lat_lon_extents(
 }
 
 
-GPlatesPropertyValues::Georeferencing::ConversionFromLatLonExtentsError
+GPlatesPropertyValues::Georeferencing::SetLatLonExtentsError
 GPlatesPropertyValues::Georeferencing::set_lat_lon_extents(
 		lat_lon_extents_type extents,
 		unsigned int raster_width,
 		unsigned int raster_height)
 {
-	// Check whether the bottom is greater than the top.
-	if (GPlatesMaths::Real(extents.bottom) > GPlatesMaths::Real(extents.top))
+	// Check that top != bottom and left != right.
+	if (GPlatesMaths::are_almost_exactly_equal(extents.top, extents.bottom))
 	{
-		return BOTTOM_ABOVE_TOP;
+		return ZERO_HEIGHT;
+	}
+	if (GPlatesMaths::are_almost_exactly_equal(extents.left, extents.right))
+	{
+		return ZERO_WIDTH;
 	}
 
-	// Check that the longitudes are in range.
-	static const double MIN_LONGITUDE = -180.0;
-	static const double MAX_LONGITUDE = 180.0;
-	static const double LONGITUDE_RANGE = MAX_LONGITUDE - MIN_LONGITUDE;
-	if (extents.left < MIN_LONGITUDE)
-	{
-		int steps = static_cast<int>((MAX_LONGITUDE - extents.left) / LONGITUDE_RANGE);
-		extents.left += steps * LONGITUDE_RANGE;
-	}
-	if (extents.right > MAX_LONGITUDE)
-	{
-		int steps = static_cast<int>((extents.right - MIN_LONGITUDE) / LONGITUDE_RANGE);
-		extents.right -= steps * LONGITUDE_RANGE;
-	}
-
-	// Check that the latitudes are in range.
-	static const double MIN_LATITUDE = -90.0;
-	static const double MAX_LATITUDE = 90.0;
+	// Clamp latitude extents if they are out of range but within epsilon.
 	if (extents.bottom < MIN_LATITUDE)
 	{
+		if (extents.bottom < MIN_LATITUDE - LATITUDE_EPISLON)
+		{
+			return BOTTOM_OUT_OF_RANGE;
+		}
 		extents.bottom = MIN_LATITUDE;
 	}
 	if (extents.top > MAX_LATITUDE)
 	{
+		if (extents.top > MAX_LATITUDE + LATITUDE_EPISLON)
+		{
+			return TOP_OUT_OF_RANGE;
+		}
 		extents.top = MAX_LATITUDE;
-	}
-
-	// Finally, check that top != bottom and left != right.
-	if (GPlatesMaths::are_almost_exactly_equal(extents.top, extents.bottom))
-	{
-		return TOP_EQUALS_BOTTOM;
-	}
-	if (GPlatesMaths::are_almost_exactly_equal(extents.left, extents.right))
-	{
-		return LEFT_EQUALS_RIGHT;
 	}
 
 	// Convert to affine transform parameters.
 	double extents_width = extents.right - extents.left;
-	if (extents_width < 0.0)
-	{
-		extents_width += LONGITUDE_RANGE;
-	}
-
 	double extents_height = extents.bottom - extents.top;
 	parameters_type converted = {{{
 		extents.left,
