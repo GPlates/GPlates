@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -57,6 +57,7 @@ namespace GPlatesAppLogic
 	class LayerTask;
 	class LayerTaskRegistry;
 	class ReconstructGraph;
+	class UserPreferences;
 
 
 	/**
@@ -110,6 +111,13 @@ namespace GPlatesAppLogic
 		 */
 		FeatureCollectionFileIO &
 		get_feature_collection_file_io();
+
+
+		/**
+		 * Responsible for all persistent GPlates session storage including user preferences.
+		 */
+		GPlatesAppLogic::UserPreferences &
+		get_user_preferences();
 
 
 		/**
@@ -230,6 +238,9 @@ namespace GPlatesAppLogic
 		 * All file reading/writing goes through here.
 		 */
 		boost::scoped_ptr<FeatureCollectionFileIO> d_feature_collection_file_io;
+
+
+		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
 
 		/**
 		 * The layer task registry is used to create layer tasks.

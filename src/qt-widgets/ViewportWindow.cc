@@ -46,7 +46,6 @@
 #include <QDropEvent>
 #include <QCoreApplication>
 #include <QProcess>
-#include <QDebug>
 
 #include "ViewportWindow.h"
 
@@ -65,6 +64,7 @@
 #include "ImportRasterDialog.h"
 #include "InformationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
+#include "PreferencesDialog.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "SaveFileDialog.h"
@@ -501,7 +501,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// been called and all the widgets that are used to notify the user are in place.
 	d_unsaved_changes_tracker_ptr->init();
 
-
 	// Registered a slot to be called when a new reconstruction is generated.
 	QObject::connect(
 			&get_application_state(),
@@ -511,6 +510,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Render everything on the screen in present-day positions.
 	get_application_state().reconstruct();
+
+	// Initialise the default range of the animation slider based on UserPreferences.
+	d_animation_controller.init_default_time_range();
 
 	// Synchronise the "Show X Features" menu items with RenderSettings.
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
@@ -668,6 +670,11 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			d_clone_operation_ptr.get(), SLOT(clone_focused_geometry()));
 	QObject::connect(action_Clone_Feature, SIGNAL(triggered()),
 			d_clone_operation_ptr.get(), SLOT(clone_focused_feature()));
+
+	// Preferences is beta functionality and not on a menu anywhere yet.
+	QObject::connect(action_Preferences, SIGNAL(triggered()),
+			this, SLOT(pop_up_preferences_dialog()));
+
 
 	// Reconstruction Menu:
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
@@ -1132,6 +1139,19 @@ GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	d_animate_dialog_ptr->raise();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_preferences_dialog()
+{
+	if (!d_preferences_dialog_ptr)
+	{
+		d_preferences_dialog_ptr.reset(new PreferencesDialog(this));
+	}
+
+	// PreferencesDialog is modal and should not need the 'raise' hack other dialogs use.
+	d_preferences_dialog_ptr->exec();
 }
 
 

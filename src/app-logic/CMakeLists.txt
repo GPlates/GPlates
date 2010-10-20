@@ -121,6 +121,8 @@ set(srcs
     TopologyNetworkResolverLayerTask.h
     TopologyUtils.cc
     TopologyUtils.h
+    UserPreferences.cc
+    UserPreferences.h
     VelocityFieldCalculatorLayerTask.cc
     VelocityFieldCalculatorLayerTask.h
     VgpPartitionFeatureTask.cc

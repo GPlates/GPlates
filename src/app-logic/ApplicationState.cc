@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -34,6 +34,7 @@
 #include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructUtils.h"
+#include "UserPreferences.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -102,6 +103,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
 					d_model, *d_feature_collection_file_state)),
+	d_user_preferences_ptr(
+			new UserPreferences()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_reconstruct_graph(new ReconstructGraph(*this)),
 	d_block_handle_file_state_file_activation_changed(false),
@@ -373,6 +376,13 @@ GPlatesAppLogic::FeatureCollectionFileIO &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_io()
 {
 	return *d_feature_collection_file_io;
+}
+
+
+GPlatesAppLogic::UserPreferences &
+GPlatesAppLogic::ApplicationState::get_user_preferences()
+{
+	return *d_user_preferences_ptr;
 }
 
 

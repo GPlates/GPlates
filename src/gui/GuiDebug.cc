@@ -37,6 +37,7 @@
 #include "model/FeatureCollectionHandle.h"
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/UserPreferences.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/TaskPanel.h"
 
@@ -94,6 +95,8 @@ namespace
 	/**
 	 * Convenience version of @a add_slots_to_menu that adds menu items under a
 	 * submenu with the class name of the object.
+	 *
+	 * Remember, they have to be defined as slots so we can add a QAction for them.
 	 */
 	void
 	add_slots_as_submenu(
@@ -148,12 +151,14 @@ GPlatesGui::GuiDebug::create_menu()
 	// If you don't need a keyboard shortcut for it, this is a fantastic way to
 	// quickly add some test code you can trigger at-will at runtime.
 	add_debug_slots_to_menu(this, debug_menu);
+
+	// Plus a few 'debug_' methods from specific classes as a submenu:-
+	add_slots_as_submenu(&(d_app_state_ptr->get_user_preferences()), "debug_", debug_menu);
 	
 	// For bonus points, let's add ALL no-argument slots from ViewportWindow and friends.
 	add_slots_as_submenu(d_viewport_window_ptr, "", debug_menu);
 	add_slots_as_submenu(d_viewport_window_ptr->task_panel_ptr(), "", debug_menu);
 	add_slots_as_submenu(find_child_qobject("ManageFeatureCollectionsDialog"), "", debug_menu);
-	add_slots_as_submenu(find_child_qobject("UnsavedChangesTracker"), "", debug_menu);
 }
 
 

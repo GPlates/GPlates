@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,12 +22,13 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #include <cmath>
 
 #include "AnimationController.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/UserPreferences.h"
 #include "maths/Real.h"
 #include "utils/FloatingPointComparisons.h"
 #include "utils/AnimationSequenceUtils.h"
@@ -53,6 +54,17 @@ GPlatesGui::AnimationController::AnimationController(
 			SLOT(react_view_time_changed(GPlatesAppLogic::ApplicationState &)));
 }
 
+
+void
+GPlatesGui::AnimationController::init_default_time_range()
+{
+	// Pull in defaults from UserPreferences.
+	GPlatesAppLogic::UserPreferences &prefs = d_application_state_ptr->get_user_preferences();
+	set_start_time(prefs.get_value("view/animation/default_time_range_start").toDouble());
+	set_end_time(prefs.get_value("view/animation/default_time_range_end").toDouble());
+	set_time_increment(prefs.get_value("view/animation/default_time_increment").toDouble());
+	d_application_state_ptr->set_reconstruction_time(end_time());
+}
 
 const double &
 GPlatesGui::AnimationController::view_time() const

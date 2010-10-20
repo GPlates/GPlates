@@ -1378,6 +1378,14 @@
     <string>Import &amp;Time-Dependent Raster...</string>
    </property>
   </action>
+  <action name="action_Preferences">
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc"><normaloff>:/gnome_preferences_desktop_16.png</normaloff>:/gnome_preferences_desktop_16.png</iconset>
+   </property>
+   <property name="text">
+    <string>Preferences</string>
+   </property>
+  </action>
   <action name="action_Show_Stars">
    <property name="checkable">
     <bool>true</bool>

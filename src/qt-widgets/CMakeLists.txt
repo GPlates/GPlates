@@ -194,6 +194,9 @@ set(srcs
     PoleSequenceTableWidget.cc
     PoleSequenceTableWidget.h
     PoleSequenceTableWidgetUi.ui
+    PreferencesDialog.cc
+    PreferencesDialog.h
+    PreferencesDialogUi.ui
     ProgressDialog.h
     ProgressDialogUi.ui
     ProjectionControlWidget.cc

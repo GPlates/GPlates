@@ -118,6 +118,7 @@ namespace GPlatesQtWidgets
 	class FeaturePropertiesDialog;
 	class ManageFeatureCollectionsDialog;
 	class MeshDialog;
+	class PreferencesDialog;
 	class ReadErrorAccumulationDialog;
 	class SaveFileDialog;
 	class SetCameraViewpointDialog;
@@ -406,6 +407,9 @@ namespace GPlatesQtWidgets
 		pop_up_animate_dialog();
 
 		void
+		pop_up_preferences_dialog();
+
+		void
 		update_tools_and_status_message();
 
 
@@ -481,6 +485,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
 		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
+		boost::scoped_ptr<PreferencesDialog> d_preferences_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
