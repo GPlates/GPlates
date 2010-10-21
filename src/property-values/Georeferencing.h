@@ -131,18 +131,18 @@ namespace GPlatesPropertyValues
 		 * and lat-lon extents.
 		 *
 		 * We constrain the latitude (top/bottom) extents to be in the range
-		 * [-90, +90] and they must not be equal:
+		 * [-90, +90]:
 		 *  - If 'top' is strictly greater than 'bottom' (the usual case), the
 		 *    first line of the raster file is drawn to the north of the last line.
+		 *  - If 'top' is equal to 'bottom', the raster is drawn with height zero.
 		 *  - If 'top' is strictly less than 'bottom', the first line of the
 		 *    raster file is drawn to the south of the last line; that is, the
 		 *    raster is drawn flipped vertically.
 		 *
-		 * The only constraint on the longitude extents (left/right) is that
-		 * they must not be equal; there is no constraint on the distance between
-		 * 'left' and 'right':
+		 * There are no constraints on the longitude (left/right) extents:
 		 *  - If 'left' is strictly less than 'right' (the usual case), the
 		 *    columns of the raster are drawn from west to east.
+		 *  - If 'left' is equal to 'right', the raster is drawn with width zero.
 		 *  - If 'left' is strictly greater than 'right', the columns of the
 		 *    raster are drawn from east to west; that is, the raster is drawn
 		 *    flipped horizontally.
@@ -241,27 +241,14 @@ namespace GPlatesPropertyValues
 				unsigned int raster_height) const;
 
 		/**
-		 * Error codes returned by @a set_lat_lon_extents.
-		 */
-		enum SetLatLonExtentsError
-		{
-			NONE,
-
-			ZERO_WIDTH,
-			ZERO_HEIGHT,
-			
-			TOP_OUT_OF_RANGE,
-			BOTTOM_OUT_OF_RANGE
-		};
-
-		/**
 		 * Sets the affine transform parameters using lat-lon extents.
 		 *
-		 * If the latitude extents are outside of [-90, +90], if the value lies
+		 * If the latitude extents are outside of [-90, +90], and the value lies
 		 * within a certain epsilon, the extents are clamped to the nearest value
-		 * in that range.
+		 * in that range. If the value does not lie within a certain epsilon, this
+		 * method is a no-op.
 		 */
-		SetLatLonExtentsError
+		void
 		set_lat_lon_extents(
 				lat_lon_extents_type extents,
 				unsigned int raster_width,

@@ -41,8 +41,6 @@ namespace GPlatesQtWidgets
 			public QWizardPage,
 			protected Ui_GeoreferencingPage
 	{
-		Q_OBJECT
-		
 	public:
 
 		explicit
@@ -55,16 +53,6 @@ namespace GPlatesQtWidgets
 		void
 		initializePage();
 
-		virtual
-		bool
-		isComplete() const;
-
-	private slots:
-
-		void
-		handle_warning_visible_changed(
-				bool visible);
-
 	private:
 
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type &d_georeferencing;
@@ -72,7 +60,6 @@ namespace GPlatesQtWidgets
 		TimeDependentRasterSequence &d_raster_sequence;
 		unsigned int d_last_seen_raster_width;
 		unsigned int d_last_seen_raster_height;
-		bool d_is_complete;
 	};
 }
 

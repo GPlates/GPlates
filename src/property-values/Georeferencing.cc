@@ -94,28 +94,19 @@ GPlatesPropertyValues::Georeferencing::lat_lon_extents(
 }
 
 
-GPlatesPropertyValues::Georeferencing::SetLatLonExtentsError
+void
 GPlatesPropertyValues::Georeferencing::set_lat_lon_extents(
 		lat_lon_extents_type extents,
 		unsigned int raster_width,
 		unsigned int raster_height)
 {
-	// Check that top != bottom and left != right.
-	if (GPlatesMaths::are_almost_exactly_equal(extents.top, extents.bottom))
-	{
-		return ZERO_HEIGHT;
-	}
-	if (GPlatesMaths::are_almost_exactly_equal(extents.left, extents.right))
-	{
-		return ZERO_WIDTH;
-	}
-
 	// Clamp latitude extents if they are out of range but within epsilon.
+	// If they are beyond epsilon from the range, return immediately.
 	if (extents.bottom < MIN_LATITUDE)
 	{
 		if (extents.bottom < MIN_LATITUDE - LATITUDE_EPISLON)
 		{
-			return BOTTOM_OUT_OF_RANGE;
+			return;
 		}
 		extents.bottom = MIN_LATITUDE;
 	}
@@ -123,7 +114,7 @@ GPlatesPropertyValues::Georeferencing::set_lat_lon_extents(
 	{
 		if (extents.top > MAX_LATITUDE + LATITUDE_EPISLON)
 		{
-			return TOP_OUT_OF_RANGE;
+			return;
 		}
 		extents.top = MAX_LATITUDE;
 	}
@@ -141,8 +132,6 @@ GPlatesPropertyValues::Georeferencing::set_lat_lon_extents(
 	}}};
 
 	d_parameters = converted;
-
-	return NONE;
 }
 
 

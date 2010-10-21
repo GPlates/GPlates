@@ -47,8 +47,7 @@ GPlatesQtWidgets::GeoreferencingPage::GeoreferencingPage(
 				this)),
 	d_raster_sequence(raster_sequence),
 	d_last_seen_raster_width(0),
-	d_last_seen_raster_height(0),
-	d_is_complete(true)
+	d_last_seen_raster_height(0)
 {
 	setupUi(this);
 
@@ -56,12 +55,6 @@ GPlatesQtWidgets::GeoreferencingPage::GeoreferencingPage(
 	setSubTitle("Specify the location of the raster using lat-lon bounds or an affine transformation.");
 
 	QtWidgetUtils::add_widget_to_placeholder(d_georeferencing_widget, georeferencing_placeholder_widget);
-
-	QObject::connect(
-			d_georeferencing_widget,
-			SIGNAL(warning_visible_changed(bool)),
-			this,
-			SLOT(handle_warning_visible_changed(bool)));
 }
 
 
@@ -89,22 +82,5 @@ GPlatesQtWidgets::GeoreferencingPage::initializePage()
 	}
 
 	d_georeferencing_widget->refresh();
-}
-
-
-bool
-GPlatesQtWidgets::GeoreferencingPage::isComplete() const
-{
-	return d_is_complete;
-}
-
-
-void
-GPlatesQtWidgets::GeoreferencingPage::handle_warning_visible_changed(
-		bool visible)
-{
-	// The user can only continue if there are no warnings.
-	d_is_complete = !visible;
-	emit completeChanged();
 }
 

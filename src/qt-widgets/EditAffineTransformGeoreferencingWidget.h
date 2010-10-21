@@ -68,10 +68,6 @@ namespace GPlatesQtWidgets
 	signals:
 
 		void
-		warning_visible_changed(
-				bool visible);
-
-		void
 		georeferencing_changed();
 
 	private slots:
