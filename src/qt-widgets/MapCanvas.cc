@@ -125,11 +125,6 @@ GPlatesQtWidgets::MapCanvas::draw_svg_output()
 		GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER,
 		false);
 
-	// Turn off rendering of mouse movement layer.
-	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::MOUSE_MOVEMENT_LAYER,
-		false);
-
 	update();
 
 	// Force the update signal to be processed so that 

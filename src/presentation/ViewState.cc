@@ -82,18 +82,6 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection)),
 	d_feature_focus(
 			new GPlatesGui::FeatureFocus(application_state)),
-	d_comp_mesh_point_layer(
-			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
-					0.175f)),
-	d_comp_mesh_arrow_layer(
-			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
-					0.175f)),
-	d_paleomag_layer(
-			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-					GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER,
-					0.175f)),					
 	d_visual_layers(
 			new VisualLayers(
 				d_application_state,
@@ -248,16 +236,6 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 	// Reconstruction rendered layer is always active.
 	d_rendered_geometry_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
-
-	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
-		
-	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_TOOL_LAYER);	
-		
-	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER);			
-			
 
 	// Activate the main rendered layer.
 	// Specify which main rendered layers are orthogonal to each other - when

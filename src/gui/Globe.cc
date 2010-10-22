@@ -201,11 +201,6 @@ GPlatesGui::Globe::paint_vector_output(
 			GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER,
 			false);
 
-	// Turn off rendering of mouse movement layer.
-	d_rendered_geom_collection.set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::MOUSE_MOVEMENT_LAYER,
-			false);
-
 	// Draw the rendered geometries in the depth range [0, 0.7].
 	d_rendered_geom_collection_painter.set_scale(scale);
 	d_rendered_geom_collection_painter.paint(

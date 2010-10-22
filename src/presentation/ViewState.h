@@ -289,15 +289,6 @@ namespace GPlatesPresentation
 		 */
 		boost::scoped_ptr<GPlatesGui::FeatureFocus> d_feature_focus;
 
-		// FIXME: remove these 
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_comp_mesh_point_layer;
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_comp_mesh_arrow_layer;
-			
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_paleomag_layer;
-
 		/**
 		 * Manages the various layers (usually corresponding to each loaded feature collection)
 		 * whose output results are drawn into child layers of the RECONSTRUCTION main
