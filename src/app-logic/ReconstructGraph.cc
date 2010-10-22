@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cstddef> // For std::size_t
 #include <iterator>
+#include <vector>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
@@ -446,26 +447,66 @@ GPlatesAppLogic::ReconstructGraph::handle_file_state_file_about_to_be_removed(
 	// The input file corresponding to the file about to be removed.
 	ReconstructGraphImpl::Data *input_file_impl = input_file_iter->second.get();
 
-	// Get the input file to disconnect all connections that use it as input.
-	input_file_impl->disconnect_output_connections();
-
-	// Iterate over all layers and remove any layer that now has no inputs on its main channel.
-	layer_ptr_seq_type::iterator layers_iter = d_layers.begin();
-	layer_ptr_seq_type::iterator layers_end = d_layers.end();
-	for ( ; layers_iter != layers_end; )
+	// Iterate over all layers that are directly connected to the file about to be removed
+	// and remove any layers that:
+	//   1) reference that file on their *main* input channel, *and*
+	//   2) have no other input files at the *main* input channel.
+	// This effectively removes layers that currently have *one* input file on thei
+	// main input channel that's about to be removed.
+	// NOTE: This avoids removing layers that, by default, never have any input on their
+	// main channel - this is a relatively new occurrence that wasn't initially planned for
+	// (ie, all layers were expected to have some input on their main channel) but will
+	// happen when the Small Circle layer is implemented - as this layer will have input
+	// data entered by the user (in a dialog) and passed to the app-logic layer via a
+	// LayerTaskParams derived class.
+	std::vector<Layer> layers_to_remove;
+	BOOST_FOREACH(
+			ReconstructGraphImpl::LayerInputConnection *input_file_connection,
+			input_file_impl->get_output_connections())
 	{
-		Layer layer(*layers_iter);
+		const layer_ptr_type layer_receiving_file_input(
+				input_file_connection->get_layer_receiving_input());
+
+		if (!layer_receiving_file_input)
+		{
+			continue;
+		}
+
+		Layer layer(layer_receiving_file_input);
 
 		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
 
-		// Increment the layer list iterator in case we remove the layer.
-		++layers_iter;
-
-		if (layer.get_channel_inputs(main_input_channel).empty())
+		const std::vector<Layer::InputConnection> input_connections =
+				layer.get_channel_inputs(main_input_channel);
+		// We only remove layers that currently have one input file on the main channel
+		// (that's about to be removed).
+		if (input_connections.size() != 1)
 		{
-			remove_layer(layer);
+			continue;
+		}
+
+		// Make sure the input connects to a file rather than the output of another layer.
+		boost::optional<Layer::InputFile> input_file = input_connections[0].get_input_file();
+		if (!input_file)
+		{
+			continue;
+		}
+
+		// If the sole input file on the main channel matches the file about to be removed.
+		if (input_file->get_file() == file_about_to_be_removed)
+		{
+			layers_to_remove.push_back(layer);
 		}
 	}
+
+	// Remove any layers that need removing.
+	BOOST_FOREACH(const Layer &layer_to_remove, layers_to_remove)
+	{
+		remove_layer(layer_to_remove);
+	}
+
+	// Get the input file to disconnect all connections that use it as input.
+	input_file_impl->disconnect_output_connections();
 
 	// Remove the input file object.
 	d_input_files.erase(input_file_iter);
