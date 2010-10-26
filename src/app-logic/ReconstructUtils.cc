@@ -31,9 +31,6 @@
 #include "ReconstructedFeatureGeometryPopulator.h"
 #include "ReconstructionGraph.h"
 #include "ReconstructionTreePopulator.h"
-#include "TopologyUtils.h"
-#include "TopologyBoundaryResolver.h"
-#include "TopologyNetworkResolver.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
@@ -251,21 +248,6 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 			reconstructable_features_collection.begin(),
 			reconstructable_features_collection.end(),
 			rfgp);
-
-	TopologyBoundaryResolver topology_boundary_resolver(*reconstruction_geom_collection);
-
-	AppLogicUtils::visit_feature_collections(
-			reconstructable_features_collection.begin(),
-			reconstructable_features_collection.end(),
-			topology_boundary_resolver);
-
-	// Visit topological network features.
-	TopologyNetworkResolver topology_network_resolver(*reconstruction_geom_collection);
-
-	AppLogicUtils::visit_feature_collections(
-			reconstructable_features_collection.begin(),
-			reconstructable_features_collection.end(),
-			topology_network_resolver);
 
 	return reconstruction_geom_collection;
 }
