@@ -63,7 +63,7 @@ namespace GPlatesCanvasTools
 		create(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_)
+				GPlatesQtWidgets::ViewportWindow &view_state_)
 		{
 			ReorientGlobe::non_null_ptr_type ptr(
 					new ReorientGlobe(globe_, globe_canvas_, view_state_),
@@ -126,7 +126,7 @@ namespace GPlatesCanvasTools
 		ReorientGlobe(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_):
+				GPlatesQtWidgets::ViewportWindow &view_state_):
 			GlobeCanvasTool(globe_, globe_canvas_),
 			d_view_state_ptr(&view_state_)
 		{  }
@@ -136,7 +136,7 @@ namespace GPlatesCanvasTools
 		/**
 		 * This is the View State used to pass messages to the status bar.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.

@@ -81,7 +81,7 @@ namespace GPlatesCanvasTools
 				CanvasTool *canvas_tool_ptr,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::MapTransform &map_transform_);
 		
 		virtual
@@ -209,17 +209,13 @@ namespace GPlatesCanvasTools
 				CanvasTool *canvas_tool_ptr,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::MapTransform &map_transform_);
 		
 	private:
 
 		//! A pointer to the CanvasTool instance that we wrap around
 		boost::scoped_ptr<CanvasTool> d_canvas_tool_ptr;
-
-		//! Listeners to status bar updates from the CanvasTool
-		StatusBarListenerForViewport d_status_bar_listener;
-		
 	};
 }
 

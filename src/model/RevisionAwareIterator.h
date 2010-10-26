@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_REVISIONAWAREITERATOR_H
 
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
+#include <boost/operators.hpp>
 
 #include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
@@ -59,6 +60,16 @@ namespace GPlatesModel
 			typedef typename HandleTraits<HandleType>::const_weak_ref handle_weak_ref_type;
 		};
 	}
+
+	// Forward declarations.
+	template<class HandleType>
+	class RevisionAwareIterator;
+
+	template<class HandleType>
+	bool
+	operator<(
+			const RevisionAwareIterator<HandleType> &lhs,
+			const RevisionAwareIterator<HandleType> &rhs);
 
 	/**
 	 * A revision-aware iterator to iterate over the container within a revisioning collection.
@@ -91,7 +102,9 @@ namespace GPlatesModel
 				// operator returns a temporary, and it is not desirable to take a reference
 				// to a temporary.
 				typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type
-			>
+			>,
+			public boost::equivalent<RevisionAwareIterator<HandleType> >,
+			public boost::equality_comparable<RevisionAwareIterator<HandleType> >
 	{
 
 	public:
@@ -231,24 +244,6 @@ namespace GPlatesModel
 		operator--(int);
 
 		/**
-		 * Returns whether this instance is equal to @a other.
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		operator==(
-				const this_type &other) const;
-
-		/**
-		 * Returns whether this instance is not equal to @a other.
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		operator!=(
-				const this_type &other) const;
-
-		/**
 		 * Returns whether the underlying weak-ref to the Handle is valid, and if so
 		 * whether the child of the Handle being pointed to is still in existence.
 		 *
@@ -265,9 +260,16 @@ namespace GPlatesModel
 		bool
 		is_still_valid() const;
 
+		/**
+		 * Returns whether @a lhs is less than @a rhs.
+		 *
+		 * This function will now throw.
+		 */
+		friend
 		bool
-		operator<(
-				const RevisionAwareIterator<HandleType> &other) const;
+		operator< <>(
+				const RevisionAwareIterator<HandleType> &lhs,
+				const RevisionAwareIterator<HandleType> &rhs);
 
 	private:
 
@@ -429,25 +431,6 @@ namespace GPlatesModel
 
 	template<class HandleType>
 	bool
-	RevisionAwareIterator<HandleType>::operator==(
-			const this_type &other) const
-	{
-		return d_handle_weak_ref == other.d_handle_weak_ref &&
-			d_index == other.d_index;
-	}
-
-
-	template<class HandleType>
-	bool
-	RevisionAwareIterator<HandleType>::operator!=(
-			const this_type &other) const
-	{
-		return !(*this == other);
-	}
-
-
-	template<class HandleType>
-	bool
 	RevisionAwareIterator<HandleType>::is_still_valid() const
 	{
 		return d_handle_weak_ref.is_valid() &&
@@ -457,16 +440,17 @@ namespace GPlatesModel
 
 	template<class HandleType>
 	bool
-	RevisionAwareIterator<HandleType>::operator<(
-			const RevisionAwareIterator<HandleType> &other) const
+	operator<(
+			const RevisionAwareIterator<HandleType> &lhs,
+			const RevisionAwareIterator<HandleType> &rhs)
 	{
-		if (d_handle_weak_ref == other.d_handle_weak_ref)
+		if (lhs.d_handle_weak_ref == rhs.d_handle_weak_ref)
 		{
-			return d_index < other.d_index;
+			return lhs.d_index < rhs.d_index;
 		}
 		else
 		{
-			return d_handle_weak_ref < other.d_handle_weak_ref;
+			return lhs.d_handle_weak_ref < rhs.d_handle_weak_ref;
 		}
 	}
 

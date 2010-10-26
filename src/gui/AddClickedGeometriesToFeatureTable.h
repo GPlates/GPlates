@@ -98,7 +98,7 @@ namespace GPlatesGui
 	add_clicked_geometries_to_feature_table(
 			const GPlatesMaths::PointOnSphere &click_point_on_sphere,
 			double proximity_inclusion_threshold,
-			const GPlatesQtWidgets::ViewportWindow &view_state,
+			GPlatesQtWidgets::ViewportWindow &view_state,
 			GPlatesGui::FeatureTableModel &clicked_table_model,
 			GPlatesGui::FeatureFocus &feature_focus,
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,

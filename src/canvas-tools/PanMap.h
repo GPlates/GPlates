@@ -68,7 +68,7 @@ namespace GPlatesCanvasTools
 		create(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::MapTransform &map_transform_)
 		{
 			PanMap::non_null_ptr_type ptr(
@@ -139,7 +139,7 @@ namespace GPlatesCanvasTools
 		PanMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::MapTransform &map_transform_):
 			MapCanvasTool(map_canvas_, map_view_, map_transform_),
 			d_view_state_ptr(&view_state_)
@@ -150,7 +150,7 @@ namespace GPlatesCanvasTools
 		/**
 		 * This is the View State used to pass messages to the status bar.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.

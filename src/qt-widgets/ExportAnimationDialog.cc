@@ -68,13 +68,11 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	
 	update_single_frame_progress_bar(0,tableWidget_single->rowCount());
 
-	tableWidget_range->horizontalHeader()->setResizeMode(0,QHeaderView::ResizeToContents);
-	tableWidget_range->horizontalHeader()->setResizeMode(1,QHeaderView::ResizeToContents);
-	tableWidget_range->horizontalHeader()->setResizeMode(2,QHeaderView::Stretch);
-
-	tableWidget_single->horizontalHeader()->setResizeMode(0,QHeaderView::ResizeToContents);
-	tableWidget_single->horizontalHeader()->setResizeMode(1,QHeaderView::ResizeToContents);
-	tableWidget_single->horizontalHeader()->setResizeMode(2,QHeaderView::Stretch);
+	for (int i = 0; i != 2; ++i)
+	{
+		tableWidget_range->horizontalHeader()->setResizeMode(i, QHeaderView::ResizeToContents);
+		tableWidget_single->horizontalHeader()->setResizeMode(i, QHeaderView::ResizeToContents);
+	}
 
 	tableWidget_range->verticalHeader()->hide();
 	tableWidget_single->verticalHeader()->hide();
@@ -499,7 +497,6 @@ GPlatesQtWidgets::ExportAnimationDialog::insert_item(
 			new QTableWidgetItem(filename));
 
 	tableWidget->setSortingEnabled(true);	
-	tableWidget->resizeColumnsToContents();
 
 	if(radioButton_single->isChecked())
 	{
@@ -570,10 +567,10 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_abort_button_state(
 
 	radioButton_single->setDisabled(we_are_exporting);
 	radioButton_range->setDisabled(we_are_exporting);
-	pushButton_close->setDisabled(we_are_exporting);
 
 	button_export_single_frame->setDisabled(we_are_exporting);
-	pushButton_single_cancel->setDisabled(we_are_exporting);
+
+	main_buttonbox->setDisabled(we_are_exporting);
 }
 
 void

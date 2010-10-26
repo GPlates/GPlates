@@ -172,6 +172,27 @@ namespace GPlatesQtWidgets
 				const QString &text,
 				Qt::MatchFlags flags = Qt::MatchExactly | Qt::MatchCaseSensitive);
 
+		/**
+		 * Returns the index of the item containing the given @a user_data. Returns -1
+		 * if @a user_data is not found.
+		 */
+		template<typename T>
+		int
+		find_data(
+				typename GPlatesUtils::TypeTraits<T>::argument_type user_data) const
+		{
+			int count = d_listwidget ? d_listwidget->count() : d_combobox->count();
+			for (int i = 0; i != count; ++i)
+			{
+				boost::optional<T> curr_user_data = get_data<T>(i);
+				if (curr_user_data && *curr_user_data == user_data)
+				{
+					return i;
+				}
+			}
+			return -1;
+		}
+
 	signals:
 
 		/**

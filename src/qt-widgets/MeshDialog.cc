@@ -57,36 +57,36 @@ namespace
 {
 	const std::string CAP_NUM_PLACE_HOLDER = "%c";
 	const std::string DENSITY_PLACE_HOLDER = "%d";
+
+	const char *HELP_DIALOG_TITLE_RESOLUTION = QT_TR_NOOP("Setting the mesh resolution");
+
+	const char *HELP_DIALOG_TEXT_RESOLUTION = QT_TR_NOOP(
+		"<html><body>"
+		"<p/>"
+		"<p>The nodex and nodey parameters specify the number of nodes in each edge of cap diamonds.</p>"
+		"<p>These	nodes are used to divide the diamonds into smaller ones evenly.</p>"
+		"<p>For the global mesh, the nodex always equals nodey.</p>" 
+		"<p>In current release, we only support global mesh. The regional mesh might come in the future.</p>"
+		"</body></html>");
+
+	const char *HELP_DIALOG_TITLE_OUTPUT = QT_TR_NOOP("Setting output directory and file name template");
+
+	const char *HELP_DIALOG_TEXT_OUTPUT = QT_TR_NOOP(
+		"<html><body>"
+		"<p/>"
+		"<p>12 files will be generated in the specifed output directory.</p>"
+		"<p>The file name template can be specified as something like %d.mesh.%c "
+		"where the '%d' represents the mesh point density and '%c' represents the cap number.</p>"
+		"<p>%d and %c must appear in the template once and only once.</p>"
+		"</body></html>\n");
 }
-const QString GPlatesQtWidgets::MeshDialog::s_help_dialog_title_resolution = QObject::tr(
-	"Setting the mesh resolution");
 
-const QString GPlatesQtWidgets::MeshDialog::s_help_dialog_text_resolution = QObject::tr(
-	"<html><body>"
-	"<p/>"
-	"<p>The nodex and nodey parameters specify the number of nodes in each edge of cap diamonds.</p>"
-	"<p>These	nodes are used to divide the diamonds into smaller ones evenly.</p>"
-	"<p>For the global mesh, the nodex always equals nodey.</p>" 
-	"<p>In current release, we only support global mesh. The regional mesh might come in the future.</p>"
-	"</body></html>");
-
-const QString GPlatesQtWidgets::MeshDialog::s_help_dialog_title_output = QObject::tr(
-	"Setting output directory and file name template");
-
-const QString GPlatesQtWidgets::MeshDialog::s_help_dialog_text_output = QObject::tr(
-	"<html><body>"
-	"<p/>"
-	"<p>12 files will be generated in the specifed output directory.</p>"
-	"<p>The file name template can be specified as something like %d.mesh.%c "
-	"where the '%d' represents the mesh point density and '%c' represents the cap number.</p>"
-	"<p>%d and %c must appear in the template once and only once.</p>"
-	"</body></html>\n");
 
 GPlatesQtWidgets::MeshDialog::MeshDialog(
 		GPlatesPresentation::ViewState & view_state,
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog& manage_feature_collections_dialog,
-		QWidget *parent_ )
-	:QDialog(
+		QWidget *parent_ ) :
+	QDialog(
 			parent_, 
 			Qt::CustomizeWindowHint | 
 			Qt::WindowTitleHint | 
@@ -97,13 +97,13 @@ GPlatesQtWidgets::MeshDialog::MeshDialog(
 			view_state),
 	d_help_dialog_resolution(
 			new InformationDialog(
-					s_help_dialog_text_resolution, 
-					s_help_dialog_title_resolution, 
+					tr(HELP_DIALOG_TEXT_RESOLUTION), 
+					tr(HELP_DIALOG_TITLE_RESOLUTION), 
 					this)),
 	d_help_dialog_output(
 			new InformationDialog(
-					s_help_dialog_text_output, 
-					s_help_dialog_title_output, 
+					tr(HELP_DIALOG_TEXT_OUTPUT), 
+					tr(HELP_DIALOG_TITLE_OUTPUT), 
 					this)),
 	d_file_name_template(
 			DENSITY_PLACE_HOLDER+".mesh."+CAP_NUM_PLACE_HOLDER),
@@ -117,20 +117,47 @@ GPlatesQtWidgets::MeshDialog::MeshDialog(
 
 	lineEdit_file_template->setText(d_file_name_template.c_str());
 	
-	QObject::connect(button_gen, SIGNAL(clicked()),
-		this, SLOT(gen_mesh()));
-	QObject::connect(button_path, SIGNAL(clicked()),
-		this, SLOT(select_path()));
-	QObject::connect(lineEdit_path, SIGNAL(editingFinished()),
-		this, SLOT(set_path()));
-	QObject::connect(lineEdit_file_template, SIGNAL(editingFinished()),
-		this, SLOT(set_file_name_template()));
-	QObject::connect(node_X, SIGNAL(valueChanged(int)), 
-	    this, SLOT(set_node_x(int)));
-	QObject::connect(pushButton_info_output, SIGNAL(clicked()),
-		d_help_dialog_output, SLOT(show()));
-	QObject::connect(pushButton_info_resolution, SIGNAL(clicked()),
-		d_help_dialog_resolution, SLOT(show()));
+	QObject::connect(
+			button_path,
+			SIGNAL(clicked()),
+			this,
+			SLOT(select_path()));
+	QObject::connect(
+			lineEdit_path,
+			SIGNAL(editingFinished()),
+			this,
+			SLOT(set_path()));
+	QObject::connect(
+			lineEdit_file_template,
+			SIGNAL(editingFinished()),
+			this,
+			SLOT(set_file_name_template()));
+	QObject::connect(
+			node_X,
+			SIGNAL(valueChanged(int)), 
+			this,
+			SLOT(set_node_x(int)));
+	QObject::connect(
+			pushButton_info_output,
+			SIGNAL(clicked()),
+			d_help_dialog_output,
+			SLOT(show()));
+	QObject::connect(
+			pushButton_info_resolution,
+			SIGNAL(clicked()),
+			d_help_dialog_resolution,
+			SLOT(show()));
+
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(accepted()),
+			this,
+			SLOT(gen_mesh()));
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(rejected()),
+			this,
+			SLOT(reject()));
 }
 
 void
@@ -219,8 +246,7 @@ GPlatesQtWidgets::MeshDialog::set_file_name_template()
 void
 GPlatesQtWidgets::MeshDialog::gen_mesh()
 {
-	button_gen->setDisabled(true);
-	button_cancel->setDisabled(true);
+	main_buttonbox->setDisabled(true);
 
 	std::vector<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> geometries;
 	ProgressDialog *progress_dlg = new ProgressDialog(this);
@@ -240,8 +266,7 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 		if(progress_dlg->canceled())
 		{
 			progress_dlg->close();
-			button_gen->setDisabled(false);
-			button_cancel->setDisabled(false);
+			main_buttonbox->setDisabled(false);
 			this->close();
 			return;
 		}
@@ -322,9 +347,9 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 
 	}
 
-	button_gen->setDisabled(false);
-	button_cancel->setDisabled(false);
+	main_buttonbox->setDisabled(false);
 	progress_dlg->reject();
-	reject();
+
+	accept();
 }
 

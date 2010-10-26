@@ -68,7 +68,8 @@ namespace GPlatesQtWidgets
 		handle_calculate();
 		
 		void
-		handle_apply();
+		handle_button_clicked(
+				QAbstractButton *button);
 
 	private:
 	

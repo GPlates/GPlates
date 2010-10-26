@@ -80,12 +80,6 @@ namespace GPlatesQtWidgets
 		InformationDialog *d_help_dialog_output;
 		std::string d_file_name_template;
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &d_manage_feature_collections_dialog;
-
-		static const QString s_help_dialog_text_output;
-		static const QString s_help_dialog_title_output;
-		static const QString s_help_dialog_text_resolution;
-		static const QString s_help_dialog_title_resolution;
-
 	};
 }
 

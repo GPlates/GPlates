@@ -174,7 +174,7 @@ GPlatesAppLogic::ApplicationState::set_reconstruction_time(
 
 void
 GPlatesAppLogic::ApplicationState::set_anchored_plate_id(
-		unsigned long new_anchor_plate_id)
+		GPlatesModel::integer_plate_id_type new_anchor_plate_id)
 {
 	if (!has_anchor_plate_id_changed(d_anchored_plate_id, new_anchor_plate_id))
 	{

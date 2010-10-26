@@ -74,7 +74,6 @@
 #include "ShapefileAttributeViewerDialog.h"
 #include "ShapefilePropertyMapper.h"
 #include "SpecifyAnchoredPlateIdDialog.h"
-#include "SpecifyTimeIncrementDialog.h"
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
 #include "VisualLayersWidget.h"
@@ -257,11 +256,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				this)),
 	d_specify_anchored_plate_id_dialog_ptr(
 			new SpecifyAnchoredPlateIdDialog(
-				get_application_state().get_current_anchored_plate_id(),
 				this)),
-	d_specify_time_increment_dialog_ptr(
-			new SpecifyTimeIncrementDialog(
-				d_animation_controller, this)),
 	d_total_reconstruction_poles_dialog_ptr(
 			new TotalReconstructionPolesDialog(
 				get_view_state(),
@@ -311,9 +306,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::FeatureTableModel(
 				get_view_state())),
 	d_task_panel_ptr(NULL),
-	d_layering_dialog_opened_automatically_once(false),
 	d_canvas_tool_last_chosen_by_user(
-			GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE)
+			GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE),
+	d_action_show_bottom_panel(NULL)
 {
 	setupUi(this);
 
@@ -381,10 +376,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Set up the Specify Anchored Plate ID dialog.
 	// Perform a reconstruction when the anchor plate id changes.
-	QObject::connect(d_specify_anchored_plate_id_dialog_ptr.get(),
-			SIGNAL(value_changed(unsigned long)),
+	QObject::connect(
+			d_specify_anchored_plate_id_dialog_ptr.get(),
+			SIGNAL(value_changed(GPlatesModel::integer_plate_id_type)),
 			&get_application_state(),
-			SLOT(set_anchored_plate_id(unsigned long)));
+			SLOT(set_anchored_plate_id(GPlatesModel::integer_plate_id_type)));
 
 	// Set up the Reconstruction View widget.
 	setCentralWidget(&d_reconstruction_view_widget);
@@ -615,7 +611,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Measure_Distance, SIGNAL(triggered()),
 			this, SLOT(handle_measure_distance_triggered()));
 
-
 	// File Menu:
 	QObject::connect(action_New_Window, SIGNAL(triggered()),
 			this, SLOT(open_new_window()));
@@ -652,7 +647,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QAction *undo_action_ptr =
 		GPlatesViewOperations::UndoRedo::instance().get_undo_group().createUndoAction(this, tr("&Undo"));
 	QAction *redo_action_ptr =
-		GPlatesViewOperations::UndoRedo::instance().get_undo_group().createRedoAction(this, tr("&Redo"));
+		GPlatesViewOperations::UndoRedo::instance().get_undo_group().createRedoAction(this, tr("Re&do"));
 	undo_action_ptr->setShortcut(action_Undo_Placeholder->shortcut());
 	redo_action_ptr->setShortcut(action_Redo_Placeholder->shortcut());
 	menu_Edit->insertAction(action_Undo_Placeholder, undo_action_ptr);
@@ -675,7 +670,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Preferences, SIGNAL(triggered()),
 			this, SLOT(pop_up_preferences_dialog()));
 
-
 	// Reconstruction Menu:
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(activate_time_spinbox()));
@@ -692,27 +686,27 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(&d_animation_controller, SIGNAL(animation_state_changed(bool)),
 			action_Play, SLOT(setChecked(bool)));
 	// ----
+	QObject::connect(action_Export, SIGNAL(triggered()),
+			this, SLOT(pop_up_export_animation_dialog()));
+	// ----
 	QObject::connect(action_Specify_Anchored_Plate_ID, SIGNAL(triggered()),
 			this, SLOT(pop_up_specify_anchored_plate_id_dialog()));
 	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
 			this, SLOT(pop_up_total_reconstruction_poles_dialog()));
 	// ----
-	QObject::connect(action_Export, SIGNAL(triggered()),
-			this, SLOT(pop_up_export_animation_dialog()));
-	
-	// ----
 	QObject::connect(action_Assign_Plate_IDs, SIGNAL(triggered()),
 			this, SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
+	QObject::connect(action_Generate_Mesh_Cap, SIGNAL(triggered()),
+			this, SLOT(generate_mesh_cap()));
 	
 	// Layers Menu:
-	QObject::connect(action_Show_Layers, SIGNAL(triggered()),
-			this, SLOT(pop_up_layering_dialog()));
+	QObject::connect(menu_Layers, SIGNAL(aboutToShow()),
+			this, SLOT(handle_layers_menu_about_to_show()));
+	QObject::connect(action_Show_Layers, SIGNAL(triggered(bool)),
+			this, SLOT(set_layering_dialog_visibility(bool)));
 	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
 			this, SLOT(pop_up_colouring_dialog()));
-	QObject::connect(action_Generate_Mesh_Cap, SIGNAL(triggered()),
-		this, SLOT(generate_mesh_cap()));
-	
-	// View Menu:
+	// ----
 	QObject::connect(action_Show_Point_Features, SIGNAL(triggered()),
 			this, SLOT(enable_point_display()));
 	QObject::connect(action_Show_Line_Features, SIGNAL(triggered()),
@@ -727,14 +721,21 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(enable_strings_display()));
 	QObject::connect(action_Show_Stars, SIGNAL(triggered()),
 			this, SLOT(enable_stars_display()));
+	
+	// View Menu:
+	QObject::connect(action_Full_Screen, SIGNAL(triggered(bool)),
+			&d_full_screen_mode, SLOT(toggle_full_screen(bool)));
+	d_action_show_bottom_panel = dock_search_results->toggleViewAction();
+	d_action_show_bottom_panel->setText(tr("Show &Bottom Panel"));
+	d_action_show_bottom_panel->setObjectName("action_Show_Bottom_Panel");
+	menu_View->insertAction(action_Show_Bottom_Panel_Placeholder, d_action_show_bottom_panel);
+	menu_View->removeAction(action_Show_Bottom_Panel_Placeholder);
 	// ----
 	QObject::connect(action_Set_Projection, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_projection_dialog()));
-	QObject::connect(action_Full_Screen, SIGNAL(triggered(bool)),
-			&d_full_screen_mode, SLOT(toggle_full_screen(bool)));
 	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
- 
+	// ----
 	QObject::connect(action_Move_Camera_Up, SIGNAL(triggered()),
 			this, SLOT(handle_move_camera_up()));
 	QObject::connect(action_Move_Camera_Down, SIGNAL(triggered()),
@@ -743,14 +744,13 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(handle_move_camera_left()));
 	QObject::connect(action_Move_Camera_Right, SIGNAL(triggered()),
 			this, SLOT(handle_move_camera_right()));
-
+	// ----
 	QObject::connect(action_Rotate_Camera_Clockwise, SIGNAL(triggered()),
 			this, SLOT(handle_rotate_camera_clockwise()));
 	QObject::connect(action_Rotate_Camera_Anticlockwise, SIGNAL(triggered()),
 			this, SLOT(handle_rotate_camera_anticlockwise()));
 	QObject::connect(action_Reset_Camera_Orientation, SIGNAL(triggered()),
 			this, SLOT(handle_reset_camera_orientation()));
-
 	// ----
 	QObject::connect(action_Set_Zoom, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(activate_zoom_spinbox()));
@@ -760,7 +760,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			&get_view_state().get_viewport_zoom(), SLOT(zoom_out()));
 	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
 			&get_view_state().get_viewport_zoom(), SLOT(reset_zoom()));
-	// ----
 	
 	// Paleomagnetism menu	
 	QObject::connect(action_Create_VGP, SIGNAL(triggered()),
@@ -769,9 +768,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 		this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
 	QObject::connect(action_Set_VGP_Visibility, SIGNAL(triggered()),
 		this, SLOT(pop_up_set_vgp_visibility_dialog()));	
-	
-	
-	
 	
 	// Help Menu:
 	QObject::connect(action_About, SIGNAL(triggered()),
@@ -1044,7 +1040,10 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_specify_anchored_plate_id_dialog()
 {
 	// note: this dialog is created in the constructor
-	
+
+	d_specify_anchored_plate_id_dialog_ptr->populate(
+			get_application_state().get_current_anchored_plate_id(),
+			get_view_state().get_feature_focus().focused_feature());
 	d_specify_anchored_plate_id_dialog_ptr->show();
 	// In most cases, 'show()' is sufficient. However, selecting the menu entry
 	// a second time, when the dialog is still open, should make the dialog 'active'
@@ -1175,7 +1174,8 @@ GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_layering_dialog()
+GPlatesQtWidgets::ViewportWindow::set_layering_dialog_visibility(
+		bool visible)
 {
 	if (!d_layering_dialog_ptr)
 	{
@@ -1200,14 +1200,28 @@ GPlatesQtWidgets::ViewportWindow::pop_up_layering_dialog()
 		d_layering_dialog_ptr.reset(dialog);
 	}
 
-	d_layering_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_layering_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_layering_dialog_ptr->raise();
+	if (visible)
+	{
+		d_layering_dialog_ptr->show();
+		// In most cases, 'show()' is sufficient. However, selecting the menu entry
+		// a second time, when the dialog is still open, should make the dialog 'active'
+		// and return keyboard focus to it.
+		d_layering_dialog_ptr->activateWindow();
+		// On platforms which do not keep dialogs on top of their parent, a call to
+		// raise() may also be necessary to properly 're-pop-up' the dialog.
+		d_layering_dialog_ptr->raise();
+	}
+	else
+	{
+		d_layering_dialog_ptr->hide();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_layers_menu_about_to_show()
+{
+	action_Show_Layers->setChecked(d_layering_dialog_ptr && d_layering_dialog_ptr->isVisible());
 }
 
 
@@ -1838,10 +1852,6 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_specify_anchored_plate_id_dialog_ptr->reject();
 	}
-	if (d_specify_time_increment_dialog_ptr)
-	{
-		d_specify_time_increment_dialog_ptr->reject();
-	}
 	if (d_total_reconstruction_poles_dialog_ptr)
 	{
 		d_total_reconstruction_poles_dialog_ptr->reject();
@@ -2297,11 +2307,15 @@ void
 GPlatesQtWidgets::ViewportWindow::handle_visual_layer_added(
 		size_t added)
 {
-	if (!d_layering_dialog_opened_automatically_once)
-	{
-		d_layering_dialog_opened_automatically_once = true;
-		pop_up_layering_dialog();
-	}
+	set_layering_dialog_visibility(true);
+
+	// Disconnect from signal so that we only open the Layers dialog automatically
+	// the first time a visual layer is added.
+	QObject::disconnect(
+			&(get_view_state().get_visual_layers()),
+			SIGNAL(layer_added(size_t)),
+			this,
+			SLOT(handle_visual_layer_added(size_t)));
 }
 
 

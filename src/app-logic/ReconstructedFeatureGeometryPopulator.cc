@@ -272,15 +272,15 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 				gml_line_string.polyline();
 	boost::optional<GPlatesModel::integer_plate_id_type> plate_id = d_reconstruction_params.get_recon_plate_id();
 
-	if(d_reconstruction_params.get_reconstruction_method() == GPlatesAppLogic::HALF_STAGE_ROTATION)
+	if (d_reconstruction_params.get_reconstruction_method() == GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION)
 	{
 		boost::optional<FiniteRotation> rot;
-		if(rot = get_half_stage_rotation())
+		if (rot = get_half_stage_rotation())
 		{
 			reconstructed_polyline = (*rot) * reconstructed_polyline;
 		}
 	} 
-	else if(plate_id) 
+	else if (plate_id) 
 	{
 		reconstructed_polyline = (*d_recon_rotation) * reconstructed_polyline;
 	}
@@ -308,15 +308,15 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 	MultiPointOnSphere::non_null_ptr_to_const_type reconstructed_multipoint =
 			gml_multi_point.multipoint();
 
-	if(d_reconstruction_params.get_reconstruction_method() == GPlatesAppLogic::HALF_STAGE_ROTATION)
+	if (d_reconstruction_params.get_reconstruction_method() == GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION)
 	{
 		boost::optional<FiniteRotation> rot;
-		if(rot = get_half_stage_rotation())
+		if (rot = get_half_stage_rotation())
 		{
 			reconstructed_multipoint = (*rot) * reconstructed_multipoint;
 		}
 	}
-	else if(plate_id)
+	else if (plate_id)
 	{
 		const FiniteRotation &r = *d_recon_rotation;
 		reconstructed_multipoint =
@@ -360,15 +360,15 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 	PointOnSphere::non_null_ptr_to_const_type reconstructed_point =
 			gml_point.point();
 
-	if(d_reconstruction_params.get_reconstruction_method() == GPlatesAppLogic::HALF_STAGE_ROTATION)
+	if (d_reconstruction_params.get_reconstruction_method() == GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION)
 	{
 		boost::optional<FiniteRotation> rot;
-		if(rot = get_half_stage_rotation())
+		if (rot = get_half_stage_rotation())
 		{
 			reconstructed_point = (*rot) * reconstructed_point;
 		}
 	}
-	else if(plate_id)
+	else if (plate_id)
 	{
 		const FiniteRotation &r = *d_recon_rotation;
 		reconstructed_point = r * gml_point.point();
@@ -398,15 +398,15 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 			gml_polygon.exterior();
 
 	boost::optional<FiniteRotation> rot;
-	if(d_reconstruction_params.get_reconstruction_method() == GPlatesAppLogic::HALF_STAGE_ROTATION)
+	if (d_reconstruction_params.get_reconstruction_method() == GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION)
 	{
-		if(rot = get_half_stage_rotation())
+		if (rot = get_half_stage_rotation())
 		{
 			reconstructed_exterior = (*rot) * reconstructed_exterior;
 			
 		}
 	}
-	else if(plate_id)
+	else if (plate_id)
 	{
 		// Reconstruct the exterior PolygonOnSphere,
 		// then add it to the d_reconstruction_geometries_to_populate vector.

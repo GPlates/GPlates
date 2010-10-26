@@ -69,7 +69,7 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget)
 		{
 			return GlobeManipulatePole::non_null_ptr_type(
@@ -147,7 +147,7 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget);
 
 
@@ -166,7 +166,7 @@ namespace GPlatesCanvasTools
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * This is the Modify Reconstruction Pole widget in the Task Panel.

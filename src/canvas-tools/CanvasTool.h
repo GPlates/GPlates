@@ -28,72 +28,17 @@
 #ifndef GPLATES_CANVASTOOLS_CANVASTOOL_H
 #define GPLATES_CANVASTOOLS_CANVASTOOL_H
 
-#include <vector>
-#include <algorithm>
-#include <QString>
 #include <boost/noncopyable.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
+#include <boost/optional.hpp>
+#include <QString>
 
 #include "maths/PointOnSphere.h"
 
 
-namespace GPlatesQtWidgets
-{
-	class ViewportWindow;
-}
-
 namespace GPlatesCanvasTools
 {
-
-	/**
-	 * An abstract base listener class for status bar updates. Subclass this in
-	 * order to listen to status bar updates from CanvasTool subclasses.
-	 * Add CanvasToolStatusBarListener objects using add_status_bar_listener()
-	 * in CanvasTool.
-	 */
-	class CanvasToolStatusBarListener
-	{
-		public:
-			
-			virtual
-			~CanvasToolStatusBarListener()
-			{
-			}
-			
-			/**
-			 * Called when the status bar message is changed by the CanvasTool
-			 */
-			virtual
-			void
-			update_status_bar_message(const QString &message) = 0;
-
-	};
-
-	/**
-	 * An implementation of CanvasToolStatusBarListener for ViewportWindow
-	 */
-	class StatusBarListenerForViewport:
-		public CanvasToolStatusBarListener
-	{
-		
-		public:
-
-			StatusBarListenerForViewport(
-					const GPlatesQtWidgets::ViewportWindow *view_state_ptr):
-				d_view_state_ptr(view_state_ptr)
-			{
-			}
-			
-			virtual
-			void
-			update_status_bar_message(const QString &message);
-
-		private:
-
-			//! A pointer to the ViewportWindow where the status bar updates will be shown
-			const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
-	};
-
 	/**
 	 * Base class for canvas tools that do not need to be implemented differently
 	 * for globe and map views.
@@ -338,10 +283,10 @@ namespace GPlatesCanvasTools
 		 * Adds the @a listener for status bar updates.
 		 */
 		void
-		add_status_bar_listener(
-				CanvasToolStatusBarListener *listener)
+		set_status_bar_callback(
+				const boost::function< void ( const QString & ) > &callback)
 		{
-			d_status_bar_listeners.push_back(listener);
+			d_status_bar_callback = callback;
 		}
 
 	protected:
@@ -351,12 +296,10 @@ namespace GPlatesCanvasTools
 		 * All listeners are notified of the @message.
 		 */
 		void
-		set_status_bar_message(const QString &message)
+		set_status_bar_message(
+				const QString &message)
 		{
-			std::for_each(
-				d_status_bar_listeners.begin(),
-				d_status_bar_listeners.end(),
-				boost::bind(&CanvasToolStatusBarListener::update_status_bar_message, _1, message));
+			d_status_bar_callback(message);
 		}
 
 	private:
@@ -364,9 +307,8 @@ namespace GPlatesCanvasTools
 		//! The view that this CanvasTool is being used in (globe or map)
 		View d_view;
 
-		//! A vector of status bar listeners that are notified about status bar changes
-		std::vector<CanvasToolStatusBarListener *> d_status_bar_listeners;
-
+		//! The callback used to show text on the status bar.
+		boost::function< void ( const QString & ) > d_status_bar_callback;
 	};
 
 }

@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/bind.hpp>
+
 #include "CanvasToolAdapterForGlobe.h"
 
 #include "maths/PointOnSphere.h"
@@ -32,17 +34,26 @@
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 
+#include "utils/OverloadResolution.h"
+
+
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::CanvasToolAdapterForGlobe (
 		CanvasTool *canvas_tool_ptr,
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		const GPlatesQtWidgets::ViewportWindow &viewport_window_) :
+		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
 	GlobeCanvasTool(globe_, globe_canvas_),
-	d_canvas_tool_ptr(canvas_tool_ptr),
-	d_status_bar_listener(&viewport_window_)
+	d_canvas_tool_ptr(canvas_tool_ptr)
 {
+	using namespace GPlatesUtils::OverloadResolution;
+
 	canvas_tool_ptr->set_view(CanvasTool::GLOBE_VIEW);
-	canvas_tool_ptr->add_status_bar_listener(&d_status_bar_listener);
+	canvas_tool_ptr->set_status_bar_callback(
+			boost::bind(
+				resolve<GPlatesQtWidgets::ViewportWindow, void, Params<const QString &> >(
+					&GPlatesQtWidgets::ViewportWindow::status_message),
+				boost::ref(viewport_window_),
+				_1));
 }
 
 const GPlatesCanvasTools::CanvasToolAdapterForGlobe::non_null_ptr_type
@@ -50,7 +61,7 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
 		CanvasTool *canvas_tool_ptr,
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		const GPlatesQtWidgets::ViewportWindow &viewport_window) 
+		GPlatesQtWidgets::ViewportWindow &viewport_window) 
 {
 	CanvasToolAdapterForGlobe::non_null_ptr_type ptr(
 			new CanvasToolAdapterForGlobe(

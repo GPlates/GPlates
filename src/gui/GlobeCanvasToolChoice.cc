@@ -57,7 +57,7 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 		Globe &globe,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-		const GPlatesQtWidgets::ViewportWindow &viewport_window,
+		GPlatesQtWidgets::ViewportWindow &viewport_window,
 		GPlatesPresentation::ViewState &view_state,
 		FeatureTableModel &clicked_table_model,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,

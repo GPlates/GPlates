@@ -40,14 +40,19 @@ set(srcs
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
-    ChangeGeometryPropertyDialog.cc
-    ChangeGeometryPropertyDialog.h
-    ChangeGeometryPropertyDialogUi.ui
+    ChangeFeatureTypeDialog.cc
+    ChangeFeatureTypeDialog.h
+    ChangeFeatureTypeDialogUi.ui
+    ChangeGeometryPropertyWidget.cc
+    ChangeGeometryPropertyWidget.h
+    ChangeGeometryPropertyWidgetUi.ui
     ChooseFeatureCollectionWidget.cc
     ChooseFeatureCollectionWidget.h
     ChooseFeatureCollectionWidgetUi.ui
     ChooseFeatureTypeWidget.cc
     ChooseFeatureTypeWidget.h
+    ChooseGeometryPropertyWidget.cc
+    ChooseGeometryPropertyWidget.h
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
@@ -132,8 +137,6 @@ set(srcs
     FeatureSummaryWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
-    GeometryDestinationsWidget.cc
-    GeometryDestinationsWidget.h
     GeoreferencingPage.cc
     GeoreferencingPage.h
     GeoreferencingPageUi.ui
@@ -266,9 +269,6 @@ set(srcs
     SpecifyAnchoredPlateIdDialog.cc
     SpecifyAnchoredPlateIdDialog.h
     SpecifyAnchoredPlateIdDialogUi.ui
-    SpecifyTimeIncrementDialog.cc
-    SpecifyTimeIncrementDialog.h
-    SpecifyTimeIncrementDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
     TimeControlWidget.cc

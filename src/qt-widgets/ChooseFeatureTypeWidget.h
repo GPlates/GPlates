@@ -53,7 +53,7 @@ namespace GPlatesQtWidgets
 		 * Initialises the list widget with feature types.
 		 */
 		void
-		initialise(
+		populate(
 				bool topological);
 
 		/**
@@ -62,6 +62,13 @@ namespace GPlatesQtWidgets
 		 */
 		boost::optional<GPlatesModel::FeatureType>
 		get_feature_type() const;
+
+		/**
+		 * Changes the currently selected feature type to @a feature_type.
+		 */
+		void
+		set_feature_type(
+				const GPlatesModel::FeatureType &feature_type);
 
 	signals:
 

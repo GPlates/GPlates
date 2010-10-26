@@ -26,6 +26,8 @@
 #ifndef GPLATES_MODEL_MODELUTILS_H
 #define GPLATES_MODEL_MODELUTILS_H
 
+#include <boost/optional.hpp>
+
 #include "FeatureHandle.h"
 #include "FeatureCollectionHandle.h"
 #include "ModelInterface.h"
@@ -82,6 +84,32 @@ namespace GPlatesModel
 		create_gpml_constant_value(
 				const PropertyValue::non_null_ptr_type property_value,
 				const GPlatesPropertyValues::TemplateTypeParameterType &template_type_parameter_type);
+
+
+		namespace RenameGeometricPropertyError
+		{
+			enum Type
+			{
+				NOT_ONE_PROPERTY_VALUE,
+				NOT_GEOMETRY,
+				COULD_NOT_UNWRAP_TIME_DEPENDENT_PROPERTY,
+				NOT_TOP_LEVEL_PROPERTY_INLINE,
+
+				NUM_ERRORS // Must be last.
+			};
+		}
+
+
+		/**
+		 * Takes an existing geometric @a top_level_property and returns a new top-level
+		 * property object with the same geometry as @a top_level_property but with
+		 * the @a new_property_name.
+		 */
+		boost::optional<TopLevelProperty::non_null_ptr_type>
+		rename_geometric_property(
+				const TopLevelProperty &top_level_property,
+				const PropertyName &new_property_name,
+				RenameGeometricPropertyError::Type *error_code = NULL);
 
 
 		// Before this line are the new, hopefully-better-designed functions; after this

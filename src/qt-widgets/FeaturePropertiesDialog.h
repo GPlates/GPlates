@@ -35,6 +35,7 @@
 #include "ViewFeatureGeometriesWidget.h"
 
 #include "gui/FeatureFocus.h"
+
 #include "model/FeatureHandle.h"
 
 
@@ -45,9 +46,9 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class ChangeGeometryPropertyDialog;
+	class ChangeFeatureTypeDialog;
 
-	class FeaturePropertiesDialog:
+	class FeaturePropertiesDialog :
 			public QDialog,
 			protected Ui_FeaturePropertiesDialog
 	{
@@ -110,15 +111,12 @@ namespace GPlatesQtWidgets
 				int index);
 
 		void
-		handle_feature_type_changed();
+		pop_up_change_feature_type_dialog();
 
 	private:
 		
 		void
 		pop_up();
-
-		void
-		populate_feature_types();
 
 		/**
 		 * The Feature observed by the dialog.
@@ -138,10 +136,10 @@ namespace GPlatesQtWidgets
 		ViewFeatureGeometriesWidget *d_view_feature_geometries_widget;
 
 		/**
-		 * Prompts the user to change the geometry property if an existing geometry
-		 * property is no longer appropriate after a feature type change.
+		 * Allows the user to change the feature type of the currently selected
+		 * feature and also fix up any geometry properties that are no longer valid.
 		 */
-		ChangeGeometryPropertyDialog *d_change_geometry_property_dialog;
+		ChangeFeatureTypeDialog *d_change_feature_type_dialog;
 	};
 }
 

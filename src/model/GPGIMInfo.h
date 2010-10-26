@@ -41,31 +41,61 @@ namespace GPlatesModel
 
 	namespace GPGIMInfo
 	{
-		typedef std::map<GPlatesModel::PropertyName, QString> geometry_prop_name_map_type;
+		typedef std::map<PropertyName, QString> geometric_property_name_map_type;
 
 		/**
-		 * Returns a map of geometry property names to human-readable names.
+		 * Returns a map of geometric property names to human-readable names.
 		 */
-		const geometry_prop_name_map_type &
-		get_geometry_prop_name_map();
-
-		typedef std::map<GPlatesModel::PropertyName, bool> geometry_prop_timedependency_map_type;
+		const geometric_property_name_map_type &
+		get_geometric_property_name_map();
 
 		/**
-		 * Returns a map of geometry property names to a boolean value indicating
+		 * Returns the human-readable name for a geometric @a property_name.
+		 */
+		QString
+		get_geometric_property_name(
+				const PropertyName &property_name);
+
+
+
+		typedef std::map<PropertyName, bool> geometric_property_timedependency_map_type;
+
+		/**
+		 * Returns a map of geometric property names to a boolean value indicating
 		 * whether the property should have a time-dependent wrapper.
 		 */
-		const geometry_prop_timedependency_map_type &
-		get_geometry_prop_timedependency_map();
+		const geometric_property_timedependency_map_type &
+		get_geometric_property_timedependency_map();
 
-		typedef std::multimap<GPlatesModel::FeatureType, GPlatesModel::PropertyName> feature_geometric_prop_map_type;
+		/**
+		 * Returns whether the given geometric @a property_name should have a
+		 * time-dependent wrapper.
+		 */
+		bool
+		expects_time_dependent_wrapper(
+				const PropertyName &property_name);
+
+
+
+		typedef std::multimap<FeatureType, PropertyName> feature_geometric_property_map_type;
 
 		/**
 		 * Returns a map of feature types to property names, indicating what geometric
 		 * properties can be associated with each feature type.
 		 */
-		const feature_geometric_prop_map_type &
-		get_feature_geometric_prop_map();
+		const feature_geometric_property_map_type &
+		get_feature_geometric_property_map();
+
+		/**
+		 * Returns whether the @a property_name is a valid geometric property for the
+		 * given @a feature_type.
+		 */
+		bool
+		is_valid_geometric_property(
+				const FeatureType &feature_type,
+				const PropertyName &property_name);
+
+
 
 		typedef std::set<FeatureType> feature_set_type;
 

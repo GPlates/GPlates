@@ -222,7 +222,7 @@
      <item>
       <widget class="QPushButton" name="button_calculate">
        <property name="text">
-        <string>&amp;Calculate</string>
+        <string>C&amp;alculate</string>
        </property>
       </widget>
      </item>
@@ -249,38 +249,11 @@
     </spacer>
    </item>
    <item>
-    <layout class="QHBoxLayout">
-     <item>
-      <spacer>
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_apply">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>&amp;Insert pole in rotation model</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_done">
-       <property name="text">
-        <string>Close</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QDialogButtonBox" name="main_buttonbox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close|QDialogButtonBox::Save</set>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
@@ -292,8 +265,6 @@
   <tabstop>radio_north</tabstop>
   <tabstop>radio_south</tabstop>
   <tabstop>button_calculate</tabstop>
-  <tabstop>button_apply</tabstop>
-  <tabstop>button_done</tabstop>
  </tabstops>
  <resources/>
  <connections/>

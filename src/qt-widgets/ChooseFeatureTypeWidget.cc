@@ -55,10 +55,18 @@ namespace
 			return *d_feature_type;
 		}
 
+		bool
+		operator==(
+				const DefaultConstructibleFeatureType &other)
+		{
+			return d_feature_type == other.d_feature_type;
+		}
+
 	private:
 
 		boost::optional<GPlatesModel::FeatureType> d_feature_type;
 	};
+
 
 	/**
 	 * Fill the list with possible feature types we can create.
@@ -84,19 +92,9 @@ namespace
 					feature_type);
 		}
 
-		// Set the default field to UnclassifiedFeature. 
-		int unclassified_feature_index = selection_widget.find_text(
-				"gpml:UnclassifiedFeature", Qt::MatchFixedString);
-		if (unclassified_feature_index == -1)
+		if (selection_widget.get_count())
 		{
-			if (selection_widget.get_count())
-			{
-				selection_widget.set_current_index(0);
-			}
-		}
-		else
-		{
-			selection_widget.set_current_index(unclassified_feature_index);
+			selection_widget.set_current_index(0);
 		}
 	}
 }
@@ -118,7 +116,7 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::ChooseFeatureTypeWidget(
 
 
 void
-GPlatesQtWidgets::ChooseFeatureTypeWidget::initialise(
+GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
 		bool topological)
 {
 	populate_feature_types_list(*d_selection_widget, topological);
@@ -131,6 +129,15 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::get_feature_type() const
 	return boost::optional<GPlatesModel::FeatureType>(
 			d_selection_widget->get_data<DefaultConstructibleFeatureType>(
 				d_selection_widget->get_current_index()));
+}
+
+
+void
+GPlatesQtWidgets::ChooseFeatureTypeWidget::set_feature_type(
+		const GPlatesModel::FeatureType &feature_type)
+{
+	int index = d_selection_widget->find_data<DefaultConstructibleFeatureType>(feature_type);
+	d_selection_widget->set_current_index(index);
 }
 
 

@@ -34,7 +34,7 @@ GPlatesCanvasTools::MapManipulatePole::MapManipulatePole(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
 		GPlatesQtWidgets::MapView &map_view_,
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget,
 		GPlatesGui::MapTransform &map_transform_):
 	MapCanvasTool(map_canvas_, map_view_, map_transform_),

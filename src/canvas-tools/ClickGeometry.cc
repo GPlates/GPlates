@@ -39,7 +39,7 @@
 
 GPlatesCanvasTools::ClickGeometry::ClickGeometry(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 		GPlatesGui::FeatureFocus &feature_focus_,

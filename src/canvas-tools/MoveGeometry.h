@@ -62,7 +62,7 @@ namespace GPlatesCanvasTools
 		create(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_)
+				GPlatesQtWidgets::ViewportWindow &view_state_)
 		{
 			MoveGeometry::non_null_ptr_type ptr(
 					new MoveGeometry(globe_, globe_canvas_, view_state_),
@@ -110,7 +110,7 @@ namespace GPlatesCanvasTools
 		MoveGeometry(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_);
+				GPlatesQtWidgets::ViewportWindow &view_state_);
 		
 		
 		const GPlatesQtWidgets::ViewportWindow &
@@ -122,7 +122,7 @@ namespace GPlatesCanvasTools
 
 	private:
 		
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 			
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.

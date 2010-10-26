@@ -68,7 +68,7 @@ namespace GPlatesCanvasTools
 		create(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window_,
+				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				GPlatesPresentation::ViewState &view_state_)
 		{
 			ZoomGlobe::non_null_ptr_type ptr(
@@ -102,7 +102,7 @@ namespace GPlatesCanvasTools
 		ZoomGlobe(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window_,
+				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				GPlatesPresentation::ViewState &view_state_):
 			GlobeCanvasTool(globe_, globe_canvas_),
 			d_viewport_window(&viewport_window_),
@@ -114,7 +114,7 @@ namespace GPlatesCanvasTools
 		/**
 		 * This is the View State used to pass messages to the status bar.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_viewport_window;
+		GPlatesQtWidgets::ViewportWindow *d_viewport_window;
 
 		/**
 		 * This is the view state (in the presentation tier).

@@ -161,7 +161,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		set_anchored_plate_id(
-				unsigned long anchor_plate_id);
+				GPlatesModel::integer_plate_id_type anchor_plate_id);
 
 		/**
 		 * Performs a reconstruction and emits the @a reconstructed signal.

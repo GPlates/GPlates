@@ -85,7 +85,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				GPlatesPresentation::ViewState &view_state,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window,
+				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
@@ -136,7 +136,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				GPlatesPresentation::ViewState &view_state,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window,
+				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
@@ -160,7 +160,7 @@ namespace GPlatesCanvasTools
 		/**
 		 * This is currently used to pass messages to the status bar.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
 
 		/**
 		 * This is the external table of hits which will be updated in the event that

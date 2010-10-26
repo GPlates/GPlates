@@ -23,10 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <boost/bind.hpp>
 #include <QObject>
 #include <QDebug>
 
 #include "GPGIMInfo.h"
+
+#include "utils/UnicodeStringUtils.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -76,10 +80,10 @@ namespace
 	/**
 	 * Converts the above table into a map of PropertyName -> QString.
 	 */
-	const geometry_prop_name_map_type &
-	build_geometry_prop_name_map()
+	const geometric_property_name_map_type &
+	build_geometric_property_name_map()
 	{
-		static geometry_prop_name_map_type map;
+		static geometric_property_name_map_type map;
 
 		// Add all the friendly names from the table.
 		const GeometryPropInfo *it = geometry_prop_info_table;
@@ -95,10 +99,10 @@ namespace
 	/**
 	 * Converts the above table into a map of PropertyName -> bool.
 	 */
-	const geometry_prop_timedependency_map_type &
-	build_geometry_prop_timedependency_map()
+	const geometric_property_timedependency_map_type &
+	build_geometric_property_timedependency_map()
 	{
-		static geometry_prop_timedependency_map_type map;
+		static geometric_property_timedependency_map_type map;
 
 		// Add all the expects_time_dependent_wrapper flags from the table.
 		const GeometryPropInfo *it = geometry_prop_info_table;
@@ -256,10 +260,10 @@ namespace
 	/**
 	 * Converts the above table into a multimap.
 	 */
-	const feature_geometric_prop_map_type &
-	build_feature_geometric_prop_map()
+	const feature_geometric_property_map_type &
+	build_feature_geometric_property_map()
 	{
-		static feature_geometric_prop_map_type map;
+		static feature_geometric_property_map_type map;
 
 		// Add all the feature types -> geometric props from the feature_type_info_table.
 		const FeatureTypeInfo *it = feature_type_info_table;
@@ -330,27 +334,78 @@ namespace
 }
 
 
-const GPlatesModel::GPGIMInfo::geometry_prop_name_map_type &
-GPlatesModel::GPGIMInfo::get_geometry_prop_name_map()
+const GPlatesModel::GPGIMInfo::geometric_property_name_map_type &
+GPlatesModel::GPGIMInfo::get_geometric_property_name_map()
 {
-	static const geometry_prop_name_map_type &map = build_geometry_prop_name_map();
+	static const geometric_property_name_map_type &map = build_geometric_property_name_map();
 	return map;
 }
 
 
-const GPlatesModel::GPGIMInfo::geometry_prop_timedependency_map_type &
-GPlatesModel::GPGIMInfo::get_geometry_prop_timedependency_map()
+QString
+GPlatesModel::GPGIMInfo::get_geometric_property_name(
+		const PropertyName &property_name)
 {
-	static const geometry_prop_timedependency_map_type &map = build_geometry_prop_timedependency_map();
+	const geometric_property_name_map_type &map = get_geometric_property_name_map();
+	geometric_property_name_map_type::const_iterator iter = map.find(property_name);
+	if (iter == map.end())
+	{
+		return GPlatesUtils::make_qstring_from_icu_string(property_name.build_aliased_name());
+	}
+	else
+	{
+		return iter->second;
+	}
+}
+
+
+const GPlatesModel::GPGIMInfo::geometric_property_timedependency_map_type &
+GPlatesModel::GPGIMInfo::get_geometric_property_timedependency_map()
+{
+	static const geometric_property_timedependency_map_type &map = build_geometric_property_timedependency_map();
 	return map;
 }
 
 
-const GPlatesModel::GPGIMInfo::feature_geometric_prop_map_type &
-GPlatesModel::GPGIMInfo::get_feature_geometric_prop_map()
+bool
+GPlatesModel::GPGIMInfo::expects_time_dependent_wrapper(
+		const PropertyName &property_name)
 {
-	static const feature_geometric_prop_map_type &map = build_feature_geometric_prop_map();
+	const geometric_property_timedependency_map_type &map = get_geometric_property_timedependency_map();
+	geometric_property_timedependency_map_type::const_iterator iter = map.find(property_name);
+	if (iter == map.end())
+	{
+		return true;
+	}
+	else
+	{
+		return iter->second;
+	}
+}
+
+
+const GPlatesModel::GPGIMInfo::feature_geometric_property_map_type &
+GPlatesModel::GPGIMInfo::get_feature_geometric_property_map()
+{
+	static const feature_geometric_property_map_type &map = build_feature_geometric_property_map();
 	return map;
+}
+
+
+bool
+GPlatesModel::GPGIMInfo::is_valid_geometric_property(
+		const FeatureType &feature_type,
+		const PropertyName &property_name)
+{
+	const feature_geometric_property_map_type &map = get_feature_geometric_property_map();
+
+	typedef feature_geometric_property_map_type::const_iterator map_iterator_type;
+	typedef const feature_geometric_property_map_type::value_type map_value_type;
+	map_iterator_type lower_bound = map.lower_bound(feature_type);
+	map_iterator_type upper_bound = map.upper_bound(feature_type);
+
+	return std::find_if(lower_bound, upper_bound,
+			boost::bind(&map_value_type::second, _1) == property_name) != upper_bound;
 }
 
 

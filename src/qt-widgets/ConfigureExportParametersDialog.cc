@@ -67,24 +67,53 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 	d_is_single_frame(false)
 {
 	setupUi(this);
+
 	initialize_export_item_map();
 	initialize_export_item_list_widget();
 	initialize_item_desc_map();
 
-	button_add_item->setEnabled(false);
+	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
+
+	QPalette pal = textedit_filename_desc->palette();
+	pal.setColor(QPalette::Base, pal.color(QPalette::Window));
+	textedit_filename_desc->setPalette(pal);
 	
-	QObject::connect(button_add_item, SIGNAL(clicked()),
-		this, SLOT(react_add_item_clicked()));
-	QObject::connect(listWidget_export_items, SIGNAL(itemSelectionChanged()),
-		this, SLOT(react_export_items_selection_changed()));
-	QObject::connect(listWidget_export_items, SIGNAL(itemClicked(QListWidgetItem *)),
-		this, SLOT(react_export_items_selection_changed()));
-	QObject::connect(listWidget_format, SIGNAL(itemSelectionChanged()),
-		this, SLOT(react_format_selection_changed()));
-	QObject::connect(lineEdit_filename, SIGNAL(cursorPositionChanged(int, int)),
-		this, SLOT(react_filename_template_changing()));
-	QObject::connect(lineEdit_filename, SIGNAL(editingFinished()),
-		this, SLOT(react_filename_template_changed()));
+	QObject::connect(
+			listWidget_export_items,
+			SIGNAL(itemSelectionChanged()),
+			this,
+			SLOT(react_export_items_selection_changed()));
+	QObject::connect(
+			listWidget_export_items,
+			SIGNAL(itemClicked(QListWidgetItem *)),
+			this,
+			SLOT(react_export_items_selection_changed()));
+	QObject::connect(
+			listWidget_format,
+			SIGNAL(itemSelectionChanged()),
+			this,
+			SLOT(react_format_selection_changed()));
+	QObject::connect(
+			lineEdit_filename,
+			SIGNAL(cursorPositionChanged(int, int)),
+			this,
+			SLOT(react_filename_template_changing()));
+	QObject::connect(
+			lineEdit_filename,
+			SIGNAL(editingFinished()),
+			this,
+			SLOT(react_filename_template_changed()));
+
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(accepted()),
+			this,
+			SLOT(react_add_item_clicked()));
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(rejected()),
+			this,
+			SLOT(reject()));
 }
 
 bool 
@@ -244,7 +273,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_format_selection_change
 				d_export_item_map[selected_item][selected_type].class_id,
 				*d_export_animation_context_ptr)->get_default_filename_template();
 	
-	button_add_item->setEnabled(true);
+	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(true);
 
 	lineEdit_filename->setText(
 			filename_template.toStdString().substr(
@@ -254,14 +283,10 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_format_selection_change
 			filename_template.toStdString().substr(
 					filename_template.toStdString().find_last_of(".")).c_str());
 
-	label_filename_desc->setText(
+	textedit_filename_desc->setText(
 		GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
 		d_export_item_map[selected_item][selected_type].class_id,
 		*d_export_animation_context_ptr)->get_filename_template_desc());
-	QPalette pal=label_filename_desc->palette();
-	pal.setColor(QPalette::WindowText, QColor("black")); 
-	label_filename_desc->setPalette(pal);
-	
 }
 
 void
@@ -269,7 +294,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_items_selection_
 {
 	if(!listWidget_export_items->currentItem())
 		return;
-	button_add_item->setEnabled(false);
+	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
 	lineEdit_filename->clear();
 	label_file_extension->clear();
 	listWidget_format->clear();
@@ -348,12 +373,9 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 	
 	if(!validator->is_valid(filename_template))	
 	{
-		label_filename_desc->setText(
+		textedit_filename_desc->setText(
 				validator->get_result_report().message());
-		QPalette pal=label_filename_desc->palette();
-		pal.setColor(QPalette::WindowText, QColor("red")); 
-		label_filename_desc->setPalette(pal);
-		button_add_item->setEnabled(false);
+		main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
 		return;
 	}
 	
@@ -370,6 +392,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 			selected_item,
 			selected_type,
 			filename_template);
+
+	accept();
 }
 
 void
@@ -451,17 +475,10 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_chang
 		return;		
 	}
 
-	label_filename_desc->setText(
+	textedit_filename_desc->setText(
 			GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
 					d_export_item_map[selected_item][selected_type].class_id,
 					*d_export_animation_context_ptr)->get_filename_template_desc());
-	QPalette pal=label_filename_desc->palette();
-	pal.setColor(QPalette::WindowText, QColor("black")); 
-	label_filename_desc->setPalette(pal);
-	button_add_item->setEnabled(true);
+	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
-
-
-
-
 

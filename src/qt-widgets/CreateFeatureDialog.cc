@@ -40,7 +40,7 @@
 #include "EditPlateIdWidget.h"
 #include "EditTimePeriodWidget.h"
 #include "EditStringWidget.h"
-#include "GeometryDestinationsWidget.h"
+#include "ChooseGeometryPropertyWidget.h"
 #include "InformationDialog.h"
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
@@ -59,6 +59,7 @@
 #include "model/PropertyName.h"
 #include "model/FeatureType.h"
 #include "model/FeatureCollectionHandle.h"
+#include "model/GPGIMInfo.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 
@@ -152,10 +153,10 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_right_plate_id(new EditPlateIdWidget(this)),
 	d_left_plate_id(new EditPlateIdWidget(this)),
 	d_listwidget_geometry_destinations(
-			new GeometryDestinationsWidget(
+			new ChooseGeometryPropertyWidget(
 				SelectionWidget::Q_LIST_WIDGET,
 				this)),
-	d_recon_method(GPlatesAppLogic::BY_PLATE_ID)
+	d_recon_method(GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID)
 {
 	setupUi(this);
 
@@ -213,7 +214,16 @@ void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_type_page()
 {
 	// Populate list of feature types.
-	d_choose_feature_type_widget->initialise(d_creation_type == TOPOLOGICAL);
+	bool topological = (d_creation_type == TOPOLOGICAL);
+	d_choose_feature_type_widget->populate(topological);
+
+	// Default to gpml:UnclassifiedFeature for non-topological features.
+	if (!topological)
+	{
+		static const GPlatesModel::FeatureType UNCLASSIFIED_FEATURE =
+			GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
+		d_choose_feature_type_widget->set_feature_type(UNCLASSIFIED_FEATURE);
+	}
 	
 	// Pushing Enter or double-clicking should cause the page to advance.
 	QObject::connect(
@@ -254,8 +264,8 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	QHBoxLayout *recon_method_layout;
 	QLabel * recon_method_label;
 	recon_method_label = new QLabel(this);
-	d_recon_method_combobox->insertItem(GPlatesAppLogic::BY_PLATE_ID, tr("By Plate ID"));
-	d_recon_method_combobox->insertItem(GPlatesAppLogic::HALF_STAGE_ROTATION, tr("Half Stage Rotation"));
+	d_recon_method_combobox->insertItem(GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID, tr("By Plate ID"));
+	d_recon_method_combobox->insertItem(GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION, tr("Half Stage Rotation"));
 	recon_method_layout = new QHBoxLayout;
 	QSizePolicy sizePolicy1(QSizePolicy::Expanding, QSizePolicy::Fixed);
 	d_recon_method_combobox->setSizePolicy(sizePolicy1);
@@ -432,16 +442,15 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	bool topological = (d_creation_type == TOPOLOGICAL);
 
 	// Get the PropertyName the user has selected for geometry to go into.
-	typedef std::pair<GPlatesModel::PropertyName, bool> pair_type;
-	boost::optional<pair_type> geom_prop_name_item =
-		d_listwidget_geometry_destinations->get_current_property_name();
+	boost::optional<GPlatesModel::PropertyName> geom_prop_name_item =
+		d_listwidget_geometry_destinations->get_property_name();
 	if (!geom_prop_name_item)
 	{
 		QMessageBox::critical(this, tr("No geometry destination selected"),
 				tr("Please select a property name to use for your digitised geometry."));
 		return;
 	}
-	const GPlatesModel::PropertyName geom_prop_name = geom_prop_name_item->first;
+	const GPlatesModel::PropertyName geom_prop_name = *geom_prop_name_item;
 	
 	// Get the FeatureType the user has selected.
 	boost::optional<GPlatesModel::FeatureType> feature_type_opt =
@@ -469,7 +478,8 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		// Geometry Property using present-day geometry.
 		if (!topological)
 		{
-			bool geom_prop_needs_constant_value = geom_prop_name_item->second;
+			bool geom_prop_needs_constant_value =
+				GPlatesModel::GPGIMInfo::expects_time_dependent_wrapper(geom_prop_name);
 
 			// Check we have a valid GeometryOnSphere supplied from the DigitisationWidget.
 			if (!d_geometry_opt_ptr)
@@ -560,8 +570,8 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 					GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
 
-		//if we are using half stage rotation, add right and left plate id
-		if(GPlatesAppLogic::HALF_STAGE_ROTATION == d_recon_method)
+		// If we are using half stage rotation, add right and left plate id.
+		if (GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION == d_recon_method)
 		{
 			feature->add(
 					GPlatesModel::TopLevelPropertyInline::create(
@@ -641,29 +651,25 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_and_save()
 void 
 GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 {
-	switch(index)
+	switch (index)
 	{
-		case GPlatesAppLogic::HALF_STAGE_ROTATION:
+		case GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION:
 			d_plate_id_widget->setVisible(false);
 			d_conjugate_plate_id_widget->setVisible(false);
 			d_right_plate_id->setVisible(true);
 			d_left_plate_id->setVisible(true);
-			d_recon_method = GPlatesAppLogic::HALF_STAGE_ROTATION;
-		break;
+			d_recon_method = GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION;
+			break;
 		
-		case GPlatesAppLogic::BY_PLATE_ID:
-		default:	
+		case GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID:
 			d_right_plate_id->setVisible(false);
 			d_left_plate_id->setVisible(false);
 			d_plate_id_widget->setVisible(true);
 			d_conjugate_plate_id_widget->setVisible(
 					should_offer_conjugate_plate_id_prop(
 							d_choose_feature_type_widget));
-			d_recon_method = GPlatesAppLogic::BY_PLATE_ID;
-		break;
+			d_recon_method = GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID;
+			break;
 	}
-	return;
 }
-
-
 

@@ -24,13 +24,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "model/PropertyName.h"
-#include "model/FeatureType.h"
 #include "FeaturePropertiesMap.h"
+
 #include "PropertyCreationUtils.h"
 
+#include "model/FeatureType.h"
+#include "model/PropertyName.h"
 
 #define GET_PROP_VAL_NAME(create_prop) GPlatesFileIO::PropertyCreationUtils::create_prop##_as_prop_val
+
 
 namespace
 {
@@ -1034,5 +1036,43 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_raster_properties();
 
 	// Time variant features.
+}
+
+
+GPlatesFileIO::FeaturePropertiesMap::const_iterator
+GPlatesFileIO::FeaturePropertiesMap::find(
+		const GPlatesModel::FeatureType &key) const
+{
+	return d_map.find(key);
+}
+
+
+GPlatesFileIO::FeaturePropertiesMap::const_iterator
+GPlatesFileIO::FeaturePropertiesMap::begin() const
+{
+	return d_map.begin();
+}
+
+
+GPlatesFileIO::FeaturePropertiesMap::const_iterator
+GPlatesFileIO::FeaturePropertiesMap::end() const
+{
+	return d_map.end();
+}
+
+
+bool
+GPlatesFileIO::FeaturePropertiesMap::is_valid_property(
+		const GPlatesModel::FeatureType &feature_type,
+		const GPlatesModel::PropertyName &property_name) const
+{
+	const_iterator iter = find(feature_type);
+	if (iter == end())
+	{
+		return false;
+	}
+
+	const PropertyCreationUtils::PropertyCreatorMap &prop_map = iter->second;
+	return prop_map.find(property_name) != prop_map.end();
 }
 

@@ -47,41 +47,40 @@ namespace GPlatesFileIO
 	class FeaturePropertiesMap :
 			public GPlatesUtils::Singleton<FeaturePropertiesMap>
 	{
-		GPLATES_SINGLETON_CONSTRUCTOR_DECL(FeaturePropertiesMap)
+		GPLATES_SINGLETON_CONSTRUCTOR_DECL( FeaturePropertiesMap )
 
 	private:
 
 		typedef std::map<
 				GPlatesModel::FeatureType, 
 				PropertyCreationUtils::PropertyCreatorMap> 
-			FeaturePropertiesMapType;
+			feature_properties_map_type;
 
 	public:
 
-		typedef FeaturePropertiesMapType::const_iterator const_iterator;
+		typedef feature_properties_map_type::const_iterator const_iterator;
 
 		const_iterator
 		find(
-				const GPlatesModel::FeatureType &key) const
-		{
-			return d_map.find(key);
-		}
+				const GPlatesModel::FeatureType &key) const;
 
 		const_iterator
-		begin() const
-		{
-			return d_map.begin();
-		}
+		begin() const;
 
 		const_iterator
-		end() const
-		{
-			return d_map.end();
-		}
+		end() const;
+
+		/**
+		 * Returns whether @a property_name is a valid property of @a feature_type.
+		 */
+		bool
+		is_valid_property(
+				const GPlatesModel::FeatureType &feature_type,
+				const GPlatesModel::PropertyName &property_name) const;
 
 	private:
 
-		FeaturePropertiesMapType d_map;
+		feature_properties_map_type d_map;
 	};
 }
 

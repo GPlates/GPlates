@@ -39,7 +39,7 @@ GPlatesCanvasTools::GlobeManipulatePole::GlobeManipulatePole(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget):
 	GlobeCanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&rendered_geom_collection),

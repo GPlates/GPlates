@@ -78,7 +78,7 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesQtWidgets::MapCanvas &map_canvas,
 				GPlatesQtWidgets::MapView &map_view,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget,
 				GPlatesGui::MapTransform &map_transform_)
 		{
@@ -112,7 +112,7 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesQtWidgets::MapCanvas &map_canvas,
 				GPlatesQtWidgets::MapView &map_view,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget,
 				GPlatesGui::MapTransform &map_transform_);
 
@@ -127,7 +127,7 @@ namespace GPlatesCanvasTools
 		/**
 		 * This is the view state used to update the viewport window status bar.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * This is the Reconstruction Pole widget in the Task Panel.

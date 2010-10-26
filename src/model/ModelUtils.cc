@@ -25,22 +25,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <algorithm>
-
-#include "Model.h"
 #include "ModelUtils.h"
+
+#include "GPGIMInfo.h"
+#include "Model.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTopologicalPolygon.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/TemplateTypeParameterType.h"
 
 
 const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
@@ -96,6 +105,292 @@ GPlatesModel::ModelUtils::create_gpml_constant_value(
 {
 	return GPlatesPropertyValues::GpmlConstantValue::create(property_value,
 			template_type_parameter_type);
+}
+
+
+namespace
+{
+	class ExtractGeometryPropertyVisitor :
+			public GPlatesModel::ConstFeatureVisitor
+	{
+	public:
+
+		ExtractGeometryPropertyVisitor(
+				bool time_dependent) :
+			d_time_dependent(time_dependent),
+			d_is_property_value_constant_value(false),
+			d_is_property_value_irregular_sampling_or_piecewise_aggregation(false)
+		{  }
+
+		// Note: We only visit geometry types and time-dependent types.
+
+		virtual
+		void
+		visit_gml_line_string(
+				const GPlatesPropertyValues::GmlLineString &gml_line_string)
+		{
+			store_property(gml_line_string);
+
+			static const GPlatesPropertyValues::TemplateTypeParameterType GML_LINE_STRING =
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString");
+			d_template_type_parameter_type = GML_LINE_STRING;
+		}
+
+		virtual
+		void
+		visit_gml_multi_point(
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+		{
+			store_property(gml_multi_point);
+
+			static const GPlatesPropertyValues::TemplateTypeParameterType GML_MULTI_POINT =
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("MultiPoint");
+			d_template_type_parameter_type = GML_MULTI_POINT;
+		}
+
+		virtual
+		void
+		visit_gml_orientable_curve(
+				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+		{
+			store_property(gml_orientable_curve);
+
+			static const GPlatesPropertyValues::TemplateTypeParameterType GML_ORIENTABLE_CURVE =
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve");
+			d_template_type_parameter_type = GML_ORIENTABLE_CURVE;
+		}
+
+		virtual
+		void
+		visit_gml_point(
+				const GPlatesPropertyValues::GmlPoint &gml_point)
+		{
+			store_property(gml_point);
+
+			static const GPlatesPropertyValues::TemplateTypeParameterType GML_POINT =
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point");
+			d_template_type_parameter_type = GML_POINT;
+		}
+
+		virtual
+		void
+		visit_gml_polygon(
+				const GPlatesPropertyValues::GmlPolygon &gml_polygon)
+		{
+			store_property(gml_polygon);
+
+			static const GPlatesPropertyValues::TemplateTypeParameterType GML_POLYGON =
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon");
+			d_template_type_parameter_type = GML_POLYGON;
+		}
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		{
+			// If the new property value needs a time-dependent wrapper, then we just use
+			// the existing time-dependent wrapper. Otherwise, unwrap the time-dependent wrapper.
+			if (d_time_dependent)
+			{
+				store_property(gpml_constant_value);
+				d_is_property_value_constant_value = true;
+			}
+			else
+			{
+				gpml_constant_value.value()->accept_visitor(*this);
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_irregular_sampling(
+				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+		{
+			// Note that even if the new property value doesn't need a time-dependent
+			// wrapper, there's nothing we can do to unwrap the irregular sampling into a
+			// single value.
+			store_property(gpml_irregular_sampling);
+			d_is_property_value_irregular_sampling_or_piecewise_aggregation = true;
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{
+			// Note that even if the new property value doesn't need a time-dependent
+			// wrapper, there's nothing we can do to unwrap the piecewise aggregation
+			// into a single value.
+			store_property(gpml_piecewise_aggregation);
+			d_is_property_value_irregular_sampling_or_piecewise_aggregation = true;
+		}
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+				const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
+		{
+			store_property(gpml_topological_polygon);
+
+			static const GPlatesPropertyValues::TemplateTypeParameterType GPML_TOPOLOGICAL_POLYGON =
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("TopologicalPolygon");
+			d_template_type_parameter_type = GPML_TOPOLOGICAL_POLYGON;
+		}
+
+		virtual
+		void
+		visit_gpml_topological_line_section(
+				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section)
+		{
+			store_property(gpml_topological_line_section);
+
+			static const GPlatesPropertyValues::TemplateTypeParameterType GPML_TOPOLOGICAL_LINE_SECTION =
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("TopologicalLineSection");
+			d_template_type_parameter_type = GPML_TOPOLOGICAL_LINE_SECTION;
+		}
+
+		virtual
+		void
+		visit_gpml_topological_point(
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
+		{
+			store_property(gpml_topological_point);
+
+			static const GPlatesPropertyValues::TemplateTypeParameterType GPML_TOPOLOGICAL_POINT =
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("TopologicalPoint");
+			d_template_type_parameter_type = GPML_TOPOLOGICAL_POINT;
+		}
+
+		const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> &
+		get_property_value() const
+		{
+			return d_property_value;
+		}
+
+		bool
+		is_property_value_constant_value() const
+		{
+			return d_is_property_value_constant_value;
+		}
+
+		bool
+		is_property_value_irregular_sampling_or_piecewise_aggregation() const
+		{
+			return d_is_property_value_irregular_sampling_or_piecewise_aggregation;
+		}
+
+		const boost::optional<GPlatesPropertyValues::TemplateTypeParameterType> &
+		get_template_type_parameter_type() const
+		{
+			return d_template_type_parameter_type;
+		}
+
+	private:
+
+		void
+		store_property(
+				const GPlatesModel::PropertyValue &prop)
+		{
+			d_property_value = prop.deep_clone_as_prop_val();
+		}
+
+		/**
+		 * Whether the new property expects a time dependent wrapper.
+		 */
+		bool d_time_dependent;
+
+		bool d_is_property_value_constant_value;
+		bool d_is_property_value_irregular_sampling_or_piecewise_aggregation;
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> d_property_value;
+		boost::optional<GPlatesPropertyValues::TemplateTypeParameterType> d_template_type_parameter_type;
+	};
+}
+
+
+boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
+GPlatesModel::ModelUtils::rename_geometric_property(
+		const TopLevelProperty &top_level_property,
+		const PropertyName &new_property_name,
+		RenameGeometricPropertyError::Type *error_code)
+{
+	using namespace RenameGeometricPropertyError;
+
+	try
+	{
+		const TopLevelPropertyInline &tlpi = dynamic_cast<const TopLevelPropertyInline &>(top_level_property);
+		if (tlpi.size() != 1)
+		{
+			if (error_code)
+			{
+				*error_code = NOT_ONE_PROPERTY_VALUE;
+			}
+			return boost::none;
+		}
+
+		bool time_dependent = GPGIMInfo::expects_time_dependent_wrapper(tlpi.property_name());
+
+		ExtractGeometryPropertyVisitor visitor(time_dependent);
+		tlpi.accept_visitor(visitor);
+
+		const boost::optional<PropertyValue::non_null_ptr_type> &property_value =
+			visitor.get_property_value();
+		if (!property_value)
+		{
+			if (error_code)
+			{
+				*error_code = NOT_GEOMETRY;
+			}
+			return boost::none;
+		}
+
+		if (time_dependent)
+		{
+			if (visitor.is_property_value_constant_value() ||
+					visitor.is_property_value_irregular_sampling_or_piecewise_aggregation())
+			{
+				// Since the property_value is already a time-dependent property, we can
+				// create the new geometry property directly.
+				return TopLevelProperty::non_null_ptr_type(TopLevelPropertyInline::create(
+						new_property_name, *property_value, tlpi.xml_attributes()));
+			}
+			else
+			{
+				// If the property_value is not already a time-dependent property, we will
+				// need to wrap it up in a constant value.
+				GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type constant_value =
+					GPlatesPropertyValues::GpmlConstantValue::create(
+							*property_value, *visitor.get_template_type_parameter_type());
+				return TopLevelProperty::non_null_ptr_type(TopLevelPropertyInline::create(
+						new_property_name, constant_value, tlpi.xml_attributes()));
+			}
+		}
+		else
+		{
+			if (visitor.is_property_value_irregular_sampling_or_piecewise_aggregation())
+			{
+				// We need to unwrap the time-dependent property, but was unable to.
+				if (error_code)
+				{
+					*error_code = COULD_NOT_UNWRAP_TIME_DEPENDENT_PROPERTY;
+				}
+				return boost::none;
+			}
+			else
+			{
+				return TopLevelProperty::non_null_ptr_type(TopLevelPropertyInline::create(
+						new_property_name, *property_value, tlpi.xml_attributes()));
+			}
+		}
+	}
+	catch (const std::bad_cast &)
+	{
+		if (error_code)
+		{
+			*error_code = NOT_TOP_LEVEL_PROPERTY_INLINE;
+		}
+		return boost::none;
+	}
 }
 
 

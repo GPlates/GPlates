@@ -28,15 +28,18 @@
 #ifndef GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORGLOBE_H
 #define GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORGLOBE_H
 
-#include <QString>
 #include <boost/scoped_ptr.hpp>
+#include <QString>
 
 #include "CanvasTool.h"
+
 #include "gui/GlobeCanvasTool.h"
+
 
 namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
+	class ViewportWindow;
 }
 
 namespace GPlatesGui
@@ -77,7 +80,7 @@ namespace GPlatesCanvasTools
 				CanvasTool *canvas_tool_ptr,
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window_);
+				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 		
 		virtual
 		void
@@ -226,16 +229,12 @@ namespace GPlatesCanvasTools
 				CanvasTool *canvas_tool_ptr,
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window_);
+				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 		
 	private:
 
 		//! A pointer to the CanvasTool instance that we wrap around
 		boost::scoped_ptr<CanvasTool> d_canvas_tool_ptr;
-
-		//! Listeners to status bar updates from the CanvasTool
-		StatusBarListenerForViewport d_status_bar_listener;
-
 	};
 }
 

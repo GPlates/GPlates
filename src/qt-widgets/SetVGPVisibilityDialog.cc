@@ -62,18 +62,48 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::set_initial_state()
 	handle_delta_t();	
 }
 
+
 void
 GPlatesQtWidgets::SetVGPVisibilityDialog::setup_connections()
 {
-	QObject::connect(radiobutton_always_visible,SIGNAL(clicked()),this,SLOT(handle_always_visible()));
-	QObject::connect(radiobutton_time_window,SIGNAL(clicked()),this,SLOT(handle_time_window()));
-	QObject::connect(radiobutton_delta_t_around_age,SIGNAL(clicked()),this,SLOT(handle_delta_t()));
-	QObject::connect(checkbox_past,SIGNAL(clicked(bool)),this,SLOT(handle_distant_past(bool)));
-	QObject::connect(checkbox_future,SIGNAL(clicked(bool)),this,SLOT(handle_distant_future(bool)));
-	QObject::connect(button_apply,SIGNAL(clicked(bool)),this,SLOT(handle_apply()));
-	QObject::connect(button_cancel,SIGNAL(clicked(bool)),this,SLOT(reject()));		
-}
+	QObject::connect(
+			radiobutton_always_visible,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_always_visible()));
+	QObject::connect(
+			radiobutton_time_window,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_time_window()));
+	QObject::connect(
+			radiobutton_delta_t_around_age,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_delta_t()));
 
+	QObject::connect(
+			checkbox_past,
+			SIGNAL(clicked(bool)),
+			this,
+			SLOT(handle_distant_past(bool)));
+	QObject::connect(
+			checkbox_future,
+			SIGNAL(clicked(bool)),
+			this,
+			SLOT(handle_distant_future(bool)));
+
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(accepted()),
+			this,
+			SLOT(handle_apply()));
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(rejected()),
+			this,
+			SLOT(reject()));
+}
 
 
 void

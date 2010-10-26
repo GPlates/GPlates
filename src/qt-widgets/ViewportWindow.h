@@ -126,7 +126,6 @@ namespace GPlatesQtWidgets
 	class SetVGPVisibilityDialog;
 	class ShapefileAttributeViewerDialog;
 	class SpecifyAnchoredPlateIdDialog;
-	class SpecifyTimeIncrementDialog;
 	class TaskPanel;
 	class TotalReconstructionPolesDialog;
 
@@ -237,9 +236,17 @@ namespace GPlatesQtWidgets
 		void
 		status_message(
 				const QString &message,
-				int timeout = 20000) const
+				int timeout)
 		{
 			statusBar()->showMessage(message, timeout);
+		}
+
+		void
+		status_message(
+				const QString &message)
+		{
+			static const int TIMEOUT = 20000;
+			statusBar()->showMessage(message, TIMEOUT);
 		}
 
 		/**
@@ -492,7 +499,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<SetVGPVisibilityDialog> d_set_vgp_visibility_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
-		boost::scoped_ptr<SpecifyTimeIncrementDialog> d_specify_time_increment_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
 
 		boost::scoped_ptr<QDialog> d_layering_dialog_ptr;
@@ -567,13 +573,6 @@ namespace GPlatesQtWidgets
 		TaskPanel *d_task_panel_ptr;
 
 		/**
-		 * To help users adjust to the new layers system, we'll open up the layers
-		 * dialog the first time (and only the first time) a new layer gets added.
-		 * This variable is true iff that has already happened.
-		 */
-		bool d_layering_dialog_opened_automatically_once;
-
-		/**
 		 * The last canvas tool explicitly chosen by the user (i.e. not the
 		 * result of an automatic switch of canvas tool by GPlates code).
 		 *
@@ -583,6 +582,11 @@ namespace GPlatesQtWidgets
 		 * the user to a digitisation tool.
 		 */
 		GPlatesCanvasTools::CanvasToolType::Value d_canvas_tool_last_chosen_by_user;
+
+		/**
+		 * Checkable action that toggles the bottom panel on and off.
+		 */
+		QAction *d_action_show_bottom_panel;
 
 		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
@@ -635,7 +639,11 @@ namespace GPlatesQtWidgets
 		pop_up_colouring_dialog();
 
 		void
-		pop_up_layering_dialog();
+		set_layering_dialog_visibility(
+				bool visible);
+
+		void
+		handle_layers_menu_about_to_show();
 
 		void
 		close_all_dialogs();

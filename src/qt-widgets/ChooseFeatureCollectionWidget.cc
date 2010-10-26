@@ -126,7 +126,7 @@ namespace
 			else
 			{
 				// The file doesn't exist so give it a filename to indicate this.
-				label = "New Feature Collection";
+				label = GPlatesQtWidgets::ChooseFeatureCollectionWidget::tr("New Feature Collection");
 			}
 			
 			// We are only interested in loaded files which have valid FeatureCollections.
@@ -134,8 +134,12 @@ namespace
 				list_widget.addItem(new FeatureCollectionItem(file_ref, label));
 			}
 		}
+
 		// Add a final option for creating a brand new FeatureCollection.
-		list_widget.addItem(new FeatureCollectionItem(QObject::tr(" < Create a new feature collection > ")));
+		list_widget.addItem(
+				new FeatureCollectionItem(
+					GPlatesQtWidgets::ChooseFeatureCollectionWidget::tr(" < Create a new feature collection > ")));
+
 		// Default to first entry.
 		list_widget.setCurrentRow(0);
 	}

@@ -442,8 +442,8 @@ GPlatesQtWidgets::AddPropertyDialog::check_property_name_validity(
 
 				if (!property_name_valid)
 				{
-					static const QString WARNING_TEXT = "%1 is not a valid property in a %2 feature.";
-					label_warning->setText(WARNING_TEXT.arg(
+					static const char *WARNING_TEXT = "%1 is not a valid property for a %2 feature.";
+					label_warning->setText(tr(WARNING_TEXT).arg(
 							combobox_add_property_name->currentText()).arg(
 							GPlatesUtils::make_qstring_from_icu_string(
 								feature_ref->feature_type().build_aliased_name())));

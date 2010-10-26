@@ -70,10 +70,10 @@
     <addaction name="action_Play"/>
     <addaction name="action_Animate"/>
     <addaction name="separator"/>
+    <addaction name="action_Export"/>
+    <addaction name="separator"/>
     <addaction name="action_Specify_Anchored_Plate_ID"/>
     <addaction name="action_View_Reconstruction_Poles"/>
-    <addaction name="separator"/>
-    <addaction name="action_Export"/>
     <addaction name="separator"/>
     <addaction name="action_Assign_Plate_IDs"/>
     <addaction name="action_Generate_Mesh_Cap"/>
@@ -141,9 +141,10 @@
      <addaction name="action_Rotate_Camera_Anticlockwise"/>
      <addaction name="action_Reset_Camera_Orientation"/>
     </widget>
-    <addaction name="action_Set_Projection"/>
     <addaction name="action_Full_Screen"/>
+    <addaction name="action_Show_Bottom_Panel_Placeholder"/>
     <addaction name="separator"/>
+    <addaction name="action_Set_Projection"/>
     <addaction name="menu_Move_Camera"/>
     <addaction name="menu_Rotate_Camera"/>
     <addaction name="menu_Camera_Zoom"/>
@@ -217,7 +218,7 @@
     <enum>Qt::ActionsContextMenu</enum>
    </property>
    <property name="features">
-    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar</set>
+    <set>QDockWidget::DockWidgetFeatureMask</set>
    </property>
    <property name="allowedAreas">
     <set>Qt::BottomDockWidgetArea|Qt::TopDockWidgetArea</set>
@@ -395,7 +396,13 @@
   </action>
   <action name="action_Specify_Anchored_Plate_ID">
    <property name="text">
-    <string>Specify A&amp;nchored Plate ID...</string>
+    <string>Specify Anchore&amp;d Plate ID...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Increment_Animation_Time_Backwards">
@@ -466,7 +473,7 @@
      <normaloff>:/gnome_edit_find_22.png</normaloff>:/gnome_edit_find_22.png</iconset>
    </property>
    <property name="text">
-    <string>&amp;Query Feature</string>
+    <string>Que&amp;ry Feature</string>
    </property>
    <property name="iconText">
     <string>&amp;Query Feature</string>
@@ -475,7 +482,7 @@
     <string>Query Feature  Ctrl+Y</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Y</string>
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="action_Docks">
@@ -584,7 +591,7 @@
      <normaloff>:/tango_document_open_16.png</normaloff>:/tango_document_open_16.png</iconset>
    </property>
    <property name="text">
-    <string>Open &amp;Feature Collection...</string>
+    <string>&amp;Open Feature Collection...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -986,10 +993,10 @@
   </action>
   <action name="action_Redo_Placeholder">
    <property name="text">
-    <string>&amp;Redo (Placeholder)</string>
+    <string>Re&amp;do (Placeholder)</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+Z</string>
+    <string>Ctrl+Y</string>
    </property>
   </action>
   <action name="action_Move_Geometry">
@@ -1220,7 +1227,7 @@
   </action>
   <action name="action_Generate_Mesh_Cap">
    <property name="text">
-    <string>&amp;Generate Mesh Cap...</string>
+    <string>&amp;Generate Mesh Caps...</string>
    </property>
   </action>
   <action name="action_Export_Reconstruction">
@@ -1380,7 +1387,8 @@
   </action>
   <action name="action_Preferences">
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc"><normaloff>:/gnome_preferences_desktop_16.png</normaloff>:/gnome_preferences_desktop_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/gnome_preferences_desktop_16.png</normaloff>:/gnome_preferences_desktop_16.png</iconset>
    </property>
    <property name="text">
     <string>Preferences</string>
@@ -1407,6 +1415,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="action_Show_Bottom_Panel_Placeholder">
+   <property name="text">
+    <string>Show &amp;Bottom Panel (Placeholder)</string>
    </property>
   </action>
  </widget>

@@ -69,7 +69,7 @@ namespace GPlatesCanvasTools
 		 */
 		ClickGeometry(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
@@ -107,7 +107,7 @@ namespace GPlatesCanvasTools
 		 * Since the view state is also the ViewportWindow, it is currently used to
 		 * pass messages to the status bar.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * This is the external table of hits which will be updated in the event that

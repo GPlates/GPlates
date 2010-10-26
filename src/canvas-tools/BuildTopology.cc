@@ -53,7 +53,7 @@ GPlatesCanvasTools::BuildTopology::BuildTopology(
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		GPlatesPresentation::ViewState &view_state_,
-		const GPlatesQtWidgets::ViewportWindow &viewport_window_,
+		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,	
 		GPlatesGui::TopologySectionsContainer &topology_sections_container,
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,

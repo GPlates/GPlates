@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -112,6 +112,12 @@ namespace GPlatesQtWidgets
 			d_read_errors.clear();
 			clear();
 		}
+
+	private slots:
+
+		void
+		handle_buttonbox_clicked(
+				QAbstractButton *button);
 		
 	private:
 		/**

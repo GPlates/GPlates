@@ -50,19 +50,29 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::CalculateReconstructionPole
 {
 	setupUi(this);
 
+	main_buttonbox->button(QDialogButtonBox::Save)->setText(tr("&Insert Pole in Rotation Model"));
+
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_reconstruction_pole_widget_ptr,
 			groupbox_recon_pole);
 
-	QObject::connect(button_done,SIGNAL(clicked()),this,SLOT(close()));
-	QObject::connect(button_calculate,SIGNAL(clicked()),this,SLOT(handle_calculate()));	
-	QObject::connect(button_apply,SIGNAL(clicked()),this,SLOT(handle_apply()));	
-	
+	QObject::connect(
+			button_calculate,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_calculate()));	
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(rejected()),
+			this,
+			SLOT(reject()));
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(clicked(QAbstractButton *)),
+			this,
+			SLOT(handle_button_clicked(QAbstractButton *)));
+
 	update_buttons();
-	
-	// Keep apply button disabled for now.
-	button_apply->setEnabled(false);
-	
 }
 
 void
@@ -149,15 +159,18 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_calculate()
 }
 
 void
-GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_apply()
+GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_button_clicked(
+		QAbstractButton *button)
 {
-
-	if (d_reconstruction_pole)
+	QDialogButtonBox::StandardButton button_enum = main_buttonbox->standardButton(button);
+	if (button_enum == QDialogButtonBox::Save)
 	{
-		d_dialog_ptr->setup(*d_reconstruction_pole);
+		if (d_reconstruction_pole)
+		{
+			d_dialog_ptr->setup(*d_reconstruction_pole);
+		}
+		d_dialog_ptr->show();
 	}
-	d_dialog_ptr->show();
-
 }
 
 void
@@ -166,6 +179,6 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::update_buttons()
 	//button_apply->setEnabled(d_reconstruction_pole);
 	
 	// Keep the apply button disabled for now. 
-	button_apply->setEnabled(false);
+	main_buttonbox->button(QDialogButtonBox::Save)->setEnabled(false);
 }
 

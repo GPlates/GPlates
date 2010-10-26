@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,49 +27,67 @@
 #define GPLATES_QTWIDGETS_SPECIFYANCHOREDPLATEIDDIALOG_H
 
 #include <QDialog>
+
 #include "SpecifyAnchoredPlateIdDialogUi.h"
+
+#include "model/FeatureHandle.h"
+#include "model/types.h"
 
 
 namespace GPlatesQtWidgets
 {
-	class SpecifyAnchoredPlateIdDialog: 
+	class SpecifyAnchoredPlateIdDialog : 
 			public QDialog,
 			protected Ui_SpecifyAnchoredPlateIdDialog 
 	{
 		Q_OBJECT
 		
 	public:
+
 		explicit
 		SpecifyAnchoredPlateIdDialog(
-				unsigned long init_value,
 				QWidget *parent_ = NULL);
 
+		/**
+		 * Call this function before showing the dialog to repopulate its fields with
+		 * the latest values.
+		 */
+		void
+		populate(
+				GPlatesModel::integer_plate_id_type plate_id,
+				const GPlatesModel::FeatureHandle::weak_ref &focused_feature);
+
+	protected:
+
 		virtual
-		~SpecifyAnchoredPlateIdDialog()
-		{  }
-
-	public slots:
 		void
-		change_value(
-				int new_value)
-		{
-			// Since the value is a plate ID, it should always be non-negative.
-			d_value = static_cast<unsigned long>(new_value);
-		}
+		showEvent(
+				QShowEvent *ev);
+
+	private slots:
 
 		void
-		propagate_value()
-		{
-			emit value_changed(d_value);
-		}
+		propagate_value();
+
+		void
+		handle_action_triggered(
+				QAction *action);
 
 	signals:
+
 		void
 		value_changed(
-				unsigned long new_value);
+				GPlatesModel::integer_plate_id_type new_value);
 
 	private:
-		unsigned long d_value;
+
+		void
+		populate_spinbox(
+				GPlatesModel::integer_plate_id_type plate_id);
+
+		void
+		populate_menu(
+				const GPlatesModel::FeatureHandle::weak_ref &focused_feature);
 	};
 }
 

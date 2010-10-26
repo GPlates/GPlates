@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -626,15 +626,46 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::ReadErrorAccumulationDialog(
 	setupUi(this);
 	clear();
 	
-	QObject::connect(button_help, SIGNAL(clicked()),
-			this, SLOT(pop_up_help_dialog()));
+	QObject::connect(
+			button_help,
+			SIGNAL(clicked()),
+			this,
+			SLOT(pop_up_help_dialog()));
 
-	QObject::connect(button_expand_all, SIGNAL(clicked()),
-			this, SLOT(expandAll()));
-	QObject::connect(button_collapse_all, SIGNAL(clicked()),
-			this, SLOT(collapseAll()));
-	QObject::connect(button_clear, SIGNAL(clicked()),
-			this, SLOT(clear_errors()));
+	QObject::connect(
+			button_expand_all,
+			SIGNAL(clicked()),
+			this,
+			SLOT(expandAll()));
+	QObject::connect(
+			button_collapse_all,
+			SIGNAL(clicked()),
+			this,
+			SLOT(collapseAll()));
+
+	// Set up the button box.
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(clicked(QAbstractButton *)),
+			this,
+			SLOT(handle_buttonbox_clicked(QAbstractButton *)));
+	main_buttonbox->button(QDialogButtonBox::Reset)->setText("Clea&r All");
+}
+
+
+void
+GPlatesQtWidgets::ReadErrorAccumulationDialog::handle_buttonbox_clicked(
+		QAbstractButton *button)
+{
+	QDialogButtonBox::StandardButton button_enum = main_buttonbox->standardButton(button);
+	if (button_enum == QDialogButtonBox::Reset)
+	{
+		clear_errors();
+	}
+	else if (button_enum == QDialogButtonBox::Close)
+	{
+		accept();
+	}
 }
 
 

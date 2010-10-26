@@ -61,6 +61,17 @@ namespace
 		names << "ZoomSlider";	// Had some trouble hiding this one; seems ok now.
 		return names;		// QStringList is pimpl-idiom so this isn't a bad thing.
 	}
+
+	/**
+	 * Same as above, but for actions attached to menus.
+	 */
+	QStringList
+	get_actions_to_disable()
+	{
+		QStringList names;
+		names << "action_Show_Bottom_Panel";
+		return names;
+	}
 }
 
 
@@ -95,6 +106,7 @@ GPlatesGui::FullScreenMode::toggle_full_screen(
 		bool wants_full_screen)
 {
 	static const QStringList things_to_hide = get_full_screen_widgets_to_hide();
+	static const QStringList actions_to_disable = get_actions_to_disable();
 
 	// Tell Qt to do this step as one big change - looks nicer, probably means
 	// less race-condition-like buggy behaviour due to hiding a bunch of widgets.
@@ -115,6 +127,14 @@ GPlatesGui::FullScreenMode::toggle_full_screen(
 				widget->hide();
 			}
 		}
+
+		// Disable certain actions on menus.
+		Q_FOREACH(QString action_name, actions_to_disable) {
+			QAction *action = viewport_window().findChild<QAction *>(action_name);
+			if (action) {
+				action->setEnabled(false);
+			}
+		}
 		
 		// Reduce the border around the RecontructionViewWidget so that
 		// access to the GMenu passes Fitt's law.
@@ -129,6 +149,14 @@ GPlatesGui::FullScreenMode::toggle_full_screen(
 			QWidget *widget = viewport_window().findChild<QWidget *>(widget_name);
 			if (widget) {
 				widget->show();
+			}
+		}
+
+		// Re-enable disabled actions.
+		Q_FOREACH(QString action_name, actions_to_disable) {
+			QAction *action = viewport_window().findChild<QAction *>(action_name);
+			if (action) {
+				action->setEnabled(true);
 			}
 		}
 

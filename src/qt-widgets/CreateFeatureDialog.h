@@ -30,13 +30,15 @@
 
 #include "CreateFeatureDialogUi.h"
 
-#include "app-logic/ReconstructionMethodId.h"
+#include "app-logic/ReconstructionMethod.h"
 
 #include "maths/GeometryOnSphere.h"
+
 #include "model/ModelInterface.h"
 #include "model/FeatureHandle.h"
 
 class QComboBox;
+
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -56,7 +58,7 @@ namespace GPlatesQtWidgets
 	class EditPlateIdWidget;
 	class EditTimePeriodWidget;
 	class EditStringWidget;
-	class GeometryDestinationsWidget;
+	class ChooseGeometryPropertyWidget;
 	class InformationDialog;
 	class ViewportWindow;
 
@@ -249,9 +251,9 @@ namespace GPlatesQtWidgets
 		/**
 		 * Allows the user to pick the property that will store the geometry.
 		 */
-		GeometryDestinationsWidget *d_listwidget_geometry_destinations;
+		ChooseGeometryPropertyWidget *d_listwidget_geometry_destinations;
 
-		GPlatesAppLogic::ReconstructionMethod d_recon_method;
+		GPlatesAppLogic::ReconstructionMethod::Type d_recon_method;
 	};
 }
 

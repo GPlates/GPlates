@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>AnimateDialog</class>
- <widget class="QDialog" name="AnimateDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="AnimateDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,149 +10,150 @@
     <height>484</height>
    </rect>
   </property>
-  <property name="windowTitle" >
-   <string>Animate</string>
+  <property name="windowTitle">
+   <string>Configure Animation</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
+    <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
-  <property name="sizeGripEnabled" >
+  <property name="sizeGripEnabled">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QVBoxLayout">
    <item>
-    <widget class="QGroupBox" name="groupBox" >
-     <property name="title" >
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
       <string>Range</string>
      </property>
-     <layout class="QVBoxLayout" >
+     <layout class="QVBoxLayout">
       <item>
-       <layout class="QGridLayout" >
-        <item row="0" column="1" >
-         <widget class="QLabel" name="label_1" >
-          <property name="text" >
-           <string>Animate &amp;from</string>
+       <layout class="QGridLayout">
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_1">
+          <property name="text">
+           <string>Animate &amp;from:</string>
           </property>
-          <property name="alignment" >
+          <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>widget_start_time</cstring>
           </property>
          </widget>
         </item>
-        <item row="0" column="2" >
-         <widget class="QDoubleSpinBox" name="widget_start_time" >
-          <property name="maximum" >
+        <item row="0" column="2">
+         <widget class="QDoubleSpinBox" name="widget_start_time">
+          <property name="maximum">
            <double>1000000.000000000000000</double>
           </property>
          </widget>
         </item>
-        <item row="0" column="3" >
-         <widget class="QLabel" name="label_start_time_units" >
-          <property name="text" >
+        <item row="0" column="3">
+         <widget class="QLabel" name="label_start_time_units">
+          <property name="text">
            <string>Ma</string>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>widget_start_time</cstring>
           </property>
          </widget>
         </item>
-        <item row="0" column="4" >
-         <widget class="QPushButton" name="button_Use_View_Time_start_time" >
-          <property name="text" >
+        <item row="0" column="4">
+         <widget class="QPushButton" name="button_Use_View_Time_start_time">
+          <property name="text">
            <string>&amp;Use Main Window</string>
           </property>
-          <property name="autoDefault" >
+          <property name="autoDefault">
            <bool>false</bool>
           </property>
          </widget>
         </item>
-        <item row="1" column="1" >
-         <widget class="QLabel" name="label_2" >
-          <property name="text" >
-           <string>&amp;to</string>
+        <item row="1" column="1">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>&amp;to:</string>
           </property>
-          <property name="alignment" >
+          <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>widget_end_time</cstring>
           </property>
          </widget>
         </item>
-        <item row="1" column="2" >
-         <widget class="QDoubleSpinBox" name="widget_end_time" >
-          <property name="maximum" >
+        <item row="1" column="2">
+         <widget class="QDoubleSpinBox" name="widget_end_time">
+          <property name="maximum">
            <double>1000000.000000000000000</double>
           </property>
          </widget>
         </item>
-        <item row="1" column="3" >
-         <widget class="QLabel" name="label_end_time_units" >
-          <property name="text" >
+        <item row="1" column="3">
+         <widget class="QLabel" name="label_end_time_units">
+          <property name="text">
            <string>Ma</string>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>widget_end_time</cstring>
           </property>
          </widget>
         </item>
-        <item row="1" column="4" >
-         <widget class="QPushButton" name="button_Use_View_Time_end_time" >
-          <property name="text" >
+        <item row="1" column="4">
+         <widget class="QPushButton" name="button_Use_View_Time_end_time">
+          <property name="text">
            <string>Use &amp;Main Window</string>
           </property>
-          <property name="autoDefault" >
+          <property name="autoDefault">
            <bool>false</bool>
           </property>
          </widget>
         </item>
-        <item row="2" column="1" >
-         <widget class="QLabel" name="label_5" >
-          <property name="text" >
-           <string>with an &amp;increment of</string>
+        <item row="2" column="1">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>with an &amp;increment of:</string>
           </property>
-          <property name="alignment" >
+          <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>widget_time_increment</cstring>
           </property>
          </widget>
         </item>
-        <item row="2" column="2" >
-         <widget class="QDoubleSpinBox" name="widget_time_increment" >
-          <property name="minimum" >
+        <item row="2" column="2">
+         <widget class="QDoubleSpinBox" name="widget_time_increment">
+          <property name="minimum">
            <double>0.010000000000000</double>
           </property>
-          <property name="maximum" >
+          <property name="maximum">
            <double>10000.000000000000000</double>
           </property>
-          <property name="singleStep" >
+          <property name="singleStep">
            <double>0.100000000000000</double>
           </property>
-          <property name="value" >
+          <property name="value">
            <double>1.000000000000000</double>
           </property>
          </widget>
         </item>
-        <item row="2" column="3" >
-         <widget class="QLabel" name="label_time_increment_units" >
-          <property name="text" >
+        <item row="2" column="3">
+         <widget class="QLabel" name="label_time_increment_units">
+          <property name="text">
            <string>M</string>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>widget_time_increment</cstring>
           </property>
          </widget>
         </item>
-        <item row="0" column="0" >
+        <item row="0" column="0">
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -159,12 +161,12 @@
           </property>
          </spacer>
         </item>
-        <item row="0" column="5" >
+        <item row="0" column="5">
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -172,9 +174,9 @@
           </property>
          </spacer>
         </item>
-        <item row="2" column="4" >
-         <widget class="QLabel" name="label_increment_is_per_frame" >
-          <property name="text" >
+        <item row="2" column="4">
+         <widget class="QLabel" name="label_increment_is_per_frame">
+          <property name="text">
            <string>per frame.</string>
           </property>
          </widget>
@@ -182,13 +184,13 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" >
+       <layout class="QHBoxLayout">
         <item>
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -197,28 +199,28 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="button_Reverse_the_Animation" >
-          <property name="text" >
+         <widget class="QPushButton" name="button_Reverse_the_Animation">
+          <property name="text">
            <string>Re&amp;verse the Animation</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_by_swapping" >
-          <property name="text" >
+         <widget class="QLabel" name="label_by_swapping">
+          <property name="text">
            <string>by swapping the start and end times.</string>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>button_Reverse_the_Animation</cstring>
           </property>
          </widget>
         </item>
         <item>
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -232,57 +234,48 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupbox_Playback_Options" >
-     <property name="title" >
+    <widget class="QGroupBox" name="groupbox_Playback_Options">
+     <property name="title">
       <string>Options</string>
      </property>
-     <layout class="QVBoxLayout" >
+     <layout class="QVBoxLayout">
       <item>
-       <layout class="QHBoxLayout" >
-        <property name="spacing" >
+       <layout class="QHBoxLayout">
+        <property name="spacing">
          <number>6</number>
         </property>
-        <property name="leftMargin" >
-         <number>0</number>
-        </property>
-        <property name="topMargin" >
-         <number>0</number>
-        </property>
-        <property name="rightMargin" >
-         <number>0</number>
-        </property>
-        <property name="bottomMargin" >
+        <property name="margin">
          <number>0</number>
         </property>
         <item>
-         <widget class="QLabel" name="label_Frames_per_second" >
-          <property name="text" >
+         <widget class="QLabel" name="label_Frames_per_second">
+          <property name="text">
            <string>Frames per &amp;second:</string>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>widget_Frames_per_second</cstring>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QDoubleSpinBox" name="widget_Frames_per_second" >
-          <property name="minimum" >
+         <widget class="QDoubleSpinBox" name="widget_Frames_per_second">
+          <property name="minimum">
            <double>0.100000000000000</double>
           </property>
-          <property name="maximum" >
+          <property name="maximum">
            <double>100.000000000000000</double>
           </property>
-          <property name="value" >
+          <property name="value">
            <double>5.000000000000000</double>
           </property>
          </widget>
         </item>
         <item>
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -293,26 +286,26 @@
        </layout>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkbox_Finish_animation_on_end_time" >
-        <property name="text" >
-         <string>Finish animation &amp;exactly on end time.</string>
+       <widget class="QCheckBox" name="checkbox_Finish_animation_on_end_time">
+        <property name="text">
+         <string>Finish animation &amp;exactly on end time</string>
         </property>
-        <property name="checked" >
+        <property name="checked">
          <bool>true</bool>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkbox_Loop" >
-        <property name="text" >
-         <string>&amp;Loop.</string>
+       <widget class="QCheckBox" name="checkbox_Loop">
+        <property name="text">
+         <string>&amp;Loop</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkbox_Close_dialog_when_animation_starts" >
-        <property name="text" >
-         <string>Cl&amp;ose this dialog when animation starts.</string>
+       <widget class="QCheckBox" name="checkbox_Close_dialog_when_animation_starts">
+        <property name="text">
+         <string>Cl&amp;ose this dialog when animation starts</string>
         </property>
        </widget>
       </item>
@@ -320,34 +313,25 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupbox_Playback_controls" >
-     <property name="title" >
+    <widget class="QGroupBox" name="groupbox_Playback_controls">
+     <property name="title">
       <string>Playback</string>
      </property>
-     <layout class="QVBoxLayout" >
+     <layout class="QVBoxLayout">
       <item>
-       <layout class="QHBoxLayout" >
-        <property name="spacing" >
+       <layout class="QHBoxLayout">
+        <property name="spacing">
          <number>6</number>
         </property>
-        <property name="leftMargin" >
-         <number>0</number>
-        </property>
-        <property name="topMargin" >
-         <number>0</number>
-        </property>
-        <property name="rightMargin" >
-         <number>0</number>
-        </property>
-        <property name="bottomMargin" >
+        <property name="margin">
          <number>0</number>
         </property>
         <item>
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -356,38 +340,38 @@
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="label_current_time" >
-          <property name="text" >
-           <string>&amp;Current time:</string>
+         <widget class="QLabel" name="label_current_time">
+          <property name="text">
+           <string>C&amp;urrent time:</string>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>widget_current_time</cstring>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QDoubleSpinBox" name="widget_current_time" >
-          <property name="maximum" >
+         <widget class="QDoubleSpinBox" name="widget_current_time">
+          <property name="maximum">
            <double>1000000.000000000000000</double>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_current_time_units" >
-          <property name="text" >
+         <widget class="QLabel" name="label_current_time_units">
+          <property name="text">
            <string>Ma</string>
           </property>
-          <property name="buddy" >
+          <property name="buddy">
            <cstring>widget_current_time</cstring>
           </property>
          </widget>
         </item>
         <item>
          <spacer>
-          <property name="orientation" >
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -396,45 +380,47 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="button_Rewind" >
-          <property name="enabled" >
+         <widget class="QPushButton" name="button_Rewind">
+          <property name="enabled">
            <bool>true</bool>
           </property>
-          <property name="text" >
+          <property name="text">
            <string>&amp;Reset</string>
           </property>
-          <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/seek_beginning_22.png</iconset>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/seek_beginning_22.png</normaloff>:/seek_beginning_22.png</iconset>
           </property>
-          <property name="iconSize" >
+          <property name="iconSize">
            <size>
             <width>22</width>
             <height>22</height>
            </size>
           </property>
-          <property name="autoDefault" >
+          <property name="autoDefault">
            <bool>false</bool>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="button_Start" >
-          <property name="text" >
+         <widget class="QPushButton" name="button_Start">
+          <property name="text">
            <string>&amp;Play</string>
           </property>
-          <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_media_playback_start_22.png</iconset>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/gnome_media_playback_start_22.png</normaloff>:/gnome_media_playback_start_22.png</iconset>
           </property>
-          <property name="iconSize" >
+          <property name="iconSize">
            <size>
             <width>22</width>
             <height>22</height>
            </size>
           </property>
-          <property name="autoDefault" >
+          <property name="autoDefault">
            <bool>true</bool>
           </property>
-          <property name="default" >
+          <property name="default">
            <bool>true</bool>
           </property>
          </widget>
@@ -442,8 +428,8 @@
        </layout>
       </item>
       <item>
-       <widget class="QSlider" name="slider_current_time" >
-        <property name="orientation" >
+       <widget class="QSlider" name="slider_current_time">
+        <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
        </widget>
@@ -452,46 +438,24 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
-     <property name="spacing" >
-      <number>6</number>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-     <property name="leftMargin" >
-      <number>0</number>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
      </property>
-     <property name="topMargin" >
-      <number>0</number>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="main_buttonbox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
      </property>
-     <property name="rightMargin" >
-      <number>0</number>
-     </property>
-     <property name="bottomMargin" >
-      <number>0</number>
-     </property>
-     <item>
-      <spacer>
-       <property name="orientation" >
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" >
-        <size>
-         <width>131</width>
-         <height>31</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_Close" >
-       <property name="text" >
-        <string>Close</string>
-       </property>
-       <property name="autoDefault" >
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    </widget>
    </item>
   </layout>
  </widget>
@@ -509,25 +473,24 @@
   <tabstop>widget_Frames_per_second</tabstop>
   <tabstop>checkbox_Finish_animation_on_end_time</tabstop>
   <tabstop>checkbox_Loop</tabstop>
-  <tabstop>button_Close</tabstop>
  </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections>
   <connection>
-   <sender>button_Close</sender>
-   <signal>clicked()</signal>
+   <sender>main_buttonbox</sender>
+   <signal>rejected()</signal>
    <receiver>AnimateDialog</receiver>
-   <slot>close()</slot>
+   <slot>reject()</slot>
    <hints>
-    <hint type="sourcelabel" >
-     <x>409</x>
-     <y>512</y>
+    <hint type="sourcelabel">
+     <x>242</x>
+     <y>461</y>
     </hint>
-    <hint type="destinationlabel" >
-     <x>179</x>
-     <y>282</y>
+    <hint type="destinationlabel">
+     <x>242</x>
+     <y>241</y>
     </hint>
    </hints>
   </connection>
