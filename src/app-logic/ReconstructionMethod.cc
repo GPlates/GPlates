@@ -28,6 +28,10 @@
 
 #include "ReconstructionMethod.h"
 
+#include "global/CompilerWarnings.h"
+
+
+DISABLE_GCC_WARNING("-Wold-style-cast")
 
 namespace
 {
@@ -66,6 +70,8 @@ namespace
 		return RECON_METHOD_MAP;
 	}
 }
+
+ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesPropertyValues::EnumerationContent

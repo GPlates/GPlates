@@ -31,6 +31,8 @@
 #include "ChooseGeometryPropertyWidget.h"
 #include "QtWidgetUtils.h"
 
+#include "global/CompilerWarnings.h"
+
 #include "gui/FeatureFocus.h"
 
 #include "model/GPGIMInfo.h"
@@ -98,6 +100,9 @@ GPlatesQtWidgets::ChangeGeometryPropertyWidget::populate(
 }
 
 
+// For the BOOST_STATIC_ASSERT below with GCC 4.2.
+DISABLE_GCC_WARNING("-Wold-style-cast")
+
 void
 GPlatesQtWidgets::ChangeGeometryPropertyWidget::process(
 		GPlatesModel::FeatureHandle::iterator &new_focused_geometry_property)
@@ -157,4 +162,6 @@ GPlatesQtWidgets::ChangeGeometryPropertyWidget::process(
 		}
 	}
 }
+
+ENABLE_GCC_WARNING("-Wold-style-cast")
 
