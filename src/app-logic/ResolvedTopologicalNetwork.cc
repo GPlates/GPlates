@@ -54,11 +54,11 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries() cons
 	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
 	// Iterate over the individual faces of the triangulation and create a
 	// ResolvedTopologicalNetwork for each one.
-	CgalUtils::cgal_finite_faces_iterator finite_faces_iter =
+	CgalUtils::cgal_finite_faces_2_iterator finite_faces_2_iter =
 			d_cgal_triangulation->finite_faces_begin();
-	CgalUtils::cgal_finite_faces_iterator finite_faces_end =
+	CgalUtils::cgal_finite_faces_2_iterator finite_faces_end =
 			d_cgal_triangulation->finite_faces_end();
-	for ( ; finite_faces_iter != finite_faces_end; ++finite_faces_iter)
+	for ( ; finite_faces_2_iter != finite_faces_end; ++finite_faces_2_iter)
 	{
 		std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
 		network_triangle_points.reserve(3);
@@ -66,7 +66,7 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries() cons
 		for (int index = 0; index != 3 ; ++index)
 		{
 			const CgalUtils::cgal_point_2_type cgal_triangle_point =
-					finite_faces_iter->vertex( index )->point();
+					finite_faces_2_iter->vertex( index )->point();
 			const float lon = cgal_triangle_point.x();
 			const float lat = cgal_triangle_point.y();
 

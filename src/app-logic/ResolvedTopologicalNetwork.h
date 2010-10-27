@@ -260,7 +260,7 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_type> cgal_triangulation,
+				boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_2_type> cgal_triangulation,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				NodeForwardIter node_sequence_begin,
@@ -308,7 +308,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The delaunay triangulation of all the points in the network.
 		 */
-		const CgalUtils::cgal_delaunay_triangulation_type &
+		const CgalUtils::cgal_delaunay_triangulation_2_type &
 		get_cgal_triangulation() const
 		{
 			return *d_cgal_triangulation;
@@ -518,7 +518,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The delaunay triangulation of all the points in the network.
 		 */
-		boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_type> d_cgal_triangulation;
+		boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_2_type> d_cgal_triangulation;
 
 		/**
 		 * Stores the velocity data at the points of this network and
@@ -536,7 +536,7 @@ namespace GPlatesAppLogic
 		template <typename NodeForwardIter>
 		ResolvedTopologicalNetwork(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
-				boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_type> cgal_triangulation,
+				boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_2_type> cgal_triangulation,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				NodeForwardIter node_sequence_begin,

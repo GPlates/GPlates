@@ -238,8 +238,8 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 {
 	// The triangulation for the topological network.
-	boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_type> delaunay_triangulation(
-			new CgalUtils::cgal_delaunay_triangulation_type());
+	boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_2_type> delaunay_triangulation_2(
+			new CgalUtils::cgal_delaunay_triangulation_2_type());
 
 	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalNetwork.
 	std::vector<ResolvedTopologicalNetwork::Node> output_nodes;
@@ -278,15 +278,15 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		output_nodes.push_back(output_node);
 
 		// Add the node's points to the triangulation.
-		CgalUtils::insert_points_into_delaunay_triangulation(
-				*delaunay_triangulation, node_points.begin(), node_points.end());
+		CgalUtils::insert_points_into_delaunay_triangulation_2(
+				*delaunay_triangulation_2, node_points.begin(), node_points.end());
 	}
 
 	// Create the network.
 	const ResolvedTopologicalNetwork::non_null_ptr_type network =
 			ResolvedTopologicalNetwork::create(
 					d_reconstruction_geometry_collection.reconstruction_tree(),
-					delaunay_triangulation,
+					delaunay_triangulation_2,
 					*(current_top_level_propiter()->handle_weak_ref()),
 					*(current_top_level_propiter()),
 					output_nodes.begin(),

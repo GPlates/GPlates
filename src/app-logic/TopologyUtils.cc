@@ -101,7 +101,7 @@ namespace GPlatesAppLogic
 				network(network_)
 			{  }
 
-			typedef boost::shared_ptr<CgalUtils::cgal_map_point_to_value_type> scalar_map_ptr_type;
+			typedef boost::shared_ptr<CgalUtils::cgal_map_point_2_to_value_type> scalar_map_ptr_type;
 			typedef std::vector<scalar_map_ptr_type> scalar_map_seq_type;
 
 			const ResolvedTopologicalNetwork *network;
@@ -129,7 +129,7 @@ namespace GPlatesAppLogic
 			const ResolvedNetworkForInterpolationQuery &resolved_network = *resolved_network_query;
 
 			boost::optional<CgalUtils::interpolate_triangulation_query_type> interpolation_query =
-					CgalUtils::query_interpolate_triangulation(
+					CgalUtils::query_interpolate_triangulation_2(
 							cgal_point_2,
 							resolved_network.network->get_cgal_triangulation());
 
@@ -150,11 +150,11 @@ namespace GPlatesAppLogic
 			for ( ; scalar_maps_iter != scalar_maps_end; ++scalar_maps_iter)
 			{
 				// Get the map for the current scalar.
-				const CgalUtils::cgal_map_point_to_value_type &scalar_map = **scalar_maps_iter;
+				const CgalUtils::cgal_map_point_2_to_value_type &scalar_map = **scalar_maps_iter;
 
 				// Interpolate the mapped values.
 				interpolated_scalars.push_back(
-						CgalUtils::interpolate_triangulation(
+						CgalUtils::interpolate_triangulation_2(
 								*interpolation_query,
 								scalar_map));
 			}
@@ -597,7 +597,7 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 		{
 			resolved_network_query->scalar_map_seq.push_back(
 					ResolvedNetworkForInterpolationQuery::scalar_map_ptr_type(
-							new CgalUtils::cgal_map_point_to_value_type()));
+							new CgalUtils::cgal_map_point_2_to_value_type()));
 		}
 
 		// Iterate through the nodes of the current topological network.
@@ -640,7 +640,7 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 						GPLATES_ASSERTION_SOURCE);
 
 				const CgalUtils::cgal_point_2_type cgal_node_point_2 =
-						CgalUtils::convert_point_to_cgal(node_point);
+						CgalUtils::convert_point_to_cgal_2(node_point);
 
 				// Iterate over the scalars and insert each one into its own map.
 				for (unsigned int scalar_index = 0; scalar_index < scalars.size(); ++scalar_index)
@@ -702,7 +702,7 @@ GPlatesAppLogic::TopologyUtils::get_resolved_topology_network_scalars(
 
 	// Keep track of the scalar map iterators as we will be processing them
 	// in sync with each other.
-	typedef CgalUtils::cgal_map_point_to_value_type::const_iterator scalar_map_iter_type;
+	typedef CgalUtils::cgal_map_point_2_to_value_type::const_iterator scalar_map_iter_type;
 	std::vector<scalar_map_iter_type> scalar_map_iters;
 	scalar_map_iters.reserve(num_scalars);
 	for (std::size_t scalar_map_iter_index = 0;
@@ -730,7 +730,7 @@ GPlatesAppLogic::TopologyUtils::get_resolved_topology_network_scalars(
 		// network point) so just get it from the first scalar map.
 		const CgalUtils::cgal_point_2_type &cgal_network_point_2 = scalar_map_iters[0]->first;
 		const GPlatesMaths::PointOnSphere network_point =
-				CgalUtils::convert_point_from_cgal(cgal_network_point_2);
+				CgalUtils::convert_point_from_cgal_2(cgal_network_point_2);
 
 		// Iterate through the scalar maps and collect each mapped scalar.
 		for (std::size_t scalar_map_iter_index = 0;
@@ -764,7 +764,7 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
 		return boost::none;
 	}
 
-	const CgalUtils::cgal_point_2_type cgal_point_2 = CgalUtils::convert_point_to_cgal(point);
+	const CgalUtils::cgal_point_2_type cgal_point_2 = CgalUtils::convert_point_to_cgal_2(point);
 
 	// Iterate through the resolved networks.
 	ResolvedNetworksForInterpolationQuery::resolved_network_seq_type::const_iterator rtn_iter =
@@ -795,7 +795,7 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_network(
 		const resolved_network_for_interpolation_query_type &resolved_network_query,
 		const GPlatesMaths::PointOnSphere &point)
 {
-	const CgalUtils::cgal_point_2_type cgal_point_2 = CgalUtils::convert_point_to_cgal(point);
+	const CgalUtils::cgal_point_2_type cgal_point_2 = CgalUtils::convert_point_to_cgal_2(point);
 
 	return interpolate_resolved_topology_network(resolved_network_query, cgal_point_2);
 }
