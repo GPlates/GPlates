@@ -52,7 +52,7 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to define new geometry.
 	 */
-	class DigitiseGeometry:
+	class DigitiseGeometry :
 			public CanvasTool
 	{
 	public:

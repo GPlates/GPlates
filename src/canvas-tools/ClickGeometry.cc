@@ -57,10 +57,7 @@ GPlatesCanvasTools::ClickGeometry::ClickGeometry(
 void
 GPlatesCanvasTools::ClickGeometry::handle_activation()
 {
-	set_status_bar_message(QObject::tr(
-		"Click a geometry to choose a feature."
-		" Shift+click to query immediately."
-		" Ctrl+drag to re-orient the globe."));
+	set_status_bar_message(QT_TR_NOOP("Click a geometry to choose a feature. Shift+click to query immediately."));
 
 	// Activate the geometry focus hightlight layer.
 	d_rendered_geom_collection->set_main_layer_active(

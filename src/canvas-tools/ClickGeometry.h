@@ -54,15 +54,11 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to focus features by clicking on them.
 	 */
-	class ClickGeometry:
+	class ClickGeometry :
 			public CanvasTool
 	{
 
 	public:
-
-		virtual
-		~ClickGeometry()
-		{  }
 
 		/**
 		 * Create a ClickGeometry instance.

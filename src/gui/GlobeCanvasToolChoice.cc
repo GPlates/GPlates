@@ -31,10 +31,9 @@
 #include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
 
-#include "canvas-tools/BuildTopology.h"   // Not Globe/Mapified yet!
-#include "canvas-tools/EditTopology.h"    // Not Globe/Mapified yet!
-
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
+#include "canvas-tools/BuildTopology.h"
+#include "canvas-tools/EditTopology.h"
 #include "canvas-tools/MeasureDistance.h"
 #include "canvas-tools/DigitiseGeometry.h"
 #include "canvas-tools/ClickGeometry.h"
@@ -42,8 +41,7 @@
 #include "canvas-tools/InsertVertex.h"
 #include "canvas-tools/MoveVertex.h"
 #include "canvas-tools/SplitFeature.h"
-
-#include "canvas-tools/GlobeManipulatePole.h"
+#include "canvas-tools/ManipulatePole.h"
 
 #include "qt-widgets/DigitisationWidget.h"
 #include "view-operations/RenderedGeometryCollection.h"
@@ -165,30 +163,35 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 			globe,
 			globe_canvas,
 			viewport_window)),
-	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::GlobeManipulatePole::create(
-			rendered_geom_collection,
+	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::ManipulatePole(
+				rendered_geom_collection,
+				pole_widget),
 			globe,
 			globe_canvas,
-			viewport_window,
-			pole_widget)),
-	d_build_topology_tool_ptr(GPlatesCanvasTools::BuildTopology::create(
-			globe, 
-			globe_canvas, 
-			view_state,
-			viewport_window, 
-			clicked_table_model, 
-			topology_sections_container,
-			topology_tools_widget,
-			view_state.get_application_state())),
-	d_edit_topology_tool_ptr(GPlatesCanvasTools::EditTopology::create(
-			globe, 
-			globe_canvas, 
-			view_state,
-			viewport_window, 
-			clicked_table_model, 
-			topology_sections_container,
-			topology_tools_widget,
-			view_state.get_application_state())),
+			viewport_window)),
+	d_build_topology_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::BuildTopology(
+				view_state,
+				viewport_window, 
+				clicked_table_model, 
+				topology_sections_container,
+				topology_tools_widget,
+				view_state.get_application_state()),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_edit_topology_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::EditTopology(
+				view_state,
+				viewport_window, 
+				clicked_table_model, 
+				topology_sections_container,
+				topology_tools_widget,
+				view_state.get_application_state()),
+			globe,
+			globe_canvas,
+			viewport_window)),
 	d_measure_distance_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
 			new GPlatesCanvasTools::MeasureDistance(
 				rendered_geom_collection,

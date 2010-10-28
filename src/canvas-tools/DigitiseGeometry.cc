@@ -91,40 +91,13 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 	// to the specified main render layer.
 	d_add_point_geometry_operation->activate(geometry_builder, main_layer_type);
 
-	switch (get_view())
+	if (d_default_geom_type == GPlatesViewOperations::GeometryType::MULTIPOINT)
 	{
-		case GLOBE_VIEW:
-			if (d_default_geom_type == GPlatesViewOperations::GeometryType::MULTIPOINT)
-			{
-				set_status_bar_message(QObject::tr(
-					"Click to draw a new point."
-					" Ctrl+drag to re-orient the globe."));
-			}
-			else
-			{
-				set_status_bar_message(QObject::tr(
-					"Click to draw a new vertex."
-					" Ctrl+drag to re-orient the globe."));
-			}
-			break;
-
-		case MAP_VIEW:
-			if (d_default_geom_type == GPlatesViewOperations::GeometryType::MULTIPOINT)
-			{
-				set_status_bar_message(QObject::tr(
-					"Click to draw a new point."
-					" Ctrl+drag to pan the map."));
-			}
-			else
-			{
-				set_status_bar_message(QObject::tr(
-					"Click to draw a new vertex."
-					" Ctrl+drag to pan the map."));
-			}
-			break;
-
-		default:
-			break;
+		set_status_bar_message(QT_TR_NOOP("Click to draw a new point."));
+	}
+	else
+	{
+		set_status_bar_message(QT_TR_NOOP("Click to draw a new vertex."));
 	}
 }
 

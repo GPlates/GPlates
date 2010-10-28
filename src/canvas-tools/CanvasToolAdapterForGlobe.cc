@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -34,7 +34,28 @@
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 
-#include "utils/OverloadResolution.h"
+
+namespace
+{
+	const char *STATUS_BAR_MESSAGE_SUFFIX = QT_TR_NOOP("Ctrl+drag to re-orient the globe.");
+
+	/**
+	 * Helper function that sets the status bar message of @a viewport_window
+	 * to be @a message with @a STATUS_BAR_MESSAGE_SUFFIX appended.
+	 *
+	 * Note that @a message should *not* have been translated, i.e. passed
+	 * through QObject::tr().
+	 */
+	void
+	set_status_bar_message(
+			GPlatesQtWidgets::ViewportWindow &viewport_window,
+			const char *message)
+	{
+		viewport_window.status_message(
+				GPlatesQtWidgets::ViewportWindow::tr(message) + " " +
+				GPlatesQtWidgets::ViewportWindow::tr(STATUS_BAR_MESSAGE_SUFFIX));
+	}
+}
 
 
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::CanvasToolAdapterForGlobe (
@@ -45,13 +66,9 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::CanvasToolAdapterForGlobe (
 	GlobeCanvasTool(globe_, globe_canvas_),
 	d_canvas_tool_ptr(canvas_tool_ptr)
 {
-	using namespace GPlatesUtils::OverloadResolution;
-
-	canvas_tool_ptr->set_view(CanvasTool::GLOBE_VIEW);
 	canvas_tool_ptr->set_status_bar_callback(
 			boost::bind(
-				resolve<GPlatesQtWidgets::ViewportWindow, void, Params<const QString &> >(
-					&GPlatesQtWidgets::ViewportWindow::status_message),
+				&::set_status_bar_message,
 				boost::ref(viewport_window_),
 				_1));
 }
@@ -141,7 +158,8 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_drag(
 				oriented_current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe));
+					current_pos_on_globe),
+				oriented_centre_of_viewport);
 	}
 }
 
@@ -165,7 +183,8 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_release_after_drag(
 				oriented_current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe));
+					current_pos_on_globe),
+				oriented_centre_of_viewport);
 	}
 }
 
@@ -205,7 +224,8 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_left_drag(
 				oriented_current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe));
+					current_pos_on_globe),
+				oriented_centre_of_viewport);
 	}
 }
 
@@ -229,7 +249,8 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_left_release_after_d
 				oriented_current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe));
+					current_pos_on_globe),
+				oriented_centre_of_viewport);
 	}
 }
 
@@ -269,7 +290,8 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_drag(
 				oriented_current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe)))
+					current_pos_on_globe),
+				oriented_centre_of_viewport))
 		{
 			// perform default action
 			GlobeCanvasTool::handle_ctrl_left_drag(
@@ -304,7 +326,8 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_release_after_dr
 				oriented_current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe)))
+					current_pos_on_globe),
+				oriented_centre_of_viewport))
 		{
 			// perform default action
 			GlobeCanvasTool::handle_ctrl_left_release_after_drag(
@@ -355,7 +378,8 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_drag(
 				oriented_current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe)))
+					current_pos_on_globe),
+				oriented_centre_of_viewport))
 		{
 			// perform default action
 			GlobeCanvasTool::handle_shift_ctrl_left_drag(
@@ -390,7 +414,8 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_release_af
 				oriented_current_pos_on_globe,
 				is_on_globe,
 				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe)))
+					current_pos_on_globe),
+				oriented_centre_of_viewport))
 		{
 			// perform default action
 			GlobeCanvasTool::handle_shift_ctrl_left_release_after_drag(

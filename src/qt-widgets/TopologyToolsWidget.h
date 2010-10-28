@@ -104,12 +104,6 @@ namespace GPlatesQtWidgets
 		}
 
 		void
-		handle_shift_left_click(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-				bool is_on_globe);
-
-		void
 		handle_remove_all_sections();
 
 		void

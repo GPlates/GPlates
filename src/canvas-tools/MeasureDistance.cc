@@ -108,20 +108,7 @@ GPlatesCanvasTools::MeasureDistance::handle_activation()
 {
 	d_measure_distance_state_ptr->handle_activation();
 
-	// set status bar message
-	switch (get_view())
-	{
-		case GLOBE_VIEW:
-			set_status_bar_message(QObject::tr("Click to measure distance between points. Ctrl+drag to rotate the globe."));
-			break;
-	
-		case MAP_VIEW:
-			set_status_bar_message(QObject::tr("Click to measure distance between points. Ctrl+drag to pan the map."));
-			break;
-
-		default:
-			break;
-	}
+	set_status_bar_message(QT_TR_NOOP("Click to measure the distance between arbitrary points."));
 
 	// activate rendered layer
 	d_rendered_geom_collection_ptr->set_main_layer_active(

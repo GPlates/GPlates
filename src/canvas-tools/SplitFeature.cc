@@ -82,23 +82,7 @@ GPlatesCanvasTools::SplitFeature::handle_activation()
 	// Activate our InsertVertexGeometryOperation.
 	d_split_feature_geometry_operation->activate(geometry_builder, main_layer_type);
 
-	switch (get_view())
-	{
-		case GLOBE_VIEW:
-			set_status_bar_message(QObject::tr(
-				"Click to split the current feature into two."
-				" Ctrl+drag to re-orient the globe."));
-			break;
-
-		case MAP_VIEW:
-			set_status_bar_message(QObject::tr(
-				"Click to split the current feature into two."
-				" Ctrl+drag to pan the map."));
-			break;
-
-		default:
-			break;
-	}
+	set_status_bar_message(QT_TR_NOOP("Click to split the current feature into two."));
 }
 
 
@@ -128,7 +112,8 @@ GPlatesCanvasTools::SplitFeature::handle_left_drag(
 		double initial_proximity_inclusion_threshold,
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
-		double current_proximity_inclusion_threshold)
+		double current_proximity_inclusion_threshold,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 	d_split_feature_geometry_operation->mouse_move(
 			current_point_on_sphere,

@@ -76,23 +76,7 @@ GPlatesCanvasTools::InsertVertex::handle_activation()
 	// Activate our InsertVertexGeometryOperation.
 	d_insert_vertex_geometry_operation->activate(geometry_builder, main_layer_type);
 
-	switch (get_view())
-	{
-		case GLOBE_VIEW:
-			set_status_bar_message(QObject::tr(
-				"Click to insert a vertex into the current geometry."
-				" Ctrl+drag to re-orient the globe."));
-			break;
-
-		case MAP_VIEW:
-			set_status_bar_message(QObject::tr(
-				"Click to insert a vertex into the current geometry."
-				" Ctrl+drag to pan the map."));
-			break;
-
-		default:
-			break;
-	}
+	set_status_bar_message(QT_TR_NOOP("Click to insert a vertex into the current geometry."));
 }
 
 
@@ -122,7 +106,8 @@ GPlatesCanvasTools::InsertVertex::handle_left_drag(
 		double initial_proximity_inclusion_threshold,
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
-		double current_proximity_inclusion_threshold)
+		double current_proximity_inclusion_threshold,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 	d_insert_vertex_geometry_operation->mouse_move(
 			current_point_on_sphere,

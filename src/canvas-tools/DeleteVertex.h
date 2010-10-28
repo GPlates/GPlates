@@ -57,16 +57,10 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to delete vertices from geometry.
 	 */
-	class DeleteVertex:
+	class DeleteVertex :
 			public CanvasTool
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<DeleteVertex,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<DeleteVertex,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
 		~DeleteVertex();

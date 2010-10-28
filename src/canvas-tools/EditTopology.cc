@@ -33,30 +33,36 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/TopologyInternalUtils.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "global/InternalInconsistencyException.h"
+
 #include "gui/AddClickedGeometriesToFeatureTable.h"
+
 #include "maths/LatLonPoint.h"
+
 #include "model/FeatureHandle.h"
+
 #include "presentation/ViewState.h"
+
 #include "property-values/XsString.h"
+
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/TopologyToolsWidget.h"
 #include "qt-widgets/ViewportWindow.h"
+
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
 
 
 GPlatesCanvasTools::EditTopology::EditTopology(
-		GPlatesGui::Globe &globe_,
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		GPlatesPresentation::ViewState &view_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,	
 		GPlatesGui::TopologySectionsContainer &topology_sections_container,
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 		GPlatesAppLogic::ApplicationState &application_state):
-	GlobeCanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&view_state_.get_rendered_geometry_collection()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
@@ -64,11 +70,8 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 	d_topology_tools_widget_ptr(&topology_tools_widget),
 	d_feature_focus_ptr(&view_state_.get_feature_focus()),
 	d_reconstruct_graph(application_state.get_reconstruct_graph())
-{
-}
+{  }
 
-
-	
 
 void
 GPlatesCanvasTools::EditTopology::handle_activation()
@@ -84,21 +87,20 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 
 	// else check type 
 
-	// Check feature type via qstrings 
 	//
 	// FIXME: Do this check based on feature properties rather than feature type.
 	// So if something looks like a TCPB (because it has a topology polygon property)
 	// then treat it like one. For this to happen we first need TopologicalNetwork to
 	// use a property type different than TopologicalPolygon.
 	//
-	static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
-	static const QString topology_network_type_name ("TopologicalNetwork");
-	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		d_feature_focus_ptr->focused_feature()->feature_type().get_name() );
+	static const GPlatesModel::FeatureType topology_boundary_type =
+		GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
+	static const GPlatesModel::FeatureType topology_network_type =
+		GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
+	const GPlatesModel::FeatureType &feature_type = d_feature_focus_ptr->focused_feature()->feature_type();
 
 	// Only activate for topologies
-	if ( ( feature_type_name != topology_boundary_type_name ) &&
-		( feature_type_name != topology_network_type_name ) )
+	if (feature_type != topology_boundary_type && feature_type != topology_network_type)
 	{
 		// unset the focus
  		d_feature_focus_ptr->unset_focus();
@@ -113,6 +115,8 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
 	d_topology_tools_widget_ptr->activate( GPlatesGui::TopologyTools::EDIT );
+
+	set_status_bar_message(QT_TR_NOOP("Click a feature to add it to a topology."));
 }
 
 void
@@ -124,18 +128,15 @@ GPlatesCanvasTools::EditTopology::handle_deactivation()
 
 void
 GPlatesCanvasTools::EditTopology::handle_left_click(
-		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-		bool is_on_globe)
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
 {
 	// Show the 'Clicked' Feature Table
 	d_viewport_window_ptr->choose_clicked_geometry_table();
 
-	const double proximity_inclusion_threshold =
-			globe_canvas().current_proximity_inclusion_threshold(click_pos_on_globe);
-
 	GPlatesGui::add_clicked_geometries_to_feature_table(
-			oriented_click_pos_on_globe,
+			point_on_sphere,
 			proximity_inclusion_threshold,
 			*d_viewport_window_ptr,
 			*d_clicked_table_model_ptr,
@@ -143,29 +144,5 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 			*d_rendered_geom_collection,
 			d_reconstruct_graph,
 			&GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries);
-
-	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
-		oriented_click_pos_on_globe);
-}
-
-
-void
-GPlatesCanvasTools::EditTopology::handle_shift_left_click(
-		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-		bool is_on_globe)
-{
-	handle_left_click(click_pos_on_globe, oriented_click_pos_on_globe, is_on_globe);
-
-	// Pass the click info to the widget.
-	//
-	// NOTE: This is done after adding the clicked geometries to the feature table
-	// to ensure that the focused feature is set, or unset, first since our handling
-	// of shift-left-click relies on this. For example, changing the stored click point
-	// in a topological section which only changes it if there's a focused feature
-	// at the clicked point.
-	//
-	d_topology_tools_widget_ptr->handle_shift_left_click(
-		click_pos_on_globe, oriented_click_pos_on_globe, is_on_globe);
 }
 

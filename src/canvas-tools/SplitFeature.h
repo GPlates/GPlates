@@ -58,16 +58,10 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to insert vertices into geometry.
 	 */
-	class SplitFeature:
+	class SplitFeature :
 			public CanvasTool
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<InsertVertex,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<SplitFeature,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
 		~SplitFeature();
@@ -110,7 +104,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold);
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
 
 		virtual
 		void

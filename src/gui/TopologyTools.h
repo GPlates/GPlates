@@ -156,12 +156,6 @@ namespace GPlatesGui
 		//
 
 		void
-		handle_shift_left_click(
-			const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-			const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-			bool is_on_globe);
-
-		void
 		handle_create_new_feature(
 			GPlatesModel::FeatureHandle::weak_ref);
 

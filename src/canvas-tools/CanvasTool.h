@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,10 +29,8 @@
 #define GPLATES_CANVASTOOLS_CANVASTOOL_H
 
 #include <boost/noncopyable.hpp>
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
-#include <QString>
 
 #include "maths/PointOnSphere.h"
 
@@ -67,51 +65,19 @@ namespace GPlatesCanvasTools
 
 	public:
 
-		/**
-		 * What view is this instance of CanvasTool being used in?
-		 * (Main use: providing context-sensitive status bar messages)
-		 */
-		enum View
-		{
-			GLOBE_VIEW,
-			MAP_VIEW
-		};
-
-		/**
-		 * Construct a new instance of CanvasTool. View defaults to globe view.
-		 */
-		CanvasTool():
-			d_view(GLOBE_VIEW)
-		{
-		}
-
-		/**
-		 * Construct a new instance of CanvasTool, specifying whether it is being
-		 * used in a globe or a map @a view.
-		 */
-		explicit
-		CanvasTool(
-				View view):
-			d_view(view)
-		{
-		}
-
 		virtual
 		~CanvasTool()
-		{
-		}
+		{  }
 
 		virtual
 		void
 		handle_activation()
-		{
-		}
+		{  }
 
 		virtual
 		void
 		handle_deactivation()
-		{
-		}
+		{  }
 
 		virtual
 		void
@@ -119,8 +85,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 		
 		virtual
 		void
@@ -128,8 +93,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 
 		virtual
 		void
@@ -139,9 +103,9 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
-		{
-		}
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		{  }
 
 		virtual
 		void
@@ -151,9 +115,9 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
-		{
-		}
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		{  }
 
 		virtual
 		void
@@ -161,8 +125,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 
 		virtual
 		void
@@ -172,9 +135,9 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
-		{
-		}
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		{  }
 
 		virtual
 		void
@@ -184,9 +147,9 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
-		{
-		}
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		{  }
 
 		virtual
 		void
@@ -194,8 +157,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 
 		virtual
 		bool
@@ -205,7 +167,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 		{
 			return true; // perform default behaviour (rotate globe)
 		}
@@ -218,7 +181,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 		{
 			return true; // perform default behaviour (rotate globe)
 		}
@@ -229,8 +193,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 
 		virtual
 		bool
@@ -240,7 +203,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 		{
 			return true; // perform default behaviour (rotate globe)
 		}
@@ -253,7 +217,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 		{
 			return true; // perform default behaviour (rotate globe)
 		}
@@ -264,27 +229,14 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
-
-		void
-		set_view(View view)
-		{
-			d_view = view;
-		}
-
-		View
-		get_view()
-		{
-			return d_view;
-		}
+		{  }
 
 		/**
-		 * Adds the @a listener for status bar updates.
+		 * Adds a @a callback that the canvas tool can use to set status bar messages.
 		 */
 		void
 		set_status_bar_callback(
-				const boost::function< void ( const QString & ) > &callback)
+				const boost::function< void ( const char * ) > &callback)
 		{
 			d_status_bar_callback = callback;
 		}
@@ -293,22 +245,24 @@ namespace GPlatesCanvasTools
 
 		/**
 		 * Subclasses call this function to set text on the status bar.
-		 * All listeners are notified of the @message.
+		 *
+		 * Note that @a message should *not* have been translated, i.e. passed
+		 * through QObject::tr().
 		 */
 		void
 		set_status_bar_message(
-				const QString &message)
+				const char *message)
 		{
-			d_status_bar_callback(message);
+			if (d_status_bar_callback)
+			{
+				d_status_bar_callback(message);
+			}
 		}
 
 	private:
 
-		//! The view that this CanvasTool is being used in (globe or map)
-		View d_view;
-
 		//! The callback used to show text on the status bar.
-		boost::function< void ( const QString & ) > d_status_bar_callback;
+		boost::function< void ( const char * ) > d_status_bar_callback;
 	};
 
 }

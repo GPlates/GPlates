@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2009-02-06 15:36:27 -0800 (Fri, 06 Feb 2009) $
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
@@ -33,32 +33,39 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/TopologyInternalUtils.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "global/InternalInconsistencyException.h"
+
 #include "gui/AddClickedGeometriesToFeatureTable.h"
+
 #include "maths/LatLonPoint.h"
+
 #include "model/FeatureHandle.h"
+
 #include "presentation/ViewState.h"
+
 #include "property-values/XsString.h"
+
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/TopologyToolsWidget.h"
 #include "qt-widgets/ViewportWindow.h"
+
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
+
 #include "view-operations/RenderedGeometryProximity.h"
 #include "view-operations/RenderedGeometryUtils.h"
 
 
 GPlatesCanvasTools::BuildTopology::BuildTopology(
-		GPlatesGui::Globe &globe_,
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		GPlatesPresentation::ViewState &view_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,	
 		GPlatesGui::TopologySectionsContainer &topology_sections_container,
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 		GPlatesAppLogic::ApplicationState &application_state):
-	GlobeCanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&view_state_.get_rendered_geometry_collection()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
@@ -66,8 +73,7 @@ GPlatesCanvasTools::BuildTopology::BuildTopology(
 	d_topology_tools_widget_ptr(&topology_tools_widget),
 	d_feature_focus_ptr(&view_state_.get_feature_focus()),
 	d_reconstruct_graph(application_state.get_reconstruct_graph())
-{
-}
+{  }
 
 
 void
@@ -85,6 +91,8 @@ GPlatesCanvasTools::BuildTopology::handle_activation()
 	}
 
 	d_topology_tools_widget_ptr->activate( GPlatesGui::TopologyTools::BUILD );
+
+	set_status_bar_message(QT_TR_NOOP("Click a feature to add it to a topology."));
 }
 
 
@@ -97,18 +105,15 @@ GPlatesCanvasTools::BuildTopology::handle_deactivation()
 
 void
 GPlatesCanvasTools::BuildTopology::handle_left_click(
-		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-		bool is_on_globe)
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
 {
 	// Show the 'Clicked' Feature Table
 	d_viewport_window_ptr->choose_clicked_geometry_table();
-
-	const double proximity_inclusion_threshold =
-			globe_canvas().current_proximity_inclusion_threshold(click_pos_on_globe);
 	
 	GPlatesGui::add_clicked_geometries_to_feature_table(
-			oriented_click_pos_on_globe,
+			point_on_sphere,
 			proximity_inclusion_threshold,
 			*d_viewport_window_ptr,
 			*d_clicked_table_model_ptr,
@@ -116,28 +121,5 @@ GPlatesCanvasTools::BuildTopology::handle_left_click(
 			*d_rendered_geom_collection,
 			d_reconstruct_graph,
 			&GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries);
-
-	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
-		oriented_click_pos_on_globe);
 }
 
-
-void
-GPlatesCanvasTools::BuildTopology::handle_shift_left_click(
-		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-		bool is_on_globe)
-{
-	handle_left_click(click_pos_on_globe, oriented_click_pos_on_globe, is_on_globe);
-
-	// Pass the click info to the widget.
-	//
-	// NOTE: This is done after adding the clicked geometries to the feature table
-	// to ensure that the focused feature is set, or unset, first since our handling
-	// of shift-left-click relies on this. For example, changing the stored click point
-	// in a topological section which only changes it if there's a focused feature
-	// at the clicked point.
-	//
-	d_topology_tools_widget_ptr->handle_shift_left_click(
-		click_pos_on_globe, oriented_click_pos_on_globe, is_on_globe);
-}

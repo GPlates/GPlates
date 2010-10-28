@@ -269,10 +269,6 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 			QMessageBox::Ok);
 	}
 
-	d_viewport_window_ptr->status_message(QObject::tr(
- 		"Click on a features to Add or Remove them from the Topology."
- 		" Ctrl+drag to reorient the globe."));
-
 	return;
 }
 
@@ -900,77 +896,6 @@ GPlatesGui::TopologyTools::initialise_focused_topology()
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_section_info_seq.size() == d_topology_sections_container_ptr->size(),
 			GPLATES_ASSERTION_SOURCE);
-}
-
-
-void
-GPlatesGui::TopologyTools::handle_shift_left_click(
-	const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-	const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-	bool is_on_globe)
-{
-	//
-	// NOTE: This method is currently not needed since the user no longer needs
-	// to set the click point because the click point no longer determines which
-	// partitioned subsegment of a section contributes to the plate polygon boundary.
-	//
-	// However this method is left here until we are sure that the new way of
-	// doing things is what we want.
-	//
-	// FIXME: Remove this method and all references to present day and reconstructed
-	// click points.
-	//
-#if 0
-
-	// Check if the focused feature is valid
-	if ( !d_feature_focus_ptr->is_valid() )
-	{
-		// no feature focused ; just return
-		return;
-	}
-
-	// Check if the focused feature is a topology
-	//
-	// FIXME: Do this check based on feature properties rather than feature type.
-	// So if something looks like a TCPB (because it has a topology polygon property)
-	// then treat it like one. For this to happen we first need TopologicalNetwork to
-	// use a property type different than TopologicalPolygon.
-	//
-	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
-	static const QString topology_network_type_name("TopologicalNetwork");
-	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		(d_feature_focus_ptr->focused_feature())->feature_type().get_name() );
-	if ( feature_type_name == topology_boundary_type_name ||
-		feature_type_name == topology_network_type_name ) 
-	{
-		return;
-	}
-
-	// check if the focused feature is in the topology
-	const int section_index = find_topological_section_index(
-			d_feature_focus_ptr->focused_feature(),
-			d_feature_focus_ptr->associated_geometry_property());
-
-	if (section_index < 0)
-	{
-		return;
-	}
-
-	SectionInfo &section_info = d_section_info_seq[section_index];
-
-	// Set the unrotated user click point in the table row.
-	section_info.d_table_row.set_present_day_click_point(
-			d_click_point.d_present_day_click_point);
-
-	// Update the row in the topology sections container.
-	// NOTE: This will generate a signal that will call our 'react_entry_modified()' method.
-	d_topology_sections_container_ptr->update_at(
-			section_index,
-			section_info.d_table_row);
-
-	// flip the tab
-	d_topology_tools_widget_ptr->choose_topology_tab();
-#endif
 }
 
 

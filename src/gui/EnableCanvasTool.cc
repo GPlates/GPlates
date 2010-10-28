@@ -393,21 +393,20 @@ GPlatesGui::EnableCanvasTool::is_focused_feature_topological_boundary_or_network
 {
 	if (d_feature_focus->is_valid())
 	{
-		// Check feature type via qstrings
 		//
 		// FIXME: Do this check based on feature properties rather than feature type.
 		// So if something looks like a TCPB (because it has a topology polygon property)
 		// then treat it like one. For this to happen we first need TopologicalNetwork to
 		// use a property type different than TopologicalPolygon.
 		//
-		static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
-		static const QString topology_network_type_name ("TopologicalNetwork");
-		QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-				d_feature_focus->focused_feature()->feature_type().get_name() );
+		static const GPlatesModel::FeatureType topology_boundary_type =
+			GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
+		static const GPlatesModel::FeatureType topology_network_type =
+			GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
+		const GPlatesModel::FeatureType &feature_type = d_feature_focus->focused_feature()->feature_type();
 
 		// Only activate for topologies.
-		if (feature_type_name == topology_boundary_type_name ||
-			feature_type_name == topology_network_type_name)
+		if (feature_type == topology_boundary_type || feature_type == topology_network_type)
 		{
 			return true;
 		}

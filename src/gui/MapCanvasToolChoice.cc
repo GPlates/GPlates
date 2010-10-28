@@ -28,14 +28,15 @@
 #include "MapCanvasToolChoice.h"
 
 #include "canvas-tools/CanvasToolAdapterForMap.h"
+#include "canvas-tools/BuildTopology.h"
+#include "canvas-tools/EditTopology.h"
 #include "canvas-tools/MeasureDistance.h"
 #include "canvas-tools/DigitiseGeometry.h"
 #include "canvas-tools/ClickGeometry.h"
 #include "canvas-tools/DeleteVertex.h"
 #include "canvas-tools/InsertVertex.h"
 #include "canvas-tools/MoveVertex.h"
-
-#include "canvas-tools/MapManipulatePole.h"
+#include "canvas-tools/ManipulatePole.h"
 
 #include "canvas-tools/PanMap.h"
 #include "canvas-tools/ZoomMap.h"
@@ -43,6 +44,7 @@
 #include "qt-widgets/DigitisationWidget.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
+
 
 GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
@@ -52,7 +54,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
 		GPlatesQtWidgets::MapView &map_view_,
-		GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesPresentation::ViewState &view_state_,
+		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		FeatureTableModel &clicked_table_model,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 		GPlatesGui::FeatureFocus &feature_focus,
@@ -65,24 +68,24 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 	d_pan_map_tool_ptr(GPlatesCanvasTools::PanMap::create(
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
 	d_zoom_map_tool_ptr(GPlatesCanvasTools::ZoomMap::create(
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
 	d_click_geometry_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::ClickGeometry(
 				rendered_geom_collection,
-				view_state_,
+				viewport_window_,
 				clicked_table_model,
 				fp_dialog,
 				feature_focus,
 				application_state),
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
 	d_digitise_polyline_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::DigitiseGeometry(
@@ -95,7 +98,7 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
 	d_digitise_multipoint_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::DigitiseGeometry(
@@ -108,7 +111,7 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
 	d_digitise_polygon_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::DigitiseGeometry(
@@ -121,7 +124,7 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
 	d_move_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::MoveVertex(
@@ -130,10 +133,10 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				rendered_geom_collection,
 				choose_canvas_tool,
 				query_proximity_threshold,
-				&view_state_),
+				&viewport_window_),
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
 	d_delete_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::DeleteVertex(
@@ -144,7 +147,7 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
 	d_insert_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::InsertVertex(
@@ -155,14 +158,39 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				query_proximity_threshold),
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
-	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::MapManipulatePole::create(
-			rendered_geom_collection,
+	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
+			new GPlatesCanvasTools::ManipulatePole(
+				rendered_geom_collection,
+				pole_widget),
 			map_canvas_,
 			map_view_,
-			view_state_,
-			pole_widget,
+			viewport_window_,
+			map_transform_)),
+	d_build_topology_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
+			new GPlatesCanvasTools::BuildTopology(
+				view_state_,
+				viewport_window_, 
+				clicked_table_model, 
+				topology_sections_container,
+				topology_tools_widget,
+				application_state),
+			map_canvas_,
+			map_view_,
+			viewport_window_,
+			map_transform_)),
+	d_edit_topology_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
+			new GPlatesCanvasTools::EditTopology(
+				view_state_,
+				viewport_window_, 
+				clicked_table_model, 
+				topology_sections_container,
+				topology_tools_widget,
+				application_state),
+			map_canvas_,
+			map_view_,
+			viewport_window_,
 			map_transform_)),
 	d_measure_distance_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 			new GPlatesCanvasTools::MeasureDistance(
@@ -170,7 +198,7 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 				measure_distance_state),
 			map_canvas_,
 			map_view_,
-			view_state_,
+			viewport_window_,
 			map_transform_)),
 	d_tool_choice_ptr(d_pan_map_tool_ptr)
 {
@@ -207,3 +235,4 @@ GPlatesGui::MapCanvasToolChoice::change_tool_if_necessary(
 	d_tool_choice_ptr = new_tool_choice;
 	d_tool_choice_ptr->handle_activation();
 }
+

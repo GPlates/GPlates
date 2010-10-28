@@ -432,6 +432,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 					map_view(),
 					map_view().map_canvas(),
 					map_view(),
+					get_view_state(),
 					*this,
 					*d_feature_table_model_ptr,
 					*d_feature_properties_dialog_ptr,
@@ -1622,9 +1623,8 @@ GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 {
 	action_Manipulate_Pole->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
-
-// The map's manipulate pole tool doesn't yet do anything. 
 	d_map_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
+
 	d_task_panel_ptr->choose_modify_pole_tab();
 }
 
@@ -1642,14 +1642,8 @@ GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 {
 	action_Build_Topology->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_build_topology_tool();
-	// FIXME: There is no MapCanvasToolChoice equivalent yet.
-	
-	if (d_reconstruction_view_widget.map_is_active())
-	{
-		status_message(QObject::tr(
-			"Build topology tool is not yet available on the map. Use the globe projection to build a topology."
-			" Ctrl+drag to pan the map."));		
-	}
+	d_map_canvas_tool_choice_ptr->choose_build_topology_tool();
+
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
@@ -1667,13 +1661,8 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 {
 	action_Edit_Topology->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_edit_topology_tool();
-	// FIXME: There is no MapCanvasToolChoice equivalent yet.
-	if(d_reconstruction_view_widget.map_is_active())
-	{
-		status_message(QObject::tr(
-			"Edit topology tool is not yet available on the map. Use the globe projection to edit a topology."
-			" Ctrl+drag to pan the map."));			
-	}
+	d_map_canvas_tool_choice_ptr->choose_edit_topology_tool();
+
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
@@ -1996,32 +1985,10 @@ GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
 
 void
 GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
-{
-	// These calls ensure that the correct status message is displayed. 
-	d_map_canvas_tool_choice_ptr->tool_choice().handle_activation();
-	d_globe_canvas_tool_choice_ptr->tool_choice().handle_activation();
-	
+{	
 	bool globe_is_active = d_reconstruction_view_widget.globe_is_active();
 	action_Show_Arrow_Decorations->setEnabled(globe_is_active);
 	action_Show_Stars->setEnabled(globe_is_active);
-	
-	// Grey-out the modify pole tab when in map mode. 
-	d_task_panel_ptr->set_tab_enabled(TaskPanel::MODIFY_POLE, globe_is_active);
-	d_task_panel_ptr->set_tab_enabled(TaskPanel::TOPOLOGY_TOOLS, globe_is_active);
-	
-	// Display appropriate status bar message for tools which are not available on the map.
-	if (action_Build_Topology->isChecked() && d_reconstruction_view_widget.map_is_active())
-	{
-		status_message(QObject::tr(
-			"Build topology tool is not yet available on the map. Use the globe projection to build a topology."
-			" Ctrl+drag to pan the map."));		
-	}
-	else if(action_Edit_Topology->isChecked() && d_reconstruction_view_widget.map_is_active())
-	{
-		status_message(QObject::tr(
-			"Edit topology tool is not yet available on the map. Use the globe projection to edit a topology."
-			" Ctrl+drag to pan the map."));			
-	}
 }
 
 

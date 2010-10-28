@@ -60,20 +60,13 @@ namespace GPlatesCanvasTools
 	/**
 	 * Canvas tool used to measuring distances on the globe and map
 	 */
-	class MeasureDistance:
+	class MeasureDistance :
 			public QObject,
 			public CanvasTool
 	{
 		Q_OBJECT
 
 	public:
-
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<MeasureDistance,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<MeasureDistance,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		MeasureDistance (
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,

@@ -57,16 +57,10 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to move individual vertices of geometry.
 	 */
-	class MoveVertex:
+	class MoveVertex :
 			public CanvasTool
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<MoveVertex,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<MoveVertex,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
 		~MoveVertex();
@@ -116,7 +110,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold);
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
 
 		virtual
 		void
@@ -126,7 +121,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold);
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
 				
 		void
 		handle_move_without_drag(
@@ -159,17 +155,16 @@ namespace GPlatesCanvasTools
 
 		void
 		handle_activation(
-			GPlatesViewOperations::GeometryOperationTarget *geometry_operation_target,
-			GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation);
+				GPlatesViewOperations::GeometryOperationTarget *geometry_operation_target,
+				GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation);
 
 		void
 		handle_left_drag(
-			bool &is_in_drag,
-			GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation,
-			const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-			const double &closeness_inclusion_threshold,
-			const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe);
-
+				bool &is_in_drag,
+				GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				const double &closeness_inclusion_threshold,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe);
 	};
 }
 

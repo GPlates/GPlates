@@ -28,14 +28,15 @@
 #ifndef GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORMAP_H
 #define GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORMAP_H
 
+#include <boost/scoped_ptr.hpp>
+#include <boost/optional.hpp>
 #include <QPointF>
 #include <QString>
 
-#include <boost/scoped_ptr.hpp>
-#include <boost/optional.hpp>
-
 #include "CanvasTool.h"
+
 #include "gui/MapCanvasTool.h"
+
 
 namespace GPlatesGui
 {
@@ -213,6 +214,54 @@ namespace GPlatesCanvasTools
 				GPlatesGui::MapTransform &map_transform_);
 		
 	private:
+
+		/**
+		 * Typedef for a pointer to a member function of CanvasTool used for clicks
+		 * and moves without drag.
+		 */
+		typedef void (CanvasTool::*canvas_tool_click_func)
+			(const GPlatesMaths::PointOnSphere &, bool, double);
+
+		/**
+		 * Typedef for a pointer to a member function of CanvasTool used for drag
+		 * operations that do not have a default action.
+		 */
+		typedef void (CanvasTool::*canvas_tool_drag_func_without_default)
+			(const GPlatesMaths::PointOnSphere &, bool, double,
+			 const GPlatesMaths::PointOnSphere &, bool, double,
+			 const boost::optional<GPlatesMaths::PointOnSphere> &);
+
+		/**
+		 * Typedef for a pointer to a member function of CanvasTool used for drag
+		 * operations that have a default action.
+		 */
+		typedef bool (CanvasTool::*canvas_tool_drag_func_with_default)
+			(const GPlatesMaths::PointOnSphere &, bool, double,
+			 const GPlatesMaths::PointOnSphere &, bool, double,
+			 const boost::optional<GPlatesMaths::PointOnSphere> &);
+
+		void
+		invoke_canvas_tool_func(
+				const QPointF &click_point_on_scene,
+				bool is_on_surface,
+				const canvas_tool_click_func &func);
+
+		void
+		invoke_canvas_tool_func(
+				const QPointF &initial_point_on_scene,
+				bool was_on_surface,
+				const QPointF &current_point_on_scene,
+				bool is_on_surface,
+				const canvas_tool_drag_func_without_default &func);
+
+		bool
+		invoke_canvas_tool_func(
+				const QPointF &initial_point_on_scene,
+				bool was_on_surface,
+				const QPointF &current_point_on_scene,
+				bool is_on_surface,
+				const canvas_tool_drag_func_with_default &func);
+				
 
 		//! A pointer to the CanvasTool instance that we wrap around
 		boost::scoped_ptr<CanvasTool> d_canvas_tool_ptr;

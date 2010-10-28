@@ -26,11 +26,13 @@
 #ifndef GPLATES_GUI_MAPCANVASTOOLCHOICE_H
 #define GPLATES_GUI_MAPCANVASTOOLCHOICE_H
 
+#include <boost/noncopyable.hpp>
 #include <QObject>
 
-#include "gui/FeatureFocus.h"
 #include "MapCanvasTool.h"
 #include "FeatureTableModel.h"
+
+#include "gui/FeatureFocus.h"
 
 
 namespace GPlatesAppLogic
@@ -61,6 +63,11 @@ namespace GPlatesCanvasTools
 	class MeasureDistanceState;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesViewOperations
 {
 	class ActiveGeometryOperation;
@@ -79,7 +86,8 @@ namespace GPlatesGui
 	 * This serves the role of the Context class in the State Pattern in Gamma et al.
 	 */
 	class MapCanvasToolChoice:
-			public QObject
+			public QObject,
+			public boost::noncopyable
 	{
 		Q_OBJECT
 
@@ -99,6 +107,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
+				GPlatesPresentation::ViewState &view_state_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
@@ -196,6 +205,18 @@ namespace GPlatesGui
 		}
 
 		void
+		choose_build_topology_tool()
+		{
+			change_tool_if_necessary(d_build_topology_tool_ptr);
+		}
+
+		void
+		choose_edit_topology_tool()
+		{
+			change_tool_if_necessary(d_edit_topology_tool_ptr);
+		}
+
+		void
 		choose_measure_distance_tool()
 		{
 			change_tool_if_necessary(d_measure_distance_tool_ptr);
@@ -247,7 +268,6 @@ namespace GPlatesGui
 		*/
 		MapCanvasTool::non_null_ptr_type d_insert_vertex_tool_ptr;
 
-
 #if 0
 		/**
 		 * This is the MoveGeometry tool which the user may choose.
@@ -261,6 +281,16 @@ namespace GPlatesGui
 		MapCanvasTool::non_null_ptr_type d_manipulate_pole_tool_ptr;
 
 		/**
+		 * This is the BuildTopology tool which the user may choose.
+		 */
+		MapCanvasTool::non_null_ptr_type d_build_topology_tool_ptr;
+
+		/**
+		 * This is the EditTopology tool which the user may choose.
+		 */
+		MapCanvasTool::non_null_ptr_type d_edit_topology_tool_ptr;
+
+		/**
 		 * This is the Measure Distance canvas tool which the user may choose.
 		 */
 		MapCanvasTool::non_null_ptr_type d_measure_distance_tool_ptr;
@@ -269,17 +299,6 @@ namespace GPlatesGui
 		 * The current choice of CanvasTool.
 		 */
 		MapCanvasTool::non_null_ptr_type d_tool_choice_ptr;
-
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		MapCanvasToolChoice(
-				const MapCanvasToolChoice &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		MapCanvasToolChoice &
-		operator=(
-				const MapCanvasToolChoice &);
 
 		void
 		change_tool_if_necessary(

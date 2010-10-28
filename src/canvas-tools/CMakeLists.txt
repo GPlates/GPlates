@@ -27,12 +27,10 @@ set(srcs
     DigitiseGeometry.h
     EditTopology.cc
     EditTopology.h
-    GlobeManipulatePole.cc
-    GlobeManipulatePole.h
     InsertVertex.cc
     InsertVertex.h
-    MapManipulatePole.cc
-    MapManipulatePole.h
+    ManipulatePole.cc
+    ManipulatePole.h
     MeasureDistance.cc
     MeasureDistance.h
     MeasureDistanceState.cc
