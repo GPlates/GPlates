@@ -70,7 +70,6 @@ POP_MSVC_WARNINGS
 #include "utils/FloatingPointComparisons.h"
 
 
-
 // All code in this namespace was copied from "file-io/ReconstructedFeatureGeometryExportImpl.h"
 // and "file-io/ReconstructedFeatureGeometryExportImpl.cc".
 namespace
@@ -410,7 +409,6 @@ namespace
 	}
 
 }
-
 
 
 namespace
@@ -844,3 +842,9 @@ GPlatesGui::ExportVelocityAnimationStrategy::get_filename_template_desc()
 }
 
 
+// Quash warning C4503 ("decorated name length exceeded, name was truncated")
+// on VS2008 with CGAL 3.6.1.
+// It's here at the end of the file by a process of trial and error; the warning
+// is probably being emitted here because the compiler is instantiating
+// templates at the end of the file.
+DISABLE_MSVC_WARNING(4503)
