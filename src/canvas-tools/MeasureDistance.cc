@@ -73,8 +73,10 @@ const int
 GPlatesCanvasTools::MeasureDistance::LABEL_Y_OFFSET = 5;
 
 GPlatesCanvasTools::MeasureDistance::MeasureDistance(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state):
+		const status_bar_callback_type &status_bar_callback,
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state) :
+	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection_ptr(&rendered_geom_collection),
 	d_measure_distance_state_ptr(&measure_distance_state),
 	d_main_layer_ptr(measure_distance_state.get_main_layer_ptr()),

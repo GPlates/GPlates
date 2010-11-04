@@ -32,13 +32,15 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesViewOperations::GeometryType::Value geom_type,
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
-		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold):
+		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold) :
+	CanvasTool(status_bar_callback),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_geometry_operation_target(&geometry_operation_target),
 	d_canvas_tool_type(canvas_tool_type),
@@ -51,8 +53,7 @@ GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
 			   &rendered_geometry_collection,
 			   choose_canvas_tool,
 			   query_proximity_threshold))
-{
-}
+{  }
 
 
 GPlatesCanvasTools::DigitiseGeometry::~DigitiseGeometry()

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,179 +27,104 @@
 
 #include "GlobeCanvasToolChoice.h"
 
-#include "canvas-tools/CanvasToolType.h"
+#include "GlobeCanvasTool.h"
+
+#include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
 
-#include "canvas-tools/CanvasToolAdapterForGlobe.h"
-#include "canvas-tools/BuildTopology.h"
-#include "canvas-tools/EditTopology.h"
-#include "canvas-tools/MeasureDistance.h"
-#include "canvas-tools/DigitiseGeometry.h"
-#include "canvas-tools/ClickGeometry.h"
-#include "canvas-tools/DeleteVertex.h"
-#include "canvas-tools/InsertVertex.h"
-#include "canvas-tools/MoveVertex.h"
-#include "canvas-tools/SplitFeature.h"
-#include "canvas-tools/ManipulatePole.h"
-
-#include "qt-widgets/DigitisationWidget.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 
 GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
-		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 		Globe &globe,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 		GPlatesQtWidgets::ViewportWindow &viewport_window,
 		GPlatesPresentation::ViewState &view_state,
-		FeatureTableModel &clicked_table_model,
-		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
-		GPlatesGui::FeatureFocus &feature_focus,
-		GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget,
-		GPlatesGui::TopologySectionsContainer &topology_sections_container,
-		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state):
-	d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_zoom_globe_tool_ptr(GPlatesCanvasTools::ZoomGlobe::create(
-			globe,
-			globe_canvas,
-			viewport_window,
-			view_state)),
-	d_click_geometry_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::ClickGeometry(
-				rendered_geom_collection,
+		const GPlatesCanvasTools::ClickGeometry::non_null_ptr_type &click_geometry_tool,
+		const GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type &digitise_polyline_tool,
+		const GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type &digitise_multipoint_tool,
+		const GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type &digitise_polygon_tool,
+		const GPlatesCanvasTools::MoveVertex::non_null_ptr_type &move_vertex_tool,
+		const GPlatesCanvasTools::DeleteVertex::non_null_ptr_type &delete_vertex_tool,
+		const GPlatesCanvasTools::InsertVertex::non_null_ptr_type &insert_vertex_tool,
+		const GPlatesCanvasTools::SplitFeature::non_null_ptr_type &split_feature_tool,
+		const GPlatesCanvasTools::ManipulatePole::non_null_ptr_type &manipulate_pole_tool,
+		const GPlatesCanvasTools::BuildTopology::non_null_ptr_type &build_topology_tool,
+		const GPlatesCanvasTools::EditTopology::non_null_ptr_type &edit_topology_tool,
+		const GPlatesCanvasTools::MeasureDistance::non_null_ptr_type &measure_distance_tool) :
+	d_reorient_globe_tool_ptr(
+			new GPlatesCanvasTools::ReorientGlobe(
+				globe,
+				globe_canvas,
+				viewport_window)),
+	d_zoom_globe_tool_ptr(
+			new GPlatesCanvasTools::ZoomGlobe(
+				globe,
+				globe_canvas,
 				viewport_window,
-				clicked_table_model,
-				fp_dialog,
-				feature_focus,
-				view_state.get_application_state()),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_digitise_polyline_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::DigitiseGeometry(
-				GPlatesViewOperations::GeometryType::POLYLINE,
-				geometry_operation_target,
-				active_geometry_operation,
-				rendered_geom_collection,
-				choose_canvas_tool,
-				GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE,
-				query_proximity_threshold),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_digitise_multipoint_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::DigitiseGeometry(
-				GPlatesViewOperations::GeometryType::MULTIPOINT,
-				geometry_operation_target,
-				active_geometry_operation,
-				rendered_geom_collection,
-				choose_canvas_tool,
-				GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT,
-				query_proximity_threshold),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_digitise_polygon_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::DigitiseGeometry(
-				GPlatesViewOperations::GeometryType::POLYGON,
-				geometry_operation_target,
-				active_geometry_operation,
-				rendered_geom_collection,
-				choose_canvas_tool,
-				GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON,
-				query_proximity_threshold),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_move_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::MoveVertex(
-				geometry_operation_target,
-				active_geometry_operation,
-				rendered_geom_collection,
-				choose_canvas_tool,
-				query_proximity_threshold,
-				&viewport_window),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_delete_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::DeleteVertex(
-				geometry_operation_target,
-				active_geometry_operation,
-				rendered_geom_collection,
-				choose_canvas_tool,
-				query_proximity_threshold),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_insert_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::InsertVertex(
-				geometry_operation_target,
-				active_geometry_operation,
-				rendered_geom_collection,
-				choose_canvas_tool,
-				query_proximity_threshold),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_split_feature_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::SplitFeature(
-				feature_focus,
-				view_state,
-				geometry_operation_target,
-				active_geometry_operation,
-				rendered_geom_collection,
-				choose_canvas_tool,
-				query_proximity_threshold),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::ManipulatePole(
-				rendered_geom_collection,
-				pole_widget),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_build_topology_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::BuildTopology(
-				view_state,
-				viewport_window, 
-				clicked_table_model, 
-				topology_sections_container,
-				topology_tools_widget,
-				view_state.get_application_state()),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_edit_topology_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::EditTopology(
-				view_state,
-				viewport_window, 
-				clicked_table_model, 
-				topology_sections_container,
-				topology_tools_widget,
-				view_state.get_application_state()),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_measure_distance_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-			new GPlatesCanvasTools::MeasureDistance(
-				rendered_geom_collection,
-				measure_distance_state),
-			globe,
-			globe_canvas,
-			viewport_window)),
-	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
+				view_state)),
+	d_click_geometry_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				click_geometry_tool,
+				globe,
+				globe_canvas)),
+	d_digitise_polyline_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				digitise_polyline_tool,
+				globe,
+				globe_canvas)),
+	d_digitise_multipoint_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				digitise_multipoint_tool,
+				globe,
+				globe_canvas)),
+	d_digitise_polygon_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				digitise_polygon_tool,
+				globe,
+				globe_canvas)),
+	d_move_vertex_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				move_vertex_tool,
+				globe,
+				globe_canvas)),
+	d_delete_vertex_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				delete_vertex_tool,
+				globe,
+				globe_canvas)),
+	d_insert_vertex_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				insert_vertex_tool,
+				globe,
+				globe_canvas)),
+	d_split_feature_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				split_feature_tool,
+				globe,
+				globe_canvas)),
+	d_manipulate_pole_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				manipulate_pole_tool,
+				globe,
+				globe_canvas)),
+	d_build_topology_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				build_topology_tool,
+				globe,
+				globe_canvas)),
+	d_edit_topology_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				edit_topology_tool,
+				globe,
+				globe_canvas)),
+	d_measure_distance_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				measure_distance_tool,
+				globe,
+				globe_canvas)),
+	d_tool_choice_ptr(d_reorient_globe_tool_ptr.get())
 {
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
@@ -213,9 +138,13 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 }
 
 
+GPlatesGui::GlobeCanvasToolChoice::~GlobeCanvasToolChoice()
+{  }
+
+
 void
 GPlatesGui::GlobeCanvasToolChoice::change_tool_if_necessary(
-		GlobeCanvasTool::non_null_ptr_type new_tool_choice)
+		GlobeCanvasTool *new_tool_choice)
 {
 	if (new_tool_choice == d_tool_choice_ptr) {
 		// The specified tool is already chosen.  Nothing to do here.

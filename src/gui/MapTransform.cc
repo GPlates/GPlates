@@ -27,70 +27,102 @@
 
 #include "MapTransform.h"
 
-GPlatesGui::MapTransform::MapTransform() :
-	d_total_translation_x(0.0),
-	d_total_translation_y(0.0),
-	d_total_rotation(0.0),
-	d_centre_of_viewport(0.0, 0.0)
+#include "ViewportZoom.h"
+
+
+const double
+GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X = -180.0;
+
+const double
+GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X = 180.0;
+
+const double
+GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_Y = -90.0;
+
+const double
+GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_Y = 90.0;
+
+
+GPlatesGui::MapTransform::MapTransform(
+		ViewportZoom &viewport_zoom) :
+	d_viewport_zoom(viewport_zoom),
+	d_centre_of_viewport(0.0, 0.0),
+	d_rotation(0)
 {
+	QObject::connect(
+			&viewport_zoom,
+			SIGNAL(zoom_changed()),
+			this,
+			SLOT(handle_zoom_changed()));
 }
 
-void
-GPlatesGui::MapTransform::translate_maps(
-		qreal dx, qreal dy)
-{
-	d_total_translation_x += dx;
-	d_total_translation_y += dy;
-	emit translate(dx, dy);
-	emit view_changed();
-}
-
-void
-GPlatesGui::MapTransform::rotate_maps(
-		double angle)
-{
-	d_total_rotation += angle;
-	emit rotate(angle);
-	emit view_changed();
-}
-
-void
-GPlatesGui::MapTransform::reset_rotation()
-{
-	double old_rotation = d_total_rotation;
-	d_total_rotation = 0.0;
-	emit rotate(-old_rotation);
-	emit view_changed();
-}
-
-qreal
-GPlatesGui::MapTransform::get_total_translation_x() const
-{
-	return d_total_translation_x;
-}
-
-qreal
-GPlatesGui::MapTransform::get_total_translation_y() const
-{
-	return d_total_translation_y;
-}
-
-double
-GPlatesGui::MapTransform::get_total_rotation() const
-{
-	return d_total_rotation;
-}
 
 void
 GPlatesGui::MapTransform::set_centre_of_viewport(
-		const QPointF &centre_of_viewport)
+		const point_type &centre_of_viewport)
 {
+	// Disallow centre of viewport that is out of bounds.
+	// Note that we don't do clamping; this is because if the map is rotated and
+	// precisely one of the x or y are out of bounds, if we clamp, the map will
+	// appear to slide at an angle along one of the edges of the rotated map, even
+	// if the user pressed up, down, left or right.
+	if (centre_of_viewport.x() < MIN_CENTRE_OF_VIEWPORT_X ||
+			centre_of_viewport.x() > MAX_CENTRE_OF_VIEWPORT_X ||
+			centre_of_viewport.y() < MIN_CENTRE_OF_VIEWPORT_Y ||
+			centre_of_viewport.y() > MAX_CENTRE_OF_VIEWPORT_Y)
+	{
+		return;
+	}
+
 	d_centre_of_viewport = centre_of_viewport;
-	emit view_changed();
+	emit transform_changed(*this);
 }
 
-const QPointF &
-GPlatesGui::MapTransform::get_centre_of_viewport() const
+
+void
+GPlatesGui::MapTransform::translate(
+		double dx,
+		double dy)
 {
-	return d_centre_of_viewport;
+	set_centre_of_viewport(d_centre_of_viewport + QPointF(dx, dy));
 }
+
+
+void
+GPlatesGui::MapTransform::set_rotation(
+		double rotation)
+{
+	d_rotation = rotation;
+
+	// Make sure rotation is between -360 and 360.
+	if (d_rotation > 360.0 || d_rotation < -360.0)
+	{
+		int num_steps = static_cast<int>(d_rotation / 360.0);
+		d_rotation -= num_steps * 360.0;
+	}
+
+	emit transform_changed(*this);
+}
+
+
+void
+GPlatesGui::MapTransform::rotate(
+		double angle)
+{
+	set_rotation(d_rotation + angle);
+}
+
+
+double
+GPlatesGui::MapTransform::get_zoom_factor() const
+{
+	return d_viewport_zoom.zoom_factor();
+}
+
+
+void
+GPlatesGui::MapTransform::handle_zoom_changed()
+{
+	emit transform_changed(*this);
+}
+

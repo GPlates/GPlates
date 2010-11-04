@@ -48,19 +48,31 @@ namespace GPlatesCanvasTools
 	{
 	public:
 
-		ManipulatePole(
+		/**
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ManipulatePole>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<ManipulatePole> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget);
+				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget)
+		{
+			return new ManipulatePole(
+					status_bar_callback,
+					rendered_geom_collection,
+					pole_widget);
+		}
 
 		virtual
 		void
 		handle_activation();
 
-
 		virtual
 		void
 		handle_deactivation();
-
 
 		virtual
 		void
@@ -73,7 +85,6 @@ namespace GPlatesCanvasTools
 				double current_proximity_inclussion_threshold,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
 
-
 		virtual
 		void
 		handle_left_release_after_drag(
@@ -85,7 +96,6 @@ namespace GPlatesCanvasTools
 				double current_proximity_inclussion_threshold,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
 
-
 		virtual
 		void
 		handle_shift_left_drag(
@@ -96,7 +106,6 @@ namespace GPlatesCanvasTools
 				bool is_on_earth,
 				double current_proximity_inclussion_threshold,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
-
 
 		virtual
 		void
@@ -110,6 +119,11 @@ namespace GPlatesCanvasTools
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
 
 	private:
+
+		ManipulatePole(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget);
 
 		/**
 		 * We need to change which canvas-tool layer is shown when this canvas-tool is

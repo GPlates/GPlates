@@ -25,16 +25,26 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
+#include <QHBoxLayout>
+
 #include "GlobeAndMapWidget.h"
+#ifdef GPLATES_PINCH_ZOOM_ENABLED // Defined in .h file.
+#include <QPinchGesture>
+#endif
+
 #include "GlobeCanvas.h"
 #include "MapCanvas.h"
 #include "MapView.h"
+
 #include "gui/ColourScheme.h"
 #include "gui/MapTransform.h"
+#include "gui/SimpleGlobeOrientation.h"
 #include "gui/ViewportProjection.h"
+#include "gui/ViewportZoom.h"
+
 #include "presentation/ViewState.h"
 
-#include <QHBoxLayout>
 
 // Fresh GlobeAndMapWidget
 GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
@@ -51,7 +61,8 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 			new MapView(
 				d_view_state,
 				d_view_state.get_colour_scheme(),
-				this))
+				this)),
+	d_zoom_enabled(true)
 {
 	// Globe is the active view by default.
 	d_active_view_ptr = d_globe_canvas_ptr.get();
@@ -59,6 +70,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 
 	init();
 }
+
 
 // For cloning GlobeAndMapWidget
 GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
@@ -75,7 +87,8 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 			new MapView(
 				d_view_state,
 				colour_scheme,
-				this))
+				this)),
+	d_zoom_enabled(existing_globe_and_map_widget_ptr->d_zoom_enabled)
 {
 	// Copy which of globe and map is active.
 	if (existing_globe_and_map_widget_ptr->is_globe_active())
@@ -91,6 +104,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 
 	init();
 }
+
 
 void
 GPlatesQtWidgets::GlobeAndMapWidget::init()
@@ -108,11 +122,16 @@ GPlatesQtWidgets::GlobeAndMapWidget::init()
 
 	// Set up signals and slots.
 	make_signal_slot_connections();
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+	grabGesture(Qt::PinchGesture);
+#endif
 }
 
+
 GPlatesQtWidgets::GlobeAndMapWidget::~GlobeAndMapWidget()
-{
-}
+{  }
+
 
 bool
 GPlatesQtWidgets::GlobeAndMapWidget::is_globe_active() const
@@ -120,17 +139,20 @@ GPlatesQtWidgets::GlobeAndMapWidget::is_globe_active() const
 	return d_active_view_ptr == d_globe_canvas_ptr.get();
 }
 
+
 bool
 GPlatesQtWidgets::GlobeAndMapWidget::is_map_active() const
 {
 	return d_active_view_ptr == d_map_view_ptr.get();
 }
 
+
 QSize
 GPlatesQtWidgets::GlobeAndMapWidget::sizeHint() const
 {
 	return d_globe_canvas_ptr->sizeHint();
 }
+
 
 void
 GPlatesQtWidgets::GlobeAndMapWidget::make_signal_slot_connections()
@@ -169,12 +191,14 @@ GPlatesQtWidgets::GlobeAndMapWidget::make_signal_slot_connections()
 			SLOT(handle_globe_or_map_repainted(bool)));
 }
 
+
 void
 GPlatesQtWidgets::GlobeAndMapWidget::handle_globe_or_map_repainted(
 		bool mouse_down)
 {
 	emit repainted(mouse_down);
 }
+
 
 void
 GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
@@ -205,7 +229,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	{
 		// Switch to map.
 		d_active_view_ptr = d_map_view_ptr.get();
-		d_map_view_ptr->set_view();
+		// d_map_view_ptr->set_view();
 		d_map_view_ptr->update_canvas();
 		if (camera_llp)
 		{
@@ -225,11 +249,13 @@ GPlatesQtWidgets::GlobeAndMapWidget::handle_zoom_change()
 	d_active_view_ptr->handle_zoom_change();
 }
 
+
 GPlatesQtWidgets::GlobeCanvas &
 GPlatesQtWidgets::GlobeAndMapWidget::get_globe_canvas()
 {
 	return *d_globe_canvas_ptr;
 }
+
 
 const GPlatesQtWidgets::GlobeCanvas &
 GPlatesQtWidgets::GlobeAndMapWidget::get_globe_canvas() const
@@ -237,11 +263,13 @@ GPlatesQtWidgets::GlobeAndMapWidget::get_globe_canvas() const
 	return *d_globe_canvas_ptr;
 }
 
+
 GPlatesQtWidgets::MapView &
 GPlatesQtWidgets::GlobeAndMapWidget::get_map_view()
 {
 	return *d_map_view_ptr;
 }
+
 
 const GPlatesQtWidgets::MapView &
 GPlatesQtWidgets::GlobeAndMapWidget::get_map_view() const
@@ -249,11 +277,13 @@ GPlatesQtWidgets::GlobeAndMapWidget::get_map_view() const
 	return *d_map_view_ptr;
 }
 
+
 GPlatesQtWidgets::SceneView &
 GPlatesQtWidgets::GlobeAndMapWidget::get_active_view()
 {
 	return *d_active_view_ptr;
 }
+
 
 const GPlatesQtWidgets::SceneView &
 GPlatesQtWidgets::GlobeAndMapWidget::get_active_view() const
@@ -261,19 +291,13 @@ GPlatesQtWidgets::GlobeAndMapWidget::get_active_view() const
 	return *d_active_view_ptr;
 }
 
+
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::GlobeAndMapWidget::get_camera_llp() const
 {
 	return d_active_view_ptr->camera_llp();
 }
 
-void
-GPlatesQtWidgets::GlobeAndMapWidget::set_mouse_wheel_enabled(
-		bool enabled)
-{
-	d_globe_canvas_ptr->set_mouse_wheel_enabled(enabled);
-	d_map_view_ptr->set_mouse_wheel_enabled(enabled);
-}
 
 void
 GPlatesQtWidgets::GlobeAndMapWidget::resizeEvent(
@@ -282,15 +306,132 @@ GPlatesQtWidgets::GlobeAndMapWidget::resizeEvent(
 	emit resized(resize_event->size().width(), resize_event->size().height());
 }
 
+
 QImage
 GPlatesQtWidgets::GlobeAndMapWidget::grab_frame_buffer()
 {
 	return d_active_view_ptr->grab_frame_buffer();
 }
 
+
 void
 GPlatesQtWidgets::GlobeAndMapWidget::update_canvas()
 {
 	d_active_view_ptr->update_canvas();
 }
+
+
+double
+GPlatesQtWidgets::GlobeAndMapWidget::current_proximity_inclusion_threshold(
+		const GPlatesMaths::PointOnSphere &click_pos_on_globe) const
+{
+	return d_active_view_ptr->current_proximity_inclusion_threshold(click_pos_on_globe);
+}
+
+
+void
+GPlatesQtWidgets::GlobeAndMapWidget::set_zoom_enabled(
+		bool enabled)
+{
+	d_zoom_enabled = enabled;
+}
+
+
+void
+GPlatesQtWidgets::GlobeAndMapWidget::wheelEvent(
+		QWheelEvent *wheel_event) 
+{
+	if (d_zoom_enabled)
+	{
+		int delta = wheel_event->delta();
+		if (delta == 0)
+		{
+			return;
+		}
+
+		GPlatesGui::ViewportZoom &viewport_zoom = d_view_state.get_viewport_zoom();
+
+		// The number 120 is derived from the Qt docs for QWheelEvent:
+		// http://doc.trolltech.com/4.3/qwheelevent.html#delta
+		static const int NUM_UNITS_PER_STEP = 120;
+
+		double num_levels = static_cast<double>(std::abs(delta)) / NUM_UNITS_PER_STEP;
+		if (delta > 0)
+		{
+			viewport_zoom.zoom_in(num_levels);
+		}
+		else
+		{
+			viewport_zoom.zoom_out(num_levels);
+		}
+	}
+	else
+	{
+		wheel_event->ignore();
+	}
+}
+
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+#include <QDebug>
+bool
+GPlatesQtWidgets::GlobeAndMapWidget::event(
+		QEvent *ev)
+{
+	if (ev->type() == QEvent::Gesture)
+	{
+		if (!d_zoom_enabled)
+		{
+			return false;
+		}
+
+		QGestureEvent *gesture_ev = static_cast<QGestureEvent *>(ev);
+		bool pinch_gesture_found = false;
+
+		BOOST_FOREACH(QGesture *gesture, gesture_ev->activeGestures())
+		{
+			if (gesture->gestureType() == Qt::PinchGesture)
+			{
+				gesture_ev->accept(gesture);
+				pinch_gesture_found = true;
+
+				QPinchGesture *pinch_gesture = static_cast<QPinchGesture *>(gesture);
+
+				// Handle the scaling component of the pinch gesture.
+				GPlatesGui::ViewportZoom &viewport_zoom = d_view_state.get_viewport_zoom();
+				if (pinch_gesture->state() == Qt::GestureStarted)
+				{
+					viewport_zoom_at_start_of_pinch = viewport_zoom.zoom_percent();
+				}
+
+				viewport_zoom.set_zoom_percent(*viewport_zoom_at_start_of_pinch *
+						pinch_gesture->scaleFactor());
+
+				if (pinch_gesture->state() == Qt::GestureFinished)
+				{
+					viewport_zoom_at_start_of_pinch = boost::none;
+				}
+
+				// Handle the rotation component of the pinch gesture.
+				double angle = pinch_gesture->rotationAngle() - pinch_gesture->lastRotationAngle();
+				if (is_globe_active())
+				{
+					GPlatesGui::SimpleGlobeOrientation &orientation = d_globe_canvas_ptr->globe().orientation();
+					orientation.rotate_camera(-angle);
+				}
+				else
+				{
+					d_view_state.get_map_transform().rotate(-angle);
+				}
+			}
+		}
+
+		return pinch_gesture_found;
+	}
+	else
+	{
+		return QWidget::event(ev);
+	}
+}
+#endif
 

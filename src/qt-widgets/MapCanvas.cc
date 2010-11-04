@@ -36,6 +36,7 @@
 
 #include "gui/Map.h"
 #include "gui/MapProjection.h"
+#include "gui/MapTransform.h"
 #include "gui/RenderSettings.h"
 
 #include "presentation/ViewState.h"
@@ -59,7 +60,21 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	d_rendered_geometry_collection(&rendered_geometry_collection)
 {
 	// Give the scene a nice big rectangle.
-	setSceneRect(QRect(-360, -180, 720, 360));
+	// setSceneRect(QRect(-360, -180, 720, 360));
+	// setSceneRect(QRect(-1000, -1000, 2000, 2000));
+
+	// Give the scene a rectangle that's big enough to guarantee that the map view,
+	// even after rotations and translations, won't go outside these boundaries.
+	// (Note that the centre of the map, in scene coordinates, is constrained by
+	// the MapTransform class.)
+	static const int FACTOR = 3;
+	setSceneRect(QRect(
+				GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X * FACTOR,
+				GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_Y * FACTOR,
+				(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
+				 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) * FACTOR,
+				(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_Y -
+				 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_Y) * FACTOR));
 
 	QObject::connect(d_rendered_geometry_collection,
 		SIGNAL(collection_was_updated(

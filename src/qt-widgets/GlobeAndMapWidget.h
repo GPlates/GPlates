@@ -28,12 +28,21 @@
 #ifndef GPLATES_QTWIDGETS_GLOBEANDMAPWIDGET_H
 #define GPLATES_QTWIDGETS_GLOBEANDMAPWIDGET_H
 
-#include <QWidget>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <QWidget>
 
 #include "gui/ColourScheme.h"
+
 #include "maths/LatLonPoint.h"
+
+#include "view-operations/QueryProximityThreshold.h"
+
+
+// We only enable the pinch zoom gesture on the Mac with Qt 4.6 and above.
+#if defined(Q_WS_MAC) && QT_VERSION >= 0x040600
+#	define GPLATES_PINCH_ZOOM_ENABLED
+#endif
 
 namespace GPlatesGui
 {
@@ -57,9 +66,9 @@ namespace GPlatesQtWidgets
 	 * and for switching between them as appropriate.
 	 */
 	class GlobeAndMapWidget :
-			public QWidget
+			public QWidget,
+			public GPlatesViewOperations::QueryProximityThreshold
 	{
-
 		Q_OBJECT
 
 	public:
@@ -104,10 +113,6 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesMaths::LatLonPoint>
 		get_camera_llp() const;
 
-		void
-		set_mouse_wheel_enabled(
-				bool enabled = true);
-
 		virtual
 		QSize
 		sizeHint() const;
@@ -118,6 +123,15 @@ namespace GPlatesQtWidgets
 
 		void
 		update_canvas();
+
+		virtual
+		double
+		current_proximity_inclusion_threshold(
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe) const;
+
+		void
+		set_zoom_enabled(
+				bool enabled);
 
 	signals:
 
@@ -133,10 +147,35 @@ namespace GPlatesQtWidgets
 
 	protected:
 
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+		virtual
+		bool
+		event(
+				QEvent *ev);
+#endif
+
 		virtual
 		void
 		resizeEvent(
 				QResizeEvent *resize_event);
+
+		/**
+		 * This is a virtual override of the function in QWidget.
+		 *
+		 * To quote the QWidget documentation:
+		 *
+		 * This event handler, for event event, can be reimplemented in a subclass to
+		 * receive wheel events for the widget.
+		 *
+		 * If you reimplement this handler, it is very important that you ignore() the
+		 * event if you do not handle it, so that the widget's parent can interpret it.
+		 *
+		 * The default implementation ignores the event.
+		 */
+		virtual
+		void
+		wheelEvent(
+				QWheelEvent *event);
 
 	private slots:
 
@@ -164,9 +203,23 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<GlobeCanvas> d_globe_canvas_ptr;
 		boost::scoped_ptr<MapView> d_map_view_ptr;
 
-		//! Which of globe and map is currently active.
+		/**
+		 * Which of globe and map is currently active.
+		 */
 		SceneView *d_active_view_ptr;
 
+		/**
+		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.
+		 */
+		bool d_zoom_enabled;
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+		/**
+		 * The viewport zoom percentage at the start of a pinch gesture.
+		 * The value is boost::none if we're currently not in a pinch gesture.
+		 */
+		boost::optional<double> viewport_zoom_at_start_of_pinch;
+#endif
 	};
 }
 

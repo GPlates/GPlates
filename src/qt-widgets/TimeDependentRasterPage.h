@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_TIMEDEPENDENTRASTERPAGE_H
 #define GPLATES_QTWIDGETS_TIMEDEPENDENTRASTERPAGE_H
 
+#include <map>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <QWizardPage>
@@ -47,6 +48,11 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+
+		/**
+		 * Assists with finding out which editor is editing which index.
+		 */
+		typedef std::map<QModelIndex, QWidget *> index_to_editor_map_type;
 
 		explicit
 		TimeDependentRasterPage(
@@ -88,6 +94,18 @@ namespace GPlatesQtWidgets
 				int row,
 				int column);
 
+		void
+		handle_table_current_cell_changed(
+				int current_row,
+				int current_column,
+				int previous_row,
+				int previous_column);
+		
+		void
+		handle_table_cell_clicked(
+				int row,
+				int column);
+
 	private:
 
 		void
@@ -119,6 +137,8 @@ namespace GPlatesQtWidgets
 
 		bool d_is_complete;
 		bool d_show_full_paths;
+
+		index_to_editor_map_type d_index_to_editor_map;
 	};
 }
 

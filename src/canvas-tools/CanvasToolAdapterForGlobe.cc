@@ -25,70 +25,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
-
 #include "CanvasToolAdapterForGlobe.h"
 
 #include "maths/PointOnSphere.h"
 
 #include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/ViewportWindow.h"
-
-
-namespace
-{
-	const char *STATUS_BAR_MESSAGE_SUFFIX = QT_TR_NOOP("Ctrl+drag to re-orient the globe.");
-
-	/**
-	 * Helper function that sets the status bar message of @a viewport_window
-	 * to be @a message with @a STATUS_BAR_MESSAGE_SUFFIX appended.
-	 *
-	 * Note that @a message should *not* have been translated, i.e. passed
-	 * through QObject::tr().
-	 */
-	void
-	set_status_bar_message(
-			GPlatesQtWidgets::ViewportWindow &viewport_window,
-			const char *message)
-	{
-		viewport_window.status_message(
-				GPlatesQtWidgets::ViewportWindow::tr(message) + " " +
-				GPlatesQtWidgets::ViewportWindow::tr(STATUS_BAR_MESSAGE_SUFFIX));
-	}
-}
 
 
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::CanvasToolAdapterForGlobe (
-		CanvasTool *canvas_tool_ptr,
+		const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
 		GPlatesGui::Globe &globe_,
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
+		GPlatesQtWidgets::GlobeCanvas &globe_canvas_) :
 	GlobeCanvasTool(globe_, globe_canvas_),
 	d_canvas_tool_ptr(canvas_tool_ptr)
-{
-	canvas_tool_ptr->set_status_bar_callback(
-			boost::bind(
-				&::set_status_bar_message,
-				boost::ref(viewport_window_),
-				_1));
-}
-
-const GPlatesCanvasTools::CanvasToolAdapterForGlobe::non_null_ptr_type
-GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
-		CanvasTool *canvas_tool_ptr,
-		GPlatesGui::Globe &globe_,
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		GPlatesQtWidgets::ViewportWindow &viewport_window) 
-{
-	CanvasToolAdapterForGlobe::non_null_ptr_type ptr(
-			new CanvasToolAdapterForGlobe(
-				canvas_tool_ptr,
-				globe_,
-				globe_canvas_,
-				viewport_window),
-			GPlatesUtils::NullIntrusivePointerHandler());
-	return ptr;
-}
+{  }
 
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_activation()

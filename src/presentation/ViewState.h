@@ -27,6 +27,7 @@
 #ifndef GPLATES_PRESENTATION_VIEWSTATE_H
 #define GPLATES_PRESENTATION_VIEWSTATE_H
 
+#include <utility>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -197,13 +198,21 @@ namespace GPlatesPresentation
 		get_map_transform();
 
 
-		int
-		get_main_viewport_min_dimension();
+		const std::pair<int, int> &
+		get_main_viewport_dimensions() const;
 
 
 		void
-		set_main_viewport_min_dimension(
-				int min_dimension);
+		set_main_viewport_dimensions(
+				const std::pair<int, int> &dimensions);
+
+
+		int
+		get_main_viewport_min_dimension() const;
+
+		
+		int
+		get_main_viewport_max_dimension() const;
 
 
 		inline
@@ -308,10 +317,10 @@ namespace GPlatesPresentation
 		boost::scoped_ptr<GPlatesGui::MapTransform> d_map_transform;
 
 		/**
-		 * The smaller of width or height of the main globe or map attached.
+		 * The dimensions (in pixels) of the main globe or map attached.
 		 * Used for scaling additional globes and maps.
 		 */
-		int d_main_viewport_min_dimension;
+		std::pair<int, int> d_main_viewport_dimensions;
 
 		/**
 		 * Stores render settings for VirtualGeomagneticPole features.                                                                     

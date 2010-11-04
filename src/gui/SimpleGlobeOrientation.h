@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2007, 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,9 +28,11 @@
 #ifndef GPLATES_GUI_SIMPLEGLOBEORIENTATION_H
 #define GPLATES_GUI_SIMPLEGLOBEORIENTATION_H
 
+#include <boost/noncopyable.hpp>
 #include <QObject>
 
 #include "GlobeOrientation.h"
+
 #include "maths/Rotation.h"
 
 
@@ -42,8 +44,10 @@ namespace GPlatesGui
 	 * changes to this globe orientation do not affect any other globe
 	 * orientation, and vice-versa).
 	 */
-	class SimpleGlobeOrientation:
-			public QObject, public GlobeOrientation
+	class SimpleGlobeOrientation :
+			public QObject,
+			public GlobeOrientation,
+			public boost::noncopyable
 	{
 		Q_OBJECT
 
@@ -185,6 +189,13 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_camera_anticlockwise();
+
+		/**
+		 * Rotates the camera by an arbitrary @a angle, in degrees.
+		 */
+		void
+		rotate_camera(
+				double angle);
 		
 		/**
 		 * Rotate the camera such that the poles are oriented vertically (with North at the top
@@ -220,17 +231,6 @@ namespace GPlatesGui
 		 * The @em reverse of the accumulated rotation of the globe.
 		 */
 		GPlatesMaths::Rotation d_rev_accum_rot;
-
-		// Apparently QObject isn't copy-constructable.  So, let's make this class
-		// non-copy-constructable too.
-		SimpleGlobeOrientation(
-				const SimpleGlobeOrientation &);
-
-		// Apparently QObject isn't copy-assignable.  So, let's make this class
-		// non-copy-assignable too.
-		SimpleGlobeOrientation &
-		operator=(
-				const SimpleGlobeOrientation &);
 	};
 }
 

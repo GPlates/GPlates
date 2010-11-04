@@ -25,15 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
-
 #include "CanvasToolAdapterForMap.h"
 
 #include "gui/MapProjection.h"
 
 #include "maths/PointOnSphere.h"
 
-#include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/MapCanvas.h"
 
 
@@ -60,66 +57,20 @@ namespace
 			return boost::none;
 		}
 	}
-
-	const char *STATUS_BAR_MESSAGE_SUFFIX = QT_TR_NOOP("Ctrl+drag to pan the map.");
-
-	/**
-	 * Helper function that sets the status bar message of @a viewport_window
-	 * to be @a message with @a STATUS_BAR_MESSAGE_SUFFIX appended.
-	 *
-	 * Note that @a message should *not* have been translated, i.e. passed
-	 * through QObject::tr().
-	 */
-	void
-	set_status_bar_message(
-			GPlatesQtWidgets::ViewportWindow &viewport_window,
-			const char *message)
-	{
-		viewport_window.status_message(
-				GPlatesQtWidgets::ViewportWindow::tr(message) + " " +
-				GPlatesQtWidgets::ViewportWindow::tr(STATUS_BAR_MESSAGE_SUFFIX));
-	}
 }
 
 
-GPlatesCanvasTools::CanvasToolAdapterForMap::CanvasToolAdapterForMap (
-		CanvasTool *canvas_tool_ptr,
+GPlatesCanvasTools::CanvasToolAdapterForMap::CanvasToolAdapterForMap(
+		const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
 		GPlatesQtWidgets::MapView &map_view_,
-		GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesGui::MapTransform &map_transform_) :
 	MapCanvasTool(
 			map_canvas_,
 			map_view_,
 			map_transform_),
 	d_canvas_tool_ptr(canvas_tool_ptr)
-{
-	canvas_tool_ptr->set_status_bar_callback(
-			boost::bind(
-				&::set_status_bar_message,
-				boost::ref(view_state_),
-				_1));
-}
-
-
-const GPlatesCanvasTools::CanvasToolAdapterForMap::non_null_ptr_type
-GPlatesCanvasTools::CanvasToolAdapterForMap::create(
-		CanvasTool *canvas_tool_ptr,
-		GPlatesQtWidgets::MapCanvas &map_canvas_,
-		GPlatesQtWidgets::MapView &map_view_,
-		GPlatesQtWidgets::ViewportWindow &view_state,
-		GPlatesGui::MapTransform &map_transform_) 
-{
-	CanvasToolAdapterForMap::non_null_ptr_type ptr(
-			new CanvasToolAdapterForMap(
-				canvas_tool_ptr,
-				map_canvas_,
-				map_view_,
-				view_state,
-				map_transform_),
-			GPlatesUtils::NullIntrusivePointerHandler());
-	return ptr;
-}
+{  }
 
 
 void

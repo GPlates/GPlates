@@ -35,8 +35,6 @@ set(srcs
     MeasureDistance.h
     MeasureDistanceState.cc
     MeasureDistanceState.h
-    MoveGeometry.cc
-    MoveGeometry.h
     MoveVertex.cc
     MoveVertex.h
     PanMap.cc

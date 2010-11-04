@@ -28,11 +28,13 @@
 #ifndef GPLATES_CANVASTOOLS_CANVASTOOL_H
 #define GPLATES_CANVASTOOLS_CANVASTOOL_H
 
-#include <boost/noncopyable.hpp>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 
 #include "maths/PointOnSphere.h"
+
+#include "utils/ReferenceCount.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesCanvasTools
@@ -60,14 +62,23 @@ namespace GPlatesCanvasTools
 	 * the nearest point on the map for clicks off the map.
 	 */
 	class CanvasTool :
-			public boost::noncopyable
+			public GPlatesUtils::ReferenceCount<CanvasTool>
 	{
-
 	public:
 
 		virtual
 		~CanvasTool()
 		{  }
+
+		/**
+		 * Typedef for a function that takes a C string and displays it on the status bar.
+		 */
+		typedef boost::function< void ( const char * ) > status_bar_callback_type;
+
+		/**
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<CanvasTool>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<CanvasTool> non_null_ptr_type;
 
 		virtual
 		void
@@ -231,17 +242,17 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold)
 		{  }
 
-		/**
-		 * Adds a @a callback that the canvas tool can use to set status bar messages.
-		 */
-		void
-		set_status_bar_callback(
-				const boost::function< void ( const char * ) > &callback)
-		{
-			d_status_bar_callback = callback;
-		}
-
 	protected:
+
+		/**
+		 * Constructs CanvasTool, given @a status_bar_callback that can be used by the
+		 * canvas tool to set status bar messages.
+		 */
+		explicit
+		CanvasTool(
+				const status_bar_callback_type &status_bar_callback) :
+			d_status_bar_callback(status_bar_callback)
+		{  }
 
 		/**
 		 * Subclasses call this function to set text on the status bar.
@@ -262,7 +273,7 @@ namespace GPlatesCanvasTools
 	private:
 
 		//! The callback used to show text on the status bar.
-		boost::function< void ( const char * ) > d_status_bar_callback;
+		status_bar_callback_type d_status_bar_callback;
 	};
 
 }

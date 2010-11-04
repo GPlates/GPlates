@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,10 @@
 #ifndef GPLATES_VIEWOPERATIONS_QUERYPROXIMITYTHRESHOLD_H
 #define GPLATES_VIEWOPERATIONS_QUERYPROXIMITYTHRESHOLD_H
 
+namespace GPlatesMaths
+{
+	class PointOnSphere;
+}
 
 namespace GPlatesViewOperations
 {

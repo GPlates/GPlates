@@ -63,31 +63,44 @@ namespace GPlatesCanvasTools
 	{
 	public:
 
-		virtual
-		~SplitFeature();
-
 		/**
-		 * Create a InsertVertex instance.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<SplitFeature>.
 		 */
-		SplitFeature(
+		typedef GPlatesUtils::non_null_intrusive_ptr<SplitFeature> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
-		
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold)
+		{
+			return new SplitFeature(
+					status_bar_callback,
+					feature_focus,
+					view_state,
+					geometry_operation_target,
+					active_geometry_operation,
+					rendered_geometry_collection,
+					choose_canvas_tool,
+					query_proximity_threshold);
+		}
+
+		virtual
+		~SplitFeature();
 		
 		virtual
 		void
 		handle_activation();
 
-
 		virtual
 		void
 		handle_deactivation();
-
 
 		virtual
 		void
@@ -115,6 +128,19 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold);
 
 	private:
+
+		/**
+		 * Create a InsertVertex instance.
+		 */
+		SplitFeature(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesPresentation::ViewState &view_state,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
 
 		GPlatesGui::FeatureFocus *d_feature_focus;
 

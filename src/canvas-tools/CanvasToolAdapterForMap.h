@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,7 +28,6 @@
 #ifndef GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORMAP_H
 #define GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORMAP_H
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
 #include <QPointF>
 #include <QString>
@@ -67,22 +66,12 @@ namespace GPlatesCanvasTools
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<CanvasToolAdapterForMap,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<CanvasToolAdapterForMap,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		/**
 		 * Create a CanvasToolAdapterForMap instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
-				CanvasTool *canvas_tool_ptr,
+		CanvasToolAdapterForMap(
+				const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::MapTransform &map_transform_);
 		
 		virtual
@@ -202,16 +191,6 @@ namespace GPlatesCanvasTools
 				const QPointF &current_point_on_scene,
 				bool is_on_surface,
 				const QPointF &translation);
-
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		CanvasToolAdapterForMap (
-				CanvasTool *canvas_tool_ptr,
-				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesQtWidgets::MapView &map_view_,
-				GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::MapTransform &map_transform_);
 		
 	private:
 
@@ -264,7 +243,7 @@ namespace GPlatesCanvasTools
 				
 
 		//! A pointer to the CanvasTool instance that we wrap around
-		boost::scoped_ptr<CanvasTool> d_canvas_tool_ptr;
+		CanvasTool::non_null_ptr_type d_canvas_tool_ptr;
 	};
 }
 

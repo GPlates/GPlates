@@ -62,31 +62,42 @@ namespace GPlatesCanvasTools
 	{
 	public:
 
-		virtual
-		~MoveVertex();
-
 		/**
-		 * Create a MoveVertex instance.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<MoveVertex>.
 		 */
-		MoveVertex(
+		typedef GPlatesUtils::non_null_intrusive_ptr<MoveVertex> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				const GPlatesQtWidgets::ViewportWindow *viewport_window
-				);
-		
+				const GPlatesQtWidgets::ViewportWindow *viewport_window)
+		{
+			return new MoveVertex(
+					status_bar_callback,
+					geometry_operation_target,
+					active_geometry_operation,
+					rendered_geometry_collection,
+					choose_canvas_tool,
+					query_proximity_threshold,
+					viewport_window);
+		}
+
+		virtual
+		~MoveVertex();
 		
 		virtual
 		void
 		handle_activation();
 
-
 		virtual
 		void
 		handle_deactivation();
-
 
 		virtual
 		void
@@ -131,6 +142,18 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold);
 
 	private:
+
+		/**
+		 * Create a MoveVertex instance.
+		 */
+		MoveVertex(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
+				const GPlatesQtWidgets::ViewportWindow *viewport_window);
 
 		/**
 		 * Used to set main rendered layer.

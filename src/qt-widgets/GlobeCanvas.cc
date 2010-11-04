@@ -225,9 +225,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			view_state.get_raster_colour_scheme_map(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
 			GPlatesGui::GlobeVisibilityTester(*this),
-			colour_scheme),
-	d_viewport_zoom(view_state.get_viewport_zoom()),
-	d_mouse_wheel_enabled(true)
+			colour_scheme)
 {
 	init();
 }
@@ -240,7 +238,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
 		bool mouse_pointer_is_on_globe_,
 		GPlatesGui::Globe &existing_globe_,
-		bool mouse_wheel_enabled_,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
 	QGLWidget(
@@ -277,9 +274,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			view_state_.get_raster_colour_scheme_map(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
 			GPlatesGui::GlobeVisibilityTester(*this),
-			colour_scheme_),
-	d_viewport_zoom(view_state_.get_viewport_zoom()),
-	d_mouse_wheel_enabled(mouse_wheel_enabled_)
+			colour_scheme_)
 {
 	if (!isSharing())
 	{
@@ -350,7 +345,6 @@ GPlatesQtWidgets::GlobeCanvas::clone(
 			d_virtual_mouse_pointer_pos_on_globe,
 			d_mouse_pointer_is_on_globe,
 			d_globe,
-			d_mouse_wheel_enabled,
 			colour_scheme,
 			parent_);
 }
@@ -417,7 +411,7 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 	double cos_lambda = click_point.position_vector().x().dval();
 	double lambda_scaled_epsilon_diameter = epsilon_diameter + 3 * epsilon_diameter * (1 - cos_lambda);
 	GLdouble diameter_ratio =
-			lambda_scaled_epsilon_diameter / (d_smaller_dim * d_viewport_zoom.zoom_factor());
+			lambda_scaled_epsilon_diameter / (d_smaller_dim * d_view_state.get_viewport_zoom().zoom_factor());
 	double proximity_inclusion_threshold = cos(static_cast<double>(diameter_ratio));
 
 #if 0  // Change 0 to 1 if you want this informative output.
@@ -462,7 +456,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
 				initialise_render_graph(*render_graph);
 
-		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
+		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 		// Fill up the render graph with more nodes.
 		d_globe.paint_vector_output(
 				d_gl_context->get_shared_state(),
@@ -583,7 +577,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
 				initialise_render_graph(*render_graph);
 
-		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
+		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 		// Fill up the render graph with more nodes.
 		d_globe.paint(
 				globe_render_graph_node,
@@ -737,20 +731,6 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 }
 
 
-void GPlatesQtWidgets::GlobeCanvas::wheelEvent(
-		QWheelEvent *wheel_event) 
-{
-	if (d_mouse_wheel_enabled)
-	{
-		handle_wheel_rotation(wheel_event->delta());
-	}
-	else
-	{
-		wheel_event->ignore();
-	}
-}
-
-
 void
 GPlatesQtWidgets::GlobeCanvas::handle_zoom_change() 
 {
@@ -787,7 +767,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// This is used for the coordinates of the symmetrical clipping planes which bound the
 	// smaller dimension.
 	GLdouble smaller_dim_clipping =
-			FRAMING_RATIO / d_viewport_zoom.zoom_factor();
+			FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor();
 
 	// This is used for the coordinates of the symmetrical clipping planes which bound the
 	// larger dimension.
@@ -851,27 +831,6 @@ GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
 }
 
 
-void
-GPlatesQtWidgets::GlobeCanvas::handle_wheel_rotation(
-		int delta) 
-{
-	// These integer values (8 and 15) are copied from the Qt reference docs for QWheelEvent:
-	//  http://doc.trolltech.com/4.3/qwheelevent.html#delta
-	const int num_degrees = delta / 8;
-	int num_steps = num_degrees / 15;
-
-	if (num_steps > 0) {
-		while (num_steps--) {
-			d_viewport_zoom.zoom_in();
-		}
-	} else {
-		while (num_steps++) {
-			d_viewport_zoom.zoom_out();
-		}
-	}
-}
-
-
 double
 GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y(
 		int screen_x) const
@@ -879,7 +838,7 @@ GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y(
 	// Scale the screen to a "unit square".
 	double y_pos = (2.0 * screen_x - d_canvas_screen_width) / d_smaller_dim;
 
-	return (y_pos * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
+	return (y_pos * FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 
@@ -890,7 +849,7 @@ GPlatesQtWidgets::GlobeCanvas::get_universe_coord_z(
 	// Scale the screen to a "unit square".
 	double z_pos = (d_canvas_screen_height - 2.0 * screen_y) / d_smaller_dim;
 	
-	return (z_pos * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
+	return (z_pos * FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 

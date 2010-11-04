@@ -7,7 +7,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 Geological Survey of Norway.
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,18 +29,19 @@
 #ifndef GPLATES_QTWIDGETS_MAPVIEW_H
 #define GPLATES_QTWIDGETS_MAPVIEW_H
 
+#include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/noncopyable.hpp>
 #include <QGraphicsView>
 #include <QGLWidget>
 #include <QMouseEvent>
 
-#include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
-
 #include "gui/ColourScheme.h"
-#include "gui/ViewportZoom.h"
+
 #include "maths/LatLonPoint.h"
+
 #include "qt-widgets/SceneView.h"
-#include "view-operations/QueryProximityThreshold.h"
+
 
 namespace GPlatesGui
 {
@@ -56,12 +58,11 @@ namespace GPlatesQtWidgets
 	class MapCanvas;
 	class ViewportWindow;
 
-	class MapView: 
-		public QGraphicsView, 
-		public GPlatesViewOperations::QueryProximityThreshold,
-		public SceneView
+	class MapView : 
+			public QGraphicsView, 
+			public SceneView,
+			public boost::noncopyable
 	{
-
 		Q_OBJECT
 
 	public:
@@ -97,9 +98,9 @@ namespace GPlatesQtWidgets
 		};
 
 		MapView(
-			GPlatesPresentation::ViewState &view_state,
-			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
-			QWidget *parent);
+				GPlatesPresentation::ViewState &view_state,
+				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
+				QWidget *parent);
 
 		~MapView();
 
@@ -155,12 +156,6 @@ namespace GPlatesQtWidgets
 		void
 		disable_raster_display();
 
-		/**
-		 * Rescales the view of the scene after zoom or resize events. 
-		 */
-		void
-		set_view();
-
 		void
 		update_mouse_pointer_pos(
 			QMouseEvent *mouse_event);
@@ -178,7 +173,7 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		create_svg_output(
-			QString filename);
+				QString filename);
 
 		/**
 		 * Draw the reconstruction geometries on the screen.
@@ -194,22 +189,6 @@ namespace GPlatesQtWidgets
 		map_canvas();
 
 		/**
-		 * Updates the member variable d_centre_of_viewport by translating the center of the viewport
-		 * to scene coordinates. 
-		 */
-		void
-		update_centre_of_viewport();
-
-		/**
-		 * Return a pointer to the viewport zoom, which is really the GlobeCanvas' viewport zoom. 
-		 */ 
-		GPlatesGui::ViewportZoom &
-		viewport_zoom()
-		{
-			return *d_viewport_zoom;
-		}
-
-		/**
 		 * Redraw geometries on the canvas associated with this view.
 		 */
 		void
@@ -219,21 +198,8 @@ namespace GPlatesQtWidgets
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_point) const;
 
-		void
-		set_mouse_wheel_enabled(
-				bool enabled = true)
-		{
-			d_mouse_wheel_enabled = enabled;
-		}
-
 		QImage
 		grab_frame_buffer();
-
-	public slots:
-
-		void
-		handle_zoom_change();
-
 
 	protected:
 
@@ -247,22 +213,25 @@ namespace GPlatesQtWidgets
 		mousePressEvent(
 				QMouseEvent *mouse_event);
 
+		virtual
+		void
+		mouseDoubleClickEvent(
+				QMouseEvent *mouse_event);
+
 		virtual 
 		void 
 		mouseReleaseEvent(
-				QMouseEvent *mouse_event);	
-
-
-		virtual
-		void
-		wheelEvent(
-			QWheelEvent *wheel_event);
-
+				QMouseEvent *mouse_event);
 
 		virtual
 		void
 		resizeEvent(
-			QResizeEvent* resize_event);
+				QResizeEvent* resize_event);
+
+		virtual
+		void
+		wheelEvent(
+				QWheelEvent *wheel_event);
 
 	signals:
 
@@ -319,28 +288,13 @@ namespace GPlatesQtWidgets
 	private slots:
 
 		void
-		handle_translate(
-				qreal dx, qreal dy);
-
-		void
-		handle_rotate(
-				double angle);
+		handle_transform_changed(
+				const GPlatesGui::MapTransform &map_transform);
 
 		void
 		handle_map_canvas_repainted();
 
 	private:
-
-		MapView(
-			const MapView &);
-
-		MapView &
-		operator=(
-			MapView &other);
-
-		void
-		handle_wheel_rotation(
-				int delta);
 
 		/**
 		 * Returns the llp of the mouse position, if the mouse is on the surface. 
@@ -355,6 +309,14 @@ namespace GPlatesQtWidgets
 		mouse_pointer_scene_coords();
 
 		/**
+		 * Move camera by @a dx and @a dy, both expressed in window coordinates.
+		 */
+		void
+		move_camera(
+				double dx,
+				double dy);
+
+		/**
 		 * Returns true if the mouse is over the surface of the earth. 
 		 */ 
 		bool
@@ -362,11 +324,6 @@ namespace GPlatesQtWidgets
 
 		void
 		make_signal_slot_connections();
-
-		/**
-		 * A pointer to the GlobeCanvas' ViewportZoom. 
-		 */
-		GPlatesGui::ViewportZoom *d_viewport_zoom;
 
 		/**
 		 * A pointer to the map canvas that this view is associated with. 
@@ -399,18 +356,12 @@ namespace GPlatesQtWidgets
 		 * The QGLWidget that we use for this widget's viewport
 		 */
 		QGLWidget *d_gl_widget_ptr;
-
-		/**
-		 * Whether the mouse wheel is enabled
-		 */
-		bool d_mouse_wheel_enabled;
 		
 		/**
 		 * Translates and rotates maps
 		 */
 		GPlatesGui::MapTransform &d_map_transform;
 	};
-
 }
 
 

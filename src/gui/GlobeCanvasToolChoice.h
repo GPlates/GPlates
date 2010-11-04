@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,49 +26,38 @@
 #ifndef GPLATES_GUI_GLOBECANVASTOOLCHOICE_H
 #define GPLATES_GUI_GLOBECANVASTOOLCHOICE_H
 
-#include <boost/noncopyable.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <QObject>
 
-#include "gui/FeatureFocus.h"
-#include "GlobeCanvasTool.h"
-#include "FeatureTableModel.h"
+#include "canvas-tools/BuildTopology.h"
+#include "canvas-tools/EditTopology.h"
+#include "canvas-tools/MeasureDistance.h"
+#include "canvas-tools/DigitiseGeometry.h"
+#include "canvas-tools/ClickGeometry.h"
+#include "canvas-tools/DeleteVertex.h"
+#include "canvas-tools/InsertVertex.h"
+#include "canvas-tools/MoveVertex.h"
+#include "canvas-tools/SplitFeature.h"
+#include "canvas-tools/ManipulatePole.h"
 
-namespace GPlatesGui
-{
-	class ChooseCanvasTool;
-	class TopologySectionsContainer;
-}
-
-namespace GPlatesQtWidgets
-{
-	class GlobeCanvas;
-	class ViewportWindow;
-	class FeaturePropertiesDialog;
-	class DigitisationWidget;
-	class ModifyReconstructionPoleWidget;
-	class TopologyToolsWidget;
-}
-
-namespace GPlatesCanvasTools
-{
-	class MeasureDistanceState;
-}
 
 namespace GPlatesPresentation
 {
 	class ViewState;
 }
 
-namespace GPlatesViewOperations
+namespace GPlatesQtWidgets
 {
-	class ActiveGeometryOperation;
-	class GeometryOperationTarget;
-	class QueryProximityThreshold;
-	class RenderedGeometryCollection;
+	class GlobeCanvas;
+	class ViewportWindow;
 }
 
 namespace GPlatesGui
 {
+	// Forward declarations.
+	class Globe;
+	class GlobeCanvasTool;
+
 	/**
 	 * This class contains the current choice of GlobeCanvasTool.
 	 *
@@ -76,39 +65,35 @@ namespace GPlatesGui
 	 *
 	 * This serves the role of the Context class in the State Pattern in Gamma et al.
 	 */
-	class GlobeCanvasToolChoice:
-			public QObject,
-			private boost::noncopyable
+	class GlobeCanvasToolChoice :
+			public QObject
 	{
 		Q_OBJECT
 
 	public:
+
 		/**
 		 * Construct a GlobeCanvasToolChoice instance.
-		 *
-		 * These parameters are needed by various GlobeCanvasTool derivations, which will be
-		 * instantiated by this class.
 		 */
 		GlobeCanvasToolChoice(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesPresentation::ViewState &view_state,
-				FeatureTableModel &clicked_table_model,
-				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
-				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget,
-				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state);
+				const GPlatesCanvasTools::ClickGeometry::non_null_ptr_type &click_geometry_tool,
+				const GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type &digitise_polyline_tool,
+				const GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type &digitise_multipoint_tool,
+				const GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type &digitise_polygon_tool,
+				const GPlatesCanvasTools::MoveVertex::non_null_ptr_type &move_vertex_tool,
+				const GPlatesCanvasTools::DeleteVertex::non_null_ptr_type &delete_vertex_tool,
+				const GPlatesCanvasTools::InsertVertex::non_null_ptr_type &insert_vertex_tool,
+				const GPlatesCanvasTools::SplitFeature::non_null_ptr_type &split_feature_tool,
+				const GPlatesCanvasTools::ManipulatePole::non_null_ptr_type &manipulate_pole_tool,
+				const GPlatesCanvasTools::BuildTopology::non_null_ptr_type &build_topology_tool,
+				const GPlatesCanvasTools::EditTopology::non_null_ptr_type &edit_topology_tool,
+				const GPlatesCanvasTools::MeasureDistance::non_null_ptr_type &measure_distance_tool);
 
-		~GlobeCanvasToolChoice()
-		{  }
+		~GlobeCanvasToolChoice();
 
 		GlobeCanvasTool &
 		tool_choice() const
@@ -120,37 +105,37 @@ namespace GPlatesGui
 		void
 		choose_reorient_globe_tool()
 		{
-			change_tool_if_necessary(d_reorient_globe_tool_ptr);
+			change_tool_if_necessary(d_reorient_globe_tool_ptr.get());
 		}
 
 		void
 		choose_zoom_globe_tool()
 		{
-			change_tool_if_necessary(d_zoom_globe_tool_ptr);
+			change_tool_if_necessary(d_zoom_globe_tool_ptr.get());
 		}
 
 		void
 		choose_click_geometry_tool()
 		{
-			change_tool_if_necessary(d_click_geometry_tool_ptr);
+			change_tool_if_necessary(d_click_geometry_tool_ptr.get());
 		}
 
 		void
 		choose_digitise_polyline_tool()
 		{
-			change_tool_if_necessary(d_digitise_polyline_tool_ptr);
+			change_tool_if_necessary(d_digitise_polyline_tool_ptr.get());
 		}
 
 		void
 		choose_digitise_multipoint_tool()
 		{
-			change_tool_if_necessary(d_digitise_multipoint_tool_ptr);
+			change_tool_if_necessary(d_digitise_multipoint_tool_ptr.get());
 		}
 
 		void
 		choose_digitise_polygon_tool()
 		{
-			change_tool_if_necessary(d_digitise_polygon_tool_ptr);
+			change_tool_if_necessary(d_digitise_polygon_tool_ptr.get());
 		}
 #if 0
 		void
@@ -162,81 +147,81 @@ namespace GPlatesGui
 		void
 		choose_move_vertex_tool()
 		{
-			change_tool_if_necessary(d_move_vertex_tool_ptr);
+			change_tool_if_necessary(d_move_vertex_tool_ptr.get());
 		}
 
 		void
 		choose_delete_vertex_tool()
 		{
-			change_tool_if_necessary(d_delete_vertex_tool_ptr);
+			change_tool_if_necessary(d_delete_vertex_tool_ptr.get());
 		}
 
 		void
 		choose_insert_vertex_tool()
 		{
-			change_tool_if_necessary(d_insert_vertex_tool_ptr);
+			change_tool_if_necessary(d_insert_vertex_tool_ptr.get());
 		}
 
 		void
 		choose_split_feature_tool()
 		{
-			change_tool_if_necessary(d_split_feature_tool_ptr);
+			change_tool_if_necessary(d_split_feature_tool_ptr.get());
 		}
 
 		void
 		choose_manipulate_pole_tool()
 		{
-			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
+			change_tool_if_necessary(d_manipulate_pole_tool_ptr.get());
 		}
 
 		void
 		choose_build_topology_tool()
 		{
-			change_tool_if_necessary(d_build_topology_tool_ptr);
+			change_tool_if_necessary(d_build_topology_tool_ptr.get());
 		}
 
 		void
 		choose_edit_topology_tool()
 		{
-			change_tool_if_necessary(d_edit_topology_tool_ptr);
+			change_tool_if_necessary(d_edit_topology_tool_ptr.get());
 		}
 
 		void
 		choose_measure_distance_tool()
 		{
-			change_tool_if_necessary(d_measure_distance_tool_ptr);
+			change_tool_if_necessary(d_measure_distance_tool_ptr.get());
 		}
 
 	private:
 		/**
 		 * This is the ReorientGlobe tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_reorient_globe_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_reorient_globe_tool_ptr;
 
 		/**
 		 * This is the ZoomGlobe tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_zoom_globe_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_zoom_globe_tool_ptr;
 
 		/**
 		 * This is the ClickGeometry tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_click_geometry_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_click_geometry_tool_ptr;
 
 		/**
 		 * This is the GlobeDigitiseGeometry (Polyline) tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_digitise_polyline_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_digitise_polyline_tool_ptr;
 
 		/**
 		 * This is the GlobeDigitiseGeometry (MultiPoint) tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_digitise_multipoint_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_digitise_multipoint_tool_ptr;
 
 		/**
 		 * This is the GlobeDigitiseGeometry (Polygon) tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_digitise_polygon_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_digitise_polygon_tool_ptr;
 #if 0
 		/**
 		 * This is the MoveGeometry tool which the user may choose.
@@ -246,51 +231,51 @@ namespace GPlatesGui
 		/**
 		 * This is the GlobeMoveVertex tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_move_vertex_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_move_vertex_tool_ptr;
 
 		/**
 		 * This is the DeleteVertex tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_delete_vertex_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_delete_vertex_tool_ptr;
 
 		/**
 		 * This is the InsertVertex tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_insert_vertex_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_insert_vertex_tool_ptr;
 
 		/**
 		 * This is the SplitFeature tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_split_feature_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_split_feature_tool_ptr;
 
 		/**
 		 * This is the ManipulatePole tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_manipulate_pole_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_manipulate_pole_tool_ptr;
 
 		/**
 		 * This is the BuildTopology Canvas tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_build_topology_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_build_topology_tool_ptr;
 
 		/**
 		 * This is the EditTopology Canvas tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_edit_topology_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_edit_topology_tool_ptr;
 
 		/**
 		 * This is the Measure Distance canvas tool which the user may choose.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_measure_distance_tool_ptr;
+		boost::scoped_ptr<GlobeCanvasTool> d_measure_distance_tool_ptr;
 
 		/**
 		 * The current choice of GlobeCanvasTool.
 		 */
-		GlobeCanvasTool::non_null_ptr_type d_tool_choice_ptr;
+		GlobeCanvasTool *d_tool_choice_ptr;
 
 		void
 		change_tool_if_necessary(
-				GlobeCanvasTool::non_null_ptr_type new_tool_choice);
+				GlobeCanvasTool *new_tool_choice);
 	};
 }
 

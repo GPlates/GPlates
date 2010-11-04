@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -49,33 +49,20 @@ namespace GPlatesCanvasTools
 			public GPlatesGui::GlobeCanvasTool
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		virtual
-		~ZoomGlobe()
-		{  }
 
 		/**
 		 * Create a ZoomGlobe instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
+		explicit
+		ZoomGlobe(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesPresentation::ViewState &view_state_)
-		{
-			ZoomGlobe::non_null_ptr_type ptr(
-					new ZoomGlobe(globe_, globe_canvas_, viewport_window_, view_state_),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
+				GPlatesPresentation::ViewState &view_state_):
+			GlobeCanvasTool(globe_, globe_canvas_),
+			d_viewport_window(&viewport_window_),
+			d_view_state(view_state_)
+		{  }
 
 		virtual
 		void
@@ -95,21 +82,11 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe);
 
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		explicit
-		ZoomGlobe(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesPresentation::ViewState &view_state_):
-			GlobeCanvasTool(globe_, globe_canvas_),
-			d_viewport_window(&viewport_window_),
-			d_view_state(view_state_)
-		{  }
-
 	private:
+
+		void
+		recentre_globe(
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe);
 
 		/**
 		 * This is the View State used to pass messages to the status bar.
@@ -120,17 +97,6 @@ namespace GPlatesCanvasTools
 		 * This is the view state (in the presentation tier).
 		 */
 		GPlatesPresentation::ViewState &d_view_state;
-
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		ZoomGlobe(
-				const ZoomGlobe &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		ZoomGlobe &
-		operator=(
-				const ZoomGlobe &);
 	};
 }
 

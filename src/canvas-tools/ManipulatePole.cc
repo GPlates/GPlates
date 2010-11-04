@@ -36,13 +36,14 @@
 
 
 GPlatesCanvasTools::ManipulatePole::ManipulatePole(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget):
+		GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget) :
+	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_pole_widget_ptr(&pole_widget),
 	d_is_in_drag(false)
-{
-}
+{  }
 
 
 void

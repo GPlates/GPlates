@@ -62,29 +62,40 @@ namespace GPlatesCanvasTools
 	{
 	public:
 
-		virtual
-		~InsertVertex();
-
 		/**
-		 * Create a InsertVertex instance.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<InsertVertex>.
 		 */
-		InsertVertex(
+		typedef GPlatesUtils::non_null_intrusive_ptr<InsertVertex> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
-		
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold)
+		{
+			return new InsertVertex(
+					status_bar_callback,
+					geometry_operation_target,
+					active_geometry_operation,
+					rendered_geometry_collection,
+					choose_canvas_tool,
+					query_proximity_threshold);
+		}
+
+		virtual
+		~InsertVertex();
 		
 		virtual
 		void
 		handle_activation();
 
-
 		virtual
 		void
 		handle_deactivation();
-
 
 		virtual
 		void
@@ -112,6 +123,17 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold);
 
 	private:
+
+		/**
+		 * Create a InsertVertex instance.
+		 */
+		InsertVertex(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
 
 		/**
 		 * Used to set main rendered layer.

@@ -5,7 +5,8 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C)  2008 Geological Survey of Norway
+ * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,6 +29,7 @@
 
 #include "gui/MapCanvasTool.h"
 
+
 namespace GPlatesGui
 {
 	class MapTransform;
@@ -49,37 +51,19 @@ namespace GPlatesCanvasTools
 			public GPlatesGui::MapCanvasTool
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PanMap,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		virtual
-		~PanMap()
-		{  }
 
 		/**
 		 * Create a PanMap instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
+		explicit
+		PanMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
 				GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::MapTransform &map_transform_)
-		{
-			PanMap::non_null_ptr_type ptr(
-					new PanMap(
-						map_canvas_,
-						map_view_,
-						view_state_,
-						map_transform_),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
+				GPlatesGui::MapTransform &map_transform_):
+			MapCanvasTool(map_canvas_, map_view_, map_transform_),
+			d_view_state_ptr(&view_state_)
+		{  }
 
 		virtual
 		void
@@ -88,13 +72,6 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_deactivation();
-
-		
-		virtual
-		void
-		handle_left_click(
-				const QPointF &point_on_scene,
-				bool is_on_surface);
 
 
 		virtual
@@ -107,12 +84,6 @@ namespace GPlatesCanvasTools
 				const QPointF &translation
 		);
 
-		virtual
-		void
-		handle_shift_left_click(
-				const QPointF &point_on_scene,
-				bool is_on_surface);	
-
 
 		virtual
 		void
@@ -123,45 +94,12 @@ namespace GPlatesCanvasTools
 				bool is_on_surface,
 				const QPointF &translation);
 
-		virtual
-		void
-		handle_shift_left_release_after_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface);
-
-
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		explicit
-		PanMap(
-				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesQtWidgets::MapView &map_view_,
-				GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::MapTransform &map_transform_):
-			MapCanvasTool(map_canvas_, map_view_, map_transform_),
-			d_view_state_ptr(&view_state_)
-		{  }
-
 	private:
 
 		/**
 		 * This is the View State used to pass messages to the status bar.
 		 */
 		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
-
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		PanMap(
-				const PanMap &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		PanMap &
-		operator=(
-				const PanMap &);
 	};
 }
 

@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,34 +26,55 @@
 
 #include "ZoomMap.h"
 
-#include "qt-widgets/MapCanvas.h"
-#include "qt-widgets/MapView.h"
+#include "gui/MapTransform.h"
+#include "gui/ViewportZoom.h"
+
 #include "qt-widgets/ViewportWindow.h"
+
+
+GPlatesCanvasTools::ZoomMap::ZoomMap(
+		GPlatesQtWidgets::MapCanvas &map_canvas_,
+		GPlatesQtWidgets::MapView &map_view_,
+		GPlatesQtWidgets::ViewportWindow &viewport_window_,
+		GPlatesGui::MapTransform &map_transform_,
+		GPlatesGui::ViewportZoom &viewport_zoom_) :
+	MapCanvasTool(map_canvas_, map_view_, map_transform_),
+	d_viewport_window_ptr(&viewport_window_),
+	d_map_transform_ptr(&map_transform_),
+	d_viewport_zoom_ptr(&viewport_zoom_)
+{  }
+
 
 void
 GPlatesCanvasTools::ZoomMap::handle_activation()
 {
 	if (map_view().isVisible())
 	{
-		d_view_state_ptr->status_message(QObject::tr(
-			"Click to zoom in."
-			" Shift+click to zoom out."
-			" Ctrl+drag to pan the map."));
+		d_viewport_window_ptr->status_message(QObject::tr(
+					"Click to zoom in."
+					" Shift+click to zoom out."
+					" Ctrl+drag to pan the map."));
 	}
 }
 
 
 void
-GPlatesCanvasTools::ZoomMap::handle_left_click(
-	const QPointF &point_on_scene, 
-	bool is_on_surface)
+GPlatesCanvasTools::ZoomMap::recentre_map(
+		const QPointF &point_on_scene)
 {
+	d_map_transform_ptr->set_centre_of_viewport(point_on_scene);
+}
 
+
+void
+GPlatesCanvasTools::ZoomMap::handle_left_click(
+		const QPointF &point_on_scene, 
+		bool is_on_surface)
+{
 	if (is_on_surface)
 	{
-		map_view().centerOn(point_on_scene);
-		map_view().update_centre_of_viewport();
-		map_view().viewport_zoom().zoom_in();
+		recentre_map(point_on_scene);
+		d_viewport_zoom_ptr->zoom_in();
 	}
 }
 
@@ -60,9 +82,13 @@ GPlatesCanvasTools::ZoomMap::handle_left_click(
 
 void
 GPlatesCanvasTools::ZoomMap::handle_shift_left_click(
-	const QPointF &point_on_scene, 
-	bool is_on_surface)
+		const QPointF &point_on_scene, 
+		bool is_on_surface)
 {
-	map_view().viewport_zoom().zoom_out();
+	if (is_on_surface)
+	{
+		recentre_map(point_on_scene);
+		d_viewport_zoom_ptr->zoom_out();
+	}
 }
 

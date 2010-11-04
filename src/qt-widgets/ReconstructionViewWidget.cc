@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,9 +31,9 @@
 #include <QSizePolicy>
 #include <QToolButton>
 #include <QMenu>
-#include <cmath>
 
 #include "ReconstructionViewWidget.h"
+
 #include "ViewportWindow.h"
 #include "GlobeCanvas.h"
 #include "AnimateControlWidget.h"
@@ -48,10 +48,14 @@
 #include "gui/MapProjection.h"
 #include "gui/MapTransform.h"
 #include "gui/ViewportProjection.h"
+
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPoint.h"
+
 #include "presentation/ViewState.h"
+
 #include "qt-widgets/TaskPanel.h"
+
 #include "utils/FloatingPointComparisons.h"
 
 
@@ -261,7 +265,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			SLOT(recalc_camera_position()));
 	QObject::connect(
 			&(view_state.get_map_transform()),
-			SIGNAL(view_changed()),
+			SIGNAL(transform_changed(const GPlatesGui::MapTransform &)),
 			this,
 			SLOT(recalc_camera_position()));
 
@@ -311,7 +315,7 @@ void
 GPlatesQtWidgets::ReconstructionViewWidget::handle_globe_and_map_widget_resized(
 		int new_width, int new_height)
 {
-	d_view_state.set_main_viewport_min_dimension((std::min)(new_width, new_height));
+	d_view_state.set_main_viewport_dimensions(std::make_pair(new_width, new_height));
 }
 
 

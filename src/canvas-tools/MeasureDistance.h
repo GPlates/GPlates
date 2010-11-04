@@ -68,9 +68,23 @@ namespace GPlatesCanvasTools
 
 	public:
 
-		MeasureDistance (
+		/**
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<MeasureDistance>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<MeasureDistance> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state);
+				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state)
+		{
+			return new MeasureDistance(
+					status_bar_callback,
+					rendered_geom_collection,
+					measure_distance_state);
+		}
 
 		virtual
 		void
@@ -96,6 +110,11 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold);
 		
 	private:
+
+		MeasureDistance(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state);
 
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection_ptr;

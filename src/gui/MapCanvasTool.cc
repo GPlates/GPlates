@@ -100,7 +100,7 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag(
 	// the centre of the view. 
 	// Ideally I want this to rotate about the centre of the view, but without 
 	// re-centring the map each time. 
-	map_transform().rotate_maps(angle);
+	map_transform().rotate(angle);
 
 #if 0
 	qDebug();
@@ -112,3 +112,4 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag(
 	qDebug() << "Angle: " << angle;
 #endif
 }
+

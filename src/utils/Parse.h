@@ -29,6 +29,8 @@
 #define GPLATES_UTILS_PARSE_H
 
 #include <QString>
+#include <QLocale>
+
 
 namespace GPlatesUtils
 {
@@ -42,7 +44,7 @@ namespace GPlatesUtils
 	 * However, the idea is for specialisations of Parse to accompany the
 	 * definitions of other types that can be converted from a string.
 	 *
-	 * Specialisations must provide a public function operator that takes a
+	 * Specialisations must provide a const public function operator that takes a
 	 * const QString & parameter and returns, by value, the parsed value.
 	 * ParseError is to be thrown when the provided string cannot be parsed.
 	 */
@@ -55,54 +57,84 @@ namespace GPlatesUtils
 	{
 		template<typename T, typename FunctionType>
 		T
-		parse_using_qstring(
+		parse_using_qlocale(
+				const QLocale &loc,
 				const QString &s,
 				FunctionType fn)
 		{
 			bool ok;
-			T result = (s.*fn)(&ok);
+
+			// Attempt to parse using provided locale.
+			T result = (loc.*fn)(s, &ok);
 			if (ok)
 			{
 				return result;
 			}
-			else
+
+			// Attempt to parse using "C" locale.
+			static const QLocale C_LOCALE = QLocale::c();
+			if (C_LOCALE != loc)
 			{
-				throw ParseError();
+				result = (C_LOCALE.*fn)(s, &ok);
+				if (ok)
+				{
+					return result;
+				}
 			}
+
+			throw ParseError();
 		}
 
 
 		template<typename T, typename FunctionType>
 		T
-		parse_using_qstring(
+		parse_using_qlocale(
+				const QLocale &loc,
 				const QString &s,
 				FunctionType fn,
 				int base)
 		{
 			bool ok;
-			T result = (s.*fn)(&ok, base);
+
+			// Attempt to parse using provided locale.
+			T result = (loc.*fn)(s, &ok, base);
 			if (ok)
 			{
 				return result;
 			}
-			else
+
+			// Attempt to parse using "C" locale.
+			static const QLocale C_LOCALE = QLocale::c();
+			if (C_LOCALE != loc)
 			{
-				throw ParseError();
+				result = (C_LOCALE.*fn)(s, &ok, base);
+				if (ok)
+				{
+					return result;
+				}
 			}
+
+			throw ParseError();
 		}
 
-		
-		class ParseWithBase
+
+		class ParseWithLocale
 		{
-		public:
+		protected:
+
+			QLocale d_locale;
+		};
+
+		
+		class ParseWithBase :
+				public ParseWithLocale
+		{
+		protected:
 
 			ParseWithBase(
 					int base) :
 				d_base(base)
-			{
-			}
-
-		protected:
+			{  }
 
 			int d_base;
 		};
@@ -119,14 +151,13 @@ namespace GPlatesUtils
 		Parse(
 				int base = 10) :
 			ParseWithBase(base)
-		{
-		}
+		{  }
 
 		int
 		operator()(
-				const QString &s)
+				const QString &s) const
 		{
-			return ParseInternals::parse_using_qstring<int>(s, &QString::toInt, d_base);
+			return ParseInternals::parse_using_qlocale<int>(d_locale, s, &QLocale::toInt, d_base);
 		}
 	};
 
@@ -141,58 +172,13 @@ namespace GPlatesUtils
 		Parse(
 				int base = 10) :
 			ParseWithBase(base)
-		{
-		}
+		{  }
 
 		unsigned int
 		operator()(
-				const QString &s)
+				const QString &s) const
 		{
-			return ParseInternals::parse_using_qstring<unsigned int>(s, &QString::toUInt, d_base);
-		}
-	};
-
-
-	/**
-	 * Template specialisation of Parse for long.
-	 */
-	template<>
-	struct Parse<long> :
-			public ParseInternals::ParseWithBase
-	{
-		Parse(
-				int base = 10) :
-			ParseWithBase(base)
-		{
-		}
-
-		long
-		operator()(
-				const QString &s)
-		{
-			return ParseInternals::parse_using_qstring<long>(s, &QString::toLong, d_base);
-		}
-	};
-
-
-	/**
-	 * Template specialisation of Parse for unsigned long.
-	 */
-	template<>
-	struct Parse<unsigned long> :
-			public ParseInternals::ParseWithBase
-	{
-		Parse(
-				int base = 10) :
-			ParseWithBase(base)
-		{
-		}
-
-		unsigned long
-		operator()(
-				const QString &s)
-		{
-			return ParseInternals::parse_using_qstring<long>(s, &QString::toULong, d_base);
+			return ParseInternals::parse_using_qlocale<unsigned int>(d_locale, s, &QLocale::toUInt, d_base);
 		}
 	};
 
@@ -240,13 +226,20 @@ namespace GPlatesUtils
 	{
 	public:
 
+		Parse() :
+			d_parse(Base)
+		{  }
+
 		Int<Base, IntType>
 		operator()(
-				const QString &s)
+				const QString &s) const
 		{
-			Parse<IntType> parse(Base);
-			return parse(s);
+			return d_parse(s);
 		}
+
+	private:
+
+		Parse<IntType> d_parse;
 	};
 
 
@@ -254,13 +247,14 @@ namespace GPlatesUtils
 	 * Template specialisation of Parse for float.
 	 */
 	template<>
-	struct Parse<float>
+	struct Parse<float> :
+			public ParseInternals::ParseWithLocale
 	{
 		float
 		operator()(
-				const QString &s)
+				const QString &s) const
 		{
-			return ParseInternals::parse_using_qstring<float>(s, &QString::toFloat);
+			return ParseInternals::parse_using_qlocale<float>(d_locale, s, &QLocale::toFloat);
 		}
 	};
 
@@ -269,13 +263,14 @@ namespace GPlatesUtils
 	 * Template specialisation of Parse for double.
 	 */
 	template<>
-	struct Parse<double>
+	struct Parse<double> :
+			public ParseInternals::ParseWithLocale
 	{
 		double
 		operator()(
-				const QString &s)
+				const QString &s) const
 		{
-			return ParseInternals::parse_using_qstring<double>(s, &QString::toDouble);
+			return ParseInternals::parse_using_qlocale<double>(d_locale, s, &QLocale::toDouble);
 		}
 	};
 
@@ -288,14 +283,17 @@ namespace GPlatesUtils
 	{
 		bool
 		operator()(
-				const QString &s)
+				const QString &s) const
 		{
+			static const QString TRUE_STRING = "true";
+			static const QString FALSE_STRING = "false";
+
 			QString lower = s.toLower();
-			if (lower == "true")
+			if (lower == TRUE_STRING)
 			{
 				return true;
 			}
-			else if (lower == "false")
+			else if (lower == FALSE_STRING)
 			{
 				return false;
 			}
@@ -315,7 +313,7 @@ namespace GPlatesUtils
 	{
 		const QString &
 		operator()(
-				const QString &s)
+				const QString &s) const
 		{
 			return s;
 		}
@@ -330,7 +328,7 @@ namespace GPlatesUtils
 	{
 		QString
 		operator()(
-				const QString &s)
+				const QString &s) const
 		{
 			return s;
 		}

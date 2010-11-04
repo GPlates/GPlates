@@ -66,23 +66,39 @@ namespace GPlatesCanvasTools
 
 	public:
 
-		EditTopology(
+		/**
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<EditTopology>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<EditTopology> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesAppLogic::ApplicationState &application_state);
-		
+				GPlatesAppLogic::ApplicationState &application_state)
+		{
+			return new EditTopology(
+					status_bar_callback,
+					view_state,
+					viewport_window,
+					clicked_table_model_,
+					topology_sections_container,
+					topology_tools_widget,
+					application_state);
+		}
+
 		virtual
 		void
 		handle_activation();
 
-
 		virtual
 		void
 		handle_deactivation();
-
 
 		virtual
 		void
@@ -92,6 +108,15 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold);
 
 	private:
+
+		EditTopology(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesPresentation::ViewState &view_state,
+				GPlatesQtWidgets::ViewportWindow &viewport_window,
+				GPlatesGui::FeatureTableModel &clicked_table_model_,	
+				GPlatesGui::TopologySectionsContainer &topology_sections_container,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		/**
 		 * We need to change which canvas-tool layer is shown when this canvas-tool is

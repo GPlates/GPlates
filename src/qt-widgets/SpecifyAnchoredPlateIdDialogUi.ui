@@ -56,7 +56,7 @@
          <bool>false</bool>
         </property>
         <property name="text">
-         <string>Fill from Current Feature</string>
+         <string>&amp;Fill from Current Feature</string>
         </property>
         <property name="popupMode">
          <enum>QToolButton::InstantPopup</enum>
@@ -76,6 +76,9 @@
   </layout>
   <action name="action_Reconstruction_Plate_Id">
    <property name="text">
+    <string>gpml:reconstruction&amp;PlateId</string>
+   </property>
+   <property name="toolTip">
     <string>gpml:reconstructionPlateId</string>
    </property>
    <property name="visible">
@@ -84,7 +87,7 @@
   </action>
   <action name="action_Right_Plate">
    <property name="text">
-    <string>gpml:rightPlate</string>
+    <string>gpml:&amp;rightPlate</string>
    </property>
    <property name="visible">
     <bool>false</bool>
@@ -92,7 +95,7 @@
   </action>
   <action name="action_Left_Plate">
    <property name="text">
-    <string>action:leftPlate</string>
+    <string>action:&amp;leftPlate</string>
    </property>
    <property name="visible">
     <bool>false</bool>

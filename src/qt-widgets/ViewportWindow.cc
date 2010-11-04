@@ -64,6 +64,7 @@
 #include "ImportRasterDialog.h"
 #include "InformationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
+#include "MapView.h"
 #include "PreferencesDialog.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -194,6 +195,25 @@ GPlatesQtWidgets::ViewportWindow::handle_read_errors(
 		d_read_errors_dialog_ptr->show();
 	} else {
 		d_trinket_area_ptr->read_errors_trinket().setVisible(true);
+	}
+}
+
+
+namespace
+{
+	const char *STATUS_MESSAGE_SUFFIX_FOR_GLOBE = QT_TR_NOOP("Ctrl+drag to re-orient the globe.");
+	const char *STATUS_MESSAGE_SUFFIX_FOR_MAP = QT_TR_NOOP("Ctrl+drag to pan the map.");
+
+	void
+	canvas_tool_status_message(
+			GPlatesQtWidgets::ViewportWindow &viewport_window,
+			const char *message)
+	{
+		viewport_window.status_message(
+				GPlatesQtWidgets::ViewportWindow::tr(message) + " " +
+				GPlatesQtWidgets::ViewportWindow::tr(
+					viewport_window.reconstruction_view_widget().globe_is_active() ?
+						STATUS_MESSAGE_SUFFIX_FOR_GLOBE : STATUS_MESSAGE_SUFFIX_FOR_MAP));
 	}
 }
 
@@ -422,51 +442,161 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			d_shapefile_attribute_viewer_dialog_ptr.get(), SLOT(update()));
 
+	// Create canvas tools.
+	GPlatesGui::Globe &globe = globe_canvas().globe();
+	MapCanvas &map_canvas = map_view().map_canvas();
+	GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection =
+		get_view_state().get_rendered_geometry_collection();
+	GPlatesGui::FeatureFocus &feature_focus = get_view_state().get_feature_focus();
+	GlobeAndMapWidget &globe_and_map_widget = d_reconstruction_view_widget.globe_and_map_widget();
+	GPlatesGui::MapTransform &map_transform = get_view_state().get_map_transform();
+	GPlatesCanvasTools::CanvasTool::status_bar_callback_type status_bar_callback =
+		boost::bind(
+				&::canvas_tool_status_message,
+				boost::ref(*this),
+				_1);
+
+	GPlatesCanvasTools::ClickGeometry::non_null_ptr_type click_geometry_tool =
+		GPlatesCanvasTools::ClickGeometry::create(
+				status_bar_callback,
+				rendered_geom_collection,
+				*this,
+				*d_feature_table_model_ptr,
+				*d_feature_properties_dialog_ptr,
+				feature_focus,
+				get_application_state());
+	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_polyline_tool =
+		GPlatesCanvasTools::DigitiseGeometry::create(
+				status_bar_callback,
+				GPlatesViewOperations::GeometryType::POLYLINE,
+				*d_geometry_operation_target,
+				*d_active_geometry_operation,
+				rendered_geom_collection,
+				*d_choose_canvas_tool,
+				GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE,
+				globe_and_map_widget);
+	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_multipoint_tool =
+		GPlatesCanvasTools::DigitiseGeometry::create(
+				status_bar_callback,
+				GPlatesViewOperations::GeometryType::MULTIPOINT,
+				*d_geometry_operation_target,
+				*d_active_geometry_operation,
+				rendered_geom_collection,
+				*d_choose_canvas_tool,
+				GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT,
+				globe_and_map_widget);
+	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_polygon_tool =
+		GPlatesCanvasTools::DigitiseGeometry::create(
+				status_bar_callback,
+				GPlatesViewOperations::GeometryType::POLYGON,
+				*d_geometry_operation_target,
+				*d_active_geometry_operation,
+				rendered_geom_collection,
+				*d_choose_canvas_tool,
+				GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON,
+				globe_and_map_widget);
+	GPlatesCanvasTools::MoveVertex::non_null_ptr_type move_vertex_tool =
+		GPlatesCanvasTools::MoveVertex::create(
+				status_bar_callback,
+				*d_geometry_operation_target,
+				*d_active_geometry_operation,
+				rendered_geom_collection,
+				*d_choose_canvas_tool,
+				globe_and_map_widget,
+				this);
+	GPlatesCanvasTools::DeleteVertex::non_null_ptr_type delete_vertex_tool =
+		GPlatesCanvasTools::DeleteVertex::create(
+				status_bar_callback,
+				*d_geometry_operation_target,
+				*d_active_geometry_operation,
+				rendered_geom_collection,
+				*d_choose_canvas_tool,
+				globe_and_map_widget);
+	GPlatesCanvasTools::InsertVertex::non_null_ptr_type insert_vertex_tool =
+		GPlatesCanvasTools::InsertVertex::create(
+				status_bar_callback,
+				*d_geometry_operation_target,
+				*d_active_geometry_operation,
+				rendered_geom_collection,
+				*d_choose_canvas_tool,
+				globe_and_map_widget);
+	GPlatesCanvasTools::SplitFeature::non_null_ptr_type split_feature_tool =
+		GPlatesCanvasTools::SplitFeature::create(
+				status_bar_callback,
+				feature_focus,
+				get_view_state(),
+				*d_geometry_operation_target,
+				*d_active_geometry_operation,
+				rendered_geom_collection,
+				*d_choose_canvas_tool,
+				globe_and_map_widget);
+	GPlatesCanvasTools::ManipulatePole::non_null_ptr_type manipulate_pole_tool =
+		GPlatesCanvasTools::ManipulatePole::create(
+				status_bar_callback,
+				rendered_geom_collection,
+				d_task_panel_ptr->modify_reconstruction_pole_widget());
+	GPlatesCanvasTools::BuildTopology::non_null_ptr_type build_topology_tool =
+		GPlatesCanvasTools::BuildTopology::create(
+				status_bar_callback,
+				get_view_state(),
+				*this,
+				*d_feature_table_model_ptr,
+				*d_topology_sections_container_ptr,
+				d_task_panel_ptr->topology_tools_widget(),
+				get_application_state());
+	GPlatesCanvasTools::EditTopology::non_null_ptr_type edit_topology_tool =
+		GPlatesCanvasTools::EditTopology::create(
+				status_bar_callback,
+				get_view_state(),
+				*this,
+				*d_feature_table_model_ptr,
+				*d_topology_sections_container_ptr,
+				d_task_panel_ptr->topology_tools_widget(),
+				get_application_state());
+	GPlatesCanvasTools::MeasureDistance::non_null_ptr_type measure_distance_tool =
+		GPlatesCanvasTools::MeasureDistance::create(
+				status_bar_callback,
+				rendered_geom_collection,
+				*d_measure_distance_state_ptr);
+
 	// Set up the Map and Globe Canvas Tools Choices.
-	d_map_canvas_tool_choice_ptr.reset(
-			new GPlatesGui::MapCanvasToolChoice(
-					get_view_state().get_rendered_geometry_collection(),
-					*d_geometry_operation_target,
-					*d_active_geometry_operation,
-					*d_choose_canvas_tool,
-					map_view(),
-					map_view().map_canvas(),
-					map_view(),
-					get_view_state(),
-					*this,
-					*d_feature_table_model_ptr,
-					*d_feature_properties_dialog_ptr,
-					get_view_state().get_feature_focus(),
-					d_task_panel_ptr->modify_reconstruction_pole_widget(),
-					*d_topology_sections_container_ptr,
-					d_task_panel_ptr->topology_tools_widget(),
-					*d_measure_distance_state_ptr,
-					get_view_state().get_map_transform(),
-					get_application_state()));
-
-
-
-	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
 	d_globe_canvas_tool_choice_ptr.reset(
 			new GPlatesGui::GlobeCanvasToolChoice(
-					get_view_state().get_rendered_geometry_collection(),
-					*d_geometry_operation_target,
-					*d_active_geometry_operation,
-					*d_choose_canvas_tool,
-					globe_canvas(),
-					globe_canvas().globe(),
-					globe_canvas(),
-					*this,
-					get_view_state(),
-					*d_feature_table_model_ptr,
-					*d_feature_properties_dialog_ptr,
-					get_view_state().get_feature_focus(),
-					d_task_panel_ptr->modify_reconstruction_pole_widget(),
-					*d_topology_sections_container_ptr,
-					d_task_panel_ptr->topology_tools_widget(),
-					*d_measure_distance_state_ptr));
-
-
+				globe,
+				globe_canvas(),
+				*this,
+				get_view_state(),
+				click_geometry_tool,
+				digitise_polyline_tool,
+				digitise_multipoint_tool,
+				digitise_polygon_tool,
+				move_vertex_tool,
+				delete_vertex_tool,
+				insert_vertex_tool,
+				split_feature_tool,
+				manipulate_pole_tool,
+				build_topology_tool,
+				edit_topology_tool,
+				measure_distance_tool));
+	d_map_canvas_tool_choice_ptr.reset(
+			new GPlatesGui::MapCanvasToolChoice(
+				map_canvas,
+				map_view(),
+				*this,
+				map_transform,
+				get_view_state().get_viewport_zoom(),
+				click_geometry_tool,
+				digitise_polyline_tool,
+				digitise_multipoint_tool,
+				digitise_polygon_tool,
+				move_vertex_tool,
+				delete_vertex_tool,
+				insert_vertex_tool,
+				split_feature_tool,
+				manipulate_pole_tool,
+				build_topology_tool,
+				edit_topology_tool,
+				measure_distance_tool));
 
 	// Set up the Map and Globe Canvas Tool Adapters for handling globe click and drag events.
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
@@ -2305,4 +2435,19 @@ GPlatesQtWidgets::ViewportWindow::open_new_window()
 	}
 }
 
+
+void
+GPlatesQtWidgets::ViewportWindow::status_message(
+		const QString &message,
+		int timeout)
+{
+#ifdef Q_WS_MAC
+	QString cloverleaf(QChar(0x2318));
+	QString fixed_message = message;
+	fixed_message.replace(QString("ctrl"), cloverleaf, Qt::CaseInsensitive);
+	statusBar()->showMessage(fixed_message, timeout);
+#else
+	statusBar()->showMessage(message, timeout);
+#endif
+}
 

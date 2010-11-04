@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,9 +29,11 @@
 
 #include "gui/MapCanvasTool.h"
 
+
 namespace GPlatesGui
 {
 	class MapTransform;
+	class ViewportZoom;
 }
 
 namespace GPlatesQtWidgets
@@ -45,41 +48,21 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to re-orient the globe by dragging.
 	 */
-	class ZoomMap:
+	class ZoomMap :
 			public GPlatesGui::MapCanvasTool
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ZoomMap,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		virtual
-		~ZoomMap()
-		{  }
 
 		/**
 		 * Create a PanMap instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
+		explicit
+		ZoomMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::MapTransform &map_transform_)
-		{
-			ZoomMap::non_null_ptr_type ptr(
-					new ZoomMap(
-						map_canvas_,
-						map_view_,
-						view_state_,
-						map_transform_),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
+				GPlatesQtWidgets::ViewportWindow &viewport_window_,
+				GPlatesGui::MapTransform &map_transform_,
+				GPlatesGui::ViewportZoom &viewport_zoom_);
 
 		virtual
 		void
@@ -98,46 +81,19 @@ namespace GPlatesCanvasTools
 				const QPointF &point_on_scene,
 				bool is_on_surface);
 
-#if 0
-		virtual
-		void
-		handle_shift_left_drag();
-
-		virtual
-		void
-		handle_shift_left_release_after_drag();
-#endif
-
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		explicit
-		ZoomMap(
-				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesQtWidgets::MapView &map_view_,
-				GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::MapTransform &map_transform_):
-			MapCanvasTool(map_canvas_, map_view_, map_transform_),
-			d_view_state_ptr(&view_state_)
-		{  }
-
 	private:
 
+		void
+		recentre_map(
+				const QPointF &point_on_scene);
+
 		/**
-		 * This is the View State used to pass messages to the status bar.
+		 * This is the window that has the status bar.
 		 */
-		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
 
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		ZoomMap(
-				const ZoomMap &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		ZoomMap &
-		operator=(
-				const ZoomMap &);
+		GPlatesGui::MapTransform *d_map_transform_ptr;
+		GPlatesGui::ViewportZoom *d_viewport_zoom_ptr;
 	};
 }
 

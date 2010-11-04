@@ -91,8 +91,9 @@ GPlatesPresentation::ViewState::ViewState(
 	d_render_settings(
 			new GPlatesGui::RenderSettings()),
 	d_map_transform(
-			new GPlatesGui::MapTransform()),
-	d_main_viewport_min_dimension(0),
+			new GPlatesGui::MapTransform(
+				*d_viewport_zoom)),
+	d_main_viewport_dimensions(0, 0),
 	d_vgp_render_settings(
 			GPlatesAppLogic::VGPRenderSettings::instance()),
 	d_raster_colour_scheme_map(
@@ -208,18 +209,50 @@ GPlatesPresentation::ViewState::get_map_transform()
 }
 
 
-int
-GPlatesPresentation::ViewState::get_main_viewport_min_dimension()
+const std::pair<int, int> &
+GPlatesPresentation::ViewState::get_main_viewport_dimensions() const
 {
-	return d_main_viewport_min_dimension;
+	return d_main_viewport_dimensions;
 }
 
 
 void
-GPlatesPresentation::ViewState::set_main_viewport_min_dimension(
-		int min_dimension)
+GPlatesPresentation::ViewState::set_main_viewport_dimensions(
+		const std::pair<int, int> &dimensions)
 {
-	d_main_viewport_min_dimension = min_dimension;
+	d_main_viewport_dimensions = dimensions;
+}
+
+
+int
+GPlatesPresentation::ViewState::get_main_viewport_min_dimension() const
+{
+	int width = d_main_viewport_dimensions.first;
+	int height = d_main_viewport_dimensions.second;
+	if (width < height)
+	{
+		return width;
+	}
+	else
+	{
+		return height;
+	}
+}
+
+
+int
+GPlatesPresentation::ViewState::get_main_viewport_max_dimension() const
+{
+	int width = d_main_viewport_dimensions.first;
+	int height = d_main_viewport_dimensions.second;
+	if (width > height)
+	{
+		return width;
+	}
+	else
+	{
+		return height;
+	}
 }
 
 

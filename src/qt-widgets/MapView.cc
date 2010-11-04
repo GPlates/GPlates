@@ -7,7 +7,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 Geological Survey of Norway.
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,20 +30,24 @@
 #include <QGraphicsView>
 #include <QtOpenGL/qgl.h>
 #include <QPaintEngine>
+#include <QScrollBar>
 
 #include "MapView.h"
+
 #include "MapCanvas.h"
 
 #include "gui/MapTransform.h"
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
 #include "gui/QGLWidgetTextRenderer.h"
+
 #include "maths/InvalidLatLonException.h"
+
 #include "presentation/ViewState.h"
+
 
 namespace
 {
-
 	double
 	distance_between_qpointfs(
 		const QPointF &p1,
@@ -52,26 +57,13 @@ namespace
 
 		return sqrt(difference.x()*difference.x() + difference.y()*difference.y());
 	}
-
-	QPointF
-	get_scene_translation_from_view_translation(
-		QGraphicsView *view,
-		const int &x,
-		const int &y)
-	{
-		QPointF zero = view->mapToScene(0,0);
-		QPointF translation = view->mapToScene(x,y);
-
-		return (translation - zero);
-	}
-
 }
+
 
 GPlatesQtWidgets::MapView::MapView(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
-		QWidget *parent_):
-	d_viewport_zoom(&view_state.get_viewport_zoom()),
+		QWidget *parent_) :
 	d_map_canvas_ptr(
 			new MapCanvas(
 				view_state.get_rendered_geometry_collection(),
@@ -85,7 +77,6 @@ GPlatesQtWidgets::MapView::MapView(
 			new QGLWidget(
 				QGLFormat(QGL::SampleBuffers),
 				this)),
-	d_mouse_wheel_enabled(true),
 	d_map_transform(view_state.get_map_transform())
 {
 #if QT_VERSION >= 0x040600
@@ -132,26 +123,20 @@ GPlatesQtWidgets::MapView::MapView(
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-	// Flip the vertical axis so that positive latitude is upwards. 
-	scale(1.,-1.);
-	fitInView(d_scene_rect, Qt::KeepAspectRatio);
-
 	// Get rid of the border.
 	setFrameShape(QFrame::NoFrame);
 
 	// Set initial rotation and translation.
-	handle_translate(
-			d_map_transform.get_total_translation_x(),
-			d_map_transform.get_total_translation_y());
-	handle_rotate(
-			d_map_transform.get_total_rotation());
+	setTransformationAnchor(QGraphicsView::NoAnchor);
+	handle_transform_changed(d_map_transform);
 
 	make_signal_slot_connections();
 }
 
+
 GPlatesQtWidgets::MapView::~MapView()
-{
-}
+{  }
+
 
 void
 GPlatesQtWidgets::MapView::make_signal_slot_connections()
@@ -159,14 +144,9 @@ GPlatesQtWidgets::MapView::make_signal_slot_connections()
 	// Handle map transforms.
 	QObject::connect(
 			&d_map_transform,
-			SIGNAL(translate(qreal, qreal)),
+			SIGNAL(transform_changed(const GPlatesGui::MapTransform &)),
 			this,
-			SLOT(handle_translate(qreal, qreal)));
-	QObject::connect(
-			&d_map_transform,
-			SIGNAL(rotate(double)),
-			this,
-			SLOT(handle_rotate(double)));
+			SLOT(handle_transform_changed(const GPlatesGui::MapTransform &)));
 
 	// Pass up repainted signals from MapCanvas.
 	QObject::connect(
@@ -176,21 +156,48 @@ GPlatesQtWidgets::MapView::make_signal_slot_connections()
 			SLOT(handle_map_canvas_repainted()));
 }
 
-void
-GPlatesQtWidgets::MapView::handle_translate(
-		qreal dx, qreal dy)
-{
-	setTransformationAnchor(QGraphicsView::NoAnchor);
-	translate(dx, dy);
-}
 
 void
-GPlatesQtWidgets::MapView::handle_rotate(
-		double angle)
+GPlatesQtWidgets::MapView::handle_transform_changed(
+		const GPlatesGui::MapTransform &map_transform)
 {
+	static const double FRAMING_RATIO = 1.07;
+	double scale_factor = map_transform.get_zoom_factor() * width() /
+		(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
+		 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) / FRAMING_RATIO;
+
+	QMatrix m;
+	m.scale(scale_factor, -scale_factor);
+	m.rotate(map_transform.get_rotation());
+
+	// For the translation, we see where the centre of viewport (in scene
+	// coordinates) would have ended up (in window coordinates) if we hadn't done
+	// any translation. Then we apply a translation such that the centre of
+	// viewport will end up in the middle of the screen (in window coordinates).
+	// Note that QMatrix::translate() translates along the (already rotated) axes,
+	// so we do it manually, by modifying the dx and dy parameters of the matrix.
+	const GPlatesGui::MapTransform::point_type &centre = map_transform.get_centre_of_viewport();
+	double transformed_centre_x, transformed_centre_y;
+	m.map(centre.x(), centre.y(), &transformed_centre_x, &transformed_centre_y);
+	double offset_x = static_cast<double>(width()) / 2.0 - transformed_centre_x;
+	double offset_y = static_cast<double>(height()) / 2.0 - transformed_centre_y;
 	setTransformationAnchor(QGraphicsView::NoAnchor);
-	rotate(angle);
+	setMatrix(
+			QMatrix(m.m11(), m.m12(), m.m21(), m.m22(),
+				m.dx() + offset_x,
+				m.dy() + offset_y));
+
+	// Even though the scroll bars are hidden, the QGraphicsView is still
+	// scrollable, and it has a habit of scrolling around if you have panned to the
+	// extremes of the map - which means that if you later recentre on llp (0, 0),
+	// that point doesn't appear in the centre of the map anymore. The following
+	// cause the QGraphicsView to recentre itself where possible.
+	horizontalScrollBar()->setValue(0);
+	verticalScrollBar()->setValue(0);
+
+	handle_mouse_pointer_pos_change();
 }
+
 
 void
 GPlatesQtWidgets::MapView::handle_map_canvas_repainted()
@@ -199,39 +206,6 @@ GPlatesQtWidgets::MapView::handle_map_canvas_repainted()
 	emit repainted(d_mouse_press_info);
 }
 
-void
-GPlatesQtWidgets::MapView::handle_zoom_change()
-{
-	// Record the camera position so we can reset it after the zoom. 
-	boost::optional<GPlatesMaths::LatLonPoint> llp	= camera_llp();
-
-	set_view();
-	
-	if (llp)
-	{
-		set_camera_viewpoint(*llp);
-	}
-
-	update();
-	handle_mouse_pointer_pos_change();
-
-	update_centre_of_viewport();
-}
-
-void
-GPlatesQtWidgets::MapView::set_view()
-{
-	// This resets the scale, but also resets any x-y offsets. 
-	fitInView(d_scene_rect,Qt::KeepAspectRatio);	
-
-	// Get the zoom level from the GlobeCanvas' ViewportZoom.
-	double zoom = d_viewport_zoom->zoom_percent()/100.;
-
-	scale(zoom,zoom);
-
-	// Reinstate the original offset.
-	centerOn(d_map_transform.get_centre_of_viewport());
-}
 
 void
 GPlatesQtWidgets::MapView::update_mouse_pointer_pos(
@@ -241,6 +215,7 @@ GPlatesQtWidgets::MapView::update_mouse_pointer_pos(
 
 	handle_mouse_pointer_pos_change();
 }
+
 
 void
 GPlatesQtWidgets::MapView::handle_mouse_pointer_pos_change()
@@ -278,13 +253,11 @@ GPlatesQtWidgets::MapView::mousePressEvent(
 					press_event->modifiers());
 					
 	emit mouse_pressed(
-		d_mouse_press_info->d_mouse_pointer_scene_coords,
-		d_mouse_press_info->d_is_on_surface,
-		d_mouse_press_info->d_button,
-		d_mouse_press_info->d_modifiers);
-
+			d_mouse_press_info->d_mouse_pointer_scene_coords,
+			d_mouse_press_info->d_is_on_surface,
+			d_mouse_press_info->d_button,
+			d_mouse_press_info->d_modifiers);
 }
-
 
 
 void 
@@ -348,6 +321,13 @@ GPlatesQtWidgets::MapView::mouseReleaseEvent(
 }
 
 
+void
+GPlatesQtWidgets::MapView::mouseDoubleClickEvent(
+		QMouseEvent *mouse_event)
+{
+	mousePressEvent(mouse_event);
+}
+
 
 void
 GPlatesQtWidgets::MapView::mouseMoveEvent(
@@ -369,17 +349,14 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 
 		if (d_mouse_press_info->d_is_mouse_drag)
 		{
-
 			emit mouse_dragged(
-				d_mouse_press_info->d_mouse_pointer_scene_coords,
-				d_mouse_press_info->d_is_on_surface,
-				mouse_pointer_scene_coords(),
-				mouse_pointer_is_on_surface(),
-				d_mouse_press_info->d_button,
-				d_mouse_press_info->d_modifiers,
-				translation);
-
-			update_centre_of_viewport();
+					d_mouse_press_info->d_mouse_pointer_scene_coords,
+					d_mouse_press_info->d_is_on_surface,
+					mouse_pointer_scene_coords(),
+					mouse_pointer_is_on_surface(),
+					d_mouse_press_info->d_button,
+					d_mouse_press_info->d_modifiers,
+					translation);
 		}
 
 	}
@@ -393,9 +370,9 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 		// canvas tool operation.
 		//
 		emit mouse_moved_without_drag(
-			mouse_pointer_scene_coords(),
-			mouse_pointer_is_on_surface(),
-			translation);
+				mouse_pointer_scene_coords(),
+				mouse_pointer_is_on_surface(),
+				translation);
 	}
 
 
@@ -403,39 +380,6 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 
 }
 
-void
-GPlatesQtWidgets::MapView::wheelEvent(
-	  QWheelEvent *wheel_event)
-{
-	if (d_mouse_wheel_enabled)
-	{
-		handle_wheel_rotation(wheel_event->delta());	
-	}
-	else
-	{
-		wheel_event->ignore();
-	}
-}
-
-void
-GPlatesQtWidgets::MapView::handle_wheel_rotation(
-		int delta) 
-{
-	// These integer values (8 and 15) are copied from the Qt reference docs for QWheelEvent:
-	//  http://doc.trolltech.com/4.3/qwheelevent.html#delta
-	const int num_degrees = delta / 8;
-	int num_steps = num_degrees / 15;
-
-	if (num_steps > 0) {
-		while (num_steps--) {
-			d_viewport_zoom->zoom_in();
-		}
-	} else {
-		while (num_steps++) {
-			d_viewport_zoom->zoom_out();
-		}
-	}
-}
 
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::MapView::mouse_pointer_llp()
@@ -493,11 +437,13 @@ GPlatesQtWidgets::MapView::create_svg_output(
 	GPlatesGui::SvgExport::create_svg_output(filename,this);
 }
 
+
 void
 GPlatesQtWidgets::MapView::draw_svg_output()
 {
 	map_canvas().draw_svg_output();
 }
+
 
 const GPlatesQtWidgets::MapCanvas &
 GPlatesQtWidgets::MapView::map_canvas() const
@@ -505,18 +451,13 @@ GPlatesQtWidgets::MapView::map_canvas() const
 	return *d_map_canvas_ptr;
 }
 
+
 GPlatesQtWidgets::MapCanvas &
 GPlatesQtWidgets::MapView::map_canvas()
 {
 	return *d_map_canvas_ptr;
 }
 
-void
-GPlatesQtWidgets::MapView::update_centre_of_viewport()
-{
-	QPoint view_centre = viewport()->rect().center();
-	d_map_transform.set_centre_of_viewport(mapToScene(view_centre));
-}
 
 void
 GPlatesQtWidgets::MapView::set_camera_viewpoint(
@@ -536,15 +477,15 @@ GPlatesQtWidgets::MapView::set_camera_viewpoint(
 	}
 
 	// Centre the view on this point.
-	const QPointF &current_centre = d_map_transform.get_centre_of_viewport();
-	d_map_transform.translate_maps(current_centre.x() - x_pos, current_centre.y() - y_pos);
-	d_map_transform.set_centre_of_viewport(QPointF(x_pos,y_pos));
+	d_map_transform.set_centre_of_viewport(
+			GPlatesGui::MapTransform::point_type(x_pos, y_pos));
 }
+
 
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::MapView::camera_llp() const
 {
-	const QPointF &centre_of_viewport = d_map_transform.get_centre_of_viewport();
+	const GPlatesGui::MapTransform::point_type &centre_of_viewport = d_map_transform.get_centre_of_viewport();
 	double x_pos = centre_of_viewport.x();
 	double y_pos = centre_of_viewport.y();
 
@@ -577,12 +518,25 @@ GPlatesQtWidgets::MapView::camera_llp() const
 
 }
 
+
 void
 GPlatesQtWidgets::MapView::resizeEvent(
 	QResizeEvent *resize_event)
 {
-	set_view();
+	handle_transform_changed(d_map_transform);
 }
+
+
+void
+GPlatesQtWidgets::MapView::wheelEvent(
+		QWheelEvent *wheel_event)
+{
+	// This is necessary otherwise the base implementation in QGraphicsView
+	// will cause the view to scroll up and down.
+	// Zooming is handled by our parent widget, GlobeAndMapWidget.
+	wheel_event->ignore();
+}
+
 
 void
 GPlatesQtWidgets::MapView::enable_raster_display()
@@ -590,17 +544,20 @@ GPlatesQtWidgets::MapView::enable_raster_display()
 	// Do nothing because we can't draw rasters in map view yet.
 }
 
+
 void
 GPlatesQtWidgets::MapView::disable_raster_display()
 {
 	// Do nothing because we can't draw rasters in map view yet.
 }
 
+
 QPointF
 GPlatesQtWidgets::MapView::mouse_pointer_scene_coords()
 {
-	return 	mapToScene(d_mouse_pointer_screen_pos);
+	return mapToScene(d_mouse_pointer_screen_pos);
 }
+
 
 bool
 GPlatesQtWidgets::MapView::mouse_pointer_is_on_surface()
@@ -608,11 +565,30 @@ GPlatesQtWidgets::MapView::mouse_pointer_is_on_surface()
 	return mouse_pointer_llp();
 }
 
+
 void
 GPlatesQtWidgets::MapView::update_canvas()
 {
 	map_canvas().update();
 }
+
+
+void
+GPlatesQtWidgets::MapView::move_camera(
+		double dx,
+		double dy)
+{
+	// Position of new centre in window coordinates.
+	double win_x = static_cast<double>(width()) / 2.0 + dx;
+	double win_y = static_cast<double>(height()) / 2.0 + dy;
+
+	// Turn that into scene coordinates.
+	double scene_x, scene_y;
+	matrix().inverted().map(win_x, win_y, &scene_x, &scene_y);
+	d_map_transform.set_centre_of_viewport(
+			GPlatesGui::MapTransform::point_type(scene_x, scene_y));
+}
+
 
 void
 GPlatesQtWidgets::MapView::move_camera_up()
@@ -620,88 +596,59 @@ GPlatesQtWidgets::MapView::move_camera_up()
 	// This translation will be zoom-dependent, as it's based on view coordinates. 
 	// This is slightly different from the globe behaviour, which is always a 5 degree increment, 
 	// irrespective of zoom level.
-	QPointF translation = get_scene_translation_from_view_translation(this,0,5);
-	d_map_transform.translate_maps(translation.x(), translation.y());
-
-	update_centre_of_viewport();
-	handle_mouse_pointer_pos_change();
+	move_camera(0, 5);
 }
+
 
 void
 GPlatesQtWidgets::MapView::move_camera_down()
 {
 	// See comments under "move_camera_up" above. 
-	QPointF translation = get_scene_translation_from_view_translation(this,0,-5);
-	d_map_transform.translate_maps(translation.x(), translation.y());
-
-	update_centre_of_viewport();
-	handle_mouse_pointer_pos_change();
+	move_camera(0, -5);
 }
+
 
 void
 GPlatesQtWidgets::MapView::move_camera_left()
 {
 	// See comments under "move_camera_up" above. 
-	QPointF translation = get_scene_translation_from_view_translation(this,5,0);
-	d_map_transform.translate_maps(translation.x(), translation.y());
-
-	update_centre_of_viewport();
-	handle_mouse_pointer_pos_change();
+	move_camera(5, 0);
 }
+
 
 void
 GPlatesQtWidgets::MapView::move_camera_right()
 {
-	// See comments under "move_camera_up" above. 
-	QPointF translation = get_scene_translation_from_view_translation(this,-5,0);
-	d_map_transform.translate_maps(translation.x(), translation.y());
-
-	update_centre_of_viewport();
-	handle_mouse_pointer_pos_change();
+	// See comments under "move_camera_up" above.
+	move_camera(-5, 0);
 }
+
 
 void
 GPlatesQtWidgets::MapView::rotate_camera_clockwise()
 {
-	d_map_transform.rotate_maps(-5.0);
-
-	update_centre_of_viewport();
-	handle_mouse_pointer_pos_change();
+	d_map_transform.rotate(-5.0);
 }
+
 
 void
 GPlatesQtWidgets::MapView::rotate_camera_anticlockwise()
 {
-	d_map_transform.rotate_maps(5.0);
-
-	update_centre_of_viewport();
-	handle_mouse_pointer_pos_change();
+	d_map_transform.rotate(5.0);
 }
+
 
 void
 GPlatesQtWidgets::MapView::reset_camera_orientation()
 {
-	/*
-	// Set the identity matrix as the transform.
-	setTransform(QTransform());
-
-	scale(1.,-1.);
-
-	// This will reset the scale to the current zoom value. 
-	set_view();
-	*/
-	d_map_transform.reset_rotation();
-	
-	update_centre_of_viewport();
-	handle_mouse_pointer_pos_change();
+	d_map_transform.set_rotation(0);
 }
+
 
 double
 GPlatesQtWidgets::MapView::current_proximity_inclusion_threshold(
-	const GPlatesMaths::PointOnSphere &click_point) const
+		const GPlatesMaths::PointOnSphere &click_point) const
 {
-
-
 	// See the corresponding GlobeCanvas::current_proximity_inclusion_threshold function for a 
 	// justification, and explanation of calculation, of the proximity inclusion threshold. 
 	//
@@ -780,6 +727,7 @@ GPlatesQtWidgets::MapView::current_proximity_inclusion_threshold(
 
 	return proximity_inclusion_threshold;
 }
+
 
 QImage
 GPlatesQtWidgets::MapView::grab_frame_buffer()

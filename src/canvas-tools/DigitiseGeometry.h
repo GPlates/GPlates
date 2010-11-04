@@ -57,20 +57,36 @@ namespace GPlatesCanvasTools
 	{
 	public:
 
-		virtual
-		~DigitiseGeometry();
-
 		/**
-		 * Create a DigitiseGeometry instance.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<DigitiseGeometry>.
 		 */
-		DigitiseGeometry(
+		typedef GPlatesUtils::non_null_intrusive_ptr<DigitiseGeometry> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::GeometryType::Value geom_type,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);		
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold)
+		{
+			return new DigitiseGeometry(
+					status_bar_callback,
+					geom_type,
+					geometry_operation_target,
+					active_geometry_operation,
+					rendered_geometry_collection,
+					choose_canvas_tool,
+					canvas_tool_type,
+					query_proximity_threshold);
+		}
+
+		virtual
+		~DigitiseGeometry();
 		
 		virtual
 		void
@@ -89,6 +105,19 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold);
 		
 	private:
+
+		/**
+		 * Create a DigitiseGeometry instance.
+		 */
+		DigitiseGeometry(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesViewOperations::GeometryType::Value geom_type,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);	
 
 		/**
 		 * Used to set main rendered layer.

@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,6 +27,8 @@
 #include <QDebug>
 
 #include "MapCanvasToolAdapter.h"
+
+#include "MapCanvasTool.h"
 #include "MapCanvasToolChoice.h"
 
 #include "view-operations/RenderedGeometryCollection.h"

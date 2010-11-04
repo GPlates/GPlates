@@ -30,19 +30,21 @@
 
 
 GPlatesCanvasTools::SplitFeature::SplitFeature(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesPresentation::ViewState	&view_state,
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold):
+		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold) :
+	CanvasTool(status_bar_callback),
 	d_feature_focus(&feature_focus),
 	d_view_state(&view_state),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_geometry_operation_target(&geometry_operation_target),
 	d_split_feature_geometry_operation(
-		new GPlatesViewOperations::SplitFeatureGeometryOperation(
+			new GPlatesViewOperations::SplitFeatureGeometryOperation(
 				feature_focus,
 				view_state,
 				geometry_operation_target,
@@ -50,8 +52,7 @@ GPlatesCanvasTools::SplitFeature::SplitFeature(
 				&rendered_geometry_collection,
 				choose_canvas_tool,
 				query_proximity_threshold))
-{
-}
+{  }
 
 
 GPlatesCanvasTools::SplitFeature::~SplitFeature()

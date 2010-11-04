@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -49,19 +49,24 @@ GPlatesCanvasTools::ZoomGlobe::handle_activation()
 
 
 void
+GPlatesCanvasTools::ZoomGlobe::recentre_globe(
+		const GPlatesMaths::PointOnSphere &click_pos_on_globe)
+{
+	static const GPlatesMaths::PointOnSphere centre_of_canvas =
+			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
+
+	globe().set_new_handle_pos(click_pos_on_globe);
+	globe().update_handle_pos(centre_of_canvas);
+}
+
+
+void
 GPlatesCanvasTools::ZoomGlobe::handle_left_click(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
-	static const GPlatesMaths::PointOnSphere centre_of_canvas =
-			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
-
-	// First, re-orient the globe so the click-point is in the centre of the canvas.
-	globe().set_new_handle_pos(click_pos_on_globe);
-	globe().update_handle_pos(centre_of_canvas);
-
-	// Now, zoom in.
+	recentre_globe(click_pos_on_globe);
 	d_view_state.get_viewport_zoom().zoom_in();
 }
 
@@ -72,5 +77,6 @@ GPlatesCanvasTools::ZoomGlobe::handle_shift_left_click(
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
+	recentre_globe(click_pos_on_globe);
 	d_view_state.get_viewport_zoom().zoom_out();
 }

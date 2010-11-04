@@ -144,6 +144,14 @@ GPlatesQtWidgets::FriendlyLineEdit::lineEditSizePolicy() const
 }
 
 
+void
+GPlatesQtWidgets::FriendlyLineEdit::focusInEvent(
+		QFocusEvent *event_)
+{
+	d_line_edit->setFocus();
+}
+
+
 GPlatesQtWidgets::FriendlyLineEditInternals::InternalLineEdit::InternalLineEdit(
 		const QString &message_on_empty_string,
 		const boost::function<void (QFocusEvent *)> &parent_focus_in_event_function,

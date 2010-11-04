@@ -65,14 +65,31 @@ namespace GPlatesCanvasTools
 
 	public:
 
-		BuildTopology(
+		/**
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<BuildTopology>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<BuildTopology> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesAppLogic::ApplicationState &application_state);
-
+				GPlatesAppLogic::ApplicationState &application_state)
+		{
+			return new BuildTopology(
+					status_bar_callback,
+					view_state,
+					viewport_window,
+					clicked_table_model,
+					topology_sections_container,
+					topology_tools_widget,
+					application_state);
+		}
 
 		virtual
 		void
@@ -91,6 +108,15 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold);
 		
 	private:
+
+		BuildTopology(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesPresentation::ViewState &view_state,
+				GPlatesQtWidgets::ViewportWindow &viewport_window,
+				GPlatesGui::FeatureTableModel &clicked_table_model,	
+				GPlatesGui::TopologySectionsContainer &topology_sections_container,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		/**
 		 * We need to change which canvas-tool layer is shown when this canvas-tool is

@@ -60,12 +60,14 @@
 
 
 GPlatesCanvasTools::BuildTopology::BuildTopology(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesPresentation::ViewState &view_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,	
 		GPlatesGui::TopologySectionsContainer &topology_sections_container,
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-		GPlatesAppLogic::ApplicationState &application_state):
+		GPlatesAppLogic::ApplicationState &application_state) :
+	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection(&view_state_.get_rendered_geometry_collection()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_clicked_table_model_ptr(&clicked_table_model_),

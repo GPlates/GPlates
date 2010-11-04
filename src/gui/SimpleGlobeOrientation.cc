@@ -126,6 +126,20 @@ GPlatesGui::SimpleGlobeOrientation::rotate_camera_anticlockwise()
 	emit orientation_changed();
 }
 
+void
+GPlatesGui::SimpleGlobeOrientation::rotate_camera(
+		double angle)
+{
+	const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
+			GPlatesMaths::UnitVector3D::xBasis(), 
+			GPlatesMaths::convert_deg_to_rad(angle));
+
+	d_accum_rot = rot * d_accum_rot;
+	d_rev_accum_rot = d_accum_rot.get_reverse();
+
+	emit orientation_changed();
+}
+
 namespace
 {
 	/**

@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
  *  (under the name "GLCanvas.h")
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *  (under the name "GlobeCanvas.h")
  *
  * This file is part of GPlates.
@@ -62,7 +62,7 @@
 #include "opengl/GLViewport.h"
 
 #include "qt-widgets/SceneView.h"
-#include "view-operations/QueryProximityThreshold.h"
+
 #include "view-operations/RenderedGeometryFactory.h"
 
 
@@ -80,7 +80,6 @@ namespace GPlatesQtWidgets
 {
 	class GlobeCanvas:
 			public QGLWidget,
-			public GPlatesViewOperations::QueryProximityThreshold,
 			public SceneView
 	{
 		Q_OBJECT
@@ -140,7 +139,6 @@ namespace GPlatesQtWidgets
 				GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
 				bool mouse_pointer_is_on_globe_,
 				GPlatesGui::Globe &existing_globe_,
-				bool mouse_wheel_enabled_,
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 				QWidget *parent_ = 0);
 
@@ -250,13 +248,6 @@ namespace GPlatesQtWidgets
 		void
 		set_camera_viewpoint(
 			const GPlatesMaths::LatLonPoint &llp);
-
-		void
-		set_mouse_wheel_enabled(
-				bool enabled = true)
-		{
-			d_mouse_wheel_enabled = enabled;
-		}
 
 		QImage
 		grab_frame_buffer();
@@ -387,24 +378,6 @@ namespace GPlatesQtWidgets
 		mouseReleaseEvent(
 				QMouseEvent *event);
 
-		/**
-		 * This is a virtual override of the function in QWidget.
-		 *
-		 * To quote the QWidget documentation:
-		 *
-		 * This event handler, for event event, can be reimplemented in a subclass to
-		 * receive wheel events for the widget.
-		 *
-		 * If you reimplement this handler, it is very important that you ignore() the
-		 * event if you do not handle it, so that the widget's parent can interpret it.
-		 *
-		 * The default implementation ignores the event.
-		 */
-		virtual
-		void
-		wheelEvent(
-				QWheelEvent *event);
-
 		virtual
 		void
 		move_camera_up();
@@ -512,8 +485,8 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 	private:
-		GPlatesPresentation::ViewState &d_view_state;
 
+		GPlatesPresentation::ViewState &d_view_state;
 
 		/**
 		 * Shadows some OpenGL state to allow faster OpenGL queries and
@@ -576,11 +549,6 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::Globe d_globe;
 
-		GPlatesGui::ViewportZoom &d_viewport_zoom;
-
-		//! Whether the mouse wheel is enabled
-		bool d_mouse_wheel_enabled;
-
 		void
 		set_view();
 
@@ -590,10 +558,6 @@ namespace GPlatesQtWidgets
 
 		void
 		update_dimensions();
-
-		void
-		handle_wheel_rotation(
-				int delta);
 
 		/**
 		 * Get the "universe" y-coordinate of the current mouse pointer position.

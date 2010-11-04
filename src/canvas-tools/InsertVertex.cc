@@ -30,11 +30,13 @@
 
 
 GPlatesCanvasTools::InsertVertex::InsertVertex(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold):
+		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold) :
+	CanvasTool(status_bar_callback),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_geometry_operation_target(&geometry_operation_target),
 	d_insert_vertex_geometry_operation(
@@ -44,8 +46,7 @@ GPlatesCanvasTools::InsertVertex::InsertVertex(
 				&rendered_geometry_collection,
 				choose_canvas_tool,
 				query_proximity_threshold))
-{
-}
+{  }
 
 
 GPlatesCanvasTools::InsertVertex::~InsertVertex()

@@ -236,18 +236,7 @@ namespace GPlatesQtWidgets
 		void
 		status_message(
 				const QString &message,
-				int timeout)
-		{
-			statusBar()->showMessage(message, timeout);
-		}
-
-		void
-		status_message(
-				const QString &message)
-		{
-			static const int TIMEOUT = 20000;
-			statusBar()->showMessage(message, TIMEOUT);
-		}
+				int timeout = 20000);
 
 		/**
 		 * Highlights the first row in the "Clicked" feature table.

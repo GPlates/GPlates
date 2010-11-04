@@ -38,12 +38,14 @@ namespace GPlatesMaths
 }
 
 GPlatesCanvasTools::MoveVertex::MoveVertex(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-		const GPlatesQtWidgets::ViewportWindow *viewport_window):
+		const GPlatesQtWidgets::ViewportWindow *viewport_window) :
+	CanvasTool(status_bar_callback),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_geometry_operation_target(&geometry_operation_target),
 	d_move_vertex_geometry_operation(
@@ -55,8 +57,7 @@ GPlatesCanvasTools::MoveVertex::MoveVertex(
 				query_proximity_threshold,
 				viewport_window)),
 	d_is_in_drag(false)
-{
-}
+{  }
 
 
 GPlatesCanvasTools::MoveVertex::~MoveVertex()
