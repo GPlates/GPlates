@@ -29,6 +29,7 @@
 #include <map>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QWizardPage>
 #include <QFileInfo>
 #include <QValidator>
@@ -94,18 +95,6 @@ namespace GPlatesQtWidgets
 				int row,
 				int column);
 
-		void
-		handle_table_current_cell_changed(
-				int current_row,
-				int current_column,
-				int previous_row,
-				int previous_column);
-		
-		void
-		handle_table_cell_clicked(
-				int row,
-				int column);
-
 	private:
 
 		void
@@ -138,7 +127,8 @@ namespace GPlatesQtWidgets
 		bool d_is_complete;
 		bool d_show_full_paths;
 
-		index_to_editor_map_type d_index_to_editor_map;
+		boost::shared_ptr<index_to_editor_map_type> d_index_to_editor_map;
+		QWidget *d_widget_to_focus;
 	};
 }
 

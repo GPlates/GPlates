@@ -26,6 +26,7 @@
 #include <cmath>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
+#include <boost/weak_ptr.hpp>
 #include <QTableWidgetItem>
 #include <QItemDelegate>
 #include <QFileDialog>
@@ -37,7 +38,6 @@
 #include <QDoubleValidator>
 #include <QKeyEvent>
 #include <QSizePolicy>
-#include <QDebug>
 
 #include "TimeDependentRasterPage.h"
 
@@ -61,11 +61,25 @@ namespace
 	const int DECIMAL_PLACES = 4;
 
 	double
+	round(
+			double d)
+	{
+		double fractpart, intpart;
+		fractpart = std::modf(d, &intpart);
+		if (fractpart >= 0.5)
+		{
+			intpart += 1.0;
+		}
+
+		return intpart;
+	}
+
+	double
 	round_to_dp(
 			double d)
 	{
 		static const double MULTIPLIER = std::pow(10.0, DECIMAL_PLACES);
-		return round(d * MULTIPLIER) / MULTIPLIER;
+		return ::round(d * MULTIPLIER) / MULTIPLIER;
 	}
 
 	class TimeLineEdit :
@@ -73,11 +87,13 @@ namespace
 	{
 	public:
 
+		typedef GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type index_to_editor_map_type;
+
 		TimeLineEdit(
 				const QString &contents,
 				const QString &message_on_empty_string,
 				QTableWidget *table,
-				GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type &index_to_editor_map,
+				const boost::weak_ptr<index_to_editor_map_type> &index_to_editor_map,
 				QWidget *parent_ = NULL) :
 			FriendlyLineEdit(contents, message_on_empty_string, parent_),
 			d_table(table),
@@ -101,12 +117,14 @@ namespace
 			erase_index_mapping();
 			d_model_index = index;
 
-			typedef GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type::iterator iterator_type;
-			std::pair<iterator_type, bool> new_iter = d_index_to_editor_map.insert(
-					std::make_pair(index, this));
-			if (!new_iter.second)
+			typedef index_to_editor_map_type::iterator iterator_type;
+			if (boost::shared_ptr<index_to_editor_map_type> locked_map = d_index_to_editor_map.lock())
 			{
-				new_iter.first->second = this;
+				std::pair<iterator_type, bool> new_iter = locked_map->insert(std::make_pair(index, this));
+				if (!new_iter.second)
+				{
+					new_iter.first->second = this;
+				}
 			}
 		}
 
@@ -115,11 +133,14 @@ namespace
 		void
 		erase_index_mapping()
 		{
-			typedef GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type::iterator iterator_type;
-			iterator_type old_iter = d_index_to_editor_map.find(d_model_index);
-			if (old_iter != d_index_to_editor_map.end() && old_iter->second == this)
+			typedef index_to_editor_map_type::iterator iterator_type;
+			if (boost::shared_ptr<index_to_editor_map_type> locked_map = d_index_to_editor_map.lock())
 			{
-				d_index_to_editor_map.erase(old_iter);
+				iterator_type old_iter = locked_map->find(d_model_index);
+				if (old_iter != locked_map->end() && old_iter->second == this)
+				{
+					locked_map->erase(old_iter);
+				}
 			}
 		}
 
@@ -133,7 +154,7 @@ namespace
 			// For some reason, the row in the table containing this line edit sometimes
 			// gets selected when the line edit gets focus, but sometimes it doesn't.
 			// Because Qt can't make up its mind, we'll do it explicitly here.
-			if (d_table->currentRow() != d_model_index.row())
+			if (d_table->currentIndex() != d_model_index)
 			{
 				d_table->setCurrentIndex(d_model_index);
 			}
@@ -155,7 +176,7 @@ namespace
 
 		QTableWidget *d_table;
 		QModelIndex d_model_index;
-		GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type &d_index_to_editor_map;
+		boost::weak_ptr<index_to_editor_map_type> d_index_to_editor_map;
 	};
 
 	class TimeDelegate :
@@ -163,9 +184,11 @@ namespace
 	{
 	public:
 
+		typedef GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type index_to_editor_map_type;
+
 		TimeDelegate(
 				QValidator *validator,
-				GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type &index_to_editor_map,
+				const boost::weak_ptr<index_to_editor_map_type> index_to_editor_map,
 				QTableWidget *parent_) :
 			QItemDelegate(parent_),
 			d_validator(validator),
@@ -225,7 +248,7 @@ namespace
 	private:
 
 		QValidator *d_validator;
-		GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type &d_index_to_editor_map;
+		boost::weak_ptr<index_to_editor_map_type> d_index_to_editor_map;
 		QTableWidget *d_table;
 	};
 
@@ -306,7 +329,9 @@ GPlatesQtWidgets::TimeDependentRasterPage::TimeDependentRasterPage(
 	d_set_number_of_bands_function(set_number_of_bands_function),
 	d_validator(new TimeValidator(this)),
 	d_is_complete(false),
-	d_show_full_paths(false)
+	d_show_full_paths(false),
+	d_index_to_editor_map(new index_to_editor_map_type()),
+	d_widget_to_focus(NULL)
 {
 	setupUi(this);
 
@@ -449,8 +474,20 @@ GPlatesQtWidgets::TimeDependentRasterPage::handle_show_full_paths_button_toggled
 void
 GPlatesQtWidgets::TimeDependentRasterPage::handle_table_selection_changed()
 {
-	remove_selected_button->setEnabled(
-			!files_table->selectedRanges().isEmpty());
+	// Only enable the remove selected button if there are items selected.
+	remove_selected_button->setEnabled(files_table->selectedItems().count());
+
+	if (files_table->selectedItems().count() == 3 /* number of columns in row */)
+	{
+		typedef index_to_editor_map_type::iterator iterator_type;
+		int current_row = files_table->currentIndex().row();
+		iterator_type iter = d_index_to_editor_map->find(
+				files_table->model()->index(current_row, 0));
+		if (iter != d_index_to_editor_map->end())
+		{
+			iter->second->setFocus();
+		}
+	}
 }
 
 
@@ -474,37 +511,6 @@ GPlatesQtWidgets::TimeDependentRasterPage::handle_table_cell_changed(
 
 		check_if_complete();
 	}
-}
-
-
-void
-GPlatesQtWidgets::TimeDependentRasterPage::handle_table_current_cell_changed(
-		int current_row,
-		int current_column,
-		int previous_row,
-		int previous_column)
-{
-	if (current_row == previous_row)
-	{
-		return;
-	}
-
-	// Focus on the editor on the current row.
-	typedef index_to_editor_map_type::iterator iterator_type;
-	iterator_type iter = d_index_to_editor_map.find(
-			files_table->model()->index(current_row, 0));
-	if (iter != d_index_to_editor_map.end())
-	{
-		iter->second->setFocus();
-	}
-}
-
-
-void
-GPlatesQtWidgets::TimeDependentRasterPage::handle_table_cell_clicked(
-		int row,
-		int column)
-{
 }
 
 
@@ -556,16 +562,6 @@ GPlatesQtWidgets::TimeDependentRasterPage::make_signal_slot_connections()
 			SIGNAL(cellChanged(int, int)),
 			this,
 			SLOT(handle_table_cell_changed(int, int)));
-	QObject::connect(
-			files_table,
-			SIGNAL(currentCellChanged(int, int, int, int)),
-			this,
-			SLOT(handle_table_current_cell_changed(int, int, int, int)));
-	QObject::connect(
-			files_table,
-			SIGNAL(cellClicked(int, int)),
-			this,
-			SLOT(handle_table_cell_clicked(int, int)));
 }
 
 
@@ -683,7 +679,7 @@ GPlatesQtWidgets::TimeDependentRasterPage::populate_table()
 		// First column is the time.
 		boost::optional<double> time = iter->time;
 		QTableWidgetItem *time_item = new QTableWidgetItem(
-				time ? loc.toString(*time, 'g', DECIMAL_PLACES) : QString());
+				time ? loc.toString(*time) : QString());
 		time_item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
 		time_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 		files_table->setItem(i, 0, time_item);
