@@ -370,7 +370,7 @@ namespace
 	}
 
 	const PropertyCreationUtils::PropertyCreatorMap
-	get_slab_properties()
+	get_slab_edge_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
 
@@ -378,6 +378,14 @@ namespace
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("subductionPolarity") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("slabEdgeType") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+		map[ PropertyName::create_gpml("depth") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("dipAngle") ] =
+			GET_PROP_VAL_NAME(create_xs_double);
 
 		return map;
 	}
@@ -652,6 +660,19 @@ namespace
 		map[ PropertyName::create_gpml("islandArc") ] =
 			GET_PROP_VAL_NAME(create_feature_reference);
 
+		map[ PropertyName::create_gpml("subductionZoneAge") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+		map[ PropertyName::create_gpml("subductionZoneDeepDip") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+		map[ PropertyName::create_gpml("subductionZoneDepth") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+
+		map[ PropertyName::create_gpml("isActive") ] =
+			GET_PROP_VAL_NAME(create_xs_boolean);
+
+		map[ PropertyName::create_gpml("slabEdgeType") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+
 		return map;
 	}
 
@@ -827,6 +848,25 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_topological_slab_boundary_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_topological_closed_plate_boundary_properties();
+
+		map[ PropertyName::create_gpml("flatLying") ] =
+			GET_PROP_VAL_NAME(create_xs_boolean);
+
+		map[ PropertyName::create_gpml("depth") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+
+		map[ PropertyName::create_gpml("dipAngle") ] =
+			GET_PROP_VAL_NAME(create_xs_double);
+
+		return map;
+	}
+
+
+
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_reconstruction_feature_properties()
@@ -895,6 +935,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	// Topological features.
 	d_map[ FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
 		get_topological_closed_plate_boundary_properties();
+	d_map[ FeatureType::create_gpml("TopologicalSlabBoundary") ] =
+		get_topological_slab_boundary_properties();
 	d_map[ FeatureType::create_gpml("TopologicalNetwork") ] =
 		get_topological_closed_plate_boundary_properties();
 
@@ -1001,9 +1043,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_hot_spot_trail_properties();
 	d_map[ FeatureType::create_gpml("Seamount") ] =
 		get_seamount_properties();
-	d_map[ FeatureType::create_gpml("Slab") ] =
-		get_slab_properties();
-	d_map[ FeatureType::create_gpml("Volcano") ] =
+	d_map[ FeatureType::create_gpml("SlabEdge") ] =
+		get_slab_edge_properties();
 	d_map[ FeatureType::create_gpml("Volcano") ] =
 		get_volcano_properties();
 	d_map[ FeatureType::create_gpml("AseismicRidge") ] =

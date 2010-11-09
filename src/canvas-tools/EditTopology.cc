@@ -95,14 +95,20 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	// then treat it like one. For this to happen we first need TopologicalNetwork to
 	// use a property type different than TopologicalPolygon.
 	//
-	static const GPlatesModel::FeatureType topology_boundary_type =
+	static const GPlatesModel::FeatureType plate_type =
 		GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
-	static const GPlatesModel::FeatureType topology_network_type =
+	static const GPlatesModel::FeatureType network_type =
 		GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
+	static const GPlatesModel::FeatureType slab_type =
+		GPlatesModel::FeatureType::create_gpml("TopologicalSlabBoundary");
+
 	const GPlatesModel::FeatureType &feature_type = d_feature_focus_ptr->focused_feature()->feature_type();
 
 	// Only activate for topologies
-	if (feature_type != topology_boundary_type && feature_type != topology_network_type)
+	if (
+		feature_type != plate_type && 
+		feature_type != network_type &&
+		feature_type != slab_type)
 	{
 		// unset the focus
  		d_feature_focus_ptr->unset_focus();

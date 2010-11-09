@@ -170,6 +170,15 @@ namespace GPlatesGui
 		//! Replaces placeholder string when exporting all right subduction geometry to a single file.
 		static const QString s_placeholder_right_subductions;
 
+		//! Replaces placeholder string when exporting 
+		static const QString s_placeholder_slab_polygons;
+
+		//! Replaces placeholder string when exporting 
+		static const QString s_placeholder_slab_edge_leading;
+		static const QString s_placeholder_slab_edge_trench;
+		static const QString s_placeholder_slab_edge_side;
+
+
 		//! Typedef for a sequence of resolved topological geometries.
 		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_geom_seq_type;
 

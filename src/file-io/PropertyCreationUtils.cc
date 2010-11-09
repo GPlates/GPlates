@@ -1204,6 +1204,12 @@ GPlatesFileIO::PropertyCreationUtils::create_gpml_subduction_polarity_enumeratio
 	return create_enumeration(elem, "gpml:SubductionPolarityEnumeration");
 }
 
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_slab_edge_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:SlabEdgeEnumeration");
+}
 
 GPlatesModel::FeatureId
 GPlatesFileIO::PropertyCreationUtils::create_feature_id(

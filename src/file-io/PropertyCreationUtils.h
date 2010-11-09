@@ -257,6 +257,11 @@ namespace GPlatesFileIO
 
 		AS_PROP_VAL(create_gpml_subduction_polarity_enumeration)
 
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_slab_edge_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_slab_edge_enumeration)
 
 		GPlatesPropertyValues::GpmlRevisionId::non_null_ptr_type
 		create_gpml_revision_id(

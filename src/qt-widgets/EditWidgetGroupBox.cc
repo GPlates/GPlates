@@ -176,6 +176,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
 	map["gpml:angle"] = d_edit_angle_widget_ptr;
 	map["xs:string"] = d_edit_string_widget_ptr;
 	map["xs:boolean"] = d_edit_boolean_widget_ptr;
+
 #if 0
 	// Keep the KeyValueDictionary out of the map until we have the
 	// ability to create one. 

@@ -234,6 +234,7 @@ namespace
 		{ "TerraneBoundary", "unclassifiedGeometry" },
 		{ "Topography", "outlineOf" },
 		{ "TopologicalClosedPlateBoundary", "boundary" },
+		{ "TopologicalSlabBoundary", "boundary" },
 		{ "Transform", "centerLineOf" },
 		{ "Transform", "outlineOf" },
 		{ "Transform", "unclassifiedGeometry" },
@@ -254,6 +255,7 @@ namespace
 
 	static const FeatureTypeInfo topological_feature_type_info_table[] = {
 		{ "TopologicalClosedPlateBoundary", "boundary" },
+		{ "TopologicalSlabBoundary", "boundary" },
 	};
 
 

@@ -177,9 +177,23 @@ GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(
 	// then treat it like one. For this to happen we first need TopologicalNetwork to
 	// use a property type different than TopologicalPolygon.
 
+	bool test = false;
+
 	static const GPlatesModel::FeatureType topo_closed_plate_boundary_type =
 			GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
-	return (feature.feature_type() == topo_closed_plate_boundary_type);
+	if (feature.feature_type() == topo_closed_plate_boundary_type) 
+	{
+		test = true;
+	}
+
+	static const GPlatesModel::FeatureType type =
+			GPlatesModel::FeatureType::create_gpml("TopologicalSlabBoundary");
+	if (feature.feature_type() == type) 
+	{
+		test = true;
+	}
+
+	return test;
 }
 
 
