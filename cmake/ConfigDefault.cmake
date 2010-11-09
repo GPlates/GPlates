@@ -105,7 +105,7 @@ set(GPLATES_BINARY_INSTALL_EXTRAS "")
 # Set to 'true' if this is a public code release (to non-developers).
 # Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
-set(GPLATES_PUBLIC_RELEASE true)
+set(GPLATES_PUBLIC_RELEASE false)
 
 # Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
 # Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.
