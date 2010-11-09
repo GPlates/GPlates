@@ -824,27 +824,34 @@ namespace
 			const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment,
 			const double &recon_time)
 	{
-			SubSegmentType d_sub_segment_type;
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature =
+				sub_segment.get_feature_ref();
 
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature =
-					sub_segment.get_feature_ref();
+		static const GPlatesModel::PropertyName property_name =
+				GPlatesModel::PropertyName::create_gpml("slabEdgeType");
+		const GPlatesPropertyValues::XsString *property_value = NULL;
 
-			QString slabEdgeType;
-			static const GPlatesModel::PropertyName property_name =
-					GPlatesModel::PropertyName::create_gpml("slabEdgeType");
-			const GPlatesPropertyValues::XsString *property_value = NULL;
+		if (GPlatesFeatureVisitors::get_property_value(feature, property_name, property_value))
+		{
+			static const GPlatesPropertyValues::TextContent LEADING("Leading");
+			static const GPlatesPropertyValues::TextContent TRENCH("Trench");
+			static const GPlatesPropertyValues::TextContent SIDE("Side");
 
-			if ( GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value) )
+			if (property_value->value() == LEADING)
 			{
-				slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value->value().get() );
-
-				if (slabEdgeType == QString("Leading") ) { d_sub_segment_type = SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING; } 
-				if (slabEdgeType == QString("Trench") )  { d_sub_segment_type = SUB_SEGMENT_TYPE_SLAB_EDGE_TRENCH; } 
-				if (slabEdgeType == QString("Side") )    { d_sub_segment_type = SUB_SEGMENT_TYPE_SLAB_EDGE_SIDE; } 
-				return d_sub_segment_type;
+				return SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING;
 			}
+			else if (property_value->value() == TRENCH)
+			{
+				return SUB_SEGMENT_TYPE_SLAB_EDGE_TRENCH;
+			}
+			else if (property_value->value() == SIDE)
+			{
+				return SUB_SEGMENT_TYPE_SLAB_EDGE_SIDE;
+			}
+		}
 
-		return d_sub_segment_type;
+		return SUB_SEGMENT_TYPE_OTHER;
 	}
 	
 
@@ -1471,8 +1478,9 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 
 		if (feature_ref->feature_type() == plate_type)
 		{
-std::cout << "TopologicalClosedPlateBoundary\n";
-
+#if 0
+			std::cout << "TopologicalClosedPlateBoundary\n";
+#endif
 			export_platepolygon(
 					*resolved_geom, feature_ref, all_platepolygons_exporter,
 					target_dir, filebasename,
@@ -1485,8 +1493,10 @@ std::cout << "TopologicalClosedPlateBoundary\n";
 		}
 	
 		if (feature_ref->feature_type() == slab_type)
-		{	
-std::cout << "TopologicalSlabBoundary\n";
+		{
+#if 0
+			std::cout << "TopologicalSlabBoundary\n";
+#endif
 			export_slab_polygon( *resolved_geom, feature_ref, all_slab_polygons_exporter,
 					target_dir, filebasename,
 					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING);	
