@@ -23,6 +23,7 @@ of the California Institute of Technology:
 The GPlates source code also contains code derived from:
  ReconTreeViewer (James Boyden)
  Boost intrusive_ptr (Peter Dimov)
+ Boost fpclassify (John Maddock)
  Loki ScopeGuard (Andrei Alexandrescu, Petru Marginean, Joshua Lehrer)
  Loki RefToValue (Richard Sposato, Peter Kummel)
 

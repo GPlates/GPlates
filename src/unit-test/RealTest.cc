@@ -55,43 +55,28 @@ GPlatesUnitTest::RealTestSuite::construct_maps()
 void
 GPlatesUnitTest::RealTest::test_positive_infinity()
 {
-	BOOST_CHECK(are_almost_exactly_equal<float>(
-		GPlatesMaths::positive_infinity(), GPlatesMaths::Real::positive_infinity().dval()));
-	BOOST_CHECK(are_almost_exactly_equal<float>(
-		GPlatesMaths::positive_infinity(), (1.0 / zero)));
-	BOOST_CHECK(GPlatesMaths::is_infinity(GPlatesMaths::positive_infinity()));
-	BOOST_CHECK(GPlatesMaths::is_positive_infinity(GPlatesMaths::positive_infinity()));
-	BOOST_CHECK(!GPlatesMaths::is_negative_infinity(GPlatesMaths::positive_infinity()));
-	BOOST_CHECK(!GPlatesMaths::is_nan(GPlatesMaths::positive_infinity()));
-	BOOST_CHECK(!GPlatesMaths::is_zero(GPlatesMaths::positive_infinity()));
+	BOOST_CHECK(GPlatesMaths::is_infinity(GPlatesMaths::positive_infinity<double>()));
+	BOOST_CHECK(GPlatesMaths::is_positive_infinity(GPlatesMaths::positive_infinity<double>()));
+	BOOST_CHECK(!GPlatesMaths::is_negative_infinity(GPlatesMaths::positive_infinity<double>()));
+	BOOST_CHECK(!GPlatesMaths::is_nan(GPlatesMaths::positive_infinity<double>()));
 }
 
 void
 GPlatesUnitTest::RealTest::test_negative_infinity()
 {
-	BOOST_CHECK(are_almost_exactly_equal<float>(
-		GPlatesMaths::negative_infinity(), GPlatesMaths::Real::negative_infinity().dval()));
-	BOOST_CHECK(are_almost_exactly_equal<float>(
-		GPlatesMaths::negative_infinity(), (-1.0 / zero)));
-	BOOST_CHECK(GPlatesMaths::is_infinity(GPlatesMaths::negative_infinity()));
-	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(GPlatesMaths::negative_infinity()));
-	BOOST_CHECK(GPlatesMaths::is_negative_infinity(GPlatesMaths::negative_infinity()));
-	BOOST_CHECK(!GPlatesMaths::is_nan(GPlatesMaths::negative_infinity()));
-	BOOST_CHECK(!GPlatesMaths::is_zero(GPlatesMaths::negative_infinity()));
+	BOOST_CHECK(GPlatesMaths::is_infinity(GPlatesMaths::negative_infinity<double>()));
+	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(GPlatesMaths::negative_infinity<double>()));
+	BOOST_CHECK(GPlatesMaths::is_negative_infinity(GPlatesMaths::negative_infinity<double>()));
+	BOOST_CHECK(!GPlatesMaths::is_nan(GPlatesMaths::negative_infinity<double>()));
 }
 
 void 
 GPlatesUnitTest::RealTest::test_nan()
 {
-	BOOST_CHECK(are_almost_exactly_equal<float>(
-		GPlatesMaths::nan(), GPlatesMaths::Real::nan().dval()) == false);
-	BOOST_CHECK(are_almost_exactly_equal<float>(
-		GPlatesMaths::nan(), (zero / zero)) == false);
-	BOOST_CHECK(!GPlatesMaths::is_infinity(GPlatesMaths::nan()));
-	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(GPlatesMaths::nan()));
-	BOOST_CHECK(!GPlatesMaths::is_negative_infinity(GPlatesMaths::nan()));
-	BOOST_CHECK(GPlatesMaths::is_nan(GPlatesMaths::nan()));
-	BOOST_CHECK(!GPlatesMaths::is_zero(GPlatesMaths::nan()));
+	BOOST_CHECK(!GPlatesMaths::is_infinity(GPlatesMaths::quiet_nan<double>()));
+	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(GPlatesMaths::quiet_nan<double>()));
+	BOOST_CHECK(!GPlatesMaths::is_negative_infinity(GPlatesMaths::quiet_nan<double>()));
+	BOOST_CHECK(GPlatesMaths::is_nan(GPlatesMaths::quiet_nan<double>()));
 }
 
 void
@@ -101,10 +86,5 @@ GPlatesUnitTest::RealTest::test_zero()
 	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(0.0));
 	BOOST_CHECK(!GPlatesMaths::is_negative_infinity(0.0));
 	BOOST_CHECK(!GPlatesMaths::is_nan(0.0));
-	BOOST_CHECK(GPlatesMaths::is_zero(0.0));
 }
-
-
-
-
 

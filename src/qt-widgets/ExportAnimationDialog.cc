@@ -27,12 +27,14 @@
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QAbstractItemModel>
+
 #include "ExportAnimationDialog.h"
 
-#include "utils/FloatingPointComparisons.h"
+#include "gui/AnimationController.h"
+
 #include "utils/ExportTemplateFilenameSequence.h"
 #include "utils/ExportAnimationStrategyFactory.h"
-#include "gui/AnimationController.h"
+
 
 GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 		GPlatesGui::AnimationController &animation_controller,

@@ -36,7 +36,6 @@
 
 #include "presentation/ViewState.h"
 
-#include "utils/FloatingPointComparisons.h"
 
 const QString 
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE

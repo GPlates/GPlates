@@ -48,6 +48,7 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
 #include "model/ModelUtils.h"
+#include "model/XmlNode.h"
 
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "file-io/XmlOutputInterface.h"
@@ -60,11 +61,11 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsString.h"
 #include "property-values/TemplateTypeParameterType.h"
-#include "model/XmlNode.h"
 
 
 const GPlatesModel::FeatureHandle::weak_ref
@@ -555,6 +556,8 @@ output_reconstructions(
 int
 main(int argc, char *argv[])
 {
+	GPlatesMaths::assert_has_infinity_and_nan();
+
 	GPlatesModel::ModelInterface model;
 
 	std::pair<GPlatesModel::FeatureCollectionHandle::weak_ref,

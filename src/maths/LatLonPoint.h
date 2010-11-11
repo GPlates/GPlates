@@ -32,6 +32,9 @@
 #include <iosfwd>
 #include <list>
 
+#include "MathsUtils.h"
+
+
 namespace GPlatesMaths
 {
 	class PointOnSphere;
@@ -57,9 +60,13 @@ namespace GPlatesMaths
 		 * GPlates uses the range [-90.0, 90.0].
 		 */
 		static
+		inline
 		bool
 		is_valid_latitude(
-				const double &val);
+				const double &val)
+		{
+			return is_in_range(val, -90.0, 90.0);
+		}
 
 		/**
 		 * Return whether a given value is a valid longitude.
@@ -68,9 +75,13 @@ namespace GPlatesMaths
 		 * output, but accepts [-360.0, 360.0] as input.
 		 */
 		static
+		inline
 		bool
 		is_valid_longitude(
-				const double &val);
+				const double &val)
+		{
+			return is_in_range(val, -360.0, 360.0);
+		}
 
 		const double &
 		latitude() const

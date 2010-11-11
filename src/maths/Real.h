@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,8 +28,13 @@
 #ifndef GPLATES_MATHS_REAL_H
 #define GPLATES_MATHS_REAL_H
 
-#include <iostream>
+#include <iosfwd>
 #include <cmath>
+#include <limits>
+#include <boost/math/special_functions/fpclassify.hpp>
+#include <boost/operators.hpp>
+
+#include "MathsUtils.h"
 
 
 namespace GPlatesMaths
@@ -46,31 +51,13 @@ namespace GPlatesMaths
 	 * "almost exact" comparisons instead of the "exact" comparisons
 	 * provided by the standard floating-point types.
 	 */
-	class Real
+	class Real :
+			public boost::less_than_comparable<Real>,
+			public boost::equivalent<Real>,
+			public boost::equality_comparable<Real>
 	{
 	public:
-		static const unsigned High_Precision;
 
-	private:
-		static const double Epsilon;
-		static const double Negative_Epsilon;
-
-		/*
-		 * these functions are friends,
-		 * to be able to access the above two members.
-		 */
-		friend bool operator==(Real, Real);
-		friend bool operator!=(Real, Real);
-		friend bool operator<=(Real, Real);
-		friend bool operator>=(Real, Real);
-		friend bool operator<(Real, Real);
-		friend bool operator>(Real, Real);
-		
-		friend std::istream &operator>>(std::istream &, Real &);
-
-		double _dval;
-
-	public:
 		Real()
 			: _dval(0.0)
 		{  }
@@ -140,15 +127,9 @@ namespace GPlatesMaths
 		bool
 		is_finite() const;
 
-		bool
-		is_zero() const
-		{
-			return *this == Real(0.0);
-		}
-
 		static
 		Real
-		nan();
+		quiet_nan();
 
 		static
 		Real
@@ -158,27 +139,37 @@ namespace GPlatesMaths
 		Real
 		negative_infinity();
 
+	private:
+
+		double _dval;
+
+		friend bool are_almost_exactly_equal(const Real &, const Real &);
+		friend bool are_slightly_more_strictly_equal(const Real &, const Real &);
+		friend bool is_in_range(const Real &, const Real &, const Real &);
+		friend bool operator<(const Real &, const Real &);
+		friend std::istream &operator>>(std::istream &, Real &);
 	};
 
 
+	/**
+	 * Returns whether the two supplied real numbers @a r1 and @a r2 are
+	 * equal to within the standard equality tolerance.
+	 */
 	inline
 	bool
-	operator==(Real r1, Real r2)
+	are_almost_exactly_equal(
+			const Real &r1,
+			const Real &r2)
 	{
-		/*
-		 * Allow difference between r1 and r2 to fall into a range
-		 * instead of insisting upon an exact value.
-		 * That range will be [-e, e].
-		 */
-		double d = r1.dval() - r2.dval();
-		return Real::Negative_Epsilon <= d && d <= Real::Epsilon;
+		// Use the double version for consistency.
+		return GPlatesMaths::are_almost_exactly_equal(r1._dval, r2._dval);
 	}
 
 
 	/**
-	 * Return whether the two supplied real numbers @a r1 and @a r2 are
+	 * Returns whether the two supplied real numbers @a r1 and @a r2 are
 	 * equal to within a slightly stricter tolerance than the standard
-	 * equality tolerance, aka @a Real::Epsilon.
+	 * equality tolerance, aka @a GPlatesMaths::EPSILON.
 	 *
 	 * This function is used by @a GPlatesMaths::FiniteRotation::operator*
 	 * and will hopefully be the first in a new generation of comparison
@@ -194,87 +185,34 @@ namespace GPlatesMaths
 			const Real &r1,
 			const Real &r2)
 	{
-		double d = r1.dval() - r2.dval();
-		return -9.99e-13 <= d && d <= 9.99e-13;
-	}
-
-
-	/**
-	 * On a Pentium IV processor, this should cost about
-	 * (5 [FSUB] + (2 + 1) [2*FCOM] + 1 [OR]) = 9 clock cycles.
-	 */
-	inline
-	bool
-	operator!=(Real r1, Real r2)
-	{
-		/*
-		 * Difference between r1 and r2 must lie *outside* range.
-		 * This is necessary to maintain the logical invariant
-		 * (a == b) iff not (a != b)
-		 */
-		double d = r1.dval() - r2.dval();
-		return Real::Negative_Epsilon > d || d > Real::Epsilon;
-	}
-
-
-	/**
-	 * On a Pentium IV processor, this should cost about
-	 * (5 [FSUB] + 2 [FCOM]) = 7 clock cycles.
-	 */
-	inline
-	bool
-	operator<=(Real r1, Real r2)
-	{
-		/*
-		 * According to the logical invariant
-		 * (a == b) implies (a <= b), the set of pairs (r1, r2) which
-		 * cause this boolean comparison to evaluate to true must be
-		 * a superset of the set of pairs which cause the equality
-		 * comparison to return true.
-		 */
-		double d = r1.dval() - r2.dval();
-		return d <= Real::Epsilon;
+		// Use the double version for consistency.
+		return GPlatesMaths::are_slightly_more_strictly_equal(r1._dval, r2._dval);
 	}
 
 
 	inline
 	bool
-	operator>=(Real r1, Real r2)
+	is_in_range(
+			const Real &value,
+			const Real &minimum,
+			const Real &maximum)
 	{
-		/*
-		 * According to the logical invariant
-		 * (a == b) implies (a >= b), the set of pairs (r1, r2) which
-		 * cause this boolean comparison to evaluate to true must be
-		 * a superset of the set of pairs which cause the equality
-		 * comparison to return true.
-		 */
-		double d = r1.dval() - r2.dval();
-		return Real::Negative_Epsilon <= d;
+		// Use the double version for consistency.
+		return GPlatesMaths::is_in_range(value._dval, minimum._dval, maximum._dval);
 	}
 
 
+	// All of the other operators are supplied by Boost operators.
 	inline
 	bool
-	operator>(Real r1, Real r2)
+	operator<(
+			const Real &r1,
+			const Real &r2)
 	{
-		/*
-		 * (a > b) must be the logical inverse of (a <= b).
-		 */
-		double d = r1.dval() - r2.dval();
-		return d > Real::Epsilon;
+		double d = r2._dval - r1._dval;
+		return d > GPlatesMaths::EPSILON;
 	}
 
-
-	inline
-	bool
-	operator<(Real r1, Real r2)
-	{
-		/*
-		 * (a < b) must be the logical inverse of (a >= b).
-		 */
-		double d = r1.dval() - r2.dval();
-		return Real::Negative_Epsilon > d;
-	}
 
 	inline
 	const Real
@@ -476,33 +414,78 @@ namespace GPlatesMaths
 			const Real &y,
 			const Real &x);
 
+	template<typename T>
+	inline
 	bool
-	is_nan(double d);
+	is_nan(
+			T d)
+	{
+		return boost::math::isnan(d);
+	}
 
+	template<typename T>
+	inline
 	bool
-	is_infinity(double d);
+	is_infinity(
+			T d)
+	{
+		return boost::math::isinf(d);
+	}
 
+	template<typename T>
+	inline
 	bool
-	is_positive_infinity(double d);
+	is_positive_infinity(
+			T d)
+	{
+		return boost::math::isinf(d) && d > 0;
+	}
 
+	template<typename T>
+	inline
 	bool
-	is_negative_infinity(double d);
+	is_negative_infinity(
+			T d)
+	{
+		return boost::math::isinf(d) && d < 0;
+	}
 
+	template<typename T>
+	inline
 	bool
-	is_finite(double d);
+	is_finite(
+			T d)
+	{
+		return boost::math::isfinite(d);
+	}
 
-	bool
-	is_zero(double d);
+	// The following assumes std::numeric_limits<double>::is_iec559 is true.
+	// This is asserted for on application startup so it is something that we can
+	// rely upon.
 
-	double
-	nan();
+	template<typename T>
+	inline
+	T
+	quiet_nan()
+	{
+		return std::numeric_limits<T>::quiet_NaN();
+	}
 
-	double
-	positive_infinity();
+	template<typename T>
+	inline
+	T
+	positive_infinity()
+	{
+		return std::numeric_limits<T>::infinity();
+	}
 
-	double
-	negative_infinity();
-
+	template<typename T>
+	inline
+	T
+	negative_infinity()
+	{
+		return -std::numeric_limits<T>::infinity();
+	}
 }
 
 #endif  // GPLATES_MATHS_REAL_H

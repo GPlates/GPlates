@@ -29,8 +29,10 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/UserPreferences.h"
+
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
-#include "utils/FloatingPointComparisons.h"
+
 #include "utils/AnimationSequenceUtils.h"
 
 
@@ -124,8 +126,6 @@ GPlatesGui::AnimationController::duration_in_frames() const
 	
 	return seq.duration_in_frames;
 #if 0
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
 	// We always play the very first frame (@a start_time);
 	static const frame_index_type first_frame = 1;
 	double abs_time_increment = time_increment();
@@ -159,7 +159,7 @@ GPlatesGui::AnimationController::duration_in_frames() const
 	// In this case, we have calculated @a available_steps with something like
 	// std::floor(some number like 20.00002), and blindly adding an additional
 	// @a end_time() step would be a fencepost error. Leave @a available_steps as-is.
-	if (geo_times_are_approx_equal(time_remainder, 0.0)) {
+	if (GPlatesMaths::are_geo_times_approximately_equal(time_remainder, 0.0)) {
 		// Okay, requested range divides approximately by an integer multiple,
 		// but we need to correct the @a available_steps calculation depending on
 		// whether we were slightly over or slightly under.
@@ -262,18 +262,16 @@ bool
 GPlatesGui::AnimationController::is_valid_reconstruction_time(
 		const double &time)
 {
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
 	// Firstly, ensure that the time is not less than the minimum reconstruction time.
 	if (time < AnimationController::min_reconstruction_time() &&
-			! geo_times_are_approx_equal(time,
+			! GPlatesMaths::are_geo_times_approximately_equal(time,
 					AnimationController::min_reconstruction_time())) {
 		return false;
 	}
 
 	// Secondly, ensure that the time is not greater than the maximum reconstruction time.
 	if (time > AnimationController::max_reconstruction_time() &&
-			! geo_times_are_approx_equal(time,
+			! GPlatesMaths::are_geo_times_approximately_equal(time,
 					AnimationController::min_reconstruction_time())) {
 		return false;
 	}
@@ -292,8 +290,6 @@ GPlatesGui::AnimationController::play()
 		return;
 	}
 	
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
 	recalculate_increment();
 	double abs_time_increment = std::fabs(d_time_increment);
 	double abs_total_time_delta = std::fabs(d_end_time - d_start_time);
@@ -304,11 +300,11 @@ GPlatesGui::AnimationController::play()
 	// wanted (since the difference is smaller than any difference the user could
 	// specify), and is the presumably the result of the floating-point representation.
 	// In this case, we should allow one frame of animation after this current frame.
-	if (geo_times_are_approx_equal(abs_time_increment - abs_total_time_delta, 0.0)) {
+	if (GPlatesMaths::are_geo_times_approximately_equal(abs_time_increment - abs_total_time_delta, 0.0)) {
 
 		double current_time = view_time();
-		if (geo_times_are_approx_equal(d_start_time, current_time) ||
-				geo_times_are_approx_equal(d_end_time, current_time)) {
+		if (GPlatesMaths::are_geo_times_approximately_equal(d_start_time, current_time) ||
+				GPlatesMaths::are_geo_times_approximately_equal(d_end_time, current_time)) {
 
 			set_view_time(d_start_time);
 			start_animation_timer();
@@ -414,8 +410,6 @@ void
 GPlatesGui::AnimationController::set_view_time(
 		const double new_time)
 {
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
 	// Ensure the new reconstruction time is valid.
 	// FIXME: Move this function somewhere more appropriate and call the new version.
 	if ( ! is_valid_reconstruction_time(new_time)) {
@@ -424,7 +418,7 @@ GPlatesGui::AnimationController::set_view_time(
 
 	// Only modify the reconstruction time and emit signals if the time has
 	// actually been changed.
-	if ( ! geo_times_are_approx_equal(view_time(), new_time)) {
+	if ( ! GPlatesMaths::are_geo_times_approximately_equal(view_time(), new_time)) {
 		// This will perform a new reconstruction.
 		d_application_state_ptr->set_reconstruction_time(new_time);
 		
@@ -451,9 +445,7 @@ void
 GPlatesGui::AnimationController::set_start_time(
 		const double new_time)
 {
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
-	if ( ! geo_times_are_approx_equal(d_start_time, new_time)) {
+	if ( ! GPlatesMaths::are_geo_times_approximately_equal(d_start_time, new_time)) {
 		d_start_time = new_time;
 		
 		emit start_time_changed(new_time);
@@ -466,9 +458,7 @@ void
 GPlatesGui::AnimationController::set_end_time(
 		const double new_time)
 {
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
-	if ( ! geo_times_are_approx_equal(d_end_time, new_time)) {
+	if ( ! GPlatesMaths::are_geo_times_approximately_equal(d_end_time, new_time)) {
 		d_end_time = new_time;
 		
 		emit end_time_changed(new_time);
@@ -481,8 +471,6 @@ void
 GPlatesGui::AnimationController::set_time_increment(
 		const double new_abs_increment)
 {
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
 	// Translate the user-friendly absolute value new_increment into the
 	// appropriate +/- increment to get from d_start_time to d_end_time.
 	double new_increment;
@@ -492,7 +480,7 @@ GPlatesGui::AnimationController::set_time_increment(
 		new_increment = -new_abs_increment;
 	}
 	
-	if ( ! geo_times_are_approx_equal(d_time_increment, new_increment)) {
+	if ( ! GPlatesMaths::are_geo_times_approximately_equal(d_time_increment, new_increment)) {
 		d_time_increment = new_increment;
 		
 		// Note that the signal emits the abs version for consistency.
@@ -548,8 +536,6 @@ GPlatesGui::AnimationController::set_should_adjust_bounds_to_contain_current_tim
 void
 GPlatesGui::AnimationController::react_animation_playback_step()
 {
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
 	double abs_time_increment = std::fabs(d_time_increment);
 	double abs_remaining_time = std::fabs(d_end_time - view_time());
 
@@ -559,7 +545,7 @@ GPlatesGui::AnimationController::react_animation_playback_step()
 	// In this case, we should allow one more frame (after the current frame),  but rather than
 	// adding the increment to the current-time, set the current-time directly to the end-time
 	// (or else, the current-time would go past the end-time).
-	if (geo_times_are_approx_equal(abs_time_increment - abs_remaining_time, 0.0)) {
+	if (GPlatesMaths::are_geo_times_approximately_equal(abs_time_increment - abs_remaining_time, 0.0)) {
 		set_view_time(d_end_time);
 		return;
 	}

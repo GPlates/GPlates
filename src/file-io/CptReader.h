@@ -105,7 +105,7 @@ namespace GPlatesFileIO
 			double
 			value()
 			{
-				return GPlatesMaths::negative_infinity();
+				return GPlatesMaths::negative_infinity<double>();
 			}
 		};
 

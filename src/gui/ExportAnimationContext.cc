@@ -25,19 +25,19 @@
  
 #include <QDir>
 #include <vector>
+
 #include "ExportAnimationContext.h"
 
-#include "utils/FloatingPointComparisons.h"
-#include "utils/ExportTemplateFilenameSequence.h"
-#include "utils/ExportAnimationStrategyFactory.h"
-
 #include "gui/AnimationController.h"
-#include "qt-widgets/ExportAnimationDialog.h"
-
 #include "gui/ExportSvgAnimationStrategy.h"
 #include "gui/ExportVelocityAnimationStrategy.h"
 #include "gui/ExportReconstructedGeometryAnimationStrategy.h"
 #include "gui/ExportResolvedTopologyAnimationStrategy.h"
+
+#include "utils/ExportTemplateFilenameSequence.h"
+#include "utils/ExportAnimationStrategyFactory.h"
+
+#include "qt-widgets/ExportAnimationDialog.h"
 
 
 GPlatesGui::ExportAnimationContext::ExportAnimationContext(

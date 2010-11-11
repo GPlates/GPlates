@@ -28,6 +28,7 @@
 
 #include <limits>
 #include <stack>
+#include <iostream>
 
 #include <QDebug>
 #include <QPolygonF>

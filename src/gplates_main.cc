@@ -45,6 +45,8 @@
 #include "gui/GPlatesQApplication.h"
 #include "gui/GPlatesQtMsgHandler.h"
 
+#include "maths/MathsUtils.h"
+
 #include "presentation/Application.h"
 
 #include "qt-widgets/ViewportWindow.h"
@@ -188,6 +190,10 @@ namespace {
 
 int internal_main(int argc, char* argv[])
 {
+	// Sanity check: Proceed only if we have access to infinity and NaN.
+	// This should pass on all systems that we support.
+	GPlatesMaths::assert_has_infinity_and_nan();
+
 	// This will only install handler if any of the following conditions are satisfied:
 	//   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
 	//   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive

@@ -22,28 +22,74 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#include <QMenu>
+
+#include <map>
+#include <QAction>
+#include <QString>
 
 #include "SpecifyAnchoredPlateIdDialog.h"
 
-#include "app-logic/ReconstructionFeatureProperties.h"
+#include "model/FeatureVisitor.h"
+
+#include "property-values/GpmlPlateId.h"
+
+#include "utils/UnicodeStringUtils.h"
+
+
+namespace
+{
+	class ExtractPlateIds :
+			public GPlatesModel::ConstFeatureVisitor
+	{
+	public:
+
+		typedef std::map<QString, GPlatesModel::integer_plate_id_type> result_type;
+
+		const result_type &
+		get_plate_ids() const
+		{
+			return d_plate_ids;
+		}
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		{
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_plate_id(
+				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+		{
+			if (current_top_level_propname())
+			{
+				QString property_name = GPlatesUtils::make_qstring_from_icu_string(
+						current_top_level_propname()->build_aliased_name());
+				d_plate_ids.insert(std::make_pair(property_name, gpml_plate_id.value()));
+			}
+		}
+
+	private:
+
+		result_type d_plate_ids;
+	};
+}
 
 
 GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::SpecifyAnchoredPlateIdDialog(
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint)
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
+	d_fill_menu(new QMenu(this))
 {
 	setupUi(this);
 
 	// Set up fill button's menu.
-	QMenu *fill_menu = new QMenu(this);
-	fill_menu->addAction(action_Reconstruction_Plate_Id);
-	fill_menu->addAction(action_Left_Plate);
-	fill_menu->addAction(action_Right_Plate);
-	fill_toolbutton->setMenu(fill_menu);
+	fill_toolbutton->setMenu(d_fill_menu);
 	QObject::connect(
-			fill_menu,
+			d_fill_menu,
 			SIGNAL(triggered(QAction *)),
 			this,
 			SLOT(handle_action_triggered(QAction *)));
@@ -135,39 +181,23 @@ GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::populate_menu(
 		const GPlatesModel::FeatureHandle::weak_ref &focused_feature)
 {
 	// Find out what plate IDs are in the given feature.
-	GPlatesAppLogic::ReconstructionFeatureProperties visitor;
+	ExtractPlateIds visitor;
 	if (focused_feature.is_valid())
 	{
 		visitor.visit_feature(focused_feature);
 	}
 
-	typedef boost::optional<GPlatesModel::integer_plate_id_type> opt_plate_id_type;
-	bool any_plate_id_found = false;
-
-	const opt_plate_id_type &recon_plate_id = visitor.get_recon_plate_id();
-	action_Reconstruction_Plate_Id->setVisible(recon_plate_id);
-	if (recon_plate_id)
+	// Clear the menu and repopulate it.
+	d_fill_menu->clear();
+	const ExtractPlateIds::result_type &plate_ids = visitor.get_plate_ids();
+	for (ExtractPlateIds::result_type::const_iterator iter = plate_ids.begin();
+			iter != plate_ids.end(); ++iter)
 	{
-		any_plate_id_found = true;
-		action_Reconstruction_Plate_Id->setData(static_cast<uint>(*recon_plate_id));
+		QAction *action = new QAction(iter->first, d_fill_menu);
+		action->setData(static_cast<uint>(iter->second));
+		d_fill_menu->addAction(action);
 	}
 
-	const opt_plate_id_type &left_plate_id = visitor.get_left_plate_id();
-	action_Left_Plate->setVisible(left_plate_id);
-	if (left_plate_id)
-	{
-		any_plate_id_found = true;
-		action_Left_Plate->setData(static_cast<uint>(*left_plate_id));
-	}
-
-	const opt_plate_id_type &right_plate_id = visitor.get_right_plate_id();
-	action_Right_Plate->setVisible(right_plate_id);
-	if (right_plate_id)
-	{
-		any_plate_id_found = true;
-		action_Right_Plate->setData(static_cast<uint>(*right_plate_id));
-	}
-
-	fill_toolbutton->setEnabled(any_plate_id_found);
+	fill_toolbutton->setEnabled(plate_ids.size() > 0);
 }
 

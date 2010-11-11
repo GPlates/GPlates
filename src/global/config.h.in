@@ -137,3 +137,7 @@
 
 /* Version number of package */
 #cmakedefine VERSION
+
+/* The full path to certain header files in the local Boost installation */
+#cmakedefine BOOST_MATH_SPECIAL_FUNCTIONS_FPCLASSIFY_HPP_PATH "${BOOST_MATH_SPECIAL_FUNCTIONS_FPCLASSIFY_HPP_PATH}"
+#cmakedefine BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH "${BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH}"

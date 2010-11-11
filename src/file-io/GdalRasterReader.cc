@@ -118,7 +118,7 @@ namespace
 				// If it is not NaN, however, we will have to convert all values that match
 				// no_data_value to NaN.
 				raster_element_type casted_no_data_value = static_cast<raster_element_type>(no_data_value);
-				raster_element_type casted_nan_value = static_cast<raster_element_type>(GPlatesMaths::nan());
+				raster_element_type casted_nan_value = GPlatesMaths::quiet_nan<raster_element_type>();
 
 				std::replace_if(
 						raster.data(),

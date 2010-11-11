@@ -24,11 +24,12 @@
  */
 
 #include <cstddef> // std::size_t
+#include <iostream>
+#include <vector>
+#include <boost/noncopyable.hpp>
 #include <QGridLayout>
 #include <QWidget>
 #include <QDebug>
-#include <vector>
-#include <boost/noncopyable.hpp>
 
 #include "TopologySectionsTable.h"
 

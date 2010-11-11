@@ -98,7 +98,7 @@ GPlatesUtils::XmlNamespaces::get_namespace_for_standard_alias(
 		const UnicodeString &namespace_alias)
 {
 	GPlatesUtils::StringSet& aliases = 
-		GPlatesModel::StringSetSingletons::xml_namespace_alias_instance();
+		GPlatesModel::StringSetSingletons::xml_namespace_instance();
 	if (namespace_alias == GPML_STANDARD_ALIAS)
 	{
 		return aliases.insert(GPML_NAMESPACE);

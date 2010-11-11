@@ -133,7 +133,34 @@ namespace GPlatesAppLogic
 			return d_time_of_appearance;
 		}
 
+		virtual
+		void
+		visit_gml_time_period(
+				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+
+		virtual
+		void
+		visit_gpml_plate_id(
+				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+
+		void
+		visit_enumeration(
+				const enumeration_type &enumeration);
+
+	protected:
+
+		virtual
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
+
 	private:
+
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_recon_time;
 
 		/**
@@ -154,31 +181,6 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesAppLogic::ReconstructionMethod::Type> d_recon_method;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_right_plate_id;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_left_plate_id;
-
-
-		virtual
-		bool
-		initialise_pre_feature_properties(
-				const GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_gml_time_period(
-				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
-
-		virtual
-		void
-		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
-
-		virtual
-		void
-		visit_gpml_plate_id(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
-
-		void
-		visit_enumeration(
-				const enumeration_type &enumeration);
 	};
 }
 

@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ui version="4.0">
+<ui version="4.0" >
  <class>SpecifyAnchoredPlateIdDialog</class>
- <widget class="QDialog" name="SpecifyAnchoredPlateIdDialog">
-  <property name="geometry">
+ <widget class="QDialog" name="SpecifyAnchoredPlateIdDialog" >
+  <property name="geometry" >
    <rect>
     <x>0</x>
     <y>0</y>
@@ -10,55 +9,55 @@
     <height>169</height>
    </rect>
   </property>
-  <property name="windowTitle">
+  <property name="windowTitle" >
    <string>Specify Anchored Plate ID</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >
     <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
-  <property name="modal">
+  <property name="modal" >
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <layout class="QVBoxLayout" name="verticalLayout_2" >
    <item>
-    <widget class="QGroupBox" name="main_groupbox">
-     <property name="title">
+    <widget class="QGroupBox" name="main_groupbox" >
+     <property name="title" >
       <string>Anchored Plate ID</string>
      </property>
-     <layout class="QFormLayout" name="formLayout">
-      <item row="0" column="0">
-       <widget class="QLabel" name="fixed_plate_label">
-        <property name="text">
+     <layout class="QFormLayout" name="formLayout" >
+      <item row="0" column="0" >
+       <widget class="QLabel" name="fixed_plate_label" >
+        <property name="text" >
          <string>&amp;Plate ID:</string>
         </property>
-        <property name="buddy">
+        <property name="buddy" >
          <cstring>fixed_plate_spinbox</cstring>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QSpinBox" name="fixed_plate_spinbox">
-        <property name="minimum">
+      <item row="0" column="1" >
+       <widget class="QSpinBox" name="fixed_plate_spinbox" >
+        <property name="minimum" >
          <number>0</number>
         </property>
-        <property name="maximum">
+        <property name="maximum" >
          <number>999999999</number>
         </property>
-        <property name="value">
+        <property name="value" >
          <number>0</number>
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QToolButton" name="fill_toolbutton">
-        <property name="enabled">
+      <item row="1" column="1" >
+       <widget class="QToolButton" name="fill_toolbutton" >
+        <property name="enabled" >
          <bool>false</bool>
         </property>
-        <property name="text">
+        <property name="text" >
          <string>&amp;Fill from Current Feature</string>
         </property>
-        <property name="popupMode">
+        <property name="popupMode" >
          <enum>QToolButton::InstantPopup</enum>
         </property>
        </widget>
@@ -67,43 +66,29 @@
     </widget>
    </item>
    <item>
-    <widget class="QDialogButtonBox" name="main_buttonbox">
-     <property name="standardButtons">
+    <spacer name="verticalSpacer" >
+     <property name="orientation" >
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0" >
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="main_buttonbox" >
+     <property name="standardButtons" >
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
     </widget>
    </item>
   </layout>
-  <action name="action_Reconstruction_Plate_Id">
-   <property name="text">
-    <string>gpml:reconstruction&amp;PlateId</string>
-   </property>
-   <property name="toolTip">
-    <string>gpml:reconstructionPlateId</string>
-   </property>
-   <property name="visible">
-    <bool>false</bool>
-   </property>
-  </action>
-  <action name="action_Right_Plate">
-   <property name="text">
-    <string>gpml:&amp;rightPlate</string>
-   </property>
-   <property name="visible">
-    <bool>false</bool>
-   </property>
-  </action>
-  <action name="action_Left_Plate">
-   <property name="text">
-    <string>action:&amp;leftPlate</string>
-   </property>
-   <property name="visible">
-    <bool>false</bool>
-   </property>
-  </action>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_widgets.qrc" />
  </resources>
  <connections/>
 </ui>

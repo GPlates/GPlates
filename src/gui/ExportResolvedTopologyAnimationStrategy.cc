@@ -59,7 +59,6 @@
 #include "property-values/XsString.h"
 
 #include "utils/ExportTemplateFilenameSequence.h"
-#include "utils/FloatingPointComparisons.h"
 #include "utils/UnicodeStringUtils.h"
 #include "utils/StringFormattingUtils.h"
 

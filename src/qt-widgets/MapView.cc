@@ -27,6 +27,7 @@
  */
 
 #include <cmath>
+#include <iostream>
 #include <QGraphicsView>
 #include <QtOpenGL/qgl.h>
 #include <QPaintEngine>

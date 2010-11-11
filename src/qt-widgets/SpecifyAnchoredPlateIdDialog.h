@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_SPECIFYANCHOREDPLATEIDDIALOG_H
 
 #include <QDialog>
+#include <QMenu>
 
 #include "SpecifyAnchoredPlateIdDialogUi.h"
 
@@ -88,6 +89,8 @@ namespace GPlatesQtWidgets
 		void
 		populate_menu(
 				const GPlatesModel::FeatureHandle::weak_ref &focused_feature);
+
+		QMenu *d_fill_menu;
 	};
 }
 

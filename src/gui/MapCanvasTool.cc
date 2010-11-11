@@ -24,12 +24,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <cmath_ext.h>
+#include "MapCanvasTool.h"
 
-#include "maths/types.h"
 #include "maths/Real.h"
 #include "maths/MathsUtils.h"
-#include "MapCanvasTool.h"
+#include "maths/types.h"
+
 
 namespace
 {

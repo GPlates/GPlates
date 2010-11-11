@@ -26,7 +26,7 @@
 #include <cmath>
 #include "AnimationSequenceUtils.h"
 
-#include "utils/FloatingPointComparisons.h"
+#include "maths/MathsUtils.h"
 
 
 GPlatesUtils::AnimationSequence::SequenceInfo
@@ -36,10 +36,8 @@ GPlatesUtils::AnimationSequence::calculate_sequence(
 		const double &abs_time_increment,
 		bool should_finish_exactly_on_end_time)
 {
-	using namespace GPlatesUtils::FloatingPointComparisons;
-	
 	// Reconstruction time increment should not be zero.
-	if (geo_times_are_approx_equal(abs_time_increment, 0))
+	if (GPlatesMaths::are_geo_times_approximately_equal(abs_time_increment, 0.0))
 	{
 		throw AnimationSequence::TimeIncrementZero(GPLATES_EXCEPTION_SOURCE);
 	}
@@ -84,7 +82,7 @@ GPlatesUtils::AnimationSequence::calculate_sequence(
 	// In this case, we have calculated @a available_steps with something like
 	// std::floor(some number like 20.00002), and blindly adding an additional
 	// @a end_time() step would be a fencepost error. Leave @a available_steps as-is.
-	if (geo_times_are_approx_equal(time_remainder, 0.0)) {
+	if (GPlatesMaths::are_geo_times_approximately_equal(time_remainder, 0.0)) {
 		// Okay, requested range divides approximately by an integer multiple,
 		// but we need to correct the @a available_steps calculation depending on
 		// whether we were slightly over or slightly under.

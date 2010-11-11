@@ -30,9 +30,6 @@
 #include "GPGIMInfo.h"
 #include "Model.h"
 
-#include "global/AssertionFailureException.h"
-#include "global/GPlatesAssert.h"
-
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"

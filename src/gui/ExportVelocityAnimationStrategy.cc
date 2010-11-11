@@ -67,8 +67,6 @@ POP_MSVC_WARNINGS
 #include "property-values/GmlDataBlock.h"
 #include "property-values/GmlMultiPoint.h"
 
-#include "utils/FloatingPointComparisons.h"
-
 
 // All code in this namespace was copied from "file-io/ReconstructedFeatureGeometryExportImpl.h"
 // and "file-io/ReconstructedFeatureGeometryExportImpl.cc".

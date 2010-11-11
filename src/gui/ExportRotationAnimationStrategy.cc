@@ -38,8 +38,6 @@
 
 #include "presentation/ViewState.h"
 
-#include "utils/FloatingPointComparisons.h"
-
 
  const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_RELATIVE_COMMA_FILENAME_TEMPLATE
 		="relative_total_rotation_comma_%0.2f.csv";

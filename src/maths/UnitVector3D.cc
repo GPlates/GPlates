@@ -27,9 +27,8 @@
 
 #include <ostream>
 #include <sstream>
-#ifdef HAVE_PYTHON
-# include <boost/python.hpp>
-#endif
+#include <iostream>
+
 #include "UnitVector3D.h"
 #include "HighPrecision.h"
 #include "ViolatedUnitVectorInvariantException.h"

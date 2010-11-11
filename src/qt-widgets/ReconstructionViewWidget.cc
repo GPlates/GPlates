@@ -56,8 +56,6 @@
 
 #include "qt-widgets/TaskPanel.h"
 
-#include "utils/FloatingPointComparisons.h"
-
 
 namespace
 {

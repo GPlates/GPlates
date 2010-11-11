@@ -135,14 +135,6 @@ include (CompileOptionsCPlusPlus)
 include (Util)
 
 #
-# Generate 'global/config.h' file from 'global/config.h.in' and add HAVE_CONFIG_H compiler definition so GPlates will look for it.
-#
-# This should be included after the above include and find_package calls and before the add_subdirectory calls because
-# it uses the GDAL package and it sets the HAVE_CONFIG_H compiler flag needed by source code in the subdirectories.
-#
-include (Config_h)
-
-#
 # Generate 'global/Constants.cc' file from 'global/Constants.cc.in'.
 #
 # To change the current GPlates version string edit the "ConfigDefault.cmake" file.
@@ -257,6 +249,14 @@ set(internal_INCLUDE_DIRS
 # All the GPlates subdirectories.
 set(ALL_GPlates_src_subdirs
 	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS} ${unit_test_LIBS})
+
+#
+# Generate 'global/config.h' file from 'global/config.h.in' and add HAVE_CONFIG_H compiler definition so GPlates will look for it.
+#
+# This should be included after the above include and find_package calls and before the add_subdirectory calls because
+# it uses the GDAL and Boost packages and it sets the HAVE_CONFIG_H compiler flag needed by source code in the subdirectories.
+#
+include (Config_h)
 
 # Recurse into subdirectories - CMake continues processing this file when it returns.
 # NOTE: any variables set after 'add_subdirectory' will not be visible in the subdirectory 'CMakeList.txt' files.
