@@ -29,6 +29,7 @@
 #define GPLATES_MATHS_REAL_H
 
 #include <iosfwd>
+#include <iostream>
 #include <cmath>
 #include <limits>
 #include <boost/math/special_functions/fpclassify.hpp>
