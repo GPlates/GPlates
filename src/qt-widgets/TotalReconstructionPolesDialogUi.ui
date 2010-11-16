@@ -29,7 +29,7 @@
      <item>
       <widget class="QLabel" name="label_time">
        <property name="text">
-        <string>Total reconstruction poles generated at</string>
+        <string>Viewing total reconstruction poles generated at</string>
        </property>
       </widget>
      </item>
@@ -158,6 +158,11 @@
          <column>
           <property name="text">
            <string>Fixed Plate ID</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Interpolated?</string>
           </property>
          </column>
         </widget>

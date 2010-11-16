@@ -61,7 +61,7 @@ namespace ColumnNames
 	 */
 	enum ColumnName
 	{
-		PLATEID, LATITUDE, LONGITUDE, ANGLE, FIXED
+		PLATEID, LATITUDE, LONGITUDE, ANGLE, FIXED, INTERPOLATED
 	};
 }
 
@@ -81,12 +81,18 @@ namespace {
 	/**
 	 * Table of filter options to present to the user when exporting CSV.
 	 */
-	static FileDialogFilterOption file_dialog_filter_table[] = {
-		{ "CSV file, comma-delimited (*.csv)", { ',' } },
-		{ "CSV file, semicolon-delimited (*.csv)", { ';' } },
-		{ "CSV file, tab-delimited (*.csv)", { '\t' } },
+	static const FileDialogFilterOption file_dialog_filter_table[] = {
+		{ QT_TRANSLATE_NOOP("TotalReconstructionPolesDialog",
+				"CSV file, comma-delimited (*.csv)"),
+			{ ',' } },
+		{ QT_TRANSLATE_NOOP("TotalReconstructionPolesDialog",
+				"CSV file, semicolon-delimited (*.csv)"),
+			{ ';' } },
+		{ QT_TRANSLATE_NOOP("TotalReconstructionPolesDialog",
+				"CSV file, tab-delimited (*.csv)"),
+			{ '\t' } },
 	};
-	
+
 	/**
 	 * This map is built for a quick, easy way to get back the CSV options
 	 * based on what filter the QFileDialog says was selected.
@@ -95,14 +101,15 @@ namespace {
 	build_export_filter_map()
 	{
 		static FileDialogFilterMapType map;
-		FileDialogFilterOption *begin = file_dialog_filter_table;
-		FileDialogFilterOption *end = begin + NUM_ELEMS(file_dialog_filter_table);
+		const FileDialogFilterOption *begin = file_dialog_filter_table;
+		const FileDialogFilterOption *end = begin + NUM_ELEMS(file_dialog_filter_table);
 		for (; begin != end; ++begin) {
-			map[QObject::tr(begin->text)] = begin->options;
+			map[GPlatesQtWidgets::TotalReconstructionPolesDialog::tr(begin->text)] =
+					begin->options;
 		}
 		return map;
 	}
-	
+
 
 	/**
 	 * Anon namespace function to create and set up a QFileDialog
@@ -114,18 +121,20 @@ namespace {
 	create_export_file_dialog(
 			QWidget *parent)
 	{
-		QFileDialog *dialog = new QFileDialog(parent, QObject::tr("Export tablular data"));
-		
+		QFileDialog *dialog = new QFileDialog(parent,
+				GPlatesQtWidgets::TotalReconstructionPolesDialog::tr(
+					"Export tablular data"));
+
 		// Use "Save As"-like behaviour.
 		dialog->setFileMode(QFileDialog::AnyFile);
 		dialog->setAcceptMode(QFileDialog::AcceptSave);
 		
 		// Set up different filters for different CSV options.
 		QStringList filters;
-		FileDialogFilterOption *begin = file_dialog_filter_table;
-		FileDialogFilterOption *end = begin + NUM_ELEMS(file_dialog_filter_table);
+		const FileDialogFilterOption *begin = file_dialog_filter_table;
+		const FileDialogFilterOption *end = begin + NUM_ELEMS(file_dialog_filter_table);
 		for (; begin != end; ++begin) {
-			filters << QObject::tr(begin->text);
+			filters << GPlatesQtWidgets::TotalReconstructionPolesDialog::tr(begin->text);
 		}
 		dialog->setFilters(filters);
 		dialog->setDefaultSuffix("csv");
@@ -136,50 +145,50 @@ namespace {
 
 
 
-	QString
+	const QString
 	make_string_from_rotation(
-		GPlatesMaths::FiniteRotation &rotation)
+			const GPlatesMaths::FiniteRotation &rotation)
 	{
-		QString result;
+		using namespace GPlatesMaths;
 
-		const GPlatesMaths::UnitQuaternion3D &uq = rotation.unit_quat();
-		const boost::optional<GPlatesMaths::UnitVector3D> &axis_hint = rotation.axis_hint();
+		const UnitQuaternion3D &uq = rotation.unit_quat();
+		const boost::optional<UnitVector3D> &axis_hint = rotation.axis_hint();
 
-		if (GPlatesMaths::represents_identity_rotation(uq)) {
-			result.append(QObject::tr("-- indeterminate pole --\t  angle: 0.00"));
+		if (represents_identity_rotation(uq)) {
+			// Assume that this string won't change after the first time this function
+			// is called, so we can keep the QString in a static local var.
+			static QString indeterm_pole_tr_str =
+					GPlatesQtWidgets::TotalReconstructionPolesDialog::tr(
+							"(indeterminate pole)\t  angle: 0.00");
+			return indeterm_pole_tr_str;
 		} else {
-
-			using namespace GPlatesMaths;
 			UnitQuaternion3D::RotationParams params = uq.get_rotation_params(axis_hint);
 
 			PointOnSphere euler_pole(params.axis);
 			LatLonPoint llp = make_lat_lon_point(euler_pole);
 
 			QLocale locale_;
-			
-			QString lat_string = locale_.toString(llp.latitude(),'f',2);
-			QString lon_string = locale_.toString(llp.longitude(),'f',2);
 
-			const double &angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
-			
-			QString angle_string = locale_.toString(angle,'f',2);
-	
-			result.append(QObject::tr("lat: "));
-			result.append(lat_string);
-			result.append(QObject::tr("\tlon: "));
-			result.append(lon_string);
-			result.append(QObject::tr("\t  angle: "));
-			result.append(angle_string);
+			QString lat_val_string = locale_.toString(llp.latitude(),'f',2);
+			QString lon_val_string = locale_.toString(llp.longitude(),'f',2);
+
+			double angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
+			QString angle_val_string = locale_.toString(angle,'f',2);
+
+			return GPlatesQtWidgets::TotalReconstructionPolesDialog::tr(
+					"lat: %1\tlon: %2\t  angle: %3")
+					.arg(lat_val_string)
+					.arg(lon_val_string)
+					.arg(angle_val_string);
 		}
-		return result;
 	}
+
 
 	void
 	fill_tree_item(
-		QTreeWidgetItem* item,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge)
+			QTreeWidgetItem* item,
+			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge)
 	{
-
 		int column = item->columnCount();
 		QString moving_string;
 		moving_string.setNum(edge->moving_plate());
@@ -195,7 +204,7 @@ namespace {
 		GPlatesMaths::FiniteRotation relative_rotation = edge->relative_rotation();
 		QString relative_rotation_string = make_string_from_rotation(relative_rotation);
 
-		GPlatesMaths::FiniteRotation composed_rotation = edge->composed_absolute_rotation();
+		const GPlatesMaths::FiniteRotation &composed_rotation = edge->composed_absolute_rotation();
 		QString composed_rotation_string = make_string_from_rotation(composed_rotation);
 
 		item->setText(column++,edge_string);
@@ -206,16 +215,15 @@ namespace {
 
 	void
 	add_children_of_edge_to_tree_item(
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge,
-		QTreeWidgetItem *item)
+			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge,
+			QTreeWidgetItem *item)
 	{
-		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator it;
 		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
-			it_begin = edge->children_in_built_tree().begin();
+				it = edge->children_in_built_tree().begin();
 		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
-			it_end = edge->children_in_built_tree().end();
+				end = edge->children_in_built_tree().end();
 
-		for(it = it_begin; it != it_end ; it++)
+		for( ; it != end ; it++)
 		{
 			QTreeWidgetItem* child_item = new QTreeWidgetItem(item,0);
 			fill_tree_item(child_item,*it);
@@ -223,7 +231,72 @@ namespace {
 		}
 	}
 
+
+	void
+	populate_rotation_table_row(
+			QTableWidget *table,
+			int row_num,
+			GPlatesModel::integer_plate_id_type plate_id,
+			const GPlatesMaths::FiniteRotation &fr)
+	{
+		table->insertRow(row_num);
+
+		// Insert the plate ID into the first column of the table.
+		QString plate_id_as_string;
+		plate_id_as_string.setNum(plate_id);
+		QTableWidgetItem* plate_id_item = new QTableWidgetItem(plate_id_as_string);
+		plate_id_item->setFlags(Qt::ItemIsEnabled);
+		table->setItem(row_num, ColumnNames::PLATEID, plate_id_item);
+
+		using namespace GPlatesMaths;
+
+		// Now handle the finite rotation.
+		const UnitQuaternion3D &uq = fr.unit_quat();
+		if (represents_identity_rotation(uq)) {
+			// Assume that this string won't change after the first time this function
+			// is called, so we can keep the QString in a static local var.
+			static QString indeterm_tr_str =
+					GPlatesQtWidgets::TotalReconstructionPolesDialog::tr("Indeterminate");
+
+			QTableWidgetItem*  latitude_item = new QTableWidgetItem(indeterm_tr_str);
+			latitude_item->setFlags(Qt::ItemIsEnabled);
+			table->setItem(row_num, ColumnNames::LATITUDE, latitude_item);
+
+			QTableWidgetItem*  longitude_item = new QTableWidgetItem(indeterm_tr_str);
+			longitude_item->setFlags(Qt::ItemIsEnabled);
+			table->setItem(row_num, ColumnNames::LONGITUDE, longitude_item);
+
+			QTableWidgetItem* angle_item = new QTableWidgetItem();
+			angle_item->setFlags(Qt::ItemIsEnabled);
+			angle_item->setData(Qt::DisplayRole, QVariant(0.0));
+			table->setItem(row_num, ColumnNames::ANGLE, angle_item);
+		} else {
+			UnitQuaternion3D::RotationParams params = uq.get_rotation_params(fr.axis_hint());
+			PointOnSphere euler_pole(params.axis);
+			LatLonPoint llp = make_lat_lon_point(euler_pole);
+
+			QLocale locale_;
+			QString euler_pole_lat = locale_.toString(llp.latitude());
+			QString euler_pole_lon = locale_.toString(llp.longitude());
+
+			QTableWidgetItem* latitude_item = new QTableWidgetItem(euler_pole_lat);
+			table->setItem(row_num, ColumnNames::LATITUDE, latitude_item);
+
+			QTableWidgetItem* longitude_item = new QTableWidgetItem(euler_pole_lon);
+			longitude_item->setFlags(Qt::ItemIsEnabled);
+			table->setItem(row_num, ColumnNames::LONGITUDE, longitude_item);
+
+			double angle = convert_rad_to_deg(params.angle).dval();
+			
+			QString angle_string = locale_.toString(angle);
+			QTableWidgetItem* angle_item = new QTableWidgetItem(angle_string);
+			angle_item->setFlags(Qt::ItemIsEnabled);
+			table->setItem(row_num, ColumnNames::ANGLE, angle_item);
+		}
+	}
+
 } // anonymous namespace
+
 
 GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog(
 		GPlatesPresentation::ViewState &view_state,
@@ -285,9 +358,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 	make_signal_slot_connections();
 }
 
+
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::set_plate(
-	unsigned long plate)
+		unsigned long plate)
 {
 	d_plate = plate;
 	QString s;
@@ -295,9 +369,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::set_plate(
 	field_reference_plate->setText(s);
 }
 
+
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::set_time(
-	double time)
+		double time)
 {
 	d_time = time;
 	QString s;
@@ -306,183 +381,102 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::set_time(
 }
 
 
+
+
 /**
- * Fill the QTableWidget in tab1 with a list of Plate-ids and their corresponding 
- *	composite Euler poles.
+ * Fill the equivalent rotations QTableWidget with a list of Plate-ids and their corresponding
+ * composed absolute rotations.
  */
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
-	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it = 
 			reconstruction_tree.edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator end = 
 			reconstruction_tree.edge_map_end();
 
-
-	for(it = it_begin; it != it_end ; ++it)
+	for( ; it != end ; ++it)
 	{
+		// Fill in a row of the table.
 		int num_row = table_equivalent->rowCount();
-		table_equivalent->insertRow(num_row);
-
-	// insert the plate id into the first column of the table
-		QString id_as_string;
-
-		id_as_string.setNum(it->first);
-		QTableWidgetItem* id_item = new QTableWidgetItem(id_as_string);
-		id_item->setFlags(Qt::ItemIsEnabled);
-
-		table_equivalent->setItem(num_row,ColumnNames::PLATEID,id_item);
-
-		GPlatesMaths::FiniteRotation fr = it->second->composed_absolute_rotation();
-		const GPlatesMaths::UnitQuaternion3D &uq = fr.unit_quat();
-		if (GPlatesMaths::represents_identity_rotation(uq)) {
-			QString indeterminate_string(QObject::tr("Indeterminate"));
-			QTableWidgetItem*  latitude_item = new QTableWidgetItem(indeterminate_string);
-			latitude_item->setFlags(Qt::ItemIsEnabled);
-			table_equivalent->setItem(num_row,ColumnNames::LATITUDE,latitude_item);
-
-			QTableWidgetItem*  longitude_item = new QTableWidgetItem(indeterminate_string);
-			longitude_item->setFlags(Qt::ItemIsEnabled);
-			table_equivalent->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
-
-			QTableWidgetItem* angle_item = new QTableWidgetItem();
-			angle_item->setFlags(Qt::ItemIsEnabled);
-			angle_item->setData(Qt::DisplayRole, QVariant(0.0));
-			table_equivalent->setItem(num_row,ColumnNames::ANGLE,angle_item);
-		} else {
-
-			using namespace GPlatesMaths;
-			UnitQuaternion3D::RotationParams params = uq.get_rotation_params(fr.axis_hint());
-
-			PointOnSphere euler_pole(params.axis);
-			LatLonPoint llp = make_lat_lon_point(euler_pole);
-
-			QLocale locale_;
-			QString euler_pole_lat = locale_.toString(llp.latitude());
-			QString euler_pole_lon = locale_.toString(llp.longitude());
-
-			QTableWidgetItem* latitude_item = new QTableWidgetItem(euler_pole_lat);
-			table_equivalent->setItem(num_row,ColumnNames::LATITUDE,latitude_item);
-
-			QTableWidgetItem* longitude_item = new QTableWidgetItem(euler_pole_lon);
-			longitude_item->setFlags(Qt::ItemIsEnabled);
-			table_equivalent->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
-
-			const double &angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
-			
-			QString angle_string = locale_.toString(angle);
-			QTableWidgetItem* angle_item = new QTableWidgetItem(angle_string);
-			angle_item->setFlags(Qt::ItemIsEnabled);
-			table_equivalent->setItem(num_row,ColumnNames::ANGLE,angle_item);
-		}
+		populate_rotation_table_row(table_equivalent, num_row, it->first,
+				it->second->composed_absolute_rotation());
 	}
 
 }
 
+
+/**
+ * Fill the relative rotations QTableWidget with a list of Plate-ids and their corresponding
+ * relative rotations.
+ */
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
-	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it = 
 			reconstruction_tree.edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator end = 
 			reconstruction_tree.edge_map_end();
 
-
-	for(it = it_begin; it != it_end ; ++it)
+	for( ; it != end ; ++it)
 	{
+		// Fill in a row of the table (or at least the first four fields).
 		int num_row = table_relative->rowCount();
-		table_relative->insertRow(num_row);
+		populate_rotation_table_row(table_relative, num_row, it->first,
+				it->second->relative_rotation());
 
-	// insert the plate id into the first column of the table
-		QString id_as_string;
-		id_as_string.setNum(it->first);
-		QTableWidgetItem* id_item = new QTableWidgetItem(id_as_string);
-		id_item->setFlags(Qt::ItemIsEnabled);
-
-		table_relative->setItem(num_row,ColumnNames::PLATEID,id_item);
-
-		GPlatesMaths::FiniteRotation fr = it->second->relative_rotation();
-		const GPlatesMaths::UnitQuaternion3D &uq = fr.unit_quat();
-		if (GPlatesMaths::represents_identity_rotation(uq)) {
-			QString indeterminate_string(QObject::tr("Indeterminate"));
-			QTableWidgetItem*  latitude_item = new QTableWidgetItem(indeterminate_string);
-			latitude_item->setFlags(Qt::ItemIsEnabled);
-			table_relative->setItem(num_row,ColumnNames::LATITUDE,latitude_item);
-
-			QTableWidgetItem*  longitude_item = new QTableWidgetItem(indeterminate_string);
-			longitude_item->setFlags(Qt::ItemIsEnabled);
-			table_relative->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
-
-			QTableWidgetItem* angle_item = new QTableWidgetItem();
-			angle_item->setFlags(Qt::ItemIsEnabled);
-			angle_item->setData(Qt::DisplayRole, QVariant(0.0));
-			table_relative->setItem(num_row,ColumnNames::ANGLE,angle_item);
-		} else {
-
-			using namespace GPlatesMaths;
-			UnitQuaternion3D::RotationParams params = uq.get_rotation_params(fr.axis_hint());
-
-			PointOnSphere euler_pole(params.axis);
-			LatLonPoint llp = make_lat_lon_point(euler_pole);
-
-			QLocale locale_;
-			QString euler_pole_lat = locale_.toString(llp.latitude());
-			QString euler_pole_lon = locale_.toString(llp.longitude());
-
-			QTableWidgetItem* latitude_item = new QTableWidgetItem(euler_pole_lat);
-			table_relative->setItem(num_row,ColumnNames::LATITUDE,latitude_item);
-
-			QTableWidgetItem* longitude_item = new QTableWidgetItem(euler_pole_lon);
-			longitude_item->setFlags(Qt::ItemIsEnabled);
-			table_relative->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
-
-			const double &angle = convert_rad_to_deg(params.angle).dval();
-			
-			QString angle_string = locale_.toString(angle);
-			QTableWidgetItem* angle_item = new QTableWidgetItem(angle_string);
-			angle_item->setFlags(Qt::ItemIsEnabled);
-			table_relative->setItem(num_row,ColumnNames::ANGLE,angle_item);
-		}
-
-		// insert fixed plate into last column of table
+		// Now insert the fixed plate ID into the second-last column of the table.
 		GPlatesModel::integer_plate_id_type fixed_id = it->second->fixed_plate();
 		QString fixed_string;
 		fixed_string.setNum(fixed_id);
 		QTableWidgetItem* fixed_item = new QTableWidgetItem(fixed_string);
 		fixed_item->setFlags(Qt::ItemIsEnabled);
-		table_relative->setItem(num_row,ColumnNames::FIXED,fixed_item);
+		table_relative->setItem(num_row, ColumnNames::FIXED, fixed_item);
+
+		// Finally, state whether the pole was interpolated or not.
+
+		// Assume that these strings won't change after the first time this function
+		// is called, so we can keep the QStrings in static local vars.
+		static QString interp_tr_str = tr("interp");
+		static QString not_interp_tr_str = tr("not-interp");
+
+		if (it->second->finite_rotation_was_interpolated()) {
+			QTableWidgetItem* interp_item = new QTableWidgetItem(interp_tr_str);
+			interp_item->setFlags(Qt::ItemIsEnabled);
+			table_relative->setItem(num_row, ColumnNames::INTERPOLATED, interp_item);
+		} else {
+			QTableWidgetItem* not_interp_item = new QTableWidgetItem(not_interp_tr_str);
+			not_interp_item->setFlags(Qt::ItemIsEnabled);
+			table_relative->setItem(num_row, ColumnNames::INTERPOLATED, not_interp_item);
+		}
 	}
 
 }
 
+
 /**
- * Fill the QTreeWidget in the second tab with data from the Reconstruction Tree
+ * Fill the reconstruction tree QTreeWidget with the Reconstruction Tree.
  */
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
-	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
-	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
+	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it = 
 			reconstruction_tree.rootmost_edges_begin();
-	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
+	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator end = 
 			reconstruction_tree.rootmost_edges_end();
 
-	for(it = it_begin; it != it_end; ++it)
+	for( ; it != end; ++it)
 	{
 		//std::cerr << (*it)->moving_plate() << std::endl;
 		
-		// Create a QTreeWidgetItem for each of the rootmost edges, and iteratively 
+		// Create a QTreeWidgetItem for each of the rootmost edges, and recursively
 		// add its children to the tree 
 
 
@@ -493,24 +487,23 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree(
 	}
 }
 
-/*
- * Fill the QTreeWidget in the third tab with the circuit-to-stationary-plate for each plate-id. 
+
+/**
+ * Fill the plate circuit QTreeWidget with the circuit-to-stationary-plate for each plate-id. 
  */
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
-	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it = 
 			reconstruction_tree.edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
+		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator end = 
 			reconstruction_tree.edge_map_end();
 
 
-	for(it = it_begin; it != it_end ; ++it)
+	for( ; it != end ; ++it)
 	{
 		// get plate id and add it to the top level of the tree
 		QTreeWidgetItem *item = new QTreeWidgetItem(tree_circuit,0);

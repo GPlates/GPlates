@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TotalReconstructionSequencesDialog</class>
+ <widget class="QDialog" name="TotalReconstructionSequencesDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>748</width>
+    <height>495</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Total Reconstruction Sequences</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>View and edit the total reconstruction sequences that are loaded in the application.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QTreeWidget" name="treewidget_seqs">
+         <attribute name="headerDefaultSectionSize">
+          <number>60</number>
+         </attribute>
+         <attribute name="headerMinimumSectionSize">
+          <number>50</number>
+         </attribute>
+         <column>
+          <property name="text">
+           <string>File / Seq</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Time</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Lat</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Lon</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Angle</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Comment</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_limit_plate_id">
+           <property name="text">
+            <string>Show &amp;only sequences matching plate ID:</string>
+           </property>
+           <property name="buddy">
+            <cstring>lineedit_Filter_by_Plate_ID</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineedit_Filter_by_Plate_ID">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>80</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="inputMask">
+            <string>00000000; </string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="button_Apply_Filter">
+           <property name="text">
+            <string>&amp;Apply Filter</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="button_Reset_Filter">
+           <property name="text">
+            <string>&amp;Reset Filter</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Find &amp;plate ID:</string>
+           </property>
+           <property name="buddy">
+            <cstring>lineedit_find_plate_id</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineedit_find_plate_id">
+           <property name="maximumSize">
+            <size>
+             <width>80</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="inputMask">
+            <string>00000000; </string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="button_Find_Forward">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Find &amp;Forward</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="button_Find_Backward">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Find &amp;Backward</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="button_Find_from_Start">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Find from &amp;Start</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Find &amp;text in comments:</string>
+           </property>
+           <property name="buddy">
+            <cstring>lineedit_find_text_in_comment</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineedit_find_text_in_comment">
+           <property name="maximumSize">
+            <size>
+             <width>200</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="maxLength">
+            <number>100</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="Line" name="line_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_Edit_Sequence">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>&amp;Edit Sequence</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_New_Sequence">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>&amp;New Sequence</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_Expand_All">
+         <property name="text">
+          <string>E&amp;xpand All</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_Collapse_All">
+         <property name="text">
+          <string>&amp;Collapse All</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item row="2" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_Close">
+       <property name="text">
+        <string>Close</string>
+       </property>
+       <property name="shortcut">
+        <string>Esc</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>treewidget_seqs</tabstop>
+  <tabstop>lineedit_Filter_by_Plate_ID</tabstop>
+  <tabstop>lineedit_find_plate_id</tabstop>
+  <tabstop>button_Edit_Sequence</tabstop>
+  <tabstop>button_Close</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>button_Close</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>TotalReconstructionSequencesDialog</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>637</x>
+     <y>438</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>350</x>
+     <y>247</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_Reset_Filter</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>lineedit_Filter_by_Plate_ID</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>273</x>
+     <y>373</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>194</x>
+     <y>373</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_Expand_All</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>treewidget_seqs</receiver>
+   <slot>expandAll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>679</x>
+     <y>229</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>312</x>
+     <y>179</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_Collapse_All</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>treewidget_seqs</receiver>
+   <slot>collapseAll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>679</x>
+     <y>263</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>312</x>
+     <y>179</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

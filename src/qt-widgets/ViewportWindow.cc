@@ -77,6 +77,7 @@
 #include "SpecifyAnchoredPlateIdDialog.h"
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
+#include "TotalReconstructionSequencesDialog.h"
 #include "VisualLayersWidget.h"
 
 #include "app-logic/ApplicationState.h"
@@ -279,6 +280,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				this)),
 	d_total_reconstruction_poles_dialog_ptr(
 			new TotalReconstructionPolesDialog(
+				get_view_state(),
+				this)),
+	d_total_reconstruction_sequences_dialog_ptr(
+			new TotalReconstructionSequencesDialog(
+				get_application_state().get_feature_collection_file_state(),
 				get_view_state(),
 				this)),
 	d_layering_dialog_ptr(NULL),
@@ -756,6 +762,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// ---
 	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
 			this, SLOT(pop_up_manage_feature_collections_dialog()));
+	QObject::connect(action_View_Total_Reconstruction_Sequences, SIGNAL(triggered()),
+			this, SLOT(pop_up_total_reconstruction_sequences_dialog()));
 	QObject::connect(action_View_Shapefile_Attributes, SIGNAL(triggered()),
 			this, SLOT(pop_up_shapefile_attribute_viewer_dialog()));
 	// ----
@@ -1975,6 +1983,10 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_total_reconstruction_poles_dialog_ptr->reject();
 	}
+	if (d_total_reconstruction_sequences_dialog_ptr)
+	{
+		d_total_reconstruction_sequences_dialog_ptr->reject();
+	}
 }
 
 void
@@ -2224,6 +2236,24 @@ GPlatesQtWidgets::ViewportWindow::pop_up_shapefile_attribute_viewer_dialog()
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	d_shapefile_attribute_viewer_dialog_ptr->raise();
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_sequences_dialog()
+{
+	// note: this dialog is created in the constructor
+	
+	d_total_reconstruction_sequences_dialog_ptr->show();
+	d_total_reconstruction_sequences_dialog_ptr->update();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_total_reconstruction_sequences_dialog_ptr->activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_total_reconstruction_sequences_dialog_ptr->raise();
+}
+
 
 void
 GPlatesQtWidgets::ViewportWindow::generate_mesh_cap()

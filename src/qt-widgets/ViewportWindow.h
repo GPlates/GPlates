@@ -128,6 +128,7 @@ namespace GPlatesQtWidgets
 	class SpecifyAnchoredPlateIdDialog;
 	class TaskPanel;
 	class TotalReconstructionPolesDialog;
+	class TotalReconstructionSequencesDialog;
 
 	class ViewportWindow:
 			public QMainWindow, 
@@ -489,6 +490,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
+		boost::scoped_ptr<TotalReconstructionSequencesDialog> d_total_reconstruction_sequences_dialog_ptr;
 
 		boost::scoped_ptr<QDialog> d_layering_dialog_ptr;
 
@@ -715,6 +717,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_import_time_dependent_raster_dialog();
+
+		void
+		pop_up_total_reconstruction_sequences_dialog();
 
 		void
 		handle_visual_layer_added(

@@ -177,7 +177,9 @@ namespace GPlatesAppLogic
 		insert_total_reconstruction_pole(
 				GPlatesModel::integer_plate_id_type fixed_plate_id_,
 				GPlatesModel::integer_plate_id_type moving_plate_id_,
-				const GPlatesMaths::FiniteRotation &pole);
+				const GPlatesMaths::FiniteRotation &pole,
+				const GPlatesModel::FeatureHandle::weak_ref &originating_feature,
+				bool finite_rotation_was_interpolated);
 
 		/**
 		 * Build the graph into a ReconstructionTree, specifying the @a root_plate_id of

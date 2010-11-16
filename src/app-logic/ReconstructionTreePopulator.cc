@@ -210,7 +210,9 @@ GPlatesAppLogic::ReconstructionTreePopulator::finalise_post_feature_properties(
 	d_graph_ptr->insert_total_reconstruction_pole(
 			*(d_accumulator->d_fixed_ref_frame),
 			*(d_accumulator->d_moving_ref_frame),
-			*(d_accumulator->d_finite_rotation));
+			*(d_accumulator->d_finite_rotation),
+			feature_handle.reference(),
+			d_accumulator->d_finite_rotation_was_interpolated);
 
 	d_accumulator = boost::none;
 }
@@ -389,6 +391,7 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 						*previous_finite_rotation, *current_finite_rotation,
 						previous_time, current_time, target_time,
 						axis_hint);
+			d_accumulator->d_finite_rotation_was_interpolated = true;
 
 			return;
 		}

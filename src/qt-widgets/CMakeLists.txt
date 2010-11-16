@@ -283,6 +283,9 @@ set(srcs
     TotalReconstructionPolesDialog.cc
     TotalReconstructionPolesDialog.h
     TotalReconstructionPolesDialogUi.ui
+    TotalReconstructionSequencesDialog.cc
+    TotalReconstructionSequencesDialog.h
+    TotalReconstructionSequencesDialogUi.ui
     TrinketIcon.cc
     TrinketIcon.h
     UninitialisedEditWidgetException.h

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,7 +35,9 @@
 #include "property-values/GpmlIrregularSampling.h"
 
 
-GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::TotalReconstructionSequenceTimePeriodFinder()
+GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::TotalReconstructionSequenceTimePeriodFinder(
+		bool skip_over_disabled_samples):
+	d_skip_over_disabled_samples(skip_over_disabled_samples)
 {
 	d_property_names_to_allow.push_back(
 			GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"));
@@ -80,14 +82,16 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 	std::vector<GpmlTimeSample>::const_iterator iter = gpml_irregular_sampling.time_samples().begin();
 	std::vector<GpmlTimeSample>::const_iterator end = gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) {
-		// First, skip over any disabled time samples.
-		if (iter->is_disabled()) {
-			continue;
+		// First, skip over any disabled time samples (if the client code wants us to).
+		if (d_skip_over_disabled_samples) {
+			if (iter->is_disabled()) {
+				continue;
+			}
 		}
 		const GeoTimeInstant &gti = iter->valid_time()->time_position();
 		if ( ! gti.is_real()) {
-			// This geo-time-instant must be in either the distant past or the distant
-			// future.  This should not be the case in an irregular sampling.
+			// This geo-time-instant seems to be in either the distant past or the
+			// distant future.  This should not be the case in an irregular sampling.
 			// FIXME: Should we complain?
 			std::cerr << "Current time sample (at "
 					<< gti
@@ -112,6 +116,12 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 			// geo-time-instant is earlier than it.  This is as expected, since each
 			// successive time sample should be further in the past (ie, earlier).
 			d_begin_time = gti;
+		} else if (iter->is_disabled()) {
+			// This time sample is disabled, so we won't bother comparing its time
+			// position with that of the preceding time sample.  (This if-condition
+			// basically prevents us from proceeding into the following "else" block.)
+			// We want to allow this because in rotation files, adjacent disabled time
+			// samples often have the same time position.
 		} else {
 			// The begin-time has been set in a previous iteration, and the current
 			// geo-time-instant is not earlier than it.  This is strange, because the

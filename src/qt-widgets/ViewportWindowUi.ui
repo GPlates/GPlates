@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>23</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -55,6 +55,7 @@
     <addaction name="separator"/>
     <addaction name="action_Manage_Feature_Collections"/>
     <addaction name="action_File_Errors"/>
+    <addaction name="action_View_Total_Reconstruction_Sequences"/>
     <addaction name="action_View_Shapefile_Attributes"/>
     <addaction name="separator"/>
     <addaction name="action_Quit"/>
@@ -1166,7 +1167,7 @@
   </action>
   <action name="action_View_Shapefile_Attributes">
    <property name="text">
-    <string>View &amp;Shapefile Attributes</string>
+    <string>View Shapefile &amp;Attributes</string>
    </property>
   </action>
   <action name="action_Specify_Time_Increment">
@@ -1403,6 +1404,11 @@
    </property>
    <property name="text">
     <string>Show Stars</string>
+   </property>
+  </action>
+  <action name="action_View_Total_Reconstruction_Sequences">
+   <property name="text">
+    <string>View Total Reconstruction &amp;Sequences</string>
    </property>
   </action>
   <action name="action_New_Window">

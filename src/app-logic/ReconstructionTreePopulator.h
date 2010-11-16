@@ -32,6 +32,7 @@
 
 #include "maths/FiniteRotation.h"
 #include "model/FeatureVisitor.h"
+#include "model/FeatureHandle.h"
 #include "model/PropertyName.h"
 #include "model/types.h"
 #include "property-values/GeoTimeInstant.h"
@@ -72,9 +73,11 @@ namespace GPlatesAppLogic
 			boost::optional<GPlatesModel::integer_plate_id_type> d_fixed_ref_frame;
 			boost::optional<GPlatesModel::integer_plate_id_type> d_moving_ref_frame;
 			boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation;
+			bool d_finite_rotation_was_interpolated;
 			bool d_is_expecting_a_finite_rotation;
 
 			ReconstructionSequenceAccumulator():
+				d_finite_rotation_was_interpolated(false),
 				d_is_expecting_a_finite_rotation(false)
 			{  }
 
