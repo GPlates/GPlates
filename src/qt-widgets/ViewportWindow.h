@@ -413,7 +413,7 @@ namespace GPlatesQtWidgets
 
 		void
 		use_small_canvas_tool_icons(
-				bool small);
+				bool use_small_icons);
 
 		void
 		handle_read_errors(

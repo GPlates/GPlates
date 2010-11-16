@@ -1853,9 +1853,9 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 
 void
 GPlatesQtWidgets::ViewportWindow::use_small_canvas_tool_icons(
-		bool small)
+		bool use_small_icons)
 {
-	int s = small ? 16 : 35;
+	int s = use_small_icons ? 16 : 35;
 	toolbar_canvas_tools->setIconSize(QSize(s, s));
 }
 
