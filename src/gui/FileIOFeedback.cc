@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,12 +37,15 @@
 #include "FeatureFocus.h"
 #include "UnsavedChangesTracker.h"
 
-#include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/ApplicationState.h"
 #include "app-logic/ClassifyFeatureCollection.h"
+#include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/SessionManagement.h"
 
 #include "file-io/FileInfo.h"
 #include "file-io/ExternalProgram.h"
 #include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
@@ -253,15 +256,15 @@ namespace
 
 
 GPlatesGui::FileIOFeedback::FileIOFeedback(
+		GPlatesAppLogic::ApplicationState &app_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
-		GPlatesAppLogic::FeatureCollectionFileState &file_state_,
-		GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io_,
 		FeatureFocus &feature_focus_,
 		QObject *parent_):
 	QObject(parent_),
+	d_app_state_ptr(&app_state_),
 	d_viewport_window_ptr(&viewport_window_),
-	d_file_state_ptr(&file_state_),
-	d_feature_collection_file_io_ptr(&feature_collection_file_io_),
+	d_file_state_ptr(&app_state_.get_feature_collection_file_state()),
+	d_feature_collection_file_io_ptr(&app_state_.get_feature_collection_file_io()),
 	d_feature_focus(feature_focus_),
 	d_save_file_as_dialog_ptr(
 			GPlatesQtWidgets::SaveFileDialog::get_save_file_dialog(
@@ -347,6 +350,17 @@ GPlatesGui::FileIOFeedback::open_urls(
 					&GPlatesAppLogic::FeatureCollectionFileIO::load_urls,
 					d_feature_collection_file_io_ptr,
 					urls));
+}
+
+
+void
+GPlatesGui::FileIOFeedback::open_previous_session()
+{
+	GPlatesAppLogic::SessionManagement &sm = app_state().get_session_management();
+	try_catch_file_load_with_feedback(
+			boost::bind(
+					&GPlatesAppLogic::SessionManagement::load_previous_session,
+					&sm));
 }
 
 
@@ -743,6 +757,13 @@ GPlatesGui::FileIOFeedback::try_catch_file_load_with_feedback(
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
+	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
+	{
+		QString message = tr("Error: GPlates was unable to read the file '%1'.")
+				.arg(e.filename());
+		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
 	catch (GPlatesGlobal::Exception &e)
 	{
 		QString message = tr("Error: Unexpected error loading file - ignoring file.");
@@ -753,6 +774,13 @@ GPlatesGui::FileIOFeedback::try_catch_file_load_with_feedback(
 	}
 }
 
+
+
+GPlatesAppLogic::ApplicationState &
+GPlatesGui::FileIOFeedback::app_state()
+{
+	return *d_app_state_ptr;
+}
 
 
 GPlatesQtWidgets::ManageFeatureCollectionsDialog &

@@ -34,6 +34,7 @@
 #include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructUtils.h"
+#include "SessionManagement.h"
 #include "UserPreferences.h"
 
 #include "global/AssertionFailureException.h"
@@ -103,8 +104,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
 					d_model, *d_feature_collection_file_state)),
-	d_user_preferences_ptr(
-			new UserPreferences()),
+	d_session_management_ptr(new SessionManagement(*this)),
+	d_user_preferences_ptr(new UserPreferences()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_reconstruct_graph(new ReconstructGraph(*this)),
 	d_block_handle_file_state_file_activation_changed(false),
@@ -376,6 +377,13 @@ GPlatesAppLogic::FeatureCollectionFileIO &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_io()
 {
 	return *d_feature_collection_file_io;
+}
+
+
+GPlatesAppLogic::SessionManagement &
+GPlatesAppLogic::ApplicationState::get_session_management()
+{
+	return *d_session_management_ptr;
 }
 
 

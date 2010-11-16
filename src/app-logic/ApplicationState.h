@@ -57,6 +57,7 @@ namespace GPlatesAppLogic
 	class LayerTask;
 	class LayerTaskRegistry;
 	class ReconstructGraph;
+	class SessionManagement;
 	class UserPreferences;
 
 
@@ -111,6 +112,13 @@ namespace GPlatesAppLogic
 		 */
 		FeatureCollectionFileIO &
 		get_feature_collection_file_io();
+
+
+		/**
+		 * Stores/Loads loaded file information to and from persistent storage.
+		 */
+		GPlatesAppLogic::SessionManagement &
+		get_session_management();
 
 
 		/**
@@ -239,6 +247,8 @@ namespace GPlatesAppLogic
 		 */
 		boost::scoped_ptr<FeatureCollectionFileIO> d_feature_collection_file_io;
 
+
+		boost::scoped_ptr<SessionManagement> d_session_management_ptr;
 
 		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
 

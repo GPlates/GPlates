@@ -184,15 +184,49 @@ GPlatesAppLogic::UserPreferences::subkeys(
 }
 
 
+GPlatesAppLogic::UserPreferences::KeyValueMap
+GPlatesAppLogic::UserPreferences::get_keyvalues_as_map(
+		const QString &prefix)
+{
+	QStringList keys = subkeys(prefix);
+	KeyValueMap map;
+	
+	Q_FOREACH(QString subkey, keys) {
+		QString fullkey = QString("%1/%2").arg(prefix, subkey);
+		map.insert(subkey, get_value(fullkey));
+	}
+	return map;	// Is a Qt container, uses pimpl idiom, is fine to return by value.
+}
+
+
+void
+GPlatesAppLogic::UserPreferences::set_keyvalues_from_map(
+		const QString &prefix,
+		const GPlatesAppLogic::UserPreferences::KeyValueMap &keyvalues)
+{
+	clear_value(prefix);
+	Q_FOREACH(QString subkey, keyvalues.keys()) {
+		QString fullkey = QString("%1/%2").arg(prefix, subkey);
+		set_value(fullkey, keyvalues.value(subkey));
+	}
+}
+
 
 void
 GPlatesAppLogic::UserPreferences::debug_file_locations()
 {
+	// The default location:-
 	QSettings settings_user_app;
-	QSettings settings_user_org(QCoreApplication::organizationName());
-	QSettings settings_system_app(QSettings::SystemScope, QCoreApplication::organizationName(), 
-			QCoreApplication::applicationName());
-	QSettings settings_system_org(QSettings::SystemScope, QCoreApplication::organizationName());
+	// It is necessary to pull these names out of the default settings as our
+	// organization name is "gplates.org" on OSX and "GPlates" everywhere else,
+	// to be consistent with the platform conventions.
+	QString org_name = settings_user_app.organizationName();
+	QString app_name = settings_user_app.applicationName();
+	
+	// Tweaked locations for global-organization settings & operating-system-wide settings.
+	QSettings settings_user_org(org_name);
+	QSettings settings_system_app(QSettings::SystemScope, org_name, app_name);
+	QSettings settings_system_org(QSettings::SystemScope, org_name);
 
 	qDebug() << "UserPreferences file locations:-";
 	qDebug() << "User/App:" << settings_user_app.fileName();

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -40,6 +40,7 @@
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
 	class FeatureCollectionFileIO;
 }
 
@@ -82,9 +83,8 @@ namespace GPlatesGui
 	
 		explicit
 		FileIOFeedback(
+				GPlatesAppLogic::ApplicationState &app_state_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesAppLogic::FeatureCollectionFileState &file_state_,
-				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io_,
 				FeatureFocus &feature_focus_,
 				QObject *parent_ = NULL);
 
@@ -195,6 +195,15 @@ namespace GPlatesGui
 		open_files();
 
 
+		/**
+		 * Opens the set of files from the user's previous session.
+		 * This delegates to SessionManagement, but catches any exceptions the
+		 * file-io code might throw.
+		 */
+		void
+		open_previous_session();
+
+
 	private:
 
 		/**
@@ -222,6 +231,13 @@ namespace GPlatesGui
 			return *d_viewport_window_ptr;
 		}
 
+
+		/**
+		 * Quick method to get at the ApplicationState from inside this class.
+		 */
+		GPlatesAppLogic::ApplicationState &
+		app_state();
+
 		
 		/**
 		 * Sneaky method to find the ManageFeatureCollectionsDialog via
@@ -241,6 +257,11 @@ namespace GPlatesGui
 		unsaved_changes_tracker();
 
 
+
+		/**
+		 * ApplicationState for getting access to important file-loading stuff.
+		 */
+		GPlatesAppLogic::ApplicationState *d_app_state_ptr;
 
 		/**
 		 * Pointer to the main window, to pop up error dialogs from etc.

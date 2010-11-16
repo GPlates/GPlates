@@ -85,6 +85,7 @@
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/SessionManagement.h"
 
 #include "canvas-tools/MeasureDistanceState.h"
 
@@ -116,6 +117,7 @@
 #include "gui/MapCanvasToolAdapter.h"
 #include "gui/MapCanvasToolChoice.h"
 #include "gui/ProjectionException.h"
+#include "gui/SessionMenu.h"
 #include "gui/SvgExport.h"
 #include "gui/TopologySectionsContainer.h"
 #include "gui/TopologySectionsTable.h"
@@ -235,10 +237,15 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				this)),
 	d_file_io_feedback_ptr(
 			new GPlatesGui::FileIOFeedback(
+				get_application_state(),
 				*this,
-				get_application_state().get_feature_collection_file_state(),
-				get_application_state().get_feature_collection_file_io(),
 				get_view_state().get_feature_focus(),
+				this)),
+	d_session_menu_ptr(
+			new GPlatesGui::SessionMenu(
+				get_application_state(),
+				*d_file_io_feedback_ptr,
+				*d_unsaved_changes_tracker_ptr,
 				this)),
 	d_reconstruction_view_widget(
 			d_animation_controller,
@@ -372,6 +379,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	populate_gmenu_from_menubar();
 	// Initialise various elements for full-screen-mode that must wait until after setupUi().
 	d_full_screen_mode.init();
+	// Initialise the Recent Session menu (that must wait until after setupUi()).
+	d_session_menu_ptr->init(*menu_Open_Recent_Session);
 	
 	// Set up an emergency context menu to control QDockWidgets even if
 	// they're no longer behaving properly.
@@ -899,6 +908,12 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			&get_view_state().get_viewport_zoom(), SLOT(zoom_out()));
 	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
 			&get_view_state().get_viewport_zoom(), SLOT(reset_zoom()));
+
+	// Tools menu. This is mostly auto-populated with Canvas Tool actions,
+	// which don't need to be hooked up here, however there are a few little
+	// extras which aren't regular canvas tools and should be connected here:-
+	QObject::connect(action_Use_Small_Icons, SIGNAL(toggled(bool)),
+		this, SLOT(use_small_canvas_tool_icons(bool)));
 	
 	// Paleomagnetism menu	
 	QObject::connect(action_Create_VGP, SIGNAL(triggered()),
@@ -1837,6 +1852,15 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 
 
 void
+GPlatesQtWidgets::ViewportWindow::use_small_canvas_tool_icons(
+		bool small)
+{
+	int s = small ? 16 : 35;
+	toolbar_canvas_tools->setIconSize(QSize(s, s));
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
 {
 	// note: this dialog is created in the constructor
@@ -1993,6 +2017,9 @@ void
 GPlatesQtWidgets::ViewportWindow::closeEvent(
 		QCloseEvent *close_event)
 {
+	// Remember the current set of loaded files for next time.
+	get_application_state().get_session_management().close_event_hook();
+
 	// Check for unsaved changes and potentially give the user a chance to save/abort/etc.
 	bool close_ok = d_unsaved_changes_tracker_ptr->close_event_hook();
 	if (close_ok) {

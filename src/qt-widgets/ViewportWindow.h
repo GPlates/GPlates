@@ -82,6 +82,7 @@ namespace GPlatesGui
 	class GlobeCanvasToolChoice;
 	class MapCanvasToolAdapter;
 	class MapCanvasToolChoice;
+	class SessionMenu;
 	class TopologySectionsTable;
 	class TopologySectionsContainer;
 	class TrinketArea;
@@ -411,6 +412,10 @@ namespace GPlatesQtWidgets
 
 
 		void
+		use_small_canvas_tool_icons(
+				bool small);
+
+		void
 		handle_read_errors(
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				const GPlatesFileIO::ReadErrorAccumulation &new_read_errors);
@@ -470,6 +475,11 @@ namespace GPlatesQtWidgets
 		 * object system handles cleanup, and so that I have easier access to it via GuiDebug.
 		 */
 		QPointer<GPlatesGui::FileIOFeedback> d_file_io_feedback_ptr;
+
+		/**
+		 * Manages the Open Recent Session menu.
+		 */
+		QPointer<GPlatesGui::SessionMenu> d_session_menu_ptr;
 
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;

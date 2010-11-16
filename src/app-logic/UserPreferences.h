@@ -32,6 +32,7 @@
 #include <QSettings>
 #include <QString>
 #include <QStringList>
+#include <QMap>
 
 
 namespace GPlatesAppLogic
@@ -42,6 +43,7 @@ namespace GPlatesAppLogic
 	 * A few handy guidelines:-
 	 *
 	 *  - Keys are set using a hierarchy with a unix-like '/' path delimiter.
+	 *    There is no initial '/' as the first character.
 	 *
 	 *  - Treat keys as though they were case-sensitive, because they might be.
 	 *
@@ -71,6 +73,9 @@ namespace GPlatesAppLogic
 		Q_OBJECT
 
 	public:
+
+		typedef QMap<QString, QVariant> KeyValueMap;
+
 		UserPreferences();
 
 		virtual
@@ -136,6 +141,47 @@ namespace GPlatesAppLogic
 		QStringList
 		subkeys(
 				const QString &prefix = "");
+
+		/**
+		 * Given a @a prefix to a set of keys, slurp all those keys and
+		 * values into a QMap<QString, QVariant>.
+		 * This is intended to make working with groups of related sub-keys as
+		 * a single "object" easier - for example, storing a GPlatesAppLogic::Session.
+		 *
+		 * All key names will have the prefix stripped - they will be
+		 * "relative pathnames" from the given root. It is assumed that
+		 * the prefix itself does not have a value stored.
+		 *
+		 * For example, you could get the keyvalues for prefix "session/recent/1"
+		 * and this method would return a map containing keys such as "loaded_files"
+		 * and "date" - corresponding to "session/recent/1/loaded_files" and
+		 * "session/recent/1/date".
+		 *
+		 * While there is probably no real application for applying this method
+		 * to key/values with defaults and system fallbacks, the returned map
+		 * will include default and fallback values even if nothing has been
+		 * explicitly set in the "user" scope - returning the same list of keys
+		 * that @a subkeys(prefix) would have matched.
+		 */
+		KeyValueMap
+		get_keyvalues_as_map(
+				const QString &prefix);
+		
+
+		/**
+		 * Given a @a prefix in the key-value store, and a map of keyname->value
+		 * in a QMap<QString, QVariant>, set all the given keys in one pass.
+		 * This is intended to make working with groups of related sub-keys as
+		 * a single "object" easier - for example, storing a GPlatesAppLogic::Session.
+		 *
+		 * All key names should have the prefix stripped - they will be
+		 * "relative pathnames" from the given root. All pre-existing keys for that
+		 * prefix are cleared before setting the new values.
+		 */
+		void
+		set_keyvalues_from_map(
+				const QString &prefix,
+				const KeyValueMap &keyvalues);
 
 
 	public slots:

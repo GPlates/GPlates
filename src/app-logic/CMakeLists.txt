@@ -108,6 +108,10 @@ set(srcs
     ResolvedTopologicalBoundary.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
+    Session.cc
+    Session.h
+    SessionManagement.cc
+    SessionManagement.h
     TopologyBoundaryIntersections.cc
     TopologyBoundaryIntersections.h
     TopologyBoundaryResolver.cc

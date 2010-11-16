@@ -46,9 +46,15 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <widget class="QMenu" name="menu_Open_Recent_Session">
+     <property name="title">
+      <string>O&amp;pen Recent Session</string>
+     </property>
+    </widget>
     <addaction name="action_New_Window"/>
     <addaction name="separator"/>
     <addaction name="action_Open_Feature_Collection"/>
+    <addaction name="menu_Open_Recent_Session"/>
     <addaction name="separator"/>
     <addaction name="action_Import_Raster"/>
     <addaction name="action_Import_Time_Dependent_Raster"/>
@@ -154,6 +160,8 @@
     <property name="title">
      <string>&amp;Tools</string>
     </property>
+    <addaction name="action_Use_Small_Icons"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_Paleomagnetism">
     <property name="title">
@@ -175,7 +183,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolbar_canvas_tools">
    <property name="contextMenuPolicy">
-    <enum>Qt::PreventContextMenu</enum>
+    <enum>Qt::CustomContextMenu</enum>
    </property>
    <property name="windowTitle">
     <string>Tools</string>
@@ -1421,6 +1429,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="action_Use_Small_Icons">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Use Small Ico&amp;ns</string>
+   </property>
+   <property name="toolTip">
+    <string>Make the Canvas Tools toolbar icons smaller</string>
    </property>
   </action>
   <action name="action_Show_Bottom_Panel_Placeholder">

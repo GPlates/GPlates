@@ -134,6 +134,8 @@ set(srcs
     RasterColourSchemeMap.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
+    SessionMenu.cc
+    SessionMenu.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
     SingleColourScheme.cc
