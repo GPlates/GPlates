@@ -230,3 +230,19 @@ GPlatesMaths::Real::negative_infinity()
 	return -std::numeric_limits<double>::infinity();
 }
 
+
+std::ostream &
+GPlatesMaths::operator<<(std::ostream &os, const Real &r)
+{
+	os << r._dval;
+	return os;
+}
+
+
+std::istream &
+GPlatesMaths::operator>>(std::istream &is, Real &r)
+{
+	is >> r._dval;
+	return is;
+}
+

@@ -29,7 +29,6 @@
 #define GPLATES_MATHS_REAL_H
 
 #include <iosfwd>
-#include <iostream>
 #include <cmath>
 #include <limits>
 #include <boost/math/special_functions/fpclassify.hpp>
@@ -148,8 +147,21 @@ namespace GPlatesMaths
 		friend bool are_slightly_more_strictly_equal(const Real &, const Real &);
 		friend bool is_in_range(const Real &, const Real &, const Real &);
 		friend bool operator<(const Real &, const Real &);
+		friend std::ostream &operator<<(std::ostream &, const Real &);
 		friend std::istream &operator>>(std::istream &, Real &);
 	};
+
+
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const Real &r);
+
+
+	std::istream &
+	operator>>(
+			std::istream &,
+			Real &r);
 
 
 	/**
@@ -337,23 +349,6 @@ namespace GPlatesMaths
 	tan(Real r)
 	{
 		return Real(std::tan(r.dval()));
-	}
-
-	inline
-	std::ostream &
-	operator<<(std::ostream &os, Real r)
-	{
-		os << r.dval();
-		return os;
-	}
-
-
-	inline
-	std::istream &
-	operator>>(std::istream &is, Real& r)
-	{
-		is >> r._dval;
-		return is;
 	}
 
 
