@@ -73,4 +73,4 @@ namespace GPlatesUtils
 }
 
 
-#endif
+#endif  // GPLATES_UTILS_GENERICREDUCER_H

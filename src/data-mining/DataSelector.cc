@@ -722,7 +722,8 @@ DataSelector::optimize_cfg_table_row(
 	return modified_cfg_row;
 }
 
-
-
-
+// Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
+// This is here at the end of the file because the problem resides in a template
+// being instantiated at the end of the compilation unit.
+DISABLE_GCC_WARNING("-Wshadow")
 

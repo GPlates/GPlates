@@ -23,14 +23,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "global/CompilerWarnings.h"
-#include "QDoubleSpinBox"
-#include "QFileDialog"
+#include <QDoubleSpinBox>
+#include <QFileDialog>
 
 #include "CoRegLayerConfigurationDialog.h"
 
 #include "data-mining/PopulateShapeFileAttributesVisitor.h"
 #include "data-mining/CoRegConfigurationTable.h"
+
+#include "global/CompilerWarnings.h"
+
 #include "presentation/VisualLayer.h"
 
 GPlatesDataMining::CoRegConfigurationTable GPlatesQtWidgets::CoRegLayerConfigurationDialog::CoRegCfgTable;
@@ -560,9 +562,8 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::update_export_path(
 	return;
 }
 
-
-
-
-
-
+// Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
+// This is here at the end of the file because the problem resides in a template
+// being instantiated at the end of the compilation unit.
+DISABLE_GCC_WARNING("-Wshadow")
 

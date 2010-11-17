@@ -7,7 +7,7 @@ endforeach(lib)
 # We need to use static libraries for boost because we need to link to the main 
 #funtion in the unit test framework statically. Otherwise, the g++ cannot find the 
 #main entrance when linking gplates-unit-test executable. 
-SET (Boost_USE_STATIC_LIBS ON)
+#SET (Boost_USE_STATIC_LIBS ON)
 
 # The Boost package is a special case - it is mostly just headers with some object libraries.
 # We don't specify the REQUIRE option like the above packages because:

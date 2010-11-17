@@ -70,4 +70,4 @@ namespace GPlatesUtils
 	};
 }
 
-#endif
+#endif  // GPLATES_UTILS_REDUCER_H

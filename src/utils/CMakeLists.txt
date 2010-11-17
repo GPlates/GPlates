@@ -49,7 +49,6 @@ set(srcs
     Profile.cc
     Profile.h
     QtFormattingUtils.h
-    Reducer.cc
     Reducer.h
     ReferenceCount.h
     SafeBool.h

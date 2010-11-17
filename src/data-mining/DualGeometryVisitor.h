@@ -22,8 +22,8 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */	
-#ifndef GPLATESDATAMINING_DUALGEOMETRYVISITOR_H
-#define GPLATESDATAMINING_DUALGEOMETRYVISITOR_H
+#ifndef GPLATES_DATAMINING_DUALGEOMETRYVISITOR_H
+#define GPLATES_DATAMINING_DUALGEOMETRYVISITOR_H
 
 #include <boost/type_traits/is_void.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
@@ -144,4 +144,4 @@ namespace GPlatesDataMining
 	};
 }
 
-#endif
+#endif  // GPLATES_DATAMINING_DUALGEOMETRYVISITOR_H
