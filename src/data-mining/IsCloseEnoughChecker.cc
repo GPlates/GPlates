@@ -206,7 +206,7 @@ template<class GeometryType>
 boost::optional<double>
 GPlatesDataMining::IsCloseEnoughChecker::test_proximity(
 		const GeometryType* geometry, 
-		const PointOnSphere* point,
+		const GPlatesMaths::PointOnSphere* point,
 		const double range)
 {
 

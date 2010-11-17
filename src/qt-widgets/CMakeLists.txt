@@ -59,7 +59,6 @@ set(srcs
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
-    CoRegistrationOptionsWidget.cc
     CoRegistrationOptionsWidget.h
     CoRegistrationOptionsWidgetUi.ui
     CoRegLayerConfigurationDialog.cc

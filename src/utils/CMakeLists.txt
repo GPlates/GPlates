@@ -29,11 +29,9 @@ set(srcs
     ExportTemplateFilenameSequenceFormats.h
     ExportTemplateFilenameSequenceImpl.cc
     ExportTemplateFilenameSequenceImpl.h
-    Filter.cc
     Filter.h
     FilterMapOutputHandler.h
     FilterMapReduceWorkFlow.h
-    GenericFilter.cc
     GenericFilter.h
     GenericMapper.h
     GenericReducer.h
@@ -41,7 +39,6 @@ set(srcs
     IdStringSet.cc
     IdStringSet.h
     LatLonAreaSampling.h
-    Mapper.cc
     Mapper.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
