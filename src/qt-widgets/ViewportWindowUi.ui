@@ -179,7 +179,6 @@
    <addaction name="menu_Tools"/>
    <addaction name="menu_Paleomagnetism"/>
    <addaction name="menu_Help"/>
-   <addaction name="menuData_Mining" />
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolbar_canvas_tools">
