@@ -25,11 +25,18 @@
 
 #include <boost/foreach.hpp>
 
+#include "global/CompilerWarnings.h"
 #include "utils/Profile.h"
 
 #include "RegionOfInterestAssociationOperator.h"
 #include "IsCloseEnoughChecker.h"
 #include "DualGeometryVisitor.h"
+
+
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
 
 void
 GPlatesDataMining::RegionOfInterestAssociationOperator::execute(
@@ -62,6 +69,10 @@ GPlatesDataMining::RegionOfInterestAssociationOperator::execute(
 	}
 	return;
 }
+
+// See above
+ENABLE_GCC_WARNING("-Wshadow")
+
 
 void
 GPlatesDataMining::RegionOfInterestAssociationOperator::associate(

@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "global/CompilerWarnings.h"
 #include "QDoubleSpinBox"
 #include "QFileDialog"
 
@@ -68,6 +69,11 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_target_files() const
 }
 
 
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
+
 std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_files(
 		const QString& channel_name) const
@@ -111,6 +117,9 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_files(
 	}
 	return files;
 }
+
+// See above
+ENABLE_GCC_WARNING("-Wshadow")
 
 
 void

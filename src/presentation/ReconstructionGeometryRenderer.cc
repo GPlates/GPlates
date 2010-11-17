@@ -27,6 +27,7 @@
 
 #include <boost/foreach.hpp>
 
+#include "global/CompilerWarnings.h"
 #include "ReconstructionGeometryRenderer.h"
 
 #include "app-logic/ApplicationState.h"
@@ -422,6 +423,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 }
 
 
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
+
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr)
@@ -457,4 +463,6 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	}
 }
 
+// See above
+ENABLE_GCC_WARNING("-Wshadow")
 

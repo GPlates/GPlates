@@ -25,6 +25,7 @@
 #include <map>
 #include <algorithm>
 
+#include "global/CompilerWarnings.h"
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
 
@@ -83,6 +84,12 @@ GPlatesDataMining::DataSelector::select(
 	return;
 }
 #endif 
+
+
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
 
 void
 DataSelector::select(
@@ -153,6 +160,9 @@ DataSelector::select(
 		ret.push_back( row );
 	}//end of first loop (for each seed)
 }//end of the function
+
+// See above
+ENABLE_GCC_WARNING("-Wshadow")
 
 
 namespace
@@ -245,6 +255,11 @@ namespace
 	}
 
 
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
+
 	void
 	construct_feature_collection_handle_and_reconstructed_feature_geometries_map(
 			const std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type>& input,
@@ -290,6 +305,10 @@ namespace
 		}
 	}
 
+// See above
+ENABLE_GCC_WARNING("-Wshadow")
+
+
 	void
 	construct_feature_and_reconstructed_feature_geometries_map(
 			const std::vector<GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type>& rgcs,
@@ -329,6 +348,11 @@ namespace
 	}
 }
 
+
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
 
 void
 DataSelector::select(
@@ -390,6 +414,9 @@ DataSelector::select(
 	}
 	return;
 }
+
+// See above
+ENABLE_GCC_WARNING("-Wshadow")
 
 
 void
