@@ -176,6 +176,16 @@ namespace GPlatesMaths
 		{  }
 
 
+		/*
+		* Create a default point on sphere.
+		*/
+		explicit 
+		PointOnSphere():
+			GeometryOnSphere(),
+			d_position_vector(UnitVector3D(1,0,0))
+		{  }
+
+
 		virtual
 		ProximityHitDetail::maybe_null_ptr_type
 		test_proximity(
@@ -213,6 +223,15 @@ namespace GPlatesMaths
 				const PointOnSphere &other)
 		{
 			d_position_vector = other.d_position_vector;
+			return *this;
+		}
+
+
+		PointOnSphere &
+		operator=(
+				const UnitVector3D &position_vec)
+		{
+			d_position_vector = position_vec;
 			return *this;
 		}
 

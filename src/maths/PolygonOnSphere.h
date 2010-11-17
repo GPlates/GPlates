@@ -158,7 +158,7 @@ namespace GPlatesMaths
 		 * The type used to const_iterate over the vertices.
 		 */
 		typedef boost::transform_iterator<gca_start_point_fn_type, const_iterator> vertex_const_iterator;
-
+		typedef vertex_const_iterator VertexConstIterator;
 
 		/**
 		 * The possible return values from the construction-parameter

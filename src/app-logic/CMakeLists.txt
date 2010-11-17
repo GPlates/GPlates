@@ -25,6 +25,10 @@ set(srcs
     CgalUtils.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
+    CoRegistrationData.cc
+    CoRegistrationData.h
+    CoRegistrationLayerTask.cc
+    CoRegistrationLayerTask.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc

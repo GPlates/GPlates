@@ -126,6 +126,11 @@ namespace GPlatesPresentation
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr);
+
 	private:
 		GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 		StyleParams d_style_params;

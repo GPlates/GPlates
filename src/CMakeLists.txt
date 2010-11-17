@@ -171,7 +171,7 @@ set(gui_LIBS
 set(presentation_LIBS
 	view-operations presentation gui canvas-tools)
 set(app_LIBS
-	app-logic file-io feature-visitors opengl property-values model)
+	app-logic file-io feature-visitors opengl property-values model data-mining)
 set(util_LIBS
 	maths utils global)
 

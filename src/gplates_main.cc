@@ -54,6 +54,8 @@
 #include "utils/Profile.h"
 #include "utils/CommandLineParser.h"
 
+//Data-mining temporary code
+extern bool enable_data_mining;
 
 namespace {
 
@@ -78,6 +80,8 @@ namespace {
 	const char *ROTATION_FILE_OPTION_NAME = "rotation-file";
 	const char *LINE_FILE_OPTION_NAME = "line-file";
 	const char *DEBUG_GUI_OPTION_NAME = "debug-gui";
+	//Data-mining temporary code: enable data-mining feature by secret command line option.
+	const char *DATA_MINING_OPTION_NAME = "show-me-data-mining-feature-please";
 
 	void
 	print_usage(
@@ -132,6 +136,10 @@ namespace {
 			(DEBUG_GUI_OPTION_NAME, "Enable GUI debugging menu")
 			;
 
+		// Temporary code. Add secret data-mining options.
+		input_options.hidden_options.add_options()
+			(DATA_MINING_OPTION_NAME, "Enable data mining feature");
+
 		boost::program_options::variables_map vm;
 
 		try
@@ -182,6 +190,11 @@ namespace {
 		if(vm.count(DEBUG_GUI_OPTION_NAME))
 		{
 			command_line_options.debug_gui = true;
+		}
+		//Data-mining temporary code: enable data mining feature by command line option.
+		if(vm.count(DATA_MINING_OPTION_NAME))
+		{
+			enable_data_mining = true;
 		}
 
 		return command_line_options;

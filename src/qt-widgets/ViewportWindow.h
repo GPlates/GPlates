@@ -114,6 +114,7 @@ namespace GPlatesQtWidgets
 	class AssignReconstructionPlateIdsDialog;
 	class CalculateReconstructionPoleDialog;
 	class ColouringDialog;
+	class DataAssociationDialog;
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
@@ -410,7 +411,6 @@ namespace GPlatesQtWidgets
 		void
 		update_tools_and_status_message();
 
-
 		void
 		use_small_canvas_tool_icons(
 				bool use_small_icons);
@@ -426,6 +426,9 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		install_gui_debug_menu();
+
+		void
+		install_data_mining_menu();
 
 	private:
 		//! Returns the application state.
@@ -487,6 +490,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
+		boost::scoped_ptr<DataAssociationDialog> d_data_association_dialog_ptr;
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
@@ -730,6 +734,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_total_reconstruction_sequences_dialog();
+
+		void
+		pop_up_data_association_dialog();
 
 		void
 		handle_visual_layer_added(

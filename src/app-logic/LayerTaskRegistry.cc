@@ -36,6 +36,7 @@
 #include "TopologyBoundaryResolverLayerTask.h"
 #include "TopologyNetworkResolverLayerTask.h"
 #include "VelocityFieldCalculatorLayerTask.h"
+#include "CoRegistrationLayerTask.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -329,6 +330,13 @@ GPlatesAppLogic::register_default_layer_task_types(
 			&VelocityFieldCalculatorLayerTask::can_process_feature_collection,
 			&VelocityFieldCalculatorLayerTask::is_primary_layer_task_type,
 			GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR);
+
+	// Layer task to do co-registration.
+	layer_task_registry.register_layer_task_type(
+			&CoRegistrationLayerTask::create_layer_task,
+			&CoRegistrationLayerTask::can_process_feature_collection,
+			&CoRegistrationLayerTask::is_primary_layer_task_type,
+			GPlatesAppLogic::LayerTaskType::CO_REGISTRATION);
 
 	//
 	// Set the layer task type to use when no registered layer task types can process

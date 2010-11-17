@@ -42,6 +42,7 @@
 #include "unit-test/ViewOperationsTestSuite.h"
 #include "unit-test/GuiTestSuite.h"
 #include "unit-test/MathsTestSuite.h"
+#include "unit-test/DataMiningTestSuite.h"
 
 
 
@@ -61,6 +62,7 @@ void GPlatesUnitTest::MainTestSuite::construct_maps()
 	ADD_TESTSUITE(ViewOperations);
 	ADD_TESTSUITE(Gui);
 	ADD_TESTSUITE(Maths);
+	ADD_TESTSUITE(DataMining);
 }
 
 void GPlatesUnitTest::MainTestSuite::add_test_suites()

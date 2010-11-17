@@ -46,6 +46,7 @@ namespace GPlatesAppLogic
 			TOPOLOGY_BOUNDARY_RESOLVER,
 			TOPOLOGY_NETWORK_RESOLVER,
 			VELOCITY_FIELD_CALCULATOR,
+			CO_REGISTRATION,
 			// Entries for new built-in layer task types should go here.
 
 			// The following two members should be the third-last and second-last,

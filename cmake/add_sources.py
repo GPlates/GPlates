@@ -18,6 +18,7 @@ GPLATES_SUB_DIRECTORIES = [
 	'app-logic',
     'canvas-tools',
 	'cli',
+	'data-mining',
     'feature-visitors',
     'file-io',
     'global',

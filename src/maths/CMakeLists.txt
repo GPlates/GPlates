@@ -83,7 +83,10 @@ set(srcs
     Rotation.h
     SmallCircle.cc
     SmallCircle.h
+    SphereSettings.h
     SphericalCollection.h
+    SphericalDistance.cc
+    SphericalDistance.h
     TrailingLatLonCoordinateException.cc
     TrailingLatLonCoordinateException.h
     types.h

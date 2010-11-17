@@ -29,10 +29,20 @@ set(srcs
     ExportTemplateFilenameSequenceFormats.h
     ExportTemplateFilenameSequenceImpl.cc
     ExportTemplateFilenameSequenceImpl.h
+    Filter.cc
+    Filter.h
+    FilterMapOutputHandler.h
+    FilterMapReduceWorkFlow.h
+    GenericFilter.cc
+    GenericFilter.h
+    GenericMapper.h
+    GenericReducer.h
     GeometryCreationUtils.h
     IdStringSet.cc
     IdStringSet.h
     LatLonAreaSampling.h
+    Mapper.cc
+    Mapper.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
@@ -42,6 +52,8 @@ set(srcs
     Profile.cc
     Profile.h
     QtFormattingUtils.h
+    Reducer.cc
+    Reducer.h
     ReferenceCount.h
     SafeBool.h
     Select.h

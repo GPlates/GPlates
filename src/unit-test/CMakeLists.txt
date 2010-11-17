@@ -17,10 +17,22 @@ set(srcs
     AppLogicTestSuite.h
     CanvasToolsTestSuite.cc
     CanvasToolsTestSuite.h
+    DataAssociationDataTableTest.cc
+    DataAssociationDataTableTest.h
+    DataAssociationTest.cc
+    DataAssociationTest.h
+    DataMiningTestSuite.cc
+    DataMiningTestSuite.h
+    DataSelectorTest.cc
+    DataSelectorTest.h
+    FeatureHandleTest.cc
+    FeatureHandleTest.h
     FeatureVisitorsTestSuite.cc
     FeatureVisitorsTestSuite.h
     FileIoTestSuite.cc
     FileIoTestSuite.h
+    FilterTest.cc
+    FilterTest.h
     GeometryVisitorsTestSuite.cc
     GeometryVisitorsTestSuite.h
     GlobalTestSuite.cc
@@ -40,6 +52,8 @@ set(srcs
     MipmapperTest.h
     ModelTestSuite.cc
     ModelTestSuite.h
+    MultiThreadTest.cc
+    MultiThreadTest.h
     PresentationTestSuite.cc
     PresentationTestSuite.h
     PropertyValuesTestSuite.cc
@@ -48,6 +62,8 @@ set(srcs
     RealTest.h
     SmartNodeLinkedListTest.cc
     SmartNodeLinkedListTest.h
+    SphericalDistanceTest.cc
+    SphericalDistanceTest.h
     StringSetTest.cc
     StringSetTest.h
     TestSuiteFilter.cc

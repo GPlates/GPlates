@@ -25,9 +25,12 @@
 
 #include <cstddef> // For std::size_t
 
+#include <boost/foreach.hpp>
+
 #include "ReconstructionGeometryRenderer.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/CoRegistrationData.h"
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
@@ -36,6 +39,8 @@
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/PlateVelocityUtils.h"
 #include "app-logic//VGPRenderSettings.h"
+
+#include "data-mining/DataTable.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -415,3 +420,41 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	render_topological_network_velocities(rtn, d_rendered_geometry_layer, d_style_params, d_colour);
 }
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr)
+{
+	//TODO: 
+	// Add to the rendered geometry layer.
+	using namespace GPlatesDataMining;
+	using namespace GPlatesAppLogic;
+	using namespace GPlatesMaths;
+
+	const DataTable& table = crr->data_table();
+	BOOST_FOREACH(const DataTable::value_type& row, table )
+	{
+		const std::vector< const ReconstructedFeatureGeometry* >& rfgs = row->seed_rfgs();
+		BOOST_FOREACH(const ReconstructedFeatureGeometry* rfg, rfgs )
+		{
+			GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						rfg->geometry(), crr, d_style_params, GPlatesGui::Colour::get_red());
+			d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+			
+			const PointOnSphere* point = dynamic_cast<const PointOnSphere*>(rfg->geometry().get());
+			if(point)
+			{
+				GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
+					GPlatesViewOperations::create_rendered_small_circle(
+							*point,
+							GPlatesMaths::convert_deg_to_rad(12),
+							GPlatesGui::Colour::get_red());
+				d_rendered_geometry_layer.add_rendered_geometry(rendered_small_circle);	
+			}
+		}
+	}
+}
+
+

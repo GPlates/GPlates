@@ -59,12 +59,21 @@ set(srcs
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
+    CoRegistrationOptionsWidget.cc
+    CoRegistrationOptionsWidget.h
+    CoRegistrationOptionsWidgetUi.ui
+    CoRegLayerConfigurationDialog.cc
+    CoRegLayerConfigurationDialog.h
+    CoRegLayerConfigurationDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
+    DataAssociationDialog.cc
+    DataAssociationDialog.h
+    DataAssociationDialogUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
@@ -235,6 +244,9 @@ set(srcs
     ReconstructionViewWidget.cc
     ReconstructionViewWidget.h
     ReconstructionViewWidgetUi.ui
+    ResultTableDialog.cc
+    ResultTableDialog.h
+    ResultTableDialogUi.ui
     SaveFileDialog.cc
     SaveFileDialog.h
     SceneView.h

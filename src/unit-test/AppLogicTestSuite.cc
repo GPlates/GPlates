@@ -29,6 +29,7 @@
 #include "unit-test/AppLogicTestSuite.h"
 #include "unit-test/ApplicationStateTest.h"
 #include "unit-test/TestSuiteFilter.h"
+#include "unit-test/DataAssociationDataTableTest.h"
 #include "unit-test/MeshGeneratorTest.h"
 
 

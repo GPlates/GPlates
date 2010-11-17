@@ -37,7 +37,10 @@
 
 #include "qt-widgets/RasterLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
+#include "qt-widgets/CoRegistrationOptionsWidget.h"
 
+//Data-mining temporary code
+extern bool enable_data_mining;
 
 namespace
 {
@@ -373,6 +376,20 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				VELOCITY_FIELD_CALCULATOR),
 			&no_widget);
+
+	if(enable_data_mining)//Data-mining temporary code
+	{
+		registry.register_visual_layer_type(
+				VisualLayerType::Type(CO_REGISTRATION),
+				"Co-registration tool",
+				"Co-registration tool for data mining",
+				*html_colours.get_colour("tomato"),
+				CreateAppLogicLayer(
+					reconstruct_graph,
+					layer_task_registry,
+					CO_REGISTRATION),
+				&GPlatesQtWidgets::CoRegistrationOptionsWidget::create);
+	}
 
 	//
 	// The following visual layer types do not have corresponding app-logic layers
