@@ -24,6 +24,7 @@
  */
 #include <map>
 #include <algorithm>
+#include <QCoreApplication>
 
 #include "global/CompilerWarnings.h"
 #include <boost/assign.hpp>
@@ -35,8 +36,6 @@
 #include "RegionOfInterestFilter.h"
 
 #include "maths/Real.h"
-
-#include "qt-widgets/DataAssociationDialog.h"
 
 #include "utils/Profile.h"
 
