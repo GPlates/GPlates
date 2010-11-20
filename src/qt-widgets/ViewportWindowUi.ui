@@ -106,6 +106,7 @@
     </property>
     <addaction name="action_Show_Layers"/>
     <addaction name="action_Manage_Colouring"/>
+    <addaction name="action_Manage_Small_Circles"/>
     <addaction name="separator"/>
     <addaction name="action_Show_Point_Features"/>
     <addaction name="action_Show_Line_Features"/>
@@ -1481,6 +1482,11 @@
   <action name="action_Show_Bottom_Panel_Placeholder">
    <property name="text">
     <string>Show &amp;Bottom Panel (Placeholder)</string>
+   </property>
+  </action>
+  <action name="action_Manage_Small_Circles">
+   <property name="text">
+    <string>Manage Small Circles...</string>
    </property>
   </action>
  </widget>

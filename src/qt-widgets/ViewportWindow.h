@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -127,6 +128,7 @@ namespace GPlatesQtWidgets
 	class SetProjectionDialog;
 	class SetVGPVisibilityDialog;
 	class ShapefileAttributeViewerDialog;
+	class SmallCircleManager;
 	class SpecifyAnchoredPlateIdDialog;
 	class TaskPanel;
 	class TotalReconstructionPolesDialog;
@@ -502,6 +504,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
 		boost::scoped_ptr<SetVGPVisibilityDialog> d_set_vgp_visibility_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
+		boost::scoped_ptr<SmallCircleManager> d_small_circle_manager_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionSequencesDialog> d_total_reconstruction_sequences_dialog_ptr;
@@ -786,6 +789,10 @@ namespace GPlatesQtWidgets
 
 		void
 		open_new_window();
+
+		void
+		pop_up_small_circle_manager();
+
 
 	protected:
 	

@@ -67,6 +67,9 @@ set(srcs
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
+	CreateSmallCircleDialog.cc
+	CreateSmallCircleDialog.h
+	CreateSmallCircleDialogUi.ui
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
@@ -277,6 +280,9 @@ set(srcs
     SnapNearbyVerticesWidget.cc
     SnapNearbyVerticesWidget.h
     SnapNearbyVerticesWidgetUi.ui
+	SmallCircleManager.cc
+	SmallCircleManager.h
+	SmallCircleManagerUi.ui
     SpecifyAnchoredPlateIdDialog.cc
     SpecifyAnchoredPlateIdDialog.h
     SpecifyAnchoredPlateIdDialogUi.ui

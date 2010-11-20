@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -74,6 +75,7 @@
 #include "SetVGPVisibilityDialog.h"
 #include "ShapefileAttributeViewerDialog.h"
 #include "ShapefilePropertyMapper.h"
+#include "SmallCircleManager.h"
 #include "SpecifyAnchoredPlateIdDialog.h"
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
@@ -286,6 +288,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new ShapefileAttributeViewerDialog(
 				get_application_state().get_feature_collection_file_state(),
 				this)),
+	d_small_circle_manager_ptr(NULL),
 	d_specify_anchored_plate_id_dialog_ptr(
 			new SpecifyAnchoredPlateIdDialog(
 				this)),
@@ -863,7 +866,12 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(set_layering_dialog_visibility(bool)));
 	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
 			this, SLOT(pop_up_colouring_dialog()));
-	// ----
+	QObject::connect(action_Manage_Small_Circles, SIGNAL(triggered()),
+			this, SLOT(pop_up_small_circle_manager()));
+	QObject::connect(action_Generate_Mesh_Cap, SIGNAL(triggered()),
+		this, SLOT(generate_mesh_cap()));
+	
+	// View Menu:
 	QObject::connect(action_Show_Point_Features, SIGNAL(triggered()),
 			this, SLOT(enable_point_display()));
 	QObject::connect(action_Show_Line_Features, SIGNAL(triggered()),
@@ -2530,6 +2538,22 @@ GPlatesQtWidgets::ViewportWindow::open_new_window()
 	}
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_small_circle_manager()
+{
+	if (!d_small_circle_manager_ptr)
+	{
+		d_small_circle_manager_ptr.reset(
+			new SmallCircleManager(
+				get_view_state().get_rendered_geometry_collection(),
+				get_application_state(),
+				this));
+	}
+
+	d_small_circle_manager_ptr->show();
+	d_small_circle_manager_ptr->activateWindow();
+	d_small_circle_manager_ptr->raise();
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::status_message(

@@ -270,6 +270,14 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 	d_rendered_geometry_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
+
+		
+	d_rendered_geometry_collection->set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_LAYER);	
+		
+	
+			
+
 	// Activate the main rendered layer.
 	// Specify which main rendered layers are orthogonal to each other - when
 	// one is activated the others are automatically deactivated.
