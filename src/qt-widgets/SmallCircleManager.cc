@@ -146,9 +146,6 @@ namespace
 		table_widget->clearContents();
 		table_widget->setRowCount(0);
 
-		qDebug() << "size of small circles container: " << small_circles.size();
-		qDebug() << "rows in table: " << table_widget->rowCount(); 
-
 		std::vector<SmallCircle>::const_iterator it = small_circles.begin(),
 											   end = small_circles.end();
 		for (; it != end ; ++it)
