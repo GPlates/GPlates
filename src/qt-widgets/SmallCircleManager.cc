@@ -24,6 +24,7 @@
  */
 
 #include <QDebug>
+#include <QHeaderView>
 #include <QMessageBox>
 #include <QTableWidget>
 #include <QTableWidgetItem>
