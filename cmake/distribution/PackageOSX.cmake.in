@@ -78,9 +78,22 @@ function(gp_item_default_embedded_path_override item default_embedded_path_var)
   set(${default_embedded_path_var} "${path}" PARENT_SCOPE)
 endfunction(gp_item_default_embedded_path_override)
 
-# Copy the application bundle to the staging area location first.
+# Get the location, inside the staging area location, to copy the application bundle to.
 EXECUTE_PROCESS(
-		COMMAND "@OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT@"
+		COMMAND "@OSX_GET_BUNDLE_STAGING_AREA_LOCATION_SHELL_SCRIPT@" "@CMAKE_SOURCE_DIR@" "@GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING@"
+		RESULT_VARIABLE OSX_GET_BUNDLE_STAGING_AREA_LOCATION_RESULT
+		OUTPUT_VARIABLE OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT
+	   )
+
+IF (OSX_GET_BUNDLE_STAGING_AREA_LOCATION_RESULT)
+		MESSAGE(FATAL_ERROR "Error determining location in CPack staging area to copy built Mac OSX bundle to.")
+ENDIF (OSX_GET_BUNDLE_STAGING_AREA_LOCATION_RESULT)
+
+
+# Copy the application bundle to the staging area location.
+MESSAGE("Bundle location is ${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}")
+EXECUTE_PROCESS(
+		COMMAND "@OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT@" "${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}"
 		RESULT_VARIABLE OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_RESULT
 	   )
 
@@ -92,7 +105,7 @@ ENDIF (OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_RESULT)
 # This will copy any non-system libraries into the bundle making it standalone.
 # fixup_bundle() will generate a FATAL_ERROR if bundle fails validation.
 include(BundleUtilities)
-fixup_bundle("@STAGING_AREA_FOR_CPACK@/@GPLATES_MAIN_TARGET@.app"
+fixup_bundle("${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app"
 	"@GPLATES_QT_PLUGINS_ABSOLUTE@"
 	"@GPLATES_QT_PLUGIN_PATHS_ABSOLUTE@;/usr/local/lib;/usr/lib;/opt/local/lib")
 
@@ -102,7 +115,7 @@ fixup_bundle("@STAGING_AREA_FOR_CPACK@/@GPLATES_MAIN_TARGET@.app"
 EXECUTE_PROCESS(
 		COMMAND "@CMAKE_COMMAND@" -E copy
 			"@GPLATES_SOURCE_DISTRIBUTION_DIR@/qt.conf" 
-			"@STAGING_AREA_FOR_CPACK@/@GPLATES_MAIN_TARGET@.app/Contents/Resources/qt.conf" 
+			"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/qt.conf" 
 		RESULT_VARIABLE COPY_QT_CONF_RESULT
 		)
 

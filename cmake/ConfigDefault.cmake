@@ -69,7 +69,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # This is manually set when making GPlates *public* releases.
 # However, when making internal releases or just an ordinary developer build, leave it
 # empty; if it is empty, the revision number is automatically populated for you on build.
-set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "")
+set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "10012")
 
 # List the Qt plugins used by GPlates.
 # This is needed for packaging standalone versions of GPlates for a binary installer.
@@ -102,12 +102,12 @@ set(GPLATES_QT_PLUGINS_LINUX
 # NOTE: each file/directory listed should have its own double quotes as this is a list variable.
 # NOTE: it's better to override this in 'cmake/ConfigUser.cmake' instead of changing it here
 # to make sure this change does not inadvertently get checked into source code control.
-set(GPLATES_BINARY_INSTALL_EXTRAS "")
+set(GPLATES_BINARY_INSTALL_EXTRAS "~/gplates/data/0.9.10.1/sample-data")
 
 # Set to 'true' if this is a public code release (to non-developers).
 # Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
-set(GPLATES_PUBLIC_RELEASE false)
+set(GPLATES_PUBLIC_RELEASE true)
 
 # Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
 # Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.

@@ -351,18 +351,20 @@ IF (APPLE)
 	if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
 		if (NOT EXISTS "${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt")
 		    file(WRITE "${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt"
-			"To install GPlates drag the 'GPlates' bundle onto the 'Applications' shortcut"
-			" or copy it to a folder on your hard drive.\n"
-			"You can also copy the sample data to a folder of your choice.\n")
+			"To install drag the GPlates folder onto the 'Applications' shortcut"
+			" or copy it to another location on your hard drive.\n"
+			"The folder contains a 'GPlates' application bundle and some sample data.\n")
 		endif (NOT EXISTS "${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt")
-		# Add 'INSTALL.txt' to the list of extras to be copied to installer.
-		set(GPLATES_BINARY_INSTALL_EXTRAS
-			"${GPLATES_BINARY_INSTALL_EXTRAS} ${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt")
+		# Add 'INSTALL.txt' to the list of extras to be copied to the CPACK staging area.
+		set(GPLATES_CPACK_STAGING_AREA_EXTRAS
+			"${GPLATES_CPACK_STAGING_AREA_EXTRAS} ${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt")
 	endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
 
 	# Set some configure variables that will be used by the following "CONFIGURE_FILE()" commands.
 	SET(BUILT_BUNDLE "${EXECUTABLE_OUTPUT_PATH}/${GPLATES_MAIN_TARGET}.app")
 	SET(PACKAGE_CPACK_CONFIG "${GPLATES_BINARY_DISTRIBUTION_DIR}/Package.cpack")
+	SET(OSX_GET_BUNDLE_STAGING_AREA_LOCATION_SHELL_SCRIPT
+		"${GPLATES_BINARY_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh")
 	SET(OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT
 		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh")
 	SET(OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT
@@ -391,6 +393,7 @@ IF (APPLE)
 	# When the shell scripts get created by configure_file it should copy the file permissions.
 	EXECUTE_PROCESS(
 			COMMAND chmod +x
+			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh.in"
 			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh.in"
 			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/CreateInstallerFromStandaloneBundle.sh.in"
 			RESULT_VARIABLE EXECUTE_CHMOD_RESULT
@@ -398,12 +401,16 @@ IF (APPLE)
 
 	IF (EXECUTE_CHMOD_RESULT)
 			MESSAGE("Unable to set execute permissions on "
+			"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_SHELL_SCRIPT} and "
 			"${OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT} and "
 			"${OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT}.")
 			MESSAGE("You will need to set their execute permissions manually.")
 	ENDIF (EXECUTE_CHMOD_RESULT)
 
 	# Configure the shell scripts.
+	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh.in"
+		"${GPLATES_BINARY_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh" @ONLY IMMEDIATE)
+
 	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh.in"
 		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh" @ONLY IMMEDIATE)
 
