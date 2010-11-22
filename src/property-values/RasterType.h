@@ -26,14 +26,7 @@
 #ifndef GPLATES_PROPERTYVALUES_RASTERTYPE_H
 #define GPLATES_PROPERTYVALUES_RASTERTYPE_H
 
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#endif
 #include <boost/cstdint.hpp>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#	include <cstdint>
-#endif
 
 #include "gui/Colour.h"
 

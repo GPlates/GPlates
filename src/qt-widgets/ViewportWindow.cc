@@ -23,7 +23,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -66,6 +66,7 @@
 #include "InformationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "MapView.h"
+#include "MeshDialog.h"
 #include "PreferencesDialog.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -157,7 +158,6 @@
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 
-#include "MeshDialog.h"
 
 //Data-mining temporary code
 extern bool enable_data_mining;

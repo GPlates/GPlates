@@ -30,14 +30,7 @@
 
 #include <algorithm>
 #include <iosfwd>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#endif
 #include <boost/cstdint.hpp>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#	include <cstdint>
-#endif
 #include <opengl/OpenGL.h>
 #include <QColor>
 

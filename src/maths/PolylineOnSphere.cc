@@ -30,9 +30,7 @@
 
 #include <list>
 #include <sstream>
-#ifdef HAVE_PYTHON
-# include <boost/python.hpp>
-#endif
+
 #include "PolylineOnSphere.h"
 #include "PolylineProximityHitDetail.h"
 #include "ProximityCriteria.h"
@@ -370,42 +368,4 @@ GPlatesMaths::InvalidPointsForPolylineConstructionError::write_message(
 		os << message;
 	}
 }
-
-
-#ifdef HAVE_PYTHON
-/**
- * Here begin the Python wrappers
- */
-
-
-using namespace boost::python;
-
-
-// *** what about VertextConstIterator?
-
-
-void
-GPlatesMaths::export_PolylineOnSphere()
-{
-	class_<GPlatesMaths::PolylineOnSphere>("PolylineOnSphere", init<const PolylineOnSphere &>())
-		// .def("create_on_heap", &GPlatesMaths::PolylineOnSphere::create_on_heap).staticmethod("create_on_heap")
-		// .def("clone_on_heap", &GPlatesMaths::PolylineOnSphere::clone_on_heap).staticmethod("clone_on_heap")
-		// *** VARIOUS TEMPLATE CONSTRUCTORS ***
-		//.def("assign", &GPlatesMaths::PolylineOnSphere::operator=)
-		.def("number_of_vertices", &GPlatesMaths::PolylineOnSphere::number_of_vertices)
-		.def("start_point", &GPlatesMaths::PolylineOnSphere::start_point,
-				return_internal_reference<1>())
-		.def("end_point", &GPlatesMaths::PolylineOnSphere::end_point,
-				return_internal_reference<1>())
-		.def("swap", &GPlatesMaths::PolylineOnSphere::swap)
-		.def("is_close_to", &GPlatesMaths::PolylineOnSphere::is_close_to,
-				args("test_point", "latitude_exclusion_threshold", "closeness"))
-	;
-	// def("get_antipodal_point", &GPlatesMaths::get_antipodal_point, args("p"));
-	def("polylines_are_directed_equivalent", &GPlatesMaths::polylines_are_directed_equivalent,
-			args("poly1", "poly2"));
-	def("polylines_are_undirected_equivalent", &GPlatesMaths::polylines_are_undirected_equivalent,
-			args("poly1", "poly2"));
-}
-#endif
 

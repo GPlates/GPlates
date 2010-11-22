@@ -1,20 +1,23 @@
 # Find our required libraries.
 set(required_libs "Qt4" "OpenGL" "GLEW" "ICU" "GDAL" "GZIP" "PROJ4" "CGAL")
+if(GPLATES_HAS_PYTHON)
+	set(required_libs ${required_libs} "PythonLibs")
+endif(GPLATES_HAS_PYTHON)
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
-
-# We need to use static libraries for boost because we need to link to the main 
-#funtion in the unit test framework statically. Otherwise, the g++ cannot find the 
-#main entrance when linking gplates-unit-test executable. 
-SET (Boost_USE_STATIC_LIBS ON)
 
 # The Boost package is a special case - it is mostly just headers with some object libraries.
 # We don't specify the REQUIRE option like the above packages because:
 # - it fails if the COMPONENTS libraries are not found, and
 # - we only need the unit_test_framework boost library for the unit-test version of GPLates (gplates-unit-test), and
 # - since boost is mostly just headers we can still compile the GUI version of GPlates.
-find_package("Boost" 1.33.1 COMPONENTS program_options unit_test_framework)
+set(boost_components program_options unit_test_framework)
+if(GPLATES_HAS_PYTHON)
+	set(boost_components ${boost_components} python)
+endif(GPLATES_HAS_PYTHON)
+find_package("Boost" 1.34.1 COMPONENTS ${boost_components})
+
 # However we do need to find the boost include directory to locate the headers.
 if (NOT Boost_INCLUDE_DIR)
 	message(FATAL_ERROR "Boost include path not found - please make sure boost is installed.")
@@ -32,9 +35,6 @@ if (NOT Boost_PROGRAM_OPTIONS_FOUND)
 	message(FATAL_ERROR "Boost program_options library not found - please make sure it is installed.")
 endif (NOT Boost_PROGRAM_OPTIONS_FOUND)
 
-# Add a target to build the command-line version of GPlates.
-set(ADD_GPLATES_CLI_TARGET TRUE)
-
 if (Boost_UNIT_TEST_FRAMEWORK_FOUND)
     set(ADD_UNIT_TEST_TARGET TRUE)
 else (Boost_UNIT_TEST_FRAMEWORK_FOUND)
@@ -44,6 +44,15 @@ else (Boost_UNIT_TEST_FRAMEWORK_FOUND)
 		message(STATUS "Warning: boost unit_test_framework not found so GPlates unit-test executable gplates-unit-test will not be available.")
 	endif (NOT GPLATES_PUBLIC_RELEASE)
 endif (Boost_UNIT_TEST_FRAMEWORK_FOUND)
+
+if(GPLATES_HAS_PYTHON)
+	if (NOT Boost_PYTHON_FOUND)
+		message(FATAL_ERROR "Boost Python library not found - please make sure it is installed.")
+	endif (NOT Boost_PYTHON_FOUND)
+endif(GPLATES_HAS_PYTHON)
+
+# Add a target to build the command-line version of GPlates.
+set(ADD_GPLATES_CLI_TARGET TRUE)
 
 # Mac OS 10.4 produced alot of "error: template with C linkage" errors when using -isystem for 'src/system-fixes' directory.
 # Mac OS 10.5 was fine though - could just be the g++ compiler version (was 4.0.0 on OS 10.4 and 4.0.1 on OS 10.5).
@@ -113,7 +122,7 @@ endif ( NOT WIN32 )
 if ( NOT WIN32 )
 	# Restore CMAKE_BUILD_TYPE before we kludged it for CGAL (see above).
 	set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_BEFORE_CGAL})
-	message("-- Build type: ${CMAKE_BUILD_TYPE}")
+	message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 endif ( NOT WIN32 )
 
 # Tell Qt that we use QtXML.
@@ -171,7 +180,7 @@ set(gui_LIBS
 set(presentation_LIBS
 	view-operations presentation gui canvas-tools)
 set(app_LIBS
-	app-logic file-io feature-visitors opengl property-values model data-mining)
+	app-logic file-io feature-visitors opengl property-values model data-mining api)
 set(util_LIBS
 	maths utils global)
 
@@ -231,13 +240,18 @@ set(generated_headers_INCLUDE_DIRS
 # External include directories:
 # NOTE: Qt, ICU and CGAL includes are taken care of by including QT_USE_FILE, ICU_USE_FILE and CGAL_USE_FILE.
 set(external_INCLUDE_DIRS
+	${GPlates_SOURCE_DIR}/src/system-fixes	# Contains files copied from external libraries
 	${OPENGL_INCLUDE_DIR}
 	${GLEW_INCLUDE_DIR}
 	${GDAL_INCLUDE_DIR}
-	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
 	${Boost_INCLUDE_DIR}
 	${PROJ4_INCLUDE_DIR}
 	${ImageMagick_INCLUDE_DIRS})
+if(GPLATES_HAS_PYTHON)
+	set(external_INCLUDE_DIRS
+		${external_INCLUDE_DIRS}
+		${PYTHON_INCLUDE_PATH})
+endif(GPLATES_HAS_PYTHON)
 	
 # Internal include directories:
 set(internal_INCLUDE_DIRS
@@ -379,6 +393,19 @@ endif (ADD_UNIT_TEST_TARGET)
 # Referenced in "Package.cmake" so it knows which executable to package up.
 set(GPLATES_MAIN_TARGET gplates)
 
+# Add Python module library target.
+if(GPLATES_HAS_PYTHON)
+	message(STATUS "Adding GPlates Python module.")
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
+	add_library(pygplates MODULE
+		${target_GPlates_SRCS}
+		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
+	set_target_properties(pygplates PROPERTIES PREFIX "")
+	if(WIN32)
+		set_target_properties(pygplates PROPERTIES SUFFIX ".pyd")
+	endif(WIN32)
+endif(GPLATES_HAS_PYTHON)
+
 if (APPLE)
 	# Copy icon file to 'Resources' directory inside application bundle.
 	set_source_files_properties(${GPlates_ICON} PROPERTIES
@@ -421,6 +448,11 @@ set(dependency_LIBS
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
 	${ImageMagick_LIBRARIES})
+if(GPLATES_HAS_PYTHON)
+	set(dependency_LIBS
+		${dependency_LIBS}
+		${PYTHON_LIBRARIES})
+endif(GPLATES_HAS_PYTHON)
 
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
@@ -438,10 +470,12 @@ target_link_libraries(gplates-no-gui ${GPlates_LIBS} ${dependency_LIBS} ${GPlate
 if (ADD_GPLATES_CLI_TARGET)
 	target_link_libraries(gplates-cli ${GPlates_cli_LIBS} ${dependency_LIBS} ${GPlates_cli_LIBS})
 endif (ADD_GPLATES_CLI_TARGET)
-
 if (ADD_UNIT_TEST_TARGET)
 	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LIBS} ${dependency_LIBS} ${GPlates_unit_test_LIBS})
 endif (ADD_UNIT_TEST_TARGET)
+if (GPLATES_HAS_PYTHON)
+	target_link_libraries(pygplates ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
+endif (GPLATES_HAS_PYTHON)
 
 # Current binary directory must be included first for g++ pre-compiled headers.
 # There's a '_pch.h' file in current source and current binary directory however the '_pch.h.gch' pre-compiled header
@@ -503,3 +537,9 @@ endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
 if (CMAKE_COMPILER_IS_GNUCXX)
 	set_source_files_properties(gplates_cli_main.cc PROPERTIES COMPILE_FLAGS "-Wno-shadow")
 endif (CMAKE_COMPILER_IS_GNUCXX)
+
+# Test whether Python embedding works.
+# This must be run after the include and library paths have all been set.
+if(GPLATES_HAS_PYTHON)
+	include(TestPythonEmbedding)
+endif(GPLATES_HAS_PYTHON)

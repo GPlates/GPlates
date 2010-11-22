@@ -27,13 +27,6 @@
 #ifndef GPLATES_QTWIDGETS_VIEWPORTWINDOW_H
 #define GPLATES_QTWIDGETS_VIEWPORTWINDOW_H
 
-#ifdef HAVE_PYTHON
-// We need to include this _before_ any Qt headers get included because
-// of a moc preprocessing problems with a feature called 'slots' in the
-// python header file object.h
-# include <boost/python.hpp>
-#endif
-
 #include <vector>
 #include <string>
 #include <list>

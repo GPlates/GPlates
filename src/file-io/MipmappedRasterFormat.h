@@ -28,14 +28,7 @@
 #ifndef GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
 #define GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
 
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#endif
 #include <boost/cstdint.hpp>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#	include <cstdint>
-#endif
 #include <QDataStream>
 
 #include "gui/Colour.h"

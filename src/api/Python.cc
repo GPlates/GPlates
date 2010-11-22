@@ -3,9 +3,9 @@
 /**
  * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,40 +22,20 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#ifndef GPLATES_QTWIDGETS_INSERTIONPOINTWIDGET_H
-#define GPLATES_QTWIDGETS_INSERTIONPOINTWIDGET_H
 
-#include <QWidget>
-#include <QAction>
+#include "global/config.h" // GPLATES_HAS_PYTHON
 
-#include "InsertionPointWidgetUi.h"
+#if defined(GPLATES_HAS_PYTHON)
+#include <boost/python.hpp>
 
+void export_application_state();
 
-namespace GPlatesQtWidgets
+BOOST_PYTHON_MODULE(pygplates)
 {
-	/**
-	 * Lightweight Qt widget to display the 'Insertion Point' arrow
-	 * plus cancel button.
-	 */
-	class InsertionPointWidget:
-			public QWidget, 
-			protected Ui_InsertionPointWidget
-	{
-		Q_OBJECT
-		
-	public:
-		explicit
-		InsertionPointWidget(
-				QAction &action,
-				QWidget *parent_ = NULL):
-			QWidget(parent_)
-		{
-			setupUi(this);
-			toolbutton->setDefaultAction(&action);
-		}
-
-	};
+	export_application_state();
 }
+#else
+// Dummy variable so that this compilation unit isn't empty.
+void *dummy_gplates_python_disabled = 0;
+#endif
 
-#endif  // GPLATES_QTWIDGETS_INSERTIONPOINTWIDGET_H

@@ -25,16 +25,9 @@
 
 #include <iostream>
 #include <fstream>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#endif
 #include <boost/bind.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#	include <cstdint>
-#endif
 
 #include "CommandLineParser.h"
 

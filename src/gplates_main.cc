@@ -24,19 +24,17 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#ifdef HAVE_PYTHON
-// We need to include this _before_ any Qt headers get included because
-// of a moc preprocessing problems with a feature called 'slots' in the
-// python header file object.h
-# include <boost/python.hpp>
-#endif
+
+#include "global/config.h" // GPLATES_HAS_PYTHON
 
 #include <iostream>
 #include <string>
 #include <utility>
 #include <algorithm>
 #include <vector>
+#if defined(GPLATES_HAS_PYTHON)
+#	include <boost/python.hpp>
+#endif
 #include <QStringList>
 #include <QTextStream>
 
@@ -56,6 +54,8 @@
 
 //Data-mining temporary code
 extern bool enable_data_mining;
+
+extern "C" void initpygplates();
 
 namespace {
 
@@ -227,6 +227,29 @@ int internal_main(int argc, char* argv[])
 	// The application state and view state are stored in this object.
 	GPlatesPresentation::Application state;
 
+#if defined(GPLATES_HAS_PYTHON)
+	// Start the embedded Python interpreter and give it access to the ApplicationState.
+	using namespace boost::python;
+	try
+	{
+		char GPLATES_MODULE_NAME[] = "pygplates";
+		PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates);
+
+		Py_Initialize();
+
+		object main_module((handle<>(borrowed(PyImport_AddModule("__main__")))));
+		object main_namespace = main_module.attr("__dict__");
+		object gplates_module((handle<>(PyImport_ImportModule("pygplates"))));
+		main_namespace["pygplates"] = gplates_module;
+		scope(gplates_module).attr("app_state") = ptr(&state.get_application_state());
+		handle<> ignored((PyRun_String("print pygplates.app_state.get_num()\n", Py_file_input, main_namespace.ptr(), main_namespace.ptr())));
+	}
+	catch (const error_already_set &)
+	{
+		PyErr_Print();
+	}
+#endif
+
 	// The main window widget.
 	GPlatesQtWidgets::ViewportWindow main_window_widget(state);
 	main_window_widget.show();
@@ -241,6 +264,8 @@ int internal_main(int argc, char* argv[])
 	}
 
 	return qapplication.exec();
+
+	// Note: Because we are using Boost.Python, Py_Finalize() should not be called.
 }
 
 

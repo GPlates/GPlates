@@ -29,15 +29,8 @@
 #define GPLATES_MODEL_FEATUREHANDLE_H
 
 #include <ctime>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#endif
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#	include <cstdint>
-#endif
 
 #include "BasicHandle.h"
 #include "FeatureId.h"

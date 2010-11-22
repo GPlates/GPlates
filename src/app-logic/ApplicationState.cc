@@ -23,7 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "global/config.h" // GPLATES_HAS_PYTHON
+
 #include <boost/foreach.hpp>
+#if defined(GPLATES_HAS_PYTHON)
+#	include <boost/python.hpp>
+#endif
 
 #include "ApplicationState.h"
 
@@ -624,4 +629,15 @@ GPlatesAppLogic::ApplicationState::create_layers(
 		handle_setting_default_reconstruction_tree_layer(input_file_ref);
 	}
 }
+
+#if defined(GPLATES_HAS_PYTHON)
+void
+export_application_state()
+{
+	using namespace boost::python;
+
+	class_<GPlatesAppLogic::ApplicationState, boost::noncopyable>("ApplicationState")
+		.def("get_num", &GPlatesAppLogic::ApplicationState::get_num);
+}
+#endif
 

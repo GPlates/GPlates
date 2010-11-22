@@ -95,29 +95,31 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	endif(APPLE)
 
 	# Detect g++ compiler version.
-	# Generate a fatal error if the version is not 4.2 or above on MacOS X.
+	# Generate a fatal error if the version is not 4.2 or above.
 	# This is required by the CGAL dependency library because apparently there is a bug in g++ 4.0 on MacOS X
 	# that causes CGAL to fail (see http://www.cgal.org/FAQ.html#mac_optimization_bug).
+	# This is also required because we use certain GCC pragmas only available on 4.2 and above.
 	execute_process(COMMAND "${CMAKE_CXX_COMPILER}" "-dumpversion"
 		OUTPUT_VARIABLE CXX_VERSION
 		RESULT_VARIABLE CXX_VERSION_RESULT)
-	if (NOT CXX_VERSION_RESULT)
+	if (CXX_VERSION_RESULT)
+		message(FATAL_ERROR "Could not detect g++ compiler version.")
+	else (CXX_VERSION_RESULT)
 		# Convert 4.2.1 to 4.2 for example.
+		string(STRIP ${CXX_VERSION} CXX_VERSION)
 		string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" CXX_MAJOR_MINOR_VERSION ${CXX_VERSION})
 		string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" CXX_MAJOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
 		string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" CXX_MINOR_VERSION ${CXX_MAJOR_MINOR_VERSION})
 		add_definitions(-DCXX_MAJOR_VERSION=${CXX_MAJOR_VERSION})
 		add_definitions(-DCXX_MINOR_VERSION=${CXX_MINOR_VERSION})
-		if(APPLE)
-			message("g++ version=${CXX_VERSION}")
-			if (CXX_MAJOR_VERSION STRLESS "4")
-				message(FATAL_ERROR "g++ compiler version less than 4.0.")
-			elseif (CXX_MINOR_VERSION STRLESS "2")
-				message(FATAL_ERROR "Require g++ compiler version 4.2 or above for GPlates on MacOS X. "
-						"Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
-			endif (CXX_MAJOR_VERSION STRLESS "4")
-		endif(APPLE)
-	endif (NOT CXX_VERSION_RESULT)
+		message(STATUS "Found g++ version ${CXX_VERSION}")
+		if (CXX_MAJOR_VERSION STRLESS "4")
+			message(FATAL_ERROR "g++ compiler version less than 4.0.")
+		elseif (CXX_MINOR_VERSION STRLESS "2")
+			message(FATAL_ERROR "Require g++ compiler version 4.2 or above. "
+					"Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
+		endif (CXX_MAJOR_VERSION STRLESS "4")
+	endif (CXX_VERSION_RESULT)
 
     if(APPLE)
         # The compilers under OSX seem to behave oddly with '-isystem'.

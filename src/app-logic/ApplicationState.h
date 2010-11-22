@@ -177,6 +177,12 @@ namespace GPlatesAppLogic
 		void
 		reconstruct();
 
+		int
+		get_num() const
+		{
+			return 17;
+		}
+
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt

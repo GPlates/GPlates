@@ -30,14 +30,7 @@
 #include <vector>
 #include <algorithm>  // std::find
 #include <utility>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#endif
 #include <boost/bind.hpp>
-#if _MSC_VER == 1600 // For Boost 1.44 and Visual Studio 2010.
-#	undef UINT8_C
-#	include <cstdint>
-#endif
 
 #include "model/FeatureVisitor.h"
 #include "model/TopLevelPropertyInline.h"
