@@ -33,6 +33,10 @@ set(srcs
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
     FeatureCollectionFileState.h
+	FlowlineGeometryPopulator.cc
+	FlowlineGeometryPopulator.h
+	FlowlineUtils.cc
+	FlowlineUtils.h
     GenericPartitionFeatureTask.cc
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
@@ -50,6 +54,10 @@ set(srcs
     LayerTaskType.h
     MeshGenerator.cc
     MeshGenerator.h
+	MotionTrackGeometryPopulator.cc
+	MotionTrackGeometryPopulator.h
+	MotionTrackUtils.cc
+	MotionTrackUtils.h
     MultiPointVectorField.cc
     MultiPointVectorField.h
     PartitionFeatureTask.cc
@@ -68,6 +76,10 @@ set(srcs
     ReconstructedFeatureGeometryFinder.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
+	ReconstructedFlowline.cc
+	ReconstructedFlowline.h
+	ReconstructedMotionTrack.cc
+	ReconstructedMotionTrack.h
     ReconstructedPaleomagGeometryPopulator.h
     ReconstructedVirtualGeomagneticPole.cc
     ReconstructedVirtualGeomagneticPole.h

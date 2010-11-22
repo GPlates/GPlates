@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -29,6 +30,7 @@
 #include <boost/optional.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include "AbstractEditWidget.h"
+#include "EditTableWidget.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
@@ -50,10 +52,11 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class EditGeometryActionWidget;
+	class EditTableActionWidget;
 	
 	class EditGeometryWidget:
 			public AbstractEditWidget, 
+			public EditTableWidget,
 			protected Ui_EditGeometryWidget
 	{
 		Q_OBJECT
@@ -105,17 +108,20 @@ namespace GPlatesQtWidgets
 		update_property_value_from_widget();
 	
 
+		virtual
 		void
-		handle_insert_point_above(
-				const EditGeometryActionWidget *action_widget);
+		handle_insert_row_above(
+				const EditTableActionWidget *action_widget);
 
+		virtual
 		void
-		handle_insert_point_below(
-				const EditGeometryActionWidget *action_widget);
+		handle_insert_row_below(
+				const EditTableActionWidget *action_widget);
 	
+		virtual
 		void
-		handle_delete_point(
-				const EditGeometryActionWidget *action_widget);
+		handle_delete_row(
+				const EditTableActionWidget *action_widget);
 	
 		/**
 		 * Adds a new point to end of the current geometry in the table.
@@ -159,7 +165,7 @@ namespace GPlatesQtWidgets
 		
 
 		/**
-		 * Creates an EditGeometryActionWidget item in the current row.
+		 * Creates an EditTableActionWidget item in the current row.
 		 */
 		void
 		handle_current_cell_changed(
@@ -168,13 +174,13 @@ namespace GPlatesQtWidgets
 	private:
 		
 		/**
-		 * Finds the current table row associated with the EditGeometryActionWidget.
+		 * Finds the current table row associated with the EditTableActionWidget.
 		 * Will return -1 in the event that the action widget provided is not in
 		 * the table.
 		 */
 		int
 		get_row_for_action_widget(
-				const EditGeometryActionWidget *action_widget);
+				const EditTableActionWidget *action_widget);
 		
 		/**
 		 * Adds a new blank point to the current geometry in the table.

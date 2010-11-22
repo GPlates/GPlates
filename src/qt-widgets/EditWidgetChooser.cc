@@ -38,6 +38,7 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlOldPlatesHeader.h"
@@ -166,6 +167,13 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
+}
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gpml_irregular_sampling(
+	GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+{
+	d_edit_widget_group_box_ptr->activate_edit_time_sequence_widget(gpml_irregular_sampling);
 }
 
 void

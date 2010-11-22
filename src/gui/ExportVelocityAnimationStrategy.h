@@ -38,7 +38,7 @@
 #include "utils/ReferenceCount.h"
 #include "utils/ExportTemplateFilenameSequence.h"
 
-#include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
+#include "view-operations/VisibleReconstructionGeometryExport.h"
 
 #include "gui/ExportAnimationStrategy.h"
 
@@ -163,7 +163,7 @@ namespace GPlatesGui
 		 *
 		 * This code is copied from "gui/ExportReconstructedGeometryAnimationStrategy.h".
 		 */
-		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type d_active_files;
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type d_active_files;
 
 		ExportVelocityAnimationStrategy();
 	};

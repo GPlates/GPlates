@@ -33,12 +33,14 @@
 #include "ConfigureExportParametersDialog.h"
 #include "ExportAnimationDialog.h"
 
-#include "gui/ExportResolvedTopologyAnimationStrategy.h"
-#include "gui/ExportVelocityAnimationStrategy.h"
+#include "gui/ExportFlowlineAnimationStrategy.h"
+#include "gui/ExportMotionTrackAnimationStrategy.h"
 #include "gui/ExportReconstructedGeometryAnimationStrategy.h"
 #include "gui/ExportResolvedTopologyAnimationStrategy.h"
 #include "gui/ExportSvgAnimationStrategy.h"
+#include "gui/ExportVelocityAnimationStrategy.h"
 #include "gui/ExportRasterAnimationStrategy.h"
+
 
 #include "utils/ExportAnimationStrategyFactory.h"
 
@@ -128,6 +130,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_name_and_type
 	d_name_map[EQUIVALENT_ROTATION]     =QObject::tr("Equivalent Total Rotation");
 	d_name_map[ROTATION_PARAMS]			=QObject::tr("Equivalent Stage Rotation");
 	d_name_map[RASTER]				    =QObject::tr("Raster");
+	d_name_map[FLOWLINES]				=QObject::tr("Flowlines");
+	d_name_map[MOTION_TRACKS]			=QObject::tr("Motion Tracks");
 
 	d_type_map[GMT]             =QObject::tr("GMT (*.xy)");
 	d_type_map[GPML]			=QObject::tr("GPML (*.gpml)");
@@ -166,7 +170,11 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_desc_map()
 		GPlatesGui::ExportRotationAnimationStrategy::EQUIVALENT_ROTATION_DESC;
 	d_desc_map[ROTATION_PARAMS]          = 
 		GPlatesGui::ExportRotationParamsAnimationStrategy::ROTATION_PARAMS_DESC;
-}
+	d_desc_map[FLOWLINES]				 =
+		GPlatesGui::ExportFlowlineAnimationStrategy::FLOWLINES_DESC;
+	d_desc_map[MOTION_TRACKS]				 =
+		GPlatesGui::ExportMotionTrackAnimationStrategy::MOTION_TRACKS_DESC;
+}		
 
 void
 GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_list_widget()
@@ -241,6 +249,14 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_map()
 	REGISTER_EXPORT_ITEM(RASTER,XBM);
 	//RASTER_XPM
 	REGISTER_EXPORT_ITEM(RASTER,XPM);
+	//FLOWLINES_GMT
+	REGISTER_EXPORT_ITEM(FLOWLINES,GMT);
+	//FLOWLINES_SHAPEFILE
+	REGISTER_EXPORT_ITEM(FLOWLINES,SHAPEFILE);
+	//MOTION_TRACKS_GMT
+	REGISTER_EXPORT_ITEM(MOTION_TRACKS,GMT);
+	//MOTION_TRACKS_SHAPEFILE
+	REGISTER_EXPORT_ITEM(MOTION_TRACKS,SHAPEFILE);
 }
 
 void

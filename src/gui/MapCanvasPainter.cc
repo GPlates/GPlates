@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The Geological Survey of Norway
+ * Copyright (C) 2009, 2010 The Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -48,6 +48,7 @@
 #include "maths/PolylineIntersections.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/Rotation.h"
+#include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
 #include "view-operations/RenderedMultiPointOnSphere.h"
@@ -446,7 +447,8 @@ namespace
 	draw_geometry(
 		GeometryIterator &begin,
 		GeometryIterator &end,
-		const GPlatesGui::MapProjection &projection)
+		const GPlatesGui::MapProjection &projection,
+		const boost::optional<double> &arrowhead_size = boost::none)
 	{
 		GeometryIterator iter = begin;
 
@@ -465,6 +467,9 @@ namespace
 
 		for (; iter != end ; ++iter)
 		{
+			//! Keep track of the last start point of the segment, for use in drawing arrowheads.
+			QPointF last_start_qpoint;
+		
 			const PointOnSphere &start_point = iter->start_point();
 			const PointOnSphere &end_point = iter->end_point();
 
@@ -476,12 +481,13 @@ namespace
 			if (distance_between_qpointfs(start_qpoint,end_qpoint) > SCREEN_THRESHOLD) {
 
 				glEnd();
-				draw_arc(*iter,projection,great_circle,central_pos);
+				draw_arc(*iter,projection,great_circle,central_pos,arrowhead_size);
 				
 				QPointF end_of_arc = get_scene_coords_from_pos(iter->end_point(),projection);
 				glBegin(GL_LINE_STRIP);
 				glVertex2d(end_of_arc.x(),end_of_arc.y());
 
+				last_start_qpoint = QPointF(prev_x,prev_y);
 				prev_x = end_of_arc.x();
 				prev_y = end_of_arc.y();
 				continue;
@@ -590,9 +596,18 @@ namespace
 			// If the segment didn't cross the boundary, we just draw the line. 
 			// If the segment did cross the boundary, we need to finish off the second of the two new segments. 
 			// So either way, we need to draw a line to current_lon, current_lat. 
+			last_start_qpoint = QPointF(prev_x,prev_y);
 			prev_x = end_qpoint.x();
 			prev_y = end_qpoint.y();
+
 			glVertex2d(end_qpoint.x(),end_qpoint.y());
+			if(arrowhead_size)
+			{
+				glEnd();
+				draw_arrowhead(last_start_qpoint,end_qpoint,*arrowhead_size);
+				glBegin(GL_LINE_STRIP);
+				glVertex2d(end_qpoint.x(),end_qpoint.y());
+			}
 
 		} // for loop.
 		glEnd();
@@ -768,7 +783,8 @@ namespace
 		GeometryIterator iter,
 		const GPlatesGui::MapProjection &projection,
 		const GreatCircle &great_circle,
-		const PointOnSphere &central_pos)
+		const PointOnSphere &central_pos,
+		boost::optional<double> arrowhead_size = boost::none)
 	{
 
 		GPlatesMaths::Vector3D start_pt = GPlatesMaths::Vector3D(iter.start_point().position_vector());
@@ -804,12 +820,14 @@ namespace
 			GPlatesMaths::PointOnSphere segment_end_pos =
 				GPlatesMaths::PointOnSphere(segment_end);
 
-			draw_segment(segment_start_pos,segment_end_pos,projection,great_circle,central_pos);
+			draw_segment(segment_start_pos, segment_end_pos,projection,
+						great_circle,central_pos);
 
 			segment_start_pos = segment_end_pos;
 			fraction_along_arc += fraction_increment;
 		}
-		draw_segment(segment_start_pos,iter.end_point(),projection,great_circle,central_pos);
+		draw_segment(segment_start_pos,iter.end_point(),projection,
+					great_circle,central_pos,arrowhead_size);
 
 	}
 	
@@ -1237,3 +1255,35 @@ GPlatesGui::MapCanvasPainter::get_custom_child_layers_order(
 	}
 }
 
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_arrowed_polyline(
+	const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline)
+{
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_arrowed_polyline, d_colour_scheme);
+	if (colour)
+	{
+
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
+			rendered_arrowed_polyline.get_polyline_on_sphere();
+
+		GPlatesMaths::PolylineOnSphere::const_iterator iter = polyline_on_sphere->begin();
+		GPlatesMaths::PolylineOnSphere::const_iterator end = polyline_on_sphere->end();
+
+		glColor3fv(*colour);
+		glLineWidth(rendered_arrowed_polyline.get_arrowline_width_hint()* LINE_WIDTH_ADJUSTMENT);
+
+		double arrowhead_size = 
+			d_inverse_zoom_factor*rendered_arrowed_polyline.get_arrowhead_projected_size()*GLOBE_TO_MAP_FACTOR;
+
+		float MAX_ARROWHEAD_SIZE = rendered_arrowed_polyline.get_max_arrowhead_size()*GLOBE_TO_MAP_FACTOR;
+
+		if (arrowhead_size >MAX_ARROWHEAD_SIZE)
+		{
+			arrowhead_size = MAX_ARROWHEAD_SIZE;
+		}
+
+		boost::optional<double> optional_arrowhead_size(arrowhead_size);
+
+		draw_geometry(iter,end, d_map.projection(),arrowhead_size);
+	}
+}

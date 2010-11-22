@@ -61,6 +61,15 @@ namespace GPlatesQtWidgets
 		bool
 		update_property_value_from_widget();
 
+		/**
+		 * Return a copy of the string from the QLineEdit widget.                                                                    
+		 */
+		QString
+		get_string() const
+		{
+			return line_edit->text();
+		}
+
 	private:
 
 		/**

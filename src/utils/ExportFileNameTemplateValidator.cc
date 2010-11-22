@@ -96,6 +96,13 @@ GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
 						new ExportRasterFileNameTemplateValidator());
 	}
 
+	if (id == GPlatesUtils::FLOWLINES_GMT ||
+		id == GPlatesUtils::FLOWLINES_SHAPEFILE)
+	{	
+		return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
+			new ExportFlowlineFileNameTemplateValidator());
+	}
+
 	return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
 		new DummyExportFileNameTemplateValidator());
 }
@@ -171,6 +178,17 @@ GPlatesUtils::ExportRotationParamsFileNameTemplateValidator::is_valid(
 		const QString &filename)
 {
 	if(has_invalid_characters(filename) || has_percent_P(filename))
+	{
+		return false;
+	}
+	return file_sequence_validate(filename);
+}
+
+bool
+GPlatesUtils::ExportFlowlineFileNameTemplateValidator::is_valid(
+	const QString &filename)
+{
+	if(has_invalid_characters(filename)||has_percent_P(filename))
 	{
 		return false;
 	}

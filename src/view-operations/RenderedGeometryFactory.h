@@ -7,6 +7,7 @@
  * $Date$
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -450,6 +451,18 @@ namespace GPlatesViewOperations
 	create_rendered_reconstruction_geometry(
 			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geom,
 			RenderedGeometry rendered_geom);
+
+	/**
+	 *  Creates a polyline rendered geometry with an arrowhead on each segment.                                                                      
+	 */		
+	RenderedGeometry
+	create_rendered_arrowed_polyline(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+			const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			const float ratio_arrowhead_size_to_globe_radius =
+				RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
+			const float arrowline_width_hint =
+				RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 }
 
 #endif // GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYFACTORY_H

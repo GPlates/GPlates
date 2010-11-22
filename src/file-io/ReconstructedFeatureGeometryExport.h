@@ -72,7 +72,6 @@ namespace GPlatesFileIO
 		get_export_file_format(
 				const QFileInfo& file_info);
 
-
 		/**
 		 * Exports @a ReconstructedFeatureGeometry objects.
 		 *
@@ -82,31 +81,13 @@ namespace GPlatesFileIO
 		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
-		export_geometries_as_single_file(
+		export_reconstructed_feature_geometries(
 				const QString &filename,
 				ReconstructedFeatureGeometryExport::Format export_format,
 				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
 				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
-
-		/**
-		 * Exports @a ReconstructedFeatureGeometry objects.
-		 *
-		 * @param export_format specifies which format to write.
-		 *
-		 * @throws ErrorOpeningFileForWritingException if file is not writable.
-		 * @throws FileFormatNotSupportedException if file format not supported.
-		 */
-		void
-		export_geometries_per_collection(
-				const QString &filename,
-				ReconstructedFeatureGeometryExport::Format export_format,
-				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
-				const files_collection_type &active_files,
-				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
-
 
 
 		/**
@@ -119,40 +100,14 @@ namespace GPlatesFileIO
 		 */
 		inline
 		void
-		export_geometries_as_single_file(
+		export_reconstructed_feature_geometries(
 				const QString &filename,
 				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
 				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time)
 		{
-			export_geometries_as_single_file(
-					filename,
-					get_export_file_format(filename),
-					reconstructed_feature_geom_seq,
-					active_files,
-					reconstruction_anchor_plate_id,
-					reconstruction_time);
-		}
-
-		/**
-		 * Exports @a ReconstructedFeatureGeometry objects.
-		 *
-		 * @param file_info file whose extension is used to determine which format to write.
-		 *
-		 * @throws ErrorOpeningFileForWritingException if file is not writable.
-		 * @throws FileFormatNotSupportedException if file format not supported.
-		 */
-		inline
-		void
-		export_geometries_per_collection(
-				const QString &filename,
-				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
-				const files_collection_type &active_files,
-				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time)
-		{
-			export_geometries_per_collection(
+			export_reconstructed_feature_geometries(
 					filename,
 					get_export_file_format(filename),
 					reconstructed_feature_geom_seq,

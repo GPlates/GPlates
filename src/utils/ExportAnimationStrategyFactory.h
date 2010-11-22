@@ -35,13 +35,16 @@
 #include "ExportAnimationStrategyExporterID.h"
 
 #include "gui/ExportAnimationStrategy.h"
-#include "gui/ExportRotationAnimationStrategy.h"
-#include "gui/ExportVelocityAnimationStrategy.h"
+#include "gui/ExportFlowlineAnimationStrategy.h"
+#include "gui/ExportMotionTrackAnimationStrategy.h"
+#include "gui/ExportRasterAnimationStrategy.h"
 #include "gui/ExportReconstructedGeometryAnimationStrategy.h"
 #include "gui/ExportResolvedTopologyAnimationStrategy.h"
-#include "gui/ExportSvgAnimationStrategy.h"
+#include "gui/ExportRotationAnimationStrategy.h"
 #include "gui/ExportRotationParamsAnimationStrategy.h"
-#include "gui/ExportRasterAnimationStrategy.h"
+#include "gui/ExportSvgAnimationStrategy.h"
+#include "gui/ExportVelocityAnimationStrategy.h"
+
 
 
 namespace GPlatesGui
@@ -336,6 +339,55 @@ namespace GPlatesUtils
 					export_context,
 					GPlatesGui::ExportRotationParamsAnimationStrategy::TAB,
 					cfg);
+		}
+
+		static
+		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
+		create_FLOWLINES_GMT(
+			GPlatesGui::ExportAnimationContext& export_context,			
+			const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
+		{		
+			return GPlatesGui::ExportFlowlineAnimationStrategy::create(
+				export_context,
+				GPlatesGui::ExportFlowlineAnimationStrategy::GMT,
+				cfg);
+		}
+
+		static
+		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
+		create_FLOWLINES_SHAPEFILE(
+			GPlatesGui::ExportAnimationContext& export_context,			
+			const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
+		{		
+			return GPlatesGui::ExportFlowlineAnimationStrategy::create(
+				export_context,
+				GPlatesGui::ExportFlowlineAnimationStrategy::SHAPEFILE,
+				cfg);
+		}
+
+		static
+		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
+		create_MOTION_TRACKS_GMT(
+			GPlatesGui::ExportAnimationContext& export_context,			
+			const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
+		{		
+			return GPlatesGui::ExportMotionTrackAnimationStrategy::create(
+				export_context,
+				GPlatesGui::ExportMotionTrackAnimationStrategy::GMT,
+				cfg);
+		}
+
+
+		static
+		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
+		create_MOTION_TRACKS_SHAPEFILE(
+			GPlatesGui::ExportAnimationContext& export_context,			
+			const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
+		{		
+			return GPlatesGui::ExportMotionTrackAnimationStrategy::create(
+				export_context,
+				GPlatesGui::ExportMotionTrackAnimationStrategy::SHAPEFILE,
+				cfg);
 		}
 
 		static

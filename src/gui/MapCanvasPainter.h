@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The Geological Survey of Norway
+ * Copyright (C) 2009, 2010 The Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -81,6 +81,11 @@ namespace GPlatesGui
             const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
             GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type);
 #endif
+		virtual
+		void
+		visit_rendered_arrowed_polyline(
+				const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline);
+
 
 		virtual
 		void

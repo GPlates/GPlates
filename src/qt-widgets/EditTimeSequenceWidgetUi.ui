@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>EditTimeSequenceWidget</class>
+ <widget class="QWidget" name="EditTimeSequenceWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>495</width>
+    <height>463</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2">
+   <item row="0" column="0">
+    <layout class="QHBoxLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <widget class="QTableWidget" name="table_times">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="styleSheet">
+      <string/>
+     </property>
+     <property name="verticalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOn</enum>
+     </property>
+     <property name="horizontalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <property name="verticalScrollMode">
+      <enum>QAbstractItemView::ScrollPerItem</enum>
+     </property>
+     <property name="gridStyle">
+      <enum>Qt::DashLine</enum>
+     </property>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <column>
+      <property name="text">
+       <string>Time</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Actions</string>
+      </property>
+     </column>
+     <item row="0" column="0">
+      <property name="text">
+       <string>50</string>
+      </property>
+     </item>
+     <item row="1" column="0">
+      <property name="text">
+       <string>51</string>
+      </property>
+     </item>
+     <item row="2" column="0">
+      <property name="text">
+       <string>52</string>
+      </property>
+     </item>
+     <item row="3" column="0">
+      <property name="text">
+       <string>53</string>
+      </property>
+     </item>
+     <item row="4" column="0">
+      <property name="text">
+       <string>54</string>
+      </property>
+     </item>
+     <item row="5" column="0">
+      <property name="text">
+       <string>55</string>
+      </property>
+     </item>
+     <item row="6" column="0">
+      <property name="text">
+       <string>56</string>
+      </property>
+     </item>
+     <item row="7" column="0">
+      <property name="text">
+       <string>57</string>
+      </property>
+     </item>
+     <item row="8" column="0">
+      <property name="text">
+       <string>58</string>
+      </property>
+     </item>
+     <item row="9" column="0">
+      <property name="text">
+       <string>59</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_remove">
+       <property name="text">
+        <string>Remove</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_remove_all">
+       <property name="text">
+        <string>Remove all</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="3" column="0">
+    <layout class="QHBoxLayout">
+     <property name="rightMargin">
+      <number>4</number>
+     </property>
+     <item>
+      <widget class="QGroupBox" name="groupbox_insert_time">
+       <property name="title">
+        <string>Insert &amp;single time</string>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
+       </property>
+       <layout class="QHBoxLayout">
+        <property name="margin">
+         <number>4</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_time">
+          <property name="text">
+           <string>Time:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="spinbox_time">
+          <property name="decimals">
+           <number>4</number>
+          </property>
+          <property name="minimum">
+           <double>0.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>9999.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_insert_single">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/tango_list_add_22.png</normaloff>:/tango_list_add_22.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="4" column="0">
+    <widget class="QGroupBox" name="groupbox_insert_times">
+     <property name="title">
+      <string>Insert &amp;multiple times</string>
+     </property>
+     <property name="flat">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_from">
+        <property name="text">
+         <string>From </string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDoubleSpinBox" name="spinbox_from_time">
+        <property name="maximum">
+         <double>9999.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="label_to">
+        <property name="text">
+         <string>Ma to </string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QDoubleSpinBox" name="spinbox_to_time">
+        <property name="maximum">
+         <double>9999.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QLabel" name="label_steps">
+        <property name="text">
+         <string>Ma in steps of</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="5">
+       <widget class="QDoubleSpinBox" name="spinbox_step_time">
+        <property name="maximum">
+         <double>9999.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="6">
+       <widget class="QLabel" name="label_ma">
+        <property name="text">
+         <string>My</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="7">
+       <spacer>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>21</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="0" column="8">
+       <widget class="QPushButton" name="button_insert_multiple">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../qt-resources/qt_widgets.qrc">
+          <normaloff>:/tango_list_add_22.png</normaloff>:/tango_list_add_22.png</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>22</width>
+          <height>22</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_widgets.qrc"/>
+ </resources>
+ <connections/>
+</ui>

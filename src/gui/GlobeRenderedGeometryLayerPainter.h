@@ -7,6 +7,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -112,6 +113,12 @@ namespace GPlatesGui
 
 		typedef GPlatesOpenGL::Vertex vertex_type;
 	
+		virtual
+		void
+		visit_rendered_arrowed_polyline(
+			const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline);
+
+
 		virtual
 		void
 		visit_rendered_ellipse(

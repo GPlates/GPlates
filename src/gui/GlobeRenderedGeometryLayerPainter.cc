@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -58,6 +59,7 @@
 #include "property-values/RawRasterUtils.h"
 #include "property-values/XsString.h"
 
+#include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
@@ -1246,3 +1248,70 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::LineDrawables::LineDrawables(
 {
 }
 
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
+		const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline)
+{
+	// Based on the "visit_rendered_direction_arrow" code 
+
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_arrowed_polyline);
+	if (!colour)
+	{
+		return;
+	}
+
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
+
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type points =
+			rendered_arrowed_polyline.get_polyline_on_sphere();
+
+	GPlatesMaths::PolylineOnSphere::const_iterator 
+			iter = points->begin(),
+			end = points->end();
+
+	for (; iter != end ; ++iter)
+	{	
+		GPlatesMaths::real_t arrowhead_size =
+			d_inverse_zoom_factor * rendered_arrowed_polyline.get_arrowhead_projected_size();
+
+		//qDebug() << "arrowhead_size:" << arrowhead_size.dval();
+
+		const float MAX_ARROWHEAD_SIZE = rendered_arrowed_polyline.get_max_arrowhead_size();
+
+		if (arrowhead_size >MAX_ARROWHEAD_SIZE)
+		{
+			arrowhead_size = MAX_ARROWHEAD_SIZE;
+		}
+
+		// For the direction of the arrow, we really want the tangent to the curve at
+		// the end of the curve. The curve will ultimately be a small circle arc; the 
+		// current implementation uses a great circle arc. 
+		if (!(iter->is_zero_length()))
+		{
+			GPlatesMaths::Vector3D tangent_direction = GPlatesMaths::cross(
+				iter->rotation_axis(),iter->end_point().position_vector());
+			GPlatesMaths::UnitVector3D arrowline_unit_vector(tangent_direction);			
+			paint_cone(GPlatesMaths::Vector3D(iter->end_point().position_vector()),
+				arrowhead_size*arrowline_unit_vector,
+				rgba8_colour,
+				d_paint_params->drawables_off_the_sphere.get_triangle_drawables());
+		}
+	}
+
+	const float line_width =
+		rendered_arrowed_polyline.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	LineDrawables &line_drawables =
+		d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+
+	paint_great_circle_arcs(
+		points->begin(),
+		points->end(),
+		colour.get(),
+		line_drawables,
+		*d_nurbs_renderer);
+
+
+
+}

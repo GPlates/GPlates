@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -34,6 +35,8 @@
 #include "app-logic/CoRegistrationData.h"
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructedFlowline.h"
+#include "app-logic/ReconstructedMotionTrack.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
@@ -420,6 +423,73 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	}
 
 	render_topological_network_velocities(rtn, d_rendered_geometry_layer, d_style_params, d_colour);
+}
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+	const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+{
+#if 0
+	// Copy the "standard" rendering for an rfg for now.
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+		create_rendered_reconstruction_geometry(
+		rf->geometry(), rf, d_style_params, d_colour, d_reconstruction_adjustment);
+
+	// Add to the rendered geometry layer.
+	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+#endif
+
+	// Upstream flowline
+	GPlatesViewOperations::RenderedGeometry up_rendered_geom =
+		GPlatesViewOperations::create_rendered_arrowed_polyline(
+			rf->upstream_flowline_points(),
+			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rf));
+
+	GPlatesViewOperations::RenderedGeometry up_rendered_geometry = 
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rf,
+			up_rendered_geom);
+
+	// Add to the rendered geometry layer.
+	d_rendered_geometry_layer.add_rendered_geometry(up_rendered_geometry);
+
+	// Downstream
+	GPlatesViewOperations::RenderedGeometry down_rendered_geom =
+		GPlatesViewOperations::create_rendered_arrowed_polyline(
+			rf->downstream_flowline_points(),
+			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rf));
+
+	GPlatesViewOperations::RenderedGeometry down_rendered_geometry = 
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rf,
+			down_rendered_geom);
+
+	// Add to the rendered geometry layer.
+	d_rendered_geometry_layer.add_rendered_geometry(down_rendered_geometry);
+
+}
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+	const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_track_type> &rmt)
+{
+
+	// Create a RenderedGeometry for drawing the reconstructed geometry.
+	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
+	// using ColourProxy.
+	GPlatesViewOperations::RenderedGeometry rendered_geom =
+		GPlatesViewOperations::create_rendered_arrowed_polyline(
+			rmt->motion_track_points(),
+			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rmt));
+
+	GPlatesViewOperations::RenderedGeometry rendered_geometry = 
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+		rmt,
+		rendered_geom);
+
+	// Add to the rendered geometry layer.
+	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+
 }
 
 

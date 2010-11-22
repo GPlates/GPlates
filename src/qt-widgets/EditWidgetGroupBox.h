@@ -51,6 +51,7 @@ namespace GPlatesPropertyValues
 	class GmlPolygon;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
+	class GpmlIrregularSampling; // FIXME: remove when array used for time sequence. 
 	class GpmlKeyValueDictionary;
 	class GpmlMeasure;
 	class GpmlOldPlatesHeader;
@@ -64,20 +65,21 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesQtWidgets
 {
-	class EditTimeInstantWidget;
-	class EditTimePeriodWidget;
-	class EditOldPlatesHeaderWidget;
+	class EditAngleWidget;
+	class EditBooleanWidget;
 	class EditDoubleWidget;
 	class EditEnumerationWidget;
 	class EditGeometryWidget;
 	class EditIntegerWidget;
+	class EditOldPlatesHeaderWidget;
 	class EditPlateIdWidget;
 	class EditPolarityChronIdWidget;
-	class EditAngleWidget;
-	class EditStringWidget;
-	class EditBooleanWidget;
 	class EditShapefileAttributesWidget;
-	
+	class EditStringWidget;
+	class EditTimeInstantWidget;
+	class EditTimePeriodWidget;
+	class EditTimeSequenceWidget;
+
 
 	/**
 	 * A collection of pre-allocated property edit widgets, which are hidden/shown
@@ -366,6 +368,13 @@ namespace GPlatesQtWidgets
 				GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 
 		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 */
+		void
+		activate_edit_time_sequence_widget(
+				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+
+		/**
 		 * Accessor for the EditGeometryWidget, to support the extra functionality
 		 * available (e.g. set_reconstruction_plate_id())
 		 */
@@ -444,6 +453,7 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::EditStringWidget *d_edit_string_widget_ptr;
 		GPlatesQtWidgets::EditBooleanWidget *d_edit_boolean_widget_ptr;
 		GPlatesQtWidgets::EditShapefileAttributesWidget *d_edit_shapefile_attributes_widget_ptr;
+		GPlatesQtWidgets::EditTimeSequenceWidget *d_edit_time_sequence_widget_ptr;
 		
 		/**
 		 * The verb in front of the title of the groupbox, prepended to the PropertyValue

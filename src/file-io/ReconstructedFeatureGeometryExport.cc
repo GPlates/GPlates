@@ -86,8 +86,108 @@ namespace
 		return output_filename;
 	}
 
+	void
+	export_as_single_file(
+		const QString &filename,
+		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format export_format,
+		const GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::feature_geometry_group_seq_type &grouped_rfgs_seq,
+		const GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type &referenced_files,
+		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+		const double &reconstruction_time)
+	{
+		using namespace GPlatesFileIO;
 
-}
+		switch (export_format)
+		{
+		case ReconstructedFeatureGeometryExport::GMT:
+			GMTFormatReconstructedFeatureGeometryExport::export_geometries(
+				grouped_rfgs_seq,
+				filename,
+				referenced_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time);
+			break;
+
+		case ReconstructedFeatureGeometryExport::SHAPEFILE:
+			ShapefileFormatReconstructedFeatureGeometryExport::export_geometries(
+				grouped_rfgs_seq,
+				filename,
+				referenced_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time);		
+			break;
+
+		default:
+			throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
+				"Chosen export format is not currently supported.");
+		}
+	}
+
+
+	void
+	export_per_collection(
+		const QString &filename,
+		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format export_format,
+		const GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::feature_collection_feature_group_seq_type &grouped_features_seq,
+		const GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type &referenced_files,
+		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+		const double &reconstruction_time)
+	{
+		using namespace GPlatesFileIO;
+
+		ReconstructedFeatureGeometryExportImpl::feature_collection_feature_group_seq_type::const_iterator 
+			it = grouped_features_seq.begin(),
+			end = grouped_features_seq.end();
+
+		QFileInfo export_qfile_info(filename);
+		QString export_path = export_qfile_info.absolutePath();
+		QString export_filename = export_qfile_info.fileName();
+
+		for (; it != end; ++it)
+		{
+			const File::Reference *file_ptr = it->file_ptr;	
+			FileInfo file_info = file_ptr->get_file_info();
+			QFileInfo qfile_info = file_info.get_qfileinfo();
+			QString collection_filename = qfile_info.completeBaseName();
+
+#if 1
+			// Folder-structure output
+			QString output_filename = build_folder_structure_filename(export_path,collection_filename,export_filename);
+#else	
+			// Flat-structure output.
+			QString output_filename = build_flat_structure_filename(export_path,collection_filename,export_filename);
+#endif
+
+
+			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> kvd;
+			ShapefileUtils::create_default_kvd_from_collection(file_ptr->get_feature_collection(),kvd);
+
+			switch(export_format)
+			{
+ 
+			case ReconstructedFeatureGeometryExport::SHAPEFILE:
+				ShapefileFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
+					it->feature_geometry_groups,
+					output_filename,
+					referenced_files,
+					reconstruction_anchor_plate_id,
+					reconstruction_time);
+				break;
+			case ReconstructedFeatureGeometryExport::GMT:
+				GMTFormatReconstructedFeatureGeometryExport::export_geometries(
+					it->feature_geometry_groups,
+					output_filename,
+					referenced_files,
+					reconstruction_anchor_plate_id,
+					reconstruction_time);
+				break;
+			default:
+				throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
+					"Chosen export format is not currently supported.");
+			}
+		} // iterate over collections
+	}
+} // namespace
 
 GPlatesFileIO::ReconstructedFeatureGeometryExport::Format
 GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
@@ -117,62 +217,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
 
 
 void
-GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries_as_single_file(
-		const QString &filename,
-		ReconstructedFeatureGeometryExport::Format export_format,
-		const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
-		const files_collection_type &active_files,
-		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
-{
-	// Get the list of active reconstructable feature collection files that contain
-	// the features referenced by the ReconstructedFeatureGeometry objects.
-	ReconstructedFeatureGeometryExportImpl::feature_handle_to_collection_map_type feature_to_collection_map;
-	ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type referenced_files;
-	ReconstructedFeatureGeometryExportImpl::get_files_referenced_by_geometries(
-			referenced_files, reconstructed_feature_geom_seq, active_files,
-			feature_to_collection_map);
-
-	// Group the RFGs by their feature.
-	ReconstructedFeatureGeometryExportImpl::feature_geometry_group_seq_type grouped_rfgs_seq;
-	ReconstructedFeatureGeometryExportImpl::group_rfgs_with_their_feature(
-			grouped_rfgs_seq, reconstructed_feature_geom_seq);
-
-
-	// Export depending on the file format.
-
-	// I've changed these to take "active files" instead of "referenced files" so that the 
-	// reconstruction files get exported too. 
-	// Update: Actually I cannot easily distinguish at the moment between reconstruction/reconstructed files,
-	// so I'll revert these to referenced_files. 
-	switch (export_format)
-	{
-	case GMT:
-		GMTFormatReconstructedFeatureGeometryExport::export_geometries(
-				grouped_rfgs_seq,
-				filename,
-				referenced_files,
-				reconstruction_anchor_plate_id,
-				reconstruction_time);
-		break;
-		
-	case SHAPEFILE:
-		ShapefileFormatReconstructedFeatureGeometryExport::export_geometries(
-				grouped_rfgs_seq,
-				filename,
-				referenced_files,
-				reconstruction_anchor_plate_id,
-				reconstruction_time);		
-		break;
-
-	default:
-		throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
-				"Chosen export format is not currently supported.");
-	}
-}
-
-void
-GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries_per_collection(
+GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 	const QString &filename,
 	ReconstructedFeatureGeometryExport::Format export_format,
 	const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
@@ -202,55 +247,20 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries_per_collect
 		grouped_rfgs_seq);
 
 
-	ReconstructedFeatureGeometryExportImpl::feature_collection_feature_group_seq_type::const_iterator 
-			it = grouped_features_seq.begin(),
-			end = grouped_features_seq.end();
-	
-	QFileInfo export_qfile_info(filename);
-	QString export_path = export_qfile_info.absolutePath();
-	QString export_filename = export_qfile_info.fileName();
+	export_as_single_file(
+		filename,
+		export_format,
+		grouped_rfgs_seq,
+		referenced_files,
+		reconstruction_anchor_plate_id,
+		reconstruction_time);
 
-	for (; it != end; ++it)
-	{
-		const File::Reference *file_ptr = it->file_ptr;	
-		FileInfo file_info = file_ptr->get_file_info();
-		QFileInfo qfile_info = file_info.get_qfileinfo();
-		QString collection_filename = qfile_info.completeBaseName();
-
-#if 1
-		// Folder-structure output
-		QString output_filename = build_folder_structure_filename(export_path,collection_filename,export_filename);
-#else	
-		// Flat-structure output.
-		QString output_filename = build_flat_structure_filename(export_path,collection_filename,export_filename);
-#endif
-
-
-		boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> kvd;
-		ShapefileUtils::create_default_kvd_from_collection(file_ptr->get_feature_collection(),kvd);
-
-		switch(export_format)
-		{
-		// I should only be exporting the reconstruction files here rather than all the active / referenced
-		// files.  
-		case SHAPEFILE:
-			ShapefileFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
-				it->feature_geometry_groups,
-				output_filename,
-				referenced_files,
-				reconstruction_anchor_plate_id,
-				reconstruction_time);
-			break;
-		case GMT:
-		// We don't yet support GMT in per-collection export form.
-			break;
-		default:
-			throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
-				"Chosen export format is not currently supported.");
-		}
-
-
-	}
+	export_per_collection(
+		filename,
+		export_format,
+		grouped_features_seq,
+		referenced_files,
+		reconstruction_anchor_plate_id,
+		reconstruction_time);
 
 }
-

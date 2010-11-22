@@ -42,6 +42,8 @@ GPlatesQtWidgets::EditPlateIdWidget::EditPlateIdWidget(
 			this, SLOT(set_dirty()));
 	QObject::connect(button_set_to_null, SIGNAL(clicked()),
 			this, SLOT(nullify()));
+	QObject::connect(spinbox_plate_id, SIGNAL(valueChanged(int)),
+			this, SLOT(handle_value_changed()));
 
 	label_plate_id->setHidden(false);
 	declare_default_label(label_plate_id);
@@ -126,3 +128,8 @@ GPlatesQtWidgets::EditPlateIdWidget::set_null(
 	spinbox_plate_id->setValue( should_nullify? -1 : 0 );
 }
 
+void
+GPlatesQtWidgets::EditPlateIdWidget::handle_value_changed()
+{
+	emit value_changed();
+}

@@ -74,8 +74,8 @@ set(srcs
     SplitFeatureUndoCommand.h
     UndoRedo.cc
     UndoRedo.h
-    VisibleReconstructedFeatureGeometryExport.cc
-    VisibleReconstructedFeatureGeometryExport.h
+    VisibleReconstructionGeometryExport.cc
+    VisibleReconstructionGeometryExport.h
 )
 
 

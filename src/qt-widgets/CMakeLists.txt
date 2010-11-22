@@ -14,6 +14,7 @@ set(srcs
     AboutDialog.cc
     AboutDialog.h
     AboutDialogUi.ui
+	AbstractCustomPropertiesWidget.h
     AbstractEditWidget.cc
     AbstractEditWidget.h
     ActionButtonBox.cc
@@ -97,9 +98,6 @@ set(srcs
     EditFeaturePropertiesWidget.cc
     EditFeaturePropertiesWidget.h
     EditFeaturePropertiesWidgetUi.ui
-    EditGeometryActionWidget.cc
-    EditGeometryActionWidget.h
-    EditGeometryActionWidgetUi.ui
     EditGeometryWidget.cc
     EditGeometryWidget.h
     EditGeometryWidgetUi.ui
@@ -121,12 +119,19 @@ set(srcs
     EditStringWidget.cc
     EditStringWidget.h
     EditStringWidgetUi.ui
+	EditTableActionWidget.cc
+	EditTableActionWidget.h
+	EditTableActionWidgetUi.ui
+	EditTableWidget.h
     EditTimeInstantWidget.cc
     EditTimeInstantWidget.h
     EditTimeInstantWidgetUi.ui
     EditTimePeriodWidget.cc
     EditTimePeriodWidget.h
     EditTimePeriodWidgetUi.ui
+	EditTimeSequenceWidget.cc
+	EditTimeSequenceWidget.h
+	EditTimeSequenceWidgetUi.ui	
     EditTopologyWidgetUi.ui
     EditWidgetChooser.cc
     EditWidgetChooser.h
@@ -146,6 +151,9 @@ set(srcs
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
+	FlowlinePropertiesWidget.cc
+	FlowlinePropertiesWidget.h
+	FlowlinePropertiesWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
     GeoreferencingPage.cc
@@ -204,6 +212,9 @@ set(srcs
     ModifyReconstructionPoleWidget.cc
     ModifyReconstructionPoleWidget.h
     ModifyReconstructionPoleWidgetUi.ui
+	MotionTrackPropertiesWidget.cc
+	MotionTrackPropertiesWidget.h
+	MotionTrackPropertiesWidgetUi.ui	
     NoActiveEditWidgetException.h
     PoleSequenceTableWidget.cc
     PoleSequenceTableWidget.h

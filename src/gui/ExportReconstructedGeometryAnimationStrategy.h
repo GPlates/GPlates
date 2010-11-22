@@ -38,7 +38,7 @@
 
 #include "utils/ExportTemplateFilenameSequence.h"
 
-#include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
+#include "view-operations/VisibleReconstructionGeometryExport.h"
 
 #include "gui/ExportAnimationStrategy.h"
 
@@ -137,7 +137,7 @@ namespace GPlatesGui
 		/**
 		 * The list of currently loaded files that are active.
 		 */
-		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type
 				d_active_files;
 		FileFormat d_file_format;
 

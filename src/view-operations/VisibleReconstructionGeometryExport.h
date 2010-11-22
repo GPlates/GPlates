@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
-#define GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
+#ifndef GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTIONGEOMETRYEXPORT_H
+#define GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTIONGEOMETRYEXPORT_H
 
 #include <vector>
 #include <QString>
@@ -38,7 +38,7 @@ namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
 
-	namespace VisibleReconstructedFeatureGeometryExport
+	namespace VisibleReconstructionGeometryExport
 	{
 		//! Typedef for sequence of feature collection files.
 		typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;
@@ -56,7 +56,7 @@ namespace GPlatesViewOperations
 		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
-		export_visible_geometries_as_single_file(
+		export_visible_reconstructed_feature_geometries(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const files_collection_type &active_files,
@@ -77,13 +77,36 @@ namespace GPlatesViewOperations
 		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
-		export_visible_geometries_per_collection(
+		export_visible_reconstruced_flowlines(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
+
+
+		/**
+		 * Collects visible @a ReconstructedMotionTrack objects that are displayed
+		 * using @a rendered_geom_collection and exports to a file depending on the
+		 * file extension of @a filename.
+		 *
+		 * @param active_files used to determine which files the RFGs came from.
+		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
+		 * @param reconstruction_time time at which the reconstruction took place.
+		 *
+		 * @throws ErrorOpeningFileForWritingException if file is not writable.
+		 * @throws FileFormatNotSupportedException if file format not supported.
+		 */
+		void
+		export_visible_reconstruced_motion_tracks(
+				const QString &filename,
+				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				const files_collection_type &active_files,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time);
+
+
 	}
 }
 
-#endif // GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
+#endif // GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTIONFEATUREGEOMETRYEXPORT_H

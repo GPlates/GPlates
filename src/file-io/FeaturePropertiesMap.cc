@@ -7,6 +7,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -919,6 +920,54 @@ namespace
 
 		return map;
 	}
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_flowline_properties()
+	{
+
+		// FIXME: Should this be a reconstructable feature?
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();					
+
+		map[ PropertyName::create_gpml("seedPoints") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);	
+
+		// FIXME: This should be an array of time instants. 
+		map[ PropertyName::create_gpml("times") ] =
+			GET_PROP_VAL_NAME(create_irregular_sampling);			
+
+		map[ PropertyName::create_gpml("reconstructionMethod") ] = 
+			GET_PROP_VAL_NAME(create_reconstruction_method_enumeration);
+		map[ PropertyName::create_gpml("leftPlate") ] =
+			GET_PROP_VAL_NAME(create_plate_id);
+		map[ PropertyName::create_gpml("rightPlate") ] =
+			GET_PROP_VAL_NAME(create_plate_id);
+
+		return map;
+	}
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_motion_track_properties()
+	{
+
+		// FIXME: Should this be a reconstructable feature?
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();					
+
+		map[ PropertyName::create_gpml("seedPoints") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);	
+
+		// FIXME: This should be an array of time instants. 
+		map[ PropertyName::create_gpml("times") ] =
+			GET_PROP_VAL_NAME(create_irregular_sampling);			
+
+		map[ PropertyName::create_gpml("reconstructionMethod") ] = 
+			GET_PROP_VAL_NAME(create_reconstruction_method_enumeration);
+
+		map[ PropertyName::create_gpml("relativePlate") ] =
+			GET_PROP_VAL_NAME(create_plate_id);
+
+		return map;
+	}
+
 }
 
 
@@ -957,6 +1006,10 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_old_plates_grid_mark_properties();
 	d_map[ FeatureType::create_gpml("MeshNode") ] =
 		get_mesh_node_properties();
+	d_map[ FeatureType::create_gpml("Flowline")] =
+		get_flowline_properties();
+	d_map[ FeatureType::create_gpml("MotionTrack")] =
+		get_motion_track_properties();
 
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =

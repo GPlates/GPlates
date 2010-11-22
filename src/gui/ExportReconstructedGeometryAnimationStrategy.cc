@@ -123,15 +123,7 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	try {
 
 		
-		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries_as_single_file(
-			full_filename,
-			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
-			d_active_files,
-			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
-			d_export_animation_context_ptr->view_time());
-
-
-		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries_per_collection(
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_feature_geometries(
 			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 			d_active_files,

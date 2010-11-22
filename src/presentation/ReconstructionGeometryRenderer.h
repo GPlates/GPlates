@@ -46,7 +46,7 @@ namespace GPlatesPresentation
 
 	/**
 	 * Visits classes derived from @a ReconstructionGeometry and
-	 * renderes them by creating @a RenderedGeometry objects.
+	 * renders them by creating @a RenderedGeometry objects.
 	 */
 	class ReconstructionGeometryRenderer :
 			public GPlatesAppLogic::ConstReconstructionGeometryVisitor
@@ -100,6 +100,16 @@ namespace GPlatesPresentation
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf);
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_track_type> &rmt);
 
 		virtual
 		void

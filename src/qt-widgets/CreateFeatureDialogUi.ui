@@ -118,6 +118,23 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="page_custom_properties">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>6</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QGroupBox" name="groupbox_custom">
+         <property name="title">
+          <string>Custom properties</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="page_feature_collection">
       <layout class="QVBoxLayout">
        <property name="margin">

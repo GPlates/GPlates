@@ -7,6 +7,7 @@
  * $Date$
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -25,6 +26,7 @@
  */
 
 #include "RenderedGeometryFactory.h"
+#include "RenderedArrowedPolyline.h"
 #include "RenderedDirectionArrow.h"
 #include "RenderedEllipse.h"
 #include "RenderedMultiPointOnSphere.h"
@@ -372,3 +374,21 @@ GPlatesViewOperations::create_rendered_string(
 	return RenderedGeometry(rendered_geom_impl);
 }
 
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_arrowed_polyline(
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type points,
+	const GPlatesGui::ColourProxy &colour,
+	const float ratio_arrowhead_size_to_globe_radius,
+	const float arrowline_width_hint)
+{
+
+	// This could also be passed in the arguments to this "create..." function...
+	const float MAX_ARROWHEAD_SIZE = 0.005f;
+
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedArrowedPolyline(
+		points, colour,ratio_arrowhead_size_to_globe_radius,
+		MAX_ARROWHEAD_SIZE,arrowline_width_hint));
+
+	return RenderedGeometry(rendered_geom_impl);		
+
+}

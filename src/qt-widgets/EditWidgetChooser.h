@@ -137,6 +137,12 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
+		visit_gpml_irregular_sampling(
+			GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+
+
+		virtual
+		void
 		visit_gpml_key_value_dictionary(
 				GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 

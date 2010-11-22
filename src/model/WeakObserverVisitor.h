@@ -34,6 +34,8 @@ namespace GPlatesAppLogic
 	class AgeGridRaster;
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
+	class ReconstructedFlowline;
+	class ReconstructedMotionTrack;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedTopologicalBoundary;
@@ -160,6 +162,24 @@ namespace GPlatesModel
 		void
 		visit_reconstructed_feature_geometry(
 				GPlatesAppLogic::ReconstructedFeatureGeometry &rfg)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_reconstructed_flowline(
+				GPlatesAppLogic::ReconstructedFlowline &rf)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_reconstructed_motion_track(
+				GPlatesAppLogic::ReconstructedMotionTrack &rmt)
 		{  }
 
 		/**
