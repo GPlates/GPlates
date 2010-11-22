@@ -419,6 +419,9 @@
    <property name="shortcut">
     <string>Ctrl+Q</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_About">
    <property name="enabled">
@@ -438,6 +441,9 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+T</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Specify_Anchored_Plate_ID">
@@ -462,6 +468,9 @@
    <property name="shortcut">
     <string>Ctrl+Shift+I</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Increment_Animation_Time_Forwards">
    <property name="icon">
@@ -476,6 +485,9 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+I</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Animate">
@@ -529,6 +541,9 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+R</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Docks">
@@ -630,6 +645,9 @@
    <property name="shortcut">
     <string>Ctrl+M</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Open_Feature_Collection">
    <property name="icon">
@@ -642,6 +660,9 @@
    <property name="shortcut">
     <string>Ctrl+O</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Set_Camera_Viewpoint">
    <property name="checked">
@@ -652,6 +673,9 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+L</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Move_Camera_Up">
@@ -760,6 +784,9 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+E</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_View_Reconstruction_Poles">
@@ -1198,13 +1225,13 @@
      <normaloff>:/topology_edit_35.png</normaloff>:/topology_edit_35.png</iconset>
    </property>
    <property name="text">
-    <string>&amp;Edit Topology</string>
+    <string>&amp;Edit Topology Sections</string>
    </property>
    <property name="iconText">
-    <string>Edit Topology</string>
+    <string>Edit Topology Sections</string>
    </property>
    <property name="toolTip">
-    <string>Edit Topology  E</string>
+    <string>Edit Topology Sections  E</string>
    </property>
    <property name="shortcut">
     <string>E</string>
@@ -1213,6 +1240,9 @@
   <action name="action_View_Shapefile_Attributes">
    <property name="text">
     <string>View Shapefile &amp;Attributes</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Specify_Time_Increment">
@@ -1372,6 +1402,9 @@
    <property name="text">
     <string>Manage &amp;Colouring</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Split_Feature">
    <property name="checkable">
@@ -1425,10 +1458,16 @@
    <property name="text">
     <string>Import &amp;Raster...</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Import_Time_Dependent_Raster">
    <property name="text">
     <string>Import &amp;Time-Dependent Raster...</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Preferences">

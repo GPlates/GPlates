@@ -80,6 +80,8 @@ set(srcs
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
+    DockWidget.cc
+    DockWidget.h
     EditAffineTransformGeoreferencingWidget.cc
     EditAffineTransformGeoreferencingWidget.h
     EditAffineTransformGeoreferencingWidgetUi.ui

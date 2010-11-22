@@ -41,6 +41,8 @@ set(srcs
     CptColourPalette.h
     CsvExport.cc
     CsvExport.h
+    DockState.cc
+    DockState.h
     EnableCanvasTool.cc
     EnableCanvasTool.h
     ExportAnimationContext.cc

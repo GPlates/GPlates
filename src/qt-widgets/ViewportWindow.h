@@ -69,9 +69,11 @@ namespace GPlatesFileIO
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+	class DockState;
 	class EnableCanvasTool;
 	class FeatureFocus;
 	class FeatureTableModel;
+	class FileIOFeedback;
 	class GlobeCanvasToolAdapter;
 	class GlobeCanvasToolChoice;
 	class MapCanvasToolAdapter;
@@ -81,7 +83,6 @@ namespace GPlatesGui
 	class TopologySectionsContainer;
 	class TrinketArea;
 	class UnsavedChangesTracker;
-	class FileIOFeedback;
 }
 
 namespace GPlatesPresentation
@@ -109,6 +110,7 @@ namespace GPlatesQtWidgets
 	class CalculateReconstructionPoleDialog;
 	class ColouringDialog;
 	class DataAssociationDialog;
+	class DockWidget;
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
@@ -479,6 +481,17 @@ namespace GPlatesQtWidgets
 		 */
 		QPointer<GPlatesGui::SessionMenu> d_session_menu_ptr;
 
+		/**
+		 * Deals with all the micro-management of the ViewportWindow's docks.
+		 */
+		QPointer<GPlatesGui::DockState> d_dock_state_ptr;
+
+		/**
+		 * A temporary position for the new DockWidget for Clicked/Topology
+		 * while I refactor it out of ViewportWindow --JC
+		 */
+		QPointer<DockWidget> d_info_dock_ptr;
+
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
@@ -583,11 +596,6 @@ namespace GPlatesQtWidgets
 		 * the user to a digitisation tool.
 		 */
 		GPlatesCanvasTools::CanvasToolType::Value d_canvas_tool_last_chosen_by_user;
-
-		/**
-		 * Checkable action that toggles the bottom panel on and off.
-		 */
-		QAction *d_action_show_bottom_panel;
 
 		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar

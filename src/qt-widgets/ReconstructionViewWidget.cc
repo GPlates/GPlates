@@ -589,6 +589,14 @@ void
 GPlatesQtWidgets::ReconstructionViewWidget::activate_time_spinbox()
 {
 	d_time_control_widget_ptr->activate_time_spinbox();
+	
+	// Since ctrl-T can now be triggered as an Application-level shortcut,
+	// ViewportWindow might not have WM focus at the time this is triggered.
+	// This prevents the user from typing in a time, so just as we do for
+	// various ViewportWindow::pop_up_ methods, let's ensure that the main
+	// window is active and raised etc.
+	activateWindow();
+	raise();
 }
 
 

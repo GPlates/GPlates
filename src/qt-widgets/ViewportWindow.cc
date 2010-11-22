@@ -58,6 +58,7 @@
 #include "ColouringDialog.h"
 #include "CreateFeatureDialog.h"
 #include "CreateVGPDialog.h"
+#include "DockWidget.h"
 #include "ExportAnimationDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
@@ -110,6 +111,7 @@
 
 #include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "gui/ChooseCanvasTool.h"
+#include "gui/DockState.h"
 #include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
@@ -253,6 +255,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				*d_file_io_feedback_ptr,
 				*d_unsaved_changes_tracker_ptr,
 				this)),
+	d_dock_state_ptr(
+			new GPlatesGui::DockState(
+				*this,
+				this)),
+	d_info_dock_ptr(NULL),
 	d_reconstruction_view_widget(
 			d_animation_controller,
 			*this,
@@ -347,8 +354,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_view_state())),
 	d_task_panel_ptr(NULL),
 	d_canvas_tool_last_chosen_by_user(
-			GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE),
-	d_action_show_bottom_panel(NULL)
+			GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE)
 {
 	setupUi(this);
 
@@ -377,6 +383,15 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			*d_choose_canvas_tool,
 			this));
 	d_task_panel_ptr = task_panel_auto_ptr.get();
+
+	// New wrapper for Dock stuff, TEMPORARY CODE while I am in the middle of refactoring out all
+	// the "Info Dock" code away from ViewportWindow. Thanks for your patience --JC
+	d_info_dock_ptr = new DockWidget(tr(""), *d_dock_state_ptr, *this);
+	d_info_dock_ptr->setWidget(tabWidget);		// Note the hack here. It's not so bad, Qt reparents it.
+	dock_search_results->hide();
+	d_info_dock_ptr->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable |
+			QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetVerticalTitleBar);
+	d_info_dock_ptr->dock_at_bottom();
 
 	// Connect all the Signal/Slot relationships of ViewportWindow's
 	// toolbar buttons and menu items.
@@ -456,6 +471,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
 			SLOT(highlight_focused_feature_in_table()));
+
 
 	// Set up the Topology Sections Table, now that the table widget has been created.
 	d_topology_sections_table_ptr.reset(
@@ -715,7 +731,13 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// 3. Drag this action to a menu.
 	//    3a. If it's a canvas tool, drag it to the toolbar instead. It will appear on the
 	//        Tools menu automatically.
-	// 4. Add code for the triggered() signal your action generates here.
+	// 4. If your shortcut key uses 'Ctrl', it is most likely an Application shortcut
+	//    that should be usable from within any window or non-modal dialog of GPlates.
+	//    It's not immediately obvious how to set this via Designer.
+	//    First, select the QAction, either in the Action Editor or the Object inspector.
+	//    This will adjust the Property Editor window - find the "shortcutContext" property,
+	//    and set it to "ApplicationShortcut".
+	// 5. Add code for the triggered() signal your action generates here.
 	//    Please keep this function sorted in the same order as menu items appear.
 
 	// Canvas Tools:
@@ -890,10 +912,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// View Menu:
 	QObject::connect(action_Full_Screen, SIGNAL(triggered(bool)),
 			&d_full_screen_mode, SLOT(toggle_full_screen(bool)));
-	d_action_show_bottom_panel = dock_search_results->toggleViewAction();
-	d_action_show_bottom_panel->setText(tr("Show &Bottom Panel"));
-	d_action_show_bottom_panel->setObjectName("action_Show_Bottom_Panel");
-	menu_View->insertAction(action_Show_Bottom_Panel_Placeholder, d_action_show_bottom_panel);
+	QAction *action_show_bottom_panel = d_info_dock_ptr->toggleViewAction();
+	action_show_bottom_panel->setText(tr("Show &Bottom Panel"));
+	action_show_bottom_panel->setObjectName("action_Show_Bottom_Panel");
+	menu_View->insertAction(action_Show_Bottom_Panel_Placeholder, action_show_bottom_panel);
 	menu_View->removeAction(action_Show_Bottom_Panel_Placeholder);
 	// ----
 	QObject::connect(action_Set_Projection, SIGNAL(triggered()),
