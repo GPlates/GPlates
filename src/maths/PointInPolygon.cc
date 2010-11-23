@@ -225,9 +225,11 @@ namespace GPlatesMaths
 					// and determine the intersection from those.
 					const UnitVector3D gca_midpoint_norm(cross(gca.rotation_axis(), gca_start_point));
 
+#if 0
 					// Determine the signed distance of the arc midpoint from the plane.
 					const double signed_distance_gca_mid_to_plane =
 							dot(plane_normal, gca_midpoint_norm).dval();
+#endif
 
 					// Find out which sides of the plane the arc endpoints and midpoint are.
 					// Note that we must use the same comparisons as the main function -
@@ -236,8 +238,10 @@ namespace GPlatesMaths
 							dot(plane_normal, gca_start_point).dval() < 0;
 					const bool is_arc_mid_on_negative_side_of_plane =
 							dot(plane_normal, gca_midpoint_norm).dval() < 0;
+#if 0
 					const bool is_arc_end_on_negative_side_of_plane =
 							dot(plane_normal, gca_end_point).dval() < 0;
+#endif
 
 					// If the plane divides the first arc.
 					if (is_arc_start_on_negative_side_of_plane ^
