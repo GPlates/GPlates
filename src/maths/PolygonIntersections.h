@@ -168,7 +168,7 @@ namespace GPlatesMaths
 
 	private:
 		PolygonOnSphere::non_null_ptr_to_const_type d_partitioning_polygon;
-		PointInPolygon::optimised_polygon_type d_point_in_polygon_tester;
+		PointInPolygon::Polygon d_point_in_polygon_tester;
 		PolygonOrientation::Orientation d_partitioning_polygon_orientation;
 
 

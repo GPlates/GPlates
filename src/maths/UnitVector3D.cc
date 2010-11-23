@@ -224,14 +224,6 @@ GPlatesMaths::cross(
 }
 
 
-const GPlatesMaths::Vector3D
-GPlatesMaths::operator*(
-		const real_t &s,
-		const UnitVector3D &u)
-{
-	return GenericVectorOps3D::ReturnType<Vector3D>::scale(s, u);
-}
-
 std::ostream &
 GPlatesMaths::operator<<(
 		std::ostream &os,

@@ -262,10 +262,14 @@ namespace GPlatesMaths
 	}
 
 
+	inline
 	const Vector3D
 	operator*(
-			const real_t &s, 
-			const UnitVector3D &u);
+			const real_t &s,
+			const UnitVector3D &u)
+	{
+		return GenericVectorOps3D::ReturnType<Vector3D>::scale(s, u);
+	}
 
 
 	inline 
@@ -282,7 +286,8 @@ namespace GPlatesMaths
 	 * Given the unit vector @a u, generate a unit vector perpendicular
 	 * to it.
 	 */
-	UnitVector3D generate_perpendicular(
+	UnitVector3D
+	generate_perpendicular(
 			const UnitVector3D &u);
 
 	std::ostream &
