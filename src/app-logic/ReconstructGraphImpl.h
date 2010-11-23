@@ -183,13 +183,6 @@ namespace GPlatesAppLogic
 			boost::optional<layer_task_data_type> d_data;
 			connection_seq_type d_output_connections;
 			state_type d_state;
-
-			/**
-			 * Active status of this data as an input file.
-			 *
-			 * FIXME: Remove this when @a activate_input_file is removed.
-			 */
-			bool d_active;
 		};
 
 

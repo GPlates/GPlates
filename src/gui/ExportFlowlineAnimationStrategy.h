@@ -164,7 +164,7 @@ namespace GPlatesGui
 		/**
 		 * The reconstruction file(s) used to create this reconstruction.                                                                     
 		 */
-		files_collection_type d_active_files;		
+		files_collection_type d_loaded_files;		
 
 		FileFormat d_file_format;
 	};

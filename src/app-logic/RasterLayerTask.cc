@@ -418,6 +418,13 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_definitions() const
 {
 	std::vector<Layer::input_channel_definition_type> input_channel_definitions;
 
+	// Channel definition for the reconstruction tree.
+	input_channel_definitions.push_back(
+			boost::make_tuple(
+					get_reconstruction_tree_channel_name(),
+					Layer::INPUT_RECONSTRUCTION_TREE_DATA,
+					Layer::ONE_DATA_IN_CHANNEL));
+
 	// Channel definition for the raster feature.
 	input_channel_definitions.push_back(
 			boost::make_tuple(

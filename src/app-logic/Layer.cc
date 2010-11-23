@@ -349,19 +349,6 @@ GPlatesAppLogic::Layer::get_layer_task_params()
 }
 
 
-void
-GPlatesAppLogic::Layer::InputFile::activate(
-		bool active)
-{
-	// Throw our own exception to track location of throw.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-		is_valid(),
-		GPLATES_ASSERTION_SOURCE);
-
-	boost::shared_ptr<ReconstructGraphImpl::Data>(d_impl)->activate_input_file(active);
-}
-
-
 GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::Layer::InputFile::get_file() const
 {

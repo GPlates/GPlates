@@ -44,14 +44,14 @@ set(srcs
     GeometryExporter.h
     GmapReader.cc
     GmapReader.h
-	GMTFormatFlowlineExport.cc
-	GMTFormatFlowlineExport.h
+    GMTFormatFlowlineExport.cc
+    GMTFormatFlowlineExport.h
     GMTFormatGeometryExporter.cc
     GMTFormatGeometryExporter.h
     GMTFormatHeader.cc
     GMTFormatHeader.h
-	GMTFormatMotionTrackExport.cc
-	GMTFormatMotionTrackExport.h	
+    GMTFormatMotionTrackExport.cc
+    GMTFormatMotionTrackExport.h
     GMTFormatReconstructedFeatureGeometryExport.cc
     GMTFormatReconstructedFeatureGeometryExport.h
     GMTFormatWriter.cc
@@ -110,13 +110,13 @@ set(srcs
     ReconstructedMotionTrackExport.cc
     ReconstructedMotionTrackExport.h
     ReconstructedMotionTrackExportImpl.cc
-    ReconstructedMotionTrackExportImpl.h		
+    ReconstructedMotionTrackExportImpl.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
-	ShapefileFormatFlowlineExport.cc
-	ShapefileFormatFlowlineExport.h
-	ShapefileFormatMotionTrackExport.cc
-	ShapefileFormatMotionTrackExport.h	
+    ShapefileFormatFlowlineExport.cc
+    ShapefileFormatFlowlineExport.h
+    ShapefileFormatMotionTrackExport.cc
+    ShapefileFormatMotionTrackExport.h
     ShapefileFormatReconstructedFeatureGeometryExport.cc
     ShapefileFormatReconstructedFeatureGeometryExport.h
     ShapefileGeometryExporter.cc

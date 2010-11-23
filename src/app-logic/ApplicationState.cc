@@ -69,36 +69,117 @@ namespace
 		return old_anchor_plate_id != new_anchor_plate_id;
 	}
 
+
+	/**
+	 * If the layer is a velocity field calculator then look for any topology resolver layers
+	 * and connect their outputs to the velocity layer input.
+	 */
 	void
 	connect_input_channels_for_velocity_field_calculator_layer(
-			GPlatesAppLogic::Layer& layer,
-			GPlatesAppLogic::ReconstructGraph* graph)
+			GPlatesAppLogic::Layer& velocity_layer,
+			const GPlatesAppLogic::ReconstructGraph &graph)
 	{
-		GPlatesAppLogic::ReconstructGraph::const_iterator it = graph->begin();
-		GPlatesAppLogic::ReconstructGraph::const_iterator it_end = graph->end();
+		GPlatesAppLogic::ReconstructGraph::const_iterator it = graph.begin();
+		GPlatesAppLogic::ReconstructGraph::const_iterator it_end = graph.end();
 		for(; it != it_end; it++)
 		{
-			if(it->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&
+			if (it->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&
 			   it->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
 			{
 				continue;
 			}
 			std::vector<GPlatesAppLogic::Layer::input_channel_definition_type> input_channel_definitions = 
-				layer.get_input_channel_definitions();
+				velocity_layer.get_input_channel_definitions();
 		
-			QString channel_name;
-			GPlatesAppLogic::Layer::LayerInputDataType input_type = GPlatesAppLogic::Layer::INPUT_FEATURE_COLLECTION_DATA;
-			// It needs to be uninitialised otherwise g++ complains.
+			QString velocity_input_channel_name;
+			GPlatesAppLogic::Layer::LayerInputDataType velocity_input_type =
+					GPlatesAppLogic::Layer::INPUT_FEATURE_COLLECTION_DATA;
+			// It needs to be initialised otherwise g++ complains.
 			
-			BOOST_FOREACH(boost::tie(channel_name,input_type,boost::tuples::ignore),input_channel_definitions)
+			BOOST_FOREACH(
+					boost::tie(velocity_input_channel_name, velocity_input_type, boost::tuples::ignore),
+					input_channel_definitions)
 			{
-				if(input_type == GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
+				// FIXME: Find a better way to do this - there could be several input channels
+				// that accept reconstructed geometry input - we really need the channel name which
+				// only the layer task itself should know - this auto-connection should probably
+				// be done by the layer task.
+				if (velocity_input_type == GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
 				{
-					layer.connect_input_to_layer_output(*it,channel_name);
+					velocity_layer.connect_input_to_layer_output(*it, velocity_input_channel_name);
 					break;
 				}
 			}
 		}
+	}
+
+
+	/**
+	 * If the layer is a topology resolver then look for any velocity field calculator layers
+	 * and connect the topology resolver output to the input of the velocity layers.
+	 */
+	void
+	connect_input_channels_for_topology_resolver_layer(
+			const GPlatesAppLogic::Layer& topology_layer,
+			GPlatesAppLogic::ReconstructGraph &graph)
+	{
+		GPlatesAppLogic::ReconstructGraph::iterator it = graph.begin();
+		GPlatesAppLogic::ReconstructGraph::iterator it_end = graph.end();
+		for(; it != it_end; it++)
+		{
+			if (it->get_type() != GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
+			{
+				continue;
+			}
+			GPlatesAppLogic::Layer velocity_layer = *it;
+
+			std::vector<GPlatesAppLogic::Layer::input_channel_definition_type> input_channel_definitions = 
+				velocity_layer.get_input_channel_definitions();
+		
+			QString velocity_input_channel_name;
+			GPlatesAppLogic::Layer::LayerInputDataType velocity_input_type =
+					GPlatesAppLogic::Layer::INPUT_FEATURE_COLLECTION_DATA;
+			// It needs to be initialised otherwise g++ complains.
+			
+			BOOST_FOREACH(
+					boost::tie(velocity_input_channel_name, velocity_input_type, boost::tuples::ignore),
+					input_channel_definitions)
+			{
+				// FIXME: Find a better way to do this - there could be several input channels
+				// that accept reconstructed geometry input - we really need the channel name which
+				// only the layer task itself should know - this auto-connection should probably
+				// be done by the layer task.
+				if (velocity_input_type == GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
+				{
+					velocity_layer.connect_input_to_layer_output(topology_layer, velocity_input_channel_name);
+					break;
+				}
+			}
+		}
+	}
+
+
+	/**
+	 * Returns true if @a layer_task_type matches any layers types in @a layer_list.
+	 */
+	bool
+	is_the_layer_task_in_the_layer_list(
+			GPlatesAppLogic::LayerTaskType::Type layer_task_type,
+			const std::list<GPlatesAppLogic::Layer>& layer_list)
+	{
+		BOOST_FOREACH(GPlatesAppLogic::Layer layer, layer_list)
+		{
+			if (!layer.is_valid())
+			{
+				continue;
+			}
+
+			if (layer_task_type == layer.get_type())
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -113,7 +194,6 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_user_preferences_ptr(new UserPreferences()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_reconstruct_graph(new ReconstructGraph(*this)),
-	d_block_handle_file_state_file_activation_changed(false),
 	d_reconstruction_time(0.0),
 	d_anchored_plate_id(0),
 	d_reconstruction(
@@ -136,9 +216,6 @@ GPlatesAppLogic::ApplicationState::~ApplicationState()
 	// which is one of our data members and if we don't disconnect then it's possible
 	// that we'll delegate to an already destroyed ReconstructGraph as our other
 	// data member, FeatureCollectionFileState, is being destroyed.
-	//
-	// Also disconnect from the file activation signal as it can get emitted when a
-	// file is removed.
 	QObject::disconnect(
 			&get_feature_collection_file_state(),
 			SIGNAL(file_state_file_about_to_be_removed(
@@ -148,17 +225,6 @@ GPlatesAppLogic::ApplicationState::~ApplicationState()
 			SLOT(handle_file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
-	QObject::disconnect(
-			&get_feature_collection_file_state(),
-			SIGNAL(file_state_file_activation_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference,
-					bool)),
-			this,
-			SLOT(handle_file_state_file_activation_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference,
-					bool)));
 }
 
 
@@ -223,8 +289,8 @@ GPlatesAppLogic::ApplicationState::handle_file_state_files_added(
 		// Create a new layer for the current file (or create multiple layers if the
 		// feature collection contains features that can be processed by more than one layer type).
 		// We ignore the created layers because they've been added to the reconstruct graph
-		// and because they will automatically get removed/destroyed when all input files
-		// on their main input channels have been unloaded.
+		// and because they will automatically get removed/destroyed their associated
+		// input files (the ones that triggered this auto-layer-creation) have been unloaded.
 		create_layers(new_file);
 	}
 
@@ -238,130 +304,83 @@ GPlatesAppLogic::ApplicationState::handle_file_state_file_about_to_be_removed(
 		FeatureCollectionFileState &file_state,
 		FeatureCollectionFileState::file_reference file_about_to_be_removed)
 {
+	// Destroy auto-created layers for the file about to be removed.
+	// NOTE: If the user explicitly created a layer then it will never get removed automatically -
+	// the user must also explicitly destroy the layer - this is even the case when all files
+	// connected to that layer are unloaded (the user still has to explicitly destroy the layer).
+	const file_to_primary_layers_mapping_type::iterator remove_layers_iter =
+			d_file_to_primary_layers_mapping.find(file_about_to_be_removed);
+	if (remove_layers_iter != d_file_to_primary_layers_mapping.end())
+	{
+		const layer_seq_type &layers_to_remove = remove_layers_iter->second;
+
+		// The current default reconstruction tree layer (if any).
+		const Layer current_default_reconstruction_tree_layer =
+				d_reconstruct_graph->get_default_reconstruction_tree_layer();
+
+		// Remove all layers auto-created for the file about to be removed.
+		BOOST_FOREACH(const Layer &layer_to_remove, layers_to_remove)
+		{
+			// FIXME: We need to do something about the ambiguity of changing the default
+			// reconstruction tree layer under the nose of the user.
+			// This shouldn't really be done here and it's dodgy because we're assuming no one
+			// else is setting the default reconstruction tree layer.
+#if 1
+			//
+			// Before removing the layer see if it's the current default reconstruction tree layer.
+			if (layer_to_remove == current_default_reconstruction_tree_layer)
+			{
+				// If there are any recently set defaults.
+				if (!d_default_reconstruction_tree_layer_stack.empty())
+				{
+					// The current default should match the top of the stack unless
+					// someone else is setting the default (FIXME: this is quite likely).
+					if (current_default_reconstruction_tree_layer ==
+						d_default_reconstruction_tree_layer_stack.top())
+					{
+						// Remove the current default from the top of the stack.
+						d_default_reconstruction_tree_layer_stack.pop();
+					}
+
+					// Remove any invalid layers from the stack (these are the result of
+					// removed layers caused by unloaded rotation files).
+					while (!d_default_reconstruction_tree_layer_stack.empty() &&
+						!d_default_reconstruction_tree_layer_stack.top().is_valid())
+					{
+						d_default_reconstruction_tree_layer_stack.pop();
+					}
+
+					// Get the most recently set (and valid) default.
+					if (!d_default_reconstruction_tree_layer_stack.empty())
+					{
+						const Layer new_default_reconstruction_tree_layer =
+								d_default_reconstruction_tree_layer_stack.top();
+
+						d_reconstruct_graph->set_default_reconstruction_tree_layer(
+								new_default_reconstruction_tree_layer);
+					}
+				}
+			}
+#endif
+
+			// Remove the auto-created layer.
+			d_reconstruct_graph->remove_layer(layer_to_remove);
+		}
+
+		// We don't need to track the auto-generated layers for the file being removed.
+		d_file_to_primary_layers_mapping.erase(remove_layers_iter);
+	}
+
 	// Pass the signal onto the reconstruct graph first.
 	// We do this rather than connect it to the signal directly so we can control
 	// the order in which things happen.
 	d_reconstruct_graph->handle_file_state_file_about_to_be_removed(file_state, file_about_to_be_removed);
-
-	/*
-	 * It's ugly cause it's gonna get removed soon.
-	 *
-	 * FIXME: This is temporary until file activation in
-	 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-	 * in the layers GUI. We could keep both but it might be confusing for the user.
-	 */
-	{
-		file_to_layers_mapping_type::iterator iter =
-				d_file_to_layers_mapping.find(file_about_to_be_removed);
-		if (iter != d_file_to_layers_mapping.end())
-		{
-			d_file_to_layers_mapping.erase(iter);
-		}
-	}
-
-	// Currently we don't need to do anything else since the reconstruct graph will
-	// remove any layers that have no input file connections on their main input channel.
 
 	// An input file has been removed so reconstruct in case it was connected to a layer
 	// which is probably going to always be the case unless the user deletes a layer without
 	// unloading the file it uses.
 	reconstruct();
 }
-
-
-void
-GPlatesAppLogic::ApplicationState::handle_file_state_file_activation_changed(
-		FeatureCollectionFileState &file_state,
-		FeatureCollectionFileState::file_reference file,
-		bool active)
-{
-	/*
-	 * It's ugly cause it's gonna get removed soon.
-	 *
-	 * FIXME: This is temporary until file activation in
-	 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-	 * in the layers GUI. We could keep both but it might be confusing for the user.
-	 */
-	{
-		d_reconstruct_graph->get_input_file(file).activate(active);
-
-		if (d_block_handle_file_state_file_activation_changed)
-		{
-			return;
-		}
-
-		if (active)
-		{
-			handle_setting_default_reconstruction_tree_layer(file);
-		}
-
-		// An input file has been removed so reconstruct in case it was connected to a layer
-		// which is probably going to always be the case unless the user deletes a layer without
-		// unloading the file it uses.
-		reconstruct();
-	}
-}
-
-
-// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
-// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
-// cause GCC to warn about shadowed declarations.
-DISABLE_GCC_WARNING("-Wshadow")
-
-
-void
-GPlatesAppLogic::ApplicationState::handle_setting_default_reconstruction_tree_layer(
-		FeatureCollectionFileState::file_reference file)
-{
-	d_block_handle_file_state_file_activation_changed = true;
-
-	/*
-	 * It's ugly cause this whole method is gonna get removed soon.
-	 *
-	 * FIXME: This is temporary until file activation in
-	 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-	 * in the layers GUI. We could keep both but it might be confusing for the user.
-	 */
-
-	// If the file spawned a reconstruction tree layer then set the layer
-	// as the default reconstruction tree layer.
-	BOOST_FOREACH(const Layer &file_layer, d_file_to_layers_mapping[file])
-	{
-		if (file_layer.get_output_definition() == Layer::OUTPUT_RECONSTRUCTION_TREE_DATA)
-		{
-			d_reconstruct_graph->set_default_reconstruction_tree_layer(file_layer);
-
-			// Search all other files (other than 'file') and if there are any reconstruction
-			// tree layers then deactivate the file that spawned it - this is so GPlates
-			// behaves like it used to.
-			BOOST_FOREACH(file_to_layers_mapping_type::value_type &layers, d_file_to_layers_mapping)
-			{
-				if (layers.first == file)
-				{
-					continue;
-				}
-
-				BOOST_FOREACH(Layer &layer, layers.second)
-				{
-					if (layer.get_output_definition() == Layer::OUTPUT_RECONSTRUCTION_TREE_DATA)
-					{
-						FeatureCollectionFileState::file_reference other_file = layers.first;
-						// This will emit the 'file_state_file_activation_changed' signal.
-						other_file.set_file_active(false);
-					}
-				}
-			}
-
-			break;
-		}
-	}
-
-	d_block_handle_file_state_file_activation_changed = false;
-}
-
-
-// See above.
-ENABLE_GCC_WARNING("-Wshadow")
 
 
 const GPlatesAppLogic::Reconstruction &
@@ -437,17 +456,6 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 			SLOT(handle_file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
-	QObject::connect(
-			&get_feature_collection_file_state(),
-			SIGNAL(file_state_file_activation_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference,
-					bool)),
-			this,
-			SLOT(handle_file_state_file_activation_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference,
-					bool)));
 
 	//
 	// Perform a new reconstruction whenever shapefile attributes are modified.
@@ -501,8 +509,9 @@ GPlatesAppLogic::ApplicationState::create_layer_tasks(
 	// Iterate over the compatible layer task types and create layer tasks.
 	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, layer_task_types)
 	{
-		boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task;
-		if(layer_task = create_layer_task(layer_task_type))
+		const boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task =
+				create_primary_layer_task(layer_task_type);
+		if (layer_task)
 		{
 			// Add to sequence returned to the caller.
 			layer_tasks.push_back(*layer_task);
@@ -512,57 +521,78 @@ GPlatesAppLogic::ApplicationState::create_layer_tasks(
 	return layer_tasks;
 }
 
-namespace
+
+boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> >
+GPlatesAppLogic::ApplicationState::create_primary_layer_task(
+		LayerTaskRegistry::LayerTaskType& layer_task_type) 
 {
-	using namespace GPlatesAppLogic;
-	bool
-	is_the_layer_task_in_the_layer_list(
-			const LayerTask& layer_task, 
-			const std::list<Layer>& layer_list)
+	// Ignore layer task types that are not primary.
+	// Primary task types are the set of orthogonal task types that we can
+	// create without user interaction. The other types can be selected specifically
+	// by the user but will never be created automatically when a file is first loaded.
+	if (!layer_task_type.is_primary_task_type())
 	{
-		BOOST_FOREACH(Layer layer,layer_list)
-		{
-			if(layer.get_type() == layer_task.get_layer_type())
-			{
-				return true;
-			}
-		}
-		return false;
+		return boost::none;
 	}
+
+	// Create the layer task.
+	return layer_task_type.create_layer_task();
 }
 
 void
 GPlatesAppLogic::ApplicationState::update_layers(
-		const FeatureCollectionFileState::file_reference &input_file_ref)
+		const FeatureCollectionFileState::file_reference &file_ref)
 {
 	const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-			input_file_ref.get_file().get_feature_collection();
+			file_ref.get_file().get_feature_collection();
+
+	// The file may have changed so find out what layer types can process it.
+	// This may have changed since we last checked.
 	const std::vector<LayerTaskRegistry::LayerTaskType> new_layer_task_types =
 			d_layer_task_registry->get_layer_task_types_that_can_process_feature_collection(
 					feature_collection);
 
+	bool created_new_layers = false;
+
 	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, new_layer_task_types)
 	{
-		boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task;
-		if(layer_task = create_layer_task(layer_task_type))
+		// Ignore layer task types that are not primary.
+		// Primary task types are the set of orthogonal task types that we can
+		// create without user interaction. The other types can be selected specifically
+		// by the user but will never be created automatically when a file is first loaded.
+		if (!layer_task_type.is_primary_task_type())
 		{
-			if(
-				!is_the_layer_task_in_the_layer_list(
-						*(*layer_task), 
-						d_file_to_layers_mapping[input_file_ref]))
-			{
-				create_layer(input_file_ref,*layer_task);
-			}
+			continue;
 		}
-		continue;
+
+		// Get the layers auto-created from 'file_ref'.
+		const layer_seq_type &layers_created_from_file =
+				d_file_to_primary_layers_mapping[file_ref];
+
+		// If a layer task of the current type hasn't yet been created for 'file_ref'
+		// then create one.
+		if (!is_the_layer_task_in_the_layer_list(
+				layer_task_type.get_layer_type(),
+				layers_created_from_file))
+		{
+			const boost::shared_ptr<LayerTask> layer_task = layer_task_type.create_layer_task();
+
+			create_layer(file_ref, layer_task);
+
+			created_new_layers = true;
+		}
 	}
-	reconstruct();
+
+	if (created_new_layers)
+	{
+		reconstruct();
+	}
 }
 
 void
 GPlatesAppLogic::ApplicationState::create_layer(
 		const FeatureCollectionFileState::file_reference &input_file_ref,
-		boost::shared_ptr<LayerTask> layer_task)
+		const boost::shared_ptr<LayerTask> &layer_task)
 {
 	// Create a new layer using the layer task.
 	// This will emit a signal in ReconstructGraph to notify clients of a new layer.
@@ -583,23 +613,39 @@ GPlatesAppLogic::ApplicationState::create_layer(
 			input_file,
 			main_input_feature_collection_channel);
 
-	if(new_layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
+	// If the layer is a velocity field calculator then look for any topology resolver layers
+	// and connect their outputs to the velocity layer input.
+	if (new_layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
 	{
 		connect_input_channels_for_velocity_field_calculator_layer(
 				new_layer, 
-				d_reconstruct_graph.get());
+				*d_reconstruct_graph);
 	}
 
-	/*
-	 * It's ugly cause it's gonna get removed soon.
-	 *
-	 * FIXME: This is temporary until file activation in
-	 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-	 * in the layers GUI. We could keep both but it might be confusing for the user.
-	 */
+	// If the layer is a topology resolver then look for any velocity field calculator layers
+	// and connect the topology resolver output to the input of the velocity layers.
+	if (new_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER ||
+		new_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
 	{
-		d_file_to_layers_mapping[input_file_ref].push_back(new_layer);
+		connect_input_channels_for_topology_resolver_layer(
+				new_layer, 
+				*d_reconstruct_graph);
 	}
+
+	// FIXME: We need to do something about the ambiguity of changing the default
+	// reconstruction tree layer under the nose of the user.
+	// This shouldn't really be done here and it's dodgy because we're assuming no one
+	// else is setting the default reconstruction tree layer.
+	if (new_layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)
+	{
+		d_reconstruct_graph->set_default_reconstruction_tree_layer(new_layer);
+
+		// Keep track of the default reconstruction tree layers set.
+		d_default_reconstruction_tree_layer_stack.push(new_layer);
+	}
+
+	// Keep track of the layers auto-created for each file loaded.
+	d_file_to_primary_layers_mapping[input_file_ref].push_back(new_layer);
 }
 
 void
@@ -613,20 +659,9 @@ GPlatesAppLogic::ApplicationState::create_layers(
 	const std::vector< boost::shared_ptr<LayerTask> > layer_tasks =
 			create_layer_tasks(new_feature_collection);
 
-	BOOST_FOREACH(boost::shared_ptr<LayerTask> layer_task, layer_tasks)
+	BOOST_FOREACH(const boost::shared_ptr<LayerTask> &layer_task, layer_tasks)
 	{
-		create_layer(input_file_ref,layer_task);
-	}
-
-	/*
-	 * It's ugly cause it's gonna get removed soon.
-	 *
-	 * FIXME: This is temporary until file activation in
-	 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-	 * in the layers GUI. We could keep both but it might be confusing for the user.
-	 */
-	{
-		handle_setting_default_reconstruction_tree_layer(input_file_ref);
+		create_layer(input_file_ref, layer_task);
 	}
 }
 

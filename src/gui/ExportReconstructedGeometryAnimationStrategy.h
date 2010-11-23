@@ -135,10 +135,10 @@ namespace GPlatesGui
 		
 	private:
 		/**
-		 * The list of currently loaded files that are active.
+		 * The list of currently loaded files.
 		 */
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type
-				d_active_files;
+				d_loaded_files;
 		FileFormat d_file_format;
 
 		ExportReconstructedGeometryAnimationStrategy();

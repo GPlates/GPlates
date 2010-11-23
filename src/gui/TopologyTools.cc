@@ -1104,12 +1104,14 @@ GPlatesGui::TopologyTools::handle_apply()
 	// Convert the current topology state to a 'gpml:boundary' property value
 	// and attach it to the topology feature reference.
 	convert_topology_to_boundary_feature_property(d_topology_feature_ref);
-	boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_ref;
-	if(file_ref = 
-		GPlatesAppLogic::get_file_reference_containing_feature(
+
+	// The topology feature has been modified so that it now behaves as a topological feature.
+	// Create any new layers required so the topological feature can be processed.
+	const boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_ref =
+			GPlatesAppLogic::get_file_reference_containing_feature(
 				d_application_state_ptr->get_feature_collection_file_state(),
-				d_topology_feature_ref)
-	  )
+				d_topology_feature_ref);
+	if(file_ref)
 	{
 		d_application_state_ptr->update_layers(*file_ref);
 	}

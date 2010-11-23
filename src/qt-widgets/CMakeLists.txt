@@ -14,7 +14,7 @@ set(srcs
     AboutDialog.cc
     AboutDialog.h
     AboutDialogUi.ui
-	AbstractCustomPropertiesWidget.h
+    AbstractCustomPropertiesWidget.h
     AbstractEditWidget.cc
     AbstractEditWidget.h
     ActionButtonBox.cc
@@ -68,9 +68,9 @@ set(srcs
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
-	CreateSmallCircleDialog.cc
-	CreateSmallCircleDialog.h
-	CreateSmallCircleDialogUi.ui
+    CreateSmallCircleDialog.cc
+    CreateSmallCircleDialog.h
+    CreateSmallCircleDialogUi.ui
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
@@ -121,19 +121,19 @@ set(srcs
     EditStringWidget.cc
     EditStringWidget.h
     EditStringWidgetUi.ui
-	EditTableActionWidget.cc
-	EditTableActionWidget.h
-	EditTableActionWidgetUi.ui
-	EditTableWidget.h
+    EditTableActionWidget.cc
+    EditTableActionWidget.h
+    EditTableActionWidgetUi.ui
+    EditTableWidget.h
     EditTimeInstantWidget.cc
     EditTimeInstantWidget.h
     EditTimeInstantWidgetUi.ui
     EditTimePeriodWidget.cc
     EditTimePeriodWidget.h
     EditTimePeriodWidgetUi.ui
-	EditTimeSequenceWidget.cc
-	EditTimeSequenceWidget.h
-	EditTimeSequenceWidgetUi.ui	
+    EditTimeSequenceWidget.cc
+    EditTimeSequenceWidget.h
+    EditTimeSequenceWidgetUi.ui
     EditTopologyWidgetUi.ui
     EditWidgetChooser.cc
     EditWidgetChooser.h
@@ -153,9 +153,9 @@ set(srcs
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
-	FlowlinePropertiesWidget.cc
-	FlowlinePropertiesWidget.h
-	FlowlinePropertiesWidgetUi.ui
+    FlowlinePropertiesWidget.cc
+    FlowlinePropertiesWidget.h
+    FlowlinePropertiesWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
     GeoreferencingPage.cc
@@ -195,9 +195,6 @@ set(srcs
     ManageFeatureCollectionsDialog.cc
     ManageFeatureCollectionsDialog.h
     ManageFeatureCollectionsDialogUi.ui
-    ManageFeatureCollectionsStateWidget.cc
-    ManageFeatureCollectionsStateWidget.h
-    ManageFeatureCollectionsStateWidgetUi.ui
     MapCanvas.cc
     MapCanvas.h
     MapView.cc
@@ -214,9 +211,9 @@ set(srcs
     ModifyReconstructionPoleWidget.cc
     ModifyReconstructionPoleWidget.h
     ModifyReconstructionPoleWidgetUi.ui
-	MotionTrackPropertiesWidget.cc
-	MotionTrackPropertiesWidget.h
-	MotionTrackPropertiesWidgetUi.ui	
+    MotionTrackPropertiesWidget.cc
+    MotionTrackPropertiesWidget.h
+    MotionTrackPropertiesWidgetUi.ui
     NoActiveEditWidgetException.h
     PoleSequenceTableWidget.cc
     PoleSequenceTableWidget.h
@@ -290,12 +287,12 @@ set(srcs
     ShapefileAttributeWidgetUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
+    SmallCircleManager.cc
+    SmallCircleManager.h
+    SmallCircleManagerUi.ui
     SnapNearbyVerticesWidget.cc
     SnapNearbyVerticesWidget.h
     SnapNearbyVerticesWidgetUi.ui
-	SmallCircleManager.cc
-	SmallCircleManager.h
-	SmallCircleManagerUi.ui
     SpecifyAnchoredPlateIdDialog.cc
     SpecifyAnchoredPlateIdDialog.h
     SpecifyAnchoredPlateIdDialogUi.ui

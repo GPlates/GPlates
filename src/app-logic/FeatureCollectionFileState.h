@@ -126,30 +126,6 @@ namespace GPlatesAppLogic
 			}
 
 			/**
-			 * Activates or deactivates referenced file.
-			 *
-			 * This does not remove the file.
-			 *
-			 * @a FeatureCollectionFileState emits signals @a file_state_changed and
-			 * @a file_state_file_activation_changed just before returning if the file active state actually changed.
-			 */
-			void
-			set_file_active(
-					bool activate = true)
-			{
-				d_file_state->set_file_active(d_file_handle, activate);
-			}
-
-			/**
-			 * Tests if referenced file is active.
-			 */
-			bool
-			is_file_active() const
-			{
-				return d_file_state->is_file_active(d_file_handle);
-			}
-
-			/**
 			 * Returns the @a FeatureCollectionFileState that we belong to.
 			 */
 			FeatureCollectionFileState &
@@ -247,9 +223,6 @@ namespace GPlatesAppLogic
 		 * Emits signals @a file_state_files_added and @a file_state_changed
 		 * just before returning.
 		 *
-		 * Does not emit @a file_state_file_activation_changed signal since each new file added is
-		 * initially active.
-		 *
 		 * Returns a sequence of file references to the newly added files.
 		 */
 		std::vector<file_reference>
@@ -266,8 +239,6 @@ namespace GPlatesAppLogic
 		 *
 		 * Emits signals @a file_state_files_added and @a file_state_changed
 		 * just before returning.
-		 *
-		 * Does not emit @a file_state_file_activation_changed signal since file added is initially active.
 		 */
 		file_reference
 		add_file(
@@ -291,8 +262,6 @@ namespace GPlatesAppLogic
 		 * emits signal @a file_state_changed after removal.
 		 * The @a file_reference passed by the @a file_state_file_about_to_be_removed signal
 		 * should not dereference the internal feature collection as that might be invalid.
-		 *
-		 * Also emits @a file_state_file_activation_changed signal if file was active to signal deactivation.
 		 */
 		void
 		remove_file(
@@ -331,12 +300,6 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
-		void
-		file_state_file_activation_changed(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
-				bool activation);
-
 
 		//
 		// An alternative to the above signals is to listen to only one signal
@@ -366,8 +329,7 @@ namespace GPlatesAppLogic
 			FileSlotExtra(
 					const GPlatesFileIO::File::Reference::non_null_ptr_type &file_ref) :
 				d_file_ref(file_ref),
-				d_callback_feature_collection(file_ref->get_feature_collection()),
-				d_active(true)
+				d_callback_feature_collection(file_ref->get_feature_collection())
 			{  }
 
 
@@ -379,9 +341,6 @@ namespace GPlatesAppLogic
 			 * our model callback.
 			 */
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_feature_collection;
-
-			//! Has the user activated/deactivated the file?
-			bool d_active;
 		};
 
 		/**
@@ -460,15 +419,6 @@ namespace GPlatesAppLogic
 		set_file_info(
 				file_handle_type file_handle,
 				const GPlatesFileIO::FileInfo &new_file_info);
-
-		void
-		set_file_active(
-				file_handle_type file_handle,
-				bool activate);
-
-		bool
-		is_file_active(
-				file_handle_type file_handle) const;
 
 		void
 		deactivated_feature_collection(

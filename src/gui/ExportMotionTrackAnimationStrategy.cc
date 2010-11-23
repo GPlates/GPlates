@@ -106,17 +106,14 @@ GPlatesGui::ExportMotionTrackAnimationStrategy::ExportMotionTrackAnimationStrate
 			d_export_animation_context_ptr->view_state().get_application_state()
 				.get_feature_collection_file_state();
 			
-	// From the ViewState, obtain the list of all currently loaded files.
+	// From the file state, obtain the list of all currently loaded files.
 	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
 		file_state.get_loaded_files();
 
-	// Add those that are currently active to our list of active files.
+	// Add them to our list of loaded files.
 	BOOST_FOREACH(GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref, loaded_files)
 	{
-		if (file_ref.is_file_active())
-		{
-			d_active_files.push_back(&file_ref.get_file());
-		}
+		d_loaded_files.push_back(&file_ref.get_file());
 	}
 	
 }
@@ -159,7 +156,7 @@ GPlatesGui::ExportMotionTrackAnimationStrategy::do_export_iteration(
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstruced_motion_tracks(
 			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
-			d_active_files,
+			d_loaded_files,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 			d_export_animation_context_ptr->view_time());
 

@@ -26,7 +26,9 @@
 #ifndef GPLATES_APP_LOGIC_APPLICATIONSTATE_H
 #define GPLATES_APP_LOGIC_APPLICATIONSTATE_H
 
+#include <list>
 #include <map>
+#include <stack>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -144,9 +146,21 @@ namespace GPlatesAppLogic
 		ReconstructGraph &
 		get_reconstruct_graph();
 
+
+		/**
+		 * Create any auto-generate layers necessary and connect to @a file_ref.
+		 *
+		 * This is needed for situations where a file is added (and hence any
+		 * appropriate auto-generate layers are created) but then it is modified
+		 * (for example, a new feature is added) such that a new type of autogenerate
+		 * layer needs to be created.
+		 *
+		 * FIXME: This should not need to be called explicitly. Eventually it can
+		 * be detected by listening for modifications to feature collections.
+		 */
 		void
 		update_layers(
-				const FeatureCollectionFileState::file_reference &input_file_ref);
+				const FeatureCollectionFileState::file_reference &file_ref);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -220,23 +234,19 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
-		void
-		handle_file_state_file_activation_changed(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
-				bool active);
-
 	private:
-		/**
-		 * FIXME: This is temporary until file activation in
-		 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-		 * in the layers GUI.
-		 */
-		void
-		handle_setting_default_reconstruction_tree_layer(
-				FeatureCollectionFileState::file_reference file);
+		//! Typedef for a sequence of layers.
+		typedef std::list<Layer> layer_seq_type;
 
-	private:
+		//! Typedef for map of loaded files to primary (auto-generated) layers.
+		typedef std::map<
+				FeatureCollectionFileState::file_reference,
+				layer_seq_type> file_to_primary_layers_mapping_type;
+
+		//! Typedef for a stack of reconstruction tree layers.
+		typedef std::stack<Layer> default_reconstruction_tree_layer_stack_type;
+
+		//! The model store.
 		GPlatesModel::ModelInterface d_model;
 
 		//
@@ -272,19 +282,17 @@ namespace GPlatesAppLogic
 		boost::scoped_ptr<ReconstructGraph> d_reconstruct_graph;
 
 		/**
-		 * Used to make sure only one reconstruction tree layer is active and set to default.
-		 *
-		 * It's ugly cause it's gonna get removed soon.
-		 *
-		 * FIXME: This is temporary until file activation in
-		 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-		 * in the layers GUI. We could keep both but it might be confusing for the user.
+		 * A mapping of all primary layers (auto-generated when a file is loaded)
+		 * to the auto-generated layers.
 		 */
-		typedef std::map<
-				FeatureCollectionFileState::file_reference,
-				std::list<Layer> > file_to_layers_mapping_type;
-		file_to_layers_mapping_type d_file_to_layers_mapping;
-		bool d_block_handle_file_state_file_activation_changed;
+		file_to_primary_layers_mapping_type d_file_to_primary_layers_mapping;
+
+		/**
+		 * Keeps track of the default reconstruction tree layers set as rotation files are loaded.
+		 * When the rotation file for the current default layer is unloaded the most recent
+		 * valid layer is set as the new default.
+		 */
+		default_reconstruction_tree_layer_stack_type d_default_reconstruction_tree_layer_stack;
 
 		/**
 		 * The current reconstruction time.
@@ -317,10 +325,12 @@ namespace GPlatesAppLogic
 		create_layer_tasks(
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &input_feature_collection);
 
-		inline
+		/**
+		 * Creates a layer task from @a layer_task_type if it's a *primary* layer task type.
+		 */
 		boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> >
-		create_layer_task(
-				LayerTaskRegistry::LayerTaskType&);
+		create_primary_layer_task(
+				LayerTaskRegistry::LayerTaskType& layer_task_type);
 
 		/**
 		 * Creates new layer(s) that can process the feature collection in @a input_file_ref and
@@ -330,28 +340,14 @@ namespace GPlatesAppLogic
 		create_layers(
 				const FeatureCollectionFileState::file_reference &input_file_ref);
 
+		/**
+		 * Creates a new layer using @a layer_task and connects @a file_ref to the main input channel.
+		 */
 		void
 		create_layer(
-				const FeatureCollectionFileState::file_reference&,
-				boost::shared_ptr<LayerTask>);
+				const FeatureCollectionFileState::file_reference &file_ref,
+				const boost::shared_ptr<LayerTask> &layer_task);
 	};
-
-	boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> >
-	ApplicationState::create_layer_task(
-			LayerTaskRegistry::LayerTaskType& layer_task_type) 
-	{
-		// Ignore layer task types that are not primary.
-		// Primary task types are the set of orthogonal task types that we can
-		// create without user interaction. The other types can be selected specifically
-		// by the user but will never be created automatically when a file is first loaded.
-		if (!layer_task_type.is_primary_task_type())
-		{
-			return boost::none;
-		}
-
-		// Create the layer task.
-		return layer_task_type.create_layer_task();
-	}
 }
 
 #endif // GPLATES_APP_LOGIC_APPLICATIONSTATE_H

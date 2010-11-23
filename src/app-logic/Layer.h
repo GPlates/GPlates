@@ -150,20 +150,6 @@ namespace GPlatesAppLogic
 			}
 
 			/**
-			 * Activates (or deactivates) this loaded input file.
-			 *
-			 * Any layers connected to us will only receive the feature collection data
-			 * in us if @a activate is true.
-			 *
-			 * FIXME: This is really a temporary method until file activation in
-			 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-			 * in the layers GUI. We could keep both but it might be confusing for the user.
-			 */
-			void
-			activate(
-					bool active = true);
-
-			/**
 			 * Returns the loaded file that 'this' wraps.
 			 *
 			 * @throws PreconditionViolationError if @a is_valid is false.

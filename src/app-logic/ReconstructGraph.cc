@@ -69,13 +69,6 @@ GPlatesAppLogic::ReconstructGraph::add_layer(
 	// Let clients know of the new layer.
 	emit layer_added(*this, layer);
 
-	// If the new layer is a reconstruction tree layer then set it as the
-	// default reconstruction tree layer.
-	if (layer.get_output_definition() == Layer::OUTPUT_RECONSTRUCTION_TREE_DATA)
-	{
-		set_default_reconstruction_tree_layer(layer);
-	}
-
 	// Return the weak reference.
 	return layer;
 }
@@ -447,6 +440,7 @@ GPlatesAppLogic::ReconstructGraph::handle_file_state_file_about_to_be_removed(
 	// The input file corresponding to the file about to be removed.
 	ReconstructGraphImpl::Data *input_file_impl = input_file_iter->second.get();
 
+#if 1 // TODO: Remove this when the user can explicit remove a layer.
 	// Iterate over all layers that are directly connected to the file about to be removed
 	// and remove any layers that:
 	//   1) reference that file on their *main* input channel, *and*
@@ -504,6 +498,7 @@ GPlatesAppLogic::ReconstructGraph::handle_file_state_file_about_to_be_removed(
 	{
 		remove_layer(layer_to_remove);
 	}
+#endif
 
 	// Get the input file to disconnect all connections that use it as input.
 	input_file_impl->disconnect_output_connections();

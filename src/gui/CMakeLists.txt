@@ -49,10 +49,10 @@ set(srcs
     ExportAnimationContext.h
     ExportAnimationStrategy.cc
     ExportAnimationStrategy.h
-	ExportFlowlineAnimationStrategy.cc
-	ExportFlowlineAnimationStrategy.h
-	ExportMotionTrackAnimationStrategy.cc
-	ExportMotionTrackAnimationStrategy.h	
+    ExportFlowlineAnimationStrategy.cc
+    ExportFlowlineAnimationStrategy.h
+    ExportMotionTrackAnimationStrategy.cc
+    ExportMotionTrackAnimationStrategy.h
     ExportRasterAnimationStrategy.cc
     ExportRasterAnimationStrategy.h
     ExportReconstructedGeometryAnimationStrategy.cc

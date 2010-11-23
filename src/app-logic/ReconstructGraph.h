@@ -90,10 +90,16 @@ namespace GPlatesAppLogic
 
 	public:
 		/**
-		 * Typedef for an iterator over the layers in the graph.
+		 * Typedef for a const iterator over the layers in the graph.
 		 */
 		typedef boost::transform_iterator<make_layer_fn_type,
 				layer_ptr_seq_type::const_iterator> const_iterator;
+
+		/**
+		 * Typedef for an iterator over the layers in the graph.
+		 */
+		typedef boost::transform_iterator<make_layer_fn_type,
+				layer_ptr_seq_type::iterator> iterator;
 
 
 		/**
@@ -104,8 +110,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Adds a new layer to the graph and sets it as the default reconstruction tree layer
-		 * (if @a layer_task generates a reconstruction tree as output).
+		 * Adds a new layer to the graph.
 		 *
 		 * The layer will still need to be connected to a feature collection or
 		 * the output of another layer.
@@ -114,8 +119,8 @@ namespace GPlatesAppLogic
 		 * the layer does not yet have any input connections - whoever called @a add_layer
 		 * could still be in the process of making input connections.
 		 *
-		 * Can also emit the signal @a default_reconstruction_tree_layer_changed if
-		 * the layer created is a reconstruction tree layer.
+		 * NOTE: If it's a reconstruction tree layer then it does *not* set the default
+		 * reconstruction tree layer (previously it did but this has been deprecated).
 		 *
 		 * You can create @a layer_task using @a LayerTaskRegistry.
 		 */
@@ -183,7 +188,7 @@ namespace GPlatesAppLogic
 		 * layers that implicitly connect to it to use identity rotations for all plates.
 		 *
 		 * If @a default_reconstruction_tree_layer is invalid then there will be no
-		 * default reconstruction tree layer - this is they way to specify no default layer.
+		 * default reconstruction tree layer - this is the way to specify no default layer.
 		 *
 		 * Emits the @a default_reconstruction_tree_layer_changed signal if the default
 		 * reconstruction tree layer changed.
@@ -225,6 +230,32 @@ namespace GPlatesAppLogic
 		 */
 		const_iterator
 		end() const
+		{
+			return boost::make_transform_iterator(
+					d_layers.end(),
+					make_layer_fn_type(boost::lambda::constructor<Layer>()));
+		}
+
+
+		/**
+		 * Returns the "begin" iterator to iterate over the
+		 * sequence of @a Layer objects in this graph.
+		 */
+		iterator
+		begin()
+		{
+			return boost::make_transform_iterator(
+					d_layers.begin(),
+					make_layer_fn_type(boost::lambda::constructor<Layer>()));
+		}
+
+
+		/**
+		 * Returns the "end" const_iterator to iterate over the
+		 * sequence of @a Layer objects in this graph.
+		 */
+		iterator
+		end()
 		{
 			return boost::make_transform_iterator(
 					d_layers.end(),

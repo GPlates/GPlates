@@ -59,11 +59,6 @@
      </column>
      <column>
       <property name="text" >
-       <string>Layer Types</string>
-      </property>
-     </column>
-     <column>
-      <property name="text" >
        <string>Actions</string>
       </property>
      </column>

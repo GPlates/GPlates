@@ -42,8 +42,7 @@
 GPlatesAppLogic::ReconstructGraphImpl::Data::Data(
 		const FeatureCollectionFileState::file_reference &file) :
 	d_data(layer_task_data_type(file.get_file().get_feature_collection())),
-	d_state(file),
-	d_active(true)
+	d_state(file)
 {
 }
 
@@ -51,22 +50,8 @@ GPlatesAppLogic::ReconstructGraphImpl::Data::Data(
 GPlatesAppLogic::ReconstructGraphImpl::Data::Data(
 		const boost::optional<layer_task_data_type> &data) :
 	d_data(data),
-	d_state(boost::weak_ptr<Layer>()),
-	d_active(true)
+	d_state(boost::weak_ptr<Layer>())
 {
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraphImpl::Data::activate_input_file(
-		bool activate)
-{
-	// Ensure the constructor accepting a file was used to create 'this'.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			boost::get<FeatureCollectionFileState::file_reference>(&d_state),
-			GPLATES_ASSERTION_SOURCE);
-
-	d_active = activate;
 }
 
 
@@ -128,11 +113,6 @@ GPlatesAppLogic::ReconstructGraphImpl::Data::set_outputting_layer(
 boost::optional<GPlatesAppLogic::layer_task_data_type>
 GPlatesAppLogic::ReconstructGraphImpl::Data::get_data() const
 {
-	if (!d_active)
-	{
-		return boost::none;
-	}
-
 	return d_data;
 }
 

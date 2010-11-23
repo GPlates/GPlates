@@ -163,7 +163,7 @@ namespace GPlatesGui
 		 *
 		 * This code is copied from "gui/ExportReconstructedGeometryAnimationStrategy.h".
 		 */
-		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type d_active_files;
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type d_loaded_files;
 
 		ExportVelocityAnimationStrategy();
 	};
