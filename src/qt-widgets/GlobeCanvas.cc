@@ -210,6 +210,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
 	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_svg(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
 			GPlatesGui::PersistentOpenGLObjects::create(
 					d_gl_context, view_state.get_application_state())),
@@ -259,6 +260,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
 	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_svg(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
 			// Attempt to share OpenGL resources across contexts.
 			// This will depend on whether the two 'GLContext's share any state.
@@ -454,7 +456,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 
 		// Initialise the render graph before we ask Globe to do its job.
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
-				initialise_render_graph(*render_graph);
+				initialise_render_graph(*render_graph, d_gl_projection_transform_svg);
 
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 		// Fill up the render graph with more nodes.
@@ -575,7 +577,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 
 		// Initialise the render graph before we ask Globe to do its job.
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
-				initialise_render_graph(*render_graph);
+				initialise_render_graph(*render_graph, d_gl_projection_transform);
 
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 		// Fill up the render graph with more nodes.
@@ -754,8 +756,17 @@ GPlatesQtWidgets::GlobeCanvas::handle_zoom_change()
 void
 GPlatesQtWidgets::GlobeCanvas::set_view() 
 {
+	// NOTE: The projection transform for SVG output is different than for regular OpenGL rendering.
+	// This is because the far clip plane differs (because SVG output ignores depth buffering -
+	// it uses the OpenGL feedback mechanism which bypasses rasterisation - and hence the
+	// opaque disc through the centre of the globe does not occlude vector geometry
+	// on the back side of the globe and hence is visible in the SVG output).
+	// The solution is to set the far clip plane to pass through the globe centre
+	// (effectively doing the equivalent of the opaque disc but in the transformation
+	// pipeline instead of the rasterisation pipeline).
 	static const GLdouble depth_near_clipping = 3.5;
 	static const GLdouble depth_far_clipping = 15;
+	static const GLdouble depth_far_clipping_svg = fabsf(EYE_Z);
 
 	// Always fill up all of the available space.
 	update_dimensions();
@@ -775,6 +786,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
 
 	d_gl_projection_transform->get_matrix().gl_load_identity();
+	d_gl_projection_transform_svg->get_matrix().gl_load_identity();
 
 	//
 	// Note that the coordinate system, as set up in initialise_render_graph() is:
@@ -789,17 +801,25 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// Now, so that we can draw pretty stars on the background, the far clipping
 	// plane has been pushed much further back. Depth testing is now used to ensure
 	// the far side of the earth does not get drawn.
-	//
 
-	if (d_canvas_screen_width <= d_canvas_screen_height) {
+	if (d_canvas_screen_width <= d_canvas_screen_height)
+	{
 		d_gl_projection_transform->get_matrix().gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,
 			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
 			depth_far_clipping);
+		d_gl_projection_transform_svg->get_matrix().gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,
+			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
+			depth_far_clipping_svg);
 
-	} else {
+	}
+	else
+	{
 		d_gl_projection_transform->get_matrix().gl_ortho(-larger_dim_clipping, larger_dim_clipping,
 			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
 			depth_far_clipping);
+		d_gl_projection_transform_svg->get_matrix().gl_ortho(-larger_dim_clipping, larger_dim_clipping,
+			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
+			depth_far_clipping_svg);
 	}
 }
 
@@ -867,7 +887,8 @@ GPlatesQtWidgets::GlobeCanvas::clear_canvas(
 
 GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
 GPlatesQtWidgets::GlobeCanvas::initialise_render_graph(
-		GPlatesOpenGL::GLRenderGraph &render_graph)
+		GPlatesOpenGL::GLRenderGraph &render_graph,
+		const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type &projection_transform)
 {
 	// Create a viewport node with the current viewport dimensions.
 	// All children of the viewport node will use this viewport.
@@ -879,7 +900,7 @@ GPlatesQtWidgets::GlobeCanvas::initialise_render_graph(
 	// Set the projection transform on the viewport node.
 	// It doesn't have to been set on it - it's just a convenient location
 	// and viewport and view projection are related.
-	viewport_node->set_transform(d_gl_projection_transform);
+	viewport_node->set_transform(projection_transform);
 
 	// Create a drawable node to clear the frame buffers.
 	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type clear_buffers_drawable_node =

@@ -501,8 +501,22 @@ namespace GPlatesQtWidgets
 		//! The OpenGL viewport used to render the main scene into this canvas.
 		GPlatesOpenGL::GLViewport d_gl_viewport;
 
-		//! The current projection transform for OpenGL.
+		//! The current projection transform for regular OpenGL rendering.
 		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform;
+
+		/**
+		 * The current projection transform for OpenGL rendering for SVG output.
+		 *
+		 * This is different than the regular OpenGL rendering transform because the
+		 * far clip plane differs (because SVG output ignores depth buffering - it uses
+		 * the OpenGL feedback mechanism which bypasses rasterisation - and hence the
+		 * opaque disc through the centre of the globe does not occlude vector geometry
+		 * on the back side of the globe and hence is visible in the SVG output).
+		 * The solution is to set the far clip plane to pass through the globe centre
+		 * (effectively doing the equivalent of the opaque disc but in the transformation
+		 * pipeline instead of the rasterisation pipeline).
+		 */
+		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform_svg;
 
 		//! Keeps track of OpenGL objects that persist from one render to another.
 		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
@@ -609,7 +623,8 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
 		initialise_render_graph(
-				GPlatesOpenGL::GLRenderGraph &render_graph);
+				GPlatesOpenGL::GLRenderGraph &render_graph,
+				const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type &projection_transform);
 
 		void
 		draw_render_graph(
