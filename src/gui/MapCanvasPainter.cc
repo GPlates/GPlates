@@ -1287,3 +1287,4 @@ GPlatesGui::MapCanvasPainter::visit_rendered_arrowed_polyline(
 		draw_geometry(iter,end, d_map.projection(),arrowhead_size);
 	}
 }
+

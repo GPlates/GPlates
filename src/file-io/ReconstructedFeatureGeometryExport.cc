@@ -262,5 +262,5 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 		referenced_files,
 		reconstruction_anchor_plate_id,
 		reconstruction_time);
-
 }
+

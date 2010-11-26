@@ -462,3 +462,4 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 
 	return stage_pole;	
 }
+

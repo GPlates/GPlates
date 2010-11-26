@@ -222,4 +222,4 @@ namespace GPlatesAppLogic
 
 }
 
-#endif // GPLATES_APPLOGIC_FLOWLINEUTILS_H
+#endif  // GPLATES_APPLOGIC_FLOWLINEUTILS_H

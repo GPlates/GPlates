@@ -133,3 +133,4 @@ GPlatesQtWidgets::EditPlateIdWidget::handle_value_changed()
 {
 	emit value_changed();
 }
+

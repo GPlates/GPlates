@@ -716,3 +716,4 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_buttons()
 	button_remove->setEnabled(!range.isEmpty());
 	button_remove_all->setEnabled(table_times->rowCount()>0);
 }
+

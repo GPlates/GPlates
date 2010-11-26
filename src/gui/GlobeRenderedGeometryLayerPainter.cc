@@ -1311,7 +1311,5 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 		colour.get(),
 		line_drawables,
 		*d_nurbs_renderer);
-
-
-
 }
+

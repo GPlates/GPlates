@@ -62,3 +62,4 @@ GPlatesAppLogic::ReconstructedFlowline::get_feature_ref() const
 		return GPlatesModel::FeatureHandle::weak_ref();
 	}
 }
+
