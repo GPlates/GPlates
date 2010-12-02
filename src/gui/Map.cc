@@ -26,13 +26,18 @@
  */
 
 #include <iostream>
+#include <vector>
+#include <utility>
 #include <opengl/OpenGL.h>
 
-#include "Colour.h"
 #include "Map.h"
+
+#include "Colour.h"
+#include "GraticuleSettings.h"
 #include "MapCanvasPainter.h"
 
 #include "maths/LatLonPoint.h"
+#include "maths/Real.h"
 
 
 namespace
@@ -52,18 +57,19 @@ namespace
 
 
 GPlatesGui::Map::Map(
+		GPlatesPresentation::ViewState &view_state,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
 		ViewportZoom &viewport_zoom,
 		ColourScheme::non_null_ptr_type colour_scheme) :
+	d_view_state(view_state),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
 	d_viewport_zoom(viewport_zoom),
 	d_colour_scheme(colour_scheme)
-{
-}
+{  }
 
 
 GPlatesGui::MapProjection &
@@ -119,11 +125,23 @@ GPlatesGui::Map::set_text_renderer(
 }
 
 
+namespace
+{
+	std::pair<double, double>
+	project_lat_lon(
+			double lat,
+			double lon,
+			GPlatesGui::MapProjection &projection)
+	{
+		projection.forward_transform(lon, lat);
+		return std::make_pair(lon, lat);
+	}
+}
+
+
 void
 GPlatesGui::Map::draw_grid_lines()
 {
-	static const int NUM_LAT_LINES = 7;
-	static const int NUM_LON_LINES = 13;
 	static const int NUM_LAT_VERTICES = 100;
 	static const int NUM_LON_VERTICES = 200;
 
@@ -135,66 +153,107 @@ GPlatesGui::Map::draw_grid_lines()
 	//static const double LAT_MARGIN = 1.5;
 	static const double LAT_MARGIN = 0.;
 
-	double lat_line_spacing = 180./(NUM_LAT_LINES-1);
-	double lon_line_spacing = 360./(NUM_LON_LINES-1);
+	const GPlatesMaths::Real lat_line_spacing = GPlatesMaths::convert_rad_to_deg(
+			d_view_state.get_graticule_settings().get_delta_lat());
+	const GPlatesMaths::Real lon_line_spacing = GPlatesMaths::convert_rad_to_deg(
+			d_view_state.get_graticule_settings().get_delta_lon());
 
-	double lat_vertex_spacing = 360./NUM_LAT_VERTICES;
-	double lon_vertex_spacing = (180.- 2.*LAT_MARGIN)/NUM_LON_VERTICES;
+	static const double lat_vertex_spacing = 360./NUM_LAT_VERTICES;
+	static const double lon_vertex_spacing = (180.- 2.*LAT_MARGIN)/NUM_LON_VERTICES;
 
-	double lat_0 = -90.;
-	double lon_0 = d_projection.central_llp().longitude()-180.;
+	const double lat_0 = 90.;
+	const double lon_0 = d_projection.central_llp().longitude()-180.;
 
-	double lat,lon;
-	double screen_x,screen_y;
+	GPlatesMaths::Real lat,lon;
+	bool loop;
 
-	glColor3fv(GPlatesGui::Colour::get_silver());
+	glColor4fv(d_view_state.get_graticule_settings().get_colour());
 	glLineWidth(1.0f);
 
-	// Lines of latitude.
-	lat = lat_0;
-	for (int count1 = 0; count1 < NUM_LAT_LINES ; count1++)
+	typedef std::vector<std::pair<double, double> > coords_seq;
+
+	if (lat_line_spacing != 0.0)
 	{
-		glBegin(GL_LINE_STRIP);
-		lon = lon_0;
-		screen_x = lon;
-		screen_y = lat;
-		d_projection.forward_transform(screen_x,screen_y);
-		glVertex2d(screen_x,screen_y);
-		for (int count2 = 0; count2 < NUM_LAT_VERTICES; count2++)
+		// Lines of latitude.
+		lat = lat_0;
+		loop = true;
+		while (loop)
 		{
-			lon += lat_vertex_spacing;
-			screen_x = lon;
-			screen_y = lat;
-			d_projection.forward_transform(screen_x,screen_y);
-			glVertex2d(screen_x,screen_y);
+			try
+			{
+				if (lat <= -90.)
+				{
+					loop = false;
+					lat = -90.;
+				}
+
+				coords_seq projected_coords;
+				lon = lon_0;
+				projected_coords.push_back(project_lat_lon(lat.dval(), lon.dval(), d_projection));
+				for (int count2 = 0; count2 < NUM_LAT_VERTICES; count2++)
+				{
+					lon += lat_vertex_spacing;
+					projected_coords.push_back(project_lat_lon(lat.dval(), lon.dval(), d_projection));
+				}
+
+				// Only draw if no projection exceptions thrown.
+				glBegin(GL_LINE_STRIP);
+				for (coords_seq::const_iterator iter = projected_coords.begin();
+						iter != projected_coords.end(); ++iter)
+				{
+					glVertex2d(iter->first, iter->second);
+				}
+				glEnd();
+			}
+			catch (const ProjectionException &)
+			{
+				// Ignore.
+			}
+
+			lat -= lat_line_spacing;
 		}
-		glEnd();
-		lat += lat_line_spacing;
 	}
 
-
-	// Lines of longitude.
-	lon = lon_0;
-	for (int count1 = 0; count1 < NUM_LON_LINES ; count1++)
+	if (lon_line_spacing != 0.0)
 	{
-		glBegin(GL_LINE_STRIP);
-		lat = lat_0 + LAT_MARGIN;
-		screen_x = lon;
-		screen_y = lat;
-		d_projection.forward_transform(screen_x,screen_y);
-		glVertex2d(screen_x,screen_y);
-		for (int count2 = 0; count2 < NUM_LON_VERTICES; count2++)
+		// Lines of longitude.
+		lon = lon_0;
+		loop = true;
+		while (loop)
 		{
-			lat += lon_vertex_spacing;
-			screen_x = lon;
-			screen_y = lat;
-			d_projection.forward_transform(screen_x,screen_y);
-			glVertex2d(screen_x,screen_y);
-		}
-		glEnd();
-		lon += lon_line_spacing;
-	}	
+			try
+			{
+				if (lon >= lon_0 + 360.)
+				{
+					loop = false;
+					lon = lon_0 + 360.;
+				}
 
+				coords_seq projected_coords;
+				lat = lat_0 + LAT_MARGIN;
+				projected_coords.push_back(project_lat_lon(lat.dval(), lon.dval(), d_projection));
+				for (int count2 = 0; count2 < NUM_LON_VERTICES; count2++)
+				{
+					lat -= lon_vertex_spacing;
+					projected_coords.push_back(project_lat_lon(lat.dval(), lon.dval(), d_projection));
+				}
+
+				// Only draw if no projection exceptions thrown.
+				glBegin(GL_LINE_STRIP);
+				for (coords_seq::const_iterator iter = projected_coords.begin();
+						iter != projected_coords.end(); ++iter)
+				{
+					glVertex2d(iter->first, iter->second);
+				}
+				glEnd();
+			}
+			catch (const ProjectionException &)
+			{
+				// Ignore.
+			}
+			lon += lon_line_spacing;
+		}
+	}
 }
 
 
@@ -203,8 +262,8 @@ GPlatesGui::Map::draw_background()
 {
 	set_opengl_flags();
 	
-	glClearColor(0.35f,0.35f,0.35f,1.0f);
-
+	const GPlatesGui::Colour &colour = d_view_state.get_background_colour();
+	glClearColor(colour.red(), colour.green(), colour.blue(), 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	try

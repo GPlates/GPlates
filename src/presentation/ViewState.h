@@ -69,6 +69,7 @@ namespace GPlatesGui
 	class ColourSchemeDelegator;
 	class GeometryFocusHighlight;
 	class FeatureFocus;
+	class GraticuleSettings;
 	class MapTransform;
 	class RasterColourSchemeMap;
 	class RenderSettings;
@@ -252,6 +253,23 @@ namespace GPlatesPresentation
 				bool show_stars = true);
 
 
+		const GPlatesGui::Colour &
+		get_background_colour() const;
+
+
+		void
+		set_background_colour(
+				const GPlatesGui::Colour &colour);
+
+
+		GPlatesGui::GraticuleSettings &
+		get_graticule_settings();
+
+
+		const GPlatesGui::GraticuleSettings &
+		get_graticule_settings() const;
+
+
 	private slots:
 
 
@@ -344,6 +362,16 @@ namespace GPlatesPresentation
 		 * Whether to draw stars behind the 3D globe.
 		 */
 		bool d_show_stars;
+
+		/**
+		 * The colour of the background sphere or plane in 3D globe or map view respectively.
+		 */
+		boost::scoped_ptr<GPlatesGui::Colour> d_background_colour;
+
+		/**
+		 * Settings related to the graticules displayed on the map and the globe.
+		 */
+		boost::scoped_ptr<GPlatesGui::GraticuleSettings> d_graticule_settings;
 
 		void
 		connect_to_viewport_zoom();

@@ -139,7 +139,7 @@ namespace GPlatesGui
 				float scale);
 
 		virtual
-		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type *
+		boost::optional<GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>
 		get_custom_child_layers_order(
 				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer);
 

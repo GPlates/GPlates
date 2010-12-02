@@ -37,7 +37,6 @@
 #include <QStringList>
 #include <QHeaderView>
 #include <QMessageBox>
-#include <QColorDialog>
 #include <QColor>
 #include <QInputDialog>
 #include <QProgressBar>
@@ -56,6 +55,7 @@
 #include "AssignReconstructionPlateIdsDialog.h"
 #include "CalculateReconstructionPoleDialog.h"
 #include "ColouringDialog.h"
+#include "ConfigureGraticulesDialog.h"
 #include "CreateFeatureDialog.h"
 #include "CreateVGPDialog.h"
 #include "DockWidget.h"
@@ -832,6 +832,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 		GPlatesViewOperations::UndoRedo::instance().get_undo_group().createRedoAction(this, tr("Re&do"));
 	undo_action_ptr->setShortcut(action_Undo_Placeholder->shortcut());
 	redo_action_ptr->setShortcut(action_Redo_Placeholder->shortcut());
+	undo_action_ptr->setIcon(action_Undo_Placeholder->icon());
+	redo_action_ptr->setIcon(action_Redo_Placeholder->icon());
 	menu_Edit->insertAction(action_Undo_Placeholder, undo_action_ptr);
 	menu_Edit->insertAction(action_Redo_Placeholder, redo_action_ptr);
 	menu_Edit->removeAction(action_Undo_Placeholder);
@@ -893,7 +895,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Generate_Mesh_Cap, SIGNAL(triggered()),
 		this, SLOT(generate_mesh_cap()));
 	
-	// View Menu:
 	QObject::connect(action_Show_Point_Features, SIGNAL(triggered()),
 			this, SLOT(enable_point_display()));
 	QObject::connect(action_Show_Line_Features, SIGNAL(triggered()),
@@ -906,6 +907,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(enable_arrows_display()));
 	QObject::connect(action_Show_Strings, SIGNAL(triggered()),
 			this, SLOT(enable_strings_display()));
+	QObject::connect(action_Configure_Graticules, SIGNAL(triggered()),
+			this, SLOT(pop_up_configure_graticules_dialog()));
+	QObject::connect(action_Choose_Background_Colour, SIGNAL(triggered()),
+			this, SLOT(pop_up_background_colour_picker()));
 	QObject::connect(action_Show_Stars, SIGNAL(triggered()),
 			this, SLOT(enable_stars_display()));
 	
@@ -1237,14 +1242,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_specify_anchored_plate_id_dialog()
 	d_specify_anchored_plate_id_dialog_ptr->populate(
 			get_application_state().get_current_anchored_plate_id(),
 			get_view_state().get_feature_focus().focused_feature());
-	d_specify_anchored_plate_id_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_specify_anchored_plate_id_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_specify_anchored_plate_id_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_specify_anchored_plate_id_dialog_ptr.get());
 }
 
 
@@ -1286,15 +1284,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog()
 	// note: this dialog is created in the constructor
 	
 	d_total_reconstruction_poles_dialog_ptr->update();
-
-	d_total_reconstruction_poles_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_total_reconstruction_poles_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_total_reconstruction_poles_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_total_reconstruction_poles_dialog_ptr.get());
 }
 
 void
@@ -1304,15 +1294,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog(
 	// note: this dialog is created in the constructor
 	
 	d_total_reconstruction_poles_dialog_ptr->update(visual_layer);
-
-	d_total_reconstruction_poles_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_total_reconstruction_poles_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_total_reconstruction_poles_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_total_reconstruction_poles_dialog_ptr.get());
 }
 
 void
@@ -1323,14 +1305,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
 		d_animate_dialog_ptr.reset(new AnimateDialog(d_animation_controller, this));
 	}
 
-	d_animate_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_animate_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_animate_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_animate_dialog_ptr.get());
 }
 
 
@@ -1355,14 +1330,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
 		d_about_dialog_ptr.reset(new AboutDialog(this));
 	}
 
-	d_about_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_about_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_about_dialog_ptr->raise();
+	d_about_dialog_ptr->exec();
 }
 
 
@@ -1384,6 +1352,7 @@ GPlatesQtWidgets::ViewportWindow::set_layering_dialog_visibility(
 					get_view_state(),
 					this,
 					dialog));
+		dialog_layout->setContentsMargins(0, 0, 0, 0);
 		dialog->setLayout(dialog_layout);
 		dialog->setWindowTitle("Layers");
 		dialog->resize(375, 600);
@@ -1395,14 +1364,7 @@ GPlatesQtWidgets::ViewportWindow::set_layering_dialog_visibility(
 
 	if (visible)
 	{
-		d_layering_dialog_ptr->show();
-		// In most cases, 'show()' is sufficient. However, selecting the menu entry
-		// a second time, when the dialog is still open, should make the dialog 'active'
-		// and return keyboard focus to it.
-		d_layering_dialog_ptr->activateWindow();
-		// On platforms which do not keep dialogs on top of their parent, a call to
-		// raise() may also be necessary to properly 're-pop-up' the dialog.
-		d_layering_dialog_ptr->raise();
+		QtWidgetUtils::pop_up_dialog(d_layering_dialog_ptr.get());
 	}
 	else
 	{
@@ -1431,14 +1393,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
 					this));
 	}
 
-	d_colouring_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_colouring_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_colouring_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_colouring_dialog_ptr.get());
 }
 
 void
@@ -1464,14 +1419,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_export_animation_dialog()
 	}
 
 	// FIXME: Should Export Animation be modal?
-	d_export_animation_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_export_animation_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_export_animation_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_export_animation_dialog_ptr.get());
 }
 
 
@@ -1917,14 +1865,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
 {
 	// note: this dialog is created in the constructor
 	
-	d_read_errors_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_read_errors_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_read_errors_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_read_errors_dialog_ptr.get());
 
 	// Finally, if we're showing the Read Errors dialog, the user already knows about
 	// the errors and doesn't need to see the reminder in the status bar.
@@ -1937,14 +1878,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_manage_feature_collections_dialog()
 {
 	// note: this dialog is created in the constructor
 	
-	d_manage_feature_collections_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_manage_feature_collections_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_manage_feature_collections_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_manage_feature_collections_dialog_ptr.get());
 }
 
 #if 0
@@ -1991,6 +1925,7 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file(
 void
 GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 {
+	// Please keep this list in alphabetical order.
 	if (d_about_dialog_ptr)
 	{
 		d_about_dialog_ptr->reject();
@@ -2011,13 +1946,17 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_colouring_dialog_ptr->reject();
 	}
+	if (d_configure_graticules_dialog_ptr)
+	{
+		d_configure_graticules_dialog_ptr->reject();
+	}
 	if (d_create_vgp_dialog_ptr)
 	{
 		d_create_vgp_dialog_ptr->reject();
 	}
-	if (d_mesh_dialog_ptr)
+	if (d_data_association_dialog_ptr)
 	{
-		d_mesh_dialog_ptr->reject();
+		d_data_association_dialog_ptr->reject();
 	}
 	if (d_export_animation_dialog_ptr)
 	{
@@ -2027,9 +1966,17 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_feature_properties_dialog_ptr->reject();
 	}
+	if (d_layering_dialog_ptr)
+	{
+		d_layering_dialog_ptr->reject();
+	}
 	if (d_manage_feature_collections_dialog_ptr)
 	{
 		d_manage_feature_collections_dialog_ptr->reject();
+	}
+	if (d_mesh_dialog_ptr)
+	{
+		d_mesh_dialog_ptr->reject();
 	}
 	if (d_read_errors_dialog_ptr)
 	{
@@ -2062,12 +2009,7 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	if (d_total_reconstruction_sequences_dialog_ptr)
 	{
 		d_total_reconstruction_sequences_dialog_ptr->reject();
-	}
-	if(d_data_association_dialog_ptr)
-	{
-		d_data_association_dialog_ptr->reject();
-	}
-	
+	}	
 }
 
 void
@@ -2322,16 +2264,9 @@ GPlatesQtWidgets::ViewportWindow::pop_up_shapefile_attribute_viewer_dialog()
 {
 	// note: this dialog is created in the constructor
 	
-	d_shapefile_attribute_viewer_dialog_ptr->show();
+	QtWidgetUtils::pop_up_dialog(d_shapefile_attribute_viewer_dialog_ptr.get());
 	d_shapefile_attribute_viewer_dialog_ptr->update(
 			get_application_state().get_feature_collection_file_state());
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_shapefile_attribute_viewer_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_shapefile_attribute_viewer_dialog_ptr->raise();
 }
 
 
@@ -2340,15 +2275,8 @@ GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_sequences_dialog()
 {
 	// note: this dialog is created in the constructor
 	
-	d_total_reconstruction_sequences_dialog_ptr->show();
+	QtWidgetUtils::pop_up_dialog(d_total_reconstruction_sequences_dialog_ptr.get());
 	d_total_reconstruction_sequences_dialog_ptr->update();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_total_reconstruction_sequences_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_total_reconstruction_sequences_dialog_ptr->raise();
 }
 
 
@@ -2364,9 +2292,7 @@ GPlatesQtWidgets::ViewportWindow::generate_mesh_cap()
 				this));
 	}
 
-	d_mesh_dialog_ptr->show();
-	d_mesh_dialog_ptr->activateWindow();
-	d_mesh_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_mesh_dialog_ptr.get());
 }
 
 void
@@ -2391,14 +2317,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_calculate_reconstruction_pole_dialog()
 			new CalculateReconstructionPoleDialog(get_view_state(),this));
 	}
 
-	d_calculate_reconstruction_pole_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_calculate_reconstruction_pole_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_calculate_reconstruction_pole_dialog_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_calculate_reconstruction_pole_dialog_ptr.get());
 }
 
 void
@@ -2572,9 +2491,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_small_circle_manager()
 				this));
 	}
 
-	d_small_circle_manager_ptr->show();
-	d_small_circle_manager_ptr->activateWindow();
-	d_small_circle_manager_ptr->raise();
+	QtWidgetUtils::pop_up_dialog(d_small_circle_manager_ptr.get());
 }
 
 void
@@ -2583,12 +2500,42 @@ GPlatesQtWidgets::ViewportWindow::status_message(
 		int timeout)
 {
 #ifdef Q_WS_MAC
-	QString cloverleaf(QChar(0x2318));
+	static const QString CLOVERLEAF(QChar(0x2318));
 	QString fixed_message = message;
-	fixed_message.replace(QString("ctrl"), cloverleaf, Qt::CaseInsensitive);
+	fixed_message.replace(QString("ctrl"), CLOVERLEAF, Qt::CaseInsensitive);
 	statusBar()->showMessage(fixed_message, timeout);
 #else
 	statusBar()->showMessage(message, timeout);
 #endif
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_background_colour_picker()
+{
+	boost::optional<GPlatesGui::Colour> new_colour =
+		QtWidgetUtils::get_colour_with_alpha(get_view_state().get_background_colour(), this);
+	if (new_colour)
+	{
+		get_view_state().set_background_colour(*new_colour);
+		reconstruction_view_widget().update();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_configure_graticules_dialog()
+{
+	if (!d_configure_graticules_dialog_ptr)
+	{
+		d_configure_graticules_dialog_ptr.reset(
+				new ConfigureGraticulesDialog(this));
+	}
+
+	if (d_configure_graticules_dialog_ptr->exec(
+			get_view_state().get_graticule_settings()) == QDialog::Accepted)
+	{
+		reconstruction_view_widget().update();
+	}
 }
 

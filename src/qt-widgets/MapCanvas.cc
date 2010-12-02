@@ -52,6 +52,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	QGraphicsScene(parent_),
 	d_view_state(view_state),
 	d_map(
+			view_state,
 			rendered_geometry_collection,
 			view_state.get_visual_layers(),
 			render_settings,

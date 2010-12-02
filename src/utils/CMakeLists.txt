@@ -55,7 +55,6 @@ set(srcs
     Select.h
     Singleton.h
     SmartNodeLinkedList.h
-    SmartNodeLinkedList_test.cc
     StringFormattingUtils.cc
     StringFormattingUtils.h
     StringSet.cc

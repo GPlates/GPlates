@@ -25,12 +25,18 @@
 FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
 	"#include <boost/python.hpp>\n"
 	"using namespace boost::python;\n"
+	"struct TestStruct {  };\n"
+	"BOOST_PYTHON_MODULE(testmodule) {\n"
+	"	class_<TestStruct>(\"TestStruct\");\n"
+	"}\n"
 	"int main() {\n"
 	"	try {\n"
+	"		char MODULE_NAME[] = \"testmodule\";\n"
+	"		PyImport_AppendInittab(MODULE_NAME, &inittestmodule);\n"
 	"		Py_Initialize();\n"
 	"		object main_module(handle<>(borrowed(PyImport_AddModule(\"__main__\"))));\n"
 	"		object main_namespace = main_module.attr(\"__dict__\");\n"
-	"		handle<> ignored(PyRun_String(\"print 1 + 2\", Py_file_input, main_namespace.ptr(), main_namespace.ptr()));\n"
+	"		handle<> ignored(PyRun_String(\"import testmodule; t = testmodule.TestStruct()\", Py_file_input, main_namespace.ptr(), main_namespace.ptr()));\n"
 	"	} catch (...) {\n"
 	"		PyErr_Print();\n"
 	"		return 1;\n"
@@ -56,7 +62,9 @@ IF(NOT PYTHON_EMBEDDING_COMPILES)
 	MESSAGE(FATAL_ERROR "Python embedding test program could not be compiled.")
 ENDIF(NOT PYTHON_EMBEDDING_COMPILES)
 
-IF(PYTHON_EMBEDDING_RUNS EQUAL 1) # Program above returns 1 if exception thrown.
+IF(PYTHON_EMBEDDING_RUNS EQUAL 1 # Program above returns 1 if exception thrown.
+		OR PYTHON_EMBEDDING_RUNS STREQUAL FAILED_TO_RUN # The program crashed.
+		)
 	MESSAGE(STATUS "Python embedding test program output: ${PYTHON_EMBEDDING_RUN_OUTPUT}")
 	MESSAGE(FATAL_ERROR "Python embedding test program failed to run correctly. "
 		"If you have multiple Python installations, make sure that the version of "
@@ -64,6 +72,6 @@ IF(PYTHON_EMBEDDING_RUNS EQUAL 1) # Program above returns 1 if exception thrown.
 		"that Boost.Python was built against. In particular, on Mac OS X, if "
 		"Boost.Python was installed using MacPorts, provide the following CMake flag: "
 		"-DCMAKE_FRAMEWORK_PATH=/opt/local/Library/Frameworks")
-ENDIF(PYTHON_EMBEDDING_RUNS EQUAL 1)
+ENDIF(PYTHON_EMBEDDING_RUNS EQUAL 1 OR PYTHON_EMBEDDING_RUNS STREQUAL FAILED_TO_RUN)
 
 MESSAGE(STATUS "Python embedding test passed.")

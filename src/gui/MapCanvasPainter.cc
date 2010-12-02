@@ -1241,17 +1241,17 @@ GPlatesGui::MapCanvasPainter::set_scale(
 }
 
 
-const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type *
+boost::optional<GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>
 GPlatesGui::MapCanvasPainter::get_custom_child_layers_order(
 		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer)
 {
 	if (parent_layer == GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
 	{
-		return &d_visual_layers.get_layer_order();
+		return d_visual_layers.get_layer_order();
 	}
 	else
 	{
-		return NULL;
+		return boost::none;
 	}
 }
 

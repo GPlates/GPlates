@@ -766,7 +766,8 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// pipeline instead of the rasterisation pipeline).
 	static const GLdouble depth_near_clipping = 3.5;
 	static const GLdouble depth_far_clipping = 15;
-	static const GLdouble depth_far_clipping_svg = fabsf(EYE_Z);
+	// The 0.0001 is there just so that the circumference of the globe doesn't get clipped.
+	static const GLdouble depth_far_clipping_svg = fabsf(EYE_Z - 0.0001);
 
 	// Always fill up all of the available space.
 	update_dimensions();

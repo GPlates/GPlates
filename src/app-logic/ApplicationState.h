@@ -42,6 +42,8 @@
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 
+#include "global/config.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
@@ -162,6 +164,14 @@ namespace GPlatesAppLogic
 		update_layers(
 				const FeatureCollectionFileState::file_reference &file_ref);
 
+#if defined(GPLATES_HAS_PYTHON)
+		int
+		get_num() const
+		{
+			return 17;
+		}
+#endif
+
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -190,12 +200,6 @@ namespace GPlatesAppLogic
 		 */
 		void
 		reconstruct();
-
-		int
-		get_num() const
-		{
-			return 17;
-		}
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments

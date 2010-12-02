@@ -103,6 +103,7 @@ set(srcs
     GPlatesQApplication.h
     GPlatesQtMsgHandler.cc
     GPlatesQtMsgHandler.h
+    GraticuleSettings.h
     GuiDebug.cc
     GuiDebug.h
     GuiException.h

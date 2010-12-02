@@ -213,9 +213,7 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 
 	make_signal_slot_connections();
 
-	// Hide things for now...
 	advanced_options_groupbox->hide();
-	colouring_groupbox->hide();
 }
 
 
@@ -249,7 +247,6 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 		// Update the basic info.
 		d_name_label->setText(locked_visual_layer->get_name());
 		d_type_label->setText(visual_layer_registry.get_name(visual_layer_type));
-		top_widget->setToolTip(visual_layer_registry.get_description(visual_layer_type));
 
 		// Show or hide the details panel as necessary.
 		details_placeholder_widget->setVisible(expanded);
@@ -292,11 +289,14 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 			if (d_current_layer_options_widget)
 			{
 				d_current_layer_options_widget->set_data(visual_layer);
+				d_current_layer_options_widget->updateGeometry();
 			}
 		}
 
 		// Store pointer to visual layer for later use.
 		d_visual_layer = visual_layer;
+
+		right_widget->updateGeometry();
 	}
 }
 
@@ -383,6 +383,8 @@ GPlatesQtWidgets::VisualLayerWidget::set_input_channel_data(
 			(*widget_iter)->hide();
 		}
 	}
+
+	input_channels_widget->updateGeometry();
 }
 
 
@@ -579,7 +581,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::InputChannelWi
 	this_layout->setSpacing(4);
 	this_layout->addWidget(d_input_channel_name_label);
 	this_layout->addWidget(yet_another_container);
-	this_layout->addStretch();
+	// this_layout->addStretch();
 
 	// Create a layout for the input connection widgets container.
 	d_input_connection_widgets_layout = new QVBoxLayout(d_input_connection_widgets_container);
@@ -632,14 +634,6 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 		}
 	}
 
-	// Easy code path if no input connections.
-	if (input_connections.size() == 0)
-	{
-		d_input_connection_widgets_container->hide();
-		return;
-	}
-	d_input_connection_widgets_container->show();
-
 	// Make sure we have enough widgets in our pool to display all input channels.
 	if (input_connections.size() > d_input_connection_widgets.size())
 	{
@@ -675,6 +669,10 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 			(*widget_iter)->hide();
 		}
 	}
+
+	d_input_connection_widgets_layout->update();
+	d_input_connection_widgets_container->updateGeometry();
+	updateGeometry();
 }
 
 

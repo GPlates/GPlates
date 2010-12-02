@@ -94,9 +94,13 @@ namespace GPlatesGui
 				float scale);
 
 		virtual
-		const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type *
+		boost::optional<GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>
 		get_custom_child_layers_order(
 				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer);
+
+		void
+		set_visual_layers_reversed(
+				bool reversed);
 
 	private:
 		virtual
@@ -153,6 +157,9 @@ namespace GPlatesGui
 
 		//! When rendering globes that are meant to be a scale copy of another
 		float d_scale;
+
+		//! If true, renders child layers in the RECONSTRUCTION_LAYER in reverse order.
+		bool d_visual_layers_reversed;
 	};
 }
 

@@ -787,7 +787,7 @@ namespace GPlatesViewOperations
 			// Visit the child render layers second.
 
 			// First, determine if the visitor would like to use a custom order of visitation.
-			const ChildLayerIndexRangeType *custom_child_layers_order =
+			boost::optional<ChildLayerIndexRangeType> custom_child_layers_order =
 				visitor.get_custom_child_layers_order(main_layer_type);
 			if (custom_child_layers_order)
 			{

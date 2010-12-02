@@ -30,10 +30,12 @@
 #include "maths/MathsUtils.h"
 
 #include "opengl/GLCompositeStateSet.h"
-#include "opengl/GLMaskBuffersState.h"
 #include "opengl/GLFragmentTestStates.h"
+#include "opengl/GLMaskBuffersState.h"
 #include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLTransform.h"
+
+#include "presentation/ViewState.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 
@@ -41,7 +43,6 @@
 namespace
 {
 	const GPlatesGui::Colour STARS_COLOUR(0.75f, 0.75f, 0.75f);
-	const GPlatesGui::Colour SPHERE_COLOUR(0.35f, 0.35f, 0.35f);
 }
 
 
@@ -62,8 +63,9 @@ GPlatesGui::Globe::Globe(
 	d_visual_layers(visual_layers),
 	d_nurbs_renderer(GPlatesOpenGL::GLUNurbsRenderer::create()),
 	d_stars(view_state, STARS_COLOUR),
-	d_sphere(SPHERE_COLOUR),
-	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
+	d_sphere(view_state),
+	d_black_sphere(Colour::get_black()),
+	d_grid(view_state.get_graticule_settings()),
 	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
 	d_rendered_geom_collection_painter(
 			rendered_geom_collection,
@@ -74,8 +76,8 @@ GPlatesGui::Globe::Globe(
 			text_renderer_ptr,
 			visibility_tester,
 			colour_scheme)
-{
-}
+{  }
+
 
 GPlatesGui::Globe::Globe(
 		Globe &existing_globe,
@@ -91,8 +93,9 @@ GPlatesGui::Globe::Globe(
 	d_visual_layers(existing_globe.d_visual_layers),
 	d_nurbs_renderer(GPlatesOpenGL::GLUNurbsRenderer::create()),
 	d_stars(d_view_state, STARS_COLOUR),
-	d_sphere(SPHERE_COLOUR),
-	d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
+	d_sphere(d_view_state),
+	d_black_sphere(Colour::get_black()),
+	d_grid(d_view_state.get_graticule_settings()),
 	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
 	d_rendered_geom_collection_painter(
 			d_rendered_geom_collection,
@@ -103,8 +106,8 @@ GPlatesGui::Globe::Globe(
 			text_renderer_ptr,
 			visibility_tester,
 			colour_scheme)
-{
-}
+{  }
+
 
 void
 GPlatesGui::Globe::set_new_handle_pos(
@@ -138,25 +141,71 @@ GPlatesGui::Globe::paint(
 {
 	// Set up the globe orientation transform.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_orientation_transform_node =
-			setup_globe_orientation_transform(*render_graph_node);
+		setup_globe_orientation_transform(*render_graph_node);
+
+	// Determine whether the globe is transparent or not.
+	rgba8_t background_colour = Colour::to_rgba8(d_view_state.get_background_colour());
+	bool transparent = (background_colour.alpha != 255);
+
+	// Set up common state.
+	d_rendered_geom_collection_painter.set_scale(scale);
+
+	if (transparent)
+	{
+		// To render the far side of the globe, we first render a black disk to draw
+		// onto the depth buffer, set the depth function to be the reverse of the usual
+		// and then render everything in reverse order.
+		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type black_sphere_node =
+			create_rendered_layer_node(globe_orientation_transform_node, GL_TRUE, GL_TRUE);
+		d_black_sphere.paint(
+				black_sphere_node,
+				d_globe_orientation_ptr->rotation_axis(),
+				GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
+	}
 
 	// Render stars.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type stars_node =
-			create_rendered_layer_node(globe_orientation_transform_node);
+		create_rendered_layer_node(globe_orientation_transform_node, GL_FALSE);
 	d_stars.paint(stars_node);
 
+	if (transparent)
+	{
+		// Create a node where the depth func is set to GL_GREATER.
+		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type far_side_node =
+			create_rendered_layer_node(globe_orientation_transform_node);
+		GPlatesOpenGL::GLDepthTestState::non_null_ptr_type depth_test_state =
+			GPlatesOpenGL::GLDepthTestState::create();
+		depth_test_state->gl_depth_func(GL_GREATER);
+		far_side_node->set_state_set(depth_test_state);
+
+		// Render the grid lines on the far side of the sphere.
+		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type far_side_grid_node =
+			create_rendered_layer_node(far_side_node);
+		d_grid.paint(far_side_grid_node);
+
+		// Draw the rendered geometries in reverse order.
+		d_rendered_geom_collection_painter.set_visual_layers_reversed(true);
+		d_rendered_geom_collection_painter.paint(
+				far_side_node,
+				viewport_zoom_factor,
+				d_nurbs_renderer);
+	}
+
 	// Render opaque sphere.
-	// Note that this writes a disk cutting through the centre of the globe
-	// parallel to the *screen* to the depth buffer.
+	// Only write to the depth buffer if not transparent (because the depth buffer
+	// is written to by the black disk if transparent).
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type sphere_node =
-			create_rendered_layer_node(globe_orientation_transform_node, GL_TRUE);
+		create_rendered_layer_node(
+				globe_orientation_transform_node,
+				transparent ? GL_FALSE : GL_TRUE,
+				transparent ? GL_FALSE : GL_TRUE);
 	d_sphere.paint(
 			sphere_node,
 			d_globe_orientation_ptr->rotation_axis(),
 			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
 
 	// Draw the rendered geometries.
-	d_rendered_geom_collection_painter.set_scale(scale);
+	d_rendered_geom_collection_painter.set_visual_layers_reversed(false);
 	d_rendered_geom_collection_painter.paint(
 			globe_orientation_transform_node,
 			viewport_zoom_factor,
@@ -164,11 +213,10 @@ GPlatesGui::Globe::paint(
 
 	// Render the grid lines on the sphere.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_node =
-			create_rendered_layer_node(globe_orientation_transform_node);
-	Colour grid_colour = Colour::get_silver();
-	grid_colour.alpha() = 0.5f;
-	d_grid.paint(grid_node, grid_colour);
+		create_rendered_layer_node(globe_orientation_transform_node);
+	d_grid.paint(grid_node);
 }
+
 
 void
 GPlatesGui::Globe::paint_vector_output(
@@ -184,12 +232,15 @@ GPlatesGui::Globe::paint_vector_output(
 	// Paint the circumference of the Earth.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_circumference_node =
 			create_rendered_layer_node(globe_orientation_transform_node);
-	d_grid.paint_circumference(grid_circumference_node, GPlatesGui::Colour::get_grey());
+	d_grid.paint_circumference(
+			grid_circumference_node,
+			d_globe_orientation_ptr->rotation_axis(),
+			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
 
 	// Paint the grid lines.
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type grid_lines_node =
 			create_rendered_layer_node(globe_orientation_transform_node);
-	d_grid.paint(grid_lines_node, Colour::get_grey());
+	d_grid.paint(grid_lines_node);
 
 	// Get current rendered layer active state so we can restore later.
 	const GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState
@@ -241,6 +292,7 @@ GPlatesGui::Globe::setup_globe_orientation_transform(
 GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
 GPlatesGui::Globe::create_rendered_layer_node(
 		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &parent_render_graph_node,
+		GLboolean depth_test_flag,
 		GLboolean depth_write_flag)
 {
 	// Create an internal node to represent the depth range.
@@ -261,10 +313,10 @@ GPlatesGui::Globe::create_rendered_layer_node(
 	// depth test is turned on but depth writes are turned off.
 	//
 
-	// Turn on depth testing - it's off by default.
+	// Turn on depth testing as specified - it's off by default.
 	GPlatesOpenGL::GLDepthTestState::non_null_ptr_type depth_test_state =
 			GPlatesOpenGL::GLDepthTestState::create();
-	depth_test_state->gl_enable(GL_TRUE);
+	depth_test_state->gl_enable(depth_test_flag);
 	state_set->add_state_set(depth_test_state);
 
 	// Turn depth writes on or off as specified.

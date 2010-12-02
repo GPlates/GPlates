@@ -260,3 +260,20 @@ GPlatesGui::Colour::to_rgba8(
 	return result;
 }
 
+
+GPlatesGui::Colour
+GPlatesGui::Colour::from_qrgb(
+		const QRgb &rgba)
+{
+	return QColor::fromRgba(rgba);
+}
+
+
+QRgb
+GPlatesGui::Colour::to_qrgb(
+		const Colour &colour)
+{
+	QColor qcolor = colour;
+	return qcolor.rgba();
+}
+

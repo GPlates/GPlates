@@ -57,9 +57,9 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 	d_text_renderer_ptr(text_renderer_ptr),
 	d_visibility_tester(visibility_tester),
 	d_colour_scheme(colour_scheme),
-	d_scale(1.0f)
-{
-}
+	d_scale(1.0f),
+	d_visual_layers_reversed(false)
+{  }
 
 
 void
@@ -135,17 +135,34 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::set_scale(
 }
 
 
-const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type *
+boost::optional<GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::get_custom_child_layers_order(
 		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer)
 {
 	if (parent_layer == GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
 	{
-		return &d_visual_layers.get_layer_order();
+		if (d_visual_layers_reversed)
+		{
+			return GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type(
+					d_visual_layers.get_layer_order().rbegin(),
+					d_visual_layers.get_layer_order().rend());
+		}
+		else
+		{
+			return d_visual_layers.get_layer_order();
+		}
 	}
 	else
 	{
-		return NULL;
+		return boost::none;
 	}
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::set_visual_layers_reversed(
+		bool reversed)
+{
+	d_visual_layers_reversed = reversed;
 }
 

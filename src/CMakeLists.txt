@@ -397,7 +397,7 @@ set(GPLATES_MAIN_TARGET gplates)
 if(GPLATES_HAS_PYTHON)
 	message(STATUS "Adding GPlates Python module.")
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
-	add_library(pygplates MODULE
+	add_library(pygplates MODULE EXCLUDE_FROM_ALL
 		${target_GPlates_SRCS}
 		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
 	set_target_properties(pygplates PROPERTIES PREFIX "")

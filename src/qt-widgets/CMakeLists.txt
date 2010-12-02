@@ -47,6 +47,8 @@ set(srcs
     ChangeGeometryPropertyWidget.cc
     ChangeGeometryPropertyWidget.h
     ChangeGeometryPropertyWidgetUi.ui
+    ChooseColourButton.cc
+    ChooseColourButton.h
     ChooseFeatureCollectionWidget.cc
     ChooseFeatureCollectionWidget.h
     ChooseFeatureCollectionWidgetUi.ui
@@ -60,6 +62,9 @@ set(srcs
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
+    ConfigureGraticulesDialog.cc
+    ConfigureGraticulesDialog.h
+    ConfigureGraticulesDialogUi.ui
     CoRegistrationOptionsWidget.h
     CoRegistrationOptionsWidgetUi.ui
     CoRegLayerConfigurationDialog.cc

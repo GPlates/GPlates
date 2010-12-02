@@ -293,7 +293,7 @@ GPlatesPresentation::register_default_visual_layers(
 			VisualLayerType::Type(RECONSTRUCTION),
 			"Reconstruction Tree",
 			"A plate-reconstruction hierarchy of total reconstruction poles "
-			"that can be used to reconstruct geometries in other layers",
+			"that can be used to reconstruct geometries in other layers.",
 			*html_colours.get_colour("gold"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
@@ -305,7 +305,7 @@ GPlatesPresentation::register_default_visual_layers(
 			VisualLayerType::Type(RECONSTRUCT),
 			"Reconstructed Geometries",
 			"Geometries in this layer will be reconstructed to the current reconstruction "
-			"time when this layer is connected to a reconstruction tree layer",
+			"time when this layer is connected to a reconstruction tree layer.",
 			*html_colours.get_colour("yellowgreen"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
@@ -318,7 +318,7 @@ GPlatesPresentation::register_default_visual_layers(
 			"Reconstructed Raster",
 			"A raster in this layer will be reconstructed when "
 			"this layer is connected to a static plate polygon feature collection and "
-			"to a reconstruction tree layer",
+			"to a reconstruction tree layer.",
 			*html_colours.get_colour("tomato"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
@@ -330,7 +330,7 @@ GPlatesPresentation::register_default_visual_layers(
 			VisualLayerType::Type(AGE_GRID),
 			"Age Grid",
 			"An age grid can be attached to a reconstructed raster layer to provide "
-			"smoother raster reconstructions",
+			"smoother raster reconstructions.",
 			*html_colours.get_colour("darkturquoise"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
@@ -343,7 +343,7 @@ GPlatesPresentation::register_default_visual_layers(
 			"Resolved Topological Closed Plate Boundaries",
 			"Plate boundaries will be generated dynamically by referencing topological section "
 			"features, that have been reconstructed to a geological time, and joining them to "
-			"form a closed polygon boundary",
+			"form a closed polygon boundary.",
 			*html_colours.get_colour("plum"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
@@ -357,7 +357,7 @@ GPlatesPresentation::register_default_visual_layers(
 			"Deforming regions will be simulated dynamically by referencing topological section "
 			"features, that have been reconstructed to a geological time, and triangulating "
 			"the convex hull region defined by these reconstructed sections while excluding "
-			"any micro-block sections from the triangulation",
+			"any micro-block sections from the triangulation.",
 			*html_colours.get_colour("darkkhaki"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
@@ -369,7 +369,7 @@ GPlatesPresentation::register_default_visual_layers(
 			VisualLayerType::Type(VELOCITY_FIELD_CALCULATOR),
 			"Calculated Velocity Fields",
 			"Lithosphere-motion velocity vectors will be calculated dynamically at mesh points "
-			"that lie within resolved topological boundaries or topological networks",
+			"that lie within resolved topological boundaries or topological networks.",
 			*html_colours.get_colour("aquamarine"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
@@ -377,13 +377,13 @@ GPlatesPresentation::register_default_visual_layers(
 				VELOCITY_FIELD_CALCULATOR),
 			&no_widget);
 
-	if(enable_data_mining)//Data-mining temporary code
+	if (enable_data_mining)//Data-mining temporary code
 	{
 		registry.register_visual_layer_type(
 				VisualLayerType::Type(CO_REGISTRATION),
 				"Co-registration tool",
-				"Co-registration tool for data mining",
-				*html_colours.get_colour("tomato"),
+				"Co-registration tool for data mining.",
+				*html_colours.get_colour("sandybrown"),
 				CreateAppLogicLayer(
 					reconstruct_graph,
 					layer_task_registry,

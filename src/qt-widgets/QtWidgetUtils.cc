@@ -28,6 +28,7 @@
 #include <QHBoxLayout>
 #include <QRect>
 #include <QSize>
+#include <QColorDialog>
 
 #include "QtWidgetUtils.h"
 
@@ -68,5 +69,53 @@ GPlatesQtWidgets::QtWidgetUtils::reposition_to_side_of_parent(
 
 		dialog->move(new_x, new_y);
 	}
+}
+
+
+void
+GPlatesQtWidgets::QtWidgetUtils::pop_up_dialog(
+		QDialog *dialog)
+{
+	dialog->show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	dialog->activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	dialog->raise();
+}
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesQtWidgets::QtWidgetUtils::get_colour_with_alpha(
+		const GPlatesGui::Colour &initial,
+		QWidget *parent)
+{
+	// Qt 4.5 revamped the QColorDialog, changing the mechanism by which the dialog
+	// is to be invoked if you are interested in getting an alpha value.
+	// QColorDialog::getRgba() is deprecated; note also that the dialog when
+	// invoked using this function resets the alpha value to 255.
+#if QT_VERSION >= 0x040500
+	QColor new_colour = QColorDialog::getColor(
+			initial,
+			parent,
+			"" /* use default title */,
+			QColorDialog::ShowAlphaChannel);
+	if (new_colour.isValid())
+	{
+		return GPlatesGui::Colour(new_colour);
+	}
+	return boost::none;
+#else
+	QRgb curr_colour = GPlatesGui::Colour::to_qrgb(initial);
+	bool ok;
+	QRgb result = QColorDialog::getRgba(curr_colour, &ok, parent);
+	if (ok)
+	{
+		return GPlatesGui::Colour::from_qrgb(result);
+	}
+	return boost::none;
+#endif
 }
 

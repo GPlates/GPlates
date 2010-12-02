@@ -28,6 +28,8 @@
 #include <QFrame>
 #include <QFontInfo>
 #include <QLayout>
+#include <QMouseEvent>
+#include <QDebug>
 
 #include "ElidedLabel.h"
 
@@ -191,7 +193,8 @@ GPlatesQtWidgets::ElidedLabel::InternalLabel::enterEvent(
 				d_full_text,
 				tool_tip_font,
 				tool_tip_pos,
-				height());
+				height(),
+				width());
 	}
 }
 
@@ -200,6 +203,7 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::ElidedLabelToolTip() :
 	QDialog(NULL, Qt::Popup),
 	d_internal_label_frame(new QFrame(this)),
 	d_internal_label(new QLabel(this)),
+	d_elided_width(0),
 	d_inside_do_show(false)
 {
 	// Put the internal label into a frame.
@@ -208,6 +212,10 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::ElidedLabelToolTip() :
 
 	// Put the frame into this widget.
 	QtWidgetUtils::add_widget_to_placeholder(d_internal_label_frame, this);
+
+	setMouseTracking(true);
+	d_internal_label->setMouseTracking(true);
+	d_internal_label->installEventFilter(this);
 }
 
 
@@ -216,9 +224,10 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::showToolTip(
 		const QString &text,
 		const QFont &text_font,
 		const QPoint &global_pos,
-		int label_height)
+		int label_height,
+		int elided_width)
 {
-	instance().do_show(text, text_font, global_pos, label_height);
+	instance().do_show(text, text_font, global_pos, label_height, elided_width);
 }
 
 
@@ -233,7 +242,38 @@ void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::leaveEvent(
 		QEvent *event_)
 {
-	hide();
+	do_hide();
+}
+
+
+void
+GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::mouseMoveEvent(
+		QMouseEvent *event_)
+{
+	QPointF event_pos = event_->pos();
+	if (event_pos.x() < 0 || event_pos.x() > d_elided_width ||
+			event_pos.y() < 0 || event_pos.y() > height())
+	{
+		do_hide();
+	}
+}
+
+
+bool
+GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::eventFilter(
+		QObject *object_,
+		QEvent *event_)
+{
+	if (event_->type() == QEvent::MouseMove)
+	{
+		QMouseEvent *mouse_event = static_cast<QMouseEvent *>(event_);
+		if (mouse_event->pos().x() > d_elided_width)
+		{
+			do_hide();
+			return true;
+		}
+	}
+	return false;
 }
 
 
@@ -250,7 +290,8 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 		const QString &text,
 		const QFont &text_font,
 		const QPoint &global_pos,
-		int label_height)
+		int label_height,
+		int elided_width)
 {
 	if (d_inside_do_show)
 	{
@@ -264,6 +305,7 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 	d_inside_do_show = true;
 
 	d_internal_label->setText(text);
+	d_elided_width = elided_width;
 
 	// Shift towards top-left because of frame.
 	int frame_width = d_internal_label_frame->frameWidth();
@@ -279,6 +321,8 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 	new_size.setHeight(label_height + frame_width * 2);
 	resize(new_size);
 
+	grabMouse();
+
 	d_inside_do_show = false;
 }
 
@@ -286,6 +330,7 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_hide()
 {
+	releaseMouse();
 	hide();
 }
 

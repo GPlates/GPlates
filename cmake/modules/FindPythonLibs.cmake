@@ -20,9 +20,12 @@ SET(PYTHON_DEBUG_LIBRARY NOTFOUND CACHE FLEPATH "Python Framework" FORCE)
 SET(PYTHON_LIBRARY NOTFOUND CACHE FLEPATH "Python Framework" FORCE)
 # End GPlates addition.
 
-INCLUDE(CMakeFindFrameworks)
+# GPlates modification:
+# Use the GPlates version of FindFrameworks.
+INCLUDE(GPlatesFindFrameworks)
 # Search for the python framework on Apple.
-CMAKE_FIND_FRAMEWORKS(Python)
+GPLATES_FIND_FRAMEWORKS(Python)
+# End GPlates modification.
 
 FOREACH(_CURRENT_VERSION 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
   STRING(REPLACE "." "" _CURRENT_VERSION_NO_DOTS ${_CURRENT_VERSION})
@@ -34,14 +37,27 @@ FOREACH(_CURRENT_VERSION 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
       [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\${_CURRENT_VERSION}\\InstallPath]/libs )
   ENDIF(WIN32)
 
+  # GPlates addition:
+  # Attempt to point PYTHON_LIBRARY at file in frameworks directory.
+  # This change is necessary because we don't use -framework as in the original
+  # script (see comments below).
+  SET(PYTHON_FRAMEWORK_LIBRARIES)
+  IF(Python_FRAMEWORKS AND NOT PYTHON_LIBRARY)
+    FOREACH(dir ${Python_FRAMEWORKS})
+      SET(PYTHON_FRAMEWORK_LIBRARIES ${PYTHON_FRAMEWORK_LIBRARIES}
+      	${dir}/Versions/${_CURRENT_VERSION}/lib/python${_CURRENT_VERSION}/config)
+    ENDFOREACH(dir)
+  ENDIF(Python_FRAMEWORKS AND NOT PYTHON_LIBRARY)
+  # End GPlates addition.
+
   FIND_LIBRARY(PYTHON_LIBRARY
     NAMES python${_CURRENT_VERSION_NO_DOTS} python${_CURRENT_VERSION}
     PATHS
+      ${PYTHON_FRAMEWORK_LIBRARIES} # GPlates addition.
       [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\${_CURRENT_VERSION}\\InstallPath]/libs
     PATH_SUFFIXES
       python${_CURRENT_VERSION}/config
-    # Avoid finding the .dll in the PATH.  We want the .lib.
-    NO_SYSTEM_ENVIRONMENT_PATH
+    NO_DEFAULT_PATH # GPlates modification.
   )
 
   SET(PYTHON_FRAMEWORK_INCLUDES)
@@ -59,9 +75,32 @@ FOREACH(_CURRENT_VERSION 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
       [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\${_CURRENT_VERSION}\\InstallPath]/include
     PATH_SUFFIXES
       python${_CURRENT_VERSION}
+    NO_DEFAULT_PATH # GPlates addition.
   )
   
 ENDFOREACH(_CURRENT_VERSION)
+
+# GPlates addition.
+# Since we specified NO_DEFAULT_PATH above, we now search the default paths here
+# which are only searched if the variables haven't already been set.
+FOREACH(_CURRENT_VERSION 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
+  STRING(REPLACE "." "" _CURRENT_VERSION_NO_DOTS ${_CURRENT_VERSION})
+
+  FIND_LIBRARY(PYTHON_LIBRARY
+    NAMES python${_CURRENT_VERSION_NO_DOTS} python${_CURRENT_VERSION}
+    PATH_SUFFIXES
+      python${_CURRENT_VERSION}/config
+    # Avoid finding the .dll in the PATH.  We want the .lib.
+    NO_SYSTEM_ENVIRONMENT_PATH
+  )
+
+  FIND_PATH(PYTHON_INCLUDE_PATH
+    NAMES Python.h
+    PATH_SUFFIXES
+      python${_CURRENT_VERSION}
+  )
+ENDFOREACH(_CURRENT_VERSION)
+# End GPlates addition.
 
 MARK_AS_ADVANCED(
   PYTHON_DEBUG_LIBRARY
@@ -69,51 +108,16 @@ MARK_AS_ADVANCED(
   PYTHON_INCLUDE_PATH
 )
 
-# GPlates addition:
-# Store the parent directory of Python.framework in PYTHON_FRAMEWORK_PARENT_DIRECTORY
-# if that directory is not one of the standard framework directories.
-# If Python was installed using MacPorts, this should be /opt/local/Library/Frameworks.
-SET(PYTHON_FRAMEWORK_PARENT_DIRECTORY "")
-IF(Python_FRAMEWORKS)
-  IF("${PYTHON_INCLUDE_PATH}" MATCHES "Python\\.framework")
-  	STRING(REGEX REPLACE "Python\\.framework.*" "" PYTHON_FRAMEWORK_PARENT_DIRECTORY "${PYTHON_INCLUDE_PATH}")
-    IF(PYTHON_FRAMEWORK_PARENT_DIRECTORY STREQUAL "/Library/Frameworks/")
-  	  SET(PYTHON_FRAMEWORK_PARENT_DIRECTORY "")
-    ENDIF(PYTHON_FRAMEWORK_PARENT_DIRECTORY STREQUAL "/Library/Frameworks/")
-    IF(PYTHON_FRAMEWORK_PARENT_DIRECTORY STREQUAL "/System/Library/Frameworks/")
-  	  SET(PYTHON_FRAMEWORK_PARENT_DIRECTORY "")
-    ENDIF(PYTHON_FRAMEWORK_PARENT_DIRECTORY STREQUAL "/System/Library/Frameworks/")
-  ENDIF("${PYTHON_INCLUDE_PATH}" MATCHES "Python\\.framework")
-ENDIF(Python_FRAMEWORKS)
-# End GPlates addition.
-
-# Python Should be built and installed as a Framework on OSX
-IF(Python_FRAMEWORKS)
-  # If a framework has been selected for the include path,
-  # make sure "-framework" is used to link it.
-  IF("${PYTHON_INCLUDE_PATH}" MATCHES "Python\\.framework")
-    SET(PYTHON_LIBRARY "")
-    SET(PYTHON_DEBUG_LIBRARY "")
-  ENDIF("${PYTHON_INCLUDE_PATH}" MATCHES "Python\\.framework")
-  IF(NOT PYTHON_LIBRARY)
-    # GPlates modification:
-    # SET (PYTHON_LIBRARY "-framework Python" CACHE FILEPATH "Python Framework" FORCE)
-	# If PYTHON_FRAMEWORK_PARENT_DIRECTORY is set, this means that the Python
-	# framework chosen is not in one of the standard frameworks directory. In that
-	# case, we must provide g++ with the -F flag, which tells it to look there for
-	# a framework (ahead of the system framework directories).
-    IF(PYTHON_FRAMEWORK_PARENT_DIRECTORY)
-      SET (PYTHON_LIBRARY "-F${PYTHON_FRAMEWORK_PARENT_DIRECTORY} -framework Python" CACHE FILEPATH "Python Framework" FORCE)
-    ELSE(PYTHON_FRAMEWORK_PARENT_DIRECTORY)
-      SET (PYTHON_LIBRARY "-framework Python" CACHE FILEPATH "Python Framework" FORCE)
-    ENDIF(PYTHON_FRAMEWORK_PARENT_DIRECTORY)
-	# End GPlates modification.
-  ENDIF(NOT PYTHON_LIBRARY)
-  IF(NOT PYTHON_DEBUG_LIBRARY)
-    # SET (PYTHON_DEBUG_LIBRARY "-framework Python" CACHE FILEPATH "Python Framework" FORCE)
-    SET (PYTHON_DEBUG_LIBRARY "${PYTHON_LIBRARY}" CACHE FILEPATH "Python Framework" FORCE)
-  ENDIF(NOT PYTHON_DEBUG_LIBRARY)
-ENDIF(Python_FRAMEWORKS)
+# GPlates modification.
+# The whole block of code that sets PYTHON_LIBRARY and PYTHON_DEBUG_LIBRARY to
+# "-framework Python" if Python is installed as a framework on Darwin was
+# removed. As a consequence, we always link to the Python libraries like any
+# other non-framework library. This is because if we want to use the MacPorts
+# version of Python (because Boost.Python got compiled against that version),
+# specifying "-framework Python" would cause GPlates to be built against the
+# system version of Python (thus causing a version mismatch). Specifying the -F
+# flag to g++ (adding framework search paths) appears to work on some systems
+# but not on others unfortunately.
 
 # We use PYTHON_LIBRARY and PYTHON_DEBUG_LIBRARY for the cache entries
 # because they are meant to specify the location of a single library.

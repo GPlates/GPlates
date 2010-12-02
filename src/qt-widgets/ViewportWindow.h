@@ -109,6 +109,7 @@ namespace GPlatesQtWidgets
 	class AssignReconstructionPlateIdsDialog;
 	class CalculateReconstructionPoleDialog;
 	class ColouringDialog;
+	class ConfigureGraticulesDialog;
 	class DataAssociationDialog;
 	class DockWidget;
 	class CreateVGPDialog;
@@ -406,6 +407,9 @@ namespace GPlatesQtWidgets
 		pop_up_preferences_dialog();
 
 		void
+		pop_up_configure_graticules_dialog();
+
+		void
 		update_tools_and_status_message();
 
 		void
@@ -498,6 +502,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
+		boost::scoped_ptr<ConfigureGraticulesDialog> d_configure_graticules_dialog_ptr;
 		boost::scoped_ptr<DataAssociationDialog> d_data_association_dialog_ptr;
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
@@ -793,6 +798,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_small_circle_manager();
+
+		void
+		pop_up_background_colour_picker();
 
 
 	protected:

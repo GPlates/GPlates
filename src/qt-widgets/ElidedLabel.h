@@ -146,7 +146,8 @@ namespace GPlatesQtWidgets
 					const QString &text,
 					const QFont &text_font,
 					const QPoint &global_pos,
-					int label_height);
+					int label_height,
+					int elided_width);
 
 			static
 			void
@@ -157,6 +158,17 @@ namespace GPlatesQtWidgets
 			virtual
 			void
 			leaveEvent(
+					QEvent *event_);
+
+			virtual
+			void
+			mouseMoveEvent(
+					QMouseEvent *event_);
+
+			virtual
+			bool
+			eventFilter(
+					QObject *object_,
 					QEvent *event_);
 
 		private:
@@ -170,7 +182,8 @@ namespace GPlatesQtWidgets
 					const QString &text,
 					const QFont &text_font,
 					const QPoint &global_pos,
-					int label_height);
+					int label_height,
+					int elided_width);
 
 			void
 			do_hide();
@@ -180,6 +193,7 @@ namespace GPlatesQtWidgets
 			QFrame *d_internal_label_frame;
 			QLabel *d_internal_label;
 
+			int d_elided_width;
 			bool d_inside_do_show; // to prevent infinite loops on some platforms.
 		};
 

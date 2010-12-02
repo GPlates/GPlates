@@ -36,6 +36,7 @@
 
 #include "gui/ViewportZoom.h"
 
+#include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -52,6 +53,7 @@ namespace GPlatesGui
 	public:
 
 		Map(
+				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
@@ -103,6 +105,8 @@ namespace GPlatesGui
 
 		//! To do map projections
 		MapProjection d_projection;
+
+		GPlatesPresentation::ViewState &d_view_state;
 
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;

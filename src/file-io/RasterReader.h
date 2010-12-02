@@ -200,35 +200,6 @@ namespace GPlatesFileIO
 		get_file_dialog_filters();
 
 
-		///////////////////////////////////////////////////////////////////////
-		// The following static functions are deprecated.
-		///////////////////////////////////////////////////////////////////////
-
-		/**
-		 * Fill the time_dependent_raster_map with <time, filename> pairs. 
-		 * This function will look for files of the form <root_name>-<time>.<ext>
-		 * The first such file encountered will be used to establish the root_name.
-		 * Any files matching the same pattern will be added to the time_dependent_raster_map.
-		 *
-		 * This currently only supports reading a directory of JPEG images.
-		 */
-		static
-		void
-		populate_time_dependent_raster_map(
-				QMap<int, QString> &raster_map,
-				QString directory_path,
-				ReadErrorAccumulation &read_errors);	
-
-		/**
-		 * Given a time_dependent_raster_map and a reconstruction_time, this function will return 
-		 * the filename whose time value is closest to the reconstruction time. 
-		 */
-		static
-		QString
-		get_nearest_raster_filename(
-				const QMap<int, QString> &raster_map,
-				double time);
-
 	private:
 
 		RasterReader(

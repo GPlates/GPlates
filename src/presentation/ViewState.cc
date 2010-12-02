@@ -33,19 +33,19 @@
 #include "VisualLayers.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic//VGPRenderSettings.h"
+#include "app-logic/VGPRenderSettings.h"
 
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/TemporaryFileRegistry.h"
 
-#include "gui/ColourRawRaster.h"
 #include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeDelegator.h"
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
 #include "gui/FeatureFocus.h"
 #include "gui/GeometryFocusHighlight.h"
+#include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RasterColourSchemeMap.h"
@@ -53,16 +53,32 @@
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
 
-#include "property-values/Georeferencing.h"
-#include "property-values/ProxiedRasterResolver.h"
-#include "property-values/RawRaster.h"
-#include "property-values/RawRasterUtils.h"
-
-#include "utils/VirtualProxy.h"
-
 #include "view-operations/RenderedGeometryCollection.h"
+
+
+namespace
+{
+	const double DEFAULT_GRATICULES_DELTA_LAT = GPlatesMaths::PI / 6.0; // 30 degrees
+	const double DEFAULT_GRATICULES_DELTA_LON = GPlatesMaths::PI / 6.0; // 30 degrees
+
+	GPlatesGui::Colour
+	get_default_background_colour()
+	{
+		return GPlatesGui::Colour(0.35f, 0.35f, 0.35f);
+	}
+
+	GPlatesGui::Colour
+	get_default_graticules_colour()
+	{
+		GPlatesGui::Colour result = GPlatesGui::Colour::get_silver();
+		result.alpha() = 0.5f;
+		return result;
+	}
+}
+
 
 GPlatesPresentation::ViewState::ViewState(
 		GPlatesAppLogic::ApplicationState &application_state) :
@@ -100,7 +116,15 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::RasterColourSchemeMap(
 				application_state.get_reconstruct_graph())),
 	d_open_file_path(QDir::currentPath()),
-	d_show_stars(true)
+	d_show_stars(true),
+	d_background_colour(
+			new GPlatesGui::Colour(get_default_background_colour())),
+	d_graticule_settings(
+			new GPlatesGui::GraticuleSettings(
+				DEFAULT_GRATICULES_DELTA_LAT,
+				DEFAULT_GRATICULES_DELTA_LON,
+				get_default_graticules_colour()))
+
 {
 	connect_to_viewport_zoom();
 
@@ -396,5 +420,34 @@ GPlatesPresentation::ViewState::set_show_stars(
 		bool show_stars)
 {
 	d_show_stars = show_stars;
+}
+
+
+const GPlatesGui::Colour &
+GPlatesPresentation::ViewState::get_background_colour() const
+{
+	return *d_background_colour;
+}
+
+
+void
+GPlatesPresentation::ViewState::set_background_colour(
+		const GPlatesGui::Colour &colour)
+{
+	*d_background_colour = colour;
+}
+
+
+GPlatesGui::GraticuleSettings &
+GPlatesPresentation::ViewState::get_graticule_settings()
+{
+	return *d_graticule_settings;
+}
+
+
+const GPlatesGui::GraticuleSettings &
+GPlatesPresentation::ViewState::get_graticule_settings() const
+{
+	return *d_graticule_settings;
 }
 

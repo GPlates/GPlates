@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,33 +25,276 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
+#include <vector>
+#include <utility>
+
 #include "OpaqueSphere.h"
 
-#include "opengl/GLDrawable.h"
+#include "maths/MathsUtils.h"
+
+#include "opengl/GLBlendState.h"
+#include "opengl/GLCompositeDrawable.h"
 #include "opengl/GLRenderGraphDrawableNode.h"
+#include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLTransform.h"
+#include "opengl/GLUQuadric.h"
+#include "opengl/Vertex.h"
+
+#include "presentation/ViewState.h"
 
 
 namespace
 {
-	static const GLdouble RADIUS = 1.0;
-	static const GLdouble INNER_RADIUS = 0.0;
+	static const double RADIUS = 1.0;
+	static const unsigned int NUM_SLICES = 72;
 
-	static const GLint NUM_SLICES = 72;
-//	static const GLint NUM_STACKS = 36;
-	static const GLint NUM_LOOPS = 1;
+	typedef GPlatesOpenGL::Vertex vertex_type;
+	typedef std::pair<double, double> double_pair;
+
+
+	/**
+	 * Computes the sin and cos of:
+	 *     2 * PI * i / num_slices
+	 * for 0 <= i <= num_slices.
+	 *
+	 * Note that the returned vector has (num_slices + 1) elements.
+	 */
+	std::vector<double_pair>
+	compute_sin_cos_angles(
+			unsigned int num_slices)
+	{
+		std::vector<double_pair> result;
+		for (unsigned int i = 0; i <= num_slices; ++i)
+		{
+			double angle = 2 * GPlatesMaths::PI * i / num_slices;
+			result.push_back(std::make_pair(std::sin(angle), std::cos(angle)));
+		}
+		return result;
+	}
+
+
+	/**
+	 * Creates a donut-shaped drawable on the z = 0 plane.
+	 */
+	boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type>
+	create_disk_drawable(
+			double inner_radius,
+			double outer_radius,
+			const std::vector<double_pair> &sin_cos_angles,
+			const GPlatesGui::rgba8_t &inner_colour,
+			const GPlatesGui::rgba8_t &outer_colour)
+	{
+		static const GLfloat Z_VALUE = 0;
+		GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream =
+			GPlatesOpenGL::create_stream<vertex_type>();
+		GPlatesOpenGL::GLStreamTriangleStrips<vertex_type> stream_triangle_strips(*stream);
+		stream_triangle_strips.begin_triangle_strip();
+
+		for (std::vector<double_pair>::const_iterator iter = sin_cos_angles.begin();
+				iter != sin_cos_angles.end(); ++iter)
+		{
+			vertex_type outer_vertex = {
+				static_cast<GLfloat>(outer_radius * iter->first),
+				static_cast<GLfloat>(outer_radius * iter->second),
+				Z_VALUE,
+				outer_colour
+			};
+			vertex_type inner_vertex = {
+				static_cast<GLfloat>(inner_radius * iter->first),
+				static_cast<GLfloat>(inner_radius * iter->second),
+				Z_VALUE,
+				inner_colour
+			};
+
+			stream_triangle_strips.add_vertex(outer_vertex);
+			stream_triangle_strips.add_vertex(inner_vertex);
+		}
+
+		stream_triangle_strips.end_triangle_strip();
+		return stream->get_drawable();
+	}
+
+
+	/**
+	 * Evaluates the integral of sqrt(r^2 - x^2) with respect to x for a given
+	 * value of r and x (ignoring the constant of integration).
+	 */
+	double
+	eval_integral(
+			double x,
+			double r)
+	{
+		double sqrt_part = std::sqrt(r * r - x * x);
+		return 0.5 * (x * sqrt_part + r * r * std::atan2(x, sqrt_part));
+	}
+
+
+	/**
+	 * Draws a disk on the z = 0 plane with varying translucency from centre to
+	 * edge, that simulates what a real translucent sphere would look like.
+	 *
+	 * Imagine a translucent balloon, and consider parallel light rays travelling
+	 * from behind the balloon towards the viewer. A light ray going through the
+	 * centre of the balloon has to go through less material than a light ray going
+	 * through the balloon further away from the centre, where the balloon's
+	 * surface is more slanted relative to the viewer.
+	 *
+	 * We model this using a 2D doughnut (for ease of calculation), with an outer
+	 * radius of RADIUS and a very small thickness. We calculate the amount
+	 * of doughnut in each equal slice from x = 0 to x = RADIUS. The alpha
+	 * value of @a colour is used at the centre of the disk, and as we go outwards,
+	 * the alpha value is modulated by the amount of doughnut in that slice.
+	 */
+	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+	create_translucent_sphere_drawable(
+			const GPlatesGui::rgba8_t &colour)
+	{
+		static const unsigned int STEPS = 150;
+		static const double INNER_RADIUS = (STEPS - 0.5) / STEPS * RADIUS;
+
+		double radii[STEPS + 1];
+		double integral[STEPS + 1];
+		double inner_integral[STEPS + 1];
+		for (unsigned int i = 0; i <= STEPS; ++i)
+		{
+			double curr_radius = RADIUS * i / STEPS;
+			radii[i] = curr_radius;
+			integral[i] = eval_integral(curr_radius, RADIUS);
+			inner_integral[i] = eval_integral(curr_radius > INNER_RADIUS ? INNER_RADIUS : curr_radius, INNER_RADIUS);
+		}
+
+		double thickness[STEPS];
+		for (unsigned int i = 0; i < STEPS; ++i)
+		{
+			double outer_area = integral[i + 1] - integral[i];
+			double inner_area = inner_integral[i + 1] - inner_integral[i];
+			thickness[i] = outer_area - inner_area;
+		}
+
+		double base_thickness = thickness[0];
+		double base_alpha = colour.alpha / 255.0;
+		boost::uint8_t alphas[STEPS + 1];
+		alphas[0] = colour.alpha;
+		for (unsigned int i = 0; i < STEPS; ++i)
+		{
+			double alpha = 1.0 - std::pow(1.0 - base_alpha, thickness[i] / base_thickness);
+			alphas[i + 1] = static_cast<boost::uint8_t>(alpha * 255.0);
+		}
+
+		GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type composite_drawable =
+			GPlatesOpenGL::GLCompositeDrawable::create();
+		std::vector<double_pair> sin_cos_angles = compute_sin_cos_angles(NUM_SLICES);
+
+		for (unsigned int i = 0; i < STEPS; ++i)
+		{
+			GPlatesGui::rgba8_t inner_colour = colour;
+			inner_colour.alpha = alphas[i];
+			GPlatesGui::rgba8_t outer_colour = colour;
+			outer_colour.alpha = alphas[i + 1];
+
+			boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> disk_drawable =
+				create_disk_drawable(radii[i], radii[i + 1], sin_cos_angles, inner_colour, outer_colour);
+			if (disk_drawable)
+			{
+				composite_drawable->add_drawable(*disk_drawable);
+			}
+		}
+		
+		return composite_drawable;
+	}
+
+
+	/**
+	 * Draws a disk on the z = 0 plane with a fixed @a colour.
+	 */
+	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+	create_opaque_sphere_drawable(
+			const GPlatesGui::rgba8_t &colour)
+	{
+		GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type composite_drawable =
+			GPlatesOpenGL::GLCompositeDrawable::create();
+		std::vector<double_pair> sin_cos_angles = compute_sin_cos_angles(NUM_SLICES);
+		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> disk_drawable =
+			create_disk_drawable(0.0, RADIUS, sin_cos_angles, colour, colour);
+		if (disk_drawable)
+		{
+			composite_drawable->add_drawable(*disk_drawable);
+		}
+
+		return composite_drawable;
+	}
+
+
+	/**
+	 * Creates a drawable that renders the sphere to the screen.
+	 *
+	 * Note that this actually draws a flat disk on the z = 0 plane instead of an
+	 * actual sphere. This has the advantage that, if we draw to the depth buffer
+	 * while drawing the disk, we can use a depth test to occlude geometries on the
+	 * far side of the globe, but since the disk cuts through the centre of the
+	 * globe, we avoid any artifacts due to geometries dipping in and out of the
+	 * surface of the globe.
+	 */
+	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+	create_sphere_drawable(
+			const GPlatesGui::rgba8_t &colour)
+	{
+		if (colour.alpha == 255)
+		{
+			return create_opaque_sphere_drawable(colour);
+		}
+		else
+		{
+			return create_translucent_sphere_drawable(colour);
+		}
+	}
+
+
+	GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+	create_sphere_state_set()
+	{
+		GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
+			GPlatesOpenGL::GLBlendState::create();
+		blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		return blend_state;
+	}
+
+
+	GPlatesOpenGL::GLTransform::non_null_ptr_type
+	undo_rotation(
+			const GPlatesMaths::UnitVector3D &axis,
+			double angle_in_deg)
+	{
+		GPlatesOpenGL::GLTransform::non_null_ptr_type transform =
+				GPlatesOpenGL::GLTransform::create(GL_MODELVIEW);
+		// Undo the rotation done in Globe so that the disk always faces the camera.
+		transform->get_matrix().gl_rotate(-angle_in_deg, axis.x().dval(), axis.y().dval(), axis.z().dval());
+		// Rotate the axes so that the z-axis is perpendicular to the screen.
+		// This is because we draw the disk on the z = 0 plane.
+		transform->get_matrix().gl_rotate(90, 0.0, 1.0, 0.0);
+		
+		return transform;
+	}
 }
 
 
-GPlatesGui::OpaqueSphere::OpaqueSphere(const Colour &colour) :
-	d_quad(GPlatesOpenGL::GLUQuadric::create()),
-	d_colour(colour)
-{
-	d_quad->set_normals(GLU_NONE);
-	d_quad->set_orientation(GLU_OUTSIDE);
-	d_quad->set_generate_texture(GL_FALSE);
-	d_quad->set_draw_style(GLU_FILL);
-}
+GPlatesGui::OpaqueSphere::OpaqueSphere(
+		const Colour &colour) :
+	d_view_state(NULL),
+	d_colour(colour),
+	d_drawable(create_sphere_drawable(Colour::to_rgba8(d_colour))),
+	d_state_set(create_sphere_state_set())
+{  }
+
+
+GPlatesGui::OpaqueSphere::OpaqueSphere(
+		const GPlatesPresentation::ViewState &view_state) :
+	d_view_state(&view_state),
+	d_colour(view_state.get_background_colour()),
+	d_drawable(create_sphere_drawable(Colour::to_rgba8(d_colour))),
+	d_state_set(create_sphere_state_set())
+{  }
 
 
 void
@@ -60,30 +303,17 @@ GPlatesGui::OpaqueSphere::paint(
 		const GPlatesMaths::UnitVector3D &axis,
 		double angle_in_deg)
 {
-	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type drawable =
-			d_quad->draw_disk(INNER_RADIUS, RADIUS, NUM_SLICES, NUM_LOOPS, d_colour);
-	// Note: This used to be
-	//     d_quad->draw_sphere(RADIUS, NUM_SLICES, NUM_STACKS, d_colour)
-	// But note that the globe appears as a perfect circle on the screen with a
-	// flat colour, so we might as well just draw a much simpler disk with that
-	// colour. Drawing a disk has one other advantage over actually drawing a
-	// sphere in our case: if we write into the depth buffer while drawing the
-	// disk, we can use a depth test to occlude the geometries on the far side of
-	// the globe, but since the disk cuts through the centre of the globe, we
-	// avoid any artifacts due to geometries dipping in and out of the surface of
-	// the globe.
+	// Check whether the view state's background colour has changed.
+	if (d_view_state && d_view_state->get_background_colour() != d_colour)
+	{
+		d_colour = d_view_state->get_background_colour();
+		d_drawable = create_sphere_drawable(Colour::to_rgba8(d_colour));
+	}
 
 	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type drawable_node =
-			GPlatesOpenGL::GLRenderGraphDrawableNode::create(drawable);
-
-	GPlatesOpenGL::GLTransform::non_null_ptr_type t =
-			GPlatesOpenGL::GLTransform::create(GL_MODELVIEW);
-	// Undo the rotation done in Globe so that the disk always faces the camera.
-	t->get_matrix().gl_rotate(-angle_in_deg, axis.x().dval(), axis.y().dval(), axis.z().dval());
-	// Rotate the axes so that the z-axis is perpendicular to the screen.
-	// This is because gluDisk draws the disk on the z = 0 plane.
-	t->get_matrix().gl_rotate(90, 0.0, 1.0, 0.0);
-	drawable_node->set_transform(t);
+			GPlatesOpenGL::GLRenderGraphDrawableNode::create(d_drawable);
+	drawable_node->set_transform(undo_rotation(axis, angle_in_deg));
+	drawable_node->set_state_set(d_state_set);
 
 	render_graph_parent_node->add_child_node(drawable_node);
 }
