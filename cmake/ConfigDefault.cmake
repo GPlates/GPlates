@@ -102,7 +102,7 @@ set(GPLATES_QT_PLUGINS_LINUX
 # NOTE: each file/directory listed should have its own double quotes as this is a list variable.
 # NOTE: it's better to override this in 'cmake/ConfigUser.cmake' instead of changing it here
 # to make sure this change does not inadvertently get checked into source code control.
-set(GPLATES_BINARY_INSTALL_EXTRAS "~/gplates/data/0.9.10.1/sample-data")
+set(GPLATES_BINARY_INSTALL_EXTRAS "")
 
 # Set to 'true' if this is a public code release (to non-developers).
 # Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
