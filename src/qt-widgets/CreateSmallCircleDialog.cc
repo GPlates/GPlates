@@ -47,6 +47,10 @@ namespace
 		widget->setPalette(palette);
 	}
 
+        /**
+         * Check that the entered mulitple-radii fields make sense.
+         *
+         */
 	bool
 	fields_are_valid(
 		double r1, 
@@ -142,7 +146,7 @@ GPlatesQtWidgets::CreateSmallCircleDialog::CreateSmallCircleDialog(
 
 	//initial states
 	checkbox_stage_pole->setChecked(false);
-	groupbox_stage_pole->setEnabled(false);
+        frame_stage_pole->setEnabled(false);
 	spinbox_radius_1->setEnabled(false);
 	spinbox_radius_2->setEnabled(false);
 	spinbox_step->setEnabled(false);
@@ -163,7 +167,7 @@ GPlatesQtWidgets::CreateSmallCircleDialog::CreateSmallCircleDialog(
 void
 GPlatesQtWidgets::CreateSmallCircleDialog::handle_stage_pole_checkbox_state()
 {
-	groupbox_stage_pole->setEnabled(checkbox_stage_pole->isChecked());
+        frame_stage_pole->setEnabled(checkbox_stage_pole->isChecked());
 }
 
 void

@@ -43,12 +43,6 @@
         <attribute name="verticalHeaderHighlightSections">
          <bool>false</bool>
         </attribute>
-        <attribute name="horizontalHeaderHighlightSections">
-         <bool>false</bool>
-        </attribute>
-        <attribute name="verticalHeaderHighlightSections">
-         <bool>false</bool>
-        </attribute>
         <column>
          <property name="text">
           <string>Centre (Lat ; Lon)</string>
@@ -66,14 +60,14 @@
         <item>
          <widget class="QPushButton" name="button_add">
           <property name="text">
-           <string>Add...</string>
+           <string>&amp;Add...</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="button_remove">
           <property name="text">
-           <string>Remove</string>
+           <string>&amp;Remove</string>
           </property>
          </widget>
         </item>
@@ -120,7 +114,7 @@
      <item>
       <widget class="QPushButton" name="button_close">
        <property name="text">
-        <string>Close</string>
+        <string>&amp;Close</string>
        </property>
       </widget>
      </item>
@@ -128,6 +122,13 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>button_add</tabstop>
+  <tabstop>button_remove</tabstop>
+  <tabstop>button_remove_all</tabstop>
+  <tabstop>button_close</tabstop>
+  <tabstop>table_circles</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

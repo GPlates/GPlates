@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>925</width>
+    <width>907</width>
     <height>295</height>
    </rect>
   </property>
@@ -19,153 +19,138 @@
      <property name="title">
       <string>Centre</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout_3">
-      <item row="0" column="0" colspan="3">
-       <layout class="QHBoxLayout" name="horizontalLayout_9">
-        <item>
-         <widget class="QCheckBox" name="checkbox_stage_pole">
-          <property name="text">
-           <string>use stage pole</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupbox_stage_pole">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>127</height>
-           </size>
-          </property>
-          <property name="title">
-           <string/>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_2">
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>14</number>
-           </property>
-           <item row="0" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_5">
-             <item>
-              <widget class="QLabel" name="label_plate_id_1">
-               <property name="text">
-                <string>Plate id 1</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="spinbox_plate_id_1">
-               <property name="minimumSize">
-                <size>
-                 <width>60</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximum">
-                <number>1000000</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="0" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <item>
-              <widget class="QLabel" name="label_plate_id_2">
-               <property name="text">
-                <string>Plate id 2</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="spinbox_plate_id_2">
-               <property name="minimumSize">
-                <size>
-                 <width>60</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximum">
-                <number>1000000</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="0" column="2">
-            <layout class="QHBoxLayout" name="horizontalLayout_7">
-             <item>
-              <widget class="QLabel" name="label_time_1">
-               <property name="text">
-                <string>Time 1</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="spinbox_time_1">
-               <property name="minimumSize">
-                <size>
-                 <width>60</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="suffix">
-                <string> Ma</string>
-               </property>
-               <property name="maximum">
-                <double>1000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="0" column="3">
-            <layout class="QHBoxLayout" name="horizontalLayout_8">
-             <item>
-              <widget class="QLabel" name="label_time_2">
-               <property name="text">
-                <string>Time 2</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="spinbox_time_2">
-               <property name="minimumSize">
-                <size>
-                 <width>60</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="suffix">
-                <string> Ma</string>
-               </property>
-               <property name="maximum">
-                <double>1000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="0" column="4">
-            <widget class="QPushButton" name="button_calculate_stage_pole">
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="checkbox_stage_pole">
+        <property name="text">
+         <string>Use stage &amp;pole</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1" colspan="3">
+       <widget class="QFrame" name="frame_stage_pole">
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="0" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <item>
+            <widget class="QLabel" name="label_plate_id_2">
              <property name="text">
-              <string>Calculate</string>
+              <string>Plate id 2</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spinbox_plate_id_2">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximum">
+              <number>1000000</number>
              </property>
             </widget>
            </item>
           </layout>
-         </widget>
-        </item>
-       </layout>
+         </item>
+         <item row="0" column="2">
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <item>
+            <widget class="QLabel" name="label_time_1">
+             <property name="text">
+              <string>Time 1</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="spinbox_time_1">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="suffix">
+              <string> Ma</string>
+             </property>
+             <property name="maximum">
+              <double>1000.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="3">
+          <layout class="QHBoxLayout" name="horizontalLayout_8">
+           <item>
+            <widget class="QLabel" name="label_time_2">
+             <property name="text">
+              <string>Time 2</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="spinbox_time_2">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="suffix">
+              <string> Ma</string>
+             </property>
+             <property name="maximum">
+              <double>1000.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="button_calculate_stage_pole">
+             <property name="text">
+              <string>&amp;Generate</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <item>
+            <widget class="QLabel" name="label_plate_id_1">
+             <property name="text">
+              <string>Plate id 1</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spinbox_plate_id_1">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximum">
+              <number>1000000</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+        <zorder></zorder>
+        <zorder></zorder>
+        <zorder></zorder>
+        <zorder></zorder>
+       </widget>
       </item>
       <item row="1" column="0">
        <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -209,7 +194,7 @@
         </item>
        </layout>
       </item>
-      <item row="1" column="1">
+      <item row="1" column="1" colspan="2">
        <layout class="QHBoxLayout" name="horizontalLayout_4">
         <item>
          <widget class="QLabel" name="label_lon">
@@ -251,7 +236,7 @@
         </item>
        </layout>
       </item>
-      <item row="1" column="2">
+      <item row="1" column="3">
        <spacer name="horizontalSpacer_3">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -276,7 +261,7 @@
       <item row="0" column="0">
        <widget class="QRadioButton" name="radio_button_single">
         <property name="text">
-         <string>Single radius</string>
+         <string>&amp;Single radius</string>
         </property>
        </widget>
       </item>
@@ -295,7 +280,7 @@
          <double>0.010000000000000</double>
         </property>
         <property name="maximum">
-         <double>90.000000000000000</double>
+         <double>180.000000000000000</double>
         </property>
         <property name="value">
          <double>1.000000000000000</double>
@@ -318,7 +303,7 @@
       <item row="1" column="0">
        <widget class="QRadioButton" name="radio_button_multiple">
         <property name="text">
-         <string>Multiple radii</string>
+         <string>&amp;Multiple radii</string>
         </property>
        </widget>
       </item>
@@ -326,6 +311,12 @@
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
          <widget class="QLabel" name="label_from">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>From</string>
           </property>
@@ -345,6 +336,9 @@
           <property name="suffix">
            <string>°</string>
           </property>
+          <property name="maximum">
+           <double>180.000000000000000</double>
+          </property>
           <property name="value">
            <double>1.000000000000000</double>
           </property>
@@ -352,6 +346,12 @@
         </item>
         <item>
          <widget class="QLabel" name="label_to">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>to</string>
           </property>
@@ -370,6 +370,9 @@
           </property>
           <property name="suffix">
            <string>°</string>
+          </property>
+          <property name="maximum">
+           <double>180.000000000000000</double>
           </property>
           <property name="value">
            <double>5.000000000000000</double>
@@ -396,6 +399,9 @@
           </property>
           <property name="suffix">
            <string>°</string>
+          </property>
+          <property name="maximum">
+           <double>180.000000000000000</double>
           </property>
           <property name="value">
            <double>1.000000000000000</double>
@@ -438,14 +444,14 @@
      <item>
       <widget class="QPushButton" name="button_add">
        <property name="text">
-        <string>Add</string>
+        <string>&amp;Add</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="button_close">
        <property name="text">
-        <string>Close</string>
+        <string>&amp;Close</string>
        </property>
       </widget>
      </item>
@@ -453,6 +459,24 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>checkbox_stage_pole</tabstop>
+  <tabstop>spinbox_plate_id_1</tabstop>
+  <tabstop>spinbox_plate_id_2</tabstop>
+  <tabstop>spinbox_time_1</tabstop>
+  <tabstop>spinbox_time_2</tabstop>
+  <tabstop>button_calculate_stage_pole</tabstop>
+  <tabstop>spinbox_lat</tabstop>
+  <tabstop>spinbox_lon</tabstop>
+  <tabstop>radio_button_single</tabstop>
+  <tabstop>spin_box_radius</tabstop>
+  <tabstop>radio_button_multiple</tabstop>
+  <tabstop>spinbox_radius_1</tabstop>
+  <tabstop>spinbox_radius_2</tabstop>
+  <tabstop>spinbox_step</tabstop>
+  <tabstop>button_add</tabstop>
+  <tabstop>button_close</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

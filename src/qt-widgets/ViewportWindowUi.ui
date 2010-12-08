@@ -1504,7 +1504,7 @@
   </action>
   <action name="action_Manage_Small_Circles">
    <property name="text">
-    <string>Manage &amp;Small Circles</string>
+    <string>Manage &amp;Small Circles...</string>
    </property>
   </action>
   <action name="action_Choose_Background_Colour">

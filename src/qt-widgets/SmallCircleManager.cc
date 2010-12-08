@@ -208,6 +208,8 @@ GPlatesQtWidgets::SmallCircleManager::SmallCircleManager(
 
 	d_small_circle_layer->set_active();
 
+        update_buttons();
+
 }
 
 void
