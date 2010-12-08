@@ -114,6 +114,11 @@ namespace GPlatesAppLogic
 		 *
 		 * Note: Keys can exist outside of the compiled-in defaults, i.e. session storage
 		 * which has no limit to the number of sub-keys.
+		 *
+		 * Further note: This only checks if a key/value pair has been set for the given
+		 * name. It is possible to have "directories" which have no values associated with
+		 * them, use only to sub-divide things. @a exists will return @a false if you
+		 * ask about such key-paths.
 		 */
 		bool
 		exists(

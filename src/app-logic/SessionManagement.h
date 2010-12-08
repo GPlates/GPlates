@@ -118,6 +118,11 @@ namespace GPlatesAppLogic
 
 	private:
 
+
+		void
+		store_recent_session_list(
+				const QList<GPlatesAppLogic::Session> &session_list);
+
 		Session
 		new_session_from_current_state();
 
