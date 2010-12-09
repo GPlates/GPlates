@@ -29,6 +29,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QMenu>
+#include <QList>
 
 
 namespace GPlatesAppLogic
@@ -67,7 +68,7 @@ namespace GPlatesGui
 
 
 		/**
-		 * Does Menu initialisation, which must wait until after ViewportWindow
+		 * Does Menu Action initialisation, which must wait until after ViewportWindow
 		 * has called setupUi().
 		 *
 		 * @a menu_ - the QMenu to mess with.
@@ -75,6 +76,14 @@ namespace GPlatesGui
 		void
 		init(
 				QMenu &menu_);
+
+
+		/**
+		 * Relabels and shows/hides appropriate Menu Actions to match the current
+		 * Recent Sessions List as returned by GPlatesAppLogic::SessionManagement.
+		 */
+		void
+		regenerate_menu();
 
 
 	public slots:
@@ -104,6 +113,18 @@ namespace GPlatesGui
 		 * Guarded pointer to the QMenu we are allowed to mess with.
 		 */
 		QPointer<QMenu> d_menu_ptr;
+
+
+		/**
+		 * The "No sessions to load" placeholder Action.
+		 */
+		QPointer<QAction> d_no_sessions_action;
+		
+		/**
+		 * One QAction for each potential session to restore, in order.
+		 */
+		QList<QPointer<QAction> > d_recent_session_actions;
+		
 	};
 }
 
