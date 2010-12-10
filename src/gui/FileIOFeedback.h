@@ -199,9 +199,15 @@ namespace GPlatesGui
 		 * Opens the set of files from the user's previous session.
 		 * This delegates to SessionManagement, but catches any exceptions the
 		 * file-io code might throw.
+		 *
+		 * The default value loads the most recent session "slot" in the user's
+		 * history; higher numbers dig further into the past. Attempting to
+		 * load a "session slot" which does not exist does nothing - the menu
+		 * should match the correct number of slots anyway.
 		 */
 		void
-		open_previous_session();
+		open_previous_session(
+				int session_slot_to_load = 0);
 
 
 	private:

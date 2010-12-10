@@ -354,13 +354,15 @@ GPlatesGui::FileIOFeedback::open_urls(
 
 
 void
-GPlatesGui::FileIOFeedback::open_previous_session()
+GPlatesGui::FileIOFeedback::open_previous_session(
+		int session_slot_to_load)
 {
 	GPlatesAppLogic::SessionManagement &sm = app_state().get_session_management();
 	try_catch_file_load_with_feedback(
 			boost::bind(
 					&GPlatesAppLogic::SessionManagement::load_previous_session,
-					&sm));
+					&sm,
+					session_slot_to_load));
 }
 
 

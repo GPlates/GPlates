@@ -29,6 +29,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QMenu>
+#include <QActionGroup>
 #include <QList>
 
 
@@ -78,6 +79,8 @@ namespace GPlatesGui
 				QMenu &menu_);
 
 
+	public slots:
+
 		/**
 		 * Relabels and shows/hides appropriate Menu Actions to match the current
 		 * Recent Sessions List as returned by GPlatesAppLogic::SessionManagement.
@@ -86,10 +89,15 @@ namespace GPlatesGui
 		regenerate_menu();
 
 
-	public slots:
+		void
+		open_previous_session(
+				int session_slot_to_load = 0);
+
+	private slots:
 
 		void
-		open_previous_session();
+		handle_action_triggered(
+				QAction *act);
 
 	private:
 
@@ -124,7 +132,7 @@ namespace GPlatesGui
 		 * One QAction for each potential session to restore, in order.
 		 */
 		QList<QPointer<QAction> > d_recent_session_actions;
-		
+		QActionGroup d_recent_session_action_group;
 	};
 }
 

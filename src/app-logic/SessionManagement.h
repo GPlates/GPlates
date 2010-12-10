@@ -89,9 +89,15 @@ namespace GPlatesAppLogic
 		/**
 		 * As @a load_session(Session &), but automatically picks the most recent
 		 * session from user preference storage to load.
+		 *
+		 * The default value loads the most recent session "slot" in the user's
+		 * history; higher numbers dig further into the past. Attempting to
+		 * load a "session slot" which does not exist does nothing - the menu
+		 * should match the correct number of slots anyway.
 		 */
 		void
-		load_previous_session();
+		load_previous_session(
+				int session_slot_to_load = 0);
 
 		/**
 		 * Clear out all loaded files (in preparation for loading some new session)
@@ -115,6 +121,15 @@ namespace GPlatesAppLogic
 
 		void
 		debug_session_state();
+
+	signals:
+
+		/**
+		 * Emitted when we write a new session list to persistent storage, so
+		 * that menus can be updated.
+		 */
+		void
+		session_list_updated();
 
 	private:
 

@@ -62,7 +62,7 @@ namespace
 			QString dir = QFileInfo(filename).path();
 			common = common_base_dir(common, dir);
 		}
-		return QFileInfo(common).baseName();
+		return QFileInfo(common).fileName();
 	}
 }
 

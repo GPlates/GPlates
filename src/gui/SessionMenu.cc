@@ -64,7 +64,8 @@ GPlatesGui::SessionMenu::SessionMenu(
 	d_session_management_ptr(&(app_state_.get_session_management())),
 	d_file_io_feedback_ptr(&file_io_feedback_),
 	d_unsaved_changes_tracker_ptr(&unsaved_changes_tracker_),
-	d_no_sessions_action(new QAction(tr("<No sessions to load>"), d_menu_ptr))
+	d_no_sessions_action(new QAction(tr("<No sessions to load>"), d_menu_ptr)),
+	d_recent_session_action_group(NULL)
 {  }
 
 
@@ -72,8 +73,18 @@ void
 GPlatesGui::SessionMenu::init(
 		QMenu &menu_)
 {
+	// Remember which menu we're supposed to be modifying.
 	d_menu_ptr = &menu_;
 	
+	// When the SessionManagement list of sessions gets updated, update the menu.
+	connect(d_session_management_ptr, SIGNAL(session_list_updated()),
+			this, SLOT(regenerate_menu()));
+	
+	// Configure an Action Group so we can listen to just one signal from the whole lot.
+	d_recent_session_action_group.setExclusive(false);
+	connect(&d_recent_session_action_group, SIGNAL(triggered(QAction *)),
+			this, SLOT(handle_action_triggered(QAction *)));
+
 	// The "placeholder" action visible only when there's nothing else to load.
 	d_no_sessions_action->setMenuRole(QAction::NoRole);
 	d_no_sessions_action->setDisabled(true);
@@ -90,9 +101,7 @@ GPlatesGui::SessionMenu::init(
 		act->setData(QVariant(i));
 		d_menu_ptr->addAction(act);
 		d_recent_session_actions << act;
-		
-		//TEMP: All clicks just load previous session.
-		connect(act, SIGNAL(triggered()), this, SLOT(open_previous_session()));
+		d_recent_session_action_group.addAction(act);
 	}
 	
 	// Populate menu with appropriate labels.
@@ -138,10 +147,19 @@ GPlatesGui::SessionMenu::regenerate_menu()
 
 
 void
-GPlatesGui::SessionMenu::open_previous_session()
+GPlatesGui::SessionMenu::open_previous_session(
+		int session_slot_to_load)
 {
 	if (d_unsaved_changes_tracker_ptr->replace_session_event_hook()) {
-		d_file_io_feedback_ptr->open_previous_session();
+		d_file_io_feedback_ptr->open_previous_session(session_slot_to_load);
 	}
 }
 
+
+void
+GPlatesGui::SessionMenu::handle_action_triggered(
+		QAction *act)
+{
+	int session_slot_to_load = act->data().toInt();
+	open_previous_session(session_slot_to_load);
+}

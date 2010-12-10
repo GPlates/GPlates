@@ -134,23 +134,17 @@ GPlatesAppLogic::SessionManagement::get_recent_session_list()
 
 
 void
-GPlatesAppLogic::SessionManagement::load_previous_session()
+GPlatesAppLogic::SessionManagement::load_previous_session(
+		int session_slot_to_load)
 {
-
-	// TEMP: Just load exactly one session.
-	GPlatesAppLogic::UserPreferences &prefs = d_app_state_ptr->get_user_preferences();
-	if (prefs.get_value("session/recent/size").toInt() <= 0) {
+	QList<GPlatesAppLogic::Session> sessions = get_recent_session_list();
+	if (session_slot_to_load >= sessions.size() || session_slot_to_load < 0) {
 		// Nothing to load.
 		return;
 	}
 
-	// Pull the most recent session out of the user preferences storage.	
-	GPlatesAppLogic::UserPreferences::KeyValueMap map = prefs.get_keyvalues_as_map(
-			"session/recent/1");
-	Session previous = Session::unserialise_from_prefs_map(map);
-	
 	// Load it, potentially saving the previous session.
-	load_session(previous);
+	load_session(sessions.at(session_slot_to_load));
 }
 
 
@@ -255,6 +249,9 @@ GPlatesAppLogic::SessionManagement::store_recent_session_list(
 
 		prefs.set_keyvalues_from_map(session_path, session.serialise_to_prefs_map());
 	}
+
+	// Ensure menu is updated.
+	emit session_list_updated();
 }
 
 
