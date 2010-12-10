@@ -84,6 +84,8 @@ set(srcs
     SmallCircle.cc
     SmallCircle.h
     SphereSettings.h
+    SphericalArea.cc
+    SphericalArea.h
     SphericalCollection.h
     SphericalDistance.cc
     SphericalDistance.h
