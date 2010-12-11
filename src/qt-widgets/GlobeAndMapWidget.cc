@@ -62,13 +62,14 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 				d_view_state,
 				d_view_state.get_colour_scheme(),
 				this)),
+	d_layout(new QStackedLayout(this)),
+	d_active_view_ptr(d_globe_canvas_ptr.get()),
 	d_zoom_enabled(true)
 {
-	// Globe is the active view by default.
-	d_active_view_ptr = d_globe_canvas_ptr.get();
-	d_map_view_ptr->hide();
-
 	init();
+
+	// Globe is the active view by default.
+	d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
 }
 
 
@@ -88,21 +89,24 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 				d_view_state,
 				colour_scheme,
 				this)),
+	d_layout(new QStackedLayout(this)),
+	d_active_view_ptr(
+			existing_globe_and_map_widget_ptr->is_globe_active()
+			? static_cast<SceneView *>(d_globe_canvas_ptr.get())
+			: static_cast<SceneView *>(d_map_view_ptr.get())),
 	d_zoom_enabled(existing_globe_and_map_widget_ptr->d_zoom_enabled)
 {
+	init();
+
 	// Copy which of globe and map is active.
 	if (existing_globe_and_map_widget_ptr->is_globe_active())
 	{
-		d_active_view_ptr = d_globe_canvas_ptr.get();
-		d_map_view_ptr->hide();
+		d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
 	}
 	else
 	{
-		d_active_view_ptr = d_map_view_ptr.get();
-		d_globe_canvas_ptr->hide();
+		d_layout->setCurrentWidget(d_map_view_ptr.get());
 	}
-
-	init();
 }
 
 
@@ -110,11 +114,8 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::init()
 {
 	// Add the globe and the map to this widget.
-	QHBoxLayout *globe_and_map_layout = new QHBoxLayout(this);
-	globe_and_map_layout->setSpacing(0);
-	globe_and_map_layout->setContentsMargins(0, 0, 0, 0);
-	globe_and_map_layout->addWidget(d_globe_canvas_ptr.get());
-	globe_and_map_layout->addWidget(d_map_view_ptr.get());
+	d_layout->addWidget(d_globe_canvas_ptr.get());
+	d_layout->addWidget(d_map_view_ptr.get());
 
 	// Make sure the cursor is always an arrow.
 	d_globe_canvas_ptr->setCursor(Qt::ArrowCursor);
@@ -222,8 +223,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		{
 			d_globe_canvas_ptr->set_camera_viewpoint(*camera_llp);
 		}
-		d_globe_canvas_ptr->show();
-		d_map_view_ptr->hide();
+		d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
 	}
 	else
 	{
@@ -235,8 +235,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		{
 			d_map_view_ptr->set_camera_viewpoint(*camera_llp);	
 		}
-		d_globe_canvas_ptr->hide();
-		d_map_view_ptr->show();
+		d_layout->setCurrentWidget(d_map_view_ptr.get());
 	}
 	
 	emit update_tools_and_status_message();

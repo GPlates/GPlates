@@ -43,15 +43,17 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 	d_old_feature = 
 		d_feature_focus->focused_feature();
-	if(!(*d_old_feature).is_valid())
+	if (!(*d_old_feature).is_valid())
 	{
 		return;
 	}
-	d_feature_collection_ref = 
-		*GPlatesAppLogic::get_feature_collection_containing_feature(
-				d_view_state->get_application_state().get_feature_collection_file_state(),
-				*d_old_feature);
-	if(!d_feature_collection_ref.is_valid())
+	GPlatesModel::FeatureCollectionHandle *feature_collection_ptr = (*d_old_feature)->parent_ptr();
+	if (!feature_collection_ptr)
+	{
+		return;
+	}
+	d_feature_collection_ref = feature_collection_ptr->reference();
+	if (!d_feature_collection_ref.is_valid())
 	{
 		return;
 	}

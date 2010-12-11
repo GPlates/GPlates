@@ -49,11 +49,16 @@ set(srcs
     ChangeGeometryPropertyWidgetUi.ui
     ChooseColourButton.cc
     ChooseColourButton.h
+    ChooseFeatureCollectionDialog.cc
+    ChooseFeatureCollectionDialog.h
+    ChooseFeatureCollectionDialogUi.ui
     ChooseFeatureCollectionWidget.cc
     ChooseFeatureCollectionWidget.h
     ChooseFeatureCollectionWidgetUi.ui
     ChooseFeatureTypeWidget.cc
     ChooseFeatureTypeWidget.h
+    ChooseFontButton.cc
+    ChooseFontButton.h
     ChooseGeometryPropertyWidget.cc
     ChooseGeometryPropertyWidget.h
     ColouringDialog.cc
@@ -65,6 +70,9 @@ set(srcs
     ConfigureGraticulesDialog.cc
     ConfigureGraticulesDialog.h
     ConfigureGraticulesDialogUi.ui
+    ConfigureTextOverlayDialog.cc
+    ConfigureTextOverlayDialog.h
+    ConfigureTextOverlayDialogUi.ui
     CoRegistrationOptionsWidget.h
     CoRegistrationOptionsWidgetUi.ui
     CoRegLayerConfigurationDialog.cc
@@ -158,6 +166,7 @@ set(srcs
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
+    FileDialogFilter.h
     FlowlinePropertiesWidget.cc
     FlowlinePropertiesWidget.h
     FlowlinePropertiesWidgetUi.ui
@@ -220,6 +229,10 @@ set(srcs
     MotionTrackPropertiesWidget.h
     MotionTrackPropertiesWidgetUi.ui
     NoActiveEditWidgetException.h
+    OpenDirectoryDialog.cc
+    OpenDirectoryDialog.h
+    OpenFileDialog.cc
+    OpenFileDialog.h
     PoleSequenceTableWidget.cc
     PoleSequenceTableWidget.h
     PoleSequenceTableWidgetUi.ui
@@ -266,6 +279,8 @@ set(srcs
     ResultTableDialogUi.ui
     SaveFileDialog.cc
     SaveFileDialog.h
+    SaveFileDialogImpl.cc
+    SaveFileDialogImpl.h
     SceneView.h
     SelectionWidget.cc
     SelectionWidget.h
@@ -329,6 +344,8 @@ set(srcs
     ViewportWindow.cc
     ViewportWindow.h
     ViewportWindowUi.ui
+    VisualLayersComboBox.cc
+    VisualLayersComboBox.h
     VisualLayersDelegate.cc
     VisualLayersDelegate.h
     VisualLayersListView.cc

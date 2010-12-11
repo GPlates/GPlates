@@ -73,7 +73,7 @@ namespace GPlatesGui
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				RasterColourSchemeMap &raster_colour_scheme_map,
-				TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
@@ -147,7 +147,7 @@ namespace GPlatesGui
 		RasterColourSchemeMap &d_raster_colour_scheme_map;
 		
 		//! Used for rendering text on an OpenGL canvas
-		TextRenderer::ptr_to_const_type d_text_renderer_ptr;
+		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
 
 		//! Used for determining whether a particular point on the globe is visible
 		GlobeVisibilityTester d_visibility_tester;

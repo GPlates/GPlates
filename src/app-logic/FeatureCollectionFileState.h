@@ -478,16 +478,6 @@ namespace GPlatesAppLogic
 		};
 	};
 
-
-	/**
-	 * Return FeatureCollectionHandle which contains the given feature handle.
-	 *
-	 */
-	boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref>
-	get_feature_collection_containing_feature(
-			GPlatesAppLogic::FeatureCollectionFileState &file_state_ref,
-			GPlatesModel::FeatureHandle::weak_ref feature_ref);
-
 	boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 	get_file_reference_containing_feature(
 			GPlatesAppLogic::FeatureCollectionFileState &file_state_ref,

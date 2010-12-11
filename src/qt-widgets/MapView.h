@@ -201,6 +201,12 @@ namespace GPlatesQtWidgets
 		QImage
 		grab_frame_buffer();
 
+		int
+		width() const;
+
+		int
+		height() const;
+
 	protected:
 
 		virtual 
@@ -326,6 +332,11 @@ namespace GPlatesQtWidgets
 		make_signal_slot_connections();
 
 		/**
+		 * The QGLWidget that we use for this widget's viewport
+		 */
+		QGLWidget *d_gl_widget_ptr;
+
+		/**
 		 * A pointer to the map canvas that this view is associated with. 
 		 */
 		boost::scoped_ptr<MapCanvas> d_map_canvas_ptr;
@@ -346,16 +357,6 @@ namespace GPlatesQtWidgets
 		QPoint d_last_mouse_view_coords;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
-
-		/**
-		 * The visible area of the MapView will initially be set to cover this area of the QGraphicsScene.
-		 */
-		QRectF d_scene_rect;
-
-		/**
-		 * The QGLWidget that we use for this widget's viewport
-		 */
-		QGLWidget *d_gl_widget_ptr;
 		
 		/**
 		 * Translates and rotates maps

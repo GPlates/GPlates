@@ -29,6 +29,7 @@
 #include <memory>
 #include <boost/format.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/foreach.hpp>
 
 #include <QtGlobal>
 #include <QFileDialog>
@@ -54,8 +55,10 @@
 #include "ActionButtonBox.h"
 #include "AssignReconstructionPlateIdsDialog.h"
 #include "CalculateReconstructionPoleDialog.h"
+#include "ChooseFeatureCollectionDialog.h"
 #include "ColouringDialog.h"
 #include "ConfigureGraticulesDialog.h"
+#include "ConfigureTextOverlayDialog.h"
 #include "CreateFeatureDialog.h"
 #include "CreateVGPDialog.h"
 #include "DockWidget.h"
@@ -246,6 +249,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_file_io_feedback_ptr(
 			new GPlatesGui::FileIOFeedback(
 				get_application_state(),
+				get_view_state(),
 				*this,
 				get_view_state().get_feature_focus(),
 				this)),
@@ -299,10 +303,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_specify_anchored_plate_id_dialog_ptr(
 			new SpecifyAnchoredPlateIdDialog(
 				this)),
-	d_total_reconstruction_poles_dialog_ptr(
-			new TotalReconstructionPolesDialog(
-				get_view_state(),
-				this)),
+	d_total_reconstruction_poles_dialog_ptr(NULL),
 	d_total_reconstruction_sequences_dialog_ptr(
 			new TotalReconstructionSequencesDialog(
 				get_application_state().get_feature_collection_file_state(),
@@ -671,13 +672,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// been called and all the widgets that are used to notify the user are in place.
 	d_unsaved_changes_tracker_ptr->init();
 
-	// Registered a slot to be called when a new reconstruction is generated.
-	QObject::connect(
-			&get_application_state(),
-			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
-			this,
-			SLOT(handle_reconstruction()));
-
 	// Render everything on the screen in present-day positions.
 	get_application_state().reconstruct();
 
@@ -848,7 +842,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Clone_Geometry, SIGNAL(triggered()),
 			d_clone_operation_ptr.get(), SLOT(clone_focused_geometry()));
 	QObject::connect(action_Clone_Feature, SIGNAL(triggered()),
-			d_clone_operation_ptr.get(), SLOT(clone_focused_feature()));
+			this, SLOT(clone_feature_with_dialog()));
 
 	// Preferences is beta functionality and not on a menu anywhere yet.
 	QObject::connect(action_Preferences, SIGNAL(triggered()),
@@ -907,6 +901,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(enable_arrows_display()));
 	QObject::connect(action_Show_Strings, SIGNAL(triggered()),
 			this, SLOT(enable_strings_display()));
+	QObject::connect(action_Configure_Text_Overlay, SIGNAL(triggered()),
+			this, SLOT(pop_up_configure_text_overlay_dialog()));
 	QObject::connect(action_Configure_Graticules, SIGNAL(triggered()),
 			this, SLOT(pop_up_configure_graticules_dialog()));
 	QObject::connect(action_Choose_Background_Colour, SIGNAL(triggered()),
@@ -1223,16 +1219,6 @@ GPlatesQtWidgets::ViewportWindow::highlight_focused_feature_in_table()
 	}
 }
 
-void
-GPlatesQtWidgets::ViewportWindow::handle_reconstruction()
-{
-	// A new reconstruction has just happened so do some updating.
-	if (d_total_reconstruction_poles_dialog_ptr->isVisible())
-	{
-		d_total_reconstruction_poles_dialog_ptr->update();
-	}
-}
-
 
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_specify_anchored_plate_id_dialog()
@@ -1281,20 +1267,28 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog()
 {
-	// note: this dialog is created in the constructor
-	
-	d_total_reconstruction_poles_dialog_ptr->update();
+	if (!d_total_reconstruction_poles_dialog_ptr)
+	{
+		d_total_reconstruction_poles_dialog_ptr.reset(
+				new TotalReconstructionPolesDialog(get_view_state(), this));
+	}
+
 	QtWidgetUtils::pop_up_dialog(d_total_reconstruction_poles_dialog_ptr.get());
+	d_total_reconstruction_poles_dialog_ptr->update();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
 {
-	// note: this dialog is created in the constructor
-	
-	d_total_reconstruction_poles_dialog_ptr->update(visual_layer);
+	if (!d_total_reconstruction_poles_dialog_ptr)
+	{
+		d_total_reconstruction_poles_dialog_ptr.reset(
+				new TotalReconstructionPolesDialog(get_view_state(), this));
+	}
+
 	QtWidgetUtils::pop_up_dialog(d_total_reconstruction_poles_dialog_ptr.get());
+	d_total_reconstruction_poles_dialog_ptr->update(visual_layer);
 }
 
 void
@@ -1925,91 +1919,14 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file(
 void
 GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 {
-	// Please keep this list in alphabetical order.
-	if (d_about_dialog_ptr)
+	BOOST_FOREACH(QObject *obj, children())
 	{
-		d_about_dialog_ptr->reject();
+		QDialog *dialog = dynamic_cast<QDialog *>(obj);
+		if (dialog)
+		{
+			dialog->reject();
+		}
 	}
-	if (d_animate_dialog_ptr)
-	{
-		d_animate_dialog_ptr->reject();
-	}
-	if (d_assign_recon_plate_ids_dialog_ptr)
-	{
-		d_assign_recon_plate_ids_dialog_ptr->reject();
-	}
-	if (d_calculate_reconstruction_pole_dialog_ptr)
-	{
-		d_calculate_reconstruction_pole_dialog_ptr->reject();
-	}
-	if (d_colouring_dialog_ptr)
-	{
-		d_colouring_dialog_ptr->reject();
-	}
-	if (d_configure_graticules_dialog_ptr)
-	{
-		d_configure_graticules_dialog_ptr->reject();
-	}
-	if (d_create_vgp_dialog_ptr)
-	{
-		d_create_vgp_dialog_ptr->reject();
-	}
-	if (d_data_association_dialog_ptr)
-	{
-		d_data_association_dialog_ptr->reject();
-	}
-	if (d_export_animation_dialog_ptr)
-	{
-		d_export_animation_dialog_ptr->reject();
-	}
-	if (d_feature_properties_dialog_ptr)
-	{
-		d_feature_properties_dialog_ptr->reject();
-	}
-	if (d_layering_dialog_ptr)
-	{
-		d_layering_dialog_ptr->reject();
-	}
-	if (d_manage_feature_collections_dialog_ptr)
-	{
-		d_manage_feature_collections_dialog_ptr->reject();
-	}
-	if (d_mesh_dialog_ptr)
-	{
-		d_mesh_dialog_ptr->reject();
-	}
-	if (d_read_errors_dialog_ptr)
-	{
-		d_read_errors_dialog_ptr->reject();
-	}
-	if (d_set_camera_viewpoint_dialog_ptr)
-	{
-		d_set_camera_viewpoint_dialog_ptr->reject();
-	}
-	if (d_set_projection_dialog_ptr)
-	{
-		d_set_projection_dialog_ptr->reject();
-	}
-	if (d_set_vgp_visibility_dialog_ptr)
-	{
-		d_set_vgp_visibility_dialog_ptr->reject();
-	}
-	if (d_shapefile_attribute_viewer_dialog_ptr)
-	{
-		d_shapefile_attribute_viewer_dialog_ptr->reject();
-	}
-	if (d_specify_anchored_plate_id_dialog_ptr)
-	{
-		d_specify_anchored_plate_id_dialog_ptr->reject();
-	}
-	if (d_total_reconstruction_poles_dialog_ptr)
-	{
-		d_total_reconstruction_poles_dialog_ptr->reject();
-	}
-	if (d_total_reconstruction_sequences_dialog_ptr)
-	{
-		d_total_reconstruction_sequences_dialog_ptr->reject();
-	}	
 }
 
 void
@@ -2524,6 +2441,23 @@ GPlatesQtWidgets::ViewportWindow::pop_up_background_colour_picker()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::pop_up_configure_text_overlay_dialog()
+{
+	if (!d_configure_text_overlay_dialog_ptr)
+	{
+		d_configure_text_overlay_dialog_ptr.reset(
+				new ConfigureTextOverlayDialog(this));
+	}
+
+	if (d_configure_text_overlay_dialog_ptr->exec(
+				get_view_state().get_text_overlay_settings()) == QDialog::Accepted)
+	{
+		reconstruction_view_widget().update();
+	}
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::pop_up_configure_graticules_dialog()
 {
 	if (!d_configure_graticules_dialog_ptr)
@@ -2536,6 +2470,44 @@ GPlatesQtWidgets::ViewportWindow::pop_up_configure_graticules_dialog()
 			get_view_state().get_graticule_settings()) == QDialog::Accepted)
 	{
 		reconstruction_view_widget().update();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::clone_feature_with_dialog()
+{
+	if (!d_choose_feature_collection_dialog_ptr)
+	{
+		d_choose_feature_collection_dialog_ptr.reset(
+				new ChooseFeatureCollectionDialog(
+					get_application_state().get_feature_collection_file_state(),
+					get_application_state().get_feature_collection_file_io(),
+					this));
+	}
+
+	GPlatesModel::FeatureHandle::weak_ref feature_ref = get_view_state().get_feature_focus().focused_feature();
+	if (!feature_ref.is_valid())
+	{
+		return;
+	}
+
+	GPlatesModel::FeatureCollectionHandle *feature_collection_ptr = feature_ref->parent_ptr();
+	if (!feature_collection_ptr)
+	{
+		return;
+	}
+
+	boost::optional<std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> > dialog_result =
+		d_choose_feature_collection_dialog_ptr->get_file_reference(feature_collection_ptr->reference());
+	if (dialog_result)
+	{
+		d_clone_operation_ptr->clone_focused_feature(
+				dialog_result->first.get_file().get_feature_collection());
+		if (dialog_result->second)
+		{
+			get_application_state().update_layers(dialog_result->first);
+		}
 	}
 }
 

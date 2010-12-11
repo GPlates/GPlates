@@ -153,6 +153,10 @@ set(srcs
     Stars.h
     SvgExport.cc
     SvgExport.h
+    TextOverlay.cc
+    TextOverlay.h
+    TextOverlaySettings.cc
+    TextOverlaySettings.h
     TextRenderer.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h

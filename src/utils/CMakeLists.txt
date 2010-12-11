@@ -68,6 +68,8 @@ set(srcs
     VirtualProxy.h
     XmlNamespaces.cc
     XmlNamespaces.h
+    XPath.cc
+    XPath.h
 )
 
 

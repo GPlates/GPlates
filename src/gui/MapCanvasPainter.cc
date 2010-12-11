@@ -981,7 +981,7 @@ GPlatesGui::MapCanvasPainter::MapCanvasPainter(
 		Map &map,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		GPlatesGui::RenderSettings &render_settings,
-		GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
+		const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
 		double inverse_zoom_factor,
 		ColourScheme::non_null_ptr_type colour_scheme):

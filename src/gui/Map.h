@@ -28,8 +28,6 @@
 #ifndef GPLATES_GUI_MAP_H
 #define GPLATES_GUI_MAP_H
 
-#include <boost/shared_ptr.hpp>
-
 #include "ColourScheme.h"
 #include "MapProjection.h"
 #include "TextRenderer.h"
@@ -40,6 +38,7 @@
 #include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
+
 
 namespace GPlatesGui
 {
@@ -58,7 +57,8 @@ namespace GPlatesGui
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				ViewportZoom &viewport_zoom,
-				ColourScheme::non_null_ptr_type colour_scheme);
+				const ColourScheme::non_null_ptr_type &colour_scheme,
+				const TextRenderer::non_null_ptr_to_const_type &text_renderer);
 
 		MapProjection &
 		projection();
@@ -79,10 +79,6 @@ namespace GPlatesGui
 		void
 		set_central_meridian(
 				double central_meridian_);
-
-		void
-		set_text_renderer(
-				TextRenderer::ptr_to_const_type text_renderer_ptr);
 
 		//! Set the background colour and draw the lat-lon grid.
 		void
@@ -114,9 +110,6 @@ namespace GPlatesGui
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
-		//! Used for rendering text
-		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer_ptr;
-
 		//! Flags to determine what data to show
 		GPlatesGui::RenderSettings &d_render_settings;
 
@@ -125,6 +118,9 @@ namespace GPlatesGui
 		
 		//! For giving colour to RenderedGeometry
 		GPlatesGui::ColourScheme::non_null_ptr_type d_colour_scheme;
+
+		//! Used for rendering text
+		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
 	};
 }
 

@@ -33,8 +33,12 @@
 #include <boost/function.hpp>
 
 #include "app-logic/FeatureCollectionFileState.h"
+
 #include "file-io/FeatureCollectionFileFormat.h"
+
 #include "model/FeatureCollectionHandle.h"
+
+#include "qt-widgets/OpenFileDialog.h"
 #include "qt-widgets/SaveFileDialog.h"
 
 
@@ -50,6 +54,10 @@ namespace GPlatesGui
 	class UnsavedChangesTracker;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -84,6 +92,7 @@ namespace GPlatesGui
 		explicit
 		FileIOFeedback(
 				GPlatesAppLogic::ApplicationState &app_state_,
+				GPlatesPresentation::ViewState &view_state_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				FeatureFocus &feature_focus_,
 				QObject *parent_ = NULL);
@@ -293,32 +302,23 @@ namespace GPlatesGui
 
 		/**
 		 * The save file as dialog box.
-		 *
-		 * FIXME: I don't believe shared_ptr is the Right Thing To Do here,
-		 * since we are already parenting to Qt. - JC
 		 */
-		boost::shared_ptr<GPlatesQtWidgets::SaveFileDialog> d_save_file_as_dialog_ptr;
+		GPlatesQtWidgets::SaveFileDialog d_save_file_as_dialog;
 
 		/**
 		 * The save file copy dialog box.
-		 *
-		 * FIXME: I don't believe shared_ptr is the Right Thing To Do here,
-		 * since we are already parenting to Qt. - JC
 		 */
-		boost::shared_ptr<GPlatesQtWidgets::SaveFileDialog> d_save_file_copy_dialog_ptr;
+		GPlatesQtWidgets::SaveFileDialog d_save_file_copy_dialog;
+
+		/**
+		 * The open files dialog box.
+		 */
+		GPlatesQtWidgets::OpenFileDialog d_open_files_dialog;
 		
 		/**
 		 * Controls whether Save File dialogs include a Compressed GPML option.
 		 */
 		bool d_gzip_available;
-
-		/**
-		 * Holds the path information from the last file opened using the Open File dialog.
-		 * Note that file save dialogs infer their directory based on the path of the file
-		 * being saved.
-		 */
-		QString d_open_file_path;
-
 	};
 }
 

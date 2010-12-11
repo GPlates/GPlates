@@ -164,6 +164,7 @@ GPlatesQtWidgets::DataAssociationDialog::DataAssociationDialog(
 	d_button_create(NULL),
 	d_feature_collection_file_state(application_state.get_feature_collection_file_state()),
 	d_application_state(view_state.get_application_state()),
+	d_view_state(view_state),
 	d_feature_focus(view_state.get_feature_focus()),
 	d_default_ROI_range(0),
 	d_start_time(0.0),
@@ -740,15 +741,15 @@ GPlatesQtWidgets::DataAssociationDialog::create_data_association_feature()
 					data_association_parameters));
 
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
-	filters.push_back(std::make_pair(filter, filter_ext));
+	filters.push_back(FileDialogFilter(filter, filter_ext));
 
-	boost::shared_ptr< GPlatesQtWidgets::SaveFileDialog > save_dialog_ptr = 
-	GPlatesQtWidgets::SaveFileDialog::get_save_file_dialog(
+	GPlatesQtWidgets::SaveFileDialog save_dialog(
 			this,
 			"Save",
-			filters);
+			filters,
+			d_view_state);
 	
-	boost::optional<QString> filename_opt = save_dialog_ptr->get_file_name();
+	boost::optional<QString> filename_opt = save_dialog.get_file_name();
 	if(!filename_opt)
 	{
 		qDebug() << "No file name.";
@@ -832,7 +833,11 @@ GPlatesQtWidgets::DataAssociationDialog::apply()
 	clear();
 	done(QDialog::Accepted);
 	
-	d_result_dialog.reset(new ResultTableDialog(result_collection, this));
+	d_result_dialog.reset(
+			new ResultTableDialog(
+				result_collection,
+				d_view_state,
+				this));
 	d_result_dialog->show();
  	d_result_dialog->activateWindow();
  	d_result_dialog->raise();

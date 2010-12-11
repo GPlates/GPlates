@@ -35,12 +35,17 @@
 
 #include "CoRegLayerConfigurationDialogUi.h"
 
+#include "OpenDirectoryDialog.h"
+
 #include "app-logic/FeatureCollectionFileState.h"
+
 #include "data-mining/CheckAttrTypeVisitor.h"
 #include "data-mining/CoRegConfigurationTable.h"
 
+
 namespace GPlatesPresentation
 {
+	class ViewState;
 	class VisualLayer;
 }
 
@@ -134,11 +139,10 @@ namespace GPlatesQtWidgets
 	};
 	
 
-	/*
-	* The configuration dialog for Co-registration layer.
-	*/
-
-	class CoRegLayerConfigurationDialog:
+	/**
+	 * The configuration dialog for Co-registration layer.
+	 */
+	class CoRegLayerConfigurationDialog :
 			public QDialog, 
 			protected Ui_CoRegLayerConfigurationDialog
 	{
@@ -149,8 +153,13 @@ namespace GPlatesQtWidgets
 		static GPlatesDataMining::CoRegConfigurationTable CoRegCfgTable;
 
 		CoRegLayerConfigurationDialog(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer):
-			d_visual_layer(layer)
+				GPlatesPresentation::ViewState &view_state,
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer) :
+			d_visual_layer(layer),
+			d_open_directory_dialog(
+					this,
+					tr("Select Path"),
+					view_state)
 		{
 			setupUi(this);
 			QObject::connect(FeatureCollectionListWidget, SIGNAL(itemSelectionChanged()),
@@ -248,7 +257,8 @@ namespace GPlatesQtWidgets
 		std::multimap< QString, GPlatesDataMining::AttributeTypeEnum >  d_attr_name_type_map;
 
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
-			
+		
+		OpenDirectoryDialog d_open_directory_dialog;
 	};
 
 }

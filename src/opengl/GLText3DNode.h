@@ -62,7 +62,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const GPlatesGui::TextRenderer::ptr_to_const_type &text_renderer,
+				const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
 				double x,
 				double y,
 				double z,
@@ -111,7 +111,7 @@ namespace GPlatesOpenGL
 		}
 
 	private:
-		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer;
+		GPlatesGui::TextRenderer::non_null_ptr_to_const_type d_text_renderer;
 
 		double d_x;
 		double d_y;
@@ -126,7 +126,7 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLText3DNode(
-				const GPlatesGui::TextRenderer::ptr_to_const_type &text_renderer,
+				const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
 				double x,
 				double y,
 				double z,

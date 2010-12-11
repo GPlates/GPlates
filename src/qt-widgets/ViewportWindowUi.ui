@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -116,6 +116,7 @@
     <addaction name="action_Show_Arrow_Decorations"/>
     <addaction name="action_Show_Strings"/>
     <addaction name="separator"/>
+    <addaction name="action_Configure_Text_Overlay"/>
     <addaction name="action_Configure_Graticules"/>
     <addaction name="action_Choose_Background_Colour"/>
     <addaction name="action_Show_Stars"/>
@@ -934,7 +935,10 @@
      <normaloff>:/clone_geometry_22.png</normaloff>:/clone_geometry_22.png</iconset>
    </property>
    <property name="text">
-    <string>Clone &amp;Geometry</string>
+    <string>Copy &amp;Geometry to Digitise Tool</string>
+   </property>
+   <property name="toolTip">
+    <string>Copy Geometry to Digitise Tool</string>
    </property>
   </action>
   <action name="action_Clone_Feature">
@@ -1316,10 +1320,10 @@
      <normaloff>:/measure_distance_35.png</normaloff>:/measure_distance_35.png</iconset>
    </property>
    <property name="text">
-    <string>Measure Di&amp;stance</string>
+    <string>Mea&amp;sure</string>
    </property>
    <property name="toolTip">
-    <string>Measure Distance  S</string>
+    <string>Measure  S</string>
    </property>
    <property name="shortcut">
     <string>S</string>
@@ -1515,6 +1519,14 @@
   <action name="action_Configure_Graticules">
    <property name="text">
     <string>Configure &amp;Graticules...</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_Configure_Text_Overlay">
+   <property name="text">
+    <string>Configure &amp;Text Overlay...</string>
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>

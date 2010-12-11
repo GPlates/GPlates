@@ -29,7 +29,6 @@
 #include <boost/foreach.hpp>
 #include <QString>
 #include <QStringList>
-#include <QFileDialog>
 #include <QMessageBox>
 
 #include "ImportRasterDialog.h"
@@ -179,12 +178,17 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 	d_view_state(view_state),
 	d_unsaved_changes_tracker(unsaved_changes_tracker),
 	d_file_io_feedback(file_io_feedback),
+	d_open_file_dialog(
+			parentWidget(),
+			tr("Import Raster"),
+			GPlatesFileIO::RasterReader::get_file_dialog_filters(),
+			view_state),
 	d_georeferencing(
 			GPlatesPropertyValues::Georeferencing::create()),
 	d_save_after_finish(true),
 	d_time_dependent_raster_page_id(addPage(
 				new TimeDependentRasterPage(
-					view_state.get_open_file_path(),
+					view_state,
 					d_raster_sequence,
 					boost::bind(
 						&ImportRasterDialog::set_number_of_bands,
@@ -242,18 +246,13 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 {
 	if (!time_dependent_raster)
 	{
-		QString filename = QFileDialog::getOpenFileName(
-				parentWidget(),
-				QObject::tr("Import Raster"),
-				d_view_state.get_open_file_path(),
-				GPlatesFileIO::RasterReader::get_file_dialog_filters());
-
+		QString filename = d_open_file_dialog.get_open_file_name();
 		if (filename.isEmpty())
 		{
 			return;
 		}
 
-		d_view_state.get_open_file_path() = filename;
+		d_view_state.get_last_open_directory() = QFileInfo(filename).path();
 
 		// Check whether there is a GPML file of the same name in the same directory.
 		// If so, ask the user if they actually meant to open that.

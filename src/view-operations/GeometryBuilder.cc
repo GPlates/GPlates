@@ -689,7 +689,7 @@ GPlatesViewOperations::GeometryBuilder::get_actual_type_of_geometry(
 }
 
 GPlatesViewOperations::GeometryBuilder::geometry_opt_ptr_type
-GPlatesViewOperations::GeometryBuilder::get_geometry_on_sphere()
+GPlatesViewOperations::GeometryBuilder::get_geometry_on_sphere() const
 {
 	// Until multiple geometries are supported (ie can be returned in a
 	// single GeometryOnSphere type) then make sure have only zero or one geometry.
@@ -703,7 +703,7 @@ GPlatesViewOperations::GeometryBuilder::get_geometry_on_sphere()
 		return boost::none;
 	}
 
-	InternalGeometryBuilder &geometry = get_current_geometry_builder();
+	const InternalGeometryBuilder &geometry = get_current_geometry_builder();
 
 	return geometry.update(), geometry.get_geometry_on_sphere();
 }

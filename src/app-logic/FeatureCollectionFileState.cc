@@ -484,22 +484,6 @@ GPlatesAppLogic::FeatureCollectionFileState::destroying_feature_collection(
 }
 
 
-boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref>
-GPlatesAppLogic::get_feature_collection_containing_feature(
-		FeatureCollectionFileState &file_state_ref,
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
-{
-	boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_ref;
-	if(file_ref = get_file_reference_containing_feature(file_state_ref,feature_ref))
-	{
-		return (*file_ref).get_file().get_feature_collection();
-	}
-	else
-	{
-		return boost::none;
-	}
-}
-
 boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesAppLogic::get_file_reference_containing_feature(
 		FeatureCollectionFileState &file_state_ref,

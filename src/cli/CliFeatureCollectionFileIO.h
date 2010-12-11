@@ -106,7 +106,7 @@ namespace GPlatesCli
 		// Values specified by user on command-line for the save file type.
 		//
 		static const std::string SAVE_FILE_TYPE_GPML;
-		static const std::string SAVE_FILE_TYPE_GPML_GZ;
+		static const std::string SAVE_FILE_TYPE_GPMLZ;
 		static const std::string SAVE_FILE_TYPE_PLATES_LINE;
 		static const std::string SAVE_FILE_TYPE_PLATES_ROTATION;
 		static const std::string SAVE_FILE_TYPE_SHAPEFILE;

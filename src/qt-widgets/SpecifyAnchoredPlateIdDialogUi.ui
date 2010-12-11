@@ -50,17 +50,51 @@
        </widget>
       </item>
       <item row="1" column="1" >
-       <widget class="QToolButton" name="fill_toolbutton" >
-        <property name="enabled" >
-         <bool>false</bool>
-        </property>
-        <property name="text" >
-         <string>&amp;Fill from Current Feature</string>
-        </property>
-        <property name="popupMode" >
-         <enum>QToolButton::InstantPopup</enum>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout" >
+        <item>
+         <widget class="QToolButton" name="fill_toolbutton" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="text" >
+           <string>&amp;Fill from Current Feature</string>
+          </property>
+          <property name="popupMode" >
+           <enum>QToolButton::InstantPopup</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="reset_button" >
+          <property name="toolTip" >
+           <string>Reset Plate ID to 0</string>
+          </property>
+          <property name="text" >
+           <string>&amp;Reset</string>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >
+            <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
+          </property>
+          <property name="toolButtonStyle" >
+           <enum>Qt::ToolButtonTextBesideIcon</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer" >
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>

@@ -34,7 +34,7 @@
 
 
 GPlatesOpenGL::GLText3DNode::GLText3DNode(
-		const GPlatesGui::TextRenderer::ptr_to_const_type &text_renderer,
+		const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
 		double x,
 		double y,
 		double z,

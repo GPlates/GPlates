@@ -315,6 +315,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesAppLogic::FeatureCollectionFileState &d_feature_collection_file_state;
 		GPlatesAppLogic::ApplicationState &d_application_state;
+		GPlatesPresentation::ViewState &d_view_state;
 		GPlatesGui::FeatureFocus &d_feature_focus;
 
 		/**

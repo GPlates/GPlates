@@ -104,7 +104,9 @@ namespace GPlatesQtWidgets
 			if(!d_coreg_layer_config_dialog)
 			{
 				d_coreg_layer_config_dialog.reset(
-						new CoRegLayerConfigurationDialog(d_current_visual_layer));
+						new CoRegLayerConfigurationDialog(
+							d_view_state,
+							d_current_visual_layer));
 			}
 			d_coreg_layer_config_dialog->pop_up();
 

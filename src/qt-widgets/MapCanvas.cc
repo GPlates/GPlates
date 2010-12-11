@@ -38,32 +38,37 @@
 #include "gui/MapProjection.h"
 #include "gui/MapTransform.h"
 #include "gui/RenderSettings.h"
+#include "gui/TextOverlay.h"
 
 #include "presentation/ViewState.h"
 
 
 GPlatesQtWidgets::MapCanvas::MapCanvas(
+		GPlatesPresentation::ViewState &view_state,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		MapView *map_view_ptr,
 		GPlatesGui::RenderSettings &render_settings,
 		GPlatesGui::ViewportZoom &viewport_zoom,
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
-		GPlatesPresentation::ViewState &view_state,
+		const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,
+		const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
 		QWidget *parent_):
 	QGraphicsScene(parent_),
 	d_view_state(view_state),
+	d_map_view_ptr(map_view_ptr),
 	d_map(
 			view_state,
 			rendered_geometry_collection,
 			view_state.get_visual_layers(),
 			render_settings,
 			viewport_zoom,
-			colour_scheme),
-	d_rendered_geometry_collection(&rendered_geometry_collection)
+			colour_scheme,
+			text_renderer),
+	d_rendered_geometry_collection(&rendered_geometry_collection),
+	d_text_overlay(
+			new GPlatesGui::TextOverlay(
+				view_state.get_application_state(),
+				text_renderer))
 {
-	// Give the scene a nice big rectangle.
-	// setSceneRect(QRect(-360, -180, 720, 360));
-	// setSceneRect(QRect(-1000, -1000, 2000, 2000));
-
 	// Give the scene a rectangle that's big enough to guarantee that the map view,
 	// even after rotations and translations, won't go outside these boundaries.
 	// (Note that the centre of the map, in scene coordinates, is constrained by
@@ -94,6 +99,9 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			SLOT(update_canvas()));
 }
 
+GPlatesQtWidgets::MapCanvas::~MapCanvas()
+{  }
+
 void
 GPlatesQtWidgets::MapCanvas::drawBackground(
 		QPainter *painter,
@@ -107,7 +115,15 @@ GPlatesQtWidgets::MapCanvas::drawForeground(
 		QPainter *painter, 
 		const QRectF &rect)
 {
-	d_map.paint(calculate_scale());
+	float scale = calculate_scale();
+	d_map.paint(scale);
+
+	d_text_overlay->paint(
+			d_view_state.get_text_overlay_settings(),
+			d_map_view_ptr->width(),
+			d_map_view_ptr->height(),
+			scale);
+
 	emit repainted();
 }
 

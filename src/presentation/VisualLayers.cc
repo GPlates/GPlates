@@ -41,8 +41,10 @@
 
 GPlatesPresentation::VisualLayers::VisualLayers(
 		GPlatesAppLogic::ApplicationState &application_state,
+		ViewState &view_state,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection) :
 	d_application_state(application_state),
+	d_view_state(view_state),
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_next_visual_layer_number(1)
 {
@@ -243,6 +245,17 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 			SLOT(handle_layer_removed_input_connection(
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer)));
+	QObject::connect(
+			reconstruct_graph,
+			SIGNAL(default_reconstruction_tree_layer_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::Layer)),
+			this,
+			SLOT(handle_default_reconstruction_tree_layer_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::Layer)));
 
 	// Connect to FeatureCollectionFileState signals.
 	GPlatesAppLogic::FeatureCollectionFileState *file_state = &d_application_state.get_feature_collection_file_state();
@@ -293,6 +306,7 @@ GPlatesPresentation::VisualLayers::add_layer(
 
 	emit layer_added(new_index);
 	emit layer_added(visual_layer);
+	emit changed();
 }
 
 
@@ -337,6 +351,7 @@ GPlatesPresentation::VisualLayers::remove_layer(
 		d_layer_order.erase(layer_order_iter);
 
 		emit layer_removed(order_seq_index);
+		emit changed();
 	}
 
 	// Also remove the entry from the map from layer index to visual layer.
@@ -391,6 +406,7 @@ GPlatesPresentation::VisualLayers::create_visual_layer(
 	boost::shared_ptr<VisualLayer> visual_layer(
 			new VisualLayer(
 				*this,
+				d_view_state.get_visual_layer_registry(),
 				layer,
 				d_rendered_geometry_collection,
 				d_next_visual_layer_number));
@@ -476,6 +492,7 @@ GPlatesPresentation::VisualLayers::move_layer(
 		std::swap(d_layer_order, new_order);
 		emit layer_order_changed(to_index, from_index);
 	}
+	emit changed();
 
 	// FIXME: There has to be a better way, but let's just do a full reconstruction
 	// so the changes in layer ordering get reflected in the main window.
@@ -531,6 +548,17 @@ GPlatesPresentation::VisualLayers::handle_file_state_file_info_changed(
 
 
 void
+GPlatesPresentation::VisualLayers::handle_default_reconstruction_tree_layer_changed(
+		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+		GPlatesAppLogic::Layer prev_default_reconstruction_tree_layer,
+		GPlatesAppLogic::Layer new_default_reconstruction_tree_layer)
+{
+	handle_layer_modified(prev_default_reconstruction_tree_layer);
+	handle_layer_modified(new_default_reconstruction_tree_layer);
+}
+
+
+void
 GPlatesPresentation::VisualLayers::handle_layer_modified(
 		const GPlatesAppLogic::Layer &layer)
 {
@@ -557,6 +585,8 @@ GPlatesPresentation::VisualLayers::refresh_all_layers()
 	{
 		emit layer_modified(i);
 	}
+
+	emit changed();
 }
 
 
@@ -578,6 +608,7 @@ GPlatesPresentation::VisualLayers::emit_layer_modified(
 	{
 		emit layer_modified(index_iter->second);
 		emit layer_modified(order_iter - d_layer_order.begin());
+		emit changed();
 	}
 }
 

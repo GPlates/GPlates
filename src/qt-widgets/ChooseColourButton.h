@@ -2,7 +2,6 @@
 
 /**
  * \file
- * Contains the definition of the class FriendlyLineEdit.
  *
  * $Revision$
  * $Date$ 

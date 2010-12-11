@@ -41,6 +41,11 @@
 #include "data-mining/DataTable.h"
 #include "data-mining/OpaqueDataToQString.h"
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
 	using namespace GPlatesDataMining;
@@ -49,6 +54,7 @@ namespace GPlatesQtWidgets
 	{
 	public:
 
+		explicit
 		ResultTableView(
 				QWidget *_parent) : 
 			QTableView(_parent)  
@@ -222,6 +228,7 @@ namespace GPlatesQtWidgets
 		explicit
 		ResultTableDialog(
 				const std::vector< DataTable > data_tables,
+				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
 		~ResultTableDialog()
@@ -263,6 +270,7 @@ namespace GPlatesQtWidgets
 		update();
 
 		std::vector< DataTable > d_data_tables;
+		GPlatesPresentation::ViewState &d_view_state;
 		boost::scoped_ptr< ResultTableModel > d_table_model_prt;
 		
 		QTableView* table_view;

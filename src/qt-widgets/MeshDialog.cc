@@ -23,14 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QFileDialog>
-#include <QDebug>
-#include <QMessageBox>
 #include <sstream>
 #include <string>
+#include <QMessageBox>
+#include <QDir>
+#include <QDebug>
 
-#include "MeshDialogUi.h"
 #include "MeshDialog.h"
+
 #include "ProgressDialog.h"
 
 #include "app-logic/FeatureCollectionFileIO.h"
@@ -83,7 +83,7 @@ namespace
 
 
 GPlatesQtWidgets::MeshDialog::MeshDialog(
-		GPlatesPresentation::ViewState & view_state,
+		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog& manage_feature_collections_dialog,
 		QWidget *parent_ ) :
 	QDialog(
@@ -108,12 +108,16 @@ GPlatesQtWidgets::MeshDialog::MeshDialog(
 	d_file_name_template(
 			DENSITY_PLACE_HOLDER+".mesh."+CAP_NUM_PLACE_HOLDER),
 	d_manage_feature_collections_dialog(
-			manage_feature_collections_dialog)
+			manage_feature_collections_dialog),
+	d_open_directory_dialog(
+			this,
+			tr("Select Path"),
+			view_state)
 {
 	setupUi(this);
 	
 	node_Y->setDisabled(true);
-	lineEdit_path->setText(QDir::currentPath());
+	lineEdit_path->setText(QDir::toNativeSeparators(QDir::currentPath()));
 
 	lineEdit_file_template->setText(d_file_name_template.c_str());
 	
@@ -182,7 +186,7 @@ GPlatesQtWidgets::MeshDialog::set_path()
 	else
 	{
 		//if the new path is invalid, we don't allow the path change.
-		lineEdit_path->setText(d_path);
+		lineEdit_path->setText(QDir::toNativeSeparators(d_path));
 	}
 	return;
 }
@@ -190,18 +194,14 @@ GPlatesQtWidgets::MeshDialog::set_path()
 void
 GPlatesQtWidgets::MeshDialog::select_path()
 {
-	QString pathname = 
-		QFileDialog::getExistingDirectory(
-				parentWidget(), 
-				tr("Select Path"), 
-				lineEdit_path->text());
-	
-	if(!pathname.isEmpty())
+	d_open_directory_dialog.select_directory(lineEdit_path->text());
+	QString pathname = d_open_directory_dialog.get_existing_directory();
+
+	if (!pathname.isEmpty())
 	{
-		lineEdit_path->setText(pathname);
+		lineEdit_path->setText(QDir::toNativeSeparators(pathname));
 		set_path();
 	}
-	return;
 }
 
 void

@@ -65,18 +65,19 @@ GPlatesQtWidgets::MapView::MapView(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_) :
-	d_map_canvas_ptr(
-			new MapCanvas(
-				view_state.get_rendered_geometry_collection(),
-				view_state.get_render_settings(),
-				view_state.get_viewport_zoom(),
-				colour_scheme,
-				view_state,
-				this)),
-	d_scene_rect(-180,-90,360,180),
 	d_gl_widget_ptr(
 			new QGLWidget(
 				QGLFormat(QGL::SampleBuffers),
+				this)),
+	d_map_canvas_ptr(
+			new MapCanvas(
+				view_state,
+				view_state.get_rendered_geometry_collection(),
+				this,
+				view_state.get_render_settings(),
+				view_state.get_viewport_zoom(),
+				colour_scheme,
+				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr),
 				this)),
 	d_map_transform(view_state.get_map_transform())
 {
@@ -110,11 +111,8 @@ GPlatesQtWidgets::MapView::MapView(
 	//   are pressed.
 	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
 	d_gl_widget_ptr->setMouseTracking(true);
-	setViewport(d_gl_widget_ptr);
 
-	d_map_canvas_ptr->map().set_text_renderer(
-				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr));
-	d_map_canvas_ptr->set_map_view_ptr(this);
+	setViewport(d_gl_widget_ptr);
 	setScene(d_map_canvas_ptr.get());
 
 	setViewportUpdateMode(
@@ -734,5 +732,19 @@ QImage
 GPlatesQtWidgets::MapView::grab_frame_buffer()
 {
 	return d_gl_widget_ptr->grabFrameBuffer();
+}
+
+
+int
+GPlatesQtWidgets::MapView::width() const
+{
+	return d_gl_widget_ptr->width();
+}
+
+
+int
+GPlatesQtWidgets::MapView::height() const
+{
+	return d_gl_widget_ptr->height();
 }
 

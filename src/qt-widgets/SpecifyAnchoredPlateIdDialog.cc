@@ -112,6 +112,13 @@ GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::SpecifyAnchoredPlateIdDialog(
 			SIGNAL(accepted()),
 			this,
 			SLOT(propagate_value()));
+
+	// Reset button.
+	QObject::connect(
+			reset_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(reset_to_zero()));
 }
 
 
@@ -153,6 +160,13 @@ GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::handle_action_triggered(
 	{
 		populate_spinbox(static_cast<GPlatesModel::integer_plate_id_type>(plate_id));
 	}
+}
+
+
+void
+GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::reset_to_zero()
+{
+	fixed_plate_spinbox->setValue(0);
 }
 
 

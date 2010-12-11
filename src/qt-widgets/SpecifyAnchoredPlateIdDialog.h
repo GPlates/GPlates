@@ -74,6 +74,9 @@ namespace GPlatesQtWidgets
 		handle_action_triggered(
 				QAction *action);
 
+		void
+		reset_to_zero();
+
 	signals:
 
 		void

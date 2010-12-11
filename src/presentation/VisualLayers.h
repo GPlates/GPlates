@@ -65,6 +65,7 @@ namespace GPlatesPresentation
 		 */
 		VisualLayers(
 				GPlatesAppLogic::ApplicationState &application_state,
+				ViewState &view_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection);
 
 		/**
@@ -294,6 +295,13 @@ namespace GPlatesPresentation
 		layer_modified(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 
+		/**
+		 * This signal is emitted after a visual layer has been added, removed or
+		 * modified, or if the ordering of visual layers has changed.
+		 */
+		void
+		changed();
+
 	private slots:
 
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -331,6 +339,12 @@ namespace GPlatesPresentation
 		handle_file_state_file_info_changed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
+
+		void
+		handle_default_reconstruction_tree_layer_changed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer prev_default_reconstruction_tree_layer,
+				GPlatesAppLogic::Layer new_default_reconstruction_tree_layer);
 
 	private:
 
@@ -407,7 +421,7 @@ namespace GPlatesPresentation
 		friend class VisualLayer;
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
-
+		ViewState &d_view_state;
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**

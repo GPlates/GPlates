@@ -26,6 +26,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <functional>
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QTableWidget>
@@ -37,8 +38,12 @@
 
 #include "TotalReconstructionPolesDialog.h"
 
+#include "QtWidgetUtils.h"
+#include "VisualLayersComboBox.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/Layer.h"
+#include "app-logic/LayerTaskType.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeEdge.h"
 
@@ -48,6 +53,7 @@
 
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayerRegistry.h"
+#include "presentation/VisualLayers.h"
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -303,10 +309,23 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
 	d_view_state(view_state),
-	d_application_state(view_state.get_application_state())
+	d_application_state(view_state.get_application_state()),
+	d_plate(0),
+	d_time(0.0),
+	d_visual_layers_combobox(
+			new VisualLayersComboBox(
+				view_state.get_visual_layers(),
+				view_state.get_visual_layer_registry(),
+				std::bind1st(std::equal_to<GPlatesPresentation::VisualLayerType::Type>(),
+					static_cast<GPlatesPresentation::VisualLayerType::Type>(
+						GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)),
+				this))
 {
 	setupUi(this);
-
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_visual_layers_combobox,
+			visual_layers_combobox_placeholder_widget);
+	label_reconstruction_tree_layer->setBuddy(d_visual_layers_combobox);
 
 	QHeaderView *equivalent_header = table_equivalent->horizontalHeader();
 
@@ -538,28 +557,52 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree(
 
 }
 
+
+void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::showEvent(
+		QShowEvent *event_)
+{
+	update_if_layer_changed();
+}	
+
+
+void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::update_if_visible()
+{
+	if (isVisible())
+	{
+		update();
+	}
+}
+
+
+void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::update_if_layer_changed()
+{
+	boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer =
+		d_visual_layers_combobox->get_selected_visual_layer();
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
+	{
+		if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_curr_visual_layer = d_curr_visual_layer.lock())
+		{
+			if (locked_curr_visual_layer != locked_visual_layer)
+			{
+				update();
+			}
+		}
+	}
+}
+
+
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::update()
 {
-	// Reset everything.
-	set_time(d_application_state.get_current_reconstruction_time());
-	set_plate(d_application_state.get_current_anchored_plate_id());
-	table_equivalent->clearContents();
-	table_equivalent->setRowCount(0);
-	table_relative->clearContents();
-	table_relative->setRowCount(0);
-	tree_reconstruction->clear();
-	tree_circuit->clear();
+	reset_everything();
 
 	// Extract the reconstruction tree from the currently selected layer.
-	if (combobox_reconstruction_tree_layer->currentIndex() == -1)
-	{
-		return;
-	}
-	typedef boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer_ptr;
-	visual_layer_ptr visual_layer = combobox_reconstruction_tree_layer->itemData(
-			combobox_reconstruction_tree_layer->currentIndex()).value<visual_layer_ptr>();
-	
+	boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer =
+		d_visual_layers_combobox->get_selected_visual_layer();
+
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
@@ -574,8 +617,29 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::update()
 			fill_reconstruction_tree(**reconstruction_tree);
 			fill_circuit_tree(**reconstruction_tree);
 		}
+
+		d_curr_visual_layer = visual_layer;
+	}
+	else
+	{
+		d_curr_visual_layer = boost::weak_ptr<GPlatesPresentation::VisualLayer>();
 	}
 }
+
+
+void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::reset_everything()
+{
+	set_time(d_application_state.get_current_reconstruction_time());
+	set_plate(d_application_state.get_current_anchored_plate_id());
+	table_equivalent->clearContents();
+	table_equivalent->setRowCount(0);
+	table_relative->clearContents();
+	table_relative->setRowCount(0);
+	tree_reconstruction->clear();
+	tree_circuit->clear();
+}
+
 
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::update(
@@ -583,11 +647,7 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::update(
 {
 	// By moving the combobox to the correct index, the dialog should be updated
 	// via a signal emitted by the combobox.
-	int index = get_combobox_index(visual_layer);
-	if (index != -1)
-	{
-		combobox_reconstruction_tree_layer->setCurrentIndex(index);
-	}
+	d_visual_layers_combobox->set_selected_visual_layer(visual_layer);
 }
 
 void
@@ -628,81 +688,6 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::export_equivalent()
 
 
 void
-GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_layer_added(
-		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
-{
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
-	{
-		if (locked_visual_layer->get_reconstruct_graph_layer().get_type() ==
-				GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)
-		{
-			QVariant qv;
-			qv.setValue(visual_layer);
-			combobox_reconstruction_tree_layer->addItem(
-					d_view_state.get_visual_layer_registry().get_icon(
-						static_cast<GPlatesPresentation::VisualLayerType::Type>(
-							GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)),
-					locked_visual_layer->get_name(), qv);
-		}
-	}
-}
-
-
-void
-GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_layer_about_to_be_removed(
-		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
-{
-	int index = get_combobox_index(visual_layer);
-	if (index != -1)
-	{
-		if (combobox_reconstruction_tree_layer->count() > 1)
-		{
-			combobox_reconstruction_tree_layer->setCurrentIndex(0);
-		}
-		combobox_reconstruction_tree_layer->removeItem(index);
-	}
-}
-
-
-void
-GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_layer_modified(
-		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
-{
-	int index = get_combobox_index(visual_layer);
-	if (index != -1)
-	{
-		if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
-		{
-			combobox_reconstruction_tree_layer->setItemText(index, locked_visual_layer->get_name());
-		}
-	}
-}
-
-
-int
-GPlatesQtWidgets::TotalReconstructionPolesDialog::get_combobox_index(
-		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
-{
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
-	{
-		for (int i = 0; i != combobox_reconstruction_tree_layer->count(); ++i)
-		{
-			typedef boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer_ptr;
-			visual_layer_ptr curr = combobox_reconstruction_tree_layer->itemData(i).value<visual_layer_ptr>();
-			if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_curr = curr.lock())
-			{
-				if (locked_curr == locked_visual_layer)
-				{
-					return i;
-				}
-			}
-		}
-	}
-	return -1;
-}
-
-
-void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_export(
 		const QTableWidget &table)
 {
@@ -735,30 +720,6 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_export(
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::make_signal_slot_connections()
 {
-	// VisualLayers signals.
-	GPlatesPresentation::VisualLayers *visual_layers = &d_view_state.get_visual_layers();
-	QObject::connect(
-			visual_layers,
-			SIGNAL(layer_added(
-					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
-			this,
-			SLOT(handle_layer_added(
-					boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
-	QObject::connect(
-			visual_layers,
-			SIGNAL(layer_about_to_be_removed(
-					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
-			this,
-			SLOT(handle_layer_about_to_be_removed(
-					boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
-	QObject::connect(
-			visual_layers,
-			SIGNAL(layer_modified(
-					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
-			this,
-			SLOT(handle_layer_modified(
-					boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
-
 	// Export buttons.
 	QObject::connect(
 			button_export_relative_rotations,
@@ -773,9 +734,17 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::make_signal_slot_connections()
 
 	// Layers combobox.
 	QObject::connect(
-			combobox_reconstruction_tree_layer,
-			SIGNAL(currentIndexChanged(int)),
+			d_visual_layers_combobox,
+			SIGNAL(selected_visual_layer_changed(
+					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
 			this,
-			SLOT(update()));
+			SLOT(update_if_layer_changed()));
+
+	// Reconstructed.
+	QObject::connect(
+			&d_application_state,
+			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
+			this,
+			SLOT(update_if_visible()));
 }
 

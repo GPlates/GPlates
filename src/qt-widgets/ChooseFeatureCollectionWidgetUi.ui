@@ -18,7 +18,7 @@
   </property>
   <layout class="QVBoxLayout">
    <item>
-    <widget class="QLabel" name="label_feature_collections">
+    <widget class="QLabel" name="label_help_text">
      <property name="text">
       <string>Choose a feature collection for the new feature:</string>
      </property>

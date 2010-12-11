@@ -50,6 +50,7 @@
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/QGLWidgetTextRenderer.h"
 #include "gui/SvgExport.h"
+#include "gui/TextOverlay.h"
 
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
@@ -217,6 +218,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
+	d_text_renderer(
+			GPlatesGui::QGLWidgetTextRenderer::create(this)),
 	d_globe(
 			view_state,
 			d_gl_persistent_objects,
@@ -224,9 +227,13 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			view_state.get_visual_layers(),
 			view_state.get_render_settings(),
 			view_state.get_raster_colour_scheme_map(),
-			GPlatesGui::QGLWidgetTextRenderer::create(this),
+			d_text_renderer,
 			GPlatesGui::GlobeVisibilityTester(*this),
-			colour_scheme)
+			colour_scheme),
+	d_text_overlay(
+			new GPlatesGui::TextOverlay(
+				view_state.get_application_state(),
+				d_text_renderer))
 {
 	init();
 }
@@ -270,13 +277,19 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 					view_state_.get_application_state())),
 	d_virtual_mouse_pointer_pos_on_globe(virtual_mouse_pointer_pos_on_globe_),
 	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
+	d_text_renderer(
+			GPlatesGui::QGLWidgetTextRenderer::create(this)),
 	d_globe(
 			existing_globe_,
 			d_gl_persistent_objects,
 			view_state_.get_raster_colour_scheme_map(),
-			GPlatesGui::QGLWidgetTextRenderer::create(this),
+			d_text_renderer,
 			GPlatesGui::GlobeVisibilityTester(*this),
-			colour_scheme_)
+			colour_scheme_),
+	d_text_overlay(
+			new GPlatesGui::TextOverlay(
+				d_view_state.get_application_state(),
+				d_text_renderer))
 {
 	if (!isSharing())
 	{
@@ -285,6 +298,10 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 
 	init();
 }
+
+
+GPlatesQtWidgets::GlobeCanvas::~GlobeCanvas()
+{  }
 
 
 void
@@ -305,6 +322,7 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	QSizePolicy globe_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	globe_size_policy.setHorizontalStretch(255);
 	setSizePolicy(globe_size_policy);
+	setFocusPolicy(Qt::StrongFocus);
 	setMinimumSize(100, 100);
 
 	QObject::connect(&(d_globe.orientation()), SIGNAL(orientation_changed()),
@@ -580,16 +598,24 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 				initialise_render_graph(*render_graph, d_gl_projection_transform);
 
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
+		const float scale = calculate_scale();
 		// Fill up the render graph with more nodes.
 		d_globe.paint(
 				globe_render_graph_node,
 				viewport_zoom_factor,
-				calculate_scale());
+				scale);
 
 		draw_render_graph(*render_graph);
 
 		// Finished rendering.
 		d_gl_context->end_render();
+
+		// Paint the text overlay.
+		d_text_overlay->paint(
+				d_view_state.get_text_overlay_settings(),
+				width(),
+				height(),
+				scale);
 	}
 	catch (const GPlatesGlobal::Exception &e)
 	{
@@ -1124,25 +1150,25 @@ GPlatesQtWidgets::GlobeCanvas::camera_llp() const
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_up()
 {
-	globe().orientation().move_camera_up();
+	globe().orientation().move_camera_up(d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_down()
 {
-	globe().orientation().move_camera_down();
+	globe().orientation().move_camera_down(d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_left()
 {
-	globe().orientation().move_camera_left();
+	globe().orientation().move_camera_left(d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_right()
 {
-	globe().orientation().move_camera_right();
+	globe().orientation().move_camera_right(d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 void

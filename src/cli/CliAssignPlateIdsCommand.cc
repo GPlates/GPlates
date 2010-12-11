@@ -134,7 +134,7 @@ namespace
 
 		// We're only allowing a subset of the save file types that make sense for us.
 		if (save_file_type == GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML ||
-			save_file_type == GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML_GZ ||
+			save_file_type == GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPMLZ ||
 			save_file_type == GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_PLATES_LINE ||
 			save_file_type == GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_SHAPEFILE ||
 			save_file_type == GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GMT)
@@ -215,7 +215,7 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 					+ "') - valid values are:\n"
 					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML
 					+ " - GPlates native GPML format\n"
-					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML_GZ
+					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_GPMLZ
 					+ " - GPlates native GPML format compressed with gzip\n"
 					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_SHAPEFILE
 					+ " - ArcGIS Shapefile format\n"

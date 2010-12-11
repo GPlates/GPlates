@@ -530,10 +530,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 void
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_choose_export_path()
 {
-	QString path = 
-		QFileDialog::getExistingDirectory(
-				this, 
-				QApplication::tr("Select Path"));
+	QString path = d_open_directory_dialog.get_existing_directory();
 	
 	if(!path.isEmpty())
 	{

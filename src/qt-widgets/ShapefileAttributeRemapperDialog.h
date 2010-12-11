@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2007 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -73,6 +74,12 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		reset_fields();
+
+	private slots:
+
+		void
+		handle_buttonbox_clicked(
+				QAbstractButton *button);
 
 	private:
 

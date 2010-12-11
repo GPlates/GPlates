@@ -36,6 +36,14 @@
 
 #include "TimeDependentRasterPageUi.h"
 
+#include "OpenDirectoryDialog.h"
+#include "OpenFileDialog.h"
+
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -57,7 +65,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		TimeDependentRasterPage(
-				QString &open_file_path,
+				GPlatesPresentation::ViewState &view_state,
 				TimeDependentRasterSequence &raster_sequence,
 				const boost::function<void (unsigned int)> &set_number_of_bands_function,
 				QWidget *parent_ = NULL);
@@ -118,7 +126,6 @@ namespace GPlatesQtWidgets
 		deduce_time(
 				const QFileInfo &file_info);
 
-		QString &d_open_file_path;
 		TimeDependentRasterSequence &d_raster_sequence;
 		boost::function<void (unsigned int)> d_set_number_of_bands_function;
 
@@ -129,6 +136,9 @@ namespace GPlatesQtWidgets
 
 		boost::shared_ptr<index_to_editor_map_type> d_index_to_editor_map;
 		QWidget *d_widget_to_focus;
+
+		OpenDirectoryDialog d_open_directory_dialog;
+		OpenFileDialog d_open_files_dialog;
 	};
 }
 

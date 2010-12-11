@@ -24,7 +24,6 @@
  */
  
 #include <QDir>
-#include <QFileDialog>
 #include <QHeaderView>
 #include <QAbstractItemModel>
 
@@ -53,11 +52,13 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 			GPlatesUtils::NullIntrusivePointerHandler()),
 	d_animation_controller_ptr(
 			&animation_controller),
-	d_view_state_ptr(
-			&viewport_window_),
 	d_configure_parameters_dialog_ptr(
 			new GPlatesQtWidgets::ConfigureExportParametersDialog(
 					d_export_animation_context_ptr, this)),
+	d_open_directory_dialog(
+			this,
+			tr("Select Path"),
+			view_state_),
 	d_is_single_frame(false)
 {
 	setupUi(this);
@@ -510,7 +511,7 @@ void
 GPlatesQtWidgets::ExportAnimationDialog::react_choose_target_directory_clicked()
 {
 	QString current_path;
-	if(d_is_single_frame)
+	if (d_is_single_frame)
 	{
 		current_path=lineEdit_single_path->text();
 	}
@@ -518,18 +519,14 @@ GPlatesQtWidgets::ExportAnimationDialog::react_choose_target_directory_clicked()
 	{
 		current_path=lineEdit_range_path->text();
 	}
+	d_open_directory_dialog.select_directory(current_path);
 
-	QString path = 
-		QFileDialog::getExistingDirectory(
-				this, 
-				tr("Select Path"), 
-				current_path);
-	
-	if(!path.isEmpty())
+	QString path = d_open_directory_dialog.get_existing_directory();
+
+	if (!path.isEmpty())
 	{
 		update_target_directory(path);
 	}
-	
 }
 
 void
@@ -646,11 +643,11 @@ GPlatesQtWidgets::ExportAnimationDialog::update_target_directory(
 	//otherwise, set the new value
 	if(d_is_single_frame)
 	{
-		lineEdit_single_path->setText(d_single_path);
+		lineEdit_single_path->setText(QDir::toNativeSeparators(d_single_path));
 	}
 	else
 	{
-		lineEdit_range_path->setText(d_range_path);
+		lineEdit_range_path->setText(QDir::toNativeSeparators(d_range_path));
 	}
 
 	if(ret == false)

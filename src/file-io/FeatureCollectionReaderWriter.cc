@@ -92,7 +92,7 @@ namespace
 			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 				new GPlatesFileIO::GpmlOnePointSixOutputVisitor(file_info, false));
 
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPMLZ:
 			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 				new GPlatesFileIO::GpmlOnePointSixOutputVisitor(file_info, true));
 
@@ -227,9 +227,9 @@ GPlatesFileIO::read_feature_collection(
 		switch ( get_feature_collection_file_format(file_ref.get_file_info()) )
 		{
 		case FeatureCollectionFileFormat::GPML:
-		case FeatureCollectionFileFormat::GPML_GZ:
-			// Both '.gpml' and '.gpml.gz' use the same reader.
-			// Instead of trusting the file extension 'GPML' or 'GPML_GZ'
+		case FeatureCollectionFileFormat::GPMLZ:
+			// Both '.gpml' and '.gpmlz'/'.gpml.gz' use the same reader.
+			// Instead of trusting the file extension 'GPML' or 'GPMLZ'
 			// we'll check the first few bytes of the file to make sure it's
 			// a gzip compressed file or xml file.
 			switch ( identify_by_magic_number(file_ref.get_file_info()) )
@@ -246,7 +246,7 @@ GPlatesFileIO::read_feature_collection(
 
 			default:
 				throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
-					"File extension is '.gpml' or '.gpml.gz' but file format is neither.");
+					"File extension is '.gpml', '.gpmlz' or '.gpml.gz' but file format is neither.");
 			}
 			break;
 

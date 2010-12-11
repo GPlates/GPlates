@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <opengl/OpenGL.h>
+#include <QFontInfo>
 
 #include "QGLWidgetTextRenderer.h"
 
@@ -34,7 +35,6 @@
 namespace
 {
 	const qreal MIN_POINT_SIZE = 2.0;
-	const int MIN_PIXEL_SIZE = 2;
 
 	QFont
 	scale_font(
@@ -42,31 +42,22 @@ namespace
 			float scale)
 	{
 		QFont ret = font;
-		int pixel_size = font.pixelSize();
-		if (pixel_size == -1)
-		{
-			// Size was specified in points
-			qreal point_size = font.pointSizeF();
-			ret.setPointSizeF((std::max)(
-						MIN_POINT_SIZE,
-						point_size * scale));
-		}
-		else
-		{
-			// Size was specified in pixels
-			ret.setPixelSize((std::max)(
-						MIN_PIXEL_SIZE,
-						static_cast<int>(pixel_size * scale + 0.5f)));
-		}
+
+		qreal point_size = QFontInfo(font).pointSizeF();
+		ret.setPointSizeF((std::max)(
+				MIN_POINT_SIZE,
+				point_size * scale));
+
 		return ret;
 	}
 }
 
+
 GPlatesGui::QGLWidgetTextRenderer::QGLWidgetTextRenderer(
 		QGLWidget *gl_widget_ptr) :
 	d_gl_widget_ptr(gl_widget_ptr)
-{
-}
+{  }
+
 
 void
 GPlatesGui::QGLWidgetTextRenderer::render_text(
@@ -77,12 +68,15 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 		const QFont &font,
 		float scale) const
 {
-	glColor3fv(colour);
+	glColor4fv(colour);
+#if 0
 	// need to change to GL_MODULATE for a moment otherwise the text will be rendered as white
 	// GL_MODULATE is the default OpenGL state so we'll leave it that way when we're finished.
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+#endif
 	d_gl_widget_ptr->renderText(x, y, string, scale_font(font, scale));
 }
+
 
 void
 GPlatesGui::QGLWidgetTextRenderer::render_text(
@@ -96,8 +90,8 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 		const QFont &font,
 		float scale) const
 {
-	// compute screen coordinates
-	glColor3fv(colour);
+	// Compute screen coordinates.
+	glColor4fv(colour);
 	GLdouble model[16];
 	glGetDoublev(GL_MODELVIEW_MATRIX, model);
 	GLdouble proj[16];
@@ -107,7 +101,7 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 	GLdouble winX, winY, winZ;
 	gluProject(x, y, z, model, proj, view, &winX, &winY, &winZ);
 
-	// render, with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other)
+	// Render, with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other).
 	int height = view[3];
 	render_text(
 			static_cast<int>(winX) + x_offset, height - (static_cast<int>(winY) + y_offset),

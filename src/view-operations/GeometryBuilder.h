@@ -567,7 +567,7 @@ namespace GPlatesViewOperations
 		 * whether that's a wrapper over multiple geometries or not.
 		 */
 		geometry_opt_ptr_type
-		get_geometry_on_sphere();
+		get_geometry_on_sphere() const;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Only GeometryBuilder implementation classes call these methods.

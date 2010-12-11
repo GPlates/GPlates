@@ -34,6 +34,8 @@
 
 #include "app-logic/FeatureCollectionFileState.h"
 
+#include "model/FeatureCollectionHandle.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -66,6 +68,13 @@ namespace GPlatesQtWidgets
 		initialise();
 
 		/**
+		 * Changes the help text in the widget to @a text.
+		 */
+		void
+		set_help_text(
+				const QString &text);
+
+		/**
 		 * Returns an iterator to the file selected by the user, and a boolean value
 		 * indicating whether the iterator points to a file that was newly created.
 		 *
@@ -78,6 +87,20 @@ namespace GPlatesQtWidgets
 		 */
 		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool>
 		get_file_reference() const;
+
+		/**
+		 * Selects the item in the list that corresponds to @a file_reference.
+		 */
+		void
+		select_file_reference(
+				const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_reference);
+
+		/**
+		 * Selects the item in the list that corresponds to @a feature_collection.
+		 */
+		void
+		select_feature_collection(
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 	signals:
 

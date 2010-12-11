@@ -128,7 +128,7 @@ namespace GPlatesViewOperations
 		 * Might return boost::none if we have no (valid) point data yet.
 		 */
 		geometry_opt_ptr_type
-		get_geometry_on_sphere()
+		get_geometry_on_sphere() const
 		{
 			return d_geometry_opt_ptr;
 		}

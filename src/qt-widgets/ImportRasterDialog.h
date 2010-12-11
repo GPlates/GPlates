@@ -31,6 +31,8 @@
 #include <QWizard>
 #include <QString>
 
+#include "OpenFileDialog.h"
+
 #include "model/PropertyValue.h"
 
 #include "property-values/Georeferencing.h"
@@ -188,6 +190,7 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState &d_view_state;
 		GPlatesGui::UnsavedChangesTracker *d_unsaved_changes_tracker;
 		GPlatesGui::FileIOFeedback *d_file_io_feedback;
+		OpenFileDialog d_open_file_dialog;
 
 		// For communication between pages.
 		TimeDependentRasterSequence d_raster_sequence;

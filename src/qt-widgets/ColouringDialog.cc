@@ -28,7 +28,6 @@
 #include <QApplication>
 #include <QColorDialog>
 #include <QDesktopWidget>
-#include <QFileDialog>
 #include <QFileInfo>
 #include <QHeaderView>
 #include <QMessageBox>
@@ -38,6 +37,7 @@
 #include <QDropEvent>
 #include <QList>
 #include <QUrl>
+#include <QDir>
 
 #include "ColouringDialog.h"
 #include "GlobeAndMapWidget.h"
@@ -65,8 +65,6 @@
 #include "presentation/ViewState.h"
 
 #include "utils/UnicodeStringUtils.h"
-
-#include <QDebug>
 
 
 // This is to allow FeatureCollectionHandle::const_weak_ref to be stored in the
@@ -145,37 +143,25 @@ namespace
 		QComboBox *d_combobox;
 	};
 
-
 	void
-	add_feature_collection_to_combobox(
-			GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection,
-			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &loaded_files,
+	add_file_reference_to_combobox(
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_reference,
 			QComboBox *combobox)
 	{
-		// FIXME: Maybe show a feature collection only if it contains reconstructable features.
-
 		// Attach a callback so that the feature collection removes itself when deactivated.
+		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
+			file_reference.get_file().get_feature_collection();
 		feature_collection.attach_callback(
 				new FeatureCollectionRemover(combobox));
 
-		// Add a separator to the combobox first if this is the first feature collection to be added.
-		if (combobox->count() == 1) /* i.e. just the all feature collections line */
+		// Add a separator to the combobox first if this is the first file reference to be added.
+		if (combobox->count() == 1) /* i.e. just the all feature collections item */
 		{
 			insert_separator(combobox);
 		}
 
-		// Look up the filename from the file state.
-		// NOTE: This is a hack until we get colouring into the layering framework.
-		typedef GPlatesAppLogic::FeatureCollectionFileState::file_reference file_reference;
-		QString filename;
-		BOOST_FOREACH(const file_reference &loaded_file, loaded_files)
-		{
-			const GPlatesFileIO::File::Reference &file_ref = loaded_file.get_file();
-			if (file_ref.get_feature_collection().publisher_ptr() == feature_collection.publisher_ptr())
-			{
-				filename = file_ref.get_file_info().get_display_name(false);
-			}
-		}
+		// Look up the file name, or else use a default name.
+		QString filename = file_reference.get_file().get_file_info().get_display_name(false);
 		if (filename.isEmpty())
 		{
 			filename = NEW_FEATURE_COLLECTION;
@@ -185,48 +171,6 @@ namespace
 		qv.setValue(feature_collection);
 		combobox->addItem(filename, qv);
 	}
-
-
-	class AddFeatureCollectionCallback :
-			public GPlatesModel::WeakReferenceCallback<const GPlatesModel::FeatureStoreRootHandle>
-	{
-	public:
-
-		AddFeatureCollectionCallback(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				QComboBox *combobox) :
-			d_file_state(file_state),
-			d_combobox(combobox)
-		{
-		}
-
-		void
-		publisher_added(
-				const added_event_type &event)
-		{
-			typedef std::vector<GPlatesModel::FeatureStoreRootHandle::const_iterator> new_children_collection_type;
-			const new_children_collection_type &new_children_collection = event.new_children();
-
-			for (new_children_collection_type::const_iterator iter = new_children_collection.begin();
-					iter != new_children_collection.end(); ++iter)
-			{
-				const GPlatesModel::FeatureStoreRootHandle::const_iterator &new_child_iter = *iter;
-				if (new_child_iter.is_still_valid())
-				{
-					add_feature_collection_to_combobox(
-							(*new_child_iter)->reference(),
-							d_file_state.get_loaded_files(),
-							d_combobox);
-				}
-			}
-		}
-
-	private:
-
-		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
-		QComboBox *d_combobox;
-	};
-
 
 	/**
 	 * Transforms a list of file:// urls into a list of pathnames in string form.
@@ -254,6 +198,8 @@ namespace
 		return pathnames;	// QStringList implicitly shares data and uses pimpl idiom, return by value is fine.
 	}
 
+	const char *OPEN_DIALOG_TITLE = QT_TR_NOOP("Open Files");
+
 }  // anonymous namespace
 
 
@@ -280,7 +226,22 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 			view_state.get_application_state().get_model_interface()->root()),
 	d_show_thumbnails(true),
 	d_suppress_next_repaint(false),
-	d_last_single_colour(Qt::white)
+	d_last_single_colour(Qt::white),
+	d_open_regular_cpt_files_dialog(
+			this,
+			tr(OPEN_DIALOG_TITLE),
+			tr("Regular CPT files (*.cpt);;All files (*)"),
+			view_state),
+	d_open_categorical_cpt_files_dialog(
+			this,
+			tr(OPEN_DIALOG_TITLE),
+			tr("Categorical CPT files (*.cpt);;All files (*)"),
+			view_state),
+	d_open_any_cpt_files_dialog(
+			this,
+			tr(OPEN_DIALOG_TITLE),
+			tr("Regular or categorical CPT files (*.cpt);;All files (*)"),
+			view_state)
 {
 	setupUi(this);
 	reposition();
@@ -323,12 +284,6 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 		*d_view_state_colour_scheme_delegator->get_colour_scheme();
 	load_category(curr_colour_scheme.first);
 
-	// Listen in to notifications from the feature store root to find out new FCs.
-	d_feature_store_root.attach_callback(
-			new AddFeatureCollectionCallback(
-				d_application_state.get_feature_collection_file_state(),
-				feature_collections_combobox));
-	
 	// Move the splitter as far left as possible without collapsing the left side
 	QList<int> sizes;
 	sizes.append(1);
@@ -377,16 +332,12 @@ GPlatesQtWidgets::ColouringDialog::populate_feature_collections()
 			"(All)",
 			QVariant(GPlatesModel::FeatureCollectionHandle::const_weak_ref()));
 
-	// Get the present feature collections from the feature store root.
-	typedef GPlatesModel::FeatureStoreRootHandle::const_iterator iterator_type;
+	// Add all open files.
 	std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
 		d_application_state.get_feature_collection_file_state().get_loaded_files();
-	for (iterator_type iter = d_feature_store_root->begin(); iter != d_feature_store_root->end(); ++iter)
+	BOOST_FOREACH(const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_reference, loaded_files)
 	{
-		add_feature_collection_to_combobox(
-				(*iter)->reference(),
-				loaded_files,
-				feature_collections_combobox);
+		add_file_reference_to_combobox(file_reference, feature_collections_combobox);
 	}
 }
 
@@ -588,38 +539,23 @@ void
 GPlatesQtWidgets::ColouringDialog::handle_open_button_clicked(
 		bool checked)
 {
-	static const QString OPEN_DIALOG_TITLE = "Open Files";
-	static const QString ALL_FILES = ";;All files (*)";
-	static const QString REGULAR_FILTER = "Regular CPT files (*.cpt)" + ALL_FILES;
-	static const QString CATEGORICAL_FILTER = "Categorical CPT files (*.cpt)" + ALL_FILES;
-	static const QString UNIFIED_FILTER = "Regular or categorical CPT files (*.cpt)" + ALL_FILES;
-
-	const QString *filter = NULL;
-
 	switch (d_current_colour_scheme_category)
 	{
 		case GPlatesGui::ColourSchemeCategory::PLATE_ID:
-			filter = &UNIFIED_FILTER;
+			open_cpt_files(d_open_any_cpt_files_dialog.get_open_file_names());
 			break;
 
 		case GPlatesGui::ColourSchemeCategory::FEATURE_AGE:
-			filter = &REGULAR_FILTER;
+			open_cpt_files(d_open_regular_cpt_files_dialog.get_open_file_names());
 			break;
 
 		case GPlatesGui::ColourSchemeCategory::FEATURE_TYPE:
-			filter = &CATEGORICAL_FILTER;
+			open_cpt_files(d_open_categorical_cpt_files_dialog.get_open_file_names());
 			break;
 
 		default:
-			return;
+			break;
 	}
-
-	QStringList file_list = QFileDialog::getOpenFileNames(
-			this,
-			OPEN_DIALOG_TITLE,
-			QString() /* directory */,
-			*filter);
-	open_cpt_files(file_list);
 }
 
 
@@ -716,7 +652,7 @@ GPlatesQtWidgets::ColouringDialog::open_cpt_files(
 			GPlatesGui::ColourSchemeInfo cpt_info(
 					colour_scheme,
 					file_info.fileName(),
-					file_info.absoluteFilePath(),
+					QDir::toNativeSeparators(file_info.absoluteFilePath()),
 					false /* not built-in */);
 			GPlatesGui::ColourSchemeContainer::id_type id = d_colour_scheme_container.add(
 					d_current_colour_scheme_category, cpt_info);
@@ -1005,6 +941,18 @@ GPlatesQtWidgets::ColouringDialog::handle_use_global_changed(
 
 
 void
+GPlatesQtWidgets::ColouringDialog::handle_files_added(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files)
+{
+	BOOST_FOREACH(const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_reference, new_files)
+	{
+		add_file_reference_to_combobox(file_reference, feature_collections_combobox);
+	}
+}
+
+
+void
 GPlatesQtWidgets::ColouringDialog::handle_file_info_changed(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
@@ -1126,6 +1074,7 @@ GPlatesQtWidgets::ColouringDialog::make_signal_slot_connections()
 			this,
 			SLOT(handle_use_global_changed(int)));
 
+	// File state signals.
 	QObject::connect(
 			&d_application_state.get_feature_collection_file_state(),
 			SIGNAL(file_state_file_info_changed(
@@ -1135,6 +1084,15 @@ GPlatesQtWidgets::ColouringDialog::make_signal_slot_connections()
 			SLOT(handle_file_info_changed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
+	QObject::connect(
+			&d_application_state.get_feature_collection_file_state(),
+			SIGNAL(file_state_files_added(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &)),
+			this,
+			SLOT(handle_files_added(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &)));
 }
 
 

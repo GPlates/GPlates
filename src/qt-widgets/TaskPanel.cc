@@ -283,9 +283,9 @@ GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
 void
 GPlatesQtWidgets::TaskPanel::set_up_measure_distance_tab()
 {
-	// Set up the layout to be used by the Measure Distance tab.
+	// Set up the layout to be used by the Measure tab.
 	QLayout *lay = add_default_layout(
-			add_page_with_title(d_stacked_widget_ptr, tr("Measure Distance")));
+			add_page_with_title(d_stacked_widget_ptr, tr("Measure")));
 	
 	// Add the main ModifyReconstructionPoleWidget.
 	// As usual, Qt will take ownership of memory so we don't have to worry.

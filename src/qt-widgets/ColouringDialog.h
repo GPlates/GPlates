@@ -34,6 +34,8 @@
 
 #include "ColouringDialogUi.h"
 
+#include "OpenFileDialog.h"
+
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
@@ -132,6 +134,11 @@ namespace GPlatesQtWidgets
 
 		void
 		edit_current_colour_scheme();
+
+		void
+		handle_files_added(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files);
 
 		void
 		handle_file_info_changed(
@@ -363,6 +370,10 @@ namespace GPlatesQtWidgets
 		 * The last colour added to the Single Colour category.
 		 */
 		QColor d_last_single_colour;
+
+		OpenFileDialog d_open_regular_cpt_files_dialog;
+		OpenFileDialog d_open_categorical_cpt_files_dialog;
+		OpenFileDialog d_open_any_cpt_files_dialog;
 
 		/**
 		 * The height and width of a preview icon.

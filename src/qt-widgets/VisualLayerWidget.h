@@ -95,11 +95,20 @@ namespace GPlatesQtWidgets
 
 		protected:
 
+			virtual
 			void
 			mousePressEvent(
 					QMouseEvent *event_);
 
+			virtual
+			void
+			changeEvent(
+					QEvent *event_);
+
 		private:
+
+			void
+			set_cursor();
 
 			const QPixmap &d_on_icon;
 			const QPixmap &d_off_icon;
@@ -270,6 +279,13 @@ namespace GPlatesQtWidgets
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
 				int row);
 
+	protected:
+
+		virtual
+		void
+		mousePressEvent(
+				QMouseEvent *event_);
+
 	private slots:
 
 		void
@@ -278,29 +294,11 @@ namespace GPlatesQtWidgets
 		void
 		handle_visibility_icon_clicked();
 
+		void
+		handle_link_activated(
+				const QString &link);
+
 	private:
-
-		class DraggableWidget:
-				public QWidget
-		{
-		public:
-
-			DraggableWidget(
-					QWidget *parent_ = NULL);
-
-			virtual
-			void
-			mousePressEvent(
-					QMouseEvent *event_);
-
-			void
-			set_row(
-					int row);
-
-		private:
-
-			int d_row;
-		};
 
 		void
 		make_signal_slot_connections();
@@ -325,7 +323,12 @@ namespace GPlatesQtWidgets
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
 
-		DraggableWidget *d_left_widget;
+		/**
+		 * The index of the row that this widget is showing.
+		 */
+		int d_row;
+
+		QWidget *d_left_widget;
 
 		/**
 		 * A pointer to the expand/collapse icon on the left. For this icon, 'on'
@@ -348,11 +351,11 @@ namespace GPlatesQtWidgets
 		ElidedLabel *d_type_label;
 
 		/**
-		 * A pointer to the layout of the input_channels_widget.
+		 * A pointer to the layout of the input_channels_groupbox.
 		 *
 		 * Memory managed by Qt.
 		 */
-		QVBoxLayout *d_input_channels_widget_layout;
+		QVBoxLayout *d_input_channels_groupbox_layout;
 
 		/**
 		 * A pool of InputChannelWidgets that can be used to display information about

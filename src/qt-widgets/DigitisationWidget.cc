@@ -59,7 +59,10 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_export_coordinates_dialog(new ExportCoordinatesDialog(this)),
+	d_export_coordinates_dialog(
+			new ExportCoordinatesDialog(
+				view_state_,
+				this)),
 	d_create_feature_dialog(
 			new CreateFeatureDialog(
 					view_state_,

@@ -26,6 +26,8 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <QDir>
+
 #include "ReadErrorAccumulationDialog.h"
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -1014,7 +1016,7 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_file_path_item(
 	QTreeWidgetItem *path_item = new QTreeWidgetItem();
 	std::ostringstream path_str;
 	error.d_data_source->write_full_name(path_str);
-	path_item->setText(0, QString::fromAscii(path_str.str().c_str()));
+	path_item->setText(0, QDir::toNativeSeparators(QString::fromAscii(path_str.str().c_str())));
  	path_item->setIcon(0, path_icon);
  	
  	return path_item;

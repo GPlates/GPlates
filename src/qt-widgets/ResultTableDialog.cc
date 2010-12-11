@@ -73,8 +73,10 @@ ResultTableDialog::update_time_label()
 
 ResultTableDialog::ResultTableDialog(
 		const std::vector< DataTable > data_tables,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_) :
 	d_data_tables(data_tables),
+	d_view_state(view_state),
 	d_page_index(0)
 {
 	setupUi(this);
@@ -191,14 +193,14 @@ void
 ResultTableDialog::accept()
 {
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
-	filters.push_back(std::make_pair(filter_csv, filter_csv_ext));
+	filters.push_back(FileDialogFilter(filter_csv, filter_csv_ext));
 
-	boost::shared_ptr< GPlatesQtWidgets::SaveFileDialog > save_dialog_ptr = 
-		GPlatesQtWidgets::SaveFileDialog::get_save_file_dialog(
-				this,
-				"Save as CSV",
-				filters);
-	boost::optional<QString> filename_opt = save_dialog_ptr->get_file_name();
+	GPlatesQtWidgets::SaveFileDialog save_dialog(
+			this,
+			"Save as CSV",
+			filters,
+			d_view_state);
+	boost::optional<QString> filename_opt = save_dialog.get_file_name();
 	if(filename_opt)
 	{
 		d_table_model_prt->data_table().export_as_CSV(*filename_opt);
@@ -270,14 +272,14 @@ void
 ResultTableDialog::handle_save_all()
 {
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
-	filters.push_back(std::make_pair(filter_csv, filter_csv_ext));
+	filters.push_back(FileDialogFilter(filter_csv, filter_csv_ext));
 
-	boost::shared_ptr< GPlatesQtWidgets::SaveFileDialog > save_dialog_ptr = 
-		GPlatesQtWidgets::SaveFileDialog::get_save_file_dialog(
-				this,
-				"Save as CSV",
-				filters);
-	boost::optional<QString> filename_opt = save_dialog_ptr->get_file_name();
+	GPlatesQtWidgets::SaveFileDialog save_dialog(
+			this,
+			"Save as CSV",
+			filters,
+			d_view_state);
+	boost::optional<QString> filename_opt = save_dialog.get_file_name();
 	QString basename;
 	if(filename_opt)
 	{

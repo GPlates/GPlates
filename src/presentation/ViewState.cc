@@ -50,6 +50,7 @@
 #include "gui/RasterColourPalette.h"
 #include "gui/RasterColourSchemeMap.h"
 #include "gui/RenderSettings.h"
+#include "gui/TextOverlaySettings.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
@@ -101,6 +102,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_visual_layers(
 			new VisualLayers(
 				d_application_state,
+				*this,
 				*d_rendered_geometry_collection)),
 	d_visual_layer_registry(
 			new VisualLayerRegistry()),
@@ -115,7 +117,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_raster_colour_scheme_map(
 			new GPlatesGui::RasterColourSchemeMap(
 				application_state.get_reconstruct_graph())),
-	d_open_file_path(QDir::currentPath()),
+	d_last_open_directory(QDir::currentPath()),
 	d_show_stars(true),
 	d_background_colour(
 			new GPlatesGui::Colour(get_default_background_colour())),
@@ -123,7 +125,9 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::GraticuleSettings(
 				DEFAULT_GRATICULES_DELTA_LAT,
 				DEFAULT_GRATICULES_DELTA_LON,
-				get_default_graticules_colour()))
+				get_default_graticules_colour())),
+	d_text_overlay_settings(
+			new GPlatesGui::TextOverlaySettings())
 
 {
 	connect_to_viewport_zoom();
@@ -395,16 +399,16 @@ GPlatesPresentation::ViewState::connect_to_raster_colour_scheme_map()
 
 
 QString &
-GPlatesPresentation::ViewState::get_open_file_path()
+GPlatesPresentation::ViewState::get_last_open_directory()
 {
-	return d_open_file_path;
+	return d_last_open_directory;
 }
 
 
 const QString &
-GPlatesPresentation::ViewState::get_open_file_path() const
+GPlatesPresentation::ViewState::get_last_open_directory() const
 {
-	return d_open_file_path;
+	return d_last_open_directory;
 }
 
 
@@ -449,5 +453,19 @@ const GPlatesGui::GraticuleSettings &
 GPlatesPresentation::ViewState::get_graticule_settings() const
 {
 	return *d_graticule_settings;
+}
+
+
+GPlatesGui::TextOverlaySettings &
+GPlatesPresentation::ViewState::get_text_overlay_settings()
+{
+	return *d_text_overlay_settings;
+}
+
+
+const GPlatesGui::TextOverlaySettings &
+GPlatesPresentation::ViewState::get_text_overlay_settings() const
+{
+	return *d_text_overlay_settings;
 }
 

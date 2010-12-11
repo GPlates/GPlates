@@ -49,11 +49,12 @@ GPlatesGui::SimpleGlobeOrientation::move_handle_to_pos(
 }
 
 void
-GPlatesGui::SimpleGlobeOrientation::move_camera_up()
+GPlatesGui::SimpleGlobeOrientation::move_camera_up(
+		double zoom_factor)
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::yBasis(), 
-			GPlatesMaths::convert_deg_to_rad(s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(s_nudge_camera_amount / zoom_factor));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
@@ -62,11 +63,12 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_up()
 }
 
 void
-GPlatesGui::SimpleGlobeOrientation::move_camera_down()
+GPlatesGui::SimpleGlobeOrientation::move_camera_down(
+		double zoom_factor)
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::yBasis(), 
-			GPlatesMaths::convert_deg_to_rad(0 - s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(0 - s_nudge_camera_amount / zoom_factor));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
@@ -75,11 +77,12 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_down()
 }
 
 void
-GPlatesGui::SimpleGlobeOrientation::move_camera_left()
+GPlatesGui::SimpleGlobeOrientation::move_camera_left(
+		double zoom_factor)
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::zBasis(),
-			GPlatesMaths::convert_deg_to_rad(s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(s_nudge_camera_amount / zoom_factor));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
@@ -88,11 +91,12 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_left()
 }
 
 void
-GPlatesGui::SimpleGlobeOrientation::move_camera_right()
+GPlatesGui::SimpleGlobeOrientation::move_camera_right(
+		double zoom_factor)
 {
 	static const GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			GPlatesMaths::UnitVector3D::zBasis(),
-			GPlatesMaths::convert_deg_to_rad(0 - s_nudge_camera_amount));
+			GPlatesMaths::convert_deg_to_rad(0 - s_nudge_camera_amount / zoom_factor));
 
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();

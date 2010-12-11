@@ -144,10 +144,7 @@ namespace GPlatesQtWidgets
 			void
 			showToolTip(
 					const QString &text,
-					const QFont &text_font,
-					const QPoint &global_pos,
-					int label_height,
-					int elided_width);
+					QLabel *master_label);
 
 			static
 			void
@@ -180,10 +177,7 @@ namespace GPlatesQtWidgets
 			void
 			do_show(
 					const QString &text,
-					const QFont &text_font,
-					const QPoint &global_pos,
-					int label_height,
-					int elided_width);
+					QLabel *master_label);
 
 			void
 			do_hide();
@@ -193,7 +187,7 @@ namespace GPlatesQtWidgets
 			QFrame *d_internal_label_frame;
 			QLabel *d_internal_label;
 
-			int d_elided_width;
+			QLabel *d_master_label;
 			bool d_inside_do_show; // to prevent infinite loops on some platforms.
 		};
 

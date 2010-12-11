@@ -122,29 +122,6 @@ namespace
 		q_file_ptr->setFileName(file_info.absolutePath() + QDir::separator() + uuid_string + ".gpml");
 	}
 
-
-	/**
-	 * If the filename of the QFile ends in ".gz", this will be stripped from the QFile's filename. 
-	 */
-	void
-	remove_gz_from_filename(
-		boost::shared_ptr<QFile> q_file_ptr)
-	{
-		if (!q_file_ptr){
-			return;
-		}
-
-		QString file_name = q_file_ptr->fileName();
-
-		QString gz_string(".gz");
-
-		if (file_name.endsWith(gz_string))
-		{
-			file_name.remove(file_name.length()-gz_string.length(),gz_string.length());
-			q_file_ptr->setFileName(file_name);
-		}
-	}
-
 	typedef std::pair<
 		GPlatesModel::XmlAttributeName, 
 		GPlatesModel::XmlAttributeValue> 

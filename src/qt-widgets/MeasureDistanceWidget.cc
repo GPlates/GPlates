@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,9 +28,12 @@
 #include <QString>
 
 #include "MeasureDistanceWidget.h"
+
 #include "maths/LatLonPoint.h"
 #include "maths/types.h"
+
 #include "canvas-tools/MeasureDistanceState.h"
+
 
 namespace
 {
@@ -46,6 +49,7 @@ namespace
 	{
 		control.setText(QString("%1").arg(value, 0, 'f', precision));
 	}
+
 
 	/**
 	 * Displays @a point_on_sphere in Lat-Lon format in two QLineEdit controls,
@@ -63,6 +67,7 @@ namespace
 		set_lineedit_text(lon_control, lat_lon.longitude(), precision);
 	}
 
+
 	/**
 	 * Clears the text and disables a QLineEdit @a control
 	 */
@@ -75,8 +80,10 @@ namespace
 	}
 }
 
+
 const unsigned int
 GPlatesQtWidgets::MeasureDistanceWidget::PRECISION = 4;
+
 
 GPlatesQtWidgets::MeasureDistanceWidget::MeasureDistanceWidget(
 		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
@@ -98,6 +105,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::MeasureDistanceWidget(
 	// remember the original palette for radius box (should be the same for all QLineEdit)
 	d_lineedit_original_palette = lineedit_radius->palette();
 }
+
 
 void
 GPlatesQtWidgets::MeasureDistanceWidget::make_signal_slot_connections()
@@ -125,12 +133,14 @@ GPlatesQtWidgets::MeasureDistanceWidget::make_signal_slot_connections()
 			d_measure_distance_state_ptr,
 			SIGNAL(feature_measure_updated(
 					double,
+					boost::optional<double>,
 					boost::optional<GPlatesMaths::PointOnSphere>,
 					boost::optional<GPlatesMaths::PointOnSphere>,
 					boost::optional<double>)),
 			this,
 			SLOT(update_feature_measure(
 					double,
+					boost::optional<double>,
 					boost::optional<GPlatesMaths::PointOnSphere>,
 					boost::optional<GPlatesMaths::PointOnSphere>,
 					boost::optional<double>)));
@@ -150,6 +160,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::make_signal_slot_connections()
 			this,
 			SLOT(change_feature_measure_highlight(bool)));
 }
+
 
 void
 GPlatesQtWidgets::MeasureDistanceWidget::update_quick_measure(
@@ -206,9 +217,11 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_quick_measure(
 	}
 }
 
+
 void
 GPlatesQtWidgets::MeasureDistanceWidget::update_feature_measure(
 		double total_distance,
+		boost::optional<double> area,
 		boost::optional<GPlatesMaths::PointOnSphere> segment_start,
 		boost::optional<GPlatesMaths::PointOnSphere> segment_end,
 		boost::optional<double> segment_distance)
@@ -223,6 +236,24 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_feature_measure(
 			*lineedit_feature_total,
 			total_distance,
 			PRECISION);
+
+	// Show area if provided.
+	if (area)
+	{
+		label_feature_area->show();
+		label_feature_area_sq_km->show();
+		lineedit_feature_area->show();
+		set_lineedit_text(
+				*lineedit_feature_area,
+				*area,
+				PRECISION);
+	}
+	else
+	{
+		label_feature_area->hide();
+		label_feature_area_sq_km->hide();
+		lineedit_feature_area->hide();
+	}
 
 	// start point of highlighted segment
 	if (segment_start)
@@ -273,6 +304,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_feature_measure(
 	}
 }
 
+
 void
 GPlatesQtWidgets::MeasureDistanceWidget::update_feature_measure()
 {
@@ -280,6 +312,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_feature_measure()
 	groupbox_feature_none->setVisible(true);
 	groupbox_feature_present->setVisible(false);
 }
+
 
 void
 GPlatesQtWidgets::MeasureDistanceWidget::lineedit_radius_text_edited(
@@ -300,6 +333,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::lineedit_radius_text_edited(
 	}
 }
 
+
 void
 GPlatesQtWidgets::MeasureDistanceWidget::change_quick_measure_highlight(
 		bool is_highlighted)
@@ -313,6 +347,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::change_quick_measure_highlight(
 		restore_background_colour(lineedit_quick_distance);
 	}
 }
+
 
 void
 GPlatesQtWidgets::MeasureDistanceWidget::change_feature_measure_highlight(
@@ -328,6 +363,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::change_feature_measure_highlight(
 	}
 }
 
+
 void
 GPlatesQtWidgets::MeasureDistanceWidget::change_background_colour(
 		QLineEdit *lineedit,
@@ -337,6 +373,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::change_background_colour(
 	colour_palette.setColor(QPalette::Base, colour);
 	lineedit->setPalette(colour_palette);
 }
+
 
 void
 GPlatesQtWidgets::MeasureDistanceWidget::restore_background_colour(

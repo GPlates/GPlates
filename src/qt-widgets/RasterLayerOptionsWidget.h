@@ -31,6 +31,7 @@
 #include "RasterLayerOptionsWidgetUi.h"
 
 #include "LayerOptionsWidget.h"
+#include "OpenFileDialog.h"
 
 
 namespace GPlatesAppLogic
@@ -109,6 +110,7 @@ namespace GPlatesQtWidgets
 		ReadErrorAccumulationDialog *d_read_errors_dialog;
 
 		FriendlyLineEdit *d_palette_filename_lineedit;
+		OpenFileDialog d_open_file_dialog;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

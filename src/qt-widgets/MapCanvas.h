@@ -28,16 +28,19 @@
 #ifndef GPLATES_QTWIDGETS_MAPCANVAS_H
 #define GPLATES_QTWIDGETS_MAPCANVAS_H
 
-#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <QGraphicsScene>
 
 #include "gui/ColourScheme.h"
 #include "gui/Map.h"
+#include "gui/TextRenderer.h"
+
 
 namespace GPlatesGui
 {
 	class RenderSettings;
+	class TextOverlay;
 	class ViewportZoom;
 }
 
@@ -55,7 +58,7 @@ namespace GPlatesQtWidgets
 	 * Note: this is not analogous to GlobeCanvas. The map analogue of GlobeCanvas
 	 * is MapView.
 	 */
-	class MapCanvas: 
+	class MapCanvas : 
 			public QGraphicsScene,
 			public boost::noncopyable
 	{
@@ -64,12 +67,16 @@ namespace GPlatesQtWidgets
 	public:
 
 		MapCanvas(
+				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				MapView *map_view_ptr,
 				GPlatesGui::RenderSettings &render_settings,
 				GPlatesGui::ViewportZoom &viewport_zoom,
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
-				GPlatesPresentation::ViewState &view_state,
+				const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,
+				const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
 				QWidget *parent_ = NULL);
+
+		~MapCanvas();
 
 		GPlatesGui::Map &
 		map()
@@ -86,13 +93,6 @@ namespace GPlatesQtWidgets
 		void
 		draw_svg_output();
 
-		void
-		set_map_view_ptr(
-				MapView *map_view_ptr)
-		{
-			d_map_view_ptr = map_view_ptr;
-		}
-
 	signals:
 
 		void
@@ -108,13 +108,7 @@ namespace GPlatesQtWidgets
 				GPlatesViewOperations::RenderedGeometryCollection &collection,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type update_type);
 
-	private:
-		
-		GPlatesPresentation::ViewState &d_view_state;
-		MapView *d_map_view_ptr;
-
-		//! Holds the state
-		GPlatesGui::Map d_map;
+	protected:
 
 		/**
 		 * A virtual override of the QGraphicsScene function. 
@@ -132,13 +126,22 @@ namespace GPlatesQtWidgets
 				QPainter *painter,
 				const QRectF &rect);
 
-		//! A pointer to the state's RenderedGeometryCollection
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
+	private:
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float
 		calculate_scale();
 
+		GPlatesPresentation::ViewState &d_view_state;
+		MapView *d_map_view_ptr;
+
+		//! Holds the state
+		GPlatesGui::Map d_map;
+
+		//! A pointer to the state's RenderedGeometryCollection
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
+
+		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 	};
 
 }

@@ -73,6 +73,7 @@ namespace GPlatesGui
 	class MapTransform;
 	class RasterColourSchemeMap;
 	class RenderSettings;
+	class TextOverlaySettings;
 	class ViewportProjection;
 	class ViewportZoom;
 }
@@ -237,11 +238,11 @@ namespace GPlatesPresentation
 
 
 		QString &
-		get_open_file_path();
+		get_last_open_directory();
 
 
 		const QString &
-		get_open_file_path() const;
+		get_last_open_directory() const;
 
 
 		bool
@@ -268,6 +269,14 @@ namespace GPlatesPresentation
 
 		const GPlatesGui::GraticuleSettings &
 		get_graticule_settings() const;
+
+
+		GPlatesGui::TextOverlaySettings &
+		get_text_overlay_settings();
+
+		
+		const GPlatesGui::TextOverlaySettings &
+		get_text_overlay_settings() const;
 
 
 	private slots:
@@ -351,12 +360,10 @@ namespace GPlatesPresentation
 		boost::scoped_ptr<GPlatesGui::RasterColourSchemeMap> d_raster_colour_scheme_map;
 
 		/**
-		 * Stores the file path of the last opened file, or the directory of the last
-		 * opened directory.
-		 *
-		 * NOTE: This is currently only used for rasters.
+		 * Stores the directory containing the files last opened, or the last opened
+		 * directory.
 		 */
-		QString d_open_file_path;
+		QString d_last_open_directory;
 
 		/**
 		 * Whether to draw stars behind the 3D globe.
@@ -372,6 +379,11 @@ namespace GPlatesPresentation
 		 * Settings related to the graticules displayed on the map and the globe.
 		 */
 		boost::scoped_ptr<GPlatesGui::GraticuleSettings> d_graticule_settings;
+
+		/**
+		 * Settings related to the overlay of text on top the map and the globe.
+		 */
+		boost::scoped_ptr<GPlatesGui::TextOverlaySettings> d_text_overlay_settings;
 
 		void
 		connect_to_viewport_zoom();

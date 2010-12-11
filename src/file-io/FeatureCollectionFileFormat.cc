@@ -39,7 +39,8 @@ namespace
 	//
 
 	const QString FILE_FORMAT_EXT_GPML = "gpml";
-	const QString FILE_FORMAT_EXT_GPML_GZ = "gpml.gz";
+	const QString FILE_FORMAT_EXT_GPMLZ = "gpmlz";
+	const QString FILE_FORMAT_EXT_GPMLZ_ALTERNATIVE = "gpml.gz";
 	const QString FILE_FORMAT_EXT_PLATES4_LINE = "dat";
 	const QString FILE_FORMAT_EXT_PLATES4_LINE_ALTERNATIVE = "pla";
 	const QString FILE_FORMAT_EXT_PLATES4_ROTATION = "rot";
@@ -99,9 +100,10 @@ namespace
 	}
 
 	bool
-	is_gpml_gz_format_file(const QFileInfo &file)
+	is_gpmlz_format_file(const QFileInfo &file)
 	{
-		return file_name_ends_with(file, FILE_FORMAT_EXT_GPML_GZ);
+		return file_name_ends_with(file, FILE_FORMAT_EXT_GPMLZ) ||
+			file_name_ends_with(file, FILE_FORMAT_EXT_GPMLZ_ALTERNATIVE);
 	}
 	
 	bool
@@ -128,12 +130,12 @@ GPlatesFileIO::get_feature_collection_file_format(
 	{
 		return FeatureCollectionFileFormat::GPML;
 	}
-	else if (is_gpml_gz_format_file(file_info))
+	else if (is_gpmlz_format_file(file_info))
 	{
 		// FIXME: Feed the OutputVisitor a better way of Gzipping things. We might want a Writer base class,
 		// which takes a QIODevice, so we could wrap that up in a special GzipWriter. But, that'd mean re-writing
 		// the PlatesLineFormat stuff to use a QIODevice.
-		return FeatureCollectionFileFormat::GPML_GZ;
+		return FeatureCollectionFileFormat::GPMLZ;
 	}
 	else if (is_plates_line_format_file(file_info))
 	{
@@ -171,8 +173,8 @@ GPlatesFileIO::get_filename_extension(
 	case FeatureCollectionFileFormat::GPML:
 		return FILE_FORMAT_EXT_GPML;
 
-	case FeatureCollectionFileFormat::GPML_GZ:
-		return FILE_FORMAT_EXT_GPML_GZ;
+	case FeatureCollectionFileFormat::GPMLZ:
+		return FILE_FORMAT_EXT_GPMLZ;
 
 	case FeatureCollectionFileFormat::PLATES4_LINE:
 		return FILE_FORMAT_EXT_PLATES4_LINE;

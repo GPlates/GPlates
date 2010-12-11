@@ -158,25 +158,29 @@ namespace GPlatesGui
 		 * For keyboard camera controls to use: nudge the camera 'up' by a few degrees.
 		 */
 		void
-		move_camera_up();
+		move_camera_up(
+				double zoom_factor = 1.0);
 
 		/**
 		 * For keyboard camera controls to use: nudge the camera 'down' by a few degrees.
 		 */
 		void
-		move_camera_down();
+		move_camera_down(
+				double zoom_factor = 1.0);
 
 		/**
 		 * For keyboard camera controls to use: nudge the camera 'left' by a few degrees.
 		 */
 		void
-		move_camera_left();
+		move_camera_left(
+				double zoom_factor = 1.0);
 
 		/**
 		 * For keyboard camera controls to use: nudge the camera 'right' by a few degrees.
 		 */
 		void
-		move_camera_right();
+		move_camera_right(
+				double zoom_factor = 1.0);
 
 		/**
 		 * For keyboard camera controls to use: rotate the camera clockwise by a few degrees.

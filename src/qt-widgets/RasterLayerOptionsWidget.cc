@@ -26,7 +26,8 @@
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
-#include <QFileDialog>
+#include <QFileInfo>
+#include <QDir>
 #include <QDebug>
 
 #include "RasterLayerOptionsWidget.h"
@@ -128,7 +129,12 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 			new FriendlyLineEdit(
 				QString(),
 				PALETTE_FILENAME_BLANK_TEXT,
-				this))
+				this)),
+	d_open_file_dialog(
+			this,
+			tr("Open CPT File"),
+			tr("Regular CPT file (*.cpt);;All files (*)"),
+			view_state)
 {
 	setupUi(this);
 
@@ -304,11 +310,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
 
 		// FIXME: This currently just reads in regular CPT files.
-		QString palette_file_name = QFileDialog::getOpenFileName(
-				this,
-				"Open CPT File",
-				d_view_state.get_open_file_path(),
-				"CPT file (*.cpt);;All files (*)");
+		QString palette_file_name = d_open_file_dialog.get_open_file_name();
 		if (!palette_file_name.isEmpty())
 		{
 			GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog->read_errors();
@@ -336,7 +338,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 						colour_scheme,
 						palette_file_name);
 
-				d_palette_filename_lineedit->setText(palette_file_name);
+				d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
 			}
 
 			d_read_errors_dialog->update();
@@ -346,7 +348,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 				d_read_errors_dialog->show();
 			}
 
-			d_view_state.get_open_file_path() = palette_file_name;
+			d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 		}
 	}
 }

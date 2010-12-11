@@ -95,15 +95,20 @@ namespace GPlatesPresentation
 
 		/**
 		 * Stores information about the given @a visual_layer_type.
+		 *
+		 * @a produces_rendered_geometries_ should be set to false only if this
+		 * particular type of visual layer, almost paradoxically, will never
+		 * produce rendered geometries (i.e. it is never visible).
 		 */
 		void
 		register_visual_layer_type(
-				VisualLayerType::Type visual_layer_type,
-				const QString &name,
-				const QString &description,
-				const GPlatesGui::Colour &colour,
-				const create_visual_layer_function_type &create_visual_layer_function,
-				const create_options_widget_function_type &create_options_widget_function);
+				VisualLayerType::Type visual_layer_type_,
+				const QString &name_,
+				const QString &description_,
+				const GPlatesGui::Colour &colour_,
+				const create_visual_layer_function_type &create_visual_layer_function_,
+				const create_options_widget_function_type &create_options_widget_function_,
+				bool produces_rendered_geometries_);
 
 		void
 		unregister_visual_layer_type(
@@ -167,6 +172,15 @@ namespace GPlatesPresentation
 				GPlatesQtWidgets::ViewportWindow *viewport_window,
 				QWidget *parent) const;
 
+		/**
+		 * Returns whether the given @a visual_layer_type ever produces rendered
+		 * geometries. If it is false, this layer has no output that can be
+		 * rendered on the globe or map.
+		 */
+		bool
+		produces_rendered_geometries(
+				VisualLayerType::Type visual_layer_type) const;
+
 	private:
 
 		struct VisualLayerInfo
@@ -177,7 +191,8 @@ namespace GPlatesPresentation
 					const GPlatesGui::Colour &colour_,
 					const QIcon &icon_,
 					const create_visual_layer_function_type &create_visual_layer_function_,
-					const create_options_widget_function_type &create_options_widget_function_);
+					const create_options_widget_function_type &create_options_widget_function_,
+					bool produces_rendered_geometries_);
 
 			QString name;
 			QString description;
@@ -185,6 +200,7 @@ namespace GPlatesPresentation
 			QIcon icon;
 			create_visual_layer_function_type create_visual_layer_function;
 			create_options_widget_function_type create_options_widget_function;
+			bool produces_rendered_geometries;
 		};
 
 		typedef std::map<VisualLayerType::Type, VisualLayerInfo> visual_layer_info_map_type;

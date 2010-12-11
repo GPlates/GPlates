@@ -32,7 +32,7 @@
 #define GPLATES_QTWIDGETS_GLOBECANVAS_H
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 #include <QtOpenGL/qgl.h>
@@ -40,6 +40,7 @@
 #include "gui/ColourScheme.h"
 #include "gui/Globe.h"
 #include "gui/PersistentOpenGLObjects.h"
+#include "gui/TextRenderer.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -58,6 +59,11 @@
 
 #include "view-operations/RenderedGeometryFactory.h"
 
+
+namespace GPlatesGui
+{
+	class TextOverlay;
+}
 
 namespace GPlatesPresentation
 {
@@ -121,6 +127,8 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = 0);
+
+		~GlobeCanvas();
 
 	private:
 
@@ -521,7 +529,6 @@ namespace GPlatesQtWidgets
 		//! Keeps track of OpenGL objects that persist from one render to another.
 		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
 
-
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
 		 * on the globe.
@@ -554,7 +561,11 @@ namespace GPlatesQtWidgets
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
+		GPlatesGui::TextRenderer::non_null_ptr_to_const_type d_text_renderer;
+
 		GPlatesGui::Globe d_globe;
+
+		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 
 		void
 		set_view();

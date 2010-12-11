@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <QWidget>
+#include <QStackedLayout>
 
 #include "gui/ColourScheme.h"
 
@@ -202,6 +203,7 @@ namespace GPlatesQtWidgets
 
 		boost::scoped_ptr<GlobeCanvas> d_globe_canvas_ptr;
 		boost::scoped_ptr<MapView> d_map_view_ptr;
+		QStackedLayout *d_layout;
 
 		/**
 		 * Which of globe and map is currently active.

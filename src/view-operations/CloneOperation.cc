@@ -86,20 +86,26 @@ GPlatesViewOperations::CloneOperation::clone_focused_geometry()
 }
 
 void 
-GPlatesViewOperations::CloneOperation::clone_focused_feature()
+GPlatesViewOperations::CloneOperation::clone_focused_feature(
+		GPlatesModel::FeatureCollectionHandle::weak_ref target_feature_collection)
 {
 	GPlatesModel::FeatureHandle::weak_ref feature_ref = 
 			d_view_state.get_feature_focus().focused_feature();
 
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
-			*GPlatesAppLogic::get_feature_collection_containing_feature(
-					d_view_state.get_application_state().get_feature_collection_file_state(),
-					feature_ref);
+	// Use the feature's feature collection if target_feature_collection is invalid.
+	if (!target_feature_collection.is_valid())
+	{
+		if (!feature_ref->parent_ptr())
+		{
+			return;
+		}
+		target_feature_collection = feature_ref->parent_ptr()->reference();
+	}
 
 	GPlatesModel::FeatureHandle::non_null_ptr_type new_feature_ptr = feature_ref->clone();
 
 	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature_collection_ref->add(new_feature_ptr);
+	target_feature_collection->add(new_feature_ptr);
 	d_view_state.get_application_state().reconstruct();
 	// transaction.commit();
 

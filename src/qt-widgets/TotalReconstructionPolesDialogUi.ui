@@ -477,14 +477,14 @@
          <string>Show Reconstruction Tree &amp;Layer:</string>
         </property>
         <property name="buddy">
-         <cstring>combobox_reconstruction_tree_layer</cstring>
+         <cstring>visual_layers_combobox_placeholder_widget</cstring>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QComboBox" name="combobox_reconstruction_tree_layer">
+       <widget class="QWidget" name="visual_layers_combobox_placeholder_widget" native="true">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
           <horstretch>3</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>

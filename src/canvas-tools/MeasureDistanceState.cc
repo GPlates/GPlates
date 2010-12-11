@@ -27,7 +27,9 @@
 
 #include "MeasureDistanceState.h"
 
+#include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/MathsUtils.h"
+#include "maths/SphericalArea.h"
 
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/GeometryOperationTarget.h"
@@ -54,11 +56,69 @@ namespace
 			return boost::none;
 		}
 	}
+
+
+	class PolygonAreaVisitor :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+
+		PolygonAreaVisitor(
+				double radius) :
+			d_radius(radius)
+		{  }
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_area = GPlatesMaths::SphericalArea::calculate_polygon_area(*polygon_on_sphere).dval() * d_radius * d_radius;
+		}
+
+		const boost::optional<double> &
+		get_area() const
+		{
+			return d_area;
+		}
+
+	private:
+
+		double d_radius;
+		boost::optional<double> d_area;
+	};
+
+
+	/**
+	 * Returns the area of the polygon contained inside the @a geometry_builder,
+	 * which is assumed to be non-NULL.
+	 *
+	 * Returns boost::none if the @a geometry_builder does not contain a polygon.
+	 */
+	boost::optional<double>
+	get_area_of_polygon(
+			const GPlatesViewOperations::GeometryBuilder *geometry_builder,
+			double radius)
+	{
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> opt_geometry_on_sphere =
+			geometry_builder->get_geometry_on_sphere();
+		if (!opt_geometry_on_sphere)
+		{
+			return boost::none;
+		}
+
+		PolygonAreaVisitor visitor(radius);
+		(*opt_geometry_on_sphere)->accept_visitor(visitor);
+
+		return visitor.get_area();
+	}
 }
+
 
 const double
 GPlatesCanvasTools::MeasureDistanceState::DEFAULT_RADIUS_OF_EARTH = 6378.1;
 	// from Google Calculator
+
 
 GPlatesCanvasTools::MeasureDistanceState::MeasureDistanceState(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
@@ -81,6 +141,7 @@ GPlatesCanvasTools::MeasureDistanceState::MeasureDistanceState(
 	d_label_layer_ptr->set_active(true);
 }
 
+
 void
 GPlatesCanvasTools::MeasureDistanceState::make_signal_slot_connections_for_geometry_operation_target()
 {
@@ -96,6 +157,7 @@ GPlatesCanvasTools::MeasureDistanceState::make_signal_slot_connections_for_geome
 					GPlatesViewOperations::GeometryBuilder *)));
 }
 
+
 void
 GPlatesCanvasTools::MeasureDistanceState::make_signal_slot_connections_for_geometry_builder()
 {
@@ -109,6 +171,7 @@ GPlatesCanvasTools::MeasureDistanceState::make_signal_slot_connections_for_geome
 				SLOT(reexamine_geometry_builder()));
 	}
 }
+
 
 void
 GPlatesCanvasTools::MeasureDistanceState::disconnect_signal_slot_connections_for_geometry_builder()
@@ -124,6 +187,7 @@ GPlatesCanvasTools::MeasureDistanceState::disconnect_signal_slot_connections_for
 	}
 }
 
+
 void
 GPlatesCanvasTools::MeasureDistanceState::switch_geometry_builder(
 		GPlatesViewOperations::GeometryOperationTarget &,
@@ -134,12 +198,14 @@ GPlatesCanvasTools::MeasureDistanceState::switch_geometry_builder(
 	make_signal_slot_connections_for_geometry_builder();
 }
 
+
 void
 GPlatesCanvasTools::MeasureDistanceState::reexamine_geometry_builder()
 {
 	process_geometry_builder(d_current_geometry_builder_ptr);
 	emit feature_in_geometry_builder_changed();
 }
+
 
 void
 GPlatesCanvasTools::MeasureDistanceState::set_feature_segment_points(
@@ -152,6 +218,7 @@ GPlatesCanvasTools::MeasureDistanceState::set_feature_segment_points(
 	emit_feature_measure_updated();
 }
 
+
 boost::optional<double>
 GPlatesCanvasTools::MeasureDistanceState::get_quick_measure_distance()
 {
@@ -160,6 +227,7 @@ GPlatesCanvasTools::MeasureDistanceState::get_quick_measure_distance()
 			d_quick_measure_end,
 			d_radius);
 }
+
 
 boost::optional<double>
 GPlatesCanvasTools::MeasureDistanceState::get_feature_segment_distance()
@@ -170,6 +238,7 @@ GPlatesCanvasTools::MeasureDistanceState::get_feature_segment_distance()
 			d_radius);
 }
 
+
 void
 GPlatesCanvasTools::MeasureDistanceState::emit_quick_measure_updated()
 {
@@ -178,6 +247,7 @@ GPlatesCanvasTools::MeasureDistanceState::emit_quick_measure_updated()
 			d_quick_measure_end,
 			get_quick_measure_distance());
 }
+
 
 void
 GPlatesCanvasTools::MeasureDistanceState::quick_measure_add_point(
@@ -209,6 +279,7 @@ GPlatesCanvasTools::MeasureDistanceState::quick_measure_add_point(
 	}
 }
 
+
 void
 GPlatesCanvasTools::MeasureDistanceState::handle_activation()
 {
@@ -226,6 +297,7 @@ GPlatesCanvasTools::MeasureDistanceState::handle_activation()
 	emit_feature_measure_updated();
 }
 
+
 void
 GPlatesCanvasTools::MeasureDistanceState::emit_feature_measure_updated()
 {
@@ -233,6 +305,7 @@ GPlatesCanvasTools::MeasureDistanceState::emit_feature_measure_updated()
 	{
 		emit feature_measure_updated(
 				*d_feature_total_distance,
+				d_feature_area,
 				d_feature_segment_start,
 				d_feature_segment_end,
 				get_feature_segment_distance());
@@ -243,6 +316,7 @@ GPlatesCanvasTools::MeasureDistanceState::emit_feature_measure_updated()
 	}
 }
 
+
 void
 GPlatesCanvasTools::MeasureDistanceState::handle_deactivation()
 {
@@ -252,6 +326,7 @@ GPlatesCanvasTools::MeasureDistanceState::handle_deactivation()
 	set_quick_measure_highlight(false);
 	set_feature_measure_highlight(false);
 }
+
 
 void
 GPlatesCanvasTools::MeasureDistanceState::process_geometry_builder(
@@ -298,6 +373,8 @@ GPlatesCanvasTools::MeasureDistanceState::process_geometry_builder(
 				}
 				
 				d_feature_total_distance = boost::optional<double>(total_distance.dval());
+
+				d_feature_area = get_area_of_polygon(geometry_builder, d_radius.dval());
 			}
 			else
 			{
@@ -312,6 +389,7 @@ GPlatesCanvasTools::MeasureDistanceState::process_geometry_builder(
 		}
 	}
 }
+
 
 void
 GPlatesCanvasTools::MeasureDistanceState::set_radius(
@@ -329,6 +407,7 @@ GPlatesCanvasTools::MeasureDistanceState::set_radius(
 	}
 }
 
+
 void
 GPlatesCanvasTools::MeasureDistanceState::set_quick_measure_highlight(
 		bool is_highlighted)
@@ -339,6 +418,7 @@ GPlatesCanvasTools::MeasureDistanceState::set_quick_measure_highlight(
 		emit quick_measure_highlight_changed(is_highlighted);
 	}
 }
+
 
 void
 GPlatesCanvasTools::MeasureDistanceState::set_feature_measure_highlight(

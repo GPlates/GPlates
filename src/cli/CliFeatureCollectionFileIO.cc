@@ -97,7 +97,7 @@ namespace
 
 
 const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML = "gpml";
-const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML_GZ = "compressed-gpml";
+const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_GPMLZ = "compressed-gpml";
 const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_PLATES_LINE = "plates4-line";
 const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_PLATES_ROTATION = "plates4-rotation";
 const std::string GPlatesCli::FeatureCollectionFileIO::SAVE_FILE_TYPE_SHAPEFILE = "shapefile";
@@ -204,9 +204,9 @@ GPlatesCli::FeatureCollectionFileIO::get_save_file_format(
 	{
 		return GPlatesFileIO::FeatureCollectionFileFormat::GPML;
 	}
-	else if (save_file_type == SAVE_FILE_TYPE_GPML_GZ)
+	else if (save_file_type == SAVE_FILE_TYPE_GPMLZ)
 	{
-		return GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ;
+		return GPlatesFileIO::FeatureCollectionFileFormat::GPMLZ;
 	}
 	else if (save_file_type == SAVE_FILE_TYPE_PLATES_LINE)
 	{

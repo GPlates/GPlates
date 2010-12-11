@@ -29,11 +29,12 @@
 #ifndef GPLATES_QTWIDGETS_TOTALRECONSTRUCTIONPOLESDIALOG_H
 #define GPLATES_QTWIDGETS_TOTALRECONSTRUCTIONPOLESDIALOG_H
 
+#include <boost/weak_ptr.hpp>
 #include <QDialog>
 
 #include "TotalReconstructionPolesDialogUi.h"
 
-#include "presentation/VisualLayers.h"
+#include "presentation/VisualLayer.h"
 
 
 namespace GPlatesAppLogic
@@ -49,6 +50,8 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
+	class VisualLayersComboBox;
+
 	class TotalReconstructionPolesDialog:
 			public QDialog,
 			protected Ui_TotalReconstructionPolesDialog
@@ -77,6 +80,12 @@ namespace GPlatesQtWidgets
 		update(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 
+	protected:
+
+		void
+		showEvent(
+				QShowEvent *event_);
+
 	private slots:
 
 		/**
@@ -91,46 +100,13 @@ namespace GPlatesQtWidgets
 		void
 		export_equivalent();
 
-		/**
-		 * When a visual layer has been added.
-		 */
 		void
-		handle_layer_added(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+		update_if_visible();
 
-		/**
-		 * When a visual layer is about to be removed.
-		 */
 		void
-		handle_layer_about_to_be_removed(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
-
-		/**
-		 * When a visual layer or its underlying reconstruct graph layer is modified.
-		 */
-		void
-		handle_layer_modified(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
+		update_if_layer_changed();
 
 	private:
-
-		GPlatesPresentation::ViewState &d_view_state;
-
-		/**
-		 * To query the reconstruction.
-		 */
-		GPlatesAppLogic::ApplicationState &d_application_state;
-
-		/**
-		 * The stationary plate id.
-		 */
-		unsigned long d_plate;
-
-		/**
-		 * The reconstruction time.
-		 */
-		double d_time;
-
 	
 		/**
 		 * Called from @a export_relative and @a export_equivalent to handle
@@ -145,14 +121,14 @@ namespace GPlatesQtWidgets
 		 */ 
 		void 
 		set_time(
-			const double time);
+				const double time);
 
 		/**
 		 * Set the dialog stationary plate id.
 		 */
 		void
 		set_plate(
-			unsigned long plate);
+				unsigned long plate);
 
 		/**
 		 * Fill the equivalent-rotation QTableWidget. 
@@ -186,12 +162,31 @@ namespace GPlatesQtWidgets
 		void
 		make_signal_slot_connections();
 
-		int
-		get_combobox_index(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
-	};
+		void
+		reset_everything();
 
+		GPlatesPresentation::ViewState &d_view_state;
+
+		/**
+		 * To query the reconstruction.
+		 */
+		GPlatesAppLogic::ApplicationState &d_application_state;
+
+		/**
+		 * The stationary plate id.
+		 */
+		unsigned long d_plate;
+
+		/**
+		 * The reconstruction time.
+		 */
+		double d_time;
+
+		VisualLayersComboBox *d_visual_layers_combobox;
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_curr_visual_layer;
+	};
 }
+
 
 #endif // GPLATES_QTWIDGETS_TOTALRECONSTRUCTIONPOLESDIALOG_H
 

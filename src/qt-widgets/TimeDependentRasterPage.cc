@@ -29,7 +29,6 @@
 #include <boost/weak_ptr.hpp>
 #include <QTableWidgetItem>
 #include <QItemDelegate>
-#include <QFileDialog>
 #include <QDir>
 #include <QString>
 #include <QStringList>
@@ -319,19 +318,27 @@ namespace
 
 
 GPlatesQtWidgets::TimeDependentRasterPage::TimeDependentRasterPage(
-		QString &open_file_path,
+		GPlatesPresentation::ViewState &view_state,
 		TimeDependentRasterSequence &raster_sequence,
 		const boost::function<void (unsigned int)> &set_number_of_bands_function,
 		QWidget *parent_) :
 	QWizardPage(parent_),
-	d_open_file_path(open_file_path),
 	d_raster_sequence(raster_sequence),
 	d_set_number_of_bands_function(set_number_of_bands_function),
 	d_validator(new TimeValidator(this)),
 	d_is_complete(false),
 	d_show_full_paths(false),
 	d_index_to_editor_map(new index_to_editor_map_type()),
-	d_widget_to_focus(NULL)
+	d_widget_to_focus(NULL),
+	d_open_directory_dialog(
+			this,
+			tr("Add Directory"),
+			view_state),
+	d_open_files_dialog(
+			this,
+			tr("Add Files"),
+			GPlatesFileIO::RasterReader::get_file_dialog_filters(),
+			view_state)
 {
 	setupUi(this);
 
@@ -376,17 +383,11 @@ GPlatesQtWidgets::TimeDependentRasterPage::isComplete() const
 void
 GPlatesQtWidgets::TimeDependentRasterPage::handle_add_directory_button_clicked()
 {
-	QString dir_path = QFileDialog::getExistingDirectory(
-			this,
-			tr("Add Directory"),
-			d_open_file_path,
-			QFileDialog::ShowDirsOnly);
+	QString dir_path = d_open_directory_dialog.get_existing_directory();
 	if (dir_path.isEmpty())
 	{
 		return;
 	}
-
-	d_open_file_path = dir_path;
 
 	QDir dir(dir_path);
 	add_files_to_sequence(dir.entryInfoList());
@@ -396,19 +397,11 @@ GPlatesQtWidgets::TimeDependentRasterPage::handle_add_directory_button_clicked()
 void
 GPlatesQtWidgets::TimeDependentRasterPage::handle_add_files_button_clicked()
 {
-	const QString &filters = GPlatesFileIO::RasterReader::get_file_dialog_filters();
-	QStringList files = QFileDialog::getOpenFileNames(
-			this,
-			tr("Add Files"),
-			d_open_file_path,
-			filters);
+	QStringList files = d_open_files_dialog.get_open_file_names();
 	if (files.isEmpty())
 	{
 		return;
 	}
-
-	QFileInfo first(files.front());
-	d_open_file_path = first.path();
 
 	QList<QFileInfo> info_list;
 	BOOST_FOREACH(const QString &file, files)
@@ -686,10 +679,12 @@ GPlatesQtWidgets::TimeDependentRasterPage::populate_table()
 		files_table->openPersistentEditor(time_item);
 
 		// Second column is the file name.
-		QString file_name = d_show_full_paths ? iter->absolute_file_path : iter->file_name;
+		QString native_absolute_file_path = QDir::toNativeSeparators(iter->absolute_file_path);
+		QString file_name = d_show_full_paths ?
+				native_absolute_file_path : iter->file_name;
 		QTableWidgetItem *file_item = new QTableWidgetItem(file_name);
 		file_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-		file_item->setToolTip(iter->absolute_file_path);
+		file_item->setToolTip(native_absolute_file_path);
 		files_table->setItem(i, 1, file_item);
 
 		// Third column is the number of bands.

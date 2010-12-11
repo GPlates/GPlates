@@ -62,13 +62,15 @@ GPlatesGui::Map::Map(
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
 		ViewportZoom &viewport_zoom,
-		ColourScheme::non_null_ptr_type colour_scheme) :
+		const ColourScheme::non_null_ptr_type &colour_scheme,
+		const TextRenderer::non_null_ptr_to_const_type &text_renderer) :
 	d_view_state(view_state),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
 	d_viewport_zoom(viewport_zoom),
-	d_colour_scheme(colour_scheme)
+	d_colour_scheme(colour_scheme),
+	d_text_renderer_ptr(text_renderer)
 {  }
 
 
@@ -114,14 +116,6 @@ GPlatesGui::Map::set_central_meridian(
 {
 	GPlatesMaths::LatLonPoint llp(0.0, central_meridian_);
 	d_projection.set_central_llp(llp);
-}
-
-
-void
-GPlatesGui::Map::set_text_renderer(
-		TextRenderer::ptr_to_const_type text_renderer_ptr)
-{
-	d_text_renderer_ptr = text_renderer_ptr;
 }
 
 

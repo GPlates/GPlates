@@ -91,7 +91,7 @@ GPlatesCli::ConvertFileFormatCommand::add_options(
 					+ "') - valid values are:\n"
 					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML
 					+ " - GPlates native GPML format\n"
-					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_GPML_GZ
+					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_GPMLZ
 					+ " - GPlates native GPML format compressed with gzip\n"
 					+ FeatureCollectionFileIO::SAVE_FILE_TYPE_SHAPEFILE
 					+ " - ArcGIS Shapefile format\n"

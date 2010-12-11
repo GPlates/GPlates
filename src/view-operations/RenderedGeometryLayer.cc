@@ -472,12 +472,18 @@ GPlatesViewOperations::RenderedGeometryLayer::add_rendered_geometry(
 void
 GPlatesViewOperations::RenderedGeometryLayer::clear_rendered_geometries()
 {
+	// The empty checks were removed to ensure that the globe or map refresh
+	// themselves even if no rendered geometries were created.
+#if 0
 	if (!d_impl->is_empty())
 	{
+#endif
 		d_impl->clear_rendered_geometries();
 
 		emit layer_was_updated(*this, d_user_data);
+#if 0
 	}
+#endif
 }
 
 

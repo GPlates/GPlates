@@ -70,15 +70,22 @@ namespace GPlatesMaths
 			// We need to get the cosine and sine into the correct atan quadrant.
 			// To do this we need to:
 			// (1) Negate the dot product and,
-			// (2) Flip the sign of the cross product magnitude relative to its alignment
-			//     with the vector from the origin (sphere centre) to the point-on-sphere
-			//     joining the two edges.
-			if (dot(cross_product_normals, second_edge.start_point().position_vector()).dval() > 0)
+			// (2) Flip the sign of the cross product magnitude if the cross product vector
+			//     is pointing in the opposite direction to the vector
+			//         from the origin (sphere centre) to
+			//         the point-on-sphere joining the two edges.
+			double angle =
+					(dot(cross_product_normals, second_edge.start_point().position_vector()).dval() < 0)
+					? std::atan2(-cross_product_magnitude,  -dot_product_normals)
+					: std::atan2(cross_product_magnitude,  -dot_product_normals);
+
+			// Convert range [-PI, PI] returned by atan2 to the range [0, 2PI].
+			if (angle < 0)
 			{
-				return std::atan2(-cross_product_magnitude,  -dot_product_normals);
+				angle += 2 * PI;
 			}
 
-			return std::atan2(cross_product_magnitude,  -dot_product_normals);
+			return angle;
 		}
 	}
 }

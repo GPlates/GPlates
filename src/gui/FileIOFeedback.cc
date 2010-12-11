@@ -28,7 +28,6 @@
 #include <boost/foreach.hpp>
 #include <QDebug>
 #include <QString>
-#include <QFileDialog>
 #include <QMessageBox>
 #include <QCoreApplication>
 
@@ -59,6 +58,7 @@
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
+#include "qt-widgets/FileDialogFilter.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
 #include "qt-widgets/GMTHeaderFormatDialog.h"
@@ -66,6 +66,54 @@
 
 namespace
 {
+	using GPlatesQtWidgets::FileDialogFilter;
+
+	FileDialogFilter
+	create_gmt_filter()
+	{
+		return FileDialogFilter(QObject::tr("GMT xy"), "xy");
+	}
+
+	FileDialogFilter
+	create_line_filter()
+	{
+		FileDialogFilter filter(QObject::tr("PLATES4 line"), "dat");
+		filter.add_extension("pla");
+		return filter;
+	}
+
+	FileDialogFilter
+	create_rotation_filter()
+	{
+		return FileDialogFilter(QObject::tr("PLATES4 rotation"), "rot");
+	}
+
+	FileDialogFilter
+	create_shapefile_filter()
+	{
+		return FileDialogFilter(QObject::tr("ESRI shapefile"), "shp");
+	}
+
+	FileDialogFilter
+	create_gpml_filter()
+	{
+		return FileDialogFilter(QObject::tr("GPlates Markup Language"), "gpml");
+	}
+
+	FileDialogFilter
+	create_gpmlz_filter()
+	{
+		FileDialogFilter filter(QObject::tr("Compressed GPML"), "gpmlz");
+		filter.add_extension("gpml.gz");
+		return filter;
+	}
+
+	FileDialogFilter
+	create_all_filter()
+	{
+		return FileDialogFilter(QObject::tr("All files") /* no extensions = matches all */);
+	}
+
 	/**
 	 * Builds the specially-formatted list of suitable output filters given a file
 	 * to be saved. The result can be fed into the Save As or Save a Copy dialogs.
@@ -76,23 +124,14 @@ namespace
 			GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
 			bool has_gzip)
 	{
-		using std::make_pair;
-
 		// Appropriate filters for available output formats.
-		static const QString filter_gmt(QObject::tr("GMT xy (*.xy)"));
-		static const QString filter_gmt_ext(QObject::tr("xy"));
-		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
-		static const QString filter_line_ext(QObject::tr("dat"));
-		static const QString filter_rotation(QObject::tr("PLATES4 rotation (*.rot)"));
-		static const QString filter_rotation_ext(QObject::tr("rot"));
-		static const QString filter_shapefile(QObject::tr("ESRI shapefile (*.shp)"));
-		static const QString filter_shapefile_ext(QObject::tr("shp"));
-		static const QString filter_gpml(QObject::tr("GPlates Markup Language (*.gpml)"));
-		static const QString filter_gpml_ext(QObject::tr("gpml"));
-		static const QString filter_gpml_gz(QObject::tr("Compressed GPML (*.gpml.gz)"));
-		static const QString filter_gpml_gz_ext(QObject::tr("gpml.gz"));
-		static const QString filter_all(QObject::tr("All files (*)"));
-		static const QString filter_all_ext(QObject::tr(""));
+		static const FileDialogFilter gmt_filter(create_gmt_filter());
+		static const FileDialogFilter line_filter(create_line_filter());
+		static const FileDialogFilter rotation_filter(create_rotation_filter());
+		static const FileDialogFilter shapefile_filter(create_shapefile_filter());
+		static const FileDialogFilter gpml_filter(create_gpml_filter());
+		static const FileDialogFilter gpmlz_filter(create_gpmlz_filter());
+		static const FileDialogFilter all_filter(create_all_filter());
 		
 		// Determine whether file contains reconstructable and/or reconstruction features.
 		const GPlatesAppLogic::ClassifyFeatureCollection::classifications_type classification =
@@ -111,123 +150,126 @@ namespace
 		{
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
 			{
-				filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
+				filters.push_back(gmt_filter);
 				if (has_gzip)
 				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
+					filters.push_back(gpmlz_filter);
 				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
-				filters.push_back(make_pair(filter_line, filter_line_ext));
-				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
-				filters.push_back(make_pair(filter_all, filter_all_ext));
+				filters.push_back(gpml_filter);
+				filters.push_back(line_filter);
+				filters.push_back(shapefile_filter);
+				filters.push_back(all_filter);
 			}
 			break;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
 			{
-				filters.push_back(make_pair(filter_line, filter_line_ext));
+				filters.push_back(line_filter);
 				if (has_gzip)
 				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
+					filters.push_back(gpmlz_filter);
 				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
-				filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
-				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
-				filters.push_back(make_pair(filter_all, filter_all_ext));
+				filters.push_back(gpml_filter);
+				filters.push_back(gmt_filter);
+				filters.push_back(shapefile_filter);
+				filters.push_back(all_filter);
 			}
 			break;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
 			{
-				filters.push_back(make_pair(filter_rotation, filter_rotation_ext));
+				filters.push_back(rotation_filter);
 				if (has_gzip)
 				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
+					filters.push_back(gpmlz_filter);
 				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
-				filters.push_back(make_pair(filter_all, filter_all_ext));
+				filters.push_back(gpml_filter);
+				filters.push_back(all_filter);
 			}
 			break;
 			
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 			{
-				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
-				filters.push_back(make_pair(filter_line, filter_line_ext));
+				filters.push_back(shapefile_filter);
+				filters.push_back(line_filter);
 				if (has_gzip)
 				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
+					filters.push_back(gpmlz_filter);
 				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
-				filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
-				filters.push_back(make_pair(filter_all, filter_all_ext));
+				filters.push_back(gpml_filter);
+				filters.push_back(gmt_filter);
+				filters.push_back(all_filter);
 			}
 			break;
+
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
 			{
 #if 0			
 				// Disable any kind of export from GMAP data. 
-				break;
 #else			
 				// No GMAP writing yet. (Ever?).
-				// Offer gmpl/gpml_gz export.
+				// Offer gmpl/gpmlz export.
 				// 
 				// (Probably not useful to export these in shapefile or plates formats
 				// for example - users would get the geometries but nothing else).
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
+				filters.push_back(gpml_filter);
 				if (has_gzip)
 				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
+					filters.push_back(gpmlz_filter);
 				}
-				break;
 #endif
 			}
+			break;
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPMLZ:
+			{
+				if (has_gzip)
+				{
+					filters.push_back(gpmlz_filter); // Save compressed by default, assuming we can.
+				}
+				filters.push_back(gpml_filter); // Option to change to uncompressed version.
+				if (has_features_with_geometry)
+				{
+					// Only offer to save in line-only formats if feature collection
+					// actually has reconstructable features in it!
+					filters.push_back(gmt_filter);
+					filters.push_back(line_filter);
+					filters.push_back(shapefile_filter);
+				}
+				if (has_reconstruction_features)
+				{
+					// Only offer to save as PLATES4 .rot if feature collection
+					// actually has rotations in it!
+					filters.push_back(rotation_filter);
+				}
+				filters.push_back(all_filter);
+			}
+			break;
+
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
 		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
-		default: // If no file extension then use same options as GMPL.
+		default: // If no file extension then use same options as GPML.
 			{
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext)); // Save uncompressed by default, same as original
+				filters.push_back(gpml_filter); // Save uncompressed by default, same as original
 				if (has_gzip)
 				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext)); // Option to change to compressed version.
+					filters.push_back(gpmlz_filter); // Option to change to compressed version.
 				}
 				if (has_features_with_geometry)
 				{
 					// Only offer to save in line-only formats if feature collection
 					// actually has reconstructable features in it!
-					filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
-					filters.push_back(make_pair(filter_line, filter_line_ext));
-					filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
+					filters.push_back(gmt_filter);
+					filters.push_back(line_filter);
+					filters.push_back(shapefile_filter);
 				}
 				if (has_reconstruction_features)
 				{
 					// Only offer to save as PLATES4 .rot if feature collection
 					// actually has rotations in it!
-					filters.push_back(make_pair(filter_rotation, filter_rotation_ext));
+					filters.push_back(rotation_filter);
 				}
-				filters.push_back(make_pair(filter_all, filter_all_ext));
-			}
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
-			{
-				if (has_gzip)
-				{
-					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext)); // Save compressed by default, assuming we can.
-				}
-				filters.push_back(make_pair(filter_gpml, filter_gpml_ext)); // Option to change to uncompressed version.
-				if (has_features_with_geometry)
-				{
-					// Only offer to save in line-only formats if feature collection
-					// actually has reconstructable features in it!
-					filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
-					filters.push_back(make_pair(filter_line, filter_line_ext));
-					filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
-				}
-				if (has_reconstruction_features)
-				{
-					// Only offer to save as PLATES4 .rot if feature collection
-					// actually has rotations in it!
-					filters.push_back(make_pair(filter_rotation, filter_rotation_ext));
-				}
-				filters.push_back(make_pair(filter_all, filter_all_ext));
+				filters.push_back(all_filter);
 			}
 			break;
 		}
@@ -257,6 +299,7 @@ namespace
 
 GPlatesGui::FileIOFeedback::FileIOFeedback(
 		GPlatesAppLogic::ApplicationState &app_state_,
+		GPlatesPresentation::ViewState &view_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		FeatureFocus &feature_focus_,
 		QObject *parent_):
@@ -266,18 +309,29 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 	d_file_state_ptr(&app_state_.get_feature_collection_file_state()),
 	d_feature_collection_file_io_ptr(&app_state_.get_feature_collection_file_io()),
 	d_feature_focus(feature_focus_),
-	d_save_file_as_dialog_ptr(
-			GPlatesQtWidgets::SaveFileDialog::get_save_file_dialog(
-				d_viewport_window_ptr,
-				"Save File As",
-				GPlatesQtWidgets::SaveFileDialog::filter_list_type())),
-	d_save_file_copy_dialog_ptr(
-			GPlatesQtWidgets::SaveFileDialog::get_save_file_dialog(
-				d_viewport_window_ptr,
-				"Save a copy of the file with a different name",
-				GPlatesQtWidgets::SaveFileDialog::filter_list_type())),
-	d_gzip_available(false),
-	d_open_file_path(QDir::currentPath())
+	d_save_file_as_dialog(
+			d_viewport_window_ptr,
+			tr("Save File As"),
+			GPlatesQtWidgets::SaveFileDialog::filter_list_type(),
+			view_state_),
+	d_save_file_copy_dialog(
+			d_viewport_window_ptr,
+			tr("Save a copy of the file with a different name"),
+			GPlatesQtWidgets::SaveFileDialog::filter_list_type(),
+			view_state_),
+	d_open_files_dialog(
+			d_viewport_window_ptr,
+			tr("Open Files"),
+			tr(
+				"All loadable files (*.dat *.pla *.rot *.shp *.gpml *.gpmlz *.gpml.gz *.vgp);;"
+				"PLATES4 line (*.dat *.pla);;"
+				"PLATES4 rotation (*.rot);;"
+				"ESRI shapefile (*.shp);;"
+				"GPlates Markup Language (*.gpml *.gpmlz *.gpml.gz);;"
+				"GMAP VGP file (*.vgp);;"
+				"All files (*)"),
+			view_state_),
+	d_gzip_available(false)
 {
 	setObjectName("FileIOFeedback");
 
@@ -294,20 +348,7 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 void
 GPlatesGui::FileIOFeedback::open_files()
 {
-	// FIXME: Move up to the anon namespace area with the save filters.
-	static const QString filters = tr(
-			"All loadable files (*.dat *.pla *.rot *.shp *.gpml *.gpml.gz *.vgp);;"
-			"PLATES4 line (*.dat *.pla);;"
-			"PLATES4 rotation (*.rot);;"
-			"ESRI shapefile (*.shp);;"
-			"GPlates Markup Language (*.gpml *.gpml.gz);;"
-			"GMAP VGP file (*.vgp);;"
-			"All files (*)" );
-	
-	QStringList filenames = QFileDialog::getOpenFileNames(&(viewport_window()),
-			tr("Open Files"), d_open_file_path, filters);
-
-	open_files(filenames);
+	open_files(d_open_files_dialog.get_open_file_names());
 }
 
 
@@ -326,12 +367,6 @@ GPlatesGui::FileIOFeedback::open_files(
 					d_feature_collection_file_io_ptr,
 					filenames));
 
-	// Set open file path to the last opened file.
-	if ( ! filenames.isEmpty() )
-	{
-		QFileInfo last_opened_file(filenames.last());
-		d_open_file_path = last_opened_file.path();
-	}
 	// FIXME: Dropped during refactoring. Was probably unnecessary.. right? //highlight_unsaved_changes();
 }
 
@@ -464,17 +499,14 @@ GPlatesGui::FileIOFeedback::save_file_as(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
 	// Configure and open the Save As dialog.
-	d_save_file_as_dialog_ptr->set_filters(
+	d_save_file_as_dialog.set_filters(
 			get_output_filters_for_file(
 				*d_file_state_ptr,
 				file,
 				d_gzip_available));
 	QString file_path = file.get_file().get_file_info().get_qfileinfo().filePath();
-	if (file_path != "")
-	{
-		d_save_file_as_dialog_ptr->select_file(file_path);
-	}
-	boost::optional<QString> filename_opt = d_save_file_as_dialog_ptr->get_file_name();
+	d_save_file_as_dialog.select_file(file_path);
+	boost::optional<QString> filename_opt = d_save_file_as_dialog.get_file_name();
 
 	if ( ! filename_opt)
 	{
@@ -520,17 +552,14 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
 	// Configure and pop up the Save a Copy dialog.
-	d_save_file_copy_dialog_ptr->set_filters(
+	d_save_file_copy_dialog.set_filters(
 			get_output_filters_for_file(
 				*d_file_state_ptr,
 				file,
 				d_gzip_available));
 	QString file_path = file.get_file().get_file_info().get_qfileinfo().filePath();
-	if (file_path != "")
-	{
-		d_save_file_copy_dialog_ptr->select_file(file_path);
-	}
-	boost::optional<QString> filename_opt = d_save_file_copy_dialog_ptr->get_file_name();
+	d_save_file_copy_dialog.select_file(file_path);
+	boost::optional<QString> filename_opt = d_save_file_copy_dialog.get_file_name();
 
 	if ( ! filename_opt)
 	{

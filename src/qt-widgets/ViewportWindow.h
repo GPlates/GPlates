@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  * Copyright (C) 2007, 2008, 2009, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -108,8 +108,10 @@ namespace GPlatesQtWidgets
 	class AnimateDialog;
 	class AssignReconstructionPlateIdsDialog;
 	class CalculateReconstructionPoleDialog;
+	class ChooseFeatureCollectionDialog;
 	class ColouringDialog;
 	class ConfigureGraticulesDialog;
+	class ConfigureTextOverlayDialog;
 	class DataAssociationDialog;
 	class DockWidget;
 	class CreateVGPDialog;
@@ -250,9 +252,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		highlight_focused_feature_in_table();
-
-		void
-		handle_reconstruction();
 
 		void
 		enable_drag_globe_tool(
@@ -407,6 +406,9 @@ namespace GPlatesQtWidgets
 		pop_up_preferences_dialog();
 
 		void
+		pop_up_configure_text_overlay_dialog();
+
+		void
 		pop_up_configure_graticules_dialog();
 
 		void
@@ -501,8 +503,10 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
+		boost::scoped_ptr<ChooseFeatureCollectionDialog> d_choose_feature_collection_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
 		boost::scoped_ptr<ConfigureGraticulesDialog> d_configure_graticules_dialog_ptr;
+		boost::scoped_ptr<ConfigureTextOverlayDialog> d_configure_text_overlay_dialog_ptr;
 		boost::scoped_ptr<DataAssociationDialog> d_data_association_dialog_ptr;
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
@@ -802,6 +806,8 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_background_colour_picker();
 
+		void
+		clone_feature_with_dialog();
 
 	protected:
 	

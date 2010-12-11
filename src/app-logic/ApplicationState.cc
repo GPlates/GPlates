@@ -473,7 +473,7 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 			SLOT(reconstruct()));
 
 	//
-	// Perform a new reconstruction whenever layer input connections are modified.
+	// Perform a new reconstruction whenever layers are modified.
 	//
 	QObject::connect(
 			d_reconstruct_graph.get(),
@@ -487,6 +487,22 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 			d_reconstruct_graph.get(),
 			SIGNAL(layer_removed_input_connection(
 					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer)),
+			this,
+			SLOT(reconstruct()));
+	QObject::connect(
+			d_reconstruct_graph.get(),
+			SIGNAL(layer_activation_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					bool)),
+			this,
+			SLOT(reconstruct()));
+	QObject::connect(
+			d_reconstruct_graph.get(),
+			SIGNAL(default_reconstruction_tree_layer_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
 					GPlatesAppLogic::Layer)),
 			this,
 			SLOT(reconstruct()));

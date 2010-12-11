@@ -31,6 +31,7 @@
 #include <QPushButton>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QDir>
 #include <QDebug>
 
 #include "app-logic/ApplicationState.h"
@@ -84,7 +85,7 @@ namespace
 		static const QString format_rotation(QObject::tr("PLATES4 rotation"));
 		static const QString format_shapefile(QObject::tr("ESRI shapefile"));
 		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
-		static const QString format_gpml_gz(QObject::tr("Compressed GPML"));
+		static const QString format_gpmlz(QObject::tr("Compressed GPML"));
 		static const QString format_gmt(QObject::tr("GMT xy"));
 		static const QString format_gmap(QObject::tr("GMAP VGP"));
 		static const QString format_unknown(QObject::tr(""));
@@ -103,8 +104,8 @@ namespace
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
 			return format_gpml;
 
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
-			return format_gpml_gz;
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPMLZ:
+			return format_gpmlz;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
 			return format_gmt;
@@ -407,7 +408,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	}
 	
 	QString filename_str = qfileinfo.fileName();
-	QString filepath_str = qfileinfo.path();
+	QString filepath_str = QDir::toNativeSeparators(qfileinfo.path());
 	QString format_str = get_format_for_file(qfileinfo);
 
 	// Add blank row.
