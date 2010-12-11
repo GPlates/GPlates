@@ -115,6 +115,13 @@ namespace GPlatesQtWidgets
 			return d_feature_ref;
 		}
 
+                boost::optional<GPlatesModel::integer_plate_id_type>
+                get_left_plate();
+
+                boost::optional<GPlatesModel::integer_plate_id_type>
+                get_right_plate();
+
+
 	signals:
 		
 		void
@@ -132,7 +139,6 @@ namespace GPlatesQtWidgets
 		void
 		handle_page_change(
 				int page);
-
 		void
 		handle_create();
 
@@ -168,6 +174,11 @@ namespace GPlatesQtWidgets
 		
 		void
 		set_up_geometric_property_list();
+
+		void
+		add_geometry(
+		    GPlatesModel::FeatureHandle::weak_ref &feature,
+		    const GPlatesModel::PropertyName &geom_prop_name);
 
 		/**
 		 * The Model interface, used to create new features.

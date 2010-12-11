@@ -95,8 +95,8 @@ namespace GPlatesAppLogic
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
-				const flowline_geom_ptr_type &upstream_flowline_points,
-				const flowline_geom_ptr_type &downstream_flowline_points,
+				const flowline_geom_ptr_type &left_flowline_points,
+				const flowline_geom_ptr_type &right_flowline_points,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator)
 		{
@@ -104,8 +104,8 @@ namespace GPlatesAppLogic
 					new ReconstructedFlowline(
 							reconstruction_tree,
 							present_day_seed_point_geometry_ptr,
-							upstream_flowline_points,
-							downstream_flowline_points,
+							left_flowline_points,
+							right_flowline_points,
 							feature_handle,
 							property_iterator),
 					GPlatesUtils::NullIntrusivePointerHandler());
@@ -193,15 +193,15 @@ namespace GPlatesAppLogic
 
 
 		flowline_geom_ptr_type
-		upstream_flowline_points() const
+		left_flowline_points() const
 		{
-			return d_upstream_flowline_points;
+			return d_left_flowline_points;
 		}
 
 		flowline_geom_ptr_type
-		downstream_flowline_points() const
+		right_flowline_points() const
 		{
-			return d_downstream_flowline_points;
+			return d_right_flowline_points;
 		}
 
 		seed_point_geom_ptr_type
@@ -220,15 +220,15 @@ namespace GPlatesAppLogic
 		ReconstructedFlowline(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const seed_point_geom_ptr_type &present_day_seed_point,
-				const flowline_geom_ptr_type &upstream_flowline_points_,
-				const flowline_geom_ptr_type &downstream_flowline_points_,
+				const flowline_geom_ptr_type &left_flowline_points_,
+				const flowline_geom_ptr_type &right_flowline_points_,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator):
 			ReconstructionGeometry(reconstruction_tree_),
 			WeakObserverType(feature_handle),
 			d_present_day_seed_point(present_day_seed_point),
-			d_upstream_flowline_points(upstream_flowline_points_),
-			d_downstream_flowline_points(downstream_flowline_points_)
+			d_left_flowline_points(left_flowline_points_),
+			d_right_flowline_points(right_flowline_points_)
 		{  }
 
 		/**
@@ -237,8 +237,8 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesModel::FeatureHandle::iterator d_property_iterator;
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_present_day_seed_point;
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_upstream_flowline_points;
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_downstream_flowline_points;
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_left_flowline_points;
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_right_flowline_points;
 
 
 		

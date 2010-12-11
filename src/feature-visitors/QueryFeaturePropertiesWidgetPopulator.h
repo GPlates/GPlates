@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -40,6 +41,7 @@
 
 namespace GPlatesPropertyValues
 {
+	class GpmlArray;
 	class GpmlKeyValueDictionaryElement;
 }
 
@@ -119,6 +121,11 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gml_time_period(
 				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
+
+		virtual
+		void
+		visit_gpml_array(
+				const GPlatesPropertyValues::GpmlArray &gpml_array);
 
 		virtual
 		void

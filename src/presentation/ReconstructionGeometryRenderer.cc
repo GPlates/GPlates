@@ -36,7 +36,7 @@
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
-#include "app-logic/ReconstructedMotionTrack.h"
+#include "app-logic/ReconstructedMotionPath.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
@@ -429,49 +429,40 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
 {
-#if 0
-	// Copy the "standard" rendering for an rfg for now.
-	GPlatesViewOperations::RenderedGeometry rendered_geometry =
-		create_rendered_reconstruction_geometry(
-		rf->geometry(), rf, d_style_params, d_colour, d_reconstruction_adjustment);
 
-	// Add to the rendered geometry layer.
-	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
-#endif
-
-	// Upstream flowline
-	GPlatesViewOperations::RenderedGeometry up_rendered_geom =
+	// Left-plate flowline
+	GPlatesViewOperations::RenderedGeometry left_rendered_geom =
 		GPlatesViewOperations::create_rendered_arrowed_polyline(
-			rf->upstream_flowline_points(),
+			rf->left_flowline_points(),
 			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rf));
 
-	GPlatesViewOperations::RenderedGeometry up_rendered_geometry = 
+	GPlatesViewOperations::RenderedGeometry left_rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
 			rf,
-			up_rendered_geom);
+			left_rendered_geom);
 
 	// Add to the rendered geometry layer.
-	d_rendered_geometry_layer.add_rendered_geometry(up_rendered_geometry);
+	d_rendered_geometry_layer.add_rendered_geometry(left_rendered_geometry);
 
 	// Downstream
-	GPlatesViewOperations::RenderedGeometry down_rendered_geom =
+	GPlatesViewOperations::RenderedGeometry right_rendered_geom =
 		GPlatesViewOperations::create_rendered_arrowed_polyline(
-			rf->downstream_flowline_points(),
+			rf->right_flowline_points(),
 			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rf));
 
-	GPlatesViewOperations::RenderedGeometry down_rendered_geometry = 
+	GPlatesViewOperations::RenderedGeometry right_rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
 			rf,
-			down_rendered_geom);
+			right_rendered_geom);
 
 	// Add to the rendered geometry layer.
-	d_rendered_geometry_layer.add_rendered_geometry(down_rendered_geometry);
+	d_rendered_geometry_layer.add_rendered_geometry(right_rendered_geometry);
 
 }
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
-	const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_track_type> &rmt)
+	const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
 {
 
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
@@ -479,12 +470,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// using ColourProxy.
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
 		GPlatesViewOperations::create_rendered_arrowed_polyline(
-			rmt->motion_track_points(),
-			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rmt));
+			rmp->motion_path_points(),
+			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rmp));
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
-		rmt,
+		rmp,
 		rendered_geom);
 
 	// Add to the rendered geometry layer.

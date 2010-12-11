@@ -34,7 +34,6 @@
 
 #include "FlowlineUtils.h"
 #include "ReconstructedFlowline.h"
-#include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
 
 #include "maths/FiniteRotation.h"
@@ -48,54 +47,6 @@
 namespace GPlatesAppLogic
 {
 
-		/**
-		* Determines if there are any flowline features in the collection.
-		*/
-		class DetectFlowlineFeatures:
-			public GPlatesModel::ConstFeatureVisitor
-		{
-		public:
-			DetectFlowlineFeatures() :
-				d_found_flowline_features(false)
-			{  }
-
-
-			bool
-			has_flowline_features() const
-			{
-				return d_found_flowline_features;
-			}
-
-
-			virtual
-			void
-			visit_feature_handle(
-					const GPlatesModel::FeatureHandle &feature_handle)
-			{
-				if (d_found_flowline_features)
-				{
-					// We've already found a flowline feature so just return.
-					return;
-				}
-
-				static const GPlatesModel::FeatureType flowline_feature_type = 
-					GPlatesModel::FeatureType::create_gpml("Flowline");
-
-				if (feature_handle.feature_type() == flowline_feature_type)
-				{
-					d_found_flowline_features = true;
-				}
-
-				// NOTE: We don't actually want to visit the feature's properties
-				// so we're not calling 'visit_feature_properties()'.
-			}
-
-		private:
-
-
-
-			bool d_found_flowline_features;
-		};
 
 
 	class ReconstructionGeometryCollection;
@@ -152,6 +103,14 @@ namespace GPlatesAppLogic
 		process_point(
 			const GPlatesMaths::PointOnSphere &point);
 
+		void
+		process_seed_point_and_flowline(
+			const GPlatesMaths::PointOnSphere &point);
+
+		void
+		process_seed_point_with_recon_plate_id(
+			const GPlatesMaths::PointOnSphere &point);
+
 		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
 
 		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
@@ -160,7 +119,18 @@ namespace GPlatesAppLogic
 
 		FlowlineUtils::FlowlinePropertyFinder d_flowline_property_finder;
 
-		std::vector<GPlatesMaths::FiniteRotation> d_rotations;
+		
+		/**
+		 * The (half) stage-pole rotations required for building up the flowlines.                                                                    
+		 */
+		std::vector<GPlatesMaths::FiniteRotation> d_left_rotations;
+		std::vector<GPlatesMaths::FiniteRotation> d_right_rotations;
+		
+		/**
+		 * Rotations for moving the seed point prior to building the rest of the flowline.                                                                    
+		 */
+		std::vector<GPlatesMaths::FiniteRotation> d_left_seed_point_rotations;
+		std::vector<GPlatesMaths::FiniteRotation> d_right_seed_point_rotations;
 
 	};
 }

@@ -134,19 +134,19 @@ namespace
 		const GPlatesAppLogic::ReconstructedFlowline &rf,
 		const std::vector<double> &times)
 	{
-		GPlatesAppLogic::ReconstructedFlowline::flowline_geom_ptr_type uf = rf.upstream_flowline_points();
-		GPlatesAppLogic::ReconstructedFlowline::flowline_geom_ptr_type df = rf.downstream_flowline_points();
+		GPlatesAppLogic::ReconstructedFlowline::flowline_geom_ptr_type lrf = rf.left_flowline_points();
+		GPlatesAppLogic::ReconstructedFlowline::flowline_geom_ptr_type rrf = rf.right_flowline_points();
 
 		GPlatesMaths::PolylineOnSphere::vertex_const_iterator 
-			line_it = uf->vertex_begin(),
-			line_end = uf->vertex_end();
+			line_it = lrf->vertex_begin(),
+			line_end = lrf->vertex_end();
 
 		std::vector<double>::const_iterator 
 			time_it = times.begin(),
 			time_end = times.end(); 
 
 
-		text_stream << "> Upstream flowline" << endl;
+		text_stream << "> Left-plate flowline" << endl;
 		for (; (line_it != line_end) && (time_it != time_end) ; ++line_it, ++time_it)
 		{
 			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*line_it);
@@ -156,10 +156,10 @@ namespace
 
 		// Repeat for downstream part. 
 		time_it = times.begin();
-		line_it = df->vertex_begin();
-		line_end = df->vertex_end();
+		line_it = rrf->vertex_begin();
+		line_end = rrf->vertex_end();
 
-		text_stream << "> Downstream flowline" << endl;
+		text_stream << "> Right-plate flowline" << endl;
 		for (; (line_it != line_end) && (time_it != time_end) ; ++line_it, ++time_it)
 		{
 			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*line_it);
@@ -297,7 +297,7 @@ namespace
 				end = times.end();
 
 			QString times_string;	
-			times_string += " ";
+			times_string += " Times: ";
 			times_string += QString::number(*it);
 			++it;
 			for( ; it != end ; ++it)

@@ -23,6 +23,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <QDebug>
 
 #include <boost/foreach.hpp>
 
@@ -30,7 +31,8 @@
 
 #include "AppLogicUtils.h"
 #include "FlowlineGeometryPopulator.h"
-#include "MotionTrackGeometryPopulator.h"
+#include "FlowlineUtils.h"
+#include "MotionPathGeometryPopulator.h"
 #include "ReconstructedFeatureGeometryPopulator.h"
 #include "ReconstructionGraph.h"
 #include "ReconstructionTreePopulator.h"
@@ -353,7 +355,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 			reconstructable_features_collection.end(),
 			fgp);
 
-	MotionTrackGeometryPopulator mtgp(*reconstruction_geom_collection);
+	MotionPathGeometryPopulator mtgp(*reconstruction_geom_collection);
 	AppLogicUtils::visit_feature_collections(
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
@@ -397,13 +399,17 @@ GPlatesAppLogic::ReconstructUtils::get_half_stage_rotation(
 		GPlatesModel::integer_plate_id_type left_plate_id,
 		GPlatesModel::integer_plate_id_type right_plate_id)
 {
+
 	using namespace GPlatesMaths;
+
 	FiniteRotation right_rotation = reconstruction_tree.get_composed_absolute_rotation(right_plate_id).first;
 
 	FiniteRotation left_rotation = reconstruction_tree.get_composed_absolute_rotation(left_plate_id).first;
 
 	const FiniteRotation& r = compose(left_rotation, get_reverse(right_rotation));
+ 
 	UnitQuaternion3D quat = r.unit_quat();
+
 	if(!represents_identity_rotation(quat))
 	{
 		UnitQuaternion3D::RotationParams params = quat.get_rotation_params(r.axis_hint());
@@ -416,7 +422,9 @@ GPlatesAppLogic::ReconstructUtils::get_half_stage_rotation(
 			half_angle),
 			r.axis_hint());
 
+
 		return compose(half_rotation,right_rotation);
+
 	}
 	else
 	{
@@ -461,5 +469,34 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 		GPlatesMaths::compose(rot_t2,GPlatesMaths::get_reverse(rot_t1));	
 
 	return stage_pole;	
+
+}
+
+void
+GPlatesAppLogic::ReconstructUtils::display_rotation(
+    const GPlatesMaths::FiniteRotation &rotation)
+
+{
+    if (represents_identity_rotation(rotation.unit_quat()))
+    {
+        qDebug() << "Identity rotation.";
+        return;
+    }
+
+    using namespace GPlatesMaths;
+    const UnitQuaternion3D old_uq = rotation.unit_quat();
+
+
+
+    const boost::optional<GPlatesMaths::UnitVector3D> &axis_hint = rotation.axis_hint();
+    UnitQuaternion3D::RotationParams params = old_uq.get_rotation_params(axis_hint);
+    real_t angle = params.angle;
+
+    PointOnSphere point(params.axis);
+    LatLonPoint llp = make_lat_lon_point(point);
+
+    qDebug() << "Pole: Lat" << llp.latitude() << ", lon: " << llp.longitude() << ", angle: "
+             << GPlatesMaths::convert_rad_to_deg(params.angle.dval());
+
 }
 

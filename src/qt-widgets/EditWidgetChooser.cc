@@ -161,6 +161,12 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gml_time_period(
 	d_edit_widget_group_box_ptr->activate_edit_time_period_widget(gml_time_period);
 }
 
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gpml_array(
+		GPlatesPropertyValues::GpmlArray &gpml_array)
+{
+	d_edit_widget_group_box_ptr->activate_edit_time_sequence_widget(gpml_array);
+}
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_constant_value(
@@ -169,12 +175,14 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_constant_value(
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
+#if 0
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_irregular_sampling(
 	GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
 	d_edit_widget_group_box_ptr->activate_edit_time_sequence_widget(gpml_irregular_sampling);
 }
+#endif
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_key_value_dictionary(

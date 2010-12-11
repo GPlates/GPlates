@@ -36,7 +36,7 @@
 
 #include "gui/ExportAnimationStrategy.h"
 #include "gui/ExportFlowlineAnimationStrategy.h"
-#include "gui/ExportMotionTrackAnimationStrategy.h"
+#include "gui/ExportMotionPathAnimationStrategy.h"
 #include "gui/ExportRasterAnimationStrategy.h"
 #include "gui/ExportReconstructedGeometryAnimationStrategy.h"
 #include "gui/ExportResolvedTopologyAnimationStrategy.h"
@@ -367,26 +367,26 @@ namespace GPlatesUtils
 
 		static
 		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
-		create_MOTION_TRACKS_GMT(
+		create_MOTION_PATHS_GMT(
 			GPlatesGui::ExportAnimationContext& export_context,			
 			const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
 		{		
-			return GPlatesGui::ExportMotionTrackAnimationStrategy::create(
+			return GPlatesGui::ExportMotionPathAnimationStrategy::create(
 				export_context,
-				GPlatesGui::ExportMotionTrackAnimationStrategy::GMT,
+				GPlatesGui::ExportMotionPathAnimationStrategy::GMT,
 				cfg);
 		}
 
 
 		static
 		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
-		create_MOTION_TRACKS_SHAPEFILE(
+		create_MOTION_PATHS_SHAPEFILE(
 			GPlatesGui::ExportAnimationContext& export_context,			
 			const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
 		{		
-			return GPlatesGui::ExportMotionTrackAnimationStrategy::create(
+			return GPlatesGui::ExportMotionPathAnimationStrategy::create(
 				export_context,
-				GPlatesGui::ExportMotionTrackAnimationStrategy::SHAPEFILE,
+				GPlatesGui::ExportMotionPathAnimationStrategy::SHAPEFILE,
 				cfg);
 		}
 

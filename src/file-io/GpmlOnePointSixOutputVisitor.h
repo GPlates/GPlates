@@ -171,6 +171,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_array(
+				const GPlatesPropertyValues::GpmlArray &gpml_array);
+
+		virtual
+		void
 		visit_gpml_constant_value(
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 

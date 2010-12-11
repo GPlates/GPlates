@@ -203,7 +203,7 @@ namespace
 		{ "MidOceanRidge", "centerLineOf" },
 		{ "MidOceanRidge", "outlineOf" },
 		{ "MidOceanRidge", "unclassifiedGeometry" },
-		{ "MotionTrack", "seedPoints" },
+		{ "MotionPath", "seedPoints" },
 		{ "OceanicAge", "outlineOf" },
 		{ "OldPlatesGridMark", "centerLineOf" },
 		{ "OldPlatesGridMark", "unclassifiedGeometry" },

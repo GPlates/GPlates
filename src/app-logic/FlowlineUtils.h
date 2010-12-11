@@ -36,7 +36,7 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
-#include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlArray.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 
@@ -50,13 +50,71 @@ namespace GPlatesAppLogic
 	{
 
 		/**
+		* Determines if there are any flowline features in the collection.
+		*/
+		class DetectFlowlineFeatures:
+			public GPlatesModel::ConstFeatureVisitor
+		{
+		public:
+			DetectFlowlineFeatures() :
+			  d_found_flowline_features(false)
+			  {  }
+
+
+			  bool
+				  has_flowline_features() const
+			  {
+				  return d_found_flowline_features;
+			  }
+
+
+			  virtual
+				  void
+				  visit_feature_handle(
+				  const GPlatesModel::FeatureHandle &feature_handle)
+			  {
+				  if (d_found_flowline_features)
+				  {
+					  // We've already found a flowline feature so just return.
+					  return;
+				  }
+
+				  static const GPlatesModel::FeatureType flowline_feature_type =
+					  GPlatesModel::FeatureType::create_gpml("Flowline");
+
+				  if (feature_handle.feature_type() == flowline_feature_type)
+				  {
+					  d_found_flowline_features = true;
+				  }
+
+				  // NOTE: We don't actually want to visit the feature's properties
+				  // so we're not calling 'visit_feature_properties()'.
+			  }
+
+		private:
+
+
+
+			bool d_found_flowline_features;
+		};
+
+		/**
 		* Used to obtain flowline-relevant parameters from a flowline feature.
 		*/
 		class FlowlinePropertyFinder :
 			public GPlatesModel::ConstFeatureVisitor
 		{
 		public:
+			FlowlinePropertyFinder(
+				const double &reconstruction_time):
+				d_feature_is_defined_at_recon_time(true),
+				d_has_geometry(false),
+				d_reconstruction_time(
+				    GPlatesPropertyValues::GeoTimeInstant(reconstruction_time))
+			{  }
+
 			FlowlinePropertyFinder():
+				d_feature_is_defined_at_recon_time(true),
 				d_has_geometry(false)
 			{  }
 
@@ -84,12 +142,6 @@ namespace GPlatesAppLogic
 				return d_times;
 			}
 
-			const std::vector<GPlatesMaths::FiniteRotation> &
-			get_rotations() const
-			{
-				return d_rotations;
-			}
-
 			QString
 			get_feature_info_string()
 			{
@@ -108,8 +160,45 @@ namespace GPlatesAppLogic
 				return d_has_geometry;
 			}
 
+			/**
+			 * Whether or not we should calculate flowlines for the
+			 * current time.
+			 */
 			bool
 			can_process_flowline();
+
+			/**
+			 * Whether or not we should display the seed point for the
+			 * current time.
+			 */
+			bool
+			can_process_seed_point();
+
+			/**
+			 * Whether or not we have enough info in the feature to
+			 * perform a seed-point correction.
+			 */
+			bool
+			can_correct_seed_point();
+
+			/**
+			 * Returns optional time of appearance if a "gml:validTime" property is found.
+			 */
+			const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
+			get_time_of_appearance() const
+			{
+				return d_time_of_appearance;
+			}
+
+
+			/**
+			 * Returns optional time of dissappearance if a "gml:validTime" property is found.
+			 */
+			const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
+			get_time_of_dissappearance() const
+			{
+				return d_time_of_appearance;
+			}
 
 		private:
 			virtual
@@ -139,6 +228,10 @@ namespace GPlatesAppLogic
 				d_has_geometry = true;
 			}
 
+			virtual
+			void
+			visit_gpml_array(
+				const GPlatesPropertyValues::GpmlArray &gpml_array);
 
 			virtual
 			void
@@ -150,59 +243,47 @@ namespace GPlatesAppLogic
 
 			virtual
 			void
-			visit_gpml_irregular_sampling(
-				const gpml_irregular_sampling_type &gpml_irregular_sampling);
+			visit_gpml_plate_id(
+				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
 			virtual
 			void
-			visit_gpml_plate_id(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+			visit_gml_time_period(
+				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 
 			virtual
 			void
 			visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
 
-			bool d_has_geometry;
 
+			bool d_feature_is_defined_at_recon_time;
+			bool d_has_geometry;
+			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_reconstruction_time;
 			boost::optional<GPlatesModel::integer_plate_id_type> d_reconstruction_plate_id;
 			boost::optional<GPlatesModel::integer_plate_id_type> d_left_plate;
 			boost::optional<GPlatesModel::integer_plate_id_type> d_right_plate;
+			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;
+			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_dissappearance;
 			QString d_feature_info;
 			QString d_name;
 
-			// Times to be used in flowline calculations. The first element in the current reconstruction time, and
-			// subsequent elements go back in time. 
-			// This vector is not necessarily identical to the flowline input times.
+			// The GpmlArray<TimePeriod> times converted into a vector of doubles. 
 			std::vector<double> d_times;
-
-			// A vector of rotations used in flowline calculations. These are the half stage poles from the current
-			// reconstruction time to each of the other times in the @a d_times vector.
-			//
-			// For example, the first rotation is the half stage pole from t0 to t1, for plates d_left_plate_id and d_right_plate_id,
-			// where t0 and t1 are the first two elements of @a d_times.
-			//
-			// The second element would be the half stage pole from t0 to t2 and so on.
-			std::vector<GPlatesMaths::FiniteRotation> d_rotations;
 
 		};
 
 		void
-		calculate_upstream_symmetric_flowline(
-			const GPlatesMaths::PointOnSphere &point,
+		calculate_flowline(
+			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &seed_point,
 			const FlowlinePropertyFinder &flowline_parameters,
 			std::vector<GPlatesMaths::PointOnSphere> &flowline,
 			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &tree,
 			const std::vector<GPlatesMaths::FiniteRotation> &rotations);
 
-		void
-		calculate_downstream_symmetric_flowline(
-			const GPlatesMaths::PointOnSphere &point,
-			const FlowlinePropertyFinder &flowline_parameters,
-			std::vector<GPlatesMaths::PointOnSphere> &flowline,
-			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &tree,
-			const std::vector<GPlatesMaths::FiniteRotation> &rotations);
-
+		/**
+		 * Halves the angle of the provided FiniteRotation.
+		 */
 		void
 		get_half_angle_rotation(
 			GPlatesMaths::FiniteRotation &rotation);
@@ -214,12 +295,59 @@ namespace GPlatesAppLogic
 			const std::vector<double> &time_samples);		
 
 		void
-		get_times_from_irregular_sampling(
+		get_times_from_time_period_array(
 			std::vector<double> &times,
-			const GPlatesPropertyValues::GpmlIrregularSampling &irregular_sampling);
+			const GPlatesPropertyValues::GpmlArray &array);
+
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		reconstruct_seed_point(
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point,
+			const std::vector<GPlatesMaths::FiniteRotation> &rotations,
+			bool reverse = false);
+
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_seed_points(
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type seed_points,
+			const std::vector<GPlatesMaths::FiniteRotation> &rotations,
+			bool reverse = false);
+
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_flowline_seed_points(
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type seed_points,
+			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type current_reconstruction_tree_ptr,
+			const GPlatesModel::FeatureHandle::weak_ref &feature_handle,
+			bool reverse = false);
+
+		/**
+		 * Fills @a seed_point_rotations with half-stage rotations from earliest flowline
+		 * time to current time.
+		 */
+		void
+		fill_seed_point_rotations(
+			const double &current_time,
+			const std::vector<double> &flowline_times,
+			const GPlatesModel::integer_plate_id_type &left_plate_id,
+			const GPlatesModel::integer_plate_id_type &right_plate_id,
+			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_ptr,
+			std::vector<GPlatesMaths::FiniteRotation> &seed_point_rotations);
+
+		/**
+		 * Given a flowline end point(s) @a geometry_ at time @a reconstruction_time,
+		 * calculates the spreading centre for that flowline.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		correct_end_point_to_centre(
+		    GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_,
+		    const GPlatesModel::integer_plate_id_type &plate_1,
+		    const GPlatesModel::integer_plate_id_type &plate_2,
+		    const std::vector<double> &times,
+		    const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &tree,
+		    const double &reconstruction_time);
 
 	}
 
 }
 
-#endif  // GPLATES_APPLOGIC_FLOWLINEUTILS_H
+
+#endif // GPLATES_APPLOGIC_FLOWLINEUTILS_H
+

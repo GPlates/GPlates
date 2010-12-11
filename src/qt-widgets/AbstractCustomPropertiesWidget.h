@@ -28,6 +28,7 @@
 
 #include <QWidget>
 
+#include "maths/GeometryOnSphere.h"
 #include "model/FeatureHandle.h"
 #include "model/PropertyValue.h"
 
@@ -61,8 +62,7 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		add_geometry_properties_to_feature(
-			GPlatesModel::PropertyValue::non_null_ptr_type geometry_property,
-			GPlatesModel::FeatureHandle::weak_ref feature_handle) = 0;
+                        GPlatesModel::FeatureHandle::weak_ref feature_handle) = 0;
 			
 		virtual
 		void
@@ -74,6 +74,15 @@ namespace GPlatesQtWidgets
 		do_custom_tasks(
 			GPlatesModel::FeatureHandle::weak_ref feature_handle)
 		{ }
+
+                virtual
+                GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+                do_geometry_tasks(
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry_,
+			const GPlatesModel::FeatureHandle::weak_ref &feature_handle)
+                {
+                    return geometry_;
+                }
 
 	};
 }

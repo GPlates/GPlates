@@ -29,10 +29,12 @@
 
 #include "ReconstructedFeatureGeometryPopulator.h"
 
+#include "FlowlineUtils.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryCollection.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
+#include "ReconstructUtils.h"
 
 #include "VGPRenderSettings.h"
 
@@ -243,9 +245,9 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::initialise_pre_feature_p
 	}
 
 	//detect VGP feature and set the flag.
-	ReconstructionGeometryUtils::DetectPaleomagFeatures detector;
-	detector.visit_feature_handle(feature_handle);
-	if(detector.has_paleomag_features())
+	ReconstructionGeometryUtils::DetectPaleomagFeatures vgp_detector;
+	vgp_detector.visit_feature_handle(feature_handle);
+	if(vgp_detector.has_paleomag_features())
 	{
 		d_is_vgp_feature = true;
 		d_VGP_params = ReconstructedVirtualGeomagneticPoleParams();
@@ -253,6 +255,18 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::initialise_pre_feature_p
 	else
 	{
 		d_is_vgp_feature = false;
+	}
+
+	// Detect Flowline features.
+	FlowlineUtils::DetectFlowlineFeatures flowlines_detector;
+	flowlines_detector.visit_feature_handle(feature_handle);
+	if(flowlines_detector.has_flowline_features())
+	{
+	    d_is_flowline_feature = true;
+	}
+	else
+	{
+	    d_is_flowline_feature = false;
 	}
 
 	// Now visit the feature to reconstruct any geometries we find.
@@ -301,6 +315,11 @@ void
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
+
+	if (d_is_flowline_feature)
+	{
+	    return;
+	}
 	using namespace GPlatesMaths;
 	GPlatesModel::FeatureHandle::iterator property = *(current_top_level_propiter());
 	boost::optional<GPlatesModel::integer_plate_id_type> plate_id = 
@@ -347,10 +366,15 @@ void
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	if(d_is_vgp_feature)
+	if (d_is_vgp_feature)
 	{
 		handle_vgp_gml_point(gml_point);
 		return;
+	}
+
+	if (d_is_flowline_feature)
+	{
+	    return;
 	}
 	using namespace GPlatesMaths;
 
@@ -579,33 +603,14 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::finalise_post_feature_pr
 boost::optional<GPlatesMaths::FiniteRotation>
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::get_half_stage_rotation()
 {
-	using namespace GPlatesMaths;
-	FiniteRotation right_rotation = d_reconstruction_tree->get_composed_absolute_rotation(
-			*d_reconstruction_params.get_right_plate_id()).first;
 
-	FiniteRotation left_rotation = d_reconstruction_tree->get_composed_absolute_rotation(
-			*d_reconstruction_params.get_left_plate_id()).first;
 
-	const FiniteRotation& r = compose(left_rotation, get_reverse(right_rotation));
-	UnitQuaternion3D quat = r.unit_quat();
-	if(!represents_identity_rotation(quat))
-	{
-		UnitQuaternion3D::RotationParams params = quat.get_rotation_params(r.axis_hint());
-		real_t half_angle = 0.5 * params.angle;
-		
-		FiniteRotation half_rotation = 
-			FiniteRotation::create(
-					UnitQuaternion3D::create_rotation(
-							params.axis, 
-							half_angle),
-					r.axis_hint());
+        return ReconstructUtils::get_half_stage_rotation(
+                    *d_reconstruction_tree,
+                    *d_reconstruction_params.get_left_plate_id(),
+                    *d_reconstruction_params.get_right_plate_id());
 
-		return compose(half_rotation,right_rotation);
-	}
-	else
-	{
-		return boost::none;
-	}
+
 }
 
 

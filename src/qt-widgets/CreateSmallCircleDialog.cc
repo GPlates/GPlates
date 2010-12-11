@@ -66,52 +66,6 @@ namespace
 		return true;
 	}
 
-
-	// Returns the stage pole for moving_plate_id wrt fixed_plate_id between times corresponding
-	// to reconstruction_tree_ptr_1 and reconstruction_tree_ptr_2
-	GPlatesMaths::FiniteRotation
-	get_stage_pole(
-		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree_1,
-		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree_2,
-		const GPlatesModel::integer_plate_id_type &moving_plate_id,
-		const GPlatesModel::integer_plate_id_type &fixed_plate_id)
-	{
-		// For t1, get the rotation for plate M w.r.t. anchor	
-		GPlatesMaths::FiniteRotation rot_0_to_t1_M = 
-			reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id).first;
-
-		// For t1, get the rotation for plate F w.r.t. anchor	
-		GPlatesMaths::FiniteRotation rot_0_to_t1_F = 
-			reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id).first;	
-
-
-		// For t2, get the rotation for plate M w.r.t. anchor	
-		GPlatesMaths::FiniteRotation rot_0_to_t2_M = 
-			reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id).first;
-
-		// For t2, get the rotation for plate F w.r.t. anchor	
-		GPlatesMaths::FiniteRotation rot_0_to_t2_F = 
-			reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id).first;	
-
-		// Compose these rotations so that we get
-		// the stage pole from time t1 to time t2 for plate M w.r.t. plate F.
-
-		GPlatesMaths::FiniteRotation rot_t1 = 
-			GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t1_F),rot_0_to_t1_M);
-
-		GPlatesMaths::FiniteRotation rot_t2 = 
-			GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t2_F),rot_0_to_t2_M);	
-
-		GPlatesMaths::FiniteRotation stage_pole = 
-			GPlatesMaths::compose(rot_t2,GPlatesMaths::get_reverse(rot_t1));	
-#if 0
-		qDebug() << "Stage pole for " << moving_plate_id << " w.r.t. " << fixed_plate_id;			
-		display_rotation(creation_time_correction);	
-#endif
-		return stage_pole;	
-	}
-
-
 	GPlatesMaths::LatLonPoint
 	get_axis_llp_from_rotation(
 		const GPlatesMaths::FiniteRotation &rotation)
@@ -175,13 +129,13 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_calculate()
 {
 	// Attempt to generate a stage pole from the plate id and time fields.
 	// If it's possible, use the axis of the stage pole as the centre coordinates. 
-	GPlatesModel::integer_plate_id_type p1 = spinbox_plate_id_1->value();
-	GPlatesModel::integer_plate_id_type p2 = spinbox_plate_id_2->value();
+	GPlatesModel::integer_plate_id_type p_moving = spinbox_plate_id_moving->value();
+	GPlatesModel::integer_plate_id_type p_fixed = spinbox_plate_id_fixed->value();
 	double t1 = spinbox_time_1->value();
 	double t2 = spinbox_time_2->value();
 
 	if (GPlatesMaths::are_almost_exactly_equal(t1,t2) ||
-		(p1 == p2))
+		(p_moving == p_fixed))
 	{
 		return;
 	}
@@ -205,11 +159,11 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_calculate()
 
 	// Get stage pole
 	GPlatesMaths::FiniteRotation stage_pole =
-		get_stage_pole(
+		GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 			*tree_1,
 			*tree_2,				
-			p1,
-			p2);
+			p_moving,
+			p_fixed);
 
 	GPlatesMaths::LatLonPoint llp = get_axis_llp_from_rotation(stage_pole);
 

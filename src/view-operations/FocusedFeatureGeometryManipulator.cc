@@ -30,6 +30,7 @@
 #include "UndoRedo.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/FlowlineUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionFeatureProperties.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
@@ -42,6 +43,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
+#include "model/FeatureHandle.h"
 #include "presentation/ViewState.h"
 
 
@@ -412,10 +414,24 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 	bool reverse_reconstruct)
 {
 
+	// Handle flowline features specially, until MOR reconstruction can be used for flowlines.
+
+	static const GPlatesModel::FeatureType flowline_type = GPlatesModel::FeatureType::create_gpml("Flowline");
+
+	if (d_feature->feature_type() == flowline_type)
+	{
+	    return GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
+			geometry_on_sphere,
+			d_focused_geometry->reconstruction_tree(),
+			d_feature,
+			true /* reverse reconstruct */);
+	}
+
 	GPlatesAppLogic::ReconstructionFeatureProperties visitor(
 		d_application_state->get_current_reconstruction_time());
 
 	visitor.visit_feature(d_feature);
+
 
 	if (visitor.get_reconstruction_method() == 
 		GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION)

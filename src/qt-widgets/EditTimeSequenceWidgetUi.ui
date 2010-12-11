@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>495</width>
-    <height>463</height>
+    <width>567</width>
+    <height>495</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -62,7 +62,7 @@
      <row/>
      <column>
       <property name="text">
-       <string>Time</string>
+       <string>Time (Ma)</string>
       </property>
      </column>
      <column>
@@ -154,76 +154,104 @@
     </layout>
    </item>
    <item row="3" column="0">
-    <layout class="QHBoxLayout">
-     <property name="rightMargin">
-      <number>4</number>
+    <widget class="QGroupBox" name="groupbox_insert_time">
+     <property name="title">
+      <string>Insert &amp;single time</string>
      </property>
-     <item>
-      <widget class="QGroupBox" name="groupbox_insert_time">
-       <property name="title">
-        <string>Insert &amp;single time</string>
-       </property>
-       <property name="flat">
-        <bool>true</bool>
-       </property>
-       <layout class="QHBoxLayout">
-        <property name="margin">
-         <number>4</number>
+     <property name="flat">
+      <bool>true</bool>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
-        <item>
-         <widget class="QLabel" name="label_time">
-          <property name="text">
-           <string>Time:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QDoubleSpinBox" name="spinbox_time">
-          <property name="decimals">
-           <number>4</number>
-          </property>
-          <property name="minimum">
-           <double>0.000000000000000</double>
-          </property>
-          <property name="maximum">
-           <double>9999.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_insert_single">
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
-            <normaloff>:/tango_list_add_22.png</normaloff>:/tango_list_add_22.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>22</width>
-            <height>22</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-     </item>
-    </layout>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>96</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_time">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>71</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::RightToLeft</enum>
+        </property>
+        <property name="text">
+         <string>Time</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QDoubleSpinBox" name="spinbox_time">
+        <property name="decimals">
+         <number>2</number>
+        </property>
+        <property name="minimum">
+         <double>0.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>9999.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_to_2">
+        <property name="text">
+         <string>Ma </string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_use_main_single">
+        <property name="text">
+         <string>&amp;Use Main Window</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_insert_single">
+        <property name="text">
+         <string>&amp;Insert</string>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>22</width>
+          <height>22</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>96</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item row="4" column="0">
     <widget class="QGroupBox" name="groupbox_insert_times">
@@ -235,75 +263,59 @@
      </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="0" column="1">
        <widget class="QLabel" name="label_from">
+        <property name="minimumSize">
+         <size>
+          <width>71</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::RightToLeft</enum>
+        </property>
         <property name="text">
-         <string>From </string>
+         <string>From</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
+      <item row="0" column="2">
        <widget class="QDoubleSpinBox" name="spinbox_from_time">
         <property name="maximum">
          <double>9999.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
+      <item row="0" column="3">
        <widget class="QLabel" name="label_to">
         <property name="text">
-         <string>Ma to </string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="3">
-       <widget class="QDoubleSpinBox" name="spinbox_to_time">
-        <property name="maximum">
-         <double>9999.000000000000000</double>
+         <string>Ma </string>
         </property>
        </widget>
       </item>
       <item row="0" column="4">
-       <widget class="QLabel" name="label_steps">
+       <widget class="QPushButton" name="button_use_main_from">
         <property name="text">
-         <string>Ma in steps of</string>
+         <string>Use M&amp;ain Window</string>
         </property>
        </widget>
       </item>
       <item row="0" column="5">
-       <widget class="QDoubleSpinBox" name="spinbox_step_time">
-        <property name="maximum">
-         <double>9999.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="6">
-       <widget class="QLabel" name="label_ma">
-        <property name="text">
-         <string>My</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="7">
-       <spacer>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>21</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="8">
        <widget class="QPushButton" name="button_insert_multiple">
         <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="../qt-resources/qt_widgets.qrc">
-          <normaloff>:/tango_list_add_22.png</normaloff>:/tango_list_add_22.png</iconset>
+         <string>I&amp;nsert</string>
         </property>
         <property name="iconSize">
          <size>
@@ -313,14 +325,105 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="6">
+       <spacer name="horizontalSpacer_4">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="label">
+        <property name="minimumSize">
+         <size>
+          <width>71</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::RightToLeft</enum>
+        </property>
+        <property name="text">
+         <string>to</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QDoubleSpinBox" name="spinbox_to_time">
+        <property name="maximum">
+         <double>9999.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QLabel" name="label_steps">
+        <property name="text">
+         <string>Ma </string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QPushButton" name="button_use_main_to">
+        <property name="text">
+         <string>Use Main &amp;Window</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="label_2">
+        <property name="minimumSize">
+         <size>
+          <width>71</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::RightToLeft</enum>
+        </property>
+        <property name="text">
+         <string>in steps of</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QDoubleSpinBox" name="spinbox_step_time">
+        <property name="maximum">
+         <double>9999.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QLabel" name="label_ma">
+        <property name="text">
+         <string>My</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
- </resources>
+ <tabstops>
+  <tabstop>table_times</tabstop>
+  <tabstop>spinbox_time</tabstop>
+  <tabstop>button_use_main_single</tabstop>
+  <tabstop>button_insert_single</tabstop>
+  <tabstop>spinbox_from_time</tabstop>
+  <tabstop>button_use_main_from</tabstop>
+  <tabstop>spinbox_to_time</tabstop>
+  <tabstop>button_use_main_to</tabstop>
+  <tabstop>spinbox_step_time</tabstop>
+  <tabstop>button_insert_multiple</tabstop>
+  <tabstop>button_remove</tabstop>
+  <tabstop>button_remove_all</tabstop>
+ </tabstops>
+ <resources/>
  <connections/>
 </ui>

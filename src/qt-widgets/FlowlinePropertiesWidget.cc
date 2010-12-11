@@ -5,7 +5,7 @@
 * $Revision: 8461 $
 * $Date: 2010-05-20 16:18:01 +0200 (to, 20 mai 2010) $ 
 * 
-* Copyright (C) 2009 Geological Survey of Norway
+* Copyright (C) 2009, 2010 Geological Survey of Norway
 *
 * This file is part of GPlates.
 *
@@ -23,12 +23,17 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include <iostream>
+
 #include "app-logic/ApplicationState.h"
+#include "app-logic/FlowlineUtils.h"
+#include "app-logic/ReconstructionTree.h"
+#include "app-logic/ReconstructUtils.h"
 #include "model/ModelUtils.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlPlateId.h"
-#include "property-values/XsBoolean.h"
 #include "EditTimeSequenceWidget.h"
+#include "CreateFeatureDialog.h"
 
 #include "FlowlinePropertiesWidget.h"
 
@@ -63,17 +68,21 @@ namespace
 
 GPlatesQtWidgets::FlowlinePropertiesWidget::FlowlinePropertiesWidget(
 	GPlatesAppLogic::ApplicationState *application_state_ptr,
+        CreateFeatureDialog *create_feature_dialog_ptr,
 	QWidget *parent_):
 	AbstractCustomPropertiesWidget(parent_),
 	d_application_state_ptr(application_state_ptr),
-	d_time_sequence_widget(new GPlatesQtWidgets::EditTimeSequenceWidget(this))
+        d_time_sequence_widget(new GPlatesQtWidgets::EditTimeSequenceWidget(
+                *d_application_state_ptr,
+                this)),
+        d_create_feature_dialog_ptr(create_feature_dialog_ptr)
 {
 	setupUi(this);
 	
-	cram_widget_into_widget(d_time_sequence_widget,widget_time_sequence_holder);
+        cram_widget_into_widget(d_time_sequence_widget,groupbox_time_sequence);
 
-	//FIXME: Could also add the current reconstruction time as an initial value
-	//in the time-sequence-widget..?
+        radio_centre->setChecked(true);
+
 }
 
 void
@@ -95,24 +104,73 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::add_properties_to_feature(
 
 void
 GPlatesQtWidgets::FlowlinePropertiesWidget::add_geometry_properties_to_feature(
-	GPlatesModel::PropertyValue::non_null_ptr_type geometry_property,
-	GPlatesModel::FeatureHandle::weak_ref feature_handle)
+                GPlatesModel::FeatureHandle::weak_ref feature_handle)
 {
-
 
 }
 
-
-void
-GPlatesQtWidgets::FlowlinePropertiesWidget::handle_checkbox_status_changed()
-{
-#if 0
-	spinbox_digitisation_time->setEnabled(checkbox_is_symmetrical->checkState() == Qt::Checked);
-#endif
-}
 
 void
 GPlatesQtWidgets::FlowlinePropertiesWidget::update()
 {
+
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry_,
+	const GPlatesModel::FeatureHandle::weak_ref &feature_handle)
+{
+// Here we correct the geometry depending on the desired role of the selected point.
+//
+// If the user wants the point to be the flowline spreading centre, we do nothing; the point will be
+// reverse half-stage reconstructed in the main CreateFeatureDialog code.
+//
+// If the user wants the point to be either of the end-points, we want to find the central point (at current reconstruction
+// time) which would give us the desired end point.  This point will then be reverse half-stage reconstructed in the
+// main CreateFeatureDialog code.
+
+    if (radio_centre->isChecked())
+    {
+        return geometry_;
+    }
+
+
+
+    GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder finder(
+		d_application_state_ptr->get_current_reconstruction_time());
+    finder.visit_feature(feature_handle);
+
+    if (!finder.can_correct_seed_point())
+    {
+	return geometry_;
+    }
+
+
+    // Call the plates plate_1 and plate_2 so we can use the same stage-pole calculation further below.
+    GPlatesModel::integer_plate_id_type plate_1;
+    GPlatesModel::integer_plate_id_type plate_2;
+
+
+    if (radio_left->isChecked())
+    {
+	plate_1 = finder.get_left_plate().get();
+	plate_2 = finder.get_right_plate().get();
+    }
+    else if (radio_right->isChecked())
+    {
+	plate_1 = finder.get_right_plate().get();
+	plate_2 = finder.get_left_plate().get();
+    }
+
+
+    return GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
+		geometry_,
+		plate_1,
+		plate_2,
+		finder.get_times(),
+		d_application_state_ptr->get_current_reconstruction().get_default_reconstruction_tree(),
+		d_application_state_ptr->get_current_reconstruction_time());
 
 }

@@ -91,80 +91,133 @@ GPlatesAppLogic::FlowlineGeometryPopulator::FlowlineGeometryPopulator(
 		ReconstructionGeometryCollection &reconstruction_geometry_collection):
 	d_reconstruction_geometry_collection(reconstruction_geometry_collection),
 	d_reconstruction_tree(reconstruction_geometry_collection.reconstruction_tree()),
-	d_recon_time(
-			GPlatesPropertyValues::GeoTimeInstant(
-					reconstruction_geometry_collection.get_reconstruction_time())),
-	d_flowline_property_finder()
+	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(
+	    reconstruction_geometry_collection.get_reconstruction_time())),
+	d_flowline_property_finder(
+	    reconstruction_geometry_collection.get_reconstruction_time())
 {  }
 
 bool
 GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
+    d_left_rotations.clear();
+    d_right_rotations.clear();
+    d_left_seed_point_rotations.clear();
+    d_right_seed_point_rotations.clear();
 
-
-	//Detect Flowline features and set the flag.
-	DetectFlowlineFeatures detector;
-	detector.visit_feature_handle(feature_handle);
-	if(!detector.has_flowline_features())
-	{
+    //Detect Flowline features.
+    FlowlineUtils::DetectFlowlineFeatures detector;
+    detector.visit_feature_handle(feature_handle);
+    if(!detector.has_flowline_features())
+    {
 		return false;
-	}
+    }
 
-	d_flowline_property_finder.visit_feature(feature_handle.reference());
+    d_flowline_property_finder.visit_feature(feature_handle.reference());
 
 
-	if (!d_flowline_property_finder.can_process_flowline())
-	{
+    if (!d_flowline_property_finder.can_process_seed_point())
+    {
 		return false;
-	}
-	// This will hold the times we need to use for stage poles, from the current reconstruction time to
-	// the oldest time in the flowline.
-	std::vector<double> times;
+    }
 
-	FlowlineUtils::fill_times_vector(
-		times,
-		d_reconstruction_tree->get_reconstruction_time(),
-		d_flowline_property_finder.get_times());
+    if (d_flowline_property_finder.can_process_flowline())
+    {
+		GPlatesModel::integer_plate_id_type anchor = d_reconstruction_tree->get_anchor_plate_id();
+		double current_time = d_reconstruction_tree->get_reconstruction_time();
+		std::vector<double> times = d_flowline_property_finder.get_times();
 
-	// We'll work from the current time, backwards in time.		
-	std::vector<double>::const_iterator 
-		iter = times.begin(),
-		end = times.end();
+		std::vector<double>::const_iterator
+			t_iter = times.begin(),
+			t_prev_iter = times.begin();
 
-	// Step forward beyond the current time
-	++iter;	
+		++t_iter;
 
-	GPlatesModel::integer_plate_id_type anchor = d_reconstruction_tree->get_anchor_plate_id();
+		if ((current_time > times.back()) ||
+			(current_time < times.front()))
+		{
+			return true;
+		}
 
+		FlowlineUtils::fill_seed_point_rotations(
+			current_time,
+			times,
+			*d_flowline_property_finder.get_left_plate(),
+			*d_flowline_property_finder.get_right_plate(),
+			d_reconstruction_tree,
+			d_left_seed_point_rotations);
 
-	for (; iter != end ; ++iter)
-	{
+		FlowlineUtils::fill_seed_point_rotations(
+			current_time,
+			times,
+			*d_flowline_property_finder.get_right_plate(),
+			*d_flowline_property_finder.get_left_plate(),
+			d_reconstruction_tree,
+			d_right_seed_point_rotations);
 
-		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_time_t_ptr = 
+		// This will now hold the times we need to use for flowline rotations, from the current reconstruction time to
+		// the oldest time in the flowline.
+		times.clear();
+
+		FlowlineUtils::fill_times_vector(
+			times,
+			current_time,
+			d_flowline_property_finder.get_times());
+
+		// We'll work from the current time, backwards in time.
+		std::vector<double>::const_iterator
+			iter = times.begin(),
+			end = times.end();
+
+		// Save the "previous" tree for use in the loop.
+		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_prev_time_ptr =
 			GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+			*iter,
+			anchor,
+			d_reconstruction_tree->get_reconstruction_features());
+
+		// Step forward beyond the current time
+		++iter;
+
+		for (; iter != end ; ++iter)
+		{
+
+			GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_time_t_ptr =
+				GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
 				*iter,
 				anchor,
 				d_reconstruction_tree->get_reconstruction_features());
 
-		// The stage pole for the moving plate w.r.t. the fixed plate, from current time to t
-		GPlatesMaths::FiniteRotation stage_pole =
-			GPlatesAppLogic::ReconstructUtils::get_stage_pole(
-				*d_reconstruction_tree,
-				*tree_at_time_t_ptr,				
+
+			// The stage pole for the right plate w.r.t. the left plate
+			GPlatesMaths::FiniteRotation stage_pole_left =
+				GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+				*tree_at_prev_time_ptr,
+				*tree_at_time_t_ptr,
+				*d_flowline_property_finder.get_right_plate(),
+				*d_flowline_property_finder.get_left_plate());
+
+
+			GPlatesMaths::FiniteRotation stage_pole_right =
+				GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+				*tree_at_prev_time_ptr,
+				*tree_at_time_t_ptr,
 				*d_flowline_property_finder.get_left_plate(),
-				*d_flowline_property_finder.get_right_plate());		
+				*d_flowline_property_finder.get_right_plate());
 
-		// Halve the stage pole, and store it.
-		FlowlineUtils::get_half_angle_rotation(stage_pole);
+			// Halve the stage poles, and store them.
+			FlowlineUtils::get_half_angle_rotation(stage_pole_left);
+			FlowlineUtils::get_half_angle_rotation(stage_pole_right);
 
-		//FlowlineUtils::display_rotation(stage_pole);
+			d_left_rotations.push_back(stage_pole_left);
+			d_right_rotations.push_back(stage_pole_right);
 
-		d_rotations.push_back(stage_pole);
+			tree_at_prev_time_ptr = tree_at_time_t_ptr;
 
-	}
-
-	return true;
+		}
+    }
+    return true;
 
 }
 
@@ -208,7 +261,6 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 		static const GPlatesModel::PropertyName flowline_node_property_name = 
 			GPlatesModel::PropertyName::create_gpml("seedPoints");
 		GPlatesModel::PropertyName property_name = *current_top_level_propname();	
-		qDebug() << GPlatesUtils::make_qstring_from_icu_string(property_name.get_name());
 		if (property_name != flowline_node_property_name)
 		{
 			return;
@@ -242,72 +294,141 @@ void
 GPlatesAppLogic::FlowlineGeometryPopulator::process_point(
 	const GPlatesMaths::PointOnSphere &point)
 {
-	// Get the reconstructed seed point location.
-	// FIXME: We're already doing this in the flowline calculation.
-	boost::optional<GPlatesMaths::FiniteRotation> rotation =
-		ReconstructUtils::get_half_stage_rotation(
-		*d_reconstruction_tree,
-		d_flowline_property_finder.get_left_plate().get(),
-		d_flowline_property_finder.get_right_plate().get());
+    if (d_flowline_property_finder.can_process_flowline())
+    {
+		process_seed_point_and_flowline(point);
+    }
+    else
+    {
+		process_seed_point_with_recon_plate_id(point);
+    }
+}
 
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_seed_point = point.get_non_null_pointer();
+void
+GPlatesAppLogic::FlowlineGeometryPopulator::process_seed_point_and_flowline(
+	const GPlatesMaths::PointOnSphere &point)
+{
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_left_seed_point =
+		FlowlineUtils::reconstruct_seed_point(
+		    point.get_non_null_pointer(),
+		    d_left_seed_point_rotations);
 
-	if (rotation)
-	{
-		reconstructed_seed_point = (*rotation) * reconstructed_seed_point;
-	}
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_right_seed_point =
+		FlowlineUtils::reconstruct_seed_point(
+		    point.get_non_null_pointer(),
+		    d_right_seed_point_rotations);
 
-#if 0
-	GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type seed_point_rfg =
-		ReconstructedFeatureGeometry::create(
-			d_reconstruction_tree,
-			reconstructed_seed_point,
-			*(current_top_level_propiter()->handle_weak_ref()),
-			*(current_top_level_propiter()));
 
-	d_reconstruction_geometry_collection.add_reconstruction_geometry(seed_point_rfg);
-#endif
+	std::vector<GPlatesMaths::PointOnSphere> left_flowline;
 
-	std::vector<GPlatesMaths::PointOnSphere> upstream_flowline;
-
-	FlowlineUtils::calculate_upstream_symmetric_flowline(
-		point,
+	FlowlineUtils::calculate_flowline(
+		reconstructed_left_seed_point,
 		d_flowline_property_finder,
-		upstream_flowline,
+		left_flowline,
 		d_reconstruction_tree,
-		d_rotations);
+		d_left_rotations);
 
-	std::vector<GPlatesMaths::PointOnSphere> downstream_flowline;
+	std::vector<GPlatesMaths::PointOnSphere> right_flowline;
 
-	FlowlineUtils::calculate_downstream_symmetric_flowline(
-		point,
+	FlowlineUtils::calculate_flowline(
+		reconstructed_right_seed_point,
 		d_flowline_property_finder,
-		downstream_flowline,
+		right_flowline,
 		d_reconstruction_tree,
-		d_rotations);
+		d_right_rotations);
+
+	// We'll calculate the left and right flowlines in the frames of the left and right plates 
+	// respectively. Afterwards we correct for the position of the left and right plates at our
+	// current time. 
+	GPlatesMaths::FiniteRotation left_correction =
+		d_reconstruction_tree->get_composed_absolute_rotation(
+		    d_flowline_property_finder.get_left_plate().get()).first;
+
+	GPlatesMaths::FiniteRotation right_correction =
+		d_reconstruction_tree->get_composed_absolute_rotation(
+		    d_flowline_property_finder.get_right_plate().get()).first;
+
+	GPlatesMaths::FiniteRotation seed_point_correction = left_correction;
+
 
 	try{
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type upstream_flowline_points = 
-			GPlatesMaths::PolylineOnSphere::create_on_heap(upstream_flowline.begin(),upstream_flowline.end());
+	    // This seed_point could equally be calculated from the right-rotations, by the way.
+	    GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point =
+		    left_correction * reconstructed_left_seed_point;
 
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type downstream_flowline_points = 
-			GPlatesMaths::PolylineOnSphere::create_on_heap(downstream_flowline.begin(),downstream_flowline.end());
+	    GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type seed_point_rfg =
+		    ReconstructedFeatureGeometry::create(
+			d_reconstruction_tree,
+			seed_point,
+			*(current_top_level_propiter()->handle_weak_ref()),
+			*(current_top_level_propiter()),
+			d_flowline_property_finder.get_reconstruction_plate_id());
 
-		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type rf_ptr =
-			ReconstructedFlowline::create(
+	    d_reconstruction_geometry_collection.add_reconstruction_geometry(seed_point_rfg);
+
+	    GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type left_flowline_points =
+		    GPlatesMaths::PolylineOnSphere::create_on_heap(left_flowline.begin(),left_flowline.end());
+
+	    left_flowline_points = left_correction * left_flowline_points;
+
+	    GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type right_flowline_points =
+		    GPlatesMaths::PolylineOnSphere::create_on_heap(right_flowline.begin(),right_flowline.end());
+
+	    right_flowline_points = right_correction * right_flowline_points;
+
+	    GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type rf_ptr =
+		    ReconstructedFlowline::create(
 			d_reconstruction_tree,
 			point.get_non_null_pointer(),
-			upstream_flowline_points,
-			downstream_flowline_points,
+			left_flowline_points,
+			right_flowline_points,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()));
 
-		d_reconstruction_geometry_collection.add_reconstruction_geometry(rf_ptr);
+	    d_reconstruction_geometry_collection.add_reconstruction_geometry(rf_ptr);
 
 	}
 	catch(...)
 	{
 		// We failed creating a flowline for whatever reason. 
+	}
+
+}
+
+void
+GPlatesAppLogic::FlowlineGeometryPopulator::process_seed_point_with_recon_plate_id(
+	const GPlatesMaths::PointOnSphere &point)
+{
+	// We end up here if no times are defined in the flowline, or if the 
+	// recon-time is outwith the flowline time periods. 
+
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point = point.get_non_null_pointer();
+
+	if (d_flowline_property_finder.get_reconstruction_plate_id())
+	{
+		seed_point = d_reconstruction_tree->get_composed_absolute_rotation(
+			    d_flowline_property_finder.get_reconstruction_plate_id().get()).first *
+			    seed_point;
+	}
+
+
+
+	try{
+
+	    GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type seed_point_rfg =
+		    ReconstructedFeatureGeometry::create(
+			d_reconstruction_tree,
+			seed_point,
+			*(current_top_level_propiter()->handle_weak_ref()),
+			*(current_top_level_propiter()),
+			d_flowline_property_finder.get_reconstruction_plate_id());
+
+	    d_reconstruction_geometry_collection.add_reconstruction_geometry(seed_point_rfg);
+
+	}
+	catch(...)
+	{
+		// We failed creating a seed_point rfg for whatever reason.
 	}
 
 }

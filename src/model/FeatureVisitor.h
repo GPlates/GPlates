@@ -57,6 +57,7 @@ namespace GPlatesPropertyValues
 	class GmlRectifiedGrid;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
+	class GpmlArray;
 	class GpmlConstantValue;
 	class GpmlFeatureReference;
 	class GpmlFeatureSnapshotReference;
@@ -188,6 +189,7 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlRectifiedGrid>::type gml_rectified_grid_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimeInstant>::type gml_time_instant_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimePeriod>::type gml_time_period_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlArray>::type gpml_array_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlConstantValue>::type gpml_constant_value_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureReference>::type gpml_feature_reference_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureSnapshotReference>::type gpml_feature_snapshot_reference_type;
@@ -450,6 +452,14 @@ namespace GPlatesModel
 		visit_gml_time_period(
 				gml_time_period_type &gml_time_period)
 		{  }
+
+
+		virtual
+		void
+		visit_gpml_array(
+				gpml_array_type &gpml_array)
+		{  }
+
 
 		virtual
 		void

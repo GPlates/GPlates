@@ -41,9 +41,11 @@
 #include "UninitialisedEditWidgetException.h"
 #include "InvalidPropertyValueException.h"
 
+#include "app-logic/ApplicationState.h"
 #include "model/ModelUtils.h"
+#include "presentation/ViewState.h"
 #include "property-values/GmlTimeInstant.h"
-#include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlArray.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
@@ -142,7 +144,7 @@ namespace
 		// Set the current cell to be a cell from the new row, so that an action widget is added to it. 
 		table.setCurrentCell(row,COLUMN_ACTION);		
 		
-		return true;
+		return row;
 	}	
 
 
@@ -297,57 +299,33 @@ namespace
 
 
 GPlatesQtWidgets::EditTimeSequenceWidget::EditTimeSequenceWidget(
+                GPlatesAppLogic::ApplicationState &app_state_,
 		QWidget *parent_):
 	AbstractEditWidget(parent_),
 	EditTableWidget(),
+        d_current_reconstruction_time(
+                app_state_.get_current_reconstruction_time()),
 	d_editing(false)
 {
-	setupUi(this);
-	// Set column widths and resizabilty.
-	EditTableActionWidget dummy(this, NULL);
-	table_times->horizontalHeader()->setResizeMode(COLUMN_TIME, QHeaderView::Stretch);
-	table_times->horizontalHeader()->setResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
-	table_times->horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width());
-	table_times->horizontalHeader()->setMovable(true);
-	// Set up a minimum row height as well, for the action widgets' sake.
-	table_times->verticalHeader()->setDefaultSectionSize(dummy.height());
+    setupUi(this);
+    // Set column widths and resizabilty.
+    EditTableActionWidget dummy(this, NULL);
+    table_times->horizontalHeader()->setResizeMode(COLUMN_TIME, QHeaderView::Stretch);
+    table_times->horizontalHeader()->setResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
+    table_times->horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width());
+    table_times->horizontalHeader()->setMovable(true);
+    // Set up a minimum row height as well, for the action widgets' sake.
+    table_times->verticalHeader()->setDefaultSectionSize(dummy.height());
 
-	button_remove->setVisible(false);
-	
-	// Clear spinboxes and things.
-	reset_widget_to_default_values();
-	
-	// FIXME: Find the right signal to look for. This one (cellActivated) kinda works,
-	// but what happens is, user changes value, user hits enter, value goes in cell,
-	// user hits enter again, cellActivated(). We need something better - but cellChanged()
-	// fires when we're populating the table...
-	
-	QObject::connect(table_times, SIGNAL(cellActivated(int, int)),
-			this, SLOT(handle_cell_changed(int, int)));
-	
-	// Signals for managing data entry focus for the "Insert single time" widgets.
-	QObject::connect(button_insert_single, SIGNAL(clicked()),
-			this, SLOT(handle_insert_single()));
-			
-	// Signals for clearing the table .
-	QObject::connect(button_remove_all, SIGNAL(clicked()),
-		this, SLOT(handle_remove_all()));	
+    //button_remove->setVisible(false);
 
-	QObject::connect(button_remove, SIGNAL(clicked()),
-		this, SLOT(handle_remove()));
-			
-	// Signals for managing data entry focus for the "Fill with times" widgets.
-	QObject::connect(button_insert_multiple, SIGNAL(clicked()),
-		this, SLOT(handle_insert_multiple()));			
-	
-	QObject::connect(table_times, SIGNAL(currentCellChanged(int,int,int,int)),
-						this, SLOT(handle_current_cell_changed(int,int,int,int)));
-						
-//	QObject::connect(table_times, SIGNAL(cellChanged(int, int)),
-//		this, SLOT(handle_cell_changed(int, int)));						
-		
-	setFocusProxy(table_times);
-	
+    // Clear spinboxes and things.
+    reset_widget_to_default_values();
+
+    setup_connections();
+    update_buttons();
+
+    setFocusProxy(table_times);
 
 }
 
@@ -356,62 +334,80 @@ void
 GPlatesQtWidgets::EditTimeSequenceWidget::reset_widget_to_default_values()
 {
 
-	d_irregular_sampling_ptr = NULL;
-	// Reset table.
-	table_times->clearContents();
-	table_times->setRowCount(0);
+    d_array_ptr = NULL;
+    // Reset table.
+    table_times->clearContents();
+    table_times->setRowCount(0);
 
-	// Reset widgets.
-	spinbox_time->setValue(0.0);
-	spinbox_from_time->setValue(100.0);
-	spinbox_to_time->setValue(0.0);
-	spinbox_step_time->setValue(10.0);
-	
-	set_clean();
+    // Reset widgets.
+    spinbox_time->setValue(0.0);
+    spinbox_from_time->setValue(100.0);
+    spinbox_to_time->setValue(0.0);
+    spinbox_step_time->setValue(10.0);
+
+    set_clean();
 }
 
 
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() const
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
+	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
 
-	GPlatesPropertyValues::TemplateTypeParameterType value_type =
-		GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double");
-	GPlatesModel::PropertyValue::non_null_ptr_type value = GPlatesPropertyValues::XsDouble::create(0.);
-	boost::intrusive_ptr<GPlatesPropertyValues::XsString> description;
+	static const GPlatesPropertyValues::TemplateTypeParameterType gml_time_period_type =
+		GPlatesPropertyValues::TemplateTypeParameterType::create_gml("TimePeriod");
 
-	for (int i = 0; i < table_times->rowCount(); ++i)
+	// Find first valid time in table, so we can store it as the "end" part of the first gpml:Array element. 
+	boost::optional<double> begin_time,end_time;
+	int count;
+
+	for (count = 0; count < table_times->rowCount(); ++count)
+	{			   
+		end_time = get_valid_time(*table_times,count,COLUMN_TIME);		
+		if (end_time)
+		{			 
+			break;
+		}
+	}		
+	++count;
+	for (int i = count; i < table_times->rowCount(); ++i)
 	{
-			boost::optional<double> time = get_valid_time(*table_times,i,COLUMN_TIME);
-			if (time)
-			{
-					GPlatesPropertyValues::GeoTimeInstant time_instant(*time);
-					GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant =
-						GPlatesModel::ModelUtils::create_gml_time_instant(time_instant);
-					GPlatesPropertyValues::GpmlTimeSample gpml_time_sample(value,gml_time_instant,description,value_type);
-					time_samples.push_back(gpml_time_sample);
-					
-			}
+		begin_time = get_valid_time(*table_times,i,COLUMN_TIME);
+		if (begin_time)
+		{
+			GPlatesPropertyValues::GeoTimeInstant end_geo_instant(*end_time);
+			GPlatesPropertyValues::GeoTimeInstant begin_geo_instant(*begin_time);
 
+			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type end_gml_instant =
+				GPlatesModel::ModelUtils::create_gml_time_instant(end_geo_instant);
+
+			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type begin_gml_instant =
+				GPlatesModel::ModelUtils::create_gml_time_instant(begin_geo_instant);	
+
+			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period =
+				GPlatesPropertyValues::GmlTimePeriod::create(begin_gml_instant,end_gml_instant);
+
+			time_periods.push_back(gml_time_period);
+
+			// Get ready for next iteration; use the current begin_time as the end_time for the next 
+			// time-period. 
+			end_time = begin_time;
+		}
 
 	}
-	return GPlatesPropertyValues::GpmlIrregularSampling::create(
-		time_samples,
-		NULL,
-		value_type);	
+	return GPlatesPropertyValues::GpmlArray::create(
+		gml_time_period_type,
+		time_periods);		
 
 }
-
 
 bool
 GPlatesQtWidgets::EditTimeSequenceWidget::update_property_value_from_widget()
 {
 
 	// Remember that the property value pointer may be NULL!
-	// FIXME: You know what? This should probably be a boost::optional of non_null_intrusive_ptr.
-	// It's late and I'm tired and there's no time for big API changes right now though.
-	if (d_irregular_sampling_ptr.get() != NULL) {
+
+	if (d_array_ptr.get() != NULL) {
 		if (is_dirty()) {
 			update_times();
 			set_clean();
@@ -425,67 +421,130 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_property_value_from_widget()
 	
 }
 
-void
-GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_sequence(
-	std::vector<double> &time_sequence)
-{
-
-}
 
 void
-GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_irregular_sampling(
-	GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
+    GPlatesPropertyValues::GpmlArray &gpml_array)
 {
-	d_irregular_sampling_ptr = &gpml_irregular_sampling;
-	std::vector<GPlatesPropertyValues::GpmlTimeSample> times = gpml_irregular_sampling.time_samples();
-	
-	std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator 
-		it = times.begin(),
-		end = times.end();
-	
 
-	table_times->clearContents();
-	table_times->setRowCount(0);
+    // Here we assume that the time periods stored in the array are adjoining,
+    // and that they are ordered youngest->oldest.
+    //
+    // We take the end() time of each time period, and add on the begin() time of
+    // the previous time period.
+    d_array_ptr = &gpml_array;
 
-#if 0	
-	ensure_table_size(*table_times, static_cast<int>(times.size()));	
-#endif	
+    static const GPlatesPropertyValues::TemplateTypeParameterType gml_time_period_type =
+            GPlatesPropertyValues::TemplateTypeParameterType::create_gml("TimePeriod");
 
-	for (int row = 0; it != end ; ++it, ++row)
+    if (gpml_array.type() != gml_time_period_type)
+    {
+        return;
+    }
+
+
+    std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator
+            it = gpml_array.members().begin(),
+            end = gpml_array.members().end();
+
+
+
+    table_times->clearContents();
+    table_times->setRowCount(0);
+
+#if 0
+    ensure_table_size(*table_times, static_cast<int>(times.size()));
+#endif
+
+    // We will use the last gml_time_period_ptr after the loop has completed so declare it now.
+    GPlatesPropertyValues::GmlTimePeriod* gml_time_period_ptr = NULL;
+
+    for (int row = 0; it != end ; ++it, ++row)
+    {
+	try
 	{
-		double time = it->valid_time()->time_position().value();
-		
-		attempt_to_populate_table_row_from_time(*this,*table_times,time);
+	    gml_time_period_ptr =
+		    dynamic_cast<GPlatesPropertyValues::GmlTimePeriod*>((*it).get());
+
+	    GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
+		    gml_time_period_ptr->end()->time_position();
+
+	    if (geo_time_instant.is_real())
+	    {
+		attempt_to_populate_table_row_from_time(*this,*table_times,geo_time_instant.value());
+	    }
 	}
+	catch(const std::bad_cast &)
+	{
 
-	set_clean();
+	}
+    }
 
-	table_times->setCurrentCell(0,0);
+    // And finish off with the begin() time of the last (oldest) time period.
+    if (gml_time_period_ptr)
+    {
+        GPlatesPropertyValues::GeoTimeInstant geo_time_instant = gml_time_period_ptr->begin()->time_position();
+        if (geo_time_instant.is_real())
+        {
+            attempt_to_populate_table_row_from_time(*this,*table_times,geo_time_instant.value());
+        }
+    }
+
+    set_clean();
+
+    table_times->setCurrentCell(0,0);
 }
+
+
 
 void
 GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
-	
-	GPlatesPropertyValues::TemplateTypeParameterType value_type =
-		GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double");
-	GPlatesModel::PropertyValue::non_null_ptr_type value = GPlatesPropertyValues::XsDouble::create(0.);
-	boost::intrusive_ptr<GPlatesPropertyValues::XsString> description;	
+	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
 
-	for (int i = 0; i < table_times->rowCount(); ++i)
-	{
-		boost::optional<double> time = get_valid_time(*table_times,i,COLUMN_TIME);
-		if (time)
-		{
-				GPlatesPropertyValues::GeoTimeInstant time_instant(*time);
-				GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant =
-					GPlatesModel::ModelUtils::create_gml_time_instant(time_instant);
-				GPlatesPropertyValues::GpmlTimeSample gpml_time_sample(value,gml_time_instant,description,value_type);
-				time_samples.push_back(gpml_time_sample);
+	static const GPlatesPropertyValues::TemplateTypeParameterType gml_time_period_type =
+		GPlatesPropertyValues::TemplateTypeParameterType::create_gml("TimePeriod");
+
+	// Find first valid time in table, so we can store it as the "end" part of the first gpml:Array element. 
+	boost::optional<double> begin_time,end_time;
+	int count;
+
+	for (count = 0; count < table_times->rowCount(); ++count)
+	{			   
+		end_time = get_valid_time(*table_times,count,COLUMN_TIME);		
+		if (end_time)
+		{			 
+			break;
 		}
-	}	
-	d_irregular_sampling_ptr->time_samples() = time_samples;
+	}		
+	for (int i = count; i < table_times->rowCount(); ++i)
+	{
+		begin_time = get_valid_time(*table_times,i,COLUMN_TIME);
+		if (begin_time)
+		{
+			GPlatesPropertyValues::GeoTimeInstant end_geo_instant(*end_time);
+			GPlatesPropertyValues::GeoTimeInstant begin_geo_instant(*begin_time);
+
+			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type end_gml_instant =
+				GPlatesModel::ModelUtils::create_gml_time_instant(end_geo_instant);
+
+			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type begin_gml_instant =
+				GPlatesModel::ModelUtils::create_gml_time_instant(begin_geo_instant);	
+
+			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period =
+				GPlatesPropertyValues::GmlTimePeriod::create(begin_gml_instant,end_gml_instant);
+
+			time_periods.push_back(gml_time_period);
+
+			// Get ready for next iteration; use the current begin_time as the end_time for the next 
+			// time-period. 
+			end_time = begin_time;
+		}
+
+	}
+
+	d_array_ptr->members() = time_periods;
+
 }
 
 void
@@ -497,6 +556,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_insert_row_above(
 		insert_blank_time_into_table(row);
 	}
 	d_editing = true;
+	update_buttons();
 }
 
 void
@@ -508,6 +568,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_insert_row_below(
 		insert_blank_time_into_table(row + 1);
 	}
 	d_editing = true;
+	update_buttons();
 }
 
 void
@@ -518,6 +579,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_delete_row(
 	if (row >= 0) {
 		delete_time_from_table(row);
 	}
+	update_buttons();
 }
 
 
@@ -530,6 +592,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_cell_changed(
 	{
 		sort_and_commit();
 	}
+	update_buttons();
 }
 
 void
@@ -559,12 +622,14 @@ void
 GPlatesQtWidgets::EditTimeSequenceWidget::insert_single(
 		double time)
 {
+
 	if (!attempt_to_populate_table_row_from_time(*this,*table_times, time))
 	{
 		return;
 	}
 
 	int row = table_times->rowCount();
+
 	// Scroll to show the user the point they just added.
 	QTableWidgetItem *table_item_to_scroll_to = table_times->item(row, 0);
 	if (table_item_to_scroll_to != NULL) {
@@ -574,7 +639,13 @@ GPlatesQtWidgets::EditTimeSequenceWidget::insert_single(
 	// recently scrolled-to row appear to be misaligned.
 	work_around_table_graphical_glitch(*this, *table_times);
 
-	sort_and_commit();
+        // Attempts to trigger a call to handle_current_cell_changed which should add in the
+        // action widget. The handle_ function gets called ok, but never seems to add the
+        // action widget to a new row....
+        //table_times->setCurrentCell(row,COLUMN_ACTION);
+        //handle_current_cell_changed(row,COLUMN_TIME,-1,COLUMN_TIME);
+
+
 	update_buttons();
 }
 
@@ -679,6 +750,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::insert_multiple()
 	{
 		insert_single(time);
 	}
+
+
 }
 
 void
@@ -700,6 +773,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_remove_all()
 
 	table_times->clearContents();
 	table_times->setRowCount(0);
+	update_buttons();
+	sort_and_commit();
 }
 
 void
@@ -707,6 +782,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_remove()
 {
 	remove_rows(table_times);
 	update_buttons();
+	sort_and_commit();
 }
 
 void
@@ -717,3 +793,85 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_buttons()
 	button_remove_all->setEnabled(table_times->rowCount()>0);
 }
 
+void
+GPlatesQtWidgets::EditTimeSequenceWidget::handle_use_main_single()
+{
+    spinbox_time->setValue(d_current_reconstruction_time);
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceWidget::handle_use_main_from()
+{
+    spinbox_from_time->setValue(d_current_reconstruction_time);
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceWidget::handle_use_main_to()
+{
+    spinbox_to_time->setValue(d_current_reconstruction_time);
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceWidget::setup_connections()
+{
+
+        // See comments in EditGeometryWidget about issues with this signal.
+        QObject::connect(table_times, SIGNAL(cellActivated(int, int)),
+                        this, SLOT(handle_cell_changed(int, int)));
+
+	// See comments in EditGeometryWidget about issues with this signal.
+	QObject::connect(table_times, SIGNAL(cellClicked(int, int)),
+			this, SLOT(handle_cell_clicked(int, int)));
+
+        // Signals for managing data entry focus for the "Insert single time" widgets.
+        QObject::connect(button_insert_single, SIGNAL(clicked()),
+                        this, SLOT(handle_insert_single()));
+
+        // Signals for clearing the table .
+        QObject::connect(button_remove_all, SIGNAL(clicked()),
+                this, SLOT(handle_remove_all()));
+
+        QObject::connect(button_remove, SIGNAL(clicked()),
+                this, SLOT(handle_remove()));
+
+        // Signals for managing data entry focus for the "Fill with times" widgets.
+        QObject::connect(button_insert_multiple, SIGNAL(clicked()),
+                this, SLOT(handle_insert_multiple()));
+
+        QObject::connect(table_times, SIGNAL(currentCellChanged(int,int,int,int)),
+                   this, SLOT(handle_current_cell_changed(int,int,int,int)));
+
+        QObject::connect(button_use_main_single,
+                         SIGNAL(clicked()),
+                         this,
+                         SLOT(handle_use_main_single()));
+
+        QObject::connect(button_use_main_from,
+                         SIGNAL(clicked()),
+                         this,
+                         SLOT(handle_use_main_from()));
+
+        QObject::connect(button_use_main_to,
+                         SIGNAL(clicked()),
+                         this,
+                         SLOT(handle_use_main_to()));
+
+	QObject::connect(spinbox_time,
+			 SIGNAL(editingFinished()),
+			 this,
+			 SLOT(handle_single_time_entered()));
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceWidget::handle_cell_clicked(
+    int row, int column)
+{
+    //table_times->setCurrentCell(row,column);
+    update_buttons();
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceWidget::handle_single_time_entered()
+{
+    handle_insert_single();
+}

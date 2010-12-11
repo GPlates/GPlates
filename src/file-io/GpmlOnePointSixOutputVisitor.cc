@@ -59,6 +59,7 @@
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlArray.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFeatureReference.h"
 #include "property-values/GpmlFeatureSnapshotReference.h"
@@ -1575,4 +1576,27 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_key_value_dictionary_ele
 			element.value()->accept_visitor(*this);
 		d_output.writeEndElement();
 	d_output.writeEndElement();
+}
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_array(
+		const GPlatesPropertyValues::GpmlArray &gpml_array)
+{
+
+	d_output.writeStartGpmlElement("Array");
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_array.type());
+		d_output.writeEndElement();
+	
+	//d_output.writeStartGpmlElement("members");
+		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator 
+			iter = gpml_array.members().begin(),
+			end = gpml_array.members().end();
+		for ( ; iter != end; ++iter) {
+			d_output.writeStartGpmlElement("member");
+				(*iter)->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+	d_output.writeEndElement();
+
 }

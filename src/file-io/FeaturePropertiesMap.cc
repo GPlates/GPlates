@@ -931,9 +931,8 @@ namespace
 		map[ PropertyName::create_gpml("seedPoints") ] = 
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);	
 
-		// FIXME: This should be an array of time instants. 
 		map[ PropertyName::create_gpml("times") ] =
-			GET_PROP_VAL_NAME(create_irregular_sampling);			
+			GET_PROP_VAL_NAME(create_array);			
 
 		map[ PropertyName::create_gpml("reconstructionMethod") ] = 
 			GET_PROP_VAL_NAME(create_reconstruction_method_enumeration);
@@ -946,7 +945,7 @@ namespace
 	}
 
 	const PropertyCreationUtils::PropertyCreatorMap
-	get_motion_track_properties()
+	get_motion_path_properties()
 	{
 
 		// FIXME: Should this be a reconstructable feature?
@@ -957,7 +956,7 @@ namespace
 
 		// FIXME: This should be an array of time instants. 
 		map[ PropertyName::create_gpml("times") ] =
-			GET_PROP_VAL_NAME(create_irregular_sampling);			
+			GET_PROP_VAL_NAME(create_array);			
 
 		map[ PropertyName::create_gpml("reconstructionMethod") ] = 
 			GET_PROP_VAL_NAME(create_reconstruction_method_enumeration);
@@ -1008,8 +1007,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_mesh_node_properties();
 	d_map[ FeatureType::create_gpml("Flowline")] =
 		get_flowline_properties();
-	d_map[ FeatureType::create_gpml("MotionTrack")] =
-		get_motion_track_properties();
+	d_map[ FeatureType::create_gpml("MotionPath")] =
+		get_motion_path_properties();
 
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =

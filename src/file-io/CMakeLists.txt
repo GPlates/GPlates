@@ -50,8 +50,8 @@ set(srcs
     GMTFormatGeometryExporter.h
     GMTFormatHeader.cc
     GMTFormatHeader.h
-    GMTFormatMotionTrackExport.cc
-    GMTFormatMotionTrackExport.h
+    GMTFormatMotionPathExport.cc
+    GMTFormatMotionPathExport.h
     GMTFormatReconstructedFeatureGeometryExport.cc
     GMTFormatReconstructedFeatureGeometryExport.h
     GMTFormatWriter.cc
@@ -107,16 +107,16 @@ set(srcs
     ReconstructedFlowlineExport.h
     ReconstructedFlowlineExportImpl.cc
     ReconstructedFlowlineExportImpl.h
-    ReconstructedMotionTrackExport.cc
-    ReconstructedMotionTrackExport.h
-    ReconstructedMotionTrackExportImpl.cc
-    ReconstructedMotionTrackExportImpl.h
+    ReconstructedMotionPathExport.cc
+    ReconstructedMotionPathExport.h
+    ReconstructedMotionPathExportImpl.cc
+    ReconstructedMotionPathExportImpl.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
     ShapefileFormatFlowlineExport.cc
     ShapefileFormatFlowlineExport.h
-    ShapefileFormatMotionTrackExport.cc
-    ShapefileFormatMotionTrackExport.h
+    ShapefileFormatMotionPathExport.cc
+    ShapefileFormatMotionPathExport.h
     ShapefileFormatReconstructedFeatureGeometryExport.cc
     ShapefileFormatReconstructedFeatureGeometryExport.h
     ShapefileGeometryExporter.cc

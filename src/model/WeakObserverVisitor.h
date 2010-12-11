@@ -35,7 +35,7 @@ namespace GPlatesAppLogic
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
-	class ReconstructedMotionTrack;
+	class ReconstructedMotionPath;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedTopologicalBoundary;
@@ -178,8 +178,8 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
-		visit_reconstructed_motion_track(
-				GPlatesAppLogic::ReconstructedMotionTrack &rmt)
+		visit_reconstructed_motion_path(
+				GPlatesAppLogic::ReconstructedMotionPath &rmp)
 		{  }
 
 		/**

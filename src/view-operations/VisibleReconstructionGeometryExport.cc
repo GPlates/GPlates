@@ -33,7 +33,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/ReconstructedFlowlineExport.h"
-#include "file-io/ReconstructedMotionTrackExport.h"
+#include "file-io/ReconstructedMotionPathExport.h"
 
 namespace
 {
@@ -46,8 +46,8 @@ namespace
 			reconstructed_flowline_seq_type;
 
 	//! Convenience typedef for sequence of reconstructed motion track geometries.
-	typedef GPlatesFileIO::ReconstructedMotionTrackExport::reconstructed_motion_track_seq_type
-			reconstructed_motion_track_seq_type;
+	typedef GPlatesFileIO::ReconstructedMotionPathExport::reconstructed_motion_path_seq_type
+			reconstructed_motion_path_seq_type;
 }
 
 
@@ -115,7 +115,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 }
 
 void
-GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstruced_motion_tracks(
+GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstruced_motion_paths(
 	const QString &filename,
 	const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 	const files_collection_type &active_files,
@@ -129,17 +129,17 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 		reconstruction_geom_seq,
 		rendered_geom_collection);
 
-	// Get any ReconstructionGeometry objects that are of type ReconstructedFlowline.
-	reconstructed_motion_track_seq_type reconstructed_motion_track_seq;
+	// Get any ReconstructionGeometry objects that are of type ReconstructedMotionPath.
+	reconstructed_motion_path_seq_type reconstructed_motion_path_seq;
 	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 		reconstruction_geom_seq.begin(),
 		reconstruction_geom_seq.end(),
-		reconstructed_motion_track_seq);
+		reconstructed_motion_path_seq);
 
 	// Export the flowlines to a file format based on the filename extension.
-	GPlatesFileIO::ReconstructedMotionTrackExport::export_reconstructed_motion_tracks(
+	GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 		filename,
-		reconstructed_motion_track_seq,
+		reconstructed_motion_path_seq,
 		active_files,
 		reconstruction_anchor_plate_id,
 		reconstruction_time);

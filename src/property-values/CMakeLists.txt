@@ -43,6 +43,8 @@ set(srcs
     GmlTimeInstant.h
     GmlTimePeriod.cc
     GmlTimePeriod.h
+    GpmlArray.cc
+    GpmlArray.h
     GpmlConstantValue.cc
     GpmlConstantValue.h
     GpmlFeatureReference.cc

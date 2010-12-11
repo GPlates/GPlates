@@ -51,7 +51,7 @@ namespace GPlatesPropertyValues
 	class GmlPolygon;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
-	class GpmlIrregularSampling; // FIXME: remove when array used for time sequence. 
+	class GpmlArray; 
 	class GpmlKeyValueDictionary;
 	class GpmlMeasure;
 	class GpmlOldPlatesHeader;
@@ -372,7 +372,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		activate_edit_time_sequence_widget(
-				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+				GPlatesPropertyValues::GpmlArray &gpml_array);
 
 		/**
 		 * Accessor for the EditGeometryWidget, to support the extra functionality

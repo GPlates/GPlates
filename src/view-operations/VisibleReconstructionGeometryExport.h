@@ -86,7 +86,7 @@ namespace GPlatesViewOperations
 
 
 		/**
-		 * Collects visible @a ReconstructedMotionTrack objects that are displayed
+		 * Collects visible @a ReconstructedMotionPath objects that are displayed
 		 * using @a rendered_geom_collection and exports to a file depending on the
 		 * file extension of @a filename.
 		 *
@@ -98,7 +98,7 @@ namespace GPlatesViewOperations
 		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
-		export_visible_reconstruced_motion_tracks(
+		export_visible_reconstruced_motion_paths(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const files_collection_type &active_files,

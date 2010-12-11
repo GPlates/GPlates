@@ -54,6 +54,7 @@
 #include "property-values/GmlRectifiedGrid.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlArray.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
 #include "property-values/GpmlInterpolationFunction.h"
@@ -505,6 +506,17 @@ namespace GPlatesFileIO
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
 
 		AS_PROP_VAL(create_raster_band_names)
+
+		GPlatesPropertyValues::GpmlArray::non_null_ptr_type
+                create_array(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+#if 0
+		GPlatesPropertyValues::GpmlArray::non_null_ptr_type
+                create_array_member(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+#endif
+                AS_PROP_VAL(create_array)
+
 	}
 }
 

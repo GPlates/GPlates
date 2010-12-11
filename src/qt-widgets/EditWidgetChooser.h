@@ -131,15 +131,21 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
-		visit_gpml_constant_value(
-				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+		visit_gpml_array(
+				GPlatesPropertyValues::GpmlArray &gpml_array);
 
 
 		virtual
 		void
+		visit_gpml_constant_value(
+				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+
+#if 0
+		virtual
+		void
 		visit_gpml_irregular_sampling(
 			GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
-
+#endif
 
 		virtual
 		void

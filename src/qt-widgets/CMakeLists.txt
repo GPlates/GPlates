@@ -225,9 +225,9 @@ set(srcs
     ModifyReconstructionPoleWidget.cc
     ModifyReconstructionPoleWidget.h
     ModifyReconstructionPoleWidgetUi.ui
-    MotionTrackPropertiesWidget.cc
-    MotionTrackPropertiesWidget.h
-    MotionTrackPropertiesWidgetUi.ui
+    MotionPathPropertiesWidget.cc
+    MotionPathPropertiesWidget.h
+    MotionPathPropertiesWidgetUi.ui
     NoActiveEditWidgetException.h
     OpenDirectoryDialog.cc
     OpenDirectoryDialog.h

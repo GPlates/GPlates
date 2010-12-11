@@ -46,7 +46,9 @@
 
 #include "EditWidgetChooser.h"
 #include "NoActiveEditWidgetException.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+#include "presentation/ViewState.h"
 #include "property-values/GpmlPlateId.h"
 
 
@@ -96,7 +98,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	d_edit_string_widget_ptr(new EditStringWidget(this)),
 	d_edit_boolean_widget_ptr(new EditBooleanWidget(this)),
 	d_edit_shapefile_attributes_widget_ptr(new EditShapefileAttributesWidget(this)),
-	d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(this)),
+        d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(
+                view_state_.get_application_state(), this)),
 	d_edit_verb(tr("Edit"))
 {
 	// We stay invisible unless we are called on for a specific widget.
@@ -577,11 +580,11 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_shapefile_attributes_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_sequence_widget(
-	GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+	GPlatesPropertyValues::GpmlArray &gpml_array)
 {
 	setTitle(tr("%1 Time Sequence").arg(d_edit_verb));
 	show();
-	d_edit_time_sequence_widget_ptr->update_widget_from_irregular_sampling(gpml_irregular_sampling);
+	d_edit_time_sequence_widget_ptr->update_widget_from_time_period_array(gpml_array);
 	d_active_widget_ptr = d_edit_time_sequence_widget_ptr;
 	d_edit_time_sequence_widget_ptr->show();
 }

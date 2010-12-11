@@ -5,7 +5,7 @@
 * $Revision: 8461 $
 * $Date: 2010-05-20 16:18:01 +0200 (to, 20 mai 2010) $ 
 * 
-* Copyright (C) 2009 Geological Survey of Norway
+* Copyright (C) 2009, 2010 Geological Survey of Norway
 *
 * This file is part of GPlates.
 *
@@ -39,6 +39,7 @@ namespace GPlatesAppLogic
 
 namespace GPlatesQtWidgets
 {
+        class CreateFeatureDialog;
 	class EditTimeSequenceWidget;
 
 	class FlowlinePropertiesWidget:
@@ -50,12 +51,11 @@ namespace GPlatesQtWidgets
 		explicit
 		FlowlinePropertiesWidget(
 			GPlatesAppLogic::ApplicationState *application_state_ptr,
+                        CreateFeatureDialog *create_feature_dialog_ptr,
 			QWidget *parent_ = NULL);
 			
 		~FlowlinePropertiesWidget()
-		{
-			qDebug() << "Deleting FlowlinePropertiesWidget";
-		}	
+		{}	
 		
 		virtual
 		void
@@ -65,16 +65,17 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		add_geometry_properties_to_feature(
-			GPlatesModel::PropertyValue::non_null_ptr_type geometry_property,
-			GPlatesModel::FeatureHandle::weak_ref feature_handle);	
+                        GPlatesModel::FeatureHandle::weak_ref feature_handle);
 					
 		void
 		update();
-		
-	private	slots:
 
-		void
-		handle_checkbox_status_changed();
+                virtual
+                GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+                do_geometry_tasks(
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+			const GPlatesModel::FeatureHandle::weak_ref &feature_handle);
+		
 		
 	private:
 		
@@ -87,7 +88,12 @@ namespace GPlatesQtWidgets
 		 * Custom edit widget used for time sequence. 
 		 */
 		EditTimeSequenceWidget *d_time_sequence_widget;
-		
+
+
+                /**
+                 * Create feature dialog,for grabbing common properties.
+                 */
+                CreateFeatureDialog *d_create_feature_dialog_ptr;
 		
 	};
 }

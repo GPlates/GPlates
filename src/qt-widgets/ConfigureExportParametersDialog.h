@@ -75,7 +75,7 @@ namespace GPlatesQtWidgets
 			ROTATION_PARAMS,
 			RASTER,
 			FLOWLINES,
-			MOTION_TRACKS,
+			MOTION_PATHS,
 			INVALID_NAME=999
 		};
 

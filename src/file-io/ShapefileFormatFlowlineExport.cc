@@ -256,8 +256,8 @@ GPlatesFileIO::ShapefileFormatFlowlineExport::export_flowlines(
 					rf->seed_point(),
 					should_export_referenced_files);
 
-			exporter.export_geometry(rf->upstream_flowline_points(),kvd);
-			exporter.export_geometry(rf->downstream_flowline_points(),kvd);
+			exporter.export_geometry(rf->left_flowline_points(),kvd);
+			exporter.export_geometry(rf->right_flowline_points(),kvd);
 
 		}
 	}	

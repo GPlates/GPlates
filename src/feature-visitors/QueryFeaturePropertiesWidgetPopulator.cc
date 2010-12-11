@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -45,6 +46,7 @@
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/Enumeration.h"
+#include "property-values/GpmlArray.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
@@ -780,4 +782,29 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_multipoint_
 		point_string.append(lon);
 
 		add_child(d_tree_widget_builder, item_handle, pos, point_string);
+}
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_array(
+		const GPlatesPropertyValues::GpmlArray &gpml_array)
+{
+	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
+	// when the item is attached to the QTreeWidget otherwise it will have no effect.
+	add_function_to_current_item(d_tree_widget_builder,
+		boost::bind(
+		&QTreeWidgetItem::setExpanded,
+		_1, // will be the QTreeWidgetItem we're attaching this function to
+		true));
+
+	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
+		add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:members"));
+	d_tree_widget_builder.push_current_item(item_handle);
+
+	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator 
+		iter = gpml_array.members().begin(),
+		end = gpml_array.members().end();
+	for ( ; iter != end; ++iter) {
+		(*iter)->accept_visitor(*this);
+	}
+	d_tree_widget_builder.pop_current_item();
 }

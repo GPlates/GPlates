@@ -28,16 +28,21 @@
 
 #include <boost/optional.hpp>
 #include <boost/intrusive_ptr.hpp>
+
 #include "AbstractEditWidget.h"
 #include "EditTableWidget.h"
-#include "property-values/GmlLineString.h"
-#include "property-values/GmlMultiPoint.h"
-#include "property-values/GmlPoint.h"
-#include "property-values/GmlPolygon.h"
-#include "property-values/GpmlIrregularSampling.h"
+
 #include "model/types.h"
+#include "property-values/GpmlArray.h"
+#include "property-values/GpmlIrregularSampling.h"
+
 
 #include "EditTimeSequenceWidgetUi.h"
+
+namespace GPlatesAppLogic
+{
+    class ApplicationState;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -54,19 +59,16 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		EditTimeSequenceWidget(
-				QWidget *parent_ = NULL);
+			GPlatesAppLogic::ApplicationState &app_state_,
+			QWidget *parent_ = NULL);
 		
 		virtual
 		void
 		reset_widget_to_default_values();
 		
 		void
-		update_widget_from_time_sequence(
-				std::vector<double> &time_sequence);
-				
-		void
-		update_widget_from_irregular_sampling(
-				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+		update_widget_from_time_period_array(
+			GPlatesPropertyValues::GpmlArray &gpml_array);
 
 		virtual
 		GPlatesModel::PropertyValue::non_null_ptr_type
@@ -116,6 +118,13 @@ namespace GPlatesQtWidgets
 		
 		
 		/**
+		 * Fired when a cell has been clicked.
+		 *
+		 */
+		void
+		handle_cell_clicked(int row, int column);
+
+		/**
 		 * Fired when Fill-with-times widget's Fill button has been clicked.                                                                   
 		 */
 		
@@ -131,6 +140,7 @@ namespace GPlatesQtWidgets
 			insert_single(spinbox_time->value());
 			spinbox_time->setFocus();
 			spinbox_time->selectAll();
+			sort_and_commit();
 		}
 
 		void
@@ -139,6 +149,7 @@ namespace GPlatesQtWidgets
 			insert_multiple();
 			spinbox_from_time->setFocus();
 			spinbox_from_time->selectAll();
+			sort_and_commit();
 		};
 
 		/**
@@ -150,6 +161,31 @@ namespace GPlatesQtWidgets
 				
 		void
 		handle_cell_activated(int row, int column);
+
+		/**
+		 * Use main window time for the insert-single-time time-value
+		 */
+		void
+		handle_use_main_single();
+
+		/**
+		 * Use main window time for the insert-multiple-times from-value
+		 */
+		void
+		handle_use_main_from();
+
+		/**
+		 * Use main window time for the insert-multiple-times to-value
+		 */
+		void
+		handle_use_main_to();
+
+		/**
+		 * Listen for the time spinbox having had a value entered. We
+		 * can use this to auto-fill the table.
+		 */
+		void
+		handle_single_time_entered();
 		
 	private:
 		
@@ -191,6 +227,9 @@ namespace GPlatesQtWidgets
 
 		void
 		update_buttons();
+
+        void
+		setup_connections();
 		
 		/**
 		 * This boost::intrusive_ptr is used to remember the property value which
@@ -205,9 +244,12 @@ namespace GPlatesQtWidgets
 		 * The pointer will also be NULL when the edit widget is being used for
 		 * adding brand new properties to the model.
 		 */
-		boost::intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling> d_irregular_sampling_ptr;
+
+         boost::intrusive_ptr<GPlatesPropertyValues::GpmlArray> d_array_ptr;
 		
-		bool d_editing;
+		 double d_current_reconstruction_time;
+
+		 bool d_editing;
 
 	};
 }

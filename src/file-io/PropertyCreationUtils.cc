@@ -185,7 +185,7 @@ namespace
 			CollectionOfT &destination)
 	{
 		GPlatesModel::XmlElementNode::named_child_const_iterator 
-			iter = elem->get_next_child_by_name(prop_name, elem->children_begin());
+                        iter = elem->get_next_child_by_name(prop_name, elem->children_begin());
 
 		while (iter.first != elem->children_end()) {
 			GPlatesModel::XmlElementNode::non_null_ptr_type target = *iter.second;
@@ -233,17 +233,9 @@ namespace
 
 		boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> 
 			target = elem->get_child_by_name(prop_name);
-#if 0
-		if ( ! (target && (*target)->attributes_empty() 
-				&& ((*target)->number_of_children() == 1))) {
-			// Can't find target value!
-			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::BadOrMissingTargetForValueType,
-					EXCEPTION_SOURCE);
-		}
-#endif
+
 
 		// Allow any number of children for string-types.
-
 		static const GPlatesPropertyValues::TemplateTypeParameterType string_type =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string");
 
@@ -259,6 +251,40 @@ namespace
 
 		return (*iter->second)(*target);
 	}
+
+
+	void
+	find_and_create_one_or_more_from_type(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		const GPlatesPropertyValues::TemplateTypeParameterType &type,
+		const GPlatesModel::PropertyName &prop_name,
+		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members)
+	{
+		GPlatesFileIO::StructurePropertyCreatorMap *map =
+			GPlatesFileIO::StructurePropertyCreatorMap::instance();
+		GPlatesFileIO::StructurePropertyCreatorMap::iterator map_iter = map->find(type);
+
+		if (map_iter == map->end()) {
+			// We can't create the given type!
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::UnknownValueType,
+				EXCEPTION_SOURCE);
+		}
+
+		GPlatesModel::XmlElementNode::named_child_const_iterator
+			iter = elem->get_next_child_by_name(prop_name, elem->children_begin());
+
+		while (iter.first != elem->children_end()) {
+			GPlatesModel::XmlElementNode::non_null_ptr_type target = *iter.second;
+
+			//May need to check for attributes and number of children before adding to vector.
+			members.push_back((*map_iter->second)(target));  // creation_fn can throw.
+
+			// Increment iter:
+			iter = elem->get_next_child_by_name(prop_name, ++iter.first);
+		}
+
+	}
+
 
 
 	class TextExtractionVisitor
@@ -2153,7 +2179,6 @@ GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary(
 
 	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements;
 	find_and_create_one_or_more(elem, &create_key_value_dictionary_element, ELEMENT, elements);
-//	find_and_create_one(elem, &create_key_value_dictionary_element, ELEMENTS, elements);
 	return GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements);
 }
 
@@ -2286,7 +2311,7 @@ GPlatesFileIO::PropertyCreationUtils::create_raster_band_names(
 		get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	std::vector<XsString::non_null_ptr_type> band_names;
-	find_and_create_zero_or_more(elem, &create_xs_string, BAND_NAME, band_names);
+        find_and_create_zero_or_more(elem, &create_xs_string, BAND_NAME, band_names);
 
 	// Check for uniqueness of band names.
 	std::set<UnicodeString> band_name_set;
@@ -2300,5 +2325,49 @@ GPlatesFileIO::PropertyCreationUtils::create_raster_band_names(
 	}
 
 	return GpmlRasterBandNames::create(band_names.begin(), band_names.end());
+}
+
+#if 0
+GPlatesPropertyValues::GpmlArrayMember
+GPlatesFileIO::PropertyCreationUtils::create_array_member(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("ArrayMember"),
+		VALUE_TYPE = GPlatesModel::PropertyName::create_gpml("valueType"),
+		VALUE = GPlatesModel::PropertyName::create_gpml("value");
+
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type 
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	GPlatesPropertyValues::TemplateTypeParameterType
+		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+	GPlatesModel::PropertyValue::non_null_ptr_type 
+		value = find_and_create_from_type(elem, type, VALUE);
+
+	return GPlatesPropertyValues::GpmlArrayMember(value, type);
+}
+#endif
+
+GPlatesPropertyValues::GpmlArray::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_array(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("Array"),
+		VALUE_TYPE = GPlatesModel::PropertyName::create_gpml("valueType"),
+		MEMBER = GPlatesModel::PropertyName::create_gpml("member");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type 
+		mem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	GPlatesPropertyValues::TemplateTypeParameterType
+		type = find_and_create_one(mem, &create_template_type_parameter_type, VALUE_TYPE);
+
+	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> members;
+	find_and_create_one_or_more_from_type(mem, type, MEMBER, members);
+
+	return GPlatesPropertyValues::GpmlArray::create(type,members);
 }
 

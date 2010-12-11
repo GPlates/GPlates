@@ -27,6 +27,8 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTUTILS_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTUTILS_H
 
+#include <QDebug>
+
 #include <utility>
 #include <vector>
 #include <boost/noncopyable.hpp>
@@ -47,6 +49,12 @@ namespace GPlatesAppLogic
 {
 	namespace ReconstructUtils
 	{
+
+        void
+        display_rotation(
+            const GPlatesMaths::FiniteRotation &rotation);
+
+
 		/**
 		 * Returns true if @a feature_ref is a reconstruction feature.
 		 *
@@ -222,7 +230,7 @@ namespace GPlatesAppLogic
 		 * @a reconstruction_tree_ptr_2
 		 */
 		GPlatesMaths::FiniteRotation
-			get_stage_pole(
+                get_stage_pole(
 			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree_ptr_1, 
 			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree_ptr_2, 
 			const GPlatesModel::integer_plate_id_type &moving_plate_id, 
@@ -289,6 +297,8 @@ namespace GPlatesAppLogic
 		}
 
 	}
+
+
 
 }
 

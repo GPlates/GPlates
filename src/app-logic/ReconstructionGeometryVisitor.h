@@ -59,7 +59,7 @@ namespace GPlatesAppLogic
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
-	class ReconstructedMotionTrack;
+	class ReconstructedMotionPath;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedTopologicalBoundary;
@@ -99,10 +99,10 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ReconstructedFlowline>::type
 						reconstructed_flowline_type;
 
-		//! Typedef for @a ReconstructedMotionTrack of appropriate const-ness.
+		//! Typedef for @a ReconstructedMotionPath of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
-				ReconstructionGeometryType, ReconstructedMotionTrack>::type
-						reconstructed_motion_track_type;
+				ReconstructionGeometryType, ReconstructedMotionPath>::type
+						reconstructed_motion_path_type;
 
 		//! Typedef for @a ReconstructedFeatureGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -176,7 +176,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_track_type> &rmt)
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
 		{  }
 
 
