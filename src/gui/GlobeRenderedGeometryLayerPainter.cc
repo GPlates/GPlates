@@ -204,8 +204,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type primitives_off_the_sphere_node =
 			GPlatesOpenGL::GLRenderGraphInternalNode::create();
 
-	// Only setting for non-raster primitives - the raster primitives will handle their own state.
+	// Only setting for non-raster primitives.
 	set_state_for_non_raster_primitives_on_the_sphere(*non_raster_primitives_on_the_sphere_node);
+
+	// Only setting for raster primitives.
+	set_state_for_raster_primitives_on_the_sphere(*raster_primitives_on_the_sphere_node);
 
 	set_state_for_primitives_off_the_sphere(*primitives_off_the_sphere_node);
 
@@ -969,6 +972,39 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_non_raster_primitiv
 
 	render_graph_node.set_state_set(state_set);
 }
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_raster_primitives_on_the_sphere(
+		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node)
+{
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
+	//
+	// Note that we set the depth testing/writing state here rather than inside the
+	// raster rendering machinery because here we know we are rendering to the scene
+	// and hence have a depth buffer attachment to the main framebuffer.
+	// In the raster rendering code there are certain paths that use render targets which
+	// currently don't have a depth buffer attachment (because it's not needed) and
+	// hence enabling depth testing in these paths can give corrupt results.
+	//
+
+	// Turn on depth testing.
+	GPlatesOpenGL::GLDepthTestState::non_null_ptr_type depth_test_state_set =
+			GPlatesOpenGL::GLDepthTestState::create();
+	depth_test_state_set->gl_enable(GL_TRUE);
+	state_set->add_state_set(depth_test_state_set);
+
+	// Turn off depth writes.
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type depth_mask_state_set =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	depth_mask_state_set->gl_depth_mask(GL_FALSE);
+	state_set->add_state_set(depth_mask_state_set);
+
+	render_graph_node.set_state_set(state_set);
+}
+
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_text_off_the_sphere(

@@ -367,6 +367,10 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
 
 		void
+		set_state_for_raster_primitives_on_the_sphere(
+				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+
+		void
 		set_state_for_text_off_the_sphere(
 				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
 
