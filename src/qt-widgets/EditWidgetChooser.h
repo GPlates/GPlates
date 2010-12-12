@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -171,6 +171,11 @@ namespace GPlatesQtWidgets
 		void
 		visit_gpml_old_plates_header(
 				GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
+
+		virtual
+		void
+		visit_gpml_string_list(
+				GPlatesPropertyValues::GpmlStringList &gpml_string_list);
 
 		virtual
 		void

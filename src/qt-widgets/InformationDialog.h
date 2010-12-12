@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_INFORMATIONDIALOG_H
 #define GPLATES_QTWIDGETS_INFORMATIONDIALOG_H
 
+#include <QDialog>
 #include "InformationDialogUi.h"
 
 namespace GPlatesQtWidgets

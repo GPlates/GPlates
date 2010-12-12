@@ -80,6 +80,8 @@ set(srcs
     GpmlRasterBandNames.h
     GpmlRevisionId.cc
     GpmlRevisionId.h
+    GpmlStringList.cc
+    GpmlStringList.h
     GpmlTimeSample.cc
     GpmlTimeSample.h
     GpmlTimeWindow.cc

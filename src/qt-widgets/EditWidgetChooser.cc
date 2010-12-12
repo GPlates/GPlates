@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -42,6 +42,7 @@
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlOldPlatesHeader.h"
+#include "property-values/GpmlStringList.h"
 #include "property-values/Enumeration.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -221,6 +222,14 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_old_plates_header(
 		GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
 	d_edit_widget_group_box_ptr->activate_edit_old_plates_header_widget(gpml_old_plates_header);
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gpml_string_list(
+		GPlatesPropertyValues::GpmlStringList &gpml_string_list)
+{
+	d_edit_widget_group_box_ptr->activate_edit_string_list_widget(gpml_string_list);
 }
 
 

@@ -2,10 +2,12 @@
 
 /**
 * \file 
+* Contains definition of class EditTableWidget.
+*
 * $Revision: 6415 $
 * $Date: 2009-08-06 15:25:03 +0200 (to, 06 aug 2009) $ 
 * 
-* Copyright (C) 2009 Geological Survey of Norway
+* Copyright (C) 2009, 2010 Geological Survey of Norway
 *
 * This file is part of GPlates.
 *
@@ -26,15 +28,15 @@
 #ifndef GPLATES_QTWIDGETS_EDITTABLEWIDGET_H
 #define GPLATES_QTWIDGETS_EDITTABLEWIDGET_H
 
-/**
- *  An abstract base class for classes which will make use of the EditTableActionWidget.                                                                     
- */
 namespace GPlatesQtWidgets
 {
 	class EditTableActionWidget;
 	
-	class EditTableWidget{
-		
+	/**
+	 * An abstract base class for classes which will make use of the EditTableActionWidget.
+	 */
+	class EditTableWidget
+	{
 	public:
 
 		virtual

@@ -61,6 +61,8 @@ set(srcs
     StringSet.h
     StringUtils.h
     TypeTraits.h
+    UnicodeString.cc
+    UnicodeString.h
     UnicodeStringUtils.cc
     UnicodeStringUtils.h
     UniqueId.cc

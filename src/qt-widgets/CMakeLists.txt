@@ -134,6 +134,9 @@ set(srcs
     EditStringWidget.cc
     EditStringWidget.h
     EditStringWidgetUi.ui
+    EditStringListWidget.cc
+    EditStringListWidget.h
+    EditStringListWidgetUi.ui
     EditTableActionWidget.cc
     EditTableActionWidget.h
     EditTableActionWidgetUi.ui

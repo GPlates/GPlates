@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of class EditWidgetGroupBox.
  *
  * Most recent change:
  *   $Date$
@@ -57,6 +57,7 @@ namespace GPlatesPropertyValues
 	class GpmlOldPlatesHeader;
 	class GpmlPlateId;
 	class GpmlPolarityChronId;
+	class GpmlStringList;
 	class XsBoolean;
 	class XsDouble;
 	class XsInteger;
@@ -75,6 +76,7 @@ namespace GPlatesQtWidgets
 	class EditPlateIdWidget;
 	class EditPolarityChronIdWidget;
 	class EditShapefileAttributesWidget;
+	class EditStringListWidget;
 	class EditStringWidget;
 	class EditTimeInstantWidget;
 	class EditTimePeriodWidget;
@@ -350,6 +352,13 @@ namespace GPlatesQtWidgets
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
+		activate_edit_string_list_widget(
+				GPlatesPropertyValues::GpmlStringList &gpml_string_list);
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 */
+		void
 		activate_edit_string_widget(
 				GPlatesPropertyValues::XsString &xs_string);
 
@@ -450,6 +459,7 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::EditPlateIdWidget *d_edit_plate_id_widget_ptr;
 		GPlatesQtWidgets::EditPolarityChronIdWidget *d_edit_polarity_chron_id_widget_ptr;
 		GPlatesQtWidgets::EditAngleWidget *d_edit_angle_widget_ptr;
+		GPlatesQtWidgets::EditStringListWidget *d_edit_string_list_widget_ptr;
 		GPlatesQtWidgets::EditStringWidget *d_edit_string_widget_ptr;
 		GPlatesQtWidgets::EditBooleanWidget *d_edit_boolean_widget_ptr;
 		GPlatesQtWidgets::EditShapefileAttributesWidget *d_edit_shapefile_attributes_widget_ptr;

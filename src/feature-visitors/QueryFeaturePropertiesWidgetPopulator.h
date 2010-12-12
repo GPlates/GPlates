@@ -164,6 +164,11 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_gpml_string_list(
+				const GPlatesPropertyValues::GpmlStringList &gpml_string_list);
+
+		virtual
+		void
 		visit_xs_boolean(
 				const GPlatesPropertyValues::XsBoolean &xs_boolean);
 

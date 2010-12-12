@@ -2,7 +2,7 @@
 
 /**
  * \file
- * File specific comments.
+ * Contains functions to convert between UnicodeString instances and QString instances.
  *
  * Most recent change:
  *   $Date$
@@ -35,28 +35,30 @@
 
 #include "global/unicode.h"
 
-#ifndef GPLATES_ICU_BOOL
-#define GPLATES_ICU_BOOL(b) ((b) != 0)
-#endif
 
 namespace GPlatesUtils
 {
 	/**
 	 * Make a QString from an ICU UnicodeString.
-	 *
-	 * This won't be super-fast:  It will require memory allocation for the internals of the
-	 * QString and O(n) iteration through the characters in the UnicodeString.
 	 */
+	inline
 	const QString
 	make_qstring_from_icu_string(
-			const UnicodeString &icu_string);
+			const UnicodeString &icu_string)
+	{
+		return icu_string.qstring();
+	}
 
 	/**
 	 * Make a std::string from an ICU UnicodeString.
 	 */
+	inline
 	const std::string
 	make_std_string_from_icu_string(
-			const UnicodeString &icu_string);
+			const UnicodeString &icu_string)
+	{
+		return icu_string.qstring().toStdString();
+	}
 
 	/**
 	 * Make a QString from a Unicode string container in the Model.
@@ -79,35 +81,14 @@ namespace GPlatesUtils
 	/**
 	 * Make a ICU UnicodeString from a QString.
 	 */
+	inline
 	const UnicodeString
 	make_icu_string_from_qstring(
-			const QString &qstring);
-
-}
-
-
-namespace std
-{
-	/**
-	 * Template specialisation std::less<UnicodeString> to support std::map, etc.
-	 * This is because on Visual Studio we get the following error:
-	 *   "warning C4800: 'UBool' : forcing value to bool 'true' or 'false' (performance warning)"
-	 * and since warnings are treated as errors we get failed compilation.
-	 * This is because "operator<" for UnicodeString returns UBool.
-	 */
-	template<>
-	struct less<UnicodeString>
-		: public binary_function<UnicodeString, UnicodeString, bool>
+			const QString &qstring)
 	{
-		bool
-		operator()(
-				const UnicodeString &lhs,
-				const UnicodeString &rhs) const
-		{
-			// Solution is to explicitly compare returned UBool with zero.
-			return GPLATES_ICU_BOOL(lhs < rhs);
-		}
-	};
+		return UnicodeString(qstring);
+	}
+
 }
 
 #endif  // GPLATES_UTILS_UNICODESTRINGUTILS_H

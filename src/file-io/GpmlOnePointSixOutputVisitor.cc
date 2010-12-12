@@ -74,6 +74,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/GpmlRevisionId.h"
+#include "property-values/GpmlStringList.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
@@ -1511,6 +1512,23 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_old_plates_header(
 
 	d_output.writeEndElement();  // </gpml:OldPlatesHeader>
 }
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_string_list(
+			const GPlatesPropertyValues::GpmlStringList &gpml_string_list)
+{
+	d_output.writeStartGpmlElement("StringList");
+
+		BOOST_FOREACH(const GPlatesPropertyValues::TextContent &text_content, gpml_string_list)
+		{
+			d_output.writeStartGpmlElement("element");
+				d_output.writeText(text_content.get());
+			d_output.writeEndElement();
+		}
+	d_output.writeEndElement();
+}
+
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_xs_string(

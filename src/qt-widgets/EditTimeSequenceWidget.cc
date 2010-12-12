@@ -22,6 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
@@ -33,11 +34,8 @@
 #include <QString>
 #include <QTableWidgetItem>
 
-
-
-#include "EditTableWidget.h"
-#include "EditTableActionWidget.h"
 #include "EditTimeSequenceWidget.h"
+#include "EditTableActionWidget.h"
 #include "UninitialisedEditWidgetException.h"
 #include "InvalidPropertyValueException.h"
 
@@ -49,7 +47,6 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
-#include "qt-widgets/ViewportWindow.h"
 
 
 

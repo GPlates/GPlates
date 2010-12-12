@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -36,21 +36,15 @@
 
 #include "model/FeatureId.h"
 #include "model/RevisionId.h"
-#include "property-values/XsBoolean.h"
-#include "property-values/XsInteger.h"
-#include "property-values/XsDouble.h"
-#include "property-values/XsString.h"
 #include "property-values/Enumeration.h"
-#include "property-values/GpmlPlateId.h"
-#include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlFile.h"
 #include "property-values/GmlGridEnvelope.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
-#include "property-values/GmlPolygon.h"
-#include "property-values/GmlPoint.h"
 #include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GmlRectifiedGrid.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
@@ -63,22 +57,34 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFeatureReference.h"
 #include "property-values/GpmlFeatureSnapshotReference.h"
+#include "property-values/GpmlFiniteRotationSlerp.h"
+#include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlHotSpotTrailMark.h"
-#include "property-values/GpmlKeyValueDictionary.h"
-#include "property-values/GpmlKeyValueDictionaryElement.h"
-#include "property-values/GpmlMeasure.h"
-#include "property-values/GpmlRasterBandNames.h"
-#include "property-values/GpmlRevisionId.h"
+#include "property-values/GpmlInterpolationFunction.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlKeyValueDictionaryElement.h"
+#include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlMeasure.h"
+#include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlPolarityChronId.h"
 #include "property-values/GpmlPropertyDelegate.h"
-#include "property-values/UninterpretedPropertyValue.h"
+#include "property-values/GpmlRasterBandNames.h"
+#include "property-values/GpmlRevisionId.h"
+#include "property-values/GpmlStringList.h"
+#include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTimeWindow.h"
+#include "property-values/GpmlTopologicalIntersection.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
-#include "property-values/GpmlTopologicalLineSection.h"
-#include "property-values/GpmlTopologicalIntersection.h"
-#include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/UninterpretedPropertyValue.h"
+#include "property-values/XsBoolean.h"
+#include "property-values/XsDouble.h"
+#include "property-values/XsInteger.h"
+#include "property-values/XsString.h"
 #include "ReadErrors.h"
 
 
@@ -431,6 +437,13 @@ namespace GPlatesFileIO
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
 
 		AS_PROP_VAL(create_geometry)
+
+
+		GPlatesPropertyValues::GpmlStringList::non_null_ptr_type
+		create_string_list(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_string_list)
 
 
 		GPlatesModel::PropertyValue::non_null_ptr_type

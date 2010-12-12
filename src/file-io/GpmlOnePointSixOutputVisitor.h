@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of class GpmlOnePointSixOutputVisitor.
  *
  * Most recent change:
  *   $Date$
@@ -253,6 +253,11 @@ namespace GPlatesFileIO
 		void
 		visit_gpml_revision_id(
 				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id);
+
+		virtual
+		void
+		visit_gpml_string_list(
+				const GPlatesPropertyValues::GpmlStringList &gpml_string_list);
 
 		void
 		write_gpml_time_sample(

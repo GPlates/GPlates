@@ -44,17 +44,20 @@ namespace GPlatesQtWidgets
 	 * and add references to the new edit widget in the following places:-
 	 *
 	 * EditWidgetGroupBox.h:
-	 *  - add a member data pointer to the edit widget.
-	 *  - define an activate_edit_*_widget() function.
+	 *  - add a member which is a pointer to an instance of the edit widget.
+	 *  - declare an activate_edit_*_widget() function.
 	 * EditWidgetGroupBox.cc:
 	 *  - add initialiser to constructor.
 	 *  - add widget to edit_layout in constructor.
 	 *  - connect widget's commit_me() signal in constructor.
 	 *  - add map entry in EditWidgetGroupBox::build_widget_map().
-	 *  - add an activate_edit_*_widget() function.
+	 *  - define the activate_edit_*_widget() function declared earlier.
 	 *  - hide the widget in deactivate_edit_widgets() function.
+	 * EditWidgetChooser.h:
+	 *  - declare a visit_*() function.
 	 * EditWidgetChooser.cc:
-	 *  - call the activate_edit_*_widget() function you defined earlier.
+	 *  - define a visit_*() function to call the activate_edit_*_widget() function
+	 *    you defined earlier.
 	 */
 	class AbstractEditWidget:
 			public QWidget

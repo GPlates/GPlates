@@ -27,6 +27,11 @@
 #ifndef GPLATES_GLOBAL_UNICODE_H
 #define GPLATES_GLOBAL_UNICODE_H
 
+#include "utils/UnicodeString.h"
+
+using GPlatesUtils::UnicodeString;
+
+#if 0
 #include <unicode/unistr.h>
 #include <unicode/ustream.h>
 #include <unicode/schriter.h>
@@ -44,5 +49,6 @@
 #	undef UINT64_C
 #	include <cstdint>
 #endif // _MSC_VER == 1600
+#endif
 
 #endif  // GPLATES_GLOBAL_UNICODE_H

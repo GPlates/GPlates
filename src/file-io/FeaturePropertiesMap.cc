@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -569,8 +569,11 @@ namespace
 			GET_PROP_VAL_NAME(create_xs_double);
 		map[ PropertyName::create_gpml("poleDm") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);
+		// FIXME:  Should gpml:averageAge be a gpml:TimeInstant rather than an xs:double?
 		map[ PropertyName::create_gpml("averageAge") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("locationNames") ] = 
+			GET_PROP_VAL_NAME(create_string_list);
 
 		return map;
 	}	

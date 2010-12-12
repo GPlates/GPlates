@@ -26,7 +26,6 @@
 #ifndef GPLATES_QTWIDGETS_EDITTIMESEQUENCE_H
 #define GPLATES_QTWIDGETS_EDITTIMESEQUENCE_H
 
-#include <boost/optional.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include "AbstractEditWidget.h"
@@ -47,8 +46,7 @@ namespace GPlatesAppLogic
 namespace GPlatesQtWidgets
 {
 	class EditTableActionWidget;
-	class ViewportWindow;
-	
+
 	class EditTimeSequenceWidget:
 			public AbstractEditWidget,
 			public EditTableWidget,

@@ -1,13 +1,13 @@
 /* $Id$ */
 
 /**
- * \file
+ * \file 
  * File specific comments.
  *
  * Most recent change:
  *   $Date$
- *
- * Copyright (C) 2007, 2008, 2010 The University of Sydney, Australia
+ * 
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,6 +25,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "UnicodeStringUtils.h"
+#include <iostream>
 
-// There is nothing that needs to be defined in this source file.
+#include "GpmlStringList.h"
+
+
+std::ostream &
+GPlatesPropertyValues::GpmlStringList::print_to(
+		std::ostream &os) const
+{
+	os << "GpmlStringList{";
+	string_list_type::const_iterator iter = begin();
+	string_list_type::const_iterator end_ = end();
+	for ( ; iter != end_; ++iter) {
+		os << "\"" << (*iter).get() << "\",";
+	}
+	os << "}";
+	return os;
+}
+

@@ -10,7 +10,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -375,8 +375,16 @@ namespace
 		}
 		return str;
 	}
-	
-	
+
+
+	UnicodeString
+	create_unicode_string(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+	{
+		return GPlatesUtils::make_icu_string_from_qstring(create_string(elem));
+	}
+
+
 	GPlatesPropertyValues::Enumeration::non_null_ptr_type
 	create_enumeration(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
@@ -1937,6 +1945,24 @@ GPlatesFileIO::PropertyCreationUtils::create_finite_rotation_slerp(
 	return GPlatesPropertyValues::GpmlFiniteRotationSlerp::create(value_type);
 }
 
+
+GPlatesPropertyValues::GpmlStringList::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_string_list(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("StringList"),
+		ELEMENT = GPlatesModel::PropertyName::create_gpml("element");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type 
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	std::vector<UnicodeString> elements;
+	find_and_create_zero_or_more(elem, &create_unicode_string, ELEMENT, elements);
+	return GPlatesPropertyValues::GpmlStringList::create_copy(elements);
+}
+
+
 GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_topological_polygon(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
@@ -2165,6 +2191,7 @@ GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary_element(
 
 	return GPlatesPropertyValues::GpmlKeyValueDictionaryElement(key, value, type);
 }
+
 
 GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary(
