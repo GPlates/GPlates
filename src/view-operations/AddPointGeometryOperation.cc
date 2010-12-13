@@ -402,16 +402,25 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polygon_on_sph
 			d_geometry_builder->get_geometry_point(geom_index, num_points_in_geom - 1)
 		};
 
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type end_segment_polyline_on_sphere =
-				GPlatesMaths::PolylineOnSphere::create_on_heap(end_segment, end_segment + 2);
+		// Attempt to create a valid line segment.
+		GPlatesUtils::GeometryConstruction::GeometryConstructionValidity line_segment_validity;
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> end_segment_polyline_on_sphere =
+				GPlatesUtils::create_polyline_on_sphere(
+						end_segment, end_segment + 2, line_segment_validity);
 
+		// We need to check for a valid geometry especially since we're creating a single
+		// line segment - we could get failure if both points are too close which would result
+		// in a thrown exception.
+		if (line_segment_validity == GPlatesUtils::GeometryConstruction::VALID)
+		{
 		RenderedGeometry end_segment_polyline_rendered_geom =
 				RenderedGeometryFactory::create_rendered_polyline_on_sphere(
-						end_segment_polyline_on_sphere,
+							*end_segment_polyline_on_sphere,
 						GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 						GeometryOperationParameters::LINE_WIDTH_HINT);
 
 		// Add to the lines layer.
 		d_lines_layer_ptr->add_rendered_geometry(end_segment_polyline_rendered_geom);
+		}
 	}
 }
