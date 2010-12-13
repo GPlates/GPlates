@@ -232,9 +232,6 @@ namespace GPlatesAppLogic
 		//! Used to help build the resolved network of the current topological polygon.
 		ResolvedNetwork d_resolved_network;
 
-		//! seed points
-		std::vector<GPlatesMaths::PointOnSphere> all_seed_points;
-
 		//! The number of topologies visited.
 		int d_num_topologies;
 
