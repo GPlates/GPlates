@@ -606,20 +606,20 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 	{
 		static const UnicodeString identity_start_tag(" <identity>");
 		static const UnicodeString identity_end_tag("</identity>");
-		static const int32_t identity_start_tag_length = identity_start_tag.length();
-		static const int32_t identity_end_tag_length = identity_end_tag.length();
+		static const boost::int32_t identity_start_tag_length = identity_start_tag.length();
+		static const boost::int32_t identity_end_tag_length = identity_end_tag.length();
 
 		UnicodeString geog_description = header->geographic_description();
 
 		// Search for the identity start tag.
-		const int32_t identity_start_index = geog_description.indexOf(identity_start_tag);
+		const boost::int32_t identity_start_index = geog_description.indexOf(identity_start_tag);
 		if (identity_start_index < 0)
 		{
 			return false;
 		}
 
 		// Search for the identity end tag (starting at end of the identity start tag).
-		const int32_t identity_end_index = geog_description.indexOf(
+		const boost::int32_t identity_end_index = geog_description.indexOf(
 				identity_end_tag,
 				identity_start_index + identity_start_tag_length);
 		if (identity_end_index < 0)

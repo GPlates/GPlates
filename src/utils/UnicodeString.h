@@ -27,7 +27,7 @@
 #ifndef GPLATES_UTILS_UNICODESTRING_H
 #define GPLATES_UTILS_UNICODESTRING_H
 
-#include <stdint.h>
+#include <boost/cstdint.hpp>
 #include <iosfwd>
 #include <QString>
 
@@ -102,7 +102,7 @@ namespace GPlatesUtils
 		 *
 		 * http://icu-project.org/apiref/icu4c/classUnicodeString.html#a772ced3c5e5c737d07a05adb3818f37
 		 */
-		int32_t
+		boost::int32_t
 		length() const;
 
 		/**
@@ -111,7 +111,7 @@ namespace GPlatesUtils
 		 *
 		 * http://icu-project.org/apiref/icu4c/classUnicodeString.html#8f3956140af1d4d9d255e5da837b297c
 		 */
-		int32_t
+		boost::int32_t
 		indexOf(
 				const UnicodeString &text) const;
 
@@ -121,10 +121,10 @@ namespace GPlatesUtils
 		 *
 		 * http://icu-project.org/apiref/icu4c/classUnicodeString.html#81248ae2f8f2700f808c3fdf14a2ee67
 		 */
-		int32_t
+		boost::int32_t
 		indexOf(
 				const UnicodeString &text,
-				int32_t start) const;
+				boost::int32_t start) const;
 
 		/**
 		 * Copy the characters in the range [start, limit) into the UnicodeString @a target.
@@ -133,8 +133,8 @@ namespace GPlatesUtils
 		 */
 		void
 		extractBetween(
-				int32_t start,
-				int32_t limit,
+				boost::int32_t start,
+				boost::int32_t limit,
 				UnicodeString &target);
 
 		/**
@@ -144,8 +144,8 @@ namespace GPlatesUtils
 		 */
 		UnicodeString &
 		removeBetween(
-				int32_t start,
-				int32_t limit);
+				boost::int32_t start,
+				boost::int32_t limit);
 
 		UnicodeString &
 		operator+=(

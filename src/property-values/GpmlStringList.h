@@ -84,6 +84,7 @@ namespace GPlatesPropertyValues
 		 * The type used to iterate over the list of strings.
 		 */
 		typedef string_list_type::const_iterator const_iterator;
+		typedef string_list_type::iterator iterator;
 
 		virtual
 		~GpmlStringList()

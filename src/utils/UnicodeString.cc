@@ -27,7 +27,7 @@
 #include "UnicodeString.h"
 
 
-int32_t
+boost::int32_t
 GPlatesUtils::UnicodeString::length() const
 {
 	// Implementing
@@ -50,8 +50,8 @@ GPlatesUtils::UnicodeString::length() const
 
 void
 GPlatesUtils::UnicodeString::extractBetween(
-		int32_t start,
-		int32_t limit,
+		boost::int32_t start,
+		boost::int32_t limit,
 		UnicodeString &target)
 {
 	// Implementing
@@ -65,8 +65,8 @@ GPlatesUtils::UnicodeString::extractBetween(
 
 GPlatesUtils::UnicodeString &
 GPlatesUtils::UnicodeString::removeBetween(
-		int32_t start,
-		int32_t limit)
+		boost::int32_t start,
+		boost::int32_t limit)
 {
 	// Implementing
 	// http://icu-project.org/apiref/icu4c/classUnicodeString.html#46ca3daa10b0bcbcc4d75da6b7496f4e
@@ -78,7 +78,7 @@ GPlatesUtils::UnicodeString::removeBetween(
 }
 
 
-int32_t
+boost::int32_t
 GPlatesUtils::UnicodeString::indexOf(
 		const UnicodeString &text) const
 {
@@ -90,10 +90,10 @@ GPlatesUtils::UnicodeString::indexOf(
 }
 
 
-int32_t
+boost::int32_t
 GPlatesUtils::UnicodeString::indexOf(
 		const UnicodeString &text,
-		int32_t start) const
+		boost::int32_t start) const
 {
 	// Implementing
 	// http://icu-project.org/apiref/icu4c/classUnicodeString.html#81248ae2f8f2700f808c3fdf14a2ee67

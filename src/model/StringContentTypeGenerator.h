@@ -68,7 +68,7 @@ namespace GPlatesModel
 		/**
 		 * Instantiate a new StringContent instance for the given string.
 		 */
-		explicit
+		//explicit
 		StringContentTypeGenerator(
 				const UnicodeString &s) :
 			d_ss_iter(SingletonType::instance().insert(s))
