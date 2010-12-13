@@ -529,7 +529,7 @@ namespace
 		}
 
 		static const XsString::non_null_ptr_to_const_type EMPTY_FILE_STRUCTURE =
-			XsString::create(UnicodeString());
+			XsString::create(GPlatesUtils::UnicodeString());
 		return GmlFile::create(
 				range_parameters,
 				XsString::create(GPlatesUtils::make_icu_string_from_qstring(file_info.absolute_file_path)),

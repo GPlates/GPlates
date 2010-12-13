@@ -37,7 +37,7 @@ namespace
 	{
 		// This header is required in any XML document.  Note that we have fixed the
 		// encoding at the moment.
-		static const UnicodeString XML_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+		static const GPlatesUtils::UnicodeString XML_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 		*os << XML_HEADER;
 	}
 }
@@ -45,7 +45,7 @@ namespace
 
 GPlatesFileIO::XmlOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
 		XmlOutputInterface &interface,
-		const UnicodeString &elem_name):
+		const GPlatesUtils::UnicodeString &elem_name):
 	d_interface_ptr(&interface),
 	d_elem_name(elem_name) {
 	d_interface_ptr->write_opening_element(d_elem_name);
@@ -64,7 +64,7 @@ GPlatesFileIO::XmlOutputInterface::ElementPairStackFrame::~ElementPairStackFrame
 
 const GPlatesFileIO::XmlOutputInterface
 GPlatesFileIO::XmlOutputInterface::create_for_stdout(
-		const UnicodeString &indentation_unit) {
+		const GPlatesUtils::UnicodeString &indentation_unit) {
 	return XmlOutputInterface(std::cout, indentation_unit);
 }
 
@@ -72,14 +72,14 @@ GPlatesFileIO::XmlOutputInterface::create_for_stdout(
 const GPlatesFileIO::XmlOutputInterface
 GPlatesFileIO::XmlOutputInterface::create_for_stream(
 		std::ostream &output_stream,
-		const UnicodeString &indentation_unit) {
+		const GPlatesUtils::UnicodeString &indentation_unit) {
 	return XmlOutputInterface(std::cout, indentation_unit);
 }
 
 
 void
 GPlatesFileIO::XmlOutputInterface::write_opening_element(
-		const UnicodeString &elem_name) {
+		const GPlatesUtils::UnicodeString &elem_name) {
 	write_indentation();
 	write_unicode_string("<");
 	write_unicode_string(elem_name);
@@ -91,7 +91,7 @@ GPlatesFileIO::XmlOutputInterface::write_opening_element(
 
 void
 GPlatesFileIO::XmlOutputInterface::write_closing_element(
-		const UnicodeString &elem_name) {
+		const GPlatesUtils::UnicodeString &elem_name) {
 	--d_indentation_level;
 
 	write_indentation();
@@ -103,7 +103,7 @@ GPlatesFileIO::XmlOutputInterface::write_closing_element(
 
 void
 GPlatesFileIO::XmlOutputInterface::write_empty_element(
-		const UnicodeString &elem_name) {
+		const GPlatesUtils::UnicodeString &elem_name) {
 	write_indentation();
 	write_unicode_string("<");
 	write_unicode_string(elem_name);
@@ -113,7 +113,7 @@ GPlatesFileIO::XmlOutputInterface::write_empty_element(
 
 void
 GPlatesFileIO::XmlOutputInterface::write_line_of_string_content(
-		const UnicodeString &content) {
+		const GPlatesUtils::UnicodeString &content) {
 	write_indentation();
 	write_unicode_string(content);
 	write_unicode_string("\n");
@@ -182,7 +182,7 @@ GPlatesFileIO::XmlOutputInterface::write_indentation() {
 
 void
 GPlatesFileIO::XmlOutputInterface::write_unicode_string(
-		const UnicodeString &s) {
+		const GPlatesUtils::UnicodeString &s) {
 
 	// FIXME:  This function should escape any occurrences of '<' or '&' (to "&lt;" and
 	// "&amp;", respectively).
@@ -264,7 +264,7 @@ GPlatesFileIO::XmlOutputInterface::flush_underlying_stream()
 
 GPlatesFileIO::XmlOutputInterface::XmlOutputInterface(
 		std::ostream &os,
-		const UnicodeString &indentation_unit) :
+		const GPlatesUtils::UnicodeString &indentation_unit) :
 	d_os_ptr(&os),
 	d_indentation_unit(indentation_unit),
 	d_indentation_level(0),

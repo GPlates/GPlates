@@ -195,7 +195,7 @@ namespace
 		contains_age_band_name(
 				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names)
 		{
-			static const GPlatesPropertyValues::TextContent AGE_BAND_NAME(UnicodeString("age"));
+			static const GPlatesPropertyValues::TextContent AGE_BAND_NAME(GPlatesUtils::UnicodeString("age"));
 			BOOST_FOREACH(const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &xs_string, raster_band_names)
 			{
 				if (xs_string->value() == AGE_BAND_NAME)

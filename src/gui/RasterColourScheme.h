@@ -79,7 +79,7 @@ namespace GPlatesGui
 		static
 		non_null_ptr_type
 		create(
-				const UnicodeString &band_name);
+				const GPlatesUtils::UnicodeString &band_name);
 
 		/**
 		 * Creates a new instance of RasterColourScheme, to colour rasters according
@@ -102,7 +102,7 @@ namespace GPlatesGui
 		static
 		non_null_ptr_type
 		create(
-				const UnicodeString &band_name,
+				const GPlatesUtils::UnicodeString &band_name,
 				const typename ColourPalette<PaletteKeyType>::non_null_ptr_type &colour_palette)
 		{
 			return new RasterColourScheme(band_name, colour_palette);
@@ -116,7 +116,7 @@ namespace GPlatesGui
 		non_null_ptr_type
 		create_from_existing(
 				const non_null_ptr_type &existing,
-				const UnicodeString &band_name);
+				const GPlatesUtils::UnicodeString &band_name);
 
 		const band_name_string_type &
 		get_band_name() const;
@@ -146,15 +146,15 @@ namespace GPlatesGui
 				const band_name_string_type &band_name);
 
 		RasterColourScheme(
-				const UnicodeString &band_name,
+				const GPlatesUtils::UnicodeString &band_name,
 				const ColourPalette<boost::int32_t>::non_null_ptr_type &colour_palette);
 
 		RasterColourScheme(
-				const UnicodeString &band_name,
+				const GPlatesUtils::UnicodeString &band_name,
 				const ColourPalette<boost::uint32_t>::non_null_ptr_type &colour_palette);
 
 		RasterColourScheme(
-				const UnicodeString &band_name,
+				const GPlatesUtils::UnicodeString &band_name,
 				const ColourPalette<double>::non_null_ptr_type &colour_palette);
 
 		typedef boost::variant

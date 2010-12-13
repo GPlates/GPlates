@@ -28,7 +28,7 @@
 
 GPlatesGui::RasterColourScheme::non_null_ptr_type
 GPlatesGui::RasterColourScheme::create(
-		const UnicodeString &band_name)
+		const GPlatesUtils::UnicodeString &band_name)
 {
 	return new RasterColourScheme(GPlatesPropertyValues::TextContent(band_name));
 }
@@ -45,7 +45,7 @@ GPlatesGui::RasterColourScheme::create(
 GPlatesGui::RasterColourScheme::non_null_ptr_type
 GPlatesGui::RasterColourScheme::create_from_existing(
 		const non_null_ptr_type &existing,
-		const UnicodeString &band_name)
+		const GPlatesUtils::UnicodeString &band_name)
 {
 	switch (existing->d_colour_palette_type)
 	{
@@ -78,7 +78,7 @@ GPlatesGui::RasterColourScheme::RasterColourScheme(
 
 
 GPlatesGui::RasterColourScheme::RasterColourScheme(
-		const UnicodeString &band_name,
+		const GPlatesUtils::UnicodeString &band_name,
 		const ColourPalette<boost::int32_t>::non_null_ptr_type &colour_palette) :
 	d_band_name(band_name),
 	d_colour_palette(colour_palette),
@@ -87,7 +87,7 @@ GPlatesGui::RasterColourScheme::RasterColourScheme(
 
 
 GPlatesGui::RasterColourScheme::RasterColourScheme(
-		const UnicodeString &band_name,
+		const GPlatesUtils::UnicodeString &band_name,
 		const ColourPalette<boost::uint32_t>::non_null_ptr_type &colour_palette) :
 	d_band_name(band_name),
 	d_colour_palette(colour_palette),
@@ -96,7 +96,7 @@ GPlatesGui::RasterColourScheme::RasterColourScheme(
 
 
 GPlatesGui::RasterColourScheme::RasterColourScheme(
-		const UnicodeString &band_name,
+		const GPlatesUtils::UnicodeString &band_name,
 		const ColourPalette<double>::non_null_ptr_type &colour_palette) :
 	d_band_name(band_name),
 	d_colour_palette(colour_palette),

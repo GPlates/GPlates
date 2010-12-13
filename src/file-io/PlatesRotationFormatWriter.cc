@@ -65,7 +65,7 @@ namespace
 			const double &longitude,
 			const double &angle,
 			int fixed_plate_id,
-			const UnicodeString &comment)
+			const GPlatesUtils::UnicodeString &comment)
 	{
 		using namespace GPlatesUtils;
 
@@ -114,7 +114,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 			continue;
 		}
 
-		UnicodeString str_comment("");
+		GPlatesUtils::UnicodeString str_comment("");
 		if (iter->comment) {
 			str_comment = *(iter->comment);
 		}

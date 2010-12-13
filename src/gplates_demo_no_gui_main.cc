@@ -77,9 +77,9 @@ create_isochron(
 		unsigned num_coords,
 		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
 		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end,
-		const UnicodeString &geographic_description,
-		const UnicodeString &name,
-		const UnicodeString &codespace_of_name)
+		const GPlatesUtils::UnicodeString &geographic_description,
+		const GPlatesUtils::UnicodeString &name,
+		const GPlatesUtils::UnicodeString &codespace_of_name)
 {
 	GPlatesModel::FeatureType feature_type = GPlatesModel::FeatureType::create_gpml("Isochron");
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
@@ -290,9 +290,9 @@ populate_feature_store(
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin1(10.9);
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end1 =
 			GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-	UnicodeString description1("CARLSBERG RIDGE, INDIA-AFRICA ANOMALY 5 ISOCHRON");
-	UnicodeString name1("Izzy the Isochron");
-	UnicodeString codespace_of_name1("EarthByte");
+	GPlatesUtils::UnicodeString description1("CARLSBERG RIDGE, INDIA-AFRICA ANOMALY 5 ISOCHRON");
+	GPlatesUtils::UnicodeString name1("Izzy the Isochron");
+	GPlatesUtils::UnicodeString codespace_of_name1("EarthByte");
 
 	GPlatesModel::FeatureHandle::weak_ref isochron1 =
 			create_isochron(model, isochrons, plate_id1, coords1, num_coords1,
@@ -319,9 +319,9 @@ populate_feature_store(
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin2(83.5);
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end2 =
 			GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-	UnicodeString description2("SOUTHWEST INDIAN RIDGE, MADAGASCAR-ANTARCTICA ANOMALY 34 ISOCHRON");
-	UnicodeString name2("Ozzy the Isochron");
-	UnicodeString codespace_of_name2("EarthByte");
+	GPlatesUtils::UnicodeString description2("SOUTHWEST INDIAN RIDGE, MADAGASCAR-ANTARCTICA ANOMALY 34 ISOCHRON");
+	GPlatesUtils::UnicodeString name2("Ozzy the Isochron");
+	GPlatesUtils::UnicodeString codespace_of_name2("EarthByte");
 
 	GPlatesModel::FeatureHandle::weak_ref isochron2 =
 			create_isochron(model, isochrons, plate_id2, coords2, num_coords2,
@@ -352,9 +352,9 @@ populate_feature_store(
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin3(40.1);
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end3 =
 			GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-	UnicodeString description3("SEIR CROZET AND CIB, CENTRAL INDIAN BASIN-ANTARCTICA ANOMALY 18 ISOCHRON");
-	UnicodeString name3("Uzi the Isochron");
-	UnicodeString codespace_of_name3("EarthByte");
+	GPlatesUtils::UnicodeString description3("SEIR CROZET AND CIB, CENTRAL INDIAN BASIN-ANTARCTICA ANOMALY 18 ISOCHRON");
+	GPlatesUtils::UnicodeString name3("Uzi the Isochron");
+	GPlatesUtils::UnicodeString codespace_of_name3("EarthByte");
 
 	GPlatesModel::FeatureHandle::weak_ref isochron3 =
 			create_isochron(model, isochrons, plate_id3, coords3, num_coords3,

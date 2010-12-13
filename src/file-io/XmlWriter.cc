@@ -140,7 +140,7 @@ GPlatesFileIO::XmlWriter::writeNamespace(
 }
 
 
-const UnicodeString
+const GPlatesUtils::UnicodeString
 GPlatesFileIO::XmlWriter::getAliasForNamespace(
 		const GPlatesUtils::StringSet::SharedIterator namespace_uri) const
 {

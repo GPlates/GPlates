@@ -211,7 +211,7 @@ namespace
 			// We retain strings even if they're empty, since an empty string is still
 			// a valid string, and there may be a reason why a user wants an empty
 			// string in the list.
-			UnicodeString ustr = GPlatesUtils::make_icu_string_from_qstring(*elem_str);
+			GPlatesUtils::UnicodeString ustr = GPlatesUtils::make_icu_string_from_qstring(*elem_str);
 			elements.push_back(GPlatesPropertyValues::TextContent(ustr));
 		}
 	}

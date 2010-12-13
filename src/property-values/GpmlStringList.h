@@ -195,7 +195,7 @@ namespace GPlatesPropertyValues
 
 		void
 		push_back(
-				const UnicodeString &s)
+				const GPlatesUtils::UnicodeString &s)
 		{
 			push_back(TextContent(s));
 		}
@@ -211,7 +211,7 @@ namespace GPlatesPropertyValues
 		const_iterator
 		insert(
 				const_iterator pos,
-				const UnicodeString &s)
+				const GPlatesUtils::UnicodeString &s)
 		{
 			return insert(pos, TextContent(s));
 		}

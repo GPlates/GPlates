@@ -377,7 +377,7 @@ namespace
 	}
 
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	create_unicode_string(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
 	{
@@ -388,7 +388,7 @@ namespace
 	GPlatesPropertyValues::Enumeration::non_null_ptr_type
 	create_enumeration(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-		const UnicodeString &enum_type)
+		const GPlatesUtils::UnicodeString &enum_type)
 	{
 		QString enum_value = create_nonempty_string(elem);
 		return GPlatesPropertyValues::Enumeration::create(enum_type, 
@@ -1957,7 +1957,7 @@ GPlatesFileIO::PropertyCreationUtils::create_string_list(
 	GPlatesModel::XmlElementNode::non_null_ptr_type 
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
-	std::vector<UnicodeString> elements;
+	std::vector<GPlatesUtils::UnicodeString> elements;
 	find_and_create_zero_or_more(elem, &create_unicode_string, ELEMENT, elements);
 	return GPlatesPropertyValues::GpmlStringList::create_copy(elements);
 }
@@ -2341,7 +2341,7 @@ GPlatesFileIO::PropertyCreationUtils::create_raster_band_names(
         find_and_create_zero_or_more(elem, &create_xs_string, BAND_NAME, band_names);
 
 	// Check for uniqueness of band names.
-	std::set<UnicodeString> band_name_set;
+	std::set<GPlatesUtils::UnicodeString> band_name_set;
 	BOOST_FOREACH(const XsString::non_null_ptr_type &band_name, band_names)
 	{
 		if (!band_name_set.insert(band_name->value().get()).second)

@@ -264,7 +264,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_band_combobox_activated(
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
 
-		UnicodeString band_name = GPlatesUtils::make_icu_string_from_qstring(text);
+		GPlatesUtils::UnicodeString band_name = GPlatesUtils::make_icu_string_from_qstring(text);
 		QString palette_file_name = d_palette_filename_lineedit->text();
 
 		GPlatesGui::RasterColourSchemeMap &map = d_view_state.get_raster_colour_scheme_map();
@@ -327,7 +327,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 						GPlatesMaths::Real,
 						double
 					>(colour_palette_opt.get(), GPlatesGui::RealToBuiltInConverter<double>());
-				UnicodeString band_name = GPlatesUtils::make_icu_string_from_qstring(
+				GPlatesUtils::UnicodeString band_name = GPlatesUtils::make_icu_string_from_qstring(
 						band_combobox->currentText());
 				GPlatesGui::RasterColourScheme::non_null_ptr_type colour_scheme =
 					GPlatesGui::RasterColourScheme::create<double>(band_name, colour_palette);

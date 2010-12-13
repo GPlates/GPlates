@@ -63,21 +63,21 @@ namespace GPlatesModel
 		static
 		bool
 		is_loaded(
-				const UnicodeString &s);
+				const GPlatesUtils::UnicodeString &s);
 
 		/**
 		 * Instantiate a new StringContent instance for the given string.
 		 */
 		//explicit
 		StringContentTypeGenerator(
-				const UnicodeString &s) :
+				const GPlatesUtils::UnicodeString &s) :
 			d_ss_iter(SingletonType::instance().insert(s))
 		{ }
 
 		/**
 		 * Access the Unicode string of the text content for this instance.
 		 */
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		get() const {
 			return *d_ss_iter;
 		}
@@ -103,7 +103,7 @@ namespace GPlatesModel
 	inline
 	bool
 	GPlatesModel::StringContentTypeGenerator<SingletonType>::is_loaded(
-			const UnicodeString &s) {
+			const GPlatesUtils::UnicodeString &s) {
 		return SingletonType::instance().contains(s);
 	}
 

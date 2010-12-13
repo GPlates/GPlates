@@ -29,8 +29,6 @@
 
 #include "utils/UnicodeString.h"
 
-using GPlatesUtils::UnicodeString;
-
 #if 0
 #include <unicode/unistr.h>
 #include <unicode/ustream.h>

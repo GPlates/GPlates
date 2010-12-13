@@ -39,7 +39,7 @@ namespace GPlatesFileIO
 		/**
 		 * Used in the data type code field of PLATES header to indicate an unknown or invalid type.
 		 */
-		const UnicodeString INVALID_DATA_TYPE_CODE = "XX";
+		const GPlatesUtils::UnicodeString INVALID_DATA_TYPE_CODE = "XX";
 
 
 		/**
@@ -48,7 +48,7 @@ namespace GPlatesFileIO
 		 * If the feature cannot be mapped to a plates data type then @a INVALID_DATA_TYPE_CODE
 		 * is returned.
 		 */
-		UnicodeString
+		GPlatesUtils::UnicodeString
 		get_plates_data_type_code(
 				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
 	}

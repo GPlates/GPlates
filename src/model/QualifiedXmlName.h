@@ -148,8 +148,8 @@ namespace GPlatesModel
 
 
 		QualifiedXmlName(
-				const UnicodeString &namespace_uri,
-				const UnicodeString &name) :
+				const GPlatesUtils::UnicodeString &namespace_uri,
+				const GPlatesUtils::UnicodeString &name) :
 			d_namespace(StringSetSingletons::xml_namespace_instance().insert(namespace_uri)), 
 			d_name(SingletonType::instance().insert(name))
 		{
@@ -174,9 +174,9 @@ namespace GPlatesModel
 
 
 		QualifiedXmlName(
-				const UnicodeString &namespace_uri,
-				boost::optional<const UnicodeString &> namespace_alias,
-				const UnicodeString &name) :
+				const GPlatesUtils::UnicodeString &namespace_uri,
+				boost::optional<const GPlatesUtils::UnicodeString &> namespace_alias,
+				const GPlatesUtils::UnicodeString &name) :
 			d_namespace(StringSetSingletons::xml_namespace_instance().insert(namespace_uri)), 
 			d_name(SingletonType::instance().insert(name))
 		{
@@ -191,7 +191,7 @@ namespace GPlatesModel
 		/**
 		 * Access the Unicode string of the namespace for this instance.
 		 */
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		get_namespace() const {
 			return *d_namespace;
 		}
@@ -207,7 +207,7 @@ namespace GPlatesModel
 		/**
 		 * Access the Unicode string of the namespace alias for this instance.
 		 */
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		get_namespace_alias() const {
 			return *d_namespace_alias;
 		}
@@ -224,7 +224,7 @@ namespace GPlatesModel
 		/**
 		 * Access the Unicode string of the name for this instance.
 		 */
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		get_name() const {
 			return *d_name;
 		}
@@ -237,9 +237,9 @@ namespace GPlatesModel
 		 * Note that this undermines many of the performance benefits
 		 * gained from using QualifiedXmlName in the first place.
 		 */
-		const UnicodeString
+		const GPlatesUtils::UnicodeString
 		build_aliased_name() const {
-			return get_namespace_alias() + UnicodeString(":") + get_name();
+			return get_namespace_alias() + GPlatesUtils::UnicodeString(":") + get_name();
 		}
 
 		/**

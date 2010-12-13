@@ -468,7 +468,7 @@ namespace
 
 				// Create a dummy value				
 				GPlatesPropertyValues::XsString::non_null_ptr_type feature_id_value = 
-					GPlatesPropertyValues::XsString::create(UnicodeString());
+					GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString());
 
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement feature_id_element(
 					key,
@@ -985,7 +985,7 @@ namespace
 		key = GPlatesPropertyValues::XsString::create(
 			GPlatesUtils::make_icu_string_from_qstring(*it));
 		GPlatesPropertyValues::XsString::non_null_ptr_type type_value = 
-			GPlatesPropertyValues::XsString::create(UnicodeString());
+			GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString());
 
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement type_element(
 			key,
@@ -1024,7 +1024,7 @@ namespace
 		key = GPlatesPropertyValues::XsString::create(
 			GPlatesUtils::make_icu_string_from_qstring(*it));
 		GPlatesPropertyValues::XsString::non_null_ptr_type name_value = 
-			GPlatesPropertyValues::XsString::create(UnicodeString());
+			GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString());
 
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement name_element(
 			key,
@@ -1037,7 +1037,7 @@ namespace
 		key = GPlatesPropertyValues::XsString::create(
 			GPlatesUtils::make_icu_string_from_qstring(*it));
 		GPlatesPropertyValues::XsString::non_null_ptr_type description_value = 
-			GPlatesPropertyValues::XsString::create(UnicodeString());
+			GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString());
 
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement description_element(
 			key,
@@ -1051,7 +1051,7 @@ namespace
 		key = GPlatesPropertyValues::XsString::create(
 			GPlatesUtils::make_icu_string_from_qstring(*it));
 		GPlatesPropertyValues::XsString::non_null_ptr_type feature_id_value = 
-			GPlatesPropertyValues::XsString::create(UnicodeString());
+			GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString());
 
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement feature_id_element(
 			key,

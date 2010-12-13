@@ -135,10 +135,10 @@ namespace
 			GPlatesFileIO::XmlWriter &writer,
 			const QualifiedNameType &value_type)
 	{
-		boost::optional<const UnicodeString &> alias = 
+		boost::optional<const GPlatesUtils::UnicodeString &> alias = 
 			value_type.get_namespace_alias();
 
-		UnicodeString prefix;
+		GPlatesUtils::UnicodeString prefix;
 
 		if (alias) 
 		{

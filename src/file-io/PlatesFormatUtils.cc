@@ -43,11 +43,11 @@ namespace
 	 * If specified feature does not have "isActive" boolean property then
 	 * return inactive data type code.
 	 */
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_active_inactive_feature(
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			const UnicodeString &active_data_type_code,
-			const UnicodeString &inactive_data_type_code)
+			const GPlatesUtils::UnicodeString &active_data_type_code,
+			const GPlatesUtils::UnicodeString &inactive_data_type_code)
 	{
 		static const GPlatesModel::PropertyName is_active_property_name = 
 			GPlatesModel::PropertyName::create_gpml("isActive");
@@ -66,28 +66,28 @@ namespace
 		return inactive_data_type_code;
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_aseismic_ridge(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "AR";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_bathymetry(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "BA";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_basin(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "BS";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_continental_boundary(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -95,35 +95,35 @@ namespace
 		return "CB";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_continental_fragment(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "CF";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_craton(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "CR";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_coastline(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "CS";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_extended_continental_crust(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "EC";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_fault(
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
@@ -197,56 +197,56 @@ namespace
 		return "FT";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_fracture_zone(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "FZ";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_grid_mark(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "GR";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_gravimetry(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "GV";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_heat_flow(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "HF";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_hot_spot(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "HS";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_hot_spot_trail(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "HT";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_island_arc(
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
 		return get_data_type_code_for_active_inactive_feature(feature, "IA", "IR");
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_isochron(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -254,7 +254,7 @@ namespace
 		return "IC";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_isopach(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -262,7 +262,7 @@ namespace
 	}
 
 	// -might- be Ice Shelf, might be Isochron. We don't know.
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_unclassified_feature(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -270,21 +270,21 @@ namespace
 		return "UN";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_geological_lineation(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "LI";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_magnetics(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "MA";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_orogenic_belt(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -292,21 +292,21 @@ namespace
 		return "OB";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_ophiolite_belt(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "OP";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_inferred_paleo_boundary(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "PB";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_magnetic_pick(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -314,63 +314,63 @@ namespace
 		return "PM";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_ridge_segment(
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
 		return get_data_type_code_for_active_inactive_feature(feature, "RI", "XR");
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_seamount(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "SM";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_slab(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "SL";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_suture(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "SU";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_terrane_boundary(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "TB";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_transitional_crust(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "TC";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_transform(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "TF";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_topography(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "TO";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_subduction_zone(
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
@@ -424,14 +424,14 @@ namespace
 		return "XT";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_volcano(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "VO";
 	}
 
-	UnicodeString
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_large_igneous_province(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -442,7 +442,7 @@ namespace
 	/**
 	 * Typedef for a function that queries a feature and returns a PLATES data type code.
 	 */
-	typedef UnicodeString (*get_data_type_code_function_type)(
+	typedef GPlatesUtils::UnicodeString (*get_data_type_code_function_type)(
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature);
 
 
@@ -551,7 +551,7 @@ namespace
 }
 
 
-UnicodeString
+GPlatesUtils::UnicodeString
 GPlatesFileIO::PlatesFormatUtils::get_plates_data_type_code(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 {

@@ -417,7 +417,7 @@ GPlatesModel::ModelUtils::create_total_reconstruction_pole(
 		GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant =
 				GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant, xml_attributes);
 
-		UnicodeString comment_string(iter->comment);
+		GPlatesUtils::UnicodeString comment_string(iter->comment);
 		GPlatesPropertyValues::XsString::non_null_ptr_type gml_description =
 				GPlatesPropertyValues::XsString::create(comment_string);
 

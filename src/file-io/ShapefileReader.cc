@@ -147,7 +147,7 @@ namespace
 		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 		QString &feature_type_qstring,
-		boost::optional<UnicodeString> &feature_id)
+		boost::optional<GPlatesUtils::UnicodeString> &feature_id)
 	{
 
 
@@ -250,7 +250,7 @@ namespace
 		QString name)
 	{
 		GPlatesPropertyValues::XsString::non_null_ptr_type gml_name = 
-			GPlatesPropertyValues::XsString::create(UnicodeString(name.toStdString().c_str()));
+			GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString(name.toStdString().c_str()));
 		feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gml("name"),
@@ -263,7 +263,7 @@ namespace
 		QString description)
 	{
 		GPlatesPropertyValues::XsString::non_null_ptr_type gml_description = 
-			GPlatesPropertyValues::XsString::create(UnicodeString(description.toStdString().c_str()));
+			GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString(description.toStdString().c_str()));
 		feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gml("description"),

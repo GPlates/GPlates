@@ -46,13 +46,13 @@ namespace GPlatesFileIO
 		unsigned region_number;
 		unsigned reference_number;
 		unsigned string_number;
-		UnicodeString geographic_description;
+		GPlatesUtils::UnicodeString geographic_description;
 		GPlatesModel::integer_plate_id_type plate_id_number;
 		double age_of_appearance;
 		double age_of_disappearance;
-		UnicodeString data_type_code;
+		GPlatesUtils::UnicodeString data_type_code;
 		unsigned data_type_code_number;
-		UnicodeString data_type_code_number_additional;
+		GPlatesUtils::UnicodeString data_type_code_number_additional;
 		GPlatesModel::integer_plate_id_type conjugate_plate_id_number;
 		unsigned colour_code;
 		unsigned number_of_points;
@@ -61,13 +61,13 @@ namespace GPlatesFileIO
 			unsigned int region_number_,
 			unsigned int reference_number_,
 			unsigned int string_number_,
-			const UnicodeString &geographic_description_,
+			const GPlatesUtils::UnicodeString &geographic_description_,
 			GPlatesModel::integer_plate_id_type plate_id_number_,
 			double age_of_appearance_,
 			double age_of_disappearance_,
-			const UnicodeString &data_type_code_,
+			const GPlatesUtils::UnicodeString &data_type_code_,
 			unsigned int data_type_code_number_,
-			const UnicodeString &data_type_code_number_additional_,
+			const GPlatesUtils::UnicodeString &data_type_code_number_additional_,
 			GPlatesModel::integer_plate_id_type conjugate_plate_id_number_,
 			unsigned int colour_code_,
 			unsigned int number_of_points_);
@@ -167,7 +167,7 @@ namespace GPlatesFileIO
 			boost::optional<GPlatesModel::integer_plate_id_type> conj_plate_id;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_appearance;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_disappearance;
-			boost::optional<UnicodeString> geographic_description;
+			boost::optional<GPlatesUtils::UnicodeString> geographic_description;
 		};
 
 

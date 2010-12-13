@@ -270,7 +270,7 @@ namespace GPlatesFileIO
 #endif
 		QString d_feature_type;
 		
-		boost::optional<UnicodeString> d_feature_id;
+		boost::optional<GPlatesUtils::UnicodeString> d_feature_id;
 
 		/// The total number of geometries, including those from multi-geometries, in the file.
 		unsigned d_total_geometries;

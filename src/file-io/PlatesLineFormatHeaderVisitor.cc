@@ -74,7 +74,7 @@ namespace
 	/**
 	 * Generate a geographic description when we have nothing to put there.
 	 */
-	const UnicodeString
+	const GPlatesUtils::UnicodeString
 	generate_geog_description()
 	{
 		return "new feature";
@@ -86,9 +86,9 @@ namespace
 	void
 	append_feature_id_to_geog_description(
 			const GPlatesModel::FeatureId &feature_id,
-			UnicodeString &geog_description)
+			GPlatesUtils::UnicodeString &geog_description)
 	{
-		UnicodeString feature_id_tag = " <identity>" + feature_id.get() + "</identity>";
+		GPlatesUtils::UnicodeString feature_id_tag = " <identity>" + feature_id.get() + "</identity>";
 		geog_description += feature_id_tag;
 	}
 }
@@ -97,13 +97,13 @@ GPlatesFileIO::OldPlatesHeader::OldPlatesHeader(
 	unsigned int region_number_,
 	unsigned int reference_number_,
 	unsigned int string_number_,
-	const UnicodeString &geographic_description_,
+	const GPlatesUtils::UnicodeString &geographic_description_,
 	GPlatesModel::integer_plate_id_type plate_id_number_,
 	double age_of_appearance_,
 	double age_of_disappearance_,
-	const UnicodeString &data_type_code_,
+	const GPlatesUtils::UnicodeString &data_type_code_,
 	unsigned int data_type_code_number_,
-	const UnicodeString &data_type_code_number_additional_,
+	const GPlatesUtils::UnicodeString &data_type_code_number_additional_,
 	GPlatesModel::integer_plate_id_type conjugate_plate_id_number_,
 	unsigned int colour_code_,
 	unsigned int number_of_points_) :
@@ -350,7 +350,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_xs_string(
 	// Only store 'gml:name' property in geographic description if it exists
 	// and it not empty.
 	if ( ! d_accum.geographic_description) {
-		const UnicodeString &name = xs_string.value().get();
+		const GPlatesUtils::UnicodeString &name = xs_string.value().get();
 		if (!name.isEmpty())
 		{
 			d_accum.geographic_description = name;

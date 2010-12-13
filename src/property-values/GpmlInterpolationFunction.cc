@@ -34,7 +34,7 @@ std::ostream &
 GPlatesPropertyValues::GpmlInterpolationFunction::print_to(
 		std::ostream &os) const
 {
-	const UnicodeString &value_type_as_string = d_value_type.build_aliased_name();
+	const GPlatesUtils::UnicodeString &value_type_as_string = d_value_type.build_aliased_name();
 	return os << value_type_as_string;
 }
 

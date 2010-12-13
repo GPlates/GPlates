@@ -69,13 +69,13 @@ namespace GPlatesModel {
 		 * already possess a revision ID.
 		 */
 		RevisionId(
-				const UnicodeString &id) :
+				const GPlatesUtils::UnicodeString &id) :
 			d_id(id) {  }
 
 		/**
 		 * Access the Unicode string of the revision ID for this instance.
 		 */
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		get() const {
 			return d_id;
 		}
@@ -92,7 +92,7 @@ namespace GPlatesModel {
 
 	private:
 
-		UnicodeString d_id;
+		GPlatesUtils::UnicodeString d_id;
 
 	};
 

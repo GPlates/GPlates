@@ -81,13 +81,13 @@ namespace GPlatesPropertyValues
 				unsigned int region_number,
 				unsigned int reference_number,
 				unsigned int string_number,
-				const UnicodeString &geographic_description,
+				const GPlatesUtils::UnicodeString &geographic_description,
 				GPlatesModel::integer_plate_id_type plate_id_number,
 				const double &age_of_appearance,
 				const double &age_of_disappearance,
-				const UnicodeString &data_type_code,
+				const GPlatesUtils::UnicodeString &data_type_code,
 				unsigned int data_type_code_number,
-				const UnicodeString &data_type_code_number_additional,
+				const GPlatesUtils::UnicodeString &data_type_code_number_additional,
 				GPlatesModel::integer_plate_id_type conjugate_plate_id_number,
 				unsigned int colour_code,
 				unsigned int number_of_points)
@@ -181,7 +181,7 @@ namespace GPlatesPropertyValues
 		}
 
 		
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		geographic_description() const 
 		{
 			return d_geographic_description.get();
@@ -196,7 +196,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_geographic_description(
-				const UnicodeString &us)
+				const GPlatesUtils::UnicodeString &us)
 		{
 			d_geographic_description = TextContent(us);
 			update_instance_id();
@@ -269,7 +269,7 @@ namespace GPlatesPropertyValues
 		}
 
 		
-		const UnicodeString & 
+		const GPlatesUtils::UnicodeString & 
 		data_type_code() const 
 		{
 			return d_data_type_code.get();
@@ -284,7 +284,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_data_type_code(
-				const UnicodeString &us)
+				const GPlatesUtils::UnicodeString &us)
 		{
 			d_data_type_code = TextContent(us);
 			update_instance_id();
@@ -313,7 +313,7 @@ namespace GPlatesPropertyValues
 		}
 
 		
-		const UnicodeString & 
+		const GPlatesUtils::UnicodeString & 
 		data_type_code_number_additional() const 
 		{
 			return d_data_type_code_number_additional.get();
@@ -328,7 +328,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_data_type_code_number_additional(
-				const UnicodeString &us)
+				const GPlatesUtils::UnicodeString &us)
 		{
 			d_data_type_code_number_additional = TextContent(us);
 			update_instance_id();
@@ -450,13 +450,13 @@ namespace GPlatesPropertyValues
 				unsigned int region_number_,
 				unsigned int reference_number_,
 				unsigned int string_number_,
-				const UnicodeString &geographic_description_,
+				const GPlatesUtils::UnicodeString &geographic_description_,
 				GPlatesModel::integer_plate_id_type plate_id_number_,
 				const double &age_of_appearance_,
 				const double &age_of_disappearance_,
-				const UnicodeString &data_type_code_,
+				const GPlatesUtils::UnicodeString &data_type_code_,
 				unsigned int data_type_code_number_,
-				const UnicodeString &data_type_code_number_additional_,
+				const GPlatesUtils::UnicodeString &data_type_code_number_additional_,
 				GPlatesModel::integer_plate_id_type conjugate_plate_id_number_,
 				unsigned int colour_code_,
 				unsigned int number_of_points_):

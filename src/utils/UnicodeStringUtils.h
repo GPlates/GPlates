@@ -44,7 +44,7 @@ namespace GPlatesUtils
 	inline
 	const QString
 	make_qstring_from_icu_string(
-			const UnicodeString &icu_string)
+			const GPlatesUtils::UnicodeString &icu_string)
 	{
 		return icu_string.qstring();
 	}
@@ -55,7 +55,7 @@ namespace GPlatesUtils
 	inline
 	const std::string
 	make_std_string_from_icu_string(
-			const UnicodeString &icu_string)
+			const GPlatesUtils::UnicodeString &icu_string)
 	{
 		return icu_string.qstring().toStdString();
 	}
@@ -82,11 +82,11 @@ namespace GPlatesUtils
 	 * Make a ICU UnicodeString from a QString.
 	 */
 	inline
-	const UnicodeString
+	const GPlatesUtils::UnicodeString
 	make_icu_string_from_qstring(
 			const QString &qstring)
 	{
-		return UnicodeString(qstring);
+		return GPlatesUtils::UnicodeString(qstring);
 	}
 
 }

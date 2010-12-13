@@ -84,7 +84,7 @@ namespace GPlatesPropertyValues
 		create(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				const TemplateTypeParameterType &value_type_,
-				const UnicodeString &description_)
+				const GPlatesUtils::UnicodeString &description_)
 		{
 			non_null_ptr_type ptr(new GpmlConstantValue(value_, value_type_, description_));
 			return ptr;
@@ -140,7 +140,7 @@ namespace GPlatesPropertyValues
 			return d_value_type;
 		}
 
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		description() const
 		{
 			return d_description;
@@ -148,7 +148,7 @@ namespace GPlatesPropertyValues
 
 		void
 		set_description(
-				const UnicodeString &new_description)
+				const GPlatesUtils::UnicodeString &new_description)
 		{
 			d_description = new_description;
 			update_instance_id();
@@ -205,7 +205,7 @@ namespace GPlatesPropertyValues
 		GpmlConstantValue(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				const TemplateTypeParameterType &value_type_,
-				const UnicodeString &description_):
+				const GPlatesUtils::UnicodeString &description_):
 			PropertyValue(),
 			d_value(value_),
 			d_value_type(value_type_),
@@ -234,7 +234,7 @@ namespace GPlatesPropertyValues
 
 		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
 		TemplateTypeParameterType d_value_type;
-		UnicodeString d_description;
+		GPlatesUtils::UnicodeString d_description;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

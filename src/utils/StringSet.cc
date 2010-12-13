@@ -83,7 +83,7 @@ GPlatesUtils::StringSet::SharedIterator::decrement_ref_count()
 
 const boost::optional<GPlatesUtils::StringSet::SharedIterator>
 GPlatesUtils::StringSet::contains(
-		const UnicodeString &s) const
+		const GPlatesUtils::UnicodeString &s) const
 {
 	UnicodeStringAndRefCount elem(s);
 	collection_type::iterator iter = d_impl->collection().find(elem);
@@ -102,7 +102,7 @@ GPlatesUtils::StringSet::contains(
 
 GPlatesUtils::StringSet::SharedIterator
 GPlatesUtils::StringSet::insert(
-		const UnicodeString &s)
+		const GPlatesUtils::UnicodeString &s)
 {
 	UnicodeStringAndRefCount elem(s);
 	collection_type::iterator iter = d_impl->collection().find(elem);

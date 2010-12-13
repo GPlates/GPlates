@@ -515,7 +515,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 	boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> age_grid_raster;
 	if (rendered_resolved_raster.get_age_grid_raster_band_names())
 	{
-		static const GPlatesPropertyValues::TextContent AGE_BAND_NAME(UnicodeString("age"));
+		static const GPlatesPropertyValues::TextContent AGE_BAND_NAME(GPlatesUtils::UnicodeString("age"));
 
 		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
 				age_grid_proxied_rasters = rendered_resolved_raster.get_age_grid_proxied_rasters();

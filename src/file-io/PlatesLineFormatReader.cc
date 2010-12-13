@@ -602,14 +602,14 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 	bool
 	extract_feature_id_from_header(
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
-			UnicodeString &feature_id)
+			GPlatesUtils::UnicodeString &feature_id)
 	{
-		static const UnicodeString identity_start_tag(" <identity>");
-		static const UnicodeString identity_end_tag("</identity>");
+		static const GPlatesUtils::UnicodeString identity_start_tag(" <identity>");
+		static const GPlatesUtils::UnicodeString identity_end_tag("</identity>");
 		static const boost::int32_t identity_start_tag_length = identity_start_tag.length();
 		static const boost::int32_t identity_end_tag_length = identity_end_tag.length();
 
-		UnicodeString geog_description = header->geographic_description();
+		GPlatesUtils::UnicodeString geog_description = header->geographic_description();
 
 		// Search for the identity start tag.
 		const boost::int32_t identity_start_index = geog_description.indexOf(identity_start_tag);
@@ -658,7 +658,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header)
 	{
-		UnicodeString feature_id;
+		GPlatesUtils::UnicodeString feature_id;
 		if (extract_feature_id_from_header(header, feature_id))
 		{
 			return GPlatesModel::FeatureHandle::create(
@@ -1683,7 +1683,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &,
 			const geometry_seq_type &);
 
-	typedef std::map<UnicodeString, creation_function_type> creation_map_type;
+	typedef std::map<GPlatesUtils::UnicodeString, creation_function_type> creation_map_type;
 	typedef creation_map_type::const_iterator creation_map_const_iterator;
 
 
@@ -1798,7 +1798,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &,
 			GPlatesFileIO::ReadErrorAccumulation &);
 
-	typedef std::map<UnicodeString, warning_function_type> warning_map_type;
+	typedef std::map<GPlatesUtils::UnicodeString, warning_function_type> warning_map_type;
 	typedef warning_map_type::const_iterator warning_map_const_iterator;
 
 

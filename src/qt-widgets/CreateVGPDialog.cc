@@ -71,7 +71,7 @@ namespace
 			GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gml("name"),
 					GPlatesPropertyValues::XsString::create(
-							UnicodeString(description.toStdString().c_str()))));
+							GPlatesUtils::UnicodeString(description.toStdString().c_str()))));
 	}	
 
 	void

@@ -115,7 +115,7 @@ namespace GPlatesUtils
 		 */
 		struct UnicodeStringAndRefCountWithBackRef
 		{
-			UnicodeString d_str;
+			GPlatesUtils::UnicodeString d_str;
 			mutable long d_ref_count;
 			mutable back_ref_list_type d_back_refs;
 
@@ -125,7 +125,7 @@ namespace GPlatesUtils
 			 */
 			explicit
 			UnicodeStringAndRefCountWithBackRef(
-					const UnicodeString &str) :
+					const GPlatesUtils::UnicodeString &str) :
 				d_str(str),
 				d_ref_count(0),
 				d_back_refs(back_ref_type())
@@ -506,7 +506,7 @@ namespace GPlatesUtils
 			 *
 			 * This function will not throw.
 			 */
-			const UnicodeString &
+			const GPlatesUtils::UnicodeString &
 			operator*() const
 			{
 				return access_target();
@@ -528,7 +528,7 @@ namespace GPlatesUtils
 			 *
 			 * This function will not throw.
 			 */
-			const UnicodeString *
+			const GPlatesUtils::UnicodeString *
 			operator->() const
 			{
 				return &(access_target());
@@ -559,7 +559,7 @@ namespace GPlatesUtils
 			 */
 			boost::intrusive_ptr<IdStringSetImpl> d_impl_ptr;
 
-			const UnicodeString &
+			const GPlatesUtils::UnicodeString &
 			access_target() const
 			{
 				return d_iter->d_str;
@@ -620,7 +620,7 @@ namespace GPlatesUtils
 		 */
 		const boost::optional<SharedIterator>
 		contains(
-				const UnicodeString &s) const;
+				const GPlatesUtils::UnicodeString &s) const;
 
 		/**
 		 * Obtain a SharedIterator instance which points to the UnicodeString instance
@@ -647,7 +647,7 @@ namespace GPlatesUtils
 		 */
 		SharedIterator
 		insert(
-				const UnicodeString &s);
+				const GPlatesUtils::UnicodeString &s);
 
 	private:
 		boost::intrusive_ptr<IdStringSetImpl> d_impl;

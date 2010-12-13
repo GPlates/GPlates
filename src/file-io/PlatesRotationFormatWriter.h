@@ -141,7 +141,7 @@ namespace GPlatesFileIO
 			struct ReconstructionPoleData
 			{
 				boost::optional<GPlatesMaths::FiniteRotation> finite_rotation;
-				boost::optional<UnicodeString> comment;
+				boost::optional<GPlatesUtils::UnicodeString> comment;
 				boost::optional<double> time;
 				boost::optional<bool> is_disabled;
 
