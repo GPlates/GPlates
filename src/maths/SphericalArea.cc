@@ -29,6 +29,7 @@
 
 #include "GreatCircleArc.h"
 #include "PolygonOnSphere.h"
+#include "Vector3D.h"
 
 
 namespace GPlatesMaths
@@ -95,86 +96,65 @@ GPlatesMaths::real_t
 GPlatesMaths::SphericalArea::calculate_polygon_signed_area(
 		const PolygonOnSphere &polygon)
 {
-	double sum_internal_angles = 0;
-	unsigned int num_non_zero_edges = 0;
+	//
+	// Calculate a rough centroid of the polygon.
+	//
 
-	// We need to deal with zero length edges - these are edges that have endpoints so
-	// close together that a rotation axis (for the edge) could not be determined.
-	// We'll deal with these edges by ignoring them - their contribution to the polygon
-	// is so small anyway (at the limits of numerical precision).
+	// Iterate through the points and calculate the sum of vertex positions.
+	Vector3D summed_points_position(0,0,0);
 
-	// Find the first non-zero-length edge.
-	PolygonOnSphere::const_iterator edge_iter = polygon.begin();
-	const PolygonOnSphere::const_iterator edge_end = polygon.end();
-	for ( ; edge_iter != edge_end; ++edge_iter)
+	PolygonOnSphere::vertex_const_iterator polygon_points_iter = polygon.vertex_begin();
+	const PolygonOnSphere::vertex_const_iterator polygon_points_end = polygon.vertex_end();
+	for ( ; polygon_points_iter != polygon_points_end; ++polygon_points_iter)
 	{
-		if (!edge_iter->is_zero_length())
-		{
-			++num_non_zero_edges;
-			break;
-		}
+		const PointOnSphere &point = *polygon_points_iter;
+
+		const Vector3D vertex(point.position_vector());
+		summed_points_position = summed_points_position + vertex;
 	}
 
-	// If we were unable to find a non-zero-length edge then return zero area because
-	// all the polygon points are so close together (within the limits of numerical precision).
-	if (num_non_zero_edges == 0)
+	// If the magnitude of the summed vertex position is zero then all the points averaged
+	// to zero and hence we cannot get a centroid point.
+	// This most likely happens when the vertices roughly form a great circle arc.
+	// If this happens then just pick one of the points on the polygon - it doesn't really
+	// matter because we're just trying to shorten the lengths of the sides of the triangles
+	// that fan out from one point (centroid) to each edge of the polygon.
+	const PointOnSphere polygon_centroid =
+			(summed_points_position.magSqrd() > 0.0)
+			? PointOnSphere(summed_points_position.get_normalisation())
+			: polygon.first_vertex();
+
+	//
+	// Form triangles using the polygon centroid and each edge of the polygon and
+	// sum the signed area of these spherical triangles.
+	//
+
+	real_t total_signed_area = 0;
+
+	PolygonOnSphere::const_iterator polygon_edges_iter = polygon.begin();
+	const PolygonOnSphere::const_iterator polygon_edges_end = polygon.end();
+	for ( ; polygon_edges_iter != polygon_edges_end; ++polygon_edges_iter)
 	{
-		return 0;
+		// Form the edges of a spherical triangle that:
+		// (1) starts at the polygon centroid,
+		// (2) moves to the current polygon edge start point,
+		// (3) moves to the current polygon edge end point,
+		// (4) moves back to the polygon centroid,
+		// thus forming a continuous loop.
+		const GreatCircleArc &polygon_edge = *polygon_edges_iter;
+
+		const GreatCircleArc centroid_to_edge_start =
+				GreatCircleArc::create(polygon_centroid, polygon_edge.start_point());
+
+		const GreatCircleArc edge_end_to_centroid =
+				GreatCircleArc::create(polygon_edge.end_point(), polygon_centroid);
+
+		total_signed_area +=
+				calculate_spherical_triangle_signed_area(
+						centroid_to_edge_start, polygon_edge, edge_end_to_centroid);
 	}
 
-	// Keep track of the first non-zero-length edge so we can calculate the final internal angle.
-	const GreatCircleArc &first_non_zero_length_edge = *edge_iter;
-
-	// Calculate the internal angles between adjacent non-zero-length edges.
-	const GreatCircleArc *previous_non_zero_length_edge = &first_non_zero_length_edge;
-	for ( ++edge_iter; edge_iter != edge_end; ++edge_iter)
-	{
-		if (edge_iter->is_zero_length())
-		{
-			continue;
-		}
-		++num_non_zero_edges;
-
-		const GreatCircleArc &current_non_zero_length_edge = *edge_iter;
-
-		const double angle_between_adjacent_non_zero_length_edges =
-				calculate_angle_between_adjacent_non_zero_length_edges(
-						*previous_non_zero_length_edge, current_non_zero_length_edge);
-
-		sum_internal_angles += angle_between_adjacent_non_zero_length_edges;
-
-		// Update the previous edge to be the current edge.
-		previous_non_zero_length_edge = &current_non_zero_length_edge;
-	}
-
-	// If there's less than three non-zero edges then the polygon looks like either
-	// a point or a line, both of which have zero area.
-	if (num_non_zero_edges < 3)
-	{
-		return 0;
-	}
-
-	// Handle the internal angle between the current non-zero-length edge and
-	// the first non-zero-length edge.
-	sum_internal_angles +=
-			calculate_angle_between_adjacent_non_zero_length_edges(
-					*previous_non_zero_length_edge, first_non_zero_length_edge);
-
-	// The area of the polygon, on unit sphere, is:
-	//   Area = Sum(internal angles) - (N-2) * PI
-	// ...where N is number of vertices (or edges).
-	double signed_area = sum_internal_angles - (num_non_zero_edges - 2) * PI;
-
-	// If the area is greater than 2 * PI then the polygon is clockwise when viewed from above
-	// the surface of the sphere.
-	// Calculate the complementary area *inside* the polygon and make it negative to indicate
-	// orientation.
-	if (signed_area > 2 * PI)
-	{
-		signed_area = signed_area - 4*PI/*area of unit sphere*/;
-	}
-
-	return signed_area;
+	return total_signed_area;
 }
 
 
