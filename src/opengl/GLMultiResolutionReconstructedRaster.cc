@@ -1694,7 +1694,17 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::generate_polygon_mesh(
 
 	Polygon_2 polygon_2;
 
-	--vertex_end;
+	// If the first vertex of the polygon is the same as (or extremely close to) the
+	// last vertex then CGAL will complain that the polygon is not a simple polygon.
+	// We avoid this by skipping the last vertex in this case.
+	// NOTE: Currently PolygonOnSphere::first_vertex() and PolygonOnSphere::last_vertex()
+	// vertex return the first point always - so instead we use vertex iterators.
+	if (*src_polygon_region->exterior_polygon->vertex_begin() ==
+		*--src_polygon_region->exterior_polygon->vertex_end())
+	{
+		--vertex_end;
+	}
+
 	// Iterate through the vertices again and project onto the plane.
 	for (vertex_iter = src_polygon_region->exterior_polygon->vertex_begin();
 		vertex_iter != vertex_end;
