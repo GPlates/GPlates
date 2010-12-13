@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDebug>
+
 #include "ResolvedTopologicalNetwork.h"
 
 #include "ReconstructionGeometryVisitor.h"
@@ -49,41 +51,243 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::get_feature_ref() const
 
 
 const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type>
+GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_triangulation_2() const
+{
+	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
+
+	// 
+	// 2D 
+	//
+
+	// Iterate over the individual faces of the constrained triangulation and create a
+	// ResolvedTopologicalNetwork for each one.
+	CgalUtils::cgal_finite_faces_2_iterator finite_faces_2_iter = 
+		d_delaunay_triangulation_2->finite_faces_begin();
+	CgalUtils::cgal_finite_faces_2_iterator finite_faces_2_end = 
+		d_delaunay_triangulation_2->finite_faces_end();
+
+	for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter)
+	{
+			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
+			network_triangle_points.reserve(3);
+
+			for (int index = 0; index != 3 ; ++index)
+			{
+				const CgalUtils::cgal_point_2_type cgal_triangle_point =
+						finite_faces_2_iter->vertex( index )->point();
+				const float lon = cgal_triangle_point.x();
+				const float lat = cgal_triangle_point.y();
+	
+				// convert coordinates
+				const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
+				const GPlatesMaths::PointOnSphere triangle_point =
+						GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
+				network_triangle_points.push_back(triangle_point);
+			}
+		
+			try 
+			{
+				// create a PolygonOnSphere
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
+					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
+				ret.push_back(resolved_topology_network_triangle);
+			}
+			catch(...)
+			{
+				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+			}
+	}
+
+	return ret;
+}
+
+const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type>
 GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries() const
 {
 	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
-	// Iterate over the individual faces of the triangulation and create a
+
+	// 
+	// 2D + Constraints
+	//
+
+	// Iterate over the individual faces of the constrained triangulation and create a
 	// ResolvedTopologicalNetwork for each one.
-	CgalUtils::cgal_finite_faces_2_iterator finite_faces_2_iter =
-			d_cgal_triangulation->finite_faces_begin();
-	CgalUtils::cgal_finite_faces_2_iterator finite_faces_end =
-			d_cgal_triangulation->finite_faces_end();
-	for ( ; finite_faces_2_iter != finite_faces_end; ++finite_faces_2_iter)
+	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_iter = 
+		d_constrained_delaunay_triangulation_2->finite_faces_begin();
+	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_end = 
+		d_constrained_delaunay_triangulation_2->finite_faces_end();
+
+	for ( ; constrained_finite_faces_2_iter != constrained_finite_faces_2_end; ++constrained_finite_faces_2_iter)
 	{
-		std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
-		network_triangle_points.reserve(3);
-
-		for (int index = 0; index != 3 ; ++index)
+		// Only draw those triangles in the interior of the meshed region
+		// This excludes areas with seed points
+		// and regions outside the envelope of the bounded area 
+		if ( constrained_finite_faces_2_iter->is_in_domain() )
 		{
-			const CgalUtils::cgal_point_2_type cgal_triangle_point =
-					finite_faces_2_iter->vertex( index )->point();
-			const float lon = cgal_triangle_point.x();
-			const float lat = cgal_triangle_point.y();
+//#if 0
+			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
+			network_triangle_points.reserve(3);
 
-			// convert coordinates
-			const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
-			const GPlatesMaths::PointOnSphere triangle_point =
-					GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
-			network_triangle_points.push_back(triangle_point);
-		}
+			for (int index = 0; index != 3 ; ++index)
+			{
+				const CgalUtils::cgal_point_2_type cgal_triangle_point =
+						constrained_finite_faces_2_iter->vertex( index )->point();
+				const float lon = cgal_triangle_point.x();
+				const float lat = cgal_triangle_point.y();
+	
+				// convert coordinates
+				const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
+				const GPlatesMaths::PointOnSphere triangle_point =
+						GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
+				network_triangle_points.push_back(triangle_point);
+			}
+		
+			try 
+			{
+				// create a PolygonOnSphere
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
+					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
+				ret.push_back(resolved_topology_network_triangle);
+			}
+			catch(...)
+			{
+				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+			}
+//#endif 
+			// continue;
+		} 
+		// end of exclude seed points 
+		else
+		{
+			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
+			network_triangle_points.reserve(3);
 
-		// create a PolygonOnSphere
-		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
-				GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
-		ret.push_back(resolved_topology_network_triangle);
+			for (int index = 0; index != 3 ; ++index)
+			{
+				const CgalUtils::cgal_point_2_type cgal_triangle_point =
+						constrained_finite_faces_2_iter->vertex( index )->point();
+				const float lon = cgal_triangle_point.x();
+				const float lat = cgal_triangle_point.y();
+	
+				// convert coordinates
+				const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
+				const GPlatesMaths::PointOnSphere triangle_point =
+						GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
+				network_triangle_points.push_back(triangle_point);
+			}
+		
+			try 
+			{
+				// create a PolygonOnSphere
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
+					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
+				ret.push_back(resolved_topology_network_triangle);
+			}
+			catch(...)
+			{
+				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+			}
+		} 
 	}
+
 	return ret;
 }
+
+const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type>
+GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_mesh() const
+{
+	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
+
+	// 
+	// 2D + Constraints
+	//
+
+	// Iterate over the individual faces of the constrained triangulation and create a
+	// ResolvedTopologicalNetwork for each one.
+	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_iter = 
+		d_constrained_delaunay_triangulation_2->finite_faces_begin();
+	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_end = 
+		d_constrained_delaunay_triangulation_2->finite_faces_end();
+
+	for ( ; constrained_finite_faces_2_iter != constrained_finite_faces_2_end; ++constrained_finite_faces_2_iter)
+	{
+
+		// Only draw those triangles in the interior of the meshed region
+		// This excludes areas with seed points
+		// and regions outside the envelope of the bounded area 
+		if ( constrained_finite_faces_2_iter->is_in_domain() )
+		{
+			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
+			network_triangle_points.reserve(3);
+
+			for (int index = 0; index != 3 ; ++index)
+			{
+				const CgalUtils::cgal_point_2_type cgal_triangle_point =
+						constrained_finite_faces_2_iter->vertex( index )->point();
+				const float lon = cgal_triangle_point.x();
+				const float lat = cgal_triangle_point.y();
+	
+				// convert coordinates
+				const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
+				const GPlatesMaths::PointOnSphere triangle_point =
+						GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
+				network_triangle_points.push_back(triangle_point);
+			}
+		
+			try 
+			{
+				// create a PolygonOnSphere
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
+					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
+				ret.push_back(resolved_topology_network_triangle);
+			}
+			catch(...)
+			{
+				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+			}
+		} 
+		// end of exclude seed points 
+		else
+		{
+			continue;
+
+#if 0
+			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
+			network_triangle_points.reserve(3);
+
+			for (int index = 0; index != 3 ; ++index)
+			{
+				const CgalUtils::cgal_point_2_type cgal_triangle_point =
+						constrained_finite_faces_2_iter->vertex( index )->point();
+				const float lon = cgal_triangle_point.x();
+				const float lat = cgal_triangle_point.y();
+	
+				// convert coordinates
+				const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
+				const GPlatesMaths::PointOnSphere triangle_point =
+						GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
+				network_triangle_points.push_back(triangle_point);
+			}
+		
+			try 
+			{
+				// create a PolygonOnSphere
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
+					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
+				ret.push_back(resolved_topology_network_triangle);
+			}
+			catch(...)
+			{
+				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+			}
+#endif
+		} 
+	}
+
+	return ret;
+}
+
+
 
 
 void

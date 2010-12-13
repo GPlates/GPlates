@@ -54,7 +54,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		populate(
-				bool topological);
+				bool is_topological);
 
 		/**
 		 * Gets the currently selected feature type, or boost::none if no feature type

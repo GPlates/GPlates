@@ -128,10 +128,12 @@ namespace GPlatesAppLogic
 		{
 			const ResolvedNetworkForInterpolationQuery &resolved_network = *resolved_network_query;
 
+			// 2D 
 			boost::optional<CgalUtils::interpolate_triangulation_query_type> interpolation_query =
 					CgalUtils::query_interpolate_triangulation_2(
 							cgal_point_2,
-							resolved_network.network->get_cgal_triangulation());
+							resolved_network.network->get_delaunay_triangulation_2(),
+							resolved_network.network->get_constrained_delaunay_triangulation_2() );
 
 			// Return false if the point is not in the current network.
 			if (!interpolation_query)
@@ -152,6 +154,7 @@ namespace GPlatesAppLogic
 				// Get the map for the current scalar.
 				const CgalUtils::cgal_map_point_2_to_value_type &scalar_map = **scalar_maps_iter;
 
+				// 2D 
 				// Interpolate the mapped values.
 				interpolated_scalars.push_back(
 						CgalUtils::interpolate_triangulation_2(

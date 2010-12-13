@@ -654,6 +654,26 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 	return exec();
 }
 
+bool
+GPlatesQtWidgets::CreateFeatureDialog::display(int index)
+{
+	// Set the stack back to the first page.
+	stack->setCurrentIndex(0);
+	// The Feature Collections list needs to be repopulated each time.
+	d_choose_feature_collection_widget->initialise();
+
+#if 0
+	// FIXME
+	// set the items on the list
+	static const GPlatesModel::FeatureType UNCLASSIFIED_FEATURE =
+		GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
+	d_choose_feature_type_widget->set_feature_type(UNCLASSIFIED_FEATURE);
+#endif
+	
+	// Show the dialog modally.
+	return exec();
+}
+
 
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_prev()

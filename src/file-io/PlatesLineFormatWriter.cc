@@ -169,15 +169,12 @@ GPlatesFileIO::PlatesLineFormatWriter::finalise_post_feature_properties(
 	// If we have a valid header and at least one geometry then we can output for the current feature.
 	if (valid_header && d_feature_accumulator.have_geometry())
 	{
-		using boost::lambda::_1;
-		using boost::lambda::_2;
-
 		// Calculate total number of geometry points in the current feature.
 		const unsigned int number_points_in_feature = std::accumulate(
 				d_feature_accumulator.geometries_begin(),
 				d_feature_accumulator.geometries_end(),
 				0 /*initial_value*/,
-				_1 + boost::lambda::bind(&get_number_of_points_in_geometry, _2));
+				boost::lambda::_1 + boost::lambda::bind(&get_number_of_points_in_geometry, boost::lambda::_2));
 
 		// Store the total number of geometry points in old plates header.
 		old_plates_header.number_of_points = number_points_in_feature;

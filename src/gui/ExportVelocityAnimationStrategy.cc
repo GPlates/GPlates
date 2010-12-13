@@ -285,12 +285,9 @@ namespace
 			referenced_files.push_back(file);
 		}
 
-		using boost::lambda::_1;
-		using boost::lambda::_2;
-
 		// Sort in preparation for removing duplicates.
 		// We end up sorting on 'const GPlatesFileIO::File::weak_ref' objects.
-		std::sort(referenced_files.begin(), referenced_files.end(), _1 < _2);
+		std::sort(referenced_files.begin(), referenced_files.end(), boost::lambda::_1 < boost::lambda::_2);
 
 		// Remove duplicates.
 		referenced_files.erase(
@@ -327,14 +324,11 @@ namespace
 		vector_field_seq_type mpvfs_sorted_by_feature(
 				reconstructed_feature_geometry_seq);
 
-		using boost::lambda::_1;
-		using boost::lambda::_2;
-
 		// Sort in preparation for grouping RFGs by feature.
 		std::sort(mpvfs_sorted_by_feature.begin(), mpvfs_sorted_by_feature.end(),
-			boost::lambda::bind(&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, _1) <
+			boost::lambda::bind(&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, boost::lambda::_1) <
 						boost::lambda::bind(
-								&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, _2));
+								&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, boost::lambda::_2));
 
 		const GPlatesModel::FeatureHandle *current_feature_handle_ptr = NULL;
 

@@ -48,6 +48,7 @@
 
 #include "presentation/ViewState.h"
 
+#define HIDE_DEV_CODE
 
 namespace
 {
@@ -142,6 +143,28 @@ GPlatesQtWidgets::TopologyToolsWidget::setup_widgets()
 	// add the Feature Summary Widget 
 	layout_section->addWidget( d_feature_summary_widget_ptr );
 
+	// 
+#ifdef HIDE_DEV_CODE
+	label_shape->setVisible(false);
+	spinbox_shape_factor->setVisible(false);
+	label_edge->setVisible(false);
+	spinbox_max_edge->setVisible(false);
+	button_mesh->setVisible(false);
+	combobox_topology_type->setVisible(false);
+
+	label_topology_type->setVisible(false);
+	combobox_topology_type->setCurrentIndex(1);
+	combobox_topology_type->setVisible(false);
+#endif
+
+ 	// Set some defaults
+ 	spinbox_shape_factor->setValue(0.125);
+ 	spinbox_max_edge->setValue(5);
+ 
+ 	// Default state is disabled ; will change if Topology Type combobox is changed to Network 
+ 	button_mesh->setEnabled( false );
+ 	spinbox_shape_factor->setEnabled( false );
+ 	spinbox_max_edge->setEnabled( false );
 }
 
 void
@@ -156,6 +179,16 @@ GPlatesQtWidgets::TopologyToolsWidget::setup_connections()
 
 	 QObject::connect( button_add_feature, SIGNAL(clicked()),
  		this, SLOT(handle_add_feature()));
+
+     QObject::connect( button_remove_feature, SIGNAL(clicked()),
+        this, SLOT(handle_remove_feature()));
+
+    QObject::connect(combobox_topology_type, SIGNAL(activated(int)),
+        this, SLOT(handle_combobox_topology_type_changed(int)));
+
+    QObject::connect( button_mesh, SIGNAL( clicked() ),
+        this, SLOT(handle_mesh()));
+
 }
 
 
@@ -199,7 +232,8 @@ GPlatesQtWidgets::TopologyToolsWidget::clear()
 void
 GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type /*associated_rg*/)
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type /*associated_rg*/,
+		GPlatesGlobal::TopologyTypes topology_type)
 {
 	// Always check your weak_refs!
 	if ( ! feature_ref.is_valid()) {
@@ -244,6 +278,63 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
 		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
 	}
+
+    // Adjust the combobox widget to match the type 
+    if ( topology_type == GPlatesGlobal::UNKNOWN_TOPOLOGY)
+    {
+        combobox_topology_type->setCurrentIndex(0);
+    }
+    else if ( topology_type == GPlatesGlobal::PLATE_POLYGON)
+    {
+        combobox_topology_type->setCurrentIndex(1);
+    }
+    else if ( topology_type == GPlatesGlobal::SLAB_POLYGON)
+    {
+        combobox_topology_type->setCurrentIndex(2);
+    }
+    else if ( topology_type == GPlatesGlobal::DEFORMING_POLYGON)
+    {
+        combobox_topology_type->setCurrentIndex(3);
+    }
+    else if ( topology_type == GPlatesGlobal::NETWORK)
+    {
+        combobox_topology_type->setCurrentIndex(4);
+    }
+    else /* just in case ... */
+    {
+        combobox_topology_type->setCurrentIndex(0);
+    }
+}
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_combobox_topology_type_changed(int index)
+{
+	// call the tools fuction
+	d_topology_tools_ptr->handle_topology_type_changed(index);
+
+	// setEnable(true / false ) the various mesh widgets as needed 
+ 	if( index == 0 ) 
+ 	{
+ 		button_mesh->setEnabled( false );
+ 		spinbox_shape_factor->setEnabled( false );
+ 		spinbox_max_edge->setEnabled( false );
+ 	}
+ 	else if ( index == 1 )
+ 	{
+ 		button_mesh->setEnabled( true );
+ 		spinbox_shape_factor->setEnabled( true );
+ 		spinbox_max_edge->setEnabled( true );
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_mesh()
+{
+	// call the tools fuction with the values in the spin boxes
+	d_topology_tools_ptr->handle_mesh( 
+		spinbox_shape_factor->value(),
+		spinbox_max_edge->value()
+	);
 }
 
 
@@ -271,7 +362,10 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_create()
 	// check for existing topology
 	if ( ! d_topology_tools_ptr->get_topology_feature_ref().is_valid() )
 	{
-		bool success = d_create_feature_dialog->display();
+		// Check which item is currently selected in the combobox 
+		// and pop up the dialog with that item automatically selected 
+		int index = combobox_topology_type->currentIndex();
+		bool success = d_create_feature_dialog->display(index);
 
 		if ( ! success ) 
 		{
@@ -300,6 +394,22 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_add_feature()
 
 	// call the tools fuction
 	d_topology_tools_ptr->handle_add_feature();
+
+	// Flip tab to topoology
+	tabwidget_main->setCurrentWidget( tab_topology );
+}
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_remove_feature()
+{
+	// simple short cut for no op
+	if ( ! d_feature_focus_ptr->is_valid() )
+	{
+		return;
+	}
+
+	// call the tools fuction
+	d_topology_tools_ptr->handle_remove_feature();
 
 	// Flip tab to topoology
 	tabwidget_main->setCurrentWidget( tab_topology );

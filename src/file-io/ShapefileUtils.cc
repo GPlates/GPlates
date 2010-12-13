@@ -104,7 +104,6 @@ GPlatesFileIO::ShapefileUtils::build_feature_map()
 	map["RF"] = "Fault";
 	map["RI"] = "MidOceanRidge";
 	map["SM"] = "Seamount";
-	map["SL"] = "Slab";
 	map["SS"] = "Fault";
 	map["SU"] = "Suture";
 	map["TB"] = "TerraneBoundary";

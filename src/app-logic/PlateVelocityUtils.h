@@ -98,6 +98,19 @@ namespace GPlatesAppLogic
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &mesh_point_feature_collections,
 				const ReconstructionGeometryCollection &reconstructed_polygons);
 
+		/**
+		 * Solves velocities for all loaded velocity feature collections.
+		 *
+		 * See @a PlateVelocityUtils::solve_velocities for details on
+		 * how the results are generated and where they are stored.
+		 */
+		const ReconstructionGeometryCollection::non_null_ptr_type
+		solve_velocities_on_multiple_recon_geom_collections(
+				ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &mesh_point_feature_collections,
+				std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> &reconstructed_polygons);
 
 		/**
 		 * Solves velocities for mesh-point features in @a mesh_point_feature_collection

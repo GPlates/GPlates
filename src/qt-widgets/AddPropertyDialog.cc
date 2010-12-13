@@ -91,12 +91,10 @@ namespace
 		{ "gpml:dipAngle", "gpml:angle", false, false },
 		{ "gpml:dipSide", "gpml:DipSideEnumeration", false, false }, // Enumeration
 		{ "gpml:dipSlip", "gpml:DipSlipEnumeration", false, false }, // Enumeration
-		{ "gpml:slabEdgeType", "xs:string", false, false }, 
 		{ "gpml:edge", "gpml:ContinentalBoundaryEdgeEnumeration", false, false }, // Enumeration
 		{ "gpml:errorBounds", "gml:Polygon", true, false }, // TimeDependentPropertyValue<_Geometry>
 	//	{ "gpml:fixedReferenceFrame", "gpml:plateId", false, false }, // For TotalReconstructionSequence
 	//	{ "gpml:movingReferenceFrame", "gpml:plateId", false, false }, // For TotalReconstructionSequence
-		{ "gpml:flatLying", "xs:boolean", false, false }, 
 		{ "gpml:foldAnnotation", "gpml:FoldPlaneAnnotationEnumeration", false, false }, // Enumeration
 		{ "gpml:isActive", "xs:boolean", true, false }, // TimeDependentPropertyValue<>
 		{ "gpml:leftPlate", "gpml:plateId", false, true },
@@ -120,11 +118,15 @@ namespace
 		{ "gpml:rightPlate", "gpml:plateId", false, true },
 	//	{ "gpml:rightUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
 	//	{ "gpml:shipTrack", "gpml:FeatureReference", false, false }, // FeatureReference<MagneticAnomalyShipTrack>
+		{ "gpml:slabEdgeType", "xs:string", false, false }, 
+		{ "gpml:slabFlatLying", "xs:boolean", false, false }, 
+		{ "gpml:slabFlatLyingDepth", "xs:double", false, false }, 
 		{ "gpml:strikeSlip", "gpml:StrikeSlipEnumeration", false, false },
 		{ "gpml:subductionPolarity", "gpml:SubductionPolarityEnumeration", true, false }, // TimeDependentPropertyValue<>
-		{ "gpml:subductionZoneAge", "xs:string", false, false }, 
-		{ "gpml:subductionZoneDeepDip", "xs:string", false, false }, 
-		{ "gpml:subductionZoneDepth", "xs:string", false, false }, 
+		{ "gpml:subductionZoneAge", "xs:double", false, false }, 
+		{ "gpml:subductionZoneDeepDip", "xs:double", false, false }, 
+		{ "gpml:subductionZoneDepth", "xs:double", false, false }, 
+
 	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true, false }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
 	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false, false }, // Enumeration. For AbsoluteReferenceFrame.
 		{ "gpml:unclassifiedGeometry", "gml:MultiPoint", true, false },	// _Geometry

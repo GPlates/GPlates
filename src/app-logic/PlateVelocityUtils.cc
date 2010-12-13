@@ -359,6 +359,65 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 }
 
 
+const GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type
+GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_multiple_recon_geom_collections(
+		ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &mesh_point_feature_collections,
+		std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> &reconstructed_polygons)
+{
+	ReconstructionGeometryCollection::non_null_ptr_type velocity_fields =
+			ReconstructionGeometryCollection::create(reconstruction_tree);
+
+	// Return if there are no mesh-point feature collections on which to solve velocities.
+	if (mesh_point_feature_collections.empty())
+	{
+		// Velocity fields is empty, but it's valid, so we can return it anyway.
+		return velocity_fields;
+	}
+
+	// FIXME:  Should this '1' should be user controllable?
+	const double reconstruction_time_2 = reconstruction_time + 1;
+
+	// Our two reconstruction trees for velocity calculations.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 = 
+			GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+					reconstruction_time_2,
+					reconstruction_anchored_plate_id,
+					reconstruction_tree->get_reconstruction_features());
+
+	// Iterate over the ReconstructionGeometryCollections 
+	std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type>::iterator reconstructed_polygons_iter;
+	reconstructed_polygons_iter = reconstructed_polygons.begin();
+	for ( ; reconstructed_polygons_iter != reconstructed_polygons.end() ; ++reconstructed_polygons_iter )
+	{
+		// pointer to the current collection
+		const ReconstructionGeometryCollection *collection_ptr = (*reconstructed_polygons_iter).get();
+
+		// Iterate over all mesh-point feature collections and solve velocities.
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator iter = mesh_point_feature_collections.begin();
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator end = mesh_point_feature_collections.end();
+		for ( ; iter != end; ++iter) 
+		{
+			solve_velocities_inner(
+				*velocity_fields,
+				*iter,
+				*collection_ptr,
+				reconstruction_tree,
+				reconstruction_tree_2,
+				reconstruction_time,
+				reconstruction_time_2,
+				reconstruction_anchored_plate_id);
+		}
+	}
+
+	return velocity_fields;
+}
+
+
+
+
 void
 GPlatesAppLogic::PlateVelocityUtils::solve_velocities_inner(
 		ReconstructionGeometryCollection &velocity_fields_to_populate,

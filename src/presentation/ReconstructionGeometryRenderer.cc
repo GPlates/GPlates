@@ -406,6 +406,31 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
+#if 0 
+	//
+	// 2D total triangulation
+	//
+	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
+		geometries = rtn->resolved_topology_geometries_from_triangulation_2();
+
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		it = geometries.begin();
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		it_end = geometries.end();
+	for(; it !=it_end; it++)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						*it, rtn, d_style_params, GPlatesGui::Colour::get_grey() );
+
+		// Add to the rendered geometry layer.
+		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+	}
+
+
+	//
+	// 2D + C Total Triangulation 
+	//
 	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
 		geometries = rtn->resolved_topology_geometries();
 	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
@@ -416,11 +441,33 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						*it, rtn, d_style_params, d_colour);
+						*it, rtn, d_style_params, GPlatesGui::Colour::get_grey() );
 
 		// Add to the rendered geometry layer.
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
 	}
+#endif
+
+	//
+	// Mesh triangulation
+	//
+	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
+		mesh_geometries = rtn->resolved_topology_geometries_mesh();
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		mesh_it = mesh_geometries.begin();
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		mesh_it_end = mesh_geometries.end();
+	for(; mesh_it !=mesh_it_end; mesh_it++)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						*mesh_it, rtn, d_style_params, d_colour );
+
+		// Add to the rendered geometry layer.
+		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+	}
+
+	
 
 	render_topological_network_velocities(rtn, d_rendered_geometry_layer, d_style_params, d_colour);
 }

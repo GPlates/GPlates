@@ -422,7 +422,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		
 				const GPlatesPropertyValues::TemplateTypeParameterType value_type2 =
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("PlateId" );
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId" );
 		
 				GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
 					GPlatesPropertyValues::GpmlPropertyDelegate::create( 
@@ -494,7 +494,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		
 				const GPlatesPropertyValues::TemplateTypeParameterType value_type2 =
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("PlateId" );
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId" );
 		
 				GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
 					GPlatesPropertyValues::GpmlPropertyDelegate::create( 

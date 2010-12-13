@@ -383,9 +383,15 @@ namespace
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("slabEdgeType") ] = 
 			GET_PROP_VAL_NAME(create_xs_string);
-		map[ PropertyName::create_gpml("depth") ] = 
+		map[ PropertyName::create_gpml("slabFlatLying") ] =
+			GET_PROP_VAL_NAME(create_xs_boolean);
+		map[ PropertyName::create_gpml("slabFlatLyingDepth") ] =
 			GET_PROP_VAL_NAME(create_xs_double);
-		map[ PropertyName::create_gpml("dipAngle") ] =
+		map[ PropertyName::create_gpml("subductionZoneAge") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("subductionZoneDeepDip") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("subductionZoneDepth") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);
 
 		return map;
@@ -857,10 +863,10 @@ namespace
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_topological_closed_plate_boundary_properties();
 
-		map[ PropertyName::create_gpml("flatLying") ] =
+		map[ PropertyName::create_gpml("slabFlatLying") ] =
 			GET_PROP_VAL_NAME(create_xs_boolean);
 
-		map[ PropertyName::create_gpml("depth") ] = 
+		map[ PropertyName::create_gpml("slabFlatLyingDepth") ] =
 			GET_PROP_VAL_NAME(create_xs_double);
 
 		map[ PropertyName::create_gpml("dipAngle") ] =
@@ -970,6 +976,19 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_polygon_centroid_point_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();					
+		map[ PropertyName::create_gpml("position") ] =
+			GET_PROP_VAL_NAME(create_point);
+		map[ PropertyName::create_gpml("multiPosition") ] = 
+			GET_PROP_VAL_NAME(create_gml_multi_point);
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
 }
 
 
@@ -1012,6 +1031,9 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_flowline_properties();
 	d_map[ FeatureType::create_gpml("MotionPath")] =
 		get_motion_path_properties();
+	d_map[ FeatureType::create_gpml("PolygonCentroidPoint")] =
+		get_polygon_centroid_point_properties();
+
 
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =

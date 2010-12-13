@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
-        <gpml:TopologicalClosedPlateBoundary>
-            <gpml:identity>GPlates-36b5b12d-50e3-4eb7-bd3a-76d7362d3c19</gpml:identity>
-            <gpml:revision>GPlates-9c94729d-c2d7-4c34-854a-20d40db4d0ab</gpml:revision>
+        <gpml:TopologicalNetwork>
+            <gpml:identity>GPlates-77f79719-361f-42ef-b036-ffb329c93066</gpml:identity>
+            <gpml:revision>GPlates-05b649d6-bd93-4058-92ca-216be8732251</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>101</gpml:value>
+                    <gpml:value>104</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
@@ -24,7 +24,7 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>Topology from 1 line</gml:name>
+            <gml:name>Test Network from nested polygons</gml:name>
             <gpml:boundary>
                 <gpml:PiecewiseAggregation>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType>
@@ -35,12 +35,35 @@
                                     <gpml:value>
                                         <gpml:TopologicalPolygon>
                                             <gpml:section>
+                                                <gpml:TopologicalPoint>
+                                                    <gpml:sourceGeometry>
+                                                        <gpml:PropertyDelegate>
+                                                            <gpml:targetFeature>GPlates-34905b74-8731-4174-b828-263431907dc8</gpml:targetFeature>
+                                                            <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:position</gpml:targetProperty>
+                                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
+                                                        </gpml:PropertyDelegate>
+                                                    </gpml:sourceGeometry>
+                                                </gpml:TopologicalPoint>
+                                            </gpml:section>
+                                            <gpml:section>
                                                 <gpml:TopologicalLineSection>
                                                     <gpml:sourceGeometry>
                                                         <gpml:PropertyDelegate>
-                                                            <gpml:targetFeature>GPlates-6f0385ff-b142-4626-b67a-0fa4f7f45f52</gpml:targetFeature>
+                                                            <gpml:targetFeature>GPlates-a5e36b7c-eecc-4a68-bda4-13cf3ef21f10</gpml:targetFeature>
                                                             <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
-                                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
+                                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LinearRing</gpml:valueType>
+                                                        </gpml:PropertyDelegate>
+                                                    </gpml:sourceGeometry>
+                                                    <gpml:reverseOrder>false</gpml:reverseOrder>
+                                                </gpml:TopologicalLineSection>
+                                            </gpml:section>
+                                            <gpml:section>
+                                                <gpml:TopologicalLineSection>
+                                                    <gpml:sourceGeometry>
+                                                        <gpml:PropertyDelegate>
+                                                            <gpml:targetFeature>GPlates-eeae84a8-d235-4b5f-b16a-c3b75ca4eadc</gpml:targetFeature>
+                                                            <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
+                                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LinearRing</gpml:valueType>
                                                         </gpml:PropertyDelegate>
                                                     </gpml:sourceGeometry>
                                                     <gpml:reverseOrder>false</gpml:reverseOrder>
@@ -70,6 +93,6 @@
                     </gpml:timeWindow>
                 </gpml:PiecewiseAggregation>
             </gpml:boundary>
-        </gpml:TopologicalClosedPlateBoundary>
+        </gpml:TopologicalNetwork>
     </gml:featureMember>
 </gpml:FeatureCollection>

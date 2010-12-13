@@ -31,7 +31,7 @@ GPlatesAppLogic::CgalUtils::convert_point_to_cgal_2(
 {
 	// Create a 2D point from the point on sphere.
 	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
-//qDebug() << "lon, lat=" << llp.longitude() << " , " << llp.latitude();
+	//qDebug() << "lon, lat=" << llp.longitude() << " , " << llp.latitude();
 	return cgal_point_2_type(llp.longitude(), llp.latitude());
 }
 
@@ -79,12 +79,10 @@ GPlatesAppLogic::CgalUtils::convert_point_from_cgal_3(
 boost::optional<GPlatesAppLogic::CgalUtils::interpolate_triangulation_query_type>
 GPlatesAppLogic::CgalUtils::query_interpolate_triangulation_2(
 		const cgal_point_2_type &point,
-		const cgal_delaunay_triangulation_2_type &triangulation)
+		const cgal_delaunay_triangulation_2_type &triangulation,
+		const cgal_constrained_delaunay_triangulation_2_type &c_triangulation)
 {
-	// natural_neighbor_coordinates_2 
-	// cannot use cgal_constrained_delaunay_triangulation_2_type as the base triangulation
-	// it compiles fine with a delaunay_triangulation_2 
-
+	// Build the natural_neighbor_coordinates_2 from the cgal_delaunay_triangulation_2_type
 	cgal_point_coordinate_vector_type coords;
 	CGAL::Triple< std::back_insert_iterator<cgal_point_coordinate_vector_type>, cgal_kernel_type::FT, bool>
 			coordinate_result =
@@ -92,6 +90,20 @@ GPlatesAppLogic::CgalUtils::query_interpolate_triangulation_2(
 							triangulation,
 							point,
 							std::back_inserter(coords));
+
+	# if 0
+	// NOTE: 
+	// cannot use cgal_constrained_delaunay_triangulation_2_type as the base triangulation
+	// 2D + C
+	cgal_point_coordinate_vector_type c_coords;
+	CGAL::Triple< std::back_insert_iterator<cgal_point_coordinate_vector_type>, cgal_kernel_type::FT, bool>
+			c_coordinate_result =
+					CGAL::natural_neighbor_coordinates_2(
+							c_triangulation,
+							point,
+							std::back_inserter(c_coords));
+	#endif
+
 	
 	const bool in_network = coordinate_result.third;
 
@@ -146,7 +158,7 @@ GPlatesAppLogic::CgalUtils::gradient_2(
 	const bool in_network = coordinate_result.third;
 	if (!in_network)
 	{
-qDebug() << " !in_network ";
+		qDebug() << " !in_network ";
 	}
 
 	const cgal_coord_type &norm = coordinate_result.second;

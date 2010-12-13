@@ -175,6 +175,8 @@ namespace GPlatesGui
 
 		//! Replaces placeholder string when exporting 
 		static const QString s_placeholder_slab_edge_leading;
+		static const QString s_placeholder_slab_edge_leading_left;
+		static const QString s_placeholder_slab_edge_leading_right;
 		static const QString s_placeholder_slab_edge_trench;
 		static const QString s_placeholder_slab_edge_side;
 

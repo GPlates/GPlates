@@ -297,7 +297,7 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 
 	if ( feature_type_name == topology_boundary_type_name )
 	{ 
-		d_topology_type = GPlatesGlobal::PLATEPOLYGON;
+		d_topology_type = GPlatesGlobal::PLATE_POLYGON;
 	}
 	else if ( feature_type_name == topology_network_type_name )
 	{
@@ -318,7 +318,8 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 	// Load the topology into the Topology Widget
 	d_topology_tools_widget_ptr->display_topology(
 		d_feature_focus_ptr->focused_feature(),
-		d_feature_focus_ptr->associated_reconstruction_geometry() );
+		d_feature_focus_ptr->associated_reconstruction_geometry(),
+		d_topology_type);
 
 	// NOTE: this will NOT trigger a set_focus signal with NULL ref ; 
 	// NOTE: the focus connection is below 
@@ -554,6 +555,41 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 	d_end_points_layer_ptr->set_active();
 }
 
+void
+GPlatesGui::TopologyTools::handle_topology_type_changed(int index)
+{
+#ifdef DEBUG
+std::cout << "GPlatesGui::TopologyTools::handle_topology_type_changed() " << std::endl;
+#endif
+
+	if (! d_is_active) { return; }
+
+	if      ( index == 0 ) { d_topology_type = GPlatesGlobal::UNKNOWN_TOPOLOGY; }
+	else if ( index == 1 ) { d_topology_type = GPlatesGlobal::PLATE_POLYGON; }
+	else if ( index == 2 ) { d_topology_type = GPlatesGlobal::SLAB_POLYGON; }
+	else if ( index == 3 ) { d_topology_type = GPlatesGlobal::DEFORMING_POLYGON; }
+	else if ( index == 4 ) { d_topology_type = GPlatesGlobal::NETWORK; }
+	else                   { d_topology_type = GPlatesGlobal::UNKNOWN_TOPOLOGY; }
+
+	// update the topology
+	update_and_redraw_topology();
+}
+
+void
+GPlatesGui::TopologyTools::handle_mesh(double shape_factor, double max_edge)
+{
+#ifdef DEBUG
+std::cout << "GPlatesGui::TopologyTools::handle_mesh(shape, max_edge)" << shape_factor << "," << max_edge << ";" << std::endl;
+#endif
+	if (! d_is_active) { return; }
+
+	// Set the values
+	d_shape_factor = shape_factor;
+	d_max_edge = max_edge;
+
+	// update the topology
+	update_and_redraw_topology();
+}
 
 void
 GPlatesGui::TopologyTools::handle_reconstruction()
@@ -749,6 +785,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 		return false;
 	}
 
+    // Can't insert focused feature if it does not have an associated recon geom
 	if ( !d_feature_focus_ptr->associated_reconstruction_geometry() )
 	{
 		return false;
@@ -787,6 +824,9 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 	// that uniquely identifies a property instead of using a property name.
 	GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
 	geometry_type_finder.visit_feature(d_feature_focus_ptr->focused_feature());
+
+#if 0
+// NOTE: MULTIPLE GEOM FIXME
 	if (geometry_type_finder.has_found_multiple_geometries_of_the_same_type())
 	{
 		qWarning()
@@ -797,6 +837,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 
 		return false;
 	}
+#endif
 
 	// See if the focused feature is already in the topology.
 	const std::vector<int> topology_sections_indices = find_topological_section_indices(
@@ -980,7 +1021,6 @@ GPlatesGui::TopologyTools::react_entries_inserted(
 
 	// Iterate over the table rows inserted in the topology sections container and
 	// also insert them into our internal section sequence structure.
-	using boost::lambda::_1;
 	std::transform(
 			inserted_begin,
 			inserted_end,
@@ -990,7 +1030,7 @@ GPlatesGui::TopologyTools::react_entries_inserted(
 			// Calls the SectionInfo constructor with a TableRow as the argument...
 			boost::lambda::bind(
 					boost::lambda::constructor<SectionInfo>(),
-					_1));
+					boost::lambda::_1));
 
 	// Our internal section sequence should now be in sync with the topology sections container.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -1074,6 +1114,34 @@ GPlatesGui::TopologyTools::handle_add_feature()
 	d_feature_focus_ptr->unset_focus();
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
 	d_viewport_window_ptr->feature_table_model().clear();
+}
+
+
+void
+GPlatesGui::TopologyTools::handle_remove_feature()
+{
+	// adjust the mode
+	d_in_edit = true;
+
+	// only allow adding of focused features
+	if ( ! d_feature_focus_ptr->is_valid() ) 
+	{ 
+		return;
+	}
+
+	const std::vector<int> topological_section_indices = find_topological_section_indices(
+			d_feature_focus_ptr->focused_feature(),
+			d_feature_focus_ptr->associated_geometry_property());
+	
+	if ( !topological_section_indices.empty() )	
+	{
+		int check_index = topological_section_indices[0];
+		// remove it from the containter 
+		d_topology_sections_container_ptr->remove_at( check_index );
+
+		// NOTE : this will then trigger  our react_entry_removed() 
+		// so no further action should be needed here ...
+	}
 }
 
 
@@ -1175,12 +1243,14 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 {
 	d_topology_geometry_layer_ptr->clear_rendered_geometries();
 
+#if 0
 	if ( d_topology_type == GPlatesGlobal::NETWORK )
 	{
 		// FIXME: eventually we will want the network drawn here too, 
 		// but for now, don't draw the network, just let the Resolver do it
 	}
 	else
+#endif
 	{
 		if (d_topology_geometry_opt_ptr) 
 		{

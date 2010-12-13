@@ -32,6 +32,7 @@
 
 #include "utils/UnicodeStringUtils.h"
 
+#define HIDE_DEV_CODE
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -220,9 +221,9 @@ namespace
 		{ "Seamount", "position" },
 		{ "Seamount", "unclassifiedGeometry" },
 		{ "SedimentThickness", "outlineOf" },
-		{ "Slab", "centerLineOf" },
-		{ "Slab", "outlineOf" },
-		{ "Slab", "unclassifiedGeometry" },
+		{ "SlabEdge", "centerLineOf" },
+		{ "SlabEdge", "outlineOf" },
+		{ "SlabEdge", "unclassifiedGeometry" },
 		{ "SpreadingAsymmetry", "outlineOf" },
 		{ "SpreadingRate", "outlineOf" },
 		{ "Stress", "outlineOf" },
@@ -237,6 +238,7 @@ namespace
 		{ "Topography", "outlineOf" },
 		{ "TopologicalClosedPlateBoundary", "boundary" },
 		{ "TopologicalSlabBoundary", "boundary" },
+		{ "TopologicalNetwork", "boundary" },
 		{ "Transform", "centerLineOf" },
 		{ "Transform", "outlineOf" },
 		{ "Transform", "unclassifiedGeometry" },
@@ -257,7 +259,14 @@ namespace
 
 	static const FeatureTypeInfo topological_feature_type_info_table[] = {
 		{ "TopologicalClosedPlateBoundary", "boundary" },
+#ifndef HIDE_DEV_CODE
 		{ "TopologicalSlabBoundary", "boundary" },
+		{ "TopologicalNetwork", "boundary" },
+		{ "UnclassifiedTopologcialFeature", "boundary" },
+		{ "UnclassifiedTopologcialFeature", "centerLineOf" },
+		{ "UnclassifiedTopologcialFeature", "outlineOf" },
+		{ "UnclassifiedTopologcialFeature", "unclassifiedGeometry" },
+#endif
 	};
 
 

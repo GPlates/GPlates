@@ -31,10 +31,10 @@
 
 
 const char *GPlatesAppLogic::VelocityFieldCalculatorLayerTask::MESH_POINT_FEATURES_CHANNEL_NAME =
-		"Mesh-point features";
+		"Mesh-point Features";
 
 const char *GPlatesAppLogic::VelocityFieldCalculatorLayerTask::POLYGON_FEATURES_CHANNEL_NAME =
-		"Polygon features";
+		"Source Features";
 
 
 bool
@@ -114,12 +114,11 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::process(
 			reconstructed_polygons,
 			POLYGON_FEATURES_CHANNEL_NAME,
 			input_data);
-	// For now, let's expect exactly ONE (not more, not less) ReconstructionGeometryCollection
-	// of polygons.
+
+	// Double check for no polygons 
 	if (reconstructed_polygons.empty()) {
 		return boost::none;
 	}
-	// else, we'll ignore any after the first.
 
 	// Get the mesh-point features collection input.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> mesh_point_feature_collections;
@@ -128,6 +127,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::process(
 			MESH_POINT_FEATURES_CHANNEL_NAME,
 			input_data);
 
+#if 0
+// NOTE: this style only used the first set found in reconstructed_polygons
+// I've added a new call below to solver the velocity field on all reconstructed_polygons
+// MT 2010-12-09
 	// Calculate the velocity fields.
 	const ReconstructionGeometryCollection::non_null_ptr_to_const_type
 			velocity_fields =
@@ -137,6 +140,17 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::process(
 							anchored_plate_id,
 							mesh_point_feature_collections,
 							*reconstructed_polygons.front());
+#endif
+
+	// Calculate the velocity fields.
+	const ReconstructionGeometryCollection::non_null_ptr_to_const_type
+			velocity_fields =
+					PlateVelocityUtils::solve_velocities_on_multiple_recon_geom_collections(
+							*reconstruction_tree,
+							reconstruction_time,
+							anchored_plate_id,
+							mesh_point_feature_collections,
+							reconstructed_polygons);
 
 	// Return the velocity fields.
 	return layer_task_data_type(velocity_fields);

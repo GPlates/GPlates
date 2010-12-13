@@ -110,6 +110,9 @@ namespace GPlatesQtWidgets
 		bool
 		display();
 
+		bool
+		display(int index);
+
 		GPlatesModel::FeatureHandle::weak_ref
 		get_feature_ref() {
 			return d_feature_ref;

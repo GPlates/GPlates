@@ -124,18 +124,15 @@ namespace GPlatesViewOperations
 			remove_duplicates(
 					reconstruction_geom_seq_type &reconstruction_geom_seq)
 			{
-				using boost::lambda::_1;
-				using boost::lambda::_2;
-
 				std::sort(
 						reconstruction_geom_seq.begin(),
 						reconstruction_geom_seq.end(),
 						boost::lambda::bind(
 								&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-								_1) <
+								boost::lambda::_1) <
 								boost::lambda::bind(
 										&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-										_2));
+										boost::lambda::_2));
 
 				reconstruction_geom_seq.erase(
 						std::unique(
@@ -143,10 +140,10 @@ namespace GPlatesViewOperations
 								reconstruction_geom_seq.end(),
 								boost::lambda::bind(
 										&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-										_1) ==
+										boost::lambda::_1) ==
 										boost::lambda::bind(
 												&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-												_2)),
+												boost::lambda::_2)),
 						reconstruction_geom_seq.end());
 			}
 		}

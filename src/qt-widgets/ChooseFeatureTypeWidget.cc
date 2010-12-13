@@ -74,13 +74,13 @@ namespace
 	void
 	populate_feature_types_list(
 			GPlatesQtWidgets::SelectionWidget &selection_widget,
-			bool topological)
+			bool is_topological)
 	{
 		// FIXME: For extra brownie points, filter -this- list based on features
 		// which you couldn't possibly create given the digitised geometry.
 		// E.g. no Cratons made from PolylineOnSphere!
 		typedef GPlatesModel::GPGIMInfo::feature_set_type feature_set_type;
-		const feature_set_type &list = GPlatesModel::GPGIMInfo::get_feature_set(topological);
+		const feature_set_type &list = GPlatesModel::GPGIMInfo::get_feature_set(is_topological);
 
 		selection_widget.clear();
 
@@ -117,9 +117,9 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::ChooseFeatureTypeWidget(
 
 void
 GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
-		bool topological)
+		bool is_topological)
 {
-	populate_feature_types_list(*d_selection_widget, topological);
+	populate_feature_types_list(*d_selection_widget, is_topological);
 }
 
 

@@ -84,13 +84,11 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 	GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
 			new_recon_geom_seq, sorted_hits);
 
-	using boost::lambda::_1;
-
 	// Remove those reconstruction geometries that the caller is not interested in.
 	// Remove reconstruction geometry if it does not satisfy the caller's predicate.
 	new_recon_geom_seq.erase(
 			std::remove_if(new_recon_geom_seq.begin(), new_recon_geom_seq.end(),
-					!boost::lambda::bind(filter_recon_geom_predicate, _1)),
+					!boost::lambda::bind(filter_recon_geom_predicate, boost::lambda::_1)),
 			new_recon_geom_seq.end());
 
 	if (new_recon_geom_seq.empty())
@@ -112,7 +110,6 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 		clicked_table_model.geometry_sequence();
 
 	// Add the reconstruction geometries to the clicked table model.
-	using boost::lambda::_1;
 	std::transform(
 			new_recon_geom_seq.begin(),
 			new_recon_geom_seq.end(),
@@ -125,7 +122,7 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 			// 'const ReconstructGraph &' as the arguments...
 			boost::lambda::bind(
 					boost::lambda::constructor<FeatureTableModel::ReconstructionGeometryRow>(),
-					_1,
+					boost::lambda::_1,
 					boost::cref(reconstruct_graph)));
 
 	clicked_table_model.end_insert_features();

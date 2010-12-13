@@ -24,9 +24,11 @@
 #ifndef GPLATES_QTWIDGETS_TOPOLOGYTOOLSWIDGET_H
 #define GPLATES_QTWIDGETS_TOPOLOGYTOOLSWIDGET_H
 
+#include <QDebug>
 #include <QWidget>
 #include "TopologyToolsWidgetUi.h"
 
+#include "global/types.h"
 #include "model/FeatureHandle.h"
 
 #include "gui/TopologyTools.h"
@@ -96,7 +98,8 @@ namespace GPlatesQtWidgets
 		void
 		display_topology(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type associated_rg);
+				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type associated_rg,
+				GPlatesGlobal::TopologyTypes topology_type);
 
 		void
 		display_number_of_sections( int i ) {
@@ -113,6 +116,9 @@ namespace GPlatesQtWidgets
 		handle_add_feature();
 
 		void
+		handle_remove_feature();
+
+		void
 		choose_topology_tab()
 		{
 			tabwidget_main->setCurrentWidget( tab_topology );
@@ -123,6 +129,12 @@ namespace GPlatesQtWidgets
 		{
 			tabwidget_main->setCurrentWidget( tab_section );
 		}
+
+		void
+		handle_combobox_topology_type_changed(int index);
+
+		void
+		handle_mesh();
 
 	private:
 
