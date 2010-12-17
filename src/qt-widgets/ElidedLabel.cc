@@ -227,14 +227,24 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::showToolTip(
 		const QString &text,
 		QLabel *master_label)
 {
+	// FIXME: Temporarily disabling tooltips on Windows as two computers so far lose mouse/key
+	// focus for all applications when a tooltip in the Layers dialog pops up.
+	// CTRL+ALT+DEL is the only way to break the freeze after which GPlates can continue to be used.
+#if !defined(WIN32)
 	instance().do_show(text, master_label);
+#endif
 }
 
 
 void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::hideToolTip()
 {
+	// FIXME: Temporarily disabling tooltips on Windows as two computers so far lose mouse/key
+	// focus for all applications when a tooltip in the Layers dialog pops up.
+	// CTRL+ALT+DEL is the only way to break the freeze after which GPlates can continue to be used.
+#if !defined(WIN32)
 	instance().do_hide();
+#endif
 }
 
 
