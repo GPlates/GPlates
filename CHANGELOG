@@ -1,3 +1,12 @@
+GPlates 1.0
+===========
+
+Changes since 0.9.10:
+
+ * Added ability to create a new instance of GPlates, with its own main window
+   and dialogs, from the file menu - useful mainly for Mac OS X where multiple
+   instances of an application.
+
 GPlates 0.9.10.1
 ================
 
