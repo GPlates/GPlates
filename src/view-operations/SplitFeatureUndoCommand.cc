@@ -67,15 +67,16 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 			d_feature_collection_ref,
 			&GPlatesFeatureVisitors::is_not_geometry_property);
 #endif
+	//use focused feature to find the correct geometry property iterator.
 	boost::optional<GPlatesModel::FeatureHandle::iterator> property_iter_opt = 
-		*GPlatesFeatureVisitors::find_first_geometry_property(*d_old_feature);
+		d_feature_focus->associated_geometry_property();
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			property_iter_opt,
 			GPLATES_ASSERTION_SOURCE);
 
-GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
-	//Here we assume there is only one geometry in the feature
+	GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
+	//Here we assume there is only one geometry in one geometry property.
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere =
 		GPlatesFeatureVisitors::find_first_geometry(property_iter);
 
@@ -136,7 +137,8 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 
 #if 1
 	//we remove the geometry from the feature and then add the new one into it
-	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
+	//remove the highlighted geometry, not all the geometries in feature.  
+	(*d_old_feature)->remove(*property_iter_opt);
 #endif
 
 	GeometryBuilder::PointIndex point_index_to_split;
