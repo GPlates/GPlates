@@ -3,9 +3,86 @@ GPlates 1.0
 
 Changes since 0.9.10:
 
+ * New Flowline/MotionPath features:
+   o Create flowlines and motion paths as new gpml:Flowline and gpml:MotionPath features using
+     the multi-point digitisation tool.
+   o Provide a sequence of times between which the half-stage poles are calculated.
+   o Reconstructed Flowlines and motion paths displayed in globe and map views.
+   o Reconstructed Flowline and MotionPath geometries can be exported to GMT and Shapefile formats.
+ * New small circle tool to create concentric small circles as a visualisation aid:
+   o Generates small circle centre using euler pole of stage rotation between
+     two plates (using default Reconstruction Tree layer), or
+	 by entering small circle centre coordinates as text.
+   o One or more (concentric) equally spaced small circles entered textually as min/max radii.
+ * New area measurement of polygons in Measure tool.
+ * Total Rotation Poles:
+   o New Total Reconstruction Sequences dialog accessible from "View Total Reconstruction Sequences" in "File" menu:
+     * Views total reconstruction sequences of all rotation files (including comments in file).
+     * Disabled poles highlighted in grey.
+     * Can filter display of sequences matching a specified plate ID.
+     * Soon will form basis for editing, inserting, removing and searching poles.
+   o Added boolean field to Total Reconstruction Poles dialog to indicate whether finite rotation was interpolated.
+   o Modify Reconstruction Pole tool now works in the map views (in addition to the globe view).
+ * Feature collection file management:
+   o New restore feature collections to a previously loaded session:
+     * Loads feature collections that were loaded in a previous session of GPlates.
+	 * Multiple sessions to choose from.
+	 * Identify each session based on number of files, common directory name of files and date/time of last use of session.
+   o Feature collection activation/deactivation removed (from "Manage Feature Collections" dialog) since
+     layer activation/deactivation is now supported.
+   o Fixed various save file dialog issues relating to filenames and file format types.
+   o Fixed CTRL+O shortcut (to open feature collections) not working when "Manage Feature Collections" dialog is open.
+ * Layers:
+   o Can create a new layer.
+   o Enable or disable layers on a per-layer basis.
+   o Can set default Reconstruction Tree layer in Layers dialog:
+     * Default layer displayed with "[Default]" prefixed to layer type.
+     * Default layer implicitly connected if no Reconstruction Tree layer explicitly connected to another layer's input.
+   o Layer types with no visual output no longer have the visibility (eye) icon -
+     currently this is the "Age Grid" and "Reconstruction Tree" layers.
+   o Now possible to drag a visual layer from anywhere on the widget, not just the coloured strip to the left.
+   o Fixed map view not respecting visual layers draw order.
+   o Added layers combo box to "View Total Reconstruction Poles" dialog to show Reconstruction Tree layer being viewed.
+   o Can pop up "View Total Reconstruction Poles" dialog directly from a Reconstruction Tree layer.
+   o "Show Layers" menu item now also hides the Layers dialog.
+   o Fixed creation of Virtual Geomagnetic Pole feature not creating "Reconstruct Geometries" layer (if needed).
+ * Topology:
+   o Added gpml:TopologicalSlabBoundary feature type and associated properties.
+   o Build Topology and Edit Topology tools now work in the map views (in addition to the globe view).
+   o Fixed each topological closed plate polygon feature showing up twice (appearing as two visible geometries instead of one).
+ * Plate velocities:
+   o Significantly improved peformance of velocity calculations (via optimised point-in-polygon tests).
+   o Automatic connection of velocity layers to topological closed plate polygon layers when
+     former loaded after later or vice versa.
+ * Visualisation:
+   o Configure optional text overlay of reconstruction time including font, colour, position.
+   o Choose global graticule latitude and longitude resolution (and colour/transparency).
+   o Choose background colour of globe (default is grey).
+   o Stars in background of globe view.
+   o Added two-finger pinch gesture on Mac OS X trackpad to zoom in globe and map views.
+   o Added two-finger rotation gesture on Mac OS X trackpad to rotate in globe and map views.
+   o Can show/hide bottom panel in GPlates main window.
+   o Pressing the arrow keys in globe view now rotates the globe by an amount dependent on zoom.
+ * Export:
+   o Optional reconstruction time text overlay visible in exported globe (or map) view raster(s).
+   o Fixed far side of globe (not visible) being incorrectly exported to SVG.
+   o Fixed circumference of globe not getting exported to SVG.
  * Added ability to create a new instance of GPlates, with its own main window
-   and dialogs, from the file menu - useful mainly for Mac OS X where multiple
-   instances of an application.
+   and dialogs, from the file menu - useful mainly for Mac OS X.
+ * Warns when adding a feature property if it is not valid for the current feature type.
+ * Shortcut CTRL+D added for "Specify Anchored Plate ID" dialog.
+ * Shortcut CTRL+P added for "View Total Reconstruction Poles" dialog.
+ * Can specify plate ID of currently focused feature in "Specify Anchored Plate ID" dialog.
+ * Can specify the which plate ID of currently focused feature in case
+   there are multiple plate ID properties (eg, reconstruction, left, right plate ID).
+ * "Clone Feature" tool now pops up dialog asking which feature collection to store cloned feature in.
+ * Renamed "Clone Geometry" to "Copy Geometry to Digitise Tool".
+ * Relaxed longitude georeferencing constraints on rasters - 0 to 360 no longer gives zero width error.
+ * Fixed text not rendering (eg, in Measure tool).
+ * Fixed "New Feature Collection" incorrectly being displayed for multiple files in the colouring preview ("Manage Colouring") dialog.
+ * Fixed missing triangle when using some static polygon datasets for reconstructing rasters.
+ * Fixed incorrect rendering of reconstructed rasters on systems that use PBuffers for OpenGL render-targets.
+ * Fixed crash when using Split Feature tool on a feature containing more than one geometry property.
 
 GPlates 0.9.10.1
 ================
