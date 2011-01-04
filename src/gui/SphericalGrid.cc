@@ -292,7 +292,13 @@ namespace
 	{
 		GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type nurbs =
 			GPlatesOpenGL::GLUNurbsRenderer::create();
-		return draw_line_of_lon(nurbs, GPlatesMaths::PI / 2.0, colour);
+
+		GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type circumference_drawable =
+			GPlatesOpenGL::GLCompositeDrawable::create();
+		circumference_drawable->add_drawable(draw_line_of_lon(nurbs, GPlatesMaths::PI / 2.0, colour));
+		circumference_drawable->add_drawable(draw_line_of_lon(nurbs, -GPlatesMaths::PI / 2.0, colour));
+
+		return circumference_drawable;
 	}
 }
 
