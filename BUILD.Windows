@@ -56,10 +56,9 @@ in "DEPS.Windows".
 Creating Visual Studio solution and project files with CMake
 
   1.  Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
-      Boost, GDAL, ICU and GLEW packages you've installed.
+      Boost, GDAL, and GLEW packages you've installed.
       For example add the following to 'CMAKE_INCLUDE_PATH':
          "C:/Libraries/Boost"
-         "C:/Libraries/icu/include"
          "C:/Libraries/FWTools/include"
 		 "C:/Libraries/glew-1.5.4/include"
       The corresponding library directories will be found relative to these include directories.

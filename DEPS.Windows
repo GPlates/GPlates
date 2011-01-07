@@ -96,16 +96,6 @@ Boost
   3. Add the \boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
      environment variable.
 
-ICU
-
-  1. Get and extract icu4c-3_8-Win32-msvc8.zip from: http://icu-project.org/
-     download/3.8.html 
-  2. In VC access Tools, Options, Projects, Directories and add the following 
-     ICU directories: 
-       * Executable files: \bin
-  3. Add the \bin directory to the PATH environment variable (see above).
-  4. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
-
 FWTools (for GDAL and Proj4)
 
   1. Get and install FWTools 2.4.5 from http://home.gdal.org/fwtools/ 

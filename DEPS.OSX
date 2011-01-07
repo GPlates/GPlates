@@ -25,7 +25,6 @@ installed:
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
   • GLEW library (the OpenGL Extension Wrangler Library)
-  • ICU library
   • Boost library headers (version 1.34 or newer)
   • Qt library (version 4.4 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
@@ -40,7 +39,6 @@ library dependencies on Mac OS X 10.4 and 10.5 systems.
 
 Program/library Corresponding Macports packages
 cmake           cmake
-ICU             icu
 Boost           boost
 Qt              qt4-mac
 GDAL            gdal
@@ -114,7 +112,6 @@ instead if one exists (ie, for GDAL, Qt and CMake).
     Macports due to the large number of software dependencies required by Qt4.
   • Install GLEW with 'sudo port install glew' if you don't have GLEW.
   • Install Boost with 'sudo port install boost' if you don't have Boost.
-  • Install ICU with 'sudo port install icu' if you don't have ICU.
   • Install CGAL with 'sudo port install cgal' if you don't have CGAL.
   • Install GDAL with 'sudo port install gdal +netcdf' if you don't have GDAL - note the additional "+netcdf".
     You may have to use 'sudo port upgrade --enforce-variants gdal +netcdf' if your GDAL is already up to date. 
