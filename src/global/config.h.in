@@ -42,12 +42,6 @@
 /* Define to 1 if you have the `GLU' library (-lGLU). */
 #cmakedefine HAVE_LIBGLU
 
-/* Define to 1 if you have the `icui18n' library (-licui18n). */
-#cmakedefine HAVE_LIBICUI18N
-
-/* Define to 1 if you have the `icuio' library (-licuio). */
-#cmakedefine HAVE_LIBICUIO
-
 /* Define to 1 if you have the `proj' library (-lproj). */
 #undef HAVE_LIBPROJ
 

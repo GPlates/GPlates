@@ -1,5 +1,5 @@
 # Find our required libraries.
-set(required_libs "Qt4" "OpenGL" "GLEW" "ICU" "GDAL" "GZIP" "PROJ4" "CGAL")
+set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ4" "CGAL")
 if(GPLATES_HAS_PYTHON)
 	set(required_libs ${required_libs} "PythonLibs")
 endif(GPLATES_HAS_PYTHON)
@@ -62,17 +62,6 @@ set(ADD_GPLATES_CLI_TARGET TRUE)
 if (NOT APPLE)
 	set(SYSTEM_INCLUDE_FLAG SYSTEM)
 endif (NOT APPLE)
-
-# Tell ICU which libraries we use.
-# Options are ICU_DONT_USE_ICU_CORE, ICU_USE_I18N, ICU_USE_IO, ICU_USE_DATA, ICU_USE_LE, ICU_USE_LX, ICU_USE_TU.
-SET(ICU_USE_I18N 1)
-SET(ICU_USE_IO 1)
-include (${ICU_USE_FILE})
-
-# Make sure the ICU headers and the requested libraries were found.
-if (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
-	message(FATAL_ERROR "ICU library was not found - please make sure it is installed.")
-endif (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
 
 if ( NOT WIN32 )
 	# CGAL expects that the build type is "Release" or "Debug".
@@ -238,7 +227,8 @@ set(generated_headers_INCLUDE_DIRS
 # The 'include_directories' command doesn't propagate to subdirectories but any variable we set does.
 # We'll use this variable in subdirectories to add these includes directories (avoids duplicating changes to subdirectories).
 # External include directories:
-# NOTE: Qt, ICU and CGAL includes are taken care of by including QT_USE_FILE, ICU_USE_FILE and CGAL_USE_FILE.
+# NOTE: Qt and CGAL includes are taken care of by including QT_USE_FILE and
+# CGAL_USE_FILE respectively.
 set(external_INCLUDE_DIRS
 	${GPlates_SOURCE_DIR}/src/system-fixes	# Contains files copied from external libraries
 	${OPENGL_INCLUDE_DIR}
@@ -434,15 +424,14 @@ if (APPLE)
 		PROPERTIES MACOSX_BUNDLE_COPYRIGHT "${GPLATES_COPYRIGHT_STRING}")
 endif (APPLE)
 
-# NOTE: Even though Qt and ICU includes are taken care of by including QT_USE_FILE and ICU_USE_FILE
+# NOTE: Even though Qt includes are taken care of by including QT_USE_FILE
 # their libraries still have to be explicitly listed at each 'target_link_libraries()' call.
-# CGAL also uses a CGAL_USE_FILE but it differs from QT and ICU in that it uses the deprecated
+# CGAL also uses a CGAL_USE_FILE but it differs from QT in that it uses the deprecated
 # 'link_libraries()' to link its library to all targets (it's not physically deprecated, just
 # advised not to use). See http://www.cmake.org/pipermail/cmake/2009-April/028439.html
 # for a description of the difference between 'link_libraries' and 'target_link_libraries'.
 set(dependency_LIBS
 	${GDAL_LIBRARY}
-	${ICU_LIBRARIES}
 	${QT_LIBRARIES}
 	${GLEW_LIBRARY}
 	${OPENGL_LIBRARIES}
