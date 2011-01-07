@@ -96,9 +96,6 @@
 /* define if the compiler recognizes typename */
 #cmakedefine HAVE_TYPENAME
 
-/* Define to 1 if you have the <unicode/unistr.h> header file. */
-#cmakedefine HAVE_UNICODE_UNISTR_H
-
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
