@@ -319,6 +319,10 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::Layer layer);
 
 		void
+		handle_layer_removed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph);
+
+		void
 		handle_layer_activation_changed(
 				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 				GPlatesAppLogic::Layer layer,
@@ -336,9 +340,8 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::Layer layer);
 
 		void
-		handle_file_state_file_info_changed(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
+		handle_file_state_changed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 		void
 		handle_default_reconstruction_tree_layer_changed(
