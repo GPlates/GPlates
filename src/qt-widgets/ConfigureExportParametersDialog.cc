@@ -31,6 +31,8 @@
 #include <QFileInfo>
 #include <QColorGroup>
 #include <QMessageBox>
+#include <QHeaderView>
+
 #include "ConfigureExportParametersDialog.h"
 #include "ExportAnimationDialog.h"
 
@@ -86,6 +88,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 {
 	setupUi(this);
 	set_fixed_size_for_item_view(treeWidget_template);
+	treeWidget_template->setHeaderHidden(true);
+	treeWidget_template->header()->setResizeMode(0, QHeaderView::ResizeToContents);
 
 	initialize_export_item_map();
 	initialize_export_item_list_widget();

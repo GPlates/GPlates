@@ -77,6 +77,10 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 		tableWidget_range->horizontalHeader()->setResizeMode(i, QHeaderView::ResizeToContents);
 		tableWidget_single->horizontalHeader()->setResizeMode(i, QHeaderView::ResizeToContents);
 	}
+	tableWidget_range->horizontalHeader()->setStretchLastSection(true);
+	tableWidget_single->horizontalHeader()->setStretchLastSection(true);
+	tableWidget_range->horizontalHeader()->setHighlightSections(false);
+	tableWidget_single->horizontalHeader()->setHighlightSections(false);
 
 	tableWidget_range->verticalHeader()->hide();
 	tableWidget_single->verticalHeader()->hide();
