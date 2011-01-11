@@ -63,6 +63,7 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 {
 	setupUi(this);
 	stackedWidget->setCurrentIndex(0);
+	tableWidget_range->setFocus();
 	
 	lineEdit_range_path->setText(QDir::currentPath());
 	d_single_path=QDir::currentPath();

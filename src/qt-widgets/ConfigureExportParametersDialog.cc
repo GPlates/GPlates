@@ -30,6 +30,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QColorGroup>
+#include <QMessageBox>
 #include "ConfigureExportParametersDialog.h"
 #include "ExportAnimationDialog.h"
 
@@ -41,8 +42,23 @@
 #include "gui/ExportVelocityAnimationStrategy.h"
 #include "gui/ExportRasterAnimationStrategy.h"
 
-
 #include "utils/ExportAnimationStrategyFactory.h"
+
+
+namespace
+{
+	void
+	set_fixed_size_for_item_view(
+			QAbstractItemView *view)
+	{
+		int num_rows = view->model()->rowCount();
+		if (num_rows > 0)
+		{
+			view->setFixedHeight(view->sizeHintForRow(0) * (num_rows + 1));
+		}
+	}
+}
+
 
 std::map<GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemName, QString> 
 		GPlatesQtWidgets::ConfigureExportParametersDialog::d_name_map;
@@ -69,6 +85,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 	d_is_single_frame(false)
 {
 	setupUi(this);
+	set_fixed_size_for_item_view(treeWidget_template);
 
 	initialize_export_item_map();
 	initialize_export_item_list_widget();
@@ -76,10 +93,6 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 
 	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
 
-	QPalette pal = textedit_filename_desc->palette();
-	pal.setColor(QPalette::Base, pal.color(QPalette::Window));
-	textedit_filename_desc->setPalette(pal);
-	
 	QObject::connect(
 			listWidget_export_items,
 			SIGNAL(itemSelectionChanged()),
@@ -158,21 +171,23 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_desc_map()
 	//TODO: this map should be integrated into exporter classes.
 	d_desc_map[RECONSTRUCTED_GEOMETRIES] = 
 		GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC;
-	d_desc_map[PROJECTED_GEOMETRIES]     =
+	d_desc_map[PROJECTED_GEOMETRIES] =
 		GPlatesGui::ExportSvgAnimationStrategy::PROJECTED_GEOMETRIES_DESC;
-	d_desc_map[MESH_VELOCITIES]          =
+	d_desc_map[MESH_VELOCITIES] =
 		GPlatesGui::ExportVelocityAnimationStrategy::MESH_VELOCITIES_DESC;
-	d_desc_map[RESOLVED_TOPOLOGIES]      = 
+	d_desc_map[RESOLVED_TOPOLOGIES] = 
 		GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLOVED_TOPOLOGIES_DESC;
-	d_desc_map[RELATIVE_ROTATION]        = 
+	d_desc_map[RELATIVE_ROTATION] = 
 		GPlatesGui::ExportRotationAnimationStrategy::RELATIVE_ROTATION_DESC;
-	d_desc_map[EQUIVALENT_ROTATION]      = 
+	d_desc_map[EQUIVALENT_ROTATION] = 
 		GPlatesGui::ExportRotationAnimationStrategy::EQUIVALENT_ROTATION_DESC;
-	d_desc_map[ROTATION_PARAMS]          = 
+	d_desc_map[ROTATION_PARAMS] = 
 		GPlatesGui::ExportRotationParamsAnimationStrategy::ROTATION_PARAMS_DESC;
-	d_desc_map[FLOWLINES]				 =
+	d_desc_map[RASTER] =
+		GPlatesGui::ExportRasterAnimationStrategy::RASTER_DESC;
+	d_desc_map[FLOWLINES] =
 		GPlatesGui::ExportFlowlineAnimationStrategy::FLOWLINES_DESC;
-	d_desc_map[MOTION_PATHS]				 =
+	d_desc_map[MOTION_PATHS] =
 		GPlatesGui::ExportMotionPathAnimationStrategy::MOTION_PATHS_DESC;
 }		
 
@@ -299,10 +314,15 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_format_selection_change
 			filename_template.toStdString().substr(
 					filename_template.toStdString().find_last_of(".")).c_str());
 
-	textedit_filename_desc->setText(
+#if 0
+	label_filename_desc->setText(
 		GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
 		d_export_item_map[selected_item][selected_type].class_id,
 		*d_export_animation_context_ptr)->get_filename_template_desc());
+	QPalette pal=label_filename_desc->palette();
+	pal.setColor(QPalette::WindowText, QColor("black")); 
+	label_filename_desc->setPalette(pal);
+#endif
 }
 
 void
@@ -389,9 +409,20 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 	
 	if(!validator->is_valid(filename_template))	
 	{
-		textedit_filename_desc->setText(
+		QMessageBox error_popup;
+		error_popup.setWindowTitle(QString("Cannot Add Data to Export"));
+		error_popup.setText(QString("The filename template contains an invalid format string."));
+		error_popup.setInformativeText(validator->get_result_report().message());
+		error_popup.setIcon(QMessageBox::Warning);
+		error_popup.exec();
+#if 0
+		label_filename_desc->setText(
 				validator->get_result_report().message());
-		main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
+		QPalette pal=label_filename_desc->palette();
+		pal.setColor(QPalette::WindowText, QColor("red")); 
+		label_filename_desc->setPalette(pal);
+#endif
+		main_buttonbox->setEnabled(false);
 		return;
 	}
 	
@@ -461,12 +492,17 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_chang
 	}
 	else
 	{
+		QMessageBox error_popup;
+		error_popup.setText(validator->get_result_report().message());
+		error_popup.exec();
+#if 0
 		label_filename_desc->setText(
 				validator->get_result_report().message());
 		QPalette pal=label_filename_desc->palette();
 		pal.setColor(QPalette::WindowText, QColor("red")); 
 		label_filename_desc->setPalette(pal);
 		button_add_item->setEnabled(false);
+#endif
 	}
 #endif	
 }
@@ -491,10 +527,15 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_chang
 		return;		
 	}
 
-	textedit_filename_desc->setText(
+#if 0
+	label_filename_desc->setText(
 			GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
 					d_export_item_map[selected_item][selected_type].class_id,
 					*d_export_animation_context_ptr)->get_filename_template_desc());
-	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(true);
+	QPalette pal=label_filename_desc->palette();
+	pal.setColor(QPalette::WindowText, QColor("black")); 
+	label_filename_desc->setPalette(pal);
+#endif
+	main_buttonbox->setEnabled(true);
 }
 
