@@ -99,7 +99,7 @@
           </sizepolicy>
          </property>
          <property name="title" >
-          <string>3. Specify Output Filename Template</string>
+          <string>3. Specify Output Filenames</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout" >
           <item>
@@ -229,7 +229,7 @@
           <item>
            <widget class="QLabel" name="label_2" >
             <property name="text" >
-             <string>The precision of %f and padding of %d may be customised using printf conversion specifiers (for example, "%0.2f" or "%02d").  %n and %u will be padded automatically to the width of the highest value.</string>
+             <string>The precision of %f and padding of %d may be customised using printf conversion specifiers (for example, "%0.2f" or "%02d"). %n and %u will be padded automatically to the width of the highest value.</string>
             </property>
             <property name="wordWrap" >
              <bool>true</bool>
