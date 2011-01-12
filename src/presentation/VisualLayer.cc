@@ -63,8 +63,16 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)),
 	d_expanded(false),
 	d_visible(true),
-	d_layer_number(layer_number)
-{  }
+	d_layer_number(layer_number),
+	d_visual_layer_params(
+			visual_layer_registry.create_visual_layer_params(get_layer_type()))
+{
+	QObject::connect(
+			d_visual_layer_params.get(),
+			SIGNAL(modified()),
+			this,
+			SLOT(emit_layer_modified()));
+}
 
 
 GPlatesPresentation::VisualLayerType::Type
@@ -247,9 +255,24 @@ GPlatesPresentation::VisualLayer::get_name() const
 }
 
 
+GPlatesPresentation::VisualLayerParams::non_null_ptr_type
+GPlatesPresentation::VisualLayer::get_visual_layer_params()
+{
+	return d_visual_layer_params;
+}
+
+
+GPlatesPresentation::VisualLayerParams::non_null_ptr_to_const_type
+GPlatesPresentation::VisualLayer::get_visual_layer_params() const
+{
+	return d_visual_layer_params;
+}
+
+
 void
 GPlatesPresentation::VisualLayer::emit_layer_modified()
 {
 	// Emit signal via VisualLayers.
 	d_visual_layers.emit_layer_modified(d_rendered_geometry_layer_index);
 }
+

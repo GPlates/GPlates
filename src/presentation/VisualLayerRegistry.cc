@@ -109,6 +109,14 @@ namespace
 	{
 		return NULL;
 	}
+
+	// A function that instantiates the base VisualLayerParams class for use with
+	// create_visual_layer_params_function.
+	GPlatesPresentation::VisualLayerParams::non_null_ptr_type
+	default_visual_layer_params()
+	{
+		return GPlatesPresentation::VisualLayerParams::create();
+	}
 }
 
 
@@ -120,6 +128,7 @@ GPlatesPresentation::VisualLayerRegistry::register_visual_layer_type(
 		const GPlatesGui::Colour &colour_,
 		const create_visual_layer_function_type &create_visual_layer_function_,
 		const create_options_widget_function_type &create_options_widget_function_,
+		const create_visual_layer_params_function_type &create_visual_layer_params_function_,
 		bool produces_rendered_geometries_)
 {
 	static const int ICON_SIZE = 16;
@@ -134,6 +143,7 @@ GPlatesPresentation::VisualLayerRegistry::register_visual_layer_type(
 					QIcon(get_filled_pixmap(ICON_SIZE, ICON_SIZE, colour_)),
 					create_visual_layer_function_,
 					create_options_widget_function_,
+					create_visual_layer_params_function_,
 					produces_rendered_geometries_)));
 }
 
@@ -259,6 +269,19 @@ GPlatesPresentation::VisualLayerRegistry::create_options_widget(
 }
 
 
+GPlatesPresentation::VisualLayerParams::non_null_ptr_type
+GPlatesPresentation::VisualLayerRegistry::create_visual_layer_params(
+		VisualLayerType::Type visual_layer_type) const
+{
+	visual_layer_info_map_type::const_iterator iter = d_visual_layer_info_map.find(visual_layer_type);
+	if (iter != d_visual_layer_info_map.end())
+	{
+		return iter->second.create_visual_layer_params_function();
+	}
+	return VisualLayerParams::create();
+}
+
+
 bool
 GPlatesPresentation::VisualLayerRegistry::produces_rendered_geometries(
 		VisualLayerType::Type visual_layer_type) const
@@ -279,6 +302,7 @@ GPlatesPresentation::VisualLayerRegistry::VisualLayerInfo::VisualLayerInfo(
 		const QIcon &icon_,
 		const create_visual_layer_function_type &create_visual_layer_function_,
 		const create_options_widget_function_type &create_options_widget_function_,
+		const create_visual_layer_params_function_type &create_visual_layer_params_function_,
 		bool produces_rendered_geometries_) :
 	name(name_),
 	description(description_),
@@ -286,6 +310,7 @@ GPlatesPresentation::VisualLayerRegistry::VisualLayerInfo::VisualLayerInfo(
 	icon(icon_),
 	create_visual_layer_function(create_visual_layer_function_),
 	create_options_widget_function(create_options_widget_function_),
+	create_visual_layer_params_function(create_visual_layer_params_function_),
 	produces_rendered_geometries(produces_rendered_geometries_)
 {  }
 
@@ -317,6 +342,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				RECONSTRUCTION),
 			&GPlatesQtWidgets::ReconstructionLayerOptionsWidget::create,
+			&default_visual_layer_params,
 			false);
 
 	registry.register_visual_layer_type(
@@ -330,6 +356,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				RECONSTRUCT),
 			&no_widget,
+			&default_visual_layer_params,
 			true);
 
 	registry.register_visual_layer_type(
@@ -344,6 +371,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				RASTER),
 			&GPlatesQtWidgets::RasterLayerOptionsWidget::create,
+			&default_visual_layer_params,
 			true);
 
 	registry.register_visual_layer_type(
@@ -357,6 +385,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				AGE_GRID),
 			&no_widget,
+			&default_visual_layer_params,
 			false);
 
 	registry.register_visual_layer_type(
@@ -371,6 +400,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				TOPOLOGY_BOUNDARY_RESOLVER),
 			&no_widget,
+			&default_visual_layer_params,
 			true);
 
 	registry.register_visual_layer_type(
@@ -386,6 +416,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				TOPOLOGY_NETWORK_RESOLVER),
 			&no_widget,
+			&default_visual_layer_params,
 			true);
 
 	registry.register_visual_layer_type(
@@ -399,6 +430,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				VELOCITY_FIELD_CALCULATOR),
 			&no_widget,
+			&default_visual_layer_params,
 			true);
 
 	if (enable_data_mining) //Data-mining temporary code
@@ -413,6 +445,7 @@ GPlatesPresentation::register_default_visual_layers(
 					layer_task_registry,
 					CO_REGISTRATION),
 				&GPlatesQtWidgets::CoRegistrationOptionsWidget::create,
+				&default_visual_layer_params,
 				true);
 	}
 

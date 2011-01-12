@@ -19,6 +19,7 @@ set(srcs
     ViewState.h
     VisualLayer.cc
     VisualLayer.h
+    VisualLayerParams.h
     VisualLayerRegistry.cc
     VisualLayerRegistry.h
     VisualLayers.cc

@@ -34,6 +34,7 @@
 #include <QString>
 #include <QIcon>
 
+#include "VisualLayerParams.h"
 #include "VisualLayerType.h"
 
 #include "gui/Colour.h"
@@ -94,6 +95,14 @@ namespace GPlatesPresentation
 		> create_options_widget_function_type;
 
 		/**
+		 * Convenience typedef for a function that takes no arguments and creates a
+		 * non-null intrusive pointer to an instance of VisualLayerParams (or one of
+		 * its derived classes).
+		 */
+		typedef boost::function< VisualLayerParams::non_null_ptr_type () >
+			create_visual_layer_params_function_type;
+
+		/**
 		 * Stores information about the given @a visual_layer_type.
 		 *
 		 * @a produces_rendered_geometries_ should be set to false only if this
@@ -108,6 +117,7 @@ namespace GPlatesPresentation
 				const GPlatesGui::Colour &colour_,
 				const create_visual_layer_function_type &create_visual_layer_function_,
 				const create_options_widget_function_type &create_options_widget_function_,
+				const create_visual_layer_params_function_type &create_visual_layer_params_function_,
 				bool produces_rendered_geometries_);
 
 		void
@@ -173,6 +183,14 @@ namespace GPlatesPresentation
 				QWidget *parent) const;
 
 		/**
+		 * Returns an object suitable for holding visualisation-related parameters and
+		 * options for the given visual layer type.
+		 */
+		VisualLayerParams::non_null_ptr_type
+		create_visual_layer_params(
+				VisualLayerType::Type visual_layer_type) const;
+
+		/**
 		 * Returns whether the given @a visual_layer_type ever produces rendered
 		 * geometries. If it is false, this layer has no output that can be
 		 * rendered on the globe or map.
@@ -192,6 +210,7 @@ namespace GPlatesPresentation
 					const QIcon &icon_,
 					const create_visual_layer_function_type &create_visual_layer_function_,
 					const create_options_widget_function_type &create_options_widget_function_,
+					const create_visual_layer_params_function_type &create_visual_layer_params_function_,
 					bool produces_rendered_geometries_);
 
 			QString name;
@@ -200,6 +219,7 @@ namespace GPlatesPresentation
 			QIcon icon;
 			create_visual_layer_function_type create_visual_layer_function;
 			create_options_widget_function_type create_options_widget_function;
+			create_visual_layer_params_function_type create_visual_layer_params_function;
 			bool produces_rendered_geometries;
 		};
 

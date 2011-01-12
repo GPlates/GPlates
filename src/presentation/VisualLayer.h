@@ -30,7 +30,9 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <QString>
+#include <QObject>
 
+#include "VisualLayerParams.h"
 #include "VisualLayerType.h"
 
 #include "app-logic/Layer.h"
@@ -56,8 +58,11 @@ namespace GPlatesPresentation
 	 * to visualise the output.
 	 */
 	class VisualLayer :
+			public QObject,
 			private boost::noncopyable
 	{
+		Q_OBJECT
+
 	public:
 
 		/**
@@ -177,10 +182,26 @@ namespace GPlatesPresentation
 		QString
 		get_name() const;
 
-	private:
+		/**
+		 * Returns a non-const pointer to parameters and options specific to this type
+		 * of visual layer.
+		 */
+		VisualLayerParams::non_null_ptr_type
+		get_visual_layer_params();
+
+		/**
+		 * Returns a const pointer to parameters and options specific to this type
+		 * of visual layer.
+		 */
+		VisualLayerParams::non_null_ptr_to_const_type
+		get_visual_layer_params() const;
+
+	private slots:
 
 		void
 		emit_layer_modified();
+
+	private:
 
 		VisualLayers &d_visual_layers;
 		const VisualLayerRegistry &d_visual_layer_registry;
@@ -232,6 +253,12 @@ namespace GPlatesPresentation
 		 * a name fail.
 		 */
 		int d_layer_number;
+
+		/**
+		 * Additional parameters or options specific to the visual layer type that
+		 * this VisualLayer instance represents.
+		 */
+		VisualLayerParams::non_null_ptr_type d_visual_layer_params;
 	};
 }
 
