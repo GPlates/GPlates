@@ -28,6 +28,8 @@
 
 #include <QObject>
 
+#include "VisualLayerParamsVisitor.h"
+
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -66,6 +68,18 @@ namespace GPlatesPresentation
 
 		virtual
 		~VisualLayerParams()
+		{  }
+
+		virtual
+		void
+		accept_visitor(
+				ConstVisualLayerParamsVisitor &visitor) const
+		{  }
+
+		virtual
+		void
+		accept_visitor(
+				VisualLayerParamsVisitor &visitor)
 		{  }
 
 	signals:

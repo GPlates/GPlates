@@ -42,7 +42,7 @@ namespace GPlatesGui
 
 	/**
 	 * This class is a base class for visitors that visit ColourPalettes.
-	 * For convenience, typedefs are provided below to cover the const and non-const case.
+	 * For convenience, typedefs are provided below to cover the const and non-const cases.
 	 */
 	template<bool Const>
 	class ColourPaletteVisitorBase

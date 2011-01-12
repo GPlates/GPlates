@@ -20,6 +20,7 @@ set(srcs
     VisualLayer.cc
     VisualLayer.h
     VisualLayerParams.h
+    VisualLayerParamsVisitor.h
     VisualLayerRegistry.cc
     VisualLayerRegistry.h
     VisualLayers.cc

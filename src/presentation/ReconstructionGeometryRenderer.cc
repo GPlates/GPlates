@@ -54,6 +54,7 @@
 #include "gui/PlateIdColourPalettes.h"
 
 #include "presentation/ViewState.h"
+#include "presentation/VisualLayerParamsVisitor.h"
 
 #include "maths/CalculateVelocity.h"
 #include "maths/MathsUtils.h"
