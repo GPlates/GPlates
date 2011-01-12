@@ -29,6 +29,8 @@
 
 #include <boost/optional.hpp>
 
+#include "VisualLayerParamsVisitor.h"
+
 #include "app-logic/ReconstructionGeometryVisitor.h"
 #include "gui/Colour.h"
 #include "maths/Rotation.h"
@@ -66,6 +68,26 @@ namespace GPlatesPresentation
 			float reconstruction_line_width_hint;
 			float reconstruction_point_size_hint;
 			float velocity_ratio_unit_vector_direction_to_globe_radius;
+		};
+
+
+		/**
+		 * Populates @a RenderParams from @a VisualLayerParams.
+		 */
+		class RenderParamsPopulator :
+				public ConstVisualLayerParamsVisitor
+		{
+		public:
+
+			const RenderParams &
+			get_render_params() const
+			{
+				return d_render_params;
+			}
+
+		private:
+
+			RenderParams d_render_params;
 		};
 
 

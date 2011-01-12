@@ -29,7 +29,11 @@
 #include <boost/foreach.hpp>
 
 #include "global/CompilerWarnings.h"
+
 #include "ReconstructionGeometryRenderer.h"
+
+#include "ViewState.h"
+#include "VisualLayerParamsVisitor.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/CoRegistrationData.h"
@@ -52,9 +56,6 @@
 
 #include "gui/Colour.h"
 #include "gui/PlateIdColourPalettes.h"
-
-#include "presentation/ViewState.h"
-#include "presentation/VisualLayerParamsVisitor.h"
 
 #include "maths/CalculateVelocity.h"
 #include "maths/MathsUtils.h"

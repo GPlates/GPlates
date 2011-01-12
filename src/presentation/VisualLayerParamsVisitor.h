@@ -31,9 +31,6 @@
 
 namespace GPlatesPresentation
 {
-	// Forward declarations of supported ColourPalette derivations.
-	class TopologyNetworkVisualLayerParams;
-
 	/**
 	 * This class is a base class for visitors that visit VisualLayerParams.
 	 * For convenience, typedefs are provided below to cover the const and non-const cases.
@@ -44,16 +41,9 @@ namespace GPlatesPresentation
 	public:
 
 		// Typedefs to give the supported derivations the appropriate const-ness.
-		typedef typename GPlatesUtils::SetConst<TopologyNetworkVisualLayerParams, Const>::type topology_network_visual_layer_params_type;
 
 		virtual
 		~VisualLayerParamsVisitorBase()
-		{  }
-
-		virtual
-		void
-		visit_topology_network_visual_layer_params(
-				topology_network_visual_layer_params_type &topoogy_network_visual_layer_params)
 		{  }
 
 	protected:

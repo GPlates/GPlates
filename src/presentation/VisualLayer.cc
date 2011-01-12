@@ -123,8 +123,11 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries()
 	}
 
 	// This creates the RenderedGeometry's from the ReconstructionGeometry's.
-	GPlatesPresentation::ReconstructionGeometryRenderer reconstruction_geometry_renderer(
-			*d_rendered_geometry_layer);
+	ReconstructionGeometryRenderer::RenderParamsPopulator render_params_populator;
+	d_visual_layer_params->accept_visitor(render_params_populator);
+	ReconstructionGeometryRenderer reconstruction_geometry_renderer(
+			*d_rendered_geometry_layer,
+			render_params_populator.get_render_params());
 
 	// Iterate over the reconstruction geometries in the collection.
 	BOOST_FOREACH(GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry,
