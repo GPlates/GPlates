@@ -71,7 +71,7 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 			d_visual_layer_params.get(),
 			SIGNAL(modified()),
 			this,
-			SLOT(emit_layer_modified()));
+			SLOT(handle_params_modified()));
 }
 
 
@@ -269,6 +269,14 @@ GPlatesPresentation::VisualLayerParams::non_null_ptr_to_const_type
 GPlatesPresentation::VisualLayer::get_visual_layer_params() const
 {
 	return d_visual_layer_params;
+}
+
+
+void
+GPlatesPresentation::VisualLayer::handle_params_modified()
+{
+	emit_layer_modified();
+	create_rendered_geometries();
 }
 
 

@@ -199,9 +199,12 @@ namespace GPlatesPresentation
 	private slots:
 
 		void
-		emit_layer_modified();
+		handle_params_modified();
 
 	private:
+
+		void
+		emit_layer_modified();
 
 		VisualLayers &d_visual_layers;
 		const VisualLayerRegistry &d_visual_layer_registry;
