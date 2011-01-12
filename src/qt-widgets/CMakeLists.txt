@@ -131,12 +131,12 @@ set(srcs
     EditShapefileAttributesWidget.cc
     EditShapefileAttributesWidget.h
     EditShapefileAttributesWidgetUi.ui
-    EditStringWidget.cc
-    EditStringWidget.h
-    EditStringWidgetUi.ui
     EditStringListWidget.cc
     EditStringListWidget.h
     EditStringListWidgetUi.ui
+    EditStringWidget.cc
+    EditStringWidget.h
+    EditStringWidgetUi.ui
     EditTableActionWidget.cc
     EditTableActionWidget.h
     EditTableActionWidgetUi.ui
