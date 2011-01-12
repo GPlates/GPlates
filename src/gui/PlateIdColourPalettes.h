@@ -49,9 +49,26 @@ namespace GPlatesGui
 		non_null_ptr_type
 		create();
 
+		virtual
 		boost::optional<Colour>
 		get_colour(
 				value_type plate_id) const;
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_default_plate_id_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_default_plate_id_colour_palette(*this);
+		}
 
 	private:
 
@@ -73,9 +90,26 @@ namespace GPlatesGui
 		non_null_ptr_type
 		create();
 
+		virtual
 		boost::optional<Colour>
 		get_colour(
 				value_type plate_id) const;
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_regional_plate_id_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_regional_plate_id_colour_palette(*this);
+		}
 
 	private:
 

@@ -115,6 +115,22 @@ namespace GPlatesGui
 			return d_adaptee->get_colour(d_convert(value));
 		}
 
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			d_adaptee->accept_visitor(visitor);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			d_adaptee->accept_visitor(visitor);
+		}
+
 	private:
 
 		/**

@@ -32,6 +32,7 @@
 #include <boost/optional.hpp>
 
 #include "Colour.h"
+#include "ColourPaletteVisitor.h"
 
 #include "model/types.h"
 
@@ -39,6 +40,7 @@
 #include "utils/ReferenceCount.h"
 #include "utils/Select.h"
 #include "utils/TypeTraits.h"
+
 
 namespace GPlatesGui 
 {
@@ -71,6 +73,10 @@ namespace GPlatesGui
 		typedef boost::intrusive_ptr<this_type> maybe_null_ptr_type;
 		typedef boost::intrusive_ptr<const this_type> maybe_null_ptr_to_const_type;
 
+		virtual
+		~ColourPalette()
+		{  }
+
 		/**
 		 * Retrieves the Colour associated with the @a value provided.
 		 * @returns boost::none if no Colour is assocated with the value.
@@ -83,11 +89,17 @@ namespace GPlatesGui
 		get_colour(
 				value_type value) const = 0;
 
-		//! Destructor
 		virtual
-		~ColourPalette()
-		{
-		}
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &) const
+		{  }
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &)
+		{  }
 	};
 }
 

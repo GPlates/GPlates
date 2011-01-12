@@ -53,6 +53,7 @@ set(srcs
     ReferenceCount.h
     SafeBool.h
     Select.h
+    SetConst.h
     Singleton.h
     SmartNodeLinkedList.h
     StringFormattingUtils.cc

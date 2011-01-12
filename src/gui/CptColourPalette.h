@@ -708,6 +708,22 @@ namespace GPlatesGui
 			return new RegularCptColourPalette();
 		}
 
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_regular_cpt_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_regular_cpt_colour_palette(*this);
+		}
+
 	protected:
 
 		virtual

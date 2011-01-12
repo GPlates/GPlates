@@ -52,10 +52,27 @@ namespace GPlatesGui
 		non_null_ptr_type
 		create();
 
+		virtual
 		boost::optional<Colour>
 		get_colour(
 				const GPlatesModel::FeatureType &feature_type) const;
-	
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_feature_type_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_feature_type_colour_palette(*this);
+		}
+
 	private:
 
 		FeatureTypeColourPalette();

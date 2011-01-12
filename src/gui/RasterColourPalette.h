@@ -59,6 +59,22 @@ namespace GPlatesGui
 		get_colour(
 				double value) const;
 
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_default_raster_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_default_raster_colour_palette(*this);
+		}
+
 	private:
 
 		DefaultRasterColourPalette(

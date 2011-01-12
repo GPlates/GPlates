@@ -31,6 +31,7 @@
 #include "Colour.h"
 #include "ColourPalette.h"
 
+
 namespace GPlatesMaths
 {
 	class Real;
@@ -87,6 +88,22 @@ namespace GPlatesGui
 				double lower_bound_)
 		{
 			d_lower_bound = lower_bound_;
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_age_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_age_colour_palette(*this);
 		}
 
 	protected:

@@ -26,6 +26,7 @@ set(srcs
     ColourNameSet.h
     ColourPalette.h
     ColourPaletteAdapter.h
+    ColourPaletteVisitor.h
     ColourProxy.cc
     ColourProxy.h
     ColourRawRaster.h
