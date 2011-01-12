@@ -53,11 +53,11 @@ namespace GPlatesPresentation
 	{
 	public:
 		/**
-		 * Various parameters that control rendering style.
+		 * Various parameters that control rendering.
 		 */
-		struct StyleParams
+		struct RenderParams
 		{
-			StyleParams(
+			RenderParams(
 					float reconstruction_line_width_hint_ = RECONSTRUCTION_LINE_WIDTH_HINT,
 					float reconstruction_point_size_hint_ = RECONSTRUCTION_POINT_SIZE_HINT,
 					// FIXME: Move this hard-coded value somewhere sensible...
@@ -76,7 +76,7 @@ namespace GPlatesPresentation
 		 * time via class @a ColourProxy unless @a colour is specified in which case all
 		 * reconstruction geometries are drawn with that colour.
 		 *
-		 * @a style_params controls various rendering options.
+		 * @a render_params controls various rendering options.
 		 *
 		 * @a reconstruction_adjustment is only used to rotate derived @a ReconstructionGeometry
 		 * objects that are reconstructed. Ignored by types not explicitly reconstructed.
@@ -86,7 +86,7 @@ namespace GPlatesPresentation
 		 */
 		ReconstructionGeometryRenderer(
 				GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
-				const StyleParams &style_params = StyleParams(),
+				const RenderParams &render_params = RenderParams(),
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none);
 
@@ -143,7 +143,7 @@ namespace GPlatesPresentation
 
 	private:
 		GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
-		StyleParams d_style_params;
+		RenderParams d_render_params;
 		boost::optional<GPlatesGui::Colour> d_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
 	};

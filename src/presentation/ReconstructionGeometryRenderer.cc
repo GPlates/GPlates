@@ -73,7 +73,7 @@ namespace
 	create_rendered_reconstruction_geometry(
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
-			const GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams &style_params,
+			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
 			const boost::optional<GPlatesGui::Colour> &colour,
 			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none)
 	{
@@ -84,8 +84,8 @@ namespace
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 						rotation ? rotation.get() * geometry : geometry,
 						colour ? colour.get() : GPlatesGui::ColourProxy(reconstruction_geometry),
-						style_params.reconstruction_point_size_hint,
-						style_params.reconstruction_line_width_hint);
+						render_params.reconstruction_point_size_hint,
+						render_params.reconstruction_line_width_hint);
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.
@@ -103,7 +103,7 @@ namespace
 	render_topological_network_velocities(
 			const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &topological_network,
 			GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
-			const GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams &style_params,
+			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
 			const boost::optional<GPlatesGui::Colour> &colour)
 	{
 		const GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworkVelocities &network_velocites =
@@ -143,7 +143,7 @@ namespace
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 					point,
 					velocity_vector,
-					style_params.velocity_ratio_unit_vector_direction_to_globe_radius,
+					render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
 					velocity_colour);
 
 			// Create a RenderedGeometry for storing the ReconstructionGeometry and
@@ -163,7 +163,7 @@ namespace
 }
 
 
-GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams::StyleParams(
+GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		float reconstruction_line_width_hint_,
 		float reconstruction_point_size_hint_,
 		float velocity_ratio_unit_vector_direction_to_globe_radius_) :
@@ -177,11 +177,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams::StyleParams(
 
 GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRenderer(
 		GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
-		const StyleParams &style_params,
+		const RenderParams &render_params,
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
-	d_style_params(style_params),
+	d_render_params(render_params),
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment)
 {
@@ -215,7 +215,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 							point,
 							velocity.d_vector,
-							d_style_params.velocity_ratio_unit_vector_direction_to_globe_radius,
+							d_render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
 							GPlatesGui::Colour::get_black());
 			d_rendered_geometry_layer.add_rendered_geometry(rendered_arrow);
 
@@ -244,7 +244,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 								point,
 								velocity.d_vector,
-								d_style_params.velocity_ratio_unit_vector_direction_to_globe_radius,
+								d_render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
 								GPlatesGui::ColourProxy(pb_non_null_ptr));
 				d_rendered_geometry_layer.add_rendered_geometry(rendered_arrow);
 			} else {
@@ -252,7 +252,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 								point,
 								velocity.d_vector,
-								d_style_params.velocity_ratio_unit_vector_direction_to_globe_radius,
+								d_render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
 								GPlatesGui::Colour::get_olive());
 				d_rendered_geometry_layer.add_rendered_geometry(rendered_arrow);
 			}
@@ -268,7 +268,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
-					rfg->geometry(), rfg, d_style_params, d_colour, d_reconstruction_adjustment);
+					rfg->geometry(), rfg, d_render_params, d_colour, d_reconstruction_adjustment);
 
 	// Add to the rendered geometry layer.
 	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -325,7 +325,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				create_rendered_reconstruction_geometry(
 						*rvgp->vgp_params().d_vgp_point,
 						rvgp,
-						d_style_params,
+						d_render_params,
 						d_colour,
 						d_reconstruction_adjustment);
 		// Add to the rendered geometry layer.
@@ -395,7 +395,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
-					rtb->resolved_topology_geometry(), rtb, d_style_params, d_colour);
+					rtb->resolved_topology_geometry(), rtb, d_render_params, d_colour);
 
 	// Add to the rendered geometry layer.
 	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -421,7 +421,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						*it, rtn, d_style_params, GPlatesGui::Colour::get_grey() );
+						*it, rtn, d_render_params, GPlatesGui::Colour::get_grey() );
 
 		// Add to the rendered geometry layer.
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -441,7 +441,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						*it, rtn, d_style_params, GPlatesGui::Colour::get_grey() );
+						*it, rtn, d_render_params, GPlatesGui::Colour::get_grey() );
 
 		// Add to the rendered geometry layer.
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -461,7 +461,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						*mesh_it, rtn, d_style_params, d_colour );
+						*mesh_it, rtn, d_render_params, d_colour );
 
 		// Add to the rendered geometry layer.
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -469,7 +469,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	
 
-	render_topological_network_velocities(rtn, d_rendered_geometry_layer, d_style_params, d_colour);
+	render_topological_network_velocities(rtn, d_rendered_geometry_layer, d_render_params, d_colour);
 }
 
 void
@@ -554,7 +554,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		{
 			GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						rfg->geometry(), crr, d_style_params, GPlatesGui::Colour::get_red());
+						rfg->geometry(), crr, d_render_params, GPlatesGui::Colour::get_red());
 			d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
 			
 			const PointOnSphere* point = dynamic_cast<const PointOnSphere*>(rfg->geometry().get());

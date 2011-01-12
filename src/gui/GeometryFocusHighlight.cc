@@ -105,7 +105,7 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 
 	// FIXME: Probably should use the same styling params used to draw
 	// the original geometries rather than use some of the defaults.
-	GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams render_style_params;
+	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params;
 	render_style_params.reconstruction_line_width_hint =
 			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
 	render_style_params.reconstruction_point_size_hint =
