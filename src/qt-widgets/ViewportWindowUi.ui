@@ -506,7 +506,7 @@
     <string>&amp;Query Feature</string>
    </property>
    <property name="toolTip">
-    <string>Query Feature  Ctrl+Y</string>
+    <string>Query Feature  Ctrl+R</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+R</string>
