@@ -146,11 +146,13 @@ GPlatesOpenGL::GLProxiedRasterSource::load_tile(
 				<< texel_width << ", "
 				<< texel_height << ", ";
 
-		// TODO: print a text error message over the tile.
-
-		// Create a black raster to load into the texture.
-		const GPlatesGui::rgba8_t black(0, 0, 0, 0);
-		GLTextureUtils::load_colour_into_texture(target_texture, black, texel_width, texel_height);
+		// Create a black raster to load into the texture and overlay an error message in red.
+		GLTextureUtils::draw_text_into_texture(
+				target_texture,
+				"Error loading raster mipmap",
+				QRect(0, 0 , texel_width, texel_height),
+				3.0f/*text scale*/,
+				QColor(255, 0, 0, 255)/*red text*/);
 
 		return;
 	}

@@ -31,6 +31,10 @@
  */
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
+#include <QGLWidget>
+#include <QImage>
+#include <QMatrix>
+#include <QPainter>
 
 #include "GLTextureUtils.h"
 
@@ -69,7 +73,7 @@ GPlatesOpenGL::GLTextureUtils::load_colour_into_texture(
 void
 GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
 		const GLTexture::shared_ptr_type &texture,
-		const GPlatesGui::rgba8_t *image,
+		const void *image,
 		unsigned int image_width,
 		unsigned int image_height,
 		unsigned int texel_u_offset,
@@ -97,4 +101,68 @@ GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
 
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+}
+
+
+void
+GPlatesOpenGL::GLTextureUtils::load_qimage_into_texture(
+		const GLTexture::shared_ptr_type &texture,
+		const QImage &image,
+		unsigned int texel_u_offset,
+		unsigned int texel_v_offset)
+{
+	const QSize image_size = image.size();
+
+	load_rgba8_image_into_texture(
+			texture,
+			// Convert from (B,G,R,A) to (R,G,B,A)
+			QGLWidget::convertToGLFormat(
+					image.transformed(
+							// Invert the 'y' coordinate
+							QMatrix(1, 0, 0, -1, 0, 0))).bits(),
+			image_size.width(),
+			image_size.height(),
+			texel_u_offset,
+			texel_v_offset);
+}
+
+
+void
+GPlatesOpenGL::GLTextureUtils::draw_text_into_texture(
+		const GLTexture::shared_ptr_type &texture,
+		const QString &text,
+		const QRect &text_rect,
+		const float text_scale,
+		const QColor &text_colour,
+		const QColor &background_colour)
+{
+	// Start off with half-size dimensions - we'll scale to full-size later
+	// so that image is more visible (because image will map roughly one texel to one
+	// screen pixel which can be hard to read).
+
+	const int scaled_width = static_cast<int>(text_rect.width() / text_scale);
+	const int scaled_height = static_cast<int>(text_rect.height() / text_scale);
+
+	QImage scaled_image(scaled_width, scaled_height, QImage::Format_ARGB32);
+
+	QPainter painter(&scaled_image);
+	// Draw filled background
+	painter.fillRect(QRect(0, 0, scaled_width, scaled_height), background_colour);
+	painter.setPen(text_colour);
+	painter.drawText(
+			0, 0,
+			scaled_width, scaled_height,
+			(Qt::AlignCenter | Qt::TextWordWrap),
+			text);
+	painter.end();
+
+	// Scale the rendered text.
+	const QImage image = scaled_image.scaled(
+			text_rect.width(), text_rect.height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+	load_qimage_into_texture(
+			texture,
+			image,
+			text_rect.left(),
+			text_rect.top());
 }
