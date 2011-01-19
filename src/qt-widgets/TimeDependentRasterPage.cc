@@ -60,7 +60,7 @@ namespace
 	const int DECIMAL_PLACES = 4;
 
 	double
-	round(
+	custom_round(
 			double d)
 	{
 		double fractpart, intpart;
@@ -78,7 +78,7 @@ namespace
 			double d)
 	{
 		static const double MULTIPLIER = std::pow(10.0, DECIMAL_PLACES);
-		return round(d * MULTIPLIER) / MULTIPLIER;
+		return custom_round(d * MULTIPLIER) / MULTIPLIER;
 	}
 
 	class TimeLineEdit :

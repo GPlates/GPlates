@@ -155,7 +155,9 @@ extern "C" {
 #ifdef __WINDOWS__
 #include <boost/type_traits/remove_pointer.hpp>
 #endif // __WINDOWS__
+#ifdef __WINDOWS__
 #include <Psapi.h>
+#endif // __WINDOWS__
 #ifdef __WINDOWS__
 #include <boost/pool/singleton_pool.hpp>
 #endif // __WINDOWS__
