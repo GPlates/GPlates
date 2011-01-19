@@ -37,6 +37,9 @@
 #include <QDoubleValidator>
 #include <QKeyEvent>
 #include <QSizePolicy>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QUrl>
 
 #include "TimeDependentRasterPage.h"
 
@@ -344,6 +347,7 @@ GPlatesQtWidgets::TimeDependentRasterPage::TimeDependentRasterPage(
 
 	setTitle(tr("Raster File Sequence"));
 	setSubTitle(tr("Build the sequence of raster files that make up the time-dependent raster."));
+	setAcceptDrops(true);
 
 	files_table->verticalHeader()->hide();
 	files_table->horizontalHeader()->setResizeMode(1, QHeaderView::Stretch);
@@ -377,6 +381,55 @@ bool
 GPlatesQtWidgets::TimeDependentRasterPage::isComplete() const
 {
 	return d_is_complete;
+}
+
+
+void
+GPlatesQtWidgets::TimeDependentRasterPage::dragEnterEvent(
+		QDragEnterEvent *ev)
+{
+	// Accept if there are any file:// URLs.
+	if (ev->mimeData()->hasUrls())
+	{
+		BOOST_FOREACH(const QUrl &url, ev->mimeData()->urls())
+		{
+			if (url.scheme() == "file")
+			{
+				ev->acceptProposedAction();
+				return;
+			}
+		}
+	}
+
+	ev->ignore();
+}
+
+
+void
+GPlatesQtWidgets::TimeDependentRasterPage::dropEvent(
+		QDropEvent *ev)
+{
+	// Accept if there are any file:// URLs.
+	if (ev->mimeData()->hasUrls())
+	{
+		QFileInfoList info_list;
+		BOOST_FOREACH(const QUrl &url, ev->mimeData()->urls())
+		{
+			if (url.scheme() == "file")
+			{
+				info_list.push_back(QFileInfo(url.toLocalFile()));
+			}
+		}
+
+		if (!info_list.empty())
+		{
+			add_files_to_sequence(info_list);
+			ev->acceptProposedAction();
+			return;
+		}
+	}
+
+	ev->ignore();
 }
 
 

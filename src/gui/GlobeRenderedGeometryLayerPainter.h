@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -61,8 +61,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	class RasterColourSchemeMap;
-
 	/**
 	 * Handles drawing rendered geometries in a single layer by drawing the
 	 * opaque primitives first followed by the transparent primitives.
@@ -78,7 +76,6 @@ namespace GPlatesGui
 				const double &inverse_viewport_zoom_factor,
 				const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer,
 				RenderSettings &render_settings,
-				RasterColourSchemeMap &raster_colour_scheme_map,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme) :
@@ -87,7 +84,6 @@ namespace GPlatesGui
 			d_nurbs_renderer(nurbs_renderer),
 			d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 			d_render_settings(render_settings),
-			d_raster_colour_scheme_map(raster_colour_scheme_map),
 			d_text_renderer_ptr(text_renderer_ptr),
 			d_visibility_tester(visibility_tester),
 			d_colour_scheme(colour_scheme),
@@ -330,9 +326,6 @@ namespace GPlatesGui
 
 		//! Rendering flags for determining what gets shown
 		RenderSettings &d_render_settings;
-
-		//! Colour schemes for the app-logic layers.
-		RasterColourSchemeMap &d_raster_colour_scheme_map;
 
 		//! For rendering text
 		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;

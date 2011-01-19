@@ -40,6 +40,8 @@
     <property name="title">
      <string>&amp;Help</string>
     </property>
+    <addaction name="action_View_Online_Documentation"/>
+    <addaction name="separator"/>
     <addaction name="action_About"/>
    </widget>
    <widget class="QMenu" name="menu_File">
@@ -51,18 +53,21 @@
       <string>O&amp;pen Recent Session</string>
      </property>
     </widget>
-    <addaction name="action_New_Window"/>
+    <widget class="QMenu" name="menu_Import">
+     <property name="title">
+      <string>&amp;Import</string>
+     </property>
+    </widget>
     <addaction name="separator"/>
     <addaction name="action_Open_Feature_Collection"/>
     <addaction name="menu_Open_Recent_Session"/>
     <addaction name="separator"/>
     <addaction name="action_Import_Raster"/>
     <addaction name="action_Import_Time_Dependent_Raster"/>
+    <addaction name="menu_Import"/>
     <addaction name="separator"/>
     <addaction name="action_Manage_Feature_Collections"/>
     <addaction name="action_File_Errors"/>
-    <addaction name="action_View_Total_Reconstruction_Sequences"/>
-    <addaction name="action_View_Shapefile_Attributes"/>
     <addaction name="separator"/>
     <addaction name="action_Quit"/>
    </widget>
@@ -77,13 +82,10 @@
     <addaction name="action_Play"/>
     <addaction name="action_Animate"/>
     <addaction name="separator"/>
-    <addaction name="action_Export"/>
-    <addaction name="separator"/>
     <addaction name="action_Specify_Anchored_Plate_ID"/>
     <addaction name="action_View_Reconstruction_Poles"/>
     <addaction name="separator"/>
-    <addaction name="action_Assign_Plate_IDs"/>
-    <addaction name="action_Generate_Mesh_Cap"/>
+    <addaction name="action_Export"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
     <property name="title">
@@ -98,28 +100,7 @@
     <addaction name="action_Clone_Feature"/>
     <addaction name="action_Delete_Feature"/>
     <addaction name="separator"/>
-    <addaction name="action_Clear_Selection"/>
-   </widget>
-   <widget class="QMenu" name="menu_Layers">
-    <property name="title">
-     <string>&amp;Layers</string>
-    </property>
-    <addaction name="action_Show_Layers"/>
-    <addaction name="action_Manage_Colouring"/>
-    <addaction name="action_Manage_Small_Circles"/>
-    <addaction name="separator"/>
-    <addaction name="action_Show_Point_Features"/>
-    <addaction name="action_Show_Line_Features"/>
-    <addaction name="action_Show_Polygon_Features"/>
-    <addaction name="action_Show_Multipoint_Features"/>
-    <addaction name="separator"/>
-    <addaction name="action_Show_Arrow_Decorations"/>
-    <addaction name="action_Show_Strings"/>
-    <addaction name="separator"/>
-    <addaction name="action_Configure_Text_Overlay"/>
-    <addaction name="action_Configure_Graticules"/>
-    <addaction name="action_Choose_Background_Colour"/>
-    <addaction name="action_Show_Stars"/>
+    <addaction name="action_Clear_Placeholder"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -154,13 +135,27 @@
      <addaction name="action_Rotate_Camera_Anticlockwise"/>
      <addaction name="action_Reset_Camera_Orientation"/>
     </widget>
-    <addaction name="action_Full_Screen"/>
-    <addaction name="action_Show_Bottom_Panel_Placeholder"/>
-    <addaction name="separator"/>
+    <widget class="QMenu" name="menuGeometry_Visibility">
+     <property name="title">
+      <string>Geometry &amp;Visibility</string>
+     </property>
+     <addaction name="action_Show_Point_Features"/>
+     <addaction name="action_Show_Line_Features"/>
+     <addaction name="action_Show_Polygon_Features"/>
+     <addaction name="action_Show_Multipoint_Features"/>
+     <addaction name="action_Show_Arrow_Decorations"/>
+    </widget>
     <addaction name="action_Set_Projection"/>
     <addaction name="menu_Move_Camera"/>
     <addaction name="menu_Rotate_Camera"/>
     <addaction name="menu_Camera_Zoom"/>
+    <addaction name="separator"/>
+    <addaction name="action_Configure_Text_Overlay"/>
+    <addaction name="action_Configure_Graticules"/>
+    <addaction name="action_Choose_Background_Colour"/>
+    <addaction name="action_Show_Stars"/>
+    <addaction name="separator"/>
+    <addaction name="menuGeometry_Visibility"/>
    </widget>
    <widget class="QMenu" name="menu_Tools">
     <property name="title">
@@ -169,21 +164,47 @@
     <addaction name="action_Use_Small_Icons"/>
     <addaction name="separator"/>
    </widget>
-   <widget class="QMenu" name="menu_Paleomagnetism">
+   <widget class="QMenu" name="menu_Features">
     <property name="title">
-     <string>&amp;Palaeomagnetism</string>
+     <string>Fe&amp;atures</string>
     </property>
+    <addaction name="action_Manage_Colouring"/>
+    <addaction name="separator"/>
+    <addaction name="action_Manage_Small_Circles"/>
+    <addaction name="action_View_Total_Reconstruction_Sequences"/>
+    <addaction name="action_View_Shapefile_Attributes"/>
+    <addaction name="separator"/>
     <addaction name="action_Create_VGP"/>
+    <addaction name="action_Assign_Plate_IDs"/>
+    <addaction name="action_Generate_Mesh_Cap"/>
+   </widget>
+   <widget class="QMenu" name="menu_Utilities">
+    <property name="title">
+     <string>&amp;Utilities</string>
+    </property>
     <addaction name="action_Calculate_Reconstruction_Pole"/>
-    <addaction name="action_Set_VGP_Visibility"/>
+    <addaction name="separator"/>
+    <addaction name="action_Open_Python_Console"/>
+   </widget>
+   <widget class="QMenu" name="menu_Window">
+    <property name="title">
+     <string>&amp;Window</string>
+    </property>
+    <addaction name="action_New_Window"/>
+    <addaction name="separator"/>
+    <addaction name="action_Show_Layers"/>
+    <addaction name="action_Show_Bottom_Panel_Placeholder"/>
+    <addaction name="separator"/>
+    <addaction name="action_Full_Screen"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
    <addaction name="menu_View"/>
+   <addaction name="menu_Features"/>
    <addaction name="menu_Reconstruction"/>
-   <addaction name="menu_Layers"/>
+   <addaction name="menu_Utilities"/>
    <addaction name="menu_Tools"/>
-   <addaction name="menu_Paleomagnetism"/>
+   <addaction name="menu_Window"/>
    <addaction name="menu_Help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -505,9 +526,6 @@
    <property name="iconText">
     <string>&amp;Query Feature</string>
    </property>
-   <property name="toolTip">
-    <string>Query Feature  Ctrl+Y</string>
-   </property>
    <property name="shortcut">
     <string>Ctrl+R</string>
    </property>
@@ -658,6 +676,9 @@
    <property name="shortcut">
     <string>Up</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetWithChildrenShortcut</enum>
+   </property>
   </action>
   <action name="action_Move_Camera_Down">
    <property name="icon">
@@ -669,6 +690,9 @@
    </property>
    <property name="shortcut">
     <string>Down</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetWithChildrenShortcut</enum>
    </property>
   </action>
   <action name="action_Move_Camera_Left">
@@ -682,6 +706,9 @@
    <property name="shortcut">
     <string>Left</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetWithChildrenShortcut</enum>
+   </property>
   </action>
   <action name="action_Move_Camera_Right">
    <property name="icon">
@@ -693,6 +720,9 @@
    </property>
    <property name="shortcut">
     <string>Right</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetWithChildrenShortcut</enum>
    </property>
   </action>
   <action name="action_Rotate_Camera_Clockwise">
@@ -748,9 +778,6 @@
    <property name="iconText">
     <string>&amp;Edit Feature</string>
    </property>
-   <property name="toolTip">
-    <string>Edit Feature  Ctrl+E</string>
-   </property>
    <property name="shortcut">
     <string>Ctrl+E</string>
    </property>
@@ -777,7 +804,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Point Features</string>
+    <string>Show Point Geometries</string>
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether point features are shown.</string>
@@ -791,7 +818,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Line Features</string>
+    <string>Show Line Geometries</string>
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether line features are shown.</string>
@@ -805,7 +832,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Polygon Features</string>
+    <string>Show Polygon Geometries</string>
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether polygon features are shown.</string>
@@ -819,7 +846,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Multipoint Features</string>
+    <string>Show Multipoint Geometries</string>
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether multipoint features are shown.</string>
@@ -895,9 +922,6 @@
    <property name="text">
     <string>&amp;Delete Feature</string>
    </property>
-   <property name="toolTip">
-    <string>Delete Feature  Del</string>
-   </property>
    <property name="shortcut">
     <string>Del</string>
    </property>
@@ -920,13 +944,12 @@
     <string>Remove Feature from Selecti&amp;on</string>
    </property>
   </action>
-  <action name="action_Clear_Selection">
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/gnome_window_close_22.png</normaloff>:/gnome_window_close_22.png</iconset>
-   </property>
+  <action name="action_Clear_Placeholder">
    <property name="text">
-    <string>Clear Se&amp;lection</string>
+    <string>C&amp;lear</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+K</string>
    </property>
   </action>
   <action name="action_Clone_Geometry">
@@ -1284,12 +1307,12 @@
   </action>
   <action name="action_Assign_Plate_IDs">
    <property name="text">
-    <string>&amp;Assign Plate IDs...</string>
+    <string>Assign &amp;Plate IDs...</string>
    </property>
   </action>
   <action name="action_Generate_Mesh_Cap">
    <property name="text">
-    <string>&amp;Generate Mesh Caps...</string>
+    <string>Generate &amp;Mesh Caps...</string>
    </property>
   </action>
   <action name="action_Export_Reconstruction">
@@ -1367,20 +1390,6 @@
     <bool>true</bool>
    </property>
   </action>
-  <action name="action_Show_Strings">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Show Text</string>
-   </property>
-   <property name="toolTip">
-    <string>A toggle operation which controls whether text is shown.</string>
-   </property>
-  </action>
   <action name="action_Manage_Colouring">
    <property name="text">
     <string>Manage &amp;Colouring</string>
@@ -1406,17 +1415,12 @@
   </action>
   <action name="action_Create_VGP">
    <property name="text">
-    <string>&amp;Create VGP...</string>
+    <string>Create &amp;VGP...</string>
    </property>
   </action>
   <action name="action_Calculate_Reconstruction_Pole">
    <property name="text">
     <string>Calculate &amp;Reconstruction Pole...</string>
-   </property>
-  </action>
-  <action name="action_Set_VGP_Visibility">
-   <property name="text">
-    <string>Set VGP &amp;Visibility...</string>
    </property>
   </action>
   <action name="action_Show_Layers">
@@ -1470,12 +1474,12 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Stars</string>
+    <string>Show &amp;Stars</string>
    </property>
   </action>
   <action name="action_View_Total_Reconstruction_Sequences">
    <property name="text">
-    <string>View Total Reconstruction &amp;Sequences</string>
+    <string>View &amp;Total Reconstruction Sequences</string>
    </property>
   </action>
   <action name="action_New_Window">
@@ -1484,7 +1488,7 @@
      <normaloff>:/tango_window_new_16.png</normaloff>:/tango_window_new_16.png</iconset>
    </property>
    <property name="text">
-    <string>&amp;New Window</string>
+    <string>Open &amp;New Window</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
@@ -1508,7 +1512,7 @@
   </action>
   <action name="action_Manage_Small_Circles">
    <property name="text">
-    <string>Manage &amp;Small Circles...</string>
+    <string>Manage &amp;Small Circles</string>
    </property>
   </action>
   <action name="action_Choose_Background_Colour">
@@ -1530,6 +1534,16 @@
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_View_Online_Documentation">
+   <property name="text">
+    <string>View Online &amp;Documentation</string>
+   </property>
+  </action>
+  <action name="action_Open_Python_Console">
+   <property name="text">
+    <string>Open Python &amp;Console</string>
    </property>
   </action>
  </widget>

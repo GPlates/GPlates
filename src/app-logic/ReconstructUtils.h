@@ -34,6 +34,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "ReconstructLayerTaskParams.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryCollection.h"
 #include "ReconstructionTree.h"
@@ -147,6 +148,7 @@ namespace GPlatesAppLogic
 		ReconstructionGeometryCollection::non_null_ptr_type
 		reconstruct(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const ReconstructLayerTaskParams &reconstruct_params,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstructable_features_collection =
 								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());

@@ -136,10 +136,6 @@ set(srcs
     QGLWidgetTextRenderer.h
     RasterColourPalette.cc
     RasterColourPalette.h
-    RasterColourScheme.cc
-    RasterColourScheme.h
-    RasterColourSchemeMap.cc
-    RasterColourSchemeMap.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
     SessionMenu.cc

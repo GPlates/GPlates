@@ -29,6 +29,52 @@
 
 namespace
 {
+	class RasterColourPaletteTypeVisitor :
+			public boost::static_visitor<GPlatesGui::RasterColourPaletteType::Type>
+	{
+	public:
+
+		GPlatesGui::RasterColourPaletteType::Type
+		operator()(
+				const GPlatesGui::RasterColourPalette::empty &) const
+		{
+			return GPlatesGui::RasterColourPaletteType::INVALID;
+		}
+
+		GPlatesGui::RasterColourPaletteType::Type
+		operator()(
+				const GPlatesGui::ColourPalette<boost::int32_t>::non_null_ptr_type &) const
+		{
+			return GPlatesGui::RasterColourPaletteType::INT32;
+		}
+
+		GPlatesGui::RasterColourPaletteType::Type
+		operator()(
+				const GPlatesGui::ColourPalette<boost::uint32_t>::non_null_ptr_type &) const
+		{
+			return GPlatesGui::RasterColourPaletteType::UINT32;
+		}
+
+		GPlatesGui::RasterColourPaletteType::Type
+		operator()(
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_type &) const
+		{
+			return GPlatesGui::RasterColourPaletteType::DOUBLE;
+		}
+	};
+}
+
+
+GPlatesGui::RasterColourPaletteType::Type
+GPlatesGui::RasterColourPaletteType::get_type(
+		const RasterColourPalette &colour_palette)
+{
+	return boost::apply_visitor(RasterColourPaletteTypeVisitor(), colour_palette);
+}
+
+
+namespace
+{
 	using GPlatesGui::Colour;
 
 	// These colours are arbitrary - maybe replace them with colours appropriate
@@ -50,7 +96,9 @@ GPlatesGui::DefaultRasterColourPalette::DefaultRasterColourPalette(
 		double mean,
 		double std_dev) :
 	d_inner_palette(
-			RegularCptColourPalette::create())
+			RegularCptColourPalette::create()),
+	d_mean(mean),
+	d_std_dev(std_dev)
 {
 	double min = mean - NUM_STD_DEV_AWAY_FROM_MEAN * std_dev;
 	double max = mean + NUM_STD_DEV_AWAY_FROM_MEAN * std_dev;

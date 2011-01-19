@@ -5,8 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
- * 
+ * Copyright (C) 2008, 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,6 +32,8 @@
 #include <boost/optional.hpp>
 
 #include "ModifyReconstructionPoleWidgetUi.h"
+#include "TaskPanelWidget.h"
+
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "gui/SimpleGlobeOrientation.h"
 #include "maths/PointOnSphere.h"
@@ -62,11 +63,12 @@ namespace GPlatesQtWidgets
 	class AdjustmentApplicator;
 	
 
-	class ModifyReconstructionPoleWidget:
-			public QWidget, 
+	class ModifyReconstructionPoleWidget :
+			public TaskPanelWidget, 
 			protected Ui_ModifyReconstructionPoleWidget
 	{
 		Q_OBJECT
+
 	public:
 
 		/**
@@ -78,9 +80,26 @@ namespace GPlatesQtWidgets
 		ModifyReconstructionPoleWidget(
 				GPlatesPresentation::ViewState &view_state,
 				ViewportWindow &viewport_window,
+				QAction *clear_action,
 				QWidget *parent_ = NULL);
 
 		~ModifyReconstructionPoleWidget();
+
+		virtual
+		void
+		handle_activation();
+
+		virtual
+		QString
+		get_clear_action_text() const;
+
+		virtual
+		bool
+		clear_action_enabled() const;
+
+		virtual
+		void
+		handle_clear_action_triggered();
 
 	public slots:
 
@@ -216,8 +235,10 @@ namespace GPlatesQtWidgets
 		 *
 		 * This dialog forms the second phase of user-interaction (after dragging
 		 * geometries around on the globe to calculate a reconstruction pole adjustment).
+		 *
+		 * Memory managed by Qt.
 		 */
-		boost::scoped_ptr<ApplyReconstructionPoleAdjustmentDialog> d_dialog_ptr;
+		ApplyReconstructionPoleAdjustmentDialog *d_dialog_ptr;
 
 		boost::scoped_ptr<AdjustmentApplicator> d_applicator_ptr;
 

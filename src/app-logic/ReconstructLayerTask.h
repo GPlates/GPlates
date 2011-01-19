@@ -32,7 +32,7 @@
 #include <QString>
 
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
+#include "ReconstructLayerTaskParams.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -123,7 +123,7 @@ namespace GPlatesAppLogic
 	private:
 		static const char *RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
 
-		LayerTaskParams d_layer_task_params;
+		ReconstructLayerTaskParams d_layer_task_params;
 
 		ReconstructLayerTask()
 		{  }

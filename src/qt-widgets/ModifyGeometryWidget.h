@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,8 +31,10 @@
 #include <QWidget>
 #include <QTreeWidget>
 #include <boost/scoped_ptr.hpp>
+
 #include "ModifyGeometryWidgetUi.h"
 #include "LatLonCoordinatesTable.h"
+#include "TaskPanelWidget.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -49,13 +51,14 @@ namespace GPlatesQtWidgets
 {
 	class LatLonCoordinatesTable;
 
-	class ModifyGeometryWidget:
-			public QWidget, 
+	class ModifyGeometryWidget :
+			public TaskPanelWidget, 
 			protected Ui_ModifyGeometryWidget
 	{
 		Q_OBJECT
 
 	public:
+
 		explicit
 		ModifyGeometryWidget(
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
@@ -69,6 +72,10 @@ namespace GPlatesQtWidgets
 		{
 			d_lat_lon_coordinates_table->reload_if_necessary();
 		}
+
+		virtual
+		void
+		handle_activation();
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments

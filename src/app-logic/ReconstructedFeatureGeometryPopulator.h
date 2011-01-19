@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,6 +32,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
+#include "ReconstructLayerTaskParams.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionFeatureProperties.h"
@@ -53,7 +54,7 @@ namespace GPlatesAppLogic
 	/**
 	 * Reconstructs (rotates) geometries contained inside a feature using a @a ReconstructionTree.
 	 */
-	class ReconstructedFeatureGeometryPopulator:
+	class ReconstructedFeatureGeometryPopulator :
 			public GPlatesModel::FeatureVisitor,
 			private boost::noncopyable
 	{
@@ -71,6 +72,7 @@ namespace GPlatesAppLogic
 
 		ReconstructedFeatureGeometryPopulator(
 				ReconstructionGeometryCollection &reconstruction_geometry_collection,
+				const ReconstructLayerTaskParams &reconstruct_params,
 				bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
@@ -149,6 +151,8 @@ namespace GPlatesAppLogic
 		// we should not reconstruct the seed point here. So we need to look out for flowline
 		// features and handle them slightly differently.
 		bool d_is_flowline_feature;
+
+		ReconstructLayerTaskParams d_reconstruct_params;
 	};
 }
 

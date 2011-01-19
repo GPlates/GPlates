@@ -276,6 +276,10 @@ namespace GPlatesCanvasTools
 		void
 		feature_changed();
 
+	private slots:
+	
+		void
+		handle_quick_measure_cleared();
 	};
 }
 

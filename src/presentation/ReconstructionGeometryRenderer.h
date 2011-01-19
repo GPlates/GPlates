@@ -32,8 +32,14 @@
 #include "VisualLayerParamsVisitor.h"
 
 #include "app-logic/ReconstructionGeometryVisitor.h"
+
 #include "gui/Colour.h"
+#include "gui/RasterColourPalette.h"
+
 #include "maths/Rotation.h"
+
+#include "property-values/TextContent.h"
+
 #include "view-operations/RenderedGeometryParameters.h"
 
 
@@ -68,6 +74,13 @@ namespace GPlatesPresentation
 			float reconstruction_line_width_hint;
 			float reconstruction_point_size_hint;
 			float velocity_ratio_unit_vector_direction_to_globe_radius;
+
+			// Raster-specific parameters.
+			GPlatesPropertyValues::TextContent raster_band_name;
+			GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette;
+
+			// VGP-specific parameters.
+			bool vgp_draw_circular_error;
 		};
 
 
@@ -84,6 +97,16 @@ namespace GPlatesPresentation
 			{
 				return d_render_params;
 			}
+
+			virtual
+			void
+			visit_raster_visual_layer_params(
+					const RasterVisualLayerParams &params);
+
+			virtual
+			void
+			visit_reconstruct_visual_layer_params(
+					const ReconstructVisualLayerParams &params);
 
 		private:
 

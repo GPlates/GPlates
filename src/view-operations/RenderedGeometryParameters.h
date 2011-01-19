@@ -113,17 +113,17 @@ namespace GPlatesViewOperations
 		/**
 		 * Width of lines to render in the most general case.
 		 */
-		const float LINE_WIDTH_HINT = 1.5f;
+		const float LINE_WIDTH_HINT = 2.5f;
 
 		/**
 		 * Width of lines for rendering those parts of geometry that need highlighting
 		 * to indicate, to the user, that an operation is possible.
 		 */
-		const float HIGHLIGHT_LINE_WIDTH_HINT = 2.0f;
+		const float HIGHLIGHT_LINE_WIDTH_HINT = 3.0f;
 		
 	
 		//! Line width for move-vertex secondary geometries.
-		const float SECONDARY_LINE_WIDTH_HINT = 1.0f;
+		const float SECONDARY_LINE_WIDTH_HINT = 2.0f;
 
 		/////////////////
 		// Point sizes //

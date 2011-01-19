@@ -34,6 +34,11 @@
 #include "utils/non_null_intrusive_ptr.h"
 
 
+namespace GPlatesAppLogic
+{
+	class Layer;
+}
+
 namespace GPlatesPresentation
 {
 	/**
@@ -80,6 +85,20 @@ namespace GPlatesPresentation
 		void
 		accept_visitor(
 				VisualLayerParamsVisitor &visitor)
+		{  }
+
+		/**
+		 * Subclasses should override this to get notified when the app-logic
+		 * layer corresponding to the parent visual layer has had an input
+		 * connection added or removed.
+		 *
+		 * This function is also guaranteed to be called immediately after the
+		 * instance of the subclass is constructed.
+		 */
+		virtual
+		void
+		handle_layer_modified(
+				const GPlatesAppLogic::Layer &layer)
 		{  }
 
 	signals:

@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,6 +33,7 @@
 #include <QPalette>
 
 #include "MeasureDistanceWidgetUi.h"
+#include "TaskPanelWidget.h"
 
 #include "maths/PointOnSphere.h"
 
@@ -50,7 +51,7 @@ namespace GPlatesQtWidgets
 	 * TaskPanel widget that displays information for distance measuring canvas tool
 	 */
 	class MeasureDistanceWidget :
-			public QWidget, 
+			public TaskPanelWidget, 
 			protected Ui_MeasureDistanceWidget
 	{
 		Q_OBJECT
@@ -64,6 +65,22 @@ namespace GPlatesQtWidgets
 		MeasureDistanceWidget(
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 				QWidget *parent_ = NULL);
+
+		virtual
+		void
+		handle_activation();
+
+		virtual
+		QString
+		get_clear_action_text() const;
+
+		virtual
+		bool
+		clear_action_enabled() const;
+
+		virtual
+		void
+		handle_clear_action_triggered();
 		
 	private slots:
 

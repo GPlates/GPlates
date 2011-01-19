@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -151,7 +151,7 @@ QString
 GPlatesPropertyValues::ProxiedRasterResolverInternals::make_mipmap_filename_in_same_directory(
 		const QString &source_filename,
 		unsigned int band_number,
-		size_t colour_palette_id)
+		std::size_t colour_palette_id)
 {
 	static const QString FORMAT = "%1.%2.mipmaps";
 	static const QString FORMAT_WITH_COLOUR_PALETTE = "%1.%2.%3.mipmaps";
@@ -176,7 +176,7 @@ QString
 GPlatesPropertyValues::ProxiedRasterResolverInternals::make_mipmap_filename_in_tmp_directory(
 		const QString &source_filename,
 		unsigned int band_number,
-		size_t colour_palette_id)
+		std::size_t colour_palette_id)
 {
 	return GPlatesFileIO::TemporaryFileRegistry::make_filename_in_tmp_directory(
 			make_mipmap_filename_in_same_directory(
@@ -188,7 +188,7 @@ QString
 GPlatesPropertyValues::ProxiedRasterResolverInternals::get_writable_mipmap_filename(
 		const QString &source_filename,
 		unsigned int band_number,
-		size_t colour_palette_id)
+		std::size_t colour_palette_id)
 {
 	QString in_same_directory = make_mipmap_filename_in_same_directory(
 			source_filename, band_number, colour_palette_id);
@@ -214,7 +214,7 @@ QString
 GPlatesPropertyValues::ProxiedRasterResolverInternals::get_existing_mipmap_filename(
 		const QString &source_filename,
 		unsigned int band_number,
-		size_t colour_palette_id)
+		std::size_t colour_palette_id)
 {
 	QString in_same_directory = make_mipmap_filename_in_same_directory(
 			source_filename, band_number, colour_palette_id);
@@ -246,57 +246,80 @@ GPlatesPropertyValues::ProxiedRasterResolverInternals::get_existing_mipmap_filen
 }
 
 
-size_t
-GPlatesPropertyValues::ProxiedRasterResolverInternals::get_colour_palette_id(
-		boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette)
+namespace
 {
-	if (!colour_palette)
+	class GetColourPaletteIdVisitor :
+			public boost::static_visitor<std::size_t>
 	{
-		return 0;
-	}
+	public:
 
-	GPlatesGui::RasterColourScheme::ColourPaletteType type = (*colour_palette)->get_type();
-
-	// Note that we intentionally only do INT32 and UINT32.
-	// This is because it is only when we are using integer colour palettes that we
-	// need to create a special mipmap file for that colour palette.
-	switch (type)
-	{
-		case GPlatesGui::RasterColourScheme::INT32:
-			return reinterpret_cast<size_t>(
-					(*colour_palette)->get_colour_palette<boost::int32_t>().get());
-
-		case GPlatesGui::RasterColourScheme::UINT32:
-			return reinterpret_cast<size_t>(
-					(*colour_palette)->get_colour_palette<boost::uint32_t>().get());
-
-		default:
+		std::size_t
+		operator()(
+				const GPlatesGui::RasterColourPalette::empty &) const
+		{
 			return 0;
-	}
+		}
+
+		template<class ColourPaletteType>
+		std::size_t
+		operator()(
+				const GPlatesUtils::non_null_intrusive_ptr<ColourPaletteType> &colour_palette) const
+		{
+			return reinterpret_cast<std::size_t>(colour_palette.get());
+		}
+	};
+}
+
+
+std::size_t
+GPlatesPropertyValues::ProxiedRasterResolverInternals::get_colour_palette_id(
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
+{
+	return boost::apply_visitor(GetColourPaletteIdVisitor(), *colour_palette);
+}
+
+
+namespace
+{
+	class ColourRawRasterVisitor :
+			public boost::static_visitor<
+				boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> >
+	{
+	public:
+
+		ColourRawRasterVisitor(
+				GPlatesPropertyValues::RawRaster &raster) :
+			d_raster(raster)
+		{  }
+
+		result_type
+		operator()(
+				const GPlatesGui::RasterColourPalette::empty &) const
+		{
+			return boost::none;
+		}
+
+		template<class ColourPaletteType>
+		result_type
+		operator()(
+				const GPlatesUtils::non_null_intrusive_ptr<ColourPaletteType> &colour_palette) const
+		{
+			return GPlatesGui::ColourRawRaster::colour_raw_raster<typename ColourPaletteType::key_type>(
+					d_raster, colour_palette);
+		}
+
+	private:
+
+		GPlatesPropertyValues::RawRaster &d_raster;
+	};
 }
 
 
 boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type>
 GPlatesPropertyValues::ProxiedRasterResolverInternals::colour_raw_raster(
 		RawRaster &raster,
-		const GPlatesGui::RasterColourScheme::non_null_ptr_type &colour_palette)
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
 {
-	switch (colour_palette->get_type())
-	{
-		case GPlatesGui::RasterColourScheme::INT32:
-			return GPlatesGui::ColourRawRaster::colour_raw_raster<boost::int32_t>(
-					raster, colour_palette->get_colour_palette<boost::int32_t>());
-
-		case GPlatesGui::RasterColourScheme::UINT32:
-			return GPlatesGui::ColourRawRaster::colour_raw_raster<boost::uint32_t>(
-					raster, colour_palette->get_colour_palette<boost::uint32_t>());
-
-		case GPlatesGui::RasterColourScheme::DOUBLE:
-			return GPlatesGui::ColourRawRaster::colour_raw_raster<double>(
-					raster, colour_palette->get_colour_palette<double>());
-
-		default:
-			return boost::none;
-	}
+	return boost::apply_visitor(ColourRawRasterVisitor(raster), *colour_palette);
 }
 

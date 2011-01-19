@@ -26,7 +26,6 @@
 #include "PersistentOpenGLObjects.h"
 
 #include "RasterColourPalette.h"
-#include "RasterColourScheme.h"
 
 #include "app-logic/ApplicationState.h"
 
@@ -35,36 +34,6 @@
 
 #include "property-values/RawRaster.h"
 #include "property-values/RawRasterUtils.h"
-
-
-namespace 
-{
-	// Setup a default colour scheme for non-RGBA rasters...
-	// This should work for all raster types.
-	boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type>
-	create_default_raster_colour_scheme(
-			const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raw_raster)
-	{
-		GPlatesPropertyValues::RasterStatistics *statistics_ptr =
-			GPlatesPropertyValues::RawRasterUtils::get_raster_statistics(*raw_raster);
-		if (!statistics_ptr)
-		{
-			return boost::none;
-		}
-
-		GPlatesPropertyValues::RasterStatistics &statistics = *statistics_ptr;
-		if (!statistics.mean || !statistics.standard_deviation)
-		{
-			return boost::none;
-		}
-		double mean = *statistics.mean;
-		double std_dev = *statistics.standard_deviation;
-		GPlatesGui::DefaultRasterColourPalette::non_null_ptr_type rgba8_palette =
-				GPlatesGui::DefaultRasterColourPalette::create(mean, std_dev);
-
-		return GPlatesGui::RasterColourScheme::create<double>("band name", rgba8_palette);
-	}
-} // anonymous namespace
 
 
 GPlatesGui::PersistentOpenGLObjects::PersistentOpenGLObjects(
@@ -129,10 +98,10 @@ GPlatesGui::PersistentOpenGLObjects::handle_layer_about_to_be_removed(
 boost::optional<GPlatesOpenGL::GLRenderGraphNode::non_null_ptr_type>
 GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 		const GPlatesAppLogic::Layer &layer,
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 		const double &reconstruction_time,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &source_georeferencing,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &source_raster,
-		const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &source_raster_colour_scheme,
 		const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
 				reconstruct_raster_polygons,
 		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &age_grid_georeferencing,
@@ -143,10 +112,9 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 	const RasterBuilder::Raster &old_raster = raster;
 
 	RasterBuilder::Raster new_raster;
+	new_raster.input.source_raster_colour_palette = source_raster_colour_palette;
 	new_raster.input.source_georeferencing = source_georeferencing;
 	new_raster.input.source_raster = source_raster;
-	new_raster.input.source_raster_colour_scheme = source_raster_colour_scheme;
-	new_raster.input.is_default_raster_colour_scheme = false;
 	new_raster.input.reconstruct_raster_polygons = reconstruct_raster_polygons;
 	new_raster.input.age_grid_georeferencing = age_grid_georeferencing;
 	new_raster.input.age_grid_raster = age_grid_raster;
@@ -155,6 +123,7 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 	// First see if we need to create or update the source raster.
 	//
 
+#if 0
 	// Use the default colour scheme, for the raster, if the user hasn't set one.
 	// But keep the default colour scheme from the last frame if the raster hasn't changed.
 	// This means the multi-resolution rasters won't have to invalidate their texture caches
@@ -180,8 +149,9 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 			new_raster.input.is_default_raster_colour_scheme = old_raster.input.is_default_raster_colour_scheme;
 		}
 	}
+#endif
 
-	// If an old source raster does not exist, or  if the georeferencing has changed then
+	// If an old source raster does not exist, or if the georeferencing has changed then
 	// we need to build the raster from scratch.
 	if (!old_raster.output.source_multi_resolution_raster ||
 		new_raster.input.source_georeferencing != old_raster.input.source_georeferencing)
@@ -194,25 +164,25 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 			return boost::none;
 		}
 	}
-	// If the raster data and colour scheme have not changed then the raster is fine as it is.
+	// If the raster data and colour palette have not changed then the raster is fine as it is.
 	else if (new_raster.input.source_raster == old_raster.input.source_raster &&
-		new_raster.input.source_raster_colour_scheme == old_raster.input.source_raster_colour_scheme)
+		new_raster.input.source_raster_colour_palette == old_raster.input.source_raster_colour_palette)
 	{
 		new_raster.output.source_proxied_raster = old_raster.output.source_proxied_raster;
 		new_raster.output.source_multi_resolution_raster = old_raster.output.source_multi_resolution_raster;
 	}
-	// Otherwise we can keep the existing raster but change the raster data and/or colour scheme.
+	// Otherwise we can keep the existing raster but change the raster data and/or colour palette.
 	else
 	{
 		new_raster.output.source_proxied_raster = old_raster.output.source_proxied_raster;
 		new_raster.output.source_multi_resolution_raster = old_raster.output.source_multi_resolution_raster;
 
-		//qDebug() << "Raster colour scheme or raster changed - creating new multi-resolution raster.";
+		//qDebug() << "Raster colour palette or raster changed - creating new multi-resolution raster.";
 		// If we weren't able to change the raster then we'll need to rebuild it from scratch.
 		// This should succeed if the raster dimensions haven't changed (note also that we're
 		// only here because the georeferencing hasn't changed either).
 		if (!new_raster.output.source_proxied_raster.get()->change_raster(
-				new_raster.input.source_raster.get(), new_raster.input.source_raster_colour_scheme))
+				new_raster.input.source_raster.get(), new_raster.input.source_raster_colour_palette.get()))
 		{
 			if (!create_source_multi_resolution_raster(new_raster))
 			{
@@ -403,13 +373,14 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_raster_render_graph_node(
 	return render_graph_node;
 }
 
+
 bool
 GPlatesGui::PersistentOpenGLObjects::ListObjects::create_source_multi_resolution_raster(
 		RasterBuilder::Raster &new_raster)
 {
 	new_raster.output.source_proxied_raster = GPlatesOpenGL::GLProxiedRasterSource::create(
 			new_raster.input.source_raster.get(),
-			new_raster.input.source_raster_colour_scheme);
+			new_raster.input.source_raster_colour_palette.get());
 	if (!new_raster.output.source_proxied_raster)
 	{
 		return false;

@@ -114,6 +114,8 @@ set(srcs
     ReconstructionTreePopulator.h
     ReconstructLayerTask.cc
     ReconstructLayerTask.h
+    ReconstructLayerTaskParams.cc
+    ReconstructLayerTaskParams.h
     ReconstructRasterPolygons.cc
     ReconstructRasterPolygons.h
     ReconstructUtils.cc

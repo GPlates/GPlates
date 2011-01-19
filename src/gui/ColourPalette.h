@@ -65,7 +65,8 @@ namespace GPlatesGui
 	{
 	public:
 
-		typedef typename GPlatesUtils::TypeTraits<KeyType>::argument_type value_type;
+		typedef KeyType key_type;
+		typedef typename GPlatesUtils::TypeTraits<key_type>::argument_type value_type;
 
 		typedef ColourPalette<KeyType> this_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;

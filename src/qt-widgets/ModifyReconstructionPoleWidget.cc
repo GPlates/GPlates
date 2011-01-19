@@ -5,8 +5,8 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
- *(as "ReconstructionPoleWidget.cc")
+ * Copyright (C) 2008, 2009, 2011 The University of Sydney, Australia
+ * (as "ReconstructionPoleWidget.cc")
  * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -26,21 +26,26 @@
  */
 
 #include <iostream>
-
 #include <QDebug>
 
+#include "ActionButtonBox.h"
 #include "ApplyReconstructionPoleAdjustmentDialog.h"
 #include "ModifyReconstructionPoleWidget.h"
+#include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
+
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
+
 #include "gui/FeatureFocus.h"
+
 #include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
+
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
 
@@ -48,8 +53,9 @@
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget(
 		GPlatesPresentation::ViewState &view_state,
 		ViewportWindow &viewport_window,
+		QAction *clear_action,
 		QWidget *parent_):
-	QWidget(parent_),
+	TaskPanelWidget(parent_),
 	d_application_state_ptr(&view_state.get_application_state()),
 	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
 	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&viewport_window)),
@@ -59,6 +65,16 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget
 	d_view_state_ptr(&view_state)
 {
 	setupUi(this);
+
+	// Set up the action button box showing the reset button.
+	ActionButtonBox *action_button_box = new ActionButtonBox(1, 16, this);
+	action_button_box->add_action(clear_action);
+#ifndef Q_WS_MAC
+	action_button_box->setFixedHeight(button_apply->sizeHint().height());
+#endif
+	QtWidgetUtils::add_widget_to_placeholder(
+			action_button_box,
+			action_button_box_placeholder_widget);
 
 	make_signal_slot_connections(view_state);
 
@@ -893,6 +909,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::clear_and_reset_after_reconstr
 	draw_initial_geometries_at_activation();
 }
 
+
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 		GPlatesPresentation::ViewState &view_state)
@@ -901,16 +918,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 	QObject::connect(button_apply, SIGNAL(clicked()),
 		this, SLOT(apply()));
 
-	// The user wants to reset the adjustment (to zero).
-	QObject::connect(button_reset_adjustment, SIGNAL(clicked()),
-		this, SLOT(reset()));
-
 	// Communication between the Apply ... Adjustment dialog and the Adjustment Applicator.
-	QObject::connect(d_dialog_ptr.get(), SIGNAL(pole_sequence_choice_changed(int)),
+	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_changed(int)),
 		d_applicator_ptr.get(), SLOT(handle_pole_sequence_choice_changed(int)));
-	QObject::connect(d_dialog_ptr.get(), SIGNAL(pole_sequence_choice_cleared()),
+	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_cleared()),
 		d_applicator_ptr.get(), SLOT(handle_pole_sequence_choice_cleared()));
-	QObject::connect(d_dialog_ptr.get(), SIGNAL(accepted()),
+	QObject::connect(d_dialog_ptr, SIGNAL(accepted()),
 		d_applicator_ptr.get(), SLOT(apply_adjustment()));
 
 	// The user has agreed to apply the adjustment as described in the dialog.
@@ -941,6 +954,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 			this, SLOT(change_highlight_children_checkbox_state(int)));			
 }
 
+
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::create_child_rendered_layers()
 {
@@ -969,4 +983,31 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::create_child_rendered_layers()
 	// Activate both layers.
 	d_initial_geom_layer_ptr->set_active();
 	d_dragged_geom_layer_ptr->set_active();
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_activation()
+{
+}
+
+
+QString
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::get_clear_action_text() const
+{
+	return tr("Re&set Rotation");
+}
+
+
+bool
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::clear_action_enabled() const
+{
+	return true;
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_clear_action_triggered()
+{
+	reset();
 }

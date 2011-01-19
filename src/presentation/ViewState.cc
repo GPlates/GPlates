@@ -48,7 +48,6 @@
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
 #include "gui/RasterColourPalette.h"
-#include "gui/RasterColourSchemeMap.h"
 #include "gui/RenderSettings.h"
 #include "gui/TextOverlaySettings.h"
 #include "gui/ViewportProjection.h"
@@ -114,9 +113,6 @@ GPlatesPresentation::ViewState::ViewState(
 	d_main_viewport_dimensions(0, 0),
 	d_vgp_render_settings(
 			GPlatesAppLogic::VGPRenderSettings::instance()),
-	d_raster_colour_scheme_map(
-			new GPlatesGui::RasterColourSchemeMap(
-				application_state.get_reconstruct_graph())),
 	d_last_open_directory(QDir::currentPath()),
 	d_show_stars(true),
 	d_background_colour(
@@ -134,8 +130,6 @@ GPlatesPresentation::ViewState::ViewState(
 
 	// Connect to signals from FeatureFocus.
 	connect_to_feature_focus();
-
-	connect_to_raster_colour_scheme_map();
 
 	// Set up RenderedGeometryCollection.
 	setup_rendered_geometry_collection();
@@ -370,31 +364,6 @@ GPlatesAppLogic::VGPRenderSettings &
 GPlatesPresentation::ViewState::get_vgp_render_settings()
 {
 	return *d_vgp_render_settings;
-}
-
-
-GPlatesGui::RasterColourSchemeMap &
-GPlatesPresentation::ViewState::get_raster_colour_scheme_map()
-{
-	return *d_raster_colour_scheme_map;
-}
-
-
-const GPlatesGui::RasterColourSchemeMap &
-GPlatesPresentation::ViewState::get_raster_colour_scheme_map() const
-{
-	return *d_raster_colour_scheme_map;
-}
-
-
-void
-GPlatesPresentation::ViewState::connect_to_raster_colour_scheme_map()
-{
-	QObject::connect(
-			d_raster_colour_scheme_map.get(),
-			SIGNAL(colour_scheme_changed(const GPlatesAppLogic::Layer &)),
-			&d_application_state,
-			SLOT(reconstruct()));
 }
 
 

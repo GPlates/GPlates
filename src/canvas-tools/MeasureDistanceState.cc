@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -275,6 +275,21 @@ GPlatesCanvasTools::MeasureDistanceState::quick_measure_add_point(
 			}
 		}
 		
+		emit_quick_measure_updated();
+	}
+}
+
+
+void
+GPlatesCanvasTools::MeasureDistanceState::clear_quick_measure()
+{
+	if (d_is_active)
+	{
+		d_quick_measure_start = boost::none;
+		d_quick_measure_end = boost::none;
+
+		emit quick_measure_cleared();
+
 		emit_quick_measure_updated();
 	}
 }

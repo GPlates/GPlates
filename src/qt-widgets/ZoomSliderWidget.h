@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,6 +28,8 @@
 
 #include <QWidget>
 #include <QSlider>
+#include <QPixmap>
+#include <QLabel>
 
 
 namespace GPlatesGui
@@ -68,6 +70,70 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		class ZoomSlider :
+				public QSlider
+		{
+		public:
+
+			ZoomSlider(
+					QWidget *parent_) :
+				QSlider(parent_)
+			{  }
+
+			/**
+			 * Exposes the protected function @a setRepeatAction.
+			 */
+			void
+			set_repeat_action(
+					QAbstractSlider::SliderAction action)
+			{
+				setRepeatAction(action);
+			}
+		};
+
+		class ZoomIcon :
+				public QLabel
+		{
+		public:
+
+			ZoomIcon(
+					const QPixmap &icon,
+					ZoomSlider *zoom_slider,
+					QAbstractSlider::SliderAction action,
+					QWidget *parent_) :
+				QLabel(parent_),
+				d_zoom_slider(zoom_slider),
+				d_action(action)
+			{
+				setPixmap(icon);
+				setCursor(QCursor(Qt::PointingHandCursor));
+			}
+
+		protected:
+
+			virtual
+			void
+			mousePressEvent(
+					QMouseEvent *ev)
+			{
+				d_zoom_slider->triggerAction(d_action);
+				d_zoom_slider->set_repeat_action(d_action);
+			}
+
+			virtual
+			void
+			mouseReleaseEvent(
+					QMouseEvent *ev)
+			{
+				d_zoom_slider->set_repeat_action(QAbstractSlider::SliderNoAction);
+			}
+
+		private:
+
+			ZoomSlider *d_zoom_slider;
+			QAbstractSlider::SliderAction d_action;
+		};
+
 		void
 		set_up_ui();
 
@@ -84,7 +150,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * This is our slider widget that we get events from.
 		 */
-		QSlider *d_slider_zoom;
+		ZoomSlider *d_slider_zoom;
 
 		/**
 		 * A necessary work-around to using QSlider::setValue() while tracking

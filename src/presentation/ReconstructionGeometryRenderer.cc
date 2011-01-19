@@ -32,6 +32,8 @@
 
 #include "ReconstructionGeometryRenderer.h"
 
+#include "RasterVisualLayerParams.h"
+#include "ReconstructVisualLayerParams.h"
 #include "ViewState.h"
 #include "VisualLayerParamsVisitor.h"
 
@@ -46,7 +48,6 @@
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/PlateVelocityUtils.h"
-#include "app-logic//VGPRenderSettings.h"
 
 #include "data-mining/DataTable.h"
 
@@ -172,8 +173,28 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	reconstruction_line_width_hint(reconstruction_line_width_hint_),
 	reconstruction_point_size_hint(reconstruction_point_size_hint_),
 	velocity_ratio_unit_vector_direction_to_globe_radius(
-			velocity_ratio_unit_vector_direction_to_globe_radius_)
+			velocity_ratio_unit_vector_direction_to_globe_radius_),
+	raster_band_name(GPlatesUtils::UnicodeString()),
+	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
+	vgp_draw_circular_error(true)
 {
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_raster_visual_layer_params(
+		const RasterVisualLayerParams &params)
+{
+	d_render_params.raster_band_name = params.get_band_name();
+	d_render_params.raster_colour_palette = params.get_colour_palette();
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_reconstruct_visual_layer_params(
+		const ReconstructVisualLayerParams &params)
+{
+	d_render_params.vgp_draw_circular_error = params.get_vgp_draw_circular_error();
 }
 
 
@@ -285,6 +306,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_raster =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 					rr->get_layer(),
+					d_render_params.raster_band_name,
+					d_render_params.raster_colour_palette,
 					rr->get_reconstruction_time(),
 					rr->get_georeferencing(),
 					rr->get_proxied_rasters(),
@@ -319,8 +342,6 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
 {
-	GPlatesAppLogic::VGPRenderSettings* vgp_render_setting = GPlatesAppLogic::VGPRenderSettings::instance();
-
 	if(rvgp->vgp_params().d_vgp_point)
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_vgp_point =
@@ -352,7 +373,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			site_point = (**rvgp->vgp_params().d_site_point);
 		}
 	}
-	if (vgp_render_setting->should_draw_circular_error() &&
+	if (d_render_params.vgp_draw_circular_error &&
 		rvgp->vgp_params().d_a95 )
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
@@ -368,7 +389,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// a site point. We need the site point so that we can align the ellipse axes
 	// appropriately. 
 	else if (
-			!vgp_render_setting->should_draw_circular_error() && 
+			!d_render_params.vgp_draw_circular_error && 
 			rvgp->vgp_params().d_dm  && 
 			rvgp->vgp_params().d_dp  && 
 			rvgp->vgp_params().d_site_point )

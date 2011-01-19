@@ -593,9 +593,7 @@ void
 GPlatesQtWidgets::MapView::move_camera_up()
 {
 	// This translation will be zoom-dependent, as it's based on view coordinates. 
-	// This is slightly different from the globe behaviour, which is always a 5 degree increment, 
-	// irrespective of zoom level.
-	move_camera(0, 5);
+	move_camera(0, -5);
 }
 
 
@@ -603,7 +601,7 @@ void
 GPlatesQtWidgets::MapView::move_camera_down()
 {
 	// See comments under "move_camera_up" above. 
-	move_camera(0, -5);
+	move_camera(0, 5);
 }
 
 
@@ -611,7 +609,7 @@ void
 GPlatesQtWidgets::MapView::move_camera_left()
 {
 	// See comments under "move_camera_up" above. 
-	move_camera(5, 0);
+	move_camera(-5, 0);
 }
 
 
@@ -619,7 +617,7 @@ void
 GPlatesQtWidgets::MapView::move_camera_right()
 {
 	// See comments under "move_camera_up" above.
-	move_camera(-5, 0);
+	move_camera(5, 0);
 }
 
 

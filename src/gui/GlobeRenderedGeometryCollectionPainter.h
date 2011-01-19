@@ -54,7 +54,6 @@ namespace GPlatesGui
 {
 	class GlobeRenderedGeometryLayerPainter;
 	class GlobeVisibilityTester;
-	class RasterColourSchemeMap;
 
 	/**
 	 * Draws rendered geometries (in a @a RenderedGeometryCollection) onto a
@@ -72,7 +71,6 @@ namespace GPlatesGui
 				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
-				RasterColourSchemeMap &raster_colour_scheme_map,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -143,9 +141,6 @@ namespace GPlatesGui
 		//! Rendering flags to determine what gets shown
 		RenderSettings &d_render_settings;
 
-		//! Colour schemes for the app-logic layers.
-		RasterColourSchemeMap &d_raster_colour_scheme_map;
-		
 		//! Used for rendering text on an OpenGL canvas
 		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
 

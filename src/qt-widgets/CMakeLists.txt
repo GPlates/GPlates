@@ -64,6 +64,11 @@ set(srcs
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
+    ColourScaleDialog.cc
+    ColourScaleDialog.h
+    ColourScaleDialogUi.ui
+    ColourScaleWidget.cc
+    ColourScaleWidget.h
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
@@ -277,6 +282,9 @@ set(srcs
     ReconstructionViewWidget.cc
     ReconstructionViewWidget.h
     ReconstructionViewWidgetUi.ui
+    ReconstructLayerOptionsWidget.cc
+    ReconstructLayerOptionsWidget.h
+    ReconstructLayerOptionsWidgetUi.ui
     ResultTableDialog.cc
     ResultTableDialog.h
     ResultTableDialogUi.ui
@@ -321,6 +329,7 @@ set(srcs
     SpecifyAnchoredPlateIdDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
+    TaskPanelWidget.h
     TimeControlWidget.cc
     TimeControlWidget.h
     TimeControlWidgetUi.ui

@@ -26,8 +26,10 @@
 
 
 #include "SetProjectionDialog.h"
+
 #include "MapCanvas.h"
 #include "MapView.h"
+#include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
 
 #include "global/GPlatesAssert.h"

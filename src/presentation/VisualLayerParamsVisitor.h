@@ -31,6 +31,10 @@
 
 namespace GPlatesPresentation
 {
+	// Forward declarations of supported VisualLayerParams derivations.
+	class RasterVisualLayerParams;
+	class ReconstructVisualLayerParams;
+
 	/**
 	 * This class is a base class for visitors that visit VisualLayerParams.
 	 * For convenience, typedefs are provided below to cover the const and non-const cases.
@@ -41,9 +45,23 @@ namespace GPlatesPresentation
 	public:
 
 		// Typedefs to give the supported derivations the appropriate const-ness.
+		typedef typename GPlatesUtils::SetConst<RasterVisualLayerParams, Const>::type raster_visual_layer_params_type;
+		typedef typename GPlatesUtils::SetConst<ReconstructVisualLayerParams, Const>::type reconstruct_visual_layer_params_type;
 
 		virtual
 		~VisualLayerParamsVisitorBase()
+		{  }
+
+		virtual
+		void
+		visit_raster_visual_layer_params(
+				raster_visual_layer_params_type &params)
+		{  }
+
+		virtual
+		void
+		visit_reconstruct_visual_layer_params(
+				reconstruct_visual_layer_params_type &params)
 		{  }
 
 	protected:

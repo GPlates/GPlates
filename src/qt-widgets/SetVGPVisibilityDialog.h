@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,13 +27,20 @@
 #ifndef GPLATES_QTWIDGETS_SETVGPVISIBILITYDIALOG_H
 #define GPLATES_QTWIDGETS_SETVGPVISIBILITYDIALOG_H
 
+#include <boost/weak_ptr.hpp>
 #include <QWidget>
 
 #include "SetVGPVisibilityDialogUi.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
 namespace GPlatesPresentation
 {
-	class ViewState;
+	class VisualLayer;
 }
 
 namespace GPlatesQtWidgets
@@ -40,32 +48,28 @@ namespace GPlatesQtWidgets
 	/**
 	 * Dialog to view and modify the ViewState's VGPRenderSettings.
 	 */
-	class SetVGPVisibilityDialog:
+	class SetVGPVisibilityDialog :
 			public QDialog,
 			protected Ui_SetVGPVisibilityDialog
 	{
 		Q_OBJECT
+
 	public:
 
 		explicit
 		SetVGPVisibilityDialog(
-			GPlatesPresentation::ViewState &view_state_,
-			QWidget *parent_ = NULL);
-			
-			
-	signals:
-		
-	
-	private:
+				GPlatesAppLogic::ApplicationState &application_state,
+				QWidget *parent_ = NULL);
 
-		void
-		set_initial_state();
-		
-		void
-		setup_connections();
-		
+		/**
+		 * Causes the dialog to be populated with values from the given @a visual_layer.
+		 * Returns true iff the dialog was successfully populated.
+		 */
+		bool
+		populate(
+				const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer);
+
 	private slots:
-		
 		
 		void
 		handle_always_visible();
@@ -78,19 +82,26 @@ namespace GPlatesQtWidgets
 		
 		void
 		handle_distant_past(
-			bool state);
+				bool state);
 		
 		void
 		handle_distant_future(
-			bool state);
+				bool state);
 		
 		void
 		handle_apply();
-		
+
 	private:
+		
+		void
+		setup_connections();
 
-		GPlatesPresentation::ViewState *d_view_state_ptr;
+		GPlatesAppLogic::ApplicationState &d_application_state;
 
+		/**
+		 * The visual layer for which we are currently displaying settings.
+		 */
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
 	};
 }
 

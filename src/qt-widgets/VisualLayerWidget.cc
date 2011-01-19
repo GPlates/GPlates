@@ -345,6 +345,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 			{
 				d_current_layer_options_widget->set_data(visual_layer);
 				d_current_layer_options_widget->updateGeometry();
+				layer_options_groupbox->updateGeometry();
 			}
 		}
 
@@ -352,6 +353,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 		d_visual_layer = visual_layer;
 		d_row = row;
 
+		details_widget->updateGeometry();
 		right_widget->updateGeometry();
 	}
 }

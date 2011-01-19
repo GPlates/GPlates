@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,7 @@
 
 #include "AddNewLayerDialog.h"
 #include "QtWidgetUtils.h"
+#include "ViewportWindow.h"
 #include "VisualLayersListView.h"
 
 
@@ -39,7 +40,8 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
 	d_application_state(application_state),
-	d_view_state(view_state)
+	d_view_state(view_state),
+	d_viewport_window(viewport_window)
 {
 	setupUi(this);
 
@@ -58,6 +60,11 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_add_new_layer_button_clicked()));
+	QObject::connect(
+			colouring_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_colouring_button_clicked()));
 
 	// Hide things for now...
 	control_widget->hide();
@@ -81,5 +88,12 @@ GPlatesQtWidgets::VisualLayersWidget::handle_add_new_layer_button_clicked()
 	}
 
 	d_add_new_layer_dialog->exec();
+}
+
+
+void
+GPlatesQtWidgets::VisualLayersWidget::handle_colouring_button_clicked()
+{
+	d_viewport_window->pop_up_colouring_dialog();
 }
 

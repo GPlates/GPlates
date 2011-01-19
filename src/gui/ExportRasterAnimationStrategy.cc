@@ -37,9 +37,10 @@
 
 #include "maths/MathsUtils.h"
 
-#include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/ReconstructionViewWidget.h"
+#include "qt-widgets/ViewportWindow.h"
 
 #include "presentation/ViewState.h"
 

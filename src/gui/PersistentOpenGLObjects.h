@@ -30,7 +30,7 @@
 #include <map>
 #include <boost/optional.hpp>
 
-#include "RasterColourScheme.h"
+#include "RasterColourPalette.h"
 
 #include "app-logic/Layer.h"
 #include "app-logic/ReconstructGraph.h"
@@ -120,10 +120,10 @@ namespace GPlatesGui
 			boost::optional<GPlatesOpenGL::GLRenderGraphNode::non_null_ptr_type>
 			get_raster_render_graph_node(
 					const GPlatesAppLogic::Layer &layer,
+					const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 					const double &reconstruction_time,
 					const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &source_georeferencing,
 					const GPlatesPropertyValues::RawRaster::non_null_ptr_type &source_raster,
-					const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
 					const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
 							reconstruct_raster_polygons = boost::none,
 					const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
@@ -149,15 +149,11 @@ namespace GPlatesGui
 				{
 					struct Input
 					{
-						Input() :
-								is_default_raster_colour_scheme(false)
-						{  }
-
+						boost::optional<GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type>
+								source_raster_colour_palette;
 						boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
 								source_georeferencing;
 						boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> source_raster;
-						boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> source_raster_colour_scheme;
-						bool is_default_raster_colour_scheme;
 						boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type>
 								reconstruct_raster_polygons;
 						boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>

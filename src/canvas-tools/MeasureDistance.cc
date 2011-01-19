@@ -96,6 +96,11 @@ GPlatesCanvasTools::MeasureDistance::make_signal_slot_connections()
 			SIGNAL(feature_in_geometry_builder_changed()),
 			this,
 			SLOT(feature_changed()));
+	QObject::connect(
+			d_measure_distance_state_ptr,
+			SIGNAL(quick_measure_cleared()),
+			this,
+			SLOT(handle_quick_measure_cleared()));
 }
 
 void
@@ -254,6 +259,13 @@ GPlatesCanvasTools::MeasureDistance::handle_left_click(
 		// redraw everything
 		paint();
 	}
+}
+
+void
+GPlatesCanvasTools::MeasureDistance::handle_quick_measure_cleared()
+{
+	remove_distance_label_and_highlight();
+	paint();
 }
 
 void

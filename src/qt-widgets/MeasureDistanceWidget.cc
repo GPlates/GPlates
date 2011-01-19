@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -88,7 +88,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::PRECISION = 4;
 GPlatesQtWidgets::MeasureDistanceWidget::MeasureDistanceWidget(
 		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 		QWidget *parent_):
-	QWidget(parent_),
+	TaskPanelWidget(parent_),
 	d_measure_distance_state_ptr(&measure_distance_state)
 {
 	setupUi(this);
@@ -380,5 +380,32 @@ GPlatesQtWidgets::MeasureDistanceWidget::restore_background_colour(
 		QLineEdit *lineedit)
 {
 	lineedit->setPalette(d_lineedit_original_palette);
+}
+
+
+void
+GPlatesQtWidgets::MeasureDistanceWidget::handle_activation()
+{
+}
+
+
+QString
+GPlatesQtWidgets::MeasureDistanceWidget::get_clear_action_text() const
+{
+	return tr("C&lear Quick Measure");
+}
+
+
+bool
+GPlatesQtWidgets::MeasureDistanceWidget::clear_action_enabled() const
+{
+	return true;
+}
+
+
+void
+GPlatesQtWidgets::MeasureDistanceWidget::handle_clear_action_triggered()
+{
+	d_measure_distance_state_ptr->clear_quick_measure();
 }
 

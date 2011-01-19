@@ -13,8 +13,12 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     Application.cc
     Application.h
+    RasterVisualLayerParams.cc
+    RasterVisualLayerParams.h
     ReconstructionGeometryRenderer.cc
     ReconstructionGeometryRenderer.h
+    ReconstructVisualLayerParams.cc
+    ReconstructVisualLayerParams.h
     ViewState.cc
     ViewState.h
     VisualLayer.cc

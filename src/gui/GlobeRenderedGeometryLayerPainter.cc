@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -33,8 +33,6 @@
 #include "GlobeRenderedGeometryLayerPainter.h"
 
 #include "RasterColourPalette.h"
-#include "RasterColourScheme.h"
-#include "RasterColourSchemeMap.h"
 
 #include "maths/EllipseGenerator.h"
 #include "maths/Real.h"
@@ -465,41 +463,31 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
 {
-	// Get the user-selected raster colour scheme for the layer that this raster came from.
-	// NOTE: If it's boost::none (indicating the user hasn't set any colour scheme) then
-	// we won't create a default colour scheme here because the raster will think it
-	// has changed colours and will invalidate its textures every render slowing down
-	// rendering unnecessarily. Instead we'll store a default colour scheme with each layer
-	// and reuse it each render frame.
-	boost::optional<RasterColourScheme::non_null_ptr_type> raster_colour_scheme =
-			d_raster_colour_scheme_map.get_colour_scheme(rendered_resolved_raster.get_layer());
+	RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+		rendered_resolved_raster.get_raster_colour_palette();
 
-	// Look up the raster band name in the raster colour scheme selected by the user and
+	// Look up the raster band name selected by the user and
 	// find a match in the list of band names in the raster.
 	// Use this to find the correct proxied raster.
 	unsigned int source_proxied_raster_index = 0;
-	if (raster_colour_scheme)
-	{
-		const RasterColourScheme::band_name_string_type &raster_band_name =
-				raster_colour_scheme.get()->get_band_name();
+	const GPlatesPropertyValues::TextContent &raster_band_name =
+		rendered_resolved_raster.get_raster_band_name();
 
-		unsigned int band_name_index = 0;
-		BOOST_FOREACH(
-				const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &band_name,
-				rendered_resolved_raster.get_raster_band_names())
+	unsigned int band_name_index = 0;
+	BOOST_FOREACH(
+			const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &band_name,
+			rendered_resolved_raster.get_raster_band_names())
+	{
+		if (band_name->value() == raster_band_name)
 		{
-			if (band_name->value() == raster_band_name)
-			{
-				source_proxied_raster_index = band_name_index;
-				break;
-			}
-			++band_name_index;
+			source_proxied_raster_index = band_name_index;
+			break;
 		}
+		++band_name_index;
 	}
 
 	// Get the proxied rasters.
 	// We'll look these up using a raster band name from the colouring options.
-	// For now just use the first raster proxy.
 	const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters =
 			rendered_resolved_raster.get_proxied_rasters();
 	if (source_proxied_raster_index >= proxied_rasters.size())
@@ -509,7 +497,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 	}
 	const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster =
 			proxied_rasters[source_proxied_raster_index];
-
 
 	// Look for the age grid proxied raster if there's an age grid.
 	boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> age_grid_raster;
@@ -545,10 +532,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 	boost::optional<GPlatesOpenGL::GLRenderGraphNode::non_null_ptr_type> raster_render_graph_node =
 			d_persistent_opengl_objects->get_list_objects().get_raster_render_graph_node(
 					rendered_resolved_raster.get_layer(),
+					raster_colour_palette,
 					rendered_resolved_raster.get_reconstruction_time(),
 					rendered_resolved_raster.get_georeferencing(),
 					raster,
-					raster_colour_scheme,
 					rendered_resolved_raster.get_reconstruct_raster_polygons(),
 					rendered_resolved_raster.get_age_grid_georeferencing(),
 					age_grid_raster);

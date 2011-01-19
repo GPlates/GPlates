@@ -71,7 +71,6 @@ namespace GPlatesGui
 	class FeatureFocus;
 	class GraticuleSettings;
 	class MapTransform;
-	class RasterColourSchemeMap;
 	class RenderSettings;
 	class TextOverlaySettings;
 	class ViewportProjection;
@@ -229,14 +228,6 @@ namespace GPlatesPresentation
 		get_vgp_render_settings();
 
 
-		GPlatesGui::RasterColourSchemeMap &
-		get_raster_colour_scheme_map();
-
-
-		const GPlatesGui::RasterColourSchemeMap &
-		get_raster_colour_scheme_map() const;
-
-
 		QString &
 		get_last_open_directory();
 
@@ -355,11 +346,6 @@ namespace GPlatesPresentation
 		boost::scoped_ptr<GPlatesAppLogic::VGPRenderSettings> d_vgp_render_settings;
 
 		/**
-		 * Stores the mapping of Layer to RasterColourSchemes.
-		 */
-		boost::scoped_ptr<GPlatesGui::RasterColourSchemeMap> d_raster_colour_scheme_map;
-
-		/**
 		 * Stores the directory containing the files last opened, or the last opened
 		 * directory.
 		 */
@@ -390,9 +376,6 @@ namespace GPlatesPresentation
 
 		void
 		connect_to_feature_focus();
-
-		void
-		connect_to_raster_colour_scheme_map();
 
 		void
 		setup_rendered_geometry_collection();

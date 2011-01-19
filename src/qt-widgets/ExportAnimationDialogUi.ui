@@ -721,13 +721,32 @@
              <layout class="QHBoxLayout" >
               <item>
                <widget class="QToolButton" name="button_single_add" >
+                <property name="sizePolicy" >
+                 <sizepolicy vsizetype="Preferred" hsizetype="Fixed" >
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text" >
-                 <string>&amp;Add...</string>
+                 <string>&amp;Add Data...</string>
+                </property>
+                <property name="icon" >
+                 <iconset resource="../qt-resources/qt_widgets.qrc" >
+                  <normaloff>:/tango_list_add_16.png</normaloff>:/tango_list_add_16.png</iconset>
+                </property>
+                <property name="toolButtonStyle" >
+                 <enum>Qt::ToolButtonTextBesideIcon</enum>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QToolButton" name="button_single_remove" >
+                <property name="sizePolicy" >
+                 <sizepolicy vsizetype="Preferred" hsizetype="Fixed" >
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text" >
                  <string>&amp;Remove</string>
                 </property>
@@ -735,6 +754,12 @@
               </item>
               <item>
                <widget class="QToolButton" name="button_single_remove_all" >
+                <property name="sizePolicy" >
+                 <sizepolicy vsizetype="Preferred" hsizetype="Fixed" >
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text" >
                  <string>Remove All</string>
                 </property>
@@ -747,14 +772,20 @@
                 </property>
                 <property name="sizeHint" stdset="0" >
                  <size>
-                  <width>231</width>
-                  <height>25</height>
+                  <width>1</width>
+                  <height>1</height>
                  </size>
                 </property>
                </spacer>
               </item>
               <item>
                <widget class="QToolButton" name="button_single_add_all" >
+                <property name="sizePolicy" >
+                 <sizepolicy vsizetype="Preferred" hsizetype="Fixed" >
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text" >
                  <string>Add All</string>
                 </property>

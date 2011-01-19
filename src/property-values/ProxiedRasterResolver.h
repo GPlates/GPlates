@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -46,7 +46,7 @@
 
 #include "gui/ColourRawRaster.h"
 #include "gui/Mipmapper.h"
-#include "gui/RasterColourScheme.h"
+#include "gui/RasterColourPalette.h"
 
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
@@ -101,8 +101,8 @@ namespace GPlatesPropertyValues
 		 * Returns boost::none if an error was encountered while reading from the
 		 * source raster or the mipmaps file.
 		 *
-		 * Note that boost::none is only appropriate for the @a colour_palette
-		 * parameter if the underlying raster type is RGBA.
+		 * Note that an invalid @a colour_palette is only appropriate if the
+		 * underlying raster type is RGBA.
 		 */
 		virtual
 		boost::optional<Rgba8RawRaster::non_null_ptr_type>
@@ -112,8 +112,8 @@ namespace GPlatesPropertyValues
 				unsigned int region_y_offset,
 				unsigned int region_width,
 				unsigned int region_height,
-				boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette =
-					boost::none) = 0;
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
+					GPlatesGui::RasterColourPalette::create()) = 0;
 
 		/**
 		 * Returns the number of levels in the mipmap file.
@@ -155,8 +155,8 @@ namespace GPlatesPropertyValues
 		virtual
 		bool
 		ensure_mipmaps_available(
-				boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette =
-					boost::none) = 0;
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
+					GPlatesGui::RasterColourPalette::create()) = 0;
 
 		/**
 		 * Retrieves a region from a level in the mipmapped raster file, in the data
@@ -277,13 +277,13 @@ namespace GPlatesPropertyValues
 		make_mipmap_filename_in_same_directory(
 				const QString &source_filename,
 				unsigned int band_number,
-				size_t colour_palette_id = 0);
+				std::size_t colour_palette_id = 0);
 
 		QString
 		make_mipmap_filename_in_tmp_directory(
 				const QString &source_filename,
 				unsigned int band_number,
-				size_t colour_palette_id = 0);
+				std::size_t colour_palette_id = 0);
 		
 		/**
 		 * Returns the filename of a file that can be used for writing out a
@@ -299,7 +299,7 @@ namespace GPlatesPropertyValues
 		get_writable_mipmap_filename(
 				const QString &source_filename,
 				unsigned int band_number,
-				size_t colour_palette_id = 0);
+				std::size_t colour_palette_id = 0);
 
 		/**
 		 * Returns the filename of an existing mipmap file for the given
@@ -314,7 +314,7 @@ namespace GPlatesPropertyValues
 		get_existing_mipmap_filename(
 				const QString &source_filename,
 				unsigned int band_number,
-				size_t colour_palette_id = 0);
+				std::size_t colour_palette_id = 0);
 
 		/**
 		 * Gets the colour palette id for the given @a colour_palette.
@@ -322,10 +322,10 @@ namespace GPlatesPropertyValues
 		 * It simply casts the memory address of the colour palette and casts it
 		 * to an unsigned int.
 		 */
-		size_t
+		std::size_t
 		get_colour_palette_id(
-				boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette =
-					boost::none);
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
+					GPlatesGui::RasterColourPalette::create());
 
 		/**
 		 * Allows us to decompose the policies out of RawRasterType.
@@ -386,12 +386,12 @@ namespace GPlatesPropertyValues
 		};
 
 		/**
-		 * Colours a RawRaster using a RasterColourScheme.
+		 * Colours a RawRaster using a RasterColourPalette.
 		 */
 		boost::optional<Rgba8RawRaster::non_null_ptr_type>
 		colour_raw_raster(
 				RawRaster &raster,
-				const GPlatesGui::RasterColourScheme::non_null_ptr_type &colour_palette);
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette);
 
 		/**
 		 * Used by @a get_main_mipmap_reader and @a get_coloured_mipmap_reader,
@@ -401,10 +401,10 @@ namespace GPlatesPropertyValues
 		GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType> *
 		get_mipmap_reader(
 				boost::scoped_ptr<GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType> > &cached_mipmap_reader,
-				size_t colour_palette_id,
+				std::size_t colour_palette_id,
 				const GPlatesFileIO::RasterBandReaderHandle &raster_band_reader_handle,
 				const boost::function<bool ()> &ensure_mipmaps_available_function,
-				size_t *cached_colour_palette_id = NULL)
+				std::size_t *cached_colour_palette_id = NULL)
 		{
 			try
 			{
@@ -519,17 +519,11 @@ namespace GPlatesPropertyValues
 				colour_region_if_necessary(
 						const typename MipmappedRasterType::non_null_ptr_type &region_raster,
 						const boost::optional<CoverageRawRaster::non_null_ptr_type> &region_coverage,
-						boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette)
+						const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
 				{
-					// We need a colour palette to proceed.
-					if (!colour_palette)
-					{
-						return boost::none;
-					}
-
 					// Colour the region_raster using the colour_palette.
 					boost::optional<Rgba8RawRaster::non_null_ptr_type> coloured_region =
-						colour_raw_raster(*region_raster, *colour_palette);
+						colour_raw_raster(*region_raster, colour_palette);
 					if (!coloured_region)
 					{
 						return boost::none;
@@ -553,7 +547,7 @@ namespace GPlatesPropertyValues
 				colour_region_if_necessary(
 						const typename MipmappedRasterType::non_null_ptr_type &region_raster,
 						const boost::optional<CoverageRawRaster::non_null_ptr_type> &region_coverage,
-						boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette)
+						const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
 				{
 					// Do nothing: already in RGBA.
 					return region_raster;
@@ -586,8 +580,8 @@ namespace GPlatesPropertyValues
 					unsigned int region_y_offset,
 					unsigned int region_width,
 					unsigned int region_height,
-					boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette =
-						boost::none)
+					const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
+						GPlatesGui::RasterColourPalette::create())
 			{
 				// Get the raster data and coverage.
 				boost::optional<typename mipmapped_raster_type::non_null_ptr_type> region_raster = get_region_from_level_as_mipmapped_type(
@@ -635,8 +629,8 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			ensure_mipmaps_available(
-					boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette =
-						boost::none)
+					const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
+						GPlatesGui::RasterColourPalette::create())
 			{
 				return ensure_main_mipmaps_available();
 			}
@@ -1108,11 +1102,13 @@ namespace GPlatesPropertyValues
 				unsigned int region_y_offset,
 				unsigned int region_width,
 				unsigned int region_height,
-				boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette =
-					boost::none)
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
+					GPlatesGui::RasterColourPalette::create())
 		{
-			if (!colour_palette ||
-					(*colour_palette)->get_type() == GPlatesGui::RasterColourScheme::DOUBLE)
+			GPlatesGui::RasterColourPaletteType::Type colour_palette_type =
+				GPlatesGui::RasterColourPaletteType::get_type(*colour_palette);
+			if (colour_palette_type == GPlatesGui::RasterColourPaletteType::DOUBLE ||
+					colour_palette_type == GPlatesGui::RasterColourPaletteType::INVALID)
 			{
 				return base_type::get_coloured_region_from_level(
 						level,
@@ -1134,12 +1130,12 @@ namespace GPlatesPropertyValues
 				}
 
 				return ProxiedRasterResolverInternals::colour_raw_raster(
-						**region_raster, *colour_palette);
+						**region_raster, colour_palette);
 			}
 
 			// Get the coloured regions from the mipmap file associated with this colour palette.
 			GPlatesFileIO::MipmappedRasterFormatReader<Rgba8RawRaster> *mipmap_reader =
-				get_coloured_mipmap_reader(*colour_palette);
+				get_coloured_mipmap_reader(colour_palette);
 			if (!mipmap_reader)
 			{
 				return boost::none;
@@ -1156,17 +1152,19 @@ namespace GPlatesPropertyValues
 		virtual
 		bool
 		ensure_mipmaps_available(
-				boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> colour_palette =
-					boost::none)
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
+					GPlatesGui::RasterColourPalette::create())
 		{
-			if (!colour_palette ||
-					(*colour_palette)->get_type() == GPlatesGui::RasterColourScheme::DOUBLE)
+			GPlatesGui::RasterColourPaletteType::Type colour_palette_type =
+				GPlatesGui::RasterColourPaletteType::get_type(*colour_palette);
+			if (colour_palette_type == GPlatesGui::RasterColourPaletteType::DOUBLE ||
+					colour_palette_type == GPlatesGui::RasterColourPaletteType::INVALID)
 			{
 				return base_type::ensure_mipmaps_available();
 			}
 			else
 			{
-				return ensure_coloured_mipmaps_available(*colour_palette);
+				return ensure_coloured_mipmaps_available(colour_palette);
 			}
 		}
 
@@ -1181,21 +1179,21 @@ namespace GPlatesPropertyValues
 
 		bool
 		ensure_coloured_mipmaps_available(
-				const GPlatesGui::RasterColourScheme::non_null_ptr_type &colour_palette)
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
 		{
 			GPlatesFileIO::RasterBandReaderHandle raster_band_reader_handle =
 					get_raster_band_reader_handle(*d_proxied_raw_raster);
 
-			GPlatesGui::RasterColourScheme::ColourPaletteType colour_palette_type =
-				colour_palette->get_type();
+			GPlatesGui::RasterColourPaletteType::Type colour_palette_type =
+				GPlatesGui::RasterColourPaletteType::get_type(*colour_palette);
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					colour_palette_type == GPlatesGui::RasterColourScheme::INT32 ||
-					colour_palette_type == GPlatesGui::RasterColourScheme::UINT32,
+					colour_palette_type == GPlatesGui::RasterColourPaletteType::INT32 ||
+					colour_palette_type == GPlatesGui::RasterColourPaletteType::UINT32,
 					GPLATES_ASSERTION_SOURCE);
 
 			const QString &filename = raster_band_reader_handle.get_filename();
 			unsigned int band_number = raster_band_reader_handle.get_band_number();
-			size_t colour_palette_id = ProxiedRasterResolverInternals::get_colour_palette_id(colour_palette);
+			std::size_t colour_palette_id = ProxiedRasterResolverInternals::get_colour_palette_id(colour_palette);
 
 			if (!ProxiedRasterResolverInternals::get_existing_mipmap_filename(
 				filename, band_number, colour_palette_id).isEmpty())
@@ -1280,7 +1278,7 @@ namespace GPlatesPropertyValues
 		 */
 		GPlatesFileIO::MipmappedRasterFormatReader<Rgba8RawRaster> *
 		get_coloured_mipmap_reader(
-				const GPlatesGui::RasterColourScheme::non_null_ptr_type &colour_palette)
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
 		{
 			return ProxiedRasterResolverInternals::get_mipmap_reader<Rgba8RawRaster>(
 					d_coloured_mipmap_reader,
@@ -1295,7 +1293,7 @@ namespace GPlatesPropertyValues
 
 		boost::scoped_ptr<GPlatesFileIO::MipmappedRasterFormatReader<Rgba8RawRaster> >
 			d_coloured_mipmap_reader;
-		size_t d_colour_palette_id_of_coloured_mipmap_reader;
+		std::size_t d_colour_palette_id_of_coloured_mipmap_reader;
 
 		using base_type::d_proxied_raw_raster;
 	};

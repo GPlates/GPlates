@@ -52,7 +52,7 @@
 boost::optional<GPlatesOpenGL::GLProxiedRasterSource::non_null_ptr_type>
 GPlatesOpenGL::GLProxiedRasterSource::create(
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
-		const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 		unsigned int tile_texel_dimension)
 {
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
@@ -90,7 +90,7 @@ GPlatesOpenGL::GLProxiedRasterSource::create(
 
 	return non_null_ptr_type(new GLProxiedRasterSource(
 			proxy_resolver_opt.get(),
-			raster_colour_scheme,
+			raster_colour_palette,
 			raster_width,
 			raster_height,
 			tile_texel_dimension));
@@ -99,12 +99,12 @@ GPlatesOpenGL::GLProxiedRasterSource::create(
 
 GPlatesOpenGL::GLProxiedRasterSource::GLProxiedRasterSource(
 		const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
-		const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 		unsigned int raster_width,
 		unsigned int raster_height,
 		unsigned int tile_texel_dimension) :
 	d_proxied_raster_resolver(proxy_raster_resolver),
-	d_raster_colour_scheme(raster_colour_scheme),
+	d_raster_colour_palette(raster_colour_palette),
 	d_raster_width(raster_width),
 	d_raster_height(raster_height),
 	d_tile_texel_dimension(tile_texel_dimension)
@@ -131,7 +131,7 @@ GPlatesOpenGL::GLProxiedRasterSource::load_tile(
 					texel_y_offset,
 					texel_width,
 					texel_height,
-					d_raster_colour_scheme);
+					d_raster_colour_palette);
 	PROFILE_END(proxy_raster);
 
 	// If there was an error accessing raster data then black out the texture.
@@ -169,7 +169,7 @@ GPlatesOpenGL::GLProxiedRasterSource::load_tile(
 bool
 GPlatesOpenGL::GLProxiedRasterSource::change_raster(
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_raw_raster,
-		const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme)
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette)
 {
 	// Get the raster dimensions.
 	boost::optional<std::pair<unsigned int, unsigned int> > new_raster_dimensions =
@@ -197,8 +197,8 @@ GPlatesOpenGL::GLProxiedRasterSource::change_raster(
 	}
 	d_proxied_raster_resolver = proxy_resolver_opt.get();
 
-	// New raster colour scheme.
-	d_raster_colour_scheme = raster_colour_scheme;
+	// New raster colour palette.
+	d_raster_colour_palette = raster_colour_palette;
 
 	// Invalidate any raster data that clients may have cached.
 	invalidate();

@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,44 +23,117 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #include <boost/optional.hpp> 
+#include <boost/shared_ptr.hpp>
 
 #include "SetVGPVisibilityDialog.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/VGPRenderSettings.h"
-#include "presentation/ViewState.h" 
+#include "app-logic/Layer.h"
+#include "app-logic/ReconstructLayerTaskParams.h"
+
+#include "presentation/ReconstructVisualLayerParams.h"
+#include "presentation/VisualLayer.h"
 
 
 GPlatesQtWidgets::SetVGPVisibilityDialog::SetVGPVisibilityDialog(
-		GPlatesPresentation::ViewState &view_state_,
-		QWidget *parent_):
+		GPlatesAppLogic::ApplicationState &application_state,
+		QWidget *parent_) :
 	QDialog(parent_),
-	d_view_state_ptr(&view_state_)
+	d_application_state(application_state)
 {
 	setupUi(this);
-	
-	set_initial_state();
-	
+
 	setup_connections();
+}
 
-}	
 
-void
-GPlatesQtWidgets::SetVGPVisibilityDialog::set_initial_state()
+bool
+GPlatesQtWidgets::SetVGPVisibilityDialog::populate(
+		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
 {
-// Initial state is DELTA_T_AROUND_AGE.
-// FIXME: Grab these initial settings from the view state.
-	radiobutton_delta_t_around_age->setChecked(true);
-	spinbox_delta->setValue(GPlatesAppLogic::VGPRenderSettings::INITIAL_VGP_DELTA_T);
-	spinbox_begin->setValue(0.);
-	spinbox_end->setValue(0.);
-	checkbox_past->setChecked(true);
-	checkbox_future->setChecked(true);
-	spinbox_begin->setEnabled(false);
-	spinbox_end->setEnabled(false);
-	
-	handle_delta_t();	
+	// Store pointer so we can write the settings back later.
+	d_current_visual_layer = visual_layer;
+
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
+	{
+		// Acquire a pointer to a @a ReconstructLayerTaskParams.
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::ReconstructLayerTaskParams *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructLayerTaskParams *>(
+					&layer.get_layer_task_params());
+		if (!layer_task_params)
+		{
+			return false;
+		}
+
+		// Acquire a pointer to a @a ReconstructVisualLayerParams.
+		GPlatesPresentation::ReconstructVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::ReconstructVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!visual_layer_params)
+		{
+			return false;
+		}
+
+		// Handle visibility setting.
+		GPlatesAppLogic::ReconstructLayerTaskParams::VGPVisibilitySetting visibility_setting =
+			layer_task_params->get_vgp_visibility_setting();
+		switch (visibility_setting)
+		{
+			case GPlatesAppLogic::ReconstructLayerTaskParams::ALWAYS_VISIBLE:
+				radiobutton_always_visible->setChecked(true);
+				handle_always_visible();
+				break;
+
+			case GPlatesAppLogic::ReconstructLayerTaskParams::TIME_WINDOW:
+				radiobutton_time_window->setChecked(true);
+				handle_time_window();
+				break;
+
+			case GPlatesAppLogic::ReconstructLayerTaskParams::DELTA_T_AROUND_AGE:
+				radiobutton_delta_t_around_age->setChecked(true);
+				handle_delta_t();
+				break;
+		}
+
+		// Handle earliest and latest times.
+		const GPlatesPropertyValues::GeoTimeInstant &begin_time = layer_task_params->get_vgp_earliest_time();
+		if (begin_time.is_distant_past())
+		{
+			spinbox_begin->setValue(0.0);
+			checkbox_past->setChecked(true);
+		}
+		else
+		{
+			double begin_value = begin_time.is_distant_future() ? 0.0 : begin_time.value();
+			spinbox_begin->setValue(begin_value);
+			checkbox_past->setChecked(false);
+		}
+		const GPlatesPropertyValues::GeoTimeInstant &end_time = layer_task_params->get_vgp_latest_time();
+		if (end_time.is_distant_future())
+		{
+			spinbox_end->setValue(0.0);
+			checkbox_future->setChecked(true);
+		}
+		else
+		{
+			double end_value = end_time.is_distant_past() ? 0.0 : end_time.value();
+			spinbox_end->setValue(end_value);
+			checkbox_future->setChecked(true);
+		}
+
+		// Handle delta t.
+		spinbox_delta->setValue(layer_task_params->get_vgp_delta_t());
+
+		// Handle circular error.
+		checkbox_error->setChecked(visual_layer_params->get_vgp_draw_circular_error());
+
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -109,89 +183,134 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::setup_connections()
 void
 GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 {
-	GPlatesAppLogic::VGPRenderSettings &vgp_render_settings =
-		d_view_state_ptr->get_vgp_render_settings();
-		
-	// Update view_state with the state of this dialog.
-	if (radiobutton_always_visible->isChecked())
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
-		vgp_render_settings.set_vgp_visibility_setting(GPlatesAppLogic::VGPRenderSettings::ALWAYS_VISIBLE);
-	}
-	else if (radiobutton_time_window->isChecked())
-	{
-		vgp_render_settings.set_vgp_visibility_setting(GPlatesAppLogic::VGPRenderSettings::TIME_WINDOW);
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> begin_time;
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> end_time;		
-		if (checkbox_past->isChecked())
+		// Acquire a pointer to a @a ReconstructLayerTaskParams.
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::ReconstructLayerTaskParams *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructLayerTaskParams *>(
+					&layer.get_layer_task_params());
+		if (!layer_task_params)
 		{
-			begin_time.reset(GPlatesPropertyValues::GeoTimeInstant::create_distant_past());
+			accept();
 		}
-		else
+
+		// Acquire a pointer to a @a ReconstructVisualLayerParams.
+		GPlatesPresentation::ReconstructVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::ReconstructVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!visual_layer_params)
 		{
-			begin_time.reset(GPlatesPropertyValues::GeoTimeInstant(spinbox_begin->value()));			
+			accept();
 		}
-	
-		if (checkbox_future->isChecked())
+
+		// Handle visibility setting.
+		if (radiobutton_always_visible->isChecked())
 		{
-			end_time.reset(GPlatesPropertyValues::GeoTimeInstant::create_distant_future());
+			layer_task_params->set_vgp_visibility_setting(
+					GPlatesAppLogic::ReconstructLayerTaskParams::ALWAYS_VISIBLE);
 		}
-		else
+		else if (radiobutton_time_window->isChecked())
 		{
-			end_time.reset(GPlatesPropertyValues::GeoTimeInstant(spinbox_end->value()));			
-		}		
-		
-		vgp_render_settings.set_vgp_earliest_time(*begin_time);
-		vgp_render_settings.set_vgp_latest_time(*end_time);
-		
+			layer_task_params->set_vgp_visibility_setting(
+					GPlatesAppLogic::ReconstructLayerTaskParams::TIME_WINDOW);
+		}
+		else if (radiobutton_delta_t_around_age->isChecked())
+		{
+			layer_task_params->set_vgp_visibility_setting(
+					GPlatesAppLogic::ReconstructLayerTaskParams::DELTA_T_AROUND_AGE);
+		}
+
+		// Handle earliest and latest times.
+		GPlatesPropertyValues::GeoTimeInstant begin_time = checkbox_past->isChecked() ?
+			GPlatesPropertyValues::GeoTimeInstant::create_distant_past() :
+			GPlatesPropertyValues::GeoTimeInstant(spinbox_begin->value());
+		layer_task_params->set_vgp_earliest_time(begin_time);
+		GPlatesPropertyValues::GeoTimeInstant end_time = checkbox_future->isChecked() ?
+			GPlatesPropertyValues::GeoTimeInstant::create_distant_future() :
+			GPlatesPropertyValues::GeoTimeInstant(spinbox_end->value());
+		layer_task_params->set_vgp_latest_time(end_time);
+
+		// Handle delta t.
+		layer_task_params->set_vgp_delta_t(spinbox_delta->value());
+
+		// Handle circular error.
+		if (visual_layer_params->get_vgp_draw_circular_error() != checkbox_error->isChecked())
+		{
+			visual_layer_params->set_vgp_draw_circular_error(checkbox_error->isChecked());
+		}
+
+		// Tell GPlates to reconstruct now so that the updated render settings are used. 
+		d_application_state.reconstruct();	
 	}
-	else if (radiobutton_delta_t_around_age->isChecked())
-	{
-		vgp_render_settings.set_vgp_visibility_setting(GPlatesAppLogic::VGPRenderSettings::DELTA_T_AROUND_AGE);
-		vgp_render_settings.set_vgp_delta_t(spinbox_delta->value());
-	}
+
 	accept();
-	// Tell GPlates to reconstruct now so that the updated render settings are used. 
-	d_view_state_ptr->get_application_state().reconstruct();	
 }
+
 
 void
 GPlatesQtWidgets::SetVGPVisibilityDialog::handle_always_visible()
 {
 	spinbox_begin->setEnabled(false);
+	label_begin->setEnabled(false);
 	spinbox_end->setEnabled(false);
+	label_end->setEnabled(false);
+
 	spinbox_delta->setEnabled(false);
+	label_delta_t->setEnabled(false);
+
 	checkbox_past->setEnabled(false);
 	checkbox_future->setEnabled(false);
+	label_and->setEnabled(false);
 }
+
 
 void
 GPlatesQtWidgets::SetVGPVisibilityDialog::handle_time_window()
 {
 	spinbox_begin->setEnabled(!checkbox_past->isChecked());
+	label_begin->setEnabled(!checkbox_past->isChecked());
 	spinbox_end->setEnabled(!checkbox_future->isChecked());
+	label_end->setEnabled(!checkbox_future->isChecked());
+
 	spinbox_delta->setEnabled(false);
+	label_delta_t->setEnabled(false);
+
 	checkbox_past->setEnabled(true);
 	checkbox_future->setEnabled(true);
+	label_and->setEnabled(true);
 }
+
 
 void
 GPlatesQtWidgets::SetVGPVisibilityDialog::handle_delta_t()
 {
 	spinbox_begin->setEnabled(false);
+	label_begin->setEnabled(false);
 	spinbox_end->setEnabled(false);
+	label_end->setEnabled(false);
+
 	spinbox_delta->setEnabled(true);
+	label_delta_t->setEnabled(true);
+
 	checkbox_past->setEnabled(false);
 	checkbox_future->setEnabled(false);
+	label_and->setEnabled(false);
 }
  
+
 void
-GPlatesQtWidgets::SetVGPVisibilityDialog::handle_distant_past(bool state)
+GPlatesQtWidgets::SetVGPVisibilityDialog::handle_distant_past(
+		bool state)
 {
 	spinbox_begin->setEnabled(!state);
 }
 
+
 void
-GPlatesQtWidgets::SetVGPVisibilityDialog::handle_distant_future(bool state)
+GPlatesQtWidgets::SetVGPVisibilityDialog::handle_distant_future(
+		bool state)
 {
 	spinbox_end->setEnabled(!state);
 }
+

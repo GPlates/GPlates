@@ -28,6 +28,9 @@
 
 #include "VisualLayerRegistry.h"
 
+#include "RasterVisualLayerParams.h"
+#include "ReconstructVisualLayerParams.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/LayerTaskRegistry.h"
 #include "app-logic/LayerTaskType.h"
@@ -36,6 +39,7 @@
 #include "gui/HTMLColourNames.h"
 
 #include "qt-widgets/RasterLayerOptionsWidget.h"
+#include "qt-widgets/ReconstructLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
 #include "qt-widgets/CoRegistrationOptionsWidget.h"
 
@@ -355,8 +359,8 @@ GPlatesPresentation::register_default_visual_layers(
 				reconstruct_graph,
 				layer_task_registry,
 				RECONSTRUCT),
-			&no_widget,
-			&default_visual_layer_params,
+			&GPlatesQtWidgets::ReconstructLayerOptionsWidget::create,
+			&ReconstructVisualLayerParams::create,
 			true);
 
 	registry.register_visual_layer_type(
@@ -371,7 +375,7 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				RASTER),
 			&GPlatesQtWidgets::RasterLayerOptionsWidget::create,
-			&default_visual_layer_params,
+			&RasterVisualLayerParams::create,
 			true);
 
 	registry.register_visual_layer_type(

@@ -52,7 +52,6 @@ GPlatesGui::Globe::Globe(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
-		RasterColourSchemeMap &raster_colour_scheme_map,
 		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
@@ -72,7 +71,6 @@ GPlatesGui::Globe::Globe(
 			persistent_opengl_objects,
 			visual_layers,
 			d_render_settings,
-			raster_colour_scheme_map,
 			text_renderer_ptr,
 			visibility_tester,
 			colour_scheme)
@@ -82,7 +80,6 @@ GPlatesGui::Globe::Globe(
 GPlatesGui::Globe::Globe(
 		Globe &existing_globe,
 		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
-		RasterColourSchemeMap &raster_colour_scheme_map,
 		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
@@ -102,7 +99,6 @@ GPlatesGui::Globe::Globe(
 			persistent_opengl_objects,
 			d_visual_layers,
 			d_render_settings,
-			raster_colour_scheme_map,
 			text_renderer_ptr,
 			visibility_tester,
 			colour_scheme)

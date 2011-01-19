@@ -37,8 +37,11 @@
 
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructRasterPolygons.h"
+
 #include "gui/Colour.h"
 #include "gui/ColourProxy.h"
+#include "gui/RasterColourPalette.h"
+
 #include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -49,6 +52,7 @@
 #include "property-values/Georeferencing.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
+#include "property-values/TextContent.h"
 
 
 namespace GPlatesAppLogic
@@ -174,6 +178,8 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_resolved_raster(
 				const GPlatesAppLogic::Layer &layer,
+				const GPlatesPropertyValues::TextContent &raster_band_name,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 				const double &reconstruction_time,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,

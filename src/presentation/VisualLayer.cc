@@ -67,6 +67,8 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 	d_visual_layer_params(
 			visual_layer_registry.create_visual_layer_params(get_layer_type()))
 {
+	d_visual_layer_params->handle_layer_modified(layer);
+
 	QObject::connect(
 			d_visual_layer_params.get(),
 			SIGNAL(modified()),

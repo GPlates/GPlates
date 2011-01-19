@@ -4,6 +4,7 @@
  * $Date: 2009-05-07 17:04:21 -0700 (Thu, 07 May 2009) $ 
  * 
  * Copyright (C) 2008, 2009 California Institute of Technology
+ * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,8 +28,11 @@
 #include <QVBoxLayout>
 
 #include "TopologyToolsWidget.h"
+
+#include "ActionButtonBox.h"
 #include "CreateFeatureDialog.h"
 #include "FeatureSummaryWidget.h"
+#include "QtWidgetUtils.h"
 
 #include "app-logic/ApplicationState.h"
 
@@ -96,9 +100,10 @@ namespace
 GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 		GPlatesPresentation::ViewState &view_state_,
 		ViewportWindow &viewport_window_,
+		QAction *clear_action,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
-	QWidget(parent_),
+	TaskPanelWidget(parent_),
 	d_feature_focus_ptr(&view_state_.get_feature_focus()),
 	d_model_interface(&view_state_.get_application_state().get_model_interface()),
 	d_create_feature_dialog(
@@ -118,6 +123,16 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 	)
 {
 	setupUi(this);
+
+	// Set up the action button box to hold the remove all sections button.
+	ActionButtonBox *action_button_box = new ActionButtonBox(1, 16, this);
+	action_button_box->add_action(clear_action);
+#ifndef Q_WS_MAC
+	action_button_box->setFixedHeight(button_create->sizeHint().height());
+#endif
+	QtWidgetUtils::add_widget_to_placeholder(
+			action_button_box,
+			action_button_box_placeholder_widget);
 
 	setup_widgets();
 	setup_connections();
@@ -171,8 +186,6 @@ void
 GPlatesQtWidgets::TopologyToolsWidget::setup_connections()
 {
 	// Attach buttons to functions
-	 QObject::connect( button_remove_all_sections, SIGNAL(clicked()),
- 		this, SLOT(handle_remove_all_sections()));
 
 	 QObject::connect( button_create, SIGNAL(clicked()),
  		this, SLOT(handle_create()));
@@ -415,3 +428,25 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_remove_feature()
 	tabwidget_main->setCurrentWidget( tab_topology );
 }
 
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_activation()
+{
+}
+
+QString
+GPlatesQtWidgets::TopologyToolsWidget::get_clear_action_text() const
+{
+	return tr("Remove All &Sections");
+}
+
+bool
+GPlatesQtWidgets::TopologyToolsWidget::clear_action_enabled() const
+{
+	return true;
+}
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_clear_action_triggered()
+{
+	handle_remove_all_sections();
+}

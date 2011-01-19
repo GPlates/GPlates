@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>523</width>
-    <height>222</height>
+    <height>239</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -67,7 +67,7 @@
       </widget>
      </item>
      <item row="1" column="2">
-      <widget class="QLabel" name="label_4">
+      <widget class="QLabel" name="label_begin">
        <property name="text">
         <string>Ma</string>
        </property>
@@ -81,7 +81,7 @@
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="label_and">
        <property name="text">
         <string>and</string>
        </property>
@@ -104,7 +104,7 @@
       </widget>
      </item>
      <item row="2" column="2">
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="label_end">
        <property name="text">
         <string>Ma</string>
        </property>
@@ -138,9 +138,19 @@
       </widget>
      </item>
      <item row="3" column="2" colspan="2">
-      <widget class="QLabel" name="label_3">
+      <widget class="QLabel" name="label_delta_t">
        <property name="text">
         <string>My of VGP's age</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QCheckBox" name="checkbox_error">
+       <property name="text">
+        <string>Draw circular &amp;error</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
        </property>
       </widget>
      </item>

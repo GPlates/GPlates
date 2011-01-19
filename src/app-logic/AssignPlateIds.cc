@@ -27,6 +27,7 @@
 
 #include "ClassifyFeatureCollection.h"
 #include "PartitionFeatureTask.h"
+#include "ReconstructLayerTaskParams.h"
 #include "ReconstructUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -58,6 +59,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 							reconstruction_time,
 							anchor_plate_id,
 							reconstruction_feature_collections),
+					ReconstructLayerTaskParams(), // Note: VGP settings for any particular layer ignored.
 					partitioning_feature_collections)),
 	d_geometry_cookie_cutter(
 			*d_reconstruction_geometry_collection,

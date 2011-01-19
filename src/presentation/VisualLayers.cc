@@ -530,6 +530,8 @@ GPlatesPresentation::VisualLayers::handle_layer_added_input_connection(
 		GPlatesAppLogic::Layer layer,
 		GPlatesAppLogic::Layer::InputConnection input_connection)
 {
+	notify_visual_layer_params(layer);
+
 	// When an input connection has been added, all layers need to be refreshed,
 	// because a change in input connections can result in a change in the name of
 	// a visual layer.
@@ -542,10 +544,24 @@ GPlatesPresentation::VisualLayers::handle_layer_removed_input_connection(
 		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		GPlatesAppLogic::Layer layer)
 {
+	notify_visual_layer_params(layer);
+
 	// When an input connection has been removed, all layers need to be refreshed,
 	// because a change in input connections can result in a change in the name of
 	// a visual layer.
 	refresh_all_layers();
+}
+
+
+void
+GPlatesPresentation::VisualLayers::notify_visual_layer_params(
+		const GPlatesAppLogic::Layer &layer)
+{
+	visual_layer_map_type::const_iterator iter = d_visual_layers.find(layer);
+	if (iter != d_visual_layers.end())
+	{
+		iter->second->get_visual_layer_params()->handle_layer_modified(layer);
+	}
 }
 
 

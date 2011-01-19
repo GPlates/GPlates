@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 The University of Sydney, Australia
  * Copyright (C) 2007, 2008, 2009, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -39,7 +39,6 @@
 #include <QStringList>
 #include <QUndoGroup>
 
-#include "ReconstructionViewWidget.h"
 #include "ViewportWindowUi.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -117,14 +116,16 @@ namespace GPlatesQtWidgets
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
+	class GlobeCanvas;
 	class ManageFeatureCollectionsDialog;
+	class MapView;
 	class MeshDialog;
 	class PreferencesDialog;
 	class ReadErrorAccumulationDialog;
+	class ReconstructionViewWidget;
 	class SaveFileDialog;
 	class SetCameraViewpointDialog;
 	class SetProjectionDialog;
-	class SetVGPVisibilityDialog;
 	class ShapefileAttributeViewerDialog;
 	class SmallCircleManager;
 	class SpecifyAnchoredPlateIdDialog;
@@ -132,13 +133,14 @@ namespace GPlatesQtWidgets
 	class TotalReconstructionPolesDialog;
 	class TotalReconstructionSequencesDialog;
 
-	class ViewportWindow:
+	class ViewportWindow :
 			public QMainWindow, 
 			protected Ui_ViewportWindow
 	{
 		Q_OBJECT
 		
 	public:
+
 		ViewportWindow(
 				GPlatesPresentation::Application &application);
 
@@ -155,38 +157,26 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::ReconstructionViewWidget &
 		reconstruction_view_widget()
 		{
-			return d_reconstruction_view_widget;
+			return *d_reconstruction_view_widget_ptr;
 		}
 
 		const GPlatesQtWidgets::ReconstructionViewWidget &
 		reconstruction_view_widget() const
 		{
-			return d_reconstruction_view_widget;
+			return *d_reconstruction_view_widget_ptr;
 		}
 
 		GlobeCanvas &
-		globe_canvas()
-		{
-			return d_reconstruction_view_widget.globe_canvas();
-		}
+		globe_canvas();
 
 		const GlobeCanvas &
-		globe_canvas() const
-		{
-			return d_reconstruction_view_widget.globe_canvas();
-		}
+		globe_canvas() const;
 
 		MapView &
-		map_view()
-		{
-			return d_reconstruction_view_widget.map_view();
-		}
+		map_view();
 
 		const MapView &
-		map_view() const
-		{
-			return d_reconstruction_view_widget.map_view();
-		}
+		map_view() const;
 
 		void
 		create_svg_file(
@@ -231,6 +221,12 @@ namespace GPlatesQtWidgets
 			return *d_total_reconstruction_poles_dialog_ptr;
 		}
 
+		QDialog &
+		layers_dialog()
+		{
+			return *d_layers_dialog_ptr;
+		}
+
 		void
 		restore_canvas_tool_last_chosen_by_user();
 
@@ -245,7 +241,7 @@ namespace GPlatesQtWidgets
 		 * Highlights the first row in the "Clicked" feature table.
 		 */
 		void
-		highlight_first_clicked_feature_table_row() const;
+		highlight_first_clicked_feature_table_row();
 
 		/**
 		 * Highlights the row of the table that corresponds to the focused feature.
@@ -363,35 +359,23 @@ namespace GPlatesQtWidgets
 				GPlatesGui::FeatureFocus &feature_focus);
 
 		void
-		choose_clicked_geometry_table() const
-		{
-			tabWidget->setCurrentWidget(tab_clicked);
-		}
+		choose_clicked_geometry_table();
 
 		void
-		choose_topology_sections_table()
-		{
-			tabWidget->setCurrentWidget(tab_topology);
-		}
+		choose_topology_sections_table();
 
 		void
 		pop_up_read_errors_dialog();
 
 		void
 		pop_up_manage_feature_collections_dialog();
-#if 0
-		void
-		pop_up_export_geometry_snapshot_dialog();
-#endif
+
 		void
 		pop_up_export_animation_dialog();
 
 		void
 		pop_up_assign_reconstruction_plate_ids_dialog();
-#if 0
-		void
-		pop_up_export_reconstruction_dialog();
-#endif
+
 		void
 		pop_up_total_reconstruction_poles_dialog();
 
@@ -410,6 +394,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_configure_graticules_dialog();
+
+		void
+		pop_up_colouring_dialog();
 
 		void
 		update_tools_and_status_message();
@@ -433,7 +420,34 @@ namespace GPlatesQtWidgets
 		void
 		install_data_mining_menu();
 
+	protected:
+	
+		/**
+		 * A reimplementation of QWidget::closeEvent() to allow closure to be postponed.
+		 * To request program termination in the same manner as using the window manager's
+		 * 'close' button, you should call ViewportWindow::close().
+		 */
+		void
+		closeEvent(QCloseEvent *close_event);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * GPlates main window.
+		 */
+		void
+		dragEnterEvent(
+				QDragEnterEvent *ev);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * GPlates main window.
+		 */
+		void
+		dropEvent(
+				QDropEvent *ev);
+
 	private:
+
 		//! Returns the application state.
 		GPlatesAppLogic::ApplicationState &
 		get_application_state();
@@ -452,8 +466,239 @@ namespace GPlatesQtWidgets
 		void
 		connect_canvas_tools();
 
+		/**
+		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
+		 * buttons and menu items.
+		 */
+		void
+		connect_menu_actions();
+
+		void
+		connect_file_menu_actions();
+
+		void
+		connect_edit_menu_actions();
+
+		void
+		connect_view_menu_actions();
+
+		void
+		connect_features_menu_actions();
+
+		void
+		connect_reconstruction_menu_actions();
+
+		void
+		connect_utilities_menu_actions();
+
+		void
+		connect_tools_menu_actions();
+
+		void
+		connect_window_menu_actions();
+
+		void
+		connect_help_menu_actions();
+
+		/**
+		 * Copies the menu structure found in ViewportWindow's menu bar into the
+		 * special full-screen-mode 'GMenu' button.
+		 */
+		void
+		populate_gmenu_from_menubar();
+
+		/**
+		 * Connects signals of @a FeatureCollectionFileIO to slots of 'this'.
+		 */
+		void
+		connect_feature_collection_file_io_signals();
+
+		/**
+		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
+		 * with some of the QActions that ViewportWindow has on the menu bar.
+		 */
+		void
+		set_up_task_panel_actions();
+
+		/**
+		 * Creates a context menu to allow the user to dock DockWidgets even if
+		 * they are misbehaving and not docking when dragged over the main window.
+		 */
+		void
+		set_up_dock_context_menus();
+
+		void
+		set_internal_release_window_title();
+
+	private slots:
+
+		void
+		pop_up_specify_anchored_plate_id_dialog();
+
+		void
+		pop_up_set_camera_viewpoint_dialog();
+		
+		void
+		pop_up_about_dialog();
+
+		void
+		set_layering_dialog_visibility(
+				bool visible);
+
+		void
+		handle_window_menu_about_to_show();
+
+		void
+		close_all_dialogs();
+		
+		void
+		dock_search_results_at_top();
+		
+		void
+		dock_search_results_at_bottom();
+
+		void
+		enable_point_display();
+
+		void
+		enable_line_display();
+
+		void
+		enable_polygon_display();
+
+		void
+		enable_multipoint_display();
+
+		void
+		enable_arrows_display();
+
+		void
+		enable_stars_display();
+
+		void
+		pop_up_shapefile_attribute_viewer_dialog();
+
+		void
+		handle_move_camera_up();
+
+		void
+		handle_move_camera_down();
+
+		void
+		handle_move_camera_left();
+
+		void
+		handle_move_camera_right();
+
+		void
+		handle_rotate_camera_clockwise();
+
+		void
+		handle_rotate_camera_anticlockwise();
+
+		void
+		handle_reset_camera_orientation();
+
+		void
+		pop_up_set_projection_dialog();
+		
+		void
+		pop_up_create_vgp_dialog();
+		
+		void
+		generate_mesh_cap();
+
+		void
+		pop_up_calculate_reconstruction_pole_dialog();
+
+		void
+		handle_colour_scheme_delegator_changed();
+		
+		void
+		pop_up_import_raster_dialog();
+
+		void
+		pop_up_import_raster_dialog(
+				bool time_dependent_raster);
+
+		void
+		pop_up_import_time_dependent_raster_dialog();
+
+		void
+		pop_up_total_reconstruction_sequences_dialog();
+
+		void
+		pop_up_data_association_dialog();
+
+		void
+		handle_visual_layer_added(
+				size_t index);
+
+		void
+		handle_drag_globe_triggered();
+
+		void
+		handle_zoom_globe_triggered();
+
+		void
+		handle_click_geometry_triggered();
+
+		void
+		handle_digitise_new_polyline_triggered();
+
+		void
+		handle_digitise_new_multipoint_triggered();
+
+		void
+		handle_digitise_new_polygon_triggered();
+
+		void
+		handle_move_vertex_triggered();
+
+		void
+		handle_delete_vertex_triggered();
+
+		void
+		handle_insert_vertex_triggered();
+
+		void
+		handle_split_feature_triggered();
+
+		void
+		handle_manipulate_pole_triggered();
+
+		void
+		handle_build_topology_triggered();
+
+		void
+		handle_edit_topology_triggered();
+
+		void
+		handle_measure_distance_triggered();
+
+		void
+		open_new_window();
+
+		void
+		pop_up_small_circle_manager();
+
+		void
+		pop_up_background_colour_picker();
+
+		void
+		clone_feature_with_dialog();
+
+		void
+		update_undo_action_tooltip();
+
+		void
+		update_redo_action_tooltip();
+
+		void
+		open_online_documentation();
 
 	private:
+
 		//! Holds application state and view state.
 		GPlatesPresentation::Application &d_application;
 
@@ -498,7 +743,8 @@ namespace GPlatesQtWidgets
 		 */
 		QPointer<DockWidget> d_info_dock_ptr;
 
-		ReconstructionViewWidget d_reconstruction_view_widget;
+		ReconstructionViewWidget *d_reconstruction_view_widget_ptr;
+
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
@@ -517,14 +763,13 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
-		boost::scoped_ptr<SetVGPVisibilityDialog> d_set_vgp_visibility_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
 		boost::scoped_ptr<SmallCircleManager> d_small_circle_manager_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionSequencesDialog> d_total_reconstruction_sequences_dialog_ptr;
 
-		boost::scoped_ptr<QDialog> d_layering_dialog_ptr;
+		boost::scoped_ptr<QDialog> d_layers_dialog_ptr;
 
 		boost::shared_ptr<SaveFileDialog> d_export_geometry_snapshot_dialog_ptr;
 
@@ -606,235 +851,13 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesCanvasTools::CanvasToolType::Value d_canvas_tool_last_chosen_by_user;
 
-		/**
-		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
-		 * buttons and menu items.
-		 */
-		void
-		connect_menu_actions();
+		QAction *d_undo_action_ptr;
 
-		/**
-		 * Copies the menu structure found in ViewportWindow's menu bar into the
-		 * special full-screen-mode 'GMenu' button.
-		 */
-		void
-		populate_gmenu_from_menubar();
+		QAction *d_redo_action_ptr;
 
-		/**
-		 * Connects signals of @a FeatureCollectionFileIO to slots of 'this'.
-		 */
-		void
-		connect_feature_collection_file_io_signals();
-
-		/**
-		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
-		 * with some of the QActions that ViewportWindow has on the menu bar.
-		 */
-		void
-		set_up_task_panel_actions();
-
-		/**
-		 * Creates a context menu to allow the user to dock DockWidgets even if
-		 * they are misbehaving and not docking when dragged over the main window.
-		 */
-		void
-		set_up_dock_context_menus();
-
-		void
-		set_internal_release_window_title();
-
-	private slots:
-		void
-		pop_up_specify_anchored_plate_id_dialog();
-
-		void
-		pop_up_set_camera_viewpoint_dialog();
-		
-		void
-		pop_up_about_dialog();
-
-		void
-		pop_up_colouring_dialog();
-
-		void
-		set_layering_dialog_visibility(
-				bool visible);
-
-		void
-		handle_layers_menu_about_to_show();
-
-		void
-		close_all_dialogs();
-		
-		void
-		dock_search_results_at_top();
-		
-		void
-		dock_search_results_at_bottom();
-
-		void
-		enable_point_display();
-
-		void
-		enable_line_display();
-
-		void
-		enable_polygon_display();
-
-		void
-		enable_multipoint_display();
-
-		void
-		enable_arrows_display();
-
-		void
-		enable_strings_display();
-
-		void
-		enable_stars_display();
-
-		void
-		pop_up_shapefile_attribute_viewer_dialog();
-
-		void
-		handle_move_camera_up();
-
-		void
-		handle_move_camera_down();
-
-		void
-		handle_move_camera_left();
-
-		void
-		handle_move_camera_right();
-
-		void
-		handle_rotate_camera_clockwise();
-
-		void
-		handle_rotate_camera_anticlockwise();
-
-		void
-		handle_reset_camera_orientation();
-
-		void
-		pop_up_set_projection_dialog();
-		
-		void
-		pop_up_create_vgp_dialog();
-		
-		void
-		generate_mesh_cap();
-
-		void
-		pop_up_calculate_reconstruction_pole_dialog();
-
-		void
-		pop_up_set_vgp_visibility_dialog();
-
-		void
-		handle_colour_scheme_delegator_changed();
-		
-		void
-		pop_up_import_raster_dialog();
-
-		void
-		pop_up_import_raster_dialog(
-				bool time_dependent_raster);
-
-		void
-		pop_up_import_time_dependent_raster_dialog();
-
-		void
-		pop_up_total_reconstruction_sequences_dialog();
-
-		void
-		pop_up_data_association_dialog();
-
-		void
-		handle_visual_layer_added(
-				size_t index);
-
-		void
-		handle_drag_globe_triggered();
-
-		void
-		handle_zoom_globe_triggered();
-
-		void
-		handle_click_geometry_triggered();
-
-		void
-		handle_digitise_new_polyline_triggered();
-
-		void
-		handle_digitise_new_multipoint_triggered();
-
-		void
-		handle_digitise_new_polygon_triggered();
-
-		void
-		handle_move_vertex_triggered();
-
-		void
-		handle_delete_vertex_triggered();
-
-		void
-		handle_insert_vertex_triggered();
-
-		void
-		handle_split_feature_triggered();
-
-		void
-		handle_manipulate_pole_triggered();
-
-		void
-		handle_build_topology_triggered();
-
-		void
-		handle_edit_topology_triggered();
-
-		void
-		handle_measure_distance_triggered();
-
-		void
-		open_new_window();
-
-		void
-		pop_up_small_circle_manager();
-
-		void
-		pop_up_background_colour_picker();
-
-		void
-		clone_feature_with_dialog();
-
-	protected:
-	
-		/**
-		 * A reimplementation of QWidget::closeEvent() to allow closure to be postponed.
-		 * To request program termination in the same manner as using the window manager's
-		 * 'close' button, you should call ViewportWindow::close().
-		 */
-		void
-		closeEvent(QCloseEvent *close_event);
-
-		/**
-		 * Reimplementation of drag/drop events so we can handle users dragging files onto
-		 * GPlates main window.
-		 */
-		void
-		dragEnterEvent(
-				QDragEnterEvent *ev);
-
-		/**
-		 * Reimplementation of drag/drop events so we can handle users dragging files onto
-		 * GPlates main window.
-		 */
-		void
-		dropEvent(
-				QDropEvent *ev);
-
+		// To prevent infinite loops.
+		bool d_inside_update_undo_action_tooltip;
+		bool d_inside_update_redo_action_tooltip;
 	};
 }
 

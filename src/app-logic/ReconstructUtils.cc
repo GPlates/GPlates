@@ -336,13 +336,16 @@ GPlatesAppLogic::ReconstructUtils::has_reconstructable_features(
 GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type
 GPlatesAppLogic::ReconstructUtils::reconstruct(
 		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		const ReconstructLayerTaskParams &reconstruct_params,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				reconstructable_features_collection)
 {
 	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geom_collection =
 			ReconstructionGeometryCollection::create(reconstruction_tree);
 
-	ReconstructedFeatureGeometryPopulator rfgp(*reconstruction_geom_collection);
+	ReconstructedFeatureGeometryPopulator rfgp(
+			*reconstruction_geom_collection,
+			reconstruct_params);
 
 	AppLogicUtils::visit_feature_collections(
 			reconstructable_features_collection.begin(),

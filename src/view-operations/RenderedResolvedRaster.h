@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -36,9 +36,12 @@
 #include "app-logic/Layer.h"
 #include "app-logic/ReconstructRasterPolygons.h"
 
+#include "gui/RasterColourPalette.h"
+
 #include "property-values/Georeferencing.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
+#include "property-values/TextContent.h"
 
 
 namespace GPlatesViewOperations
@@ -50,6 +53,8 @@ namespace GPlatesViewOperations
 		explicit
 		RenderedResolvedRaster(
 				const GPlatesAppLogic::Layer &layer,
+				const GPlatesPropertyValues::TextContent &raster_band_name,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 				const double &reconstruction_time,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
@@ -62,15 +67,17 @@ namespace GPlatesViewOperations
 						age_grid_proxied_rasters = boost::none,
 				const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
 						age_grid_raster_band_names = boost::none) :
-		d_created_from_layer(layer),
-		d_reconstruction_time(reconstruction_time),
-		d_georeferencing(georeferencing),
-		d_proxied_rasters(proxied_rasters),
-		d_raster_band_names(raster_band_names),
-		d_reconstruct_raster_polygons(reconstruct_raster_polygons),
-		d_age_grid_georeferencing(age_grid_georeferencing),
-		d_age_grid_proxied_rasters(age_grid_proxied_rasters),
-		d_age_grid_raster_band_names(age_grid_raster_band_names)
+			d_created_from_layer(layer),
+			d_raster_band_name(raster_band_name),
+			d_raster_colour_palette(raster_colour_palette),
+			d_reconstruction_time(reconstruction_time),
+			d_georeferencing(georeferencing),
+			d_proxied_rasters(proxied_rasters),
+			d_raster_band_names(raster_band_names),
+			d_reconstruct_raster_polygons(reconstruct_raster_polygons),
+			d_age_grid_georeferencing(age_grid_georeferencing),
+			d_age_grid_proxied_rasters(age_grid_proxied_rasters),
+			d_age_grid_raster_band_names(age_grid_raster_band_names)
 		{  }
 
 		virtual
@@ -97,6 +104,18 @@ namespace GPlatesViewOperations
 		get_layer() const
 		{
 			return d_created_from_layer;
+		}
+
+		const GPlatesPropertyValues::TextContent &
+		get_raster_band_name() const
+		{
+			return d_raster_band_name;
+		}
+
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &
+		get_raster_colour_palette() const
+		{
+			return d_raster_colour_palette;
 		}
 
 		/**
@@ -161,6 +180,17 @@ namespace GPlatesViewOperations
 		 * The layer that this resolved raster was created in.
 		 */
 		GPlatesAppLogic::Layer d_created_from_layer;
+
+		/**
+		 * The name of the band that the user has selected for visualisation.
+		 */
+		GPlatesPropertyValues::TextContent d_raster_band_name;
+
+		/**
+		 * The colour palette used to colour integral and floating-point rasters.
+		 * Note that this colour palette is permitted to be invalid, e.g. for RGBA rasters.
+		 */
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type d_raster_colour_palette;
 
 		/**
 		 * The reconstruction time at which raster is resolved/reconstructed.

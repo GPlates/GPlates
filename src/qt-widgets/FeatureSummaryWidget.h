@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,7 +27,9 @@
 #define GPLATES_QTWIDGETS_FEATURESUMMARYWIDGET_H
 
 #include <QWidget>
+
 #include "FeatureSummaryWidgetUi.h"
+#include "TaskPanelWidget.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
 #include "model/FeatureHandle.h"
@@ -43,18 +45,35 @@ namespace GPlatesGui
 
 namespace GPlatesQtWidgets
 {
-	class FeatureSummaryWidget:
-			public QWidget, 
+	class FeatureSummaryWidget :
+			public TaskPanelWidget, 
 			protected Ui_FeatureSummaryWidget
 	{
 		Q_OBJECT
 		
 	public:
+
 		explicit
 		FeatureSummaryWidget(
 				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
-					
+
+		virtual
+		void
+		handle_activation();
+
+		virtual
+		QString
+		get_clear_action_text() const;
+
+		virtual
+		bool
+		clear_action_enabled() const;
+
+		virtual
+		void
+		handle_clear_action_triggered();
+
 	public slots:
 		
 		void
@@ -74,7 +93,8 @@ namespace GPlatesQtWidgets
 		 * We need this to look up file names from FeatureHandle weakrefs.
 		 */
 		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
-	
+
+		GPlatesGui::FeatureFocus &d_feature_focus;
 	};
 }
 

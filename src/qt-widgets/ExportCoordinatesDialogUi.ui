@@ -8,8 +8,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>431</width>
-    <height>404</height>
+    <width>440</width>
+    <height>440</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -28,6 +28,12 @@
   <layout class="QVBoxLayout" >
    <item>
     <widget class="QGroupBox" name="groupbox_format" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="title" >
       <string>Format</string>
      </property>
@@ -87,15 +93,10 @@
          <number>0</number>
         </property>
         <widget class="QWidget" name="page_format_plates4" >
-         <property name="geometry" >
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>391</width>
-           <height>84</height>
-          </rect>
-         </property>
          <layout class="QVBoxLayout" >
+          <property name="margin" >
+           <number>0</number>
+          </property>
           <item>
            <widget class="QLabel" name="label_info_plates4" >
             <property name="text" >
@@ -106,18 +107,26 @@
             </property>
            </widget>
           </item>
+          <item>
+           <spacer name="verticalSpacer_2" >
+            <property name="orientation" >
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0" >
+             <size>
+              <width>1</width>
+              <height>1</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="page_format_gmt" >
-         <property name="geometry" >
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>391</width>
-           <height>84</height>
-          </rect>
-         </property>
          <layout class="QVBoxLayout" >
+          <property name="margin" >
+           <number>0</number>
+          </property>
           <item>
            <widget class="QLabel" name="label_info_gmt" >
             <property name="text" >
@@ -128,18 +137,26 @@
             </property>
            </widget>
           </item>
+          <item>
+           <spacer name="verticalSpacer_3" >
+            <property name="orientation" >
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0" >
+             <size>
+              <width>1</width>
+              <height>1</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="page_format_shapefile" >
-         <property name="geometry" >
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>391</width>
-           <height>84</height>
-          </rect>
-         </property>
          <layout class="QGridLayout" >
+          <property name="margin" >
+           <number>0</number>
+          </property>
           <item row="0" column="0" >
            <widget class="QLabel" name="label_info_shapefile" >
             <property name="text" >
@@ -150,18 +167,26 @@
             </property>
            </widget>
           </item>
+          <item row="1" column="0" >
+           <spacer name="verticalSpacer_4" >
+            <property name="orientation" >
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0" >
+             <size>
+              <width>1</width>
+              <height>1</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="page_format_wkt" >
-         <property name="geometry" >
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>391</width>
-           <height>84</height>
-          </rect>
-         </property>
          <layout class="QVBoxLayout" >
+          <property name="margin" >
+           <number>0</number>
+          </property>
           <item>
            <widget class="QLabel" name="label_info_wkt" >
             <property name="text" >
@@ -172,18 +197,26 @@
             </property>
            </widget>
           </item>
+          <item>
+           <spacer name="verticalSpacer_5" >
+            <property name="orientation" >
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0" >
+             <size>
+              <width>1</width>
+              <height>1</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="page_format_csv" >
-         <property name="geometry" >
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>100</width>
-           <height>30</height>
-          </rect>
-         </property>
          <layout class="QVBoxLayout" >
+          <property name="margin" >
+           <number>0</number>
+          </property>
           <item>
            <widget class="QLabel" name="label_info_csv" >
             <property name="text" >
@@ -230,7 +263,33 @@
               </item>
              </widget>
             </item>
+            <item>
+             <spacer name="horizontalSpacer_2" >
+              <property name="orientation" >
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0" >
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
+          </item>
+          <item>
+           <spacer name="verticalSpacer_6" >
+            <property name="orientation" >
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0" >
+             <size>
+              <width>1</width>
+              <height>1</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </widget>
@@ -250,12 +309,6 @@
         </item>
         <item>
          <widget class="QComboBox" name="combobox_coordinate_order" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
           <item>
            <property name="text" >
             <string>Latitude, Longitude</string>
@@ -267,6 +320,19 @@
            </property>
           </item>
          </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_3" >
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </item>
@@ -283,6 +349,19 @@
          </widget>
         </item>
         <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <widget class="QPushButton" name="button_explain_terminating_point" >
           <property name="toolTip" >
            <string>What does this mean?</string>
@@ -295,19 +374,6 @@
             <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
           </property>
          </widget>
-        </item>
-        <item>
-         <spacer>
-          <property name="orientation" >
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0" >
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </item>
@@ -325,7 +391,7 @@
         <item>
          <widget class="QLabel" name="label_export_to" >
           <property name="text" >
-           <string>Export To:</string>
+           <string>Export to:</string>
           </property>
           <property name="buddy" >
            <cstring>radiobutton_to_file</cstring>
@@ -355,6 +421,19 @@
           </property>
          </widget>
         </item>
+        <item>
+         <spacer name="horizontalSpacer" >
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
        </layout>
       </item>
       <item>
@@ -365,16 +444,14 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="currentIndex" >
+         <number>0</number>
+        </property>
         <widget class="QWidget" name="page_export_select_file" >
-         <property name="geometry" >
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>391</width>
-           <height>48</height>
-          </rect>
-         </property>
          <layout class="QHBoxLayout" >
+          <property name="margin" >
+           <number>0</number>
+          </property>
           <item>
            <widget class="QLineEdit" name="lineedit_filename" />
           </item>
@@ -387,19 +464,20 @@
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="page_export_clipboard" >
-         <property name="geometry" >
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>100</width>
-           <height>30</height>
-          </rect>
-         </property>
-        </widget>
+        <widget class="QWidget" name="page_export_clipboard" />
        </widget>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" native="1" name="widget" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Expanding" hsizetype="Preferred" >
+       <horstretch>0</horstretch>
+       <verstretch>1</verstretch>
+      </sizepolicy>
+     </property>
     </widget>
    </item>
    <item>

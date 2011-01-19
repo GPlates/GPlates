@@ -31,7 +31,7 @@
 
 #include "GLMultiResolutionRasterSource.h"
 
-#include "gui/RasterColourScheme.h"
+#include "gui/RasterColourPalette.h"
 
 #include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRaster.h"
@@ -68,7 +68,7 @@ namespace GPlatesOpenGL
 		boost::optional<non_null_ptr_type>
 		create(
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
-				const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION);
 
 
@@ -123,21 +123,19 @@ namespace GPlatesOpenGL
 		bool
 		change_raster(
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
-				const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme);
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
 
 	private:
 		/**
 		 * The proxied raster resolver to get region/level data from raster and
-		 * optionally converted to RGBA (using @a d_raster_colour_scheme).
+		 * optionally converted to RGBA (using @a d_raster_colour_palette).
 		 */
 		GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type d_proxied_raster_resolver;
 
 		/**
 		 * The colour palette used to convert non-RGBA raster data to RGBA.
-		 *
-		 * It is optional since it is only needed if the raw raster is non-RGBA.
 		 */
-		boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> d_raster_colour_scheme;
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type d_raster_colour_palette;
 
 		//! Original raster width.
 		unsigned int d_raster_width;
@@ -153,7 +151,7 @@ namespace GPlatesOpenGL
 
 		GLProxiedRasterSource(
 				const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
-				const boost::optional<GPlatesGui::RasterColourScheme::non_null_ptr_type> &raster_colour_scheme,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 				unsigned int raster_width,
 				unsigned int raster_height,
 				unsigned int tile_texel_dimension);

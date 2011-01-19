@@ -29,6 +29,7 @@
 #include "CliInvalidOptionValue.h"
 #include "CliRequiredOptionNotPresent.h"
 
+#include "app-logic/ReconstructLayerTaskParams.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
@@ -201,6 +202,7 @@ GPlatesCli::ReconstructCommand::run(
 									d_recon_time,
 									d_anchor_plate_id,
 									reconstruction_feature_collections),
+							GPlatesAppLogic::ReconstructLayerTaskParams(),
 							reconstructable_feature_collections);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.

@@ -115,8 +115,10 @@ GPlatesAppLogic::ReconstructLayerTask::process(
 			reconstruction_geometry_collection =
 					ReconstructUtils::reconstruct(
 							reconstruction_tree.get(),
+							d_layer_task_params,
 							reconstructable_features_collection);
 
 	// Return the reconstruction geometry collection.
 	return layer_task_data_type(reconstruction_geometry_collection);
 }
+

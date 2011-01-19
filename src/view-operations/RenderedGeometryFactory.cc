@@ -192,6 +192,8 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_spher
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 		const GPlatesAppLogic::Layer &layer,
+		const GPlatesPropertyValues::TextContent &raster_band_name,
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 		const double &reconstruction_time,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
@@ -208,6 +210,8 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
 			new RenderedResolvedRaster(
 					layer,
+					raster_band_name,
+					raster_colour_palette,
 					reconstruction_time,
 					georeferencing,
 					proxied_rasters,

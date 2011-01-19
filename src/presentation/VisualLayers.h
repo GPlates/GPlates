@@ -420,6 +420,13 @@ namespace GPlatesPresentation
 		emit_layer_modified(
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index);
 
+		/**
+		 * Notifies the corresponding visual layer params object about a change in @a layer.
+		 */
+		void
+		notify_visual_layer_params(
+				const GPlatesAppLogic::Layer &layer);
+
 		// VisualLayer causes VisualLayers to emit layer_modified.
 		friend class VisualLayer;
 

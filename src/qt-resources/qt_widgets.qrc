@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="/">
+    <file>gnome_stock_color_16.png</file>
+    <file>rainbow_16.png</file>
+    <file>rainbow_22.png</file>
     <file>DefaultPreferences.conf</file>
     <file>gnome_stock_export_16.png</file>
     <file>gnome_stock_view_details_16.png</file>

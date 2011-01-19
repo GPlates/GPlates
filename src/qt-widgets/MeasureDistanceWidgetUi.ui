@@ -176,7 +176,7 @@
       <item>
        <widget class="QLabel" name="label_feature_none">
         <property name="text">
-         <string>Select an existing polyline or polygon, or start digitising a new polyline or polygon to measure distances between more than two points.</string>
+         <string>Select an existing polyline, or start digitising a new polyline, to measure its length. Select an existing polygon, or start digitising a new polygon, to measure its area and perimeter.</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,8 +35,6 @@
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
 #include "ReconstructUtils.h"
-
-#include "VGPRenderSettings.h"
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
@@ -187,6 +185,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::can_process(
 
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeometryPopulator(
 		ReconstructionGeometryCollection &reconstruction_geometry_collection,
+		const ReconstructLayerTaskParams &reconstruct_params,
 		bool should_keep_features_without_recon_plate_id):
 	d_reconstruction_geometry_collection(reconstruction_geometry_collection),
 	d_reconstruction_tree(reconstruction_geometry_collection.reconstruction_tree()),
@@ -194,7 +193,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeom
 			GPlatesPropertyValues::GeoTimeInstant(
 					reconstruction_geometry_collection.get_reconstruction_time())),
 	d_reconstruction_params(reconstruction_geometry_collection.get_reconstruction_time()),
-	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
+	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id),
+	d_reconstruct_params(reconstruct_params)
 {  }
 
 
@@ -566,8 +566,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::finalise_post_feature_pr
 	{
 		return;
 	}
-	GPlatesAppLogic::VGPRenderSettings* render_setting = GPlatesAppLogic::VGPRenderSettings::instance();
-	if(!render_setting->should_draw_vgp(d_recon_time.value(),*d_VGP_params->d_age))
+
+	if(!d_reconstruct_params.should_draw_vgp(d_recon_time.value(),*d_VGP_params->d_age))
 	{
 		return;
 	}

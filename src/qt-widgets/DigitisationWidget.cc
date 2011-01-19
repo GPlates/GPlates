@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,18 +35,26 @@
 #include <boost/cast.hpp>
 
 #include "DigitisationWidget.h"
-#include "LatLonCoordinatesTable.h"
-#include "ExportCoordinatesDialog.h"
+
+#include "ActionButtonBox.h"
 #include "CreateFeatureDialog.h"
+#include "ExportCoordinatesDialog.h"
+#include "LatLonCoordinatesTable.h"
+#include "QtWidgetUtils.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+
 #include "gui/ChooseCanvasTool.h"
+
 #include "maths/InvalidLatLonException.h"
 #include "maths/InvalidLatLonCoordinateException.h"
 #include "maths/LatLonPoint.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/Real.h"
+
 #include "utils/GeometryCreationUtils.h"
+
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/GeometryBuilderUndoCommands.h"
 #include "view-operations/UndoRedo.h"
@@ -56,22 +64,37 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 		GPlatesViewOperations::GeometryBuilder &new_geometry_builder,
 		GPlatesPresentation::ViewState &view_state_,
 		ViewportWindow &viewport_window_,
+		QAction *clear_action,
+		QAction *undo_action,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
-	QWidget(parent_),
+	TaskPanelWidget(parent_),
 	d_export_coordinates_dialog(
 			new ExportCoordinatesDialog(
 				view_state_,
 				this)),
 	d_create_feature_dialog(
 			new CreateFeatureDialog(
-					view_state_,
-					viewport_window_,
-					GPlatesQtWidgets::CreateFeatureDialog::NORMAL, this)),
+				view_state_,
+				viewport_window_,
+				GPlatesQtWidgets::CreateFeatureDialog::NORMAL, this)),
 	d_new_geom_builder(&new_geometry_builder),
 	d_choose_canvas_tool(&choose_canvas_tool)
 {
 	setupUi(this);
+
+	// Add the action button box.
+	ActionButtonBox *action_button_box = new ActionButtonBox(2, 16, this);
+	action_button_box->add_action(clear_action);
+	action_button_box->add_action(undo_action);
+#ifndef Q_WS_MAC
+	int desired_height = button_create_feature->sizeHint().height();
+	action_button_box->setFixedHeight(desired_height);
+	button_export_coordinates->setFixedHeight(desired_height);
+#endif
+	QtWidgetUtils::add_widget_to_placeholder(
+			action_button_box,
+			action_button_box_placeholder_widget);
 	
 	// Set up the header of the coordinates widget.
 	coordinates_table()->header()->setResizeMode(QHeaderView::Stretch);
@@ -125,7 +148,72 @@ GPlatesQtWidgets::DigitisationWidget::handle_create()
 
 
 void
-GPlatesQtWidgets::DigitisationWidget::handle_clear()
+GPlatesQtWidgets::DigitisationWidget::handle_export()
+{
+	GPlatesViewOperations::GeometryBuilder::geometry_opt_ptr_type geometry_opt_ptr =
+		d_new_geom_builder->get_geometry_on_sphere();
+
+	// Feed the Export dialog the GeometryOnSphere you've set up for the current
+	// points. You -have- set up a GeometryOnSphere for the current points,
+	// haven't you?
+	if (geometry_opt_ptr) {
+		// Give a GeometryOnSphere::non_null_ptr_to_const_type to the Export dialog.
+		d_export_coordinates_dialog->set_geometry_and_display(*geometry_opt_ptr);
+	} else {
+		QMessageBox::warning(this, tr("No geometry to export"),
+				tr("There is no valid geometry to export."),
+				QMessageBox::Ok);
+	}
+}
+
+void
+GPlatesQtWidgets::DigitisationWidget::make_signal_slot_connections()
+{
+	// Export... button to open the Export Coordinates dialog.
+	QObject::connect(
+			button_export_coordinates,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_export()));
+
+	// Create... button to open the Create Feature dialog.
+	QObject::connect(
+			button_create_feature,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_create()));
+
+	QObject::connect(
+			d_new_geom_builder,
+			SIGNAL(stopped_updating_geometry()),
+			this,
+			SLOT(handle_geometry_changed()));
+}
+
+
+void
+GPlatesQtWidgets::DigitisationWidget::handle_activation()
+{
+	reload_coordinates_table_if_necessary();
+}
+
+
+QString
+GPlatesQtWidgets::DigitisationWidget::get_clear_action_text() const
+{
+	return tr("C&lear Geometry");
+}
+
+
+bool
+GPlatesQtWidgets::DigitisationWidget::clear_action_enabled() const
+{
+	return d_new_geom_builder->has_geometry();
+}
+
+
+void
+GPlatesQtWidgets::DigitisationWidget::handle_clear_action_triggered()
 {
 	// Group two undo commands into one.
 	std::auto_ptr<QUndoCommand> undo_command(
@@ -152,36 +240,10 @@ GPlatesQtWidgets::DigitisationWidget::handle_clear()
 
 
 void
-GPlatesQtWidgets::DigitisationWidget::handle_export()
+GPlatesQtWidgets::DigitisationWidget::handle_geometry_changed()
 {
-	GPlatesViewOperations::GeometryBuilder::geometry_opt_ptr_type geometry_opt_ptr =
-		d_new_geom_builder->get_geometry_on_sphere();
-
-	// Feed the Export dialog the GeometryOnSphere you've set up for the current
-	// points. You -have- set up a GeometryOnSphere for the current points,
-	// haven't you?
-	if (geometry_opt_ptr) {
-		// Give a GeometryOnSphere::non_null_ptr_to_const_type to the Export dialog.
-		d_export_coordinates_dialog->set_geometry_and_display(*geometry_opt_ptr);
-	} else {
-		QMessageBox::warning(this, tr("No geometry to export"),
-				tr("There is no valid geometry to export."),
-				QMessageBox::Ok);
-	}
+	bool has_geometry = d_new_geom_builder->has_geometry();
+	emit_clear_action_enabled_changed(has_geometry);
+	button_export_coordinates->setEnabled(has_geometry);
 }
 
-void
-GPlatesQtWidgets::DigitisationWidget::make_signal_slot_connections()
-{
-	// Clear button to clear points from table and start over.
-	QObject::connect(button_clear_coordinates, SIGNAL(clicked()),
-			this, SLOT(handle_clear()));
-
-	// Export... button to open the Export Coordinates dialog.
-	QObject::connect(button_export_coordinates, SIGNAL(clicked()),
-			this, SLOT(handle_export()));
-
-	// Create... button to open the Create Feature dialog.
-	QObject::connect(button_create_feature, SIGNAL(clicked()),
-			this, SLOT(handle_create()));
-}
