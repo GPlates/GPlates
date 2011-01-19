@@ -75,20 +75,5 @@
 #ifdef __WINDOWS__
 #include <boost/math/special_functions/fpclassify.hpp>
 #endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/math/tools/real_cast.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/type_traits/is_floating_point.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/type_traits/is_integral.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/type_traits/is_convertible.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/type_traits/is_same.hpp>
-#endif // __WINDOWS__
 #include <QObject>
 #include <QDebug>
