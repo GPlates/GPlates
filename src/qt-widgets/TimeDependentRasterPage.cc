@@ -78,7 +78,7 @@ namespace
 			double d)
 	{
 		static const double MULTIPLIER = std::pow(10.0, DECIMAL_PLACES);
-		return ::round(d * MULTIPLIER) / MULTIPLIER;
+		return round(d * MULTIPLIER) / MULTIPLIER;
 	}
 
 	class TimeLineEdit :
