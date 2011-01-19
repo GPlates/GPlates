@@ -82,12 +82,6 @@
 #include <boost/type_traits/is_floating_point.hpp>
 #endif // __WINDOWS__
 #ifdef __WINDOWS__
-#include <boost/math/special_functions/math_fwd.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/math/tools/user.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
 #include <boost/type_traits/is_integral.hpp>
 #endif // __WINDOWS__
 #ifdef __WINDOWS__
@@ -95,27 +89,6 @@
 #endif // __WINDOWS__
 #ifdef __WINDOWS__
 #include <boost/type_traits/is_same.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/type_traits/remove_cv.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/mpl/if.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/mpl/and.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/mpl/or.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/math/policies/policy.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/mpl/comparison.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/config/no_tr1/complex.hpp>
 #endif // __WINDOWS__
 #include <QObject>
 #include <QDebug>
