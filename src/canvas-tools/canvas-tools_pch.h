@@ -1,15 +1,17 @@
 #include <queue>
 #include <QLocale>
+#include <QDebug>
+#include <QString>
 #include <QObject>
 #ifdef __WINDOWS__
-#include <boost/intrusive_ptr.hpp>
+#include <boost/function.hpp>
 #endif // __WINDOWS__
-#include <map>
-#include <QString>
 #ifdef __WINDOWS__
 #include <boost/optional.hpp>
 #endif // __WINDOWS__
-#include <set>
+#ifdef __WINDOWS__
+#include <boost/intrusive_ptr.hpp>
+#endif // __WINDOWS__
 #ifdef __WINDOWS__
 #include <boost/config.hpp>
 #endif // __WINDOWS__
@@ -19,19 +21,86 @@
 #ifdef __WINDOWS__
 #include <boost/detail/workaround.hpp>
 #endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/noncopyable.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/checked_delete.hpp>
+#endif // __WINDOWS__
+#include <cmath>
+#include <limits>
+#ifdef __WINDOWS__
+#include <boost/math/special_functions/fpclassify.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/operators.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/mpl/assert.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/mpl/contains.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/shared_ptr.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/weak_ptr.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/tuple/tuple.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/utility/enable_if.hpp>
+#endif // __WINDOWS__
+#include <QFileInfo>
+#include <QMap>
+#ifdef __WINDOWS__
+#include <boost/any.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/scoped_ptr.hpp>
+#endif // __WINDOWS__
+#include <set>
+#include <ctime>
+#include <QStringList>
+#ifdef __WINDOWS__
+#include <boost/mpl/vector.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/variant.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/iterator/transform_iterator.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/lambda/construct.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/type_traits/add_const.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/type_traits/remove_const.hpp>
+#endif // __WINDOWS__
 #include <QAbstractTableModel>
 #include <QItemSelection>
 #include <QHeaderView>
-#include <iostream>
-#include <cmath>
 #ifdef __WINDOWS__
-#include <boost/current_function.hpp>
+#include <boost/none.hpp>
 #endif // __WINDOWS__
-#if 0
-#include <QtOpenGL/qgl.h>
-#endif
+#include <iostream>
+#include <QTreeWidget>
+#include <QList>
 #ifdef __WINDOWS__
-#include <boost/shared_ptr.hpp>
+#include <boost/bind.hpp>
+#endif // __WINDOWS__
+#include <stack>
+#include <bitset>
+#ifdef __WINDOWS__
+#include <boost/foreach.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <windows.h>
 #endif // __WINDOWS__
 extern "C" {
 #if defined(__APPLE__)
@@ -53,58 +122,108 @@ extern "C" {
 #include <GL/glu.h>
 #endif
 }
+#if 0
+#include <QtOpenGL/qgl.h>
+#endif
+#include <QColor>
+#include <QGLWidget>
 #ifdef __WINDOWS__
-#include <boost/scoped_ptr.hpp>
+#include <boost/mpl/set.hpp>
 #endif // __WINDOWS__
 #ifdef __WINDOWS__
-#include <boost/none.hpp>
+#include <boost/scoped_array.hpp>
 #endif // __WINDOWS__
-#include <QtCore/QTimer>
-#include <QCloseEvent>
-#include <QStringList>
-#include <QUndoGroup>
-#include <QFileInfo>
-#include <sstream>
+#include <QImage>
+#include <QRect>
+#ifdef __WINDOWS__
+#include <boost/type_traits/is_same.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/type_traits/is_integral.hpp>
+#endif // __WINDOWS__
+#include <QFile>
+#include <QDateTime>
+#include <QDataStream>
+#include <QEvent>
+#include <QEventLoop>
+#include <QCoreApplication>
+#include <QThread>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QWaitCondition>
+#ifdef __WINDOWS__
+#include <boost/type_traits.hpp>
+#endif // __WINDOWS__
+#include <Magick++.h>
+#ifdef __WINDOWS__
+#include <boost/type_traits/is_floating_point.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/shared_array.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/iterator/iterator_traits.hpp>
+#endif // __WINDOWS__
+#include <QGLFramebufferObject>
+#include <QGLPixelBuffer>
+#include <QFont>
+#include <QWidget>
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
 #include <QtGui/QApplication>
 #include <QtGui/QButtonGroup>
-#include <QtGui/QDockWidget>
+#include <QtGui/QComboBox>
+#include <QtGui/QDoubleSpinBox>
 #include <QtGui/QHBoxLayout>
+#include <QtGui/QLabel>
+#include <QtGui/QLineEdit>
+#include <QtGui/QPushButton>
+#include <QtGui/QSpacerItem>
+#include <QtGui/QTabWidget>
+#include <QtGui/QVBoxLayout>
+#include <QtGui/QWidget>
+#include <QtCore/QTimer>
+#include <QPointer>
+#include <QCloseEvent>
+#include <QUndoGroup>
+#include <QByteArray>
+#include <QGraphicsScene>
+#include <QLabel>
+#include <QMainWindow>
+#include <QSplitter>
+#include <QMenu>
+#include <QtGui/QToolButton>
+#include <QSlider>
+#include <QtGui/QDockWidget>
 #include <QtGui/QMainWindow>
 #include <QtGui/QMenu>
 #include <QtGui/QMenuBar>
 #include <QtGui/QStatusBar>
-#include <QtGui/QTabWidget>
-#include <QtGui/QTableView>
+#include <QtGui/QTableWidget>
 #include <QtGui/QToolBar>
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QWidget>
-#include <QWidget>
-#include <QtGui/QDoubleSpinBox>
-#include <QtGui/QFrame>
+#include <QtGui/QTreeView>
+#include <QTimer>
+#include <QAction>
+#include <map>
+#include <vector>
+#include <QPointF>
+#include <QGraphicsView>
+#include <QMouseEvent>
+#ifdef __WINDOWS__
+#include <boost/cstdint.hpp>
+#endif // __WINDOWS__
+#include <list>
+#include <QUndoStack>
+#include <QUndoCommand>
+#include <proj_api.h>
+#include <iterator>
+#include <QtGui/QCheckBox>
 #include <QtGui/QGridLayout>
-#include <QtGui/QLabel>
-#include <QtGui/QPushButton>
-#include <QtGui/QSlider>
-#include <QtGui/QSpacerItem>
+#include <QtGui/QGroupBox>
 #include <QDialog>
 #include <QtGui/QDialog>
-#include <QtGui/QSpinBox>
-#include <QTimer>
-#include <QtGui/QCheckBox>
-#include <QtGui/QGroupBox>
-#include <QtGui/QTextEdit>
 #include <QtGui/QDialogButtonBox>
-#include <QtGui/QLineEdit>
 #include <QtGui/QTreeWidget>
-#include <QtGui/QComboBox>
+#include <QtGui/QTableView>
+#include <QtGui/QFormLayout>
 #include <QGroupBox>
-#include <QLabel>
-#include <QtGui/QTableWidget>
-#include <QDebug>
-#include <QTreeWidget>
-#include <QUndoStack>
-#include <QGridLayout>
-#include <vector>
-#include <functional>
