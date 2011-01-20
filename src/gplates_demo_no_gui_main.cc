@@ -34,6 +34,7 @@
 #include <iostream>
 #include <utility>  /* std::pair */
 
+#include "app-logic/ReconstructLayerTaskParams.h"
 #include "app-logic/ReconstructedFeatureGeometryPopulator.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryCollection.h"
@@ -475,7 +476,8 @@ output_reconstructions(
 		GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type rgc =
 			GPlatesAppLogic::ReconstructionGeometryCollection::create(tree);
 
-		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(*rgc);
+		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(*rgc,
+				GPlatesAppLogic::ReconstructLayerTaskParams());
 
 		GPlatesModel::FeatureCollectionHandle::iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
