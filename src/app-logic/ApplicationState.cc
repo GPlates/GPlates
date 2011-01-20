@@ -27,6 +27,9 @@
 
 #include <boost/foreach.hpp>
 #if defined(GPLATES_HAS_PYTHON)
+#	if defined(HAVE_DIRECT_H)
+#		undef HAVE_DIRECT_H
+#	endif
 #	include <boost/python.hpp>
 #endif
 
