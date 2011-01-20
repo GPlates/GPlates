@@ -54,5 +54,5 @@ add_definitions(-DHAVE_CONFIG_H)
 
 # Convert 'global/config.h.in' file to 'global/config.h'.
 set(CONFIG_H_IN_FILE "${GPlates_SOURCE_DIR}/src/global/config.h.in")
-set(CONFIG_H_OUT_FILE "${GPlates_SOURCE_DIR}/src/global/config.h")
+set(CONFIG_H_OUT_FILE "${CMAKE_BINARY_DIR}/src/global/config.h")
 configure_file(${CONFIG_H_IN_FILE} ${CONFIG_H_OUT_FILE})
