@@ -167,15 +167,21 @@ GPlatesGui::GPlatesQApplication::notify(
 		QObject *qreceiver,
 		QEvent *qevent)
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block. This is so we can do multiple changes
-	// without redrawing canvas after each change.
-	// This is located here because this is the highest level of the GUI event
-	// that captures a single user interaction - the user performs an action and
-	// we update canvas once.
-	// But since these guards can be nested it's ok to have them further down
-	// the call stack if needed for some reason.
-	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+	{
+		//The notify function could be called by multiple threads of QT.
+		//The scoped_lock is used here to protect shared variables.
+		boost::mutex::scoped_lock lock(d_notify_mutex);
+
+		// Delay any notification of changes to the rendered geometry collection
+		// until end of current scope block. This is so we can do multiple changes
+		// without redrawing canvas after each change.
+		// This is located here because this is the highest level of the GUI event
+		// that captures a single user interaction - the user performs an action and
+		// we update canvas once.
+		// But since these guards can be nested it's ok to have them further down
+		// the call stack if needed for some reason.
+		GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+	}
 
 	return try_catch<bool>(
 		boost::bind(&qapplication_notify, this, qreceiver, qevent),

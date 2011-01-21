@@ -28,6 +28,7 @@
 
 #include <QtGui/QApplication>
 
+#include <boost/thread/mutex.hpp>
 
 namespace GPlatesGui
 {
@@ -67,6 +68,8 @@ namespace GPlatesGui
 				int (*main_function)(int, char* []),
 				int argc,
 				char* argv[]);
+	private:
+		boost::mutex d_notify_mutex;
 	};
 }
 
