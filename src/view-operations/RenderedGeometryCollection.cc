@@ -35,6 +35,7 @@
 #include <list>
 #include <QDebug>
 
+
 namespace GPlatesViewOperations
 {
 	namespace
@@ -438,6 +439,7 @@ GPlatesViewOperations::RenderedGeometryCollection::connect_to_rendered_geometry_
 void
 GPlatesViewOperations::RenderedGeometryCollection::begin_update_collection()
 {
+	boost::mutex::scoped_lock lock(d_update_collection_depth_mutex);
 	++d_update_collection_depth;
 }
 
@@ -449,7 +451,10 @@ GPlatesViewOperations::RenderedGeometryCollection::end_update_collection()
 			d_update_collection_depth > 0,
 			GPLATES_ASSERTION_SOURCE);
 
-	--d_update_collection_depth;
+	{
+		boost::mutex::scoped_lock lock(d_update_collection_depth_mutex);
+		--d_update_collection_depth;
+	}
 
 	// If an update signal was delayed try signaling it now.
 	if (d_update_collection_depth == 0 &&
