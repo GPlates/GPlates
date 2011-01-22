@@ -15,6 +15,16 @@ if(GPLATES_HAS_PYTHON)
 endif(GPLATES_HAS_PYTHON)
 find_package("Boost" 1.34.1 REQUIRED ${boost_components})
 
+# Check that each of the above libraries was found, because even though it is
+# required, if Boost is found but not the libraries, the CMake scripts will
+# happily continue on their merry way.
+foreach(boost_component ${boost_components})
+	string(TOUPPER ${boost_component} boost_component_uppercase)
+	if(NOT Boost_${boost_component_uppercase}_FOUND)
+		message(FATAL_ERROR "Boost ${boost_component} library not found - please make sure it is installed.")
+	endif(NOT Boost_${boost_component_uppercase}_FOUND)
+endforeach(boost_component)
+
 # The Boost unit test framework is optional, because we only need it for the
 # unit-test version of GPlates and it is possible to compile the GUI version
 # of GPlates without it, and it is statically linked, because it contains the
