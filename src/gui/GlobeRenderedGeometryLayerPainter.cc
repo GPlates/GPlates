@@ -968,6 +968,19 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_raster_primitives_o
 	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
 			GPlatesOpenGL::GLCompositeStateSet::create();
 
+	// Set the alpha-blend state in case raster is semi-transparent.
+	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
+			GPlatesOpenGL::GLBlendState::create();
+	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	state_set->add_state_set(blend_state);
+
+	// Set the alpha-test state to reject pixels where alpha is zero (they make no
+	// change or contribution to the framebuffer) - this is an optimisation.
+	GPlatesOpenGL::GLAlphaTestState::non_null_ptr_type alpha_test_state =
+			GPlatesOpenGL::GLAlphaTestState::create();
+	alpha_test_state->gl_enable(GL_TRUE).gl_alpha_func(GL_GREATER, GLclampf(0));
+	state_set->add_state_set(alpha_test_state);
+
 	//
 	// Note that we set the depth testing/writing state here rather than inside the
 	// raster rendering machinery because here we know we are rendering to the scene

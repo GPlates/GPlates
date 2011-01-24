@@ -27,7 +27,6 @@
 
 #include "GLCullVisitor.h"
 
-#include "GLBlendState.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLMultiResolutionRasterNode.h"
 #include "GLMultiResolutionReconstructedRaster.h"
@@ -139,17 +138,8 @@ GPlatesOpenGL::GLCullVisitor::visit(
 {
 	preprocess_node(*raster_node);
 
-	// Enable alpha-blending in case texture has partial transparency.
-	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-			GPlatesOpenGL::GLBlendState::create();
-	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	d_renderer->push_state_set(blend_state);
-
 	// Render the multi-resolution raster.
 	raster_node->get_multi_resolution_raster()->render(*d_renderer);
-
-	d_renderer->pop_state_set();
 
 	postprocess_node(*raster_node);
 }
@@ -162,17 +152,8 @@ GPlatesOpenGL::GLCullVisitor::visit(
 {
 	preprocess_node(*reconstructed_raster_node);
 
-	// Enable alpha-blending in case texture has partial transparency.
-	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-			GPlatesOpenGL::GLBlendState::create();
-	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	d_renderer->push_state_set(blend_state);
-
 	// Render the multi-resolution raster.
 	reconstructed_raster_node->get_multi_resolution_reconstructed_raster()->render(*d_renderer);
-
-	d_renderer->pop_state_set();
 
 	postprocess_node(*reconstructed_raster_node);
 }
