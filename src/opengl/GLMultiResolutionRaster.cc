@@ -175,11 +175,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 	tex_env_state->gl_enable_texture_2D(GL_TRUE).gl_tex_env_mode(GL_REPLACE);
 	state_set->add_state_set(tex_env_state);
 
-	// Set the alpha-blend state in case texture has transparency.
-	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-			GPlatesOpenGL::GLBlendState::create();
-	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	state_set->add_state_set(blend_state);
+	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
+	// might not be rendering directly to the final render target and hence we don't
+	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
+	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
+	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
+	// which is not what we want - we want (A*R,A*G,A*B,A*A).
+	// Currently we are rendering to the final render target but when we reconstruct
+	// rasters in the map view (later) we will render to an intermediate render target.
 
 	renderer.push_state_set(state_set);
 
