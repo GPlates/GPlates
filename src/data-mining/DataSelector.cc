@@ -487,6 +487,9 @@ GPlatesDataMining::DataSelector::get_reconstructed_geometries(
 			rec.get_reconstruction_time());
 	properties.visit_feature(feature->reference());
 	
+	if(!properties.is_feature_defined_at_recon_time())
+		return;
+
 	for(; it != it_end; it++)
 	{
 		if(properties.get_recon_plate_id())
