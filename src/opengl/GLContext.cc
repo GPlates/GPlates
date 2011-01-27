@@ -121,6 +121,15 @@ GPlatesOpenGL::GLContext::initialise()
 		{
 			qDebug() << "Falling back to main frame buffer for render targets";
 			s_render_target_factory = GLMainFrameBufferRenderTargetFactory::create();
+
+			// Alot of render-target rendering uses an alpha channel so emit a warning if
+			// the frame buffer doesn't have an alpha channel.
+			 if (!static_cast<QGLWidgetImpl *>(d_context_impl.get())->d_qgl_widget.format().alpha())
+			 {
+				 qWarning(
+						"Could not get alpha channel on main frame buffer; "
+						"render-target results will be suboptimal");
+			 }
 		}
 	}
 }

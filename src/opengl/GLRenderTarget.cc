@@ -105,7 +105,7 @@ GPlatesOpenGL::GLPBufferTextureRenderTarget::GLPBufferTextureRenderTarget(
 {
      if (!d_pixel_buffer->format().alpha())
 	 {
-         qWarning("Could not get alpha channel on render target; results will be suboptimal");
+         qWarning("Could not get alpha channel on pbuffer render target; results will be suboptimal");
 	 }
 }
 
