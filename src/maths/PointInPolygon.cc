@@ -43,652 +43,649 @@ namespace GPlatesMaths
 {
 	namespace PointInPolygon
 	{
-		namespace
+		//! If dot product of crossing arc and polygon edge greater than this then too closely aligned.
+		static const double MAX_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE = 1 - 1e-4;
+
+		//! If dot product of crossing arc and polygon edge less than this then too closely aligned.
+		static const double MIN_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE = -1 + 1e-4;
+
+
+		/**
+		 * Finds the point antipodal to the centroid (average vertex) of the polygon.
+		 *
+		 * If the centroid is the origin then attempts to recalculate centroid by summing
+		 * the edge midpoints.
+		 *
+		 * FIXME: Use a more accurate heuristic to determine the antipodal point such as
+		 * using area of spherical polygon.
+		 *
+		 * FIXME: It is still possible for the antipodal point of the polygon centroid
+		 * to be inside the polygon for some polygon arrangements. Simply assuming it's
+		 * outside the polygon is not always true. Find a more robust solution.
+		 * One idea is to find the polygon orientation, then find the closest polygon edge
+		 * intersection to a great circle passing through the antipodal centroid and then
+		 * determine if antipodal centroid is to the left or right of the polygon edge.
+		 * If the polygon is oriented counter-clockwise and the antipodal centroid is to
+		 * the right of the polygon edge then the antipodal point is outside the polygon.
+		 * This has numerical issues in situations where the polygon edge is aligned with
+		 * the great circle and when a polygon edge intersects the antipodal centroid -
+		 * these could be dealt with by finding a great circle that does not align with
+		 * any polygon edge and adjusting the antipodal centroid point until it doesn't
+		 * touch any polygon edge (within a suitable epsilon). Although a self-intersecting
+		 * polygon presents more problems in that the left/right test switches polarity
+		 * as you traverse the polygon edges to a self-intersection point. This could
+		 * be dealt with by decomposing a non-simple polygon into one or more simple polygons
+		 * and then performing point-in-polygon tests on each in turn.
+		 */
+		UnitVector3D
+		get_polygon_centroid(
+				const PolygonOnSphere &polygon)
 		{
-			//! If dot product of crossing arc and polygon edge greater than this then too closely aligned.
-			static const double MAX_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE = 1 - 1e-4;
-
-			//! If dot product of crossing arc and polygon edge less than this then too closely aligned.
-			static const double MIN_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE = -1 + 1e-4;
-
-
-			/**
-			 * Finds the point antipodal to the centroid (average vertex) of the polygon.
-			 *
-			 * If the centroid is the origin then attempts to recalculate centroid by summing
-			 * the edge midpoints.
-			 *
-			 * FIXME: Use a more accurate heuristic to determine the antipodal point such as
-			 * using area of spherical polygon.
-			 *
-			 * FIXME: It is still possible for the antipodal point of the polygon centroid
-			 * to be inside the polygon for some polygon arrangements. Simply assuming it's
-			 * outside the polygon is not always true. Find a more robust solution.
-			 * One idea is to find the polygon orientation, then find the closest polygon edge
-			 * intersection to a great circle passing through the antipodal centroid and then
-			 * determine if antipodal centroid is to the left or right of the polygon edge.
-			 * If the polygon is oriented counter-clockwise and the antipodal centroid is to
-			 * the right of the polygon edge then the antipodal point is outside the polygon.
-			 * This has numerical issues in situations where the polygon edge is aligned with
-			 * the great circle and when a polygon edge intersects the antipodal centroid -
-			 * these could be dealt with by finding a great circle that does not align with
-			 * any polygon edge and adjusting the antipodal centroid point until it doesn't
-			 * touch any polygon edge (within a suitable epsilon). Although a self-intersecting
-			 * polygon presents more problems in that the left/right test switches polarity
-			 * as you traverse the polygon edges to a self-intersection point. This could
-			 * be dealt with by decomposing a non-simple polygon into one or more simple polygons
-			 * and then performing point-in-polygon tests on each in turn.
-			 */
-			UnitVector3D
-			get_polygon_centroid(
-					const PolygonOnSphere &polygon)
+			// Iterate through the polygon vertices and calculate the sum of vertex positions.
+			Vector3D summed_position(0,0,0);
+			PolygonOnSphere::vertex_const_iterator vertex_iter = polygon.vertex_begin();
+			const PolygonOnSphere::vertex_const_iterator vertex_end = polygon.vertex_end();
+			for ( ; vertex_iter != vertex_end; ++vertex_iter)
 			{
-				// Iterate through the polygon vertices and calculate the sum of vertex positions.
-				Vector3D summed_position(0,0,0);
-				PolygonOnSphere::vertex_const_iterator vertex_iter = polygon.vertex_begin();
-				const PolygonOnSphere::vertex_const_iterator vertex_end = polygon.vertex_end();
-				for ( ; vertex_iter != vertex_end; ++vertex_iter)
+				const PointOnSphere &vertex = *vertex_iter;
+				const Vector3D point(vertex.position_vector());
+				summed_position = summed_position + point;
+			}
+
+			// If the magnitude of the summed vertex position is zero then all
+			// the points averaged to zero. This most likely happens when the
+			// vertices roughly form a great circle arc - which should be quite unlikely.
+			if (summed_position.magSqrd() <= 0.0)
+			{
+				// Iterate through the polygon edges and sum the edge midpoints
+				// instead of the vertices in an attempt to get a different answer.
+				summed_position = Vector3D(0,0,0);
+				PolygonOnSphere::const_iterator edge_iter = polygon.begin();
+				const PolygonOnSphere::const_iterator edge_end = polygon.end();
+				for ( ; edge_iter != edge_end; ++edge_iter)
 				{
-					const PointOnSphere &vertex = *vertex_iter;
-					const Vector3D point(vertex.position_vector());
-					summed_position = summed_position + point;
+					const GreatCircleArc &edge = *edge_iter;
+					const Vector3D edge_mid_point(
+							(Vector3D(edge.start_point().position_vector()) +
+								Vector3D(edge.end_point().position_vector()))
+							.get_normalisation());
+					summed_position = summed_position + edge_mid_point;
 				}
 
-				// If the magnitude of the summed vertex position is zero then all
-				// the points averaged to zero. This most likely happens when the
-				// vertices roughly form a great circle arc - which should be quite unlikely.
 				if (summed_position.magSqrd() <= 0.0)
 				{
-					// Iterate through the polygon edges and sum the edge midpoints
-					// instead of the vertices in an attempt to get a different answer.
-					summed_position = Vector3D(0,0,0);
-					PolygonOnSphere::const_iterator edge_iter = polygon.begin();
-					const PolygonOnSphere::const_iterator edge_end = polygon.end();
-					for ( ; edge_iter != edge_end; ++edge_iter)
-					{
-						const GreatCircleArc &edge = *edge_iter;
-						const Vector3D edge_mid_point(
-								(Vector3D(edge.start_point().position_vector()) +
-									Vector3D(edge.end_point().position_vector()))
-								.get_normalisation());
-						summed_position = summed_position + edge_mid_point;
-					}
-
-					if (summed_position.magSqrd() <= 0.0)
-					{
-						// The edge midpoints summed to origin so just bail out and
-						// return the north pole.
-						// FIXME: Either all point-in-polygon tests will be wrong or they
-						// will all be right and either way is equally likely at this point.
-						summed_position = Vector3D(0, 0, 1);
-					}
+					// The edge midpoints summed to origin so just bail out and
+					// return the north pole.
+					// FIXME: Either all point-in-polygon tests will be wrong or they
+					// will all be right and either way is equally likely at this point.
+					summed_position = Vector3D(0, 0, 1);
 				}
-
-				// Return the centroid.
-				return summed_position.get_normalisation();
 			}
 
+			// Return the centroid.
+			return summed_position.get_normalisation();
+		}
 
-			/**
-			 * Returns the un-normalised normal (rotation axis) of the arc
-			 * joining the antipodal point of a polygon's centroid and the test point.
-			 *
-			 * If the arc is zero length or the points are antipodal to each other then
-			 * a normal to an arbitrary great circle passing through both points is returned.
-			 *
-			 * Note that @a antipodal_polygon_centroid is not necessarily normalised -
-			 * this is ok since we only need to generate a plane normal that is perpendicular.
-			 */
-			UnitVector3D
-			get_crossings_arc_plane_normal(
-					const UnitVector3D &crossing_arc_start_point,
-					const UnitVector3D &crossing_arc_end_point)
+
+		/**
+		 * Returns the un-normalised normal (rotation axis) of the arc
+		 * joining the antipodal point of a polygon's centroid and the test point.
+		 *
+		 * If the arc is zero length or the points are antipodal to each other then
+		 * a normal to an arbitrary great circle passing through both points is returned.
+		 *
+		 * Note that @a antipodal_polygon_centroid is not necessarily normalised -
+		 * this is ok since we only need to generate a plane normal that is perpendicular.
+		 */
+		UnitVector3D
+		get_crossings_arc_plane_normal(
+				const UnitVector3D &crossing_arc_start_point,
+				const UnitVector3D &crossing_arc_end_point)
+		{
+			const Vector3D arc_normal = cross(crossing_arc_start_point, crossing_arc_end_point);
+
+			if (arc_normal.magSqrd() <= 0 /*note: this is an epsilon test*/)
 			{
-				const Vector3D arc_normal = cross(crossing_arc_start_point, crossing_arc_end_point);
-
-				if (arc_normal.magSqrd() <= 0 /*note: this is an epsilon test*/)
-				{
-					// The arc end points are either the same or they are antipodal.
-					// In either case we can just pick any plane that passes through
-					// one of the points and it will also pass through the other point.
-					// The orientation of the plane will be arbitrary but that's ok because
-					// the arc is only used to test for polygon edge crossings and:
-					// 1) if the arc end points are the same then it will result in no
-					//    edge crossings regardless of the plane orientation, and
-					// 2) if the arc end points are antipodal then any arc joining them should
-					//    produce the same parity of edge crossings regardless of orientation.
-					return generate_perpendicular(crossing_arc_end_point);
-				}
-
-				return arc_normal.get_normalisation();
+				// The arc end points are either the same or they are antipodal.
+				// In either case we can just pick any plane that passes through
+				// one of the points and it will also pass through the other point.
+				// The orientation of the plane will be arbitrary but that's ok because
+				// the arc is only used to test for polygon edge crossings and:
+				// 1) if the arc end points are the same then it will result in no
+				//    edge crossings regardless of the plane orientation, and
+				// 2) if the arc end points are antipodal then any arc joining them should
+				//    produce the same parity of edge crossings regardless of orientation.
+				return generate_perpendicular(crossing_arc_end_point);
 			}
 
+			return arc_normal.get_normalisation();
+		}
 
-			/**
-			 * Returns true if @a test_point lies on the great circle arc defined by
-			 * @a arc_start_point, @a arc_rotation_axis and @a dot_arc_end_points.
-			 *
-			 * @pre the test point @a test_point must lie on the great circle, within a
-			 * suitable epsilon, defined by @a arc_rotation_axis.
-			 */
-			bool
-			if_point_lies_on_gc_does_it_also_lie_on_gca(
-					const UnitVector3D &arc_start_point,
-					const UnitVector3D &arc_rotation_axis,
-					const double &dot_arc_end_points,
-					const UnitVector3D &test_point)
+
+		/**
+		 * Returns true if @a test_point lies on the great circle arc defined by
+		 * @a arc_start_point, @a arc_rotation_axis and @a dot_arc_end_points.
+		 *
+		 * @pre the test point @a test_point must lie on the great circle, within a
+		 * suitable epsilon, defined by @a arc_rotation_axis.
+		 */
+		bool
+		if_point_lies_on_gc_does_it_also_lie_on_gca(
+				const UnitVector3D &arc_start_point,
+				const UnitVector3D &arc_rotation_axis,
+				const double &dot_arc_end_points,
+				const UnitVector3D &test_point)
+		{
+			// We are assured that the test point lies on the great circle that the
+			// arc lies on.
+			// So we just need to determine if the test point lies on the arc itself.
+			return
+				// Is the test point closer to the arc start point than the arc end point is...
+				dot(arc_start_point, test_point).dval() >= dot_arc_end_points &&
+				// Does the test point lie on the half-circle starting at the arc start point...
+				dot(cross(arc_start_point, test_point), arc_rotation_axis).dval() >= 0;
+		}
+
+
+		/**
+		 * Returns the intersection of the great circle arc @a gca and the
+		 * plane (passing through origin) with normal @a plane_normal.
+		 *
+		 * @pre the endpoints of the great circle arc @a gca must be on opposite
+		 * sides of the plane.
+		 * @pre the great circle arc @a gca must not be zero-length.
+		 */
+		UnitVector3D
+		if_plane_divides_gca_get_intersection_of_gca_and_plane(
+				const GreatCircleArc &gca,
+				const UnitVector3D &plane_normal)
+		{
+			const UnitVector3D &gca_start_point(gca.start_point().position_vector());
+			const UnitVector3D &gca_end_point(gca.end_point().position_vector());
+
+			// Determine the signed distances of the arc endpoints from the plane.
+			const double signed_distance_gca_start_to_plane =
+					dot(plane_normal, gca_start_point).dval();
+			const double signed_distance_gca_end_to_plane =
+					dot(plane_normal, gca_end_point).dval();
+
+			// See if the arc endpoints are antipodal.
+			const Vector3D gca_midpoint = Vector3D(gca_start_point) + Vector3D(gca_end_point);
+			if (gca_midpoint.magSqrd().dval() < 1e-6 /*equivalent to a magnitude of 1e-3*/)
 			{
-				// We are assured that the test point lies on the great circle that the
-				// arc lies on.
-				// So we just need to determine if the test point lies on the arc itself.
-				return
-					// Is the test point closer to the arc start point than the arc end point is...
-					dot(arc_start_point, test_point).dval() >= dot_arc_end_points &&
-					// Does the test point lie on the half-circle starting at the arc start point...
-					dot(cross(arc_start_point, test_point), arc_rotation_axis).dval() >= 0;
-			}
-
-
-			/**
-			 * Returns the intersection of the great circle arc @a gca and the
-			 * plane (passing through origin) with normal @a plane_normal.
-			 *
-			 * @pre the endpoints of the great circle arc @a gca must be on opposite
-			 * sides of the plane.
-			 * @pre the great circle arc @a gca must not be zero-length.
-			 */
-			UnitVector3D
-			if_plane_divides_gca_get_intersection_of_gca_and_plane(
-					const GreatCircleArc &gca,
-					const UnitVector3D &plane_normal)
-			{
-				const UnitVector3D &gca_start_point(gca.start_point().position_vector());
-				const UnitVector3D &gca_end_point(gca.end_point().position_vector());
-
-				// Determine the signed distances of the arc endpoints from the plane.
-				const double signed_distance_gca_start_to_plane =
-						dot(plane_normal, gca_start_point).dval();
-				const double signed_distance_gca_end_to_plane =
-						dot(plane_normal, gca_end_point).dval();
-
-				// See if the arc endpoints are antipodal.
-				const Vector3D gca_midpoint = Vector3D(gca_start_point) + Vector3D(gca_end_point);
-				if (gca_midpoint.magSqrd().dval() < 1e-6 /*equivalent to a magnitude of 1e-3*/)
-				{
-					// The arc endpoints are antipodal (shouldn't be able to get an arc
-					// that spans a full half-circle but it can happen within numerical tolerance).
-					// Because the points are antipodal the absolute value of their signed
-					// distances from any plane (passing through origin) will always be equal
-					// regardless of the orientation of the splitting plane.
-					// This means the intersection cannot be calculated using signed distance ratios.
-					// The solution is to divide the half-circle arc into two arcs of equal length
-					// and determine the intersection from those.
-					const UnitVector3D gca_midpoint_norm(cross(gca.rotation_axis(), gca_start_point));
+				// The arc endpoints are antipodal (shouldn't be able to get an arc
+				// that spans a full half-circle but it can happen within numerical tolerance).
+				// Because the points are antipodal the absolute value of their signed
+				// distances from any plane (passing through origin) will always be equal
+				// regardless of the orientation of the splitting plane.
+				// This means the intersection cannot be calculated using signed distance ratios.
+				// The solution is to divide the half-circle arc into two arcs of equal length
+				// and determine the intersection from those.
+				const UnitVector3D gca_midpoint_norm(cross(gca.rotation_axis(), gca_start_point));
 
 #if 0
-					// Determine the signed distance of the arc midpoint from the plane.
-					const double signed_distance_gca_mid_to_plane =
-							dot(plane_normal, gca_midpoint_norm).dval();
+				// Determine the signed distance of the arc midpoint from the plane.
+				const double signed_distance_gca_mid_to_plane =
+						dot(plane_normal, gca_midpoint_norm).dval();
 #endif
 
-					// Find out which sides of the plane the arc endpoints and midpoint are.
-					// Note that we must use the same comparisons as the main function -
-					// FIXME: make this more obvious in the code somehow.
-					const bool is_arc_start_on_negative_side_of_plane =
-							dot(plane_normal, gca_start_point).dval() < 0;
-					const bool is_arc_mid_on_negative_side_of_plane =
-							dot(plane_normal, gca_midpoint_norm).dval() < 0;
+				// Find out which sides of the plane the arc endpoints and midpoint are.
+				// Note that we must use the same comparisons as the main function -
+				// FIXME: make this more obvious in the code somehow.
+				const bool is_arc_start_on_negative_side_of_plane =
+						dot(plane_normal, gca_start_point).dval() < 0;
+				const bool is_arc_mid_on_negative_side_of_plane =
+						dot(plane_normal, gca_midpoint_norm).dval() < 0;
 #if 0
-					const bool is_arc_end_on_negative_side_of_plane =
-							dot(plane_normal, gca_end_point).dval() < 0;
+				const bool is_arc_end_on_negative_side_of_plane =
+						dot(plane_normal, gca_end_point).dval() < 0;
 #endif
 
-					// If the plane divides the first arc.
-					if (is_arc_start_on_negative_side_of_plane ^
-						is_arc_mid_on_negative_side_of_plane)
-					{
-						const GreatCircleArc first_gca = GreatCircleArc::create(
-								PointOnSphere(gca_start_point), PointOnSphere(gca_midpoint_norm));
-
-						return if_plane_divides_gca_get_intersection_of_gca_and_plane(
-								first_gca, plane_normal);
-					}
-					// ...else the plane must divide the second arc (we know this because the
-					// precondition to this function is the plane must divide the original arc).
-
-					const GreatCircleArc second_gca = GreatCircleArc::create(
-							PointOnSphere(gca_midpoint_norm), PointOnSphere(gca_end_point));
+				// If the plane divides the first arc.
+				if (is_arc_start_on_negative_side_of_plane ^
+					is_arc_mid_on_negative_side_of_plane)
+				{
+					const GreatCircleArc first_gca = GreatCircleArc::create(
+							PointOnSphere(gca_start_point), PointOnSphere(gca_midpoint_norm));
 
 					return if_plane_divides_gca_get_intersection_of_gca_and_plane(
-							second_gca, plane_normal);
+							first_gca, plane_normal);
 				}
+				// ...else the plane must divide the second arc (we know this because the
+				// precondition to this function is the plane must divide the original arc).
 
-				// The denominator of the ratios used to interpolate the arc endpoints.
-				const real_t denom =
-						signed_distance_gca_start_to_plane - signed_distance_gca_end_to_plane;
-				if (denom == 0 /*this is an epsilon test*/)
-				{
-					// The great circle arc is so closely aligned with the plane that we cannot
-					// use signed distance ratios to determine the intersection.
-					// Arbitrarily choose the arc midpoint as the intersection - this is ok
-					// because if the crossings-arc endpoint (the test point for the point-in-poly
-					// test) lands near the arc then we are testing a point-in-poly near a polygon
-					// edge (the arc) and the result is allowed to be arbitrary - but if the
-					// crossings-arc endpoint is not near the arc then the point-in-poly result
-					// should *not* be arbitrary (because it should be clear whether the point is
-					// inside or outside the polygon) but our arbitrary choice of intersection
-					// as the arc midpoint should not affect the point-in-poly test in this case
-					// (because the intersection point will be clearly inside or outside the
-					// crossings-arc - that test is not done in this function though).
+				const GreatCircleArc second_gca = GreatCircleArc::create(
+						PointOnSphere(gca_midpoint_norm), PointOnSphere(gca_end_point));
 
-					// Return the arc midpoint.
-					// We know the midpoint is not near the origin (within epsilon) since
-					// we tested above - so we know we can normalise it.
-					return gca_midpoint.get_normalisation();
-				}
-				const real_t inv_denom = 1.0 / denom;
-
-				// Interpolate the arc endpoints based on the signed distances and then
-				// normalise to get a unit vector.
-				// It should be safe to normalise the result because we've already determined
-				// that the arc end points are *not* antipodal and hence a linear interpolation
-				// of them should not be near the origin (within epsilon).
-				return
-					((signed_distance_gca_start_to_plane * inv_denom) * gca_end_point -
-						(signed_distance_gca_end_to_plane * inv_denom) * gca_start_point)
-					.get_normalisation();
+				return if_plane_divides_gca_get_intersection_of_gca_and_plane(
+						second_gca, plane_normal);
 			}
 
-
-			/**
-			 * Returns the number of polygon edges crossed by the great circle arc joining
-			 * @a crossing_arc_start_point and @a crossing_arc_end_point.
-			 *
-			 * The sequence of edges begins at @a polygon_edges_begin and ends
-			 * at @a polygon_edges_end. Note that the sequence of edges must *not* wrap
-			 * past the last edge of the polygon.
-			 *
-			 * @a crossing_arc_plane_normal is the plane normal of the great circle
-			 * passing through the crossing arc points.
-			 * If the arc is zero length or the arc endpoints are antipodal then the plane normal
-			 * can be any plane that passes through one (and hence both) of the arc points.
-			 */
-			unsigned int
-			get_num_polygon_edges_crossed(
-					const PolygonOnSphere::const_iterator &polygon_edges_begin,
-					const PolygonOnSphere::const_iterator &polygon_edges_end,
-					const UnitVector3D &crossing_arc_start_point,
-					const UnitVector3D &crossing_arc_end_point,
-					const UnitVector3D &crossing_arc_plane_normal,
-					const double &dot_crossings_arc_end_points)
+			// The denominator of the ratios used to interpolate the arc endpoints.
+			const real_t denom =
+					signed_distance_gca_start_to_plane - signed_distance_gca_end_to_plane;
+			if (denom == 0 /*this is an epsilon test*/)
 			{
-				if (polygon_edges_begin == polygon_edges_end)
-				{
-					return 0;
-				}
+				// The great circle arc is so closely aligned with the plane that we cannot
+				// use signed distance ratios to determine the intersection.
+				// Arbitrarily choose the arc midpoint as the intersection - this is ok
+				// because if the crossings-arc endpoint (the test point for the point-in-poly
+				// test) lands near the arc then we are testing a point-in-poly near a polygon
+				// edge (the arc) and the result is allowed to be arbitrary - but if the
+				// crossings-arc endpoint is not near the arc then the point-in-poly result
+				// should *not* be arbitrary (because it should be clear whether the point is
+				// inside or outside the polygon) but our arbitrary choice of intersection
+				// as the arc midpoint should not affect the point-in-poly test in this case
+				// (because the intersection point will be clearly inside or outside the
+				// crossings-arc - that test is not done in this function though).
 
-				unsigned int num_polygon_edges_crossed = 0;
-				PolygonOnSphere::const_iterator polygon_edge_iter = polygon_edges_begin;
+				// Return the arc midpoint.
+				// We know the midpoint is not near the origin (within epsilon) since
+				// we tested above - so we know we can normalise it.
+				return gca_midpoint.get_normalisation();
+			}
+			const real_t inv_denom = 1.0 / denom;
 
-				//
-				// If the arc intersects a polygon vertex we need to make sure the
-				// number of crossings is counted correctly for the two polygon edges
-				// adjacent to the intersected polygon vertex:
-				// (1) counted once if crossings arc goes from inside to outside or outside
-				//     to inside polygon,
-				// (2) counted twice if crossings arc goes from inside to inside or outside
-				//     to outside polygon.
-				// This is done by determining which side of the arc plane each polygon vertex
-				// is on and only incrementing the crossings counter whenever the status of
-				// two vertices of a polygon edge differ.
-				//
+			// Interpolate the arc endpoints based on the signed distances and then
+			// normalise to get a unit vector.
+			// It should be safe to normalise the result because we've already determined
+			// that the arc end points are *not* antipodal and hence a linear interpolation
+			// of them should not be near the origin (within epsilon).
+			return
+				((signed_distance_gca_start_to_plane * inv_denom) * gca_end_point -
+					(signed_distance_gca_end_to_plane * inv_denom) * gca_start_point)
+				.get_normalisation();
+		}
 
-				// Determine which side of arc plane the start vertex of the first edge is on.
+
+		/**
+		 * Returns the number of polygon edges crossed by the great circle arc joining
+		 * @a crossing_arc_start_point and @a crossing_arc_end_point.
+		 *
+		 * The sequence of edges begins at @a polygon_edges_begin and ends
+		 * at @a polygon_edges_end. Note that the sequence of edges must *not* wrap
+		 * past the last edge of the polygon.
+		 *
+		 * @a crossing_arc_plane_normal is the plane normal of the great circle
+		 * passing through the crossing arc points.
+		 * If the arc is zero length or the arc endpoints are antipodal then the plane normal
+		 * can be any plane that passes through one (and hence both) of the arc points.
+		 */
+		unsigned int
+		get_num_polygon_edges_crossed(
+				const PolygonOnSphere::const_iterator &polygon_edges_begin,
+				const PolygonOnSphere::const_iterator &polygon_edges_end,
+				const UnitVector3D &crossing_arc_start_point,
+				const UnitVector3D &crossing_arc_end_point,
+				const UnitVector3D &crossing_arc_plane_normal,
+				const double &dot_crossings_arc_end_points)
+		{
+			if (polygon_edges_begin == polygon_edges_end)
+			{
+				return 0;
+			}
+
+			unsigned int num_polygon_edges_crossed = 0;
+			PolygonOnSphere::const_iterator polygon_edge_iter = polygon_edges_begin;
+
+			//
+			// If the arc intersects a polygon vertex we need to make sure the
+			// number of crossings is counted correctly for the two polygon edges
+			// adjacent to the intersected polygon vertex:
+			// (1) counted once if crossings arc goes from inside to outside or outside
+			//     to inside polygon,
+			// (2) counted twice if crossings arc goes from inside to inside or outside
+			//     to outside polygon.
+			// This is done by determining which side of the arc plane each polygon vertex
+			// is on and only incrementing the crossings counter whenever the status of
+			// two vertices of a polygon edge differ.
+			//
+
+			// Determine which side of arc plane the start vertex of the first edge is on.
+			// Note: this is *not* an epsilon test.
+			const GreatCircleArc &first_edge = *polygon_edge_iter;
+			bool is_edge_start_on_negative_side_of_crossings_arc_plane =
+					dot(crossing_arc_plane_normal,
+						first_edge.start_point().position_vector()).dval() < 0;
+
+			// Iterate over the polygon edges in the sequence.
+			do
+			{
+				const GreatCircleArc &edge = *polygon_edge_iter;
+				const UnitVector3D &edge_end_point = edge.end_point().position_vector();
+
+				// Determine which side of arc plane the end vertex of the current edge is on.
 				// Note: this is *not* an epsilon test.
-				const GreatCircleArc &first_edge = *polygon_edge_iter;
-				bool is_edge_start_on_negative_side_of_crossings_arc_plane =
-						dot(crossing_arc_plane_normal,
-							first_edge.start_point().position_vector()).dval() < 0;
+				// Note: this should be the exact same comparison as with the start vertex.
+				const bool is_edge_end_on_negative_side_of_crossings_arc_plane =
+						dot(crossing_arc_plane_normal, edge_end_point).dval() < 0;
 
-				// Iterate over the polygon edges in the sequence.
-				do
+				// If the start and end of the current edge are on different sides
+				// of the arc plane then it's possible we have a crossing.
+				//
+				// NOTE: This test must return true *only* if the signed distance of
+				// one vertex is "< 0" and the other is ">= 0". And this cannot be done
+				// by multiplying the signed distances and testing for "<=0" - in other
+				// words each signed distance must be tested individually and then the
+				// *boolean* results should be compared.
+				if (is_edge_start_on_negative_side_of_crossings_arc_plane ^
+					is_edge_end_on_negative_side_of_crossings_arc_plane)
 				{
-					const GreatCircleArc &edge = *polygon_edge_iter;
-					const UnitVector3D &edge_end_point = edge.end_point().position_vector();
-
-					// Determine which side of arc plane the end vertex of the current edge is on.
-					// Note: this is *not* an epsilon test.
-					// Note: this should be the exact same comparison as with the start vertex.
-					const bool is_edge_end_on_negative_side_of_crossings_arc_plane =
-							dot(crossing_arc_plane_normal, edge_end_point).dval() < 0;
-
-					// If the start and end of the current edge are on different sides
-					// of the arc plane then it's possible we have a crossing.
-					//
-					// NOTE: This test must return true *only* if the signed distance of
-					// one vertex is "< 0" and the other is ">= 0". And this cannot be done
-					// by multiplying the signed distances and testing for "<=0" - in other
-					// words each signed distance must be tested individually and then the
-					// *boolean* results should be compared.
-					if (is_edge_start_on_negative_side_of_crossings_arc_plane ^
-						is_edge_end_on_negative_side_of_crossings_arc_plane)
+					// It's possible that the polygon edge (GCA) is classified as zero
+					// length (and hence has no rotation axis) but the edge points could
+					// still be separated by a distance less than epsilon and hence end up
+					// on different sides of the crossing plane (which effectively means the
+					// edge end points lie, within epsilon, on the crossing plane).
+					// In this case we can test for a crossing by simply determining if one
+					// of the edge points lies on the crossing arc.
+					if (edge.is_zero_length())
 					{
-						// It's possible that the polygon edge (GCA) is classified as zero
-						// length (and hence has no rotation axis) but the edge points could
-						// still be separated by a distance less than epsilon and hence end up
-						// on different sides of the crossing plane (which effectively means the
-						// edge end points lie, within epsilon, on the crossing plane).
-						// In this case we can test for a crossing by simply determining if one
-						// of the edge points lies on the crossing arc.
-						if (edge.is_zero_length())
+						if (if_point_lies_on_gc_does_it_also_lie_on_gca(
+								crossing_arc_start_point,
+								crossing_arc_plane_normal,
+								dot_crossings_arc_end_points,
+								edge_end_point))
 						{
-							if (if_point_lies_on_gc_does_it_also_lie_on_gca(
-									crossing_arc_start_point,
-									crossing_arc_plane_normal,
-									dot_crossings_arc_end_points,
-									edge_end_point))
-							{
-								++num_polygon_edges_crossed;
-							}
+							++num_polygon_edges_crossed;
 						}
-						else // The polygon edge (GCA) has a rotation axis (plane normal)...
+					}
+					else // The polygon edge (GCA) has a rotation axis (plane normal)...
+					{
+						const UnitVector3D &edge_plane_normal = edge.rotation_axis();
+
+						// Get a measure of how closely aligned the polygon edge arc
+						// is relative to the crossings arc.
+						const double crossings_arc_normal_dot_edge_normal =
+								dot(crossing_arc_plane_normal, edge_plane_normal).dval();
+
+						// If the polygon edge is *not* too closely aligned with the crossing
+						// arc then we can see if the polygon edge plane separates the crossing
+						// arc end points.
+						// NOTE: choosing a larger epsilon than default to ensure we don't
+						// have numerical issues such as both crossing-arc endpoints calculated
+						// to be on the same side of polygon edge plane (and hence no crossing
+						// detected) when it's quite clear that a crossing has occurred.
+						// We just want to avoid the more expensive test that is required when
+						// the planes align so the actual epsilon we use is not important
+						// (it's just used to funnel the majority of relative plane
+						// orientations that occur in practice, ie not aligned, into a
+						// less expensive test).
+						if (crossings_arc_normal_dot_edge_normal <
+								MAX_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE &&
+							crossings_arc_normal_dot_edge_normal >
+								MIN_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE)
 						{
-							const UnitVector3D &edge_plane_normal = edge.rotation_axis();
-
-							// Get a measure of how closely aligned the polygon edge arc
-							// is relative to the crossings arc.
-							const double crossings_arc_normal_dot_edge_normal =
-									dot(crossing_arc_plane_normal, edge_plane_normal).dval();
-
-							// If the polygon edge is *not* too closely aligned with the crossing
-							// arc then we can see if the polygon edge plane separates the crossing
-							// arc end points.
-							// NOTE: choosing a larger epsilon than default to ensure we don't
-							// have numerical issues such as both crossing-arc endpoints calculated
-							// to be on the same side of polygon edge plane (and hence no crossing
-							// detected) when it's quite clear that a crossing has occurred.
-							// We just want to avoid the more expensive test that is required when
-							// the planes align so the actual epsilon we use is not important
-							// (it's just used to funnel the majority of relative plane
-							// orientations that occur in practice, ie not aligned, into a
-							// less expensive test).
-							if (crossings_arc_normal_dot_edge_normal <
-									MAX_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE &&
-								crossings_arc_normal_dot_edge_normal >
-									MIN_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE)
+							// We now know that the two polygon edge endpoints are
+							// on opposite sides of the crossings arc plane.
+							// So now the two arcs intersect only if:
+							// 1) both endpoints of the crossings-arc are on opposite sides of
+							//    the polygon edge plane, *and*
+							// 2) the start points of each arc are on different sides of
+							//    the other arc's plane (eg, if the polygon edge start point
+							//    is on the *negative* side of the crossings-arc plane then
+							//    the crossings-arc start point must be on the *positive* side
+							//    of the polygon edge plane).
+							// Condition (2) is required so we don't return an intersection
+							// when the arcs are on the opposite sides of the globe (even
+							// though the plane of each arc divides the other arc's endpoints).
+							if (is_edge_start_on_negative_side_of_crossings_arc_plane)
 							{
-								// We now know that the two polygon edge endpoints are
-								// on opposite sides of the crossings arc plane.
-								// So now the two arcs intersect only if:
-								// 1) both endpoints of the crossings-arc are on opposite sides of
-								//    the polygon edge plane, *and*
-								// 2) the start points of each arc are on different sides of
-								//    the other arc's plane (eg, if the polygon edge start point
-								//    is on the *negative* side of the crossings-arc plane then
-								//    the crossings-arc start point must be on the *positive* side
-								//    of the polygon edge plane).
-								// Condition (2) is required so we don't return an intersection
-								// when the arcs are on the opposite sides of the globe (even
-								// though the plane of each arc divides the other arc's endpoints).
-								if (is_edge_start_on_negative_side_of_crossings_arc_plane)
+								// The crossings-arc endpoints must be on opposite sides of
+								// the edge plane *and* the crossings-arc start point must
+								// be on the *positive* side since the polygon edge start point
+								// is on the *negative* side of the crossings-arc plane.
+								if (dot(edge_plane_normal, crossing_arc_start_point).dval() >= 0 &&
+									dot(edge_plane_normal, crossing_arc_end_point).dval() <= 0)
 								{
-									// The crossings-arc endpoints must be on opposite sides of
-									// the edge plane *and* the crossings-arc start point must
-									// be on the *positive* side since the polygon edge start point
-									// is on the *negative* side of the crossings-arc plane.
-									if (dot(edge_plane_normal, crossing_arc_start_point).dval() >= 0 &&
-										dot(edge_plane_normal, crossing_arc_end_point).dval() <= 0)
-									{
-										++num_polygon_edges_crossed;
-									}
-								}
-								else // edge start point is on positive side of crossings-arc plane...
-								{
-									// The crossings-arc endpoints must be on opposite sides of
-									// the edge plane *and* the crossings-arc start point must
-									// be on the *negative* side since the polygon edge start point
-									// is on the *positive* side of the crossings-arc plane.
-									if (dot(edge_plane_normal, crossing_arc_start_point).dval() <= 0 &&
-										dot(edge_plane_normal, crossing_arc_end_point).dval() >= 0)
-									{
-										++num_polygon_edges_crossed;
-									}
+									++num_polygon_edges_crossed;
 								}
 							}
-							else // polygon edge is too closely aligned with the crossing arc...
+							else // edge start point is on positive side of crossings-arc plane...
 							{
-								// Since the polygon edge is too closely aligned with the crossing
-								// arc plane we cannot use the polygon edge plane to determine
-								// if an intersection occurred.
-								// Instead determine the point where the crossing plane intersects
-								// the polygon edge by using the calculated signed distances
-								// of the crossing arc endpoints from the polygon edge plane and
-								// then interpolating between them based on the distance ratio.
-
-								// NOTE: We've already calculated the signed distances above
-								// but we calculate them again here because we should only
-								// get here rarely and we want to avoid storing and copying
-								// the signed distance in each iteration of the main loop
-								// (like we do the edge start flags) since that adds an overhead
-								// to the non-rare cases.
-								const UnitVector3D polygon_edge_intersects_crossings_arc_plane =
-										if_plane_divides_gca_get_intersection_of_gca_and_plane(
-												edge, crossing_arc_plane_normal);
-
-								// If the intersection lies on the crossings-arc then
-								// increment the number of polygon edges crossed.
-								if (if_point_lies_on_gc_does_it_also_lie_on_gca(
-										crossing_arc_start_point,
-										crossing_arc_plane_normal,
-										dot_crossings_arc_end_points,
-										polygon_edge_intersects_crossings_arc_plane))
+								// The crossings-arc endpoints must be on opposite sides of
+								// the edge plane *and* the crossings-arc start point must
+								// be on the *negative* side since the polygon edge start point
+								// is on the *positive* side of the crossings-arc plane.
+								if (dot(edge_plane_normal, crossing_arc_start_point).dval() <= 0 &&
+									dot(edge_plane_normal, crossing_arc_end_point).dval() >= 0)
 								{
 									++num_polygon_edges_crossed;
 								}
 							}
 						}
+						else // polygon edge is too closely aligned with the crossing arc...
+						{
+							// Since the polygon edge is too closely aligned with the crossing
+							// arc plane we cannot use the polygon edge plane to determine
+							// if an intersection occurred.
+							// Instead determine the point where the crossing plane intersects
+							// the polygon edge by using the calculated signed distances
+							// of the crossing arc endpoints from the polygon edge plane and
+							// then interpolating between them based on the distance ratio.
+
+							// NOTE: We've already calculated the signed distances above
+							// but we calculate them again here because we should only
+							// get here rarely and we want to avoid storing and copying
+							// the signed distance in each iteration of the main loop
+							// (like we do the edge start flags) since that adds an overhead
+							// to the non-rare cases.
+							const UnitVector3D polygon_edge_intersects_crossings_arc_plane =
+									if_plane_divides_gca_get_intersection_of_gca_and_plane(
+											edge, crossing_arc_plane_normal);
+
+							// If the intersection lies on the crossings-arc then
+							// increment the number of polygon edges crossed.
+							if (if_point_lies_on_gc_does_it_also_lie_on_gca(
+									crossing_arc_start_point,
+									crossing_arc_plane_normal,
+									dot_crossings_arc_end_points,
+									polygon_edge_intersects_crossings_arc_plane))
+							{
+								++num_polygon_edges_crossed;
+							}
+						}
 					}
-
-					// The start point of the next edge is the end point of the current edge.
-					is_edge_start_on_negative_side_of_crossings_arc_plane =
-							is_edge_end_on_negative_side_of_crossings_arc_plane;
-				}
-				// The sequence of edges will not wrap past the last polygon edge.
-				// If there is a sequence that does wrap it will be divided into two
-				// sequences by the caller.
-				while (++polygon_edge_iter != polygon_edges_end);
-
-				return num_polygon_edges_crossed;
-			}
-
-
-			//! Keeps track of an iteration range of polygon edges.
-			class EdgeSequence
-			{
-			public:
-				EdgeSequence(
-						const PolygonOnSphere::const_iterator &begin_,
-						const PolygonOnSphere::const_iterator &end_) :
-					begin(begin_),
-					end(end_)
-				{  }
-
-				PolygonOnSphere::const_iterator begin;
-				PolygonOnSphere::const_iterator end;
-			};
-
-			//! Typedef for a list of polygon edge ranges.
-			typedef std::vector<EdgeSequence> edge_sequence_list_type;
-
-
-			/**
-			 * Returns the number of polygon edges crossed by the arc defined by
-			 * @a crossings_arc_start_point, @a crossings_arc_end_point and
-			 * @a dot_crossings_arc_end_points.
-			 *
-			 * The polygon edges are defined by a sequence of edge sequences
-			 * @a edge_sequences_begin and @a edge_sequences_end.
-			 */
-			unsigned int
-			get_num_polygon_edges_crossed(
-					const edge_sequence_list_type::const_iterator &edge_sequences_begin,
-					const edge_sequence_list_type::const_iterator &edge_sequences_end,
-					const UnitVector3D &crossings_arc_start_point,
-					const UnitVector3D &crossings_arc_end_point,
-					const double &dot_crossings_arc_end_points)
-			{
-				const UnitVector3D crossings_arc_plane_normal = get_crossings_arc_plane_normal(
-						crossings_arc_start_point, crossings_arc_end_point);
-
-				unsigned int num_polygon_edges_crossed = 0;
-
-				// Iterate over the edge sequences and see how many edges cross the crossings-arc.
-				edge_sequence_list_type::const_iterator edge_sequences_iter = edge_sequences_begin;
-				for ( ; edge_sequences_iter != edge_sequences_end; ++edge_sequences_iter)
-				{
-					const EdgeSequence &edge_sequence = *edge_sequences_iter;
-
-					num_polygon_edges_crossed += get_num_polygon_edges_crossed(
-							edge_sequence.begin, edge_sequence.end,
-							crossings_arc_start_point, crossings_arc_end_point,
-							crossings_arc_plane_normal, dot_crossings_arc_end_points);
 				}
 
-				return num_polygon_edges_crossed;
+				// The start point of the next edge is the end point of the current edge.
+				is_edge_start_on_negative_side_of_crossings_arc_plane =
+						is_edge_end_on_negative_side_of_crossings_arc_plane;
+			}
+			// The sequence of edges will not wrap past the last polygon edge.
+			// If there is a sequence that does wrap it will be divided into two
+			// sequences by the caller.
+			while (++polygon_edge_iter != polygon_edges_end);
+
+			return num_polygon_edges_crossed;
+		}
+
+
+		//! Keeps track of an iteration range of polygon edges.
+		class EdgeSequence
+		{
+		public:
+			EdgeSequence(
+					const PolygonOnSphere::const_iterator &begin_,
+					const PolygonOnSphere::const_iterator &end_) :
+				begin(begin_),
+				end(end_)
+			{  }
+
+			PolygonOnSphere::const_iterator begin;
+			PolygonOnSphere::const_iterator end;
+		};
+
+		//! Typedef for a list of polygon edge ranges.
+		typedef std::vector<EdgeSequence> edge_sequence_list_type;
+
+
+		/**
+		 * Returns the number of polygon edges crossed by the arc defined by
+		 * @a crossings_arc_start_point, @a crossings_arc_end_point and
+		 * @a dot_crossings_arc_end_points.
+		 *
+		 * The polygon edges are defined by a sequence of edge sequences
+		 * @a edge_sequences_begin and @a edge_sequences_end.
+		 */
+		unsigned int
+		get_num_polygon_edges_crossed(
+				const edge_sequence_list_type::const_iterator &edge_sequences_begin,
+				const edge_sequence_list_type::const_iterator &edge_sequences_end,
+				const UnitVector3D &crossings_arc_start_point,
+				const UnitVector3D &crossings_arc_end_point,
+				const double &dot_crossings_arc_end_points)
+		{
+			const UnitVector3D crossings_arc_plane_normal = get_crossings_arc_plane_normal(
+					crossings_arc_start_point, crossings_arc_end_point);
+
+			unsigned int num_polygon_edges_crossed = 0;
+
+			// Iterate over the edge sequences and see how many edges cross the crossings-arc.
+			edge_sequence_list_type::const_iterator edge_sequences_iter = edge_sequences_begin;
+			for ( ; edge_sequences_iter != edge_sequences_end; ++edge_sequences_iter)
+			{
+				const EdgeSequence &edge_sequence = *edge_sequences_iter;
+
+				num_polygon_edges_crossed += get_num_polygon_edges_crossed(
+						edge_sequence.begin, edge_sequence.end,
+						crossings_arc_start_point, crossings_arc_end_point,
+						crossings_arc_plane_normal, dot_crossings_arc_end_points);
 			}
 
+			return num_polygon_edges_crossed;
+		}
 
-			/**
-			 * Returns the coverage of polygon edges as a min/max range of dot products to a point.
-			 *
-			 * The polygon edges are defined by a sequence of edge sequences of @a edge_sequences.
-			 */
-			std::pair< double/*min dot product*/, double/*max dot product*/ >
-			get_dot_product_range_of_polygon_edges_to_point(
-					const edge_sequence_list_type &edge_sequences,
-					const UnitVector3D &point)
+
+		/**
+		 * Returns the coverage of polygon edges as a min/max range of dot products to a point.
+		 *
+		 * The polygon edges are defined by a sequence of edge sequences of @a edge_sequences.
+		 */
+		std::pair< double/*min dot product*/, double/*max dot product*/ >
+		get_dot_product_range_of_polygon_edges_to_point(
+				const edge_sequence_list_type &edge_sequences,
+				const UnitVector3D &point)
+		{
+			double min_dot_product = 1.0;
+			double max_dot_product = -1.0;
+
+			// Iterate over the edge sequences.
+			BOOST_FOREACH(const EdgeSequence &edge_sequence, edge_sequences)
 			{
-				double min_dot_product = 1.0;
-				double max_dot_product = -1.0;
-
-				// Iterate over the edge sequences.
-				BOOST_FOREACH(const EdgeSequence &edge_sequence, edge_sequences)
+				// Iterate over the polygon edges to be tested for intersection.
+				PolygonOnSphere::const_iterator polygon_edge_iter = edge_sequence.begin;
+				for ( ; polygon_edge_iter != edge_sequence.end; ++polygon_edge_iter)
 				{
-					// Iterate over the polygon edges to be tested for intersection.
-					PolygonOnSphere::const_iterator polygon_edge_iter = edge_sequence.begin;
-					for ( ; polygon_edge_iter != edge_sequence.end; ++polygon_edge_iter)
+					const GreatCircleArc &edge = *polygon_edge_iter;
+
+					const UnitVector3D &edge_start_point = edge.start_point().position_vector();
+					const UnitVector3D &edge_end_point = edge.end_point().position_vector();
+
+					const double edge_start_dot_polygon_centroid_antipodal =
+							dot(edge_start_point, point).dval();
+					const double edge_end_dot_polygon_centroid_antipodal =
+							dot(edge_end_point, point).dval();
+
+					// See if the polygon edge arc endpoints are closer/further than
+					// the current closest/furthest so far.
+					if (edge_start_dot_polygon_centroid_antipodal > max_dot_product)
 					{
-						const GreatCircleArc &edge = *polygon_edge_iter;
+						max_dot_product = edge_start_dot_polygon_centroid_antipodal;
+					}
+					if (edge_start_dot_polygon_centroid_antipodal < min_dot_product)
+					{
+						min_dot_product = edge_start_dot_polygon_centroid_antipodal;
+					}
+					if (edge_end_dot_polygon_centroid_antipodal > max_dot_product)
+					{
+						max_dot_product = edge_end_dot_polygon_centroid_antipodal;
+					}
+					if (edge_end_dot_polygon_centroid_antipodal < min_dot_product)
+					{
+						min_dot_product = edge_end_dot_polygon_centroid_antipodal;
+					}
 
-						const UnitVector3D &edge_start_point = edge.start_point().position_vector();
-						const UnitVector3D &edge_end_point = edge.end_point().position_vector();
+					if (edge.is_zero_length())
+					{
+						continue;
+					}
 
-						const double edge_start_dot_polygon_centroid_antipodal =
-								dot(edge_start_point, point).dval();
-						const double edge_end_dot_polygon_centroid_antipodal =
-								dot(edge_end_point, point).dval();
+					// Polygon edge is not zero length and hence has a rotation axis...
+					const UnitVector3D &edge_plane_normal = edge.rotation_axis();
 
-						// See if the polygon edge arc endpoints are closer/further than
-						// the current closest/furthest so far.
-						if (edge_start_dot_polygon_centroid_antipodal > max_dot_product)
+					const Vector3D polygon_centroid_antipodal_cross_edge_plane_normal =
+							cross(point, edge_plane_normal);
+					if (polygon_centroid_antipodal_cross_edge_plane_normal.magSqrd() <= 0)
+					{
+						// The polygon edge rotation axis is aligned, within numerical precision,
+						// with the polygon centroid/antipodal axis. Therefore the dot product
+						// distance of all points on the polygon edge to the polygon centroid
+						// antipodal is the same (within numerical precision).
+						// And we've already covered this case above.
+						// The issue of precision is covered below where we subtract/add an
+						// epsilon to the min/max dot product to expand the region covered
+						// by the polygon edges slightly.
+						continue;
+					}
+
+					// See if the polygon edge arc forms a local minima or maxima between
+					// its endpoints. This happens if its endpoints are on opposite sides
+					// of the dividing plane.
+					const bool edge_start_point_on_negative_side = dot(
+							polygon_centroid_antipodal_cross_edge_plane_normal,
+							edge_start_point).dval() <= 0;
+					const bool edge_end_point_on_negative_side = dot(
+							polygon_centroid_antipodal_cross_edge_plane_normal,
+							edge_end_point).dval() <= 0;
+
+					// If endpoints on opposite sides of the plane.
+					if (edge_start_point_on_negative_side ^ edge_end_point_on_negative_side)
+					{
+						if (edge_start_point_on_negative_side)
 						{
-							max_dot_product = edge_start_dot_polygon_centroid_antipodal;
-						}
-						if (edge_start_dot_polygon_centroid_antipodal < min_dot_product)
-						{
-							min_dot_product = edge_start_dot_polygon_centroid_antipodal;
-						}
-						if (edge_end_dot_polygon_centroid_antipodal > max_dot_product)
-						{
-							max_dot_product = edge_end_dot_polygon_centroid_antipodal;
-						}
-						if (edge_end_dot_polygon_centroid_antipodal < min_dot_product)
-						{
-							min_dot_product = edge_end_dot_polygon_centroid_antipodal;
-						}
+							// The arc forms a local maxima...
 
-						if (edge.is_zero_length())
-						{
-							continue;
-						}
-
-						// Polygon edge is not zero length and hence has a rotation axis...
-						const UnitVector3D &edge_plane_normal = edge.rotation_axis();
-
-						const Vector3D polygon_centroid_antipodal_cross_edge_plane_normal =
-								cross(point, edge_plane_normal);
-						if (polygon_centroid_antipodal_cross_edge_plane_normal.magSqrd() <= 0)
-						{
-							// The polygon edge rotation axis is aligned, within numerical precision,
-							// with the polygon centroid/antipodal axis. Therefore the dot product
-							// distance of all points on the polygon edge to the polygon centroid
-							// antipodal is the same (within numerical precision).
-							// And we've already covered this case above.
-							// The issue of precision is covered below where we subtract/add an
-							// epsilon to the min/max dot product to expand the region covered
-							// by the polygon edges slightly.
-							continue;
-						}
-
-						// See if the polygon edge arc forms a local minima or maxima between
-						// its endpoints. This happens if its endpoints are on opposite sides
-						// of the dividing plane.
-						const bool edge_start_point_on_negative_side = dot(
-								polygon_centroid_antipodal_cross_edge_plane_normal,
-								edge_start_point).dval() <= 0;
-						const bool edge_end_point_on_negative_side = dot(
-								polygon_centroid_antipodal_cross_edge_plane_normal,
-								edge_end_point).dval() <= 0;
-
-						// If endpoints on opposite sides of the plane.
-						if (edge_start_point_on_negative_side ^ edge_end_point_on_negative_side)
-						{
-							if (edge_start_point_on_negative_side)
+							const UnitVector3D maxima_point = cross(
+									polygon_centroid_antipodal_cross_edge_plane_normal,
+									edge_plane_normal)
+								.get_normalisation();
+							const double maxima_point_dot_polygon_centroid_antipodal =
+									dot(maxima_point, point).dval();
+							// See if the current arc is the furthest so far from the
+							// polygon centroid antipodal point.
+							if (maxima_point_dot_polygon_centroid_antipodal < min_dot_product)
 							{
-								// The arc forms a local maxima...
-
-								const UnitVector3D maxima_point = cross(
-										polygon_centroid_antipodal_cross_edge_plane_normal,
-										edge_plane_normal)
-									.get_normalisation();
-								const double maxima_point_dot_polygon_centroid_antipodal =
-										dot(maxima_point, point).dval();
-								// See if the current arc is the furthest so far from the
-								// polygon centroid antipodal point.
-								if (maxima_point_dot_polygon_centroid_antipodal < min_dot_product)
-								{
-									min_dot_product = maxima_point_dot_polygon_centroid_antipodal;
-								}
+								min_dot_product = maxima_point_dot_polygon_centroid_antipodal;
 							}
-							else
-							{
-								// The arc forms a local minima...
+						}
+						else
+						{
+							// The arc forms a local minima...
 
-								const UnitVector3D minima_point = cross(
-										edge_plane_normal,
-										polygon_centroid_antipodal_cross_edge_plane_normal)
-									.get_normalisation();
-								const double minima_point_dot_polygon_centroid_antipodal =
-										dot(minima_point, point).dval();
-								// See if the current arc is the closest so far to the
-								// polygon centroid antipodal point.
-								if (minima_point_dot_polygon_centroid_antipodal > max_dot_product)
-								{
-									max_dot_product = minima_point_dot_polygon_centroid_antipodal;
-								}
+							const UnitVector3D minima_point = cross(
+									edge_plane_normal,
+									polygon_centroid_antipodal_cross_edge_plane_normal)
+								.get_normalisation();
+							const double minima_point_dot_polygon_centroid_antipodal =
+									dot(minima_point, point).dval();
+							// See if the current arc is the closest so far to the
+							// polygon centroid antipodal point.
+							if (minima_point_dot_polygon_centroid_antipodal > max_dot_product)
+							{
+								max_dot_product = minima_point_dot_polygon_centroid_antipodal;
 							}
 						}
 					}
 				}
-
-				// The epsilon expands the dot product range the polygon covers
-				// as a protection against numerical precision.
-				// This epsilon should be larger than used in class Real (which is about 1e-12).
-				min_dot_product -= 1e-6;
-				max_dot_product += 1e-6;
-
-				return std::make_pair(min_dot_product, max_dot_product);
 			}
+
+			// The epsilon expands the dot product range the polygon covers
+			// as a protection against numerical precision.
+			// This epsilon should be larger than used in class Real (which is about 1e-12).
+			min_dot_product -= 1e-6;
+			max_dot_product += 1e-6;
+
+			return std::make_pair(min_dot_product, max_dot_product);
 		}
 
 
