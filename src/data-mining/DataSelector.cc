@@ -36,6 +36,7 @@
 #include "RegionOfInterestFilter.h"
 
 #include "maths/Real.h"
+#include "maths/SphericalArea.h"
 
 #include "utils/Profile.h"
 
@@ -227,6 +228,28 @@ namespace
 		return false;
 	}
 
+	bool
+	less_area(
+			const GPlatesAppLogic::ReconstructedFeatureGeometry* rfg1,
+			const GPlatesAppLogic::ReconstructedFeatureGeometry* rfg2)
+	{
+		using namespace GPlatesMaths::SphericalArea;
+		const PolygonOnSphere* p1 = dynamic_cast<const PolygonOnSphere*>(rfg1->geometry().get());
+		const PolygonOnSphere* p2 = dynamic_cast<const PolygonOnSphere*>(rfg2->geometry().get());
+		if(p1 && p2)
+		{
+			return calculate_polygon_area(*p1) < calculate_polygon_area(*p2);
+		}
+		if(p1)
+		{
+			return false;
+		}
+		if(p2)
+		{
+			return true;
+		}
+		return false;
+	}
 
 	std::vector< const GPlatesAppLogic::ReconstructedFeatureGeometry* >
 	convert_reconstruction_geometry_collection_to_reconstructed_feature_geometry_vector(
@@ -250,6 +273,7 @@ namespace
 				ret.push_back(rfg);
 			}
 		}
+		std::sort(ret.begin(),ret.end(),less_area);
 		return ret;
 	}
 
