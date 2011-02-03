@@ -81,7 +81,7 @@ namespace {
 	const char *LINE_FILE_OPTION_NAME = "line-file";
 	const char *DEBUG_GUI_OPTION_NAME = "debug-gui";
 	//Data-mining temporary code: enable data-mining feature by secret command line option.
-	const char *DATA_MINING_OPTION_NAME = "show-me-data-mining-feature-please";
+	const char *DATA_MINING_OPTION_NAME = "data-mining";
 
 	void
 	print_usage(
