@@ -44,7 +44,7 @@ namespace GPlatesDataMining
 		operator()(
 				const empty_data_type) const
 		{
-			return  QString("N/A");
+			return  QString("NaN");
 		}
 
 		inline
