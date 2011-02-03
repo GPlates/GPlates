@@ -696,7 +696,7 @@ GPlatesQtWidgets::DataAssociationDialog::initialise_progress_dialog()
 	d_progress_dialog_counter = 0;
 	d_progress_dialog->update_progress(
 			0,
-			"More work need to done...Just not high priority....About to begin calculating....");
+			"Processing....");
 	set_progress_bar_range();
 	d_progress_dialog->show();
 }
