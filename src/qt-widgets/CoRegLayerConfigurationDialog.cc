@@ -43,6 +43,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::pop_up()
 	RelationalRadioButton->setChecked(true);
 	FeatureCollectionListWidget->clear();
 	populate_feature_collection_list();
+	check_integrity();
 
 	show();
 	// In most cases, 'show()' is sufficient. However, selecting the menu entry
@@ -260,6 +261,12 @@ void
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::populate_relational_attributes()
 {
 	AttributesListWidget->clear();
+	FeatureCollectionItem* current_item = 
+		dynamic_cast< FeatureCollectionItem* > (FeatureCollectionListWidget->currentItem());
+	if(!current_item)
+	{
+		return;
+	}
 	const char* DISTANCE = QT_TR_NOOP("Distance");
 	const char* PRESENCE = QT_TR_NOOP("Presence");
 	const char* NUM_ROI  = QT_TR_NOOP("Number in Region");
@@ -555,6 +562,41 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::update_export_path(
 	else
 	{
 		qWarning() << "The export path is invalid.";
+	}
+	return;
+}
+
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::check_integrity()
+{
+	bool flag = false;
+
+	for(int i = 0; i < CoRegCfgTableWidget->rowCount(); )
+	{
+		FeatureCollectionTableItem* feature_collection_item = 
+			dynamic_cast< FeatureCollectionTableItem* > (
+					CoRegCfgTableWidget->item(i, FeatureCollectionName) );
+		int list_size = FeatureCollectionListWidget->count();
+		for(int j = 0; j < list_size; j++ ) // make sure the items in cfg table are still valid.
+		{
+			FeatureCollectionItem* item = 
+				dynamic_cast< FeatureCollectionItem* > (FeatureCollectionListWidget->item(j));
+			if(item->file_ref == feature_collection_item->file_ref)
+			{
+				flag = true;
+				break;
+			}
+		}
+		if(!flag)
+		{
+			CoRegCfgTableWidget->removeRow(i);
+		}
+		else
+		{
+			flag = false;
+			i++;
+		}
 	}
 	return;
 }

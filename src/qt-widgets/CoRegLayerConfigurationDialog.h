@@ -239,6 +239,9 @@ namespace GPlatesQtWidgets
 		void
 		populate_coregistration_attributes();
 
+		void
+		check_integrity();
+
 	private:
 		std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 		get_input_target_files() const;

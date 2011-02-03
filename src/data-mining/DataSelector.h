@@ -208,6 +208,12 @@ namespace GPlatesDataMining
 				const GPlatesModel::FeatureHandle* seed_feature,
 				const GPlatesModel::FeatureCollectionHandle* target_feature_collection);
 
+		/*
+		* Check if the configuration table is still valid.
+		*/
+		bool
+		is_cfg_table_valid();
+		
 		//default constructor
 		DataSelector();
 

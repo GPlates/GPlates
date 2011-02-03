@@ -375,6 +375,12 @@ DataSelector::select(
 			target_collections,
 			target_feature_collection_rfg_map);
 
+	if(!is_cfg_table_valid())
+	{
+		qWarning() << "The configuration table contains invalid data.";
+		d_configuration_table.clear();
+		return;
+	}
 	//the main loop
 	//for each seed feature
 	BOOST_FOREACH(const FeatureRFGMap::value_type& seed_feature_and_rfg_pair, seed_feature_rfg_map)
@@ -723,6 +729,21 @@ DataSelector::optimize_cfg_table_row(
 	}
 	return modified_cfg_row;
 }
+
+
+bool
+DataSelector::is_cfg_table_valid()
+{
+	BOOST_FOREACH(const ConfigurationTableRow &config_row, d_configuration_table)
+	{
+		if(!config_row.target_feature_collection_handle.is_valid())
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 
 // Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
 // This is here at the end of the file because the problem resides in a template
