@@ -565,6 +565,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	//TODO: 
 	// Add to the rendered geometry layer.
+	/*
 	using namespace GPlatesDataMining;
 	using namespace GPlatesAppLogic;
 	using namespace GPlatesMaths;
@@ -591,7 +592,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				d_rendered_geometry_layer.add_rendered_geometry(rendered_small_circle);	
 			}
 		}
-	}
+	}*/
 }
 
 // See above
