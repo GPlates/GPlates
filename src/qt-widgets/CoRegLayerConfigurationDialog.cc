@@ -623,6 +623,22 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::handle_file_state_file_about_to
 	check_integrity();
 }
 
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::handle_layer_removed_input_connection(
+		GPlatesAppLogic::ReconstructGraph & graph,
+		GPlatesAppLogic::Layer layer)
+{
+	boost::shared_ptr<GPlatesPresentation::VisualLayer> layer_ptr = d_visual_layer.lock();
+	if(layer_ptr->get_reconstruct_graph_layer() == layer)
+	{
+		FeatureCollectionListWidget->clear();
+		populate_feature_collection_list();
+		check_integrity();
+	}
+}
+
+
 // Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
 // This is here at the end of the file because the problem resides in a template
 // being instantiated at the end of the compilation unit.

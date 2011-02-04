@@ -39,6 +39,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/ReconstructGraph.h"
 
 #include "data-mining/CheckAttrTypeVisitor.h"
 #include "data-mining/CoRegConfigurationTable.h"
@@ -194,6 +195,16 @@ namespace GPlatesQtWidgets
 				SLOT(handle_file_state_file_about_to_be_removed(
 						GPlatesAppLogic::FeatureCollectionFileState &,
 						GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
+
+			QObject::connect(
+				&view_state.get_application_state().get_reconstruct_graph(),
+				SIGNAL(layer_removed_input_connection(
+						GPlatesAppLogic::ReconstructGraph &,
+						GPlatesAppLogic::Layer)),
+				this,
+				SLOT(handle_layer_removed_input_connection(
+						GPlatesAppLogic::ReconstructGraph &,
+						GPlatesAppLogic::Layer )));
 		}
 
 		void
@@ -255,6 +266,11 @@ namespace GPlatesQtWidgets
 		handle_file_state_file_about_to_be_removed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
+
+		void
+		handle_layer_removed_input_connection(
+				GPlatesAppLogic::ReconstructGraph &,
+				GPlatesAppLogic::Layer);
 
 	private:
 		void
