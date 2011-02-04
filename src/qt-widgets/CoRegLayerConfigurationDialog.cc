@@ -601,6 +601,28 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::check_integrity()
 	return;
 }
 
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::handle_file_state_file_about_to_be_removed(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
+{
+	for(int j = 0; j < FeatureCollectionListWidget->count(); )
+	{
+		FeatureCollectionItem* item = 
+			dynamic_cast< FeatureCollectionItem* > (FeatureCollectionListWidget->item(j));
+		if(item->file_ref == file)
+		{
+			delete FeatureCollectionListWidget->takeItem(j);
+		}
+		else
+		{
+			j++;
+		}
+	}
+	check_integrity();
+}
+
 // Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
 // This is here at the end of the file because the problem resides in a template
 // being instantiated at the end of the compilation unit.

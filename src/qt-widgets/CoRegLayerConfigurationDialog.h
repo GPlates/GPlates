@@ -37,11 +37,13 @@
 
 #include "OpenDirectoryDialog.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "data-mining/CheckAttrTypeVisitor.h"
 #include "data-mining/CoRegConfigurationTable.h"
 
+#include "presentation/ViewState.h"
 
 namespace GPlatesPresentation
 {
@@ -182,6 +184,16 @@ namespace GPlatesQtWidgets
 
 			QObject::connect(CoregRadioButton, SIGNAL(clicked()), 
 				this, SLOT(populate_coregistration_attributes()));
+
+			QObject::connect(
+				&view_state.get_application_state().get_feature_collection_file_state(),
+				SIGNAL(file_state_file_about_to_be_removed(
+						GPlatesAppLogic::FeatureCollectionFileState &,
+						GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
+				this,
+				SLOT(handle_file_state_file_about_to_be_removed(
+						GPlatesAppLogic::FeatureCollectionFileState &,
+						GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
 		}
 
 		void
@@ -240,9 +252,14 @@ namespace GPlatesQtWidgets
 		populate_coregistration_attributes();
 
 		void
-		check_integrity();
+		handle_file_state_file_about_to_be_removed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
+		void
+		check_integrity();
+	
 		std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 		get_input_target_files() const;
 
