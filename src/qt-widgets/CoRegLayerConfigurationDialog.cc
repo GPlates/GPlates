@@ -35,8 +35,6 @@
 
 #include "presentation/VisualLayer.h"
 
-GPlatesDataMining::CoRegConfigurationTable GPlatesQtWidgets::CoRegLayerConfigurationDialog::CoRegCfgTable;
-
 void 
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::pop_up()
 {
@@ -467,7 +465,7 @@ void
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 		QAbstractButton* button)
 {
-	CoRegCfgTable.clear(); //Clean up the table each time applied.
+	d_cfg_table.clear(); //Clean up the table each time applied.
 	
 	if(buttonBox->buttonRole(button) != QDialogButtonBox::ApplyRole)
 	{
@@ -518,18 +516,18 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 		row.attr_type = attr_item->attr_type;
 		row.data_operator_type = op;
 
-		CoRegCfgTable.push_back(row);	
+		d_cfg_table.push_back(row);	
 
-		CoRegCfgTable.export_path() = ExportPathlineEdit->text();
+		d_cfg_table.export_path() = ExportPathlineEdit->text();
 		//TODO:
 		//Validate the path here.
-		if(CoRegCfgTable.export_path().isEmpty())
+		if(d_cfg_table.export_path().isEmpty())
 		{
 			qWarning() << "The export path is invalid";
 			return;
 		}
 	}
-	CoRegCfgTable.set_seeds_file(get_input_seed_files()); 
+	d_cfg_table.set_seeds_file(get_input_seed_files()); 
 	done(QDialog::Accepted);
 }
 
@@ -629,13 +627,17 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::handle_layer_removed_input_conn
 		GPlatesAppLogic::ReconstructGraph & graph,
 		GPlatesAppLogic::Layer layer)
 {
-	boost::shared_ptr<GPlatesPresentation::VisualLayer> layer_ptr = d_visual_layer.lock();
-	if(layer_ptr->get_reconstruct_graph_layer() == layer)
+	if(boost::shared_ptr<GPlatesPresentation::VisualLayer> layer_ptr = d_visual_layer.lock())
 	{
-		FeatureCollectionListWidget->clear();
-		populate_feature_collection_list();
-		check_integrity();
+		if(!(layer_ptr->get_reconstruct_graph_layer() == layer))
+		{
+			return;
+		}
 	}
+	FeatureCollectionListWidget->clear();
+	populate_feature_collection_list();
+	check_integrity();
+	
 }
 
 

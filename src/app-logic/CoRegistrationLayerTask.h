@@ -30,21 +30,52 @@
 #include <utility>
 #include <boost/shared_ptr.hpp>
 #include <QString>
+#include <QObject>
 
 #include "LayerTask.h"
-
-#include "model/FeatureCollectionHandle.h"
 #include "LayerTaskParams.h"
 
+#include "data-mining/DataTable.h"
+#include "data-mining/CoRegConfigurationTable.h"
+#include "model/FeatureCollectionHandle.h"
 
 namespace GPlatesAppLogic
 {
+	
+
+	class CoRegistrationLayerTaskParams :
+			public LayerTaskParams
+	{
+	public:
+		friend class CoRegistrationLayerTask;
+		
+		void
+		set_cfg_table(
+				const GPlatesDataMining::CoRegConfigurationTable& table)
+		{
+			d_cfg_table = table;
+		}
+
+		void
+		set_call_back(
+				boost::function<void(const GPlatesDataMining::DataTable&)> fun)
+		{
+			d_call_back = fun;
+		}
+
+	protected:
+
+		GPlatesDataMining::CoRegConfigurationTable d_cfg_table;
+		boost::function<void(const GPlatesDataMining::DataTable&)> d_call_back;
+	};
+
 	/**
-	 * A layer task that calculates velocity fields on domains of mesh points.
+	 * 
 	 */
 	class CoRegistrationLayerTask :
 			public LayerTask
 	{
+
 	public:
 
 		/**
@@ -131,7 +162,7 @@ namespace GPlatesAppLogic
 				const QString, //base file name
 				const double); //reconstruction time
 
-		LayerTaskParams d_layer_params;
+		CoRegistrationLayerTaskParams d_layer_params;
 	};
 }
 

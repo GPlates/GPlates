@@ -35,8 +35,6 @@
 #include "data-mining/DataTable.h"
 #include "data-mining/DataSelector.h"
 
-#include "qt-widgets/CoRegLayerConfigurationDialog.h"
-
 bool
 GPlatesAppLogic::CoRegistrationLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
@@ -138,20 +136,21 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 
 	boost::scoped_ptr< GPlatesDataMining::DataSelector > selector( 
 			GPlatesDataMining::DataSelector::create(
-					GPlatesQtWidgets::CoRegLayerConfigurationDialog::CoRegCfgTable) );
+					d_layer_params.d_cfg_table) );
 	
 	selector->select(
 			seeds_collection, 
 			co_reg_collection, 
 			data_ptr->data_table());
 	
+	d_layer_params.d_call_back(data_ptr->data_table());
 	//TODO:
 	//Temporary code to export co-registration data.
 	try
 	{
 		data_ptr->data_table().export_as_CSV(
 				get_export_file_name(
-						GPlatesQtWidgets::CoRegLayerConfigurationDialog::CoRegCfgTable.export_path(),
+						d_layer_params.d_cfg_table.export_path(),
 						"co_registration_data",  //temporary hard code.
 						reconstruction_time));
 	}catch(...)

@@ -111,6 +111,7 @@ namespace GPlatesQtWidgets
 		columnCount(
 				const QModelIndex &parent_ = QModelIndex()) const
 		{
+			//fix here
 			return d_table.get_table_desc().size();
 		}
 		
@@ -201,7 +202,7 @@ namespace GPlatesQtWidgets
 		}
 
 		const DataTable&
-			data_table()
+		data_table()
 		{
 			return d_table;
 		}
@@ -229,7 +230,8 @@ namespace GPlatesQtWidgets
 		ResultTableDialog(
 				const std::vector< DataTable > data_tables,
 				GPlatesPresentation::ViewState &view_state,
-				QWidget *parent_ = NULL);
+				QWidget *parent_ = NULL,
+				bool old_version = true);
 
 		~ResultTableDialog()
 		{
@@ -261,6 +263,9 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_save_all();
+
+		void
+		data_arrived(const DataTable&);
 	
 	signals:
 		
@@ -268,6 +273,9 @@ namespace GPlatesQtWidgets
 
 		void
 		update();
+
+		void
+		init_controls();
 
 		std::vector< DataTable > d_data_tables;
 		GPlatesPresentation::ViewState &d_view_state;
@@ -282,6 +290,7 @@ namespace GPlatesQtWidgets
 
 		unsigned d_page_index;
 		unsigned d_page_num;
+		bool     d_old_version;
 	};
 }
 

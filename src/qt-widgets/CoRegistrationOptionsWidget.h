@@ -26,11 +26,16 @@
 #ifndef GPLATES_QTWIDGETS_COREGISTRATIONOPTIONSWIDGET_H
 #define GPLATES_QTWIDGETS_COREGISTRATIONOPTIONSWIDGET_H
 
+#include <boost/bind.hpp>
+
 #include "CoRegLayerConfigurationDialog.h"
 #include "CoRegistrationOptionsWidgetUi.h"
 #include "LayerOptionsWidget.h"
+#include "ResultTableDialog.h"
 
+#include "app-logic/CoRegistrationLayerTask.h"
 #include "file-io/File.h"
+#include "presentation/VisualLayer.h"
 
 namespace GPlatesAppLogic
 {
@@ -82,6 +87,23 @@ namespace GPlatesQtWidgets
 				const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
 		{
 			d_current_visual_layer = visual_layer;
+			boost::shared_ptr<GPlatesPresentation::VisualLayer> layer = d_current_visual_layer.lock();
+				GPlatesAppLogic::CoRegistrationLayerTaskParams* params = 
+					dynamic_cast<GPlatesAppLogic::CoRegistrationLayerTaskParams*> 
+							(&layer->get_reconstruct_graph_layer().get_layer_task_params());
+			if(params)
+			{
+				params->set_cfg_table(
+						d_coreg_layer_config_dialog->cfg_table());
+				params->set_call_back(
+						boost::bind(
+								&ResultTableDialog::data_arrived, d_result_dialog.get(),_1));
+			}
+			
+			d_coreg_layer_config_dialog.reset(
+					new CoRegLayerConfigurationDialog(
+							d_view_state,
+							d_current_visual_layer));
 		}
 
 
@@ -105,12 +127,30 @@ namespace GPlatesQtWidgets
 			{
 				d_coreg_layer_config_dialog.reset(
 						new CoRegLayerConfigurationDialog(
-							d_view_state,
-							d_current_visual_layer));
+								d_view_state,
+								d_current_visual_layer));
 			}
 			d_coreg_layer_config_dialog->pop_up();
 
 		}
+
+		void
+		handle_view_result_button_clicked()
+		{
+			if(!d_result_dialog)
+			{
+				d_result_dialog.reset(
+						new ResultTableDialog(
+								std::vector< DataTable >(),
+								d_view_state,
+								this,
+								false));
+			}
+			d_result_dialog->show();
+ 			d_result_dialog->activateWindow();
+ 			d_result_dialog->raise();
+		}
+
 	private:
 		CoRegistrationOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
@@ -126,6 +166,29 @@ namespace GPlatesQtWidgets
 						SIGNAL(clicked()),
 						this,
 						SLOT(handle_co_registration_configuration_button_clicked()));
+
+				QObject::connect(
+						view_result_button,
+						SIGNAL(clicked()),
+						this,
+						SLOT(handle_view_result_button_clicked()));
+				
+				if(!d_coreg_layer_config_dialog)
+				{
+					d_coreg_layer_config_dialog.reset(
+							new CoRegLayerConfigurationDialog(
+									d_view_state,
+									d_current_visual_layer));
+				}
+				if(!d_result_dialog)
+				{
+					d_result_dialog.reset(
+							new ResultTableDialog(
+									std::vector< DataTable >(),
+									d_view_state,
+									this,
+									false));
+				}
 			}
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
@@ -136,6 +199,7 @@ namespace GPlatesQtWidgets
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
 		boost::shared_ptr<CoRegLayerConfigurationDialog> d_coreg_layer_config_dialog;
+		boost::shared_ptr<ResultTableDialog> d_result_dialog;
 	};
 }
 

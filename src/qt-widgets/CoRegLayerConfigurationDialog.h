@@ -153,8 +153,6 @@ namespace GPlatesQtWidgets
 
 	public:
 
-		static GPlatesDataMining::CoRegConfigurationTable CoRegCfgTable;
-
 		CoRegLayerConfigurationDialog(
 				GPlatesPresentation::ViewState &view_state,
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer) :
@@ -209,6 +207,13 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up();
+
+		inline
+		GPlatesDataMining::CoRegConfigurationTable&
+		cfg_table()
+		{
+			return d_cfg_table;
+		}
 
 	protected:
 		void
@@ -289,6 +294,8 @@ namespace GPlatesQtWidgets
 		void
 		update_export_path(
 				const QString&);
+
+		GPlatesDataMining::CoRegConfigurationTable d_cfg_table;
 
 		std::multimap< QString, GPlatesDataMining::AttributeTypeEnum >  d_attr_name_type_map;
 

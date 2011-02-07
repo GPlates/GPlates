@@ -84,6 +84,12 @@ namespace GPlatesPresentation
 			return d_layer;
 		}
 
+		GPlatesAppLogic::Layer &
+		get_reconstruct_graph_layer()
+		{
+			return d_layer;
+		}
+
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
 		get_rendered_geometry_layer_index() const
 		{

@@ -74,10 +74,12 @@ ResultTableDialog::update_time_label()
 ResultTableDialog::ResultTableDialog(
 		const std::vector< DataTable > data_tables,
 		GPlatesPresentation::ViewState &view_state,
-		QWidget *parent_) :
+		QWidget *parent_,
+		bool old_version) :
 	d_data_tables(data_tables),
 	d_view_state(view_state),
-	d_page_index(0)
+	d_page_index(0),
+	d_old_version(old_version)
 {
 	setupUi(this);
 	setModal(false);
@@ -91,10 +93,13 @@ ResultTableDialog::ResultTableDialog(
 	table_view->horizontalHeader()->setStretchLastSection(true);
 	//table_view->setContextMenuPolicy(Qt::ActionsContextMenu);
 	d_page_num = data_tables.size();
-	d_table_model_prt.reset(
-			new ResultTableModel(
-					d_data_tables.at(d_page_index), 
-					this));
+	if(d_page_num > 0)
+	{
+		d_table_model_prt.reset(
+				new ResultTableModel(
+						d_data_tables.at(d_page_index), 
+						this));
+	}
 
 	if(d_data_tables.size() > d_page_index)
 	{
@@ -103,6 +108,33 @@ ResultTableDialog::ResultTableDialog(
 
 	vboxLayout->addWidget(table_view);
 
+	if(d_old_version)
+	{
+		init_controls();
+	}
+	else
+	{
+		QHBoxLayout* hboxLayout;
+		QSpacerItem* spacerItem;
+		hboxLayout = new QHBoxLayout();
+		hboxLayout->setObjectName(QString::fromUtf8("hboxLayout"));
+		spacerItem = new QSpacerItem(91, 25, QSizePolicy::Expanding, QSizePolicy::Minimum);
+		hboxLayout->addItem(spacerItem);
+		QPushButton* pushButton_close = new QPushButton(this);
+		pushButton_close->setObjectName(QString::fromUtf8("pushButton_close"));
+		hboxLayout->addWidget(pushButton_close);
+		vboxLayout->addLayout(hboxLayout);
+		pushButton_close->setText(QApplication::translate("ResultTableDialog", "close", 0, QApplication::UnicodeUTF8));
+		QObject::connect(pushButton_close, SIGNAL(clicked()), this, SLOT(reject()));
+	}
+	
+	update();
+}	
+
+
+void
+ResultTableDialog::init_controls()
+{
 	QHBoxLayout* hboxLayout_1;
 	QSpacerItem* spacerItem_1;
 	QPushButton* pushButton_goto;
@@ -177,8 +209,9 @@ ResultTableDialog::ResultTableDialog(
 	QObject::connect(pushButton_previous, SIGNAL(clicked()), this, SLOT(handle_previous_page()));
 	QObject::connect(pushButton_goto, SIGNAL(clicked()), this, SLOT(handle_goto_page()));
 	QObject::connect(pushButton_save_all, SIGNAL(clicked()), this, SLOT(handle_save_all()));
-	update();
-}	
+	return;
+}
+
 
 void
 ResultTableDialog::reject()
@@ -335,6 +368,18 @@ ResultTableDialog::handle_save_all()
 		qDebug() << "No data table to be exported.";
 	}
 	return;
+}
+
+
+void
+ResultTableDialog::data_arrived(
+		const DataTable& table)
+{
+	d_table_model_prt.reset(
+			new ResultTableModel(table));
+	table_view->setModel(d_table_model_prt.get());
+	
+	//table_view->setModel(new ResultTableModel(table));
 }
 
 
