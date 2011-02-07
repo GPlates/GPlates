@@ -412,6 +412,12 @@ DataSelector::select(
 		DataRowSharedPtr row = DataRowSharedPtr(new DataRow); 
 		row->set_seed_rfgs(seed_feature_and_rfg_pair.second);
 
+		//Write out feature id as the first column so that each data row can be correlated. 
+		//This is a temporary solution and will be removed when layer framework is ready to handle this.
+		QString feature_id = 
+			seed_feature_and_rfg_pair.first->feature_id().get().qstring();
+		row->append_cell(OpaqueData(feature_id));
+
 		//for each row in input table
 		BOOST_FOREACH(const ConfigurationTableRow &config_row, d_configuration_table)
 		{
