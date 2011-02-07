@@ -28,8 +28,8 @@
 #include "OpaqueDataToQString.h"
 
 void
-GPlatesDataMining::DataTable::export_as_CSV
-		(const QString& filename) const
+GPlatesDataMining::DataTable::export_as_CSV(
+		const QString& filename) const
 {
 	const_iterator iter = begin();
 	const_iterator iter_end = end();
@@ -55,7 +55,7 @@ GPlatesDataMining::DataTable::export_as_CSV
 	}
 
 	GPlatesGui::CsvExport::ExportOptions opt;
-	opt.delimiter = ';';
+	opt.delimiter = ',';
 	GPlatesGui::CsvExport::export_data(
 			filename, 
 			opt, 
