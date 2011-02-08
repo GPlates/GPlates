@@ -71,7 +71,7 @@ namespace GPlatesDataMining
 		static
 		DataSelector* 
 		create(
-				CoRegConfigurationTable& table)
+				const CoRegConfigurationTable& table)
 		{
 			return  new DataSelector(table) ;
 		}
@@ -227,7 +227,7 @@ namespace GPlatesDataMining
 				const DataSelector&);
 
 		DataSelector(
-				CoRegConfigurationTable &table) 
+				const CoRegConfigurationTable &table) 
 			: d_configuration_table(table)
 		{ }
 

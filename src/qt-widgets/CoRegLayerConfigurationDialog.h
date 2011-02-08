@@ -215,6 +215,14 @@ namespace GPlatesQtWidgets
 			return d_cfg_table;
 		}
 
+		inline
+		void
+		set_virtual_layer(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
+		{
+			d_visual_layer = layer;
+		}
+
 	protected:
 		void
 		populate_feature_collection_list() const;

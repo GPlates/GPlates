@@ -90,7 +90,7 @@ ResultTableDialog::ResultTableDialog(
     table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerItem);
     table_view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
 	table_view->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
-	table_view->horizontalHeader()->setStretchLastSection(true);
+	table_view->horizontalHeader()->setStretchLastSection(false);
 	//table_view->setContextMenuPolicy(Qt::ActionsContextMenu);
 	d_page_num = data_tables.size();
 	if(d_page_num > 0)
@@ -105,7 +105,7 @@ ResultTableDialog::ResultTableDialog(
 	{
 		table_view->setModel(d_table_model_prt.get());
 	}
-
+	table_view->resizeColumnsToContents(); 
 	vboxLayout->addWidget(table_view);
 
 	if(d_old_version)

@@ -49,11 +49,16 @@ namespace GPlatesAppLogic
 	public:
 		friend class CoRegistrationLayerTask;
 		
+		CoRegistrationLayerTaskParams():
+			d_cfg_table(NULL),
+			d_call_back(0)
+		{ }
+
 		void
 		set_cfg_table(
 				const GPlatesDataMining::CoRegConfigurationTable& table)
 		{
-			d_cfg_table = table;
+			d_cfg_table = &table;
 		}
 
 		void
@@ -65,7 +70,7 @@ namespace GPlatesAppLogic
 
 	protected:
 
-		GPlatesDataMining::CoRegConfigurationTable d_cfg_table;
+		const GPlatesDataMining::CoRegConfigurationTable* d_cfg_table;
 		boost::function<void(const GPlatesDataMining::DataTable&)> d_call_back;
 	};
 

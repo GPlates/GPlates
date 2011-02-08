@@ -87,6 +87,19 @@ namespace GPlatesQtWidgets
 				const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
 		{
 			d_current_visual_layer = visual_layer;
+			
+			if(d_coreg_layer_config_dialog)
+			{
+				d_coreg_layer_config_dialog->set_virtual_layer(d_current_visual_layer);
+			}
+			else
+			{
+				d_coreg_layer_config_dialog.reset(
+						new CoRegLayerConfigurationDialog(
+								d_view_state,
+								d_current_visual_layer));
+			}
+
 			boost::shared_ptr<GPlatesPresentation::VisualLayer> layer = d_current_visual_layer.lock();
 				GPlatesAppLogic::CoRegistrationLayerTaskParams* params = 
 					dynamic_cast<GPlatesAppLogic::CoRegistrationLayerTaskParams*> 
@@ -100,10 +113,6 @@ namespace GPlatesQtWidgets
 								&ResultTableDialog::data_arrived, d_result_dialog.get(),_1));
 			}
 			
-			d_coreg_layer_config_dialog.reset(
-					new CoRegLayerConfigurationDialog(
-							d_view_state,
-							d_current_visual_layer));
 		}
 
 
@@ -173,13 +182,6 @@ namespace GPlatesQtWidgets
 						this,
 						SLOT(handle_view_result_button_clicked()));
 				
-				if(!d_coreg_layer_config_dialog)
-				{
-					d_coreg_layer_config_dialog.reset(
-							new CoRegLayerConfigurationDialog(
-									d_view_state,
-									d_current_visual_layer));
-				}
 				if(!d_result_dialog)
 				{
 					d_result_dialog.reset(

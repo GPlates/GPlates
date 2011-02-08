@@ -405,6 +405,13 @@ DataSelector::select(
 		d_configuration_table.clear();
 		return;
 	}
+
+	//populate the table description
+	TableDesc table_desc;
+	table_desc.push_back("Seed Feature ID");
+	get_table_desc_from_input_table(table_desc);
+	data_table.set_table_desc(table_desc);
+
 	//the main loop
 	//for each seed feature
 	BOOST_FOREACH(const FeatureRFGMap::value_type& seed_feature_and_rfg_pair, seed_feature_rfg_map)

@@ -124,7 +124,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 			"CoRegistration input Channel",
 			input_data);
 
-	if (co_reg_collection.empty()) 
+	if (co_reg_collection.empty() || NULL == d_layer_params.d_cfg_table) 
 	{
 		return boost::none;
 	}
@@ -136,7 +136,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 
 	boost::scoped_ptr< GPlatesDataMining::DataSelector > selector( 
 			GPlatesDataMining::DataSelector::create(
-					d_layer_params.d_cfg_table) );
+					*d_layer_params.d_cfg_table) );
 	
 	selector->select(
 			seeds_collection, 
@@ -150,7 +150,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 	{
 		data_ptr->data_table().export_as_CSV(
 				get_export_file_name(
-						d_layer_params.d_cfg_table.export_path(),
+						d_layer_params.d_cfg_table->export_path(),
 						"co_registration_data",  //temporary hard code.
 						reconstruction_time));
 	}catch(...)

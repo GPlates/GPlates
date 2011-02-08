@@ -71,8 +71,15 @@ namespace GPlatesDataMining
 		}
 
 		inline
+		const QString&
+		export_path() const
+		{
+			return d_export_path;
+		}
+
+		inline
 		QString&
-		export_path()
+		export_path() 
 		{
 			return d_export_path;
 		}
