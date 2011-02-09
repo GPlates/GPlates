@@ -50,6 +50,8 @@ set(srcs
     ExportAnimationContext.h
     ExportAnimationStrategy.cc
     ExportAnimationStrategy.h
+    ExportCoRegistrationAnimationStrategy.cc
+    ExportCoRegistrationAnimationStrategy.h
     ExportFlowlineAnimationStrategy.cc
     ExportFlowlineAnimationStrategy.h
     ExportMotionPathAnimationStrategy.cc

@@ -149,6 +149,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_name_and_type
 	d_name_map[RASTER]				    =QObject::tr("Raster");
 	d_name_map[FLOWLINES]				=QObject::tr("Flowlines");
 	d_name_map[MOTION_PATHS]			=QObject::tr("Motion Paths");
+	d_name_map[CO_REGISTRATION]			=QObject::tr("Co-registration data");
 
 	d_type_map[GMT]             =QObject::tr("GMT (*.xy)");
 	d_type_map[GPML]			=QObject::tr("GPML (*.gpml)");
@@ -193,6 +194,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_desc_map()
 		GPlatesGui::ExportFlowlineAnimationStrategy::FLOWLINES_DESC;
 	d_desc_map[MOTION_PATHS] =
 		GPlatesGui::ExportMotionPathAnimationStrategy::MOTION_PATHS_DESC;
+	d_desc_map[CO_REGISTRATION] =
+		GPlatesGui::ExportCoRegistrationAnimationStrategy::CO_REGISTRATION_DESC;
 }		
 
 void
@@ -276,6 +279,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_map()
 	REGISTER_EXPORT_ITEM(MOTION_PATHS,GMT);
 	//MOTION_PATHS_SHAPEFILE
 	REGISTER_EXPORT_ITEM(MOTION_PATHS,SHAPEFILE);
+	//CO_REGISTRATION_CSV_COMMA
+	REGISTER_EXPORT_ITEM(CO_REGISTRATION,CSV_COMMA);
 }
 
 void

@@ -46,12 +46,19 @@ namespace GPlatesPresentation
 	class ViewState;
 }
 
+namespace GPlatesAppLogic
+{
+	class FeatureCollectionFileState;
+}
+
 namespace GPlatesQtWidgets
 {
 	using namespace GPlatesDataMining;
 	class ResultTableView : 
 		public QTableView
 	{
+		Q_OBJECT
+
 	public:
 
 		explicit
@@ -59,10 +66,12 @@ namespace GPlatesQtWidgets
 				QWidget *_parent) : 
 			QTableView(_parent)  
 	    {
-			//QAction* newAct = new QAction(tr("&New"), this);
-			//addAction(newAct);
+			d_highlight_seed_action = new QAction(tr("highlight seed"), this);
 			setContextMenuPolicy(Qt::DefaultContextMenu);
-			}  
+			
+			QObject::connect(d_highlight_seed_action, SIGNAL(triggered()),
+				_parent, SLOT(highlight_seed()));
+		}  
 
 		virtual
 		void
@@ -73,13 +82,19 @@ namespace GPlatesQtWidgets
 			QMenu *menu = new QMenu(this);  
 	        QModelIndex index = indexAt(_event->pos());  
 
-			if(index.isValid())  
-		       menu->addAction(QString("Row %1 - Col %2 was clicked on").arg(index.row()).arg(index.column()));  
+			if(index.isValid()) 
+			{
+		       //menu->addAction(QString("Row %1 - Col %2 was clicked on").arg(index.row()).arg(index.column())); 
+			   menu->addAction(d_highlight_seed_action);
+			}
 			else 
 				menu->addAction("No item was clicked on");  
 
 			menu->exec(QCursor::pos());  
 		 }
+
+	protected:
+		QAction* d_highlight_seed_action;
 	};
 
 	class ResultTableModel :
@@ -140,7 +155,10 @@ namespace GPlatesQtWidgets
 			{
 				if (role == Qt::DisplayRole) 
 				{
-					return d_table.get_table_desc()[section];
+					if(d_table.get_table_desc().size() - section > 0)
+					{
+						return d_table.get_table_desc()[section];
+					}
 				} 
 				else if (role == Qt::ToolTipRole) 
 				{
@@ -234,9 +252,7 @@ namespace GPlatesQtWidgets
 				bool old_version = true);
 
 		~ResultTableDialog()
-		{
-
-		}
+		{ }
 
 		void
 		update_page_label();
@@ -266,6 +282,9 @@ namespace GPlatesQtWidgets
 
 		void
 		data_arrived(const DataTable&);
+
+		void
+		highlight_seed();
 	
 	signals:
 		
@@ -276,6 +295,11 @@ namespace GPlatesQtWidgets
 
 		void
 		init_controls();
+
+		GPlatesModel::FeatureHandle::weak_ref
+		find_feature_by_id(
+				GPlatesAppLogic::FeatureCollectionFileState& state,
+				const QString& id);
 
 		std::vector< DataTable > d_data_tables;
 		GPlatesPresentation::ViewState &d_view_state;

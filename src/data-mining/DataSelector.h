@@ -124,6 +124,23 @@ namespace GPlatesDataMining
 				GPlatesModel::FeatureCollectionHandle::const_weak_ref target_feature_collection,
 				const CacheMap& cache_map);
 
+		static
+		inline
+		void
+		set_data_table(
+				const DataTable& table)
+		{
+			d_data_table = table;
+		}
+
+		static
+		inline
+		const DataTable&
+		get_data_table()
+		{
+			return d_data_table;
+		}
+
 		~DataSelector()
 		{ }
 		
@@ -237,6 +254,8 @@ namespace GPlatesDataMining
 		FeatureGeometryMap d_target_geometry_map;
 		
 		CacheMap d_associated_data_cache;
+
+		static DataTable d_data_table;
 
 	};
 }

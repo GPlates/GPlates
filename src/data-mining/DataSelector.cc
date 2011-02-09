@@ -41,7 +41,7 @@
 #include "utils/Profile.h"
 
 using namespace GPlatesDataMining;
-
+DataTable DataSelector::d_data_table;
 #if 0
 //#define GPLATES_MULTI_THREADS
 //#ifdef GPLATES_MULTI_THREADS
@@ -218,6 +218,10 @@ namespace
 			const GPlatesModel::FeatureCollectionHandle* feature_collection,
 			const GPlatesModel::FeatureHandle* feature)
 	{
+		if(!(feature_collection&&feature))
+		{
+			return false;
+		}
 		BOOST_FOREACH(const GPlatesModel::FeatureHandle::non_null_ptr_to_const_type& fh, *feature_collection)
 		{
 			if(fh.get() == feature)

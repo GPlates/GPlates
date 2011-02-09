@@ -408,10 +408,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// toolbar buttons and menu items.
 	connect_menu_actions();
 
-	if(enable_data_mining)//Data-mining temporary code
-	{
-		install_data_mining_menu();
-	}
+// 	if(enable_data_mining)//Data-mining temporary code
+// 	{
+// 		install_data_mining_menu();
+// 	}
 	
 	// Duplicate the menu structure for the full-screen-mode GMenu.
 	populate_gmenu_from_menubar();

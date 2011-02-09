@@ -454,9 +454,9 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_association_type_combobox
 	combo->addItem(
 			QApplication::tr("Region of Interest"),
 			GPlatesDataMining::REGION_OF_INTEREST);
-	combo->addItem(
-			QApplication::tr("TODO..."),
-			GPlatesDataMining::REGION_OF_INTEREST);
+// 	combo->addItem(
+// 			QApplication::tr("TODO..."),
+// 			GPlatesDataMining::REGION_OF_INTEREST);
 	return;
 }
 
@@ -521,11 +521,11 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 		d_cfg_table.export_path() = ExportPathlineEdit->text();
 		//TODO:
 		//Validate the path here.
-		if(d_cfg_table.export_path().isEmpty())
-		{
-			qWarning() << "The export path is invalid";
-			return;
-		}
+// 		if(d_cfg_table.export_path().isEmpty())
+// 		{
+// 			qWarning() << "The export path is invalid";
+// 			return;
+// 		}
 	}
 	d_cfg_table.set_seeds_file(get_input_seed_files()); 
 	done(QDialog::Accepted);
@@ -638,6 +638,22 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::handle_layer_removed_input_conn
 	populate_feature_collection_list();
 	check_integrity();
 	
+}
+
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::remove()
+{
+	int idx = CoRegCfgTableWidget->currentRow();
+	CoRegCfgTableWidget->removeRow(idx);
+}
+
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::remove_all()
+{
+	CoRegCfgTableWidget->clearContents();
+	CoRegCfgTableWidget->setRowCount(0);
 }
 
 

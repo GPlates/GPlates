@@ -184,6 +184,12 @@ namespace GPlatesQtWidgets
 			QObject::connect(CoregRadioButton, SIGNAL(clicked()), 
 				this, SLOT(populate_coregistration_attributes()));
 
+			QObject::connect(RemovePushButton, SIGNAL(clicked()), 
+				this, SLOT(remove()));
+
+			QObject::connect(RemoveAllPushButton, SIGNAL(clicked()), 
+				this, SLOT(remove_all()));
+
 			QObject::connect(
 				&view_state.get_application_state().get_feature_collection_file_state(),
 				SIGNAL(file_state_file_about_to_be_removed(
@@ -203,6 +209,10 @@ namespace GPlatesQtWidgets
 				SLOT(handle_layer_removed_input_connection(
 						GPlatesAppLogic::ReconstructGraph &,
 						GPlatesAppLogic::Layer )));
+			 ExportPathlineEdit->setVisible(false);
+             ChooseExportPathPushButton->setVisible(false);
+			 label_3->setVisible(false);
+			 CoRegCfgTableWidget->resizeColumnsToContents();
 		}
 
 		void
@@ -284,6 +294,12 @@ namespace GPlatesQtWidgets
 		handle_layer_removed_input_connection(
 				GPlatesAppLogic::ReconstructGraph &,
 				GPlatesAppLogic::Layer);
+
+		void
+		remove();
+
+		void
+		remove_all();
 
 	private:
 		void

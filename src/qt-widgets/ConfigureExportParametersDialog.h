@@ -76,6 +76,7 @@ namespace GPlatesQtWidgets
 			RASTER,
 			FLOWLINES,
 			MOTION_PATHS,
+			CO_REGISTRATION,
 			INVALID_NAME=999
 		};
 

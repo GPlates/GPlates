@@ -35,6 +35,7 @@
 #include "ExportAnimationStrategyExporterID.h"
 
 #include "gui/ExportAnimationStrategy.h"
+#include "gui/ExportCoRegistrationAnimationStrategy.h"
 #include "gui/ExportFlowlineAnimationStrategy.h"
 #include "gui/ExportMotionPathAnimationStrategy.h"
 #include "gui/ExportRasterAnimationStrategy.h"
@@ -388,6 +389,17 @@ namespace GPlatesUtils
 				export_context,
 				GPlatesGui::ExportMotionPathAnimationStrategy::SHAPEFILE,
 				cfg);
+		}
+
+		static
+		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
+		create_CO_REGISTRATION_CSV_COMMA(
+			GPlatesGui::ExportAnimationContext& export_context,			
+			const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
+		{		
+			return GPlatesGui::ExportCoRegistrationAnimationStrategy::create(
+					export_context,
+					cfg);
 		}
 
 		static

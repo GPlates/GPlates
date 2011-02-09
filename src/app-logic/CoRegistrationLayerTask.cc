@@ -144,6 +144,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 			data_ptr->data_table());
 	
 	d_layer_params.d_call_back(data_ptr->data_table());
+	GPlatesDataMining::DataSelector::set_data_table(data_ptr->data_table());
 	//TODO:
 	//Temporary code to export co-registration data.
 	try

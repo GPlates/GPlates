@@ -27,8 +27,13 @@
 #include <QtGui/QHeaderView>
 #include <QtGui/QPushButton>
 #include <boost/optional.hpp> 
+
 #include "ResultTableDialog.h"
 
+#include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileState.h"
+#include "gui/FeatureFocus.h"
+#include "presentation/ViewState.h"
 #include "utils/ExportTemplateFilenameSequence.h"
 
 using namespace GPlatesQtWidgets;
@@ -380,6 +385,48 @@ ResultTableDialog::data_arrived(
 	table_view->setModel(d_table_model_prt.get());
 	
 	//table_view->setModel(new ResultTableModel(table));
+}
+
+
+GPlatesModel::FeatureHandle::weak_ref
+ResultTableDialog::find_feature_by_id(
+		GPlatesAppLogic::FeatureCollectionFileState& state,
+		const QString& id)
+{
+	using namespace GPlatesAppLogic;
+	std::vector<FeatureCollectionFileState::file_reference> files = state.get_loaded_files();
+	BOOST_FOREACH(FeatureCollectionFileState::file_reference& file_ref, files)
+	{
+		GPlatesModel::FeatureCollectionHandle::weak_ref fc = file_ref.get_file().get_feature_collection();
+		BOOST_FOREACH(GPlatesModel::FeatureHandle::non_null_ptr_type feature, *fc)
+		{
+			if(feature->feature_id().get().qstring() == id)
+			{
+				return feature->reference();
+			}
+		}
+	}
+	throw QString("No feature found by this id: %1").arg(id);
+}
+
+
+void
+ResultTableDialog::highlight_seed()
+{
+	QModelIndex idx = table_view->currentIndex();
+	QString id = idx.data().toString();
+	GPlatesAppLogic::FeatureCollectionFileState& file_state = 
+		d_view_state.get_application_state().get_feature_collection_file_state();
+	try
+	{
+		GPlatesModel::FeatureHandle::weak_ref feature = 
+			find_feature_by_id(file_state,id);
+		d_view_state.get_feature_focus().set_focus(feature);
+	}catch(QString err)
+	{
+		qDebug() << "exception happened!";
+		qDebug() << err;
+	}
 }
 
 

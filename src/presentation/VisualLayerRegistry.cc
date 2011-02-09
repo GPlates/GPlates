@@ -441,8 +441,8 @@ GPlatesPresentation::register_default_visual_layers(
 	{
 		registry.register_visual_layer_type(
 				VisualLayerType::Type(CO_REGISTRATION),
-				"Co-registration tool",
-				"Co-registration tool for data mining.",
+				"Co-registration layer",
+				"Co-registration layer for data mining.",
 				*html_colours.get_colour("sandybrown"),
 				CreateAppLogicLayer(
 					reconstruct_graph,

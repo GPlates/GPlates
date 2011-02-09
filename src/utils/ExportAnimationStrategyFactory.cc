@@ -67,6 +67,7 @@ GPlatesUtils::ExportAnimationStrategyFactory::init_id_map()
 	REGISTER_EXPORTER(FLOWLINES_SHAPEFILE);
 	REGISTER_EXPORTER(MOTION_PATHS_GMT);
 	REGISTER_EXPORTER(MOTION_PATHS_SHAPEFILE);
+	REGISTER_EXPORTER(CO_REGISTRATION_CSV_COMMA);
 	return true;
 }
 GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
