@@ -37,6 +37,7 @@
 
 #include "Colour.h"
 #include "ColourPalette.h"
+#include "ColourPaletteVisitor.h"
 
 #include "maths/Real.h"
 
@@ -112,6 +113,7 @@ namespace GPlatesGui
 
 		typedef GPlatesMaths::Real value_type;
 
+		explicit
 		ColourSlice(
 				value_type lower_value_,
 				boost::optional<Colour> lower_colour_,
@@ -250,7 +252,8 @@ namespace GPlatesGui
 		{
 			is_label_optional = false
 		};
-		
+
+		explicit
 		ColourEntry(
 				int key_,
 				Colour colour_,
@@ -341,6 +344,7 @@ namespace GPlatesGui
 			is_label_optional = true
 		};
 
+		explicit
 		ColourEntry(
 				IntType key_,
 				Colour colour_,
@@ -657,6 +661,7 @@ namespace GPlatesGui
 
 	protected:
 
+		explicit
 		CptColourPalette() :
 			d_rgb_colour_model(true)
 		{  }
@@ -724,6 +729,18 @@ namespace GPlatesGui
 			visitor.visit_regular_cpt_colour_palette(*this);
 		}
 
+		GPlatesMaths::Real
+		get_lower_bound() const
+		{
+			return d_entries.front().lower_value();
+		}
+
+		GPlatesMaths::Real
+		get_upper_bound() const
+		{
+			return d_entries.back().upper_value();
+		}
+
 	protected:
 
 		virtual
@@ -746,23 +763,154 @@ namespace GPlatesGui
 
 	private:
 
+		explicit
 		RegularCptColourPalette()
 		{
 		}
 	};
 
 
+	namespace CategoricalCptColourPaletteInternals
+	{
+		template<typename T, class Enable = void>
+		struct UseForegroundBackgroundColour;
+
+		template<typename T>
+		struct UseForegroundBackgroundColour<T, typename boost::enable_if<boost::is_integral<T> >::type>
+		{
+			template<typename ValueType>
+			static
+			bool
+			use_background_colour(
+					const std::vector<ColourEntry<T> > &entries,
+					ValueType value)
+			{
+				// Background colour is used if value comes before first slice.
+				return value < entries.front();
+			}
+
+			template<typename ValueType>
+			static
+			bool
+			use_foreground_colour(
+					const std::vector<ColourEntry<T> > &entries,
+					ValueType value)
+			{
+				// Foreground colour is used if value comes after last slice.
+				return value > entries.back();
+			}
+		};
+
+		template<typename T>
+		struct UseForegroundBackgroundColour<T, typename boost::disable_if<boost::is_integral<T> >::type>
+		{
+			template<typename ValueType>
+			static
+			bool
+			use_background_colour(
+					const std::vector<ColourEntry<T> > &entries,
+					ValueType value)
+			{
+				// Do not use background colour. For categorical CPT files whose value type is
+				// not integral, we use the label as the value type, and there is no requirement
+				// that the labels are presented in sorted order (in fact, there may be no order).
+				return false;
+			}
+
+			template<typename ValueType>
+			static
+			bool
+			use_foreground_colour(
+					const std::vector<ColourEntry<T> > &entries,
+					ValueType value)
+			{
+				// Do not use foreground colour. For categorical CPT files whose value type is
+				// not integral, we use the label as the value type, and there is no requirement
+				// that the labels are presented in sorted order (in fact, there may be no order).
+				return false;
+			}
+		};
+
+		/**
+		 * This exists because this class is visitable only for certain template parameters T.
+		 */
+		template<typename T>
+		struct AcceptVisitor
+		{
+			static
+			void
+			do_accept_visitor(
+					ConstColourPaletteVisitor &visitor,
+					const CategoricalCptColourPalette<T> &colour_palette)
+			{
+				// Do nothing.
+			}
+
+			static
+			void
+			do_accept_visitor(
+					ColourPaletteVisitor &visitor,
+					CategoricalCptColourPalette<T> &colour_palette)
+			{
+				// Do nothing.
+			}
+		};
+
+		template<>
+		struct AcceptVisitor<boost::int32_t>
+		{
+			static
+			void
+			do_accept_visitor(
+					ConstColourPaletteVisitor &visitor,
+					const CategoricalCptColourPalette<boost::int32_t> &colour_palette)
+			{
+				visitor.visit_int32_categorical_cpt_colour_palette(colour_palette);
+			}
+
+			static
+			void
+			do_accept_visitor(
+					ColourPaletteVisitor &visitor,
+					CategoricalCptColourPalette<boost::int32_t> &colour_palette)
+			{
+				visitor.visit_int32_categorical_cpt_colour_palette(colour_palette);
+			}
+		};
+
+		template<>
+		struct AcceptVisitor<boost::uint32_t>
+		{
+			static
+			void
+			do_accept_visitor(
+					ConstColourPaletteVisitor &visitor,
+					const CategoricalCptColourPalette<boost::uint32_t> &colour_palette)
+			{
+				visitor.visit_uint32_categorical_cpt_colour_palette(colour_palette);
+			}
+
+			static
+			void
+			do_accept_visitor(
+					ColourPaletteVisitor &visitor,
+					CategoricalCptColourPalette<boost::uint32_t> &colour_palette)
+			{
+				visitor.visit_uint32_categorical_cpt_colour_palette(colour_palette);
+			}
+		};
+	}
+
+
 	/**
 	 * A colour palette that stores entries from a categorical CPT file.
 	 */
-	template<typename T, class Enable = void>
-	class CategoricalCptColourPalette;
-		// This is intentionally not defined.
-
 	template<typename T>
-	class CategoricalCptColourPalette<T, typename boost::disable_if<boost::is_integral<T> >::type> :
+	class CategoricalCptColourPalette :
 			public CptColourPalette<ColourEntry<T> >
 	{
+		typedef CptColourPalette<ColourEntry<T> > base_type;
+
 	public:
 
 		typedef CategoricalCptColourPalette<T> this_type;
@@ -771,84 +919,65 @@ namespace GPlatesGui
 		typedef boost::intrusive_ptr<this_type> maybe_null_ptr_type;
 		typedef boost::intrusive_ptr<const this_type> maybe_null_ptr_to_const_type;
 
-		typedef typename CptColourPalette<ColourEntry<T> >::value_type value_type;
-
-		static
-		non_null_ptr_type
-		create()
-		{
-			return new CategoricalCptColourPalette<T>();
-		}
-
-	protected:
-
-		virtual
-		bool
-		use_background_colour(
-				value_type value) const
-		{
-			// Do not use background colour. For categorical CPT files whose value type is
-			// not int, we use the label as the value type, and there is no requirement
-			// that the labels are presented in sorted order (in fact, there may be no order).
-			return false;
-		}
-
-		virtual
-		bool
-		use_foreground_colour(
-				value_type value) const
-		{
-			// Do not use foreground colour. For categorical CPT files whose value type is
-			// not int, we use the label as the value type, and there is no requirement
-			// that the labels are presented in sorted order (in fact, there may be no order).
-			return false;
-		}
-
-	private:
-
-		CategoricalCptColourPalette()
-		{
-		}
-	};
-
-
-	/**
-	 * Specialisation of CategoricalCptColourPalette for int.
-	 *
-	 * The specialisation enables the use of the background and foreground colours,
-	 * which are not used in the general case for categorical CPT files.
-	 */
-	template<typename IntType>
-	class CategoricalCptColourPalette<IntType, typename boost::enable_if<boost::is_integral<IntType> >::type> :
-			public CptColourPalette<ColourEntry<IntType> >
-	{
-		typedef CptColourPalette<ColourEntry<IntType> > base_type;
 		typedef typename base_type::value_type value_type;
 
-	public:
-
-		typedef CategoricalCptColourPalette<IntType> this_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
-		typedef boost::intrusive_ptr<this_type> maybe_null_ptr_type;
-		typedef boost::intrusive_ptr<const this_type> maybe_null_ptr_to_const_type;
-
 		static
 		non_null_ptr_type
 		create()
 		{
-			return new CategoricalCptColourPalette<IntType>();
+			return new CategoricalCptColourPalette();
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			CategoricalCptColourPaletteInternals::AcceptVisitor<T>::do_accept_visitor(visitor, *this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			CategoricalCptColourPaletteInternals::AcceptVisitor<T>::do_accept_visitor(visitor, *this);
+		}
+
+		/**
+		 * Returns the lower bound of the range covered by this colour palette.
+		 * This function can only be called if @a T is integral.
+		 */
+		T
+		get_lower_bound() const
+		{
+			return d_entries.front().key();
+		}
+
+		/**
+		 * Returns the upper bound of the range covered by this colour palette.
+		 * This function can only be called if @a T is integral.
+		 */
+		T
+		get_upper_bound() const
+		{
+			return d_entries.back().key();
 		}
 
 	protected:
+
+		explicit
+		CategoricalCptColourPalette()
+		{
+		}
 
 		virtual
 		bool
 		use_background_colour(
 				value_type value) const
 		{
-			// Background colour is used if value comes before first slice.
-			return value < d_entries.front();
+			return CategoricalCptColourPaletteInternals::UseForegroundBackgroundColour<T>::use_background_colour(
+					d_entries, value);
 		}
 
 		virtual
@@ -856,15 +985,11 @@ namespace GPlatesGui
 		use_foreground_colour(
 				value_type value) const
 		{
-			// Foreground colour is used if value comes after last slice.
-			return value > d_entries.back();
+			return CategoricalCptColourPaletteInternals::UseForegroundBackgroundColour<T>::use_foreground_colour(
+					d_entries, value);
 		}
 
 	private:
-
-		CategoricalCptColourPalette()
-		{
-		}
 
 		using base_type::d_entries;
 	};

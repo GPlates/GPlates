@@ -673,12 +673,6 @@
    <property name="text">
     <string>Move &amp;Up</string>
    </property>
-   <property name="shortcut">
-    <string>Up</string>
-   </property>
-   <property name="shortcutContext">
-    <enum>Qt::WidgetWithChildrenShortcut</enum>
-   </property>
   </action>
   <action name="action_Move_Camera_Down">
    <property name="icon">
@@ -687,12 +681,6 @@
    </property>
    <property name="text">
     <string>Move &amp;Down</string>
-   </property>
-   <property name="shortcut">
-    <string>Down</string>
-   </property>
-   <property name="shortcutContext">
-    <enum>Qt::WidgetWithChildrenShortcut</enum>
    </property>
   </action>
   <action name="action_Move_Camera_Left">
@@ -703,12 +691,6 @@
    <property name="text">
     <string>Move &amp;Left</string>
    </property>
-   <property name="shortcut">
-    <string>Left</string>
-   </property>
-   <property name="shortcutContext">
-    <enum>Qt::WidgetWithChildrenShortcut</enum>
-   </property>
   </action>
   <action name="action_Move_Camera_Right">
    <property name="icon">
@@ -717,12 +699,6 @@
    </property>
    <property name="text">
     <string>Move &amp;Right</string>
-   </property>
-   <property name="shortcut">
-    <string>Right</string>
-   </property>
-   <property name="shortcutContext">
-    <enum>Qt::WidgetWithChildrenShortcut</enum>
    </property>
   </action>
   <action name="action_Rotate_Camera_Clockwise">
@@ -1391,6 +1367,10 @@
    </property>
   </action>
   <action name="action_Manage_Colouring">
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/gnome_stock_color_16.png</normaloff>:/gnome_stock_color_16.png</iconset>
+   </property>
    <property name="text">
     <string>Manage &amp;Colouring</string>
    </property>
@@ -1544,6 +1524,12 @@
   <action name="action_Open_Python_Console">
    <property name="text">
     <string>Open Python &amp;Console</string>
+   </property>
+   <property name="shortcut">
+    <string>F12</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
  </widget>

@@ -1,8 +1,8 @@
 # Find our required libraries.
 set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ4" "CGAL")
-if(GPLATES_HAS_PYTHON)
+if(NOT GPLATES_NO_PYTHON)
 	set(required_libs ${required_libs} "PythonLibs")
-endif(GPLATES_HAS_PYTHON)
+endif(NOT GPLATES_NO_PYTHON)
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
@@ -10,9 +10,9 @@ endforeach(lib)
 # The following Boost libraries are both required and dynamically linked.
 set(Boost_USE_STATIC_LIBS FALSE)
 set(boost_components program_options thread)
-if(GPLATES_HAS_PYTHON)
+if(NOT GPLATES_NO_PYTHON)
 	set(boost_components ${boost_components} python)
-endif(GPLATES_HAS_PYTHON)
+endif(NOT GPLATES_NO_PYTHON)
 find_package("Boost" 1.34.1 REQUIRED ${boost_components})
 
 # Check that each of the above libraries was found, because even though it is
@@ -240,11 +240,11 @@ set(external_INCLUDE_DIRS
 	${Boost_INCLUDE_DIR}
 	${PROJ4_INCLUDE_DIR}
 	${ImageMagick_INCLUDE_DIRS})
-if(GPLATES_HAS_PYTHON)
+if(NOT GPLATES_NO_PYTHON)
 	set(external_INCLUDE_DIRS
 		${external_INCLUDE_DIRS}
 		${PYTHON_INCLUDE_PATH})
-endif(GPLATES_HAS_PYTHON)
+endif(NOT GPLATES_NO_PYTHON)
 	
 # Internal include directories:
 set(internal_INCLUDE_DIRS
@@ -386,7 +386,7 @@ endif (ADD_UNIT_TEST_TARGET)
 set(GPLATES_MAIN_TARGET gplates)
 
 # Add Python module library target.
-if(GPLATES_HAS_PYTHON)
+if(NOT GPLATES_NO_PYTHON)
 	message(STATUS "Adding GPlates Python module.")
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
 	add_library(pygplates MODULE EXCLUDE_FROM_ALL
@@ -396,7 +396,7 @@ if(GPLATES_HAS_PYTHON)
 	if(WIN32)
 		set_target_properties(pygplates PROPERTIES SUFFIX ".pyd")
 	endif(WIN32)
-endif(GPLATES_HAS_PYTHON)
+endif(NOT GPLATES_NO_PYTHON)
 
 if (APPLE)
 	# Copy icon file to 'Resources' directory inside application bundle.
@@ -439,11 +439,11 @@ set(dependency_LIBS
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
 	${ImageMagick_LIBRARIES})
-if(GPLATES_HAS_PYTHON)
+if(NOT GPLATES_NO_PYTHON)
 	set(dependency_LIBS
 		${dependency_LIBS}
 		${PYTHON_LIBRARIES})
-endif(GPLATES_HAS_PYTHON)
+endif(NOT GPLATES_NO_PYTHON)
 
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
@@ -464,9 +464,9 @@ endif (ADD_GPLATES_CLI_TARGET)
 if (ADD_UNIT_TEST_TARGET)
 	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LIBS} ${dependency_LIBS} ${GPlates_unit_test_LIBS})
 endif (ADD_UNIT_TEST_TARGET)
-if (GPLATES_HAS_PYTHON)
+if (NOT GPLATES_NO_PYTHON)
 	target_link_libraries(pygplates ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
-endif (GPLATES_HAS_PYTHON)
+endif (NOT GPLATES_NO_PYTHON)
 
 # Current binary directory must be included first for g++ pre-compiled headers.
 # There's a '_pch.h' file in current source and current binary directory however the '_pch.h.gch' pre-compiled header
@@ -531,6 +531,6 @@ endif (CMAKE_COMPILER_IS_GNUCXX)
 
 # Test whether Python embedding works.
 # This must be run after the include and library paths have all been set.
-if(GPLATES_HAS_PYTHON)
+if(NOT GPLATES_NO_PYTHON)
 	include(TestPythonEmbedding)
-endif(GPLATES_HAS_PYTHON)
+endif(NOT GPLATES_NO_PYTHON)

@@ -27,6 +27,8 @@
 #ifndef GPLATES_GUI_COLOURPALETTEVISITOR_H
 #define GPLATES_GUI_COLOURPALETTEVISITOR_H
 
+#include <boost/cstdint.hpp>
+
 #include "utils/SetConst.h"
 
 
@@ -34,6 +36,7 @@ namespace GPlatesGui
 {
 	// Forward declarations of supported ColourPalette derivations.
 	class AgeColourPalette;
+	template <typename> class CategoricalCptColourPalette;
 	class DefaultPlateIdColourPalette;
 	class DefaultRasterColourPalette;
 	class FeatureTypeColourPalette;
@@ -56,6 +59,8 @@ namespace GPlatesGui
 		typedef typename GPlatesUtils::SetConst<FeatureTypeColourPalette, Const>::type feature_type_colour_palette_type;
 		typedef typename GPlatesUtils::SetConst<RegionalPlateIdColourPalette, Const>::type regional_plate_id_colour_palette_type;
 		typedef typename GPlatesUtils::SetConst<RegularCptColourPalette, Const>::type regular_cpt_colour_palette_type;
+		typedef typename GPlatesUtils::SetConst<CategoricalCptColourPalette<boost::int32_t>, Const>::type int32_categorical_cpt_colour_palette_type;
+		typedef typename GPlatesUtils::SetConst<CategoricalCptColourPalette<boost::uint32_t>, Const>::type uint32_categorical_cpt_colour_palette_type;
 
 		virtual
 		~ColourPaletteVisitorBase()
@@ -97,8 +102,21 @@ namespace GPlatesGui
 				regular_cpt_colour_palette_type &)
 		{  }
 
+		virtual
+		void
+		visit_int32_categorical_cpt_colour_palette(
+				int32_categorical_cpt_colour_palette_type &)
+		{  }
+
+		virtual
+		void
+		visit_uint32_categorical_cpt_colour_palette(
+				uint32_categorical_cpt_colour_palette_type &)
+		{  }
+
 	protected:
 
+		explicit
 		ColourPaletteVisitorBase()
 		{  }
 	};

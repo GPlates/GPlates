@@ -64,9 +64,6 @@ set(srcs
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
-    ColourScaleDialog.cc
-    ColourScaleDialog.h
-    ColourScaleDialogUi.ui
     ColourScaleWidget.cc
     ColourScaleWidget.h
     ConfigureExportParametersDialog.cc
@@ -253,6 +250,15 @@ set(srcs
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
     PropertyValueNotSupportedException.h
+    PythonConsoleDialog.cc
+    PythonConsoleDialog.h
+    PythonConsoleDialogUi.ui
+    PythonExecutionMonitorWidget.cc
+    PythonExecutionMonitorWidget.h
+    PythonExecutionMonitorWidgetUi.ui
+    PythonReadlineDialog.cc
+    PythonReadlineDialog.h
+    PythonReadlineDialogUi.ui
     QtWidgetUtils.cc
     QtWidgetUtils.h
     QueryFeaturePropertiesWidget.cc
@@ -360,6 +366,8 @@ set(srcs
     VisualLayersComboBox.h
     VisualLayersDelegate.cc
     VisualLayersDelegate.h
+    VisualLayersDialog.cc
+    VisualLayersDialog.h
     VisualLayersListView.cc
     VisualLayersListView.h
     VisualLayersWidget.cc

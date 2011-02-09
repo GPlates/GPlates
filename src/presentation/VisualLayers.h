@@ -414,6 +414,13 @@ namespace GPlatesPresentation
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index);
 
 		/**
+		 * Calculates where a new layer of the given type should go in the ordering.
+		 */
+		std::size_t
+		get_index_of_new_layer(
+				VisualLayerType::Type visual_layer_type) const;
+
+		/**
 		 * Emits the layer_modified signal, if @a index is found in the layer ordering.
 		 */
 		void

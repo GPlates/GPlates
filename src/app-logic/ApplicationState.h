@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -42,7 +42,7 @@
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 
-#include "global/config.h"
+#include "global/python.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
@@ -164,7 +164,34 @@ namespace GPlatesAppLogic
 		update_layers(
 				const FeatureCollectionFileState::file_reference &file_ref);
 
-#if defined(GPLATES_HAS_PYTHON)
+#if !defined(GPLATES_NO_PYTHON)
+		void
+		set_python_main_module(
+				const boost::python::object &main_module)
+		{
+			d_python_main_module = main_module;
+		}
+
+		const boost::python::object &
+		get_python_main_module() const
+		{
+			return d_python_main_module;
+		}
+
+		void
+		set_python_main_namespace(
+				const boost::python::object &main_namespace)
+		{
+			d_python_main_namespace = main_namespace;
+		}
+
+		const boost::python::object &
+		get_python_main_namespace() const
+		{
+			return d_python_main_namespace;
+		}
+
+		// Testing code only:
 		int
 		get_num() const
 		{
@@ -312,6 +339,19 @@ namespace GPlatesAppLogic
 		 * Reconstruction results are stored here.
 		 */
 		Reconstruction::non_null_ptr_to_const_type d_reconstruction;
+
+#if !defined(GPLATES_NO_PYTHON)
+		/**
+		 * The "__main__" Python module.
+		 */
+		boost::python::object d_python_main_module;
+
+		/**
+		 * The "__dict__" attribute of the "__main__" Python module.
+		 * This is useful for passing into exec() and eval() for context.
+		 */
+		boost::python::object d_python_main_namespace;
+#endif
 
 		/**
 		 * Make signal/slot connections that coordinate the application logic structure

@@ -47,6 +47,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declarations.
+	class ColourScaleWidget;
 	class FriendlyLineEdit;
 	class ReadErrorAccumulationDialog;
 	class ViewportWindow;
@@ -92,9 +93,6 @@ namespace GPlatesQtWidgets
 		void
 		handle_use_default_palette_button_clicked();
 
-		void
-		handle_show_colour_scale_button_clicked();
-
 	private:
 
 		RasterLayerOptionsWidget(
@@ -112,6 +110,7 @@ namespace GPlatesQtWidgets
 
 		FriendlyLineEdit *d_palette_filename_lineedit;
 		OpenFileDialog d_open_file_dialog;
+		ColourScaleWidget *d_colour_scale_widget;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

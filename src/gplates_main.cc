@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,20 +25,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "global/config.h" // GPLATES_HAS_PYTHON
-
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <utility>
 #include <algorithm>
 #include <vector>
-#if defined(GPLATES_HAS_PYTHON)
-#	include <boost/python.hpp>
-#endif
 #include <QStringList>
 #include <QTextStream>
 
+#include "api/PythonInterpreterLocker.h"
+#include "api/Sleeper.h"
+
 #include "global/Constants.h"
+#include "global/python.h"
 
 #include "gui/GPlatesQApplication.h"
 #include "gui/GPlatesQtMsgHandler.h"
@@ -224,30 +224,80 @@ int internal_main(int argc, char* argv[])
 	CommandLineOptions command_line_options = process_command_line_options(
 			qapplication.argc(), qapplication.argv());
 
+#if !defined(GPLATES_NO_PYTHON)
+	// Initialise the embedded Python interpreter.
+	char GPLATES_MODULE_NAME[] = "pygplates";
+	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
+	{
+		PyErr_Print();
+		abort();
+	}
+
+	Py_SetProgramName(argv[0]);
+	Py_Initialize();
+
+	// Initialise Python threading support; this grabs the Global Interpreter Lock
+	// for this thread.
+	PyEval_InitThreads();
+
+	// But then we give up the GIL so that other threads can run Python code.
+	PyEval_SaveThread();
+#endif
+
 	// The application state and view state are stored in this object.
+	// Note that ViewState starts the Python execution thread, so Python threading
+	// support must have been set up already before we get here.
 	GPlatesPresentation::Application state;
 
-#if defined(GPLATES_HAS_PYTHON)
-	// Start the embedded Python interpreter and give it access to the ApplicationState.
+#if !defined(GPLATES_NO_PYTHON)
 	using namespace boost::python;
+
+	GPlatesApi::PythonInterpreterLocker interpreter_locker;
 	try
 	{
-		char GPLATES_MODULE_NAME[] = "pygplates";
-		PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates);
 
-		Py_Initialize();
-
-		object main_module((handle<>(borrowed(PyImport_AddModule("__main__")))));
+		// Set up the __main__ and pygplates module. Give the interpreter access to
+		// our instance of ApplicationState.
+		object main_module = import("__main__");
 		object main_namespace = main_module.attr("__dict__");
-		object gplates_module((handle<>(PyImport_ImportModule("pygplates"))));
-		main_namespace["pygplates"] = gplates_module;
-		scope(gplates_module).attr("app_state") = ptr(&state.get_application_state());
-		handle<> ignored((PyRun_String("print pygplates.app_state.get_num()\n", Py_file_input, main_namespace.ptr(), main_namespace.ptr())));
+
+		object pygplates_module = import("pygplates");
+		main_namespace["pygplates"] = pygplates_module;
+
+		GPlatesAppLogic::ApplicationState &application_state = state.get_application_state();
+		pygplates_module.attr("app_state") = ptr(&application_state);
+		application_state.set_python_main_module(main_module);
+		application_state.set_python_main_namespace(main_namespace);
 	}
 	catch (const error_already_set &)
 	{
+		std::cerr << "Fatal error during initialisation of the Python interpreter:" << std::endl;
+		PyErr_Print();
+		abort();
+	}
+
+	// Importing "sys" enables the printing of the value of expressions in
+	// the interactive Python console window, and importing "builtin" enables
+	// the magic variable "_" (the last result in the interactive window).
+	// We then delete them so that the packages don't linger around, but their
+	// effect remains even after deletion.
+	// Note: using boost::python::exec doesn't achieve the desired effects.
+	if (PyRun_SimpleString("import sys, __builtin__; del sys; del __builtin__"))
+	{
+		std::cerr << "Failed to import sys, __builtin__" << std::endl;
 		PyErr_Print();
 	}
+
+	// Get rid of some built-in functions.
+	if (PyRun_SimpleString("import __builtin__; del __builtin__.copyright, __builtin__.credits, __builtin__.license, __builtin__"))
+	{
+		std::cerr << "Failed to delete some built-in functions" << std::endl;
+		PyErr_Print();
+	}
+	interpreter_locker.release();
+
+	// Replaces Python's time.sleep() with our own implementation.
+	GPlatesApi::Sleeper sleeper;
 #endif
 
 	// The main window widget.

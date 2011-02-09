@@ -18,6 +18,8 @@ set(srcs
     CommandLineParser.cc
     CommandLineParser.h
     CopyConst.h
+    DeferredCallEvent.cc
+    DeferredCallEvent.h
     ExportAnimationStrategyExporterID.h
     ExportAnimationStrategyFactory.cc
     ExportAnimationStrategyFactory.h
@@ -60,6 +62,7 @@ set(srcs
     StringFormattingUtils.h
     StringSet.cc
     StringSet.h
+    StringUtils.cc
     StringUtils.h
     TypeTraits.h
     UnicodeString.cc

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -36,6 +36,8 @@
 #include "global/Constants.h"
 #include "global/GPlatesException.h"
 #include "global/SubversionInfo.h"
+
+#include "utils/DeferredCallEvent.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 
@@ -195,3 +197,26 @@ GPlatesGui::GPlatesQApplication::call_main(
 		NULL/*qreceiver*/,
 		NULL/*qevent*/);
 }
+
+
+bool
+GPlatesGui::GPlatesQApplication::event(
+		QEvent *ev)
+{
+	if (ev->type() == GPlatesUtils::DeferredCallEvent::TYPE)
+	{
+		// Because this object lives on the main GUI thread, we process all
+		// DeferredCallEvents destined to be executed on the main thread here, to save
+		// every class that uses DeferredCallEvents from having to handle this
+		// themselves.
+		GPlatesUtils::DeferredCallEvent *deferred_call_event =
+			static_cast<GPlatesUtils::DeferredCallEvent *>(ev);
+		deferred_call_event->execute();
+		return true;
+	}
+	else
+	{
+		return QApplication::event(ev);
+	}
+}
+

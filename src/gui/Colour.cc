@@ -74,6 +74,29 @@ DEFINE_COLOUR(aqua, 0.0, 1.0, 1.0)
 #undef DEFINE_COLOUR
 
 
+namespace
+{
+	inline
+	qreal
+	clamp_zero_one(
+			qreal value)
+	{
+		if (value < 0.0)
+		{
+			return 0.0;
+		}
+		else if (value > 1.0)
+		{
+			return 1.0;
+		}
+		else
+		{
+			return value;
+		}
+	}
+}
+
+
 GPlatesGui::Colour::Colour(
 		const GLfloat &red_,
 		const GLfloat &green_,
@@ -100,7 +123,11 @@ GPlatesGui::Colour::Colour(
 GPlatesGui::Colour::operator QColor() const
 {
 	QColor qcolor;
-	qcolor.setRgbF(d_rgba[RED_INDEX], d_rgba[GREEN_INDEX], d_rgba[BLUE_INDEX], d_rgba[ALPHA_INDEX]);
+	qcolor.setRgbF(
+			::clamp_zero_one(d_rgba[RED_INDEX]),
+			::clamp_zero_one(d_rgba[GREEN_INDEX]),
+			::clamp_zero_one(d_rgba[BLUE_INDEX]),
+			::clamp_zero_one(d_rgba[ALPHA_INDEX]));
 	return qcolor;
 }
 

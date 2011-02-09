@@ -112,6 +112,8 @@ set(srcs
     GuiException.h
     HTMLColourNames.cc
     HTMLColourNames.h
+    ImportMenu.cc
+    ImportMenu.h
     Map.cc
     Map.h
     MapCanvasPainter.cc
@@ -127,6 +129,8 @@ set(srcs
     MapTransform.cc
     MapTransform.h
     Mipmapper.h
+    ModalPythonExecutionMonitor.cc
+    ModalPythonExecutionMonitor.h
     OpaqueSphere.cc
     OpaqueSphere.h
     PersistentOpenGLObjects.cc
@@ -134,6 +138,8 @@ set(srcs
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
     ProjectionException.h
+    PythonConsoleHistory.cc
+    PythonConsoleHistory.h
     QGLWidgetTextRenderer.cc
     QGLWidgetTextRenderer.h
     RasterColourPalette.cc

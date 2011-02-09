@@ -213,7 +213,7 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 
 	// Note: I would've preferred to use resize() instead, but at least on
 	// Windows Vista with Qt 4.4, the dialog doesn't respect the call to resize().
-	QSize desired_size(600, 500);
+	QSize desired_size(750, 600);
 	setMinimumSize(desired_size);
 }
 

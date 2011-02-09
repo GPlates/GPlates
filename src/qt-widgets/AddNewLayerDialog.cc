@@ -99,9 +99,9 @@ GPlatesQtWidgets::AddNewLayerDialog::populate_combobox()
 	const GPlatesPresentation::VisualLayerRegistry &visual_layer_registry =
 		d_view_state.get_visual_layer_registry();
 	typedef GPlatesPresentation::VisualLayerRegistry::visual_layer_type_seq_type visual_layer_type_seq_type;
-	visual_layer_type_seq_type visual_layer_types = visual_layer_registry.get_registered_visual_layer_types();
+	visual_layer_type_seq_type visual_layer_types = visual_layer_registry.get_visual_layer_types_in_order();
 
-	BOOST_FOREACH(visual_layer_type_seq_type::value_type visual_layer_type, visual_layer_types)
+	BOOST_REVERSE_FOREACH(visual_layer_type_seq_type::value_type visual_layer_type, visual_layer_types)
 	{
 		const QString &layer_name = visual_layer_registry.get_name(visual_layer_type);
 		const QIcon &layer_icon = visual_layer_registry.get_icon(visual_layer_type);

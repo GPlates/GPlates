@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,15 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "global/config.h" // GPLATES_HAS_PYTHON
-
 #include <boost/foreach.hpp>
-#if defined(GPLATES_HAS_PYTHON)
-#	if defined(HAVE_DIRECT_H)
-#		undef HAVE_DIRECT_H
-#	endif
-#	include <boost/python.hpp>
-#endif
 
 #include "ApplicationState.h"
 
@@ -684,7 +676,7 @@ GPlatesAppLogic::ApplicationState::create_layers(
 	}
 }
 
-#if defined(GPLATES_HAS_PYTHON)
+#if !defined(GPLATES_NO_PYTHON)
 void
 export_application_state()
 {

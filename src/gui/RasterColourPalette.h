@@ -32,6 +32,7 @@
 #include <boost/variant.hpp>
 
 #include "ColourPalette.h"
+#include "ColourPaletteVisitor.h"
 #include "CptColourPalette.h"
 
 #include "utils/ReferenceCount.h"
@@ -99,7 +100,29 @@ namespace GPlatesGui
 		template<class StaticVisitorType>
 		typename StaticVisitorType::result_type
 		apply_visitor(
+				StaticVisitorType &visitor)
+		{
+			return boost::apply_visitor(visitor, d_colour_palette);
+		}
+
+		/**
+		 * Apply a static visitor to the boost::variant wrapped in this instance.
+		 */
+		template<class StaticVisitorType>
+		typename StaticVisitorType::result_type
+		apply_visitor(
 				const StaticVisitorType &visitor) const
+		{
+			return boost::apply_visitor(visitor, d_colour_palette);
+		}
+
+		/**
+		 * Apply a static visitor to the boost::variant wrapped in this instance.
+		 */
+		template<class StaticVisitorType>
+		typename StaticVisitorType::result_type
+		apply_visitor(
+				StaticVisitorType &visitor) const
 		{
 			return boost::apply_visitor(visitor, d_colour_palette);
 		}
@@ -188,12 +211,6 @@ namespace GPlatesGui
 			visitor.visit_default_raster_colour_palette(*this);
 		}
 
-		RegularCptColourPalette::non_null_ptr_to_const_type
-		get_inner_palette() const
-		{
-			return d_inner_palette;
-		}
-
 		double
 		get_mean() const
 		{
@@ -205,6 +222,12 @@ namespace GPlatesGui
 		{
 			return d_std_dev;
 		}
+
+		double
+		get_lower_bound() const;
+
+		double
+		get_upper_bound() const;
 
 	private:
 

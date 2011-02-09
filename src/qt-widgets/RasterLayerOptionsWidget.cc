@@ -29,7 +29,7 @@
 
 #include "RasterLayerOptionsWidget.h"
 
-#include "ColourScaleDialog.h"
+#include "ColourScaleWidget.h"
 #include "FriendlyLineEdit.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -65,7 +65,8 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 			this,
 			tr("Open CPT File"),
 			tr("Regular CPT file (*.cpt);;All files (*)"),
-			view_state)
+			view_state),
+	d_colour_scale_widget(new ColourScaleWidget(this))
 {
 	setupUi(this);
 
@@ -73,6 +74,10 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_palette_filename_lineedit,
 			palette_filename_placeholder_widget);
+
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_colour_scale_widget,
+			colour_scale_placeholder_widget);
 
 	make_signal_slot_connections();
 }
@@ -131,7 +136,12 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 			bool is_rgba8 = (params->get_raster_type() == GPlatesPropertyValues::RasterType::RGBA8);
 			palette_label->setVisible(!is_rgba8);
 			palette_widget->setVisible(!is_rgba8);
-			show_colour_scale_widget->setVisible(!is_rgba8);
+			bool show_colour_scale = false;
+			if (!is_rgba8)
+			{
+				show_colour_scale = d_colour_scale_widget->populate(params->get_colour_palette());
+			}
+			colour_scale_placeholder_widget->setVisible(show_colour_scale);
 
 			if (!is_rgba8)
 			{
@@ -241,15 +251,6 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_default_palette_button_cl
 
 
 void
-GPlatesQtWidgets::RasterLayerOptionsWidget::handle_show_colour_scale_button_clicked()
-{
-	QDialog &layers_dialog = d_viewport_window->layers_dialog();
-	ColourScaleDialog *dialog = new ColourScaleDialog(&layers_dialog);
-	QtWidgetUtils::pop_up_dialog(dialog);
-}
-
-
-void
 GPlatesQtWidgets::RasterLayerOptionsWidget::make_signal_slot_connections()
 {
 	QObject::connect(
@@ -267,10 +268,5 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::make_signal_slot_connections()
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_use_default_palette_button_clicked()));
-	QObject::connect(
-			show_colour_scale_button,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_show_colour_scale_button_clicked()));
 }
 

@@ -23,44 +23,41 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_COLOURSCALEDIALOG_H
-#define GPLATES_QTWIDGETS_COLOURSCALEDIALOG_H
+#ifndef GPLATES_QTWIDGETS_VISUALLAYERSDIALOG_H
+#define GPLATES_QTWIDGETS_VISUALLAYERSDIALOG_H
 
-#include <boost/weak_ptr.hpp>
 #include <QDialog>
 
-#include "ColourScaleDialogUi.h"
 
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
 
 namespace GPlatesPresentation
 {
-	class VisualLayer;
+	class ViewState;
+	class VisualLayers;
 }
 
 namespace GPlatesQtWidgets
 {
-	class ColourScaleWidget;
+	// Forward declaration.
+	class ViewportWindow;
 
-	class ColourScaleDialog :
-			public QDialog,
-			protected Ui_ColourScaleDialog 
+	class VisualLayersDialog :
+			public QDialog
 	{
-		Q_OBJECT
-		
 	public:
 
 		explicit
-		ColourScaleDialog(
+		VisualLayersDialog(
+				GPlatesPresentation::VisualLayers &visual_layers,
+				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesPresentation::ViewState &view_state,
+				ViewportWindow *viewport_window,
 				QWidget *parent_ = NULL);
-
-		void
-		populate(
-				const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer);
-
-	private:
-
-		ColourScaleWidget *d_colour_scale_widget;
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_COLOURSCALEDIALOG_H
+#endif	// GPLATES_QTWIDGETS_VISUALLAYERSDIALOG_H

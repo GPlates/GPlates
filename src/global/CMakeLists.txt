@@ -37,6 +37,7 @@ set(srcs
     NullParameterException.h
     PointerTraits.h
     PreconditionViolationError.h
+    python.h
     RetrievalFromEmptyContainerException.h
     SubversionInfo.h
     types.h

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,21 +33,25 @@
 #include <QDir>
 #include <QTableWidget>
 #include <QString>
+
 #include "ConfigureExportParametersDialogUi.h"
 
 #include "gui/ExportAnimationContext.h"
+
 #include "utils/ExportFileNameTemplateValidator.h"
 #include "utils/ExportAnimationStrategyExporterID.h"
 
+
 namespace GPlatesQtWidgets
 {
-	class ConfigureExportParametersDialog: 
+	class ConfigureExportParametersDialog : 
 			public QDialog,
 			protected Ui_ConfigureExportParametersDialog 
 	{
 		Q_OBJECT
 		
 	public:
+
 		explicit
 		ConfigureExportParametersDialog(
 				GPlatesGui::ExportAnimationContext::non_null_ptr_type export_animation_context_ptr,
@@ -59,7 +63,8 @@ namespace GPlatesQtWidgets
 	
 		friend class ExportAnimationDialog;
 
-		typedef struct {
+		typedef struct
+		{
 			bool has_been_added;
 			GPlatesUtils::Exporter_ID class_id;
 		} export_item_info;
@@ -123,6 +128,12 @@ namespace GPlatesQtWidgets
 		
 		void
 		react_filename_template_changing();
+
+		void
+		focus_on_listwidget_format();
+
+		void
+		focus_on_lineedit_filename();
 	
 	private:
 		void

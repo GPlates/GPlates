@@ -27,6 +27,7 @@
 
 #include "SetVGPVisibilityDialog.h"
 #include "ViewportWindow.h"
+#include "VisualLayersDialog.h"
 
 
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
@@ -87,7 +88,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_vgp_visibility_dialog()
 	{
 		d_set_vgp_visibility_dialog = new SetVGPVisibilityDialog(
 				d_application_state,
-				&d_viewport_window->layers_dialog());
+				&d_viewport_window->visual_layers_dialog());
 	}
 
 	d_set_vgp_visibility_dialog->populate(d_current_visual_layer);

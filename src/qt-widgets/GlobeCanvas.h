@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
  *  (under the name "GLCanvas.h")
- * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010, 2011 The University of Sydney, Australia
  *  (under the name "GlobeCanvas.h")
  *
  * This file is part of GPlates.
@@ -378,6 +378,11 @@ namespace GPlatesQtWidgets
 		void 
 		mouseReleaseEvent(
 				QMouseEvent *event);
+
+		virtual
+		void
+		keyPressEvent(
+				QKeyEvent *key_event);
 
 		virtual
 		void

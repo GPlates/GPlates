@@ -758,6 +758,37 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 
 
 void
+GPlatesQtWidgets::GlobeCanvas::keyPressEvent(
+		QKeyEvent *key_event)
+{
+	// Note that the arrow keys are handled here instead of being set as shortcuts
+	// to the corresponding actions in ViewportWindow because when they were set as
+	// shortcuts, they were interfering with the arrow keys on other widgets.
+	switch (key_event->key())
+	{
+		case Qt::Key_Up:
+			move_camera_up();
+			break;
+
+		case Qt::Key_Down:
+			move_camera_down();
+			break;
+
+		case Qt::Key_Left:
+			move_camera_left();
+			break;
+
+		case Qt::Key_Right:
+			move_camera_right();
+			break;
+
+		default:
+			QGLWidget::keyPressEvent(key_event);
+	}
+}
+
+
+void
 GPlatesQtWidgets::GlobeCanvas::handle_zoom_change() 
 {
 	// switch context before we do any GL stuff

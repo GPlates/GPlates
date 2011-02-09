@@ -671,7 +671,10 @@ GPlatesQtWidgets::TimeDependentRasterPage::check_if_complete()
 				if (GPlatesMaths::are_almost_exactly_equal(curr, prev))
 				{
 					is_complete = false;
-					warning = tr("Two or more raster files cannot be assigned the same time.");
+					QLocale loc;
+					loc.setNumberOptions(QLocale::OmitGroupSeparator);
+					warning = tr("Two or more raster files cannot be assigned the same time (%1 Ma).")
+						.arg(loc.toString(curr));
 
 					break;
 				}

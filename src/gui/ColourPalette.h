@@ -32,7 +32,6 @@
 #include <boost/optional.hpp>
 
 #include "Colour.h"
-#include "ColourPaletteVisitor.h"
 
 #include "model/types.h"
 
@@ -44,6 +43,11 @@
 
 namespace GPlatesGui 
 {
+	// Forward declarations.
+	template <bool> class ColourPaletteVisitorBase;
+	typedef ColourPaletteVisitorBase<true> ConstColourPaletteVisitor;
+	typedef ColourPaletteVisitorBase<false> ColourPaletteVisitor;
+
 	/**
 	 * ColourPalette maps KeyType values to Colours, the mapping being either
 	 * continuous or discrete.

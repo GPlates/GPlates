@@ -31,6 +31,7 @@
 
 #include "Colour.h"
 #include "ColourPalette.h"
+#include "ColourPaletteVisitor.h"
 
 #include "model/types.h"
 

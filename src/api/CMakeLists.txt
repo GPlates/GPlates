@@ -11,7 +11,25 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    AbstractConsole.h
+    AbstractPythonRunner.h
+    ConsoleReader.cc
+    ConsoleReader.h
+    ConsoleWriter.cc
+    ConsoleWriter.h
     Python.cc
+    PythonExecutionMonitor.cc
+    PythonExecutionMonitor.h
+    PythonExecutionThread.cc
+    PythonExecutionThread.h
+    PythonInterpreterLocker.cc
+    PythonInterpreterLocker.h
+    PythonInterpreterUnlocker.cc
+    PythonInterpreterUnlocker.h
+    PythonRunner.cc
+    PythonRunner.h
+    Sleeper.cc
+    Sleeper.h
 )
 
 

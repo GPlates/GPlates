@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -100,8 +100,8 @@ GPlatesGui::DefaultRasterColourPalette::DefaultRasterColourPalette(
 	d_mean(mean),
 	d_std_dev(std_dev)
 {
-	double min = mean - NUM_STD_DEV_AWAY_FROM_MEAN * std_dev;
-	double max = mean + NUM_STD_DEV_AWAY_FROM_MEAN * std_dev;
+	double min = get_lower_bound();
+	double max = get_upper_bound();
 	double range = max - min;
 
 	// Background colour, for values before min value.
@@ -140,3 +140,18 @@ GPlatesGui::DefaultRasterColourPalette::get_colour(
 {
 	return d_inner_palette->get_colour(value);
 }
+
+
+double
+GPlatesGui::DefaultRasterColourPalette::get_lower_bound() const
+{
+	return d_mean - NUM_STD_DEV_AWAY_FROM_MEAN * d_std_dev;
+}
+
+
+double
+GPlatesGui::DefaultRasterColourPalette::get_upper_bound() const
+{
+	return d_mean + NUM_STD_DEV_AWAY_FROM_MEAN * d_std_dev;
+}
+

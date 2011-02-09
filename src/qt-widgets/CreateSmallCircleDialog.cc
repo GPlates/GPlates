@@ -5,7 +5,8 @@
  * $Revision: 8194 $
  * $Date: 2010-04-26 18:24:42 +0200 (ma, 26 apr 2010) $ 
  * 
- * Copyright (C)  2010 Geological Survey of Norway
+ * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,14 +26,18 @@
 
 #include "CreateSmallCircleDialog.h"
 
+#include "QtWidgetUtils.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionTree.h"
+
 #include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
+
 #include "model/types.h"
 
 namespace
@@ -116,6 +121,8 @@ GPlatesQtWidgets::CreateSmallCircleDialog::CreateSmallCircleDialog(
 	QObject::connect(spinbox_radius_1,SIGNAL(valueChanged(double)),SLOT(handle_multiple_circle_fields_changed()));
 	QObject::connect(spinbox_radius_2,SIGNAL(valueChanged(double)),SLOT(handle_multiple_circle_fields_changed()));
 	QObject::connect(spinbox_step,SIGNAL(valueChanged(double)),SLOT(handle_multiple_circle_fields_changed()));
+
+	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
 void

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,6 +30,8 @@
 #include <QWidget>
 #include <QDialog>
 #include <QColorDialog>
+#include <QKeyEvent>
+#include <QPixmap>
 
 #include "gui/Colour.h"
 
@@ -60,6 +62,22 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		pop_up_dialog(
+				QWidget *dialog);
+
+		/**
+		 * Sets the height of @a dialog to that of its @a sizeHint(), and ensures
+		 * that the width of @a dialog is at least that of its @a sizeHint().
+		 *
+		 * This is useful for making sure that dialogs with fixed height contents
+		 * (i.e. dialogs without a vertically-expanding widget in the middle) have a
+		 * reasonable height regardless of platform. Note that for this function to
+		 * work correctly, any vertical spacers must have a sizeHint() height of 0
+		 * (see for example, @a SetProjectionDialog). The width is also changed
+		 * if the dialog's set width is not wide enough to accommodate its
+		 * contents on a particular platform.
+		 */
+		void
+		resize_based_on_size_hint(
 				QDialog *dialog);
 
 		/**
@@ -76,6 +94,25 @@ namespace GPlatesQtWidgets
 		get_colour_with_alpha(
 				const GPlatesGui::Colour &initial,
 				QWidget *parent);
+
+		/**
+		 * Returns true if the @a key_event represents Ctrl+C on Windows and
+		 * Linux, and control+C (not command+C) on the Mac.
+		 */
+		bool
+		is_control_c(
+				QKeyEvent *key_event);
+
+
+		/**
+		 * Returns a checkboard typically used as the background of a semi-transparent
+		 * image, with the given @a width, @a height and @a grid_size.
+		 */
+		QPixmap
+		create_transparent_checkerboard(
+				int width,
+				int height,
+				int grid_size);
 	}
 }
 

@@ -74,6 +74,7 @@
 #include "MapView.h"
 #include "MeshDialog.h"
 #include "PreferencesDialog.h"
+#include "PythonConsoleDialog.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
@@ -87,7 +88,7 @@
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
 #include "TotalReconstructionSequencesDialog.h"
-#include "VisualLayersWidget.h"
+#include "VisualLayersDialog.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/AppLogicUtils.h"
@@ -113,6 +114,7 @@
 #include "global/GPlatesException.h"
 #include "global/SubversionInfo.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
+#include "global/config.h"
 
 #include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "gui/ChooseCanvasTool.h"
@@ -124,6 +126,7 @@
 #include "gui/GlobeCanvasToolAdapter.h"
 #include "gui/GlobeCanvasToolChoice.h"
 #include "gui/GuiDebug.h"
+#include "gui/ImportMenu.h"
 #include "gui/MapCanvasToolAdapter.h"
 #include "gui/MapCanvasToolChoice.h"
 #include "gui/ProjectionException.h"
@@ -293,6 +296,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_view_state(),
 				this)),
 	d_mesh_dialog_ptr(NULL),
+	d_python_console_dialog_ptr(
+			new PythonConsoleDialog(
+				get_application_state(),
+				get_view_state(),
+				this,
+				this)),
 	d_read_errors_dialog_ptr(
 			new ReadErrorAccumulationDialog(this)),
 	d_set_camera_viewpoint_dialog_ptr(NULL),
@@ -311,7 +320,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_application_state().get_feature_collection_file_state(),
 				get_view_state(),
 				this)),
-	d_layers_dialog_ptr(NULL),
+	d_visual_layers_dialog_ptr(NULL),
 	d_choose_canvas_tool(
 			new GPlatesGui::ChooseCanvasTool(*this)),
 	d_digitise_geometry_builder(
@@ -363,7 +372,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_redo_action_ptr(
 			GPlatesViewOperations::UndoRedo::instance().get_undo_group().createRedoAction(this, tr("Re&do"))),
 	d_inside_update_undo_action_tooltip(false),
-	d_inside_update_redo_action_tooltip(false)
+	d_inside_update_redo_action_tooltip(false),
+	d_import_menu_ptr(NULL) // Needs to be set up after call to setupUi.
 {
 	setupUi(this);
 
@@ -781,8 +791,13 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 			this, SLOT(pop_up_import_raster_dialog()));
 	QObject::connect(action_Import_Time_Dependent_Raster, SIGNAL(triggered()),
 			this, SLOT(pop_up_import_time_dependent_raster_dialog()));
-	// Not implemented yet...
-	menu_File->removeAction(menu_Import->menuAction());
+	// Import submenu logic is handled by the ImportMenu class.
+	// Note: items to the Import submenu should be added programmatically, through
+	// @a d_import_menu_ptr, instead of via the designer.
+	d_import_menu_ptr = new GPlatesGui::ImportMenu(
+			menu_Import,
+			menu_File,
+			this);
 	// ----
 	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
 			this, SLOT(pop_up_manage_feature_collections_dialog()));
@@ -822,6 +837,8 @@ GPlatesQtWidgets::ViewportWindow::connect_edit_menu_actions()
 			SIGNAL(changed()),
 			this,
 			SLOT(update_redo_action_tooltip()));
+	add_shortcut_to_tooltip(d_undo_action_ptr);
+	add_shortcut_to_tooltip(d_redo_action_ptr);
 	// ----
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			d_feature_properties_dialog_ptr.get(), SLOT(choose_query_widget_and_open()));
@@ -867,14 +884,6 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 			this, SLOT(handle_move_camera_left()));
 	QObject::connect(action_Move_Camera_Right, SIGNAL(triggered()),
 			this, SLOT(handle_move_camera_right()));
-	// Add the move camera actions to the globe and map widget so that they can
-	// only be triggered if the focus is on the globe and map widget (their
-	// shortcutContext property is set to Qt::WidgetWithChildrenShortcut).
-	QWidget &globe_and_map_widget = reconstruction_view_widget().globe_and_map_widget();
-	globe_and_map_widget.addAction(action_Move_Camera_Up);
-	globe_and_map_widget.addAction(action_Move_Camera_Down);
-	globe_and_map_widget.addAction(action_Move_Camera_Left);
-	globe_and_map_widget.addAction(action_Move_Camera_Right);
 	// ----
 	QObject::connect(action_Rotate_Camera_Clockwise, SIGNAL(triggered()),
 			this, SLOT(handle_rotate_camera_clockwise()));
@@ -968,10 +977,10 @@ void
 GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 {
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
-		this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
+			this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
 	// ----
-	// Not implemented yet...
-	action_Open_Python_Console->setVisible(false);
+	QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
+			this, SLOT(pop_up_python_console()));
 }
 
 
@@ -1046,7 +1055,7 @@ GPlatesQtWidgets::ViewportWindow::connect_window_menu_actions()
 			this, SLOT(open_new_window()));
 	// ----
 	QObject::connect(action_Show_Layers, SIGNAL(triggered(bool)),
-			this, SLOT(set_layering_dialog_visibility(bool)));
+			this, SLOT(set_visual_layers_dialog_visibility(bool)));
 	QAction *action_show_bottom_panel = d_info_dock_ptr->toggleViewAction();
 	action_show_bottom_panel->setText(tr("Show &Bottom Panel"));
 	action_show_bottom_panel->setObjectName("action_Show_Bottom_Panel");
@@ -1453,40 +1462,30 @@ GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::set_layering_dialog_visibility(
+GPlatesQtWidgets::ViewportWindow::set_visual_layers_dialog_visibility(
 		bool visible)
 {
-	if (!d_layers_dialog_ptr)
+	if (!d_visual_layers_dialog_ptr)
 	{
-		// Create a new dialog and fill it with a VisualLayersWidget.
-		// This doesn't have to be anything fancy, because this widget is only
-		// temporarily living in a dialog (it will go into a dock later).
-		QDialog *dialog = new QDialog(this, Qt::Window);
-		QHBoxLayout *dialog_layout = new QHBoxLayout(dialog);
-		dialog_layout->addWidget(
-				new VisualLayersWidget(
+		d_visual_layers_dialog_ptr.reset(
+				new VisualLayersDialog(
 					get_view_state().get_visual_layers(),
 					get_application_state(),
 					get_view_state(),
 					this,
-					dialog));
-		dialog_layout->setContentsMargins(0, 0, 0, 0);
-		dialog->setLayout(dialog_layout);
-		dialog->setWindowTitle("Layers");
-		dialog->resize(375, 600);
+					this));
 
-		QtWidgetUtils::reposition_to_side_of_parent(dialog);
-
-		d_layers_dialog_ptr.reset(dialog);
+		QtWidgetUtils::reposition_to_side_of_parent(
+				d_visual_layers_dialog_ptr.get());
 	}
 
 	if (visible)
 	{
-		QtWidgetUtils::pop_up_dialog(d_layers_dialog_ptr.get());
+		QtWidgetUtils::pop_up_dialog(d_visual_layers_dialog_ptr.get());
 	}
 	else
 	{
-		d_layers_dialog_ptr->hide();
+		d_visual_layers_dialog_ptr->hide();
 	}
 }
 
@@ -1494,7 +1493,9 @@ GPlatesQtWidgets::ViewportWindow::set_layering_dialog_visibility(
 void
 GPlatesQtWidgets::ViewportWindow::handle_window_menu_about_to_show()
 {
-	action_Show_Layers->setChecked(d_layers_dialog_ptr && d_layers_dialog_ptr->isVisible());
+	action_Show_Layers->setChecked(
+			d_visual_layers_dialog_ptr &&
+			d_visual_layers_dialog_ptr->isVisible());
 }
 
 
@@ -2054,6 +2055,9 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 		close_event->accept();
 		// If we decide to accept the close event, we should also tidy up after ourselves.
 		close_all_dialogs();
+		// Make sure we really do quit - stray dialogs not caught by @a close_all_dialogs()
+		// (e.g. PyQt windows) will keep GPlates open.
+		QCoreApplication::quit();
 	} else {
 		// User is Not OK with quitting GPlates at this point.
 		close_event->ignore();
@@ -2457,7 +2461,7 @@ void
 GPlatesQtWidgets::ViewportWindow::handle_visual_layer_added(
 		size_t added)
 {
-	set_layering_dialog_visibility(true);
+	set_visual_layers_dialog_visibility(true);
 
 	// Disconnect from signal so that we only open the Layers dialog automatically
 	// the first time a visual layer is added.
@@ -2636,5 +2640,13 @@ void
 GPlatesQtWidgets::ViewportWindow::open_online_documentation()
 {
 	QDesktopServices::openUrl(QUrl("http://www.gplates.org/docs.html"));
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
+{
+	// Note: this dialog is constructed in the ViewportWindow constructor.
+	QtWidgetUtils::pop_up_dialog(d_python_console_dialog_ptr.get());
 }
 

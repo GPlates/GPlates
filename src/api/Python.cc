@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,19 +23,35 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "global/config.h" // GPLATES_HAS_PYTHON
+#include "global/python.h"
 
-#if defined(GPLATES_HAS_PYTHON)
-#include <boost/python.hpp>
+//
+// Note: this .cc file has no corresponding .h file.
+//
 
+#if !defined(GPLATES_NO_PYTHON)
+
+// api directory.
+void export_console_reader();
+void export_console_writer();
+
+// app-logic directory.
 void export_application_state();
 
 BOOST_PYTHON_MODULE(pygplates)
 {
+	// api directory.
+	export_console_reader();
+	export_console_writer();
+
+	// app-logic directory.
 	export_application_state();
 }
+
 #else
+
 // Dummy variable so that this compilation unit isn't empty.
-void *dummy_gplates_python_disabled = 0;
+void *dummy_gplates_can_haz_python = 0;
+
 #endif
 

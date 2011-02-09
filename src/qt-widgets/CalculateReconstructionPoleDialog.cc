@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,6 +23,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #include <QDebug>
 
 #include "CalculateReconstructionPoleDialog.h"
@@ -37,7 +39,6 @@
 #include "maths/Rotation.h"
 
 #include "presentation/ViewState.h"
-
 
 
 GPlatesQtWidgets::CalculateReconstructionPoleDialog::CalculateReconstructionPoleDialog(
@@ -73,7 +74,10 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::CalculateReconstructionPole
 			SLOT(handle_button_clicked(QAbstractButton *)));
 
 	update_buttons();
+
+	QtWidgetUtils::resize_based_on_size_hint(this);
 }
+
 
 void
 GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_calculate()
@@ -158,6 +162,7 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_calculate()
 
 }
 
+
 void
 GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_button_clicked(
 		QAbstractButton *button)
@@ -172,6 +177,7 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_button_clicked(
 		d_dialog_ptr->show();
 	}
 }
+
 
 void
 GPlatesQtWidgets::CalculateReconstructionPoleDialog::update_buttons()

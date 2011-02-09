@@ -6,7 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008, 2009 Geological Survey of Norway
- * Copyright (C) 2010 The University of Sydney
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,12 +24,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
 #include "SetProjectionDialog.h"
 
 #include "MapCanvas.h"
 #include "MapView.h"
 #include "ReconstructionViewWidget.h"
+#include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 
 #include "global/GPlatesAssert.h"
@@ -69,6 +69,8 @@ GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 			SIGNAL(rejected()),
 			this,
 			SLOT(reject()));
+
+	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
 void

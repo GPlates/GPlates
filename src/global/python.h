@@ -2,8 +2,9 @@
 
 /**
  * \file 
- * $Revision$
- * $Date$ 
+ *
+ * Most recent change:
+ *   $Date$
  * 
  * Copyright (C) 2011 The University of Sydney, Australia
  *
@@ -23,28 +24,24 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ColourScaleDialog.h"
+#ifndef GPLATES_GLOBAL_PYTHON_H
+#define GPLATES_GLOBAL_PYTHON_H
 
-#include "ColourScaleWidget.h"
-#include "QtWidgetUtils.h"
+#include "global/config.h" // GPLATES_NO_PYTHON
 
+// The undef's are compile fixes for Windows.
 
-GPlatesQtWidgets::ColourScaleDialog::ColourScaleDialog(
-		QWidget *parent_) :
-	QDialog(parent_, Qt::Tool),
-	d_colour_scale_widget(new ColourScaleWidget(this))
-{
-	setupUi(this);
+#if !defined(GPLATES_NO_PYTHON)
+#	if defined(HAVE_DIRECT_H)
+#		undef HAVE_DIRECT_H
+#	endif
+#	if defined(HAVE_UNISTD_H)
+#		undef HAVE_UNISTD_H
+#	endif
+#	if defined(ssize_t)
+#		undef ssize_t
+#	endif
+#	include <boost/python.hpp>
+#endif
 
-	QtWidgetUtils::add_widget_to_placeholder(
-			d_colour_scale_widget,
-			colour_scale_widget_placeholder);
-}
-
-
-void
-GPlatesQtWidgets::ColourScaleDialog::populate(
-		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
-{
-}
-
+#endif  // GPLATES_GLOBAL_PYTHON_H

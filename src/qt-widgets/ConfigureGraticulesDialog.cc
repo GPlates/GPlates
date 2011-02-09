@@ -54,6 +54,8 @@ GPlatesQtWidgets::ConfigureGraticulesDialog::ConfigureGraticulesDialog(
 			SIGNAL(rejected()),
 			this,
 			SLOT(reject()));
+
+	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
 

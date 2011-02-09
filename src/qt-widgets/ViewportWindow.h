@@ -75,6 +75,7 @@ namespace GPlatesGui
 	class FileIOFeedback;
 	class GlobeCanvasToolAdapter;
 	class GlobeCanvasToolChoice;
+	class ImportMenu;
 	class MapCanvasToolAdapter;
 	class MapCanvasToolChoice;
 	class SessionMenu;
@@ -121,6 +122,7 @@ namespace GPlatesQtWidgets
 	class MapView;
 	class MeshDialog;
 	class PreferencesDialog;
+	class PythonConsoleDialog;
 	class ReadErrorAccumulationDialog;
 	class ReconstructionViewWidget;
 	class SaveFileDialog;
@@ -132,6 +134,7 @@ namespace GPlatesQtWidgets
 	class TaskPanel;
 	class TotalReconstructionPolesDialog;
 	class TotalReconstructionSequencesDialog;
+	class VisualLayersDialog;
 
 	class ViewportWindow :
 			public QMainWindow, 
@@ -221,14 +224,20 @@ namespace GPlatesQtWidgets
 			return *d_total_reconstruction_poles_dialog_ptr;
 		}
 
-		QDialog &
-		layers_dialog()
+		VisualLayersDialog &
+		visual_layers_dialog()
 		{
-			return *d_layers_dialog_ptr;
+			return *d_visual_layers_dialog_ptr;
 		}
 
 		void
 		restore_canvas_tool_last_chosen_by_user();
+
+		GPlatesGui::ImportMenu &
+		import_menu()
+		{
+			return *d_import_menu_ptr;
+		}
 
 	public slots:
 		
@@ -542,7 +551,7 @@ namespace GPlatesQtWidgets
 		pop_up_about_dialog();
 
 		void
-		set_layering_dialog_visibility(
+		set_visual_layers_dialog_visibility(
 				bool visible);
 
 		void
@@ -697,6 +706,9 @@ namespace GPlatesQtWidgets
 		void
 		open_online_documentation();
 
+		void
+		pop_up_python_console();
+
 	private:
 
 		//! Holds application state and view state.
@@ -760,6 +772,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
 		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
 		boost::scoped_ptr<PreferencesDialog> d_preferences_dialog_ptr;
+		boost::scoped_ptr<PythonConsoleDialog> d_python_console_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
@@ -768,8 +781,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionSequencesDialog> d_total_reconstruction_sequences_dialog_ptr;
-
-		boost::scoped_ptr<QDialog> d_layers_dialog_ptr;
+		boost::scoped_ptr<VisualLayersDialog> d_visual_layers_dialog_ptr;
 
 		boost::shared_ptr<SaveFileDialog> d_export_geometry_snapshot_dialog_ptr;
 
@@ -858,6 +870,11 @@ namespace GPlatesQtWidgets
 		// To prevent infinite loops.
 		bool d_inside_update_undo_action_tooltip;
 		bool d_inside_update_redo_action_tooltip;
+
+		/**
+		 * Encapsulates logic regarding the Import submenu of the File menu.
+		 */
+		GPlatesGui::ImportMenu *d_import_menu_ptr;
 	};
 }
 

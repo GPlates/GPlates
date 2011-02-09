@@ -59,7 +59,7 @@ namespace GPlatesPresentation
 		}
 
 		/**
-		 * Override of virtual method in VirtualLayerParams base.
+		 * Override of virtual method in VisualLayerParams base.
 		 */
 		virtual
 		void
@@ -70,7 +70,7 @@ namespace GPlatesPresentation
 		}
 
 		/**
-		 * Override of virtual method in VirtualLayerParams base.
+		 * Override of virtual method in VisualLayerParams base.
 		 */
 		virtual
 		void
@@ -81,7 +81,7 @@ namespace GPlatesPresentation
 		}
 
 		/**
-		 * Override of virtual method in VirtualLayerParams base.
+		 * Override of virtual method in VisualLayerParams base.
 		 */
 		virtual
 		void

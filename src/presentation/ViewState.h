@@ -53,6 +53,11 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
+namespace GPlatesApi
+{
+	class PythonExecutionThread;
+}
+
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -270,6 +275,10 @@ namespace GPlatesPresentation
 		get_text_overlay_settings() const;
 
 
+		GPlatesApi::PythonExecutionThread *
+		get_python_execution_thread();
+
+
 	private slots:
 
 
@@ -370,6 +379,13 @@ namespace GPlatesPresentation
 		 * Settings related to the overlay of text on top the map and the globe.
 		 */
 		boost::scoped_ptr<GPlatesGui::TextOverlaySettings> d_text_overlay_settings;
+
+		/**
+		 * The thread on which Python is executed, off the main thread.
+		 *
+		 * Memory is managed by Qt.
+		 */
+		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
 
 		void
 		connect_to_viewport_zoom();

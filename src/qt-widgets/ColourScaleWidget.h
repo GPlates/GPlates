@@ -28,32 +28,97 @@
 #ifndef GPLATES_QTWIDGETS_COLOURSCALEWIDGET_H
 #define GPLATES_QTWIDGETS_COLOURSCALEWIDGET_H
 
-#include <boost/weak_ptr.hpp>
+#include <vector>
+#include <utility>
 #include <QWidget>
+#include <QPixmap>
+#include <QString>
 
+#include "gui/RasterColourPalette.h"
 
-namespace GPlatesPresentation
-{
-	class VisualLayer;
-}
 
 namespace GPlatesQtWidgets
 {
+	/**
+	 * ColourScaleWidget displays an annotated colour scale on screen.
+	 */
 	class ColourScaleWidget :
 			public QWidget
 	{
 	public:
 
+		typedef std::pair<int, QString> annotation_type;
+		typedef std::vector<annotation_type> annotations_seq_type;
+
+		/**
+		 * Distance from left border of widget to the colour scale.
+		 */
+		static const int LEFT_MARGIN = 6;
+
+		/**
+		 * Width of the colour scale.
+		 */
+		static const int COLOUR_SCALE_WIDTH = 32;
+
+		/**
+		 * Distance from colour scale to annotation text.
+		 */
+		static const int INTERNAL_SPACING = 5;
+
+		/**
+		 * Grid size of transparent checkerboard pattern.
+		 */
+		static const int CHECKERBOARD_GRID_SIZE = 8;
+
+		/**
+		 * Minimum spacing in pixels between each line of annotation.
+		 */
+		static const int ANNOTATION_LINE_SPACING = 5;
+
+		/**
+		 * Length of tick marks that accompany annotations.
+		 */
+		static const int TICK_LENGTH = 2;
+
+		explicit
 		ColourScaleWidget(
 				QWidget *parent_ = NULL);
 
-		void
+		/**
+		 * Causes this widget to render scales for the given @a colour_palette.
+		 * Returns whether this widget is able to render scales for the given @a colour_palette.
+		 */
+		bool
 		populate(
-				const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer);
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette);
+
+	protected:
+
+		virtual
+		void
+		paintEvent(
+				QPaintEvent *ev);
+
+		virtual
+		void
+		resizeEvent(
+				QResizeEvent *ev);
 
 	private:
 
-		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
+		/**
+		 * Returns true if we were able to extract the right info out of @a d_curr_colour_palette.
+		 */
+		bool
+		regenerate_contents();
+
+		static const int MINIMUM_HEIGHT = 200;
+
+		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type d_curr_colour_palette;
+
+		QPixmap d_colour_scale_pixmap;
+		QPixmap d_disabled_colour_scale_pixmap;
+		annotations_seq_type d_annotations;
 	};
 }
 

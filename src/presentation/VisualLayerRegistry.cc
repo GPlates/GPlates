@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <boost/foreach.hpp>
 #include <QPixmap>
 
@@ -127,6 +128,7 @@ namespace
 void
 GPlatesPresentation::VisualLayerRegistry::register_visual_layer_type(
 		VisualLayerType::Type visual_layer_type_,
+		VisualLayerGroup::Type group_,
 		const QString &name_,
 		const QString &description_,
 		const GPlatesGui::Colour &colour_,
@@ -141,6 +143,7 @@ GPlatesPresentation::VisualLayerRegistry::register_visual_layer_type(
 			std::make_pair(
 				visual_layer_type_,
 				VisualLayerInfo(
+					group_,
 					name_,
 					description_,
 					colour_,
@@ -149,6 +152,9 @@ GPlatesPresentation::VisualLayerRegistry::register_visual_layer_type(
 					create_options_widget_function_,
 					create_visual_layer_params_function_,
 					produces_rendered_geometries_)));
+
+	d_visual_layer_type_order[static_cast<std::size_t>(group_)].push_back(visual_layer_type_);
+	invalidate_order_cache();
 }
 
 
@@ -156,19 +162,75 @@ void
 GPlatesPresentation::VisualLayerRegistry::unregister_visual_layer_type(
 		VisualLayerType::Type visual_layer_type)
 {
+	VisualLayerGroup::Type group = get_group(visual_layer_type);
+	visual_layer_type_seq_type &group_order = d_visual_layer_type_order[static_cast<std::size_t>(group)];
+	group_order.erase(std::find(group_order.begin(), group_order.end(), visual_layer_type));
+	invalidate_order_cache();
+
 	d_visual_layer_info_map.erase(visual_layer_type);
 }
 
 
-GPlatesPresentation::VisualLayerRegistry::visual_layer_type_seq_type
-GPlatesPresentation::VisualLayerRegistry::get_registered_visual_layer_types() const
+void
+GPlatesPresentation::VisualLayerRegistry::invalidate_order_cache()
 {
-	visual_layer_type_seq_type result;
-	BOOST_FOREACH(const visual_layer_info_map_type::value_type &elem, d_visual_layer_info_map)
+	d_cached_combined_visual_layer_type_order = boost::none;
+	d_cached_visual_layer_type_order_map = boost::none;
+}
+
+
+const GPlatesPresentation::VisualLayerRegistry::visual_layer_type_seq_type &
+GPlatesPresentation::VisualLayerRegistry::get_visual_layer_types_in_order() const
+{
+	if (!d_cached_combined_visual_layer_type_order)
 	{
-		result.push_back(elem.first);
+		d_cached_combined_visual_layer_type_order = visual_layer_type_seq_type();
+
+		BOOST_FOREACH(const visual_layer_type_seq_type &group_order, d_visual_layer_type_order)
+		{
+			d_cached_combined_visual_layer_type_order->insert(
+					d_cached_combined_visual_layer_type_order->end(),
+					group_order.begin(),
+					group_order.end());
+		}
 	}
-	return result;
+
+	return *d_cached_combined_visual_layer_type_order;
+}
+
+
+const GPlatesPresentation::VisualLayerRegistry::visual_layer_type_order_map_type &
+GPlatesPresentation::VisualLayerRegistry::get_visual_layer_type_order_map() const
+{
+	if (!d_cached_visual_layer_type_order_map)
+	{
+		const GPlatesPresentation::VisualLayerRegistry::visual_layer_type_seq_type &order =
+			get_visual_layer_types_in_order();
+		d_cached_visual_layer_type_order_map = visual_layer_type_order_map_type();
+		
+		for (std::size_t i = 0; i != order.size(); ++i)
+		{
+			d_cached_visual_layer_type_order_map->insert(std::make_pair(order[i], i));
+		}
+	}
+
+	return *d_cached_visual_layer_type_order_map;
+}
+
+
+GPlatesPresentation::VisualLayerGroup::Type
+GPlatesPresentation::VisualLayerRegistry::get_group(
+		VisualLayerType::Type visual_layer_type) const
+{
+	visual_layer_info_map_type::const_iterator iter = d_visual_layer_info_map.find(visual_layer_type);
+	if (iter == d_visual_layer_info_map.end())
+	{
+		return VisualLayerGroup::NUM_GROUPS;
+	}
+	else
+	{
+		return iter->second.group;
+	}
 }
 
 
@@ -300,6 +362,7 @@ GPlatesPresentation::VisualLayerRegistry::produces_rendered_geometries(
 
 
 GPlatesPresentation::VisualLayerRegistry::VisualLayerInfo::VisualLayerInfo(
+		VisualLayerGroup::Type group_,
 		const QString &name_,
 		const QString &description_,
 		const GPlatesGui::Colour &colour_,
@@ -308,6 +371,7 @@ GPlatesPresentation::VisualLayerRegistry::VisualLayerInfo::VisualLayerInfo(
 		const create_options_widget_function_type &create_options_widget_function_,
 		const create_visual_layer_params_function_type &create_visual_layer_params_function_,
 		bool produces_rendered_geometries_) :
+	group(group_),
 	name(name_),
 	description(description_),
 	colour(colour_),
@@ -334,23 +398,14 @@ GPlatesPresentation::register_default_visual_layers(
 	//
 	// The following visual layer types are those that have corresponding app-logic layers.
 	//
+	// Note that, for each group, the visual layer types are registered in the
+	// order used internally, i.e. opposite to how they are displayed on screen.
+	//
 
-	registry.register_visual_layer_type(
-			VisualLayerType::Type(RECONSTRUCTION),
-			"Reconstruction Tree",
-			"A plate-reconstruction hierarchy of total reconstruction poles "
-			"that can be used to reconstruct geometries in other layers.",
-			*html_colours.get_colour("gold"),
-			CreateAppLogicLayer(
-				reconstruct_graph,
-				layer_task_registry,
-				RECONSTRUCTION),
-			&GPlatesQtWidgets::ReconstructionLayerOptionsWidget::create,
-			&default_visual_layer_params,
-			false);
-
+	// BASIC_DATA group.
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(RECONSTRUCT),
+			VisualLayerGroup::BASIC_DATA,
 			"Reconstructed Geometries",
 			"Geometries in this layer will be reconstructed to the current reconstruction "
 			"time when this layer is connected to a reconstruction tree layer.",
@@ -364,22 +419,24 @@ GPlatesPresentation::register_default_visual_layers(
 			true);
 
 	registry.register_visual_layer_type(
-			VisualLayerType::Type(RASTER),
-			"Reconstructed Raster",
-			"A raster in this layer will be reconstructed when "
-			"this layer is connected to a static plate polygon feature collection and "
-			"to a reconstruction tree layer.",
-			*html_colours.get_colour("tomato"),
+			VisualLayerType::Type(RECONSTRUCTION),
+			VisualLayerGroup::BASIC_DATA,
+			"Reconstruction Tree",
+			"A plate-reconstruction hierarchy of total reconstruction poles "
+			"that can be used to reconstruct geometries in other layers.",
+			*html_colours.get_colour("gold"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
 				layer_task_registry,
-				RASTER),
-			&GPlatesQtWidgets::RasterLayerOptionsWidget::create,
-			&RasterVisualLayerParams::create,
-			true);
+				RECONSTRUCTION),
+			&GPlatesQtWidgets::ReconstructionLayerOptionsWidget::create,
+			&default_visual_layer_params,
+			false);
 
+	// RASTERS group.
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(AGE_GRID),
+			VisualLayerGroup::RASTERS,
 			"Age Grid",
 			"An age grid can be attached to a reconstructed raster layer to provide "
 			"smoother raster reconstructions.",
@@ -393,22 +450,25 @@ GPlatesPresentation::register_default_visual_layers(
 			false);
 
 	registry.register_visual_layer_type(
-			VisualLayerType::Type(TOPOLOGY_BOUNDARY_RESOLVER),
-			"Resolved Topological Closed Plate Boundaries",
-			"Plate boundaries will be generated dynamically by referencing topological section "
-			"features, that have been reconstructed to a geological time, and joining them to "
-			"form a closed polygon boundary.",
-			*html_colours.get_colour("plum"),
+			VisualLayerType::Type(RASTER),
+			VisualLayerGroup::RASTERS,
+			"Reconstructed Raster",
+			"A raster in this layer will be reconstructed when "
+			"this layer is connected to a static plate polygon feature collection and "
+			"to a reconstruction tree layer.",
+			*html_colours.get_colour("tomato"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
 				layer_task_registry,
-				TOPOLOGY_BOUNDARY_RESOLVER),
-			&no_widget,
-			&default_visual_layer_params,
+				RASTER),
+			&GPlatesQtWidgets::RasterLayerOptionsWidget::create,
+			&RasterVisualLayerParams::create,
 			true);
 
+	// DERIVED_DATA group.
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(TOPOLOGY_NETWORK_RESOLVER),
+			VisualLayerGroup::DERIVED_DATA,
 			"Resolved Topological Networks",
 			"Deforming regions will be simulated dynamically by referencing topological section "
 			"features, that have been reconstructed to a geological time, and triangulating "
@@ -424,7 +484,24 @@ GPlatesPresentation::register_default_visual_layers(
 			true);
 
 	registry.register_visual_layer_type(
+			VisualLayerType::Type(TOPOLOGY_BOUNDARY_RESOLVER),
+			VisualLayerGroup::DERIVED_DATA,
+			"Resolved Topological Closed Plate Boundaries",
+			"Plate boundaries will be generated dynamically by referencing topological section "
+			"features, that have been reconstructed to a geological time, and joining them to "
+			"form a closed polygon boundary.",
+			*html_colours.get_colour("plum"),
+			CreateAppLogicLayer(
+				reconstruct_graph,
+				layer_task_registry,
+				TOPOLOGY_BOUNDARY_RESOLVER),
+			&no_widget,
+			&default_visual_layer_params,
+			true);
+
+	registry.register_visual_layer_type(
 			VisualLayerType::Type(VELOCITY_FIELD_CALCULATOR),
+			VisualLayerGroup::DERIVED_DATA,
 			"Calculated Velocity Fields",
 			"Lithosphere-motion velocity vectors will be calculated dynamically at mesh points "
 			"that lie within resolved topological boundaries or topological networks.",
@@ -441,6 +518,7 @@ GPlatesPresentation::register_default_visual_layers(
 	{
 		registry.register_visual_layer_type(
 				VisualLayerType::Type(CO_REGISTRATION),
+				VisualLayerGroup::DERIVED_DATA,
 				"Co-registration layer",
 				"Co-registration layer for data mining.",
 				*html_colours.get_colour("sandybrown"),

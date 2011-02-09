@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,6 +24,8 @@
  */
  
 #include "AnimateDialog.h"
+
+#include "QtWidgetUtils.h"
 
 #include "gui/AnimationController.h"
 
@@ -101,6 +103,8 @@ GPlatesQtWidgets::AnimateDialog::AnimateDialog(
 			this, SLOT(handle_animation_started()));
 	QObject::connect(d_animation_controller_ptr, SIGNAL(animation_paused()),
 			this, SLOT(handle_animation_paused()));
+
+	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
 

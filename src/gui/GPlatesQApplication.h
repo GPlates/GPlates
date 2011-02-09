@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,7 +26,7 @@
 #ifndef GPLATES_GUI_GPLATESQAPPLICATION_H
 #define GPLATES_GUI_GPLATESQAPPLICATION_H
 
-#include <QtGui/QApplication>
+#include <QApplication>
 
 
 namespace GPlatesGui
@@ -67,7 +67,14 @@ namespace GPlatesGui
 				int (*main_function)(int, char* []),
 				int argc,
 				char* argv[]);
+
+	protected:
+
+		virtual
+		bool
+		event(
+				QEvent *ev);
 	};
 }
 
-#endif // GPLATES_GUI_GPLATESQAPPLICATION_H
+#endif  // GPLATES_GUI_GPLATESQAPPLICATION_H

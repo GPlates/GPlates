@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,6 +32,7 @@
 #include "MeshDialog.h"
 
 #include "ProgressDialog.h"
+#include "QtWidgetUtils.h"
 
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/MeshGenerator.h"
@@ -162,6 +163,8 @@ GPlatesQtWidgets::MeshDialog::MeshDialog(
 			SIGNAL(rejected()),
 			this,
 			SLOT(reject()));
+
+	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
 void

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -133,6 +133,18 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 			SIGNAL(rejected()),
 			this,
 			SLOT(reject()));
+
+	// Help the user move focus around the dialog.
+	QObject::connect(
+			listWidget_export_items,
+			SIGNAL(itemPressed(QListWidgetItem *)),
+			this,
+			SLOT(focus_on_listwidget_format()));
+	QObject::connect(
+			listWidget_format,
+			SIGNAL(itemPressed(QListWidgetItem *)),
+			this,
+			SLOT(focus_on_lineedit_filename()));
 }
 
 bool 
@@ -546,5 +558,19 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_chang
 	label_filename_desc->setPalette(pal);
 #endif
 	main_buttonbox->setEnabled(true);
+}
+
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::focus_on_listwidget_format()
+{
+	listWidget_format->setFocus();
+}
+
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::focus_on_lineedit_filename()
+{
+	lineEdit_filename->setFocus();
 }
 
