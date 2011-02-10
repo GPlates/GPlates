@@ -24,6 +24,7 @@
  */
 
 #include <boost/foreach.hpp>
+#include <boost/range/iterator_range.hpp>
 
 #include "AddNewLayerDialog.h"
 
@@ -101,7 +102,11 @@ GPlatesQtWidgets::AddNewLayerDialog::populate_combobox()
 	typedef GPlatesPresentation::VisualLayerRegistry::visual_layer_type_seq_type visual_layer_type_seq_type;
 	visual_layer_type_seq_type visual_layer_types = visual_layer_registry.get_visual_layer_types_in_order();
 
-	BOOST_REVERSE_FOREACH(visual_layer_type_seq_type::value_type visual_layer_type, visual_layer_types)
+	// Simulating BOOST_REVERSE_FOREACH with a reversed iterator range since BOOST_REVERSE_FOREACH
+	// was introduced in version 1.36 and our minimum requirement is 1.34.
+	BOOST_FOREACH(
+			visual_layer_type_seq_type::value_type visual_layer_type,
+			boost::make_iterator_range(visual_layer_types.rbegin(), visual_layer_types.rend()))
 	{
 		const QString &layer_name = visual_layer_registry.get_name(visual_layer_type);
 		const QIcon &layer_icon = visual_layer_registry.get_icon(visual_layer_type);
