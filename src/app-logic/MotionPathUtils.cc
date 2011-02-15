@@ -104,6 +104,15 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::initialise_pre_featu
 		GPlatesUtils::make_qstring_from_icu_string(feature_handle.revision_id().get()));
 	d_feature_info.append("</revision>");
 
+	d_times.clear();
+
+	d_feature_is_defined_at_recon_time = true;
+	d_time_of_appearance = boost::none;
+	d_time_of_dissappearance = boost::none;
+	d_reconstruction_plate_id = boost::none;
+	d_relative_plate_id = boost::none;
+	d_has_geometry = false;
+
 	return true;
 }
 

@@ -299,6 +299,7 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::initialise_pre_feature_p
 	d_left_plate = boost::none;
 	d_right_plate = boost::none;
 	d_reconstruction_plate_id = boost::none;
+	d_has_geometry = false;
 
 	return true;
 }
