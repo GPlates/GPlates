@@ -620,6 +620,8 @@ namespace
 
 		map[ PropertyName::create_gpml("outlineOf") ] =
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 
 		return map;
 	}
