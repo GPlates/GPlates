@@ -115,6 +115,13 @@ namespace GPlatesViewOperations
 		geometry_builder_stopped_updating_geometry();
 
 	private:
+		//! Enumeration for the closest end point of the geometry to the insertion point.
+		enum ClosestEndPoint
+		{
+			START_POINT,
+			END_POINT
+		};
+
 		/**
 		 * This is used to build geometry. We insert vertices with it.
 		 */
@@ -225,12 +232,13 @@ namespace GPlatesViewOperations
 			const double &closeness_inclusion_threshold);
 
 		/**
-		 * Returns point index of closest point (in geometry contained in our
-		 * geometry builder) to the specified point.
+		 * Determines which end point (in geometry contained in our
+		 * geometry builder) is closest to the specified point.
+		 *
 		 * If there are no points in the geometry then returns false.
 		 */
-		boost::optional<const GeometryBuilder::PointIndex>
-		get_closest_geometry_point_to(
+		boost::optional<ClosestEndPoint>
+		get_closest_geometry_end_point_to(
 				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
 
 		void

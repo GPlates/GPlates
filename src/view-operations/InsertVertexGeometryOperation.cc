@@ -281,20 +281,12 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_off_line_seg
 			geom_build_type == GeometryType::POLYGON)
 		{
 			// Get index of closest point to mouse position.
-			const GeometryBuilder::PointIndex closest_geom_point_index = *get_closest_geometry_point_to(
-					oriented_pos_on_sphere);
+			const ClosestEndPoint closest_geom_end_point =
+					*get_closest_geometry_end_point_to(oriented_pos_on_sphere);
 
-			// Only allow extending polyline/polygon if one of the end points is closer to
-			// the mouse position than all other points in the geometry.
-			// Insert vertex at beginning or end depending on which is closest to mouse position.
-			if (closest_geom_point_index == 0)
-			{
-				insert_vertex(0, oriented_pos_on_sphere);
-			}
-			else if (closest_geom_point_index == num_points_in_geom - 1)
-			{
-				insert_vertex(num_points_in_geom, oriented_pos_on_sphere);
-			}
+			insert_vertex(
+					(closest_geom_end_point == START_POINT) ? 0 : num_points_in_geom,
+					oriented_pos_on_sphere);
 		}
 		else // GeometryType::POINT or GeometryType::MULTIPOINT
 		{
@@ -428,34 +420,28 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_off
 	}
 	else if (num_points_in_geom > 1)
 	{
-		// Get index of closest point to mouse position.
-		const GeometryBuilder::PointIndex closest_geom_point_index = *get_closest_geometry_point_to(
-				oriented_pos_on_sphere);
+		// Start and end points of polyline/polygon.
+		const GPlatesMaths::PointOnSphere &first_point =
+				d_geometry_builder->get_geometry_point(geom_index, 0/*point index*/);
+		const GPlatesMaths::PointOnSphere &last_point =
+				d_geometry_builder->get_geometry_point(geom_index, num_points_in_geom - 1);
 
-		// Only allow extending polyline/polygon if one of the end points is closer to
-		// the mouse position than all other points in the geometry.
-		if (closest_geom_point_index == 0 ||
-			closest_geom_point_index == num_points_in_geom - 1)
+		if (geom_build_type == GeometryType::POLYLINE)
 		{
-			// Start and end points of polyline/polygon.
-			const GPlatesMaths::PointOnSphere &first_point =
-					d_geometry_builder->get_geometry_point(geom_index, 0/*point index*/);
-			const GPlatesMaths::PointOnSphere &last_point =
-					d_geometry_builder->get_geometry_point(geom_index, num_points_in_geom - 1);
+			// Get index of closest point to mouse position.
+			const ClosestEndPoint closest_geom_end_point =
+					*get_closest_geometry_end_point_to(oriented_pos_on_sphere);
 
-			if (geom_build_type == GeometryType::POLYLINE)
-			{
-				// Add a highlight line segment from mouse position to closest end of polyline.
-				add_rendered_highlight_line_segment(
-						(closest_geom_point_index == 0) ? first_point : last_point,
-						oriented_pos_on_sphere);
-			}
-			else // GeometryType::POLYGON
-			{
-				// Add two highlight line segments from mouse position to both ends of polygon.
-				add_rendered_highlight_line_segment(first_point, oriented_pos_on_sphere);
-				add_rendered_highlight_line_segment(last_point, oriented_pos_on_sphere);
-			}
+			// Add a highlight line segment from mouse position to closest end of polyline.
+			add_rendered_highlight_line_segment(
+					(closest_geom_end_point == START_POINT) ? first_point : last_point,
+					oriented_pos_on_sphere);
+		}
+		else // GeometryType::POLYGON
+		{
+			// Add two highlight line segments from mouse position to both ends of polygon.
+			add_rendered_highlight_line_segment(first_point, oriented_pos_on_sphere);
+			add_rendered_highlight_line_segment(last_point, oriented_pos_on_sphere);
 		}
 	}
 }
@@ -588,8 +574,8 @@ GPlatesViewOperations::InsertVertexGeometryOperation::test_proximity_to_rendered
 	return closest_hit;
 }
 
-boost::optional<const GPlatesViewOperations::GeometryBuilder::PointIndex>
-GPlatesViewOperations::InsertVertexGeometryOperation::get_closest_geometry_point_to(
+boost::optional<GPlatesViewOperations::InsertVertexGeometryOperation::ClosestEndPoint>
+GPlatesViewOperations::InsertVertexGeometryOperation::get_closest_geometry_end_point_to(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
 {
 	if (d_geometry_builder->get_num_geometries() == 0)
@@ -603,29 +589,29 @@ GPlatesViewOperations::InsertVertexGeometryOperation::get_closest_geometry_point
 	const GeometryBuilder::PointIndex num_points_in_geom =
 			d_geometry_builder->get_num_points_in_geometry(geom_index);
 
-	// Closeness varies from -1 for antipodal points to 1 for coincident points.
-	GPlatesMaths::real_t max_closeness(-1);
-	GeometryBuilder::PointIndex closest_pos_on_sphere_index = 0;
-
-	GeometryBuilder::point_const_iterator_type builder_geom_iter;
-	GeometryBuilder::PointIndex point_on_sphere_index;
-	for (point_on_sphere_index = 0;
-		point_on_sphere_index < num_points_in_geom;
-		++point_on_sphere_index)
+	if (num_points_in_geom == 0)
 	{
-		const GPlatesMaths::PointOnSphere &point_on_sphere = d_geometry_builder->get_geometry_point(
-				geom_index, point_on_sphere_index);
-
-		GPlatesMaths::real_t closeness = calculate_closeness(point_on_sphere, oriented_pos_on_sphere);
-
-		if (closeness.dval() > max_closeness.dval())
-		{
-			max_closeness = closeness;
-			closest_pos_on_sphere_index = point_on_sphere_index;
-		}
+		return boost::none;
 	}
 
-	return closest_pos_on_sphere_index;
+	const GPlatesMaths::PointOnSphere &start_point_on_sphere =
+			d_geometry_builder->get_geometry_point(geom_index, 0);
+	const GPlatesMaths::real_t closeness_of_start_point =
+			calculate_closeness(start_point_on_sphere, oriented_pos_on_sphere);
+
+	if (num_points_in_geom == 1)
+	{
+		return START_POINT;
+	}
+
+	const GPlatesMaths::PointOnSphere &end_point_on_sphere =
+			d_geometry_builder->get_geometry_point(geom_index, num_points_in_geom - 1);
+	const GPlatesMaths::real_t closeness_of_end_point =
+			calculate_closeness(end_point_on_sphere, oriented_pos_on_sphere);
+
+	return (closeness_of_end_point.dval() > closeness_of_start_point.dval())
+			? END_POINT
+			: START_POINT;
 }
 
 void
