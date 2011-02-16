@@ -27,6 +27,18 @@
 #include "DataTable.h"
 #include "OpaqueDataToQString.h"
 
+#include "global/CompilerWarnings.h"
+
+
+void
+GPlatesDataMining::DataRow::append_cell(
+		const OpaqueData &val)
+{
+	DataCellSharedPtr ptr(new OpaqueData(val));
+	d_data.push_back(ptr);
+}
+
+
 void
 GPlatesDataMining::DataTable::export_as_CSV(
 		const QString& filename) const

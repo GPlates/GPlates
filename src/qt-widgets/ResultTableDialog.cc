@@ -32,6 +32,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "global/CompilerWarnings.h"
 #include "gui/FeatureFocus.h"
 #include "presentation/ViewState.h"
 #include "utils/ExportTemplateFilenameSequence.h"
@@ -388,6 +389,11 @@ ResultTableDialog::data_arrived(
 }
 
 
+// For the nested BOOST_FOREACH below.
+// Also for a problem in the ResultTableModel::data function.
+DISABLE_GCC_WARNING("-Wshadow")
+
+
 GPlatesModel::FeatureHandle::weak_ref
 ResultTableDialog::find_feature_by_id(
 		GPlatesAppLogic::FeatureCollectionFileState& state,
@@ -407,6 +413,40 @@ ResultTableDialog::find_feature_by_id(
 		}
 	}
 	throw QString("No feature found by this id: %1").arg(id);
+}
+
+
+QVariant
+GPlatesQtWidgets::ResultTableModel::data(
+		const QModelIndex &idx,
+		int role) const
+{
+	if ( ! idx.isValid()) 
+	{
+		return QVariant();
+	}
+
+	if (idx.row() < 0 || idx.row() >= rowCount())	
+	{
+		return QVariant();
+	}
+
+	if (role == Qt::DisplayRole) 
+	{
+		OpaqueData o_data;
+		d_table.at( idx.row() )->get_cell( idx.column(), o_data );
+
+		return 
+			boost::apply_visitor(
+					GPlatesDataMining::ConvertOpaqueDataToString(),
+					o_data);
+
+	} 
+	else if (role == Qt::TextAlignmentRole) 
+	{
+		return QVariant();
+	}
+	return QVariant();
 }
 
 

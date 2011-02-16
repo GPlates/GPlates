@@ -71,14 +71,9 @@ namespace GPlatesDataMining
 			ret = *d_data[column_index];			
 		}
 
-		inline
 		void
 		append_cell(
-				const OpaqueData& val)
-		{
-			DataCellSharedPtr ptr(new OpaqueData(val));
-			d_data.push_back(ptr);
-		}
+				const OpaqueData& val);
 
 		inline
 		size_t

@@ -189,35 +189,7 @@ namespace GPlatesQtWidgets
 		QVariant
 		data(
 				const QModelIndex &idx,
-				int role) const
-		{
-			if ( ! idx.isValid()) 
-			{
-				return QVariant();
-			}
-
-			if (idx.row() < 0 || idx.row() >= rowCount())	
-			{
-				return QVariant();
-			}
-	
-			if (role == Qt::DisplayRole) 
-			{
-				OpaqueData o_data;
-				d_table.at( idx.row() )->get_cell( idx.column(), o_data );
-
-				return 
-					boost::apply_visitor(
-							GPlatesDataMining::ConvertOpaqueDataToString(),
-							o_data);
-
-			} 
-			else if (role == Qt::TextAlignmentRole) 
-			{
-				return QVariant();
-			}
-			return QVariant();
-		}
+				int role) const;
 
 		const DataTable&
 		data_table()
