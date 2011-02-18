@@ -34,6 +34,7 @@ set(srcs
     Filter.h
     FilterMapOutputHandler.h
     FilterMapReduceWorkFlow.h
+    FunctionTypes.h
     GenericFilter.h
     GenericMapper.h
     GenericReducer.h
@@ -67,7 +68,6 @@ set(srcs
     TypeTraits.h
     UnicodeString.cc
     UnicodeString.h
-    UnicodeStringUtils.cc
     UnicodeStringUtils.h
     UniqueId.cc
     UniqueId.h

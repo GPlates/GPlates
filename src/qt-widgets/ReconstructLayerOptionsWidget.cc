@@ -25,6 +25,8 @@
 
 #include "ReconstructLayerOptionsWidget.h"
 
+#include "LinkWidget.h"
+#include "QtWidgetUtils.h"
 #include "SetVGPVisibilityDialog.h"
 #include "ViewportWindow.h"
 #include "VisualLayersDialog.h"
@@ -42,9 +44,14 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 {
 	setupUi(this);
 
+	LinkWidget *set_vgp_visibility_link = new LinkWidget(
+			tr("Set VGP visibility..."), this);
+	QtWidgetUtils::add_widget_to_placeholder(
+			set_vgp_visibility_link,
+			set_vgp_visibility_placeholder_widget);
 	QObject::connect(
-			set_vgp_visibility_button,
-			SIGNAL(clicked()),
+			set_vgp_visibility_link,
+			SIGNAL(link_activated()),
 			this,
 			SLOT(open_vgp_visibility_dialog()));
 }

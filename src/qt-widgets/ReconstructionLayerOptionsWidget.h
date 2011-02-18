@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -78,10 +78,15 @@ namespace GPlatesQtWidgets
 	private slots:
 
 		void
-		handle_button_clicked();
+		handle_view_total_reconstruction_poles_link_activated();
+
+		void
+		handle_keep_as_default_checkbox_clicked(
+				bool checked);
 
 	private:
 
+		explicit
 		ReconstructionLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,

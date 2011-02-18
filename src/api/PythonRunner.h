@@ -26,6 +26,9 @@
 #ifndef GPLATES_API_PYTHONRUNNER_H
 #define GPLATES_API_PYTHONRUNNER_H
 
+#include <QString>
+#include <QObject>
+
 #include "AbstractPythonRunner.h"
 
 #include "global/python.h"
@@ -43,14 +46,17 @@ namespace GPlatesApi
 	 * posted a DeferredCallEvent, in the thread of its creation.
 	 */
 	class PythonRunner :
-			public AbstractPythonRunner,
-			public QObject
+			public QObject,
+			public AbstractPythonRunner
 	{
+		Q_OBJECT
+
 	public:
 
 		explicit
 		PythonRunner(
-				GPlatesAppLogic::ApplicationState &application_state);
+				GPlatesAppLogic::ApplicationState &application_state,
+				QObject *parent_ = NULL);
 
 		virtual
 		~PythonRunner();
@@ -83,29 +89,33 @@ namespace GPlatesApi
 		void
 		eval_string(
 				const QString &string,
-				PythonExecutionMonitor *monitor)
-		{
-			// TODO
-		}
+				PythonExecutionMonitor *monitor);
 
 		virtual
 		void
 		exec_function(
 				const boost::function< void () > &function,
-				PythonExecutionMonitor *monitor)
-		{
-			// TODO
-		}
+				PythonExecutionMonitor *monitor);
 
 		virtual
 		void
 		eval_function(
 				const boost::function< boost::python::object () > &function,
-				PythonExecutionMonitor *monitor)
-		{
-			// TODO
-		}
+				PythonExecutionMonitor *monitor);
 #endif
+
+	signals:
+
+		void
+		exec_or_eval_started();
+
+		void
+		exec_or_eval_finished();
+
+		void
+		system_exit_exception_raised(
+				int exit_status,
+				QString exit_error_message);
 
 	protected:
 
@@ -143,6 +153,7 @@ namespace GPlatesApi
 #if !defined(GPLATES_NO_PYTHON)
 		boost::python::object d_console;
 		boost::python::object d_compile;
+		boost::python::object d_eval;
 #endif
 	};
 

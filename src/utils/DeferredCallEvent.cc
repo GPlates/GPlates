@@ -25,18 +25,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QApplication>
-
 #include "DeferredCallEvent.h"
 
 
 const QEvent::Type
-GPlatesUtils::DeferredCallEvent::TYPE = static_cast<QEvent::Type>(QEvent::registerEventType());
+GPlatesUtils::AbstractDeferredCallEvent::TYPE = static_cast<QEvent::Type>(QEvent::registerEventType());
+
+
+GPlatesUtils::AbstractDeferredCallEvent::AbstractDeferredCallEvent() :
+	QEvent(TYPE)
+{  }
 
 
 GPlatesUtils::DeferredCallEvent::DeferredCallEvent(
 		const deferred_call_type &deferred_call) :
-	QEvent(TYPE),
 	d_deferred_call(deferred_call)
 {  }
 
@@ -48,10 +50,22 @@ GPlatesUtils::DeferredCallEvent::execute()
 }
 
 
+GPlatesUtils::BlockingDeferredCallEvent::BlockingDeferredCallEvent(
+		const deferred_call_type &deferred_call,
+		QMutex &mutex,
+		QWaitCondition &condition) :
+	d_deferred_call(deferred_call),
+	d_mutex(mutex),
+	d_condition(condition)
+{  }
+
+
 void
-GPlatesUtils::DeferredCallEvent::defer_call(
-		const deferred_call_type &deferred_call)
+GPlatesUtils::BlockingDeferredCallEvent::execute()
 {
-	QApplication::postEvent(qApp, new DeferredCallEvent(deferred_call));
+	d_deferred_call();
+	d_mutex.lock();
+	d_condition.wakeAll();
+	d_mutex.unlock();
 }
 

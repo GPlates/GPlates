@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -72,10 +72,14 @@ namespace GPlatesQtWidgets
 		/**
 		 * Constructs a SaveFileDialog.
 		 *
+		 * NOTE: This class is not derived from QObject. You will need to manage this
+		 * object's lifetime yourself; it is not automatically destroyed by @a parent.
+		 *
 		 * @param parent The parent window for the dialog box.
 		 * @param caption The dialog box's caption.
 		 * @param filters A vector of filter descriptions
 		 */
+		explicit
 		SaveFileDialog(
 				QWidget *parent,
 				const QString &caption,

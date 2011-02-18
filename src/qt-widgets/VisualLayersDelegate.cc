@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,7 +24,6 @@
  */
 
 #include <boost/shared_ptr.hpp>
-#include <QDebug>
 
 #include "VisualLayersDelegate.h"
 
@@ -96,7 +95,6 @@ GPlatesQtWidgets::VisualLayersDelegate::setEditorData(
 		QWidget *editor,
 		const QModelIndex &index) const
 {
-	// qDebug() << index.row() << d_visual_layers.size();
 	if (!index.isValid())
 	{
 		return;

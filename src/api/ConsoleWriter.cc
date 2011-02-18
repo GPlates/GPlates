@@ -24,16 +24,12 @@
  */
 
 #include <iostream>
-#include <QDebug>
 
 #include "ConsoleWriter.h"
 
 #include "PythonInterpreterLocker.h"
 #include "PythonInterpreterUnlocker.h"
-
-#include "global/CompilerWarnings.h"
-
-#include "utils/StringUtils.h"
+#include "PythonUtils.h"
 
 
 namespace
@@ -103,9 +99,6 @@ GPlatesApi::ConsoleWriter::~ConsoleWriter()
 
 
 #if !defined(GPLATES_NO_PYTHON)
-// For PyUnicode_Check and PyString_Check below.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 void
 GPlatesApi::ConsoleWriter::write(
 		const boost::python::object &text)
@@ -114,28 +107,10 @@ GPlatesApi::ConsoleWriter::write(
 
 	try
 	{
+		// We must first guarantee that we have the lock before attempting to unlock it.
 		PythonInterpreterLocker interpreter_locker;
-		// FIXME: this decoding should be done on the main thread
-		object decoded;
-		if (PyUnicode_Check(text.ptr()))
-		{
-			decoded = text;
-		}
-		else if (PyString_Check(text.ptr()))
-		{
-			decoded = text.attr("decode")("utf-8", "replace"); // FIXME: hard coded codec
-		}
-		else
-		{
-			decoded = str(text).attr("decode")("utf-8", "replace");
-		}
-		QString qstring_text = GPlatesUtils::make_qstring_from_wstring(extract<std::wstring>(decoded));
-
-		// Note that even if we called interpreter_locker.release(), this thread may
-		// still have the GIL because of the presence of a PythonInterpreterLocker
-		// further up the call stack.
 		PythonInterpreterUnlocker interpreter_unlocker;
-		d_console->append_text(qstring_text, d_error);
+		d_console->append_text(text, d_error);
 	}
 	catch (const error_already_set &)
 	{
@@ -144,9 +119,6 @@ GPlatesApi::ConsoleWriter::write(
 		// sys.stderr, which would end up calling this, and... you get the idea.
 	}
 }
-
-// See above.
-ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void

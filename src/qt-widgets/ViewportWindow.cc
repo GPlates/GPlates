@@ -30,6 +30,7 @@
 #include <boost/format.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/foreach.hpp>
+#include <boost/bind.hpp>
 
 #include <QtGlobal>
 #include <QFileDialog>
@@ -90,6 +91,10 @@
 #include "TotalReconstructionSequencesDialog.h"
 #include "VisualLayersDialog.h"
 
+#include "api/DeferredApiCall.h"
+#include "api/PythonInterpreterLocker.h"
+#include "api/PythonUtils.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/FeatureCollectionFileIO.h"
@@ -115,6 +120,7 @@
 #include "global/SubversionInfo.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "global/config.h"
+#include "global/python.h"
 
 #include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "gui/ChooseCanvasTool.h"
@@ -136,6 +142,7 @@
 #include "gui/TopologySectionsTable.h"
 #include "gui/TrinketArea.h"
 #include "gui/UnsavedChangesTracker.h"
+#include "gui/UtilitiesMenu.h"
 #include "gui/ViewportProjection.h"
 
 #include "maths/PolylineIntersections.h"
@@ -157,6 +164,7 @@
 #include "qt-widgets/ShapefilePropertyMapper.h"
 #include "qt-widgets/DataAssociationDialog.h"
 
+#include "utils/DeferredCallEvent.h"
 #include "utils/Profile.h"
 
 #include "view-operations/ActiveGeometryOperation.h"
@@ -239,8 +247,10 @@ namespace
 
 // ViewportWindow constructor
 GPlatesQtWidgets::ViewportWindow::ViewportWindow(
-		GPlatesPresentation::Application &application) :
-	d_application(application),
+		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state) :
+	d_application_state(application_state),
+	d_view_state(view_state),
 	d_animation_controller(get_application_state()),
 	d_full_screen_mode(*this),
 	d_trinket_area_ptr(
@@ -373,7 +383,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			GPlatesViewOperations::UndoRedo::instance().get_undo_group().createRedoAction(this, tr("Re&do"))),
 	d_inside_update_undo_action_tooltip(false),
 	d_inside_update_redo_action_tooltip(false),
-	d_import_menu_ptr(NULL) // Needs to be set up after call to setupUi.
+	d_import_menu_ptr(NULL), // Needs to be set up after call to setupUi.
+	d_utilities_menu_ptr(NULL) // Needs to be set up after call to setupUi.
 {
 	setupUi(this);
 
@@ -723,6 +734,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			this,
 			SLOT(handle_visual_layer_added(size_t)));
 
+	// We display the last line from the Python console dialog in the status bar.
+	QObject::connect(
+			d_python_console_dialog_ptr.get(),
+			SIGNAL(text_changed()),
+			this,
+			SLOT(handle_python_console_text_changed()));
+
 	set_internal_release_window_title();
 }
 
@@ -978,6 +996,11 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 {
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
 			this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
+	d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
+			menu_Utilities,
+			action_Open_Python_Console,
+			get_application_state().get_python_execution_thread(),
+			this);
 	// ----
 	QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
 			this, SLOT(pop_up_python_console()));
@@ -1146,15 +1169,16 @@ GPlatesQtWidgets::ViewportWindow::populate_gmenu_from_menubar()
 GPlatesAppLogic::ApplicationState &
 GPlatesQtWidgets::ViewportWindow::get_application_state()
 {
-	return d_application.get_application_state();
+	return d_application_state;
 }
 
 
 GPlatesPresentation::ViewState &
 GPlatesQtWidgets::ViewportWindow::get_view_state()
 {
-	return d_application.get_view_state();
+	return d_view_state;
 }
+
 
 void
 GPlatesQtWidgets::ViewportWindow::connect_canvas_tools()
@@ -2649,4 +2673,75 @@ GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
 	// Note: this dialog is constructed in the ViewportWindow constructor.
 	QtWidgetUtils::pop_up_dialog(d_python_console_dialog_ptr.get());
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_python_console_text_changed()
+{
+	QString line = d_python_console_dialog_ptr->get_last_non_blank_line();
+	if (!line.isEmpty())
+	{
+		status_message(tr("Last Python output: ") + line);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::showEvent(
+		QShowEvent *ev)
+{
+#if !defined(GPLATES_NO_PYTHON)
+	// We defer this so that we can guarantee that the user interface is ready
+	// before we start running Python scripts.
+	GPlatesUtils::DeferCall<void>::defer_call(
+			boost::bind(
+				&GPlatesApi::PythonUtils::run_startup_scripts,
+				get_application_state().get_python_execution_thread()));
+#endif
+}
+
+
+#if !defined(GPLATES_NO_PYTHON)
+namespace
+{
+	void
+	status_message(
+			GPlatesQtWidgets::ViewportWindow &viewport_window,
+			const boost::python::object &obj)
+	{
+		GPlatesApi::PythonInterpreterLocker interpreter_locker;
+		viewport_window.status_message(GPlatesApi::PythonUtils::stringify_object(obj, "utf-8")); // FIXME: hard coded codec
+	}
+
+#if 0
+	void
+	status_message2(
+			GPlatesQtWidgets::ViewportWindow &viewport_window,
+			const GPlatesQtWidgets::ViewportWindow &,
+			const boost::python::object &obj)
+	{
+		GPlatesApi::PythonInterpreterLocker interpreter_locker;
+		viewport_window.status_message(GPlatesApi::PythonUtils::stringify_object(obj, "utf-8")); // FIXME: hard coded codec
+	}
+#endif
+}
+
+
+void
+export_main_window()
+{
+	using namespace boost::python;
+	using namespace GPlatesApi::DeferredApiCall;
+
+	class_<GPlatesQtWidgets::ViewportWindow, boost::noncopyable>("MainWindow", no_init /* scripts cannot create more of these! */)
+		.def("set_status_message",
+				GPLATES_DEFERRED_API_CALL(&::status_message, ArgReferenceWrappings<ref>()))
+#if 0
+		// This is an example of how to supply more than one parameter to ArgReferenceWrappings.
+		.def("set_status_message2",
+				GPLATES_DEFERRED_API_CALL(&::status_message2, (ArgReferenceWrappings<ref, cref>()) ))
+#endif
+		;
+}
+#endif
 

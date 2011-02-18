@@ -29,7 +29,7 @@
 #include <QApplication>
 #include <QDebug>
 
-#include "ModalPythonExecutionMonitor.h"
+#include "EventBlackout.h"
 
 #include "qt-widgets/QtWidgetUtils.h"
 
@@ -100,28 +100,42 @@ namespace
 		}
 		return false;
 	}
+
+	bool
+	is_control_c(
+			QEvent *ev)
+	{
+		return ev->type() == QEvent::KeyPress &&
+				GPlatesQtWidgets::QtWidgetUtils::is_control_c(
+					static_cast<QKeyEvent *>(ev));
+	}
 }
 
 
-GPlatesGui::ModalPythonExecutionMonitor::ModalPythonExecutionMonitor(
-		long python_thread_id) :
-	GPlatesApi::PythonExecutionMonitor(python_thread_id),
-	d_thread_interrupted(false)
-{  }
-
-
-bool
-GPlatesGui::ModalPythonExecutionMonitor::exec()
+GPlatesGui::EventBlackout::EventBlackout() :
+	d_has_started(false)
 {
-	qApp->installEventFilter(this);
-	bool result = GPlatesApi::PythonExecutionMonitor::exec();
-	qApp->removeEventFilter(this);
-	return result;
 }
 
 
 void
-GPlatesGui::ModalPythonExecutionMonitor::add_blackout_exemption(
+GPlatesGui::EventBlackout::start()
+{
+	qApp->installEventFilter(this);
+	d_has_started = true;
+}
+
+
+void
+GPlatesGui::EventBlackout::stop()
+{
+	qApp->removeEventFilter(this);
+	d_has_started = false;
+}
+
+
+void
+GPlatesGui::EventBlackout::add_blackout_exemption(
 		QWidget *widget)
 {
 	d_exempt_widgets.insert(widget);
@@ -129,7 +143,7 @@ GPlatesGui::ModalPythonExecutionMonitor::add_blackout_exemption(
 
 
 void
-GPlatesGui::ModalPythonExecutionMonitor::remove_blackout_exemption(
+GPlatesGui::EventBlackout::remove_blackout_exemption(
 		QWidget *widget)
 {
 	d_exempt_widgets.erase(widget);
@@ -137,38 +151,20 @@ GPlatesGui::ModalPythonExecutionMonitor::remove_blackout_exemption(
 
 
 bool
-GPlatesGui::ModalPythonExecutionMonitor::eventFilter(
+GPlatesGui::EventBlackout::eventFilter(
 		QObject *obj,
 		QEvent *ev)
 {
-	if (ev->type() == QEvent::KeyPress &&
-			GPlatesQtWidgets::QtWidgetUtils::is_control_c(
-				static_cast<QKeyEvent *>(ev)))
+	if (::is_control_c(ev) ||
+		::is_exempt(obj, d_exempt_widgets) ||
+		::is_permitted_while_monitoring(ev->type()))
 	{
-		interrupt_python_thread_if_not_yet_interrupted();
-		return true;
-	}
-	else if (is_exempt(obj, d_exempt_widgets) ||
-		is_permitted_while_monitoring(ev->type()))
-	{
-		return GPlatesApi::PythonExecutionMonitor::eventFilter(obj, ev);
+		return QObject::eventFilter(obj, ev);
 	}
 	else
 	{
 		ev->ignore();
 		return true;
-	}
-}
-
-
-void
-GPlatesGui::ModalPythonExecutionMonitor::interrupt_python_thread_if_not_yet_interrupted()
-{
-	if (!d_thread_interrupted)
-	{
-		interrupt_python_thread();
-		emit python_thread_interrupted();
-		d_thread_interrupted = true;
 	}
 }
 

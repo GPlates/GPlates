@@ -95,6 +95,7 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		explicit
 		RasterLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,

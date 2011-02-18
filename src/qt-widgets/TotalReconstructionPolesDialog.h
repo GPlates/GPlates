@@ -8,7 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008 Geological Survey of Norway
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,6 +33,8 @@
 #include <QDialog>
 
 #include "TotalReconstructionPolesDialogUi.h"
+
+#include "SaveFileDialog.h"
 
 #include "presentation/VisualLayer.h"
 
@@ -60,6 +62,7 @@ namespace GPlatesQtWidgets
 
 	public:
 
+		explicit
 		TotalReconstructionPolesDialog(
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
@@ -181,6 +184,11 @@ namespace GPlatesQtWidgets
 		 * The reconstruction time.
 		 */
 		double d_time;
+
+		/**
+		 * Used by @a handle_export to obtain a file name from the user.
+		 */
+		SaveFileDialog d_save_file_dialog;
 
 		VisualLayersComboBox *d_visual_layers_combobox;
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_curr_visual_layer;

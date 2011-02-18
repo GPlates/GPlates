@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,6 +25,11 @@
 
 #include "ReconstructionLayerOptionsWidget.h"
 
+#include "app-logic/ApplicationState.h"
+#include "app-logic/ReconstructGraph.h"
+
+#include "LinkWidget.h"
+#include "QtWidgetUtils.h"
 #include "TotalReconstructionPolesDialog.h"
 #include "ViewportWindow.h"
 
@@ -40,12 +45,24 @@ GPlatesQtWidgets::ReconstructionLayerOptionsWidget::ReconstructionLayerOptionsWi
 	d_viewport_window(viewport_window)
 {
 	setupUi(this);
+	keep_as_default_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+
+	LinkWidget *view_total_reconstruction_poles_link = new LinkWidget(
+			tr("View total reconstruction poles"), this);
+	QtWidgetUtils::add_widget_to_placeholder(
+			view_total_reconstruction_poles_link,
+			view_total_reconstruction_poles_placeholder_widget);
 
 	QObject::connect(
-			view_total_reconstruction_poles_button,
-			SIGNAL(clicked()),
+			view_total_reconstruction_poles_link,
+			SIGNAL(link_activated()),
 			this,
-			SLOT(handle_button_clicked()));
+			SLOT(handle_view_total_reconstruction_poles_link_activated()));
+	QObject::connect(
+			keep_as_default_checkbox,
+			SIGNAL(clicked(bool)),
+			this,
+			SLOT(handle_keep_as_default_checkbox_clicked(bool)));
 }
 
 
@@ -69,6 +86,16 @@ GPlatesQtWidgets::ReconstructionLayerOptionsWidget::set_data(
 		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
 {
 	d_current_visual_layer = visual_layer;
+
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		bool is_default = (layer == d_application_state.get_reconstruct_graph().get_default_reconstruction_tree_layer());
+		keep_as_default_checkbox->setEnabled(is_default);
+		keep_as_default_checkbox->setChecked(is_default &&
+				!d_application_state.is_updating_default_reconstruction_tree_layer());
+	}
 }
 
 
@@ -81,8 +108,16 @@ GPlatesQtWidgets::ReconstructionLayerOptionsWidget::get_title()
 
 
 void
-GPlatesQtWidgets::ReconstructionLayerOptionsWidget::handle_button_clicked()
+GPlatesQtWidgets::ReconstructionLayerOptionsWidget::handle_view_total_reconstruction_poles_link_activated()
 {
 	d_viewport_window->pop_up_total_reconstruction_poles_dialog(d_current_visual_layer);
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionLayerOptionsWidget::handle_keep_as_default_checkbox_clicked(
+		bool checked)
+{
+	d_application_state.set_update_default_reconstruction_tree_layer(!checked);
 }
 

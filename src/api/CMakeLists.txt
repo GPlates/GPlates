@@ -17,6 +17,10 @@ set(srcs
     ConsoleReader.h
     ConsoleWriter.cc
     ConsoleWriter.h
+    DeferredApiCall.h
+    DeferredApiCallImpl.h
+    FeatureCollection.cc
+    FeatureCollection.h
     Python.cc
     PythonExecutionMonitor.cc
     PythonExecutionMonitor.h
@@ -28,6 +32,8 @@ set(srcs
     PythonInterpreterUnlocker.h
     PythonRunner.cc
     PythonRunner.h
+    PythonUtils.cc
+    PythonUtils.h
     Sleeper.cc
     Sleeper.h
 )

@@ -34,6 +34,7 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <QMenu>
+#include <QMessageBox>
 
 #include "PythonConsoleDialogUi.h"
 
@@ -43,6 +44,8 @@
 #include "api/AbstractConsole.h"
 #include "api/ConsoleReader.h"
 #include "api/ConsoleWriter.h"
+
+#include "gui/EventBlackout.h"
 
 
 namespace GPlatesApi
@@ -69,6 +72,7 @@ namespace GPlatesQtWidgets
 {
 	// Forward declarations.
 	class ConsoleTextEdit;
+	class PythonExecutionMonitorWidget;
 	class PythonReadlineDialog;
 	class ViewportWindow;
 
@@ -110,6 +114,24 @@ namespace GPlatesQtWidgets
 				const QString &text,
 				bool error = false);
 
+#if !defined(GPLATES_NO_PYTHON)
+		/**
+		 * Appends the stringified version of @a obj to the console. The @a error
+		 * flag indicates whether it should be decorated as an error message or not.
+		 *
+		 * This is the implementation of the pure virtual function in the base class
+		 * @a AbstractConsole.
+		 *
+		 * Note that it is safe to call this function from any thread, even if it is
+		 * not the GUI thread.
+		 */
+		virtual
+		void
+		append_text(
+				const boost::python::object &obj,
+				bool error = false);
+#endif
+
 		/**
 		 * Prompts the user for a line of input. This function pops up a modal dialog
 		 * over the @a PythonConsoleDialog if it is visible, or if it is not, over the
@@ -134,6 +156,13 @@ namespace GPlatesQtWidgets
 			return d_recent_scripts_menu;
 		}
 
+		/**
+		 * Returns the last line in the console that is not blank. If no such line
+		 * exists, returns the empty string.
+		 */
+		QString
+		get_last_non_blank_line() const;
+
 	public slots:
 
 		/**
@@ -142,6 +171,20 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		run_script();
+
+		/**
+		 * Clears the output textedit.
+		 */
+		void
+		clear();
+
+	signals:
+
+		/**
+		 * Emitted when the text has been added to the console via stdout or stderr.
+		 */
+		void
+		text_changed();
 
 	protected:
 
@@ -174,13 +217,21 @@ namespace GPlatesQtWidgets
 		handle_save_button_clicked();
 
 		void
-		handle_clear_button_clicked();
-
-		void
 		handle_thread_exec_or_eval_started();
 
 		void
 		handle_thread_exec_or_eval_finished();
+
+		void
+		handle_python_runner_exec_or_eval_started();
+
+		void
+		handle_python_runner_exec_or_eval_finished();
+
+		void
+		handle_system_exit_exception_raised(
+				int exit_status,
+				QString exit_error_message);
 
 		void
 		handle_recent_script_action_triggered(
@@ -199,21 +250,19 @@ namespace GPlatesQtWidgets
 				const QString &text,
 				bool error);
 
+#if !defined(GPLATES_NO_PYTHON)
 		void
-		do_append_text_async(
-				const QString &text,
+		do_append_object(
+				const boost::python::object &obj,
 				bool error);
+#endif
 
 		QString
 		do_read_line();
 
 		void
-		do_read_line_async(
-				QString &read_line_result);
-
-		void
 		run_script(
-				const QString &file_name);
+				const QString &filename);
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
@@ -270,19 +319,35 @@ namespace GPlatesQtWidgets
 		bool d_disable_close;
 
 		/**
+		 * If true, we stopped the event blackout temporarily because the PythonRunner
+		 * started to run something on the main thread.
+		 */
+		bool d_stopped_event_blackout_for_python_runner;
+
+		/**
 		 * A menu that allows the user to run recently-run scripts.
 		 */
 		QMenu *d_recent_scripts_menu;
 
-		// For use by @a append_text in the case where it is called from a thread that
-		// is not the GUI thread.
-		QMutex d_append_text_mutex;
-		QWaitCondition d_append_text_condition;
+		/**
+		 * Lock down the user interface during Python execution.
+		 */
+		GPlatesGui::EventBlackout d_event_blackout;
 
-		// For use by @a read_line in the case where it is called from a thread that
-		// is not the GUI thread.
-		QMutex d_read_line_mutex;
-		QWaitCondition d_read_line_condition;
+		/**
+		 * Allows the user to cancel execution with a GUI widget.
+		 */
+		PythonExecutionMonitorWidget *d_monitor_widget;
+
+		/**
+		 * The number of lines in the output textedit that are banner text.
+		 */
+		int d_num_banner_lines;
+
+		/**
+		 * Used to display messages telling the user about SystemExit exceptions.
+		 */
+		QMessageBox *d_system_exit_messagebox;
 	};
 
 
@@ -436,6 +501,10 @@ namespace GPlatesQtWidgets
 		void
 		set_input_widget_visible(
 				bool visible);
+
+		QString
+		get_last_non_blank_line(
+				int num_banner_lines) const;
 
 	signals:
 

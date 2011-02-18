@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -51,10 +51,12 @@ namespace GPlatesQtWidgets
 	{
 	public:
 
+		explicit
 		ElidedLabel(
 				Qt::TextElideMode mode,
 				QWidget *parent_ = NULL);
 
+		explicit
 		ElidedLabel(
 				const QString &text_,
 				Qt::TextElideMode mode,
@@ -99,96 +101,22 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * The internal label used to display the elided text.
-		 *
-		 * We subclass QLabel so that we can hook into @a enterEvent and @a leaveEvent.
 		 */
 		class InternalLabel :
 				public QLabel
 		{
 		public:
 
+			explicit
 			InternalLabel(
-					const QString &full_text,
-					const bool &is_elided,
 					QWidget *parent_ = NULL);
 
 		protected:
 
 			virtual
-			void
-			enterEvent(
-					QEvent *event_);
-
-		private:
-
-			const QString &d_full_text;
-			const bool &d_is_elided;
-		};
-
-		/**
-		 * The tooltip that is displayed over the ElidedLabel when the text is
-		 * elided and the user moves the cursor over the ElidedLabel.
-		 *
-		 * We use a custom widget instead of a QToolTip because there are issues with
-		 * tooltip alignment and flickering.
-		 *
-		 * This is a Singleton, but the utils/Singleton class is not used because Qt
-		 * likes to manage its own memory.
-		 */
-		class ElidedLabelToolTip :
-				public QDialog
-		{
-		public:
-
-			static
-			void
-			showToolTip(
-					const QString &text,
-					QLabel *master_label);
-
-			static
-			void
-			hideToolTip();
-
-		protected:
-
-			virtual
-			void
-			leaveEvent(
-					QEvent *event_);
-
-			virtual
-			void
-			mouseMoveEvent(
-					QMouseEvent *event_);
-
-			virtual
 			bool
-			eventFilter(
-					QObject *object_,
-					QEvent *event_);
-
-		private:
-
-			static
-			ElidedLabelToolTip &
-			instance();
-
-			void
-			do_show(
-					const QString &text,
-					QLabel *master_label);
-
-			void
-			do_hide();
-
-			ElidedLabelToolTip();
-
-			QFrame *d_internal_label_frame;
-			QLabel *d_internal_label;
-
-			QLabel *d_master_label;
-			bool d_inside_do_show; // to prevent infinite loops on some platforms.
+			event(
+					QEvent *ev);
 		};
 
 		// Initialisation common to both constructors.
@@ -210,11 +138,6 @@ namespace GPlatesQtWidgets
 		 * Where the ellipsis should appear when eliding text.
 		 */
 		Qt::TextElideMode d_mode;
-
-		/**
-		 * Whether we are currently showing elided text.
-		 */
-		bool d_is_elided;
 
 		bool d_internal_label_needs_updating;
 	};

@@ -83,11 +83,11 @@ namespace GPlatesGui
 	class TopologySectionsContainer;
 	class TrinketArea;
 	class UnsavedChangesTracker;
+	class UtilitiesMenu;
 }
 
 namespace GPlatesPresentation
 {
-	class Application;
 	class ViewState;
 	class VisualLayer;
 }
@@ -144,9 +144,12 @@ namespace GPlatesQtWidgets
 		
 	public:
 
+		explicit
 		ViewportWindow(
-				GPlatesPresentation::Application &application);
+				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesPresentation::ViewState &view_state);
 
+		virtual
 		~ViewportWindow();
 
 		void
@@ -237,6 +240,12 @@ namespace GPlatesQtWidgets
 		import_menu()
 		{
 			return *d_import_menu_ptr;
+		}
+
+		GPlatesGui::UtilitiesMenu &
+		utilities_menu()
+		{
+			return *d_utilities_menu_ptr;
 		}
 
 	public slots:
@@ -436,6 +445,7 @@ namespace GPlatesQtWidgets
 		 * To request program termination in the same manner as using the window manager's
 		 * 'close' button, you should call ViewportWindow::close().
 		 */
+		virtual
 		void
 		closeEvent(QCloseEvent *close_event);
 
@@ -443,6 +453,7 @@ namespace GPlatesQtWidgets
 		 * Reimplementation of drag/drop events so we can handle users dragging files onto
 		 * GPlates main window.
 		 */
+		virtual
 		void
 		dragEnterEvent(
 				QDragEnterEvent *ev);
@@ -451,9 +462,16 @@ namespace GPlatesQtWidgets
 		 * Reimplementation of drag/drop events so we can handle users dragging files onto
 		 * GPlates main window.
 		 */
+		virtual
 		void
 		dropEvent(
 				QDropEvent *ev);
+
+
+		virtual
+		void
+		showEvent(
+				QShowEvent *ev);
 
 	private:
 
@@ -709,10 +727,13 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_python_console();
 
+		void
+		handle_python_console_text_changed();
+
 	private:
 
-		//! Holds application state and view state.
-		GPlatesPresentation::Application &d_application;
+		GPlatesAppLogic::ApplicationState &d_application_state;
+		GPlatesPresentation::ViewState &d_view_state;
 
 		GPlatesGui::AnimationController d_animation_controller;
 		GPlatesGui::FullScreenMode d_full_screen_mode;
@@ -875,6 +896,11 @@ namespace GPlatesQtWidgets
 		 * Encapsulates logic regarding the Import submenu of the File menu.
 		 */
 		GPlatesGui::ImportMenu *d_import_menu_ptr;
+
+		/**
+		 * Allows Python scripts to be run from the Utilities menu.
+		 */
+		GPlatesGui::UtilitiesMenu *d_utilities_menu_ptr;
 	};
 }
 

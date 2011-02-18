@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -61,12 +61,16 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 			rendered_geometry_collection.transfer_ownership_of_child_rendered_layer(
 					d_rendered_geometry_layer_index,
 					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)),
-	d_expanded(false),
 	d_visible(true),
 	d_layer_number(layer_number),
 	d_visual_layer_params(
 			visual_layer_registry.create_visual_layer_params(get_layer_type()))
 {
+	d_widget_sections_expanded[ALL] = false;
+	d_widget_sections_expanded[INPUT_CHANNELS] = true;
+	d_widget_sections_expanded[LAYER_OPTIONS] = true;
+	d_widget_sections_expanded[ADVANCED_OPTIONS] = false;
+
 	d_visual_layer_params->handle_layer_modified(layer);
 
 	QObject::connect(
@@ -141,28 +145,31 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries()
 
 
 bool
-GPlatesPresentation::VisualLayer::is_expanded() const
+GPlatesPresentation::VisualLayer::is_expanded(
+		WidgetSection section) const
 {
-	return d_expanded;
+	return d_widget_sections_expanded[section];
 }
 
 
 void
 GPlatesPresentation::VisualLayer::set_expanded(
+		WidgetSection section,
 		bool expanded)
 {
-	if (expanded != d_expanded)
+	if (expanded != d_widget_sections_expanded[section])
 	{
-		d_expanded = expanded;
+		d_widget_sections_expanded[section] = expanded;
 		emit_layer_modified();
 	}
 }
 
 
 void
-GPlatesPresentation::VisualLayer::toggle_expanded()
+GPlatesPresentation::VisualLayer::toggle_expanded(
+		WidgetSection section)
 {
-	d_expanded = !d_expanded;
+	d_widget_sections_expanded[section] = !d_widget_sections_expanded[section];
 	emit_layer_modified();
 }
 
@@ -243,6 +250,7 @@ GPlatesPresentation::VisualLayer::set_custom_name(
 		const boost::optional<QString> &custom_name)
 {
 	d_custom_name = custom_name;
+	d_visual_layers.refresh_all_layers();
 }
 
 

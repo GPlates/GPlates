@@ -55,7 +55,7 @@
 
 namespace GPlatesApi
 {
-	class PythonExecutionThread;
+	class Sleeper;
 }
 
 namespace GPlatesAppLogic
@@ -275,10 +275,6 @@ namespace GPlatesPresentation
 		get_text_overlay_settings() const;
 
 
-		GPlatesApi::PythonExecutionThread *
-		get_python_execution_thread();
-
-
 	private slots:
 
 
@@ -287,6 +283,16 @@ namespace GPlatesPresentation
 
 
 	private:
+
+		void
+		connect_to_viewport_zoom();
+
+		void
+		connect_to_feature_focus();
+
+		void
+		setup_rendered_geometry_collection();
+
 		//
 		// NOTE: Most of these are boost::scoped_ptr's to avoid having to include header files.
 		//
@@ -381,20 +387,9 @@ namespace GPlatesPresentation
 		boost::scoped_ptr<GPlatesGui::TextOverlaySettings> d_text_overlay_settings;
 
 		/**
-		 * The thread on which Python is executed, off the main thread.
-		 *
-		 * Memory is managed by Qt.
+		 * Replaces Python's time.sleep() with our own implementation.
 		 */
-		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
-
-		void
-		connect_to_viewport_zoom();
-
-		void
-		connect_to_feature_focus();
-
-		void
-		setup_rendered_geometry_collection();
+		boost::scoped_ptr<GPlatesApi::Sleeper> d_sleeper;
 	};
 }
 

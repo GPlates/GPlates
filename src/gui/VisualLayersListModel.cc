@@ -193,7 +193,7 @@ GPlatesGui::VisualLayersListModel::dropMimeData(
 	stream >> from_row;
 
 	// Sanity check.
-	if (from_row < 0 || static_cast<size_t>(from_row) >= d_visual_layers.size())
+	if (from_row < 0 || static_cast<std::size_t>(from_row) >= d_visual_layers.size())
 	{
 		return false;
 	}
@@ -213,6 +213,16 @@ GPlatesGui::VisualLayersListModel::dropMimeData(
 	{
 		// Treat a drop on the blank area after the last item in the list view as a
 		// drop on the last item itself.
+		to_row = d_visual_layers.size() - 1;
+	}
+
+	// Sanity check.
+	if (to_row < 0)
+	{
+		to_row = 0;
+	}
+	else if (static_cast<std::size_t>(to_row) >= d_visual_layers.size())
+	{
 		to_row = d_visual_layers.size() - 1;
 	}
 

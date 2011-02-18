@@ -208,6 +208,8 @@ set(srcs
     LeaveFullScreenButtonUi.ui
     LicenseDialog.cc
     LicenseDialog.h
+    LinkWidget.cc
+    LinkWidget.h
     ManageFeatureCollectionsActionWidget.cc
     ManageFeatureCollectionsActionWidget.h
     ManageFeatureCollectionsActionWidgetUi.ui

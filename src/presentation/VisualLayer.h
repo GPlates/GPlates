@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -66,8 +66,24 @@ namespace GPlatesPresentation
 	public:
 
 		/**
+		 * An enumeration of sections in the widgets that display visual layers. This
+		 * is used to remember which sections are expanded or not.
+		 */
+		enum WidgetSection
+		{
+			ALL,
+
+			INPUT_CHANNELS,
+			LAYER_OPTIONS,
+			ADVANCED_OPTIONS,
+
+			NUM_WIDGET_SECTIONS // Must be last entry.
+		};
+
+		/**
 		 * Constructor wraps a visual layer around @a layer created in @a ReconstructGraph.
 		 */
+		explicit
 		VisualLayer(
 				VisualLayers &visual_layers,
 				const VisualLayerRegistry &visual_layer_registry,
@@ -112,27 +128,29 @@ namespace GPlatesPresentation
 		create_rendered_geometries();
 
 		/**
-		 * Returns true if the visual layer is expanded in the user interface.
-		 * All of its gory details can then be seen.
-		 *
-		 * If false, the visual layer is displayed as collapsed in the user interface.
-		 * In this case, only basic information about the visual layer is displayed.
+		 * Returns whether the given @a section of the visual layer is expanded in the
+		 * user interface.
 		 */
 		bool
-		is_expanded() const;
+		is_expanded(
+				WidgetSection section) const;
 
 		/**
-		 * Sets whether the visual layer is expanded in the user interface or not.
+		 * Sets whether the given @a section of the visual layer is expanded in the
+		 * user interface.
 		 */
 		void
 		set_expanded(
+				WidgetSection section,
 				bool expanded = true);
 
 		/**
-		 * Toggles whether the visual layer is expanded in the user interface or not.
+		 * Toggles whether the given @a section of the visual layer is expanded in
+		 * the user interface or not.
 		 */
 		void
-		toggle_expanded();
+		toggle_expanded(
+				WidgetSection section);
 
 		/**
 		 * Returns whether the visual layer is rendered onto the viewport.
@@ -242,9 +260,10 @@ namespace GPlatesPresentation
 			d_rendered_geometry_layer;
 
 		/**
-		 * Whether this visual layer is displayed as expanded in the user interface.
+		 * Whether different sections of the visual layer are expanded in the user
+		 * interface.
 		 */
-		bool d_expanded;
+		bool d_widget_sections_expanded[NUM_WIDGET_SECTIONS];
 
 		/**
 		 * Whether this visual layer is rendered onto the viewport.

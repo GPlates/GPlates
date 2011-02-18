@@ -26,55 +26,99 @@
 #ifndef GPLATES_API_PYTHONEXECUTIONMONITOR_H
 #define GPLATES_API_PYTHONEXECUTIONMONITOR_H
 
-#include <boost/optional.hpp>
-#include <QObject>
 #include <QEventLoop>
 #include <QString>
 #include <QMutex>
 #include <QWaitCondition>
+
+#include "global/python.h"
 
 
 namespace GPlatesApi
 {
 	/**
 	 * Provides a local event loop that runs parallel to a @a PythonExecutionThread
-	 * and provides facilities for the safe interruption of the thread, if Python
-	 * execution is indeed occurring on another thread. If Python execution is
-	 * occurring on the main GUI thread, this monitor cannot interrupt execution,
-	 * but it is still needed to provide a mechanism by which the results of the
-	 * execution can be communicated back to the caller.
+	 * and allows the main GUI thread to remain responsive while waiting for
+	 * execution of Python code to finish.
 	 *
 	 * It is assumed that instances of this class live on the main GUI thread.
-	 *
-	 * This class does not provide a mechanism by which the user can interrupt the
-	 * thread; this is intended to be provided for by a subclass.
 	 */
-	class PythonExecutionMonitor :
-			public QObject
+	class PythonExecutionMonitor
 	{
-		Q_OBJECT
-
 	public:
 
 		/**
-		 * Constructs a @a PythonExecutionMonitor that monitors the execution of a
-		 * @a PythonExecutionThread with the given @a python_thread_id.
+		 * An enumeration of reasons why the execution or evaluation finished.
 		 */
-		explicit
-		PythonExecutionMonitor(
-				long python_thread_id);
+		enum FinishReason
+		{
+			SUCCESS,
+
+			KEYBOARD_INTERRUPT_EXCEPTION,
+			SYSTEM_EXIT_EXCEPTION,
+			OTHER_EXCEPTION
+		};
 
 		/**
-		 * If the thread was executing interactive input from a console, returns
-		 * whether more input is required before the command can be executed.
+		 * Constructs a @a PythonExecutionMonitor.
+		 */
+		explicit
+		PythonExecutionMonitor();
+
+		/**
+		 * If we are monitoring the execution of interactive input from a console,
+		 * returns whether more input is required before the command can be executed.
 		 */
 		bool
 		continue_interactive_input() const;
 
+#if !defined(GPLATES_NO_PYTHON)
 		/**
-		 * Starts the local event loop. Returns true if execution completed
-		 * successfully without interruption, and false if execution finished
-		 * because it was interrupted.
+		 * If we are monitoring an evaluation of a Python expression, returns the
+		 * value of that expression if the evaluation was successful.
+		 */
+		const boost::python::object &
+		get_evaluation_result() const
+		{
+			return d_evaluation_result;
+		}
+#endif
+
+		/**
+		 * Once execution or evaluation has finished, returns the reason why execution
+		 * or evaluation finished.
+		 */
+		FinishReason
+		get_finish_reason() const
+		{
+			return d_finish_reason;
+		}
+
+		/**
+		 * Returns the exit status upon finishing execution or evaluation.
+		 */
+		int
+		get_exit_status() const
+		{
+			return d_exit_status;
+		}
+
+		/**
+		 * Returns the exit error message, if set. Returns empty string if no error
+		 * message was set. Typically, the error message is set when an unhandled
+		 * SystemExit exception was raised in Python code.
+		 */
+		const QString &
+		get_exit_error_message() const
+		{
+			return d_exit_error_message;
+		}
+
+		/**
+		 * Starts the local event loop. Returns the reason why execution or evaluation
+		 * finished.
+		 *
+		 * Only call this if monitoring Python code running on another thread.
 		 *
 		 * Note that it is important that no events be allowed to be processed
 		 * between the time when Python execution thread is given a job and the
@@ -82,13 +126,14 @@ namespace GPlatesApi
 		 * termination of our event loop by the execution thread. In particular,
 		 * do not call @a QCoreApplication::processEvents() in between.
 		 */
-		virtual
-		bool
+		FinishReason
 		exec();
 
+		// The following functions are intended for use by @a PythonRunner.
+
 		/**
-		 * Stops the local event loop, after the execution thread has finished running
-		 * an interactive command.
+		 * Stops the local event loop, after an interactive command has finished
+		 * executing.
 		 *
 		 * Note: this function is thread-safe. Regardless of which thread this
 		 * function is called from, an event is posted to this object for later
@@ -100,8 +145,8 @@ namespace GPlatesApi
 				bool continue_interactive_input_);
 
 		/**
-		 * Stops the local event loop, after the execution thread has finished
-		 * execution (of anything other than an interactive command).
+		 * Stops the local event loop, after the execution (of anything other than an
+		 * interactive command) has finished.
 		 *
 		 * Note: this function is thread-safe. Regardless of which thread this
 		 * function is called from, an event is posted to this object for later
@@ -111,62 +156,46 @@ namespace GPlatesApi
 		void
 		signal_exec_finished();
 
+#if !defined(GPLATES_NO_PYTHON)
 		/**
-		 * Notifies this monitor that Python code raised a SystemExit exception.
-		 * Such an exception normally immediately quits the application, but it
-		 * is expected that if this function is called, the caller has
-		 * suppressed this default behaviour and has left it up to this monitor
-		 * to deal with the SystemExit exception as it sees fit.
+		 * Stops the local event loop, after the evaluation of a Python expression
+		 * has finished.
 		 *
-		 * Note: this function is thread-safe. If this function is called from a thread
-		 * that is not the thread in which this object lives, an event is posted to this
-		 * object, and the function blocks until the event has been processed.
+		 * Note: this function is thread-safe. Regardless of which thread this
+		 * function is called from, an event is posted to this object for later
+		 * processing, and the function returns immediately without waiting for the
+		 * event to have been processed.
 		 */
 		void
-		signal_system_exit_exception_raised(
+		signal_eval_finished(
+				const boost::python::object &result);
+#endif
+
+		/**
+		 * Sets the finish reason to be @a SYSTEM_EXIT_EXCEPTION, so that the
+		 * caller of the Python code can work out how it finished.
+		 *
+		 * Note: this function is thread-safe. Regardless of which thread this
+		 * function is called from, an event is posted to this object for later
+		 * processing, and the function returns immediately without waiting for the
+		 * event to have been processed.
+		 */
+		void
+		set_system_exit_exception_raised(
 				int exit_status,
-				const boost::optional<QString> &error_message);
-
-	signals:
+				QString exit_error_message);
 
 		/**
-		 * Emitted when the execution thread finishes the execution of an interactive
-		 * command.
+		 * Sets the finish reason to be @a KEYBOARD_INTERRUPT_EXCEPTION.
 		 */
 		void
-		exec_interactive_command_finished(
-				bool continue_interactive_input_);
+		set_keyboard_interrupt_exception_raised();
 
 		/**
-		 * Emitted when the execution thread finishes the execution of non-interactive
-		 * Python code.
+		 * Sets the finish reason to be @a OTHER_EXCEPTION.
 		 */
 		void
-		exec_finished();
-
-		/**
-		 * Emitted when the execution thread finishes the current execution or
-		 * evaluation. This is a catch-all signal to avoid having to listen to all the
-		 * above signals.
-		 */
-		void
-		exec_or_eval_finished();
-
-		/**
-		 * Emitted when a SystemExit exception is raised in Python code.
-		 */
-		void
-		system_exit_exception_raised(
-				int exit_status,
-				const boost::optional<QString> &error_message);
-
-	protected:
-
-		/**
-		 * Sends the Python thread a @a KeyboardInterrupt exception.
-		 */
-		void
-		interrupt_python_thread();
+		set_other_exception_raised();
 
 	private:
 
@@ -177,25 +206,27 @@ namespace GPlatesApi
 		void
 		handle_exec_finished();
 
+#if !defined(GPLATES_NO_PYTHON)
+		void
+		handle_eval_finished(
+				const boost::python::object &result);
+#endif
+
 		void
 		handle_system_exit_exception_raised(
 				int exit_status,
-				const boost::optional<QString> &error_message);
+				QString exit_error_message);
 
-		void
-		handle_system_exit_exception_raised_async(
-				int exit_status,
-				const boost::optional<QString> &error_message);
-
-		long d_python_thread_id;
-		bool d_was_interrupted;
 		bool d_continue_interactive_input;
+#if !defined(GPLATES_NO_PYTHON)
+		boost::python::object d_evaluation_result;
+#endif
+
 		QEventLoop d_event_loop;
 
-		// For use if @a signal_system_exit_exception_raised was called from
-		// outside our home thread.
-		QMutex d_system_exit_mutex;
-		QWaitCondition d_system_exit_condition;
+		FinishReason d_finish_reason;
+		int d_exit_status;
+		QString d_exit_error_message;
 	};
 }
 

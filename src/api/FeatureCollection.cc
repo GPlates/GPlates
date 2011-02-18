@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010, 2011 The University of Sydney, Australia
+ * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,43 +23,32 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "FeatureCollection.h"
+
 #include "global/python.h"
 
-//
-// Note: this .cc file has no corresponding .h file.
-//
 
-#if !defined(GPLATES_NO_PYTHON)
+GPlatesApi::FeatureCollection::FeatureCollection(
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) :
+	d_feature_collection(feature_collection.handle_ptr())
+{  }
 
-// api directory.
-void export_console_reader();
-void export_console_writer();
-void export_feature_collection();
 
-// presentation directory.
-void export_instance();
-
-// qt-widgets directory.
-void export_main_window();
-
-BOOST_PYTHON_MODULE(pygplates)
+std::size_t
+GPlatesApi::FeatureCollection::size() const
 {
-	// api directory.
-	export_console_reader();
-	export_console_writer();
-	export_feature_collection();
-
-	// presentation directory.
-	export_instance();
-
-	// qt-widgets directory.
-	export_main_window();
+	return d_feature_collection->size();
 }
 
-#else
 
-// Dummy variable so that this compilation unit isn't empty.
-void *dummy_gplates_can_haz_python = 0;
+#if !defined(GPLATES_NO_PYTHON)
+void
+export_feature_collection()
+{
+	using namespace boost::python;
 
+	class_<GPlatesApi::FeatureCollection, GPlatesApi::FeatureCollection::non_null_ptr_type, boost::noncopyable>("FeatureCollection", no_init /* for now, disable creation */)
+		.add_property("size", &GPlatesApi::FeatureCollection::size);
+}
 #endif
 

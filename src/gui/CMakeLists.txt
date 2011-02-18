@@ -46,6 +46,8 @@ set(srcs
     DockState.h
     EnableCanvasTool.cc
     EnableCanvasTool.h
+    EventBlackout.cc
+    EventBlackout.h
     ExportAnimationContext.cc
     ExportAnimationContext.h
     ExportAnimationStrategy.cc
@@ -129,8 +131,6 @@ set(srcs
     MapTransform.cc
     MapTransform.h
     Mipmapper.h
-    ModalPythonExecutionMonitor.cc
-    ModalPythonExecutionMonitor.h
     OpaqueSphere.cc
     OpaqueSphere.h
     PersistentOpenGLObjects.cc
@@ -177,6 +177,8 @@ set(srcs
     TrinketArea.h
     UnsavedChangesTracker.cc
     UnsavedChangesTracker.h
+    UtilitiesMenu.cc
+    UtilitiesMenu.h
     ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h

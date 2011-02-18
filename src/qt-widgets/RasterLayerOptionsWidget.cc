@@ -26,6 +26,7 @@
 #include <boost/shared_ptr.hpp>
 #include <QFileInfo>
 #include <QDir>
+#include <QPalette>
 
 #include "RasterLayerOptionsWidget.h"
 
@@ -66,9 +67,16 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 			tr("Open CPT File"),
 			tr("Regular CPT file (*.cpt);;All files (*)"),
 			view_state),
-	d_colour_scale_widget(new ColourScaleWidget(this))
+	d_colour_scale_widget(
+			new ColourScaleWidget(
+				view_state,
+				viewport_window,
+				this))
 {
 	setupUi(this);
+	band_combobox->setCursor(QCursor(Qt::ArrowCursor));
+	select_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
+	use_default_palette_button->setCursor(QCursor(Qt::ArrowCursor));
 
 	d_palette_filename_lineedit->setReadOnly(true);
 	QtWidgetUtils::add_widget_to_placeholder(
@@ -78,6 +86,9 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_colour_scale_widget,
 			colour_scale_placeholder_widget);
+	QPalette colour_scale_palette = d_colour_scale_widget->palette();
+	colour_scale_palette.setColor(QPalette::Window, Qt::white);
+	d_colour_scale_widget->setPalette(colour_scale_palette);
 
 	make_signal_slot_connections();
 }

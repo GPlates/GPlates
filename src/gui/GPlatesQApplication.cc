@@ -203,14 +203,14 @@ bool
 GPlatesGui::GPlatesQApplication::event(
 		QEvent *ev)
 {
-	if (ev->type() == GPlatesUtils::DeferredCallEvent::TYPE)
+	if (ev->type() == GPlatesUtils::AbstractDeferredCallEvent::TYPE)
 	{
 		// Because this object lives on the main GUI thread, we process all
 		// DeferredCallEvents destined to be executed on the main thread here, to save
 		// every class that uses DeferredCallEvents from having to handle this
 		// themselves.
-		GPlatesUtils::DeferredCallEvent *deferred_call_event =
-			static_cast<GPlatesUtils::DeferredCallEvent *>(ev);
+		GPlatesUtils::AbstractDeferredCallEvent *deferred_call_event =
+			static_cast<GPlatesUtils::AbstractDeferredCallEvent *>(ev);
 		deferred_call_event->execute();
 		return true;
 	}

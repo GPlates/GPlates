@@ -26,7 +26,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Running console input...</string>
+      <string>Running Python code...</string>
      </property>
     </widget>
    </item>

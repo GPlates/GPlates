@@ -83,6 +83,7 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		explicit
 		ReconstructLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,

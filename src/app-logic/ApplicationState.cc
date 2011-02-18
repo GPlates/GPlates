@@ -24,6 +24,7 @@
  */
 
 #include <boost/foreach.hpp>
+#include <QThread>
 
 #include "ApplicationState.h"
 
@@ -36,6 +37,10 @@
 #include "ReconstructUtils.h"
 #include "SessionManagement.h"
 #include "UserPreferences.h"
+
+#include "api/PythonExecutionThread.h"
+#include "api/PythonInterpreterLocker.h"
+#include "api/PythonRunner.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -189,16 +194,42 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_user_preferences_ptr(new UserPreferences()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_reconstruct_graph(new ReconstructGraph(*this)),
+	d_update_default_reconstruction_tree_layer(true),
 	d_reconstruction_time(0.0),
 	d_anchored_plate_id(0),
 	d_reconstruction(
 			// Empty reconstruction
-			Reconstruction::create(d_reconstruction_time, 0/*anchored_plate_id*/))
+			Reconstruction::create(d_reconstruction_time, 0/*anchored_plate_id*/)),
+	d_python_runner(NULL),
+	d_python_execution_thread(NULL)
 {
 	// Register default layer task types with the layer task registry.
 	register_default_layer_task_types(*d_layer_task_registry);
 
 	mediate_signal_slot_connections();
+
+#if !defined(GPLATES_NO_PYTHON)
+	using namespace boost::python;
+
+	// Hold references to the main module and its namespace for easy access from
+	// all parts of GPlates.
+	GPlatesApi::PythonInterpreterLocker interpreter_locker;
+	try
+	{
+		d_python_main_module = import("__main__");
+		d_python_main_namespace = d_python_main_module.attr("__dict__");
+	}
+	catch (const error_already_set &)
+	{
+		PyErr_Print();
+	}
+#endif
+
+	// These two must be set up after d_python_main_module and
+	// d_python_main_namespace have been set.
+	d_python_runner = new GPlatesApi::PythonRunner(*this, this);
+	d_python_execution_thread = new GPlatesApi::PythonExecutionThread(*this, this);
+	d_python_execution_thread->start(QThread::IdlePriority);
 }
 
 
@@ -220,6 +251,12 @@ GPlatesAppLogic::ApplicationState::~ApplicationState()
 			SLOT(handle_file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
+
+	// Stop the Python execution thread.
+	static const int WAIT_TIME = 1000 /* milliseconds */;
+	d_python_execution_thread->quit_event_loop();
+	d_python_execution_thread->wait(WAIT_TIME);
+	d_python_execution_thread->terminate();
 }
 
 
@@ -359,7 +396,10 @@ GPlatesAppLogic::ApplicationState::handle_file_state_file_about_to_be_removed(
 #endif
 
 			// Remove the auto-created layer.
-			d_reconstruct_graph->remove_layer(layer_to_remove);
+			if (layer_to_remove.is_valid())
+			{
+				d_reconstruct_graph->remove_layer(layer_to_remove);
+			}
 		}
 
 		// We don't need to track the auto-generated layers for the file being removed.
@@ -649,7 +689,10 @@ GPlatesAppLogic::ApplicationState::create_layer(
 	// else is setting the default reconstruction tree layer.
 	if (new_layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)
 	{
-		d_reconstruct_graph->set_default_reconstruction_tree_layer(new_layer);
+		if (d_update_default_reconstruction_tree_layer)
+		{
+			d_reconstruct_graph->set_default_reconstruction_tree_layer(new_layer);
+		}
 
 		// Keep track of the default reconstruction tree layers set.
 		d_default_reconstruction_tree_layer_stack.push(new_layer);
@@ -675,15 +718,4 @@ GPlatesAppLogic::ApplicationState::create_layers(
 		create_layer(input_file_ref, layer_task);
 	}
 }
-
-#if !defined(GPLATES_NO_PYTHON)
-void
-export_application_state()
-{
-	using namespace boost::python;
-
-	class_<GPlatesAppLogic::ApplicationState, boost::noncopyable>("ApplicationState")
-		.def("get_num", &GPlatesAppLogic::ApplicationState::get_num);
-}
-#endif
 

@@ -32,7 +32,7 @@
 #include "VisualLayerRegistry.h"
 #include "VisualLayers.h"
 
-#include "api/PythonExecutionThread.h"
+#include "api/Sleeper.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/VGPRenderSettings.h"
@@ -126,10 +126,8 @@ GPlatesPresentation::ViewState::ViewState(
 				get_default_graticules_colour())),
 	d_text_overlay_settings(
 			new GPlatesGui::TextOverlaySettings()),
-	d_python_execution_thread(
-			new GPlatesApi::PythonExecutionThread(
-				application_state,
-				this))
+	d_sleeper(
+			new GPlatesApi::Sleeper())
 {
 	connect_to_viewport_zoom();
 
@@ -144,21 +142,12 @@ GPlatesPresentation::ViewState::ViewState(
 			*d_visual_layer_registry,
 			d_application_state,
 			*this);
-
-	// Start the Python execution thread.
-	d_python_execution_thread->start(QThread::IdlePriority);
 }
 
 
 GPlatesPresentation::ViewState::~ViewState()
 {
 	// boost::scoped_ptr destructor requires complete type.
-	
-	// Stop the Python execution thread.
-	static const int WAIT_TIME = 1000 /* milliseconds */;
-	d_python_execution_thread->quit_event_loop();
-	d_python_execution_thread->wait(WAIT_TIME);
-	d_python_execution_thread->terminate();
 }
 
 
@@ -450,12 +439,5 @@ const GPlatesGui::TextOverlaySettings &
 GPlatesPresentation::ViewState::get_text_overlay_settings() const
 {
 	return *d_text_overlay_settings;
-}
-
-
-GPlatesApi::PythonExecutionThread *
-GPlatesPresentation::ViewState::get_python_execution_thread()
-{
-	return d_python_execution_thread;
 }
 

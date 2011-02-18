@@ -25,24 +25,23 @@
  
 #include <QLayout>
 #include <QPalette>
+#include <QApplication>
 
 #include "PythonExecutionMonitorWidget.h"
 
-#include "gui/ModalPythonExecutionMonitor.h"
+#include "QtWidgetUtils.h"
+
+#include "api/PythonExecutionThread.h"
 
 
 GPlatesQtWidgets::PythonExecutionMonitorWidget::PythonExecutionMonitorWidget(
-		GPlatesGui::ModalPythonExecutionMonitor *monitor,
+		GPlatesApi::PythonExecutionThread *python_execution_thread,
 		QWidget *parent_) :
 	QWidget(parent_),
-	d_monitor(monitor),
-	d_system_exit_messagebox(
-			new QMessageBox(
-				QMessageBox::Critical,
-				tr("Python Exception"),
-				QString(),
-				QMessageBox::Ok,
-				this))
+	d_python_execution_thread(python_execution_thread)
+#if 0
+
+#endif
 {
 	setupUi(this);
 
@@ -64,40 +63,28 @@ GPlatesQtWidgets::PythonExecutionMonitorWidget::PythonExecutionMonitorWidget(
 			this,
 			SLOT(handle_cancel_button_clicked()));
 
-	QObject::connect(
-			monitor,
-			SIGNAL(python_thread_interrupted()),
-			this,
-			SLOT(handle_python_thread_interrupted()));
-	QObject::connect(
-			monitor,
-			SIGNAL(exec_interactive_command_finished(bool)),
-			this,
-			SLOT(handle_execution_finished()));
-	QObject::connect(
-			monitor,
-			SIGNAL(exec_finished()),
-			this,
-			SLOT(handle_execution_finished()));
-	QObject::connect(
-			monitor,
-			SIGNAL(system_exit_exception_raised(int, const boost::optional<QString> &)),
-			this,
-			SLOT(handle_system_exit_exception_raised(int, const boost::optional<QString> &)));
-	QObject::connect(
-			this,
-			SIGNAL(python_thread_interruption_requested()),
-			monitor,
-			SLOT(interrupt_python_thread_if_not_yet_interrupted()));
-
 	d_timer.start(APPEARANCE_TIME, this);
-
-	parent_->installEventFilter(this);
-	monitor->add_blackout_exemption(this);
+	qApp->installEventFilter(this);
 }
 
 
 GPlatesQtWidgets::PythonExecutionMonitorWidget::~PythonExecutionMonitorWidget()
+{
+	qApp->removeEventFilter(this);
+}
+
+
+void
+GPlatesQtWidgets::PythonExecutionMonitorWidget::showEvent(
+		QShowEvent *ev)
+{
+	parentWidget()->installEventFilter(this);
+}
+
+
+void
+GPlatesQtWidgets::PythonExecutionMonitorWidget::hideEvent(
+		QHideEvent *ev)
 {
 	parentWidget()->removeEventFilter(this);
 }
@@ -122,6 +109,13 @@ GPlatesQtWidgets::PythonExecutionMonitorWidget::eventFilter(
 		reposition();
 		return true;
 	}
+	else if (ev->type() == QEvent::KeyPress &&
+			QtWidgetUtils::is_control_c(
+				static_cast<QKeyEvent *>(ev)))
+	{
+		d_python_execution_thread->raise_keyboard_interrupt_exception();
+		return true;
+	}
 	else
 	{
 		return QWidget::eventFilter(watched, ev);
@@ -132,51 +126,7 @@ GPlatesQtWidgets::PythonExecutionMonitorWidget::eventFilter(
 void
 GPlatesQtWidgets::PythonExecutionMonitorWidget::handle_cancel_button_clicked()
 {
-	emit python_thread_interruption_requested();
-}
-
-
-void
-GPlatesQtWidgets::PythonExecutionMonitorWidget::handle_python_thread_interrupted()
-{
-	cancel_button->setEnabled(false);
-}
-
-
-void
-GPlatesQtWidgets::PythonExecutionMonitorWidget::handle_execution_finished()
-{
-	d_timer.stop();
-	hide();
-}
-
-
-void
-GPlatesQtWidgets::PythonExecutionMonitorWidget::handle_system_exit_exception_raised(
-		int exit_status,
-		const boost::optional<QString> &error_message)
-{
-	// Only show a warning if the exit status is not 0. 0 usually means success
-	// so let's not scare the user!
-	if (exit_status != 0)
-	{
-		QString warning;
-		if (error_message)
-		{
-			warning = tr("A Python script raised an unhandled SystemExit exception \"%1\" with exit status %2.")
-				.arg(*error_message).arg(exit_status);
-		}
-		else
-		{
-			warning = tr("A Python script raised an unhandled SystemExit exception with exit status %1.")
-				.arg(exit_status);
-		}
-		warning += tr("\nThis is a serious error that usually results in program termination. "
-			"Please consider saving your work and restarting GPlates.");
-
-		d_system_exit_messagebox->setText(warning);
-		d_system_exit_messagebox->exec();
-	}
+	d_python_execution_thread->raise_keyboard_interrupt_exception();
 }
 
 

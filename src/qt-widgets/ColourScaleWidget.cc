@@ -33,9 +33,14 @@
 #include <QFontMetrics>
 #include <QLocale>
 #include <QPalette>
+#include <QMenu>
+#include <QContextMenuEvent>
+#include <QMessageBox>
 #include <QDebug>
 
 #include "ColourScaleWidget.h"
+#include "ViewportWindow.h"
+#include "VisualLayersDialog.h"
 
 #include "QtWidgetUtils.h"
 
@@ -167,17 +172,20 @@ namespace
 			{
 				double minimum_value = visitor.get_minimum_value();
 				double maximum_value = visitor.get_maximum_value();
-				if (minimum_value > maximum_value)
-				{
-					std::swap(minimum_value, maximum_value);
-				}
 
 				int pixmap_width = GPlatesQtWidgets::ColourScaleWidget::COLOUR_SCALE_WIDTH;
 				int pixmap_height = d_widget_size.height() - 2 * d_vertical_margin;
+
 				d_annotations.clear();
 
-				if (pixmap_height >= pixmap_width)
+				if (pixmap_height >= pixmap_width &&
+						!GPlatesMaths::are_almost_exactly_equal(minimum_value, maximum_value))
 				{
+					if (minimum_value > maximum_value)
+					{
+						std::swap(minimum_value, maximum_value);
+					}
+
 					// Paint a checkerboard as the background of the pixmap first.
 					d_colour_scale_pixmap = GPlatesQtWidgets::QtWidgetUtils::create_transparent_checkerboard(
 							pixmap_width, pixmap_height, GPlatesQtWidgets::ColourScaleWidget::CHECKERBOARD_GRID_SIZE);
@@ -224,29 +232,47 @@ namespace
 							disabled_painter.drawLine(0, y, pixmap_width, y);
 						}
 					}
-					
+
 					// We annotate the colour scale with numbers. The numbers shown are
 					// multiples of 1 * 10^k, 2 * 10^k or 5 * 10^k, for some integer k. We pick
 					// the multiple based on the font height, so that they're spaced out nicely.
 					int max_rows = pixmap_height / (d_font_height + GPlatesQtWidgets::ColourScaleWidget::ANNOTATION_LINE_SPACING);
 					double multiplier = calculate_annotation_multiplier(maximum_value - minimum_value, max_rows);
-					int start = round_up::convert(interp.get_value_at(pixmap_height - 1) / multiplier);
-					int end = round_down::convert(interp.get_value_at(0) / multiplier) + 1;
-					QLocale loc;
-
-					for (int i = start; i != end; ++i)
+					if (multiplier > 0)
 					{
-						double value = i * multiplier;
-						d_annotations.push_back(std::make_pair(interp.get_pos(value), loc.toString(value)));
+						int start = round_up::convert(interp.get_value_at(pixmap_height - 1) / multiplier);
+						int end = round_down::convert(interp.get_value_at(0) / multiplier) + 1;
+						QLocale loc;
+
+						for (int i = start; i != end; ++i)
+						{
+							double value = i * multiplier;
+							d_annotations.push_back(std::make_pair(interp.get_pos(value), loc.toString(value)));
+						}
 					}
 				}
-				else // pixmap_height < pixmap_width
+				else
 				{
-					// There's not enough space to do anything sensible so just clear everything.
+					// Sanity checks.
+					if (pixmap_width < 0)
+					{
+						pixmap_width = 0;
+					}
+					if (pixmap_height < 0)
+					{
+						pixmap_height = 0;
+					}
+
+					// There's not enough space to do anything sensible, or there's something
+					// wrong with the colour scale parameters, so just clear everything.
 					d_colour_scale_pixmap = QPixmap(pixmap_width, pixmap_height);
-					QPainter painter(&d_colour_scale_pixmap);
-					painter.setPen(QPen(Qt::NoPen));
-					painter.fillRect(0, 0, pixmap_width, pixmap_height, QBrush(Qt::white));
+					if (pixmap_width > 0 && pixmap_height > 0)
+					{
+						QPainter painter(&d_colour_scale_pixmap);
+						painter.setPen(QPen(Qt::NoPen));
+						painter.fillRect(0, 0, pixmap_width, pixmap_height, QBrush(Qt::white));
+					}
+					d_disabled_colour_scale_pixmap = d_colour_scale_pixmap;
 				}
 				return true;
 			}
@@ -410,15 +436,38 @@ namespace
 		int d_font_height;
 		QSize d_widget_size;
 	};
+
+
+	GPlatesQtWidgets::SaveFileDialog::filter_list_type
+	get_file_dialog_filters()
+	{
+		using namespace GPlatesQtWidgets;
+
+		SaveFileDialog::filter_list_type filters;
+		filters.push_back(FileDialogFilter(ColourScaleWidget::tr("PNG image"), "png"));
+		filters.push_back(FileDialogFilter(ColourScaleWidget::tr("All files"), "*"));
+		return filters;
+	}
 }
 
 
 GPlatesQtWidgets::ColourScaleWidget::ColourScaleWidget(
+		GPlatesPresentation::ViewState &view_state,
+		ViewportWindow *viewport_window,
 		QWidget *parent_) :
 	QWidget(parent_),
-	d_curr_colour_palette(GPlatesGui::RasterColourPalette::create())
+	d_viewport_window(viewport_window),
+	d_curr_colour_palette(GPlatesGui::RasterColourPalette::create()),
+	d_save_file_dialog(
+			this,
+			tr("Save Image As"),
+			get_file_dialog_filters(),
+			view_state)
 {
 	setMinimumHeight(MINIMUM_HEIGHT);
+
+	QAction *save_action = new QAction(tr("&Save Image As..."), this);
+	d_right_click_actions.push_back(save_action);
 }
 
 
@@ -439,6 +488,15 @@ GPlatesQtWidgets::ColourScaleWidget::paintEvent(
 	QFontMetrics font_metrics(font());
 	int vertical_margin = font_metrics.ascent() / 2;
 
+	// Paint the background.
+	QPalette this_palette = palette();
+	painter.fillRect(
+			0,
+			0,
+			width(),
+			height(),
+			QBrush(this_palette.color(QPalette::Window)));
+
 	// Draw the colour scale.
 	painter.drawPixmap(
 			LEFT_MARGIN,
@@ -456,7 +514,6 @@ GPlatesQtWidgets::ColourScaleWidget::paintEvent(
 			d_colour_scale_pixmap.height() + 1);
 
 	// Draw the annotations.
-	QPalette this_palette = palette();
 	QPen annotation_pen(this_palette.color(isEnabled() ? QPalette::Active : QPalette::Disabled, QPalette::WindowText));
 	annotation_pen.setWidth(1);
 	BOOST_FOREACH(const annotation_type &annotation, d_annotations)
@@ -486,6 +543,35 @@ GPlatesQtWidgets::ColourScaleWidget::resizeEvent(
 	if (ev->oldSize().height() != height())
 	{
 		regenerate_contents();
+	}
+
+	QWidget::resizeEvent(ev);
+}
+
+
+void
+GPlatesQtWidgets::ColourScaleWidget::contextMenuEvent(
+		QContextMenuEvent *ev)
+{
+	QAction *triggered_action = QMenu::exec(d_right_click_actions, ev->globalPos());
+	if (triggered_action == d_right_click_actions.first())
+	{
+		boost::optional<QString> file_name = d_save_file_dialog.get_file_name();
+		if (file_name)
+		{
+			// Grab an image of this widget and save it to disk.
+			QPixmap widget_pixmap = QPixmap::grabWidget(this, geometry());
+			bool success = widget_pixmap.save(*file_name);
+			if (!success)
+			{
+				QMessageBox::critical(
+						&d_viewport_window->visual_layers_dialog(),
+						tr("Save Image As"),
+						tr("GPlates could not save to the chosen file. Please choose another location."));
+			}
+		}
+
+		ev->accept();
 	}
 }
 

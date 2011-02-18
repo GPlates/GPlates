@@ -26,6 +26,7 @@
 #include <iostream>
 #include <QFile>
 #include <QByteArray>
+#include <QDebug>
 
 #include "PythonRunner.h"
 
@@ -41,7 +42,9 @@
 
 
 GPlatesApi::PythonRunner::PythonRunner(
-		GPlatesAppLogic::ApplicationState &application_state) :
+		GPlatesAppLogic::ApplicationState &application_state,
+		QObject *parent_) :
+	QObject(parent_),
 	d_application_state(application_state)
 {
 #if !defined(GPLATES_NO_PYTHON)
@@ -72,6 +75,17 @@ GPlatesApi::PythonRunner::PythonRunner(
 		std::cerr << "Could not obtain reference to __builtin__.compile function." << std::endl;
 		PyErr_Print();
 	}
+
+	try
+	{
+		object builtin_module = import("__builtin__");
+		d_eval = builtin_module.attr("eval");
+	}
+	catch (const error_already_set &)
+	{
+		std::cerr << "Could not obtain reference to __builtin__.eval function." << std::endl;
+		PyErr_Print();
+	}
 #endif
 }
 
@@ -82,6 +96,7 @@ GPlatesApi::PythonRunner::~PythonRunner()
 	PythonInterpreterLocker interpreter_locker;
 	d_console = boost::python::object();
 	d_compile = boost::python::object();
+	d_eval = boost::python::object();
 #endif
 }
 
@@ -90,10 +105,10 @@ bool
 GPlatesApi::PythonRunner::event(
 		QEvent *ev)
 {
-	if (ev->type() == GPlatesUtils::DeferredCallEvent::TYPE)
+	if (ev->type() == GPlatesUtils::AbstractDeferredCallEvent::TYPE)
 	{
-		GPlatesUtils::DeferredCallEvent *deferred_call_event =
-			static_cast<GPlatesUtils::DeferredCallEvent *>(ev);
+		GPlatesUtils::AbstractDeferredCallEvent *deferred_call_event =
+			static_cast<GPlatesUtils::AbstractDeferredCallEvent *>(ev);
 		deferred_call_event->execute();
 	}
 	else
@@ -112,6 +127,8 @@ GPlatesApi::PythonRunner::exec_interactive_command(
 		PythonExecutionMonitor *monitor)
 {
 	using namespace boost::python;
+
+	emit exec_or_eval_started();
 
 	PythonInterpreterLocker interpreter_locker;
 	bool continue_interactive_input = false;
@@ -133,6 +150,7 @@ GPlatesApi::PythonRunner::exec_interactive_command(
 	interpreter_locker.release();
 
 	monitor->signal_exec_interactive_command_finished(continue_interactive_input);
+	emit exec_or_eval_finished();
 }
 
 
@@ -142,6 +160,8 @@ GPlatesApi::PythonRunner::exec_string(
 		PythonExecutionMonitor *monitor)
 {
 	using namespace boost::python;
+
+	emit exec_or_eval_started();
 
 	PythonInterpreterLocker interpreter_locker;
 	try
@@ -157,6 +177,7 @@ GPlatesApi::PythonRunner::exec_string(
 	interpreter_locker.release();
 
 	monitor->signal_exec_finished();
+	emit exec_or_eval_finished();
 }
 
 
@@ -176,6 +197,24 @@ GPlatesApi::PythonRunner::exec_file(
 {
 	using namespace boost::python;
 
+	emit exec_or_eval_started();
+
+	// Convert the filename to a unicode object.
+	std::wstring wstring_filename = GPlatesUtils::make_wstring_from_qstring(filename);
+	object unicode_filename;
+	try
+	{
+		unicode_filename = object(wstring_filename);
+	}
+	catch (const error_already_set &)
+	{
+		PyErr_Print();
+		PySys_WriteStderr("Fatal error: script not executed.\n");
+		monitor->signal_exec_finished();
+		emit exec_or_eval_finished();
+		return;
+	}
+
 	QFile file(filename);
 	if (file.open(QIODevice::ReadOnly | QIODevice::Text))
 	{
@@ -187,12 +226,9 @@ GPlatesApi::PythonRunner::exec_file(
 
 		// Encode the filename using the given encoding.
 		PythonInterpreterLocker interpreter_locker;
-		std::wstring wstring_filename = GPlatesUtils::make_wstring_from_qstring(filename);
-		object unicode_filename;
 		str encoded_filename;
 		try
 		{
-			unicode_filename = object(wstring_filename);
 			encoded_filename = str(unicode_filename.attr("encode")(
 					filename_encoding.toUtf8().constData()));
 		}
@@ -205,8 +241,10 @@ GPlatesApi::PythonRunner::exec_file(
 			catch (const error_already_set &)
 			{
 				// We should never get here, but just in case...
-				std::cerr << "Failed to encode filename." << std::endl;
+				PyErr_Print();
+				PySys_WriteStderr("Fatal error: script not executed.\n");
 				monitor->signal_exec_finished();
+				emit exec_or_eval_finished();
 				return;
 			}
 		}
@@ -222,11 +260,110 @@ GPlatesApi::PythonRunner::exec_file(
 		}
 
 		monitor->signal_exec_finished();
+		emit exec_or_eval_finished();
 	}
 	else
 	{
+		// Print error message to the console.
+		PythonInterpreterLocker interpreter_locker;
+		try
+		{
+			object sys_module = import("sys");
+			object sys_stderr = sys_module.attr("stderr");
+			sys_stderr.attr("write")("Failed to open ");
+			sys_stderr.attr("write")(unicode_filename);
+			sys_stderr.attr("write")(" for reading, script not executed.\n");
+		}
+		catch (const error_already_set &)
+		{
+			PyErr_Print();
+			PySys_WriteStderr("Fatal error: script not executed.\n");
+		}
+
 		monitor->signal_exec_finished();
+		emit exec_or_eval_finished();
 	}
+}
+
+
+void
+GPlatesApi::PythonRunner::eval_string(
+		const QString &string,
+		PythonExecutionMonitor *monitor)
+{
+	using namespace boost::python;
+
+	emit exec_or_eval_started();
+
+	PythonInterpreterLocker interpreter_locker;
+	object result;
+	try
+	{
+		std::wstring wstring = GPlatesUtils::make_wstring_from_qstring(string);
+		result = d_eval(
+				wstring,
+				d_application_state.get_python_main_namespace(),
+				d_application_state.get_python_main_namespace());
+	}
+	catch (const error_already_set &)
+	{
+		handle_exception(monitor);
+	}
+	interpreter_locker.release();
+
+	monitor->signal_eval_finished(result);
+	emit exec_or_eval_finished();
+}
+
+
+void
+GPlatesApi::PythonRunner::exec_function(
+		const boost::function< void () > &function,
+		PythonExecutionMonitor *monitor)
+{
+	using namespace boost::python;
+
+	emit exec_or_eval_started();
+
+	PythonInterpreterLocker interpreter_locker;
+	try
+	{
+		function();
+	}
+	catch (const error_already_set &)
+	{
+		handle_exception(monitor);
+	}
+	interpreter_locker.release();
+
+	monitor->signal_exec_finished();
+	emit exec_or_eval_finished();
+}
+
+
+void
+GPlatesApi::PythonRunner::eval_function(
+		const boost::function< boost::python::object () > &function,
+		PythonExecutionMonitor *monitor)
+{
+	using namespace boost::python;
+
+	emit exec_or_eval_started();
+
+	PythonInterpreterLocker interpreter_locker;
+	object result;
+	try
+	{
+		result = function();
+	}
+	catch (const error_already_set &)
+	{
+		handle_exception(monitor);
+	}
+	interpreter_locker.release();
+
+	monitor->signal_eval_finished(result);
+	emit exec_or_eval_finished();
 }
 
 
@@ -254,9 +391,20 @@ GPlatesApi::PythonRunner::handle_exception(
 	if (PyErr_ExceptionMatches(PyExc_SystemExit))
 	{
 		handle_system_exit(monitor);
+
+		// Note: not safe to print SystemExit exception.
 	}
 	else
 	{
+		if (PyErr_ExceptionMatches(PyExc_KeyboardInterrupt))
+		{
+			monitor->set_keyboard_interrupt_exception_raised();
+		}
+		else
+		{
+			monitor->set_other_exception_raised();
+		}
+
 		PyErr_Print();
 	}
 }
@@ -285,7 +433,7 @@ GPlatesApi::PythonRunner::handle_system_exit(
 		bool is_none = (code.ptr() == Py_None);
 
 		int exit_status;
-		boost::optional<QString> error_message;
+		QString error_message;
 		if (is_int)
 		{
 			// If the code is an int, it is the exit status.
@@ -310,8 +458,9 @@ GPlatesApi::PythonRunner::handle_system_exit(
 		Py_XDECREF(type_ptr);
 		Py_XDECREF(traceback_ptr);
 
-		// Give the monitor a chance to handle it.
-		monitor->signal_system_exit_exception_raised(exit_status, error_message);
+		// Let the caller know via the monitor.
+		monitor->set_system_exit_exception_raised(exit_status, error_message);
+		emit system_exit_exception_raised(exit_status, error_message);
 	}
 	catch (const error_already_set &)
 	{

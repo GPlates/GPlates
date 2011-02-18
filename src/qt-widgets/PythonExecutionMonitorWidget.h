@@ -29,22 +29,22 @@
 #include <boost/optional.hpp>
 #include <QWidget>
 #include <QBasicTimer>
-#include <QMessageBox>
 #include <QString>
 
 #include "PythonExecutionMonitorWidgetUi.h"
 
 
-namespace GPlatesGui
+namespace GPlatesApi
 {
-	class ModalPythonExecutionMonitor;
+	class PythonExecutionThread;
 }
 
 namespace GPlatesQtWidgets
 {
 	/**
-	 * PythonExecutionMonitorWidget is a widget that provides an alternative to
-	 * pressing Ctrl+C to stop the Python execution thread.
+	 * PythonExecutionMonitorWidget is a widget that appears on screen to allow the
+	 * user to stop Python execution. It also listens to Ctrl+C, which is an
+	 * alternative way to stop Python execution.
 	 */
 	class PythonExecutionMonitorWidget :
 			public QWidget,
@@ -56,19 +56,14 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Constructs a @a PythonExecutionMonitorWidget with a non-NULL @a parent_.
-		 * The given @a monitor is used to interrupt the Python thread when requested.
 		 */
 		explicit
 		PythonExecutionMonitorWidget(
-				GPlatesGui::ModalPythonExecutionMonitor *monitor,
+				GPlatesApi::PythonExecutionThread *python_execution_thread,
 				QWidget *parent_);
 
+		virtual
 		~PythonExecutionMonitorWidget();
-
-	signals:
-
-		void
-		python_thread_interruption_requested();
 
 	protected:
 
@@ -76,6 +71,16 @@ namespace GPlatesQtWidgets
 		void
 		timerEvent(
 				QTimerEvent *ev);
+
+		virtual
+		void
+		showEvent(
+				QShowEvent *ev);
+
+		virtual
+		void
+		hideEvent(
+				QHideEvent *ev);
 
 		virtual
 		bool
@@ -88,17 +93,6 @@ namespace GPlatesQtWidgets
 		void
 		handle_cancel_button_clicked();
 
-		void
-		handle_python_thread_interrupted();
-
-		void
-		handle_execution_finished();
-
-		void
-		handle_system_exit_exception_raised(
-				int exit_status,
-				const boost::optional<QString> &error_message);
-
 	private:
 
 		void
@@ -106,8 +100,7 @@ namespace GPlatesQtWidgets
 
 		static const int APPEARANCE_TIME = 500 /* milliseconds */;
 
-		GPlatesGui::ModalPythonExecutionMonitor *d_monitor;
-		QMessageBox *d_system_exit_messagebox;
+		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
 		QBasicTimer d_timer;
 	};
 }

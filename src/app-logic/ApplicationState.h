@@ -54,6 +54,11 @@
 // This header gets included in a lot of other files and we want to reduce compile times.
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+namespace GPlatesApi
+{
+	class PythonRunner;
+	class PythonExecutionThread;
+}
 
 namespace GPlatesAppLogic
 {
@@ -78,7 +83,6 @@ namespace GPlatesAppLogic
 		ApplicationState();
 
 		~ApplicationState();
-
 
 		GPlatesModel::ModelInterface &
 		get_model_interface()
@@ -110,13 +114,11 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileState &
 		get_feature_collection_file_state();
 
-
 		/**
 		 * Handling reading/writing feature collection files and notification of read errors.
 		 */
 		FeatureCollectionFileIO &
 		get_feature_collection_file_io();
-
 
 		/**
 		 * Stores/Loads loaded file information to and from persistent storage.
@@ -124,20 +126,17 @@ namespace GPlatesAppLogic
 		GPlatesAppLogic::SessionManagement &
 		get_session_management();
 
-
 		/**
 		 * Responsible for all persistent GPlates session storage including user preferences.
 		 */
 		GPlatesAppLogic::UserPreferences &
 		get_user_preferences();
 
-
 		/**
 		 * Returns the layer task registry used to create layer tasks.
 		 */
 		LayerTaskRegistry &
 		get_layer_task_registry();
-
 
 		/**
 		 * Returns the reconstruct graph containing the connected layer tasks.
@@ -147,7 +146,6 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructGraph &
 		get_reconstruct_graph();
-
 
 		/**
 		 * Create any auto-generate layers necessary and connect to @a file_ref.
@@ -164,25 +162,32 @@ namespace GPlatesAppLogic
 		update_layers(
 				const FeatureCollectionFileState::file_reference &file_ref);
 
-#if !defined(GPLATES_NO_PYTHON)
+		/**
+		 * If @a update_default is true, this updates the default reconstruction tree
+		 * when the user loads a new rotation file.
+		 */
 		void
-		set_python_main_module(
-				const boost::python::object &main_module)
+		set_update_default_reconstruction_tree_layer(
+				bool update_default = true)
 		{
-			d_python_main_module = main_module;
+			d_update_default_reconstruction_tree_layer = update_default;
 		}
 
+		/**
+		 * Returns whether this is updating the default reconstruction tree when the
+		 * user loads a new rotation file.
+		 */
+		bool
+		is_updating_default_reconstruction_tree_layer() const
+		{
+			return d_update_default_reconstruction_tree_layer;
+		}
+
+#if !defined(GPLATES_NO_PYTHON)
 		const boost::python::object &
 		get_python_main_module() const
 		{
 			return d_python_main_module;
-		}
-
-		void
-		set_python_main_namespace(
-				const boost::python::object &main_namespace)
-		{
-			d_python_main_namespace = main_namespace;
 		}
 
 		const boost::python::object &
@@ -190,14 +195,25 @@ namespace GPlatesAppLogic
 		{
 			return d_python_main_namespace;
 		}
-
-		// Testing code only:
-		int
-		get_num() const
-		{
-			return 17;
-		}
 #endif
+
+		/**
+		 * Returns an object that runs Python on the main thread.
+		 */
+		GPlatesApi::PythonRunner *
+		get_python_runner() const
+		{
+			return d_python_runner;
+		}
+
+		/**
+		 * Returns a thread on which Python code can be run off the main thread.
+		 */
+		GPlatesApi::PythonExecutionThread *
+		get_python_execution_thread()
+		{
+			return d_python_execution_thread;
+		}
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -326,6 +342,11 @@ namespace GPlatesAppLogic
 		default_reconstruction_tree_layer_stack_type d_default_reconstruction_tree_layer_stack;
 
 		/**
+		 * If true, changes the default reconstruction tree layer upon loading a rotation file.
+		 */
+		bool d_update_default_reconstruction_tree_layer;
+
+		/**
 		 * The current reconstruction time.
 		 */
 		double d_reconstruction_time;
@@ -352,6 +373,20 @@ namespace GPlatesAppLogic
 		 */
 		boost::python::object d_python_main_namespace;
 #endif
+
+		/**
+		 * Runs Python code on the main thread.
+		 *
+		 * Memory managed by Qt.
+		 */
+		GPlatesApi::PythonRunner *d_python_runner;
+
+		/**
+		 * The thread on which Python is executed, off the main thread.
+		 *
+		 * Memory is managed by Qt.
+		 */
+		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
 
 		/**
 		 * Make signal/slot connections that coordinate the application logic structure

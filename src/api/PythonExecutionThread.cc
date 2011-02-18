@@ -60,8 +60,6 @@ GPlatesApi::PythonExecutionThread::exec_interactive_command(
 	QMutexLocker lock(&d_state_mutex);
 	if (d_python_runner != NULL)
 	{
-		emit exec_or_eval_started();
-		listen_to(monitor);
 		QCoreApplication::postEvent(
 				d_python_runner,
 				new GPlatesUtils::DeferredCallEvent(
@@ -98,8 +96,6 @@ GPlatesApi::PythonExecutionThread::exec_string(
 	QMutexLocker lock(&d_state_mutex);
 	if (d_python_runner != NULL)
 	{
-		emit exec_or_eval_started();
-		listen_to(monitor);
 		QCoreApplication::postEvent(
 				d_python_runner,
 				new GPlatesUtils::DeferredCallEvent(
@@ -121,8 +117,6 @@ GPlatesApi::PythonExecutionThread::exec_file(
 	QMutexLocker lock(&d_state_mutex);
 	if (d_python_runner != NULL)
 	{
-		emit exec_or_eval_started();
-		listen_to(monitor);
 		QCoreApplication::postEvent(
 				d_python_runner,
 				new GPlatesUtils::DeferredCallEvent(
@@ -132,6 +126,66 @@ GPlatesApi::PythonExecutionThread::exec_file(
 						filename,
 						monitor,
 						filename_encoding)));
+	}
+}
+
+
+void
+GPlatesApi::PythonExecutionThread::eval_string(
+		const QString &string,
+		PythonExecutionMonitor *monitor)
+{
+	QMutexLocker lock(&d_state_mutex);
+	if (d_python_runner != NULL)
+	{
+		QCoreApplication::postEvent(
+				d_python_runner,
+				new GPlatesUtils::DeferredCallEvent(
+					boost::bind(
+						&PythonRunner::eval_string,
+						boost::ref(*d_python_runner),
+						string,
+						monitor)));
+	}
+}
+
+
+void
+GPlatesApi::PythonExecutionThread::exec_function(
+		const boost::function< void () > &function,
+		PythonExecutionMonitor *monitor)
+{
+	QMutexLocker lock(&d_state_mutex);
+	if (d_python_runner != NULL)
+	{
+		QCoreApplication::postEvent(
+				d_python_runner,
+				new GPlatesUtils::DeferredCallEvent(
+					boost::bind(
+						&PythonRunner::exec_function,
+						boost::ref(*d_python_runner),
+						function,
+						monitor)));
+	}
+}
+
+
+void
+GPlatesApi::PythonExecutionThread::eval_function(
+		const boost::function< boost::python::object () > &function,
+		PythonExecutionMonitor *monitor)
+{
+	QMutexLocker lock(&d_state_mutex);
+	if (d_python_runner != NULL)
+	{
+		QCoreApplication::postEvent(
+				d_python_runner,
+				new GPlatesUtils::DeferredCallEvent(
+					boost::bind(
+						&PythonRunner::eval_function,
+						boost::ref(*d_python_runner),
+						function,
+						monitor)));
 	}
 }
 #endif
@@ -157,6 +211,17 @@ GPlatesApi::PythonExecutionThread::get_python_thread_id() const
 
 
 void
+GPlatesApi::PythonExecutionThread::raise_keyboard_interrupt_exception()
+{
+#if !defined(GPLATES_NO_PYTHON)
+	QMutexLocker lock(&d_state_mutex);
+	PythonInterpreterLocker interpreter_locker;
+	PyThreadState_SetAsyncExc(d_python_thread_id, PyExc_KeyboardInterrupt);
+#endif
+}
+
+
+void
 GPlatesApi::PythonExecutionThread::run()
 {
 	d_state_mutex.lock();
@@ -165,6 +230,23 @@ GPlatesApi::PythonExecutionThread::run()
 	d_event_loop = &event_loop;
 #if !defined(GPLATES_NO_PYTHON)
 	d_python_runner = new PythonRunner(d_application_state);
+
+	// Connect to signals from PythonRunner so we can forward them.
+	QObject::connect(
+			d_python_runner,
+			SIGNAL(exec_or_eval_started()),
+			this,
+			SLOT(handle_exec_or_eval_started()));
+	QObject::connect(
+			d_python_runner,
+			SIGNAL(exec_or_eval_finished()),
+			this,
+			SLOT(handle_exec_or_eval_finished()));
+	QObject::connect(
+			d_python_runner,
+			SIGNAL(system_exit_exception_raised(int, QString )),
+			this,
+			SLOT(handle_system_exit_exception_raised(int, QString )));
 
 	// Get the Python thread id for the current thread.
 	using namespace boost::python;
@@ -205,20 +287,24 @@ GPlatesApi::PythonExecutionThread::run()
 
 
 void
-GPlatesApi::PythonExecutionThread::handle_monitor_exec_or_eval_finished()
+GPlatesApi::PythonExecutionThread::handle_exec_or_eval_started()
+{
+	emit exec_or_eval_started();
+}
+
+
+void
+GPlatesApi::PythonExecutionThread::handle_exec_or_eval_finished()
 {
 	emit exec_or_eval_finished();
 }
 
 
 void
-GPlatesApi::PythonExecutionThread::listen_to(
-		PythonExecutionMonitor *monitor)
+GPlatesApi::PythonExecutionThread::handle_system_exit_exception_raised(
+		int exit_status,
+		QString exit_error_message)
 {
-	QObject::connect(
-			monitor,
-			SIGNAL(exec_or_eval_finished()),
-			this,
-			SLOT(handle_monitor_exec_or_eval_finished()));
+	emit system_exit_exception_raised(exit_status, exit_error_message);
 }
 

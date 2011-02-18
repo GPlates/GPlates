@@ -8,7 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008 Geological Survey of Norway
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,7 +27,6 @@
  */
 
 #include <functional>
-#include <QFileDialog>
 #include <QHeaderView>
 #include <QTableWidget>
 #include <QMap>
@@ -89,13 +88,13 @@ namespace {
 	 */
 	static const FileDialogFilterOption file_dialog_filter_table[] = {
 		{ QT_TRANSLATE_NOOP("TotalReconstructionPolesDialog",
-				"CSV file, comma-delimited (*.csv)"),
+				"CSV file, comma-delimited"),
 			{ ',' } },
 		{ QT_TRANSLATE_NOOP("TotalReconstructionPolesDialog",
-				"CSV file, semicolon-delimited (*.csv)"),
+				"CSV file, semicolon-delimited"),
 			{ ';' } },
 		{ QT_TRANSLATE_NOOP("TotalReconstructionPolesDialog",
-				"CSV file, tab-delimited (*.csv)"),
+				"CSV file, tab-delimited"),
 			{ '\t' } },
 	};
 
@@ -109,46 +108,31 @@ namespace {
 		static FileDialogFilterMapType map;
 		const FileDialogFilterOption *begin = file_dialog_filter_table;
 		const FileDialogFilterOption *end = begin + NUM_ELEMS(file_dialog_filter_table);
-		for (; begin != end; ++begin) {
-			map[GPlatesQtWidgets::TotalReconstructionPolesDialog::tr(begin->text)] =
-					begin->options;
+		for (; begin != end; ++begin)
+		{
+			map.insert(
+					GPlatesQtWidgets::TotalReconstructionPolesDialog::tr(begin->text) + " (*.csv)",
+					begin->options);
 		}
 		return map;
 	}
 
-
 	/**
-	 * Anon namespace function to create and set up a QFileDialog
-	 * for getting names of CSV files to export. Called once
-	 * from @a handle_export() and assigned to a static member.
-	 * Memory will be managed by Qt if you supply a valid @a parent.
+	 * Construct filters to give to SaveFileDialog.
 	 */
-	QFileDialog *
-	create_export_file_dialog(
-			QWidget *parent)
+	GPlatesQtWidgets::SaveFileDialog::filter_list_type
+	build_save_file_dialog_filters()
 	{
-		QFileDialog *dialog = new QFileDialog(parent,
-				GPlatesQtWidgets::TotalReconstructionPolesDialog::tr(
-					"Export tablular data"));
-
-		// Use "Save As"-like behaviour.
-		dialog->setFileMode(QFileDialog::AnyFile);
-		dialog->setAcceptMode(QFileDialog::AcceptSave);
-		
-		// Set up different filters for different CSV options.
-		QStringList filters;
+		GPlatesQtWidgets::SaveFileDialog::filter_list_type result;
 		const FileDialogFilterOption *begin = file_dialog_filter_table;
 		const FileDialogFilterOption *end = begin + NUM_ELEMS(file_dialog_filter_table);
-		for (; begin != end; ++begin) {
-			filters << GPlatesQtWidgets::TotalReconstructionPolesDialog::tr(begin->text);
+		for (; begin != end; ++begin)
+		{
+			result.push_back(GPlatesQtWidgets::FileDialogFilter(begin->text, "csv"));
 		}
-		dialog->setFilters(filters);
-		dialog->setDefaultSuffix("csv");
-		
-		return dialog;
+
+		return result;
 	}
-
-
 
 
 	const QString
@@ -312,6 +296,11 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 	d_application_state(view_state.get_application_state()),
 	d_plate(0),
 	d_time(0.0),
+	d_save_file_dialog(
+			this,
+			tr("Export Tabular Data"),
+			build_save_file_dialog_filters(),
+			view_state),
 	d_visual_layers_combobox(
 			new VisualLayersComboBox(
 				view_state.get_visual_layers(),
@@ -691,27 +680,24 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_export(
 		const QTableWidget &table)
 {
-	// Build the dialog we present to the user. Keep the same instance so that
-	// the dialog will remember where the user last exported to, etc.
-	// Parented to this dialog; memory managed by Qt.
-	static QFileDialog *file_dialog = create_export_file_dialog(this);
 	// Build a map to let us look up the options the user wants based on what
 	// file filter was selected in the dialog.
 	static const FileDialogFilterMapType &filter_map = build_export_filter_map();
-	
+
 	// Pop up and ask for file.
-	if (file_dialog->exec()) {
-		QStringList filenames = file_dialog->selectedFiles();
-		if (filenames.size() == 1 && ! filenames.front().isEmpty()) {
-			QString filename = filenames.front();
-			QString filter = file_dialog->selectedFilter();
-			if (filter_map.contains(filter)) {
-				GPlatesGui::CsvExport::ExportOptions options = filter_map.value(filter);
-				GPlatesGui::CsvExport::export_table(filename, options, table);
-			} else {
-				// Somehow, user chose filter that we didn't put in there.
-				QMessageBox::critical(this, tr("Invalid export filter"), tr("Please specify a CSV file format variant in the save dialog."));
-			}
+	QString filter;
+	boost::optional<QString> filename = d_save_file_dialog.get_file_name(&filter);
+	if (filename)
+	{
+		if (filter_map.contains(filter))
+		{
+			GPlatesGui::CsvExport::ExportOptions options = filter_map.value(filter);
+			GPlatesGui::CsvExport::export_table(*filename, options, table);
+		}
+		else
+		{
+			// Somehow, user chose filter that we didn't put in there.
+			QMessageBox::critical(this, tr("Invalid export filter"), tr("Please specify a CSV file format variant in the save dialog."));
 		}
 	}
 }

@@ -33,12 +33,24 @@
 #include <QWidget>
 #include <QPixmap>
 #include <QString>
+#include <QList>
+#include <QAction>
+
+#include "SaveFileDialog.h"
 
 #include "gui/RasterColourPalette.h"
 
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
+	// Forward declaration.
+	class ViewportWindow;
+
 	/**
 	 * ColourScaleWidget displays an annotated colour scale on screen.
 	 */
@@ -82,6 +94,8 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ColourScaleWidget(
+				GPlatesPresentation::ViewState &view_state,
+				ViewportWindow *viewport_window,
 				QWidget *parent_ = NULL);
 
 		/**
@@ -104,6 +118,11 @@ namespace GPlatesQtWidgets
 		resizeEvent(
 				QResizeEvent *ev);
 
+		virtual
+		void
+		contextMenuEvent(
+				QContextMenuEvent *ev);
+
 	private:
 
 		/**
@@ -114,11 +133,15 @@ namespace GPlatesQtWidgets
 
 		static const int MINIMUM_HEIGHT = 200;
 
+		ViewportWindow *d_viewport_window;
+
 		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type d_curr_colour_palette;
 
 		QPixmap d_colour_scale_pixmap;
 		QPixmap d_disabled_colour_scale_pixmap;
 		annotations_seq_type d_annotations;
+		QList<QAction *> d_right_click_actions;
+		SaveFileDialog d_save_file_dialog;
 	};
 }
 

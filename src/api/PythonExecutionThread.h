@@ -142,32 +142,50 @@ namespace GPlatesApi
 				PythonExecutionMonitor *monitor,
 				const QString &filename_encoding);
 
+		/**
+		 * Evaluates the Python expression contained in @a string, monitored from
+		 * another thread by @a monitor.
+		 *
+		 * The @a command is converted into a Python unicode object for evaluation.
+		 *
+		 * @a monitor must not be NULL. At the conclusion of evaluation, the result of
+		 * evaluation is returned to the caller via @a monitor.
+		 *
+		 * Note: this function is thread-safe.
+		 */
 		virtual
 		void
 		eval_string(
 				const QString &string,
-				PythonExecutionMonitor *monitor)
-		{
-			// TODO
-		}
+				PythonExecutionMonitor *monitor);
 
+		/**
+		 * Executes the given @a function, monitored from another thread by @a monitor.
+		 *
+		 * @a monitor must not be NULL.
+		 *
+		 * Note: this function is thread-safe.
+		 */
 		virtual
 		void
 		exec_function(
 				const boost::function< void () > &function,
-				PythonExecutionMonitor *monitor)
-		{
-			// TODO
-		}
+				PythonExecutionMonitor *monitor);
 
+		/**
+		 * Evaluates the given @a function, which returns a Python object, monitored
+		 * from another thread by @a monitor.
+		 *
+		 * @a monitor must not be NULL. At the conclusion of evaluation, the result of
+		 * evaluation is returned to the caller via @a monitor.
+		 *
+		 * Note: this function is thread-safe.
+		 */
 		virtual
 		void
 		eval_function(
 				const boost::function< boost::python::object () > &function,
-				PythonExecutionMonitor *monitor)
-		{
-			// TODO
-		}
+				PythonExecutionMonitor *monitor);
 #endif
 
 		/**
@@ -187,6 +205,16 @@ namespace GPlatesApi
 		long
 		get_python_thread_id() const;
 
+		/**
+		 * Raises a Python KeyboardInterrupt exception in the Python thread, if it is
+		 * running. This will typically interrupt execution of any currently running
+		 * Python code, in a safe manner.
+		 *
+		 * Note: this function is thread-safe.
+		 */
+		void
+		raise_keyboard_interrupt_exception();
+
 	signals:
 
 		/**
@@ -201,6 +229,14 @@ namespace GPlatesApi
 		void
 		exec_or_eval_finished();
 
+		/**
+		 * Emitted when an unhandled Python SystemExit exception is raised in the thread.
+		 */
+		void
+		system_exit_exception_raised(
+				int exit_status,
+				QString exit_error_message);
+
 	protected:
 
 		virtual
@@ -210,13 +246,17 @@ namespace GPlatesApi
 	private slots:
 
 		void
-		handle_monitor_exec_or_eval_finished();
-
-	private:
+		handle_exec_or_eval_started();
 
 		void
-		listen_to(
-				PythonExecutionMonitor *monitor);
+		handle_exec_or_eval_finished();
+
+		void
+		handle_system_exit_exception_raised(
+				int exit_status,
+				QString exit_error_message);
+
+	private:
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		PythonRunner *d_python_runner;

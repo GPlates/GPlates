@@ -25,23 +25,21 @@
 
 #include <boost/bind.hpp>
 #include <QEvent>
-#include <QCoreApplication>
+#include <QApplication>
 #include <QThread>
+#include <QDebug>
 
 #include "PythonExecutionMonitor.h"
 
 #include "PythonInterpreterLocker.h"
 
-#include "global/python.h"
-
 #include "utils/DeferredCallEvent.h"
 
 
-GPlatesApi::PythonExecutionMonitor::PythonExecutionMonitor(
-		long python_thread_id) :
-	d_python_thread_id(python_thread_id),
-	d_was_interrupted(false),
-	d_continue_interactive_input(false)
+GPlatesApi::PythonExecutionMonitor::PythonExecutionMonitor() :
+	d_continue_interactive_input(false),
+	d_finish_reason(SUCCESS),
+	d_exit_status(0)
 {  }
 
 
@@ -52,11 +50,11 @@ GPlatesApi::PythonExecutionMonitor::continue_interactive_input() const
 }
 
 
-bool
+GPlatesApi::PythonExecutionMonitor::FinishReason
 GPlatesApi::PythonExecutionMonitor::exec()
 {
 	d_event_loop.exec();
-	return d_was_interrupted;
+	return d_finish_reason;
 }
 
 
@@ -64,56 +62,70 @@ void
 GPlatesApi::PythonExecutionMonitor::signal_exec_interactive_command_finished(
 		bool continue_interactive_input_)
 {
-	GPlatesUtils::DeferredCallEvent::defer_call(
+	// This is necessary because the event loop must be stopped in the thread in
+	// which it was created (assumed to be the GUI thread).
+	GPlatesUtils::DeferCall<void>::defer_call(
 			boost::bind(
 				&PythonExecutionMonitor::handle_exec_interactive_command_finished,
 				boost::ref(*this),
-				continue_interactive_input_));
+				continue_interactive_input_),
+			QThread::currentThread() == qApp->thread());
 }
 
 
 void
 GPlatesApi::PythonExecutionMonitor::signal_exec_finished()
 {
-	GPlatesUtils::DeferredCallEvent::defer_call(
+	// This is necessary because the event loop must be stopped in the thread in
+	// which it was created (assumed to be the GUI thread).
+	GPlatesUtils::DeferCall<void>::defer_call(
 			boost::bind(
 				&PythonExecutionMonitor::handle_exec_finished,
-				boost::ref(*this)));
+				boost::ref(*this)),
+			QThread::currentThread() == qApp->thread());
 }
 
 
-void
-GPlatesApi::PythonExecutionMonitor::signal_system_exit_exception_raised(
-		int exit_status,
-		const boost::optional<QString> &error_message)
-{
-	if (QThread::currentThread() == thread())
-	{
-		handle_system_exit_exception_raised(exit_status, error_message);
-	}
-	else
-	{
-		d_system_exit_mutex.lock();
-		GPlatesUtils::DeferredCallEvent::defer_call(
-				boost::bind(
-					&PythonExecutionMonitor::handle_system_exit_exception_raised_async,
-					boost::ref(*this),
-					exit_status,
-					error_message));
-		d_system_exit_condition.wait(&d_system_exit_mutex);
-		d_system_exit_mutex.unlock();
-	}
-}
-
-
-void
-GPlatesApi::PythonExecutionMonitor::interrupt_python_thread()
-{
 #if !defined(GPLATES_NO_PYTHON)
-	PythonInterpreterLocker interpreter_locker;
-	PyThreadState_SetAsyncExc(d_python_thread_id, PyExc_KeyboardInterrupt);
-	d_was_interrupted = true;
+void
+GPlatesApi::PythonExecutionMonitor::signal_eval_finished(
+		const boost::python::object &result)
+{
+	// This is necessary because the event loop must be stopped in the thread in
+	// which it was created (assumed to be the GUI thread).
+	GPlatesUtils::DeferCall<void>::defer_call(
+			boost::bind(
+				&PythonExecutionMonitor::handle_eval_finished,
+				boost::ref(*this),
+				result),
+			QThread::currentThread() == qApp->thread());
+}
+
+
+void
+GPlatesApi::PythonExecutionMonitor::handle_eval_finished(
+		const boost::python::object &result)
+{
+	d_evaluation_result = result;
+	d_event_loop.quit();
+}
 #endif
+
+
+void
+GPlatesApi::PythonExecutionMonitor::set_system_exit_exception_raised(
+		int exit_status,
+		QString exit_error_message)
+{
+	// This is necessary to stop Qt complaining that it can't queue values of type
+	// boost::optional<QString>. Let's just emit everything from the main thread.
+	GPlatesUtils::DeferCall<void>::defer_call(
+			boost::bind(
+				&PythonExecutionMonitor::handle_system_exit_exception_raised,
+				boost::ref(*this),
+				exit_status,
+				exit_error_message),
+			QThread::currentThread() == qApp->thread());
 }
 
 
@@ -121,10 +133,8 @@ void
 GPlatesApi::PythonExecutionMonitor::handle_exec_interactive_command_finished(
 		bool continue_interactive_input_)
 {
-	d_event_loop.quit();
 	d_continue_interactive_input = continue_interactive_input_;
-	emit exec_interactive_command_finished(d_continue_interactive_input);
-	emit exec_or_eval_finished();
+	d_event_loop.quit();
 }
 
 
@@ -132,28 +142,30 @@ void
 GPlatesApi::PythonExecutionMonitor::handle_exec_finished()
 {
 	d_event_loop.quit();
-	emit exec_finished();
-	emit exec_or_eval_finished();
 }
 
 
 void
 GPlatesApi::PythonExecutionMonitor::handle_system_exit_exception_raised(
 		int exit_status,
-		const boost::optional<QString> &error_message)
+		QString exit_error_message)
 {
-	emit system_exit_exception_raised(exit_status, error_message);
+	d_finish_reason = SYSTEM_EXIT_EXCEPTION;
+	d_exit_status = exit_status;
+	d_exit_error_message = exit_error_message;
 }
 
 
 void
-GPlatesApi::PythonExecutionMonitor::handle_system_exit_exception_raised_async(
-		int exit_status,
-		const boost::optional<QString> &error_message)
+GPlatesApi::PythonExecutionMonitor::set_keyboard_interrupt_exception_raised()
 {
-	handle_system_exit_exception_raised(exit_status, error_message);
-	d_system_exit_mutex.lock();
-	d_system_exit_condition.wakeAll();
-	d_system_exit_mutex.unlock();
+	d_finish_reason = KEYBOARD_INTERRUPT_EXCEPTION;
+}
+
+
+void
+GPlatesApi::PythonExecutionMonitor::set_other_exception_raised()
+{
+	d_finish_reason = OTHER_EXCEPTION;
 }
 

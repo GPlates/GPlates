@@ -40,7 +40,6 @@
 #include <QCoreApplication>
 #include <QPainter>
 #include <QFile>
-#include <QMessageBox>
 #include <QTextBlock>
 #include <QAction>
 #include <QFileInfo>
@@ -53,7 +52,10 @@
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 
+#include "api/PythonExecutionMonitor.h"
 #include "api/PythonExecutionThread.h"
+#include "api/PythonRunner.h"
+#include "api/PythonUtils.h"
 
 #include "app-logic/ApplicationState.h"
 
@@ -63,7 +65,6 @@
 #include "global/SubversionInfo.h"
 #include "global/python.h"
 
-#include "gui/ModalPythonExecutionMonitor.h"
 #include "gui/PythonConsoleHistory.h"
 
 #include "presentation/ViewState.h"
@@ -206,7 +207,7 @@ GPlatesQtWidgets::PythonConsoleDialog::PythonConsoleDialog(
 		QWidget *parent_)
 	: QDialog(parent_, Qt::Window)
 	, d_application_state(application_state)
-	, d_python_execution_thread(view_state.get_python_execution_thread())
+	, d_python_execution_thread(application_state.get_python_execution_thread())
 	, d_viewport_window(viewport_window)
 	, d_output_textedit(new ConsoleTextEdit(this))
 	, d_open_file_dialog(
@@ -229,7 +230,17 @@ GPlatesQtWidgets::PythonConsoleDialog::PythonConsoleDialog(
 	, d_stderr_writer(true /* is stderr */, this)
 #endif
 	, d_disable_close(false)
+	, d_stopped_event_blackout_for_python_runner(false)
 	, d_recent_scripts_menu(new QMenu(tr("R&un Recent Script"), this))
+	, d_monitor_widget(NULL)
+	, d_num_banner_lines(0)
+	, d_system_exit_messagebox(
+			new QMessageBox(
+				QMessageBox::Critical,
+				tr("Python Exception"),
+				QString(),
+				QMessageBox::Ok,
+				this))
 {
 	setupUi(this);
 	run_script_button->setMenu(d_recent_scripts_menu);
@@ -241,6 +252,8 @@ GPlatesQtWidgets::PythonConsoleDialog::PythonConsoleDialog(
 	make_signal_slot_connections();
 
 	print_banner();
+
+	d_event_blackout.add_blackout_exemption(this);
 }
 
 
@@ -274,7 +287,7 @@ GPlatesQtWidgets::PythonConsoleDialog::make_signal_slot_connections()
 			clear_button,
 			SIGNAL(clicked()),
 			this,
-			SLOT(handle_clear_button_clicked()));
+			SLOT(clear()));
 	QObject::connect(
 			d_recent_scripts_menu,
 			SIGNAL(triggered(QAction *)),
@@ -292,6 +305,29 @@ GPlatesQtWidgets::PythonConsoleDialog::make_signal_slot_connections()
 			SIGNAL(exec_or_eval_finished()),
 			this,
 			SLOT(handle_thread_exec_or_eval_finished()));
+	QObject::connect(
+			d_python_execution_thread,
+			SIGNAL(system_exit_exception_raised(int, QString )),
+			this,
+			SLOT(handle_system_exit_exception_raised(int, QString )));
+
+	// PythonRunner signals from Python code running on the main thread.
+	GPlatesApi::PythonRunner *python_runner = d_application_state.get_python_runner();
+	QObject::connect(
+			python_runner,
+			SIGNAL(exec_or_eval_started()),
+			this,
+			SLOT(handle_python_runner_exec_or_eval_started()));
+	QObject::connect(
+			python_runner,
+			SIGNAL(exec_or_eval_finished()),
+			this,
+			SLOT(handle_python_runner_exec_or_eval_finished()));
+	QObject::connect(
+			python_runner,
+			SIGNAL(system_exit_exception_raised(int, QString )),
+			this,
+			SLOT(handle_system_exit_exception_raised(int, QString )));
 }
 
 
@@ -315,6 +351,7 @@ GPlatesQtWidgets::PythonConsoleDialog::print_banner()
 	banner_text.remove('\n');
 	banner_text += "\nType \"help\" for more information.\n";
 	append_text(banner_text);
+	d_num_banner_lines = 2;
 #else
 	append_text(tr(BUILT_WITHOUT_PYTHON));
 #endif
@@ -326,25 +363,39 @@ GPlatesQtWidgets::PythonConsoleDialog::append_text(
 		const QString &text,
 		bool error)
 {
-	if (QThread::currentThread() == thread())
-	{
-		do_append_text(text, error);
-	}
-	else
-	{
-		// Post an event on the GUI thread to have the appending of text done there,
-		// and then block until it is done.
-		d_append_text_mutex.lock();
-		GPlatesUtils::DeferredCallEvent::defer_call(
-				boost::bind(
-					&PythonConsoleDialog::do_append_text_async,
-					boost::ref(*this),
-					text,
-					error));
-		d_append_text_condition.wait(&d_append_text_mutex);
-		d_append_text_mutex.unlock();
-	}
+	// If called from the GUI thread, calls do_append_text straight away.
+	// If not called from the GUI thread:
+	// Post an event on the GUI thread to have the appending of text done there,
+	// and then block until it is done.
+	GPlatesUtils::DeferCall<void>::defer_call(
+			boost::bind(
+				&PythonConsoleDialog::do_append_text,
+				boost::ref(*this),
+				text,
+				error),
+			true /* blocking */);
 }
+
+
+#if !defined(GPLATES_NO_PYTHON)
+void
+GPlatesQtWidgets::PythonConsoleDialog::append_text(
+		const boost::python::object &obj,
+		bool error)
+{
+	// If called from the GUI thread, calls do_append_object straight away.
+	// If not called from the GUI thread:
+	// Post an event on the GUI thread to have the appending of text done there,
+	// and then block until it is done.
+	GPlatesUtils::DeferCall<void>::defer_call(
+			boost::bind(
+				&PythonConsoleDialog::do_append_object,
+				boost::ref(*this),
+				obj,
+				error),
+			true /* blocking */);
+}
+#endif
 
 
 void
@@ -358,43 +409,33 @@ GPlatesQtWidgets::PythonConsoleDialog::do_append_text(
 			GPLATES_ASSERTION_SOURCE);
 
 	d_output_textedit->append_text(text, error);
+
+	emit text_changed();
 }
 
 
+#if !defined(GPLATES_NO_PYTHON)
 void
-GPlatesQtWidgets::PythonConsoleDialog::do_append_text_async(
-		const QString &text,
+GPlatesQtWidgets::PythonConsoleDialog::do_append_object(
+		const boost::python::object &obj,
 		bool error)
 {
-	do_append_text(text, error);
-	d_append_text_mutex.lock();
-	d_append_text_condition.wakeAll();
-	d_append_text_mutex.unlock();
+	do_append_text(GPlatesApi::PythonUtils::stringify_object(obj, "utf-8"), error); // FIXME: hard coded codec
 }
+#endif
 
 
 QString
 GPlatesQtWidgets::PythonConsoleDialog::read_line()
 {
-	if (QThread::currentThread() == thread())
-	{
-		return do_read_line();
-	}
-	else
-	{
-		// Post an event on the GUI thread to have the read line done there,
-		// and then block until it is done.
-		QString read_line_result;
-		d_read_line_mutex.lock();
-		GPlatesUtils::DeferredCallEvent::defer_call(
-				boost::bind(
-					&PythonConsoleDialog::do_read_line_async,
-					boost::ref(*this),
-					boost::ref(read_line_result)));
-		d_read_line_condition.wait(&d_read_line_mutex);
-		d_read_line_mutex.unlock();
-		return read_line_result;
-	}
+	// If called from the GUI thread, calls do_read_line straight away.
+	// If not called from the GUI thread:
+	// Post an event on the GUI thread to have the read line done there,
+	// and then block until it is done.
+	boost::function< QString () > bound_function = boost::bind(
+			boost::mem_fn(&PythonConsoleDialog::do_read_line),
+			this);
+	return GPlatesUtils::DeferCall<QString>::defer_call(bound_function);
 }
 
 
@@ -413,14 +454,10 @@ GPlatesQtWidgets::PythonConsoleDialog::do_read_line()
 }
 
 
-void
-GPlatesQtWidgets::PythonConsoleDialog::do_read_line_async(
-		QString &read_line_result)
+QString
+GPlatesQtWidgets::PythonConsoleDialog::get_last_non_blank_line() const
 {
-	read_line_result = do_read_line();
-	d_read_line_mutex.lock();
-	d_read_line_condition.wakeAll();
-	d_read_line_mutex.unlock();
+	return d_output_textedit->get_last_non_blank_line(d_num_banner_lines);
 }
 
 
@@ -449,15 +486,11 @@ GPlatesQtWidgets::PythonConsoleDialog::handle_recent_script_action_triggered(
 
 void
 GPlatesQtWidgets::PythonConsoleDialog::run_script(
-		const QString &file_name)
+		const QString &filename)
 {
 #if !defined(GPLATES_NO_PYTHON)
-	GPlatesGui::ModalPythonExecutionMonitor monitor(
-			d_python_execution_thread->get_python_thread_id());
-	PythonExecutionMonitorWidget monitor_widget(&monitor, this);
-	monitor.add_blackout_exemption(this);
-
-	d_python_execution_thread->exec_file(file_name, &monitor, "utf-8"); // FIXME: hard coded codec
+	GPlatesApi::PythonExecutionMonitor monitor;
+	d_python_execution_thread->exec_file(filename, &monitor, "utf-8"); // FIXME: hard coded coding
 	// Note that no events are allowed to be processed on the GUI thread after the
 	// execution thread has been given its job, but before the exec() call below -
 	// otherwise there is the possibility that the monitor doesn't get the event
@@ -473,7 +506,7 @@ GPlatesQtWidgets::PythonConsoleDialog::run_script(
 		{
 			first = action;
 		}
-		if (action->data().toString() == file_name)
+		if (action->data().toString() == filename)
 		{
 			if (first != action)
 			{
@@ -485,9 +518,9 @@ GPlatesQtWidgets::PythonConsoleDialog::run_script(
 	}
 
 	// Put the new script at the top of the menu.
-	QAction *new_action = new QAction(QFileInfo(file_name).fileName(), this);
+	QAction *new_action = new QAction(QFileInfo(filename).fileName(), this);
 	QVariant qv;
-	qv.setValue(file_name);
+	qv.setValue(filename);
 	new_action->setData(qv);
 	d_recent_scripts_menu->insertAction(first, new_action);
 
@@ -564,11 +597,7 @@ GPlatesQtWidgets::PythonConsoleDialog::handle_return_pressed(
 		return;
 	}
 
-	GPlatesGui::ModalPythonExecutionMonitor monitor(
-			d_python_execution_thread->get_python_thread_id());
-	PythonExecutionMonitorWidget monitor_widget(&monitor, this);
-	monitor.add_blackout_exemption(this);
-
+	GPlatesApi::PythonExecutionMonitor monitor;
 	d_python_execution_thread->exec_interactive_command(d_buffered_lines + line, &monitor);
 	// Note that no events are allowed to be processed on the GUI thread after the
 	// execution thread has been given its job, but before the exec() call below -
@@ -590,10 +619,20 @@ GPlatesQtWidgets::PythonConsoleDialog::handle_return_pressed(
 void
 GPlatesQtWidgets::PythonConsoleDialog::handle_thread_exec_or_eval_started()
 {
+	// Because this dialog is exempt from the event blackout, we need to manually
+	// disable a few things.
 	d_output_textedit->set_input_widget_visible(false);
 	d_output_textedit->setFocus();
+	run_script_button->setEnabled(false);
 	save_button->setEnabled(false);
 	d_disable_close = true;
+
+	d_event_blackout.start();
+
+	d_monitor_widget = new PythonExecutionMonitorWidget(
+			d_python_execution_thread,
+			isVisible() ? static_cast<QWidget *>(this) : d_viewport_window);
+	d_event_blackout.add_blackout_exemption(d_monitor_widget);
 }
 
 
@@ -601,8 +640,73 @@ void
 GPlatesQtWidgets::PythonConsoleDialog::handle_thread_exec_or_eval_finished()
 {
 	d_output_textedit->set_input_widget_visible(true);
+	run_script_button->setEnabled(true);
 	save_button->setEnabled(true);
 	d_disable_close = false;
+
+	d_event_blackout.stop();
+
+	d_monitor_widget->deleteLater();
+	d_monitor_widget = NULL;
+	d_event_blackout.remove_blackout_exemption(d_monitor_widget);
+}
+
+
+void
+GPlatesQtWidgets::PythonConsoleDialog::handle_python_runner_exec_or_eval_started()
+{
+	// We need to stop the event blackout if it has started. This is because one of
+	// the reasons to run code on the main thread is to run PyQt related code - and
+	// if we're eating all Qt events, that's a bad thing! Also, if Python code is
+	// running on the main thread, the user interface is unresponsive anyway, so
+	// there is no need for the event blackout.
+	if (d_event_blackout.has_started())
+	{
+		d_event_blackout.stop();
+		d_stopped_event_blackout_for_python_runner = true;
+	}
+}
+
+
+void
+GPlatesQtWidgets::PythonConsoleDialog::handle_python_runner_exec_or_eval_finished()
+{
+	// Restore the event blackout if it was started before we stopped it when code
+	// started to run on the main thread.
+	if (d_stopped_event_blackout_for_python_runner)
+	{
+		d_event_blackout.start();
+		d_stopped_event_blackout_for_python_runner = false;
+	}
+}
+
+
+void
+GPlatesQtWidgets::PythonConsoleDialog::handle_system_exit_exception_raised(
+		int exit_status,
+		QString exit_error_message)
+{
+	// Only show a warning if the exit status is not 0. 0 usually means success
+	// so let's not scare the user!
+	if (exit_status != 0)
+	{
+		QString warning;
+		if (!exit_error_message.isEmpty())
+		{
+			warning = tr("A Python script raised an unhandled SystemExit exception \"%1\" with exit status %2.")
+				.arg(exit_error_message).arg(exit_status);
+		}
+		else
+		{
+			warning = tr("A Python script raised an unhandled SystemExit exception with exit status %1.")
+				.arg(exit_status);
+		}
+		warning += tr("\nThis is a serious error that usually results in program termination. "
+			"Please consider saving your work and restarting GPlates.");
+
+		d_system_exit_messagebox->setText(warning);
+		d_system_exit_messagebox->exec();
+	}
 }
 
 
@@ -647,10 +751,11 @@ GPlatesQtWidgets::PythonConsoleDialog::handle_save_button_clicked()
 
 
 void
-GPlatesQtWidgets::PythonConsoleDialog::handle_clear_button_clicked()
+GPlatesQtWidgets::PythonConsoleDialog::clear()
 {
 	d_output_textedit->clear();
 	d_output_textedit->focus_on_input_widget();
+	d_num_banner_lines = 0;
 }
 
 
@@ -1091,6 +1196,28 @@ GPlatesQtWidgets::ConsoleTextEdit::set_input_widget_visible(
 	d_input_textedit->setVisible(visible);
 	reposition_input_widget();
 	d_input_textedit->setFocus();
+}
+
+
+QString
+GPlatesQtWidgets::ConsoleTextEdit::get_last_non_blank_line(
+		int num_banner_lines) const
+{
+	QTextBlock block = document()->lastBlock();
+	while (block.isValid() && block.blockNumber() >= num_banner_lines)
+	{
+		QString block_text = block.text();
+		if (block_text.trimmed().isEmpty())
+		{
+			block = block.previous();
+		}
+		else
+		{
+			return block_text;
+		}
+	}
+
+	return QString();
 }
 
 

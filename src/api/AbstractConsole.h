@@ -28,6 +28,8 @@
 
 #include <QString>
 
+#include "global/python.h"
+
 
 namespace GPlatesApi
 {
@@ -54,6 +56,20 @@ namespace GPlatesApi
 		append_text(
 				const QString &text,
 				bool error = false) = 0;
+
+#if !defined(GPLATES_NO_PYTHON)
+		/**
+		 * Appends the stringified version of @a obj to the console. The @a error
+		 * flag indicates whether it should be decorated as an error message or not.
+		 *
+		 * Any implementation of this function must be thread-safe.
+		 */
+		virtual
+		void
+		append_text(
+				const boost::python::object &obj,
+				bool error = false) = 0;
+#endif
 
 		/**
 		 * Prompts the user for a line of input.

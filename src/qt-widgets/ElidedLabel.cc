@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,8 +28,7 @@
 #include <QFrame>
 #include <QFontInfo>
 #include <QLayout>
-#include <QMouseEvent>
-#include <QDebug>
+#include <QHelpEvent>
 
 #include "ElidedLabel.h"
 
@@ -67,10 +66,9 @@ GPlatesQtWidgets::ElidedLabel::init()
 	QtWidgetUtils::add_widget_to_placeholder(d_internal_label_frame, this);
 
 	// Create the internal label and add it to the frame.
-	d_internal_label = new InternalLabel(d_text, d_is_elided, this);
+	d_internal_label = new InternalLabel(this);
 	QtWidgetUtils::add_widget_to_placeholder(d_internal_label, d_internal_label_frame);
 
-	d_is_elided = false;
 	d_internal_label_needs_updating = false;
 }
 
@@ -156,192 +154,36 @@ GPlatesQtWidgets::ElidedLabel::update_internal_label()
 	QFontMetrics font_metrics(font());
 	QString elided_text = font_metrics.elidedText(d_text, d_mode, d_internal_label->width());
 	d_internal_label->setText(elided_text);
-	d_is_elided = (elided_text != d_text);
+
+	bool is_elided = (elided_text != d_text);
+	d_internal_label->setToolTip(is_elided ? d_text : QString());
 }
 
 
 GPlatesQtWidgets::ElidedLabel::InternalLabel::InternalLabel(
-		const QString &full_text,
-		const bool &is_elided,
 		QWidget *parent_) :
-	QLabel(parent_),
-	d_full_text(full_text),
-	d_is_elided(is_elided)
-{
-}
-
-
-void
-GPlatesQtWidgets::ElidedLabel::InternalLabel::enterEvent(
-		QEvent *event_)
-{
-	// Only show a tool tip if currently elided.
-	if (d_is_elided)
-	{
-#if 0
-		// The tool tip should have the exact same font as 'this'.
-		QFontInfo font_info(font());
-		QFont tool_tip_font(
-				font_info.family(),
-				font_info.pointSize(),
-				font_info.weight(),
-				font_info.italic());
-
-		// The tool tip should be positioned on top of 'this'.
-		QPoint tool_tip_pos = mapToGlobal(QPoint(0, 0));
-
-		ElidedLabelToolTip::showToolTip(
-				d_full_text,
-				tool_tip_font,
-				tool_tip_pos,
-				height(),
-				width());
-#endif
-		ElidedLabelToolTip::showToolTip(d_full_text, this);
-	}
-}
-
-
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::ElidedLabelToolTip() :
-	QDialog(NULL, Qt::Popup),
-	d_internal_label_frame(new QFrame(this)),
-	d_internal_label(new QLabel(this)),
-	d_master_label(NULL),
-	d_inside_do_show(false)
-{
-	// Put the internal label into a frame.
-	d_internal_label_frame->setFrameStyle(QFrame::Box | QFrame::Plain);
-	QtWidgetUtils::add_widget_to_placeholder(d_internal_label, d_internal_label_frame);
-
-	// Put the frame into this widget.
-	QtWidgetUtils::add_widget_to_placeholder(d_internal_label_frame, this);
-
-	setMouseTracking(true);
-	d_internal_label->setMouseTracking(true);
-	d_internal_label->installEventFilter(this);
-}
-
-
-void
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::showToolTip(
-		const QString &text,
-		QLabel *master_label)
-{
-	instance().do_show(text, master_label);
-}
-
-
-void
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::hideToolTip()
-{
-	instance().do_hide();
-}
-
-
-void
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::leaveEvent(
-		QEvent *event_)
-{
-	do_hide();
-}
-
-
-void
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::mouseMoveEvent(
-		QMouseEvent *event_)
-{
-	QPointF event_pos = event_->pos();
-	if (event_pos.x() < 0 || event_pos.x() > d_master_label->width() ||
-			event_pos.y() < 0 || event_pos.y() > height())
-	{
-		do_hide();
-	}
-}
+	QLabel(parent_)
+{  }
 
 
 bool
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::eventFilter(
-		QObject *object_,
-		QEvent *event_)
+GPlatesQtWidgets::ElidedLabel::InternalLabel::event(
+		QEvent *ev)
 {
-	if (event_->type() == QEvent::MouseMove)
+	if (ev->type() == QEvent::ToolTip)
 	{
-		QMouseEvent *mouse_event = static_cast<QMouseEvent *>(event_);
-		if (mouse_event->pos().x() > d_master_label->width())
-		{
-			do_hide();
-			return true;
-		}
+		// Always show tooltip anchored to top left (but of course it might not appear
+		// exactly at the top left due to platform-dependent offsets).
+		QPoint help_pos(0, 0);
+		QHelpEvent *help_ev = new QHelpEvent(QEvent::ToolTip, help_pos, mapToGlobal(help_pos));
+		bool result = QLabel::event(help_ev);
+		delete help_ev;
+
+		return result;
 	}
-	return false;
-}
-
-
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip &
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::instance()
-{
-	static ElidedLabelToolTip *instance = new ElidedLabelToolTip();
-	return *instance;
-}
-
-
-void
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
-		const QString &text,
-		QLabel *master_label)
-{
-	if (d_inside_do_show)
+	else
 	{
-		return;
+		return QLabel::event(ev);
 	}
-
-	if (isVisible() && d_master_label == master_label)
-	{
-		return;
-	}
-	d_master_label = master_label;
-
-	// On MacOS, we're getting infinite loops. What's happening is that the hide()
-	// call below causes the tooltip to disappear, which sometimes causes the
-	// enter event of ElidedLabel to get triggered, which then calls this function,
-	// and then bad things happen.
-	d_inside_do_show = true;
-
-	d_internal_label->setText(text);
-
-	// Shift towards top-left because of frame.
-	int frame_width = d_internal_label_frame->frameWidth();
-	QPoint global_pos = master_label->mapToGlobal(QPoint(0, 0));
-	move(global_pos - QPoint(frame_width, frame_width));
-
-	// The tool tip should have the exact same font as the master label.
-	QFontInfo font_info(master_label->font());
-	QFont text_font(
-			font_info.family(),
-			font_info.pointSize(),
-			font_info.weight(),
-			font_info.italic());
-
-	// This little song and dance is necessary to make sure the tool tip is resized
-	// correctly when the user moves the mouse from one ElidedLabel to another.
-	setFont(QFont());
-	setFont(text_font);
-	hide();
-	show();
-	QSize new_size = layout()->sizeHint();
-	new_size.setHeight(master_label->height() + frame_width * 2);
-	resize(new_size);
-
-	grabMouse();
-
-	d_inside_do_show = false;
-}
-
-
-void
-GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_hide()
-{
-	releaseMouse();
-	hide();
 }
 

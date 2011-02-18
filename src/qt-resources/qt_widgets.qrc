@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="/">
+    <file>gnome_emblem_default_yellow_16.png</file>
     <file>tango_edit_clear_22.png</file>
     <file>gnome_stock_color_16.png</file>
     <file>rainbow_16.png</file>
