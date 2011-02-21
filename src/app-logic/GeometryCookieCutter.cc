@@ -64,19 +64,19 @@ namespace
 
 
 GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
-		const ReconstructionGeometryCollection &reconstruction_geometry_collection,
-		bool partition_using_topological_plate_polygons,
+		const ReconstructionGeometryCollection &reconstructed_geometries_collection,
+		boost::optional<const ReconstructionGeometryCollection &> resolved_topological_boundaries_collection,
 		bool partition_using_static_polygons) :
-	d_reconstruction_time(reconstruction_geometry_collection.get_reconstruction_time())
+	d_reconstruction_time(reconstructed_geometries_collection.get_reconstruction_time())
 {
-	if (partition_using_topological_plate_polygons)
+	if (resolved_topological_boundaries_collection)
 	{
-		add_partitioning_resolved_topological_boundaries(reconstruction_geometry_collection);
+		add_partitioning_resolved_topological_boundaries(*resolved_topological_boundaries_collection);
 	}
 
 	if (partition_using_static_polygons)
 	{
-		add_partitioning_reconstructed_feature_polygons(reconstruction_geometry_collection);
+		add_partitioning_reconstructed_feature_polygons(reconstructed_geometries_collection);
 	}
 
 	// Make sure the ReconstructionGeometry objects with the highest plate ids
@@ -221,13 +221,13 @@ GPlatesAppLogic::GeometryCookieCutter::partition_point(
 
 void
 GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_boundaries(
-		const ReconstructionGeometryCollection &reconstruction_geometry_collection)
+		const ReconstructionGeometryCollection &resolved_topological_boundaries_collection)
 {
 	// Get all ResolvedTopologicalBoundary objects in the reconstruction.
 	std::vector<const ResolvedTopologicalBoundary *> resolved_topological_boundaries;
 	ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-				reconstruction_geometry_collection.begin(),
-				reconstruction_geometry_collection.end(),
+				resolved_topological_boundaries_collection.begin(),
+				resolved_topological_boundaries_collection.end(),
 				resolved_topological_boundaries);
 
 	// Optimisation.
