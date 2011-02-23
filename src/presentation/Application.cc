@@ -155,7 +155,7 @@ namespace
 					GPlatesApi::PythonUtils::stringify_object(category),
 					GPlatesApi::PythonUtils::stringify_object(name),
 					boost::bind(
-						&::call_utility,
+						&call_utility,
 						utility));
 		}
 		catch (const error_already_set &)
