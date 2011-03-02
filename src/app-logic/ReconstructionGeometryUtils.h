@@ -425,8 +425,11 @@ namespace GPlatesAppLogic
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
 			{
-				// A MultiPointVectorField instance does not reference a feature,
-				// so nothing to do here.
+				// A MultiPointVectorField references both a velocity point location and
+				// a plate polygon of some sort.
+				// Here we just return whichever feature reference is stored in the
+				// MultiPointVectorField object itself - currently this is velocity point location.
+				d_feature_ref = mpvf->get_feature_ref();
 			}
 
 			virtual
@@ -519,8 +522,11 @@ namespace GPlatesAppLogic
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
 			{
-				// A MultiPointVectorField instance does not correspond to a
-				// property of any single feature, so nothing to do here.
+				// A MultiPointVectorField references both a velocity point location and
+				// a plate polygon of some sort.
+				// Here we just return whichever geometry property is stored in the
+				// MultiPointVectorField object itself - currently this is velocity point location.
+				d_property = mpvf->property();
 			}
 
 			virtual
