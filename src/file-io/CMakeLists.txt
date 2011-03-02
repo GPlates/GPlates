@@ -64,6 +64,7 @@ set(srcs
     GpmlOnePointSixReader.h
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
+    LineReader.cc
     LineReader.h
     MipmappedRasterFormat.cc
     MipmappedRasterFormat.h
@@ -99,18 +100,10 @@ set(srcs
     ReadErrorOccurrence.cc
     ReadErrorOccurrence.h
     ReadErrors.h
-    ReconstructedFeatureGeometryExport.cc
-    ReconstructedFeatureGeometryExport.h
-    ReconstructedFeatureGeometryExportImpl.cc
-    ReconstructedFeatureGeometryExportImpl.h
-    ReconstructedFlowlineExport.cc
-    ReconstructedFlowlineExport.h
-    ReconstructedFlowlineExportImpl.cc
-    ReconstructedFlowlineExportImpl.h
-    ReconstructedMotionPathExport.cc
-    ReconstructedMotionPathExport.h
-    ReconstructedMotionPathExportImpl.cc
-    ReconstructedMotionPathExportImpl.h
+    ReconstructionGeometryExport.cc
+    ReconstructionGeometryExport.h
+    ReconstructionGeometryExportImpl.cc
+    ReconstructionGeometryExportImpl.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
     ShapefileFormatFlowlineExport.cc

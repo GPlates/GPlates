@@ -44,61 +44,46 @@
 
 namespace GPlatesFileIO
 {
+	/**
+	 * Reads lines in a text file allowing client to peek ahead one line.
+	 *
+	 * Also handles newline conventions for different platforms:
+	 *  - Window:  CR/LF
+	 *  - Unix:    LF
+	 *  - MacOS X: CR
+	 * ...and a single text file can contain a mixture of newline conventions.
+	 */
 	class LineReader :
 			public GPlatesUtils::SafeBool<LineReader>,
 			private boost::noncopyable
 	{
 	public:
-
 		explicit
 		LineReader(
-				std::istream &stream) :
-			d_stream_ptr(&stream),
-			d_line_number(0),
-			d_have_buffered_line(false)
-		{ }
+				std::istream &stream);
+
 		
 		LineReader &
 		getline(
-				std::string &line)
-		{
-			if (d_have_buffered_line)
-			{
-				line = d_buffered_line;
-				d_have_buffered_line = false;
-				d_line_number++;
-			}
-			else if (std::getline(*d_stream_ptr, line))
-			{
-				d_line_number++;
-			}
-			
-			return *this;
-		}
-			
+				std::string &line);
+
+					
 		LineReader &
 		peekline(
-				std::string &line)
-		{
-			if (d_have_buffered_line)
-			{
-				line = d_buffered_line;
-			}
-			else if (std::getline(*d_stream_ptr, d_buffered_line))
-			{
-				line = d_buffered_line;
-				d_have_buffered_line = true;
-			}
+				std::string &line);
 
-			return *this;
-		}
 
-		// SafeBool base class provides operator bool().
+		/**
+		 * SafeBool base class provides operator bool().
+		 *
+		 * Returns true if a line can be read by @a getline.
+		 */
 		bool
 		boolean_test() const
 		{
-			return *d_stream_ptr;
+			return d_have_buffered_line || *d_stream_ptr;
 		}
+
 		
 		unsigned int 
 		line_number() const
@@ -107,11 +92,15 @@ namespace GPlatesFileIO
 		}
 	
 	private:
-
 		std::istream *d_stream_ptr;
 		unsigned int d_line_number;
 		std::string d_buffered_line;
 		bool d_have_buffered_line;
+
+
+		bool
+		readline(
+				std::string &line);
 	};
 }
 
