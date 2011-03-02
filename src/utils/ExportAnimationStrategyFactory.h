@@ -135,6 +135,19 @@ namespace GPlatesUtils
 		{
 			return GPlatesGui::ExportResolvedTopologyAnimationStrategy::create(
 					export_context,
+					GPlatesGui::ExportResolvedTopologyAnimationStrategy::GMT,
+					cfg);
+		}
+
+		static
+		GPlatesGui::ExportAnimationStrategy::non_null_ptr_type
+		create_RESOLVED_TOPOLOGIES_SHAPEFILE(
+				GPlatesGui::ExportAnimationContext& export_context,			
+				const GPlatesGui::ExportAnimationStrategy::Configuration& cfg)
+		{
+			return GPlatesGui::ExportResolvedTopologyAnimationStrategy::create(
+					export_context,
+					GPlatesGui::ExportResolvedTopologyAnimationStrategy::SHAPEFILE,
 					cfg);
 		}
 

@@ -51,9 +51,10 @@ namespace
 	typedef GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::referenced_files_collection_type
 			referenced_files_collection_type;
 
-	//! Convenience typedef for reconstructed geometries.
-	typedef GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::reconstructed_feature_geom_seq_type
-		reconstructed_feature_geom_seq_type;
+	//! Convenience typedef for a sequence of RFGs.
+	typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>
+			reconstructed_feature_geom_seq_type;
+
 
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type
 	create_kvd_from_feature(
@@ -290,7 +291,7 @@ namespace
 
 void
 GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometries(
-		const feature_geometry_group_seq_type &feature_geometry_group_seq,
+		const std::list<feature_geometry_group_type> & feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -300,13 +301,12 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 	// Iterate through the reconstructed geometries and check which geometry types we have.
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
 
-	feature_geometry_group_seq_type::const_iterator feature_iter;
+	std::list<feature_geometry_group_type>::const_iterator feature_iter;
 	for (feature_iter = feature_geometry_group_seq.begin();
 		feature_iter != feature_geometry_group_seq.end();
 		++feature_iter)
 	{
-		const ReconstructedFeatureGeometryExportImpl::FeatureGeometryGroup &feature_geom_group =
-			*feature_iter;
+		const feature_geometry_group_type &feature_geom_group = *feature_iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 			feature_geom_group.feature_ref;
@@ -317,8 +317,8 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 
 		// Iterate through the reconstructed geometries of the current feature.
 		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
-		for (rfg_iter = feature_geom_group.recon_feature_geoms.begin();
-			rfg_iter != feature_geom_group.recon_feature_geoms.end();
+		for (rfg_iter = feature_geom_group.recon_geoms.begin();
+			rfg_iter != feature_geom_group.recon_geoms.end();
 			++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
@@ -340,8 +340,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 		++feature_iter)
 	{
 
-		const ReconstructedFeatureGeometryExportImpl::FeatureGeometryGroup &feature_geom_group =
-				*feature_iter;
+		const feature_geometry_group_type &feature_geom_group = *feature_iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 				feature_geom_group.feature_ref;
@@ -376,8 +375,8 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 		// Note that this will export each geometry as a separate entry in the shapefile, even if they
 		// come from the same feature. 
 		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
-		for (rfg_iter = feature_geom_group.recon_feature_geoms.begin();
-			rfg_iter != feature_geom_group.recon_feature_geoms.end();
+		for (rfg_iter = feature_geom_group.recon_geoms.begin();
+			rfg_iter != feature_geom_group.recon_geoms.end();
 			++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
@@ -391,7 +390,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 
 void
 GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
-		const feature_geometry_group_seq_type &feature_geometry_group_seq,
+		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -401,13 +400,12 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 	// Iterate through the reconstructed geometries and check which geometry types we have.
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
 
-	feature_geometry_group_seq_type::const_iterator feature_iter;
+	std::list<feature_geometry_group_type>::const_iterator feature_iter;
 	for (feature_iter = feature_geometry_group_seq.begin();
 		feature_iter != feature_geometry_group_seq.end();
 		++feature_iter)
 	{
-		const ReconstructedFeatureGeometryExportImpl::FeatureGeometryGroup &feature_geom_group =
-			*feature_iter;
+		const feature_geometry_group_type &feature_geom_group = *feature_iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 			feature_geom_group.feature_ref;
@@ -418,8 +416,8 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 
 		// Iterate through the reconstructed geometries of the current feature.
 		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
-		for (rfg_iter = feature_geom_group.recon_feature_geoms.begin();
-			rfg_iter != feature_geom_group.recon_feature_geoms.end();
+		for (rfg_iter = feature_geom_group.recon_geoms.begin();
+			rfg_iter != feature_geom_group.recon_geoms.end();
 			++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
@@ -441,8 +439,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 		++feature_iter)
 	{
 
-		const ReconstructedFeatureGeometryExportImpl::FeatureGeometryGroup &feature_geom_group =
-				*feature_iter;
+		const feature_geometry_group_type &feature_geom_group = *feature_iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 				feature_geom_group.feature_ref;
@@ -480,8 +477,8 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 		// Note that this will export each geometry as a separate entry in the shapefile, even if they
 		// come from the same feature. 
 		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
-		for (rfg_iter = feature_geom_group.recon_feature_geoms.begin();
-			rfg_iter != feature_geom_group.recon_feature_geoms.end();
+		for (rfg_iter = feature_geom_group.recon_geoms.begin();
+			rfg_iter != feature_geom_group.recon_geoms.end();
 			++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;

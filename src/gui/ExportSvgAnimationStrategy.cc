@@ -54,7 +54,6 @@ GPlatesGui::ExportSvgAnimationStrategy::create(
 			new ExportSvgAnimationStrategy(
 					export_animation_context,
 					cfg.filename_template());
-	ptr->d_class_id="PROJECTED_GEOMETRIES_SVG";
 	return non_null_ptr_type(
 			ptr,
 			GPlatesUtils::NullIntrusivePointerHandler());

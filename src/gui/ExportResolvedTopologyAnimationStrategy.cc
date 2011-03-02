@@ -1780,15 +1780,16 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_slab_edge_sid
 const GPlatesGui::ExportResolvedTopologyAnimationStrategy::non_null_ptr_type
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::create(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
+		FileFormat format,
 		const ExportAnimationStrategy::Configuration& cfg)
 {
 	ExportResolvedTopologyAnimationStrategy * ptr = 
 			new ExportResolvedTopologyAnimationStrategy(
 					export_animation_context,
 					cfg.filename_template());
-		
-	ptr->d_class_id = "RESOLVED_TOPOLOGIES_GMT";
 
+	ptr->d_file_format = format;
+		
 	return non_null_ptr_type(
 			ptr,
 			GPlatesUtils::NullIntrusivePointerHandler());

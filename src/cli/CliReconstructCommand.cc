@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
 #include "CliReconstructCommand.h"
 #include "CliFeatureCollectionFileIO.h"
 #include "CliInvalidOptionValue.h"
@@ -34,7 +33,7 @@
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
-#include "file-io/ReconstructedFeatureGeometryExport.h"
+#include "file-io/ReconstructionGeometryExport.h"
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionReaderWriter.h"
 #include "file-io/FileInfo.h"
@@ -206,15 +205,14 @@ GPlatesCli::ReconstructCommand::run(
 							reconstructable_feature_collections);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
-	GPlatesFileIO::ReconstructedFeatureGeometryExport::reconstructed_feature_geom_seq_type
-			reconstruct_feature_geom_seq;
+	std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> reconstruct_feature_geom_seq;
 	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 			reconstruction_geometry_collection->begin(),
 			reconstruction_geometry_collection->end(),
 			reconstruct_feature_geom_seq);
 
 	// Get the sequence of reconstructable files as File pointers.
-	GPlatesFileIO::ReconstructedFeatureGeometryExport::files_collection_type reconstructable_file_ptrs;
+	std::vector<const GPlatesFileIO::File::Reference *> reconstructable_file_ptrs;
 	loaded_feature_collection_file_seq_type::const_iterator file_iter = reconstructable_files.begin();
 	loaded_feature_collection_file_seq_type::const_iterator file_end = reconstructable_files.end();
 	for ( ; file_iter != file_end; ++file_iter)
@@ -229,7 +227,7 @@ GPlatesCli::ReconstructCommand::run(
 					export_file_type);
 
 	// Export the reconstructed feature geometries.
-	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
+	GPlatesFileIO::ReconstructionGeometryExport::export_reconstruction_geometries(
 				export_filename.get_qfileinfo().filePath(),
 				reconstruct_feature_geom_seq,
 				reconstructable_file_ptrs,

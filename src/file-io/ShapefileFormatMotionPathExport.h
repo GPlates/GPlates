@@ -26,29 +26,30 @@
 #ifndef GPLATES_FILEIO_SHAPEFILEFORMATMOTIONPATHEXPORT_H
 #define GPLATES_FILEIO_SHAPEFILEFORMATMOTIONPATHEXPORT_H
 
+#include "ReconstructionGeometryExportImpl.h"
 
-#include "ReconstructedMotionPathExportImpl.h"
 
-
+namespace GPlatesAppLogic
+{
+	class ReconstructedMotionPath;
+}
 
 namespace GPlatesFileIO
 {
 
 	namespace ShapefileFormatMotionPathExport
 	{
-
+		/**
+		 * Typedef for a feature geometry group of @a ReconstructedMotionPath objects.
+		 */
+		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ReconstructedMotionPath>
+				feature_geometry_group_type;
 
 		/**
-		 * Typedef for a sequence of @a FeatureGeometryGroup objects.
+		 * Typedef for a sequence of referenced files.
 		 */
-		typedef ReconstructedMotionPathExportImpl::motion_path_group_seq_type
-			motion_path_group_seq_type;
-
-		/**
-		 * Typedef for a sequence of files that reference the geometries.
-		 */
-		typedef ReconstructedMotionPathExportImpl::referenced_files_collection_type
-			referenced_files_collection_type;
+		typedef ReconstructionGeometryExportImpl::referenced_files_collection_type
+				referenced_files_collection_type;
 
 
 		/**
@@ -56,7 +57,7 @@ namespace GPlatesFileIO
 		*/
 		void
 		export_motion_paths(
-				const motion_path_group_seq_type &motion_path_group_seq,
+				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,

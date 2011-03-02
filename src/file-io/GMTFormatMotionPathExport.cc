@@ -49,13 +49,14 @@
 
 namespace
 {
-	//! Convenience typedef for referenced files.
+	//! Typedef for a sequence of referenced files.
 	typedef GPlatesFileIO::GMTFormatMotionPathsExport::referenced_files_collection_type
-		referenced_files_collection_type;
+			referenced_files_collection_type;
 
-	//! Convenience typedef for reconstructed geometries.
-	typedef GPlatesFileIO::ReconstructedMotionPathExportImpl::reconstructed_motion_path_seq_type
-		reconstructed_motion_path_seq_type;
+	//! Convenience typedef for a sequence of @a ReconstructedMotionPath objects.
+	typedef std::vector<const GPlatesAppLogic::ReconstructedMotionPath *>
+			reconstructed_motion_path_seq_type;
+
 
 	/**
 	* Adapted from GMTFormatGeometryExporter
@@ -293,14 +294,13 @@ namespace
 			header_lines.push_back(times_string);			
 		}	
 	}
-
 }
 
 void
 GPlatesFileIO::GMTFormatMotionPathsExport::export_motion_paths(
-	const motion_path_group_seq_type &motion_path_group_seq,
+	const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 	const QFileInfo &qfile_info, 
-	const referenced_files_collection_type referenced_files, 
+	const referenced_files_collection_type &referenced_files, 
 	const GPlatesModel::integer_plate_id_type &anchor_plate_id, 
 	const double &reconstruction_time)
 {
@@ -323,15 +323,14 @@ GPlatesFileIO::GMTFormatMotionPathsExport::export_motion_paths(
 	GMTHeaderPrinter gmt_header_printer;
 	gmt_header_printer.print_global_header_lines(output_stream,global_header_lines);
 
-	motion_path_group_seq_type::const_iterator
-		iter = motion_path_group_seq.begin(),
-		end = motion_path_group_seq.end();
+	std::list<feature_geometry_group_type>::const_iterator
+		iter = feature_geometry_group_seq.begin(),
+		end = feature_geometry_group_seq.end();
 
 	for (; iter != end ; ++iter)
 	{
 		// Get per-feature stuff: feature info, left/right plates, times.
-		const ReconstructedMotionPathExportImpl::MotionPathGroup &motion_path_group =
-			*iter;
+		const feature_geometry_group_type &motion_path_group = *iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 			motion_path_group.feature_ref;
@@ -356,8 +355,8 @@ GPlatesFileIO::GMTFormatMotionPathsExport::export_motion_paths(
 		get_export_times(export_times,feature_times,reconstruction_time);
 
 		reconstructed_motion_path_seq_type::const_iterator rf_iter;
-		for (rf_iter = motion_path_group.recon_motion_paths.begin();
-			 rf_iter != motion_path_group.recon_motion_paths.end();
+		for (rf_iter = motion_path_group.recon_geoms.begin();
+			 rf_iter != motion_path_group.recon_geoms.end();
 			++rf_iter)
 		{
 			const GPlatesAppLogic::ReconstructedMotionPath *rf = *rf_iter;
@@ -366,20 +365,5 @@ GPlatesFileIO::GMTFormatMotionPathsExport::export_motion_paths(
 			write_seed_point_to_stream(output_stream,*rf);
 			write_motion_path_to_stream(output_stream,*rf,export_times);
 		}
-		
-		
-
 	}
-
 }
-
-
-
-
-
-
-
-
-
-
-

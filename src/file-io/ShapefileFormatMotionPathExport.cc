@@ -45,6 +45,15 @@
 
 namespace
 {
+	//! Typedef for a sequence of referenced files.
+	typedef GPlatesFileIO::ShapefileFormatMotionPathExport::referenced_files_collection_type
+			referenced_files_collection_type;
+
+	//! Convenience typedef for a sequence of @a ReconstructedMotionPath objects.
+	typedef std::vector<const GPlatesAppLogic::ReconstructedMotionPath *>
+			reconstructed_motion_path_seq_type;
+
+
 	QString
 	make_seed_string(
 		GPlatesAppLogic::ReconstructedMotionPath::seed_point_geom_ptr_type seed_point)
@@ -97,7 +106,7 @@ namespace
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type
 	create_kvd_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,		
-		const GPlatesFileIO::ReconstructedMotionPathExportImpl::referenced_files_collection_type &referenced_files,	
+		const referenced_files_collection_type &referenced_files,	
 		const double &reconstruction_time,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &seed_point,
@@ -171,7 +180,7 @@ namespace
 			QString file_string("FILE");
 
 			int file_count = 1;
-			GPlatesFileIO::ShapefileFormatMotionPathExport::referenced_files_collection_type::const_iterator file_iter;
+			referenced_files_collection_type::const_iterator file_iter;
 			for (file_iter = referenced_files.begin();
 				file_iter != referenced_files.end();
 				++file_iter, ++file_count)
@@ -210,7 +219,7 @@ namespace
 
 void
 GPlatesFileIO::ShapefileFormatMotionPathExport::export_motion_paths(
-		const motion_path_group_seq_type &motion_path_group_seq,
+		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -221,16 +230,15 @@ GPlatesFileIO::ShapefileFormatMotionPathExport::export_motion_paths(
 	QString file_path = file_info.filePath();
 	ShapefileGeometryExporter exporter(file_path,false /* single geometry types */);
 
-	motion_path_group_seq_type::const_iterator
-		iter = motion_path_group_seq.begin(),
-		end = motion_path_group_seq.end();
+	std::list<feature_geometry_group_type>::const_iterator
+		iter = feature_geometry_group_seq.begin(),
+		end = feature_geometry_group_seq.end();
 
 	for (; iter != end ; ++iter)
 	{
 
 		// Get per-feature stuff: feature info, left/right plates, times.
-		const ReconstructedMotionPathExportImpl::MotionPathGroup &motion_path_group =
-			*iter;
+		const feature_geometry_group_type &motion_path_group = *iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 			motion_path_group.feature_ref;
@@ -240,9 +248,9 @@ GPlatesFileIO::ShapefileFormatMotionPathExport::export_motion_paths(
 			continue;
 		}
 
-		ReconstructedMotionPathExportImpl::reconstructed_motion_path_seq_type::const_iterator rmt_iter;
-		for (rmt_iter = motion_path_group.recon_motion_paths.begin();
-			rmt_iter != motion_path_group.recon_motion_paths.end();
+		reconstructed_motion_path_seq_type::const_iterator rmt_iter;
+		for (rmt_iter = motion_path_group.recon_geoms.begin();
+			rmt_iter != motion_path_group.recon_geoms.end();
 			++rmt_iter)
 		{
 			const GPlatesAppLogic::ReconstructedMotionPath *rmt = *rmt_iter;

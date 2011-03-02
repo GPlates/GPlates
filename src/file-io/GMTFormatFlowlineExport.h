@@ -31,36 +31,40 @@
 #include <QFileInfo>
 
 #include "file-io/File.h"
-#include "file-io/ReconstructedFlowlineExportImpl.h"
+#include "file-io/ReconstructionGeometryExportImpl.h"
+
 #include "model/types.h"
+
+
+namespace GPlatesAppLogic
+{
+	class ReconstructedFlowline;
+}
 
 namespace GPlatesFileIO
 {
-
 	namespace GMTFormatFlowlinesExport
 	{
 		/**
-		 * Typedef for a sequence of files that reference the geometries.
+		 * Typedef for a feature geometry group of @a ReconstructedFlowline objects.
 		 */
-		typedef std::vector<const GPlatesFileIO::File::Reference *> referenced_files_collection_type;	
-
+		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ReconstructedFlowline>
+				feature_geometry_group_type;
 
 		/**
-		 * Typedef for a sequence of @a FlowlineGroup objects.
+		 * Typedef for a sequence of referenced files.
 		 */
-		typedef ReconstructedFlowlineExportImpl::flowline_group_seq_type
-			flowline_group_seq_type;
+		typedef ReconstructionGeometryExportImpl::referenced_files_collection_type
+				referenced_files_collection_type;
 
 
 		void
 		export_flowlines(
-				const flowline_group_seq_type &flowline_group_seq,
+				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo &qfile_info, 
 				const referenced_files_collection_type referenced_files, 
 				const GPlatesModel::integer_plate_id_type &anchor_plate_id, 
 				const double &reconstruction_time);
-
-
 	}
 }
 

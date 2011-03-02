@@ -129,7 +129,7 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ResolvedTopologicalNetwork>::type
 						resolved_topological_network_type;
 
-		//! Typedef for @a ResolvedTopologicalNetwork of appropriate const-ness.
+		//! Typedef for @a CoRegistrationData of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, CoRegistrationData>::type
 						co_registration_data_type;
@@ -231,7 +231,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &rtn)
+				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crd)
 		{  }
 
 

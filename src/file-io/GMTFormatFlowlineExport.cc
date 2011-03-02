@@ -49,16 +49,14 @@
 
 namespace
 {
-
-
-
-	//! Convenience typedef for referenced files.
+	//! Typedef for a sequence of referenced files.
 	typedef GPlatesFileIO::GMTFormatFlowlinesExport::referenced_files_collection_type
-		referenced_files_collection_type;
+			referenced_files_collection_type;
 
-	//! Convenience typedef for reconstructed geometries.
-	typedef GPlatesFileIO::ReconstructedFlowlineExportImpl::reconstructed_flowline_seq_type
-		reconstructed_flowline_seq_type;	
+	//! Convenience typedef for a sequence of @a ReconstructedFlowline objects.
+	typedef std::vector<const GPlatesAppLogic::ReconstructedFlowline *>
+			reconstructed_flowline_seq_type;
+
 
 	/**
 	* Adapted from GMTFormatGeometryExporter
@@ -313,7 +311,7 @@ namespace
 
 void
 GPlatesFileIO::GMTFormatFlowlinesExport::export_flowlines(
-	const flowline_group_seq_type &flowline_group_seq,
+	const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 	const QFileInfo &qfile_info, 
 	const referenced_files_collection_type referenced_files, 
 	const GPlatesModel::integer_plate_id_type &anchor_plate_id, 
@@ -338,15 +336,14 @@ GPlatesFileIO::GMTFormatFlowlinesExport::export_flowlines(
 	GMTHeaderPrinter gmt_header_printer;
 	gmt_header_printer.print_global_header_lines(output_stream,global_header_lines);
 
-	flowline_group_seq_type::const_iterator 
-		iter = flowline_group_seq.begin(),
-		end = flowline_group_seq.end();
+	std::list<feature_geometry_group_type>::const_iterator 
+		iter = feature_geometry_group_seq.begin(),
+		end = feature_geometry_group_seq.end();
 
 	for (; iter != end ; ++iter)
 	{
 		// Get per-feature stuff: feature info, left/right plates, times.
-		const ReconstructedFlowlineExportImpl::FlowlineGroup &flowline_group =
-			*iter;
+		const feature_geometry_group_type &flowline_group = *iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 			flowline_group.feature_ref;
@@ -370,8 +367,8 @@ GPlatesFileIO::GMTFormatFlowlinesExport::export_flowlines(
 		get_export_times(export_times,feature_times,reconstruction_time);
 
 		reconstructed_flowline_seq_type::const_iterator rf_iter;
-		for (rf_iter = flowline_group.recon_flowlines.begin();
-			 rf_iter != flowline_group.recon_flowlines.end();
+		for (rf_iter = flowline_group.recon_geoms.begin();
+			 rf_iter != flowline_group.recon_geoms.end();
 			++rf_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFlowline *rf = *rf_iter;

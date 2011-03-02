@@ -56,6 +56,7 @@ POP_MSVC_WARNINGS
 
 #include "file-io/File.h"
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
+#include "file-io/ReconstructionGeometryExportImpl.h"
 
 #include "global/NotYetImplementedException.h"
 
@@ -66,341 +67,6 @@ POP_MSVC_WARNINGS
 
 #include "property-values/GmlDataBlock.h"
 #include "property-values/GmlMultiPoint.h"
-
-
-// All code in this namespace was copied from "file-io/ReconstructedFeatureGeometryExportImpl.h"
-// and "file-io/ReconstructedFeatureGeometryExportImpl.cc".
-namespace
-{
-	//! Typedef for sequence of feature collection files.
-	typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;
-
-	/**
-	 * Typedef for a sequence of @a MultiPointVectorField pointers.
-	 */
-	typedef std::vector<const GPlatesAppLogic::MultiPointVectorField *>
-		vector_field_seq_type;
-
-
-	/**
-	 * Groups @a MultiPointVectorField objects with their feature.
-	 */
-	struct FeatureGeometryGroup
-	{
-		FeatureGeometryGroup(
-				const GPlatesModel::FeatureHandle::const_weak_ref &_feature_ref) :
-			feature_ref(_feature_ref)
-		{  }
-
-		GPlatesModel::FeatureHandle::const_weak_ref feature_ref;
-		vector_field_seq_type recon_feature_geoms;
-	};
-
-
-	/**
-	 * Typedef for a sequence of @a FeatureGeometryGroup objects.
-	 */
-	typedef std::list<FeatureGeometryGroup> feature_geometry_group_seq_type;
-
-	//! Typedef for sequence of file references that reference a collection of geometries.
-	typedef std::vector<const GPlatesFileIO::File::Reference *> referenced_files_collection_type;
-
-
-	/**
-	 * Typedef for a mapping from @a File::Reference to the vector fields calculated from the
-	 * contents of that file.
-	 */
-	typedef std::map<const GPlatesFileIO::File::Reference *, vector_field_seq_type> file_to_vector_fields_map_type;
-
-
-	/**
-	 * Groups @a FeatureGeometryGroup objects with their feature collection.                                                                     
-	 */
-	struct FeatureCollectionFeatureGroup
-	{
-		FeatureCollectionFeatureGroup(
-			const GPlatesFileIO::File::Reference *file_ptr_):
-			file_ptr(file_ptr_)
-		{}
-
-		const GPlatesFileIO::File::Reference *file_ptr;
-		feature_geometry_group_seq_type feature_geometry_groups;
-	};
-
-
-	/**
-	 * Typedef for a sequence of @a FeatureCollectionFeatureGroup objects. 
-	 */
-	typedef std::list<FeatureCollectionFeatureGroup> feature_collection_feature_group_seq_type;
-
-
-	/**
-	 * Typedef for mapping from @a FeatureHandle to the feature collection file it came from.
-	 */
-	typedef std::map<const GPlatesModel::FeatureHandle *, const GPlatesFileIO::File::Reference *>
-		feature_handle_to_collection_map_type;
-
-	/**
-	 * Returns a list of files that reference the RFGs.
-	 * Result is stored in @a referenced_files.
-	 */
-	void
-	get_files_referenced_by_geometries(
-			referenced_files_collection_type &referenced_files,
-			const vector_field_seq_type &reconstructed_feature_geometry_seq,
-			const files_collection_type &reconstructable_files,
-			feature_handle_to_collection_map_type &feature_to_collection_map);
-
-
-	/**
-	 * Returns a sequence of groups of RFGs (grouped by their feature).
-	 * Result is stored in @a grouped_mpvfs_seq.
-	 */
-	void
-	group_mpvfs_with_their_feature(
-			feature_geometry_group_seq_type &grouped_mpvfs_seq,
-			const vector_field_seq_type &reconstructed_feature_geometry_seq);
-
-
-	/**
-	 * Fills @a grouped_features_seq with the sorted contents of @a grouped_mpvfs_seq.
-	 * 
-	 * @a grouped_mpvfs_seq is sorted by feature collection. 
-	 */
-	void
-	group_feature_geom_groups_with_their_collection(
-			const feature_handle_to_collection_map_type &feature_handle_to_collection_map,
-			feature_collection_feature_group_seq_type &grouped_features_seq,
-			const feature_geometry_group_seq_type &grouped_mpvfs_seq);
-
-
-
-	//! Convenience typedef for referenced files.
-	typedef referenced_files_collection_type
-			referenced_files_collection_type;
-
-	//! Convenience typedef for active reconstructable files.
-	typedef files_collection_type
-			files_collection_type;
-
-	//! Convenience typedef for sequence of RFGs.
-	typedef vector_field_seq_type
-			vector_field_seq_type;
-
-	//! Convenience typedef for feature-handle-to-collection map.
-	typedef feature_handle_to_collection_map_type
-			feature_handle_to_collection_map_type;
-
-	//! Convenience typedef for a sequence of grouped RFGs.
-	typedef feature_geometry_group_seq_type
-			feature_geometry_group_seq_type;
-
-	class ContainsSameFilePointerPredicate: public std::unary_function<
-		FeatureCollectionFeatureGroup,bool>
-	{
-	public:
-		bool 
-		operator()(
-			const FeatureCollectionFeatureGroup& elem) const
-		{
-			return elem.file_ptr == file_ptr;
-		}
-
-
-		explicit
-		ContainsSameFilePointerPredicate(const GPlatesFileIO::File::Reference * file_ptr_):
-			file_ptr(file_ptr_){}
-
-	private:
-		const GPlatesFileIO::File::Reference *file_ptr;
-	};
-
-	/**
-	 * Populates mapping of feature handle to feature collection file.
-	 */
-	void
-	populate_feature_handle_to_collection_map(
-			feature_handle_to_collection_map_type &feature_handle_to_collection_map,
-			const files_collection_type &reconstructable_files)
-	{
-		// Iterate through the feature collections of the active reconstructable files.
-		files_collection_type::const_iterator reconstructable_files_iter;
-		for (reconstructable_files_iter = reconstructable_files.begin();
-			reconstructable_files_iter != reconstructable_files.end();
-			++reconstructable_files_iter)
-		{
-			const GPlatesFileIO::File::Reference *recon_file = *reconstructable_files_iter;
-
-			const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_handle =
-					recon_file->get_feature_collection();
-
-			if (!feature_collection_handle.is_valid())
-			{
-				continue;
-			}
-
-			// Iterate through the feature handles in the current feature collection.
-			GPlatesModel::FeatureCollectionHandle::const_iterator features_iter;
-			for (features_iter = feature_collection_handle->begin();
-				features_iter != feature_collection_handle->end();
-				++features_iter)
-			{
-				const GPlatesModel::FeatureHandle *feature_handle_ptr = (*features_iter).get();
-
-				// Add feature handle key to our mapping.
-				feature_handle_to_collection_map[feature_handle_ptr] = recon_file;
-			}
-		}
-	}
-
-
-	/**
-	 * Returns a unique list of files that reference the visible RFGs.
-	 * Result is stored in @a referenced_files.
-	 */
-	void
-	get_unique_list_of_referenced_files(
-			referenced_files_collection_type &referenced_files,
-			const vector_field_seq_type &reconstructed_feature_geometry_seq,
-			const feature_handle_to_collection_map_type &feature_handle_to_collection_map)
-	{
-		// Iterate through the list of RFGs and build up a unique list of
-		// feature collection files referenced by them.
-		vector_field_seq_type::const_iterator mpvf_iter;
-		for (mpvf_iter = reconstructed_feature_geometry_seq.begin();
-			mpvf_iter != reconstructed_feature_geometry_seq.end();
-			++mpvf_iter)
-		{
-			const GPlatesAppLogic::MultiPointVectorField *mpvf = *mpvf_iter;
-			const GPlatesModel::FeatureHandle *feature_handle_ptr = mpvf->feature_handle_ptr();
-
-			const feature_handle_to_collection_map_type::const_iterator map_iter =
-					feature_handle_to_collection_map.find(feature_handle_ptr);
-			if (map_iter == feature_handle_to_collection_map.end())
-			{
-				continue;
-			}
-
-			const GPlatesFileIO::File::Reference *file = map_iter->second;
-			referenced_files.push_back(file);
-		}
-
-		// Sort in preparation for removing duplicates.
-		// We end up sorting on 'const GPlatesFileIO::File::weak_ref' objects.
-		std::sort(referenced_files.begin(), referenced_files.end(), boost::lambda::_1 < boost::lambda::_2);
-
-		// Remove duplicates.
-		referenced_files.erase(
-				std::unique(referenced_files.begin(), referenced_files.end()),
-				referenced_files.end());
-	}
-
-
-	void
-	get_files_referenced_by_geometries(
-			referenced_files_collection_type &referenced_files,
-			const vector_field_seq_type &reconstructed_feature_geometry_seq,
-			const files_collection_type &reconstructable_files,
-			feature_handle_to_collection_map_type &feature_handle_to_collection_map)
-	{
-
-		populate_feature_handle_to_collection_map(
-				feature_handle_to_collection_map,
-				reconstructable_files);
-
-		get_unique_list_of_referenced_files(
-				referenced_files,
-				reconstructed_feature_geometry_seq,
-				feature_handle_to_collection_map);
-	}
-
-
-	void
-	group_mpvfs_with_their_feature(
-			feature_geometry_group_seq_type &grouped_mpvfs_seq,
-			const vector_field_seq_type &reconstructed_feature_geometry_seq)
-	{
-		// Copy sequence so we can sort the RFGs by feature.
-		vector_field_seq_type mpvfs_sorted_by_feature(
-				reconstructed_feature_geometry_seq);
-
-		// Sort in preparation for grouping RFGs by feature.
-		std::sort(mpvfs_sorted_by_feature.begin(), mpvfs_sorted_by_feature.end(),
-			boost::lambda::bind(&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, boost::lambda::_1) <
-						boost::lambda::bind(
-								&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, boost::lambda::_2));
-
-		const GPlatesModel::FeatureHandle *current_feature_handle_ptr = NULL;
-
-		// Iterate through the sorted sequence and put adjacent RFGs with the same feature
-		// into a group.
-		vector_field_seq_type::const_iterator sorted_mpvf_iter;
-		for (sorted_mpvf_iter = mpvfs_sorted_by_feature.begin();
-			sorted_mpvf_iter != mpvfs_sorted_by_feature.end();
-			++sorted_mpvf_iter)
-		{
-			const GPlatesAppLogic::MultiPointVectorField *mpvf = *sorted_mpvf_iter;
-			const GPlatesModel::FeatureHandle *feature_handle_ptr = mpvf->feature_handle_ptr();
-
-			if (feature_handle_ptr != current_feature_handle_ptr)
-			{
-				// Start a new group.
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
-						mpvf->get_feature_ref();
-
-				grouped_mpvfs_seq.push_back(FeatureGeometryGroup(feature_ref));
-
-				current_feature_handle_ptr = feature_handle_ptr;
-			}
-
-			// Add the current RFG to the current feature.
-			grouped_mpvfs_seq.back().recon_feature_geoms.push_back(mpvf);
-		}
-	}
-
-	void
-	group_feature_geom_groups_with_their_collection(
-		const feature_handle_to_collection_map_type &feature_handle_to_collection_map,
-		feature_collection_feature_group_seq_type &grouped_features_seq,
-		const feature_geometry_group_seq_type &grouped_mpvfs_seq)
-	{
-
-		feature_geometry_group_seq_type::const_iterator feature_iter = grouped_mpvfs_seq.begin();
-		for (; feature_iter != grouped_mpvfs_seq.end() ; ++feature_iter)
-		{
-
-
-			GPlatesModel::FeatureHandle::const_weak_ref handle_ref = feature_iter->feature_ref;
-
-			// Need a pointer to use the map. 
-			const GPlatesModel::FeatureHandle *handle_ptr = handle_ref.handle_ptr();
-			const feature_handle_to_collection_map_type::const_iterator map_iter =
-				feature_handle_to_collection_map.find(handle_ptr);
-			if (map_iter != feature_handle_to_collection_map.end())
-			{
-				const GPlatesFileIO::File::Reference *file_ptr = map_iter->second;
-				
-				ContainsSameFilePointerPredicate predicate(file_ptr);
-				feature_collection_feature_group_seq_type::iterator it =
-						std::find_if(grouped_features_seq.begin(),grouped_features_seq.end(),predicate);
-				if (it != grouped_features_seq.end())
-				{
-					// We found the file_ref in the FeatureCollectionFeatureGroup, so add this grouped_refs_seq to it.
-					it->feature_geometry_groups.push_back(*feature_iter);
-				}
-				else
-				{
-					// We have found a new collection, so create an entry in the feature_collection_feature_group_seq
-					FeatureCollectionFeatureGroup group_of_features(file_ptr);
-					group_of_features.feature_geometry_groups.push_back(*feature_iter);
-					grouped_features_seq.push_back(group_of_features);
-				}
-			}
-		}
-
-	}
-
-}
 
 
 namespace
@@ -458,7 +124,6 @@ GPlatesGui::ExportVelocityAnimationStrategy::create(
 			new ExportVelocityAnimationStrategy(export_animation_context,
 			cfg.filename_template()); 
 	
-	ptr->d_class_id="MESH_VELOCITIES_GPML";
 	return non_null_ptr_type(
 			ptr,
 			GPlatesUtils::NullIntrusivePointerHandler());
@@ -658,6 +323,27 @@ GPlatesGui::ExportVelocityAnimationStrategy::get_file_name_from_feature_collecti
 
 namespace
 {
+	//! Typedef for sequence of feature collection files.
+	typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;
+
+	/**
+	 * Typedef for a sequence of @a MultiPointVectorField pointers.
+	 */
+	typedef std::vector<const GPlatesAppLogic::MultiPointVectorField *> vector_field_seq_type;
+
+	/**
+	 * Typedef for a mapping from @a File::Reference to the vector fields calculated from the
+	 * contents of that file.
+	 */
+	typedef std::map<const GPlatesFileIO::File::Reference *, vector_field_seq_type> file_to_vector_fields_map_type;
+
+	/**
+	 * Typedef for mapping from @a FeatureHandle to the feature collection file it came from.
+	 */
+	typedef GPlatesFileIO::ReconstructionGeometryExportImpl::feature_handle_to_collection_map_type
+			feature_handle_to_collection_map_type;
+
+
 	void
 	populate_vector_field_seq(
 			vector_field_seq_type &vector_field_seq,
@@ -708,30 +394,38 @@ namespace
 			const vector_field_seq_type &vector_field_seq,
 			const files_collection_type &active_files)
 	{
-		// This code copied from "file-io/ReconstructedFeatureGeometryExportImpl.cc".
+		using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
+
+		// This code copied from "file-io/ReconstructionGeometryExportImpl.cc".
 		feature_handle_to_collection_map_type feature_handle_to_collection_map;
-		populate_feature_handle_to_collection_map(feature_handle_to_collection_map,
+		GPlatesFileIO::ReconstructionGeometryExportImpl::populate_feature_handle_to_collection_map(
+				feature_handle_to_collection_map,
 				active_files);
 
-		feature_geometry_group_seq_type feature_geometry_group_seq;
-		group_mpvfs_with_their_feature(feature_geometry_group_seq, vector_field_seq);
+		std::list< FeatureGeometryGroup<GPlatesAppLogic::MultiPointVectorField> > feature_geometry_group_seq;
+		GPlatesFileIO::ReconstructionGeometryExportImpl::group_reconstruction_geometries_with_their_feature(
+				feature_geometry_group_seq,
+				vector_field_seq);
 
-		feature_collection_feature_group_seq_type feature_collection_feature_group_seq;
-		group_feature_geom_groups_with_their_collection(feature_handle_to_collection_map,
-				feature_collection_feature_group_seq, feature_geometry_group_seq);
+		std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::MultiPointVectorField> >
+				feature_collection_feature_group_seq;
+		GPlatesFileIO::ReconstructionGeometryExportImpl::group_feature_geom_groups_with_their_collection(
+				feature_handle_to_collection_map,
+				feature_collection_feature_group_seq,
+				feature_geometry_group_seq);
 
-		feature_collection_feature_group_seq_type::const_iterator iter =
+		std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::MultiPointVectorField> >::const_iterator iter =
 				feature_collection_feature_group_seq.begin();
-		feature_collection_feature_group_seq_type::const_iterator end =
+		std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::MultiPointVectorField> >::const_iterator end =
 				feature_collection_feature_group_seq.end();
 		for ( ; iter != end; ++iter)
 		{
 			const GPlatesFileIO::File::Reference *file_ptr = iter->file_ptr;
 			vector_field_seq_type per_file_vector_field_seq;
 
-			feature_geometry_group_seq_type::const_iterator iter2 =
+			std::list< FeatureGeometryGroup<GPlatesAppLogic::MultiPointVectorField> >::const_iterator iter2 =
 					iter->feature_geometry_groups.begin();
-			feature_geometry_group_seq_type::const_iterator end2 =
+			std::list< FeatureGeometryGroup<GPlatesAppLogic::MultiPointVectorField> >::const_iterator end2 =
 					iter->feature_geometry_groups.end();
 			for ( ; iter2 != end2; ++iter2)
 			{
@@ -739,8 +433,8 @@ namespace
 				// 'per_file_vector_field_seq'.
 				per_file_vector_field_seq.insert(
 						per_file_vector_field_seq.end(),
-						iter2->recon_feature_geoms.begin(),
-						iter2->recon_feature_geoms.end());
+						iter2->recon_geoms.begin(),
+						iter2->recon_geoms.end());
 			}
 
 			file_to_vector_fields_map.insert(

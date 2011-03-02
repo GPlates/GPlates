@@ -39,63 +39,66 @@
 #include "file-io/FileInfo.h"
 
 
-namespace
+namespace GPlatesFileIO
 {
-	//! Convenience typedef for referenced files.
-	typedef GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::referenced_files_collection_type
-			referenced_files_collection_type;
-
-	//! Convenience typedef for reconstructed geometries.
-	typedef GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::reconstructed_feature_geom_seq_type
-		reconstructed_feature_geom_seq_type;
-
-	/**
-	 * Prints GMT format header at top of the exported file containing information
-	 * about the reconstruction that is not per-feature information.
-	 */
-	void
-	get_global_header_lines(
-			std::vector<QString>& header_lines,
-			const referenced_files_collection_type &referenced_files,
-			const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-			const double &reconstruction_time)
+	namespace GMTFormatReconstructedFeatureGeometryExport
 	{
-		// Print the anchor plate id.
-		header_lines.push_back(
-				QString("anchorPlateId ") + QString::number(reconstruction_anchor_plate_id));
-
-		// Print the reconstruction time.
-		header_lines.push_back(
-				QString("reconstructionTime ") + QString::number(reconstruction_time));
-
-		// Print the list of feature collection filenames that the exported
-		// geometries came from.
-		QStringList filenames;
-		referenced_files_collection_type::const_iterator file_iter;
-		for (file_iter = referenced_files.begin();
-			file_iter != referenced_files.end();
-			++file_iter)
+		namespace
 		{
-			const GPlatesFileIO::File::Reference *file = *file_iter;
+			//! Convenience typedef for a sequence of RFGs.
+			typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>
+					reconstructed_feature_geom_seq_type;
 
-			// Some files might not actually exist yet if the user created a new
-			// feature collection internally and hasn't saved it to file yet.
-			if (!GPlatesFileIO::file_exists(file->get_file_info()))
+
+			/**
+			 * Prints GMT format header at top of the exported file containing information
+			 * about the reconstruction that is not per-feature information.
+			 */
+			void
+			get_global_header_lines(
+					std::vector<QString>& header_lines,
+					const referenced_files_collection_type &referenced_files,
+					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+					const double &reconstruction_time)
 			{
-				continue;
+				// Print the anchor plate id.
+				header_lines.push_back(
+						QString("anchorPlateId ") + QString::number(reconstruction_anchor_plate_id));
+
+				// Print the reconstruction time.
+				header_lines.push_back(
+						QString("reconstructionTime ") + QString::number(reconstruction_time));
+
+				// Print the list of feature collection filenames that the exported
+				// geometries came from.
+				QStringList filenames;
+				referenced_files_collection_type::const_iterator file_iter;
+				for (file_iter = referenced_files.begin();
+					file_iter != referenced_files.end();
+					++file_iter)
+				{
+					const File::Reference *file = *file_iter;
+
+					// Some files might not actually exist yet if the user created a new
+					// feature collection internally and hasn't saved it to file yet.
+					if (!GPlatesFileIO::file_exists(file->get_file_info()))
+					{
+						continue;
+					}
+
+					filenames << file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
+				}
+
+				header_lines.push_back(filenames.join(" "));
 			}
-
-			filenames << file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
 		}
-
-		header_lines.push_back(filenames.join(" "));
 	}
 }
 
 
 void
 GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::export_geometries(
-		const feature_geometry_group_seq_type &feature_geometry_group_seq,
+		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -130,13 +133,12 @@ GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::export_geometries(
 	GMTFormatVerboseHeader gmt_header;
 
 	// Iterate through the reconstructed geometries and write to output.
-	feature_geometry_group_seq_type::const_iterator feature_iter;
+	std::list<feature_geometry_group_type>::const_iterator feature_iter;
 	for (feature_iter = feature_geometry_group_seq.begin();
 		feature_iter != feature_geometry_group_seq.end();
 		++feature_iter)
 	{
-		const ReconstructedFeatureGeometryExportImpl::FeatureGeometryGroup &feature_geom_group =
-				*feature_iter;
+		const feature_geometry_group_type &feature_geom_group = *feature_iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 				feature_geom_group.feature_ref;
@@ -151,8 +153,8 @@ GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::export_geometries(
 
 		// Iterate through the reconstructed geometries of the current feature and write to output.
 		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
-		for (rfg_iter = feature_geom_group.recon_feature_geoms.begin();
-			rfg_iter != feature_geom_group.recon_feature_geoms.end();
+		for (rfg_iter = feature_geom_group.recon_geoms.begin();
+			rfg_iter != feature_geom_group.recon_geoms.end();
 			++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;

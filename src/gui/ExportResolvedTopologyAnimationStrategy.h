@@ -73,11 +73,18 @@ namespace GPlatesGui
 		static const QString DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE;
 		static const QString RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC;
 		static const QString RESOLOVED_TOPOLOGIES_DESC;
-		
+
+		enum FileFormat
+		{
+			SHAPEFILE,
+			GMT
+		};
+
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
+				FileFormat format = GMT,
 				const ExportAnimationStrategy::Configuration &cfg=
 					ExportAnimationStrategy::Configuration(
 							DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE));
@@ -184,6 +191,8 @@ namespace GPlatesGui
 		//! Typedef for a sequence of resolved topological geometries.
 		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_geom_seq_type;
 
+		//! The format of export file.
+		FileFormat d_file_format;
 
 		/**
 		 * Export to the various files.

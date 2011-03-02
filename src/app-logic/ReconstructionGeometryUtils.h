@@ -37,6 +37,7 @@
 #include "MultiPointVectorField.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFlowline.h"
+#include "ReconstructedMotionPath.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
@@ -111,6 +112,29 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref>
 		get_feature_ref(
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
+
+
+		/**
+		 * Visits a @a ReconstructionGeometry to get a pointer to its feature handle.
+		 * Returns false if derived type of reconstruction geometry has an invalid
+		 * feature handle reference.
+		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
+		 * non-const pointer to a @a ReconstructionGeometry.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesModel::FeatureHandle *>
+		get_feature_handle_ptr(
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
+		{
+			boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+					get_feature_ref(reconstruction_geom_ptr);
+			if (!feature_ref)
+			{
+				return boost::none;
+			}
+
+			return feature_ref->handle_ptr();
+		}
 
 
 		/**
@@ -241,7 +265,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Template visitor class to find instances of @a ReconstructionFeatureGeometry.
+		 * Template visitor class to find instances of @a ReconstructedFeatureGeometry.
 		 */
 		template <class ReconstructedFeatureGeometryType>
 		class ReconstructedFeatureGeometryTypeFinderBase :
@@ -416,6 +440,22 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_feature_ref = rf->get_feature_ref();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_feature_ref = rmp->get_feature_ref();
+			}
+
+			virtual
+			void
+			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
 			{
 				d_feature_ref = rvgp->get_feature_ref();
@@ -489,6 +529,22 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 			{
 				d_property = rfg->property();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_property = rf->property();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_property = rmp->property();
 			}
 
 			virtual

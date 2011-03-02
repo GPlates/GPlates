@@ -148,12 +148,6 @@ namespace GPlatesGui
 		virtual
 		bool
 		check_filename_sequence();
-		
-		const QString&
-		class_id()
-		{
-			return d_class_id;
-		}
 
 	protected:
 		/**
@@ -175,7 +169,6 @@ namespace GPlatesGui
 		 */
 		boost::optional<GPlatesUtils::ExportTemplateFilenameSequence> d_filename_sequence_opt;
 		boost::optional<GPlatesUtils::ExportTemplateFilenameSequence::const_iterator> d_filename_iterator_opt;
-		QString d_class_id;
 		Configuration d_cfg;
 		
 	};

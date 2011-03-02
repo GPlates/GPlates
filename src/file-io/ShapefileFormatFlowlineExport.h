@@ -27,28 +27,31 @@
 #define GPLATES_FILEIO_SHAPEFILEFORMATFLOWLINEEXPORT_H
 
 
-#include "ReconstructedFlowlineExportImpl.h"
+#include "ReconstructionGeometryExportImpl.h"
 
 
+
+namespace GPlatesAppLogic
+{
+	class ReconstructedFlowline;
+}
 
 namespace GPlatesFileIO
 {
 
 	namespace ShapefileFormatFlowlineExport
 	{
-
+		/**
+		 * Typedef for a feature geometry group of @a ReconstructedFlowline objects.
+		 */
+		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ReconstructedFlowline>
+				feature_geometry_group_type;
 
 		/**
-		 * Typedef for a sequence of @a FeatureGeometryGroup objects.
+		 * Typedef for a sequence of referenced files.
 		 */
-		typedef ReconstructedFlowlineExportImpl::flowline_group_seq_type
-			flowline_group_seq_type;
-
-		/**
-		 * Typedef for a sequence of files that reference the geometries.
-		 */
-		typedef ReconstructedFlowlineExportImpl::referenced_files_collection_type
-			referenced_files_collection_type;
+		typedef ReconstructionGeometryExportImpl::referenced_files_collection_type
+				referenced_files_collection_type;
 
 
 		/**
@@ -56,7 +59,7 @@ namespace GPlatesFileIO
 		*/
 		void
 		export_flowlines(
-				const flowline_group_seq_type &flowline_group_seq,
+				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,

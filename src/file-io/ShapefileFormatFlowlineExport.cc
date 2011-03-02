@@ -45,6 +45,15 @@
 
 namespace
 {
+	//! Typedef for a sequence of referenced files.
+	typedef GPlatesFileIO::ShapefileFormatFlowlineExport::referenced_files_collection_type
+			referenced_files_collection_type;
+
+	//! Convenience typedef for a sequence of @a ReconstructedFlowline objects.
+	typedef std::vector<const GPlatesAppLogic::ReconstructedFlowline *>
+			reconstructed_flowline_seq_type;
+
+
 	QString
 	make_seed_string(
 		GPlatesAppLogic::ReconstructedFlowline::seed_point_geom_ptr_type seed_point)
@@ -97,7 +106,7 @@ namespace
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type
 	create_kvd_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,		
-		const GPlatesFileIO::ReconstructedFlowlineExportImpl::referenced_files_collection_type &referenced_files,	
+		const referenced_files_collection_type &referenced_files,	
 		const double &reconstruction_time,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &seed_point,
@@ -210,7 +219,7 @@ namespace
 
 void
 GPlatesFileIO::ShapefileFormatFlowlineExport::export_flowlines(
-		const flowline_group_seq_type &flowline_group_seq,
+		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -221,16 +230,15 @@ GPlatesFileIO::ShapefileFormatFlowlineExport::export_flowlines(
 	QString file_path = file_info.filePath();
 	ShapefileGeometryExporter exporter(file_path,false /* single geometry types */);
 
-	flowline_group_seq_type::const_iterator 
-		iter = flowline_group_seq.begin(),
-		end = flowline_group_seq.end();
+	std::list<feature_geometry_group_type>::const_iterator 
+		iter = feature_geometry_group_seq.begin(),
+		end = feature_geometry_group_seq.end();
 
 	for (; iter != end ; ++iter)
 	{
 
 		// Get per-feature stuff: feature info, left/right plates, times.
-		const ReconstructedFlowlineExportImpl::FlowlineGroup &flowline_group =
-			*iter;
+		const feature_geometry_group_type &flowline_group = *iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 			flowline_group.feature_ref;
@@ -240,9 +248,9 @@ GPlatesFileIO::ShapefileFormatFlowlineExport::export_flowlines(
 			continue;
 		}
 
-		ReconstructedFlowlineExportImpl::reconstructed_flowline_seq_type::const_iterator rf_iter;
-		for (rf_iter = flowline_group.recon_flowlines.begin();
-			rf_iter != flowline_group.recon_flowlines.end();
+		reconstructed_flowline_seq_type::const_iterator rf_iter;
+		for (rf_iter = flowline_group.recon_geoms.begin();
+			rf_iter != flowline_group.recon_geoms.end();
 			++rf_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFlowline *rf = *rf_iter;
