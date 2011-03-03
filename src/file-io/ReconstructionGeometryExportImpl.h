@@ -210,7 +210,7 @@ namespace GPlatesFileIO
 		{
 			// Iterate through the list of ReconstructionGeometry objects and build up a unique list of
 			// feature collection files referenced by them.
-			std::vector<const ReconstructionGeometryType *>::const_iterator recon_geom_iter;
+			typename std::vector<const ReconstructionGeometryType *>::const_iterator recon_geom_iter;
 			for (recon_geom_iter = reconstruction_geometry_seq.begin();
 				recon_geom_iter != reconstruction_geometry_seq.end();
 				++recon_geom_iter)
@@ -283,7 +283,7 @@ namespace GPlatesFileIO
 
 			// Iterate through the sorted sequence and put adjacent ReconstructionGeometry objects
 			// with the same feature into a group.
-			std::vector<const ReconstructionGeometryType *>::const_iterator sorted_recon_geom_iter;
+			typename std::vector<const ReconstructionGeometryType *>::const_iterator sorted_recon_geom_iter;
 			for (sorted_recon_geom_iter = recon_geoms_sorted_by_feature.begin();
 				sorted_recon_geom_iter != recon_geoms_sorted_by_feature.end();
 				++sorted_recon_geom_iter)
@@ -319,7 +319,7 @@ namespace GPlatesFileIO
 			std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq,
 			const std::list< FeatureGeometryGroup<ReconstructionGeometryType> > &grouped_recon_geoms_seq)
 		{
-			std::list< FeatureGeometryGroup<ReconstructionGeometryType> >::const_iterator feature_iter =
+			typename std::list< FeatureGeometryGroup<ReconstructionGeometryType> >::const_iterator feature_iter =
 					grouped_recon_geoms_seq.begin();
 			for (; feature_iter != grouped_recon_geoms_seq.end() ; ++feature_iter)
 			{
@@ -334,7 +334,7 @@ namespace GPlatesFileIO
 					const GPlatesFileIO::File::Reference *file_ptr = map_iter->second;
 					
 					ContainsSameFilePointerPredicate<ReconstructionGeometryType> predicate(file_ptr);
-					std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> >::iterator it =
+					typename std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> >::iterator it =
 							std::find_if(grouped_features_seq.begin(), grouped_features_seq.end(), predicate);
 					if (it != grouped_features_seq.end())
 					{

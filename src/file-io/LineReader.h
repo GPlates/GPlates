@@ -35,7 +35,7 @@
 #ifndef GPLATES_FILEIO_LINEREADER_H
 #define GPLATES_FILEIO_LINEREADER_H
 
-#include <iosfwd>
+#include <iostream>
 #include <string>
 #include <boost/noncopyable.hpp>
 

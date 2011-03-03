@@ -232,7 +232,9 @@ GPlatesCli::ReconstructCommand::run(
 				reconstruct_feature_geom_seq,
 				reconstructable_file_ptrs,
 				d_anchor_plate_id,
-				d_recon_time);
+				d_recon_time,
+				true/*export_single_output_file*/,
+				false/*export_per_input_file*/);
 
 	return 0;
 }

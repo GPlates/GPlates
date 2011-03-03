@@ -322,7 +322,7 @@ namespace GPlatesFileIO
 		{
 			using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 
-			std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> >::const_iterator 
+			typename std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> >::const_iterator 
 				it = grouped_features_seq.begin(),
 				end = grouped_features_seq.end();
 
