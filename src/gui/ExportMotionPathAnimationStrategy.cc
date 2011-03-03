@@ -155,7 +155,7 @@ GPlatesGui::ExportMotionPathAnimationStrategy::do_export_iteration(
 
 
 		// TODO: Get 'export_single_output_file' and 'export_per_input_file' from user (via GUI).
-		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstruced_motion_paths(
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_motion_paths(
 			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 			d_loaded_files,

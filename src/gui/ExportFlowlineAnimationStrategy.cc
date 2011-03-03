@@ -153,7 +153,7 @@ GPlatesGui::ExportFlowlineAnimationStrategy::do_export_iteration(
 
 
 		// TODO: Get 'export_single_output_file' and 'export_per_input_file' from user (via GUI).
-		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstruced_flowlines(
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_flowlines(
 			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 			d_loaded_files,

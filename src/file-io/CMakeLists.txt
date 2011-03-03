@@ -100,8 +100,12 @@ set(srcs
     ReadErrorOccurrence.cc
     ReadErrorOccurrence.h
     ReadErrors.h
-    ReconstructionGeometryExport.cc
-    ReconstructionGeometryExport.h
+    ReconstructedFeatureGeometryExport.cc
+    ReconstructedFeatureGeometryExport.h
+    ReconstructedFlowlineExport.cc
+    ReconstructedFlowlineExport.h
+    ReconstructedMotionPathExport.cc
+    ReconstructedMotionPathExport.h
     ReconstructionGeometryExportImpl.cc
     ReconstructionGeometryExportImpl.h
     RgbaRasterReader.cc

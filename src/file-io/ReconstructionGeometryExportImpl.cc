@@ -23,7 +23,57 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDebug>
+#include <QDir> // static "separator" function.
+
 #include "ReconstructionGeometryExportImpl.h"
+
+#include "ErrorOpeningFileForWritingException.h"
+
+
+QString
+GPlatesFileIO::ReconstructionGeometryExportImpl::build_flat_structure_filename(
+	const QString &export_path,
+	const QString &collection_filename,
+	const QString &export_filename)
+{
+	QString output_filename =  export_path + 
+							QDir::separator() + 
+							collection_filename + 
+							"_" + 
+							export_filename;
+	return output_filename;
+}
+
+
+QString
+GPlatesFileIO::ReconstructionGeometryExportImpl::build_folder_structure_filename(
+	const QString &export_path,
+	const QString &collection_filename,
+	const QString &export_filename)
+{
+	QString output_folder_name= export_path + 
+		QDir::separator() + 
+		collection_filename;
+	
+	QDir folder(export_path);
+	QDir sub_folder(output_folder_name);
+
+	if (!sub_folder.exists())
+	{
+		bool success = folder.mkdir(collection_filename);
+		if (!success)
+		{
+			throw ErrorOpeningFileForWritingException(
+				GPLATES_EXCEPTION_SOURCE,"Unable to create output directory.");
+		}
+	}
+
+	QString output_filename = output_folder_name + 
+							QDir::separator() + 
+							export_filename;
+	return output_filename;
+}
 
 
 void

@@ -83,7 +83,7 @@ namespace GPlatesViewOperations
 		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
-		export_visible_reconstruced_flowlines(
+		export_visible_reconstructed_flowlines(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const files_collection_type &active_files,
@@ -108,7 +108,7 @@ namespace GPlatesViewOperations
 		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
-		export_visible_reconstruced_motion_paths(
+		export_visible_reconstructed_motion_paths(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const files_collection_type &active_files,

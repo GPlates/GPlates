@@ -38,6 +38,7 @@ DISABLE_MSVC_WARNING(4181)
 #include <boost/lambda/lambda.hpp>
 POP_MSVC_WARNINGS
 #include <QFileInfo>
+#include <QString>
 
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
@@ -135,6 +136,43 @@ namespace GPlatesFileIO
 				const feature_handle_to_collection_map_type &feature_handle_to_collection_map,
 				std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq,
 				const std::list< FeatureGeometryGroup<ReconstructionGeometryType> > &grouped_recon_geoms_seq);
+
+
+		/**
+		 * Creates an output filename for each entry in @a grouped_features_seq and stores
+		 * in @a output_filenames.
+		 *
+		 * The order of filenames in @a output_filenames matches the order of groups
+		 * in @a grouped_features_seq.
+		 */
+		template <class ReconstructionGeometryType>
+		void
+		get_output_filenames(
+			std::vector<QString> &output_filenames,
+			const QString &output_filename,
+			const std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq);
+
+
+		/**
+		 * Builds filename as "<export_path>/<collection_filename>_<export_filename>".
+		 */
+		QString
+		build_flat_structure_filename(
+			const QString &export_path,
+			const QString &collection_filename,
+			const QString &export_filename);
+
+
+		/**
+		 * Builds filename as "<export_path>/<collection_filename>/<export_filename>".
+		 *
+		 * Creates "<export_path>/<collection_filename>/" directory if it doesn't exist.
+		 */
+		QString
+		build_folder_structure_filename(
+			const QString &export_path,
+			const QString &collection_filename,
+			const QString &export_filename);
 	}
 
 
@@ -292,7 +330,7 @@ namespace GPlatesFileIO
 
 				const boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
 						GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(recon_geom);
-				if (!feature_ref)
+				if (!feature_ref || !feature_ref.get())
 				{
 					continue;
 				}
@@ -350,6 +388,43 @@ namespace GPlatesFileIO
 					}
 				}
 			}
+		}
+
+
+		template <class ReconstructionGeometryType>
+		void
+		get_output_filenames(
+				std::vector<QString> &output_filenames,
+				const QString &output_filename,
+				const std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq)
+		{
+			typename std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> >::const_iterator 
+					it = grouped_features_seq.begin(),
+					end = grouped_features_seq.end();
+
+			QFileInfo export_qfile_info(output_filename);
+			QString export_path = export_qfile_info.absolutePath();
+			QString export_filename = export_qfile_info.fileName();
+
+			for (; it != end; ++it)
+			{
+				const File::Reference *file_ptr = it->file_ptr;	
+				FileInfo file_info = file_ptr->get_file_info();
+				QFileInfo qfile_info = file_info.get_qfileinfo();
+				QString collection_filename = qfile_info.completeBaseName();
+
+		#if 1
+				// Folder-structure output
+				QString output_filename = build_folder_structure_filename(
+						export_path, collection_filename, export_filename);
+		#else	
+				// Flat-structure output.
+				QString output_filename = build_flat_structure_filename(
+						export_path, collection_filename, export_filename);
+		#endif
+
+				output_filenames.push_back(output_filename);
+			} // iterate over collections
 		}
 	}
 }
