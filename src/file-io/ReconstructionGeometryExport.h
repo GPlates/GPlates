@@ -63,6 +63,18 @@ namespace GPlatesFileIO
 
 
 		/**
+		 * Unspecialised class for communicating options to @a export_reconstruction_geometries.
+		 *
+		 * Contains no options.
+		 *
+		 * Specialise this class to define options for a derived type of @a ReconstructionGeometry.
+		 */
+		template <class ReconstructionGeometryType>
+		class Options
+		{ };
+
+
+		/**
 		 * Determine type of export file format based on filename extension.
 		 *
 		 * @param file_info file whose extension used to determine file format.
@@ -75,6 +87,14 @@ namespace GPlatesFileIO
 		 * Exports @a ReconstructionGeometry objects of derived type @a ReconstructionGeometryType.
 		 *
 		 * @param export_format specifies which format to write.
+		 * @param export_single_output_file specifies whether to write all reconstruction geometries
+		 *        to a single file.
+		 * @param export_per_input_file specifies whether to group
+		 *        reconstruction geometries according to the input files their features came from
+		 *        and write to corresponding output files.
+		 *
+		 * Note that both @a export_single_output_file and @a export_per_input_file can be true
+		 * in which case both a single output file is exported as well as grouped output files.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 * @throws FileFormatNotSupportedException if file format not supported.
@@ -87,13 +107,24 @@ namespace GPlatesFileIO
 				const std::vector<const ReconstructionGeometryType *> &reconstruction_geom_seq,
 				const std::vector<const File::Reference *> &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				bool export_single_output_file,
+				bool export_per_input_file,
+				const Options<ReconstructionGeometryType> &export_options = Options<ReconstructionGeometryType>());
 
 
 		/**
 		 * Exports @a ReconstructedFeatureGeometry objects of derived type @a ReconstructionGeometryType.
 		 *
 		 * @param file_info file whose extension is used to determine which format to write.
+		 * @param export_single_output_file specifies whether to write all reconstruction geometries
+		 *        to a single file.
+		 * @param export_per_input_file specifies whether to group
+		 *        reconstruction geometries according to the input files their features came from
+		 *        and write to corresponding output files.
+		 *
+		 * Note that both @a export_single_output_file and @a export_per_input_file can be true
+		 * in which case both a single output file is exported as well as grouped output files.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 * @throws FileFormatNotSupportedException if file format not supported.
@@ -106,7 +137,10 @@ namespace GPlatesFileIO
 				const std::vector<const ReconstructionGeometryType *> &reconstruction_geom_seq,
 				const std::vector<const File::Reference *> &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time)
+				const double &reconstruction_time,
+				bool export_single_output_file,
+				bool export_per_input_file,
+				const Options<ReconstructionGeometryType> &export_options = Options<ReconstructionGeometryType>())
 		{
 			export_reconstruction_geometries(
 					filename,
@@ -114,7 +148,10 @@ namespace GPlatesFileIO
 					reconstruction_geom_seq,
 					active_files,
 					reconstruction_anchor_plate_id,
-					reconstruction_time);
+					reconstruction_time,
+					export_single_output_file,
+					export_per_input_file,
+					export_options);
 		}
 	}
 
@@ -158,7 +195,8 @@ namespace GPlatesFileIO
 						FeatureGeometryGroup<ReconstructionGeometryType> > &grouped_recon_geoms_seq,
 				const std::vector<const File::Reference *> &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const Options<ReconstructionGeometryType> &export_options);
 
 		//! Specialisation for @a ReconstructedFeatureGeometry - defined in '.cc' file.
 		template <>
@@ -171,7 +209,8 @@ namespace GPlatesFileIO
 								grouped_recon_geoms_seq,
 				const std::vector<const File::Reference *> &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const Options<GPlatesAppLogic::ReconstructedFeatureGeometry> &export_options);
 
 		//! Specialisation for @a ReconstructedFlowline - defined in '.cc' file.
 		template <>
@@ -184,7 +223,8 @@ namespace GPlatesFileIO
 								grouped_recon_geoms_seq,
 				const std::vector<const File::Reference *> &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const Options<GPlatesAppLogic::ReconstructedFlowline> &export_options);
 
 		//! Specialisation for @a ReconstructedMotionPath - defined in '.cc' file.
 		template <>
@@ -197,7 +237,8 @@ namespace GPlatesFileIO
 								grouped_recon_geoms_seq,
 				const std::vector<const File::Reference *> &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const Options<GPlatesAppLogic::ReconstructedMotionPath> &export_options);
 
 
 		/**
@@ -215,7 +256,8 @@ namespace GPlatesFileIO
 				const QString &filename,
 				const std::vector<const File::Reference *> &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const Options<ReconstructionGeometryType> &export_options);
 
 		//! Specialisation for @a ReconstructedFeatureGeometry - defined in '.cc' file.
 		template<>
@@ -228,7 +270,22 @@ namespace GPlatesFileIO
 				const QString &filename,
 				const std::vector<const File::Reference *> &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const Options<GPlatesAppLogic::ReconstructedFeatureGeometry> &export_options);
+
+		//! Specialisation for @a ReconstructedFlowline - defined in '.cc' file.
+		template<>
+		void
+		export_per_collection<GPlatesAppLogic::ReconstructedFlowline>(
+				Format export_format,
+				const std::list< ReconstructionGeometryExportImpl::
+						FeatureGeometryGroup<GPlatesAppLogic::ReconstructedFlowline> > &
+								grouped_recon_geoms_seq,
+				const QString &filename,
+				const std::vector<const File::Reference *> &referenced_files,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time,
+				const Options<GPlatesAppLogic::ReconstructedFlowline> &export_options);
 
 		//! Specialisation for @a ReconstructedMotionPath - defined in '.cc' file.
 		template<>
@@ -241,7 +298,8 @@ namespace GPlatesFileIO
 				const QString &filename,
 				const std::vector<const File::Reference *> &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const Options<GPlatesAppLogic::ReconstructedMotionPath> &export_options);
 
 
 		/**
@@ -259,7 +317,8 @@ namespace GPlatesFileIO
 					FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq,
 			const std::vector<const File::Reference *> &referenced_files,
 			const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-			const double &reconstruction_time)
+			const double &reconstruction_time,
+			const Options<ReconstructionGeometryType> &export_options)
 		{
 			using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 
@@ -298,7 +357,8 @@ namespace GPlatesFileIO
 						output_filename,
 						referenced_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						export_options);
 			} // iterate over collections
 		}
 
@@ -311,7 +371,10 @@ namespace GPlatesFileIO
 			const std::vector<const ReconstructionGeometryType *> &reconstruction_geom_seq,
 			const std::vector<const File::Reference *> &active_files,
 			const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-			const double &reconstruction_time)
+			const double &reconstruction_time,
+			bool export_single_output_file,
+			bool export_per_input_file,
+			const Options<ReconstructionGeometryType> &export_options)
 		{
 			using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 
@@ -337,21 +400,29 @@ namespace GPlatesFileIO
 					grouped_recon_geom_seq);
 
 
-			export_as_single_file(
-					filename,
-					export_format,
-					grouped_recon_geom_seq,
-					referenced_files,
-					reconstruction_anchor_plate_id,
-					reconstruction_time);
+			if (export_single_output_file)
+			{
+				export_as_single_file(
+						filename,
+						export_format,
+						grouped_recon_geom_seq,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time,
+						export_options);
+			}
 
-			export_per_collection(
-					filename,
-					export_format,
-					grouped_features_seq,
-					referenced_files,
-					reconstruction_anchor_plate_id,
-					reconstruction_time);
+			if (export_per_input_file)
+			{
+				export_per_collection(
+						filename,
+						export_format,
+						grouped_features_seq,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time,
+						export_options);
+			}
 		}
 	}
 }

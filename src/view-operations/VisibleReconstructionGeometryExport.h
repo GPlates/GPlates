@@ -51,6 +51,8 @@ namespace GPlatesViewOperations
 		 * @param active_files used to determine which files the RFGs came from.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
 		 * @param reconstruction_time time at which the reconstruction took place.
+		 * @param export_single_output_file write all geometries to a single file.
+		 * @param export_per_input_file write output files corresponding to input files.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 * @throws FileFormatNotSupportedException if file format not supported.
@@ -61,7 +63,9 @@ namespace GPlatesViewOperations
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				bool export_single_output_file,
+				bool export_per_input_file);
 
 
 		/**
@@ -72,6 +76,8 @@ namespace GPlatesViewOperations
 		 * @param active_files used to determine which files the RFGs came from.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
 		 * @param reconstruction_time time at which the reconstruction took place.
+		 * @param export_single_output_file write all geometries to a single file.
+		 * @param export_per_input_file write output files corresponding to input files.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 * @throws FileFormatNotSupportedException if file format not supported.
@@ -82,7 +88,9 @@ namespace GPlatesViewOperations
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				bool export_single_output_file,
+				bool export_per_input_file);
 
 
 		/**
@@ -93,6 +101,8 @@ namespace GPlatesViewOperations
 		 * @param active_files used to determine which files the RFGs came from.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
 		 * @param reconstruction_time time at which the reconstruction took place.
+		 * @param export_single_output_file write all geometries to a single file.
+		 * @param export_per_input_file write output files corresponding to input files.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 * @throws FileFormatNotSupportedException if file format not supported.
@@ -103,9 +113,9 @@ namespace GPlatesViewOperations
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
-
-
+				const double &reconstruction_time,
+				bool export_single_output_file,
+				bool export_per_input_file);
 	}
 }
 

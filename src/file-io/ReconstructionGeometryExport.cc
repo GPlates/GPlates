@@ -119,7 +119,8 @@ GPlatesFileIO::ReconstructionGeometryExport::export_as_single_file<GPlatesAppLog
 		const std::list< FeatureGeometryGroup<GPlatesAppLogic::ReconstructedFeatureGeometry> > &grouped_recon_geoms_seq,
 		const std::vector<const File::Reference *> &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const Options<GPlatesAppLogic::ReconstructedFeatureGeometry> &export_options)
 {
 	switch (export_format)
 	{
@@ -156,7 +157,8 @@ GPlatesFileIO::ReconstructionGeometryExport::export_as_single_file<GPlatesAppLog
 		const std::list< FeatureGeometryGroup<GPlatesAppLogic::ReconstructedFlowline> > &grouped_recon_geoms_seq,
 		const std::vector<const File::Reference *> &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const Options<GPlatesAppLogic::ReconstructedFlowline> &export_options)
 {
 	switch (export_format)
 	{
@@ -193,7 +195,8 @@ GPlatesFileIO::ReconstructionGeometryExport::export_as_single_file<GPlatesAppLog
 		const std::list< FeatureGeometryGroup<GPlatesAppLogic::ReconstructedMotionPath> > &grouped_recon_geoms_seq,
 		const std::vector<const File::Reference *> &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const Options<GPlatesAppLogic::ReconstructedMotionPath> &export_options)
 {
 	switch (export_format)
 	{
@@ -230,7 +233,8 @@ GPlatesFileIO::ReconstructionGeometryExport::export_per_collection<GPlatesAppLog
 		const QString &filename,
 		const std::vector<const File::Reference *> &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const Options<GPlatesAppLogic::ReconstructedFeatureGeometry> &export_options)
 {
 	switch(export_format)
 	{
@@ -265,7 +269,8 @@ GPlatesFileIO::ReconstructionGeometryExport::export_per_collection<GPlatesAppLog
 		const QString &filename,
 		const std::vector<const File::Reference *> &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const Options<GPlatesAppLogic::ReconstructedFlowline> &export_options)
 {
 	switch(export_format)
 	{
@@ -306,7 +311,8 @@ GPlatesFileIO::ReconstructionGeometryExport::export_per_collection<GPlatesAppLog
 		const QString &filename,
 		const std::vector<const File::Reference *> &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const Options<GPlatesAppLogic::ReconstructedMotionPath> &export_options)
 {
 	switch(export_format)
 	{

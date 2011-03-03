@@ -119,13 +119,15 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	// given frame_index, filename, reconstructable files and geoms, and target_dir. Etc.
 	try {
 
-		
+		// TODO: Get 'export_single_output_file' and 'export_per_input_file' from user (via GUI).
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_feature_geometries(
 			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 			d_loaded_files,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
-			d_export_animation_context_ptr->view_time());
+			d_export_animation_context_ptr->view_time(),
+			true/*export_single_output_file*/,
+			true/*export_per_input_file*/);
 
 	} catch (...) {
 		// FIXME: Catch all proper exceptions we might get here.
