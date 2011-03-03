@@ -34,6 +34,7 @@
 #include <boost/lambda/lambda.hpp>
 #include <QByteArray>
 #include <QFile>
+#include <QFileInfo>
 #include <QProcess>
 #include <QString>
 #include <QStringList>
@@ -448,13 +449,18 @@ int main(int argc, char *argv[])
 		custom_version_number = argv[3];
 	}
 
-	// Compute the version number and branch name if required.
-	QString version_number = custom_version_number ?
-			QString(custom_version_number) :
-			get_compact_version_number(working_directory, program_name);
-	QString branch_name = custom_version_number ?
-			QString() :
-			get_branch_name(working_directory, program_name);
+	QString version_number, branch_name;
+	QFileInfo svn_file(QString(working_directory)+"/.svn/entries");
+	if(svn_file.isFile())
+	{
+		// Compute the version number and branch name if required.
+		version_number = custom_version_number ?
+				QString(custom_version_number) :
+				get_compact_version_number(working_directory, program_name);
+		branch_name = custom_version_number ?
+				QString() :
+				get_branch_name(working_directory, program_name);
+	}
 
 	// Check whether we need to write the values out again or not. We don't write
 	// the values out if they haven't changed because we don't want to cause
