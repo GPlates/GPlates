@@ -395,14 +395,14 @@ namespace GPlatesFileIO
 		void
 		get_output_filenames(
 				std::vector<QString> &output_filenames,
-				const QString &output_filename,
+				const QString &filename,
 				const std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq)
 		{
 			typename std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> >::const_iterator 
 					it = grouped_features_seq.begin(),
 					end = grouped_features_seq.end();
 
-			QFileInfo export_qfile_info(output_filename);
+			QFileInfo export_qfile_info(filename);
 			QString export_path = export_qfile_info.absolutePath();
 			QString export_filename = export_qfile_info.fileName();
 
