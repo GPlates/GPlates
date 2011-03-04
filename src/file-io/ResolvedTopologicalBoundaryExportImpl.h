@@ -66,6 +66,26 @@ namespace GPlatesFileIO
 
 
 		/**
+		 * The export type of subsegments.
+		 */
+		enum SubSegmentExportType
+		{
+			ALL_SUB_SEGMENTS_EXPORT_TYPE,
+			PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+			SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE
+		};
+
+		/**
+		 * The export type of resolved topological boundaries.
+		 */
+		enum ResolvedTopologicalBoundaryExportType
+		{
+			PLATE_POLYGON_EXPORT_TYPE,
+			SLAB_POLYGON_EXPORT_TYPE
+		};
+
+
+		/**
 		 *  Sub segment feature type.
 		 */
 		enum SubSegmentType

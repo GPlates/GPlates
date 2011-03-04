@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/scoped_ptr.hpp>
 #include <QFile>
 #include <QStringList>
 #include <QString>
@@ -37,6 +38,8 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
 #include "file-io/FileInfo.h"
+
+#include "global/GPlatesAssert.h"
 
 #include "utils/UnicodeStringUtils.h"
 #include "utils/StringFormattingUtils.h"
@@ -887,6 +890,7 @@ namespace GPlatesFileIO
 void
 GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
 		const resolved_geom_seq_type &resolved_topological_boundaries,
+		ResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -900,11 +904,6 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 			file_info.filePath());
 	}
 
-	QTextStream output_stream(&output_file);
-
-	// Does the actual printing of GMT header to the output stream.
-	GMTHeaderPrinter gmt_header_printer;
-
 	// NOTE: For this particular format we *don't* write out the global header
 	// (at the top of the exported file).
 	// This is because this format is specifically used as input to CitcomS which expects
@@ -914,14 +913,8 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 	// (which will later be handled by the OGR library - just like Shapefiles).
 	//
 
-	// Used to write the reconstructed geometry in GMT format.
-	GMTFormatGeometryExporter geom_exporter(output_stream);
-
-	// Even though we're printing out reconstructed geometry rather than
-	// present day geometry we still write out the verbose properties
-	// of the feature (including the properties used to reconstruct
-	// the geometries).
-	GMTFormatVerboseHeader gmt_header;
+	// Used to write in GMT format.
+	GMTFeatureExporter geom_exporter(output_file);
 
 	// Iterate through the reconstructed geometries and write to output.
 	resolved_geom_seq_type::const_iterator resolved_geom_iter;
@@ -931,22 +924,33 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 	{
 		const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_geom = *resolved_geom_iter;
 
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref =
 				resolved_geom->get_feature_ref();
 		if (!feature_ref.is_valid())
 		{
 			continue;
 		}
 
-		// Get the header lines.
-		std::vector<QString> header_lines;
-		gmt_header.get_feature_header_lines(feature_ref, header_lines);
+		// Choose the style of GMT header based on the type of topological polygon export.
+		boost::scoped_ptr<GMTExportHeader> gmt_export_header;
+		switch (export_type)
+		{
+		case PLATE_POLYGON_EXPORT_TYPE:
+			gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(feature_ref));
+			break;
+		case SLAB_POLYGON_EXPORT_TYPE:
+			gmt_export_header.reset(new SlabPolygonStyleHeader(feature_ref));
+			break;
+		default:
+			// Shouldn't get here.
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			continue;
+		}
 
-		// Print the header lines.
-		gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
-
-		// Write the resolved topological boundary.
-		geom_exporter.export_geometry(resolved_geom->resolved_topology_geometry()); 
+		// Write out the resolved topological boundary.
+		geom_exporter.print_gmt_header_and_geometry(
+				*gmt_export_header,
+				resolved_geom->resolved_topology_geometry());
 	}
 }
 
@@ -954,6 +958,7 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 void
 GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 		const sub_segment_group_seq_type &sub_segments,
+		ResolvedTopologicalBoundaryExportImpl::SubSegmentExportType export_type,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -967,11 +972,6 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 			file_info.filePath());
 	}
 
-	QTextStream output_stream(&output_file);
-
-	// Does the actual printing of GMT header to the output stream.
-	GMTHeaderPrinter gmt_header_printer;
-
 	// NOTE: For this particular format we *don't* write out the global header
 	// (at the top of the exported file).
 	// This is because this format is specifically used as input to CitcomS which expects
@@ -981,14 +981,8 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 	// (which will later be handled by the OGR library - just like Shapefiles).
 	//
 
-	// Used to write the reconstructed geometry in GMT format.
-	GMTFormatGeometryExporter geom_exporter(output_stream);
-
-	// Even though we're printing out reconstructed geometry rather than
-	// present day geometry we still write out the verbose properties
-	// of the feature (including the properties used to reconstruct
-	// the geometries).
-	GMTFormatVerboseHeader gmt_header;
+	// Used to write in GMT format.
+	GMTFeatureExporter geom_exporter(output_file);
 
 	// Iterate through the subsegment groups and write them out.
 	sub_segment_group_seq_type::const_iterator sub_segment_group_iter;
@@ -998,7 +992,6 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 	{
 		const SubSegmentGroup &sub_segment_group = *sub_segment_group_iter;
 
-#if 0
 		// The topological plate polygon feature.
 		const GPlatesModel::FeatureHandle::weak_ref resolved_geom_feature_ref =
 				sub_segment_group.resolved_topological_boundary->get_feature_ref();
@@ -1006,7 +999,6 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 		{
 			continue;
 		}
-#endif
 
 		// Iterate through the subsegment geometries of the current resolved topological boundary.
 		sub_segment_seq_type::const_iterator sub_segment_iter;
@@ -1024,15 +1016,41 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 				continue;
 			}
 
-			// Get the header lines.
-			std::vector<QString> header_lines;
-			gmt_header.get_feature_header_lines(subsegment_feature_ref, header_lines);
+			// Choose the style of GMT header based on the type of subsegment type.
+			boost::scoped_ptr<GMTExportHeader> gmt_export_header;
+			switch (export_type)
+			{
+			case ALL_SUB_SEGMENTS_EXPORT_TYPE:
+				// The file with all subsegments (regardless of type) uses a different
+				// header format than the files with specific types of subsegments.
+				gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(subsegment_feature_ref));
+				break;
+			case PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE:
+				gmt_export_header.reset(
+						new PlatePolygonSubSegmentHeader(
+								subsegment_feature_ref,
+								resolved_geom_feature_ref,
+								*sub_segment,
+								get_sub_segment_type(*sub_segment, reconstruction_time)));
+				break;
+			case SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE:
+				gmt_export_header.reset(
+						new SlabPolygonSubSegmentHeader(
+								subsegment_feature_ref,
+								resolved_geom_feature_ref,
+								*sub_segment,
+								get_sub_segment_type(*sub_segment, reconstruction_time)));
+				break;
+			default:
+				// Shouldn't get here.
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				continue;
+			}
 
-			// Print the header lines.
-			gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
-
-			// Write the subsegment geometry.
-			geom_exporter.export_geometry(sub_segment->get_geometry()); 
+			// Write out the subsegment.
+			geom_exporter.print_gmt_header_and_geometry(
+					*gmt_export_header,
+					sub_segment->get_geometry());
 		}
 	}
 }

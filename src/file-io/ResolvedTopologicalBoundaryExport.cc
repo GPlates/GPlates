@@ -461,6 +461,7 @@ namespace GPlatesFileIO
 			export_resolved_topological_boundaries_file(
 					const QString &filename,
 					Format export_format,
+					ResolvedTopologicalBoundaryExportType export_type,
 					const resolved_geom_seq_type &resolved_geoms,
 					const std::vector<const File::Reference *> &referenced_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -476,6 +477,7 @@ namespace GPlatesFileIO
 				case GMT:
 					GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
 						resolved_geoms,
+						export_type,
 						filename,
 						referenced_files,
 						reconstruction_anchor_plate_id,
@@ -506,6 +508,7 @@ namespace GPlatesFileIO
 			export_sub_segments_file(
 					const QString &filename,
 					Format export_format,
+					SubSegmentExportType export_type,
 					const sub_segment_group_seq_type &sub_segment_groups,
 					const std::vector<const File::Reference *> &referenced_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -527,6 +530,7 @@ namespace GPlatesFileIO
 				case GMT:
 					GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 						sub_segment_groups,
+						export_type,
 						filename,
 						referenced_files,
 						reconstruction_anchor_plate_id,
@@ -555,6 +559,7 @@ namespace GPlatesFileIO
 					const QString &file_basename,
 					const QString &placeholder_format_string,
 					Format export_format,
+					ResolvedTopologicalBoundaryExportType export_type,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					const boost::optional<QString> &placeholder,
@@ -580,6 +585,7 @@ namespace GPlatesFileIO
 					export_resolved_topological_boundaries_file(
 							filename,
 							export_format,
+							export_type,
 							resolved_geoms,
 							referenced_files,
 							reconstruction_anchor_plate_id,
@@ -594,6 +600,7 @@ namespace GPlatesFileIO
 					const QString &file_basename,
 					const QString &placeholder_format_string,
 					Format export_format,
+					SubSegmentExportType export_type,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					const boost::optional<QString> &placeholder,
@@ -619,6 +626,7 @@ namespace GPlatesFileIO
 					export_sub_segments_file(
 							filename,
 							export_format,
+							export_type,
 							sub_segment_groups,
 							referenced_files,
 							reconstruction_anchor_plate_id,
@@ -628,7 +636,7 @@ namespace GPlatesFileIO
 
 
 			void
-			export_resolved_topological_boundaries(
+			output_exports(
 					const QDir &target_dir,
 					const QString &file_basename,
 					const QString &placeholder_format_string,
@@ -645,6 +653,22 @@ namespace GPlatesFileIO
 
 
 				//
+				// All subsegments.
+				//
+
+				if_export_sub_segments(
+						target_dir,
+						file_basename,
+						placeholder_format_string,
+						export_format,
+						ALL_SUB_SEGMENTS_EXPORT_TYPE,
+						reconstruction_anchor_plate_id,
+						reconstruction_time,
+						output_options.placeholder_lines,
+						output.lines,
+						feature_to_collection_map);
+
+				//
 				// Plate polygons.
 				//
 
@@ -653,28 +677,56 @@ namespace GPlatesFileIO
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						PLATE_POLYGON_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_platepolygons,
 						output.platepolygons,
 						feature_to_collection_map);
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_lines,
-						output.lines,
-						feature_to_collection_map);
+				// If we're also exporting each plate polygon to its own file.
+				if (output_options.export_individual_plate_polygon_files)
+				{
+					// Iterate over the plate polygons and export each separately.
+					BOOST_FOREACH(
+							const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_geom,
+							output.platepolygons)
+					{
+						// We're expecting a plate id as that forms part of the filename.
+						if (!resolved_geom->plate_id())
+						{
+							continue;
+						}
+						const QString place_holder_replacement =
+								QString::number(*resolved_geom->plate_id());
+
+						// We're exporting a sequence of one resolved geometry to its own file.
+						resolved_geom_seq_type resolved_geoms(1, resolved_geom);
+
+						if_export_resolved_topological_boundaries(
+								target_dir,
+								file_basename,
+								placeholder_format_string,
+								export_format,
+								PLATE_POLYGON_EXPORT_TYPE,
+								reconstruction_anchor_plate_id,
+								reconstruction_time,
+								place_holder_replacement,
+								resolved_geoms,
+								feature_to_collection_map);
+					}
+				}
+
+				//
+				// Plate polygon subsegments.
+				//
 
 				if_export_sub_segments(
 						target_dir,
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_ridge_transforms,
@@ -686,6 +738,7 @@ namespace GPlatesFileIO
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_subductions,
@@ -697,6 +750,7 @@ namespace GPlatesFileIO
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_left_subductions,
@@ -708,6 +762,7 @@ namespace GPlatesFileIO
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_right_subductions,
@@ -723,17 +778,57 @@ namespace GPlatesFileIO
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						SLAB_POLYGON_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_slab_polygons,
 						output.slab_polygons,
 						feature_to_collection_map);
 
+				// If we're also exporting each slab polygon to its own file.
+				if (output_options.export_individual_slab_polygon_files)
+				{
+					// Iterate over the slab polygons and export each separately.
+					BOOST_FOREACH(
+							const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_geom,
+							output.slab_polygons)
+					{
+						// We're expecting a plate id as that forms part of the filename.
+						if (!resolved_geom->plate_id())
+						{
+							continue;
+						}
+						QString place_holder_replacement = "slab_";
+						const QString plate_id_string = QString::number(*resolved_geom->plate_id());
+						place_holder_replacement.append(plate_id_string);
+
+						// We're exporting a sequence of one resolved geometry to its own file.
+						resolved_geom_seq_type resolved_geoms(1, resolved_geom);
+
+						if_export_resolved_topological_boundaries(
+								target_dir,
+								file_basename,
+								placeholder_format_string,
+								export_format,
+								SLAB_POLYGON_EXPORT_TYPE,
+								reconstruction_anchor_plate_id,
+								reconstruction_time,
+								place_holder_replacement,
+								resolved_geoms,
+								feature_to_collection_map);
+					}
+				}
+
+				//
+				// Slab polygon subsegments.
+				//
+
 				if_export_sub_segments(
 						target_dir,
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_slab_edge_leading,
@@ -745,6 +840,7 @@ namespace GPlatesFileIO
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_slab_edge_leading_left,
@@ -756,6 +852,7 @@ namespace GPlatesFileIO
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_slab_edge_leading_right,
@@ -767,6 +864,7 @@ namespace GPlatesFileIO
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_slab_edge_trench,
@@ -778,6 +876,7 @@ namespace GPlatesFileIO
 						file_basename,
 						placeholder_format_string,
 						export_format,
+						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						output_options.placeholder_slab_edge_side,
@@ -837,7 +936,7 @@ GPlatesFileIO::ResolvedTopologicalBoundaryExport::export_resolved_topological_bo
 			output_options,
 			output);
 
-	export_resolved_topological_boundaries(
+	output_exports(
 			target_dir,
 			file_basename,
 			placeholder_format_string,

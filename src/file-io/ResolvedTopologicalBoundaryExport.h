@@ -82,6 +82,8 @@ namespace GPlatesFileIO
 		struct OutputOptions
 		{
 			OutputOptions() :
+					export_individual_plate_polygon_files(false),
+					export_individual_slab_polygon_files(false),
 					export_plate_polygon_subsegments_to_lines(false),
 					export_slab_polygon_subsegments_to_lines(false)
 			{  }
@@ -110,6 +112,12 @@ namespace GPlatesFileIO
 			boost::optional<QString> placeholder_slab_edge_leading_right;
 			boost::optional<QString> placeholder_slab_edge_trench;
 			boost::optional<QString> placeholder_slab_edge_side;
+
+			// If true then also export each plate polygon to its own file.
+			bool export_individual_plate_polygon_files;
+
+			// If true then also export each slab polygon to its own file.
+			bool export_individual_slab_polygon_files;
 
 			// If true then plate polygon subsegments also exported to 'lines' file.
 			bool export_plate_polygon_subsegments_to_lines;

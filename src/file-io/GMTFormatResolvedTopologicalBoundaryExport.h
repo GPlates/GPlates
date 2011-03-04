@@ -66,6 +66,7 @@ namespace GPlatesFileIO
 		void
 		export_resolved_topological_boundaries(
 				const resolved_geom_seq_type &resolved_topological_boundaries,
+				ResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -78,6 +79,7 @@ namespace GPlatesFileIO
 		void
 		export_sub_segments(
 				const sub_segment_group_seq_type &sub_segments,
+				ResolvedTopologicalBoundaryExportImpl::SubSegmentExportType export_type,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
