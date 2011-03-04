@@ -60,7 +60,14 @@ GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
 				GPlatesUtils::ExportFileNameTemplateValidator >(
 						new ExportResolvedTopologyFileNameTemplateValidator());
 	}
-	
+
+	if(id == GPlatesUtils::RESOLVED_TOPOLOGIES_SHAPEFILE)
+	{
+		return boost::shared_ptr<
+				GPlatesUtils::ExportFileNameTemplateValidator >(
+						new ExportResolvedTopologyFileNameTemplateValidator());
+	}
+
 	if( id == GPlatesUtils::RELATIVE_ROTATION_CSV_COMMA ||
 		id == GPlatesUtils::RELATIVE_ROTATION_CSV_SEMICOLON ||
 		id == GPlatesUtils::RELATIVE_ROTATION_CSV_TAB ||

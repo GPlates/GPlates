@@ -193,7 +193,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_desc_map()
 	d_desc_map[MESH_VELOCITIES] =
 		GPlatesGui::ExportVelocityAnimationStrategy::MESH_VELOCITIES_DESC;
 	d_desc_map[RESOLVED_TOPOLOGIES] = 
-		GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLOVED_TOPOLOGIES_DESC;
+		GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLVED_TOPOLOGIES_DESC;
 	d_desc_map[RELATIVE_ROTATION] = 
 		GPlatesGui::ExportRotationAnimationStrategy::RELATIVE_ROTATION_DESC;
 	d_desc_map[EQUIVALENT_ROTATION] = 
@@ -249,6 +249,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_map()
 	REGISTER_EXPORT_ITEM(MESH_VELOCITIES,GPML);
 	//RESOLVED_TOPOLOGIES_GMT
 	REGISTER_EXPORT_ITEM(RESOLVED_TOPOLOGIES,GMT);
+	//RESOLVED_TOPOLOGIES_SHAPEFILE
+	REGISTER_EXPORT_ITEM(RESOLVED_TOPOLOGIES,SHAPEFILE);
 	//RELATIVE_ROTATION_CSV_COMMA
 	REGISTER_EXPORT_ITEM(RELATIVE_ROTATION,CSV_COMMA);
 	//RELATIVE_ROTATION_CSV_SEMICOLON

@@ -33,7 +33,7 @@
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
-#include "file-io/ReconstructionGeometryExport.h"
+#include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionReaderWriter.h"
 #include "file-io/FileInfo.h"
@@ -227,8 +227,10 @@ GPlatesCli::ReconstructCommand::run(
 					export_file_type);
 
 	// Export the reconstructed feature geometries.
-	GPlatesFileIO::ReconstructionGeometryExport::export_reconstruction_geometries(
+	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 				export_filename.get_qfileinfo().filePath(),
+				GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
+						export_filename.get_qfileinfo().filePath()),
 				reconstruct_feature_geom_seq,
 				reconstructable_file_ptrs,
 				d_anchor_plate_id,

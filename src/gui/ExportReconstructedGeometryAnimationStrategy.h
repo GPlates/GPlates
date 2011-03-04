@@ -139,6 +139,7 @@ namespace GPlatesGui
 		 */
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type
 				d_loaded_files;
+
 		FileFormat d_file_format;
 
 		ExportReconstructedGeometryAnimationStrategy();

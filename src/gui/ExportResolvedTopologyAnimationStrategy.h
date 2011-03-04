@@ -36,6 +36,8 @@
 
 #include "gui/ExportAnimationStrategy.h"
 
+#include "file-io/File.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 
@@ -70,9 +72,10 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
-		static const QString DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE;
-		static const QString RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC;
-		static const QString RESOLOVED_TOPOLOGIES_DESC;
+		static const QString DEFAULT_RESOLVED_TOPOLOGIES_GMT_FILENAME_TEMPLATE;
+		static const QString DEFAULT_RESOLVED_TOPOLOGIES_SHP_FILENAME_TEMPLATE;
+		static const QString RESOLVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC;
+		static const QString RESOLVED_TOPOLOGIES_DESC;
 
 		enum FileFormat
 		{
@@ -87,7 +90,7 @@ namespace GPlatesGui
 				FileFormat format = GMT,
 				const ExportAnimationStrategy::Configuration &cfg=
 					ExportAnimationStrategy::Configuration(
-							DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE));
+							DEFAULT_RESOLVED_TOPOLOGIES_GMT_FILENAME_TEMPLATE));
 
 
 		virtual
@@ -121,7 +124,7 @@ namespace GPlatesGui
 		const QString&
 		get_filename_template_desc()
 		{
-			return RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC;
+			return RESOLVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC;
 		}
 
 
@@ -129,7 +132,7 @@ namespace GPlatesGui
 		const QString&
 				get_description()
 		{
-			return RESOLOVED_TOPOLOGIES_DESC;
+			return RESOLVED_TOPOLOGIES_DESC;
 		}
 
 
@@ -191,8 +194,15 @@ namespace GPlatesGui
 		//! Typedef for a sequence of resolved topological geometries.
 		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_geom_seq_type;
 
+
+		/**
+		 * The list of currently loaded files.
+		 */
+		std::vector<const GPlatesFileIO::File::Reference *> d_loaded_files;
+
 		//! The format of export file.
 		FileFormat d_file_format;
+
 
 		/**
 		 * Export to the various files.

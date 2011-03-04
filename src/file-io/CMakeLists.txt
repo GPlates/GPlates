@@ -54,6 +54,8 @@ set(srcs
     GMTFormatMotionPathExport.h
     GMTFormatReconstructedFeatureGeometryExport.cc
     GMTFormatReconstructedFeatureGeometryExport.h
+    GMTFormatResolvedTopologicalBoundaryExport.cc
+    GMTFormatResolvedTopologicalBoundaryExport.h
     GMTFormatWriter.cc
     GMTFormatWriter.h
     GpmlOnePointFiveOutputVisitor.cc
@@ -108,6 +110,10 @@ set(srcs
     ReconstructedMotionPathExport.h
     ReconstructionGeometryExportImpl.cc
     ReconstructionGeometryExportImpl.h
+    ResolvedTopologicalBoundaryExport.cc
+    ResolvedTopologicalBoundaryExport.h
+    ResolvedTopologicalBoundaryExportImpl.cc
+    ResolvedTopologicalBoundaryExportImpl.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
     ShapefileFormatFlowlineExport.cc
@@ -116,6 +122,8 @@ set(srcs
     ShapefileFormatMotionPathExport.h
     ShapefileFormatReconstructedFeatureGeometryExport.cc
     ShapefileFormatReconstructedFeatureGeometryExport.h
+    ShapefileFormatResolvedTopologicalBoundaryExport.cc
+    ShapefileFormatResolvedTopologicalBoundaryExport.h
     ShapefileGeometryExporter.cc
     ShapefileGeometryExporter.h
     ShapefileReader.cc
