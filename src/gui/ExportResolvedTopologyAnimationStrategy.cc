@@ -388,8 +388,10 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::
 	RESOLVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC
 		=FORMAT_CODE_DESC;
 
-const QString GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLVED_TOPOLOGIES_DESC 
-		="Export resolved topologies.";
+const QString GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLVED_TOPOLOGIES_DESC  =
+		"Export resolved topologies:\n"
+		"- exports resolved topological closed plate polygons,\n"
+		"- optionally exports the subsegment geometries of polygon boundaries.\n";
 
 //
 // Plate Polygon related data 
@@ -590,6 +592,13 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 	output_options.placeholder_slab_edge_leading_right = s_placeholder_slab_edge_leading_right;
 	output_options.placeholder_slab_edge_trench = s_placeholder_slab_edge_trench;
 	output_options.placeholder_slab_edge_side = s_placeholder_slab_edge_side;
+
+	// For time being only also export subsegments of plate polygons to 'lines' file.
+	// Not also exporting subsegments of slab polygons to 'lines' file.
+	//
+	// TODO: Remove when this can be set by user via the GUI.
+	output_options.export_plate_polygon_subsegments_to_lines = true;
+	output_options.export_slab_polygon_subsegments_to_lines = false;
 
 	GPlatesFileIO::ResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
 			target_dir,

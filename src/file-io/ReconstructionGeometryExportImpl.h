@@ -102,8 +102,31 @@ namespace GPlatesFileIO
 
 
 		/**
+		 * Populates mapping of feature handle to feature collection file.
+		 */
+		void
+		populate_feature_handle_to_collection_map(
+				feature_handle_to_collection_map_type &feature_handle_to_collection_map,
+				const std::vector<const File::Reference *> &reconstructable_files);
+
+
+		/**
+		 * Returns a unique list of files that reference the visible ReconstructionGeometry objects.
+		 * Result is stored in @a referenced_files.
+		 */
+		template <class ReconstructionGeometryType>
+		void
+		get_unique_list_of_referenced_files(
+				referenced_files_collection_type &referenced_files,
+				const std::vector<const ReconstructionGeometryType *> &reconstruction_geometry_seq,
+				const feature_handle_to_collection_map_type &feature_handle_to_collection_map);
+
+
+		/**
 		 * Returns a list of files that reference the @a ReconstructionGeometry derived objects.
 		 * Result is stored in @a referenced_files.
+		 *
+		 * Also populates @a feature_to_collection_map.
 		 */
 		template <class ReconstructionGeometryType>
 		void
@@ -111,7 +134,18 @@ namespace GPlatesFileIO
 				referenced_files_collection_type &referenced_files,
 				const std::vector<const ReconstructionGeometryType *> &reconstruction_geometry_seq,
 				const std::vector<const File::Reference *> &reconstructable_files,
-				feature_handle_to_collection_map_type &feature_to_collection_map);
+				feature_handle_to_collection_map_type &feature_handle_to_collection_map)
+		{
+
+			populate_feature_handle_to_collection_map(
+					feature_handle_to_collection_map,
+					reconstructable_files);
+
+			get_unique_list_of_referenced_files(
+					referenced_files,
+					reconstruction_geometry_seq,
+					feature_handle_to_collection_map);
+		}
 
 
 		/**
@@ -227,15 +261,6 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Populates mapping of feature handle to feature collection file.
-		 */
-		void
-		populate_feature_handle_to_collection_map(
-				feature_handle_to_collection_map_type &feature_handle_to_collection_map,
-				const std::vector<const File::Reference *> &reconstructable_files);
-
-
-		/**
 		 * Returns a unique list of files that reference the visible ReconstructionGeometry objects.
 		 * Result is stored in @a referenced_files.
 		 */
@@ -243,7 +268,7 @@ namespace GPlatesFileIO
 		void
 		get_unique_list_of_referenced_files(
 				referenced_files_collection_type &referenced_files,
-				const std::vector<const ReconstructionGeometryType *> & reconstruction_geometry_seq,
+				const std::vector<const ReconstructionGeometryType *> &reconstruction_geometry_seq,
 				const feature_handle_to_collection_map_type &feature_handle_to_collection_map)
 		{
 			// Iterate through the list of ReconstructionGeometry objects and build up a unique list of
@@ -281,26 +306,6 @@ namespace GPlatesFileIO
 			referenced_files.erase(
 					std::unique(referenced_files.begin(), referenced_files.end()),
 					referenced_files.end());
-		}
-
-
-		template <class ReconstructionGeometryType>
-		void
-		get_files_referenced_by_geometries(
-				referenced_files_collection_type &referenced_files,
-				const std::vector<const ReconstructionGeometryType *> &reconstruction_geometry_seq,
-				const std::vector<const File::Reference *> &reconstructable_files,
-				feature_handle_to_collection_map_type &feature_handle_to_collection_map)
-		{
-
-			populate_feature_handle_to_collection_map(
-					feature_handle_to_collection_map,
-					reconstructable_files);
-
-			get_unique_list_of_referenced_files(
-					referenced_files,
-					reconstruction_geometry_seq,
-					feature_handle_to_collection_map);
 		}
 
 

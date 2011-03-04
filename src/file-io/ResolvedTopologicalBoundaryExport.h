@@ -81,34 +81,49 @@ namespace GPlatesFileIO
 		 */
 		struct OutputOptions
 		{
+			OutputOptions() :
+					export_plate_polygon_subsegments_to_lines(false),
+					export_slab_polygon_subsegments_to_lines(false)
+			{  }
+
+			// Plate polygons.
 			boost::optional<QString> placeholder_platepolygons;
+
+			// Slab polygons.
+			boost::optional<QString> placeholder_slab_polygons;
+
+			// All subsegments go here.
+			//
+			// Depending on @a export_plate_polygon_subsegments_to_lines and
+			// @a export_slab_polygon_subsegments_to_lines.
 			boost::optional<QString> placeholder_lines;
+
+			// Subsegments for plate polygons.
 			boost::optional<QString> placeholder_ridge_transforms;
 			boost::optional<QString> placeholder_subductions;
 			boost::optional<QString> placeholder_left_subductions;
 			boost::optional<QString> placeholder_right_subductions;
 
-			boost::optional<QString> placeholder_slab_polygons;
+			// Subsegments for slab polygons.
 			boost::optional<QString> placeholder_slab_edge_leading;
 			boost::optional<QString> placeholder_slab_edge_leading_left;
 			boost::optional<QString> placeholder_slab_edge_leading_right;
 			boost::optional<QString> placeholder_slab_edge_trench;
 			boost::optional<QString> placeholder_slab_edge_side;
+
+			// If true then plate polygon subsegments also exported to 'lines' file.
+			bool export_plate_polygon_subsegments_to_lines;
+
+			// If true then slab polygon subsegments also exported to 'lines' file.
+			bool export_slab_polygon_subsegments_to_lines;
 		};
 
 
 		/**
-		 * Exports @a ResolvedTopologicalBoundary objects.
+		 * Exports @a ResolvedTopologicalBoundary objects and associated subsegments as specified
+		 * by the options in @a output_options.
 		 *
 		 * @param export_format specifies which format to write.
-		 * @param export_single_output_file specifies whether to write all reconstruction geometries
-		 *        to a single file.
-		 * @param export_per_input_file specifies whether to group
-		 *        reconstruction geometries according to the input files their features came from
-		 *        and write to corresponding output files.
-		 *
-		 * Note that both @a export_single_output_file and @a export_per_input_file can be true
-		 * in which case both a single output file is exported as well as grouped output files.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 * @throws FileFormatNotSupportedException if file format not supported.
@@ -121,7 +136,7 @@ namespace GPlatesFileIO
 				const OutputOptions &output_options,
 				Format export_format,
 				const std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> &resolved_topological_boundary_seq,
-				const std::vector<const File::Reference *> &active_files,
+				const std::vector<const File::Reference *> &loaded_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 	}
