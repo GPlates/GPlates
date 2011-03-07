@@ -274,7 +274,28 @@ IF (APPLE)
 	#   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate,
 	#   not including the extension. For example, cmake-2.6.1-Linux-i686.
 	#
-	SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPLATES_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+	SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "${GPLATES_PACKAGE_VERSION}")
+	# Add the Subversion version number to the package filename if this is a non-public release.
+	# A non-public release has an empty 'GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING' variable in 'ConfigDefault.cmake'.
+	IF (NOT "${GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING}")
+		# Get the location, inside the staging area location, to copy the application bundle to.
+		EXECUTE_PROCESS(
+				COMMAND svnversion ${CMAKE_SOURCE_DIR}
+				RESULT_VARIABLE SVN_VERSION_RESULT
+				OUTPUT_VARIABLE SVN_VERSION_OUTPUT
+				OUTPUT_STRIP_TRAILING_WHITESPACE
+			   )
+
+		IF (SVN_VERSION_RESULT)
+			MESSAGE(STATUS "Unable to determine svn version number for non-public release - ignoring.")
+		ELSE (SVN_VERSION_RESULT)
+			SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "${GPLATES_PACKAGE_VERSION}_r${SVN_VERSION_OUTPUT}")
+		ENDIF (SVN_VERSION_RESULT)
+	ENDIF (NOT "${GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING}")
+
+	# Finally set the actual package filename.
+	SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+	MESSAGE(STATUS "Package name: ${CPACK_PACKAGE_FILE_NAME}")
 
 	#   CPACK_GENERATOR - List of CPack generators to use. If not
 	#   specified, CPack will create a set of options (e.g.,
