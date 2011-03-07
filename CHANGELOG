@@ -1,3 +1,23 @@
+GPlates 1.0.1
+=============
+
+Changes since 1.0:
+
+ * Fixed MotionPath loops (the last vertex of the the motion track joining up in a straight line to the first vertex).
+ * Fixed Assign Plate Ids dialog not working with topological plate polygons.
+ * Fixed incorrect plate ID assignment for features that initially had no plate IDs.
+ * Fixed previous frame exported when exporting rasters.
+ * Fixed upside down non-GMT netCDF rasters when using newer versions of GDAL.
+ * Fixed incorrect alpha blending of semi-transparent rasters when reconstructing with static polygons.
+ * Fixed raster colour tinge on certain older hardware (most likely hardware that falls back to software rendering).
+ * Fixed crash in layers dialog when the user drags a layer and drops it on the very bottom pixel of the last layer.
+ * Fixed only half the globe's circumference being drawn when exporting to SVG.
+ * Inverted the colours used by the default raster colour palette.
+ * Fixed refresh problem in visual layers when a file is unloaded.
+ * Fixed visual layers widget sizing glitch.
+ * Fixed crash due incorrect synchronisation of multiple threads.
+ * Allow Bathymetry features to have unclassifiedGeometry.
+
 GPlates 1.0
 ===========
 
