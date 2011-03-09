@@ -20,17 +20,6 @@ set(srcs
     CopyConst.h
     DeferredCallEvent.cc
     DeferredCallEvent.h
-    ExportAnimationStrategyExporterID.h
-    ExportAnimationStrategyFactory.cc
-    ExportAnimationStrategyFactory.h
-    ExportFileNameTemplateValidator.cc
-    ExportFileNameTemplateValidator.h
-    ExportTemplateFilenameSequence.cc
-    ExportTemplateFilenameSequence.h
-    ExportTemplateFilenameSequenceFormats.cc
-    ExportTemplateFilenameSequenceFormats.h
-    ExportTemplateFilenameSequenceImpl.cc
-    ExportTemplateFilenameSequenceImpl.h
     Filter.h
     FilterMapOutputHandler.h
     FilterMapReduceWorkFlow.h

@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCEIMPL_H
-#define GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCEIMPL_H
+#ifndef GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCEIMPL_H
+#define GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCEIMPL_H
 
 #include <cstddef>
 #include <utility>
@@ -41,7 +41,7 @@
 #include "utils/AnimationSequenceUtils.h"
 
 
-namespace GPlatesUtils
+namespace GPlatesFileIO
 {
 	namespace ExportTemplateFilename
 	{
@@ -166,7 +166,7 @@ namespace GPlatesUtils
 			typedef std::pair<format_ptr_type, QString> create_format_info_type;
 
 			//! Typedef for a matched format string and the variation of the format that matched it.
-			typedef std::pair<QString, GPlatesUtils::ExportTemplateFilename::Format::Variation>
+			typedef std::pair<QString, GPlatesFileIO::ExportTemplateFilename::Format::Variation>
 					validate_format_info_type;
 
 			//! Utility to help transfer a type with boost::mpl::for_each.
@@ -300,4 +300,4 @@ namespace GPlatesUtils
 	};
 }
 
-#endif // GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCEIMPL_H
+#endif // GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCEIMPL_H

@@ -31,13 +31,11 @@
 
 #include <QString>
 
+#include "ExportAnimationStrategy.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
-
-#include "utils/ExportTemplateFilenameSequence.h"
-
-#include "gui/ExportAnimationStrategy.h"
 
 namespace GPlatesGui
 {
@@ -56,27 +54,47 @@ namespace GPlatesGui
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportSvgAnimationStrategy,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportSvgAnimationStrategy>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportSvgAnimationStrategy,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportSvgAnimationStrategy> non_null_ptr_type;
 
-		static const QString 
-			DEFAULT_PROJECTED_GEOMETRIES_FILENAME_TEMPLATE;
-		static const QString 
-			PROJECTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
-		static const QString
-			PROJECTED_GEOMETRIES_DESC;
+
+		/**
+		 * Configuration options..
+		 */
+		class Configuration :
+				public ExportAnimationStrategy::ConfigurationBase
+		{
+		public:
+			explicit
+			Configuration(
+					const QString& filename_template_) :
+				ConfigurationBase(filename_template_)
+			{  }
+
+			virtual
+			configuration_base_ptr
+			clone() const
+			{
+				return configuration_base_ptr(new Configuration(*this));
+			}
+		};
+
+		//! Typedef for a shared pointer to const @a Configuration.
+		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
 
 
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const ExportAnimationStrategy::Configuration& cfg=
-					ExportAnimationStrategy::Configuration(
-							DEFAULT_PROJECTED_GEOMETRIES_FILENAME_TEMPLATE));
+				ExportAnimationContext &export_animation_context,
+				const const_configuration_ptr &export_configuration)
+		{
+			return non_null_ptr_type(
+					new ExportSvgAnimationStrategy(
+							export_animation_context, export_configuration));
+		}
+
 
 		virtual
 		~ExportSvgAnimationStrategy()
@@ -91,21 +109,6 @@ namespace GPlatesGui
 		do_export_iteration(
 				std::size_t frame_index);
 
-		virtual
-		const QString&
-				get_default_filename_template();
-
-		virtual
-		const QString&
-		get_filename_template_desc();
-
-		virtual
-		const QString&
-				get_description()
-		{
-			return PROJECTED_GEOMETRIES_DESC;
-		}
-
 	protected:
 		/**
 		 * Protected constructor to prevent instantiation on the stack.
@@ -114,10 +117,11 @@ namespace GPlatesGui
 		explicit
 		ExportSvgAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const QString &filename_template);
+				const const_configuration_ptr &cfg);
 		
 	private:
-		ExportSvgAnimationStrategy();
+		//! Export configuration parameters.
+		const_configuration_ptr d_configuration;
 	};
 }
 

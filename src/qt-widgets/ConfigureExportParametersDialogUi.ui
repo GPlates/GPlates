@@ -74,11 +74,21 @@
           </sizepolicy>
          </property>
          <property name="title" >
-          <string>2. Choose Output File Format</string>
+          <string>2. Choose Output File Format and Export Options</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2" >
           <item>
            <widget class="QListWidget" name="listWidget_format" >
+            <property name="sizePolicy" >
+             <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="widget_export_options" >
             <property name="sizePolicy" >
              <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
               <horstretch>0</horstretch>

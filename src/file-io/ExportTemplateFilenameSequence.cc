@@ -30,19 +30,20 @@
 #include "ExportTemplateFilenameSequence.h"
 
 #include "ExportTemplateFilenameSequenceImpl.h"
+
 #include "global/UninitialisedIteratorException.h"
 #include "utils/AnimationSequenceUtils.h"
 
 
 void
-GPlatesUtils::ExportTemplateFilename::validate_filename_template(
+GPlatesFileIO::ExportTemplateFilename::validate_filename_template(
 		const QString &filename_template)
 {
 	ExportTemplateFilenameSequenceImpl::validate_filename_template(filename_template);
 }
 
 
-GPlatesUtils::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
+GPlatesFileIO::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
 		const QString &filename_template,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const GPlatesMaths::real_t &begin_reconstruction_time,
@@ -90,22 +91,22 @@ GPlatesUtils::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
 
 
 std::size_t
-GPlatesUtils::ExportTemplateFilenameSequence::size() const
+GPlatesFileIO::ExportTemplateFilenameSequence::size() const
 {
 	return d_impl->size();
 }
 
 
-GPlatesUtils::ExportTemplateFilenameSequence::const_iterator
-GPlatesUtils::ExportTemplateFilenameSequence::begin() const
+GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator
+GPlatesFileIO::ExportTemplateFilenameSequence::begin() const
 {
 	return ExportTemplateFilenameSequenceIterator(
 			d_impl.get(), 0/*sequence_index*/);
 }
 
 
-GPlatesUtils::ExportTemplateFilenameSequence::const_iterator
-GPlatesUtils::ExportTemplateFilenameSequence::end() const
+GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator
+GPlatesFileIO::ExportTemplateFilenameSequence::end() const
 {
 	return ExportTemplateFilenameSequenceIterator(
 			d_impl.get(), d_impl->size()/*sequence_index*/);
@@ -113,7 +114,7 @@ GPlatesUtils::ExportTemplateFilenameSequence::end() const
 
 
 const QString
-GPlatesUtils::ExportTemplateFilenameSequenceIterator::operator*() const
+GPlatesFileIO::ExportTemplateFilenameSequenceIterator::operator*() const
 {
 	if (d_sequence_impl == NULL)
 	{
@@ -135,7 +136,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceIterator::operator*() const
 
 
 void
-GPlatesUtils::ExportTemplateFilename::UnrecognisedFormatString::write_message(
+GPlatesFileIO::ExportTemplateFilename::UnrecognisedFormatString::write_message(
 		std::ostream &os) const
 {
 	os

@@ -31,9 +31,9 @@
 
 #include <QString>
 
+#include "ExportAnimationStrategy.h"
+
 #include "file-io/File.h"
-#include "gui/ExportAnimationStrategy.h"
-#include "utils/ExportTemplateFilenameSequence.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -62,41 +62,57 @@ namespace GPlatesGui
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportMotionPathsAnimationStrategy,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportMotionPathsAnimationStrategy>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportMotionPathAnimationStrategy,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-				
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportMotionPathAnimationStrategy> non_null_ptr_type;
+		
+
 		/**
-		 * For storing files referenced in the current reconstruction.                                                                      
-		 */		
-		typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;				
-
-		static const QString 
-			DEFAULT_MOTION_PATHS_GMT_FILENAME_TEMPLATE;
-		static const QString 
-			DEFAULT_MOTION_PATHS_SHP_FILENAME_TEMPLATE;
-		static const QString 
-			MOTION_PATHS_FILENAME_TEMPLATE_DESC;
-		static const QString
-			MOTION_PATHS_DESC;
-
-		enum FileFormat
+		 * Configuration options.
+		 */
+		class Configuration :
+				public ExportAnimationStrategy::ConfigurationBase
 		{
-			GMT,
-			SHAPEFILE
+		public:
+			enum FileFormat
+			{
+				GMT,
+				SHAPEFILE
+			};
+
+			explicit
+			Configuration(
+					const QString& filename_template_,
+					FileFormat file_format_) :
+				ConfigurationBase(filename_template_),
+				file_format(file_format_)
+			{  }
+
+			virtual
+			configuration_base_ptr
+			clone() const
+			{
+				return configuration_base_ptr(new Configuration(*this));
+			}
+
+			FileFormat file_format;
 		};
+
+		//! Typedef for a shared pointer to const @a Configuration.
+		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
 
 
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::ExportAnimationContext &export_animation_context,
-				FileFormat format = GMT,
-				const ExportAnimationStrategy::Configuration& cfg=
-					ExportAnimationStrategy::Configuration(
-						DEFAULT_MOTION_PATHS_GMT_FILENAME_TEMPLATE));
+				ExportAnimationContext &export_animation_context,
+				const const_configuration_ptr &export_configuration)
+		{
+			return non_null_ptr_type(
+					new ExportMotionPathAnimationStrategy(
+							export_animation_context,
+							export_configuration));
+		}
 
 
 		virtual
@@ -112,21 +128,6 @@ namespace GPlatesGui
 		bool
 		do_export_iteration(
 				std::size_t frame_index);
-
-		virtual
-		const QString&
-		get_default_filename_template();
-		
-		virtual
-		const QString&
-		get_filename_template_desc();
-
-		virtual
-		const QString&
-		get_description()
-		{
-			return MOTION_PATHS_DESC;
-		}
 
 
 		/**
@@ -156,17 +157,21 @@ namespace GPlatesGui
 		explicit
 		ExportMotionPathAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const QString &filename_template);
+				const const_configuration_ptr &export_configuration);
 		
 	private:
-		ExportMotionPathAnimationStrategy();
-		
+		/**
+		 * For storing files referenced in the current reconstruction.                                                                      
+		 */		
+		typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;				
+
 		/**
 		 * The reconstruction file(s) used to create this reconstruction.                                                                     
 		 */
 		files_collection_type d_loaded_files;		
 
-		FileFormat d_file_format;
+		//! Export configuration parameters.
+		const_configuration_ptr d_configuration;
 	};
 }
 

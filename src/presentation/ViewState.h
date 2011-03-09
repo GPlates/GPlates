@@ -72,6 +72,7 @@ namespace GPlatesGui
 	class ColourScheme;
 	class ColourSchemeContainer;
 	class ColourSchemeDelegator;
+	class ExportAnimationRegistry;
 	class GeometryFocusHighlight;
 	class FeatureFocus;
 	class GraticuleSettings;
@@ -274,6 +275,8 @@ namespace GPlatesPresentation
 		const GPlatesGui::TextOverlaySettings &
 		get_text_overlay_settings() const;
 
+		GPlatesGui::ExportAnimationRegistry &
+		get_export_animation_registry() const;
 
 	private slots:
 
@@ -385,6 +388,11 @@ namespace GPlatesPresentation
 		 * Settings related to the overlay of text on top the map and the globe.
 		 */
 		boost::scoped_ptr<GPlatesGui::TextOverlaySettings> d_text_overlay_settings;
+
+		/**
+		 * Stores information about the export animation types.
+		 */
+		boost::scoped_ptr<GPlatesGui::ExportAnimationRegistry> d_export_animation_registry;
 
 		/**
 		 * Replaces Python's time.sleep() with our own implementation.

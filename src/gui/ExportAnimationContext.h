@@ -33,13 +33,12 @@
 
 #include <boost/function.hpp>
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
-#include "utils/ReferenceCount.h"
-#include "utils/ExportAnimationStrategyExporterID.h"
+#include "ExportAnimationStrategy.h"
+#include "ExportAnimationType.h"
 
-#include "gui/ExportAnimationStrategy.h"
-#include "gui/ExportRotationAnimationStrategy.h"
+#include "utils/non_null_intrusive_ptr.h"
+#include "utils/ReferenceCount.h"
+
 
 namespace GPlatesPresentation
 {
@@ -55,6 +54,7 @@ namespace GPlatesQtWidgets
 namespace GPlatesGui
 {
 	class AnimationController;
+
 	/**
 	 * ExportAnimationContext manages the iteration steps and progress bar updates while
 	 * we are exporting an animation via the ExportAnimationDialog.
@@ -72,16 +72,10 @@ namespace GPlatesGui
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportAnimationContext,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportAnimationContext>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportAnimationContext,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportAnimationContext> non_null_ptr_type;
 
-		typedef std::map<
-				GPlatesUtils::Exporter_ID, 
-				ExportAnimationStrategy::non_null_ptr_type> 
-			ExportersMapType;
 
 		explicit
 		ExportAnimationContext(
@@ -123,9 +117,9 @@ namespace GPlatesGui
 		}
 		
 		void
-		add_exporter(
-				GPlatesUtils::Exporter_ID,
-				const ExportAnimationStrategy::Configuration& cfg);
+		add_export_animation_strategy(
+				ExportAnimationType::ExportID,
+				const ExportAnimationStrategy::const_configuration_base_ptr &cfg);
 
 
 		const GPlatesGui::AnimationController &
@@ -176,10 +170,17 @@ namespace GPlatesGui
 		};
 
 	private:
+		//! Typedef to map export ID to an @a ExportAnimationStrategy.
+		typedef std::map<
+				ExportAnimationType::ExportID, 
+				ExportAnimationStrategy::non_null_ptr_type> 
+			exporter_map_type;
+
+
 		void
 		cleanup_exporters_map()
 		{
-			d_exporters_map.clear();
+			d_exporter_map.clear();
 		}
 
 		/**
@@ -230,17 +231,11 @@ namespace GPlatesGui
 		 */
 		QDir d_target_dir;
 
-		/*
-		* a std::map to manage exporters
-		*/
-		ExportersMapType d_exporters_map;
-		std::map<QString, boost::function<
-				void (const ExportAnimationStrategy::Configuration&)> > 
-			d_class_id_map;
+		/**
+		 * A map of export ID to exporters.
+		 */
+		exporter_map_type d_exporter_map;
 	};
 }
 
-#endif
-// GPLATES_GUI_EXPORTANIMATIONCONTEXT
-
-
+#endif // GPLATES_GUI_EXPORTANIMATIONCONTEXT

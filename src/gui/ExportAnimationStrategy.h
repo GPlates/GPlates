@@ -28,22 +28,16 @@
 
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <QString>
+
+#include "file-io/ExportTemplateFilenameSequence.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
 
-#include "utils/ExportTemplateFilenameSequence.h"
-
-#define FORMAT_CODE_DESC \
-	" -- %n  the \"number\" (index + 1) of the frame -- will lie in the inclusive range [1, N]," \
-	"and will be padded to the width of the decimal integer representation of N. \n"	\
-	" -- %u  the index of the frame -- will lie in the inclusive range [0, (N - 1)], "	\
-	"and will be padded to the width of the decimal integer representation of (N - 1).\n"  \
-	" -- %f  the reconstruction-time instant of the frame, in printf-style %f format.  \n"	\
-	" -- %d  the reconstruction-time instant of the frame, rounded to the closest integer, in printf-style %d format." ;
 
 namespace GPlatesGui
 {
@@ -61,38 +55,80 @@ namespace GPlatesGui
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportAnimationStrategy,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportAnimationStrategy>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportAnimationStrategy,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		static const QString dummy_desc;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportAnimationStrategy> non_null_ptr_type;
 		
 		virtual
 		~ExportAnimationStrategy()
 		{  }
 
-		class Configuration
+
+		class ConfigurationBase;
+
+		//! Typedef for a shared pointer to const @a ConfigurationBase.
+		typedef boost::shared_ptr<const ConfigurationBase> const_configuration_base_ptr;
+		//! Typedef for a shared pointer to @a ConfigurationBase.
+		typedef boost::shared_ptr<ConfigurationBase> configuration_base_ptr;
+
+		/**
+		 * Configuration parameters for an @a ExportAnimationStrategy.
+		 *
+		 * Contains filename template (common to all @a ExportAnimationStrategy derived types).
+		 *
+		 * If a derived @a ExportAnimationStrategy type requires specialised configuration
+		 * parameters then create a derived @a Configuration class.
+		 */
+		class ConfigurationBase
 		{
 		public:
+			virtual
+			~ConfigurationBase()
+			{  }
 
 			explicit
-			Configuration(
-					const QString& filename)
+			ConfigurationBase(
+					const QString& _filename_template)
 			{
-				d_filename_template = filename;
+				d_filename_template = _filename_template;
 			}
 
 			const QString&
-			filename_template() const
+			get_filename_template() const
 			{
 				return d_filename_template;
 			}
 
+			void
+			set_filename_template(
+					const QString &filename_template)
+			{
+				d_filename_template = filename_template;
+			}
+
+			//! Clones derived configuration object.
+			virtual
+			configuration_base_ptr
+			clone() const = 0;
+
 		private:
 			QString d_filename_template;
 		};
+
+
+		/**
+		 * Creates an export animation strategy that doesn't do anything.
+		 *
+		 * Only created when an export ID is requested of export animation registry that doesn't exist.
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				GPlatesGui::ExportAnimationContext &export_animation_context)
+		{
+			return non_null_ptr_type(new ExportAnimationStrategy(export_animation_context));
+		}
+
 
 		/**
 		 * Sets the internal ExportTemplateFilenameSequence.
@@ -109,19 +145,10 @@ namespace GPlatesGui
 		virtual		
 		bool
 		do_export_iteration(
-				std::size_t frame_index) = 0;
-
-		virtual
-		const QString&
-		get_default_filename_template() = 0;
-
-		virtual
-		const QString&
-		get_filename_template_desc() = 0;
-
-		virtual 
-		const QString&
-		get_description() = 0;
+				std::size_t frame_index)
+		{
+			return false;
+		}
 
 
 		/**
@@ -167,13 +194,8 @@ namespace GPlatesGui
 		/**
 		 * The filename sequence to use when exporting.
 		 */
-		boost::optional<GPlatesUtils::ExportTemplateFilenameSequence> d_filename_sequence_opt;
-		boost::optional<GPlatesUtils::ExportTemplateFilenameSequence::const_iterator> d_filename_iterator_opt;
-		Configuration d_cfg;
-		
+		boost::optional<GPlatesFileIO::ExportTemplateFilenameSequence> d_filename_sequence_opt;
+		boost::optional<GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator> d_filename_iterator_opt;
 	};
 }
 #endif //GPLATES_GUI_EXPORTANIMATIONSTRATEGY_H
-
-
-

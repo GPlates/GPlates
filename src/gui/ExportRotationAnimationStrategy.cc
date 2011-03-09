@@ -39,92 +39,20 @@
 #include "presentation/ViewState.h"
 
 
- const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_RELATIVE_COMMA_FILENAME_TEMPLATE
-		="relative_total_rotation_comma_%0.2f.csv";
-
- const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_RELATIVE_SEMI_FILENAME_TEMPLATE
-		="relative_total_rotation_semicomma_%0.2f.csv";
- 
- const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_RELATIVE_TAB_FILENAME_TEMPLATE
-		="relative_total_rotation_tab_%0.2f.csv";
- 
- const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_EQUIVALENT_COMMA_FILENAME_TEMPLATE
-		="equivalent_total_rotation_comma_%0.2f.csv";
- 
- const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_EQUIVALENT_SEMI_FILENAME_TEMPLATE
-		="equivalent_total_rotation_semicomma_%0.2f.csv";
- 
- const QString GPlatesGui::ExportRotationAnimationStrategy::DEFAULT_EQUIVALENT_TAB_FILENAME_TEMPLATE
-		="equivalent_total_rotation_tab_%0.2f.csv";
- 
- const QString GPlatesGui::ExportRotationAnimationStrategy::ROTATION_FILENAME_TEMPLATE_DESC
-		=FORMAT_CODE_DESC;
-
- const QString GPlatesGui::ExportRotationAnimationStrategy::RELATIVE_ROTATION_DESC =
-		"Export relative total rotation data:\n"
-		"- 'relative' is between a moving/fixed plate pair,\n"
-		"- 'total' is from the export reconstruction time to present day.\n"
-		"Each line in exported file(s) will contain the following entries...\n"
-		" 'moving_plate_id' 'euler_pole_lat' 'euler_pole_lon' 'euler_pole_angle' 'fixed_plate_id'\n";
-
- const QString GPlatesGui::ExportRotationAnimationStrategy::EQUIVALENT_ROTATION_DESC =
-		"Export equivalent total rotation data:\n"
-		"- 'equivalent' is from an exported plate id to the anchor plate,\n"
-		"- 'total' is from the export reconstruction time to present day.\n"
-		"Each line in exported file(s) will contain the following entries...\n"
-		" 'plate_id' 'euler_pole_lat' 'euler_pole_lon' 'euler_pole_angle'\n";
-
-const GPlatesGui::ExportRotationAnimationStrategy::non_null_ptr_type
-GPlatesGui::ExportRotationAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
-		ExportRotationAnimationStrategy::RotationType type,
-		const ExportAnimationStrategy::Configuration& cfg)
-{
-	ExportRotationAnimationStrategy* ptr=
-		new ExportRotationAnimationStrategy(
-				export_animation_context,
-				cfg.filename_template());
-	
-	ptr->d_type=type;
-
-	switch(type)
-	{
-	case RELATIVE_COMMA:
-	case EQUIVALENT_COMMA:
-		ptr->d_delimiter=',';
-		break;
-	case RELATIVE_SEMI:
-	case EQUIVALENT_SEMI:
-		ptr->d_delimiter=';';
-		break;
-	case RELATIVE_TAB:
-	case EQUIVALENT_TAB:
-	default:
-		ptr->d_delimiter='\t';
-		break;
-	}
-	return non_null_ptr_type(
-			ptr,
-			GPlatesUtils::NullIntrusivePointerHandler());
-}
-
 GPlatesGui::ExportRotationAnimationStrategy::ExportRotationAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const QString &filename_template):
-	ExportAnimationStrategy(export_animation_context)
+		const const_configuration_ptr &configuration):
+	ExportAnimationStrategy(export_animation_context),
+	d_configuration(configuration)
 {
-	set_template_filename(filename_template);
+	set_template_filename(d_configuration->get_filename_template());
 }
 
 bool
 GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {	
-	if(!check_filename_sequence())
-	{
-		return false;
-	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
 	GPlatesAppLogic::ApplicationState &application_state =
@@ -165,9 +93,9 @@ GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 				
 	
 		const bool is_relative_rotation = (
-				(d_type == RELATIVE_COMMA) ||
-				(d_type == RELATIVE_SEMI) ||
-				(d_type == RELATIVE_TAB) );
+				(d_configuration->rotation_type == Configuration::RELATIVE_COMMA) ||
+				(d_configuration->rotation_type == Configuration::RELATIVE_SEMICOLON) ||
+				(d_configuration->rotation_type == Configuration::RELATIVE_TAB) );
 
 		GPlatesMaths::FiniteRotation fr =
 				is_relative_rotation
@@ -217,7 +145,24 @@ GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 	}
 	
 	CsvExport::ExportOptions option;
-	option.delimiter=d_delimiter;
+	switch(d_configuration->rotation_type)
+	{
+	case Configuration::RELATIVE_COMMA:
+	case Configuration::EQUIVALENT_COMMA:
+		option.delimiter = ',';
+		break;
+
+	case Configuration::RELATIVE_SEMICOLON:
+	case Configuration::EQUIVALENT_SEMICOLON:
+		option.delimiter = ';';
+		break;
+
+	case Configuration::RELATIVE_TAB:
+	case Configuration::EQUIVALENT_TAB:
+	default:
+		option.delimiter = '\t';
+		break;
+	}
 		
 	CsvExport::export_data(
 			QDir(d_export_animation_context_ptr->target_dir()).absoluteFilePath(
@@ -229,40 +174,3 @@ GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
 }
-
-const QString&
-GPlatesGui::ExportRotationAnimationStrategy::get_default_filename_template()
-{
-	switch(d_type)
-	{
-	case RELATIVE_COMMA:
-		return DEFAULT_RELATIVE_COMMA_FILENAME_TEMPLATE;
-		break;
-	case RELATIVE_SEMI:
-		return DEFAULT_RELATIVE_SEMI_FILENAME_TEMPLATE;
-		break;
-	case RELATIVE_TAB:
-		return DEFAULT_RELATIVE_TAB_FILENAME_TEMPLATE;
-		break;
-	case EQUIVALENT_COMMA:
-		return DEFAULT_EQUIVALENT_COMMA_FILENAME_TEMPLATE;
-		break;
-	case EQUIVALENT_SEMI:
-		return DEFAULT_EQUIVALENT_SEMI_FILENAME_TEMPLATE;
-		break;
-	case EQUIVALENT_TAB:
-		return DEFAULT_EQUIVALENT_TAB_FILENAME_TEMPLATE;
-		break;
-	default:
-		return DEFAULT_RELATIVE_COMMA_FILENAME_TEMPLATE;
-		break;
-	}
-}
-
-const QString&
-GPlatesGui::ExportRotationAnimationStrategy::get_filename_template_desc()
-{
-	return ROTATION_FILENAME_TEMPLATE_DESC;
-}
-
-

@@ -35,16 +35,12 @@
 
 #include "ConfigureExportParametersDialog.h"
 #include "ExportAnimationDialog.h"
+#include "ExportOptionsWidget.h"
 
-#include "gui/ExportFlowlineAnimationStrategy.h"
-#include "gui/ExportMotionPathAnimationStrategy.h"
-#include "gui/ExportReconstructedGeometryAnimationStrategy.h"
-#include "gui/ExportResolvedTopologyAnimationStrategy.h"
-#include "gui/ExportSvgAnimationStrategy.h"
-#include "gui/ExportVelocityAnimationStrategy.h"
-#include "gui/ExportRasterAnimationStrategy.h"
+#include "gui/ExportAnimationRegistry.h"
+#include "gui/ExportAnimationType.h"
 
-#include "utils/ExportAnimationStrategyFactory.h"
+#include "presentation/ViewState.h"
 
 
 namespace
@@ -62,18 +58,6 @@ namespace
 }
 
 
-std::map<GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemName, QString> 
-		GPlatesQtWidgets::ConfigureExportParametersDialog::d_name_map;
-
-std::map<GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemType, QString> 
-		GPlatesQtWidgets::ConfigureExportParametersDialog::d_type_map;
-
-std::map<GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemName, QString> 
-		GPlatesQtWidgets::ConfigureExportParametersDialog::d_desc_map;
-
-bool GPlatesQtWidgets::ConfigureExportParametersDialog::dummy = 
-		GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_name_and_type_map();
-
 GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDialog(
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type export_animation_context_ptr,
 		QWidget *parent_):
@@ -84,16 +68,19 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 			Qt::WindowSystemMenuHint),
 	d_export_animation_context_ptr(
 			export_animation_context_ptr),
-	d_is_single_frame(false)
+	d_is_single_frame(false),
+	d_export_options_widget_layout(NULL)
 {
 	setupUi(this);
 	set_fixed_size_for_item_view(treeWidget_template);
 	treeWidget_template->setHeaderHidden(true);
 	treeWidget_template->header()->setResizeMode(0, QHeaderView::ResizeToContents);
 
-	initialize_export_item_map();
-	initialize_export_item_list_widget();
-	initialize_item_desc_map();
+	// Give the export options widget a layout.
+	d_export_options_widget_layout = new QVBoxLayout(widget_export_options);
+	d_export_options_widget_layout->setContentsMargins(0, 0, 0, 0);
+
+	initialize_export_type_list_widget();
 
 	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
 
@@ -101,17 +88,17 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 			listWidget_export_items,
 			SIGNAL(itemSelectionChanged()),
 			this,
-			SLOT(react_export_items_selection_changed()));
+			SLOT(react_export_type_selection_changed()));
 	QObject::connect(
 			listWidget_export_items,
 			SIGNAL(itemClicked(QListWidgetItem *)),
 			this,
-			SLOT(react_export_items_selection_changed()));
+			SLOT(react_export_type_selection_changed()));
 	QObject::connect(
 			listWidget_format,
 			SIGNAL(itemSelectionChanged()),
 			this,
-			SLOT(react_format_selection_changed()));
+			SLOT(react_export_format_selection_changed()));
 	QObject::connect(
 			lineEdit_filename,
 			SIGNAL(cursorPositionChanged(int, int)),
@@ -147,201 +134,184 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 			SLOT(focus_on_lineedit_filename()));
 }
 
-bool 
-GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_name_and_type_map()
-{
-	//TODO: these maps should be integrated into exporter classes.
-	d_name_map[RECONSTRUCTED_GEOMETRIES]=QObject::tr("Reconstructed Geometries");
-	d_name_map[PROJECTED_GEOMETRIES]    =QObject::tr("Projected Geometries");
-	d_name_map[MESH_VELOCITIES]         =QObject::tr("Colat/lon Mesh Velocities");
-	d_name_map[RESOLVED_TOPOLOGIES]     =QObject::tr("Resolved Topologies");
-	d_name_map[RELATIVE_ROTATION]       =QObject::tr("Relative Total Rotation");
-	d_name_map[EQUIVALENT_ROTATION]     =QObject::tr("Equivalent Total Rotation");
-	d_name_map[ROTATION_PARAMS]			=QObject::tr("Equivalent Stage Rotation");
-	d_name_map[RASTER]				    =QObject::tr("Raster");
-	d_name_map[FLOWLINES]				=QObject::tr("Flowlines");
-	d_name_map[MOTION_PATHS]			=QObject::tr("Motion Paths");
-	d_name_map[CO_REGISTRATION]			=QObject::tr("Co-registration data");
-
-	d_type_map[GMT]             =QObject::tr("GMT (*.xy)");
-	d_type_map[GPML]			=QObject::tr("GPML (*.gpml)");
-	d_type_map[SHAPEFILE]		=QObject::tr("Shapefiles (*.shp)");
-	d_type_map[SVG]             =QObject::tr("SVG (*.svg)");
-	d_type_map[CSV_COMMA]       =QObject::tr("CSV file (comma delimited) (*.csv)");
-	d_type_map[CSV_SEMICOLON]   =QObject::tr("CSV file (semicolon delimited) (*.csv)");
-	d_type_map[CSV_TAB]         =QObject::tr("CSV file (tab delimited) (*.csv)");
-	d_type_map[BMP]				=QObject::tr("Windows Bitmap (*.bmp)");
-	d_type_map[JPG]				=QObject::tr("Joint Photographic Experts Group (*.jpg)");
-	d_type_map[JPEG]			=QObject::tr("Joint Photographic Experts Group (*.jpeg)");
-	d_type_map[PNG]				=QObject::tr("Portable Network Graphics (*.png)");
-	d_type_map[PPM]				=QObject::tr("Portable Pixmap (*.ppm)");
-	d_type_map[TIFF]			=QObject::tr("Tagged Image File Format (*.tiff)");
-	d_type_map[XBM]				=QObject::tr("X11 Bitmap (*.xbm)");
-	d_type_map[XPM]				=QObject::tr("X11 Pixmap (*.xpm)");
-
-	return true;
-}
-
-void 
-GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_desc_map()
-{
-	//TODO: this map should be integrated into exporter classes.
-	d_desc_map[RECONSTRUCTED_GEOMETRIES] = 
-		GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC;
-	d_desc_map[PROJECTED_GEOMETRIES] =
-		GPlatesGui::ExportSvgAnimationStrategy::PROJECTED_GEOMETRIES_DESC;
-	d_desc_map[MESH_VELOCITIES] =
-		GPlatesGui::ExportVelocityAnimationStrategy::MESH_VELOCITIES_DESC;
-	d_desc_map[RESOLVED_TOPOLOGIES] = 
-		GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLVED_TOPOLOGIES_DESC;
-	d_desc_map[RELATIVE_ROTATION] = 
-		GPlatesGui::ExportRotationAnimationStrategy::RELATIVE_ROTATION_DESC;
-	d_desc_map[EQUIVALENT_ROTATION] = 
-		GPlatesGui::ExportRotationAnimationStrategy::EQUIVALENT_ROTATION_DESC;
-	d_desc_map[ROTATION_PARAMS] = 
-		GPlatesGui::ExportRotationParamsAnimationStrategy::ROTATION_PARAMS_DESC;
-	d_desc_map[RASTER] =
-		GPlatesGui::ExportRasterAnimationStrategy::RASTER_DESC;
-	d_desc_map[FLOWLINES] =
-		GPlatesGui::ExportFlowlineAnimationStrategy::FLOWLINES_DESC;
-	d_desc_map[MOTION_PATHS] =
-		GPlatesGui::ExportMotionPathAnimationStrategy::MOTION_PATHS_DESC;
-	d_desc_map[CO_REGISTRATION] =
-		GPlatesGui::ExportCoRegistrationAnimationStrategy::CO_REGISTRATION_DESC;
-}		
 
 void
-GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_list_widget()
+GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_type_list_widget()
 {
 	listWidget_export_items->clear();
 	listWidget_format->clear();
-	export_item_map_type::const_iterator it;
-	for (it=d_export_item_map.begin(); it != d_export_item_map.end(); it++ )
+	clear_export_options_widget();
+
+	//
+	// Add a widget item for each export type that has not had all its export formats added already.
+	//
+
+	GPlatesGui::ExportAnimationRegistry &export_animation_registry =
+			d_export_animation_context_ptr->view_state().get_export_animation_registry();
+
+	// Get a list of all the currently supported exporters.
+	const std::vector<GPlatesGui::ExportAnimationType::ExportID> supported_exporters =
+			export_animation_registry.get_registered_exporters();
+
+	// Get the supported export types.
+	const std::vector<GPlatesGui::ExportAnimationType::Type> supported_export_types =
+			GPlatesGui::ExportAnimationType::get_export_types(supported_exporters);
+
+	// Iterate over the export types.
+	std::vector<GPlatesGui::ExportAnimationType::Type>::const_iterator export_type_iter;
+	for (export_type_iter = supported_export_types.begin();
+		export_type_iter != supported_export_types.end();
+		++export_type_iter)
 	{
-		if(all_types_has_been_added((*it).second))
+		const GPlatesGui::ExportAnimationType::Type supported_export_type = *export_type_iter;
+
+		// Get the supported export formats for the current export type.
+		const std::vector<GPlatesGui::ExportAnimationType::Format> supported_export_formats =
+				get_export_formats(supported_exporters, supported_export_type);
+
+		bool all_export_formats_already_added = true;
+
+		// Iterate over the export formats of the current export type.
+		std::vector<GPlatesGui::ExportAnimationType::Format>::const_iterator export_format_iter;
+		for (export_format_iter = supported_export_formats.begin();
+			export_format_iter != supported_export_formats.end();
+			++export_format_iter)
 		{
-			//if all types has been added to export items table,
-			//we don't add this item to export_item_list
+			const GPlatesGui::ExportAnimationType::Format supported_export_format = *export_format_iter;
+
+			const GPlatesGui::ExportAnimationType::ExportID export_id =
+					get_export_id(supported_export_type, supported_export_format);
+
+			// See if the current export type and format have already been added by the user.
+			if (d_exporters_added.find(export_id) == d_exporters_added.end())
+			{
+				// We didn't find the current export format in the list of added exporters.
+				all_export_formats_already_added = false;
+				break;
+			}
+		}
+
+		// If not all export formats (for the current export type) have already been added
+		// then add a widget item for the current export type.
+		if (!all_export_formats_already_added)
+		{
+			QListWidgetItem *widget_item = new ExportTypeWidgetItem<QListWidgetItem>(supported_export_type);
+			listWidget_export_items->addItem(widget_item);
+			widget_item->setText(get_export_type_name(supported_export_type));
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_type_selection_changed()
+{
+	if(!listWidget_export_items->currentItem())
+	{
+		return;
+	}
+
+	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
+
+	lineEdit_filename->clear();
+	label_file_extension->clear();
+	listWidget_format->clear();
+	clear_export_options_widget();
+
+	const GPlatesGui::ExportAnimationType::Type selected_export_type =
+			get_export_type(listWidget_export_items->currentItem());
+
+	label_export_description->setText(get_export_type_description(selected_export_type));
+
+	GPlatesGui::ExportAnimationRegistry &export_animation_registry =
+			d_export_animation_context_ptr->view_state().get_export_animation_registry();
+
+	// Get a list of all the currently supported exporters.
+	const std::vector<GPlatesGui::ExportAnimationType::ExportID> supported_exporters =
+			export_animation_registry.get_registered_exporters();
+
+	// Of those, narrow down to exporters having the specified export type and
+	// return a list of their export formats.
+	const std::vector<GPlatesGui::ExportAnimationType::Format> supported_export_formats =
+			get_export_formats(supported_exporters, selected_export_type);
+
+	// Iterate through the supported export formats.
+	std::vector<GPlatesGui::ExportAnimationType::Format>::const_iterator export_format_iter;
+	for (export_format_iter = supported_export_formats.begin();
+		export_format_iter != supported_export_formats.end();
+		++export_format_iter)
+	{
+		const GPlatesGui::ExportAnimationType::Format export_format = *export_format_iter;
+
+		const GPlatesGui::ExportAnimationType::ExportID export_id =
+				get_export_id(selected_export_type, export_format);
+
+		// If we've already added the exporter then continue to the next export format.
+		if (d_exporters_added.find(export_id) != d_exporters_added.end())
+		{
 			continue;
 		}
-		QListWidgetItem *item = new ExportItem((*it).first);
-		listWidget_export_items->addItem(item);
-		item->setText(d_name_map[(*it).first]);
+
+		QListWidgetItem *item = new ExportFormatWidgetItem<QListWidgetItem>(export_format);
+		listWidget_format->addItem(item);
+		item->setText(get_export_format_description(export_format));
 	}
 }
 
-#define REGISTER_EXPORT_ITEM(ITEM_NAME,ITEM_TYPE) \
-	d_export_item_map[ITEM_NAME][ITEM_TYPE].class_id=GPlatesUtils::ITEM_NAME##_##ITEM_TYPE; \
-	d_export_item_map[ITEM_NAME][ITEM_TYPE].has_been_added = false;
-
 void
-GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_map()
+GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection_changed()
 {
-	d_export_item_map.clear();
-
-	//RECONSTRUCTED_GEOMETRY_GMT
-	REGISTER_EXPORT_ITEM(RECONSTRUCTED_GEOMETRIES,GMT);
-	//RECONSTRUCTED_GEOMETRY_SHAPEFILE
-	REGISTER_EXPORT_ITEM(RECONSTRUCTED_GEOMETRIES,SHAPEFILE);
-	//PROJECTED_GEOMETRIES_SVG
-	REGISTER_EXPORT_ITEM(PROJECTED_GEOMETRIES,SVG);
-	//MESH_VELOCITIES_GPML
-	REGISTER_EXPORT_ITEM(MESH_VELOCITIES,GPML);
-	//RESOLVED_TOPOLOGIES_GMT
-	REGISTER_EXPORT_ITEM(RESOLVED_TOPOLOGIES,GMT);
-	//RESOLVED_TOPOLOGIES_SHAPEFILE
-	REGISTER_EXPORT_ITEM(RESOLVED_TOPOLOGIES,SHAPEFILE);
-	//RELATIVE_ROTATION_CSV_COMMA
-	REGISTER_EXPORT_ITEM(RELATIVE_ROTATION,CSV_COMMA);
-	//RELATIVE_ROTATION_CSV_SEMICOLON
-	REGISTER_EXPORT_ITEM(RELATIVE_ROTATION,CSV_SEMICOLON);
-	//RELATIVE_ROTATION_CSV_TAB
-	REGISTER_EXPORT_ITEM(RELATIVE_ROTATION,CSV_TAB);
-	//EQUIVALENT_ROTATION_CSV_COMMA
-	REGISTER_EXPORT_ITEM(EQUIVALENT_ROTATION,CSV_COMMA);
-	//EQUIVALENT_ROTATION_CSV_SEMICOLON
-	REGISTER_EXPORT_ITEM(EQUIVALENT_ROTATION,CSV_SEMICOLON);
-	//EQUIVALENT_ROTATION_CSV_TAB
-	REGISTER_EXPORT_ITEM(EQUIVALENT_ROTATION,CSV_TAB);
-	//ROTATION_PARAMS_CSV_COMMA
-	REGISTER_EXPORT_ITEM(ROTATION_PARAMS,CSV_COMMA);
-	//ROTATION_PARAMS_CSV_SEMICOLON
-	REGISTER_EXPORT_ITEM(ROTATION_PARAMS,CSV_SEMICOLON);
-	//ROTATION_PARAMS_CSV_TAB
-	REGISTER_EXPORT_ITEM(ROTATION_PARAMS,CSV_TAB);
-	//RASTER_BMP
-	REGISTER_EXPORT_ITEM(RASTER,BMP);
-	//RASTER_JPG
-	REGISTER_EXPORT_ITEM(RASTER,JPG);
-	//RASTER_JPEG
-	REGISTER_EXPORT_ITEM(RASTER,JPEG);
-	//RASTER_PNG
-	REGISTER_EXPORT_ITEM(RASTER,PNG);
-	//RASTER_PPM
-	REGISTER_EXPORT_ITEM(RASTER,PPM);
-	//RASTER_TIFF
-	REGISTER_EXPORT_ITEM(RASTER,TIFF);
-	//RASTER_XBM
-	REGISTER_EXPORT_ITEM(RASTER,XBM);
-	//RASTER_XPM
-	REGISTER_EXPORT_ITEM(RASTER,XPM);
-	//FLOWLINES_GMT
-	REGISTER_EXPORT_ITEM(FLOWLINES,GMT);
-	//FLOWLINES_SHAPEFILE
-	REGISTER_EXPORT_ITEM(FLOWLINES,SHAPEFILE);
-	//MOTION_PATHS_GMT
-	REGISTER_EXPORT_ITEM(MOTION_PATHS,GMT);
-	//MOTION_PATHS_SHAPEFILE
-	REGISTER_EXPORT_ITEM(MOTION_PATHS,SHAPEFILE);
-	//CO_REGISTRATION_CSV_COMMA
-	REGISTER_EXPORT_ITEM(CO_REGISTRATION,CSV_COMMA);
-}
-
-void
-GPlatesQtWidgets::ConfigureExportParametersDialog::react_format_selection_changed()
-{
-
-	if(!listWidget_export_items->currentItem() || !listWidget_format->currentItem())
+	if (!listWidget_export_items->currentItem() ||
+		!listWidget_format->currentItem())
 	{
 		return;
 	}
-	ExportItemName selected_item = get_export_item_name(listWidget_export_items->currentItem());
-	ExportItemType selected_type = get_export_item_type(listWidget_format->currentItem());
+
+	const GPlatesGui::ExportAnimationType::Type selected_export_type =
+			get_export_type(listWidget_export_items->currentItem());
+	const GPlatesGui::ExportAnimationType::Format selected_export_format =
+			get_export_format(listWidget_format->currentItem());
 	
-	if(selected_type == INVALID_TYPE||selected_item == INVALID_NAME)
+	if (selected_export_type == GPlatesGui::ExportAnimationType::INVALID_TYPE ||
+		selected_export_format == GPlatesGui::ExportAnimationType::INVALID_FORMAT)
 	{	
-		qWarning()<<"invalid export type or item!";
+		qWarning()<<"invalid export type or format!";
 		return;
 	}
-	//initialize_export_item_map();
-	if((d_export_item_map[selected_item]).find(selected_type)==
-		(d_export_item_map[selected_item]).end())
-	{
-		qWarning()<<"format widget already invalid!";
-		listWidget_format->clear();
-		return;		
-	}
 
-	QString filename_template = 
-		GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
-				d_export_item_map[selected_item][selected_type].class_id,
-				*d_export_animation_context_ptr)->get_default_filename_template();
+	const GPlatesGui::ExportAnimationType::ExportID selected_export_id =
+			get_export_id(selected_export_type, selected_export_format);
+
+	GPlatesGui::ExportAnimationRegistry &export_animation_registry =
+			d_export_animation_context_ptr->view_state().get_export_animation_registry();
+
+	//
+	// Display the filename template.
+	//
+
+	const QString &default_filename_template =
+			export_animation_registry.get_default_filename_template(selected_export_id);
 	
 	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(true);
 
 	lineEdit_filename->setText(
-			filename_template.toStdString().substr(
-					0, filename_template.toStdString().find_last_of(".")).c_str());
+			default_filename_template.toStdString().substr(
+					0, default_filename_template.toStdString().find_last_of(".")).c_str());
 	
 	label_file_extension->setText(
-			filename_template.toStdString().substr(
-					filename_template.toStdString().find_last_of(".")).c_str());
+			default_filename_template.toStdString().substr(
+					default_filename_template.toStdString().find_last_of(".")).c_str());
+
+	//
+	// Display any export options for the selected format (if there are any).
+	//
+
+	set_export_options_widget(selected_export_id);
 
 #if 0
-	label_filename_desc->setText(
-		GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
-		d_export_item_map[selected_item][selected_type].class_id,
-		*d_export_animation_context_ptr)->get_filename_template_desc());
+	const QString &filename_template_description =
+			export_animation_registry.get_filename_template_description(selected_export_id);
+
+	label_filename_desc->setText(filename_template_description);
 	QPalette pal=label_filename_desc->palette();
 	pal.setColor(QPalette::WindowText, QColor("black")); 
 	label_filename_desc->setPalette(pal);
@@ -349,98 +319,42 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_format_selection_change
 }
 
 void
-GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_items_selection_changed()
-{
-	if(!listWidget_export_items->currentItem())
-		return;
-	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
-	lineEdit_filename->clear();
-	label_file_extension->clear();
-	listWidget_format->clear();
-	
-	ExportItemName selected_item = get_export_item_name(
-			listWidget_export_items->currentItem());
-		
-	export_type_map_type::const_iterator type_it;	
-	export_item_map_type::const_iterator item_it;
-
-
-	//iterate through the map to add available export items.
-	if((item_it=d_export_item_map.find(selected_item)) == d_export_item_map.end())
-	{
-		return;
-	}
-	else
-	{
-		type_it=(*item_it).second.begin();
-		for (; type_it != (*item_it).second.end(); type_it++ )
-		{
-			if((*type_it).second.has_been_added)
-				continue;
-			else
-			{
-				QListWidgetItem *item = new ExportTypeItem((*type_it).first);
-				listWidget_format->addItem(item);
-				item->setText(d_type_map[(*type_it).first]);
-			}
-		}
-		label_export_description->setText(
-				d_desc_map[selected_item]);
-	}
-}
-
-bool
-GPlatesQtWidgets::ConfigureExportParametersDialog::all_types_has_been_added(
-		export_type_map_type type_map)
-{
-	export_type_map_type::iterator type_it;	
-	bool flag=false;
-
-	for (type_it=type_map.begin(); type_it != type_map.end(); type_it++ )
-	{
-		if(!(*type_it).second.has_been_added)
-		{
-			flag=false;
-			break;
-		}
-		else
-		{
-			flag=true;
-			continue;
-		}
-	}
-
-	return flag;
-}
-
-void
 GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 {
-	if(!listWidget_export_items->currentItem() || !listWidget_format->currentItem())
+	if(!listWidget_export_items->currentItem() ||
+		!listWidget_format->currentItem())
+	{
 		return;
+	}
+	
+	QString filename_template = lineEdit_filename->text() + label_file_extension->text();		
 
-	ExportItemName selected_item = get_export_item_name(
+	// Get the currently selected export type and format.
+	const GPlatesGui::ExportAnimationType::Type selected_export_type = get_export_type(
 			listWidget_export_items->currentItem());
-	ExportItemType selected_type = get_export_item_type(
+	const GPlatesGui::ExportAnimationType::Format selected_export_format = get_export_format(
 			listWidget_format->currentItem());
-	
-	QString filename_template = lineEdit_filename->text()+label_file_extension->text();		
-	
-	boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator> validator=
-		GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
-				d_export_item_map[selected_item][selected_type].class_id);
-	
-	if(!validator->is_valid(filename_template))	
+
+	// Determine the corresponding export ID.
+	const GPlatesGui::ExportAnimationType::ExportID selected_export_id =
+			get_export_id(selected_export_type, selected_export_format);
+
+	GPlatesGui::ExportAnimationRegistry &export_animation_registry =
+			d_export_animation_context_ptr->view_state().get_export_animation_registry();
+
+	// Validate the filename template against the selected exporter.
+	QString filename_template_validation_message;
+	if (!export_animation_registry.validate_filename_template(
+			selected_export_id, filename_template, filename_template_validation_message))
 	{
 		QMessageBox error_popup;
 		error_popup.setWindowTitle(QString("Cannot Add Data to Export"));
 		error_popup.setText(QString("The filename template contains an invalid format string."));
-		error_popup.setInformativeText(validator->get_result_report().message());
+		error_popup.setInformativeText(filename_template_validation_message);
 		error_popup.setIcon(QMessageBox::Warning);
 		error_popup.exec();
 #if 0
-		label_filename_desc->setText(
-				validator->get_result_report().message());
+		label_filename_desc->setText(filename_template_validation_message);
 		QPalette pal=label_filename_desc->palette();
 		pal.setColor(QPalette::WindowText, QColor("red")); 
 		label_filename_desc->setPalette(pal);
@@ -448,40 +362,77 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 		main_buttonbox->setEnabled(false);
 		return;
 	}
-	
-	d_export_item_map[selected_item][selected_type].has_been_added=true;
+
+	// If we have an export options widget then get it to create the export animation configuration.
+	// Otherwise just create the default configuration.
+	GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr export_cfg;
+	if (d_current_export_options_widget)
+	{
+		export_cfg = d_current_export_options_widget.get()->
+					create_export_animation_strategy_configuration(filename_template);
+	}
+	else
+	{
+		const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr const_default_export_cfg =
+				export_animation_registry.get_default_export_configuration(selected_export_id);
+		if (!const_default_export_cfg)
+		{
+			// Something is not right - shouldn't be able to get here.
+			// Should probably assert so programmer can fix bug.
+			// But will just return without adding exporter.
+			qWarning() << "Encountered NULL export configuration - ignoring selected exporter.";
+			return;
+		}
+
+		const GPlatesGui::ExportAnimationStrategy::configuration_base_ptr default_export_cfg =
+				const_default_export_cfg->clone();
+		default_export_cfg->set_filename_template(filename_template);
+		export_cfg = default_export_cfg;
+	}
 
 	delete listWidget_format->takeItem(listWidget_format->currentRow());
-	
-	if(listWidget_format->count()==0)
+
+	if (listWidget_format->count() == 0)
 	{
 		delete listWidget_export_items->takeItem(listWidget_export_items->currentRow());
 	}
 
+	clear_export_options_widget();
+
+	// Add to the list of exporters we've added so far.
+	d_exporters_added.insert(selected_export_id);
+
+	// Add the selected exporter to the export animation dialog.
 	d_export_animation_context_ptr->get_export_dialog()->insert_item(
-			selected_item,
-			selected_type,
-			filename_template);
+			selected_export_type,
+			selected_export_format,
+			export_cfg);
 
 	accept();
 }
 
 void
-GPlatesQtWidgets::ConfigureExportParametersDialog::init(
-		ExportAnimationDialog* dialog, 
+GPlatesQtWidgets::ConfigureExportParametersDialog::initialise(
 		QTableWidget* table)
 {
-	d_export_item_map.clear();
+	d_exporters_added.clear();
 	
-	initialize_export_item_map();
 	for(int i=0; i<table->rowCount();i++)
 	{
-		d_export_item_map
-			[dialog->get_export_item_name(table->item(i,0))]
-			[dialog->get_export_item_type(table->item(i,1))]
-			.has_been_added=true;
+		const GPlatesGui::ExportAnimationType::Type selected_export_type =
+				get_export_type(table->item(i,0));
+		const GPlatesGui::ExportAnimationType::Format selected_export_format =
+				get_export_format(table->item(i,1));
+
+		const GPlatesGui::ExportAnimationType::ExportID selected_export_id =
+				get_export_id(selected_export_type, selected_export_format);
+
+		// Mark the exporter as having been added.
+		d_exporters_added.insert(selected_export_id);
 	}
-	initialize_export_item_list_widget();
+
+	initialize_export_type_list_widget();
+
 	lineEdit_filename->clear();
 	label_file_extension->clear();
 	label_export_description->clear();
@@ -490,71 +441,49 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::init(
 void
 GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_changed()
 {
-#if 0
-	//comments out these code
-	//the validation of file name template will be done when "add" button is clicked.
-	ExportItemName selected_item = get_export_item_name(
-			listWidget_export_items->currentItem());
-	ExportItemType selected_type = get_export_item_type(
-			listWidget_format->currentItem());
-
-	if(selected_type==INVALID_TYPE || selected_item==INVALID_NAME)
-	{
-		return;
-	}
-
-	QString filename_template = lineEdit_filename->text()+label_file_extension->text();
-	
-	boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator> validator=
-		GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
-				d_export_item_map[selected_item][selected_type].class_id);
-	if(validator->is_valid(filename_template))	
-	{
-		//d_filename_template=filename_template;
-		button_add_item->setEnabled(true);
-	}
-	else
-	{
-		QMessageBox error_popup;
-		error_popup.setText(validator->get_result_report().message());
-		error_popup.exec();
-#if 0
-		label_filename_desc->setText(
-				validator->get_result_report().message());
-		QPalette pal=label_filename_desc->palette();
-		pal.setColor(QPalette::WindowText, QColor("red")); 
-		label_filename_desc->setPalette(pal);
-		button_add_item->setEnabled(false);
-#endif
-	}
-#endif	
 }
 
 void
 GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_changing()
 {
-	if(!listWidget_export_items->currentItem() || !listWidget_format->currentItem())
+	if (!listWidget_export_items->currentItem() ||
+		!listWidget_format->currentItem())
+	{
 		return;
-	ExportItemName selected_item = get_export_item_name(
+	}
+
+	const GPlatesGui::ExportAnimationType::Type selected_export_type = get_export_type(
 			listWidget_export_items->currentItem());
-	ExportItemType selected_type = get_export_item_type(
+	const GPlatesGui::ExportAnimationType::Format selected_export_format = get_export_format(
 			listWidget_format->currentItem());
 
-	if(selected_type==INVALID_TYPE || selected_item==INVALID_NAME)
+	if (selected_export_type == GPlatesGui::ExportAnimationType::INVALID_TYPE ||
+		selected_export_format == GPlatesGui::ExportAnimationType::INVALID_FORMAT)
+	{
 		return;
+	}
 	
-	if((d_export_item_map[selected_item]).find(selected_type)==
-		(d_export_item_map[selected_item]).end())
+	const GPlatesGui::ExportAnimationType::ExportID selected_export_id =
+			get_export_id(selected_export_type, selected_export_format);
+
+	GPlatesGui::ExportAnimationRegistry &export_animation_registry =
+			d_export_animation_context_ptr->view_state().get_export_animation_registry();
+
+	// Get a list of all the currently supported exporters.
+	const std::vector<GPlatesGui::ExportAnimationType::ExportID> supported_exporters =
+			export_animation_registry.get_registered_exporters();
+
+	// If the selected export type and format are not in the list of supported exporters
+	// then something is not right.
+	if (std::find(supported_exporters.begin(), supported_exporters.end(), selected_export_id) ==
+		supported_exporters.end())
 	{
 		qWarning()<<"invalid selected items!";
-		return;		
+		return;
 	}
 
 #if 0
-	label_filename_desc->setText(
-			GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
-					d_export_item_map[selected_item][selected_type].class_id,
-					*d_export_animation_context_ptr)->get_filename_template_desc());
+	label_filename_desc->setText(...);
 	QPalette pal=label_filename_desc->palette();
 	pal.setColor(QPalette::WindowText, QColor("black")); 
 	label_filename_desc->setPalette(pal);
@@ -576,3 +505,110 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::focus_on_lineedit_filename()
 	lineEdit_filename->setFocus();
 }
 
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::clear_export_options_widget()
+{
+	if (d_current_export_options_widget)
+	{
+		d_export_options_widget_layout->removeWidget(d_current_export_options_widget.get());
+		delete d_current_export_options_widget.get();
+
+		d_current_export_options_widget = boost::none;
+	}
+
+	widget_export_options->setEnabled(false);
+	widget_export_options->setVisible(false);
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::set_export_options_widget(
+		GPlatesGui::ExportAnimationType::ExportID export_id)
+{
+	GPlatesGui::ExportAnimationRegistry &export_animation_registry =
+			d_export_animation_context_ptr->view_state().get_export_animation_registry();
+
+	if (d_current_export_options_widget)
+	{
+		d_export_options_widget_layout->removeWidget(d_current_export_options_widget.get());
+		delete d_current_export_options_widget.get();
+	}
+
+	d_current_export_options_widget = export_animation_registry.create_export_options_widget(
+			export_id, this);
+
+	if (d_current_export_options_widget)
+	{
+		d_current_export_options_widget.get()->layout()->setContentsMargins(0, 0, 0, 0);
+		d_export_options_widget_layout->addWidget(d_current_export_options_widget.get());
+
+		widget_export_options->setEnabled(true);
+		widget_export_options->setVisible(true);
+	}
+	else
+	{
+		widget_export_options->setEnabled(false);
+		widget_export_options->setVisible(false);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::add_all_remaining_exports()
+{
+	//
+	// Insert an exporter into the export animation dialog for each supported
+	// export type and format not yet added.
+	//
+
+	GPlatesGui::ExportAnimationRegistry &export_animation_registry =
+			d_export_animation_context_ptr->view_state().get_export_animation_registry();
+
+	// Get a list of all the currently supported exporters.
+	const std::vector<GPlatesGui::ExportAnimationType::ExportID> supported_export_ids =
+			export_animation_registry.get_registered_exporters();
+
+	// Iterate over the export ids.
+	std::vector<GPlatesGui::ExportAnimationType::ExportID>::const_iterator export_id_iter;
+	for (export_id_iter = supported_export_ids.begin();
+		export_id_iter != supported_export_ids.end();
+		++export_id_iter)
+	{
+		const GPlatesGui::ExportAnimationType::ExportID supported_export_id = *export_id_iter;
+
+		// See if the current export id has already been added by the user.
+		if (d_exporters_added.find(supported_export_id) != d_exporters_added.end())
+		{
+			continue;
+		}
+
+		// We didn't find the current export id so add it.
+
+		const GPlatesGui::ExportAnimationType::Type supported_export_type =
+				GPlatesGui::ExportAnimationType::get_export_type(supported_export_id);
+		const GPlatesGui::ExportAnimationType::Format supported_export_format =
+				GPlatesGui::ExportAnimationType::get_export_format(supported_export_id);
+
+		// Create the default export configuration for the current exporter.
+		const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr export_configuration =
+				export_animation_registry.get_default_export_configuration(
+						supported_export_id);
+
+		if (!export_configuration)
+		{
+			// Something is not right - shouldn't be able to get here.
+			// Should probably assert so programmer can fix bug.
+			// But will just continue without adding exporter.
+			qWarning() << "Encountered NULL export configuration - ignoring exporter.";
+			continue;
+		}
+
+		// Insert a new export item in the export animation dialog.
+		d_export_animation_context_ptr->get_export_dialog()->insert_item(
+				supported_export_type,
+				supported_export_format,
+				export_configuration);
+
+		// Mark the export as having been added.
+		d_exporters_added.insert(supported_export_id);
+	}
+}

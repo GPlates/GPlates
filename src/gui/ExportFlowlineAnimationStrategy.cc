@@ -58,49 +58,21 @@ namespace
 	{
 		const QString output_basename = substitute_placeholder(
 				output_filename,
-				GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+				GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
 				flowlines_filename);
 
 		return output_basename;
 	}
 }
 
-const QString 
-GPlatesGui::ExportFlowlineAnimationStrategy::DEFAULT_FLOWLINES_GMT_FILENAME_TEMPLATE
-		="flowline_output_%u_%0.2f.xy";
-const QString 
-GPlatesGui::ExportFlowlineAnimationStrategy::DEFAULT_FLOWLINES_SHP_FILENAME_TEMPLATE
-		="flowline_output_%u_%0.2f.shp";
-      
-const QString 
-GPlatesGui::ExportFlowlineAnimationStrategy::FLOWLINES_FILENAME_TEMPLATE_DESC
-		= FORMAT_CODE_DESC; 
-const QString 
-GPlatesGui::ExportFlowlineAnimationStrategy::FLOWLINES_DESC
-		="Export flowlines.";
-
-const GPlatesGui::ExportFlowlineAnimationStrategy::non_null_ptr_type
-GPlatesGui::ExportFlowlineAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
-		FileFormat format,
-		const ExportAnimationStrategy::Configuration& cfg)
-{
-	ExportFlowlineAnimationStrategy * ptr=
-			new ExportFlowlineAnimationStrategy(export_animation_context,
-					cfg.filename_template()); 
-	
-	ptr->d_file_format = format;
-	return non_null_ptr_type(
-			ptr,
-			GPlatesUtils::NullIntrusivePointerHandler());
-}
 
 GPlatesGui::ExportFlowlineAnimationStrategy::ExportFlowlineAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const QString &filename_template):
-	ExportAnimationStrategy(export_animation_context)
+		const const_configuration_ptr &configuration):
+	ExportAnimationStrategy(export_animation_context),
+	d_configuration(configuration)
 {
-	set_template_filename(filename_template);
+	set_template_filename(d_configuration->get_filename_template());
 	
 	GPlatesAppLogic::FeatureCollectionFileState &file_state =
 			d_export_animation_context_ptr->view_state().get_application_state()
@@ -129,12 +101,7 @@ bool
 GPlatesGui::ExportFlowlineAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-
-	if(!check_filename_sequence())
-	{
-		return false;
-	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
 	// Figure out a filename from the template filename sequence.
@@ -186,28 +153,3 @@ GPlatesGui::ExportFlowlineAnimationStrategy::wrap_up(
 	// up in the same file and we should close that file (if all steps completed
 	// successfully).
 }
-
-const QString&
-GPlatesGui::ExportFlowlineAnimationStrategy::get_default_filename_template()
-{
-	switch(d_file_format)
-	{
-	case GMT:
-		return DEFAULT_FLOWLINES_GMT_FILENAME_TEMPLATE;
-		break;
-	case SHAPEFILE:
-		return DEFAULT_FLOWLINES_SHP_FILENAME_TEMPLATE;
-		break;
-	default:
-		return DEFAULT_FLOWLINES_GMT_FILENAME_TEMPLATE;
-		break;
-	}
-}
-
-const QString&
-GPlatesGui::ExportFlowlineAnimationStrategy::get_filename_template_desc()
-{
-	return FLOWLINES_FILENAME_TEMPLATE_DESC;
-}
-
-

@@ -35,7 +35,7 @@
 
 
 boost::optional<int>
-GPlatesUtils::ExportTemplateFilename::PercentCharacterFormat::match_format(
+GPlatesFileIO::ExportTemplateFilename::PercentCharacterFormat::match_format(
 		const QString &rest_of_filename_template)
 {
 	if (rest_of_filename_template.startsWith("%%"))
@@ -48,7 +48,7 @@ GPlatesUtils::ExportTemplateFilename::PercentCharacterFormat::match_format(
 
 
 boost::optional<int>
-GPlatesUtils::ExportTemplateFilename::PlaceholderFormat::match_format(
+GPlatesFileIO::ExportTemplateFilename::PlaceholderFormat::match_format(
 		const QString &rest_of_filename_template)
 {
 	if (rest_of_filename_template.startsWith(
@@ -62,7 +62,7 @@ GPlatesUtils::ExportTemplateFilename::PlaceholderFormat::match_format(
 
 
 QString
-GPlatesUtils::ExportTemplateFilename::PlaceholderFormat::expand_format_string(
+GPlatesFileIO::ExportTemplateFilename::PlaceholderFormat::expand_format_string(
 		std::size_t sequence_index,
 		const double &reconstruction_time,
 		const QDateTime &date_time) const
@@ -74,7 +74,7 @@ GPlatesUtils::ExportTemplateFilename::PlaceholderFormat::expand_format_string(
 
 
 boost::optional<int>
-GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::match_format(
+GPlatesFileIO::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::match_format(
 		const QString &rest_of_filename_template)
 {
 	if (rest_of_filename_template.startsWith("%A"))
@@ -87,7 +87,7 @@ GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::match_f
 
 
 QString
-GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::expand_format_string(
+GPlatesFileIO::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::expand_format_string(
 		std::size_t /*sequence_index*/,
 		const double &/*reconstruction_time*/,
 		const QDateTime &/*date_time*/) const
@@ -97,7 +97,7 @@ GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::expand_
 
 
 boost::optional<int>
-GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::match_format(
+GPlatesFileIO::ExportTemplateFilename::FrameNumberFormat::match_format(
 		const QString &rest_of_filename_template)
 {
 	if (rest_of_filename_template.startsWith("%n") ||
@@ -110,7 +110,7 @@ GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::match_format(
 }
 
 
-GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::FrameNumberFormat(
+GPlatesFileIO::ExportTemplateFilename::FrameNumberFormat::FrameNumberFormat(
 		const QString &format_string,
 		std::size_t sequence_size)
 {
@@ -121,7 +121,7 @@ GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::FrameNumberFormat(
 
 
 QString
-GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::expand_format_string(
+GPlatesFileIO::ExportTemplateFilename::FrameNumberFormat::expand_format_string(
 		std::size_t sequence_index,
 		const double &/*reconstruction_time*/,
 		const QDateTime &/*date_time*/) const
@@ -135,7 +135,7 @@ GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::expand_format_string(
 
 
 void
-GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::calc_max_digits(
+GPlatesFileIO::ExportTemplateFilename::FrameNumberFormat::calc_max_digits(
 		std::size_t sequence_size)
 {
 	int max_frame = boost::numeric_cast<int>(
@@ -161,7 +161,7 @@ GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::calc_max_digits(
 
 
 boost::optional<int>
-GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::match_format(
+GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::match_format(
 		const QString &rest_of_filename_template)
 {
 	QRegExp regex = get_full_regular_expression();
@@ -178,7 +178,7 @@ GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::match_form
 }
 
 
-GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::ReconstructionTimePrintfFormat(
+GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::ReconstructionTimePrintfFormat(
 		const QString &format_string) :
 	d_format_string(format_string.toStdString())
 {
@@ -191,7 +191,7 @@ GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::Reconstruc
 
 
 QString
-GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::expand_format_string(
+GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::expand_format_string(
 		std::size_t /*sequence_index*/,
 		const double &reconstruction_time,
 		const QDateTime &/*date_time*/) const
@@ -212,7 +212,7 @@ GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::expand_for
 
 
 const QRegExp &
-GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_full_regular_expression()
+GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_full_regular_expression()
 {
 	// QString::sprintf() does not support the length modifiers (eg, h for short, ll for long long)
 	// so we'll omit those from the regular expression.
@@ -228,7 +228,7 @@ GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_full_r
 
 
 const QRegExp &
-GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_integer_regular_expression()
+GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_integer_regular_expression()
 {
 	// Same as returned by 'get_full_regular_expression()' but only for
 	// the '%d' integer specifier.
@@ -239,13 +239,13 @@ GPlatesUtils::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_intege
 
 
 
-const QString GPlatesUtils::ExportTemplateFilename::DateTimeFormat::HOURS_MINS_SECS_WITH_DASHES_SPECIFIER = "%T";
-const QString GPlatesUtils::ExportTemplateFilename::DateTimeFormat::HOURS_MINS_SECS_WITH_COLONS_SPECIFIER = "%:";
-const QString GPlatesUtils::ExportTemplateFilename::DateTimeFormat::YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER = "%D";
+const QString GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::HOURS_MINS_SECS_WITH_DASHES_SPECIFIER = "%T";
+const QString GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::HOURS_MINS_SECS_WITH_COLONS_SPECIFIER = "%:";
+const QString GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER = "%D";
 
 
 boost::optional<int>
-GPlatesUtils::ExportTemplateFilename::DateTimeFormat::match_format(
+GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::match_format(
 		const QString &rest_of_filename_template)
 {
 	if (rest_of_filename_template.startsWith(HOURS_MINS_SECS_WITH_DASHES_SPECIFIER))
@@ -267,7 +267,7 @@ GPlatesUtils::ExportTemplateFilename::DateTimeFormat::match_format(
 }
 
 
-GPlatesUtils::ExportTemplateFilename::DateTimeFormat::DateTimeFormat(
+GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::DateTimeFormat(
 		const QString &format_string)
 {
 	if (format_string == HOURS_MINS_SECS_WITH_DASHES_SPECIFIER)
@@ -290,7 +290,7 @@ GPlatesUtils::ExportTemplateFilename::DateTimeFormat::DateTimeFormat(
 
 
 QString
-GPlatesUtils::ExportTemplateFilename::DateTimeFormat::expand_format_string(
+GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::expand_format_string(
 		std::size_t /*sequence_index*/,
 		const double &/*reconstruction_time*/,
 		const QDateTime &date_time) const

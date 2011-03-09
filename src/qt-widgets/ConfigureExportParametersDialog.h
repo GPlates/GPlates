@@ -26,24 +26,27 @@
 #ifndef GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 #define GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 
-#include <boost/function.hpp>
+#include <set>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
+#include <boost/optional.hpp>
 #include <QDebug>
 #include <QDialog>
 #include <QDir>
-#include <QTableWidget>
 #include <QString>
+#include <QTableWidget>
+#include <QVBoxLayout>
 
 #include "ConfigureExportParametersDialogUi.h"
 
 #include "gui/ExportAnimationContext.h"
-
-#include "utils/ExportFileNameTemplateValidator.h"
-#include "utils/ExportAnimationStrategyExporterID.h"
+#include "gui/ExportAnimationType.h"
 
 
 namespace GPlatesQtWidgets
 {
+	class ExportOptionsWidget;
+
 	class ConfigureExportParametersDialog : 
 			public QDialog,
 			protected Ui_ConfigureExportParametersDialog 
@@ -61,67 +64,167 @@ namespace GPlatesQtWidgets
 		~ConfigureExportParametersDialog()
 		{ }
 	
-		friend class ExportAnimationDialog;
-
-		typedef struct
-		{
-			bool has_been_added;
-			GPlatesUtils::Exporter_ID class_id;
-		} export_item_info;
-
-		enum ExportItemName
-		{
-			RECONSTRUCTED_GEOMETRIES,
-			PROJECTED_GEOMETRIES,
-			MESH_VELOCITIES,
-			RESOLVED_TOPOLOGIES,
-			RELATIVE_ROTATION,
-			EQUIVALENT_ROTATION,
-			ROTATION_PARAMS,
-			RASTER,
-			FLOWLINES,
-			MOTION_PATHS,
-			CO_REGISTRATION,
-			INVALID_NAME=999
-		};
-
-		enum ExportItemType
-		{
-			GMT,
-			SHAPEFILE,
-			SVG,
-			GPML,
-			CSV_COMMA,
-			CSV_SEMICOLON,
-			CSV_TAB,
-			BMP,
-			JPG,
-			JPEG,
-			PNG,
-			PPM,
-			TIFF,
-			XBM,
-			XPM,
-			INVALID_TYPE=999
-		};
-
-		typedef std::map<ExportItemType, export_item_info> export_type_map_type;
-		typedef std::map<ExportItemName, export_type_map_type > export_item_map_type;
+		void
+		initialise(
+				QTableWidget*);
 
 		void
-		init(
-				ExportAnimationDialog*,
-				QTableWidget*);
+		set_single_frame(
+				bool is_single_frame)
+		{
+			d_is_single_frame = is_single_frame;
+		}
+
+		void
+		add_all_remaining_exports();
+
+
+		/**
+		 * A widget item to store the state of an ExportAnimationType::Type.
+		 */
+		template <class WidgetItemType>
+		class ExportTypeWidgetItem :
+			public WidgetItemType
+		{
+		public:
+			explicit
+			ExportTypeWidgetItem(
+					GPlatesGui::ExportAnimationType::Type type):
+			d_type(type)
+			{  }
+
+			GPlatesGui::ExportAnimationType::Type
+			type() const
+			{
+				return d_type;
+			}
+
+		private:
+			GPlatesGui::ExportAnimationType::Type d_type;
+		};
+
+		template <class WidgetItemType>
+		static
+		GPlatesGui::ExportAnimationType::Type
+		get_export_type(
+				WidgetItemType* widget_item)
+		{
+			if (ExportTypeWidgetItem<WidgetItemType>* item =
+				dynamic_cast<ExportTypeWidgetItem<WidgetItemType>*> (widget_item))
+			{
+				return item->type();
+			}
+			else
+			{
+				//This is very unlikely to happen. If it did happen, it is not necessary to abort the application since this is not a fatal error.
+				//Record the error here. The further improvement could be throwing exception and make sure the exception is handled properly.
+				qWarning()
+					<<"Unexpected pointer type found in ConfigureExportParametersDialog::get_export_type()";
+				return GPlatesGui::ExportAnimationType::INVALID_TYPE;
+			}
+		}
+
+
+		/**
+		 * A widget item to store the state of an ExportAnimationType::Format.
+		 */
+		template <class WidgetItemType>
+		class ExportFormatWidgetItem :
+			public WidgetItemType
+		{
+		public:
+			explicit
+			ExportFormatWidgetItem(
+					GPlatesGui::ExportAnimationType::Format format):
+			d_format(format)
+			{  }
+
+			GPlatesGui::ExportAnimationType::Format
+			format() const
+			{
+				return d_format;
+			}
+
+		private:
+			GPlatesGui::ExportAnimationType::Format d_format;
+		};
+
+		template <class WidgetItemType>
+		static
+		GPlatesGui::ExportAnimationType::Format
+		get_export_format(
+				WidgetItemType* widget_item)
+		{
+			if (ExportFormatWidgetItem<WidgetItemType>* item =
+				dynamic_cast<ExportFormatWidgetItem<WidgetItemType>*> (widget_item))
+			{
+				return item->format();
+			}
+			else
+			{
+				//This is very unlikely to happen. If it did happen, it is not necessary to abort the application since this is not a fatal error.
+				//Record the error here. The further improvement could be throwing exception and make sure the exception is handled properly.
+				qWarning()
+					<<"Unexpected pointer type found in ConfigureExportParametersDialog::get_export_format()";
+				return GPlatesGui::ExportAnimationType::INVALID_FORMAT;
+			}
+		}
+
+
+		/**
+		 * A widget item to store the state of an ExportAnimationStrategy::const_configuration_base_ptr.
+		 */
+		template <class WidgetItemType>
+		class ExportConfigurationWidgetItem :
+			public WidgetItemType
+		{
+		public:
+			explicit
+			ExportConfigurationWidgetItem(
+					const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &configuration) :
+				d_configuration(configuration)
+			{  }
+
+			const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &
+			configuration()
+			{
+				return d_configuration;
+			}
+
+		private:
+			GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr d_configuration;
+		};
+
+		template <class WidgetItemType>
+		static
+		GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
+		get_export_configuration(
+				WidgetItemType* widget_item)
+		{
+			if (ExportConfigurationWidgetItem<WidgetItemType>* item =
+				dynamic_cast<ExportConfigurationWidgetItem<WidgetItemType>*> (widget_item))
+			{
+				return item->configuration();
+			}
+			else
+			{
+				//This is very unlikely to happen. If it did happen, it is not necessary to abort the application since this is not a fatal error.
+				//Record the error here. The further improvement could be throwing exception and make sure the exception is handled properly.
+				qWarning()
+					<<"Unexpected pointer type found in ConfigureExportParametersDialog::get_export_configuration()";
+				return GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr();
+			}
+		}
 
 	private slots:
 		void
 		react_add_item_clicked();
 
 		void
-		react_export_items_selection_changed();
+		react_export_type_selection_changed();
 
 		void
-		react_format_selection_changed();
+		react_export_format_selection_changed();
 
 		void
 		react_filename_template_changed();
@@ -136,59 +239,9 @@ namespace GPlatesQtWidgets
 		focus_on_lineedit_filename();
 	
 	private:
-		void
-		initialize_export_item_map();
+		//! Typedef for a set of exporters - identified by their export IDs.
+		typedef std::set<GPlatesGui::ExportAnimationType::ExportID> exporter_set_type;
 
-		void
-		initialize_export_item_list_widget();
-		
-		static 
-		bool
-		initialize_item_name_and_type_map();
-
-		static 
-		void
-		initialize_item_desc_map();
-
-		bool
-		all_types_has_been_added(
-				export_type_map_type type_map);
-		
-		inline
-		ExportItemName 
-		get_export_item_name(
-				QListWidgetItem* widget_item)
-		{
-			if(ExportItem* item = dynamic_cast<ExportItem*> (widget_item))
-			{
-				return item->itemname_id();
-			}
-			else
-			{
-				qWarning()
-					<<"Unexpected pointer type found in GPlatesQtWidgets::"
-					"ConfigureExportParametersDialog::react_format_selection_changed()";
-				return INVALID_NAME;
-			}
-		};
-
-		inline
-		ExportItemType
-		get_export_item_type(
-				QListWidgetItem* widget_item)
-		{
-			if(ExportTypeItem* item = dynamic_cast<ExportTypeItem*> (widget_item))
-			{
-				return item->itemtype_id();
-			}
-			else
-			{
-				qWarning()
-					<<"Unexpected pointer type found in GPlatesQtWidgets::"
-					"ConfigureExportParametersDialog::react_format_selection_changed()";
-				return INVALID_TYPE;
-			}
-		}
 
 		/**
 		 * The ExportAnimationContext is the Context role of the Strategy pattern
@@ -198,55 +251,33 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type d_export_animation_context_ptr;
 
-		static std::map<ExportItemName, QString> d_name_map;
-		static std::map<ExportItemType, QString> d_type_map;
-		static std::map<ExportItemName, QString> d_desc_map;
-
-		class ExportItem :
-			public QListWidgetItem
-		{
-		public:
-			ExportItem(
-					ExportItemName item_id):
-				d_id(item_id)
-			{ }
-
-			ExportItemName
-					itemname_id()
-			{
-				return d_id;
-			}
-
-		private:
-			ExportItemName d_id;
-		};
-
-		class ExportTypeItem :
-			public QListWidgetItem
-		{
-		public:
-			ExportTypeItem(
-					ExportItemType type_id):
-				d_id(type_id)
-			{ }
-
-			ExportItemType
-					itemtype_id()
-			{
-				return d_id;
-			}
-
-		private:
-			ExportItemType d_id;
-		};
-
-		export_item_map_type d_export_item_map;
-		QString d_filename_template;
+		//! The currently added exporters - added by the user.
+		exporter_set_type d_exporters_added;
 
 		bool d_is_single_frame;
-		static bool dummy;
+
+		/**
+		 * The current widget, if any, used to select export options.
+		 *
+		 * This is created after the export type and format have been selected.
+		 */
+		boost::optional<ExportOptionsWidget *> d_current_export_options_widget;
+
+		/**
+		 * The layout for the export options widget.
+		 */
+		QVBoxLayout *d_export_options_widget_layout;
 
 
+		void
+		initialize_export_type_list_widget();
+
+		void
+		clear_export_options_widget();
+
+		void
+		set_export_options_widget(
+				GPlatesGui::ExportAnimationType::ExportID export_id);
 	};
 }
 

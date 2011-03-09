@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCE_H
-#define GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCE_H
+#ifndef GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCE_H
+#define GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCE_H
 
 #include <cstddef>
 #include <iterator>  // std::iterator
@@ -38,7 +38,7 @@
 #include "model/types.h"
 
 
-namespace GPlatesUtils
+namespace GPlatesFileIO
 {
 	namespace ExportTemplateFilename
 	{
@@ -374,4 +374,4 @@ namespace GPlatesUtils
 	}
 }
 
-#endif // GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCE_H
+#endif // GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCE_H

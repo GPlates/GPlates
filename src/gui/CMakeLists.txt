@@ -50,10 +50,16 @@ set(srcs
     EventBlackout.h
     ExportAnimationContext.cc
     ExportAnimationContext.h
+    ExportAnimationRegistry.cc
+    ExportAnimationRegistry.h
     ExportAnimationStrategy.cc
     ExportAnimationStrategy.h
+    ExportAnimationType.cc
+    ExportAnimationType.h
     ExportCoRegistrationAnimationStrategy.cc
     ExportCoRegistrationAnimationStrategy.h
+    ExportFileNameTemplateValidationUtils.cc
+    ExportFileNameTemplateValidationUtils.h
     ExportFlowlineAnimationStrategy.cc
     ExportFlowlineAnimationStrategy.h
     ExportMotionPathAnimationStrategy.cc

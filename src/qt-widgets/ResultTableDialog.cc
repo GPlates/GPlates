@@ -35,7 +35,7 @@
 #include "global/CompilerWarnings.h"
 #include "gui/FeatureFocus.h"
 #include "presentation/ViewState.h"
-#include "utils/ExportTemplateFilenameSequence.h"
+#include "file-io/ExportTemplateFilenameSequence.h"
 
 using namespace GPlatesQtWidgets;
 
@@ -345,14 +345,14 @@ ResultTableDialog::handle_save_all()
 		time_start = d_data_tables[0].reconstruction_time();
 		time_end = d_data_tables[d_page_num-1].reconstruction_time();
 		time_incre = (time_start - time_end)/(d_page_num - 1);
-		GPlatesUtils::ExportTemplateFilenameSequence filenames(
+		GPlatesFileIO::ExportTemplateFilenameSequence filenames(
 				basename,
 				0,
 				time_end,
 				time_start,
 				time_incre,
 				true);
-		GPlatesUtils::ExportTemplateFilenameSequence::const_iterator filename_it = filenames.begin();
+		GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator filename_it = filenames.begin();
 		for(unsigned i = 0; i < d_page_num; i++, ++filename_it)
 		{
 			

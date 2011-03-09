@@ -34,48 +34,20 @@
 #include "presentation/ViewState.h"
 
 
-const QString 
-GPlatesGui::ExportSvgAnimationStrategy::DEFAULT_PROJECTED_GEOMETRIES_FILENAME_TEMPLATE
-		="snapshot_%u_%0.2f.svg";
-const QString 
-GPlatesGui::ExportSvgAnimationStrategy::PROJECTED_GEOMETRIES_FILENAME_TEMPLATE_DESC
-		=FORMAT_CODE_DESC;
-const QString 
-GPlatesGui::ExportSvgAnimationStrategy::PROJECTED_GEOMETRIES_DESC
-		="Export projected geometries data.";
-
-
-const GPlatesGui::ExportSvgAnimationStrategy::non_null_ptr_type
-GPlatesGui::ExportSvgAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const ExportAnimationStrategy::Configuration &cfg)
-{
-	ExportSvgAnimationStrategy* ptr= 
-			new ExportSvgAnimationStrategy(
-					export_animation_context,
-					cfg.filename_template());
-	return non_null_ptr_type(
-			ptr,
-			GPlatesUtils::NullIntrusivePointerHandler());
-}
-
 GPlatesGui::ExportSvgAnimationStrategy::ExportSvgAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const QString &filename_template):
-	ExportAnimationStrategy(export_animation_context)
+		const const_configuration_ptr &cfg) :
+	ExportAnimationStrategy(export_animation_context),
+	d_configuration(cfg)
 {
-	set_template_filename(filename_template);
+	set_template_filename(d_configuration->get_filename_template());
 }
 
 bool
 GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-	if(!check_filename_sequence())
-	{
-		return false;
-	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
 	// Figure out a filename from the template filename sequence.
@@ -98,17 +70,3 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
 }
-const QString&
-GPlatesGui::ExportSvgAnimationStrategy::get_default_filename_template()
-{
-	return DEFAULT_PROJECTED_GEOMETRIES_FILENAME_TEMPLATE;
-}
-const QString&
-GPlatesGui::ExportSvgAnimationStrategy::get_filename_template_desc()
-{
-	return PROJECTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
-}
-
-
-
-

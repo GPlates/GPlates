@@ -31,13 +31,11 @@
 
 #include <QString>
 
+#include "ExportAnimationStrategy.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
-
-#include "utils/ExportTemplateFilenameSequence.h"
-
-#include "gui/ExportAnimationStrategy.h"
 
 
 namespace GPlatesGui
@@ -63,24 +61,18 @@ namespace GPlatesGui
 		static const QString DEFAULT_ROTATION_PARAMS_COMMA_FILENAME_TEMPLATE;
 		static const QString DEFAULT_ROTATION_PARAMS_SEMI_FILENAME_TEMPLATE;
 		static const QString DEFAULT_ROTATION_PARAMS_TAB_FILENAME_TEMPLATE;
-		static const QString ROTATION_PARAMS_FILENAME_TEMPLATE_DESC;
-		static const QString ROTATION_PARAMS_DESC;
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportRotationParamsAnimationStrategy,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportRotationParamsAnimationStrategy>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportRotationParamsAnimationStrategy,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportRotationParamsAnimationStrategy> non_null_ptr_type;
 		
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				File_Format,
-				const ExportAnimationStrategy::Configuration &cfg=
-					ExportAnimationStrategy::Configuration(
-							DEFAULT_ROTATION_PARAMS_SEMI_FILENAME_TEMPLATE));
+				const ExportAnimationStrategy::const_configuration_base_ptr &cfg);
 
 		virtual
 		~ExportRotationParamsAnimationStrategy()
@@ -94,21 +86,6 @@ namespace GPlatesGui
 		bool
 		do_export_iteration(
 				std::size_t frame_index);
-
-		virtual
-		const QString&
-		get_default_filename_template();
-
-		virtual
-		const QString&
-		get_filename_template_desc();
-
-		virtual
-		const QString&
-		get_description()
-		{
-			return ROTATION_PARAMS_DESC;
-		}
 
 
 	protected:

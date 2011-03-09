@@ -37,7 +37,7 @@
 #include "global/AssertionFailureException.h"
 
 
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::ExportTemplateFilenameSequenceImpl(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::ExportTemplateFilenameSequenceImpl(
 		const QString &filename_template,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &begin_reconstruction_time,
@@ -59,7 +59,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::ExportTemplateFilenameSequence
 
 
 void
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::validate_filename_template(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::validate_filename_template(
 		const QString &filename_template)
 {
 	FormatExtractor::validate_filename_template(filename_template);
@@ -67,7 +67,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::validate_filename_template(
 
 
 QString
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::get_filename(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::get_filename(
 		const std::size_t sequence_index,
 		const QDateTime &date_time) const
 {
@@ -111,7 +111,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::get_filename(
 
 template <class FormatType>
 void
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::CreateFormat::operator()(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::CreateFormat::operator()(
 		Wrap<FormatType>)
 {
 	// Return if we've already found a matching format.
@@ -144,7 +144,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::CreateFormat:
 
 template <class FormatType>
 void
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::ValidateFormat::operator()(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::ValidateFormat::operator()(
 		Wrap<FormatType>)
 {
 	// Return if we've already found a matching format.
@@ -167,7 +167,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::ValidateForma
 
 
 void
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_filename_template(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_filename_template(
 		const QString &filename_template)
 {
 	const QChar percent_char = QLatin1Char('%');
@@ -212,7 +212,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_file
 
 
 void
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::extract_formats_from_filename_template()
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::extract_formats_from_filename_template()
 {
 	const QChar percent_char = QLatin1Char('%');
 
@@ -245,7 +245,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::extract_forma
 
 
 void
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::handle_format(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::handle_format(
 		format_ptr_type format,
 		const QString &format_string)
 {
@@ -267,7 +267,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::handle_format
 
 
 void
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::handle_format_is_constant(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::handle_format_is_constant(
 		format_ptr_type format,
 		const QString &format_string)
 {
@@ -294,7 +294,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::handle_format
 
 
 void
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::handle_format_varies_with_reconstruction_time_or_iterator(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::handle_format_varies_with_reconstruction_time_or_iterator(
 		format_ptr_type format,
 		const QString &format_string)
 {
@@ -319,7 +319,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::handle_format
 
 
 void
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::check_filename_template_varies_with_reconstruction_time()
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::check_filename_template_varies_with_reconstruction_time()
 {
 	// Iterate through our format objects and make sure at least one varies with reconstruction time.
 	format_seq_type::const_iterator format_iter;
@@ -344,7 +344,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::check_filenam
 
 template <class FormatType>
 boost::optional<QString>
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::match_format(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::match_format(
 		const QString &rest_of_filename_template)
 {
 	boost::optional<int> length_format_string = FormatType::match_format(rest_of_filename_template);
@@ -362,15 +362,15 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::match_format(
 
 
 template <class FormatType>
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::format_ptr_type
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format(
 		const QString &format_string)
 {
 	return format_ptr_type(new FormatType(format_string));
 }
 
 
-namespace GPlatesUtils
+namespace GPlatesFileIO
 {
 	//
 	// Template member function specialisations have to be defined in the same
@@ -380,7 +380,7 @@ namespace GPlatesUtils
 	template <>
 	ExportTemplateFilenameSequenceImpl::format_ptr_type
 	ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
-			GPlatesUtils::ExportTemplateFilename::PercentCharacterFormat>(
+			GPlatesFileIO::ExportTemplateFilename::PercentCharacterFormat>(
 					const QString &/*format_string*/)
 	{
 		return format_ptr_type(new ExportTemplateFilename::PercentCharacterFormat());
@@ -389,7 +389,7 @@ namespace GPlatesUtils
 	template <>
 	ExportTemplateFilenameSequenceImpl::format_ptr_type
 	ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
-			GPlatesUtils::ExportTemplateFilename::PlaceholderFormat>(
+			GPlatesFileIO::ExportTemplateFilename::PlaceholderFormat>(
 					const QString &/*format_string*/)
 	{
 		return format_ptr_type(new ExportTemplateFilename::PlaceholderFormat());
@@ -397,9 +397,9 @@ namespace GPlatesUtils
 
 
 	template <>
-	GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
-	GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
-			GPlatesUtils::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat>(
+	GPlatesFileIO::ExportTemplateFilenameSequenceImpl::format_ptr_type
+	GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
+			GPlatesFileIO::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat>(
 					const QString &/*format_string*/)
 	{
 		return format_ptr_type(new ExportTemplateFilename::ReconstructionAnchorPlateIdFormat(
@@ -408,9 +408,9 @@ namespace GPlatesUtils
 
 
 	template <>
-	GPlatesUtils::ExportTemplateFilenameSequenceImpl::format_ptr_type
-	GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
-			GPlatesUtils::ExportTemplateFilename::FrameNumberFormat>(
+	GPlatesFileIO::ExportTemplateFilenameSequenceImpl::format_ptr_type
+	GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format<
+			GPlatesFileIO::ExportTemplateFilename::FrameNumberFormat>(
 					const QString &format_string)
 	{
 		return format_ptr_type(new ExportTemplateFilename::FrameNumberFormat(
@@ -419,8 +419,8 @@ namespace GPlatesUtils
 }
 
 
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format_info_type
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format()
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format_info_type
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format()
 {
 	// Object to finding matching format and create it.
 	CreateFormat create_format_object(this);
@@ -448,8 +448,8 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format
 }
 
 
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_format_info_type
-GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_format(
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_format_info_type
+GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_format(
 		const QString &rest_of_filename_template)
 {
 	// Object to find matching format.

@@ -34,14 +34,13 @@
 
 #include <QString>
 
-#include "gui/ExportAnimationStrategy.h"
+#include "ExportAnimationStrategy.h"
 
 #include "file-io/File.h"
+#include "file-io/ResolvedTopologicalBoundaryExport.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
-
-#include "utils/ExportTemplateFilenameSequence.h"
 
 
 namespace GPlatesAppLogic
@@ -66,31 +65,62 @@ namespace GPlatesGui
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy> non_null_ptr_type;
 
-		static const QString DEFAULT_RESOLVED_TOPOLOGIES_GMT_FILENAME_TEMPLATE;
-		static const QString DEFAULT_RESOLVED_TOPOLOGIES_SHP_FILENAME_TEMPLATE;
-		static const QString RESOLVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC;
-		static const QString RESOLVED_TOPOLOGIES_DESC;
 
-		enum FileFormat
+		/**
+		 * Configuration options..
+		 */
+		class Configuration :
+				public ExportAnimationStrategy::ConfigurationBase
 		{
-			SHAPEFILE,
-			GMT
+		public:
+			enum FileFormat
+			{
+				SHAPEFILE,
+				GMT
+			};
+
+			explicit
+			Configuration(
+					const QString& filename_template_,
+					FileFormat file_format_,
+					const GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions &output_options_) :
+				ConfigurationBase(filename_template_),
+				file_format(file_format_),
+				output_options(output_options_)
+			{  }
+
+			virtual
+			configuration_base_ptr
+			clone() const
+			{
+				return configuration_base_ptr(new Configuration(*this));
+			}
+
+			FileFormat file_format;
+			GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions output_options;
 		};
 
+		//! Typedef for a shared pointer to const @a Configuration.
+		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
+
+
+		/**
+		 * Creates an export animation strategy.
+		 */
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::ExportAnimationContext &export_animation_context,
-				FileFormat format = GMT,
-				const ExportAnimationStrategy::Configuration &cfg=
-					ExportAnimationStrategy::Configuration(
-							DEFAULT_RESOLVED_TOPOLOGIES_GMT_FILENAME_TEMPLATE));
+				ExportAnimationContext &export_animation_context,
+				const const_configuration_ptr &cfg)
+		{
+			return non_null_ptr_type(
+					new ExportResolvedTopologyAnimationStrategy(
+							export_animation_context, cfg));
+		}
 
 
 		virtual
@@ -116,25 +146,6 @@ namespace GPlatesGui
 		do_export_iteration(
 				std::size_t frame_index);
 
-		virtual
-		const QString&
-		get_default_filename_template();
-
-		virtual
-		const QString&
-		get_filename_template_desc()
-		{
-			return RESOLVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC;
-		}
-
-
-		virtual
-		const QString&
-				get_description()
-		{
-			return RESOLVED_TOPOLOGIES_DESC;
-		}
-
 
 		/**
 		 * Allows Strategy objects to do any housekeeping that might be necessary
@@ -156,41 +167,11 @@ namespace GPlatesGui
 		 * Protected constructor to prevent instantiation on the stack.
 		 * Use the create() method on the individual Strategy subclasses.
 		 */
-		explicit
 		ExportResolvedTopologyAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const QString &filename_template);
+				const const_configuration_ptr &cfg);
 		
 	private:
-		//! Replaces placeholder string when exporting all platepolygons to a single file.
-		static const QString s_placeholder_platepolygons;
-
-		//! Replaces placeholder string when exporting all line geometry to a single file.
-		static const QString s_placeholder_lines;
-
-		//! Replaces placeholder string when exporting all ridge/transform geometry to a single file.
-		static const QString s_placeholder_ridge_transforms;
-
-		//! Replaces placeholder string when exporting all subduction geometry to a single file.
-		static const QString s_placeholder_subductions;
-
-		//! Replaces placeholder string when exporting all left subduction geometry to a single file.
-		static const QString s_placeholder_left_subductions;
-
-		//! Replaces placeholder string when exporting all right subduction geometry to a single file.
-		static const QString s_placeholder_right_subductions;
-
-		//! Replaces placeholder string when exporting 
-		static const QString s_placeholder_slab_polygons;
-
-		//! Replaces placeholder string when exporting 
-		static const QString s_placeholder_slab_edge_leading;
-		static const QString s_placeholder_slab_edge_leading_left;
-		static const QString s_placeholder_slab_edge_leading_right;
-		static const QString s_placeholder_slab_edge_trench;
-		static const QString s_placeholder_slab_edge_side;
-
-
 		//! Typedef for a sequence of resolved topological geometries.
 		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_geom_seq_type;
 
@@ -200,8 +181,8 @@ namespace GPlatesGui
 		 */
 		std::vector<const GPlatesFileIO::File::Reference *> d_loaded_files;
 
-		//! The format of export file.
-		FileFormat d_file_format;
+		//! Export configuration parameters.
+		const_configuration_ptr d_configuration;
 
 
 		/**
@@ -212,10 +193,6 @@ namespace GPlatesGui
 				const resolved_geom_seq_type &resolved_geom_seq,
 				const double &recon_time,
 				const QString &filebasename);
-
-		ExportResolvedTopologyAnimationStrategy();
-		ExportResolvedTopologyAnimationStrategy(
-				const ExportResolvedTopologyAnimationStrategy&);
 	};
 }
 

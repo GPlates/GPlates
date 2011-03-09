@@ -31,13 +31,11 @@
 
 #include <QString>
 
+#include "ExportAnimationStrategy.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
-
-#include "utils/ExportTemplateFilenameSequence.h"
-
-#include "gui/ExportAnimationStrategy.h"
 
 
 namespace GPlatesGui
@@ -56,43 +54,62 @@ namespace GPlatesGui
 			public GPlatesGui::ExportAnimationStrategy
 	{
 	public:
+		/**
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportRotationAnimationStrategy> non_null_ptr_type;
 
- 		enum RotationType
- 		{
-			RELATIVE_COMMA,
-			RELATIVE_SEMI,
-			RELATIVE_TAB,
-			EQUIVALENT_COMMA,
-			EQUIVALENT_SEMI,
-			EQUIVALENT_TAB,
-			INVALID_TYPE=999
-		};
-
-		static const QString DEFAULT_RELATIVE_COMMA_FILENAME_TEMPLATE;
-		static const QString DEFAULT_RELATIVE_SEMI_FILENAME_TEMPLATE;
-		static const QString DEFAULT_RELATIVE_TAB_FILENAME_TEMPLATE;
-		static const QString DEFAULT_EQUIVALENT_COMMA_FILENAME_TEMPLATE;
-		static const QString DEFAULT_EQUIVALENT_SEMI_FILENAME_TEMPLATE;
-		static const QString DEFAULT_EQUIVALENT_TAB_FILENAME_TEMPLATE;
-		static const QString ROTATION_FILENAME_TEMPLATE_DESC;
-		static const QString RELATIVE_ROTATION_DESC;
-		static const QString EQUIVALENT_ROTATION_DESC;
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * Configuration options.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportRotationAnimationStrategy,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		class Configuration :
+				public ExportAnimationStrategy::ConfigurationBase
+		{
+		public:
+ 			enum RotationType
+ 			{
+				RELATIVE_COMMA,
+				RELATIVE_SEMICOLON,
+				RELATIVE_TAB,
+				EQUIVALENT_COMMA,
+				EQUIVALENT_SEMICOLON,
+				EQUIVALENT_TAB
+			};
+
+			explicit
+			Configuration(
+					const QString& filename_template_,
+					RotationType rotation_type_) :
+				ConfigurationBase(filename_template_),
+				rotation_type(rotation_type_)
+			{  }
+
+			virtual
+			configuration_base_ptr
+			clone() const
+			{
+				return configuration_base_ptr(new Configuration(*this));
+			}
+
+			RotationType rotation_type;
+		};
+
+		//! Typedef for a shared pointer to const @a Configuration.
+		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
+
 		
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				RotationType type=EQUIVALENT_COMMA,
-				const ExportAnimationStrategy::Configuration &cfg=
-					ExportAnimationStrategy::Configuration(
-							DEFAULT_EQUIVALENT_COMMA_FILENAME_TEMPLATE));
+				const const_configuration_ptr &export_configuration)
+		{
+			return non_null_ptr_type(
+					new ExportRotationAnimationStrategy(
+							export_animation_context,
+							export_configuration));
+		}
 
 		virtual
 		~ExportRotationAnimationStrategy()
@@ -107,22 +124,6 @@ namespace GPlatesGui
 		do_export_iteration(
 				std::size_t frame_index);
 
-		virtual
-		const QString&
-		get_default_filename_template();
-
-		virtual
-		const QString&
-		get_filename_template_desc();
-
-		virtual
-		const QString&
-				get_description()
-		{
-			return RELATIVE_ROTATION_DESC;
-		}
-
-
 	protected:
 		/**
 		 * Protected constructor to prevent instantiation on the stack.
@@ -131,13 +132,11 @@ namespace GPlatesGui
 		explicit
 		ExportRotationAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const QString &filename_template);
+				const const_configuration_ptr &export_configuration);
 		
 	private:
-		ExportRotationAnimationStrategy();
-		RotationType d_type;
-		char d_delimiter;
-		
+		//! Export configuration parameters.
+		const_configuration_ptr d_configuration;
 	};
 }
 

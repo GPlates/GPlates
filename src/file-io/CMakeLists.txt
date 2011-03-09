@@ -22,6 +22,12 @@ set(srcs
     ErrorOpeningPipeFromGzipException.h
     ErrorOpeningPipeToGzipException.cc
     ErrorOpeningPipeToGzipException.h
+    ExportTemplateFilenameSequence.cc
+    ExportTemplateFilenameSequence.h
+    ExportTemplateFilenameSequenceFormats.cc
+    ExportTemplateFilenameSequenceFormats.h
+    ExportTemplateFilenameSequenceImpl.cc
+    ExportTemplateFilenameSequenceImpl.h
     ExternalProgram.cc
     ExternalProgram.h
     FeatureCollectionFileFormat.cc

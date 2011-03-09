@@ -30,9 +30,7 @@
 #include "ExportAnimationDialog.h"
 
 #include "gui/AnimationController.h"
-
-#include "utils/ExportTemplateFilenameSequence.h"
-#include "utils/ExportAnimationStrategyFactory.h"
+#include "gui/ExportAnimationStrategy.h"
 
 
 GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
@@ -351,7 +349,7 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_parameters()
 {
 	QTableWidget * table_widget = NULL;
 	QString path;
-	if(radioButton_single->isChecked())
+	if (radioButton_single->isChecked())
 	{
 		table_widget=tableWidget_single;
 		path=lineEdit_single_path->text();
@@ -365,19 +363,29 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_parameters()
 		path=lineEdit_range_path->text();
 	}
 	
-	for(int i=0; i<table_widget->rowCount();i++)
+	for (int i=0; i<table_widget->rowCount();i++)
 	{
-		GPlatesUtils::Exporter_ID class_id=
-			d_configure_parameters_dialog_ptr->d_export_item_map
-			[get_export_item_name(table_widget->item(i,0))]
-			[get_export_item_type(table_widget->item(i,1))]
-			.class_id;
-		GPlatesGui::ExportAnimationStrategy::Configuration cfg(
-				table_widget->item(i,2)->text());
-		
-		d_export_animation_context_ptr->add_exporter(
-				class_id,
-				cfg);
+		const GPlatesGui::ExportAnimationType::Type export_type =
+				ConfigureExportParametersDialog::get_export_type(table_widget->item(i,0));
+		const GPlatesGui::ExportAnimationType::Format export_format =
+				ConfigureExportParametersDialog::get_export_format(table_widget->item(i,1));
+
+		const GPlatesGui::ExportAnimationType::ExportID export_id =
+				get_export_id(export_type, export_format);
+
+		const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration =
+				ConfigureExportParametersDialog::get_export_configuration(
+						table_widget->item(i,2));
+
+		// This shouldn't happen but check just in case.
+		if (!export_configuration)
+		{
+			qWarning() << "Ignoring NULL export_configuration and associated exporter.";
+			continue;
+		}
+
+		d_export_animation_context_ptr->add_export_animation_strategy(
+				export_id, export_configuration);
 	}
 }
 
@@ -429,12 +437,6 @@ GPlatesQtWidgets::ExportAnimationDialog::react_abort_button_clicked()
 }
 
 void
-GPlatesQtWidgets::ExportAnimationDialog::react_configure_export_parameters_clicked()
-{
-	d_configure_parameters_dialog_ptr->exec();
-}
-
-void
 GPlatesQtWidgets::ExportAnimationDialog::react_add_export_clicked()
 {
 	QTableWidget * table_widget = NULL;
@@ -447,7 +449,7 @@ GPlatesQtWidgets::ExportAnimationDialog::react_add_export_clicked()
 		table_widget = tableWidget_range;
 	}
 	update_status_message("Ready to export");
-	d_configure_parameters_dialog_ptr->init(this, table_widget);
+	d_configure_parameters_dialog_ptr->initialise(table_widget);
 	d_configure_parameters_dialog_ptr->exec();
 }
 
@@ -468,43 +470,49 @@ GPlatesQtWidgets::ExportAnimationDialog::react_remove_export_clicked()
 
 void
 GPlatesQtWidgets::ExportAnimationDialog::insert_item(
-		ConfigureExportParametersDialog::ExportItemName item, 
-		ConfigureExportParametersDialog::ExportItemType type,
-		QString filename)
+		GPlatesGui::ExportAnimationType::Type export_type, 
+		GPlatesGui::ExportAnimationType::Format export_format,
+		const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration)
 {
-	QTableWidget *tableWidget=NULL;
-	if(radioButton_single->isChecked())
+	QTableWidget *tableWidget = NULL;
+	if (radioButton_single->isChecked())
 	{
-		tableWidget=tableWidget_single;
+		tableWidget = tableWidget_single;
 	}
 	else
 	{
-		tableWidget=tableWidget_range;
+		tableWidget = tableWidget_range;
 	}
 
 	tableWidget->setSortingEnabled(false);
 	tableWidget->insertRow(0);
 	 	
- 	QTableWidgetItem *name_item = new ExportItem(item);
+ 	QTableWidgetItem *type_item =
+			new ConfigureExportParametersDialog::ExportTypeWidgetItem<QTableWidgetItem>(export_type);
 	tableWidget->setItem(
 			0,
 			0,
-			name_item);
-	name_item->setText(ConfigureExportParametersDialog::d_name_map[item]);
+			type_item);
+	type_item->setText(get_export_type_name(export_type));
 	
-	QTableWidgetItem *type_item = new ExportTypeItem(type);
+	QTableWidgetItem *format_item =
+			new ConfigureExportParametersDialog::ExportFormatWidgetItem<QTableWidgetItem>(export_format);
 	tableWidget->setItem(
 			0,
 			1,
-			type_item);
-			type_item->setText(ConfigureExportParametersDialog::d_type_map[type]);
+			format_item);
+	format_item->setText(get_export_format_description(export_format));
 	
+	QTableWidgetItem *configuration_item =
+			new ConfigureExportParametersDialog::ExportConfigurationWidgetItem<QTableWidgetItem>(export_configuration);
 	tableWidget->setItem(
 			0,
 			2,
-			new QTableWidgetItem(filename));
+			configuration_item);
+	configuration_item->setText(export_configuration->get_filename_template());
 
-	tableWidget->setSortingEnabled(true);	
+
+	tableWidget->setSortingEnabled(true);
 
 	if(radioButton_single->isChecked())
 	{
@@ -672,74 +680,38 @@ GPlatesQtWidgets::ExportAnimationDialog::update_target_directory(
 void
 GPlatesQtWidgets::ExportAnimationDialog::react_remove_all_clicked()
 {
-	QTableWidget *tableWidget=NULL;
-	if(d_is_single_frame)
+	QTableWidget *tableWidget = NULL;
+	if (d_is_single_frame)
 	{
-		tableWidget=tableWidget_single;
+		tableWidget = tableWidget_single;
 	}
 	else
 	{
-		tableWidget=tableWidget_range;
+		tableWidget = tableWidget_range;
 	}
 	
-	while(tableWidget->rowCount())
+	while (tableWidget->rowCount())
 	{
 		tableWidget->removeRow(0);
 	}
-	GPlatesQtWidgets::ConfigureExportParametersDialog::export_item_map_type::iterator it;
-	for(it=d_configure_parameters_dialog_ptr->d_export_item_map.begin();
-		it!=d_configure_parameters_dialog_ptr->d_export_item_map.end();
-		it++)
-	{
-		GPlatesQtWidgets::ConfigureExportParametersDialog::export_type_map_type::iterator inner_it;
 
-		for(inner_it=(*it).second.begin();
-			inner_it!=(*it).second.end();
-			inner_it++)
-		{			
-			(*inner_it).second.has_been_added=false;
-		}
-	}
-	return;
+	d_configure_parameters_dialog_ptr->initialise(tableWidget);
 }
 
 void
 GPlatesQtWidgets::ExportAnimationDialog::react_add_all_clicked()
 {
 	QTableWidget *tableWidget = NULL;
-	if(d_is_single_frame)
+	if (d_is_single_frame)
 	{
-		tableWidget=tableWidget_single;
+		tableWidget = tableWidget_single;
 	}
 	else
 	{
-		tableWidget=tableWidget_range;
+		tableWidget = tableWidget_range;
 	}
-	GPlatesQtWidgets::ConfigureExportParametersDialog::export_item_map_type::iterator it;
-	for(it=d_configure_parameters_dialog_ptr->d_export_item_map.begin();
-		it!=d_configure_parameters_dialog_ptr->d_export_item_map.end();
-		it++)
-	{
-		GPlatesQtWidgets::ConfigureExportParametersDialog::export_type_map_type::iterator inner_it;
 
-		for(inner_it=(*it).second.begin();
-			inner_it!=(*it).second.end();
-			inner_it++)
-		{
-			if(!(*inner_it).second.has_been_added)
-			{
-				QString filename = 
-					GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
-							(*inner_it).second.class_id,
-							*d_export_animation_context_ptr)->get_default_filename_template();
-				insert_item(
-						(*it).first,
-						(*inner_it).first,
-						filename);
-				(*inner_it).second.has_been_added=true;
-			}
-		}
-	}
+	// Add any exports that have not been added so far.
+	// This will in turn call our 'insert_item' method for each remaining export to be added.
+	d_configure_parameters_dialog_ptr->add_all_remaining_exports();
 }
-
-

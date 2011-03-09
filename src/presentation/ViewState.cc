@@ -45,6 +45,7 @@
 #include "gui/ColourSchemeDelegator.h"
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
+#include "gui/ExportAnimationRegistry.h"
 #include "gui/FeatureFocus.h"
 #include "gui/GeometryFocusHighlight.h"
 #include "gui/GraticuleSettings.h"
@@ -126,6 +127,8 @@ GPlatesPresentation::ViewState::ViewState(
 				get_default_graticules_colour())),
 	d_text_overlay_settings(
 			new GPlatesGui::TextOverlaySettings()),
+	d_export_animation_registry(
+			new GPlatesGui::ExportAnimationRegistry()),
 	d_sleeper(
 			new GPlatesApi::Sleeper())
 {
@@ -142,6 +145,10 @@ GPlatesPresentation::ViewState::ViewState(
 			*d_visual_layer_registry,
 			d_application_state,
 			*this);
+
+	// Set up the ExportAnimationRegistry.
+	register_default_export_animation_types(
+			*d_export_animation_registry);
 }
 
 
@@ -441,3 +448,8 @@ GPlatesPresentation::ViewState::get_text_overlay_settings() const
 	return *d_text_overlay_settings;
 }
 
+GPlatesGui::ExportAnimationRegistry &
+GPlatesPresentation::ViewState::get_export_animation_registry() const
+{
+	return *d_export_animation_registry;
+}

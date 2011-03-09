@@ -97,7 +97,7 @@ namespace
 
 		const QString output_basename = substitute_placeholder(
 				output_filename_prefix,
-				GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+				GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
 				cap_qfileinfo.fileName());
 				//cap_filename);
 
@@ -105,36 +105,14 @@ namespace
 	}
 }
 
-const QString 
-GPlatesGui::ExportVelocityAnimationStrategy::DEFAULT_MESH_VELOCITIES_FILENAME_TEMPLATE
-		="velocity_colat+lon_at_%u_%0.2fMa_on_mesh-%P.gpml";
-const QString 
-GPlatesGui::ExportVelocityAnimationStrategy::MESH_VELOCITIES_FILENAME_TEMPLATE_DESC
-		=FORMAT_CODE_DESC;
-const QString 
-GPlatesGui::ExportVelocityAnimationStrategy::MESH_VELOCITIES_DESC
-		="Export velocity data.";
-
-const GPlatesGui::ExportVelocityAnimationStrategy::non_null_ptr_type
-GPlatesGui::ExportVelocityAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const ExportAnimationStrategy::Configuration& cfg)
-{
-	ExportVelocityAnimationStrategy * ptr=
-			new ExportVelocityAnimationStrategy(export_animation_context,
-			cfg.filename_template()); 
-	
-	return non_null_ptr_type(
-			ptr,
-			GPlatesUtils::NullIntrusivePointerHandler());
-}
 
 GPlatesGui::ExportVelocityAnimationStrategy::ExportVelocityAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const QString filename_template):
-	ExportAnimationStrategy(export_animation_context)
+		const const_configuration_ptr &configuration):
+	ExportAnimationStrategy(export_animation_context),
+	d_configuration(configuration)
 {
-	set_template_filename(filename_template);
+	set_template_filename(d_configuration->get_filename_template());
 
 	// This code is copied from "gui/ExportReconstructedGeometryAnimationStrategy.cc".
 	GPlatesAppLogic::FeatureCollectionFileState &file_state =
@@ -448,11 +426,7 @@ bool
 GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-	if(!check_filename_sequence())
-	{
-		return false;
-	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
 	// Assemble parts of this iteration's filename from the template filename sequence.
@@ -510,18 +484,6 @@ GPlatesGui::ExportVelocityAnimationStrategy::wrap_up(
 	// iteration operations that might need to occur. Perhaps all iterations end
 	// up in the same file and we should close that file (if all steps completed
 	// successfully).
-}
-
-const QString&
-GPlatesGui::ExportVelocityAnimationStrategy::get_default_filename_template()
-{
-	return DEFAULT_MESH_VELOCITIES_FILENAME_TEMPLATE;
-}
-
-const QString&
-GPlatesGui::ExportVelocityAnimationStrategy::get_filename_template_desc()
-{
-	return MESH_VELOCITIES_FILENAME_TEMPLATE_DESC;
 }
 
 

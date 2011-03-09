@@ -45,63 +45,20 @@
 #include "presentation/ViewState.h"
 
 
- const QString GPlatesGui::ExportRasterAnimationStrategy::DEFAULT_RASTER_BMP_FILENAME_TEMPLATE
-		="raster_%0.2f.bmp";
- const QString GPlatesGui::ExportRasterAnimationStrategy::DEFAULT_RASTER_JPG_FILENAME_TEMPLATE
-		 ="raster_%0.2f.jpg";
- const QString GPlatesGui::ExportRasterAnimationStrategy::DEFAULT_RASTER_JPEG_FILENAME_TEMPLATE
-		 ="raster_%0.2f.jpeg";
- const QString GPlatesGui::ExportRasterAnimationStrategy::DEFAULT_RASTER_PNG_FILENAME_TEMPLATE
-	 ="raster_%0.2f.png";
- const QString GPlatesGui::ExportRasterAnimationStrategy::DEFAULT_RASTER_PPM_FILENAME_TEMPLATE
-		 ="raster_%0.2f.ppm";
- const QString GPlatesGui::ExportRasterAnimationStrategy::DEFAULT_RASTER_TIFF_FILENAME_TEMPLATE
-		 ="raster_%0.2f.tiff";
- const QString GPlatesGui::ExportRasterAnimationStrategy::DEFAULT_RASTER_XBM_FILENAME_TEMPLATE
-		 ="raster_%0.2f.xbm";
- const QString GPlatesGui::ExportRasterAnimationStrategy::DEFAULT_RASTER_XPM_FILENAME_TEMPLATE
-		="raster_%0.2f.xpm";
- const QString GPlatesGui::ExportRasterAnimationStrategy::RASTER_DESC
- 		="Export raster data as image.";
- const QString GPlatesGui::ExportRasterAnimationStrategy::RASTER_FILENAME_TEMPLATE_DESC
-		=FORMAT_CODE_DESC;
- 
-
-const GPlatesGui::ExportRasterAnimationStrategy::non_null_ptr_type
-GPlatesGui::ExportRasterAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
-		ImageType type,
-		const ExportAnimationStrategy::Configuration& cfg)
-{
-	ExportRasterAnimationStrategy* ptr=
-		new ExportRasterAnimationStrategy(
-				export_animation_context,
-				cfg.filename_template());
-	
-	ptr->d_type=type;
-
-		return non_null_ptr_type(
-			ptr,
-			GPlatesUtils::NullIntrusivePointerHandler());
-}
-
 GPlatesGui::ExportRasterAnimationStrategy::ExportRasterAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const QString &filename_template):
-	ExportAnimationStrategy(export_animation_context)
+		const const_configuration_ptr &configuration):
+	ExportAnimationStrategy(export_animation_context),
+	d_configuration(configuration)
 {
-	set_template_filename(filename_template);
+	set_template_filename(d_configuration->get_filename_template());
 }
 
 bool
 GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {	
-	if(!check_filename_sequence())
-	{
-		return false;
-	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
 	// Figure out a filename from the template filename sequence.
@@ -143,46 +100,3 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
 }
-
-const QString&
-GPlatesGui::ExportRasterAnimationStrategy::get_default_filename_template()
-{
-	switch(d_type)
-	{
-		case BMP:
-			return DEFAULT_RASTER_BMP_FILENAME_TEMPLATE;
-			break;
-		case JPG:
-			return DEFAULT_RASTER_JPG_FILENAME_TEMPLATE;
-			break;
-		case JPEG:
-			return DEFAULT_RASTER_JPEG_FILENAME_TEMPLATE;
-			break;
-		case PNG:
-			return DEFAULT_RASTER_PNG_FILENAME_TEMPLATE;
-			break;
-		case PPM:
-			return DEFAULT_RASTER_PPM_FILENAME_TEMPLATE;
-			break;
-		case TIFF:
-			return DEFAULT_RASTER_TIFF_FILENAME_TEMPLATE;
-			break;
-		case XBM:
-			return DEFAULT_RASTER_XBM_FILENAME_TEMPLATE;
-			break;
-		case XPM:
-			return DEFAULT_RASTER_XPM_FILENAME_TEMPLATE;
-			break;
-		default:
-			return DEFAULT_RASTER_JPG_FILENAME_TEMPLATE;
-			break;
-	}
-}
-
-const QString&
-GPlatesGui::ExportRasterAnimationStrategy::get_filename_template_desc()
-{
-	return RASTER_FILENAME_TEMPLATE_DESC;
-}
-
-

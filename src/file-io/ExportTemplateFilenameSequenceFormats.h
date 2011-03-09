@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCEFORMATS_H
-#define GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCEFORMATS_H
+#ifndef GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCEFORMATS_H
+#define GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCEFORMATS_H
 
 #include <cstddef>
 #include <boost/mpl/vector.hpp>
@@ -37,7 +37,7 @@
 #include "model/types.h"
 
 
-namespace GPlatesUtils
+namespace GPlatesFileIO
 {
 	namespace ExportTemplateFilename
 	{
@@ -434,4 +434,4 @@ namespace GPlatesUtils
 	}
 }
 
-#endif // GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCEFORMATS_H
+#endif // GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCEFORMATS_H

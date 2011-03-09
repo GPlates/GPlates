@@ -30,114 +30,27 @@
 
 #include "ExportResolvedTopologyAnimationStrategy.h"
 
+#include "AnimationController.h"
+#include "ExportAnimationContext.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 
-#include "file-io/ResolvedTopologicalBoundaryExport.h"
-
-#include "gui/ExportAnimationContext.h"
-#include "gui/AnimationController.h"
-
 #include "presentation/ViewState.h"
-
-#include "utils/ExportTemplateFilenameSequence.h"
 
 #include "view-operations/RenderedGeometryUtils.h"
 
 
-const QString 
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::
-	DEFAULT_RESOLVED_TOPOLOGIES_GMT_FILENAME_TEMPLATE
-		="Polygons.%P.%d.xy";
-
-const QString 
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::
-	DEFAULT_RESOLVED_TOPOLOGIES_SHP_FILENAME_TEMPLATE
-		="Polygons.%P.%d.shp";
-
-const QString 
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::
-	RESOLVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC
-		=FORMAT_CODE_DESC;
-
-const QString GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLVED_TOPOLOGIES_DESC  =
-		"Export resolved topologies:\n"
-		"- exports resolved topological closed plate polygons,\n"
-		"- optionally exports the subsegment geometries of polygon boundaries.\n";
-
-//
-// Plate Polygon related data 
-//
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_platepolygons("platepolygons");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_lines("lines");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_ridge_transforms("ridge_transform_boundaries");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_subductions("subduction_boundaries");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_left_subductions("subduction_boundaries_sL");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_right_subductions("subduction_boundaries_sR");
-
-//
-// Slab Polygon related data
-//
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_slab_polygons("slab_polygons");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_slab_edge_leading("slab_edges_leading");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_slab_edge_leading_left("slab_edges_leading_sL");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_slab_edge_leading_right("slab_edges_leading_sR");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_slab_edge_trench("slab_edges_trench");
-
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_slab_edge_side("slab_edges_side");
-
-
-
-
-const GPlatesGui::ExportResolvedTopologyAnimationStrategy::non_null_ptr_type
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
-		FileFormat format,
-		const ExportAnimationStrategy::Configuration& cfg)
-{
-	ExportResolvedTopologyAnimationStrategy * ptr = 
-			new ExportResolvedTopologyAnimationStrategy(
-					export_animation_context,
-					cfg.filename_template());
-
-	ptr->d_file_format = format;
-		
-	return non_null_ptr_type(
-			ptr,
-			GPlatesUtils::NullIntrusivePointerHandler());
-}
-
-
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const QString &filename_template):
-	ExportAnimationStrategy(export_animation_context)
+		const const_configuration_ptr &cfg) :
+	ExportAnimationStrategy(export_animation_context),
+	d_configuration(cfg)
 {
-	set_template_filename(filename_template);
+	set_template_filename(d_configuration->get_filename_template());
 	
 	GPlatesAppLogic::FeatureCollectionFileState &file_state =
 			d_export_animation_context_ptr->view_state().get_application_state()
@@ -170,7 +83,7 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
 	//So there is no need to add them here again.
 	const QString suffix =
 			"." +
-			GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING +
+			GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING +
 			".%d";
 
 	const QString modified_template_filename =
@@ -187,11 +100,7 @@ bool
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-	if(!check_filename_sequence())
-	{
-		return false;
-	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
 	// Assemble parts of this iteration's filename from the template filename sequence.
@@ -252,62 +161,14 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 {
 	const QDir &target_dir = d_export_animation_context_ptr->target_dir();
 
-	// TODO: Expose these options in the export GUI and only set placeholder strings for
-	// those export types selected by the user.
-	GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions output_options;
-	output_options.placeholder_platepolygons = s_placeholder_platepolygons;
-	output_options.placeholder_lines = s_placeholder_lines;
-	output_options.placeholder_ridge_transforms = s_placeholder_ridge_transforms;
-	output_options.placeholder_subductions = s_placeholder_subductions;
-	output_options.placeholder_left_subductions = s_placeholder_left_subductions;
-	output_options.placeholder_right_subductions = s_placeholder_right_subductions;
-	output_options.placeholder_slab_polygons = s_placeholder_slab_polygons;
-	output_options.placeholder_slab_edge_leading = s_placeholder_slab_edge_leading;
-	output_options.placeholder_slab_edge_leading_left = s_placeholder_slab_edge_leading_left;
-	output_options.placeholder_slab_edge_leading_right = s_placeholder_slab_edge_leading_right;
-	output_options.placeholder_slab_edge_trench = s_placeholder_slab_edge_trench;
-	output_options.placeholder_slab_edge_side = s_placeholder_slab_edge_side;
-
-	// For time being don't also export plate polygons or slab polygon to individual files.
-	//
-	// TODO: Remove when this can be set by user via the GUI.
-	output_options.export_individual_plate_polygon_files = false;
-	output_options.export_individual_slab_polygon_files = false;
-
-	// For time being only also export subsegments of plate polygons to 'lines' file.
-	// Not also exporting subsegments of slab polygons to 'lines' file.
-	//
-	// TODO: Remove when this can be set by user via the GUI.
-	output_options.export_plate_polygon_subsegments_to_lines = true;
-	output_options.export_slab_polygon_subsegments_to_lines = false;
-
 	GPlatesFileIO::ResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
 			target_dir,
 			filebasename,
-			GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
-			output_options,
+			GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+			d_configuration->output_options,
 			GPlatesFileIO::ResolvedTopologicalBoundaryExport::get_export_file_format(filebasename),
 			resolved_geom_seq,
 			d_loaded_files,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 			d_export_animation_context_ptr->view_time());
 }
-
-
-const QString&
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::get_default_filename_template()
-{
-	switch(d_file_format)
-	{
-	case SHAPEFILE:
-		return DEFAULT_RESOLVED_TOPOLOGIES_SHP_FILENAME_TEMPLATE;
-		break;
-	case GMT:
-		return DEFAULT_RESOLVED_TOPOLOGIES_GMT_FILENAME_TEMPLATE;
-		break;
-	default:
-		return DEFAULT_RESOLVED_TOPOLOGIES_GMT_FILENAME_TEMPLATE;
-		break;
-	}
-}
-
