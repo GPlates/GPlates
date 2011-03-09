@@ -89,8 +89,8 @@ namespace GPlatesQtWidgets
 		public:
 			explicit
 			ExportTypeWidgetItem(
-					GPlatesGui::ExportAnimationType::Type type):
-			d_type(type)
+					GPlatesGui::ExportAnimationType::Type type_):
+			d_type(type_)
 			{  }
 
 			GPlatesGui::ExportAnimationType::Type
@@ -135,8 +135,8 @@ namespace GPlatesQtWidgets
 		public:
 			explicit
 			ExportFormatWidgetItem(
-					GPlatesGui::ExportAnimationType::Format format):
-			d_format(format)
+					GPlatesGui::ExportAnimationType::Format format_):
+			d_format(format_)
 			{  }
 
 			GPlatesGui::ExportAnimationType::Format
@@ -181,8 +181,8 @@ namespace GPlatesQtWidgets
 		public:
 			explicit
 			ExportConfigurationWidgetItem(
-					const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &configuration) :
-				d_configuration(configuration)
+					const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &configuration_) :
+				d_configuration(configuration_)
 			{  }
 
 			const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &

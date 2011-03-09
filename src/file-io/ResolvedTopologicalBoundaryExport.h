@@ -83,7 +83,7 @@ namespace GPlatesFileIO
 		{
 			explicit
 			OutputOptions(
-					bool export_individual_plate_polygon_file_ = false,
+					bool export_individual_plate_polygon_files_ = false,
 					bool export_individual_slab_polygon_files_ = false,
 					bool export_plate_polygon_subsegments_to_lines_ = false,
 					bool export_slab_polygon_subsegments_to_lines_ = false,
@@ -100,21 +100,21 @@ namespace GPlatesFileIO
 					const QString &placeholder_slab_edge_trench_ = "slab_edges_trench",
 					const QString &placeholder_slab_edge_side_ = "slab_edges_side") :
 				placeholder_platepolygons(placeholder_platepolygons_),
+				placeholder_slab_polygons(placeholder_slab_polygons_),
 				placeholder_lines(placeholder_lines_),
 				placeholder_ridge_transforms(placeholder_ridge_transforms_),
 				placeholder_subductions(placeholder_subductions_),
 				placeholder_left_subductions(placeholder_left_subductions_),
 				placeholder_right_subductions(placeholder_right_subductions_),
-				placeholder_slab_polygons(placeholder_slab_polygons_),
 				placeholder_slab_edge_leading(placeholder_slab_edge_leading_),
 				placeholder_slab_edge_leading_left(placeholder_slab_edge_leading_left_),
 				placeholder_slab_edge_leading_right(placeholder_slab_edge_leading_right_),
 				placeholder_slab_edge_trench(placeholder_slab_edge_trench_),
 				placeholder_slab_edge_side(placeholder_slab_edge_side_),
-				export_individual_plate_polygon_files(false),
-				export_individual_slab_polygon_files(false),
-				export_plate_polygon_subsegments_to_lines(false),
-				export_slab_polygon_subsegments_to_lines(false)
+				export_individual_plate_polygon_files(export_individual_plate_polygon_files_),
+				export_individual_slab_polygon_files(export_individual_slab_polygon_files_),
+				export_plate_polygon_subsegments_to_lines(export_plate_polygon_subsegments_to_lines_),
+				export_slab_polygon_subsegments_to_lines(export_slab_polygon_subsegments_to_lines_)
 			{  }
 
 			// Plate polygons.

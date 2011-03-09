@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_EXPORTANIMATIONTYPE_H
 #define GPLATES_GUI_EXPORTANIMATIONTYPE_H
 
+#include <vector>
 #include <boost/cstdint.hpp>
 #include <QString>
 

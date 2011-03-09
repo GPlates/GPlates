@@ -211,8 +211,8 @@ namespace GPlatesGui
 
 			ExportAnimationStrategy::const_configuration_base_ptr default_export_configuration;
 			create_export_animation_strategy_function_type create_export_animation_strategy_function;
-			validate_filename_template_function_type validate_filename_template_function;
 			create_export_options_widget_function_type create_export_options_widget_function;
+			validate_filename_template_function_type validate_filename_template_function;
 		};
 
 		typedef std::map<ExportAnimationType::ExportID, ExporterInfo> exporter_info_map_type;
