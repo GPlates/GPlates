@@ -43,6 +43,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "qt-widgets/ExportResolvedTopologicalBoundaryOptionsWidget.h"
+
 
 namespace GPlatesGui
 {
@@ -79,6 +81,46 @@ namespace GPlatesGui
 			return ExportAnimationStrategyType::create(
 					export_animation_context,
 					derived_export_configuration);
+		}
+
+
+		/**
+		 * Function to create an @a ExportOptionsWidget derived type ExportOptionsWidgetType
+		 * passing in a default export configuration.
+		 *
+		 * Expects derived type ExportOptionsWidgetType to contain a static method 'create'
+		 * that accepts the following parameters:
+		 * - a 'QWidget' pointer (the parent widget), and
+		 * - an export configuration of type ExportAnimationStrategyType::const_configuration_ptr (see below).
+		 *
+		 * Expects derived type ExportAnimationStrategyType to contain:
+		 * - a nested type called 'const_configuration_base_ptr' that is implicitly convertible
+		 *   to a ExportAnimationStrategy::const_configuration_base_ptr (ie, a boost::shared_ptr), and
+		 * - a nested type called 'Configuration' that is derived from
+		 *   ExportAnimationStrategy::ConfigurationBase.
+		 */
+		template <class ExportOptionsWidgetType, class ExportAnimationStrategyType>
+		GPlatesQtWidgets::ExportOptionsWidget *
+		create_export_options_widget(
+				QWidget *parent,
+				const ExportAnimationStrategy::const_configuration_base_ptr &default_export_configuration)
+		{
+			// Cast the 'ExportAnimationStrategy::ConfigurationBase'
+			// to a 'ExportAnimationStrategyType::Configuration'.
+			typename ExportAnimationStrategyType::const_configuration_ptr
+					default_derived_export_configuration =
+							boost::dynamic_pointer_cast<
+									const typename ExportAnimationStrategyType::Configuration>(
+											default_export_configuration);
+
+			// The cast failed - this shouldn't happen - assert so programmer can fix bug.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					default_derived_export_configuration,
+					GPLATES_ASSERTION_SOURCE);
+
+			return ExportOptionsWidgetType::create(
+					parent,
+					default_derived_export_configuration);
 		}
 
 
@@ -308,15 +350,25 @@ GPlatesGui::register_default_export_animation_types(
 	// Export resolved topologies
 	//
 
-	// By default don't export individual plate or slab polygons,
-	// don't export slab polygon subsegments to the 'lines' file,
-	// but do export plate polygon subsegments to the 'lines' file.
+	// By default don't export individual plate or slab polygons and
+	// don't export slab polygon subsegments to the 'lines' file.
 	const GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions
 			default_resolved_topological_boundary_export_options(
-					false/*export_individual_plate_polygon_file*/,
-					false/*export_individual_slab_polygon_files*/,
-					true/*export_plate_polygon_subsegments_to_lines*/,
-					false/*export_slab_polygon_subsegments_to_lines*/);
+					/*export_all_plate_polygons_to_a_single_file*/true,
+					/*export_all_slab_polygons_to_a_single_file*/true,
+					/*export_individual_plate_polygon_files*/false,
+					/*export_individual_slab_polygon_files*/false,
+					/*export_plate_polygon_subsegments_to_lines*/true,
+					/*export_slab_polygon_subsegments_to_lines*/false,
+					/*export_ridge_transforms*/true,
+					/*export_subductions*/true,
+					/*export_left_subductions*/true,
+					/*export_right_subductions*/true,
+					/*export_slab_edge_leading*/true,
+					/*export_slab_edge_leading_left*/true,
+					/*export_slab_edge_leading_right*/true,
+					/*export_slab_edge_trench*/true,
+					/*export_slab_edge_side*/true);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -328,7 +380,9 @@ GPlatesGui::register_default_export_animation_types(
 							ExportResolvedTopologyAnimationStrategy::Configuration::GMT,
 							default_resolved_topological_boundary_export_options)),
 			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
-			&create_null_export_options_widget,
+			&create_export_options_widget<
+					GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
+					ExportResolvedTopologyAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
 	registry.register_exporter(
@@ -341,7 +395,9 @@ GPlatesGui::register_default_export_animation_types(
 							ExportResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE,
 							default_resolved_topological_boundary_export_options)),
 			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
-			&create_null_export_options_widget,
+			&create_export_options_widget<
+					GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
+					ExportResolvedTopologyAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
 	//

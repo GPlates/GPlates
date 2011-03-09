@@ -70,6 +70,13 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy> non_null_ptr_type;
 
 
+		class Configuration;
+
+		//! Typedef for a shared pointer to const @a Configuration.
+		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
+		//! Typedef for a shared pointer to @a Configuration.
+		typedef boost::shared_ptr<Configuration> configuration_ptr;
+
 		/**
 		 * Configuration options..
 		 */
@@ -97,15 +104,12 @@ namespace GPlatesGui
 			configuration_base_ptr
 			clone() const
 			{
-				return configuration_base_ptr(new Configuration(*this));
+				return configuration_ptr(new Configuration(*this));
 			}
 
 			FileFormat file_format;
 			GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions output_options;
 		};
-
-		//! Typedef for a shared pointer to const @a Configuration.
-		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
 
 
 		/**

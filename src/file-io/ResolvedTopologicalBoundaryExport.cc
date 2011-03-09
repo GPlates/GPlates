@@ -175,8 +175,7 @@ namespace GPlatesFileIO
 					Output &output)
 			{
 				// The export file with all subsegments (regardless of type).
-				if (output_options.placeholder_lines &&
-					output_options.export_plate_polygon_subsegments_to_lines)
+				if (output_options.export_plate_polygon_subsegments_to_lines)
 				{
 					output.lines.back().sub_segments.push_back(&sub_segment);
 				}
@@ -191,22 +190,22 @@ namespace GPlatesFileIO
 				switch (sub_segment_type)
 				{
 				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT:
-					if (output_options.placeholder_subductions)
+					if (output_options.export_subductions)
 					{
 						output.subductions.back().sub_segments.push_back(&sub_segment);
 					}
-					if (output_options.placeholder_left_subductions)
+					if (output_options.export_left_subductions)
 					{
 						output.left_subductions.back().sub_segments.push_back(&sub_segment);
 					}
 					break;
 
 				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT:
-					if (output_options.placeholder_subductions)
+					if (output_options.export_subductions)
 					{
 						output.subductions.back().sub_segments.push_back(&sub_segment);
 					}
-					if (output_options.placeholder_right_subductions)
+					if (output_options.export_right_subductions)
 					{
 						output.right_subductions.back().sub_segments.push_back(&sub_segment);
 					}
@@ -215,7 +214,7 @@ namespace GPlatesFileIO
 				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN:
 					// We know it's a subduction zone but don't know if left or right
 					// so export to the subduction zone file only.
-					if (output_options.placeholder_subductions)
+					if (output_options.export_subductions)
 					{
 						output.subductions.back().sub_segments.push_back(&sub_segment);
 					}
@@ -223,7 +222,7 @@ namespace GPlatesFileIO
 
 				case SUB_SEGMENT_TYPE_OTHER:
 				default:
-					if (output_options.placeholder_ridge_transforms)
+					if (output_options.export_ridge_transforms)
 					{
 						output.ridge_transforms.back().sub_segments.push_back(&sub_segment);
 					}
@@ -240,33 +239,33 @@ namespace GPlatesFileIO
 					Output &output)
 			{
 				// Add the plate polygon if they are being exported.
-				if (output_options.placeholder_platepolygons)
+				if (output_options.export_all_plate_polygons_to_a_single_file)
 				{
 					output.platepolygons.push_back(resolved_geom);
 				}
 
 				// The export file with all subsegments (regardless of type).
-				if (output_options.placeholder_lines)
+				if (output_options.export_plate_polygon_subsegments_to_lines)
 				{
 					output.lines.push_back(SubSegmentGroup(resolved_geom));
 				}
 				// The export file for all subductions.
-				if (output_options.placeholder_subductions)
+				if (output_options.export_subductions)
 				{
 					output.subductions.push_back(SubSegmentGroup(resolved_geom));
 				}
 				// The export file for all left subductions.
-				if (output_options.placeholder_left_subductions)
+				if (output_options.export_left_subductions)
 				{
 					output.left_subductions.push_back(SubSegmentGroup(resolved_geom));
 				}
 				// The export file for all right subductions.
-				if (output_options.placeholder_right_subductions)
+				if (output_options.export_right_subductions)
 				{
 					output.right_subductions.push_back(SubSegmentGroup(resolved_geom));
 				}
 				// The export file for all ridge transforms.
-				if (output_options.placeholder_ridge_transforms)
+				if (output_options.export_ridge_transforms)
 				{
 					output.ridge_transforms.push_back(SubSegmentGroup(resolved_geom));
 				}
@@ -295,8 +294,7 @@ namespace GPlatesFileIO
 					Output &output)
 			{
 				// The export file with all subsegments (regardless of type).
-				if (output_options.placeholder_lines &&
-					output_options.export_slab_polygon_subsegments_to_lines)
+				if (output_options.export_slab_polygon_subsegments_to_lines)
 				{
 					output.lines.back().sub_segments.push_back(&sub_segment);
 				}
@@ -311,29 +309,29 @@ namespace GPlatesFileIO
 				switch (sub_segment_type)
 				{
 				case SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING_LEFT:
-					if (output_options.placeholder_slab_edge_leading)
+					if (output_options.export_slab_edge_leading)
 					{
 						output.slab_edge_leading.back().sub_segments.push_back(&sub_segment);
 					}
-					if (output_options.placeholder_slab_edge_leading_left)
+					if (output_options.export_slab_edge_leading_left)
 					{
 						output.slab_edge_leading_left.back().sub_segments.push_back(&sub_segment);
 					}
 					break;
 
 				case SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING_RIGHT:
-					if (output_options.placeholder_slab_edge_leading)
+					if (output_options.export_slab_edge_leading)
 					{
 						output.slab_edge_leading.back().sub_segments.push_back(&sub_segment);
 					}
-					if (output_options.placeholder_slab_edge_leading_right)
+					if (output_options.export_slab_edge_leading_right)
 					{
 						output.slab_edge_leading_right.back().sub_segments.push_back(&sub_segment);
 					}
 					break;
 
 				case SUB_SEGMENT_TYPE_SLAB_EDGE_TRENCH:
-					if (output_options.placeholder_slab_edge_trench)
+					if (output_options.export_slab_edge_trench)
 					{
 						output.slab_edge_trench.back().sub_segments.push_back(&sub_segment);
 					}
@@ -341,7 +339,7 @@ namespace GPlatesFileIO
 
 				case SUB_SEGMENT_TYPE_SLAB_EDGE_SIDE:
 				default:
-					if (output_options.placeholder_slab_edge_side)
+					if (output_options.export_slab_edge_side)
 					{
 						output.slab_edge_side.back().sub_segments.push_back(&sub_segment);
 					}
@@ -358,35 +356,40 @@ namespace GPlatesFileIO
 					Output &output)
 			{
 				// Add the slab polygon if they are being exported.
-				if (output_options.placeholder_slab_polygons)
+				if (output_options.export_all_slab_polygons_to_a_single_file)
 				{
 					output.slab_polygons.push_back(resolved_geom);
 				}
 
 				// The export file with all subsegments (regardless of type).
-				if (output_options.placeholder_lines)
+				if (output_options.export_slab_polygon_subsegments_to_lines)
 				{
 					output.lines.push_back(SubSegmentGroup(resolved_geom));
 				}
-				// The export file for all subductions.
-				if (output_options.placeholder_subductions)
+				// The export file for all slab_edge_leading.
+				if (output_options.export_slab_edge_leading)
 				{
-					output.subductions.push_back(SubSegmentGroup(resolved_geom));
+					output.slab_edge_leading.push_back(SubSegmentGroup(resolved_geom));
 				}
-				// The export file for all left subductions.
-				if (output_options.placeholder_left_subductions)
+				// The export file for all slab_edge_leading_left.
+				if (output_options.export_slab_edge_leading_left)
 				{
-					output.left_subductions.push_back(SubSegmentGroup(resolved_geom));
+					output.slab_edge_leading_left.push_back(SubSegmentGroup(resolved_geom));
 				}
-				// The export file for all right subductions.
-				if (output_options.placeholder_right_subductions)
+				// The export file for all slab_edge_leading_right.
+				if (output_options.export_slab_edge_leading_right)
 				{
-					output.right_subductions.push_back(SubSegmentGroup(resolved_geom));
+					output.slab_edge_leading_right.push_back(SubSegmentGroup(resolved_geom));
 				}
-				// The export file for all ridge transforms.
-				if (output_options.placeholder_ridge_transforms)
+				// The export file for all slab_edge_trench.
+				if (output_options.export_slab_edge_trench)
 				{
-					output.ridge_transforms.push_back(SubSegmentGroup(resolved_geom));
+					output.slab_edge_trench.push_back(SubSegmentGroup(resolved_geom));
+				}
+				// The export file for all slab_edge_side.
+				if (output_options.export_slab_edge_side)
+				{
+					output.slab_edge_side.push_back(SubSegmentGroup(resolved_geom));
 				}
 
 				// Iterate over the subsegments contained in the current resolved topological geometry.
@@ -554,7 +557,7 @@ namespace GPlatesFileIO
 
 
 			void
-			if_export_resolved_topological_boundaries(
+			export_resolved_topological_boundaries(
 					const QDir &target_dir,
 					const QString &file_basename,
 					const QString &placeholder_format_string,
@@ -562,40 +565,37 @@ namespace GPlatesFileIO
 					ResolvedTopologicalBoundaryExportType export_type,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
-					const boost::optional<QString> &placeholder,
+					const QString &placeholder,
 					const resolved_geom_seq_type &resolved_geoms,
 					const feature_handle_to_collection_map_type &feature_to_collection_map)
 			{
-				if (placeholder)
-				{
-					const QString filename = get_full_output_filename(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						placeholder.get());
+				const QString filename = get_full_output_filename(
+					target_dir,
+					file_basename,
+					placeholder_format_string,
+					placeholder);
 
-					// Get the files containing the topological features that created
-					// the resolved topological boundaries we're about to export.
-					std::vector<const File::Reference *> referenced_files;
-					ReconstructionGeometryExportImpl::get_unique_list_of_referenced_files(
-							referenced_files,
-							resolved_geoms,
-							feature_to_collection_map);
+				// Get the files containing the topological features that created
+				// the resolved topological boundaries we're about to export.
+				std::vector<const File::Reference *> referenced_files;
+				ReconstructionGeometryExportImpl::get_unique_list_of_referenced_files(
+						referenced_files,
+						resolved_geoms,
+						feature_to_collection_map);
 
-					export_resolved_topological_boundaries_file(
-							filename,
-							export_format,
-							export_type,
-							resolved_geoms,
-							referenced_files,
-							reconstruction_anchor_plate_id,
-							reconstruction_time);
-				}
+				export_resolved_topological_boundaries_file(
+						filename,
+						export_format,
+						export_type,
+						resolved_geoms,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);
 			}
 
 
 			void
-			if_export_sub_segments(
+			export_sub_segments(
 					const QDir &target_dir,
 					const QString &file_basename,
 					const QString &placeholder_format_string,
@@ -603,35 +603,32 @@ namespace GPlatesFileIO
 					SubSegmentExportType export_type,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
-					const boost::optional<QString> &placeholder,
+					const QString &placeholder,
 					const sub_segment_group_seq_type &sub_segment_groups,
 					const feature_handle_to_collection_map_type &feature_to_collection_map)
 			{
-				if (placeholder)
-				{
-					const QString filename = get_full_output_filename(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						placeholder.get());
+				const QString filename = get_full_output_filename(
+					target_dir,
+					file_basename,
+					placeholder_format_string,
+					placeholder);
 
-					// Get the files containing the topological section features of
-					// the subsegments we're about to export.
-					std::vector<const File::Reference *> referenced_files;
-					get_unique_list_of_referenced_files(
-							referenced_files,
-							sub_segment_groups,
-							feature_to_collection_map);
+				// Get the files containing the topological section features of
+				// the subsegments we're about to export.
+				std::vector<const File::Reference *> referenced_files;
+				get_unique_list_of_referenced_files(
+						referenced_files,
+						sub_segment_groups,
+						feature_to_collection_map);
 
-					export_sub_segments_file(
-							filename,
-							export_format,
-							export_type,
-							sub_segment_groups,
-							referenced_files,
-							reconstruction_anchor_plate_id,
-							reconstruction_time);
-				}
+				export_sub_segments_file(
+						filename,
+						export_format,
+						export_type,
+						sub_segment_groups,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);
 			}
 
 
@@ -656,33 +653,40 @@ namespace GPlatesFileIO
 				// All subsegments.
 				//
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						ALL_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_lines,
-						output.lines,
-						feature_to_collection_map);
+				if (output_options.export_plate_polygon_subsegments_to_lines ||
+					output_options.export_slab_polygon_subsegments_to_lines)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							ALL_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_lines,
+							output.lines,
+							feature_to_collection_map);
+				}
 
 				//
 				// Plate polygons.
 				//
 
-				if_export_resolved_topological_boundaries(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						PLATE_POLYGON_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_platepolygons,
-						output.platepolygons,
-						feature_to_collection_map);
+				if (output_options.export_all_plate_polygons_to_a_single_file)
+				{
+					export_resolved_topological_boundaries(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							PLATE_POLYGON_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_platepolygons,
+							output.platepolygons,
+							feature_to_collection_map);
+				}
 
 				// If we're also exporting each plate polygon to its own file.
 				if (output_options.export_individual_plate_polygon_files)
@@ -703,7 +707,7 @@ namespace GPlatesFileIO
 						// We're exporting a sequence of one resolved geometry to its own file.
 						resolved_geom_seq_type resolved_geoms(1, resolved_geom);
 
-						if_export_resolved_topological_boundaries(
+						export_resolved_topological_boundaries(
 								target_dir,
 								file_basename,
 								placeholder_format_string,
@@ -721,69 +725,84 @@ namespace GPlatesFileIO
 				// Plate polygon subsegments.
 				//
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_ridge_transforms,
-						output.ridge_transforms,
-						feature_to_collection_map);
+				if (output_options.export_ridge_transforms)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_ridge_transforms,
+							output.ridge_transforms,
+							feature_to_collection_map);
+				}
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_subductions,
-						output.subductions,
-						feature_to_collection_map);
+				if (output_options.export_subductions)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_subductions,
+							output.subductions,
+							feature_to_collection_map);
+				}
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_left_subductions,
-						output.left_subductions,
-						feature_to_collection_map);
+				if (output_options.export_left_subductions)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_left_subductions,
+							output.left_subductions,
+							feature_to_collection_map);
+				}
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_right_subductions,
-						output.right_subductions,
-						feature_to_collection_map);
+				if (output_options.export_right_subductions)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_right_subductions,
+							output.right_subductions,
+							feature_to_collection_map);
+				}
 
 				//
 				// Slab polygons.
 				//
 
-				if_export_resolved_topological_boundaries(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						SLAB_POLYGON_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_slab_polygons,
-						output.slab_polygons,
-						feature_to_collection_map);
+				if (output_options.export_all_slab_polygons_to_a_single_file)
+				{
+					export_resolved_topological_boundaries(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							SLAB_POLYGON_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_slab_polygons,
+							output.slab_polygons,
+							feature_to_collection_map);
+				}
 
 				// If we're also exporting each slab polygon to its own file.
 				if (output_options.export_individual_slab_polygon_files)
@@ -805,7 +824,7 @@ namespace GPlatesFileIO
 						// We're exporting a sequence of one resolved geometry to its own file.
 						resolved_geom_seq_type resolved_geoms(1, resolved_geom);
 
-						if_export_resolved_topological_boundaries(
+						export_resolved_topological_boundaries(
 								target_dir,
 								file_basename,
 								placeholder_format_string,
@@ -823,65 +842,80 @@ namespace GPlatesFileIO
 				// Slab polygon subsegments.
 				//
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_slab_edge_leading,
-						output.slab_edge_leading,
-						feature_to_collection_map);
+				if (output_options.export_slab_edge_leading)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_slab_edge_leading,
+							output.slab_edge_leading,
+							feature_to_collection_map);
+				}
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_slab_edge_leading_left,
-						output.slab_edge_leading_left,
-						feature_to_collection_map);
+				if (output_options.export_slab_edge_leading_left)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_slab_edge_leading_left,
+							output.slab_edge_leading_left,
+							feature_to_collection_map);
+				}
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_slab_edge_leading_right,
-						output.slab_edge_leading_right,
-						feature_to_collection_map);
+				if (output_options.export_slab_edge_leading_right)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_slab_edge_leading_right,
+							output.slab_edge_leading_right,
+							feature_to_collection_map);
+				}
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_slab_edge_trench,
-						output.slab_edge_trench,
-						feature_to_collection_map);
+				if (output_options.export_slab_edge_trench)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_slab_edge_trench,
+							output.slab_edge_trench,
+							feature_to_collection_map);
+				}
 
-				if_export_sub_segments(
-						target_dir,
-						file_basename,
-						placeholder_format_string,
-						export_format,
-						SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						output_options.placeholder_slab_edge_side,
-						output.slab_edge_side,
-						feature_to_collection_map);
+				if (output_options.export_slab_edge_side)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_slab_edge_side,
+							output.slab_edge_side,
+							feature_to_collection_map);
+				}
 			}
 		}
 	}

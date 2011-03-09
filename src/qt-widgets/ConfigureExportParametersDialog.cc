@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <map>
 #include <QCheckBox>
 #include <QLabel>
@@ -283,6 +284,26 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection
 
 	GPlatesGui::ExportAnimationRegistry &export_animation_registry =
 			d_export_animation_context_ptr->view_state().get_export_animation_registry();
+
+	//
+	// Make sure the selected export id is supported.
+	//
+	// An unsupported export id can happen when react_export_type_selection_changed()
+	// is signalled which then clears the format widget which in turn signals
+	// react_export_format_selection_changed.
+	// In this situation the current export format (leftover from a previous format selection
+	// for a different type of export) might not be supported for the current export type.
+	// Get a list of all the currently supported exporters.
+	//
+	const std::vector<GPlatesGui::ExportAnimationType::ExportID> supported_exporters =
+			export_animation_registry.get_registered_exporters();
+	if (std::find(supported_exporters.begin(), supported_exporters.end(), selected_export_id) ==
+		supported_exporters.end())
+	{
+		qWarning() << "Unsupported export id selected";
+		return;
+	}
+
 
 	//
 	// Display the filename template.

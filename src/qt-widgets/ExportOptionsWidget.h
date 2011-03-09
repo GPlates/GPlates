@@ -42,7 +42,7 @@ namespace GPlatesQtWidgets
 			public QWidget
 	{
 	public:
-
+		explicit
 		ExportOptionsWidget(
 				QWidget *parent_) :
 			QWidget(parent_)
@@ -60,7 +60,7 @@ namespace GPlatesQtWidgets
 		virtual
 		GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
 		create_export_animation_strategy_configuration(
-				const QString &filename_template) const = 0;
+				const QString &filename_template) = 0;
 	};
 }
 

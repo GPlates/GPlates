@@ -1,0 +1,76 @@
+<ui version="4.0" >
+ <class>ExportResolvedTopologicalBoundaryOptionsWidget</class>
+ <widget class="QWidget" name="ExportResolvedTopologicalBoundaryOptionsWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>345</width>
+    <height>210</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Export Options</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout" >
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_all_plate_polygons_to_single_file" >
+     <property name="text" >
+      <string>Export all plate polygons to a single file</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_all_slab_polygons_to_single_file" >
+     <property name="text" >
+      <string>Export all slab polygons to a single file</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_individual_plate_polygon_files" >
+     <property name="text" >
+      <string>Export each plate polygon to a separate file</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_individual_slab_polygon_files" >
+     <property name="text" >
+      <string>Export each slab polygon to a separate file</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_plate_polygon_subsegments_to_single_file" >
+     <property name="text" >
+      <string>Export plate polygon subsegments to a single file</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_slab_polygon_subsegments_to_single_file" >
+     <property name="text" >
+      <string>Export slab polygon subsegments to a single file</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_plate_polygon_subsegments_to_type_files" >
+     <property name="text" >
+      <string>Export plate polygon subsegments to files based on type</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_slab_polygon_subsegments_to_type_files" >
+     <property name="text" >
+      <string>Export slab polygon subsegments to files based on type</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
