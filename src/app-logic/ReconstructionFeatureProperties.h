@@ -130,7 +130,7 @@ namespace GPlatesAppLogic
 		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
 		get_time_of_dissappearance() const
 		{
-			return d_time_of_appearance;
+			return d_time_of_dissappearance;
 		}
 
 		virtual

@@ -199,7 +199,7 @@ namespace GPlatesQtWidgets
 
 	public slots:
 	protected:
-		const DataTable& d_table;
+		const DataTable d_table;
 	};
 
 	/**
@@ -253,7 +253,11 @@ namespace GPlatesQtWidgets
 		handle_save_all();
 
 		void
-		data_arrived(const DataTable&);
+		data_arrived(
+				const DataTable&);
+
+		void
+		highlight_seed();
 
 		void
 		highlight_seed();

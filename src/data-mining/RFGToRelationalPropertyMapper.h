@@ -32,35 +32,7 @@
 
 #include "DualGeometryVisitor.h"
 #include "DataOperatorTypes.h"
-
-namespace
-{
-	using namespace GPlatesDataMining;
-	double
-	shortest_distance(
-			const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& seed_geos,
-			const GPlatesAppLogic::ReconstructedFeatureGeometry* geo)
-	{
-		double ret = DEFAULT_RADIUS_OF_EARTH * PI;
-		BOOST_FOREACH(const GPlatesAppLogic::ReconstructedFeatureGeometry* seed, seed_geos)
-		{
-			//use (DEFAULT_RADIUS_OF_EARTH * PI) as range, so the distance can always be calculated.
-			IsCloseEnoughChecker checker((DEFAULT_RADIUS_OF_EARTH * PI), true);
-			DualGeometryVisitor< IsCloseEnoughChecker > dual_visitor(
-					*(geo->geometry()),
-					*(seed->geometry()),
-					&checker);
-			dual_visitor.apply();
-			boost::optional<double> tmp = checker.distance();
-			if(tmp && ret > *tmp)
-			{
-				ret = *tmp;
-			}
-		}
-		return ret;
-	}
-}
-
+#include "DataMiningUtils.h"
 
 namespace GPlatesDataMining
 {
@@ -103,7 +75,7 @@ namespace GPlatesDataMining
 					for(;input_begin != input_end; input_begin++)
 					{
 						handler.insert(
-								OpaqueData(shortest_distance(d_seed_geos,*input_begin)));
+								OpaqueData(DataMiningUtils::shortest_distance(d_seed_geos,*input_begin)));
 						count++;
 					}
 					return count;

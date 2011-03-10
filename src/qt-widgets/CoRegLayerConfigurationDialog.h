@@ -213,6 +213,7 @@ namespace GPlatesQtWidgets
              ChooseExportPathPushButton->setVisible(false);
 			 label_3->setVisible(false);
 			 CoRegCfgTableWidget->resizeColumnsToContents();
+			 AttributesListWidget->setSelectionMode(QAbstractItemView::MultiSelection);
 		}
 
 		void

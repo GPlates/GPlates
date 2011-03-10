@@ -27,9 +27,19 @@
 #define GPLATESDATAMINING_DATAMININGUTILS_H
 
 #include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <QString>
+#include <QVariant>
 #include <vector>
 
 #include "OpaqueData.h"
+
+#include "model/FeatureHandle.h"
+
+namespace GPlatesAppLogic
+{
+	class ReconstructedFeatureGeometry;
+}
 
 namespace GPlatesDataMining
 {
@@ -50,6 +60,42 @@ namespace GPlatesDataMining
 				std::vector<OpaqueData>::const_iterator begin,
 				std::vector<OpaqueData>::const_iterator end,
 				std::vector<double>& result);
+
+		/*
+		* TODO: comments
+		*/
+		double
+		shortest_distance(
+				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& seed_geos,
+				const GPlatesAppLogic::ReconstructedFeatureGeometry* geo);
+		
+		/*
+		* TODO: comments
+		*/
+		OpaqueData
+		get_property_value_by_name(
+				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+				QString name);
+
+		/*
+		* TODO: comments
+		*/
+		OpaqueData
+		convert_qvariant_to_Opaque_data(
+				const QVariant& data);
+
+		/*
+		* TODO: comments
+		*/
+		OpaqueData
+		get_shape_file_value_by_name(
+				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+				QString name);
+
+		static std::vector<
+				boost::tuple<
+						std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>,
+						const GPlatesAppLogic::ReconstructedFeatureGeometry* > > RFG_INDEX_VECTOR;
 	}
 }
 #endif

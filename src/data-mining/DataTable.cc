@@ -48,6 +48,8 @@ GPlatesDataMining::DataTable::export_as_CSV(
 
 	std::vector<GPlatesGui::CsvExport::LineDataType> vector_table;
 
+	vector_table.push_back(d_table_desc);
+
 	for(; iter != iter_end; iter++) //for each row
 	{
 		std::vector<QString> line;

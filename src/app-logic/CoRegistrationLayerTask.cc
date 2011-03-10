@@ -102,6 +102,8 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 	if (!reconstruction_tree)
 	{
 		// Expecting a single reconstruction tree.
+		qWarning() << "No reconstruction tree found.";
+		d_layer_params.d_call_back(GPlatesDataMining::DataTable());
 		return boost::none;
 	}
 
@@ -114,6 +116,8 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 	
 	if (seeds_collection.empty()) 
 	{
+		qWarning() << "Seed collection is empty.";
+		d_layer_params.d_call_back(GPlatesDataMining::DataTable());
 		return boost::none;
 	}
 
@@ -126,6 +130,8 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 
 	if (co_reg_collection.empty() || NULL == d_layer_params.d_cfg_table) 
 	{
+		qWarning() << "Target collection or configuration table is empty.";
+		d_layer_params.d_call_back(GPlatesDataMining::DataTable());
 		return boost::none;
 	}
 
@@ -145,20 +151,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 	
 	d_layer_params.d_call_back(data_ptr->data_table());
 	GPlatesDataMining::DataSelector::set_data_table(data_ptr->data_table());
-	//TODO:
-	//Temporary code to export co-registration data.
-	try
-	{
-		data_ptr->data_table().export_as_CSV(
-				get_export_file_name(
-						d_layer_params.d_cfg_table->export_path(),
-						"co_registration_data",  //temporary hard code.
-						reconstruction_time));
-	}catch(...)
-	{
-		qDebug()<< "oops, exception happened.....";
-	}
-
+	
 #ifdef _DEBUG
 	std::cout << data_ptr->data_table() << std::endl;
 #endif

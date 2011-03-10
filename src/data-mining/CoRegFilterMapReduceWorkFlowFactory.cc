@@ -82,7 +82,7 @@ GPlatesDataMining::FilterMapReduceWorkFlowFactory::create(
 	case CO_REGISTRATION_ATTRIBUTE:
 		mapper.reset(
 				new GenericMapper< CoRegMaper::InputIteratorType, CoRegMaper::OutputIteratorType, RFGToPropertyValueMapper> (
-							RFGToPropertyValueMapper(row.attribute_name)));
+							RFGToPropertyValueMapper(row.attribute_name, seed_geos)));
 		break;
 
 	case DISTANCE_ATTRIBUTE:
@@ -97,7 +97,7 @@ GPlatesDataMining::FilterMapReduceWorkFlowFactory::create(
 	case SHAPE_FILE_ATTRIBUTE: 
 		mapper.reset(
 				new GenericMapper< CoRegMaper::InputIteratorType, CoRegMaper::OutputIteratorType, RFGToPropertyValueMapper> (
-							RFGToPropertyValueMapper(row.attribute_name,true)));
+							RFGToPropertyValueMapper(row.attribute_name, seed_geos,true)));
 		break;
 	default:
 		break;

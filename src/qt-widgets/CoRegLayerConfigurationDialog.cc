@@ -35,6 +35,10 @@
 
 #include "presentation/VisualLayer.h"
 
+const char* DISTANCE = QT_TR_NOOP("Distance");
+const char* PRESENCE = QT_TR_NOOP("Presence");
+const char* NUM_ROI  = QT_TR_NOOP("Number in Region");
+
 void 
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::pop_up()
 {
@@ -265,9 +269,6 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::populate_relational_attributes(
 	{
 		return;
 	}
-	const char* DISTANCE = QT_TR_NOOP("Distance");
-	const char* PRESENCE = QT_TR_NOOP("Presence");
-	const char* NUM_ROI  = QT_TR_NOOP("Number in Region");
 
 	QListWidgetItem *item = 
 		new AttributeListItem(
@@ -339,71 +340,77 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::populate_coregistration_attribu
 void
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_add_button_clicked()
 {
+	QList<QListWidgetItem*> items = AttributesListWidget->selectedItems();
 	//feature collection and attribute must have been selected.
-	if( !(FeatureCollectionListWidget->currentItem() && AttributesListWidget->currentItem()))
+	if( !FeatureCollectionListWidget->currentItem() || 
+		items.size() == 0)
 	{
 		return;
 	}
 
-	int row_num=CoRegCfgTableWidget->rowCount();
-	CoRegCfgTableWidget->insertRow(row_num);
-
-	//Attribute Name column 
-	AttributeListItem* attr_item = 
-			dynamic_cast< AttributeListItem* >(AttributesListWidget->currentItem());
-	if(attr_item)
-	{
-		CoRegCfgTableWidget->setItem(
-				row_num, 
-				AttributeName, 
-				new AttributeTableItem(
-						attr_item->text(),
-						attr_item->name,
-						attr_item->attr_type));
-	}
-
-	//Data Operator column
-	QComboBox* combo = new QComboBox();       
-    CoRegCfgTableWidget->setCellWidget(
-			row_num, 
-			DataOperator, 
-			combo);
-
-	setup_data_operator_combobox(
-			attr_item->text(),
-			combo);
-
-	//Feature Collection Name column
-	FeatureCollectionItem* fc_item = 
-		dynamic_cast<FeatureCollectionItem*>(FeatureCollectionListWidget->currentItem());
-	CoRegCfgTableWidget->setItem(
-			row_num,
-			FeatureCollectionName,
-			new FeatureCollectionTableItem(
-					fc_item->file_ref,
-					fc_item->label));
-
-	//Association Type column
-	//TODO: To be finished...
-	QComboBox* association_combo = new QComboBox();       
-    CoRegCfgTableWidget->setCellWidget(
-			row_num, 
-			AssociationType, 
-			association_combo);
 	
-	setup_association_type_combobox(association_combo);
+	BOOST_FOREACH(QListWidgetItem* item, items)
+	{
+		int row_num=CoRegCfgTableWidget->rowCount();
+		CoRegCfgTableWidget->insertRow(row_num);
 
-	//Range column
-	QDoubleSpinBox* ROI_range_spinbox = new QDoubleSpinBox(); 
-	QObject::connect(
-			ROI_range_spinbox, SIGNAL(valueChanged(double)),
-			this, SLOT(handle_range_changed(double)));
-	ROI_range_spinbox->setRange(0,25000);
-	ROI_range_spinbox->setValue(0);
-    CoRegCfgTableWidget->setCellWidget(
-			row_num, 
-			Range, 
-			ROI_range_spinbox);
+		//Attribute Name column 
+		AttributeListItem* attr_item = 
+				dynamic_cast< AttributeListItem* >(item);
+		if(attr_item)
+		{
+			CoRegCfgTableWidget->setItem(
+					row_num, 
+					AttributeName, 
+					new AttributeTableItem(
+							attr_item->text(),
+							attr_item->name,
+							attr_item->attr_type));
+		}
+
+		//Data Operator column
+		QComboBox* combo = new QComboBox();       
+		CoRegCfgTableWidget->setCellWidget(
+				row_num, 
+				DataOperator, 
+				combo);
+
+		setup_data_operator_combobox(
+				attr_item->text(),
+				combo);
+
+		//Feature Collection Name column
+		FeatureCollectionItem* fc_item = 
+			dynamic_cast<FeatureCollectionItem*>(FeatureCollectionListWidget->currentItem());
+		CoRegCfgTableWidget->setItem(
+				row_num,
+				FeatureCollectionName,
+				new FeatureCollectionTableItem(
+						fc_item->file_ref,
+						fc_item->label));
+
+		//Association Type column
+		//TODO: To be finished...
+		QComboBox* association_combo = new QComboBox();       
+		CoRegCfgTableWidget->setCellWidget(
+				row_num, 
+				AssociationType, 
+				association_combo);
+		
+		setup_association_type_combobox(association_combo);
+
+		//Range column
+		QDoubleSpinBox* ROI_range_spinbox = new QDoubleSpinBox(); 
+		QObject::connect(
+				ROI_range_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_range_changed(double)));
+		ROI_range_spinbox->setRange(0,25000);
+		ROI_range_spinbox->setValue(0);
+		CoRegCfgTableWidget->setCellWidget(
+				row_num, 
+				Range, 
+				ROI_range_spinbox);
+	}
 }
 
 
@@ -416,6 +423,19 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_data_operator_combobox(
 	if(d_attr_name_type_map.find(attribute_name) != d_attr_name_type_map.end())
 	{
 		a_type = d_attr_name_type_map.find(attribute_name)->second;
+	}
+
+	if(attribute_name == DISTANCE)
+	{
+		a_type = GPlatesDataMining::Number_Attribute;
+	}
+
+	if(attribute_name == PRESENCE || attribute_name == NUM_ROI)
+	{
+		combo->addItem(
+				QApplication::tr("Lookup"), 
+				GPlatesDataMining::DATA_OPERATOR_LOOKUP);
+		return;
 	}
 
 	if(GPlatesDataMining::String_Attribute == a_type || GPlatesDataMining::Unknown_Type == a_type)

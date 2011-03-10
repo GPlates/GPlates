@@ -256,6 +256,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_type_selection_c
 		listWidget_format->addItem(item);
 		item->setText(get_export_format_description(export_format));
 	}
+	//CO_REGISTRATION_CSV_COMMA
+	REGISTER_EXPORT_ITEM(CO_REGISTRATION,CSV_COMMA);
 }
 
 void

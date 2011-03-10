@@ -30,9 +30,9 @@
 #include <boost/none.hpp>
 #include <QString>
 
-#include "ExportAnimationStrategy.h"
-
+#include "gui/ExportAnimationStrategy.h"
 #include "data-mining/DataTable.h"
+#include "utils/ExportTemplateFilenameSequence.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -49,49 +49,21 @@ namespace GPlatesGui
 			public GPlatesGui::ExportAnimationStrategy
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportCoRegistrationAnimationStrategy>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportCoRegistrationAnimationStrategy> non_null_ptr_type;
+
+ 		static const QString DEFAULT_FILENAME_TEMPLATE;
+		static const QString FILENAME_TEMPLATE_DESC;
+		static const QString CO_REGISTRATION_DESC;
 		
-
-		/**
-		 * Configuration options.
-		 */
-		class Configuration :
-				public ExportAnimationStrategy::ConfigurationBase
-		{
-		public:
-			explicit
-			Configuration(
-					const QString& filename_template_) :
-				ConfigurationBase(filename_template_)
-			{  }
-
-			virtual
-			configuration_base_ptr
-			clone() const
-			{
-				return configuration_base_ptr(new Configuration(*this));
-			}
-		};
-
-		//! Typedef for a shared pointer to const @a Configuration.
-		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
-
-
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportCoRegistrationAnimationStrategy,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		
 		static
 		const non_null_ptr_type
 		create(
-				ExportAnimationContext &export_animation_context,
-				const const_configuration_ptr &export_configuration)
-		{
-			return non_null_ptr_type(
-					new ExportCoRegistrationAnimationStrategy(
-							export_animation_context,
-							export_configuration));
-		}
-
+				GPlatesGui::ExportAnimationContext &export_animation_context,
+				const ExportAnimationStrategy::Configuration &cfg=
+					ExportAnimationStrategy::Configuration(
+							DEFAULT_FILENAME_TEMPLATE));
 
 		virtual
 		~ExportCoRegistrationAnimationStrategy()
@@ -106,6 +78,21 @@ namespace GPlatesGui
 		do_export_iteration(
 				std::size_t frame_index);
 
+		virtual
+		const QString&
+		get_default_filename_template();
+
+		virtual
+		const QString&
+		get_filename_template_desc();
+
+		virtual
+		const QString&
+				get_description()
+		{
+			return CO_REGISTRATION_DESC;
+		}
+
 	protected:
 		/**
 		 * Protected constructor to prevent instantiation on the stack.
@@ -114,11 +101,12 @@ namespace GPlatesGui
 		explicit
 		ExportCoRegistrationAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const const_configuration_ptr &export_configuration);
+				const QString &filename_template);
 		
 	private:
-		//! Export configuration parameters.
-		const_configuration_ptr d_configuration;
+		ExportCoRegistrationAnimationStrategy();
+		char d_delimiter;
+		
 	};
 }
 

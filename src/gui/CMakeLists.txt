@@ -54,6 +54,8 @@ set(srcs
     ExportAnimationRegistry.h
     ExportAnimationStrategy.cc
     ExportAnimationStrategy.h
+    ExportCoRegistrationAnimationStrategy.cc
+    ExportCoRegistrationAnimationStrategy.h
     ExportAnimationType.cc
     ExportAnimationType.h
     ExportCoRegistrationAnimationStrategy.cc

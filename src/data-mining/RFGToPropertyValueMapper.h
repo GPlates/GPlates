@@ -31,93 +31,12 @@
 #include <boost/foreach.hpp>
 
 #include "DataTable.h"
+#include "DataMiningUtils.h"
 #include "GetValueFromPropertyVisitor.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
 #include "utils/FilterMapOutputHandler.h"
-
-namespace
-{
-	OpaqueData
-	get_property_value_by_name(
-			GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
-			QString name)
-	{
-		using namespace GPlatesModel;
-		FeatureHandle::const_iterator it = feature_ref->begin();
-		FeatureHandle::const_iterator it_end = feature_ref->end();
-		for(; it != it_end; it++)
-		{
-			if((*it)->property_name().get_name() == GPlatesUtils::make_icu_string_from_qstring(name))
-			{
-				GetValueFromPropertyVisitor<OpaqueData> visitor;
-				(*it)->accept_visitor(visitor);
-				std::vector<OpaqueData>& data_vec = visitor.get_data(); 
-				if(!data_vec.empty())
-				{
-					return data_vec.at(0);
-				}
-			}
-		}
-		return boost::none;
-	}
-
-
-	OpaqueData
-	convert_qvariant_to_Opaque_data(
-			const QVariant& data)
-	{
-		switch (data.type())
-		{
-		case QVariant::Bool:
-			return OpaqueData(data.toBool());
-			break;
-
-		case QVariant::Int:
-			return OpaqueData(data.toInt());
-			break;
-			
-		case QVariant::Double:
-			return OpaqueData(data.toDouble());
-			break;
-	
-		case QVariant::String:
-			return OpaqueData(data.toString());
-			break;
-		default:
-			return EmptyData;
-		}
-	}
-
-	
-	OpaqueData
-	get_shape_file_value_by_name(
-			GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
-			QString name)
-	{
-		using namespace GPlatesModel;
-		FeatureHandle::const_iterator it = feature_ref->begin();
-		FeatureHandle::const_iterator it_end = feature_ref->end();
-		for(; it != it_end; it++)
-		{
-			if((*it)->property_name().get_name() == "shapefileAttributes")
-			{
-				GPlatesFeatureVisitors::ShapefileAttributeFinder visitor(name);
-				(*it)->accept_visitor(visitor);
-				if(1 != std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
-				{
-					qDebug() << "More than one property found in shape file attribute.";
-					qDebug() << "But this is a one to one mapping. So, only return the first value.";
-					qDebug() << "More than one shape file attributes have the same name. Please check you data.";
-				}
-				return convert_qvariant_to_Opaque_data(*visitor.found_qvariants_begin());
-			}
-		}
-		return EmptyData;
-	}
-}
-
 
 namespace GPlatesDataMining
 {
@@ -137,8 +56,10 @@ namespace GPlatesDataMining
 		explicit
 		RFGToPropertyValueMapper(
 				const QString& attr_name,
+				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& seed_geos,
 				bool is_shapefile_attr = false):
 			d_attr_name(attr_name),
+			d_seed_geos(seed_geos),
 			d_is_shapefile_attr(is_shapefile_attr)
 			{	}
 
@@ -153,18 +74,27 @@ namespace GPlatesDataMining
 				FilterMapOutputHandler<OutputType, OutputMode> &handler)
 		{
 			int count = 0;
+			DataMiningUtils::RFG_INDEX_VECTOR.clear();
 			for(; input_begin != input_end; input_begin++)
 			{
 				if(!d_is_shapefile_attr)
 				{
 					handler.insert(
-						get_property_value_by_name((*input_begin)->get_feature_ref(), d_attr_name));
+							DataMiningUtils::get_property_value_by_name(
+									(*input_begin)->get_feature_ref(), 
+									d_attr_name));
 				}
 				else
 				{
 					handler.insert(
-						get_shape_file_value_by_name((*input_begin)->get_feature_ref(), d_attr_name));
+							DataMiningUtils::get_shape_file_value_by_name(
+									(*input_begin)->get_feature_ref(), 
+									d_attr_name));
 				}
+				DataMiningUtils::RFG_INDEX_VECTOR.push_back(
+						boost::tie(
+								d_seed_geos,
+								*input_begin));
 				count++;
 			}
 			return count;
@@ -177,6 +107,7 @@ namespace GPlatesDataMining
 	protected:
 		
 		const QString d_attr_name;
+		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> d_seed_geos;
 		bool d_is_shapefile_attr;
 	};
 }

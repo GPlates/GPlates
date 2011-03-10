@@ -35,6 +35,8 @@
 #include "DataMiningUtils.h"
 #include "RegionOfInterestFilter.h"
 
+#include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
+
 #include "maths/Real.h"
 #include "maths/SphericalArea.h"
 
@@ -413,6 +415,8 @@ DataSelector::select(
 	//populate the table description
 	TableDesc table_desc;
 	table_desc.push_back("Seed Feature ID");
+	table_desc.push_back("Seed Feature begin time");
+	table_desc.push_back("Seed Feature end time");
 	get_table_desc_from_input_table(table_desc);
 	data_table.set_table_desc(table_desc);
 
@@ -427,7 +431,46 @@ DataSelector::select(
 		//This is a temporary solution and will be removed when layer framework is ready to handle this.
 		QString feature_id = 
 			seed_feature_and_rfg_pair.first->feature_id().get().qstring();
+
+		GPlatesAppLogic::ReconstructionFeatureProperties visitor(false);
+		visitor.visit_feature(
+				GPlatesModel::WeakReference<const GPlatesModel::FeatureHandle>(
+						*seed_feature_and_rfg_pair.first));
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> begin_time = visitor.get_time_of_appearance();
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> end_time = visitor.get_time_of_dissappearance();
+
 		row->append_cell(OpaqueData(feature_id));
+		if(begin_time)
+		{
+			if((*begin_time).is_distant_past())
+			{
+				row->append_cell(OpaqueData(QString("distant past")));
+			}
+			else
+			{
+				row->append_cell(OpaqueData((*begin_time).value()));
+			}
+		}
+		else
+		{
+			row->append_cell(OpaqueData(EmptyData));
+		}
+
+		if(end_time)
+		{
+			if((*end_time).is_distant_future())
+			{
+				row->append_cell(OpaqueData(QString("distant future")));
+			}
+			else
+			{
+				row->append_cell(OpaqueData((*end_time).value()));
+			}
+		}
+		else
+		{
+			row->append_cell(OpaqueData(EmptyData));
+		}
 
 		//for each row in input table
 		BOOST_FOREACH(const ConfigurationTableRow &config_row, d_configuration_table)
