@@ -258,9 +258,6 @@ namespace GPlatesQtWidgets
 
 		void
 		highlight_seed();
-
-		void
-		highlight_seed();
 	
 	signals:
 		
