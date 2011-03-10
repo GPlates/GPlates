@@ -289,7 +289,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection
 	// Make sure the selected export id is supported.
 	//
 	// An unsupported export id can happen when react_export_type_selection_changed()
-	// is signalled which then clears the format widget which in turn signals
+	// is signaled which then clears the format widget which in turn signals
 	// react_export_format_selection_changed.
 	// In this situation the current export format (leftover from a previous format selection
 	// for a different type of export) might not be supported for the current export type.
@@ -300,7 +300,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection
 	if (std::find(supported_exporters.begin(), supported_exporters.end(), selected_export_id) ==
 		supported_exporters.end())
 	{
-		qWarning() << "Unsupported export id selected";
+		// Removing warning since this happens quite often in certain situations.
+		//qWarning() << "Unsupported export id selected";
 		return;
 	}
 
@@ -494,12 +495,21 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_chang
 	const std::vector<GPlatesGui::ExportAnimationType::ExportID> supported_exporters =
 			export_animation_registry.get_registered_exporters();
 
-	// If the selected export type and format are not in the list of supported exporters
-	// then something is not right.
+	//
+	// Make sure the selected export id is supported.
+	//
+	// An unsupported export id can happen when react_export_type_selection_changed()
+	// is signaled which then clears the format widget which in turn signals
+	// react_export_format_selection_changed.
+	// In this situation the current export format (leftover from a previous format selection
+	// for a different type of export) might not be supported for the current export type.
+	// Get a list of all the currently supported exporters.
+	//
 	if (std::find(supported_exporters.begin(), supported_exporters.end(), selected_export_id) ==
 		supported_exporters.end())
 	{
-		qWarning()<<"invalid selected items!";
+		// Removing warning because this can happen quite often in certain situations.
+		//qWarning()<<"invalid selected items!";
 		return;
 	}
 

@@ -64,6 +64,7 @@ set(srcs
     ExportFlowlineAnimationStrategy.h
     ExportMotionPathAnimationStrategy.cc
     ExportMotionPathAnimationStrategy.h
+    ExportOptionsUtils.h
     ExportRasterAnimationStrategy.cc
     ExportRasterAnimationStrategy.h
     ExportReconstructedGeometryAnimationStrategy.cc

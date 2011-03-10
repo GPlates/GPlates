@@ -43,6 +43,9 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "qt-widgets/ExportFlowlineOptionsWidget.h"
+#include "qt-widgets/ExportMotionPathOptionsWidget.h"
+#include "qt-widgets/ExportReconstructedGeometryOptionsWidget.h"
 #include "qt-widgets/ExportResolvedTopologicalBoundaryOptionsWidget.h"
 
 
@@ -292,6 +295,12 @@ GPlatesGui::register_default_export_animation_types(
 	// Export reconstructed geometries
 	//
 
+	// By default only export to multiple files (one output file per input file) as this
+	// is the most requested output.
+	const ExportOptionsUtils::ExportFileOptions default_reconstructed_geometry_file_export_options(
+			/*export_to_a_single_file_*/false,
+			/*export_to_multiple_files_*/true);
+
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 					ExportAnimationType::RECONSTRUCTED_GEOMETRIES,
@@ -299,9 +308,12 @@ GPlatesGui::register_default_export_animation_types(
 			ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
 					new ExportReconstructedGeometryAnimationStrategy::Configuration(
 							"reconstructed_%u_%0.2f.xy",
-							ExportReconstructedGeometryAnimationStrategy::Configuration::GMT)),
+							ExportReconstructedGeometryAnimationStrategy::Configuration::GMT,
+							default_reconstructed_geometry_file_export_options)),
 			&create_animation_strategy<ExportReconstructedGeometryAnimationStrategy>,
-			&create_null_export_options_widget,
+			&create_export_options_widget<
+					GPlatesQtWidgets::ExportReconstructedGeometryOptionsWidget,
+					ExportReconstructedGeometryAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -311,9 +323,12 @@ GPlatesGui::register_default_export_animation_types(
 			ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
 					new ExportReconstructedGeometryAnimationStrategy::Configuration(
 							"reconstructed_%u_%0.2f.shp",
-							ExportReconstructedGeometryAnimationStrategy::Configuration::SHAPEFILE)),
+							ExportReconstructedGeometryAnimationStrategy::Configuration::SHAPEFILE,
+							default_reconstructed_geometry_file_export_options)),
 			&create_animation_strategy<ExportReconstructedGeometryAnimationStrategy>,
-			&create_null_export_options_widget,
+			&create_export_options_widget<
+					GPlatesQtWidgets::ExportReconstructedGeometryOptionsWidget,
+					ExportReconstructedGeometryAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
@@ -580,6 +595,12 @@ GPlatesGui::register_default_export_animation_types(
 	// Export flowlines
 	//
 
+	// By default only export to multiple files (one output file per input file) as this
+	// is the most requested output.
+	const ExportOptionsUtils::ExportFileOptions default_flowline_file_export_options(
+			/*export_to_a_single_file_*/false,
+			/*export_to_multiple_files_*/true);
+
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 					ExportAnimationType::FLOWLINES,
@@ -587,9 +608,12 @@ GPlatesGui::register_default_export_animation_types(
 			ExportFlowlineAnimationStrategy::const_configuration_ptr(
 					new ExportFlowlineAnimationStrategy::Configuration(
 							"flowline_output_%u_%0.2f.xy",
-							ExportFlowlineAnimationStrategy::Configuration::GMT)),
+							ExportFlowlineAnimationStrategy::Configuration::GMT,
+							default_flowline_file_export_options)),
 			&create_animation_strategy<ExportFlowlineAnimationStrategy>,
-			&create_null_export_options_widget,
+			&create_export_options_widget<
+					GPlatesQtWidgets::ExportFlowlineOptionsWidget,
+					ExportFlowlineAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -599,14 +623,23 @@ GPlatesGui::register_default_export_animation_types(
 			ExportFlowlineAnimationStrategy::const_configuration_ptr(
 					new ExportFlowlineAnimationStrategy::Configuration(
 							"flowline_output_%u_%0.2f.shp",
-							ExportFlowlineAnimationStrategy::Configuration::SHAPEFILE)),
+							ExportFlowlineAnimationStrategy::Configuration::SHAPEFILE,
+							default_flowline_file_export_options)),
 			&create_animation_strategy<ExportFlowlineAnimationStrategy>,
-			&create_null_export_options_widget,
+			&create_export_options_widget<
+					GPlatesQtWidgets::ExportFlowlineOptionsWidget,
+					ExportFlowlineAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
 	// Export motion paths
 	//
+
+	// By default only export to multiple files (one output file per input file) as this
+	// is the most requested output.
+	const ExportOptionsUtils::ExportFileOptions default_motion_path_file_export_options(
+			/*export_to_a_single_file_*/false,
+			/*export_to_multiple_files_*/true);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -615,9 +648,12 @@ GPlatesGui::register_default_export_animation_types(
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 					new ExportMotionPathAnimationStrategy::Configuration(
 							"MOTION_PATH_output_%u_%0.2f.xy",
-							ExportMotionPathAnimationStrategy::Configuration::GMT)),
+							ExportMotionPathAnimationStrategy::Configuration::GMT,
+							default_motion_path_file_export_options)),
 			&create_animation_strategy<ExportMotionPathAnimationStrategy>,
-			&create_null_export_options_widget,
+			&create_export_options_widget<
+					GPlatesQtWidgets::ExportMotionPathOptionsWidget,
+					ExportMotionPathAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -627,9 +663,12 @@ GPlatesGui::register_default_export_animation_types(
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 					new ExportMotionPathAnimationStrategy::Configuration(
 							"MOTION_PATH_output_%u_%0.2f.shp",
-							ExportMotionPathAnimationStrategy::Configuration::SHAPEFILE)),
+							ExportMotionPathAnimationStrategy::Configuration::SHAPEFILE,
+							default_motion_path_file_export_options)),
 			&create_animation_strategy<ExportMotionPathAnimationStrategy>,
-			&create_null_export_options_widget,
+			&create_export_options_widget<
+					GPlatesQtWidgets::ExportMotionPathOptionsWidget,
+					ExportMotionPathAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//

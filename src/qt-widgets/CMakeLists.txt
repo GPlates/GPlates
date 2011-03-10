@@ -165,7 +165,12 @@ set(srcs
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
+    ExportFileOptionsWidget.h
+    ExportFileOptionsWidgetUi.ui
+    ExportFlowlineOptionsWidget.h
+    ExportMotionPathOptionsWidget.h
     ExportOptionsWidget.h
+    ExportReconstructedGeometryOptionsWidget.h
     ExportResolvedTopologicalBoundaryOptionsWidget.cc
     ExportResolvedTopologicalBoundaryOptionsWidget.h
     ExportResolvedTopologicalBoundaryOptionsWidgetUi.ui

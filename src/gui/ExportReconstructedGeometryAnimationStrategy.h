@@ -34,6 +34,8 @@
 
 #include "ExportAnimationStrategy.h"
 
+#include "ExportOptionsUtils.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -79,9 +81,11 @@ namespace GPlatesGui
 			explicit
 			Configuration(
 					const QString& filename_template_,
-					FileFormat file_format_) :
+					FileFormat file_format_,
+					const ExportOptionsUtils::ExportFileOptions &file_options_) :
 				ConfigurationBase(filename_template_),
-				file_format(file_format_)
+				file_format(file_format_),
+				file_options(file_options_)
 			{  }
 
 			virtual
@@ -92,6 +96,7 @@ namespace GPlatesGui
 			}
 
 			FileFormat file_format;
+			ExportOptionsUtils::ExportFileOptions file_options;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.
