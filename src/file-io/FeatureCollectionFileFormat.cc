@@ -47,6 +47,7 @@ namespace
 	const QString FILE_FORMAT_EXT_SHAPEFILE = "shp";
 	const QString FILE_FORMAT_EXT_GMT = "xy";
 	const QString FILE_FORMAT_EXT_GMAP = "vgp";
+	const QString FILE_FORMAT_EXT_GSML = "gsml";
 
 
 	bool
@@ -111,6 +112,13 @@ namespace
 	{
 		return file_name_ends_with(file, FILE_FORMAT_EXT_GMAP);
 	}
+
+	bool
+	is_gsml_format_file(
+			const QFileInfo &file)
+	{
+		return file_name_ends_with(file, FILE_FORMAT_EXT_GSML);
+	}
 	
 }
 
@@ -157,6 +165,10 @@ GPlatesFileIO::get_feature_collection_file_format(
 	{
 		return FeatureCollectionFileFormat::GMAP;
 	}
+	else if (is_gsml_format_file(file_info))
+	{
+		return FeatureCollectionFileFormat::GSML;
+	}
 	else
 	{
 		return FeatureCollectionFileFormat::UNKNOWN;
@@ -190,6 +202,9 @@ GPlatesFileIO::get_filename_extension(
 
 	case FeatureCollectionFileFormat::GMAP:
 		return FILE_FORMAT_EXT_GMAP;
+
+	case FeatureCollectionFileFormat::GSML:
+		return FILE_FORMAT_EXT_GSML;
 
 	case FeatureCollectionFileFormat::UNKNOWN:
 		return QString();

@@ -28,6 +28,8 @@
 #include "ErrorOpeningFileForReadingException.h"
 #include "ErrorOpeningFileForWritingException.h"
 #include "FileFormatNotSupportedException.h"
+#include "ArbitraryXmlReader.h"
+#include "GeoscimlProfile.h"
 #include "GmapReader.h"
 #include "GMTFormatWriter.h"
 #include "GpmlOnePointSixOutputVisitor.h"
@@ -261,6 +263,13 @@ GPlatesFileIO::read_feature_collection(
 
 		case FeatureCollectionFileFormat::GMAP:
 			return GmapReader::read_file(file_ref, model, read_errors);
+
+		case FeatureCollectionFileFormat::GSML:
+			return ArbitraryXmlReader::read_file(
+					file_ref, 
+					boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
+					model, 
+					read_errors);
 
 		case FeatureCollectionFileFormat::GMT:
 		

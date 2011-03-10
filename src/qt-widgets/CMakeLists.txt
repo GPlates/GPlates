@@ -75,6 +75,9 @@ set(srcs
     ConfigureTextOverlayDialog.cc
     ConfigureTextOverlayDialog.h
     ConfigureTextOverlayDialogUi.ui
+    ConnectWFSDialog.cc
+    ConnectWFSDialog.h
+    ConnectWFSDialogUi.ui
     CoRegistrationOptionsWidget.h
     CoRegistrationOptionsWidgetUi.ui
     CoRegLayerConfigurationDialog.cc

@@ -120,6 +120,8 @@ endif ( NOT WIN32 )
 # Tell Qt that we use QtXML.
 # NOTE: subdirectory 'CMakeList.txt' files will also see our QT_USE_* variables.
 SET(QT_USE_QTXML 1)
+SET(QT_USE_QTXMLPATTERNS 1)
+SET(QT_USE_QTNETWORK 1)
 SET(QT_USE_QTOPENGL 1)
 SET(QT_USE_QTSVG 1)
 include(${QT_USE_FILE})

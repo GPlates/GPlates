@@ -110,6 +110,7 @@ namespace GPlatesQtWidgets
 	class CalculateReconstructionPoleDialog;
 	class ChooseFeatureCollectionDialog;
 	class ColouringDialog;
+	class ConnectWFSDialog;
 	class ConfigureGraticulesDialog;
 	class ConfigureTextOverlayDialog;
 	class DataAssociationDialog;
@@ -415,6 +416,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_colouring_dialog();
+
+		void
+		pop_up_connect_wfs();
 
 		void
 		update_tools_and_status_message();
@@ -784,6 +788,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
 		boost::scoped_ptr<ChooseFeatureCollectionDialog> d_choose_feature_collection_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
+		boost::scoped_ptr<ConnectWFSDialog> d_connect_wfs_dialog_ptr;
 		boost::scoped_ptr<ConfigureGraticulesDialog> d_configure_graticules_dialog_ptr;
 		boost::scoped_ptr<ConfigureTextOverlayDialog> d_configure_text_overlay_dialog_ptr;
 		boost::scoped_ptr<DataAssociationDialog> d_data_association_dialog_ptr;

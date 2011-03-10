@@ -19,6 +19,7 @@
 #                    QT_USE_QTOPENGL
 #                    QT_USE_QTSQL
 #                    QT_USE_QTXML
+#                    QT_USE_QTXMLPATTERNS
 #                    QT_USE_QTSVG
 #                    QT_USE_QTTEST
 #                    QT_USE_QTUITOOLS
@@ -46,6 +47,7 @@
 #  QT_QTOPENGL_FOUND      True if QtOpenGL was found.
 #  QT_QTSQL_FOUND         True if QtSql was found.
 #  QT_QTXML_FOUND         True if QtXml was found.
+#  QT_QTXMLPATTERNS_FOUND True if QtXmlPatterns was found.
 #  QT_QTSVG_FOUND         True if QtSvg was found.
 #  QT_QTTEST_FOUND        True if QtTest was found.
 #  QT_QTUITOOLS_FOUND     True if QtUiTools was found.
@@ -71,6 +73,7 @@
 #  QT_QTOPENGL_INCLUDE_DIR     Path to "include/QtOpenGL" 
 #  QT_QTSQL_INCLUDE_DIR        Path to "include/QtSql" 
 #  QT_QTXML_INCLUDE_DIR        Path to "include/QtXml" 
+#  QT_QTXMLPATTERNS_INCLUDE_DIR  Path to "include/QtXmlPatterns
 #  QT_QTSVG_INCLUDE_DIR        Path to "include/QtSvg"
 #  QT_QTTEST_INCLUDE_DIR       Path to "include/QtTest"
 #                            
@@ -127,6 +130,9 @@
 # The QtXml library:          QT_QTXML_LIBRARY
 #                             QT_QTXML_LIBRARY_RELEASE
 #                             QT_QTXML_LIBRARY_DEBUG
+# The QtXmlPatterns library:  QT_QTXMLPATTERNS_LIBRARY
+#                             QT_QTXMLPATTERNS_LIBRARY_RELEASE
+#                             QT_QTXMLPATTERNS_LIBRARY_DEBUG
 #
 # The QtSvg library:          QT_QTSVG_LIBRARY
 #                             QT_QTSVG_LIBRARY_RELEASE
@@ -478,6 +484,22 @@ IF (QT4_QMAKE_FOUND)
     ${QT_LIBRARY_DIR}/QtXml.framework/Headers
     NO_DEFAULT_PATH
     )
+	
+  # Set QT_QTXMLPATTERNS_INCLUDE_DIR
+  FIND_PATH(QT_QTXMLPATTERNS_INCLUDE_DIR QtXmlPatterns
+    PATHS
+    ${QT_INCLUDE_DIR}/QtXmlPatterns
+    ${QT_LIBRARY_DIR}/QtXmlPatterns.framework/Headers
+    NO_DEFAULT_PATH
+    )
+	
+  # Set QT_QTXMLPATTERNS_INCLUDE_DIR
+  FIND_PATH(QT_QTNETWORK_INCLUDE_DIR QtNetwork
+    PATHS
+    ${QT_INCLUDE_DIR}/QtNetwork
+    ${QT_LIBRARY_DIR}/QtNetwork.framework/Headers
+    NO_DEFAULT_PATH
+    )
 
   # Set QT_QTASSISTANT_INCLUDE_DIR
   FIND_PATH(QT_QTASSISTANT_INCLUDE_DIR QtAssistant
@@ -540,6 +562,14 @@ IF (QT4_QMAKE_FOUND)
     # Set QT_QTXML_LIBRARY
     FIND_LIBRARY(QT_QTXML_LIBRARY_RELEASE NAMES QtXml QtXml4 PATHS ${QT_LIBRARY_DIR}        NO_DEFAULT_PATH)
     FIND_LIBRARY(QT_QTXML_LIBRARY_DEBUG   NAMES QtXml_debug QtXmld4 PATHS ${QT_LIBRARY_DIR} NO_DEFAULT_PATH)
+	
+	# Set QT_QTXMLPATTERNS_LIBRARY
+    FIND_LIBRARY(QT_QTXMLPATTERNS_LIBRARY_RELEASE NAMES QtXmlPatterns QtXmlPatterns4 PATHS ${QT_LIBRARY_DIR}         NO_DEFAULT_PATH)
+    FIND_LIBRARY(QT_QTXMLPATTERNS_LIBRARY_DEBUG   NAMES QtXmlPatterns_debug QtXmlPatternsd4 PATHS ${QT_LIBRARY_DIR}  NO_DEFAULT_PATH)
+	
+	# Set QT_QTNETWORK_LIBRARY
+    FIND_LIBRARY(QT_QTNETWORK_LIBRARY_RELEASE NAMES QtNetwork QtNetwork4 PATHS ${QT_LIBRARY_DIR}         NO_DEFAULT_PATH)
+    FIND_LIBRARY(QT_QTNETWORK_LIBRARY_DEBUG   NAMES QtNetwork_debug QtNetworkd4 PATHS ${QT_LIBRARY_DIR}  NO_DEFAULT_PATH)
 
     # Set QT_QTSVG_LIBRARY
     FIND_LIBRARY(QT_QTSVG_LIBRARY_RELEASE NAMES QtSvg QtSvg4 PATHS ${QT_LIBRARY_DIR}        NO_DEFAULT_PATH)
@@ -647,6 +677,8 @@ IF (QT4_QMAKE_FOUND)
   _QT4_ADJUST_LIB_VARS(QTOPENGL)
   _QT4_ADJUST_LIB_VARS(QTSQL)
   _QT4_ADJUST_LIB_VARS(QTXML)
+  _QT4_ADJUST_LIB_VARS(QTXMLPATTERNS)
+  _QT4_ADJUST_LIB_VARS(QTNETWORK)
   _QT4_ADJUST_LIB_VARS(QTSVG)
   _QT4_ADJUST_LIB_VARS(QTUITOOLS)
   _QT4_ADJUST_LIB_VARS(QTTEST)

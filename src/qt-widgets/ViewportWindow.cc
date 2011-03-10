@@ -61,6 +61,7 @@
 #include "ColouringDialog.h"
 #include "ConfigureGraticulesDialog.h"
 #include "ConfigureTextOverlayDialog.h"
+#include "ConnectWFSDialog.h"
 #include "CreateFeatureDialog.h"
 #include "CreateVGPDialog.h"
 #include "DigitisationWidget.h"
@@ -292,6 +293,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_application_state(), get_view_state(), this)),
 	d_calculate_reconstruction_pole_dialog_ptr(NULL),
 	d_colouring_dialog_ptr(NULL),
+	d_connect_wfs_dialog_ptr(NULL),
 	d_create_vgp_dialog_ptr(NULL),
 	d_export_animation_dialog_ptr(NULL),
 	d_feature_properties_dialog_ptr(
@@ -824,6 +826,9 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 	// ----
 	QObject::connect(action_Quit, SIGNAL(triggered()),
 			this, SLOT(close()));
+
+	QObject::connect(actionConnect_WFS, SIGNAL(triggered()),
+			this, SLOT(pop_up_connect_wfs()));
 }
 
 
@@ -1538,6 +1543,20 @@ GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
 
 	QtWidgetUtils::pop_up_dialog(d_colouring_dialog_ptr.get());
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_connect_wfs()
+{
+	if (!d_connect_wfs_dialog_ptr)
+	{
+		d_connect_wfs_dialog_ptr.reset(
+				new ConnectWFSDialog(
+						get_application_state()));
+	}
+	QtWidgetUtils::pop_up_dialog(d_connect_wfs_dialog_ptr.get());
+}
+
 
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_data_association_dialog()

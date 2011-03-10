@@ -655,14 +655,14 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
 		QString interior;
 		interior.append(QObject::tr("gml:interior"));
 		interior.append(QObject::tr(" #"));
-		interior.append(ring_number);
+		interior.append(QString().setNum(ring_number));
 
 		const GPlatesGui::TreeWidgetBuilder::item_handle_type interior_item_handle =
 				add_child_to_current_item(d_tree_widget_builder, interior);
 
 		d_tree_widget_builder.push_current_item(interior_item_handle);
 
-		write_polygon_ring(*iter);
+		write_polygon_ring(*iter,ring_number);
 
 		d_tree_widget_builder.pop_current_item();
 	}
@@ -721,14 +721,17 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geome
 
 boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::get_reconstructed_geometry_for_property(
-		const GPlatesModel::FeatureHandle::iterator property)
+		const GPlatesModel::FeatureHandle::iterator property,
+		unsigned idx)
 {
 	geometries_for_property_const_iterator it = d_rfg_geometries.begin();
 	geometries_for_property_const_iterator end = d_rfg_geometries.end();
+	unsigned i = 0;
 	for ( ; it != end; ++it) {
-		if (it->d_property == property) {
+		if (it->d_property == property && i == idx) {
 			return it->d_geometry;
 		}
+		i++;
 	}
 	return boost::none;
 }
@@ -750,7 +753,8 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::add_child_then_vis
 
 void
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::write_polygon_ring(
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr)
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr,
+		unsigned idx)
 {
 	// Now, prepare the coords in present-day and reconstructed time.
 	item_handle_seq_type coordinate_widgets;
@@ -763,7 +767,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::write_polygon_ring
 	// because someone might attempt to call us without invoking visit_feature_handle.
 	if (current_top_level_propiter()) {
 		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> recon_geometry =
-				get_reconstructed_geometry_for_property(*current_top_level_propiter());
+				get_reconstructed_geometry_for_property(*current_top_level_propiter(), idx);
 		if (recon_geometry) {
 			// We use a dynamic cast here (despite the fact that dynamic casts are
 			// generally considered bad form) because we only care about one specific
@@ -784,7 +788,6 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::write_polygon_ring
 			}
 		}
 	}
-	
 	// Add the coordinates to the tree!
 	add_children_to_current_item(d_tree_widget_builder,
 			coordinate_widgets.begin(), coordinate_widgets.end());

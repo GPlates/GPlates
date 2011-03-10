@@ -12,6 +12,10 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
+    ArbitraryXmlProfile.cc
+    ArbitraryXmlProfile.h
+    ArbitraryXmlReader.cc
+    ArbitraryXmlReader.h
     CptReader.cc
     CptReader.h
     ErrorOpeningFileForReadingException.cc
@@ -48,6 +52,8 @@ set(srcs
     GdalUtils.cc
     GdalUtils.h
     GeometryExporter.h
+    GeoscimlProfile.cc
+    GeoscimlProfile.h
     GmapReader.cc
     GmapReader.h
     GMTFormatFlowlineExport.cc
@@ -72,6 +78,14 @@ set(srcs
     GpmlOnePointSixReader.h
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
+    GsmlFeatureHandlers.cc
+    GsmlFeatureHandlers.h
+    GsmlNodeProcessor.cc
+    GsmlNodeProcessor.h
+    GsmlNodeProcessorFactory.cc
+    GsmlNodeProcessorFactory.h
+    GsmlPropertyHandlers.cc
+    GsmlPropertyHandlers.h
     LineReader.cc
     LineReader.h
     MipmappedRasterFormat.cc

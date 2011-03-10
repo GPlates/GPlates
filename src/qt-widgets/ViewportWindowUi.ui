@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>23</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -65,6 +65,8 @@
     <addaction name="action_Import_Raster"/>
     <addaction name="action_Import_Time_Dependent_Raster"/>
     <addaction name="menu_Import"/>
+    <addaction name="separator"/>
+    <addaction name="actionConnect_WFS"/>
     <addaction name="separator"/>
     <addaction name="action_Manage_Feature_Collections"/>
     <addaction name="action_File_Errors"/>
@@ -1530,6 +1532,11 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionConnect_WFS">
+   <property name="text">
+    <string>Connect WFS</string>
    </property>
   </action>
  </widget>
