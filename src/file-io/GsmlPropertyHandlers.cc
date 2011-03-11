@@ -118,6 +118,7 @@ namespace
 		query.setQuery(gml_ns + "data(doc($data_source)//@srsName)");
 		query.evaluateTo(&srs_name);
 		QXmlItem item(srs_name.next());
+		buffer.close();
 		if(!item.isNull() && item.isAtomicValue())
 		{
 			return item.toAtomicValue().toString();
@@ -126,7 +127,6 @@ namespace
 		{
 			return QString();
 		}
-		buffer.close();
 	}
 
 	bool
@@ -146,7 +146,7 @@ namespace
 
 	unsigned
 	find_srs_dimension(
-			QByteArray& buf)
+			const QByteArray& buf)
 	{
 		static const QString DIMENSION_TAG = "srsDimension";
 		QByteArray tmp = buf.trimmed();
