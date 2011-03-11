@@ -26,6 +26,11 @@
 #ifndef GPLATES_FILE_IO_RECONSTRUCTIONGEOMETRYEXPORTIMPL_H
 #define GPLATES_FILE_IO_RECONSTRUCTIONGEOMETRYEXPORTIMPL_H
 
+#if _MSC_VER_ <= 1400
+////Visual C++ 2005
+#pragma warning( disable : 4503 )
+#endif 
+
 #include <algorithm>
 #include <list>
 #include <map>

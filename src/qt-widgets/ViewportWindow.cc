@@ -24,6 +24,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#if _MSC_VER_ <= 1400
+////Visual C++ 2005
+#pragma warning( disable : 4005 )
+#endif 
+
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -2752,9 +2757,13 @@ export_main_window()
 	using namespace boost::python;
 	using namespace GPlatesApi::DeferredApiCall;
 
+#if _MSC_VER_ > 1400 
+//Visual C++ 2005
+//This code does not compile on Visual C++ 2005
 	class_<GPlatesQtWidgets::ViewportWindow, boost::noncopyable>("MainWindow", no_init /* scripts cannot create more of these! */)
 		.def("set_status_message",
 				GPLATES_DEFERRED_API_CALL(&::status_message, ArgReferenceWrappings<ref>()))
+#endif
 #if 0
 		// This is an example of how to supply more than one parameter to ArgReferenceWrappings.
 		.def("set_status_message2",

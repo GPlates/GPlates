@@ -75,7 +75,12 @@ bool
 GPlatesFileIO::LineReader::readline(
 		std::string &line)
 {
+#if 0
+	//Michael comments out this line for compilation.
 	return std::getline(*d_stream_ptr, line);
+#endif
+	throw ("Not Implement yet.");
+
 #if defined(__WINDOWS__)
 	// On windows std::getline:
 	// CR/LF -> NULL
