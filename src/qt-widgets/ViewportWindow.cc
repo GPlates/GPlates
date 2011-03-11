@@ -24,7 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#if _MSC_VER_ <= 1400
+#if defined(_MSC_VER) && _MSC_VER <= 1400
 ////Visual C++ 2005
 #pragma warning( disable : 4005 )
 #endif 
@@ -2757,7 +2757,7 @@ export_main_window()
 	using namespace boost::python;
 	using namespace GPlatesApi::DeferredApiCall;
 
-#if _MSC_VER_ > 1400 
+#if defined(_MSC_VER) && _MSC_VER > 1400 
 //Visual C++ 2005
 //This code does not compile on Visual C++ 2005
 	class_<GPlatesQtWidgets::ViewportWindow, boost::noncopyable>("MainWindow", no_init /* scripts cannot create more of these! */)

@@ -213,7 +213,7 @@ export_instance()
 {
 	using namespace boost::python;
 	using namespace GPlatesApi::DeferredApiCall;
-#if _MSC_VER_ > 1400 
+#if defined(_MSC_VER) && _MSC_VER > 1400 
 //Visual C++ 2005
 //This code does not compile on Visual C++ 2005
 	class_<GPlatesPresentation::Application, boost::noncopyable>("Instance", no_init /* not currently safe to do so */)
