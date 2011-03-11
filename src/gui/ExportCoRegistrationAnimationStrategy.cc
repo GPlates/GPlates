@@ -31,52 +31,25 @@
 #include "gui/AnimationController.h"
 #include "gui/CsvExport.h"
 
-const QString GPlatesGui::ExportCoRegistrationAnimationStrategy::DEFAULT_FILENAME_TEMPLATE
-		="co_registration_data_%0.2f.csv";
-
-const QString GPlatesGui::ExportCoRegistrationAnimationStrategy::FILENAME_TEMPLATE_DESC
-		=FORMAT_CODE_DESC;
-
-const QString GPlatesGui::ExportCoRegistrationAnimationStrategy::CO_REGISTRATION_DESC =
-		"co-registration data for data-mining\n";
-
-const GPlatesGui::ExportCoRegistrationAnimationStrategy::non_null_ptr_type
-GPlatesGui::ExportCoRegistrationAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const ExportAnimationStrategy::Configuration& cfg)
-{
-	ExportCoRegistrationAnimationStrategy* ptr=
-		new ExportCoRegistrationAnimationStrategy(
-				export_animation_context,
-				cfg.filename_template());
-	
-	ptr->d_delimiter = ',';
-	return non_null_ptr_type(
-			ptr,
-			GPlatesUtils::NullIntrusivePointerHandler());
-}
 
 GPlatesGui::ExportCoRegistrationAnimationStrategy::ExportCoRegistrationAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const QString &filename_template):
-	ExportAnimationStrategy(export_animation_context)
+		const const_configuration_ptr &configuration):
+	ExportAnimationStrategy(export_animation_context),
+	d_configuration(configuration)
 {
-	set_template_filename(filename_template);
+	set_template_filename(d_configuration->get_filename_template());
 }
 
 bool
 GPlatesGui::ExportCoRegistrationAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {	
-	if(!check_filename_sequence())
-	{
-		return false;
-	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
 	CsvExport::ExportOptions option;
-	option.delimiter=d_delimiter;
+	option.delimiter = ',';
 	
 	QString basename = *filename_it;
 	QString full_filename = d_export_animation_context_ptr->target_dir().absoluteFilePath(basename);
@@ -87,17 +60,3 @@ GPlatesGui::ExportCoRegistrationAnimationStrategy::do_export_iteration(
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
 }
-
-const QString&
-GPlatesGui::ExportCoRegistrationAnimationStrategy::get_default_filename_template()
-{
-	return DEFAULT_FILENAME_TEMPLATE;
-}
-
-const QString&
-GPlatesGui::ExportCoRegistrationAnimationStrategy::get_filename_template_desc()
-{
-	return FILENAME_TEMPLATE_DESC;
-}
-
-
