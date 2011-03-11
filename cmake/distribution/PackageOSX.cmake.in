@@ -124,6 +124,37 @@ IF (COPY_QT_CONF_RESULT)
 		MESSAGE(FATAL_ERROR "Error copying 'qt.conf' to Mac OSX bundle 'Resources' directory.")
 ENDIF (COPY_QT_CONF_RESULT)
 
+# Copy the "scripts/" directory from the root of the source tree to the 'Resources' directory of the app bundle.
+# This is where Qt looks for it.
+# It in turn tells Qt to look for plugins in the "Contents/plugins" directory.
+# First create the scripts target directory in the bundle.
+EXECUTE_PROCESS(
+		COMMAND "@CMAKE_COMMAND@" -E make_directory
+			"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts" 
+		RESULT_VARIABLE MAKE_SCRIPTS_DIR_RESULT
+		)
+IF (MAKE_SCRIPTS_DIR_RESULT)
+	MESSAGE(STATUS "Error creating 'scripts' directory in Mac OSX bundle - ignoring python scripts.")
+ELSE (MAKE_SCRIPTS_DIR_RESULT)
+	# Next copy the scripts directory into the bundle.
+	EXECUTE_PROCESS(
+			COMMAND "@CMAKE_COMMAND@" -E copy_directory
+				"@CMAKE_SOURCE_DIR@/scripts" 
+				"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts" 
+			RESULT_VARIABLE COPY_SCRIPTS_DIR_RESULT
+			)
+	IF (COPY_SCRIPTS_DIR_RESULT)
+		MESSAGE(STATUS "Error copying 'scripts' directory in Mac OSX bundle - ignoring python scripts.")
+	ELSE (COPY_SCRIPTS_DIR_RESULT)
+		# Finally remove the 'scripts/.svn' subdirectory copied over from the source tree.
+		EXECUTE_PROCESS(
+				COMMAND "@CMAKE_COMMAND@" -E remove_directory
+					"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts/.svn" 
+				RESULT_VARIABLE COPY_SCRIPTS_DIR_RESULT
+				)
+	ENDIF (COPY_SCRIPTS_DIR_RESULT)
+ENDIF (MAKE_SCRIPTS_DIR_RESULT)
+
 # Invoke CPack to package up the standalone bundle into an installer.
 EXECUTE_PROCESS(
 		COMMAND "@OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT@"

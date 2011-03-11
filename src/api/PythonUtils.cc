@@ -116,11 +116,22 @@ GPlatesApi::PythonUtils::run_startup_scripts(
 		::run_startup_scripts(python_execution_thread, cwd);
 	}
 
+	// On MacOS X systems the 'scripts/' directory is placed in the 'Resources/' directory
+	// inside the application bundle. And the 'Resources/' directory is a sibling directory
+	// of the directory containing the executable.
+#if defined(Q_OS_MAC) || defined(Q_WS_MAC)
+	QDir app_dir(QCoreApplication::applicationDirPath() + "/../Resources");
+	if (app_dir.cd("scripts"))
+	{
+		::run_startup_scripts(python_execution_thread, app_dir);
+	}
+#else
 	QDir app_dir(QCoreApplication::applicationDirPath());
 	if (app_dir.cd("scripts"))
 	{
 		::run_startup_scripts(python_execution_thread, app_dir);
 	}
+#endif
 }
 
 #else
