@@ -75,14 +75,14 @@ bool
 GPlatesFileIO::LineReader::readline(
 		std::string &line)
 {
-	return std::getline(*d_stream_ptr, line);
+	return std::getline(*d_stream_ptr, line).good();
 
 #if defined(__WINDOWS__)
 	// On windows std::getline:
 	// CR/LF -> NULL
 	// LF    -> NULL
 	// CR    -> CR
-	//
+	// 
 #elif defined(__APPLE__)
 	// On MacOS std::getline:
 	// CR/LF -> LF
