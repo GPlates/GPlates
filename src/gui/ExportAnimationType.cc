@@ -171,6 +171,8 @@ GPlatesGui::ExportAnimationType::get_export_format_description(
 	return s_export_format_description_map[format];
 }
 
+// For the BOOST_STATIC_ASSERT below with GCC 4.2.
+DISABLE_GCC_WARNING("-Wold-style-cast")
 
 GPlatesGui::ExportAnimationType::ExportID
 GPlatesGui::ExportAnimationType::get_export_id(
@@ -183,6 +185,7 @@ GPlatesGui::ExportAnimationType::get_export_id(
 	return (type << 16) | format;
 }
 
+ENABLE_GCC_WARNING("-Wold-style-cast")
 
 GPlatesGui::ExportAnimationType::Type
 GPlatesGui::ExportAnimationType::get_export_type(
