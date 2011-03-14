@@ -30,6 +30,7 @@
 
 #include "ExportAnimationType.h"
 
+#include "global/CompilerWarnings.h"
 #include "global/PreconditionViolationError.h"
 #include "global/GPlatesAssert.h"
 
