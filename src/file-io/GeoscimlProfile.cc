@@ -116,3 +116,5 @@ GPlatesFileIO::GeoscimlProfile::populate(
 	buffer.close();
 	return;
 }
+
+

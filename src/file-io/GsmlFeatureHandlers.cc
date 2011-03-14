@@ -50,3 +50,4 @@ GPlatesFileIO::GsmlFeatureHandlers::handle_mapped_feature(
 	return;
 }
 
+

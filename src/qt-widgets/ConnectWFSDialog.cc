@@ -233,3 +233,4 @@ ConnectWFSDialog::handle_canceled()
 	d_progress_dlg->hide();
 }
 
+
