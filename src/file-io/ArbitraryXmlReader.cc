@@ -49,3 +49,5 @@ GPlatesFileIO::ArbitraryXmlReader::read_xml_data(
 	GPlatesModel::FeatureCollectionHandle::weak_ref fc = file_ref.get_feature_collection();
 	profile->populate(data,fc);
 }
+
+
