@@ -678,6 +678,32 @@ namespace GPlatesApi
 		template<typename FunctionPtrType>
 		struct Wrapper
 		{
+#if defined(_MSC_VER) && _MSC_VER <= 1400
+			// Workaround for Visual Studio 2005. See else case for description.
+			// Function pointers are valid template parameters, but Visual Studio 2005
+			// seems to have trouble with function pointer template parameters to
+			// _functions_ whose type is a template parameter of the enclosing class. It
+			// seems to have no such problem with structs that have such a template
+			// parameter - I'm putting this down to a compiler bug.
+			template<void *FunctionPtr, class ArgReferenceWrappingsType>
+			inline
+			typename DeferredApiCall<
+				FunctionPtrType,
+				static_cast<FunctionPtrType>(FunctionPtr),
+				ArgReferenceWrappingsType,
+				GPlatesUtils::FunctionTypes::function_arity<FunctionPtrType>::value
+			>::function_type
+			wrap(
+					ArgReferenceWrappingsType) const
+			{
+				return &DeferredApiCall<
+					FunctionPtrType,
+					static_cast<FunctionPtrType>(FunctionPtr),
+					ArgReferenceWrappingsType,
+					GPlatesUtils::FunctionTypes::function_arity<FunctionPtrType>::value
+				>::deferred_api_call;
+			}
+#else
 			/**
 			 * Returns a pointer to a function that binds @a FunctionPtr to its arguments
 			 * and posts it to the @a qApp singleton for execution on the main GUI thread.
@@ -710,6 +736,7 @@ namespace GPlatesApi
 					GPlatesUtils::FunctionTypes::function_arity<FunctionPtrType>::value
 				>::deferred_api_call;
 			}
+#endif
 		};
 
 		/**

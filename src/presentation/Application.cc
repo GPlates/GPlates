@@ -213,9 +213,7 @@ export_instance()
 {
 	using namespace boost::python;
 	using namespace GPlatesApi::DeferredApiCall;
-#if defined(_MSC_VER) && _MSC_VER > 1400 
-//Visual C++ 2005
-//This code does not compile on Visual C++ 2005
+
 	class_<GPlatesPresentation::Application, boost::noncopyable>("Instance", no_init /* not currently safe to do so */)
 		.def("get_main_window",
 				&GPlatesPresentation::Application::get_viewport_window,
@@ -232,7 +230,6 @@ export_instance()
 				GPLATES_DEFERRED_API_CALL(&::register_utility, ArgReferenceWrappings<ref>()))
 		.def("get_loaded_files", &::get_loaded_files)
 		.def("get_feature_collection_from_loaded_file", &::get_feature_collection_from_loaded_file);
-#endif
 }
 #endif
 
