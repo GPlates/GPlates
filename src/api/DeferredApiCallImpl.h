@@ -28,6 +28,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/type_traits.hpp>
+#include <boost/utility/enable_if.hpp>
 
 #include "PythonInterpreterLocker.h"
 #include "PythonInterpreterUnlocker.h"
@@ -681,10 +682,11 @@ namespace GPlatesApi
 #if defined(_MSC_VER) && _MSC_VER <= 1400
 			// Workaround for Visual Studio 2005. See else case for description.
 			// Function pointers are valid template parameters, but Visual Studio 2005
-			// seems to have trouble with function pointer template parameters to
-			// _functions_ whose type is a template parameter of the enclosing class. It
-			// seems to have no such problem with structs that have such a template
-			// parameter - I'm putting this down to a compiler bug.
+			// seems to have trouble with template parameters that are pointers to
+			// non-member functions whose type is a template parameter of the enclosing
+			// class. It seems to have no such problem with structs that have such a
+			// template parameter - I'm putting this down to a compiler bug. Note also
+			// that it works fine with pointers to member functions.
 			template<void *FunctionPtr, class ArgReferenceWrappingsType>
 			inline
 			typename DeferredApiCall<
@@ -739,16 +741,56 @@ namespace GPlatesApi
 #endif
 		};
 
+		// The same as Wrapper but for member function pointers.
+		template<typename FunctionPtrType>
+		struct MemberFunctionWrapper
+		{
+			template<FunctionPtrType FunctionPtr, class ArgReferenceWrappingsType>
+			inline
+			typename DeferredApiCall<
+				FunctionPtrType,
+				FunctionPtr,
+				ArgReferenceWrappingsType,
+				GPlatesUtils::FunctionTypes::function_arity<FunctionPtrType>::value
+			>::function_type
+			wrap(
+					ArgReferenceWrappingsType) const
+			{
+				return &DeferredApiCall<
+					FunctionPtrType,
+					FunctionPtr,
+					ArgReferenceWrappingsType,
+					GPlatesUtils::FunctionTypes::function_arity<FunctionPtrType>::value
+				>::deferred_api_call;
+			}
+		};
+
 		/**
-		 * This function here is used to deduce the type of @a function_ptr.
+		 * This function here is used to deduce the type of @a function_ptr for
+		 * pointers to non-member functions.
 		 */
 		template<typename FunctionPtrType>
 		inline
 		Wrapper<FunctionPtrType>
 		make_wrapper(
-				FunctionPtrType function_ptr)
+				FunctionPtrType function_ptr,
+				typename boost::disable_if< boost::is_member_function_pointer<FunctionPtrType> >::type *dummy = NULL)
 		{
 			return Wrapper<FunctionPtrType>();
+		}
+
+		/**
+		 * This function here is used to deduce the type of @a function_ptr for
+		 * pointers to member functions.
+		 */
+		template<typename FunctionPtrType>
+		inline
+		MemberFunctionWrapper<FunctionPtrType>
+		make_wrapper(
+				FunctionPtrType function_ptr,
+				typename boost::enable_if< boost::is_member_function_pointer<FunctionPtrType> >::type *dummy = NULL)
+		{
+			return MemberFunctionWrapper<FunctionPtrType>();
 		}
 	}
 }
