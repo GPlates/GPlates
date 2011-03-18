@@ -74,3 +74,59 @@ GPlatesGlobal::Exception::generate_call_stack_trace_string()
 
 	d_call_stack_trace_string = output_string_stream.str();
 }
+
+
+const char *
+GPlatesGlobal::Exception::what() const
+{
+	// Write the message to a string stream.
+	std::ostringstream output_string_stream;
+	write(output_string_stream);
+
+	// Store the message.
+	d_std_exception_what_message = output_string_stream.str();
+
+	// Return a 'const char *' to our stored string.
+	return d_std_exception_what_message.c_str();
+}
+
+
+namespace GPlatesGlobal
+{
+	std::ostream &
+	operator <<(
+			std::ostream &os,
+			const Exception &ex)
+	{
+		ex.write(os);
+		return os;
+	}
+
+
+	QDebug
+	operator <<(
+			QDebug dbg,
+			const Exception &ex)
+	{
+		std::ostringstream output_string_stream;
+		output_string_stream << ex;
+
+		dbg.nospace() << output_string_stream.str().c_str();
+
+		return dbg.space();
+	}
+
+
+	QTextStream &
+	operator <<(
+			QTextStream &stream,
+			const Exception &ex)
+	{
+		std::ostringstream output_string_stream;
+		output_string_stream << ex;
+
+		stream << output_string_stream.str().c_str();
+
+		return stream;
+	}
+}
