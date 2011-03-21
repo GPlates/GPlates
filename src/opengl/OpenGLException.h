@@ -51,6 +51,7 @@ namespace GPlatesOpenGL
 				_msg(msg)
 			{  }
 
+			~OpenGLException() throw() { }
 		protected:
 			virtual const char *
 			exception_name() const {

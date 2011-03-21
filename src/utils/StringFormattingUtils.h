@@ -45,7 +45,8 @@ namespace GPlatesUtils
 				Exception(exception_source),
 				d_message(message)
 			{  }
-
+			
+			~InvalidFormattingParametersException() throw() { }
 		protected:
 
 			virtual

@@ -49,6 +49,7 @@ namespace GPlatesGlobal
 				_msg(msg)
 			{  }
 
+			~UnexpectedEmptyFeatureCollectionException() throw() { }
 		protected:
 			virtual const char *
 			exception_name() const {

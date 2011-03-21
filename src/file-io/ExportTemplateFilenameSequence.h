@@ -330,6 +330,7 @@ namespace GPlatesFileIO
 				d_format_string(format_string)
 			{  }
 
+			~UnrecognisedFormatString() throw() { }
 			//! Returns format string at which beginning does not match any specifiers.
 			const QString &
 			get_format_string() const

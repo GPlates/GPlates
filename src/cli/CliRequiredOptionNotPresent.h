@@ -51,6 +51,7 @@ namespace GPlatesCli
 			d_message(message_)
 		{  }
 
+		~RequiredOptionNotPresent() throw() { }
 		/**
 		 * Return the option that was required but not present.
 		 */

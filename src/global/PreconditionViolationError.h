@@ -48,6 +48,8 @@ namespace GPlatesGlobal
 		Exception(exception_source)
 		{  }
 
+		~PreconditionViolationError() throw() { }
+
 	protected:
 		virtual
 			const char *

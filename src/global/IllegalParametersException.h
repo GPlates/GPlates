@@ -51,6 +51,8 @@ namespace GPlatesGlobal
 				_msg(msg)
 			{  }
 
+			~IllegalParametersException() throw() { }
+
 		protected:
 			virtual const char *
 			exception_name() const {

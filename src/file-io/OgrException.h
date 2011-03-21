@@ -50,7 +50,7 @@ namespace GPlatesFileIO
 				d_msg(msg) {  }
 
 			virtual
-			~OgrException() {}
+			~OgrException() throw() { }
 
 			virtual const char *
 			exception_name() const {

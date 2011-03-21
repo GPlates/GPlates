@@ -50,6 +50,8 @@ namespace GPlatesGlobal
 					const GPlatesUtils::CallStack::Trace &exception_source) :
 				Exception(exception_source)
 			{  }
+		
+			~ExternalResourceFailureException() throw() { }
 	};
 }
 

@@ -69,7 +69,7 @@ namespace GPlatesGlobal
 					const GPlatesUtils::CallStack::Trace &exception_source);
 
 			virtual
-			~Exception() {  }
+			~Exception() throw() { }
 
 			/**
 			 * Write the name and message of an exception into the supplied output
@@ -134,7 +134,7 @@ namespace GPlatesGlobal
 			 */
 			virtual
 			const char *
-			what() const;
+			what() const throw();
 
 
 			/**

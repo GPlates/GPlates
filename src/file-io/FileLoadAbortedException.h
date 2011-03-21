@@ -46,7 +46,8 @@ namespace GPlatesFileIO
 				Exception(exception_source),
 				_msg(msg)
 			{  }
-
+			
+			~FileLoadAbortedException() throw() { } 
 		protected:
 			virtual const char *
 			exception_name() const {

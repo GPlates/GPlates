@@ -53,7 +53,7 @@ namespace GPlatesOpenGL
 			{  }
 
 			virtual
-			~OpenGLBadAllocException() {  }
+			~OpenGLBadAllocException() throw() {  }
 
 		protected:
 			virtual const char *

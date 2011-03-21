@@ -51,7 +51,7 @@ namespace GPlatesGui
 				d_msg(msg) {  }
 
 			virtual
-			~ProjectionException() {  }
+			~ProjectionException() throw()  {  }
 
 		protected:
 			virtual const char *

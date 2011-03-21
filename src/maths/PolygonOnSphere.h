@@ -790,7 +790,7 @@ namespace GPlatesMaths
 		{  }
 
 		virtual
-		~InvalidPointsForPolygonConstructionError()
+		~InvalidPointsForPolygonConstructionError() throw()
 		{  }
 
 	protected:

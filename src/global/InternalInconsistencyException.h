@@ -67,6 +67,8 @@ namespace GPlatesGlobal {
 			m_msg(msg)
 		{  }
 
+		~InternalInconsistencyException() throw() { }
+
 	 protected:
 
 		virtual

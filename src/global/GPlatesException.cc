@@ -77,7 +77,7 @@ GPlatesGlobal::Exception::generate_call_stack_trace_string()
 
 
 const char *
-GPlatesGlobal::Exception::what() const
+GPlatesGlobal::Exception::what() const throw()
 {
 	// Write the message to a string stream.
 	std::ostringstream output_string_stream;
