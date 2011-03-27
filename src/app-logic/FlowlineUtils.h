@@ -68,33 +68,31 @@ namespace GPlatesAppLogic
 			  }
 
 
-			  virtual
-				  void
-				  visit_feature_handle(
-				  const GPlatesModel::FeatureHandle &feature_handle)
-			  {
-				  if (d_found_flowline_features)
-				  {
-					  // We've already found a flowline feature so just return.
-					  return;
-				  }
+				virtual
+				bool
+				initialise_pre_feature_properties(
+						feature_handle_type &feature_handle)
+				{
+					if (d_found_flowline_features)
+					{
+						// We've already found a flowline feature so just return.
+						// NOTE: We don't actually want to visit the feature's properties.
+						return false;
+					}
 
-				  static const GPlatesModel::FeatureType flowline_feature_type =
-					  GPlatesModel::FeatureType::create_gpml("Flowline");
+					static const GPlatesModel::FeatureType flowline_feature_type =
+					GPlatesModel::FeatureType::create_gpml("Flowline");
 
-				  if (feature_handle.feature_type() == flowline_feature_type)
-				  {
-					  d_found_flowline_features = true;
-				  }
+					if (feature_handle.feature_type() == flowline_feature_type)
+					{
+						d_found_flowline_features = true;
+					}
 
-				  // NOTE: We don't actually want to visit the feature's properties
-				  // so we're not calling 'visit_feature_properties()'.
-			  }
+					// NOTE: We don't actually want to visit the feature's properties.
+					return false;
+				}
 
 		private:
-
-
-
 			bool d_found_flowline_features;
 		};
 

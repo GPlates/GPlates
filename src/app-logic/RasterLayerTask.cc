@@ -41,6 +41,7 @@
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlTimeWindow.h"
 #include "property-values/RawRaster.h"
+#include "property-values/RawRasterUtils.h"
 #include "property-values/TextContent.h"
 
 
@@ -56,6 +57,12 @@ namespace
 	 *    top level property.
 	 *  - GmlFile inside a GpmlConstantValue or a GpmlPiecewiseAggregation inside
 	 *    a gpml:rangeSet top level property.
+	 *  - any proxied raw raster (for any band) in the GmlFile is initialised.
+	 *    TODO: Check only the band number that this layer task is interested in.
+	 *          Although maybe not because the user could switch the band number in
+	 *          the layer controls and this class is designed to test if a raster layer
+	 *          can process the input feature.
+	 *          So probably better to leave as is and just check that any band can be processed.
 	 *  - GpmlRasterBandNames (not inside any time dependent structure) inside a
 	 *    gpml:bandNames top level property.
 	 */
@@ -86,6 +93,7 @@ namespace
 		{
 			d_seen_gml_rectified_grid = false;
 			d_seen_gml_file = false;
+			d_seen_at_least_one_valid_proxied_raw_raster = false;
 			d_seen_gpml_raster_band_names = false;
 
 			return true;
@@ -98,6 +106,7 @@ namespace
 		{
 			if (d_seen_gml_rectified_grid &&
 					d_seen_gml_file &&
+					d_seen_at_least_one_valid_proxied_raw_raster &&
 					d_seen_gpml_raster_band_names)
 			{
 				d_collection_has_raster_feature = true;
@@ -161,6 +170,22 @@ namespace
 				if (propname && *propname == RANGE_SET)
 				{
 					d_seen_gml_file = true;
+
+					// Make sure we have at least one initialised proxied raw raster for a band.
+					// If we have at least one then it means we can process something (even if
+					// it's only one band).
+					const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> proxied_rasters =
+							gml_file.proxied_raw_rasters();
+					BOOST_FOREACH(
+							const GPlatesPropertyValues::RawRaster::non_null_ptr_type &proxied_raster,
+							proxied_rasters)
+					{
+						if (GPlatesPropertyValues::RawRasterUtils::has_proxied_data(*proxied_raster))
+						{
+							d_seen_at_least_one_valid_proxied_raw_raster = true;
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -204,6 +229,7 @@ namespace
 
 		bool d_seen_gml_rectified_grid;
 		bool d_seen_gml_file;
+		bool d_seen_at_least_one_valid_proxied_raw_raster;
 		bool d_seen_gpml_raster_band_names;
 
 		bool d_inside_constant_value;

@@ -28,14 +28,21 @@
 #define GPLATES_OPENGL_GLPROXIEDRASTERSOURCE_H
 
 #include <boost/optional.hpp>
+#include <QImage>
 
 #include "GLMultiResolutionRasterSource.h"
 
+#include "global/PointerTraits.h"
+
 #include "gui/RasterColourPalette.h"
 
-#include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRaster.h"
 
+
+namespace GPlatesPropertyValues
+{
+	class ProxiedRasterResolver;
+}
 
 namespace GPlatesOpenGL
 {
@@ -130,7 +137,8 @@ namespace GPlatesOpenGL
 		 * The proxied raster resolver to get region/level data from raster and
 		 * optionally converted to RGBA (using @a d_raster_colour_palette).
 		 */
-		GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type d_proxied_raster_resolver;
+		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type
+					d_proxied_raster_resolver;
 
 		/**
 		 * The colour palette used to convert non-RGBA raster data to RGBA.
@@ -148,9 +156,16 @@ namespace GPlatesOpenGL
 		 */
 		unsigned int d_tile_texel_dimension;
 
+		/**
+		 * Images containing error messages when fail to load proxied raster tiles.
+		 */
+		QImage d_error_text_image_level_zero;
+		QImage d_error_text_image_mipmap_levels;
+
 
 		GLProxiedRasterSource(
-				const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
+				const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
+						proxy_raster_resolver,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 				unsigned int raster_width,
 				unsigned int raster_height,

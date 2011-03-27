@@ -47,16 +47,22 @@
 #include "GLViewport.h"
 #include "GLViewportState.h"
 
+#include "global/PointerTraits.h"
+
 #include "gui/Colour.h"
 
 #include "maths/types.h"
 
-#include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRaster.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
 
+
+namespace GPlatesPropertyValues
+{
+	class ProxiedRasterResolver;
+}
 
 namespace GPlatesOpenGL
 {
@@ -204,7 +210,8 @@ namespace GPlatesOpenGL
 		/**
 		 * The proxied raster resolver to get region/level float-point data from the age grid raster.
 		 */
-		GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type d_proxied_raster_resolver;
+		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type
+				d_proxied_raster_resolver;
 
 		//! Original raster width.
 		unsigned int d_raster_width;
@@ -273,7 +280,8 @@ namespace GPlatesOpenGL
 
 		GLAgeGridMaskSource(
 				const double &reconstruction_time,
-				const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
+				const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
+						proxy_raster_resolver,
 				unsigned int raster_width,
 				unsigned int raster_height,
 				unsigned int tile_texel_dimension,

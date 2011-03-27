@@ -40,6 +40,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRasterUtils.h"
 
 #include "utils/Profile.h"
@@ -92,7 +93,8 @@ GPlatesOpenGL::GLAgeGridCoverageSource::create(
 
 
 GPlatesOpenGL::GLAgeGridCoverageSource::GLAgeGridCoverageSource(
-		const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
+		const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
+				proxy_raster_resolver,
 		unsigned int raster_width,
 		unsigned int raster_height,
 		unsigned int tile_texel_dimension) :

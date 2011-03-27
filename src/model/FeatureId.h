@@ -33,6 +33,8 @@
 
 namespace GPlatesModel
 {
+	class FeatureHandle;
+
 	/**
 	 * A feature ID acts as a persistent unique identifier for a feature.
 	 *

@@ -548,9 +548,9 @@ std::vector< boost::shared_ptr<GPlatesAppLogic::LayerTask> >
 GPlatesAppLogic::ApplicationState::create_layer_tasks(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &input_feature_collection)
 {
-	// Look for layer task types that can process the feature collection.
+	// Look for layer task types that we should create to process the loaded feature collection.
 	const std::vector<LayerTaskRegistry::LayerTaskType> layer_task_types =
-			d_layer_task_registry->get_layer_task_types_that_can_process_feature_collection(
+			d_layer_task_registry->get_layer_task_types_to_auto_create_for_loaded_file(
 					input_feature_collection);
 
 	// The sequence of layer tasks to return to the caller.
@@ -561,7 +561,7 @@ GPlatesAppLogic::ApplicationState::create_layer_tasks(
 	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, layer_task_types)
 	{
 		const boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task =
-				create_primary_layer_task(layer_task_type);
+				layer_task_type.create_layer_task();
 		if (layer_task)
 		{
 			// Add to sequence returned to the caller.
@@ -573,23 +573,6 @@ GPlatesAppLogic::ApplicationState::create_layer_tasks(
 }
 
 
-boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> >
-GPlatesAppLogic::ApplicationState::create_primary_layer_task(
-		LayerTaskRegistry::LayerTaskType& layer_task_type) 
-{
-	// Ignore layer task types that are not primary.
-	// Primary task types are the set of orthogonal task types that we can
-	// create without user interaction. The other types can be selected specifically
-	// by the user but will never be created automatically when a file is first loaded.
-	if (!layer_task_type.is_primary_task_type())
-	{
-		return boost::none;
-	}
-
-	// Create the layer task.
-	return layer_task_type.create_layer_task();
-}
-
 void
 GPlatesAppLogic::ApplicationState::update_layers(
 		const FeatureCollectionFileState::file_reference &file_ref)
@@ -597,25 +580,17 @@ GPlatesAppLogic::ApplicationState::update_layers(
 	const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 			file_ref.get_file().get_feature_collection();
 
-	// The file may have changed so find out what layer types can process it.
+	// The file may have changed so find out what layer types should be created to
+	// process the file.
 	// This may have changed since we last checked.
 	const std::vector<LayerTaskRegistry::LayerTaskType> new_layer_task_types =
-			d_layer_task_registry->get_layer_task_types_that_can_process_feature_collection(
+			d_layer_task_registry->get_layer_task_types_to_auto_create_for_loaded_file(
 					feature_collection);
 
 	bool created_new_layers = false;
 
 	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, new_layer_task_types)
 	{
-		// Ignore layer task types that are not primary.
-		// Primary task types are the set of orthogonal task types that we can
-		// create without user interaction. The other types can be selected specifically
-		// by the user but will never be created automatically when a file is first loaded.
-		if (!layer_task_type.is_primary_task_type())
-		{
-			continue;
-		}
-
 		// Get the layers auto-created from 'file_ref'.
 		const layer_seq_type &layers_created_from_file =
 				d_file_to_primary_layers_mapping[file_ref];
@@ -639,6 +614,7 @@ GPlatesAppLogic::ApplicationState::update_layers(
 		reconstruct();
 	}
 }
+
 
 void
 GPlatesAppLogic::ApplicationState::create_layer(
@@ -702,6 +678,7 @@ GPlatesAppLogic::ApplicationState::create_layer(
 	d_file_to_primary_layers_mapping[input_file_ref].push_back(new_layer);
 }
 
+
 void
 GPlatesAppLogic::ApplicationState::create_layers(
 		const FeatureCollectionFileState::file_reference &input_file_ref)
@@ -718,4 +695,3 @@ GPlatesAppLogic::ApplicationState::create_layers(
 		create_layer(input_file_ref, layer_task);
 	}
 }
-

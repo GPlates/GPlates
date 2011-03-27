@@ -40,6 +40,8 @@
 
 #include "GLUtils.h"
 
+#include "utils/Profile.h"
+
 
 void
 GPlatesOpenGL::GLTextureUtils::load_colour_into_texture(
@@ -79,6 +81,7 @@ GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
+	PROFILE_FUNC();
 
 	// Each row of texels, in the raster image, is not aligned to 4 bytes.
 	// This is a direct call to OpenGL but it only affects how images are unpacked
@@ -99,49 +102,82 @@ GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
 			texel_u_offset, texel_v_offset, image_width, image_height,
 			GL_RGBA, GL_UNSIGNED_BYTE, image);
 
+#if 0 // No need to check this so frequently.
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+#endif
 }
 
 
 void
-GPlatesOpenGL::GLTextureUtils::load_qimage_into_texture(
+GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
 		const GLTexture::shared_ptr_type &texture,
-		const QImage &image,
+		const GPlatesGui::rgba8_t *image,
+		unsigned int image_width,
+		unsigned int image_height,
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
-	const QSize image_size = image.size();
+	load_rgba8_image_into_texture(
+			texture,
+			static_cast<const void *>(image),
+			image_width, image_height,
+			texel_u_offset, texel_v_offset);
+}
+
+
+void
+GPlatesOpenGL::GLTextureUtils::load_argb32_qimage_into_texture(
+		const GLTexture::shared_ptr_type &texture,
+		const QImage &argb32_qimage,
+		unsigned int texel_u_offset,
+		unsigned int texel_v_offset)
+{
+	PROFILE_FUNC();
+
+	const int argb32_image_width = argb32_qimage.width();
+	const int argb32_image_height = argb32_qimage.height();
+
+	// Create an array of pixels to copy into the texture.
+	boost::scoped_array<GPlatesGui::rgba8_t> texture_data_storage(
+			new GPlatesGui::rgba8_t[argb32_image_width * argb32_image_height]);
+	GPlatesGui::rgba8_t *const texture_data = texture_data_storage.get();
+	for (int i = 0; i < argb32_image_height; ++i)
+	{
+		// Convert a row of QImage::Format_ARGB32 pixels to GPlatesGui::rgba8_t.
+		convert_argb32_to_rgba8(
+				reinterpret_cast<const boost::uint32_t *>(argb32_qimage.scanLine(i)),
+				texture_data + i * argb32_image_width,
+				argb32_image_width);
+	}
 
 	load_rgba8_image_into_texture(
 			texture,
-			// Convert from (B,G,R,A) to (R,G,B,A)
-			QGLWidget::convertToGLFormat(
-					image.transformed(
-							// Invert the 'y' coordinate
-							QMatrix(1, 0, 0, -1, 0, 0))).bits(),
-			image_size.width(),
-			image_size.height(),
+			texture_data_storage.get(),
+			argb32_image_width,
+			argb32_image_height,
 			texel_u_offset,
 			texel_v_offset);
 }
 
 
-void
-GPlatesOpenGL::GLTextureUtils::draw_text_into_texture(
-		const GLTexture::shared_ptr_type &texture,
+QImage
+GPlatesOpenGL::GLTextureUtils::draw_text_into_qimage(
 		const QString &text,
-		const QRect &text_rect,
+		unsigned int image_width,
+		unsigned int image_height,
 		const float text_scale,
 		const QColor &text_colour,
 		const QColor &background_colour)
 {
+	PROFILE_FUNC();
+
 	// Start off with half-size dimensions - we'll scale to full-size later
 	// so that image is more visible (because image will map roughly one texel to one
 	// screen pixel which can be hard to read).
 
-	const int scaled_width = static_cast<int>(text_rect.width() / text_scale);
-	const int scaled_height = static_cast<int>(text_rect.height() / text_scale);
+	const int scaled_width = static_cast<int>(image_width / text_scale);
+	const int scaled_height = static_cast<int>(image_height / text_scale);
 
 	QImage scaled_image(scaled_width, scaled_height, QImage::Format_ARGB32);
 
@@ -157,12 +193,6 @@ GPlatesOpenGL::GLTextureUtils::draw_text_into_texture(
 	painter.end();
 
 	// Scale the rendered text.
-	const QImage image = scaled_image.scaled(
-			text_rect.width(), text_rect.height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-
-	load_qimage_into_texture(
-			texture,
-			image,
-			text_rect.left(),
-			text_rect.top());
+	return scaled_image.scaled(
+			image_width, image_height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 }

@@ -405,13 +405,6 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &input_feature_collection);
 
 		/**
-		 * Creates a layer task from @a layer_task_type if it's a *primary* layer task type.
-		 */
-		boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> >
-		create_primary_layer_task(
-				LayerTaskRegistry::LayerTaskType& layer_task_type);
-
-		/**
 		 * Creates new layer(s) that can process the feature collection in @a input_file_ref and
 		 * connects the feature collection to the main input of each new layer.
 		 */

@@ -44,6 +44,7 @@
 
 #include "gui/Colour.h"
 
+#include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRasterUtils.h"
 
 #include "utils/Profile.h"
@@ -98,7 +99,8 @@ GPlatesOpenGL::GLProxiedRasterSource::create(
 
 
 GPlatesOpenGL::GLProxiedRasterSource::GLProxiedRasterSource(
-		const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
+		const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
+				proxy_raster_resolver,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 		unsigned int raster_width,
 		unsigned int raster_height,
@@ -122,6 +124,8 @@ GPlatesOpenGL::GLProxiedRasterSource::load_tile(
 		const GLTexture::shared_ptr_type &target_texture,
 		GLRenderer &renderer)
 {
+	PROFILE_FUNC();
+
 	PROFILE_BEGIN(proxy_raster, "get_coloured_region_from_level");
 	// Get the region of the raster covered by this tile at the level-of-detail of this tile.
 	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> raster_region_opt =
@@ -137,6 +141,7 @@ GPlatesOpenGL::GLProxiedRasterSource::load_tile(
 	// If there was an error accessing raster data then black out the texture.
 	if (!raster_region_opt)
 	{
+#if 0 // Too many warnings - besides already drawing error message on globe via textures.
 		qWarning() << "Unable to load data into raster tile:";
 
 		qWarning() << "  level, texel_x_offset, texel_y_offset, texel_width, texel_height: "
@@ -145,14 +150,51 @@ GPlatesOpenGL::GLProxiedRasterSource::load_tile(
 				<< texel_y_offset << ", "
 				<< texel_width << ", "
 				<< texel_height << ", ";
+#endif
 
 		// Create a black raster to load into the texture and overlay an error message in red.
-		GLTextureUtils::draw_text_into_texture(
-				target_texture,
-				"Error loading raster mipmap",
-				QRect(0, 0 , texel_width, texel_height),
-				3.0f/*text scale*/,
-				QColor(255, 0, 0, 255)/*red text*/);
+		// Create a different message depending on whether the level is zero or not.
+		// This is because level zero goes through a different proxied raster resolver path
+		// than levels greater than zero and different error messages help us narrow down the problem.
+		const QString error_text = (level == 0)
+				? "Error loading raster level 0"
+				: "Error loading raster mipmap";
+		QImage &error_text_image = (level == 0)
+				? d_error_text_image_level_zero
+				: d_error_text_image_mipmap_levels;
+
+		// Only need to build once - reduces noticeable frame-rate hitches when zooming the view.
+		if (error_text_image.isNull())
+		{
+			// Draw error message text into image.
+			error_text_image = GLTextureUtils::draw_text_into_qimage(
+					error_text,
+					d_tile_texel_dimension, d_tile_texel_dimension,
+					3.0f/*text scale*/,
+					QColor(255, 0, 0, 255)/*red text*/);
+
+			// Convert to ARGB32 format so it's easier to load into a texture.
+			error_text_image.convertToFormat(QImage::Format_ARGB32);
+		}
+
+		// Most tiles will be the tile texel dimension - it's just the stragglers around the
+		// edges of the raster.
+		if (texel_width == d_tile_texel_dimension && texel_height == d_tile_texel_dimension)
+		{
+			// Load cached image into target texture.
+			GLTextureUtils::load_argb32_qimage_into_texture(
+					target_texture,
+					error_text_image,
+					0, 0);
+		}
+		else
+		{
+			// Need to load clipped copy of error text image into target texture.
+			GLTextureUtils::load_argb32_qimage_into_texture(
+					target_texture,
+					error_text_image.copy(0, 0, texel_width, texel_height),
+					0, 0);
+		}
 
 		return;
 	}

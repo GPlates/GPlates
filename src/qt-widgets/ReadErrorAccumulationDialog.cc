@@ -370,9 +370,11 @@ namespace
 				QT_TR_NOOP("An invalid polygon geometry was found.") },
 
 		// Errors relating to raster files in general
-		{ GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
-				QT_TR_NOOP("Insufficient texture memory."),
-				QT_TR_NOOP("There was insufficient memory to load the requested raster.") },
+		{ GPlatesFileIO::ReadErrors::InsufficientMemoryToLoadRaster,
+				QT_TR_NOOP("Insufficient memory."),
+				QT_TR_NOOP("There was insufficient memory to load the requested raster.\n"
+					"Try loading a JPEG or netCDF/GMT gridded raster.\n"
+					"These formats should not cause a memory allocation failure regardless of raster size.") },
 		{ GPlatesFileIO::ReadErrors::ErrorGeneratingTexture,
 				QT_TR_NOOP("Error generating texture."),
 				QT_TR_NOOP("There was an error generating an OpenGL texture.") },

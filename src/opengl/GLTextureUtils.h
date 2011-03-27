@@ -64,8 +64,10 @@ namespace GPlatesOpenGL
 		 * Loads the specified image into the specified RGBA texture.
 		 *
 		 * @a image must contains 4-byte (R,G,B,A) colour values in that order.
+		 * Note that this is a byte ordering in *memory* (not in a 32-bit integer which
+		 * is machine-endian dependent).
 		 *
-		 * It is the caller's responsibility to ensure the region is inside an
+		 * NOTE: It is the caller's responsibility to ensure the region is inside an
 		 * already allocated and created OpenGL texture.
 		 * It is also the caller's responsibility to ensure that @a image points
 		 * to @a image_width by @a image_height colour values.
@@ -85,14 +87,13 @@ namespace GPlatesOpenGL
 		/**
 		 * Loads the specified RGBA8 image into the specified RGBA texture.
 		 *
-		 * It is the caller's responsibility to ensure the region is inside an
+		 * NOTE: It is the caller's responsibility to ensure the region is inside an
 		 * already allocated and created OpenGL texture.
 		 * It is also the caller's responsibility to ensure that @a image points
 		 * to @a image_width by @a image_height colour values.
 		 *
 		 * NOTE: This will bind @a texture to whatever the currently active texture unit is.
 		 */
-		inline
 		void
 		load_rgba8_image_into_texture(
 				const GLTexture::shared_ptr_type &texture,
@@ -100,45 +101,33 @@ namespace GPlatesOpenGL
 				unsigned int image_width,
 				unsigned int image_height,
 				unsigned int texel_u_offset = 0,
-				unsigned int texel_v_offset = 0)
-		{
-			load_rgba8_image_into_texture(
-					texture,
-					static_cast<const void *>(image),
-					image_width, image_height,
-					texel_u_offset, texel_v_offset);
-		}
+				unsigned int texel_v_offset = 0);
 
 
 		/**
-		 * Loads the specified image into the specified RGBA texture.
+		 * Loads the specified QImage, must be QImage::Format_ARGB32, into the specified texture.
 		 *
-		 * It is the caller's responsibility to ensure the region is inside an
+		 * NOTE: It is the caller's responsibility to ensure the region is inside an
 		 * already allocated and created OpenGL texture.
 		 *
 		 * NOTE: This will bind @a texture to whatever the currently active texture unit is.
 		 */
 		void
-		load_qimage_into_texture(
+		load_argb32_qimage_into_texture(
 				const GLTexture::shared_ptr_type &texture,
-				const QImage &image,
+				const QImage &argb32_qimage,
 				unsigned int texel_u_offset = 0,
 				unsigned int texel_v_offset = 0);
 
 
 		/**
-		 * Draws text into the specified RGBA texture.
-		 *
-		 * It is the caller's responsibility to ensure the region is inside an
-		 * already allocated and created OpenGL texture.
-		 *
-		 * NOTE: This will bind @a texture to whatever the currently active texture unit is.
+		 * Draws the specified text into a QImage the specified size.
 		 */
-		void
-		draw_text_into_texture(
-				const GLTexture::shared_ptr_type &texture,
+		QImage
+		draw_text_into_qimage(
 				const QString &text,
-				const QRect &text_rect,
+				unsigned int image_width,
+				unsigned int image_height,
 				const float text_scale = 1.0f,
 				const QColor &text_colour = QColor(255, 255, 255, 255)/*white*/,
 				const QColor &background_colour = QColor(0, 0, 0, 255)/*black*/);

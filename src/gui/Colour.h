@@ -33,10 +33,8 @@
 #include <boost/cstdint.hpp>
 #include <opengl/OpenGL.h>
 #include <QColor>
+#include <QDataStream>
 
-
-// Forward declaration.
-class QDataStream;
 
 namespace GPlatesGui
 {
@@ -141,46 +139,148 @@ namespace GPlatesGui
 	};
 
 
-	inline
-	std::ostream &
-	operator<<(
-			std::ostream &os,
-			const rgba8_t &c)
-	{
-		os << "("
-				<< static_cast<int>(c.red) << ", "
-				<< static_cast<int>(c.green) << ", "
-				<< static_cast<int>(c.blue) << ", "
-				<< static_cast<int>(c.alpha) << ")";
+	/**
+	 * Convert an array of pixels from the 32-bit integer format 0xAARRGGBB
+	 * to the 4 x 8-byte (R,G,B,A) format (ie, the @a rgba8_t type).
+	 *
+	 * Both array must have at least @a num_pixels pixels.
+	 *
+	 * Note that (a,b,c,d) means a 4-byte ordering in *memory* (not in a 32-bit integer).
+	 *
+	 * Also note that QImage::Format_ARGB32 means the 32-bit integer 0xAARRGGBB and
+	 * not necessarily (B,G,R,A) - they're only the same on little-endian machines where
+	 * the least significant part of the integer (litte end) goes into the byte array first.
+	 *
+	 * Also note that GL_RGBA means (R,G,B,A) on both little and big endian machines -
+	 * in other words it specifies byte ordering in memory (not in a 32-bit integer like Qt).
+	 */
+	void
+	convert_argb32_to_rgba8(
+			const boost::uint32_t *argb32_pixels,
+			rgba8_t *rgba8_pixels,
+			unsigned int num_pixels);
 
-		return os;
+	/**
+	 * Convert an array of pixels from the 4 x 8-byte (R,G,B,A) format (ie, the @a rgba8_t type)
+	 * to the 32-bit integer format 0xAARRGGBB.
+	 *
+	 * Both array must have at least @a num_pixels pixels.
+	 *
+	 * Note that (a,b,c,d) means a 4-byte ordering in *memory* (not in a 32-bit integer).
+	 *
+	 * Also note that QImage::Format_ARGB32 means the 32-bit integer 0xAARRGGBB and
+	 * not necessarily (B,G,R,A) - they're only the same on little-endian machines where
+	 * the least significant part of the integer (litte end) goes into the byte array first.
+	 *
+	 * Also note that GL_RGBA means (R,G,B,A) on both little and big endian machines -
+	 * in other words it specifies byte ordering in memory (not in a 32-bit integer like Qt).
+	 */
+	void
+	convert_rgba8_to_argb32(
+			const rgba8_t *rgba8_pixels,
+			boost::uint32_t *argb32_pixels,
+			unsigned int num_pixels);
+
+
+	/**
+	 * Writes an array of @a rgba8_t pixels to the output stream.
+	 *
+	 * NOTE: It bypasses the expensive output operator '<<' and hence is *much*
+	 * faster than doing a loop with '<<' (as determined by profiling).
+	 *
+	 * Note that GPlatesGui::rgba8_t stores 4 bytes in memory as (R,G,B,A) and the
+	 * data is written to the stream as bytes (not 32-bit integers) so there's
+	 * no need to re-order the bytes according to the endianess of the current system.
+	 * Note that QDataStream stores streams in big-endian format (but that's irrelevant here).
+	 */
+	inline
+	void
+	output_pixels(
+			QDataStream &out,
+			const rgba8_t *rgba8_pixels,
+			unsigned int num_pixels)
+	{
+		out.writeRawData(
+				reinterpret_cast<const char *>(rgba8_pixels),
+				num_pixels * sizeof(rgba8_t));
+	}
+
+	/**
+	 * Read to array of @a rgba8_t pixels from the input stream.
+	 *
+	 * NOTE: It bypasses the expensive input operator '>>' and hence is *much*
+	 * faster than doing a loop with '>>' (as determined by profiling).
+	 *
+	 * Note that GPlatesGui::rgba8_t stores 4 bytes in memory as (R,G,B,A) and the
+	 * data is read from the stream as bytes (not 32-bit integers) so there's
+	 * no need to re-order the bytes according to the endianess of the current system.
+	 * Note that QDataStream stores streams in big-endian format (but that's irrelevant here).
+	 */
+	inline
+	void
+	input_pixels(
+			QDataStream &in,
+			rgba8_t *rgba8_pixels,
+			unsigned int num_pixels)
+	{
+		in.readRawData(
+				reinterpret_cast<char *>(rgba8_pixels),
+				num_pixels * sizeof(rgba8_t));
 	}
 
 
+	/**
+	 * Writes a single @a rgba8_t pixel to the output stream.
+	 *
+	 * NOTE: It is *much* faster to use @a output_pixels instead.
+	 */
 	inline
 	QDataStream &
 	operator<<(
 			QDataStream &out,
-			const rgba8_t &c)
+			const rgba8_t &pixel)
 	{
-		out << static_cast<quint8>(c.red)
-			<< static_cast<quint8>(c.green)
-			<< static_cast<quint8>(c.blue)
-			<< static_cast<quint8>(c.alpha);
+		out << static_cast<quint8>(pixel.red)
+			<< static_cast<quint8>(pixel.green)
+			<< static_cast<quint8>(pixel.blue)
+			<< static_cast<quint8>(pixel.alpha);
 
 		return out;
 	}
 
-
+	/**
+	 * Reads a single @a rgba8_t pixel from the input stream.
+	 *
+	 * NOTE: It is *much* faster to use @a input_pixels instead.
+	 */
 	inline
 	QDataStream &
 	operator>>(
 			QDataStream &in,
-			rgba8_t &c)
+			rgba8_t &pixel)
 	{
-		in >> c.red >> c.green >> c.blue >> c.alpha;
+		in >> pixel.red >> pixel.green >> pixel.blue >> pixel.alpha;
 
 		return in;
+	}
+
+
+	/**
+	 * Writes a single @a rgba8_t pixel to the output stream.
+	 */
+	inline
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const rgba8_t &pixel)
+	{
+		os << "("
+				<< static_cast<int>(pixel.red) << ", "
+				<< static_cast<int>(pixel.green) << ", "
+				<< static_cast<int>(pixel.blue) << ", "
+				<< static_cast<int>(pixel.alpha) << ")";
+
+		return os;
 	}
 
 

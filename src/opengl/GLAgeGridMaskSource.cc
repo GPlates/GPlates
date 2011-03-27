@@ -51,6 +51,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRasterUtils.h"
 
 #include "utils/Profile.h"
@@ -151,7 +152,8 @@ GPlatesOpenGL::GLAgeGridMaskSource::create(
 
 GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
 		const double &reconstruction_time,
-		const GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type &proxy_raster_resolver,
+		const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
+				proxy_raster_resolver,
 		unsigned int raster_width,
 		unsigned int raster_height,
 		unsigned int tile_texel_dimension,

@@ -119,8 +119,8 @@ namespace GPlatesFileIO
 			}
 			else
 			{
-				throw FileFormatNotSupportedException(
-						GPLATES_EXCEPTION_SOURCE, "bad version number");
+				throw MipmappedRasterFormat::UnsupportedVersion(
+						GPLATES_EXCEPTION_SOURCE, version_number);
 			}
 		}
 
@@ -1169,8 +1169,13 @@ namespace GPlatesFileIO
 				}
 
 				// Read the level info.
+				// Also check that the file length is correct.
+				// This is in case mipmap generation from a previous instance of GPlates failed
+				// part-way through writing the file and didn't remove the file for some reason.
+				// Do this before setting up the render thread in case we need to throw an exception.
 				d_file.seek(LEVEL_INFO_OFFSET);
 				bool any_coverages = false;
+				quint32 expected_file_size = LEVEL_INFO_OFFSET + LEVEL_INFO_SIZE * num_levels;
 				for (quint32 i = 0; i != num_levels; ++i)
 				{
 					MipmappedRasterFormat::LevelInfo current_level;
@@ -1184,7 +1189,23 @@ namespace GPlatesFileIO
 					if (current_level.coverage_offset != 0)
 					{
 						any_coverages = true;
+
+						// The number of bytes in file used for the coverage raster mipmap.
+						expected_file_size +=
+								current_level.width * current_level.height
+									* sizeof(GPlatesPropertyValues::CoverageRawRaster::element_type);
 					}
+
+					// The number of bytes in file used for the main raster mipmap.
+					expected_file_size +=
+							current_level.width * current_level.height
+								* sizeof(typename RawRasterType::element_type);
+				}
+
+				if (expected_file_size != file_info.size())
+				{
+					throw FileFormatNotSupportedException(
+							GPLATES_EXCEPTION_SOURCE, "detected a partially written mipmap file");
 				}
 
 				// Set up the reader thread.

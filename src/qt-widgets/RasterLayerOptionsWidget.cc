@@ -204,7 +204,6 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 			return;
 		}
 
-		// FIXME: This currently just reads in regular CPT files.
 		QString palette_file_name = d_open_file_dialog.get_open_file_name();
 		if (palette_file_name.isEmpty())
 		{
@@ -215,21 +214,62 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
 		GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
 
-		GPlatesFileIO::RegularCptReader cpt_reader;
-		GPlatesGui::RegularCptColourPalette::maybe_null_ptr_type colour_palette_opt =
-			cpt_reader.read_file(palette_file_name, read_errors);
+		GPlatesFileIO::RegularCptReader regular_cpt_reader;
+		GPlatesFileIO::ReadErrorAccumulation regular_errors;
+		GPlatesGui::RegularCptColourPalette::maybe_null_ptr_type regular_colour_palette_opt =
+			regular_cpt_reader.read_file(palette_file_name, regular_errors);
 
-		if (colour_palette_opt)
+		// There is a slight complication in the detection of whether a
+		// CPT file is regular or categorical. For the most part, a line
+		// in a categorical CPT file looks nothing like a line in a
+		// regular CPT file and will not be successfully parsed; the
+		// exception to the rule are the "BFN" lines, the format of
+		// which is common to both regular and categorical CPT files.
+		// For that reason, we also check if the regular_palette has any
+		// ColourSlices.
+		//
+		// Note: this flow of code is very similar to that in class IntegerCptReader.
+		if (regular_colour_palette_opt && regular_colour_palette_opt->size())
 		{
+			// Add all the errors reported to read_errors.
+			read_errors.accumulate(regular_errors);
+
 			GPlatesGui::ColourPalette<double>::non_null_ptr_type colour_palette =
 				GPlatesGui::convert_colour_palette<
 					GPlatesMaths::Real,
 					double
-				>(colour_palette_opt.get(), GPlatesGui::RealToBuiltInConverter<double>());
+				>(regular_colour_palette_opt.get(), GPlatesGui::RealToBuiltInConverter<double>());
+
 			params->set_colour_palette(palette_file_name,
 					GPlatesGui::RasterColourPalette::create<double>(colour_palette));
 
 			d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
+		}
+		else
+		{
+			// Attempt to read the file as a regular CPT file has failed.
+			// Now, let's try to parse it as a categorical CPT file.
+			GPlatesFileIO::CategoricalCptReader<boost::int32_t>::Type categorical_cpt_reader;
+			GPlatesFileIO::ReadErrorAccumulation categorical_errors;
+			GPlatesGui::CategoricalCptColourPalette<boost::int32_t>::maybe_null_ptr_type categorical_colour_palette_opt =
+				categorical_cpt_reader.read_file(palette_file_name, categorical_errors);
+
+			if (categorical_colour_palette_opt)
+			{
+				// This time, we return the colour palette even if it just
+				// contains "BFN" lines and no ColourEntrys.
+
+				// Add all the errors reported to errors.
+				read_errors.accumulate(categorical_errors);
+
+				const GPlatesGui::ColourPalette<boost::int32_t>::non_null_ptr_type colour_palette(
+						categorical_colour_palette_opt.get());
+
+				params->set_colour_palette(palette_file_name,
+						GPlatesGui::RasterColourPalette::create<boost::int32_t>(colour_palette));
+
+				d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
+			}
 		}
 
 		read_errors_dialog.update();

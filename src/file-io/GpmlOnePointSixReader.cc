@@ -134,7 +134,7 @@ namespace
 
 		if (pc != prop_map.end()) {
 			try {
-				properties.push_back(std::make_pair(node, (pc->second)(node)));
+				properties.push_back(std::make_pair(node, (pc->second)(node, params.errors)));
 				return;
 			} catch (const IO::PropertyCreationUtils::GpmlReaderException &ex) {
 				// FIXME: Remove this eventually:
@@ -206,14 +206,14 @@ namespace
 				FEATURE_ID = Model::PropertyName::create_gpml("identity");
 
 			if ((elem->get_name() == REVISION_ID) && (! d_revision_id)) {
-				d_revision_id = IO::PropertyCreationUtils::create_revision_id(elem);
+				d_revision_id = IO::PropertyCreationUtils::create_revision_id(elem, d_params.errors);
 				if (d_revision_id) {
 					return;
 				}
 			}
 
 			if ((elem->get_name() == FEATURE_ID) && (! d_feature_id)) {
-				d_feature_id = IO::PropertyCreationUtils::create_feature_id(elem);
+				d_feature_id = IO::PropertyCreationUtils::create_feature_id(elem, d_params.errors);
 				if (d_feature_id) {
 					return;
 				}
@@ -472,8 +472,10 @@ namespace
 	public:
 
 		MakeFilePathsAbsoluteVisitor(
-				const QString &absolute_path) :
-			d_absolute_path(absolute_path)
+				const QString &absolute_path,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors) :
+			d_absolute_path(absolute_path),
+			d_read_errors(read_errors)
 		{
 			if (!d_absolute_path.endsWith("/"))
 			{
@@ -499,7 +501,7 @@ namespace
 				// qDebug() << result_qstring;
 
 				GPlatesUtils::UnicodeString result = GPlatesUtils::make_icu_string_from_qstring(result_qstring);
-				gml_file.set_file_name(GPlatesPropertyValues::XsString::create(result));
+				gml_file.set_file_name(GPlatesPropertyValues::XsString::create(result), &d_read_errors);
 			}
 		}
 
@@ -527,6 +529,7 @@ namespace
 	private:
 
 		QString d_absolute_path;
+		GPlatesFileIO::ReadErrorAccumulation &d_read_errors;
 	};
 }
 
@@ -627,7 +630,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 	}
 
 	// Turns relative paths into absolute paths in all GmlFile instances.
-	MakeFilePathsAbsoluteVisitor visitor(fileinfo.get_qfileinfo().absolutePath());
+	MakeFilePathsAbsoluteVisitor visitor(fileinfo.get_qfileinfo().absolutePath(), read_errors);
 	for (GPlatesModel::FeatureCollectionHandle::iterator iter = collection->begin();
 			iter != collection->end(); ++iter)
 	{

@@ -38,6 +38,7 @@
 #include <QDebug>
 
 #include "RawRaster.h"
+#include "RawRasterUtils.h"
 
 #include "file-io/MipmappedRasterFormatReader.h"
 #include "file-io/MipmappedRasterFormatWriter.h"
@@ -50,6 +51,7 @@
 
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/Profile.h"
 
 
 namespace GPlatesPropertyValues
@@ -253,18 +255,18 @@ namespace GPlatesPropertyValues
 		 * This lives here because ProxiedRasterResolver is a friend of the
 		 * WithProxiedData policy class.
 		 */
-		template<class RawRasterType>
+		template<class ProxiedRawRasterType>
 		GPlatesFileIO::RasterBandReaderHandle &
 		get_raster_band_reader_handle(
-				RawRasterType &raster)
+				ProxiedRawRasterType &raster)
 		{
 			return raster.get_raster_band_reader_handle();
 		}
 
-		template<class RawRasterType>
+		template<class ProxiedRawRasterType>
 		const GPlatesFileIO::RasterBandReaderHandle &
 		get_raster_band_reader_handle(
-				const RawRasterType &raster)
+				const ProxiedRawRasterType &raster)
 		{
 			return raster.get_raster_band_reader_handle();
 		}
@@ -328,72 +330,6 @@ namespace GPlatesPropertyValues
 					GPlatesGui::RasterColourPalette::create());
 
 		/**
-		 * Allows us to decompose the policies out of RawRasterType.
-		 */
-		template<class ProxiedRawRasterType>
-		struct RawRasterTraits;
-			// This is intentionally not defined anywhere.
-		
-		template
-		<
-			typename T,
-			class StatisticsPolicy,
-			template <class> class NoDataValuePolicy
-		>
-		struct RawRasterTraits<RawRasterImpl<
-			T, RawRasterDataPolicies::WithProxiedData, StatisticsPolicy, NoDataValuePolicy> >
-		{
-			/**
-			 * Basically, it takes uses the same element_type, statistics and
-			 * no data value policies as ExistingRawRasterType, but swaps out
-			 * the data policy to be WithData (i.e. not proxied).
-			 */
-			typedef RawRasterImpl
-			<
-				T,
-				RawRasterDataPolicies::WithData,
-				StatisticsPolicy,
-				NoDataValuePolicy
-			> with_data_type;
-
-			typedef RawRasterImpl
-			<
-				T,
-				RawRasterDataPolicies::WithProxiedData,
-				StatisticsPolicy,
-				NoDataValuePolicy
-			> with_proxied_data_type;
-
-			/**
-			 * Converts a proxied raw raster to the unproxied raw raster with
-			 * the same data type.
-			 */
-			static
-			typename with_data_type::non_null_ptr_type
-			convert_proxied_raster_to_unproxied_raster(
-					typename with_proxied_data_type::non_null_ptr_type proxied_raster,
-					unsigned int region_width,
-					unsigned int region_height,
-					T *data)
-			{
-				return with_data_type::create(
-						region_width,
-						region_height,
-						data,
-						*proxied_raster /* copy statistics policy */,
-						*proxied_raster /* copy no-data policy */);
-			}
-		};
-
-		/**
-		 * Colours a RawRaster using a RasterColourPalette.
-		 */
-		boost::optional<Rgba8RawRaster::non_null_ptr_type>
-		colour_raw_raster(
-				RawRaster &raster,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette);
-
-		/**
 		 * Used by @a get_main_mipmap_reader and @a get_coloured_mipmap_reader,
 		 * to reduce code duplication.
 		 */
@@ -406,10 +342,10 @@ namespace GPlatesPropertyValues
 				const boost::function<bool ()> &ensure_mipmaps_available_function,
 				std::size_t *cached_colour_palette_id = NULL)
 		{
+			const QString &source_filename = raster_band_reader_handle.get_filename();
+
 			try
 			{
-				const QString &source_filename = raster_band_reader_handle.get_filename();
-
 				// If it is already open, check the last modified time of
 				// the source raster - in case the user modified the source
 				// raster since the mipmaps file was open.
@@ -439,33 +375,60 @@ namespace GPlatesPropertyValues
 							source_filename,
 							source_band_number,
 							colour_palette_id);
-					cached_mipmap_reader.reset(
-							new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
-								mipmap_filename));
-
-					// Check the last modified time of the source raster.
-					// If the user has modified the source raster since the
-					// mipmaps file was created, close the reader, delete
-					// the file and attempt to open it again.
-					if (cached_mipmap_reader->get_file_info().lastModified() < source_last_modified)
+					try
 					{
-						cached_mipmap_reader.reset(NULL);
+						cached_mipmap_reader.reset(NULL); // So it's NULL if exception thrown next...
+
+						cached_mipmap_reader.reset(
+								new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
+									mipmap_filename));
+					}
+					catch (GPlatesFileIO::MipmappedRasterFormat::UnsupportedVersion &exc)
+					{
+						// Log the exception so we know what caused the failure.
+						qWarning() << exc;
+
+						qWarning() << "Attempting rebuild of mipmap file '"
+								<< mipmap_filename << "' for current version of GPlates.";
+
+						// We'll have to remove the file and build it for the current GPlates version.
+						// This means if the future version of GPlates (the one that created the
+						// unrecognised version file) runs again it will either know how to
+						// load our version or rebuild it for itself also.
 						QFile(mipmap_filename).remove();
 
+						// Build it with our version.
 						if (!ensure_mipmaps_available_function())
 						{
 							return NULL;
 						}
 
+						// Try reading it again.
 						cached_mipmap_reader.reset(
 								new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
 									mipmap_filename));
+					}
+					catch (std::exception &exc)
+					{
+						// Log the exception so we know what caused the failure.
+						qWarning() << "Error reading mipmap file '" << mipmap_filename
+								<< "', attempting rebuild: " << exc.what();
 
-						// Check again, but give up if it's still wrong.
-						if (cached_mipmap_reader->get_file_info().lastModified() < source_last_modified)
+						// Remove the mipmap file in case it is corrupted somehow.
+						// Eg, it was partially written to by a previous instance of GPlates and
+						// not immediately removed for some reason.
+						QFile(mipmap_filename).remove();
+
+						// Try building it again.
+						if (!ensure_mipmaps_available_function())
 						{
-							cached_mipmap_reader.reset(NULL);
+							return NULL;
 						}
+
+						// Try reading it again.
+						cached_mipmap_reader.reset(
+								new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
+									mipmap_filename));
 					}
 
 					if (cached_colour_palette_id)
@@ -473,13 +436,17 @@ namespace GPlatesPropertyValues
 						*cached_colour_palette_id = colour_palette_id;
 					}
 				}
-
-				return cached_mipmap_reader.get();
 			}
 			catch (...)
 			{
-				return NULL;
+				// Log a warning message.
+				qWarning() << "Unable to read, or generate, mipmap file for raster '"
+						<< source_filename << "', giving up on it.";
+
+				cached_mipmap_reader.reset(NULL);
 			}
+
+			return cached_mipmap_reader.get();
 		}
 
 		/**
@@ -489,7 +456,7 @@ namespace GPlatesPropertyValues
 		 * As such, it does everything correctly, except for the case of integer
 		 * rasters with integer colour palettes.
 		 */
-		template<class RawRasterType>
+		template<class ProxiedRawRasterType>
 		class BaseProxiedRasterResolver :
 				public ProxiedRasterResolver
 		{
@@ -498,7 +465,8 @@ namespace GPlatesPropertyValues
 			/**
 			 * This is the type of raw raster that can be read from the source raster file.
 			 */
-			typedef typename RawRasterTraits<RawRasterType>::with_data_type source_raster_type;
+			typedef typename RawRasterUtils::ConvertProxiedRasterToUnproxiedRaster<ProxiedRawRasterType>
+					::unproxied_raster_type source_raster_type;
 
 			/**
 			 * This is the type of raw raster that can be read from the mipmapped file.
@@ -523,7 +491,8 @@ namespace GPlatesPropertyValues
 				{
 					// Colour the region_raster using the colour_palette.
 					boost::optional<Rgba8RawRaster::non_null_ptr_type> coloured_region =
-						colour_raw_raster(*region_raster, colour_palette);
+							GPlatesGui::ColourRawRaster::colour_raw_raster_with_raster_colour_palette(
+									*region_raster, colour_palette);
 					if (!coloured_region)
 					{
 						return boost::none;
@@ -881,7 +850,7 @@ namespace GPlatesPropertyValues
 					get_raster_band_reader_handle(*d_proxied_raw_raster);
 
 				// Check that the raster band can offer us the correct data type.
-				typedef typename RawRasterType::element_type element_type;
+				typedef typename ProxiedRawRasterType::element_type element_type;
 				if (raster_band_reader_handle.get_type() != RasterType::get_type_as_enum<element_type>())
 				{
 					return boost::none;
@@ -891,7 +860,7 @@ namespace GPlatesPropertyValues
 						QRect(region_x_offset, region_y_offset, region_width, region_height)));
 				if (raster_data)
 				{
-					return RawRasterTraits<RawRasterType>::convert_proxied_raster_to_unproxied_raster(
+					return RawRasterUtils::convert_proxied_raster_to_unproxied_raster<ProxiedRawRasterType>(
 							d_proxied_raw_raster,
 							region_width,
 							region_height,
@@ -932,21 +901,24 @@ namespace GPlatesPropertyValues
 		protected:
 
 			BaseProxiedRasterResolver(
-					const typename RawRasterType::non_null_ptr_type &raster) :
+					const typename ProxiedRawRasterType::non_null_ptr_type &raster) :
 				d_proxied_raw_raster(raster),
-				d_main_mipmap_reader(NULL)
+				d_main_mipmap_reader(NULL),
+				d_error_getting_mipmap_reader(false)
 			{  }
 
 			~BaseProxiedRasterResolver()
 			{  }
 
-			typename RawRasterType::non_null_ptr_type d_proxied_raw_raster;
+			typename ProxiedRawRasterType::non_null_ptr_type d_proxied_raw_raster;
 
 		private:
 
 			bool
 			ensure_main_mipmaps_available()
 			{
+				PROFILE_FUNC();
+
 				GPlatesFileIO::RasterBandReaderHandle raster_band_reader_handle =
 					get_raster_band_reader_handle(*d_proxied_raw_raster);
 
@@ -968,36 +940,50 @@ namespace GPlatesPropertyValues
 				}
 
 				// Check the type of the source raster band.
-				typedef typename RawRasterType::element_type element_type;
+				typedef typename ProxiedRawRasterType::element_type element_type;
 				if (raster_band_reader_handle.get_type() != RasterType::get_type_as_enum<element_type>())
 				{
-					return false;
-				}
-
-				// Read the entire source raster band into memory.
-				boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> source_raster =
-					raster_band_reader_handle.get_raw_raster();
-				if (!source_raster)
-				{
-					// Can't read source raster band.
 					return false;
 				}
 
 				// Write the mipmap file.
 				try
 				{
-					GPlatesFileIO::MipmappedRasterFormatWriter<GPlatesPropertyValues::RawRaster> writer;
-					writer.write(*source_raster, mipmap_filename);
+					// Pass the raster band reader to the mipmap format writer so it
+					// can read the raster in sections (if the raster size is very large) to
+					// avoid potential memory allocation failures.
+					GPlatesFileIO::MipmappedRasterFormatWriter<ProxiedRawRasterType> writer(
+							d_proxied_raw_raster,
+							raster_band_reader_handle);
+					writer.write(mipmap_filename);
 
 					// Copy the file permissions from the source raster file to the mipmap file.
 					QFile::setPermissions(mipmap_filename, QFile::permissions(filename));
+				}
+				catch (std::exception &exc)
+				{
+					// Log the exception so we know what caused the failure.
+					qWarning() << "Error writing mipmap file '" << mipmap_filename
+							<< "', removing it: " << exc.what();
 
-					return true;
+					// Remove the mipmap file in case it was partially written.
+					QFile(mipmap_filename).remove();
+
+					return false;
 				}
 				catch (...)
 				{
+					// Log the exception so we know what caused the failure.
+					qWarning() << "Unknown error writing mipmap file '" << mipmap_filename
+							<< "', removing it";
+
+					// Remove the mipmap file in case it was partially written.
+					QFile(mipmap_filename).remove();
+
 					return false;
 				}
+
+				return true;
 			}
 
 			/**
@@ -1013,83 +999,106 @@ namespace GPlatesPropertyValues
 			GPlatesFileIO::MipmappedRasterFormatReader<mipmapped_raster_type> *
 			get_main_mipmap_reader()
 			{
-				return ProxiedRasterResolverInternals::get_mipmap_reader(
-						d_main_mipmap_reader,
-						0 /* no colour palette id */,
-						get_raster_band_reader_handle(*d_proxied_raw_raster),
-						boost::bind(
-							&BaseProxiedRasterResolver::ensure_main_mipmaps_available,
-							boost::ref(*this)),
-						NULL /* no colour palette id */);
+				// If we fail once to get a mipmap reader then we don't need to try again.
+				// This is because frequent partial mipmap builds will slow down GPlates.
+				// The client code should notify the user of failure.
+				if (!d_error_getting_mipmap_reader)
+				{
+					// We may already have a cached mipmap reader but see if
+					// the user has changed the source raster (required a new mipmap file).
+					ProxiedRasterResolverInternals::get_mipmap_reader(
+							d_main_mipmap_reader,
+							0 /* no colour palette id */,
+							get_raster_band_reader_handle(*d_proxied_raw_raster),
+							boost::bind(
+								&BaseProxiedRasterResolver::ensure_main_mipmaps_available,
+								boost::ref(*this)),
+							NULL /* no colour palette id */);
+
+					// If there was an error then don't try again next time.
+					if (!d_main_mipmap_reader)
+					{
+						d_error_getting_mipmap_reader = true;
+					}
+				}
+
+				return d_main_mipmap_reader.get();
 			}
 
 			// Cached so that we don't have to open and close it all the time.
 			boost::scoped_ptr<GPlatesFileIO::MipmappedRasterFormatReader<mipmapped_raster_type> >
 				d_main_mipmap_reader;
+
+			/**
+			 * Prevents repeated attempts to read (or generate) the mipmap file when there's an error.
+			 *
+			 * If it fails once then client will need to propagate error to user.
+			 */
+			bool d_error_getting_mipmap_reader;
 		};
 	}
 
 
-	template<class RawRasterType, class Enable = void>
+	template<class ProxiedRawRasterType, class Enable = void>
 	class ProxiedRasterResolverImpl;
 
 
-	// Specialisation where RawRasterType has proxied data that is not integral.
-	template<class RawRasterType>
-	class ProxiedRasterResolverImpl<RawRasterType,
-		typename boost::enable_if_c<RawRasterType::has_proxied_data &&
-		!boost::is_integral<typename RawRasterType::element_type>::value>::type> :
-			public ProxiedRasterResolverInternals::BaseProxiedRasterResolver<RawRasterType>
+	// Specialisation where ProxiedRawRasterType has proxied data that is not integral.
+	template<class ProxiedRawRasterType>
+	class ProxiedRasterResolverImpl<ProxiedRawRasterType,
+		typename boost::enable_if_c<ProxiedRawRasterType::has_proxied_data &&
+		!boost::is_integral<typename ProxiedRawRasterType::element_type>::value>::type> :
+			public ProxiedRasterResolverInternals::BaseProxiedRasterResolver<ProxiedRawRasterType>
 	{
 	public:
 
-		typedef ProxiedRasterResolverImpl<RawRasterType> this_type;
+		typedef ProxiedRasterResolverImpl<ProxiedRawRasterType> this_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
 
 		static
 		non_null_ptr_type
 		create(
-				const typename RawRasterType::non_null_ptr_type &raster)
+				const typename ProxiedRawRasterType::non_null_ptr_type &raster)
 		{
 			return new ProxiedRasterResolverImpl(raster);
 		}
 
 	private:
 
-		typedef ProxiedRasterResolverInternals::BaseProxiedRasterResolver<RawRasterType> base_type;
+		typedef ProxiedRasterResolverInternals::BaseProxiedRasterResolver<ProxiedRawRasterType> base_type;
 
 		ProxiedRasterResolverImpl(
-				const typename RawRasterType::non_null_ptr_type &raster) :
+				const typename ProxiedRawRasterType::non_null_ptr_type &raster) :
 			base_type(raster)
 		{  }
 	};
 
 
-	// Specialisation where RawRasterType has proxied data that is integral.
-	template<class RawRasterType>
-	class ProxiedRasterResolverImpl<RawRasterType,
-		typename boost::enable_if_c<RawRasterType::has_proxied_data &&
-		boost::is_integral<typename RawRasterType::element_type>::value>::type> :
-			public ProxiedRasterResolverInternals::BaseProxiedRasterResolver<RawRasterType>
+	// Specialisation where ProxiedRawRasterType has proxied data that is integral.
+	template<class ProxiedRawRasterType>
+	class ProxiedRasterResolverImpl<ProxiedRawRasterType,
+		typename boost::enable_if_c<ProxiedRawRasterType::has_proxied_data &&
+		boost::is_integral<typename ProxiedRawRasterType::element_type>::value>::type> :
+			public ProxiedRasterResolverInternals::BaseProxiedRasterResolver<ProxiedRawRasterType>
 	{
 	public:
 
-		typedef ProxiedRasterResolverImpl<RawRasterType> this_type;
+		typedef ProxiedRasterResolverImpl<ProxiedRawRasterType> this_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
 
 		static
 		non_null_ptr_type
 		create(
-				const typename RawRasterType::non_null_ptr_type &raster)
+				const typename ProxiedRawRasterType::non_null_ptr_type &raster)
 		{
 			return new ProxiedRasterResolverImpl(raster);
 		}
 
 	private:
 
-		typedef ProxiedRasterResolverInternals::BaseProxiedRasterResolver<RawRasterType> base_type;
+		typedef ProxiedRasterResolverInternals::BaseProxiedRasterResolver<ProxiedRawRasterType> base_type;
 		typedef typename base_type::source_raster_type source_raster_type;
 
 	public:
@@ -1129,7 +1138,7 @@ namespace GPlatesPropertyValues
 					return boost::none;
 				}
 
-				return ProxiedRasterResolverInternals::colour_raw_raster(
+				return GPlatesGui::ColourRawRaster::colour_raw_raster_with_raster_colour_palette(
 						**region_raster, colour_palette);
 			}
 
@@ -1171,16 +1180,19 @@ namespace GPlatesPropertyValues
 	private:
 
 		ProxiedRasterResolverImpl(
-				const typename RawRasterType::non_null_ptr_type &raster) :
+				const typename ProxiedRawRasterType::non_null_ptr_type &raster) :
 			base_type(raster),
 			d_coloured_mipmap_reader(NULL),
-			d_colour_palette_id_of_coloured_mipmap_reader(0)
+			d_colour_palette_id_of_coloured_mipmap_reader(0),
+			d_error_getting_mipmap_reader_for_current_colour_palette(false)
 		{  }
 
 		bool
 		ensure_coloured_mipmaps_available(
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
 		{
+			PROFILE_FUNC();
+
 			GPlatesFileIO::RasterBandReaderHandle raster_band_reader_handle =
 					get_raster_band_reader_handle(*d_proxied_raw_raster);
 
@@ -1211,35 +1223,19 @@ namespace GPlatesPropertyValues
 				return false;
 			}
 
-			// Check the type of the source raster band.
-			typedef typename source_raster_type::element_type element_type;
-			if (raster_band_reader_handle.get_type() != RasterType::get_type_as_enum<element_type>())
-			{
-				return false;
-			}
-
-			// Read the entire source raster band into memory.
-			boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> source_raster =
-				raster_band_reader_handle.get_raw_raster();
-			if (!source_raster)
-			{
-				// Can't read source raster band.
-				return false;
-			}
-
-			// Convert the source raster band into RGBA8 using the colour palette.
-			boost::optional<Rgba8RawRaster::non_null_ptr_type> coloured_raster =
-				ProxiedRasterResolverInternals::colour_raw_raster(**source_raster, colour_palette);
-			if (!coloured_raster)
-			{
-				return false;
-			}
-
 			// Write the mipmap file.
 			try
 			{
-				GPlatesFileIO::MipmappedRasterFormatWriter<Rgba8RawRaster> writer;
-				writer.write(*coloured_raster, mipmap_filename);
+				// Pass the raster band reader to the mipmap format writer so it
+				// can read the raster in sections (if the raster size is very large) to
+				// avoid potential memory allocation failures.
+				GPlatesFileIO::MipmappedRasterFormatWriter<ProxiedRawRasterType, true> writer(
+						d_proxied_raw_raster,
+						raster_band_reader_handle,
+						colour_palette);
+				// Pass the colour palette so the mipmap format writer can colour the
+				// source raster in sections and mipmap the coloured sections.
+				writer.write(mipmap_filename);
 
 				// The coloured mipmap files used by integer rasters with integer colour
 				// palettes are deleted when GPlates exits.
@@ -1258,13 +1254,31 @@ namespace GPlatesPropertyValues
 				// 
 				// Note: this should change if we start hashing colour palettes, though.
 				QFile::setPermissions(mipmap_filename, QFile::ReadUser | QFile::WriteUser);
+			}
+			catch (std::exception &exc)
+			{
+				// Log the exception so we know what caused the failure.
+				qWarning() << "Error generating mipmap file '" << mipmap_filename
+						<< "', removing it: " << exc.what();
 
-				return true;
+				// Remove the mipmap file in case it was partially written.
+				QFile(mipmap_filename).remove();
+
+				return false;
 			}
 			catch (...)
 			{
+				// Log the exception so we know what caused the failure.
+				qWarning() << "Unknown error generating mipmap file '" << mipmap_filename
+						<< "', removing it";
+
+				// Remove the mipmap file in case it was partially written.
+				QFile(mipmap_filename).remove();
+
 				return false;
 			}
+
+			return true;
 		}
 
 		/**
@@ -1280,20 +1294,52 @@ namespace GPlatesPropertyValues
 		get_coloured_mipmap_reader(
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
 		{
-			return ProxiedRasterResolverInternals::get_mipmap_reader<Rgba8RawRaster>(
-					d_coloured_mipmap_reader,
-					ProxiedRasterResolverInternals::get_colour_palette_id(colour_palette),
-					get_raster_band_reader_handle(*d_proxied_raw_raster),
-					boost::bind(
-						&ProxiedRasterResolverImpl::ensure_coloured_mipmaps_available,
-						boost::ref(*this),
-						colour_palette),
-					&d_colour_palette_id_of_coloured_mipmap_reader);
+			const std::size_t colour_palette_id =
+					ProxiedRasterResolverInternals::get_colour_palette_id(colour_palette);
+
+			// If we fail once to get a mipmap reader then we don't need to try
+			// again until something changes - in this case the colour palette.
+			// This is because frequent partial mipmap builds will slow down GPlates.
+			// The client code should notify the user of failure.
+			if (!d_error_getting_mipmap_reader_for_current_colour_palette ||
+				d_colour_palette_id_of_coloured_mipmap_reader != colour_palette_id)
+			{
+				// We may already have a cached mipmap reader for this colour palette but see if
+				// the user has changed the source raster (required a new mipmap file).
+				ProxiedRasterResolverInternals::get_mipmap_reader<Rgba8RawRaster>(
+						d_coloured_mipmap_reader,
+						colour_palette_id,
+						get_raster_band_reader_handle(*d_proxied_raw_raster),
+						boost::bind(
+							&ProxiedRasterResolverImpl::ensure_coloured_mipmaps_available,
+							boost::ref(*this),
+							colour_palette),
+						&d_colour_palette_id_of_coloured_mipmap_reader);
+
+				// If there was an error then don't try again next time
+				// (unless there's a different colour palette).
+				if (!d_coloured_mipmap_reader)
+				{
+					// Set the current colour palette so we don't try again until
+					// a different colour palette is requested.
+					d_colour_palette_id_of_coloured_mipmap_reader = colour_palette_id;
+					d_error_getting_mipmap_reader_for_current_colour_palette = true;
+				}
+			}
+
+			return d_coloured_mipmap_reader.get();
 		}
 
 		boost::scoped_ptr<GPlatesFileIO::MipmappedRasterFormatReader<Rgba8RawRaster> >
 			d_coloured_mipmap_reader;
 		std::size_t d_colour_palette_id_of_coloured_mipmap_reader;
+
+		/**
+		 * Prevents repeated attempts to read (or generate) the mipmap file when there's an error.
+		 *
+		 * If it fails once then client will need to propagate error to user.
+		 */
+		bool d_error_getting_mipmap_reader_for_current_colour_palette;
 
 		using base_type::d_proxied_raw_raster;
 	};

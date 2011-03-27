@@ -46,11 +46,12 @@ namespace
 	public:
 
 		ConcreteProxiedRasterCacheImpl(
-				const TextContent &file_name) :
+				const TextContent &file_name,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors = NULL) :
 			d_file_name(file_name),
 			d_file_name_as_qstring(GPlatesUtils::make_qstring_from_icu_string(file_name.get()))
 		{
-			update_proxied_raw_rasters(true /* force */);
+			update_proxied_raw_rasters(true /* force */, read_errors);
 		}
 
 		virtual
@@ -64,13 +65,14 @@ namespace
 		virtual
 		void
 		set_file_name(
-				const TextContent &file_name)
+				const TextContent &file_name,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors)
 		{
 			if (d_file_name != file_name)
 			{
 				d_file_name = file_name;
 				d_file_name_as_qstring = GPlatesUtils::make_qstring_from_icu_string(file_name.get());
-				update_proxied_raw_rasters(true /* force */);
+				update_proxied_raw_rasters(true /* force */, read_errors);
 			}
 		}
 
@@ -84,10 +86,15 @@ namespace
 		 */
 		void
 		update_proxied_raw_rasters(
-				bool force)
+				bool force,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors = NULL)
 		{
 			QFileInfo file_info(d_file_name_as_qstring);
 
+			// It looks like this returns if the raster filename has not yet been
+			// changed from a relative path to an absolute path.
+			// Opening the relative path fails, but this method gets called again
+			// after the filename is changed to an absolute path.
 			if (!file_info.exists())
 			{
 				return;
@@ -102,7 +109,7 @@ namespace
 
 				// Create a proxied RawRaster for each band in file.
 				GPlatesFileIO::RasterReader::non_null_ptr_type reader =
-					GPlatesFileIO::RasterReader::create(d_file_name_as_qstring);
+					GPlatesFileIO::RasterReader::create(d_file_name_as_qstring, read_errors);
 				if (!reader->can_read())
 				{
 					return;
@@ -114,7 +121,7 @@ namespace
 				for (unsigned int i = 1; i <= number_of_bands; ++i)
 				{
 					boost::optional<RawRaster::non_null_ptr_type> proxied_raw_raster =
-						reader->get_proxied_raw_raster(i);
+						reader->get_proxied_raw_raster(i, read_errors);
 					if (proxied_raw_raster)
 					{
 						d_proxied_raw_rasters.push_back(*proxied_raw_raster);
@@ -140,15 +147,17 @@ namespace
 
 GPlatesPropertyValues::ProxiedRasterCache::non_null_ptr_type
 GPlatesPropertyValues::ProxiedRasterCache::create(
-		const TextContent &file_name)
+		const TextContent &file_name,
+		GPlatesFileIO::ReadErrorAccumulation *read_errors)
 {
-	return new ProxiedRasterCache(file_name);
+	return new ProxiedRasterCache(file_name, read_errors);
 }
 
 
 GPlatesPropertyValues::ProxiedRasterCache::ProxiedRasterCache(
-		const TextContent &file_name) :
-	d_impl(new ConcreteProxiedRasterCacheImpl(file_name))
+		const TextContent &file_name,
+		GPlatesFileIO::ReadErrorAccumulation *read_errors) :
+	d_impl(new ConcreteProxiedRasterCacheImpl(file_name, read_errors))
 {  }
 
 
@@ -161,8 +170,9 @@ GPlatesPropertyValues::ProxiedRasterCache::proxied_raw_rasters() const
 
 void
 GPlatesPropertyValues::ProxiedRasterCache::set_file_name(
-		const TextContent &file_name)
+		const TextContent &file_name,
+		GPlatesFileIO::ReadErrorAccumulation *read_errors)
 {
-	d_impl->set_file_name(file_name);
+	d_impl->set_file_name(file_name, read_errors);
 }
 

@@ -127,6 +127,65 @@ namespace GPlatesPropertyValues
 
 				boost::function<bool (IntType)> d_is_no_data_value;
 			};
+
+
+			/**
+			 * Allows us to decompose the policies out of a proxied raster type.
+			 */
+			template<class ProxiedRawRasterType>
+			struct RawRasterTraits;
+				// This is intentionally not defined anywhere.
+			
+			template
+			<
+				typename T,
+				class StatisticsPolicy,
+				template <class> class NoDataValuePolicy
+			>
+			struct RawRasterTraits<RawRasterImpl<
+				T, RawRasterDataPolicies::WithProxiedData, StatisticsPolicy, NoDataValuePolicy> >
+			{
+				/**
+				 * Basically, it takes uses the same element_type, statistics and
+				 * no data value policies as ExistingRawRasterType, but swaps out
+				 * the data policy to be WithData (i.e. not proxied).
+				 */
+				typedef RawRasterImpl
+				<
+					T,
+					RawRasterDataPolicies::WithData,
+					StatisticsPolicy,
+					NoDataValuePolicy
+				> with_data_type;
+
+				typedef RawRasterImpl
+				<
+					T,
+					RawRasterDataPolicies::WithProxiedData,
+					StatisticsPolicy,
+					NoDataValuePolicy
+				> with_proxied_data_type;
+
+				/**
+				 * Converts a proxied raw raster to the unproxied raw raster with
+				 * the same data type.
+				 */
+				static
+				typename with_data_type::non_null_ptr_type
+				convert_proxied_raster_to_unproxied_raster(
+						typename with_proxied_data_type::non_null_ptr_type proxied_raster,
+						unsigned int region_width,
+						unsigned int region_height,
+						T *data)
+				{
+					return with_data_type::create(
+							region_width,
+							region_height,
+							data,
+							*proxied_raster /* copy statistics policy */,
+							*proxied_raster /* copy no-data policy */);
+				}
+			};
 		}
 
 
@@ -309,6 +368,47 @@ namespace GPlatesPropertyValues
 		has_fully_transparent_pixels(
 				const Rgba8RawRaster::non_null_ptr_type &raster);
 
+
+		/**
+		 * Given a proxied raw raster type converts to the equivalent unproxied raw raster type.
+		 *
+		 * Basically, it uses the same element_type, statistics and
+		 * no data value policies as ProxiedRawRasterType, but swaps out
+		 * the data policy to be WithData (i.e. not proxied).
+		 */
+		template <class ProxiedRawRasterType>
+		struct ConvertProxiedRasterToUnproxiedRaster
+		{
+			typedef typename RawRasterUtilsInternals::RawRasterTraits<ProxiedRawRasterType>
+					::with_data_type unproxied_raster_type;
+		};
+
+		/**
+		 * Takes @a data of specified dimensions and returns it in an unproxied raster of the
+		 * same element type.
+		 *
+		 * Only the statistics and no data value policy parts are copied from @a proxied_raw_raster
+		 * to the returned raster.
+		 *
+		 * @a data must have been allocated using the array version of operator 'new' and
+		 * ownership is passed to the returned unproxied raster.
+		 */
+		template <class ProxiedRawRasterType>
+		typename ConvertProxiedRasterToUnproxiedRaster<ProxiedRawRasterType>
+				::unproxied_raster_type::non_null_ptr_type
+		convert_proxied_raster_to_unproxied_raster(
+				typename ProxiedRawRasterType::non_null_ptr_type proxied_raw_raster,
+				unsigned int width,
+				unsigned int height,
+				typename ProxiedRawRasterType::element_type *data)
+		{
+			return RawRasterUtilsInternals::RawRasterTraits<ProxiedRawRasterType>
+					::convert_proxied_raster_to_unproxied_raster(
+							proxied_raw_raster,
+							width,
+							height,
+							data);
+		}
 	}
 }
 

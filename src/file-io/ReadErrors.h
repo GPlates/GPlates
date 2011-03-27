@@ -119,7 +119,7 @@ namespace GPlatesFileIO
 			InvalidShapefilePolygon,
 			
 			// The following relate to raster files in general.
-			InsufficientTextureMemory,
+			InsufficientMemoryToLoadRaster,
 			ErrorGeneratingTexture,
 			UnrecognisedRasterFileType,
 			ErrorReadingRasterFile,

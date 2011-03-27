@@ -108,7 +108,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 
     //Detect Flowline features.
     FlowlineUtils::DetectFlowlineFeatures detector;
-    detector.visit_feature_handle(feature_handle);
+    detector.visit_feature(feature_handle.reference());
     if(!detector.has_flowline_features())
     {
 		return false;

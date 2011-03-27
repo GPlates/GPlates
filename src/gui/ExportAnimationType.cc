@@ -183,7 +183,7 @@ GPlatesGui::ExportAnimationType::get_export_id(
 	BOOST_STATIC_ASSERT(NUM_TYPES < (1 << 16) && NUM_FORMATS < (1 << 16));
 
 	// Combine type and format as two unsigned 16-bit integers into one unsigned 32-bit integer.
-	return (type << 16) | format;
+	return (static_cast<ExportID>(type) << 16) | static_cast<ExportID>(format);
 }
 
 ENABLE_GCC_WARNING("-Wold-style-cast")

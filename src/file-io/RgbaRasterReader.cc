@@ -26,15 +26,17 @@
  */
 
 #include <iostream>
+#include <boost/scoped_array.hpp>
+#include <QtCore/qglobal.h>
 #include <QFile>
 #include <QFileInfo>
 #include <QDateTime>
-#include <QImageReader>
-#include <QGLWidget>
 
 #include "RgbaRasterReader.h"
 
 #include "TemporaryFileRegistry.h"
+
+#include "utils/Profile.h"
 
 
 GPlatesFileIO::RgbaRasterReader::RgbaRasterReader(
@@ -82,7 +84,7 @@ GPlatesFileIO::RgbaRasterReader::get_number_of_bands(
 {
 	if (d_can_read)
 	{
-		// We only read single-band rasters with ImageMagick.
+		// We only read single-band rasters with Qt.
 		return 1;
 	}
 	else
@@ -117,7 +119,7 @@ GPlatesFileIO::RgbaRasterReader::get_proxied_raw_raster(
 		return boost::none;
 	}
 
-	if (!ensure_rgba_file_available())
+	if (!ensure_rgba_file_available(read_errors))
 	{
 		return boost::none;
 	}
@@ -146,7 +148,7 @@ GPlatesFileIO::RgbaRasterReader::get_raw_raster(
 		return boost::none;
 	}
 
-	if (!ensure_rgba_file_available())
+	if (!ensure_rgba_file_available(read_errors))
 	{
 		return boost::none;
 	}
@@ -204,7 +206,7 @@ GPlatesFileIO::RgbaRasterReader::get_data(
 		return NULL;
 	}
 
-	if (!ensure_rgba_file_available())
+	if (!ensure_rgba_file_available(read_errors))
 	{
 		return NULL;
 	}
@@ -285,6 +287,8 @@ GPlatesFileIO::RgbaRasterReader::read_rgba_file(
 		region_y_offset = 0;
 	}
 
+	PROFILE_BLOCK("Read RGBA");
+
 	GPlatesGui::rgba8_t * const dest_buf = new GPlatesGui::rgba8_t[region_width * region_height];
 	GPlatesGui::rgba8_t *dest_ptr = dest_buf;
 
@@ -293,12 +297,13 @@ GPlatesFileIO::RgbaRasterReader::read_rgba_file(
 	{
 		unsigned int row_in_file = y + region_y_offset;
 		d_rgba_file.seek((row_in_file * d_source_width + region_x_offset) * sizeof(GPlatesGui::rgba8_t));
-		
-		for (unsigned int x = 0; x != region_width; ++x)
-		{
-			d_rgba_in >> *dest_ptr;
-			++dest_ptr;
-		}
+
+		// Read the raw byte data for the row since it's *significantly* quicker than streaming
+		// each pixel individually (as determined by profiling) - Qt does a lot at each '>>'.
+		input_pixels(d_rgba_in, dest_ptr, region_width);
+
+		// Move to the next row in the region.
+		dest_ptr += region_width;
 	}
 
 	return dest_buf;
@@ -306,7 +311,8 @@ GPlatesFileIO::RgbaRasterReader::read_rgba_file(
 
 
 bool
-GPlatesFileIO::RgbaRasterReader::ensure_rgba_file_available()
+GPlatesFileIO::RgbaRasterReader::ensure_rgba_file_available(
+		ReadErrorAccumulation *read_errors)
 {
 	if (d_rgba_in.device())
 	{
@@ -339,8 +345,29 @@ GPlatesFileIO::RgbaRasterReader::ensure_rgba_file_available()
 			d_rgba_file.setFileName(rgba_filename);
 			if (d_rgba_file.open(QIODevice::ReadOnly))
 			{
-				d_rgba_in.setDevice(&d_rgba_file);
-				return true;
+				// Check that the RGBA file is the correct size - in case
+				// it was partially written to by a previous instance of GPlates.
+				// For example, if an error occurred part way through writing the file.
+				QImageReader reader(d_filename);
+				if (!reader.canRead())
+				{
+					report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
+					// Can't open the image file so nothing more can be done.
+					return false;
+				}
+
+				// All Qt-provided formats support image size queries.
+				const QSize image_size = reader.size();
+				if (d_rgba_file.size() ==
+					qint64(image_size.width()) * image_size.height() * sizeof(GPlatesGui::rgba8_t))
+				{
+					// Existing RGBA file is the expected size.
+					d_rgba_in.setDevice(&d_rgba_file);
+					return true;
+				}
+
+				// Close the file - it'll get reopened for writing.
+				d_rgba_file.close();
 			}
 
 			// Fall through, it should then attempt to write one in the temp directory.
@@ -364,30 +391,21 @@ GPlatesFileIO::RgbaRasterReader::ensure_rgba_file_available()
 
 		if (!can_open)
 		{
+			report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
 			return false;
 		}
 	}
 
-	// Read the entire image into memory and then write it out as RGBA.
-	// Note that Qt reads images with the first scanline as the bottom of the image.
-	QImageReader reader(d_filename);
-	if (!reader.canRead())
+	// Read the image and write it to the currently open RGBA file.
+	if (!write_image_to_rgba_file(read_errors))
 	{
+		// Close the RGBA file and remove it.
+		d_rgba_file.remove();
+
 		return false;
 	}
-	QImage rgba_image = QGLWidget::convertToGLFormat(reader.read());
 
-	QDataStream out(&d_rgba_file);
-	for (unsigned int i = d_source_height; i != 0; --i)
-	{
-		GPlatesGui::rgba8_t *data_ptr = reinterpret_cast<GPlatesGui::rgba8_t *>(rgba_image.scanLine(i - 1));
-		GPlatesGui::rgba8_t *data_end = data_ptr + d_source_width;
-		while (data_ptr != data_end)
-		{
-			out << *data_ptr;
-			++data_ptr;
-		}
-	}
+	// Close the RGBA file.
 	d_rgba_file.close();
 
 	// Copy the file permissions from the source raster to the RGBA file.
@@ -399,9 +417,232 @@ GPlatesFileIO::RgbaRasterReader::ensure_rgba_file_available()
 		d_rgba_in.setDevice(&d_rgba_file);
 		return true;
 	}
-	else
+
+	report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
+	return false;
+}
+
+
+bool
+GPlatesFileIO::RgbaRasterReader::write_image_to_rgba_file(
+		ReadErrorAccumulation *read_errors)
+{
+	PROFILE_FUNC();
+
+	QImageReader reader(d_filename);
+	if (!reader.canRead())
+	{
+		report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
+		return false;
+	}
+
+	// All Qt-provided formats support image size queries.
+	const QSize image_size = reader.size();
+
+	//
+	// To avoid a memory allocation failure we try not to read very large images into a single image array.
+	//
+	// Very large images are read in sections (where supported) to avoid a memory allocation failure.
+	//
+	// Currently JPEG with its clip-rect support in Qt 4.6.1 (see below) should be able to read
+	// *any* resolution image without a memory allocation failure.
+	//
+	// The other formats (not supporting clip-rect) can fail on memory allocation - probably
+	// will happen when image is higher resolution than a global 1-minute resolution image
+	// (~20000 x 10000) on 32-bit systems (especially Windows where 32-bit processes only
+	// get 2GB user-mode virtual address space unless /LARGEADDRESSAWARE linker option set in which
+	// case can get ~3GB on 32-bit OS or 4GB on 64-bit OS).
+	//
+
+	if (reader.supportsOption(QImageIOHandler::ClipRect))
+	{
+		// Using 64-bit integer in case uncompressed image is larger than 4Gb.
+		const qint64 image_size_in_bytes =
+				quint64(image_size.width()) * image_size.height() * sizeof(GPlatesGui::rgba8_t);
+
+		if (image_size_in_bytes > MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT)
+		{
+			return write_image_to_rgba_file_using_clip_rects(image_size, read_errors);
+		}
+	}
+	// ...either the image is not large enough to worry about memory allocation failure or
+	// the image can only be read into a single QImage covering the entire image (in which
+	// case a memory allocation failure can still occur, but there's not much that can be
+	// done about that other than use something besides Qt image reading).
+
+	// Read the entire image into memory.
+	const QImage image = reader.read();
+	if (image.isNull())
+	{
+		// Most likely ran out of memory because image was too large - we couldn't read it
+		// into sub-rectangles so this can happen for super-large rasters.
+		// Report insufficient memory to load raster.
+		report_failure_to_begin(read_errors, ReadErrors::InsufficientMemoryToLoadRaster);
+		return false;
+	}
+
+	// And then write the image out as RGBA.
+	QDataStream out(&d_rgba_file);
+
+	// Write the image rect to the output file.
+	if (!convert_image_to_gl_and_append_to_rgba_file(image, out, read_errors))
 	{
 		return false;
 	}
+
+	return true;
 }
 
+
+bool
+GPlatesFileIO::RgbaRasterReader::write_image_to_rgba_file_using_clip_rects(
+		const QSize &image_size,
+		ReadErrorAccumulation *read_errors)
+{
+	// Divide image into rectangles spanning the entire width of image
+	// but partially spanning the height.
+	const int image_width = image_size.width();
+	const int image_height = image_size.height();
+
+	// The min/max clip rect sizes to try.
+	const int min_rows_per_clip_rect = MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT /
+			(image_width * sizeof(GPlatesGui::rgba8_t));
+	const int max_rows_per_clip_rect = MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT /
+			(image_width * sizeof(GPlatesGui::rgba8_t));
+
+	// Start off attempting the largest clip rect size and reduce if memory allocation fails.
+	int rows_per_clip_rect = max_rows_per_clip_rect;
+
+	// The output RGBA file.
+	QDataStream out(&d_rgba_file);
+
+	int y = 0;
+	while (y < image_height)
+	{
+		int clip_rect_height = image_height - y;
+		if (clip_rect_height > rows_per_clip_rect)
+		{
+			clip_rect_height = rows_per_clip_rect;
+		}
+
+		// The input image reader.
+		QImageReader reader(d_filename);
+		if (!reader.canRead())
+		{
+			report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
+			return false;
+		}
+
+		// Only want to read the current set of 'clip_rect_height' rows.
+		reader.setClipRect(QRect(0, y, image_width, clip_rect_height));
+
+		// Read the clip rectangle.
+		PROFILE_BEGIN(read_jpg, "read jpeg");
+		QImage image_rect = reader.read();
+		PROFILE_END(read_jpg);
+		if (image_rect.isNull())
+		{
+			// Most likely a memory allocation failure.
+
+			// If we've already reduced the clip rect size to a reasonable value and
+			// it still fails then report an error.
+			if (rows_per_clip_rect < min_rows_per_clip_rect)
+			{
+				// Report insufficient memory to load raster.
+				report_failure_to_begin(read_errors, ReadErrors::InsufficientMemoryToLoadRaster);
+				return false;
+			}
+
+			// Keep reducing the clip rect height until it succeeds or
+			// we've reached a clip rect size that really should not fail.
+			// Half the clip rect height and try again.
+			rows_per_clip_rect >>= 1;
+
+			continue;
+		}
+
+		// Write the image rect to the output file.
+		if (!convert_image_to_gl_and_append_to_rgba_file(image_rect, out, read_errors))
+		{
+			return false;
+		}
+
+		// Move to start of the next clip rectangle.
+		y += clip_rect_height;
+	}
+
+	return true;
+}
+
+
+bool
+GPlatesFileIO::RgbaRasterReader::convert_image_to_gl_and_append_to_rgba_file(
+		const QImage &image,
+		QDataStream &out,
+		ReadErrorAccumulation *read_errors)
+{
+	//
+	// We've just loaded an image - it could be any size so we want to minimise the
+	// risk of a memory allocation failure by converting it to GL format and appending to
+	// the output file in *sections*.
+	//
+
+	const int image_width = image.width();
+	const int image_height = image.height();
+	int max_rows_per_convert = MAX_BYTES_TO_CONVERT_IMAGE_TO_ARGB32_FORMAT /
+			(image_width * sizeof(GPlatesGui::rgba8_t));
+	if (max_rows_per_convert == 0)
+	{
+		// Shouldn't happen but just in case image is super-large and
+		// MAX_BYTES_TO_CONVERT_IMAGE_TO_ARGB32_FORMAT gets set to super-small for some reason.
+		max_rows_per_convert = 1;
+	}
+
+	// A buffer to storage a single row of pixels.
+	boost::scoped_array<GPlatesGui::rgba8_t> row_buf(new GPlatesGui::rgba8_t[image_width]);
+
+	int y = 0;
+	while (y < image_height)
+	{
+		int num_rows_per_convert = image_height - y;
+		if (num_rows_per_convert > max_rows_per_convert)
+		{
+			num_rows_per_convert = max_rows_per_convert;
+		}
+
+		// Only want to convert the current set of 'num_rows_per_convert' rows.
+		const QImage image_rect = image.copy(0, y, image_width, num_rows_per_convert);
+
+		// Convert the image into ARGB32 format.
+		const QImage argb_image_rect = image_rect.convertToFormat(QImage::Format_ARGB32);
+		if (argb_image_rect.isNull())
+		{
+			// Most likely ran out of memory - shouldn't happen here.
+			// Report insufficient memory to load raster.
+			report_failure_to_begin(read_errors, ReadErrors::InsufficientMemoryToLoadRaster);
+			return false;
+		}
+
+		const unsigned int image_rect_height = argb_image_rect.height();
+
+		PROFILE_BLOCK("Write to RGBA file");
+
+		// Iterate over the rows.
+		for (unsigned int i = 0; i < image_rect_height; ++i)
+		{
+			// Convert QImage::Format_ARGB32 format to GPlatesGui::rgba8_t.
+			convert_argb32_to_rgba8(
+					reinterpret_cast<const boost::uint32_t *>(argb_image_rect.scanLine(i)),
+					row_buf.get(),
+					image_width);
+
+			// Output converted row of pixels to the data stream.
+			output_pixels(out, row_buf.get(), image_width);
+		}
+
+		// Move to start of the next group of rows to convert.
+		y += num_rows_per_convert;
+	}
+
+	return true;
+}

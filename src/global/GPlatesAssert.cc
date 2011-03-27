@@ -27,6 +27,8 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
+#include <QtCore/qglobal.h>
 
 #include "GPlatesAssert.h"
 #include "AbortException.h"
@@ -41,9 +43,14 @@ GPlatesGlobal::Abort(
 	// call stack trace.
 	GPlatesUtils::CallStackTracker call_stack_tracker(abort_location);
 
-	GPlatesUtils::CallStack::instance().write_call_stack_trace(std::cerr);
+	// Get the call stack trace as a string.
+	std::ostringstream output_string_stream;
+	GPlatesUtils::CallStack::instance().write_call_stack_trace(output_string_stream);
 
-	std::abort();
+	// This is where the core dump or debugger trigger happens on debug builds.
+	// Print the call stack trace.
+	qFatal("Aborting: %s",
+			QString::fromStdString(output_string_stream.str()).toLatin1().data());
 #else
 	throw AbortException(abort_location);
 #endif

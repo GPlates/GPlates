@@ -348,23 +348,32 @@ GsmlPropertyHandlers::process_geometries(
 
 			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_property = boost::none;
 
+			//
+			// TODO: Need to ask Michael to propagate read errors up to the GUI.
+			// For now this is just to get things compiling - errors aren't currently returned to user.
+			//
+			GPlatesFileIO::ReadErrorAccumulation dummy_read_errors;
+
 			if(query_str.indexOf("LineString") != -1)
 			{
 				geometry_property = 
 						PropertyCreationUtils::create_line_string(
-								GPlatesModel::XmlElementNode::create(reader,alias_map));
+								GPlatesModel::XmlElementNode::create(reader,alias_map),
+								dummy_read_errors);
 			}
 			else if(query_str.indexOf("Polygon") != -1)
 			{
 				geometry_property = 
 						PropertyCreationUtils::create_gml_polygon(
-								GPlatesModel::XmlElementNode::create(reader,alias_map));
+								GPlatesModel::XmlElementNode::create(reader,alias_map),
+								dummy_read_errors);
 			}
 			else if(query_str.indexOf("Point") != -1)
 			{
 				geometry_property = 
 					PropertyCreationUtils::create_point(
-								GPlatesModel::XmlElementNode::create(reader,alias_map));
+								GPlatesModel::XmlElementNode::create(reader,alias_map),
+								dummy_read_errors);
 			}
 
 			if(!geometry_property)

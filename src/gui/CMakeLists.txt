@@ -54,8 +54,6 @@ set(srcs
     ExportAnimationRegistry.h
     ExportAnimationStrategy.cc
     ExportAnimationStrategy.h
-    ExportCoRegistrationAnimationStrategy.cc
-    ExportCoRegistrationAnimationStrategy.h
     ExportAnimationType.cc
     ExportAnimationType.h
     ExportCoRegistrationAnimationStrategy.cc
@@ -139,6 +137,7 @@ set(srcs
     MapProjection.h
     MapTransform.cc
     MapTransform.h
+    Mipmapper.cc
     Mipmapper.h
     OpaqueSphere.cc
     OpaqueSphere.h

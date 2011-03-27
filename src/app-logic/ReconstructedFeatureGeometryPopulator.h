@@ -72,8 +72,7 @@ namespace GPlatesAppLogic
 
 		ReconstructedFeatureGeometryPopulator(
 				ReconstructionGeometryCollection &reconstruction_geometry_collection,
-				const ReconstructLayerTaskParams &reconstruct_params,
-				bool should_keep_features_without_recon_plate_id = true);
+				const ReconstructLayerTaskParams &reconstruct_params);
 
 		virtual
 		~ReconstructedFeatureGeometryPopulator()
@@ -141,8 +140,6 @@ namespace GPlatesAppLogic
 
 		ReconstructionFeatureProperties d_reconstruction_params;
 		boost::optional<GPlatesMaths::FiniteRotation> d_recon_rotation;
-
-		bool d_should_keep_features_without_recon_plate_id;
 
 		bool d_is_vgp_feature;
 		boost::optional<ReconstructedVirtualGeomagneticPoleParams> d_VGP_params;

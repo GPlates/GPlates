@@ -111,7 +111,7 @@ namespace GPlatesGlobal
 		std::ostringstream output_string_stream;
 		output_string_stream << ex;
 
-		dbg.nospace() << output_string_stream.str().c_str();
+		dbg.nospace() << QString::fromStdString(output_string_stream.str());
 
 		return dbg.space();
 	}
@@ -125,7 +125,7 @@ namespace GPlatesGlobal
 		std::ostringstream output_string_stream;
 		output_string_stream << ex;
 
-		stream << output_string_stream.str().c_str();
+		stream << QString::fromStdString(output_string_stream.str());
 
 		return stream;
 	}

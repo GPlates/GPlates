@@ -43,6 +43,7 @@
 #include "PropertyCreationUtils.h"
 
 #include "GpmlReaderUtils.h"
+#include "ReadErrorAccumulation.h"
 #include "StructurePropertyCreatorMap.h"
 
 #include "global/GPlatesException.h"
@@ -134,8 +135,11 @@ namespace
 	boost::optional<T>
 	find_and_create_optional(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-			T (*creation_fn)(const GPlatesModel::XmlElementNode::non_null_ptr_type &elem),
-			const GPlatesModel::PropertyName &prop_name)
+			T (*creation_fn)(
+					const GPlatesModel::XmlElementNode::non_null_ptr_type &,
+					GPlatesFileIO::ReadErrorAccumulation &),
+			const GPlatesModel::PropertyName &prop_name,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		GPlatesModel::XmlElementNode::named_child_const_iterator 
 			iter = elem->get_next_child_by_name(prop_name, elem->children_begin());
@@ -155,7 +159,7 @@ namespace
 					EXCEPTION_SOURCE);
 		}
 
-		return (*creation_fn)(target);  // Can throw.
+		return (*creation_fn)(target, read_errors);  // Can throw.
 	}
 
 
@@ -163,10 +167,13 @@ namespace
 	T
 	find_and_create_one(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-			T (*creation_fn)(const GPlatesModel::XmlElementNode::non_null_ptr_type &elem),
-			const GPlatesModel::PropertyName &prop_name)
+			T (*creation_fn)(
+					const GPlatesModel::XmlElementNode::non_null_ptr_type &,
+					GPlatesFileIO::ReadErrorAccumulation &),
+			const GPlatesModel::PropertyName &prop_name,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		boost::optional<T> res = find_and_create_optional(elem, creation_fn, prop_name);
+		boost::optional<T> res = find_and_create_optional(elem, creation_fn, prop_name, read_errors);
 		if ( ! res) {
 			// Couldn't find the property!
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
@@ -180,9 +187,12 @@ namespace
 	void
 	find_and_create_zero_or_more(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-			T (*creation_fn)(const GPlatesModel::XmlElementNode::non_null_ptr_type &elem),
+			T (*creation_fn)(
+					const GPlatesModel::XmlElementNode::non_null_ptr_type &,
+					GPlatesFileIO::ReadErrorAccumulation &),
 			const GPlatesModel::PropertyName &prop_name,
-			CollectionOfT &destination)
+			CollectionOfT &destination,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		GPlatesModel::XmlElementNode::named_child_const_iterator 
                         iter = elem->get_next_child_by_name(prop_name, elem->children_begin());
@@ -190,7 +200,7 @@ namespace
 		while (iter.first != elem->children_end()) {
 			GPlatesModel::XmlElementNode::non_null_ptr_type target = *iter.second;
 
-			destination.push_back((*creation_fn)(target));  // creation_fn can throw.
+			destination.push_back((*creation_fn)(target, read_errors));  // creation_fn can throw.
 			
 			// Increment iter:
 			iter = elem->get_next_child_by_name(prop_name, ++iter.first);
@@ -202,11 +212,14 @@ namespace
 	void
 	find_and_create_one_or_more(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-			T (*creation_fn)(const GPlatesModel::XmlElementNode::non_null_ptr_type &elem),
+			T (*creation_fn)(
+					const GPlatesModel::XmlElementNode::non_null_ptr_type &,
+					GPlatesFileIO::ReadErrorAccumulation &),
 			const GPlatesModel::PropertyName &prop_name,
-			CollectionOfT &destination)
+			CollectionOfT &destination,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		find_and_create_zero_or_more(elem, creation_fn, prop_name, destination);
+		find_and_create_zero_or_more(elem, creation_fn, prop_name, destination, read_errors);
 		if (destination.empty()) {
 			// Require at least one element in destination!
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
@@ -219,7 +232,8 @@ namespace
 	find_and_create_from_type(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 			const GPlatesPropertyValues::TemplateTypeParameterType &type,
-			const GPlatesModel::PropertyName &prop_name)
+			const GPlatesModel::PropertyName &prop_name,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		GPlatesFileIO::StructurePropertyCreatorMap *map = 
 			GPlatesFileIO::StructurePropertyCreatorMap::instance();
@@ -249,7 +263,7 @@ namespace
 					EXCEPTION_SOURCE);
 		}
 
-		return (*iter->second)(*target);
+		return (*iter->second)(*target, read_errors);
 	}
 
 
@@ -258,7 +272,8 @@ namespace
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 		const GPlatesPropertyValues::TemplateTypeParameterType &type,
 		const GPlatesModel::PropertyName &prop_name,
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members)
+		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		GPlatesFileIO::StructurePropertyCreatorMap *map =
 			GPlatesFileIO::StructurePropertyCreatorMap::instance();
@@ -277,7 +292,7 @@ namespace
 			GPlatesModel::XmlElementNode::non_null_ptr_type target = *iter.second;
 
 			//May need to check for attributes and number of children before adding to vector.
-			members.push_back((*map_iter->second)(target));  // creation_fn can throw.
+			members.push_back((*map_iter->second)(target, read_errors));  // creation_fn can throw.
 
 			// Increment iter:
 			iter = elem->get_next_child_by_name(prop_name, ++iter.first);
@@ -338,7 +353,8 @@ namespace
 
 	QString
 	create_string_without_trimming(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		TextExtractionVisitor visitor;
 		std::for_each(
@@ -357,17 +373,19 @@ namespace
 
 	QString
 	create_string(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		return create_string_without_trimming(elem).trimmed();
+		return create_string_without_trimming(elem, read_errors).trimmed();
 	}
 
 
 	QString
 	create_nonempty_string(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_string(elem);
+		QString str = create_string(elem, read_errors);
 		if (str.isEmpty()) {
 			// Unexpected empty string.
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::UnexpectedEmptyString,
@@ -379,18 +397,20 @@ namespace
 
 	GPlatesUtils::UnicodeString
 	create_unicode_string(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		return GPlatesUtils::make_icu_string_from_qstring(create_string(elem));
+		return GPlatesUtils::make_icu_string_from_qstring(create_string(elem, read_errors));
 	}
 
 
 	GPlatesPropertyValues::Enumeration::non_null_ptr_type
 	create_enumeration(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-		const GPlatesUtils::UnicodeString &enum_type)
+		const GPlatesUtils::UnicodeString &enum_type,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString enum_value = create_nonempty_string(elem);
+		QString enum_value = create_nonempty_string(elem, read_errors);
 		return GPlatesPropertyValues::Enumeration::create(enum_type, 
 				GPlatesUtils::make_icu_string_from_qstring(enum_value));
 	}
@@ -398,12 +418,13 @@ namespace
 
 	bool
 	create_boolean(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		static const QString TRUE_STR = "true";
 		static const QString FALSE_STR = "false";
 
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		if (str.compare(TRUE_STR, Qt::CaseInsensitive) == 0) {
 			return true;
@@ -423,9 +444,10 @@ namespace
 
 	double
 	create_double(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		double res = 0.0;
 		if ( ! parse_decimal_value(&QString::toDouble, str, res)) {
@@ -439,9 +461,10 @@ namespace
 
 	std::vector<double>
 	create_double_list(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QStringList tokens = create_string(elem).split(" ", QString::SkipEmptyParts);
+		QStringList tokens = create_string(elem, read_errors).split(" ", QString::SkipEmptyParts);
 
 		std::vector<double> result;
 		result.reserve(tokens.count());
@@ -465,9 +488,10 @@ namespace
 
 	unsigned long
 	create_ulong(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		unsigned long res = 0;
 		if ( ! parse_integral_value(&QString::toULong, str, res)) {
@@ -481,9 +505,10 @@ namespace
 
 	GPlatesPropertyValues::TemplateTypeParameterType 
 	create_template_type_parameter_type(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		QString alias = str.section(':', 0, 0);  // First chunk before a ':'.
 		QString type = str.section(':', 1);  // The chunk after the ':'.
@@ -500,9 +525,10 @@ namespace
 
 	int
 	create_int(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		int res = 0;
 		if ( ! parse_integral_value(&QString::toInt, str, res)) {
@@ -516,9 +542,10 @@ namespace
 
 	std::vector<int>
 	create_int_list(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QStringList tokens = create_string(elem).split(" ", QString::SkipEmptyParts);
+		QStringList tokens = create_string(elem, read_errors).split(" ", QString::SkipEmptyParts);
 
 		std::vector<int> result;
 		result.reserve(tokens.count());
@@ -542,9 +569,10 @@ namespace
 
 	unsigned int
 	create_uint(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		unsigned int res = 0;
 		if ( ! parse_integral_value(&QString::toUInt, str, res)) {
@@ -581,9 +609,10 @@ namespace
 
 	GPlatesMaths::PointOnSphere
 	create_pos(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		// XXX: Currently assuming srsDimension is 2!!
 
@@ -614,9 +643,10 @@ namespace
 	// point physically at the north pole.
 	std::pair<double, double>
 	create_lon_lat_pos(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		// XXX: Currently assuming srsDimension is 2!!
 
@@ -648,9 +678,10 @@ namespace
 	 */
 	GPlatesMaths::PointOnSphere
 	create_coordinates(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		// XXX: Currently assuming srsDimension is 2!!
 
@@ -683,9 +714,10 @@ namespace
 
 	std::pair<double, double>
 	create_lon_lat_coordinates(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		// XXX: Currently assuming srsDimension is 2!!
 
@@ -718,11 +750,12 @@ namespace
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 	create_polyline(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		typedef GPlatesMaths::PolylineOnSphere polyline_type;
 
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		// XXX: Currently assuming srsDimension is 2!!
 
@@ -791,11 +824,12 @@ namespace
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 	create_polygon(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		typedef GPlatesMaths::PolygonOnSphere polygon_type;
 
-		QString str = create_nonempty_string(elem);
+		QString str = create_nonempty_string(elem, read_errors);
 
 		// XXX: Currently assuming srsDimension is 2!!
 
@@ -913,7 +947,8 @@ namespace
 	 */
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 	create_linear_ring(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		static const GPlatesModel::PropertyName 
 			STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("LinearRing"),
@@ -923,7 +958,7 @@ namespace
 			elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 	
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-			polygon = find_and_create_one(elem, &create_polygon, POS_LIST);
+			polygon = find_and_create_one(elem, &create_polygon, POS_LIST, read_errors);
 	
 		// FIXME: We need to give the srsName et al. attributes from the posList 
 		// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
@@ -937,7 +972,8 @@ namespace
 	 */
 	std::pair<GPlatesMaths::PointOnSphere, GPlatesPropertyValues::GmlPoint::GmlProperty>
 	create_point_on_sphere(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		static const GPlatesModel::PropertyName
 			STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("Point"),
@@ -950,9 +986,9 @@ namespace
 		// FIXME: We need to give the srsName et al. attributes from the pos 
 		// (or the gml:FeatureCollection tag?) to the GmlPoint or GmlMultiPoint.
 		boost::optional<GPlatesMaths::PointOnSphere> point_as_pos =
-			find_and_create_optional(elem, &create_pos, POS);
+			find_and_create_optional(elem, &create_pos, POS, read_errors);
 		boost::optional<GPlatesMaths::PointOnSphere> point_as_coordinates =
-			find_and_create_optional(elem, &create_coordinates, COORDINATES);
+			find_and_create_optional(elem, &create_coordinates, COORDINATES, read_errors);
 
 		// The gml:Point needs one of gml:pos and gml:coordinates, but not both.
 		if (point_as_pos && point_as_coordinates)
@@ -979,7 +1015,8 @@ namespace
 
 	std::pair<std::pair<double, double>, GPlatesPropertyValues::GmlPoint::GmlProperty>
 	create_lon_lat_point_on_sphere(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		static const GPlatesModel::PropertyName
 			STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("Point"),
@@ -992,9 +1029,9 @@ namespace
 		// FIXME: We need to give the srsName et al. attributes from the pos 
 		// (or the gml:FeatureCollection tag?) to the GmlPoint or GmlMultiPoint.
 		boost::optional<std::pair<double, double> > point_as_pos =
-			find_and_create_optional(elem, &create_lon_lat_pos, POS);
+			find_and_create_optional(elem, &create_lon_lat_pos, POS, read_errors);
 		boost::optional<std::pair<double, double> > point_as_coordinates =
-			find_and_create_optional(elem, &create_lon_lat_coordinates, COORDINATES);
+			find_and_create_optional(elem, &create_lon_lat_coordinates, COORDINATES, read_errors);
 
 		// The gml:Point needs one of gml:pos and gml:coordinates, but not both.
 		if (point_as_pos && point_as_coordinates)
@@ -1062,7 +1099,8 @@ namespace
 	 */
 	GPlatesPropertyValues::GmlFile::value_component_type
 	create_gml_file_value_component(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		if (parent->number_of_children() > 1)
 		{
@@ -1101,7 +1139,8 @@ namespace
 	 */
 	GPlatesPropertyValues::GmlFile::composite_value_type
 	create_gml_file_composite_value(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesPropertyValues;
 
@@ -1113,7 +1152,7 @@ namespace
 			get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 		GmlFile::composite_value_type result;
-		find_and_create_zero_or_more(elem, &create_gml_file_value_component, VALUE_COMPONENT, result);
+		find_and_create_zero_or_more(elem, &create_gml_file_value_component, VALUE_COMPONENT, result, read_errors);
 
 		return result;
 	}
@@ -1122,170 +1161,191 @@ namespace
 
 GPlatesPropertyValues::XsBoolean::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_xs_boolean(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return GPlatesPropertyValues::XsBoolean::create(create_boolean(elem));
+	return GPlatesPropertyValues::XsBoolean::create(create_boolean(elem, read_errors));
 }
 
 
 GPlatesPropertyValues::XsInteger::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_xs_integer(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return GPlatesPropertyValues::XsInteger::create(create_int(elem));
+	return GPlatesPropertyValues::XsInteger::create(create_int(elem, read_errors));
 }
 
 
 GPlatesPropertyValues::XsString::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_xs_string(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
 	return GPlatesPropertyValues::XsString::create(
-			GPlatesUtils::make_icu_string_from_qstring(create_string(elem)));
+			GPlatesUtils::make_icu_string_from_qstring(create_string(elem, read_errors)));
 }
 
 
 GPlatesPropertyValues::XsDouble::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_xs_double(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return GPlatesPropertyValues::XsDouble::create(create_double(elem));
+	return GPlatesPropertyValues::XsDouble::create(create_double(elem, read_errors));
 }
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_absolute_reference_frame_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:AbsoluteReferenceFrameEnumeration");
+	return create_enumeration(elem, "gpml:AbsoluteReferenceFrameEnumeration", read_errors);
 }
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_continental_boundary_crust_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:ContinentalBoundaryCrustEnumeration");
+	return create_enumeration(elem, "gpml:ContinentalBoundaryCrustEnumeration", read_errors);
 }
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_continental_boundary_edge_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:ContinentalBoundaryEdgeEnumeration");
+	return create_enumeration(elem, "gpml:ContinentalBoundaryEdgeEnumeration", read_errors);
 }
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_continental_boundary_side_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:ContinentalBoundarySideEnumeration");
+	return create_enumeration(elem, "gpml:ContinentalBoundarySideEnumeration", read_errors);
 }
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_reconstruction_method_enumeration(
-	const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:ReconstructionMethodEnumeration");
+	return create_enumeration(elem, "gpml:ReconstructionMethodEnumeration", read_errors);
 }
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_dip_side_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:DipSideEnumeration");
+	return create_enumeration(elem, "gpml:DipSideEnumeration", read_errors);
 }
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_dip_slip_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:DipSlipEnumeration");
+	return create_enumeration(elem, "gpml:DipSlipEnumeration", read_errors);
 }
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_fold_plane_annotation_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:FoldPlaneAnnotationEnumeration");
+	return create_enumeration(elem, "gpml:FoldPlaneAnnotationEnumeration", read_errors);
 }
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_slip_component_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:SlipComponentEnumeration");
+	return create_enumeration(elem, "gpml:SlipComponentEnumeration", read_errors);
 }
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_strike_slip_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:StrikeSlipEnumeration");
+	return create_enumeration(elem, "gpml:StrikeSlipEnumeration", read_errors);
 }
 
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_subduction_polarity_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:SubductionPolarityEnumeration");
+	return create_enumeration(elem, "gpml:SubductionPolarityEnumeration", read_errors);
 }
 
 GPlatesPropertyValues::Enumeration::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_slab_edge_enumeration(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return create_enumeration(elem, "gpml:SlabEdgeEnumeration");
+	return create_enumeration(elem, "gpml:SlabEdgeEnumeration", read_errors);
 }
 
 GPlatesModel::FeatureId
 GPlatesFileIO::PropertyCreationUtils::create_feature_id(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
 	return GPlatesModel::FeatureId(
-		GPlatesUtils::make_icu_string_from_qstring(create_nonempty_string(elem)));
+		GPlatesUtils::make_icu_string_from_qstring(create_nonempty_string(elem, read_errors)));
 }
 
 
 GPlatesModel::RevisionId
 GPlatesFileIO::PropertyCreationUtils::create_revision_id(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {	
 	return GPlatesModel::RevisionId(
-		GPlatesUtils::make_icu_string_from_qstring(create_nonempty_string(elem)));
+		GPlatesUtils::make_icu_string_from_qstring(create_nonempty_string(elem, read_errors)));
 }
 
 
 GPlatesPropertyValues::GpmlRevisionId::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gpml_revision_id(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return GPlatesPropertyValues::GpmlRevisionId::create(create_revision_id(elem));
+	return GPlatesPropertyValues::GpmlRevisionId::create(create_revision_id(elem, read_errors));
 }
 
 
 GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_plate_id(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
-	return GPlatesPropertyValues::GpmlPlateId::create(create_ulong(elem));
+	return GPlatesPropertyValues::GpmlPlateId::create(create_ulong(elem, read_errors));
 }
 
 
 GPlatesPropertyValues::GeoTimeInstant
 GPlatesFileIO::PropertyCreationUtils::create_geo_time_instant(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {
 	// FIXME:  Find and store the 'frame' attribute in the GeoTimeInstant.
 
-	QString text = create_nonempty_string(elem);
+	QString text = create_nonempty_string(elem, read_errors);
 	if (text.compare("http://gplates.org/times/distantFuture", Qt::CaseInsensitive) == 0) {
 		return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
 	}
@@ -1305,7 +1365,8 @@ GPlatesFileIO::PropertyCreationUtils::create_geo_time_instant(
 
 GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_time_instant(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName 
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("TimeInstant"),
@@ -1315,7 +1376,7 @@ GPlatesFileIO::PropertyCreationUtils::create_time_instant(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::GeoTimeInstant
-		time = find_and_create_one(elem, &create_geo_time_instant, TIME_POSITION);
+		time = find_and_create_one(elem, &create_geo_time_instant, TIME_POSITION, read_errors);
 
 	// The XML attributes are read from the timePosition property, not the TimeInstant property.
 	return GPlatesPropertyValues::GmlTimeInstant::create(
@@ -1326,7 +1387,8 @@ GPlatesFileIO::PropertyCreationUtils::create_time_instant(
 
 GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_time_period(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("TimePeriod"),
@@ -1337,8 +1399,8 @@ GPlatesFileIO::PropertyCreationUtils::create_time_period(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-		begin_time = find_and_create_one(elem, &create_time_instant, BEGIN_TIME), 
-		end_time = find_and_create_one(elem, &create_time_instant, END_TIME);
+		begin_time = find_and_create_one(elem, &create_time_instant, BEGIN_TIME, read_errors), 
+		end_time = find_and_create_one(elem, &create_time_instant, END_TIME, read_errors);
 
 	return GPlatesPropertyValues::GmlTimePeriod::create(begin_time, end_time);
 }
@@ -1346,7 +1408,8 @@ GPlatesFileIO::PropertyCreationUtils::create_time_period(
 
 GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_constant_value(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("ConstantValue"),
@@ -1358,11 +1421,11 @@ GPlatesFileIO::PropertyCreationUtils::create_constant_value(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	boost::optional<QString> 
-		description = find_and_create_optional(elem, &create_string, DESCRIPTION);
+		description = find_and_create_optional(elem, &create_string, DESCRIPTION, read_errors);
 	GPlatesPropertyValues::TemplateTypeParameterType 
-		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 	GPlatesModel::PropertyValue::non_null_ptr_type value = 
-		find_and_create_from_type(elem, type, VALUE);
+		find_and_create_from_type(elem, type, VALUE, read_errors);
 
 	if (description) {
 		return GPlatesPropertyValues::GpmlConstantValue::create(value, type, 
@@ -1374,7 +1437,8 @@ GPlatesFileIO::PropertyCreationUtils::create_constant_value(
 
 GPlatesPropertyValues::GpmlTimeSample
 GPlatesFileIO::PropertyCreationUtils::create_time_sample(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("TimeSample"),
@@ -1388,15 +1452,15 @@ GPlatesFileIO::PropertyCreationUtils::create_time_sample(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 	GPlatesModel::PropertyValue::non_null_ptr_type 
-		value = find_and_create_from_type(elem, type, VALUE);
+		value = find_and_create_from_type(elem, type, VALUE, read_errors);
 	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-		valid_time = find_and_create_one(elem, &create_time_instant, VALID_TIME);
+		valid_time = find_and_create_one(elem, &create_time_instant, VALID_TIME, read_errors);
 	boost::optional<QString>
-		description = find_and_create_optional(elem, &create_string_without_trimming, DESCRIPTION);
+		description = find_and_create_optional(elem, &create_string_without_trimming, DESCRIPTION, read_errors);
 	boost::optional<bool>
-		is_disabled = find_and_create_optional(elem, &create_boolean, IS_DISABLED);
+		is_disabled = find_and_create_optional(elem, &create_boolean, IS_DISABLED, read_errors);
 
 	boost::intrusive_ptr<GPlatesPropertyValues::XsString> desc;
 	if (description) {
@@ -1416,7 +1480,8 @@ GPlatesFileIO::PropertyCreationUtils::create_time_sample(
 
 GPlatesPropertyValues::GpmlTimeWindow
 GPlatesFileIO::PropertyCreationUtils::create_time_window(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("TimeWindow"),
@@ -1430,11 +1495,11 @@ GPlatesFileIO::PropertyCreationUtils::create_time_window(
 
 	GPlatesModel::PropertyValue::non_null_ptr_type
 		time_dep_prop_val = find_and_create_one(elem, &create_time_dependent_property_value,
-				TIME_DEPENDENT_PROPERTY_VALUE);
+				TIME_DEPENDENT_PROPERTY_VALUE, read_errors);
 	GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
-		time_period = find_and_create_one(elem, &create_time_period, VALID_TIME);
+		time_period = find_and_create_one(elem, &create_time_period, VALID_TIME, read_errors);
 	GPlatesPropertyValues::TemplateTypeParameterType
-		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 
 	return GPlatesPropertyValues::GpmlTimeWindow(time_dep_prop_val, time_period, type);
 }
@@ -1442,7 +1507,8 @@ GPlatesFileIO::PropertyCreationUtils::create_time_window(
 
 GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_piecewise_aggregation(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("PiecewiseAggregation"),
@@ -1453,11 +1519,11 @@ GPlatesFileIO::PropertyCreationUtils::create_piecewise_aggregation(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 
 	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows;
 
-	find_and_create_zero_or_more(elem, &create_time_window, TIME_WINDOW, time_windows);
+	find_and_create_zero_or_more(elem, &create_time_window, TIME_WINDOW, time_windows, read_errors);
 
 	return GPlatesPropertyValues::GpmlPiecewiseAggregation::create(time_windows, type);
 }
@@ -1465,7 +1531,8 @@ GPlatesFileIO::PropertyCreationUtils::create_piecewise_aggregation(
 
 GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_irregular_sampling(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("IrregularSampling"),
@@ -1477,13 +1544,13 @@ GPlatesFileIO::PropertyCreationUtils::create_irregular_sampling(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 	boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
 		interp_func = find_and_create_optional(elem, &create_interpolation_function, 
-				INTERPOLATION_FUNCTION);
+				INTERPOLATION_FUNCTION, read_errors);
 
 	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
-	find_and_create_one_or_more(elem, &create_time_sample, TIME_SAMPLE, time_samples);
+	find_and_create_one_or_more(elem, &create_time_sample, TIME_SAMPLE, time_samples, read_errors);
 
 	if (interp_func) {
 		return GPlatesPropertyValues::GpmlIrregularSampling::create(
@@ -1498,7 +1565,8 @@ GPlatesFileIO::PropertyCreationUtils::create_irregular_sampling(
 
 GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_hot_spot_trail_mark(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {	
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("HotSpotTrailMark"),
@@ -1511,14 +1579,14 @@ GPlatesFileIO::PropertyCreationUtils::create_hot_spot_trail_mark(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::GmlPoint::non_null_ptr_type
-		position = find_and_create_one(elem, &create_point, POSITION);
+		position = find_and_create_one(elem, &create_point, POSITION, read_errors);
 	boost::optional< GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type >
-		trail_width = find_and_create_optional(elem, &create_measure, TRAIL_WIDTH);
+		trail_width = find_and_create_optional(elem, &create_measure, TRAIL_WIDTH, read_errors);
 	boost::optional< GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type >
-		measured_age = find_and_create_optional(elem, &create_time_instant, MEASURED_AGE);
+		measured_age = find_and_create_optional(elem, &create_time_instant, MEASURED_AGE, read_errors);
 	boost::optional< GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type >
 		measured_age_range = find_and_create_optional(elem, &create_time_period, 
-				MEASURED_AGE_RANGE);
+				MEASURED_AGE_RANGE, read_errors);
 
 	return GPlatesPropertyValues::GpmlHotSpotTrailMark::create(
 			position, trail_width, measured_age, measured_age_range);
@@ -1527,9 +1595,10 @@ GPlatesFileIO::PropertyCreationUtils::create_hot_spot_trail_mark(
 
 GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_measure(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		ReadErrorAccumulation &read_errors)
 {	
-	double quantity = create_double(elem);
+	double quantity = create_double(elem, read_errors);
 
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
 		xml_attrs(elem->attributes_begin(), elem->attributes_end());
@@ -1539,7 +1608,8 @@ GPlatesFileIO::PropertyCreationUtils::create_measure(
 
 GPlatesPropertyValues::GpmlFeatureReference::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_feature_reference(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("FeatureReference"),
@@ -1550,9 +1620,9 @@ GPlatesFileIO::PropertyCreationUtils::create_feature_reference(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		value_type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		value_type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 	GPlatesModel::FeatureId
-		target_feature = find_and_create_one(elem, &create_feature_id, TARGET_FEATURE);
+		target_feature = find_and_create_one(elem, &create_feature_id, TARGET_FEATURE, read_errors);
 
 	return GPlatesPropertyValues::GpmlFeatureReference::create(target_feature, value_type);
 }
@@ -1560,7 +1630,8 @@ GPlatesFileIO::PropertyCreationUtils::create_feature_reference(
 
 GPlatesPropertyValues::GpmlFeatureSnapshotReference::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_feature_snapshot_reference(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("FeatureSnapshotReference"),
@@ -1572,11 +1643,11 @@ GPlatesFileIO::PropertyCreationUtils::create_feature_snapshot_reference(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		value_type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		value_type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 	GPlatesModel::FeatureId
-		target_feature = find_and_create_one(elem, &create_feature_id, TARGET_FEATURE);
+		target_feature = find_and_create_one(elem, &create_feature_id, TARGET_FEATURE, read_errors);
 	GPlatesModel::RevisionId
-		target_revision = find_and_create_one(elem, &create_revision_id, TARGET_REVISION);
+		target_revision = find_and_create_one(elem, &create_revision_id, TARGET_REVISION, read_errors);
 
 	return GPlatesPropertyValues::GpmlFeatureSnapshotReference::create(
 			target_feature, target_revision, value_type);
@@ -1585,7 +1656,8 @@ GPlatesFileIO::PropertyCreationUtils::create_feature_snapshot_reference(
 
 GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_property_delegate(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("PropertyDelegate"),
@@ -1597,12 +1669,12 @@ GPlatesFileIO::PropertyCreationUtils::create_property_delegate(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		value_type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		value_type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 	GPlatesModel::FeatureId
-		target_feature = find_and_create_one(elem, &create_feature_id, TARGET_FEATURE);
+		target_feature = find_and_create_one(elem, &create_feature_id, TARGET_FEATURE, read_errors);
 	GPlatesPropertyValues::TemplateTypeParameterType
 		target_property = find_and_create_one(elem, &create_template_type_parameter_type, 
-				TARGET_PROPERTY);
+				TARGET_PROPERTY, read_errors);
 
 	GPlatesModel::PropertyName prop_name(target_property);
 	return GPlatesPropertyValues::GpmlPropertyDelegate::create(
@@ -1612,7 +1684,8 @@ GPlatesFileIO::PropertyCreationUtils::create_property_delegate(
 
 GPlatesPropertyValues::GpmlPolarityChronId::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_polarity_chron_id(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName 
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("PolarityChronId"),
@@ -1624,11 +1697,11 @@ GPlatesFileIO::PropertyCreationUtils::create_polarity_chron_id(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	boost::optional<QString>
-		era = find_and_create_optional(elem, &create_string, ERA);
+		era = find_and_create_optional(elem, &create_string, ERA, read_errors);
 	boost::optional<unsigned int>
-		major_region = find_and_create_optional(elem, &create_uint, MAJOR);
+		major_region = find_and_create_optional(elem, &create_uint, MAJOR, read_errors);
 	boost::optional<QString>
-		minor_region = find_and_create_optional(elem, &create_string, MINOR);
+		minor_region = find_and_create_optional(elem, &create_string, MINOR, read_errors);
 
 	return GPlatesPropertyValues::GpmlPolarityChronId::create(era, major_region, minor_region);
 }
@@ -1636,10 +1709,11 @@ GPlatesFileIO::PropertyCreationUtils::create_polarity_chron_id(
 
 GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_point(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	std::pair<std::pair<double, double>, GPlatesPropertyValues::GmlPoint::GmlProperty> point =
-		create_lon_lat_point_on_sphere(parent);
+		create_lon_lat_point_on_sphere(parent, read_errors);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// to the line string!
@@ -1649,7 +1723,8 @@ GPlatesFileIO::PropertyCreationUtils::create_point(
 
 GPlatesPropertyValues::GmlLineString::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_line_string(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName 
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("LineString"),
@@ -1659,7 +1734,7 @@ GPlatesFileIO::PropertyCreationUtils::create_line_string(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-		polyline = find_and_create_one(elem, &create_polyline, POS_LIST);
+		polyline = find_and_create_one(elem, &create_polyline, POS_LIST, read_errors);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// to the line string!
@@ -1669,7 +1744,8 @@ GPlatesFileIO::PropertyCreationUtils::create_line_string(
 
 GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gml_multi_point(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName 
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("MultiPoint"),
@@ -1682,7 +1758,7 @@ GPlatesFileIO::PropertyCreationUtils::create_gml_multi_point(
 	// single gml:Point.
 	typedef std::pair<GPlatesMaths::PointOnSphere, GPlatesPropertyValues::GmlPoint::GmlProperty> point_and_property_type;
 	std::vector<point_and_property_type> points_and_properties;
-	find_and_create_one_or_more(elem, &create_point_on_sphere, POINT_MEMBER, points_and_properties);
+	find_and_create_one_or_more(elem, &create_point_on_sphere, POINT_MEMBER, points_and_properties, read_errors);
 
 	// Unpack the vector of pairs into two vectors.
 	std::vector<GPlatesMaths::PointOnSphere> points;
@@ -1706,7 +1782,8 @@ GPlatesFileIO::PropertyCreationUtils::create_gml_multi_point(
 
 GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_orientable_curve(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName 
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("OrientableCurve"),
@@ -1716,7 +1793,7 @@ GPlatesFileIO::PropertyCreationUtils::create_orientable_curve(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::GmlLineString::non_null_ptr_type
-		line_string = find_and_create_one(elem, &create_line_string, BASE_CURVE);
+		line_string = find_and_create_one(elem, &create_line_string, BASE_CURVE, read_errors);
 
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
 		xml_attrs(elem->attributes_begin(), elem->attributes_end());
@@ -1726,7 +1803,8 @@ GPlatesFileIO::PropertyCreationUtils::create_orientable_curve(
 
 GPlatesPropertyValues::GmlPolygon::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_gml_polygon(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName 
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("Polygon"),
@@ -1738,11 +1816,11 @@ GPlatesFileIO::PropertyCreationUtils::create_gml_polygon(
 
 	// GmlPolygon has exactly one exterior gml:LinearRing
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-		exterior = find_and_create_one(elem, &create_linear_ring, EXTERIOR);
+		exterior = find_and_create_one(elem, &create_linear_ring, EXTERIOR, read_errors);
 
 	// GmlPolygon has zero or more interior gml:LinearRing
 	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> interiors;
-	find_and_create_zero_or_more(elem, &create_linear_ring, INTERIOR, interiors);
+	find_and_create_zero_or_more(elem, &create_linear_ring, INTERIOR, interiors, read_errors);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
@@ -1753,7 +1831,8 @@ GPlatesFileIO::PropertyCreationUtils::create_gml_polygon(
 
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_geometry(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
 	static GPlatesModel::PropertyName
 		POINT = GPlatesModel::PropertyName::create_gml("Point"),
@@ -1772,22 +1851,22 @@ GPlatesFileIO::PropertyCreationUtils::create_geometry(
 
 	structural_elem = parent->get_child_by_name(POINT);
 	if (structural_elem) {
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_point(parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_point(parent, read_errors));
 	}
 
 	structural_elem = parent->get_child_by_name(LINE_STRING);
 	if (structural_elem) {
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_line_string(parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_line_string(parent, read_errors));
 	}
 
 	structural_elem = parent->get_child_by_name(ORIENTABLE_CURVE);
 	if (structural_elem) {
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_orientable_curve(parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_orientable_curve(parent, read_errors));
 	}
 	
 	structural_elem = parent->get_child_by_name(POLYGON);
 	if (structural_elem) {
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_gml_polygon(parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_gml_polygon(parent, read_errors));
 	}
 	
 	// If we reach this point, we have found no valid children for a gml:_Geometry property value.
@@ -1808,7 +1887,7 @@ GPlatesFileIO::PropertyCreationUtils::create_geometry(
 		// The alternative for now is, just assume the ConstantValue is there for a good reason,
 		// read it, and return it (including whatever it was wrapping, which we should hope was
 		// some geometry!)
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_constant_value(parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_constant_value(parent, read_errors));
 #endif
 	}
 
@@ -1820,7 +1899,8 @@ GPlatesFileIO::PropertyCreationUtils::create_geometry(
 
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_time_dependent_property_value(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		CONSTANT_VALUE = GPlatesModel::PropertyName::create_gpml("ConstantValue"),
@@ -1838,19 +1918,19 @@ GPlatesFileIO::PropertyCreationUtils::create_time_dependent_property_value(
 	structural_elem = parent->get_child_by_name(CONSTANT_VALUE);
 	if (structural_elem) {
 		return GPlatesModel::PropertyValue::non_null_ptr_type(
-				create_constant_value(parent));
+				create_constant_value(parent, read_errors));
 	}
 
 	structural_elem = parent->get_child_by_name(IRREGULAR_SAMPLING);
 	if (structural_elem) {
 		return GPlatesModel::PropertyValue::non_null_ptr_type(
-				create_irregular_sampling(parent));
+				create_irregular_sampling(parent, read_errors));
 	}
 
 	structural_elem = parent->get_child_by_name(PIECEWISE_AGGREGATION);
 	if (structural_elem) {
 		return GPlatesModel::PropertyValue::non_null_ptr_type(
-				create_piecewise_aggregation(parent));
+				create_piecewise_aggregation(parent, read_errors));
 	}
 
 	// Invalid child!
@@ -1861,7 +1941,8 @@ GPlatesFileIO::PropertyCreationUtils::create_time_dependent_property_value(
 
 GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_interpolation_function(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		FINITE_ROTATION_SLERP = GPlatesModel::PropertyName::create_gpml("FiniteRotationSlerp");
@@ -1877,7 +1958,7 @@ GPlatesFileIO::PropertyCreationUtils::create_interpolation_function(
 	structural_elem = parent->get_child_by_name(FINITE_ROTATION_SLERP);
 	if (structural_elem) {
 		return GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type(
-				create_finite_rotation_slerp(parent));
+				create_finite_rotation_slerp(parent, read_errors));
 	}
 
 	// Invalid child!
@@ -1888,7 +1969,8 @@ GPlatesFileIO::PropertyCreationUtils::create_interpolation_function(
 
 GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_finite_rotation(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		AXIS_ANGLE_FINITE_ROTATION = 
@@ -1910,9 +1992,9 @@ GPlatesFileIO::PropertyCreationUtils::create_finite_rotation(
 			ANGLE = GPlatesModel::PropertyName::create_gpml("angle");
 		
 		GPlatesPropertyValues::GmlPoint::non_null_ptr_type
-			euler_pole = find_and_create_one(*structural_elem, &create_point, EULER_POLE);
+			euler_pole = find_and_create_one(*structural_elem, &create_point, EULER_POLE, read_errors);
 		GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type
-			angle = find_and_create_one(*structural_elem, &create_measure, ANGLE);
+			angle = find_and_create_one(*structural_elem, &create_measure, ANGLE, read_errors);
 
 		return GPlatesPropertyValues::GpmlFiniteRotation::create(euler_pole, angle);
 	} 
@@ -1930,7 +2012,8 @@ GPlatesFileIO::PropertyCreationUtils::create_finite_rotation(
 
 GPlatesPropertyValues::GpmlFiniteRotationSlerp::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_finite_rotation_slerp(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("FiniteRotationSlerp"),
@@ -1940,7 +2023,7 @@ GPlatesFileIO::PropertyCreationUtils::create_finite_rotation_slerp(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		value_type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		value_type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 
 	return GPlatesPropertyValues::GpmlFiniteRotationSlerp::create(value_type);
 }
@@ -1948,7 +2031,8 @@ GPlatesFileIO::PropertyCreationUtils::create_finite_rotation_slerp(
 
 GPlatesPropertyValues::GpmlStringList::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_string_list(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("StringList"),
@@ -1958,14 +2042,15 @@ GPlatesFileIO::PropertyCreationUtils::create_string_list(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	std::vector<GPlatesUtils::UnicodeString> elements;
-	find_and_create_zero_or_more(elem, &create_unicode_string, ELEMENT, elements);
+	find_and_create_zero_or_more(elem, &create_unicode_string, ELEMENT, elements, read_errors);
 	return GPlatesPropertyValues::GpmlStringList::create_copy(elements);
 }
 
 
 GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_topological_polygon(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName 
 		STRUCTURAL_TYPE = 
@@ -1978,7 +2063,7 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_polygon(
 
 	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> sections;
 
-	find_and_create_one_or_more(elem, &create_topological_section, SECTION, sections);
+	find_and_create_one_or_more(elem, &create_topological_section, SECTION, sections, read_errors);
 
 	return GPlatesPropertyValues::GpmlTopologicalPolygon::create( sections );
 }
@@ -1986,7 +2071,8 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_polygon(
 
 GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_topological_section(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		TOPOLOGICAL_LINE_SECTION = 
@@ -2005,13 +2091,13 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_section(
 	structural_elem = parent->get_child_by_name(TOPOLOGICAL_LINE_SECTION);
 	if (structural_elem) {
 		return GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type(
-				create_topological_line_section(parent));
+				create_topological_line_section(parent, read_errors));
 	}
 
 	structural_elem = parent->get_child_by_name(TOPOLOGICAL_POINT);
 	if (structural_elem) {
 		return GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type(
-				create_topological_point(parent));
+				create_topological_point(parent, read_errors));
 	}
 
 	// Invalid child!
@@ -2022,7 +2108,8 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_section(
 
 GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_topological_line_section(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = 
@@ -2041,16 +2128,16 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_line_section(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type source_geometry = 
-		find_and_create_one(elem, &create_property_delegate, SOURCE_GEOMETRY);
+		find_and_create_one(elem, &create_property_delegate, SOURCE_GEOMETRY, read_errors);
 
 	boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection> start_inter = 
-		find_and_create_optional(elem, &create_topological_intersection, START_INTERSECTION);
+		find_and_create_optional(elem, &create_topological_intersection, START_INTERSECTION, read_errors);
 
 	boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection> end_inter = 
-		find_and_create_optional(elem, &create_topological_intersection, END_INTERSECTION);
+		find_and_create_optional(elem, &create_topological_intersection, END_INTERSECTION, read_errors);
 
 	bool reverse_order = 
-		find_and_create_one(elem, &create_boolean, REVERSE_ORDER);
+		find_and_create_one(elem, &create_boolean, REVERSE_ORDER, read_errors);
 
 	return GPlatesPropertyValues::GpmlTopologicalLineSection::create(
 		source_geometry, 
@@ -2061,7 +2148,8 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_line_section(
 
 GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_topological_point(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = 
@@ -2073,7 +2161,7 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_point(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type source_geometry = 
-		find_and_create_one(elem, &create_property_delegate, SOURCE_GEOMETRY);
+		find_and_create_one(elem, &create_property_delegate, SOURCE_GEOMETRY, read_errors);
 
 	return GPlatesPropertyValues::GpmlTopologicalPoint::create(
 		source_geometry);
@@ -2082,7 +2170,8 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_point(
 
 GPlatesPropertyValues::GpmlTopologicalIntersection
 GPlatesFileIO::PropertyCreationUtils::create_topological_intersection(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = 
@@ -2098,13 +2187,13 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_intersection(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type intersection_geometry = 
-		find_and_create_one(elem, &create_property_delegate, INTERSECTION_GEOMETRY);
+		find_and_create_one(elem, &create_property_delegate, INTERSECTION_GEOMETRY, read_errors);
 
 	GPlatesPropertyValues::GmlPoint::non_null_ptr_type reference_point = 
-		find_and_create_one(elem, &create_point, REFERENCE_POINT);
+		find_and_create_one(elem, &create_point, REFERENCE_POINT, read_errors);
 
 	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type reference_point_plate_id = 
-		find_and_create_one(elem, &create_property_delegate, REFERENCE_POINT_PLATE_ID);
+		find_and_create_one(elem, &create_property_delegate, REFERENCE_POINT_PLATE_ID, read_errors);
 
 	return GPlatesPropertyValues::GpmlTopologicalIntersection(
 		intersection_geometry, 
@@ -2118,7 +2207,8 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_intersection(
 
 GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_old_plates_header(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("OldPlatesHeader"),
@@ -2139,24 +2229,24 @@ GPlatesFileIO::PropertyCreationUtils::create_old_plates_header(
 	GPlatesModel::XmlElementNode::non_null_ptr_type
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
-	unsigned int region_number = find_and_create_one(elem, &create_uint, REGION_NUMBER);
-	unsigned int reference_number = find_and_create_one(elem, &create_uint, REFERENCE_NUMBER);
-	unsigned int string_number = find_and_create_one(elem, &create_uint, STRING_NUMBER);
+	unsigned int region_number = find_and_create_one(elem, &create_uint, REGION_NUMBER, read_errors);
+	unsigned int reference_number = find_and_create_one(elem, &create_uint, REFERENCE_NUMBER, read_errors);
+	unsigned int string_number = find_and_create_one(elem, &create_uint, STRING_NUMBER, read_errors);
 	QString geographic_description = 
-		find_and_create_one(elem, &create_string, GEOGRAPHIC_DESCRIPTION);
+		find_and_create_one(elem, &create_string, GEOGRAPHIC_DESCRIPTION, read_errors);
 	GPlatesModel::integer_plate_id_type
-		plate_id_number = find_and_create_one(elem, &create_ulong, PLATE_ID_NUMBER);
-	double age_of_appearance = find_and_create_one(elem, &create_double, AGE_OF_APPEARANCE);
-	double age_of_disappearance = find_and_create_one(elem, &create_double, AGE_OF_DISAPPEARANCE);
-	QString data_type_code = find_and_create_one(elem, &create_string, DATA_TYPE_CODE);
+		plate_id_number = find_and_create_one(elem, &create_ulong, PLATE_ID_NUMBER, read_errors);
+	double age_of_appearance = find_and_create_one(elem, &create_double, AGE_OF_APPEARANCE, read_errors);
+	double age_of_disappearance = find_and_create_one(elem, &create_double, AGE_OF_DISAPPEARANCE, read_errors);
+	QString data_type_code = find_and_create_one(elem, &create_string, DATA_TYPE_CODE, read_errors);
 	unsigned int data_type_code_number = 
-		find_and_create_one(elem, &create_uint, DATA_TYPE_CODE_NUMBER);
+		find_and_create_one(elem, &create_uint, DATA_TYPE_CODE_NUMBER, read_errors);
 	QString data_type_code_number_additional =
-		find_and_create_one(elem, &create_string, DATA_TYPE_CODE_NUMBER_ADDITIONAL);
+		find_and_create_one(elem, &create_string, DATA_TYPE_CODE_NUMBER_ADDITIONAL, read_errors);
 	GPlatesModel::integer_plate_id_type conjugate_plate_id_number = 
-		find_and_create_one(elem, &create_uint, CONJUGATE_PLATE_ID_NUMBER);
-	unsigned int colour_code = find_and_create_one(elem, &create_uint, COLOUR_CODE);
-	unsigned int number_of_points = find_and_create_one(elem, &create_uint, NUMBER_OF_POINTS);
+		find_and_create_one(elem, &create_uint, CONJUGATE_PLATE_ID_NUMBER, read_errors);
+	unsigned int colour_code = find_and_create_one(elem, &create_uint, COLOUR_CODE, read_errors);
+	unsigned int number_of_points = find_and_create_one(elem, &create_uint, NUMBER_OF_POINTS, read_errors);
 
 	return GPlatesPropertyValues::GpmlOldPlatesHeader::create(
 			region_number, reference_number, string_number, 
@@ -2170,7 +2260,8 @@ GPlatesFileIO::PropertyCreationUtils::create_old_plates_header(
 
 GPlatesPropertyValues::GpmlKeyValueDictionaryElement
 GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary_element(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("KeyValueDictionaryElement"),
@@ -2183,11 +2274,11 @@ GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary_element(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 	GPlatesModel::PropertyValue::non_null_ptr_type 
-		value = find_and_create_from_type(elem, type, VALUE);
+		value = find_and_create_from_type(elem, type, VALUE, read_errors);
 	GPlatesPropertyValues::XsString::non_null_ptr_type
-		key = find_and_create_one(elem, &create_xs_string, KEY);
+		key = find_and_create_one(elem, &create_xs_string, KEY, read_errors);
 
 	return GPlatesPropertyValues::GpmlKeyValueDictionaryElement(key, value, type);
 }
@@ -2195,7 +2286,8 @@ GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary_element(
 
 GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("KeyValueDictionary"),
@@ -2205,14 +2297,15 @@ GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements;
-	find_and_create_one_or_more(elem, &create_key_value_dictionary_element, ELEMENT, elements);
+	find_and_create_one_or_more(elem, &create_key_value_dictionary_element, ELEMENT, elements, read_errors);
 	return GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements);
 }
 
 
 GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_grid_envelope(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("GridEnvelope"),
@@ -2222,8 +2315,8 @@ GPlatesFileIO::PropertyCreationUtils::create_grid_envelope(
 	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
 		get_structural_type_element(parent, STRUCTURAL_TYPE);
 
-	std::vector<int> low = find_and_create_one(elem, &create_int_list, LOW);
-	std::vector<int> high = find_and_create_one(elem, &create_int_list, HIGH);
+	std::vector<int> low = find_and_create_one(elem, &create_int_list, LOW, read_errors);
+	std::vector<int> high = find_and_create_one(elem, &create_int_list, HIGH, read_errors);
 
 	return GPlatesPropertyValues::GmlGridEnvelope::create(low, high);
 }
@@ -2231,7 +2324,8 @@ GPlatesFileIO::PropertyCreationUtils::create_grid_envelope(
 
 GPlatesPropertyValues::GmlRectifiedGrid::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_rectified_grid(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	using namespace GPlatesPropertyValues;
 
@@ -2248,19 +2342,19 @@ GPlatesFileIO::PropertyCreationUtils::create_rectified_grid(
 			elem->attributes_begin(), elem->attributes_end());
 
 	// <gml:limits>
-	GmlGridEnvelope::non_null_ptr_type limits = find_and_create_one(elem, &create_grid_envelope, LIMITS);
+	GmlGridEnvelope::non_null_ptr_type limits = find_and_create_one(elem, &create_grid_envelope, LIMITS, read_errors);
 
 	// <gml:axisName>
 	std::vector<XsString::non_null_ptr_type> non_const_axes;
-	find_and_create_one_or_more(elem, &create_xs_string, AXIS_NAME, non_const_axes);
+	find_and_create_one_or_more(elem, &create_xs_string, AXIS_NAME, non_const_axes, read_errors);
 	GmlRectifiedGrid::axes_list_type axes(non_const_axes.begin(), non_const_axes.end());
 
 	// <gml:origin>
-	GmlPoint::non_null_ptr_type origin = find_and_create_one(elem, &create_point, ORIGIN);
+	GmlPoint::non_null_ptr_type origin = find_and_create_one(elem, &create_point, ORIGIN, read_errors);
 
 	// <gml:offsetVector>
 	GmlRectifiedGrid::offset_vector_list_type offset_vectors;
-	find_and_create_one_or_more(elem, &create_double_list, OFFSET_VECTOR, offset_vectors);
+	find_and_create_one_or_more(elem, &create_double_list, OFFSET_VECTOR, offset_vectors, read_errors);
 
 	return GmlRectifiedGrid::create(limits, axes, origin, offset_vectors, xml_attributes);
 }
@@ -2287,7 +2381,8 @@ namespace
 
 GPlatesPropertyValues::GmlFile::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_file(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	using namespace GPlatesPropertyValues;
 
@@ -2304,29 +2399,30 @@ GPlatesFileIO::PropertyCreationUtils::create_file(
 
 	// <gml:rangeParameters>
 	GmlFile::composite_value_type range_parameters =
-		find_and_create_one(elem, &create_gml_file_composite_value, RANGE_PARAMETERS);
+		find_and_create_one(elem, &create_gml_file_composite_value, RANGE_PARAMETERS, read_errors);
 	
 	// <gml:fileName>
-	XsString::non_null_ptr_type file_name = find_and_create_one(elem, &create_xs_string, FILE_NAME);
+	XsString::non_null_ptr_type file_name = find_and_create_one(elem, &create_xs_string, FILE_NAME, read_errors);
 
 	// <gml:fileStructure>
-	XsString::non_null_ptr_type file_structure = find_and_create_one(elem, &create_xs_string, FILE_STRUCTURE);
+	XsString::non_null_ptr_type file_structure = find_and_create_one(elem, &create_xs_string, FILE_STRUCTURE, read_errors);
 
 	// <gml:mimeType>
 	boost::optional<XsString::non_null_ptr_to_const_type> mime_type = to_optional_of_ptr_to_const(
-			find_and_create_optional(elem, &create_xs_string, MIME_TYPE));
+			find_and_create_optional(elem, &create_xs_string, MIME_TYPE, read_errors));
 
 	// <gml:compression>
 	boost::optional<XsString::non_null_ptr_to_const_type> compression = to_optional_of_ptr_to_const(
-			find_and_create_optional(elem, &create_xs_string, COMPRESSION));
+			find_and_create_optional(elem, &create_xs_string, COMPRESSION, read_errors));
 
-	return GmlFile::create(range_parameters, file_name, file_structure, mime_type, compression);
+	return GmlFile::create(range_parameters, file_name, file_structure, mime_type, compression, &read_errors);
 }
 
 
 GPlatesPropertyValues::GpmlRasterBandNames::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_raster_band_names(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
 {
 	using namespace GPlatesPropertyValues;
 
@@ -2338,7 +2434,7 @@ GPlatesFileIO::PropertyCreationUtils::create_raster_band_names(
 		get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	std::vector<XsString::non_null_ptr_type> band_names;
-        find_and_create_zero_or_more(elem, &create_xs_string, BAND_NAME, band_names);
+        find_and_create_zero_or_more(elem, &create_xs_string, BAND_NAME, band_names, read_errors);
 
 	// Check for uniqueness of band names.
 	std::set<GPlatesUtils::UnicodeString> band_name_set;
@@ -2357,7 +2453,8 @@ GPlatesFileIO::PropertyCreationUtils::create_raster_band_names(
 #if 0
 GPlatesPropertyValues::GpmlArrayMember
 GPlatesFileIO::PropertyCreationUtils::create_array_member(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("ArrayMember"),
@@ -2369,9 +2466,9 @@ GPlatesFileIO::PropertyCreationUtils::create_array_member(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 	GPlatesModel::PropertyValue::non_null_ptr_type 
-		value = find_and_create_from_type(elem, type, VALUE);
+		value = find_and_create_from_type(elem, type, VALUE, read_errors);
 
 	return GPlatesPropertyValues::GpmlArrayMember(value, type);
 }
@@ -2379,7 +2476,8 @@ GPlatesFileIO::PropertyCreationUtils::create_array_member(
 
 GPlatesPropertyValues::GpmlArray::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_array(
-			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			ReadErrorAccumulation &read_errors)
 {
 	static const GPlatesModel::PropertyName
 		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("Array"),
@@ -2390,10 +2488,10 @@ GPlatesFileIO::PropertyCreationUtils::create_array(
 		mem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	GPlatesPropertyValues::TemplateTypeParameterType
-		type = find_and_create_one(mem, &create_template_type_parameter_type, VALUE_TYPE);
+		type = find_and_create_one(mem, &create_template_type_parameter_type, VALUE_TYPE, read_errors);
 
 	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> members;
-	find_and_create_one_or_more_from_type(mem, type, MEMBER, members);
+	find_and_create_one_or_more_from_type(mem, type, MEMBER, members, read_errors);
 
 	return GPlatesPropertyValues::GpmlArray::create(type,members);
 }

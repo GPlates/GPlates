@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <ostream>
+
 #include "MipmappedRasterFormat.h"
 
 
@@ -55,3 +57,27 @@ namespace GPlatesFileIO
 	}
 }
 
+
+GPlatesFileIO::MipmappedRasterFormat::UnsupportedVersion::UnsupportedVersion(
+		const GPlatesUtils::CallStack::Trace &exception_source,
+		quint32 unrecognised_version_) :
+	Exception(exception_source),
+	d_unrecognised_version(unrecognised_version_)
+{
+}
+
+
+const char *
+GPlatesFileIO::MipmappedRasterFormat::UnsupportedVersion::exception_name() const
+{
+
+	return "MipmappedRasterFormat::UnsupportedVersion";
+}
+
+
+void
+GPlatesFileIO::MipmappedRasterFormat::UnsupportedVersion::write_message(
+		std::ostream &os) const
+{
+	os << "unsupported version: " << d_unrecognised_version;
+}

@@ -762,14 +762,15 @@ namespace GPlatesAppLogic
 
 
 			virtual
-			void
-			visit_feature_handle(
-					const GPlatesModel::FeatureHandle &feature_handle)
+			bool
+			initialise_pre_feature_properties(
+					feature_handle_type &feature_handle)
 			{
 				if (d_found_paleomag_features)
 				{
 					// We've already found a paleomag feature so just return.
-					return;
+					// NOTE: We don't actually want to visit the feature's properties.
+					return false;
 				}
 
 				static const GPlatesModel::FeatureType paleomag_feature_type = 
@@ -780,8 +781,8 @@ namespace GPlatesAppLogic
 					d_found_paleomag_features = true;
 				}
 
-				// NOTE: We don't actually want to visit the feature's properties
-				// so we're not calling 'visit_feature_properties()'.
+				// NOTE: We don't actually want to visit the feature's properties.
+				return false;
 			}
 
 		private:

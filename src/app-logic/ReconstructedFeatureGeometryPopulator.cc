@@ -93,7 +93,15 @@ namespace
 		finalise_post_feature_properties(
 				const GPlatesModel::FeatureHandle &feature_handle)
 		{
-			if (d_has_reconstruction_plate_id && d_has_geometry)
+			// For now let's just be lenient and look for a geometry.
+			// If there's no reconstruction plate ID then it just won't get rotated.
+			// Also doing this because we no longer have a default layer that gets created
+			// when feature collection is loaded (default layer is created when no other
+			// layers recognise the features in the collection). The default layer used
+			// to be the Reconstructed Geometries layer (which uses us) but now there is
+			// no default layer - so anything that does not get recognised now results
+			// in no layer being created.
+			if (/*d_has_reconstruction_plate_id &&*/ d_has_geometry)
 			{
 				d_can_reconstruct = true;
 			}
@@ -175,39 +183,66 @@ bool
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::can_process(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
+	//
+	// Return true if any type of reconstruction can be performed on the feature.
+	//
+
+	// This currently just processes regular reconstructed feature geometries
+	// whereas it's meant to processes all types.
+	// TODO: Implement proper reconstruction framework to handle this more cleanly.
 	CanReconstructFeature can_reconstruct_visitor;
-
 	can_reconstruct_visitor.visit_feature(feature_ref);
+	if (can_reconstruct_visitor.can_reconstruct())
+	{
+		return true;
+	}
 
-	return can_reconstruct_visitor.can_reconstruct();
+	// Detect flowline features.
+	FlowlineUtils::DetectFlowlineFeatures flowlines_detector;
+	flowlines_detector.visit_feature(feature_ref);
+	if(flowlines_detector.has_flowline_features())
+	{
+		return true;
+	}
+
+	// Detect VGP features.
+	ReconstructionGeometryUtils::DetectPaleomagFeatures vgp_detector;
+	vgp_detector.visit_feature(feature_ref);
+	if(vgp_detector.has_paleomag_features())
+	{
+		return true;
+	}
+
+	return false;
 }
 
 
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeometryPopulator(
 		ReconstructionGeometryCollection &reconstruction_geometry_collection,
-		const ReconstructLayerTaskParams &reconstruct_params,
-		bool should_keep_features_without_recon_plate_id):
+		const ReconstructLayerTaskParams &reconstruct_params):
 	d_reconstruction_geometry_collection(reconstruction_geometry_collection),
 	d_reconstruction_tree(reconstruction_geometry_collection.reconstruction_tree()),
 	d_recon_time(
 			GPlatesPropertyValues::GeoTimeInstant(
 					reconstruction_geometry_collection.get_reconstruction_time())),
 	d_reconstruction_params(reconstruction_geometry_collection.get_reconstruction_time()),
-	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id),
 	d_reconstruct_params(reconstruct_params)
-{  }
+{
+}
 
 
 bool
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
+	const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature_handle.reference();
+
 	//
 	// Firstly find a reconstruction plate ID and determine whether the feature is defined
 	// at this reconstruction time.
 	//
 
-	d_reconstruction_params.visit_feature(feature_handle.reference());
+	d_reconstruction_params.visit_feature(feature_ref);
 
 
 	//
@@ -222,21 +257,12 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::initialise_pre_feature_p
 		return false;
 	}
 
-	if ( ! d_reconstruction_params.get_recon_plate_id())
-	{
-		// We couldn't obtain the reconstruction plate ID.
-
-		// So, how do we react to this situation?  Do we ignore features which don't have a
-		// reconsruction plate ID, or do we "reconstruct" their geometries using the
-		// identity rotation, so the features simply sit still on the globe?  Fortunately,
-		// the client code has already told us how it wants us to behave...
-		if ( ! d_should_keep_features_without_recon_plate_id)
-		{
-			return false;
-		}
-		// Otherwise, the code later will "reconstruct" with the identity rotation.
-	}
-	else
+	// We couldn't obtain the reconstruction plate ID.
+	// But that's ok since not all feature types require a reconstruction plate ID to reconstruct.
+	// If a feature does require a reconstruction plate ID but none is found the the code later
+	// will "reconstruct" with the identity rotation.
+	// TODO: Implement the reconstruct framework to handle different feature types more cleanly.
+	if (d_reconstruction_params.get_recon_plate_id())
 	{
 		// We obtained the reconstruction plate ID.  We now have all the information we
 		// need to reconstruct according to the reconstruction plate ID.
@@ -246,7 +272,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::initialise_pre_feature_p
 
 	//detect VGP feature and set the flag.
 	ReconstructionGeometryUtils::DetectPaleomagFeatures vgp_detector;
-	vgp_detector.visit_feature_handle(feature_handle);
+	vgp_detector.visit_feature(feature_ref);
 	if(vgp_detector.has_paleomag_features())
 	{
 		d_is_vgp_feature = true;
@@ -259,7 +285,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::initialise_pre_feature_p
 
 	// Detect Flowline features.
 	FlowlineUtils::DetectFlowlineFeatures flowlines_detector;
-	flowlines_detector.visit_feature_handle(feature_handle);
+	flowlines_detector.visit_feature(feature_ref);
 	if(flowlines_detector.has_flowline_features())
 	{
 	    d_is_flowline_feature = true;
@@ -603,15 +629,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::finalise_post_feature_pr
 boost::optional<GPlatesMaths::FiniteRotation>
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::get_half_stage_rotation()
 {
-
-
-        return ReconstructUtils::get_half_stage_rotation(
-                    *d_reconstruction_tree,
-                    *d_reconstruction_params.get_left_plate_id(),
-                    *d_reconstruction_params.get_right_plate_id());
-
-
+    return ReconstructUtils::get_half_stage_rotation(
+                *d_reconstruction_tree,
+                *d_reconstruction_params.get_left_plate_id(),
+                *d_reconstruction_params.get_right_plate_id());
 }
-
-
-
