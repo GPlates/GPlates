@@ -203,6 +203,12 @@ set(GPlates_LIBS
 if (ADD_GPLATES_CLI_TARGET)
 	set(GPlates_cli_LIBS
 		${cli_LIBS} ${app_LIBS} ${util_LIBS})
+    # Adding 'gui' lib because some useful functionality
+    # (such as colour conversion used by file-io) is in the 'gui' lib.
+    # TODO: Need to do something to avoid including Qt gui libraries when
+    # they're not used.
+	set(GPlates_cli_LIBS
+		${GPlates_cli_LIBS} ${presentation_LIBS})
 endif (ADD_GPLATES_CLI_TARGET)
 
 # Libraries used by the GPlates unit test application.
