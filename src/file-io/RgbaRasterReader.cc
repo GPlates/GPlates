@@ -296,7 +296,10 @@ GPlatesFileIO::RgbaRasterReader::read_rgba_file(
 	for (unsigned int y = 0; y != region_height; ++y)
 	{
 		unsigned int row_in_file = y + region_y_offset;
-		d_rgba_file.seek((row_in_file * d_source_width + region_x_offset) * sizeof(GPlatesGui::rgba8_t));
+		// Need to use 64-bit arithmetic when calculating file offsets since
+		// some uncompressed rasters are already larger than 4Gb.
+		d_rgba_file.seek(
+				(qint64(row_in_file) * d_source_width + region_x_offset) * sizeof(GPlatesGui::rgba8_t));
 
 		// Read the raw byte data for the row since it's *significantly* quicker than streaming
 		// each pixel individually (as determined by profiling) - Qt does a lot at each '>>'.
