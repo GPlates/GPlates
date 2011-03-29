@@ -362,7 +362,7 @@ GPlatesFileIO::RgbaRasterReader::ensure_rgba_file_available(
 				// All Qt-provided formats support image size queries.
 				const QSize image_size = reader.size();
 				if (d_rgba_file.size() ==
-					qint64(image_size.width()) * image_size.height() * sizeof(GPlatesGui::rgba8_t))
+					qint64(image_size.width()) * qint64(image_size.height()) * qint64(sizeof(GPlatesGui::rgba8_t)))
 				{
 					// Existing RGBA file is the expected size.
 					d_rgba_in.setDevice(&d_rgba_file);
