@@ -365,5 +365,8 @@ GPlatesFileIO::GMTFormatMotionPathsExport::export_motion_paths(
 			write_seed_point_to_stream(output_stream,*rf);
 			write_motion_path_to_stream(output_stream,*rf,export_times);
 		}
+
+		// Write terminating ">" after geometries.
+		output_stream << ">";
 	}
 }

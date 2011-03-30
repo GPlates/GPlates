@@ -153,6 +153,16 @@ namespace GPlatesAppLogic
 
 		virtual
 		void
+		visit_reconstructed_flowline(
+				ReconstructedFlowline &rf);
+
+		virtual
+		void
+		visit_reconstructed_motion_path(
+				ReconstructedMotionPath &rmp);
+
+		virtual
+		void
 		visit_reconstructed_virtual_geomagnetic_pole(
 				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp);
 

@@ -53,13 +53,3 @@ GPlatesAppLogic::ReconstructedMotionPath::accept_weak_observer_visitor(
 	visitor.visit_reconstructed_motion_path(*this);
 }
 
-const GPlatesModel::FeatureHandle::weak_ref
-GPlatesAppLogic::ReconstructedMotionPath::get_feature_ref() const
-{
-	if (is_valid()) {
-		return feature_handle_ptr()->reference();
-	} else {
-		return GPlatesModel::FeatureHandle::weak_ref();
-	}
-}
-

@@ -285,6 +285,12 @@ namespace GPlatesAppLogic
 			//! Typedef for reconstructed virtual geomagnetic pole type.
 			typedef typename base_class_type::reconstructed_virtual_geomagnetic_pole_type reconstructed_virtual_geomagnetic_pole_type ;
 
+			//! Typedef for reconstructed flowline type.
+			typedef typename base_class_type::reconstructed_flowline_type reconstructed_flowline_type ;
+
+			//! Typedef for reconstructed motion path type.
+			typedef typename base_class_type::reconstructed_motion_path_type reconstructed_motion_path_type ;
+
 			//! Convenience typedef for sequence of pointers to a reconstructed feature geometry.
 			typedef std::vector<reconstructed_feature_geometry_type *> container_type;
 
@@ -313,6 +319,22 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
 			{
 				d_found_geometries.push_back(rvgp.get());
+			}
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_found_geometries.push_back(rf.get());
+			}
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_found_geometries.push_back(rmp.get());
 			}
 
 		private:
@@ -656,6 +678,23 @@ namespace GPlatesAppLogic
 				d_plate_id = rtn->plate_id();
 			}
 
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_plate_id = rf->reconstruction_plate_id();
+			}
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_plate_id = rmp->plate_id();
+			}
+
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
 		};
@@ -724,6 +763,22 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 			{
 				d_time_of_formation = rtn->time_of_formation();
+			}
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_time_of_formation = rf->time_of_formation();
+			}
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_time_of_formation = rmp->time_of_formation();
 			}
 
 		private:

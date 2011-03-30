@@ -6,7 +6,7 @@
  * $Revision: 9024 $
  * $Date: 2010-07-30 12:47:35 +0200 (fr, 30 jul 2010) $
  * 
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -27,9 +27,10 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTEDMOTIONPATH_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTEDMOTIONPATH_H
 
-#include "ReconstructionGeometry.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "maths/PolylineOnSphere.h"
-#include "model/WeakObserver.h"
+
+
 
 namespace GPlatesAppLogic
 {
@@ -41,8 +42,7 @@ namespace GPlatesAppLogic
 	 *
 	 */
 	class ReconstructedMotionPath :
-			public ReconstructionGeometry,
-			public GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle>
+			public ReconstructedFeatureGeometry
 	{
 	public:
 		/**
@@ -67,16 +67,16 @@ namespace GPlatesAppLogic
 		 */
 		typedef boost::intrusive_ptr<const ReconstructedMotionPath> maybe_null_ptr_to_const_type;
 
-		/**
-		 * A convenience typedef for the WeakObserver base class of this class.
-		 */
-		typedef GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle> WeakObserverType;
-
 
 		/** 
 		 * A convenience typedef for a PointOnSphere::non_null_ptr_to_const type. 
 		 */
 		typedef GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point_geom_ptr_type;
+
+		/** 
+		 * A convenience typedef for a GeometryOnSphere::non_null_ptr_to_const type. 
+		 */
+		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type feature_geom_ptr_type;
 
 		/** 
 		 * A convenience typedef for a PointOnSphere::non_null_ptr_to_const type. 
@@ -93,7 +93,9 @@ namespace GPlatesAppLogic
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
+				const feature_geom_ptr_type &feature_geometry_ptr,
 				const motion_path_geom_ptr_type &motion_path_points,
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator)
 		{
@@ -101,66 +103,12 @@ namespace GPlatesAppLogic
 					new ReconstructedMotionPath(
 							reconstruction_tree,
 							present_day_seed_point_geometry_ptr,
+							feature_geometry_ptr,
 							motion_path_points,
+							reconstruction_plate_id,
 							feature_handle,
 							property_iterator),
 					GPlatesUtils::NullIntrusivePointerHandler());
-		}
-
-
-		/**
-		 * Return whether this RFG references @a that_feature_handle.
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		references(
-				const GPlatesModel::FeatureHandle &that_feature_handle) const
-		{
-			return (feature_handle_ptr() == &that_feature_handle);
-		}
-
-		/**
-		 * Return the pointer to the FeatureHandle.
-		 *
-		 * The pointer returned will be NULL if this instance does not reference a
-		 * FeatureHandle; non-NULL otherwise.
-		 *
-		 * This function will not throw.
-		 */
-		GPlatesModel::FeatureHandle *
-		feature_handle_ptr() const
-		{
-			return WeakObserverType::publisher_ptr();
-		}
-
-
-		/**
-		 * Return whether this pointer is valid to be dereferenced (to obtain a
-		 * FeatureHandle).
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		is_valid() const
-		{
-			return (feature_handle_ptr() != NULL);
-		}
-
-		/**
-		 * Return a weak-ref to the feature whose reconstructed geometry this RFG contains,
-		 * or an invalid weak-ref, if this pointer is not valid to be dereferenced.
-		 */
-		const GPlatesModel::FeatureHandle::weak_ref
-		get_feature_ref() const;
-
-		/**
-		 * Access the feature property which contained the reconstructed geometry.
-		 */
-		const GPlatesModel::FeatureHandle::iterator
-		property() const
-		{
-			return d_property_iterator;
 		}
 
 		/**
@@ -200,9 +148,21 @@ namespace GPlatesAppLogic
 			return d_present_day_seed_point;
 		}
 
+		feature_geom_ptr_type
+		feature_geometry() const
+		{
+			return d_feature_geometry;
+		}
+
+		GPlatesModel::integer_plate_id_type
+		plate_id () const
+		{
+			return d_reconstruction_plate_id;
+		}
+
 	private:
 		/**
-		 * Instantiate a reconstructed motion_path.
+		 * Instantiate a reconstructed motion path.
 		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
@@ -210,22 +170,30 @@ namespace GPlatesAppLogic
 		ReconstructedMotionPath(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const seed_point_geom_ptr_type &present_day_seed_point,
+				const feature_geom_ptr_type &feature_geometry,
 				const motion_path_geom_ptr_type &motion_path_points_,
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id_,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator):
-			ReconstructionGeometry(reconstruction_tree_),
-			WeakObserverType(feature_handle),
+			ReconstructedFeatureGeometry(
+				reconstruction_tree_,
+				feature_geometry,
+				feature_handle,
+				property_iterator,
+				reconstruction_plate_id_,
+				boost::none),
 			d_present_day_seed_point(present_day_seed_point),
-			d_motion_path_points(motion_path_points_)
+			d_feature_geometry(feature_geometry),
+			d_motion_path_points(motion_path_points_),
+			d_reconstruction_plate_id(reconstruction_plate_id_)
 		{  }
 
-		/**
-		 * This is an iterator to the flowline seed point from which this reconstructed flowline
-		 * was derived.
-		 */
-		GPlatesModel::FeatureHandle::iterator d_property_iterator;
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_feature_geometry;
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_present_day_seed_point;
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_motion_path_points;
+
+		// For colouring. 
+		GPlatesModel::integer_plate_id_type d_reconstruction_plate_id;
 
 	
 	};

@@ -647,7 +647,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::GMT),
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 					new ExportMotionPathAnimationStrategy::Configuration(
-							"MOTION_PATH_output_%u_%0.2f.xy",
+							"motion_path_output_%u_%0.2f.xy",
 							ExportMotionPathAnimationStrategy::Configuration::GMT,
 							default_motion_path_file_export_options)),
 			&create_animation_strategy<ExportMotionPathAnimationStrategy>,
@@ -662,7 +662,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SHAPEFILE),
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 					new ExportMotionPathAnimationStrategy::Configuration(
-							"MOTION_PATH_output_%u_%0.2f.shp",
+							"motion_path_output_%u_%0.2f.shp",
 							ExportMotionPathAnimationStrategy::Configuration::SHAPEFILE,
 							default_motion_path_file_export_options)),
 			&create_animation_strategy<ExportMotionPathAnimationStrategy>,

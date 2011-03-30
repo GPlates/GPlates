@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date: 2010-08-11 05:48:32 +0200 (on, 11 aug 2010) $
  * 
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -52,7 +52,10 @@ namespace GPlatesAppLogic
 	class ReconstructionGeometryCollection;
 
 	/**
-	 * Reconstructs flowline features
+	 * Reconstructs flowline features.
+	 *
+	 * Calculates flowlines from the flowline feature's seed points, and creates ReconstructedFlowline's which
+	 * are added to the reconstruction geometry collection. 
 	 */
 	class FlowlineGeometryPopulator:
 			public GPlatesModel::FeatureVisitor,
@@ -74,11 +77,6 @@ namespace GPlatesAppLogic
 		bool
 		initialise_pre_feature_properties(
 				GPlatesModel::FeatureHandle &feature_handle);
-		
-		virtual
-		void
-		finalise_post_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
 
 
 		virtual
@@ -99,17 +97,33 @@ namespace GPlatesAppLogic
 
 	private:
 
+		/**
+		 * Create a reconstructed feature geometry from @a present_day_seed_geometry, using the reconstruction
+		 * plate id, and add it to the reconstruction geometry collection.
+		 *
+		 * We need to use this when we don't have enough information to reconstruct a flowline properly - for 
+		 * example insufficient time information, or missing left/right plate ids. In such cases we still want to 
+		 * display a seed point somewhere. Here we're using the reconstruction plate id to do a normal 
+		 * reconstruction 
+		 */
 		void
-		process_point(
-			const GPlatesMaths::PointOnSphere &point);
+		reconstruct_seed_geometry_with_recon_plate_id(
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry);
 
+		/**
+		 * Create a reconstructed flowline (incorporating both left- and right-hand parts) from the point given
+		 * by @a present_day_seed_point_geometry, and add this to the reconstruction geometry collection.
+		 *
+		 * @a reconstructed_seed_geometry is required so that we can associate the flowline geometry with the
+		 * seed points. This is the reconstructed version of the flowline feature's seed point geometry, in whatever
+		 * geometrical form it was originally in - it could be in multipoint form for example. 
+		 */
 		void
-		process_seed_point_and_flowline(
-			const GPlatesMaths::PointOnSphere &point);
+		create_flowline_geometry(
+			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point_geometry,
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry);
 
-		void
-		process_seed_point_with_recon_plate_id(
-			const GPlatesMaths::PointOnSphere &point);
+
 
 		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
 

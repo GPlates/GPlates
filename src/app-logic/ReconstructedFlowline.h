@@ -6,7 +6,7 @@
  * $Revision: 9024 $
  * $Date: 2010-07-30 12:47:35 +0200 (fr, 30 jul 2010) $
  * 
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -27,24 +27,14 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTEDFLOWLINE_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTEDFLOWLINE_H
 
-#include "ReconstructionGeometry.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "maths/PolylineOnSphere.h"
-#include "model/WeakObserver.h"
 
 namespace GPlatesAppLogic
 {
 
-
-
-	/**
-	 * A reconstructed flowline. 
-	 *
-	 * Should this be minus the seed point? (which is a @a ReconstructedFeatureGeometry)?
-	 *
-	 */
 	class ReconstructedFlowline :
-			public ReconstructionGeometry,
-			public GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle>
+			public ReconstructedFeatureGeometry
 	{
 	public:
 		/**
@@ -69,16 +59,16 @@ namespace GPlatesAppLogic
 		 */
 		typedef boost::intrusive_ptr<const ReconstructedFlowline> maybe_null_ptr_to_const_type;
 
-		/**
-		 * A convenience typedef for the WeakObserver base class of this class.
-		 */
-		typedef GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle> WeakObserverType;
-
 
 		/** 
 		 * A convenience typedef for a PointOnSphere::non_null_ptr_to_const type. 
 		 */
 		typedef GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point_geom_ptr_type;
+
+		/** 
+		 * A convenience typedef for a GeometryOnSphere::non_null_ptr_to_const type. 
+		 */
+		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type feature_geom_ptr_type;
 
 		/** 
 		 * A convenience typedef for a PointOnSphere::non_null_ptr_to_const type. 
@@ -93,77 +83,28 @@ namespace GPlatesAppLogic
 		static
 		const non_null_ptr_type
 		create(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
-				const flowline_geom_ptr_type &left_flowline_points,
-				const flowline_geom_ptr_type &right_flowline_points,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator)
+			const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+			const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
+			const feature_geom_ptr_type &feature_geometry_ptr,
+			const flowline_geom_ptr_type &left_flowline_points,
+			const flowline_geom_ptr_type &right_flowline_points,
+			const GPlatesModel::integer_plate_id_type &left_plate_id,
+			const GPlatesModel::integer_plate_id_type &right_plate_id,
+			GPlatesModel::FeatureHandle &feature_handle,
+			GPlatesModel::FeatureHandle::iterator property_iterator)
 		{
 			return non_null_ptr_type(
-					new ReconstructedFlowline(
-							reconstruction_tree,
-							present_day_seed_point_geometry_ptr,
-							left_flowline_points,
-							right_flowline_points,
-							feature_handle,
-							property_iterator),
-					GPlatesUtils::NullIntrusivePointerHandler());
-		}
-
-
-		/**
-		 * Return whether this RFG references @a that_feature_handle.
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		references(
-				const GPlatesModel::FeatureHandle &that_feature_handle) const
-		{
-			return (feature_handle_ptr() == &that_feature_handle);
-		}
-
-		/**
-		 * Return the pointer to the FeatureHandle.
-		 *
-		 * The pointer returned will be NULL if this instance does not reference a
-		 * FeatureHandle; non-NULL otherwise.
-		 *
-		 * This function will not throw.
-		 */
-		GPlatesModel::FeatureHandle *
-		feature_handle_ptr() const
-		{
-			return WeakObserverType::publisher_ptr();
-		}
-
-		/**
-		 * Return whether this pointer is valid to be dereferenced (to obtain a
-		 * FeatureHandle).
-		 *
-		 * This function will not throw.
-		 */
-		bool
-		is_valid() const
-		{
-			return (feature_handle_ptr() != NULL);
-		}
-
-		/**
-		 * Return a weak-ref to the feature whose reconstructed geometry this RFG contains,
-		 * or an invalid weak-ref, if this pointer is not valid to be dereferenced.
-		 */
-		const GPlatesModel::FeatureHandle::weak_ref
-		get_feature_ref() const;
-
-		/**
-		 * Access the feature property which contained the reconstructed geometry.
-		 */
-		const GPlatesModel::FeatureHandle::iterator
-		property() const
-		{
-			return d_property_iterator;
+				new ReconstructedFlowline(
+				reconstruction_tree,
+				present_day_seed_point_geometry_ptr,
+				feature_geometry_ptr,
+				left_flowline_points,
+				right_flowline_points,
+				left_plate_id,
+				right_plate_id,
+				feature_handle,
+				property_iterator),
+				GPlatesUtils::NullIntrusivePointerHandler());
 		}
 
 
@@ -209,6 +150,24 @@ namespace GPlatesAppLogic
 		{
 			return d_present_day_seed_point;
 		}
+		
+		feature_geom_ptr_type
+		feature_geometry() const
+		{
+			return d_feature_geometry;
+		}
+
+		GPlatesModel::integer_plate_id_type
+		left_plate_id() const
+		{
+			return d_left_plate_id;
+		}
+
+		GPlatesModel::integer_plate_id_type
+		right_plate_id() const
+		{
+			return d_right_plate_id;
+		}
 
 	private:
 		/**
@@ -220,30 +179,38 @@ namespace GPlatesAppLogic
 		ReconstructedFlowline(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const seed_point_geom_ptr_type &present_day_seed_point,
+				const feature_geom_ptr_type &feature_geometry,
 				const flowline_geom_ptr_type &left_flowline_points_,
 				const flowline_geom_ptr_type &right_flowline_points_,
+				const GPlatesModel::integer_plate_id_type &left_plate_id_,
+				const GPlatesModel::integer_plate_id_type &right_plate_id_,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator):
-			ReconstructionGeometry(reconstruction_tree_),
-			WeakObserverType(feature_handle),
+			ReconstructedFeatureGeometry(
+				reconstruction_tree_,
+				feature_geometry,
+				feature_handle,
+				property_iterator,
+				boost::none,
+				boost::none),
 			d_present_day_seed_point(present_day_seed_point),
+			d_feature_geometry(feature_geometry),
 			d_left_flowline_points(left_flowline_points_),
-			d_right_flowline_points(right_flowline_points_)
+			d_right_flowline_points(right_flowline_points_),
+			d_left_plate_id(left_plate_id_),
+			d_right_plate_id(right_plate_id_)
 		{  }
 
-		/**
-		 * This is an iterator to the flowline seed point from which this reconstructed flowline
-		 * was derived.
-		 */
-		GPlatesModel::FeatureHandle::iterator d_property_iterator;
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_feature_geometry;
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_present_day_seed_point;
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_left_flowline_points;
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_right_flowline_points;
 
-
-		
-
+		// Left/Right plate ids are here purely for colouring.
+		GPlatesModel::integer_plate_id_type d_left_plate_id;
+		GPlatesModel::integer_plate_id_type d_right_plate_id;
 	};
+
 }
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTEDFLOWLINE_H

@@ -27,6 +27,8 @@
 #include "ReconstructionGeometryFinder.h"
 
 #include "ReconstructedFeatureGeometry.h"
+#include "ReconstructedFlowline.h"
+#include "ReconstructedMotionPath.h"
 #include "Reconstruction.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
@@ -44,6 +46,27 @@ namespace
 		return rfg.property().is_still_valid() &&
 			((*rfg.property())->property_name() == property_name_to_match);
 	}
+
+	inline
+	bool
+	property_name_matches(
+		const GPlatesAppLogic::ReconstructedFlowline &rf,
+		const GPlatesModel::PropertyName &property_name_to_match)
+	{
+		return rf.property().is_still_valid() &&
+			((*rf.property())->property_name() == property_name_to_match);
+	}
+
+	inline
+	bool
+	property_name_matches(
+		const GPlatesAppLogic::ReconstructedMotionPath &rmp,
+		const GPlatesModel::PropertyName &property_name_to_match)
+	{
+		return rmp.property().is_still_valid() &&
+			((*rmp.property())->property_name() == property_name_to_match);
+	}
+
 
 	inline
 	bool
@@ -93,6 +116,20 @@ GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_feature_geome
 		ReconstructedFeatureGeometry &rfg)
 {
 	visit_reconstruction_geometry_derived_type(rfg);
+}
+
+void
+GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_flowline(
+	ReconstructedFlowline &rf)
+{
+	visit_reconstruction_geometry_derived_type(rf);
+}
+
+void
+GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_motion_path(
+	ReconstructedMotionPath &rmp)
+{
+	visit_reconstruction_geometry_derived_type(rmp);
 }
 
 void

@@ -378,5 +378,7 @@ GPlatesFileIO::GMTFormatFlowlinesExport::export_flowlines(
 			write_flowline_to_stream(output_stream,*rf,export_times);
 		}
 		
+		// Write terminating ">"
+		output_stream << ">";
 	}
 }

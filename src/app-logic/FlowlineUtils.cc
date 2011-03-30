@@ -307,7 +307,7 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::initialise_pre_feature_p
 
 void
 GPlatesAppLogic::FlowlineUtils::calculate_flowline(
-        const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &seed_point,
+        const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point,
 	const FlowlinePropertyFinder &flowline_parameters,
 	std::vector<GPlatesMaths::PointOnSphere> &flowline,
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &tree,
@@ -315,13 +315,12 @@ GPlatesAppLogic::FlowlineUtils::calculate_flowline(
 {
 	using namespace GPlatesMaths;
 
-	flowline.push_back(*seed_point);
+	flowline.push_back(*reconstructed_seed_point);
 
-	std::vector<FiniteRotation>::const_iterator
-		iter = rotations.begin(),
+	std::vector<FiniteRotation>::const_iterator		iter = rotations.begin(),
 		end = rotations.end();
 
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type current_point = seed_point;
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type current_point = reconstructed_seed_point;
 
 	for (; iter != end ; ++iter)
 	{

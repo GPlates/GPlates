@@ -27,8 +27,6 @@
 
 #include "ReconstructionGeometryVisitor.h"
 
-#include "model/WeakObserverVisitor.h"
-
 
 void
 GPlatesAppLogic::ReconstructedFlowline::accept_visitor(
@@ -53,13 +51,4 @@ GPlatesAppLogic::ReconstructedFlowline::accept_weak_observer_visitor(
 	visitor.visit_reconstructed_flowline(*this);
 }
 
-const GPlatesModel::FeatureHandle::weak_ref
-GPlatesAppLogic::ReconstructedFlowline::get_feature_ref() const
-{
-	if (is_valid()) {
-		return feature_handle_ptr()->reference();
-	} else {
-		return GPlatesModel::FeatureHandle::weak_ref();
-	}
-}
 

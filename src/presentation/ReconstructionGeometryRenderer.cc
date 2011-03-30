@@ -499,12 +499,31 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
 {
+	GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_to_const_type palette =
+		GPlatesGui::DefaultPlateIdColourPalette::create();
+
+	// Reconstructed seed point - we can use the first point of either of the lines as an extra point for reference.
+	// FIXME: Could(perhaps should?) also do this for the end points of each line....
+	GPlatesViewOperations::RenderedGeometry rendered_seed_point =
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
+			rf->left_flowline_points()->start_point(),
+			d_colour ? d_colour.get() : palette->get_colour(0),
+			3); // experiment with a bigger point, so that it stands out in relation to the left/right lines. 
+
+	GPlatesViewOperations::RenderedGeometry seed_point_rendered_geometry =
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rf,
+			rendered_seed_point);
+
+
+	// Add to the rendered geometry layer.
+	d_rendered_geometry_layer.add_rendered_geometry(seed_point_rendered_geometry);
 
 	// Left-plate flowline
 	GPlatesViewOperations::RenderedGeometry left_rendered_geom =
 		GPlatesViewOperations::create_rendered_arrowed_polyline(
 			rf->left_flowline_points(),
-			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rf));
+			d_colour ? d_colour.get() : palette->get_colour(rf->left_plate_id()));
 
 	GPlatesViewOperations::RenderedGeometry left_rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
@@ -518,7 +537,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry right_rendered_geom =
 		GPlatesViewOperations::create_rendered_arrowed_polyline(
 			rf->right_flowline_points(),
-			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rf));
+			d_colour ? d_colour.get() : palette->get_colour(rf->right_plate_id()));
 
 	GPlatesViewOperations::RenderedGeometry right_rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(

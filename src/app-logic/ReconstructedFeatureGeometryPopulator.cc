@@ -30,6 +30,7 @@
 #include "ReconstructedFeatureGeometryPopulator.h"
 
 #include "FlowlineUtils.h"
+#include "MotionPathUtils.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryCollection.h"
 #include "ReconstructionGeometryUtils.h"
@@ -226,6 +227,9 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeom
 			GPlatesPropertyValues::GeoTimeInstant(
 					reconstruction_geometry_collection.get_reconstruction_time())),
 	d_reconstruction_params(reconstruction_geometry_collection.get_reconstruction_time()),
+	d_is_vgp_feature(false),
+	d_is_flowline_feature(false),
+	d_is_motion_path_feature(false),
 	d_reconstruct_params(reconstruct_params)
 {
 }
@@ -286,14 +290,15 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::initialise_pre_feature_p
 	// Detect Flowline features.
 	FlowlineUtils::DetectFlowlineFeatures flowlines_detector;
 	flowlines_detector.visit_feature(feature_ref);
-	if(flowlines_detector.has_flowline_features())
-	{
-	    d_is_flowline_feature = true;
-	}
-	else
-	{
-	    d_is_flowline_feature = false;
-	}
+	d_is_flowline_feature = flowlines_detector.has_flowline_features();
+
+
+	// Detect MotionPath features.
+	MotionPathUtils::DetectMotionPathFeatures motion_path_detector;
+	motion_path_detector.visit_feature_handle(feature_handle);
+	d_is_motion_path_feature = motion_path_detector.has_motion_track_features();
+
+
 
 	// Now visit the feature to reconstruct any geometries we find.
 	return true;
@@ -341,8 +346,8 @@ void
 GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-
-	if (d_is_flowline_feature)
+	// Flowlines and motion paths take care of their own reconstruction in their respective populators.
+	if (d_is_flowline_feature || d_is_motion_path_feature)
 	{
 	    return;
 	}
@@ -398,10 +403,12 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 		return;
 	}
 
-	if (d_is_flowline_feature)
+	// Flowlines and motion paths take care of their own reconstruction in their respective populators.
+	if (d_is_flowline_feature || d_is_motion_path_feature)
 	{
-	    return;
+		return;
 	}
+
 	using namespace GPlatesMaths;
 
 	GPlatesModel::FeatureHandle::iterator property = *(current_top_level_propiter());

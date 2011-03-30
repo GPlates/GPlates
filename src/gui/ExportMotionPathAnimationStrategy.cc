@@ -65,7 +65,6 @@ namespace
 	}
 }
 
-
 GPlatesGui::ExportMotionPathAnimationStrategy::ExportMotionPathAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
 		const const_configuration_ptr &configuration):

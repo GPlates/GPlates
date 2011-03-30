@@ -7,7 +7,7 @@
 * Most recent change:
 *   $Date: 2010-04-27 16:24:11 +0200 (ti, 27 apr 2010) $
 * 
-* Copyright (C) 2009, 2010 Geological Survey of Norway.
+* Copyright (C) 2009, 2010, 2011 Geological Survey of Norway.
 *
 * This file is part of GPlates.
 *
@@ -49,6 +49,56 @@ namespace GPlatesAppLogic
 
 	namespace MotionPathUtils
 	{
+
+
+		/**
+		* Determines if there are any motion track features in the collection.
+		*/
+		class DetectMotionPathFeatures:
+			public GPlatesModel::ConstFeatureVisitor
+		{
+		public:
+			DetectMotionPathFeatures() :
+				d_found_motion_track_features(false)
+			{  }
+
+
+			bool
+			has_motion_track_features() const
+			{
+				return d_found_motion_track_features;
+			}
+
+
+			virtual
+			void
+			visit_feature_handle(
+					const GPlatesModel::FeatureHandle &feature_handle)
+			{
+				if (d_found_motion_track_features)
+				{
+					// We've already found a motion track feature so just return.
+					return;
+				}
+
+				static const GPlatesModel::FeatureType motion_track_feature_type = 
+					GPlatesModel::FeatureType::create_gpml("MotionPath");
+
+				if (feature_handle.feature_type() == motion_track_feature_type)
+				{
+					d_found_motion_track_features = true;
+				}
+
+				// NOTE: We don't actually want to visit the feature's properties
+				// so we're not calling 'visit_feature_properties()'.
+			}
+
+		private:
+
+
+
+			bool d_found_motion_track_features;
+		};
 
 		/**
 		* Used to obtain motion-track-relevant parameters from a motion track feature.
@@ -109,6 +159,9 @@ namespace GPlatesAppLogic
 
 			bool
 			can_process_motion_path();
+
+			bool
+			can_process_seed_point();
 
 			/**
 			 * Returns optional time of appearance if a "gml:validTime" property is found.
@@ -198,7 +251,7 @@ namespace GPlatesAppLogic
 
 		void
 		calculate_motion_track(
-			const GPlatesMaths::PointOnSphere &point,
+			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point,
 			const MotionPathPropertyFinder	 &motion_track_parameters,
 			std::vector<GPlatesMaths::PointOnSphere> &motion_track,
 			const std::vector<GPlatesMaths::FiniteRotation> &rotations);

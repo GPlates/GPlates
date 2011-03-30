@@ -239,15 +239,29 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 		}
 	}	
 
-	GPlatesMaths::MultiPointOnSphere::const_iterator 
-		iter = gml_multi_point.multipoint()->begin(),
-		end = gml_multi_point.multipoint()->end();
-
-	for (; iter != end ; ++iter)
+	if (d_flowline_property_finder.can_process_flowline())
 	{
-		process_point(*iter);
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
+			FlowlineUtils::reconstruct_flowline_seed_points(gml_multi_point.multipoint(),
+			d_reconstruction_tree,
+			(current_top_level_propiter()->handle_weak_ref()));
+
+		GPlatesMaths::MultiPointOnSphere::const_iterator 
+			iter = gml_multi_point.multipoint()->begin(),
+			end = gml_multi_point.multipoint()->end();
+
+		for (; iter != end ; ++iter)
+		{
+			create_flowline_geometry((*iter).get_non_null_pointer(),reconstructed_seed_geometry);	
+		}
 	}
+	else
+	{
+		reconstruct_seed_geometry_with_recon_plate_id(gml_multi_point.multipoint());
+	}
+
 }
+
 
 
 
@@ -267,7 +281,20 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 		}
 	}	
 
-	process_point(*gml_point.point());
+	if (d_flowline_property_finder.can_process_flowline())
+	{
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
+			FlowlineUtils::reconstruct_flowline_seed_points(gml_point.point(),
+			d_reconstruction_tree,
+			(current_top_level_propiter()->handle_weak_ref()));
+
+		create_flowline_geometry(gml_point.point(),reconstructed_seed_geometry);	
+	}
+	else
+	{
+		reconstruct_seed_geometry_with_recon_plate_id(gml_point.point());
+	}
+		 
 }
 
 
@@ -280,135 +307,22 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gpml_constant_value(
 }
 
 
-
 void
-GPlatesAppLogic::FlowlineGeometryPopulator::finalise_post_feature_properties(
-		GPlatesModel::FeatureHandle &feature_handle)
-{
-
-	
-}
-
-
-void
-GPlatesAppLogic::FlowlineGeometryPopulator::process_point(
-	const GPlatesMaths::PointOnSphere &point)
-{
-    if (d_flowline_property_finder.can_process_flowline())
-    {
-		process_seed_point_and_flowline(point);
-    }
-    else
-    {
-		process_seed_point_with_recon_plate_id(point);
-    }
-}
-
-void
-GPlatesAppLogic::FlowlineGeometryPopulator::process_seed_point_and_flowline(
-	const GPlatesMaths::PointOnSphere &point)
-{
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_left_seed_point =
-		FlowlineUtils::reconstruct_seed_point(
-		    point.get_non_null_pointer(),
-		    d_left_seed_point_rotations);
-
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_right_seed_point =
-		FlowlineUtils::reconstruct_seed_point(
-		    point.get_non_null_pointer(),
-		    d_right_seed_point_rotations);
-
-
-	std::vector<GPlatesMaths::PointOnSphere> left_flowline;
-
-	FlowlineUtils::calculate_flowline(
-		reconstructed_left_seed_point,
-		d_flowline_property_finder,
-		left_flowline,
-		d_reconstruction_tree,
-		d_left_rotations);
-
-	std::vector<GPlatesMaths::PointOnSphere> right_flowline;
-
-	FlowlineUtils::calculate_flowline(
-		reconstructed_right_seed_point,
-		d_flowline_property_finder,
-		right_flowline,
-		d_reconstruction_tree,
-		d_right_rotations);
-
-	// We'll calculate the left and right flowlines in the frames of the left and right plates 
-	// respectively. Afterwards we correct for the position of the left and right plates at our
-	// current time. 
-	GPlatesMaths::FiniteRotation left_correction =
-		d_reconstruction_tree->get_composed_absolute_rotation(
-		    d_flowline_property_finder.get_left_plate().get()).first;
-
-	GPlatesMaths::FiniteRotation right_correction =
-		d_reconstruction_tree->get_composed_absolute_rotation(
-		    d_flowline_property_finder.get_right_plate().get()).first;
-
-	GPlatesMaths::FiniteRotation seed_point_correction = left_correction;
-
-
-	try{
-	    // This seed_point could equally be calculated from the right-rotations, by the way.
-	    GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point =
-		    left_correction * reconstructed_left_seed_point;
-
-	    GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type seed_point_rfg =
-		    ReconstructedFeatureGeometry::create(
-			d_reconstruction_tree,
-			seed_point,
-			*(current_top_level_propiter()->handle_weak_ref()),
-			*(current_top_level_propiter()),
-			d_flowline_property_finder.get_reconstruction_plate_id());
-
-	    d_reconstruction_geometry_collection.add_reconstruction_geometry(seed_point_rfg);
-
-	    GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type left_flowline_points =
-		    GPlatesMaths::PolylineOnSphere::create_on_heap(left_flowline.begin(),left_flowline.end());
-
-	    left_flowline_points = left_correction * left_flowline_points;
-
-	    GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type right_flowline_points =
-		    GPlatesMaths::PolylineOnSphere::create_on_heap(right_flowline.begin(),right_flowline.end());
-
-	    right_flowline_points = right_correction * right_flowline_points;
-
-	    GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type rf_ptr =
-		    ReconstructedFlowline::create(
-			d_reconstruction_tree,
-			point.get_non_null_pointer(),
-			left_flowline_points,
-			right_flowline_points,
-			*(current_top_level_propiter()->handle_weak_ref()),
-			*(current_top_level_propiter()));
-
-	    d_reconstruction_geometry_collection.add_reconstruction_geometry(rf_ptr);
-
-	}
-	catch(...)
-	{
-		// We failed creating a flowline for whatever reason. 
-	}
-
-}
-
-void
-GPlatesAppLogic::FlowlineGeometryPopulator::process_seed_point_with_recon_plate_id(
-	const GPlatesMaths::PointOnSphere &point)
+GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon_plate_id(
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry)
 {
 	// We end up here if no times are defined in the flowline, or if the 
-	// recon-time is outwith the flowline time periods. 
+	// recon-time is outwith the flowline time periods. We don't have enough information
+	// to do a proper flowline reconstruction, but we want to represent the seed point in some
+	// way. We can reconsruct the seedpoint with the plate-id. 
 
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point = point.get_non_null_pointer();
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom = present_day_seed_geometry;
 
 	if (d_flowline_property_finder.get_reconstruction_plate_id())
 	{
-		seed_point = d_reconstruction_tree->get_composed_absolute_rotation(
+		geom = d_reconstruction_tree->get_composed_absolute_rotation(
 			    d_flowline_property_finder.get_reconstruction_plate_id().get()).first *
-			    seed_point;
+			    geom;
 	}
 
 
@@ -418,7 +332,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::process_seed_point_with_recon_plate_
 	    GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type seed_point_rfg =
 		    ReconstructedFeatureGeometry::create(
 			d_reconstruction_tree,
-			seed_point,
+			geom,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),
 			d_flowline_property_finder.get_reconstruction_plate_id());
@@ -432,3 +346,91 @@ GPlatesAppLogic::FlowlineGeometryPopulator::process_seed_point_with_recon_plate_
 	}
 
 }
+
+
+void
+GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
+	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point_geometry,
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry)
+{
+
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom = present_day_seed_point_geometry;
+
+
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_left_seed_point =
+			FlowlineUtils::reconstruct_seed_point(
+			present_day_seed_point_geometry,
+			d_left_seed_point_rotations);
+
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_right_seed_point =
+			FlowlineUtils::reconstruct_seed_point(
+			present_day_seed_point_geometry,
+			d_right_seed_point_rotations);
+
+
+		std::vector<GPlatesMaths::PointOnSphere> left_flowline;
+
+		FlowlineUtils::calculate_flowline(
+			reconstructed_left_seed_point,
+			d_flowline_property_finder,
+			left_flowline,
+			d_reconstruction_tree,
+			d_left_rotations);
+
+		std::vector<GPlatesMaths::PointOnSphere> right_flowline;
+
+		FlowlineUtils::calculate_flowline(
+			reconstructed_right_seed_point,
+			d_flowline_property_finder,
+			right_flowline,
+			d_reconstruction_tree,
+			d_right_rotations);
+
+		// We'll calculate the left and right flowlines in the frames of the left and right plates 
+		// respectively. Afterwards we correct for the position of the left and right plates at our
+		// current time. 
+		GPlatesMaths::FiniteRotation left_correction =
+			d_reconstruction_tree->get_composed_absolute_rotation(
+			d_flowline_property_finder.get_left_plate().get()).first;
+
+		GPlatesMaths::FiniteRotation right_correction =
+			d_reconstruction_tree->get_composed_absolute_rotation(
+			d_flowline_property_finder.get_right_plate().get()).first;
+
+
+		try{
+
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type left_flowline_points =
+				GPlatesMaths::PolylineOnSphere::create_on_heap(left_flowline.begin(),left_flowline.end());
+
+			left_flowline_points = left_correction * left_flowline_points;
+
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type right_flowline_points =
+				GPlatesMaths::PolylineOnSphere::create_on_heap(right_flowline.begin(),right_flowline.end());
+
+			right_flowline_points = right_correction * right_flowline_points;
+
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type rf_ptr =
+				ReconstructedFlowline::create(
+				d_reconstruction_tree,
+				present_day_seed_point_geometry,
+				reconstructed_seed_geometry,
+				left_flowline_points,
+				right_flowline_points,
+				*d_flowline_property_finder.get_left_plate(),
+				*d_flowline_property_finder.get_right_plate(),
+				*(current_top_level_propiter()->handle_weak_ref()),
+				*(current_top_level_propiter()));
+
+			d_reconstruction_geometry_collection.add_reconstruction_geometry(rf_ptr);
+
+		}
+		catch(...)
+		{
+			// We failed creating a flowline for whatever reason. 
+		}
+
+}
+
+
+

@@ -118,7 +118,7 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::initialise_pre_featu
 
 void
 GPlatesAppLogic::MotionPathUtils::calculate_motion_track(
-	const GPlatesMaths::PointOnSphere &seed_point, 
+	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point, 
 	const MotionPathPropertyFinder &motion_track_parameters,
 	std::vector<GPlatesMaths::PointOnSphere> &motion_track,
 	const std::vector<GPlatesMaths::FiniteRotation> &rotations)
@@ -131,7 +131,7 @@ GPlatesAppLogic::MotionPathUtils::calculate_motion_track(
 
 	for (; iter != end ; ++iter)
 	{
-		PointOnSphere::non_null_ptr_to_const_type current_point = *iter * seed_point.get_non_null_pointer();
+		PointOnSphere::non_null_ptr_to_const_type current_point = *iter * present_day_seed_point;
 		motion_track.push_back(*current_point);
 	}
 }
@@ -190,4 +190,10 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::can_process_motion_p
 	}
 
 	return false;
+}
+
+bool
+GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::can_process_seed_point()
+{
+	return (d_feature_is_defined_at_recon_time && d_has_geometry);
 }

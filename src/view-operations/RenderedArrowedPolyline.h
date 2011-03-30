@@ -66,7 +66,7 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::ProximityCriteria &criteria) const
 		{
 			// We may want to allow querying of the arrowed polyline later.
-			return NULL;
+			return d_points->test_proximity(criteria);
 		}
 
 		virtual	
@@ -74,7 +74,7 @@ namespace GPlatesViewOperations
 		test_vertex_proximity(
 				const GPlatesMaths::ProximityCriteria &criteria) const
 		{
-			return NULL;
+			return d_points->test_vertex_proximity(criteria);
 		}
 
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type

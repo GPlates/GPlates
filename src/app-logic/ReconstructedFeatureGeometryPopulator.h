@@ -149,6 +149,11 @@ namespace GPlatesAppLogic
 		// features and handle them slightly differently.
 		bool d_is_flowline_feature;
 
+		// Motion Path features do their own reconstruction in the MotionPathGeometryPopulator; so
+		// we should not reconstruct the seed point here. So we need to look out for motion path
+		// features and handle them slightly differently.
+		bool d_is_motion_path_feature;
+
 		ReconstructLayerTaskParams d_reconstruct_params;
 	};
 }
