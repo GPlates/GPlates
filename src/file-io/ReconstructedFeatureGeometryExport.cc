@@ -30,7 +30,7 @@
 #include "FeatureCollectionFileFormat.h"
 #include "FileFormatNotSupportedException.h"
 #include "ReconstructionGeometryExportImpl.h"
-#include "ShapefileFormatReconstructedFeatureGeometryExport.h"
+#include "OgrFormatReconstructedFeatureGeometryExport.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 
@@ -71,7 +71,7 @@ namespace GPlatesFileIO
 					break;
 
 				case SHAPEFILE:
-					ShapefileFormatReconstructedFeatureGeometryExport::export_geometries(
+					OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
@@ -97,7 +97,15 @@ namespace GPlatesFileIO
 				switch(export_format)
 				{
 				case SHAPEFILE:
-					ShapefileFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
+					OgrFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
+						grouped_recon_geoms_seq,
+						filename,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);
+					break;
+				case OGRGMT:
+					OgrFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
@@ -141,6 +149,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
 		return GMT;
 	case FeatureCollectionFileFormat::SHAPEFILE:
 		return SHAPEFILE;
+	case FeatureCollectionFileFormat::OGRGMT:
+		return OGRGMT;
 	default:
 		break;
 	}

@@ -45,9 +45,11 @@ namespace
 	const QString FILE_FORMAT_EXT_PLATES4_LINE_ALTERNATIVE = "pla";
 	const QString FILE_FORMAT_EXT_PLATES4_ROTATION = "rot";
 	const QString FILE_FORMAT_EXT_SHAPEFILE = "shp";
+	const QString FILE_FORMAT_EXT_OGRGMT = "gmt";
 	const QString FILE_FORMAT_EXT_GMT = "xy";
 	const QString FILE_FORMAT_EXT_GMAP = "vgp";
 	const QString FILE_FORMAT_EXT_GSML = "gsml";
+
 
 
 	bool
@@ -88,9 +90,13 @@ namespace
 			const QFileInfo &file)
 	{
 		return file_name_ends_with(file, FILE_FORMAT_EXT_SHAPEFILE);
+	}
 
-	// RJW: Testing ESRI Geodatabases.
-	//	return file_name_ends_with(file, "mdb");
+	bool
+	is_ogrgmt_format_file(
+			const QFileInfo &file)
+	{
+		return file_name_ends_with(file, FILE_FORMAT_EXT_OGRGMT);
 	}
 
 	bool
@@ -157,6 +163,10 @@ GPlatesFileIO::get_feature_collection_file_format(
 	{
 		return FeatureCollectionFileFormat::SHAPEFILE;
 	}
+	else if (is_ogrgmt_format_file(file_info))
+	{
+		return FeatureCollectionFileFormat::OGRGMT;
+	}
 	else if (is_gmt_format_file(file_info))
 	{
 		return FeatureCollectionFileFormat::GMT;
@@ -196,6 +206,9 @@ GPlatesFileIO::get_filename_extension(
 
 	case FeatureCollectionFileFormat::SHAPEFILE:
 		return FILE_FORMAT_EXT_SHAPEFILE;
+
+	case FeatureCollectionFileFormat::OGRGMT:
+		return FILE_FORMAT_EXT_OGRGMT;
 
 	case FeatureCollectionFileFormat::GMT:
 		return FILE_FORMAT_EXT_GMT;

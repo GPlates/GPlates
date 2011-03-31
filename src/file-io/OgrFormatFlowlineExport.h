@@ -39,7 +39,7 @@ namespace GPlatesAppLogic
 namespace GPlatesFileIO
 {
 
-	namespace ShapefileFormatFlowlineExport
+	namespace OgrFormatFlowlineExport
 	{
 		/**
 		 * Typedef for a feature geometry group of @a ReconstructedFlowline objects.

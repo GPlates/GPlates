@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -45,19 +45,19 @@ namespace GPlatesFileIO
 {
 	class OgrWriter;
 
-	class ShapefileGeometryExporter :
+	class OgrGeometryExporter :
 		public GPlatesMaths::ConstGeometryOnSphereVisitor,
 		public GeometryExporter,
 		private boost::noncopyable
 	{
 	public:
 
-		ShapefileGeometryExporter(
+		OgrGeometryExporter(
 			QString &filename,
 			bool multiple_geometries);
 
 		virtual
-			~ShapefileGeometryExporter();
+			~OgrGeometryExporter();
 
 		virtual
 		void

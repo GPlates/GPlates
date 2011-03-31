@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2011 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -26,8 +26,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_SHAPEFILEWRITER_H
-#define GPLATES_FILEIO_SHAPEFILEWRITER_H
+#ifndef GPLATES_FILEIO_OGRFEATURECOLLECTIONWRITER_H
+#define GPLATES_FILEIO_OGRFEATURECOLLECTIONWRITER_H
 
 #include <iosfwd>
 #include <vector>
@@ -49,8 +49,12 @@
 
 namespace GPlatesFileIO
 {
-
-	class ShapefileWriter :
+	/**
+	 * Visits a feature collection and exports the contents to an OGR format determined
+	 * by the file extension.
+	 *
+	 */
+	class OgrFeatureCollectionWriter :
 		public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
@@ -62,12 +66,12 @@ namespace GPlatesFileIO
 		*        using calls to @a write_feature.
 		*/
 		explicit
-		ShapefileWriter(
+		OgrFeatureCollectionWriter(
 				const FileInfo &file_info,
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref);
 
 		virtual
-			~ShapefileWriter()
+			~OgrFeatureCollectionWriter()
 		{};
 
 	private:

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -58,10 +58,20 @@
 namespace GPlatesFileIO
 {
 
+	/**
+	 * Uses the OGR library to write geometries and attributes to OGR-supported file formats.                                                                    
+	 */
 	class OgrWriter 
 	{
 	public:
 
+		/**
+		 * @a filename: target filename for output.
+		 * @a multiple_layers: whether or not the feature of feature collections to be written contain
+		 * multiple geometry-types. 
+		 *
+		 * Multiple geometry types will be exported to a subfolder of name @a filename (less the file extension).
+		 */
 		OgrWriter(
 			QString filename,
 			bool multiple_layers);
@@ -88,7 +98,7 @@ namespace GPlatesFileIO
 			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary);	
 
 		void
-		write_polyline_feature(
+		write_multi_polyline_feature(
 			const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polyline_on_sphere,
 			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary);	
 
@@ -98,11 +108,20 @@ namespace GPlatesFileIO
 			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary);	
 			
 		void
-		write_polygon_feature(
+		write_multi_polygon_feature(
 			const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygon_on_sphere,
 			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary);				
 
 	private:
+
+		/**
+		 * The OGR driver.  
+		 *
+		 * We have to instantiate a driver of the appropriate type (ESRI shapefile, OGR-GMT etc) before
+		 * we can create output files. 
+		 */
+		OGRSFDriver *d_ogr_driver_ptr;
+
 
 		/**
 		 * Filename used by Ogr library to create a data source.
@@ -112,15 +131,24 @@ namespace GPlatesFileIO
 		/**
 		 * Filename stripped of any extension for use in naming layers. 
 		 */
-		QString d_root_filename;
+		QString d_layer_basename;
+
+		/**
+		 * File extension                                                                    
+		 */
+		QString d_extension;
+
+		/**
+		 *  True if the feature-collection/feature contains more than one geometry type.                                                                    
+		 */
+		bool d_multiple_geometry_types;
 
 		OGRDataSource *d_ogr_data_source_ptr;
 
-		/**
-		 * True if we know we need to create multiple layers, each layer holding different geometry types. 
-		 * We need this to know what sort of string to pass during creation of the OGRDataSource.
-		 */
-		bool d_multiple_layers;
+		// Data source for each of the geometry types. 
+		OGRDataSource *d_ogr_point_data_source_ptr;
+		OGRDataSource *d_ogr_line_data_source_ptr;
+		OGRDataSource *d_ogr_polygon_data_source_ptr;
 
 		/**
 		 * Pointers to the geometry layers. Not all geometry layers will be required, hence they're

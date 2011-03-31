@@ -52,7 +52,9 @@ namespace GPlatesFileIO
 
 			GMT,               //!< '.xy' extension.
 			
-			SHAPEFILE          //!< '.shp' extension.
+			SHAPEFILE,         //!< '.shp' extension.
+
+			OGRGMT			   //!< '.gmt' extension.
 		};
 
 

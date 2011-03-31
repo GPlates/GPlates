@@ -6,7 +6,7 @@
  * $Date: $
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 #include "FeatureCollectionFileFormat.h"
 #include "FileFormatNotSupportedException.h"
 #include "ReconstructionGeometryExportImpl.h"
-#include "ShapefileFormatMotionPathExport.h"
+#include "OgrFormatMotionPathExport.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 
@@ -71,13 +71,15 @@ namespace GPlatesFileIO
 					break;
 
 				case SHAPEFILE:
-					ShapefileFormatMotionPathExport::export_motion_paths(
+				case OGRGMT:
+					OgrFormatMotionPathExport::export_motion_paths(
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);		
 					break;
+
 
 				default:
 					throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
@@ -97,7 +99,8 @@ namespace GPlatesFileIO
 				switch(export_format)
 				{
 				case SHAPEFILE:
-					ShapefileFormatMotionPathExport::export_motion_paths(
+				case OGRGMT:
+					OgrFormatMotionPathExport::export_motion_paths(
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
@@ -141,6 +144,8 @@ GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(
 		return GMT;
 	case FeatureCollectionFileFormat::SHAPEFILE:
 		return SHAPEFILE;
+	case FeatureCollectionFileFormat::OGRGMT:
+		return OGRGMT;
 	default:
 		break;
 	}

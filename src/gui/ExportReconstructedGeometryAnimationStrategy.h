@@ -6,7 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -75,7 +75,8 @@ namespace GPlatesGui
 			enum FileFormat
 			{
 				SHAPEFILE,
-				GMT
+				GMT,
+				OGRGMT
 			};
 
 			explicit

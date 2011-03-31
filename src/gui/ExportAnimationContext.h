@@ -159,6 +159,8 @@ namespace GPlatesGui
 		update_status_message(
 				const QString &message);
 
+// The following enumeration seems to be obsolete. 
+#if 0
 		enum EXPORT_ITEMS
 		{
 			RECONSTRUCTED_GEOMETRIES_GMT,
@@ -168,6 +170,7 @@ namespace GPlatesGui
 			RESOLVED_TOPOLOGIES_GMT,
 			INVALID=999
 		};
+#endif
 
 	private:
 		//! Typedef to map export ID to an @a ExportAnimationStrategy.

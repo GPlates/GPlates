@@ -39,7 +39,7 @@
 #include "PlatesRotationFormatReader.h"
 #include "PlatesRotationFormatWriter.h"
 #include "ShapefileReader.h"
-#include "ShapefileWriter.h"
+#include "OgrFeatureCollectionWriter.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -112,7 +112,11 @@ namespace
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-				new GPlatesFileIO::ShapefileWriter(file_info, feature_collection));
+				new GPlatesFileIO::OgrFeatureCollectionWriter(file_info, feature_collection));
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::OGRGMT:
+			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
+				new GPlatesFileIO::OgrFeatureCollectionWriter(file_info, feature_collection));
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
 		default:

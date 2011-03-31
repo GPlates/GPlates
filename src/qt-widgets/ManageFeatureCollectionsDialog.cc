@@ -84,6 +84,7 @@ namespace
 		static const QString format_line(QObject::tr("PLATES4 line"));
 		static const QString format_rotation(QObject::tr("PLATES4 rotation"));
 		static const QString format_shapefile(QObject::tr("ESRI shapefile"));
+		static const QString format_ogrgmt(QObject::tr("OGR GMT"));
 		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
 		static const QString format_gpmlz(QObject::tr("Compressed GPML"));
 		static const QString format_gmt(QObject::tr("GMT xy"));
@@ -100,6 +101,9 @@ namespace
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 			return format_shapefile;
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::OGRGMT:
+			return format_ogrgmt;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
 			return format_gpml;

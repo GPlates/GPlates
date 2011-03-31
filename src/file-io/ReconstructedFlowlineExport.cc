@@ -6,7 +6,7 @@
  * $Date: $
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 #include "FeatureCollectionFileFormat.h"
 #include "FileFormatNotSupportedException.h"
 #include "ReconstructionGeometryExportImpl.h"
-#include "ShapefileFormatFlowlineExport.h"
+#include "OgrFormatFlowlineExport.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 
@@ -71,7 +71,8 @@ namespace GPlatesFileIO
 					break;
 
 				case SHAPEFILE:
-					ShapefileFormatFlowlineExport::export_flowlines(
+				case OGRGMT:
+					OgrFormatFlowlineExport::export_flowlines(
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
@@ -97,7 +98,8 @@ namespace GPlatesFileIO
 				switch(export_format)
 				{
 				case SHAPEFILE:
-					ShapefileFormatFlowlineExport::export_flowlines(
+				case OGRGMT:
+					OgrFormatFlowlineExport::export_flowlines(
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
@@ -141,6 +143,8 @@ GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(
 		return GMT;
 	case FeatureCollectionFileFormat::SHAPEFILE:
 		return SHAPEFILE;
+	case FeatureCollectionFileFormat::OGRGMT:
+		return OGRGMT;
 	default:
 		break;
 	}

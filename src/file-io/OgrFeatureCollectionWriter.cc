@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009, 2010 Geological Survey of Norway
+ * Copyright (C) 2009, 2010, 2011 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -68,11 +68,29 @@
 #include "utils/UnicodeStringUtils.h"
 
 #include "OgrWriter.h"
-#include "ShapefileWriter.h"
+#include "OgrFeatureCollectionWriter.h"
 
 
 namespace
 {
+	bool
+	is_shapefile_format(
+		const QFileInfo &qfileinfo)
+	{
+		QString suffix = qfileinfo.suffix();
+		suffix = suffix.toLower();
+		return (suffix == "shp");
+	}
+
+	bool
+	is_ogrgmt_format(
+		const QFileInfo &qfileinfo)
+	{
+		QString suffix = qfileinfo.suffix();
+		suffix = suffix.toLower();
+		return (suffix == "gmt");
+	}
+
 	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator 
 	find_element_by_key(
 		const QString &key,
@@ -1161,7 +1179,19 @@ namespace
 		const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polyline_geometries,
 		const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 	{
-		ogr_writer->write_polyline_feature(polyline_geometries,key_value_dictionary);	
+		if (polyline_geometries.empty())
+		{
+			return;
+		}
+		if (polyline_geometries.size() > 1)
+		{
+			ogr_writer->write_multi_polyline_feature(polyline_geometries,key_value_dictionary);	
+		}
+		else
+		{
+			ogr_writer->write_polyline_feature(polyline_geometries.front(),key_value_dictionary);
+		}
+
 	}
 
 	void
@@ -1170,11 +1200,23 @@ namespace
 		const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygon_geometries,
 		const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 	{
-		ogr_writer->write_polygon_feature(polygon_geometries,key_value_dictionary);
+		if (polygon_geometries.empty())
+		{
+			return;
+		}
+		if (polygon_geometries.size() > 1)
+		{
+			ogr_writer->write_multi_polygon_feature(polygon_geometries,key_value_dictionary);
+		}
+		else
+		{
+			ogr_writer->write_polygon_feature(polygon_geometries.front(),key_value_dictionary);
+		}
+
 	}
 }
 
-GPlatesFileIO::ShapefileWriter::ShapefileWriter(
+GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	const FileInfo &file_info,
 	const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref)
 {
@@ -1247,23 +1289,30 @@ GPlatesFileIO::ShapefileWriter::ShapefileWriter(
 			d_model_to_shapefile_map);
 	}
 
-	// Export the newly created map as an shp.gplates.xml file.
-	QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(file_info.get_qfileinfo());
+	// Question: should we export something like this (i.e. the following shp.gplates.xml file) 
+	// for ogr-gmt (and other ogr) file formats?
 
-	// FIXME: If we have multiple layers, then we will have multiple shapefiles, but only one xml mapping file.
-	// We should change this so that we have a separate (and appropriately named) xml mapping file for each shapefile. 
-	//
-	// Not exporting an individual mapping file for each layer isn't a disaster - it just means the user
-	// will have to go through the mapping dialog the next time they load any of the newly created files.
-	ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,
-		file_info.get_model_to_shapefile_map());
+	if (is_shapefile_format(file_info.get_qfileinfo()))
+	{
+		// Export the newly created map as an shp.gplates.xml file.
+		QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(file_info.get_qfileinfo());
+
+		// FIXME: If we have multiple layers, then we will have multiple shapefiles, but only one xml mapping file.
+		// We should change this so that we have a separate (and appropriately named) xml mapping file for each shapefile. 
+		//
+		// Not exporting an individual mapping file for each layer isn't a disaster - it just means the user
+		// will have to go through the mapping dialog the next time they load any of the newly created files.
+		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,
+			file_info.get_model_to_shapefile_map());
+	}
+
 
 
 }
 
 
 bool
-GPlatesFileIO::ShapefileWriter::initialise_pre_feature_properties(
+GPlatesFileIO::OgrFeatureCollectionWriter::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	if (!d_ogr_writer)
@@ -1280,7 +1329,7 @@ GPlatesFileIO::ShapefileWriter::initialise_pre_feature_properties(
 
 
 void
-GPlatesFileIO::ShapefileWriter::finalise_post_feature_properties(
+GPlatesFileIO::OgrFeatureCollectionWriter::finalise_post_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	if (!d_key_value_dictionary)
@@ -1361,35 +1410,35 @@ GPlatesFileIO::ShapefileWriter::finalise_post_feature_properties(
 
 
 void
-GPlatesFileIO::ShapefileWriter::visit_gml_point(
+GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_point(
 	const GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	d_point_geometries.push_back(gml_point.point());
 }
 
 void
-GPlatesFileIO::ShapefileWriter::visit_gml_multi_point(
+GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_multi_point(
 	const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	d_multi_point_geometries.push_back(gml_multi_point.multipoint());
 }
 
 void
-GPlatesFileIO::ShapefileWriter::visit_gml_line_string(
+GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_line_string(
 	const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	d_polyline_geometries.push_back(gml_line_string.polyline());
 }
 
 void
-GPlatesFileIO::ShapefileWriter::visit_gml_orientable_curve(
+GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_orientable_curve(
 	const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
 
 void
-GPlatesFileIO::ShapefileWriter::visit_gml_polygon(
+GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_polygon(
 	const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	// FIXME: Do something about interior rings....
@@ -1397,14 +1446,14 @@ GPlatesFileIO::ShapefileWriter::visit_gml_polygon(
 }
 
 void
-GPlatesFileIO::ShapefileWriter::visit_gpml_constant_value(
+GPlatesFileIO::OgrFeatureCollectionWriter::visit_gpml_constant_value(
 	const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 void
-GPlatesFileIO::ShapefileWriter::visit_gpml_key_value_dictionary(
+GPlatesFileIO::OgrFeatureCollectionWriter::visit_gpml_key_value_dictionary(
 	const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
 {
 	if (d_key_value_dictionary)
@@ -1422,7 +1471,7 @@ GPlatesFileIO::ShapefileWriter::visit_gpml_key_value_dictionary(
 }
 
 void
-GPlatesFileIO::ShapefileWriter::clear_accumulators()
+GPlatesFileIO::OgrFeatureCollectionWriter::clear_accumulators()
 {
 	d_point_geometries.clear();
 	d_multi_point_geometries.clear();

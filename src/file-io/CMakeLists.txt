@@ -93,6 +93,18 @@ set(srcs
     MipmappedRasterFormatReader.h
     MipmappedRasterFormatWriter.h
     OgrException.h
+    OgrFeatureCollectionWriter.cc
+    OgrFeatureCollectionWriter.h
+    OgrFormatFlowlineExport.cc
+    OgrFormatFlowlineExport.h
+    OgrFormatMotionPathExport.cc
+    OgrFormatMotionPathExport.h
+    OgrFormatReconstructedFeatureGeometryExport.cc
+    OgrFormatReconstructedFeatureGeometryExport.h    
+    OgrFormatResolvedTopologicalBoundaryExport.cc
+    OgrFormatResolvedTopologicalBoundaryExport.h
+    OgrGeometryExporter.cc
+    OgrGeometryExporter.h
     OgrWriter.cc
     OgrWriter.h
     PlatesFormatUtils.cc
@@ -136,22 +148,12 @@ set(srcs
     ResolvedTopologicalBoundaryExportImpl.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
-    ShapefileFormatFlowlineExport.cc
-    ShapefileFormatFlowlineExport.h
-    ShapefileFormatMotionPathExport.cc
-    ShapefileFormatMotionPathExport.h
-    ShapefileFormatReconstructedFeatureGeometryExport.cc
-    ShapefileFormatReconstructedFeatureGeometryExport.h
-    ShapefileFormatResolvedTopologicalBoundaryExport.cc
-    ShapefileFormatResolvedTopologicalBoundaryExport.h
-    ShapefileGeometryExporter.cc
-    ShapefileGeometryExporter.h
+
+
     ShapefileReader.cc
     ShapefileReader.h
     ShapefileUtils.cc
     ShapefileUtils.h
-    ShapefileWriter.cc
-    ShapefileWriter.h
     ShapefileXmlReader.cc
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc

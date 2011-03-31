@@ -49,6 +49,7 @@ namespace GPlatesFileIO
 			PLATES4_LINE,      //!< '.dat' or '.pla' extension.
 			PLATES4_ROTATION,  //!< '.rot' extension.
 			SHAPEFILE,         //!< '.shp' extension.
+			OGRGMT,			   //!< '.gmt' extension.
 			GMT,               //!< '.xy' extension.
 			GMAP,              //!< '.vgp' extension.
 			GSML               //!< '.gsml' extension.

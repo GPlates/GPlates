@@ -43,9 +43,9 @@
 #include "property-values/GpmlConstantValue.h"
 
 #include "OgrWriter.h"
-#include "ShapefileGeometryExporter.h"
+#include "OgrGeometryExporter.h"
 
-GPlatesFileIO::ShapefileGeometryExporter::ShapefileGeometryExporter(
+GPlatesFileIO::OgrGeometryExporter::OgrGeometryExporter(
 	QString &filename,
 	bool multiple_geometries):
 	d_filename(filename),
@@ -61,7 +61,7 @@ GPlatesFileIO::ShapefileGeometryExporter::ShapefileGeometryExporter(
 	}
 }
 
-GPlatesFileIO::ShapefileGeometryExporter::~ShapefileGeometryExporter()
+GPlatesFileIO::OgrGeometryExporter::~OgrGeometryExporter()
 {
 	if (d_ogr_writer)
 	{
@@ -70,7 +70,7 @@ GPlatesFileIO::ShapefileGeometryExporter::~ShapefileGeometryExporter()
 }
 
 void
-GPlatesFileIO::ShapefileGeometryExporter::visit_multi_point_on_sphere(
+GPlatesFileIO::OgrGeometryExporter::visit_multi_point_on_sphere(
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 {
 	if (!d_ogr_writer)
@@ -89,7 +89,7 @@ GPlatesFileIO::ShapefileGeometryExporter::visit_multi_point_on_sphere(
 }
 
 void
-GPlatesFileIO::ShapefileGeometryExporter::visit_point_on_sphere(
+GPlatesFileIO::OgrGeometryExporter::visit_point_on_sphere(
 	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
 	if (!d_ogr_writer)
@@ -108,7 +108,7 @@ GPlatesFileIO::ShapefileGeometryExporter::visit_point_on_sphere(
 }
 
 void
-GPlatesFileIO::ShapefileGeometryExporter::visit_polygon_on_sphere(
+GPlatesFileIO::OgrGeometryExporter::visit_polygon_on_sphere(
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
 	if (!d_ogr_writer)
@@ -128,7 +128,7 @@ GPlatesFileIO::ShapefileGeometryExporter::visit_polygon_on_sphere(
 
 
 void
-GPlatesFileIO::ShapefileGeometryExporter::visit_polyline_on_sphere(
+GPlatesFileIO::OgrGeometryExporter::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {
 	if (!d_ogr_writer)
@@ -146,7 +146,7 @@ GPlatesFileIO::ShapefileGeometryExporter::visit_polyline_on_sphere(
 }
 
 void
-GPlatesFileIO::ShapefileGeometryExporter::export_geometry(
+GPlatesFileIO::OgrGeometryExporter::export_geometry(
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr)
 {
 	d_key_value_dictionary.reset();
@@ -154,7 +154,7 @@ GPlatesFileIO::ShapefileGeometryExporter::export_geometry(
 }
 
 void
-GPlatesFileIO::ShapefileGeometryExporter::export_geometry(
+GPlatesFileIO::OgrGeometryExporter::export_geometry(
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type key_value_dictionary)
 {

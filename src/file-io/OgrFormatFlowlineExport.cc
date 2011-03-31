@@ -29,8 +29,8 @@
 
 #include "File.h"
 #include "FileInfo.h"
-#include "ShapefileFormatFlowlineExport.h"
-#include "ShapefileGeometryExporter.h"
+#include "OgrFormatFlowlineExport.h"
+#include "OgrGeometryExporter.h"
 
 #include "app-logic/FlowlineUtils.h"
 #include "app-logic/ReconstructedFlowline.h"
@@ -46,7 +46,7 @@
 namespace
 {
 	//! Typedef for a sequence of referenced files.
-	typedef GPlatesFileIO::ShapefileFormatFlowlineExport::referenced_files_collection_type
+	typedef GPlatesFileIO::OgrFormatFlowlineExport::referenced_files_collection_type
 			referenced_files_collection_type;
 
 	//! Convenience typedef for a sequence of @a ReconstructedFlowline objects.
@@ -180,7 +180,7 @@ namespace
 			QString file_string("FILE");
 
 			int file_count = 1;
-			GPlatesFileIO::ShapefileFormatFlowlineExport::referenced_files_collection_type::const_iterator file_iter;
+			GPlatesFileIO::OgrFormatFlowlineExport::referenced_files_collection_type::const_iterator file_iter;
 			for (file_iter = referenced_files.begin();
 				file_iter != referenced_files.end();
 				++file_iter, ++file_count)
@@ -218,7 +218,7 @@ namespace
 
 
 void
-GPlatesFileIO::ShapefileFormatFlowlineExport::export_flowlines(
+GPlatesFileIO::OgrFormatFlowlineExport::export_flowlines(
 		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
@@ -228,7 +228,7 @@ GPlatesFileIO::ShapefileFormatFlowlineExport::export_flowlines(
 {
 
 	QString file_path = file_info.filePath();
-	ShapefileGeometryExporter exporter(file_path,false /* single geometry types */);
+	OgrGeometryExporter exporter(file_path,false /* single geometry types */);
 
 	std::list<feature_geometry_group_type>::const_iterator 
 		iter = feature_geometry_group_seq.begin(),

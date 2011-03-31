@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILE_IO_SHAPEFILEFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
-#define GPLATES_FILE_IO_SHAPEFILEFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#ifndef GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#define GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
 
 #include <QFileInfo>
 
@@ -41,7 +41,7 @@ namespace GPlatesAppLogic
 
 namespace GPlatesFileIO
 {
-	namespace ShapefileFormatResolvedTopologicalBoundaryExport
+	namespace OgrFormatResolvedTopologicalBoundaryExport
 	{
 		/**
 		 * Typedef for a sequence of referenced files.
@@ -85,4 +85,4 @@ namespace GPlatesFileIO
 	}
 }
 
-#endif // GPLATES_FILE_IO_SHAPEFILEFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#endif // GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
