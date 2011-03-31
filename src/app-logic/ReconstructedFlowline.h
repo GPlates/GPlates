@@ -179,7 +179,7 @@ namespace GPlatesAppLogic
 		ReconstructedFlowline(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const seed_point_geom_ptr_type &present_day_seed_point,
-				const feature_geom_ptr_type &feature_geometry,
+				const feature_geom_ptr_type &feature_geometry_ptr,
 				const flowline_geom_ptr_type &left_flowline_points_,
 				const flowline_geom_ptr_type &right_flowline_points_,
 				const GPlatesModel::integer_plate_id_type &left_plate_id_,
@@ -188,13 +188,13 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator):
 			ReconstructedFeatureGeometry(
 				reconstruction_tree_,
-				feature_geometry,
+				feature_geometry_ptr,
 				feature_handle,
 				property_iterator,
 				boost::none,
 				boost::none),
+			d_feature_geometry(feature_geometry_ptr),
 			d_present_day_seed_point(present_day_seed_point),
-			d_feature_geometry(feature_geometry),
 			d_left_flowline_points(left_flowline_points_),
 			d_right_flowline_points(right_flowline_points_),
 			d_left_plate_id(left_plate_id_),

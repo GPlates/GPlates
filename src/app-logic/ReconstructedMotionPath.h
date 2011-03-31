@@ -170,20 +170,20 @@ namespace GPlatesAppLogic
 		ReconstructedMotionPath(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const seed_point_geom_ptr_type &present_day_seed_point,
-				const feature_geom_ptr_type &feature_geometry,
+				const feature_geom_ptr_type &feature_geometry_ptr,
 				const motion_path_geom_ptr_type &motion_path_points_,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id_,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator):
 			ReconstructedFeatureGeometry(
 				reconstruction_tree_,
-				feature_geometry,
+				feature_geometry_ptr,
 				feature_handle,
 				property_iterator,
 				reconstruction_plate_id_,
 				boost::none),
+			d_feature_geometry(feature_geometry_ptr),
 			d_present_day_seed_point(present_day_seed_point),
-			d_feature_geometry(feature_geometry),
 			d_motion_path_points(motion_path_points_),
 			d_reconstruction_plate_id(reconstruction_plate_id_)
 		{  }
