@@ -186,7 +186,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 			{
 				static const GPlatesModel::PropertyName property_name =
-					GPlatesModel::PropertyName::create_gml("subductionZoneAge");
+					GPlatesModel::PropertyName::create_gpml("subductionZoneAge");
 				const GPlatesPropertyValues::XsDouble *property_value = NULL;
 
 				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
@@ -194,8 +194,9 @@ namespace GPlatesFileIO
 					return false;
 				}
 				double d = property_value->value();
-				QString d_as_str( GPlatesUtils::formatted_double_to_string(d, 3, 1).c_str() );
-				age = d_as_str;
+				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
+				QString qs( s.c_str() );
+				age = qs;
 				return true;
 			}
 
@@ -209,7 +210,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 			{
 				static const GPlatesModel::PropertyName property_name =
-					GPlatesModel::PropertyName::create_gml("subductionZoneDeepDip");
+					GPlatesModel::PropertyName::create_gpml("subductionZoneDeepDip");
 				const GPlatesPropertyValues::XsDouble *property_value = NULL;
 
 				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
@@ -217,8 +218,9 @@ namespace GPlatesFileIO
 					return false;
 				}
 				double d = property_value->value();
-				QString d_as_str( GPlatesUtils::formatted_double_to_string(d, 3, 1).c_str() );
-				dip = d_as_str;
+				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
+				QString qs( s.c_str() );
+				dip = qs;
 				return true;
 			}
 
@@ -235,7 +237,7 @@ namespace GPlatesFileIO
 				// to help generate the header line. If that property doesn't exist
 				// then use the geographic description in the old plates header instead.
 				static const GPlatesModel::PropertyName property_name =
-					GPlatesModel::PropertyName::create_gml("subductionZoneDepth");
+					GPlatesModel::PropertyName::create_gpml("subductionZoneDepth");
 				const GPlatesPropertyValues::XsDouble *property_value = NULL;
 
 				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
@@ -260,7 +262,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 			{
 				static const GPlatesModel::PropertyName property_name =
-					GPlatesModel::PropertyName::create_gml("slabFlatLying");
+					GPlatesModel::PropertyName::create_gpml("slabFlatLying");
 				const GPlatesPropertyValues::XsBoolean *property_value = NULL;
 
 				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
@@ -281,7 +283,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 			{
 				static const GPlatesModel::PropertyName property_name =
-					GPlatesModel::PropertyName::create_gml("slabFlatLyingDepth");
+					GPlatesModel::PropertyName::create_gpml("slabFlatLyingDepth");
 				const GPlatesPropertyValues::XsDouble *property_value = NULL;
 
 				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
@@ -289,8 +291,9 @@ namespace GPlatesFileIO
 					return false;
 				}
 				double d = property_value->value();
-				QString d_as_str( GPlatesUtils::formatted_double_to_string(d, 3, 1).c_str() );
-				value = d_as_str;
+				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
+				QString qs( s.c_str() );
+				value = qs;
 				return true;
 			}
 
@@ -458,6 +461,8 @@ namespace GPlatesFileIO
 					{
 						feature_name = unk;
 					}
+
+					//qDebug() << "PlatePolygonSubSegmentHeader: name =" << feature_name;
 
 					// Get a two-letter PLATES data type code from the subsegment type 
 					// const QString feature_type_code = get_feature_type_code_2chars( sub_segment_type );
@@ -690,6 +695,8 @@ namespace GPlatesFileIO
 					{
 						feature_name = unk;
 					}
+
+					//qDebug() << "SlabPolygonSubSegmentHeader: name =" << feature_name;
 
 					// Get a two-letter PLATES data type code from the subsegment type 
 					// const QString feature_type_code = get_feature_type_code_2chars( sub_segment_type );
