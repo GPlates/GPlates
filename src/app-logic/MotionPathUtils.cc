@@ -197,3 +197,5 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::can_process_seed_poi
 {
 	return (d_feature_is_defined_at_recon_time && d_has_geometry);
 }
+
+
