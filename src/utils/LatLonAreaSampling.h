@@ -44,6 +44,8 @@
 #include "maths/UnitVector3D.h"
 #include "maths/types.h"
 
+#include "utils/IntrusiveSinglyLinkedList.h"
+#include "utils/ObjectPool.h"
 //#include "utils/Profile.h"
 
 
@@ -128,192 +130,10 @@ namespace GPlatesUtils
 
 
 		/**
-		 * Stores @a Type objects at a fixed memory address to avoid invalidating pointers to them.
-		 * Then we can use in linked lists.
-		 * Also reduces memory allocation overhead since potentially tens of thousands of
-		 * @a ElementEntry instances can be created.
-		 * Objects are destroyed together when @a Storage instance is destroyed.
-		 */
-		template <typename Type>
-		class Storage
-		{
-		public:
-			Storage()
-			{
-				create_new_chunk();
-			}
-
-			void
-			clear()
-			{
-				// Destroy all ElementEntry objects and releases chunk memory.
-				d_chunk_seq.clear();
-				create_new_chunk();
-			}
-
-			/**
-			 * Copies @a object to a fixed memory address and returns pointer to it.
-			 */
-			Type *
-			store(
-					const Type &object)
-			{
-				Chunk &chunk = d_chunk_seq.front();
-				chunk.d_seq.push_back(object);
-
-				Type *stored_object = &chunk.d_seq.back();
-
-				if (boost::numeric_cast<int>(chunk.d_seq.size()) == NUM_OBJECTS_PER_CHUNK)
-				{
-					create_new_chunk();
-				}
-
-				return stored_object;
-			}
-
-		private:
-			static const int NUM_OBJECTS_PER_CHUNK = 100;
-
-			struct Chunk
-			{
-				typedef std::vector<Type> seq_type;
-				seq_type d_seq;
-			};
-
-			typedef std::list<Chunk> chunk_seq_type;
-			chunk_seq_type d_chunk_seq;
-
-
-			void
-			create_new_chunk()
-			{
-				d_chunk_seq.push_front(Chunk());
-				d_chunk_seq.front().d_seq.reserve(NUM_OBJECTS_PER_CHUNK);
-			}
-		};
-
-
-		/**
-		 * Singly-linked list class of @a NodeType objects.
-		 * NOTE: template parameter NodeType must inherit publicly from List<NodeType>::Node.
-		 * NOTE: When NodeType is in more than one list (and hence needs to inherit from Node
-		 * more than once) use different types for NodeTag to distinguish which Node
-		 * is used by which List.
-		 */
-		template <class NodeType, class NodeTag = void>
-		class List
-		{
-		public:
-			//! Template parameter NodeType must inherit publicly from this class.
-			class Node
-			{
-			public:
-				Node() :
-					d_next_node(NULL)
-				{  }
-
-				NodeType *
-				get_next_node() const
-				{
-					return d_next_node;
-				}
-
-			private:
-				friend class List<NodeType,NodeTag>;
-
-				NodeType *d_next_node;
-			};
-
-			//! Iterator over list.
-			class Iterator :
-					public std::iterator<std::forward_iterator_tag, NodeType>,
-					public boost::forward_iteratable<Iterator, NodeType *>
-			{
-			public:
-				Iterator(
-						NodeType *node = NULL) :
-					d_node(node)
-				{  }
-
-				//! 'operator->()' provided by base class boost::forward_iteratable.
-				NodeType &
-				operator*() const
-				{
-					return *d_node;
-				}
-
-				//! Post-increment operator provided by base class boost::forward_iteratable.
-				Iterator &
-				operator++()
-				{
-					// Use "List<NodeType,NodeTag>::Node::" to pick the correct
-					// base class in case NodeType inherits from more than once
-					// Node bass class (ie, is in more than one list).
-					d_node = d_node->List<NodeType,NodeTag>::Node::get_next_node();
-					return *this;
-				}
-
-				//! Inequality operator provided by base class boost::forward_iteratable.
-				friend
-				bool
-				operator==(
-						const Iterator &lhs,
-						const Iterator &rhs)
-				{
-					return lhs.d_node == rhs.d_node;
-				}
-
-			private:
-				NodeType *d_node;
-			};
-
-			//! Typedef for iterator.
-			typedef Iterator iterator;
-
-
-			List() :
-				d_list(NULL)
-			{  }
-
-			void
-			clear()
-			{
-				d_list = NULL;
-			}
-
-			void
-			push_front(
-					NodeType *node)
-			{
-				// Use "List<NodeType,NodeTag>::Node::" to pick the correct
-				// base class in case NodeType inherits from more than once
-				// Node bass class (ie, is in more than one list).
-				node->List<NodeType,NodeTag>::Node::d_next_node = d_list;
-				d_list = node;
-			}
-
-			iterator
-			begin()
-			{
-				return Iterator(d_list);
-			}
-
-			iterator
-			end()
-			{
-				return Iterator(NULL);
-			}
-
-		private:
-			NodeType *d_list;
-		};
-
-
-		/**
 		 * Keeps element together with its location on the sphere.
 		 */
 		class ElementEntry :
-				public List<ElementEntry>::Node
+				public GPlatesUtils::IntrusiveSinglyLinkedList<ElementEntry>::Node
 		{
 		public:
 			ElementEntry(
@@ -359,8 +179,8 @@ namespace GPlatesUtils
 		 * centre is called the sample element.
 		 */
 		class SampleBin :
-				public List<SampleBin, LongitudeLookupFullListTag>::Node,
-				public List<SampleBin, LongitudeLookupInnerListTag>::Node
+				public GPlatesUtils::IntrusiveSinglyLinkedList<SampleBin, LongitudeLookupFullListTag>::Node,
+				public GPlatesUtils::IntrusiveSinglyLinkedList<SampleBin, LongitudeLookupInnerListTag>::Node
 		{
 		public:
 			SampleBin(
@@ -457,7 +277,7 @@ namespace GPlatesUtils
 			initialise(
 					const double &latitude_centre,
 					const double &longitude_spacing,
-					Storage<SampleBin> *sample_bin_storage)
+					GPlatesUtils::ObjectPool<SampleBin> *sample_bin_storage)
 			{
 				d_sample_bin_storage = sample_bin_storage;
 				d_latitude_centre = latitude_centre;
@@ -607,7 +427,8 @@ namespace GPlatesUtils
 
 			private:
 				typedef boost::uint32_t inner_list_info_type;
-				typedef List<SampleBin, LongitudeLookupInnerListTag> inner_list_type;
+				typedef GPlatesUtils::IntrusiveSinglyLinkedList<SampleBin, LongitudeLookupInnerListTag>
+						inner_list_type;
 
 				// sizeof(OuterBin) has been optimised to 8 bytes on 32-bit systems.
 				inner_list_info_type d_inner_list_info;
@@ -623,11 +444,12 @@ namespace GPlatesUtils
 
 			typedef std::vector<OuterBin> sample_bin_low_memory_lookup_type;
 			typedef std::vector<SampleBin *> sample_bin_high_speed_lookup_type;
-			typedef List<SampleBin, LongitudeLookupFullListTag> sample_bin_full_list_type;
+			typedef GPlatesUtils::IntrusiveSinglyLinkedList<SampleBin, LongitudeLookupFullListTag>
+					sample_bin_full_list_type;
 
 			static const unsigned int MAX_SAMPLE_BINS_FOR_HIGH_SPEED_LOOKUP = 500;
 
-			Storage<SampleBin> *d_sample_bin_storage;
+			GPlatesUtils::ObjectPool<SampleBin> *d_sample_bin_storage;
 
 			bool d_use_high_speed_lookup;
 			sample_bin_high_speed_lookup_type d_sample_bin_high_speed_lookup;
@@ -703,7 +525,7 @@ namespace GPlatesUtils
 				}
 
 				// Store sample bin so we have a fixed address that we can point to.
-				SampleBin *const new_sample_bin = d_sample_bin_storage->store(
+				SampleBin *const new_sample_bin = d_sample_bin_storage->add(
 						SampleBin(GPlatesMaths::LatLonPoint(d_latitude_centre, longitude_centre)));
 
 				// Add to the list of all SampleBins we own.
@@ -799,7 +621,7 @@ namespace GPlatesUtils
 			//! Typedef for sequence of @a LongitudeLookup objects (each at constant latitude).
 			typedef std::vector<LongitudeLookup> longitude_lookup_sequence_type;
 
-			Storage<SampleBin> d_sample_bin_storage;
+			GPlatesUtils::ObjectPool<SampleBin> d_sample_bin_storage;
 
 			double d_inverse_latitude_spacing;
 			longitude_lookup_sequence_type d_northern_longitude_lookups;
@@ -878,11 +700,11 @@ namespace GPlatesUtils
 		};
 
 
-		Storage<ElementEntry> d_element_entry_storage;
+		GPlatesUtils::ObjectPool<ElementEntry> d_element_entry_storage;
 
 		LatitudeLookup d_latitude_lookup;
 		sample_element_seq_type d_sample_element_seq;
-		List<ElementEntry> d_element_list;
+		GPlatesUtils::IntrusiveSinglyLinkedList<ElementEntry> d_element_list;
 	};
 
 
@@ -912,9 +734,11 @@ namespace GPlatesUtils
 		//PROFILE_BLOCK("re-add elements");
 
 		// Iterate through all our current elements.
-		typename List<ElementEntry>::iterator element_entry_iter;
-		const typename List<ElementEntry>::iterator element_entry_begin = d_element_list.begin();
-		const typename List<ElementEntry>::iterator element_entry_end = d_element_list.end();
+		typename GPlatesUtils::IntrusiveSinglyLinkedList<ElementEntry>::iterator element_entry_iter;
+		const typename GPlatesUtils::IntrusiveSinglyLinkedList<ElementEntry>::iterator element_entry_begin =
+				d_element_list.begin();
+		const typename GPlatesUtils::IntrusiveSinglyLinkedList<ElementEntry>::iterator element_entry_end =
+				d_element_list.end();
 		for (element_entry_iter = element_entry_begin;
 			element_entry_iter != element_entry_end;
 			++element_entry_iter)
@@ -973,7 +797,7 @@ namespace GPlatesUtils
 				[lat_lon_location.longitude()];
 
 		// Create a new entry - memory is owned by 'd_element_entry_storage'.
-		ElementEntry *element_entry = d_element_entry_storage.store(
+		ElementEntry *element_entry = d_element_entry_storage.add(
 				ElementEntry(element, lat_lon_location, point_on_sphere_location));
 
 		// Add new entry to the sample bin and replace/append the sequence of

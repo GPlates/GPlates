@@ -30,12 +30,14 @@ set(srcs
     GeometryCreationUtils.h
     IdStringSet.cc
     IdStringSet.h
+    IntrusiveSinglyLinkedList.h
     LatLonAreaSampling.h
     Mapper.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
+    ObjectPool.h
     OverloadResolution.h
     Parse.h
     Profile.cc

@@ -31,7 +31,6 @@ DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/operators.hpp>
-#include <boost/pool/object_pool.hpp>
 #include <boost/bind.hpp>
 POP_MSVC_WARNINGS
 
@@ -50,8 +49,11 @@ POP_MSVC_WARNINGS
 
 #include "Profile.h"
 
+#include "ObjectPool.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+
 
 namespace
 {
@@ -179,7 +181,7 @@ namespace
 		/**
 		 * Typedef for pool allocator used to allocate @a ProfileLink objects.
 		 */
-		typedef boost::object_pool<ProfileLink> profile_link_pool_type;
+		typedef GPlatesUtils::ObjectPool<ProfileLink> profile_link_pool_type;
 
 		/**
 		 * Shared pointer to @a ProfileLink object.
@@ -263,16 +265,12 @@ namespace
 			ProfileNode *parent,
 			ProfileNode *child)
 	{
-		ProfileLink *link_mem = s_profile_link_pool.malloc();
-		if (link_mem == NULL)
-		{
-			throw std::bad_alloc();
-		}
+		ProfileLink *new_link = s_profile_link_pool.add(ProfileLink(parent, child));
 
 		return pointer_type(
-				new (link_mem) ProfileLink(parent, child),
+				new_link,
 				boost::bind(
-						&profile_link_pool_type::destroy,
+						&profile_link_pool_type::reuse,
 						boost::ref(s_profile_link_pool),
 						_1));
 	}
