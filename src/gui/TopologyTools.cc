@@ -803,6 +803,22 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 		return false;
 	}
 
+	// Find the RFGs, referencing the focused feature and the focused geometry property.
+	GPlatesAppLogic::ReconstructedFeatureGeometryFinder rfg_finder(
+			d_feature_focus_ptr->associated_geometry_property(),
+			d_feature_focus_ptr->associated_reconstruction_geometry()->reconstruction_tree().get()); 
+	rfg_finder.find_rfgs_of_feature(d_feature_focus_ptr->focused_feature());
+
+	// If there is more than one RFG for the focused geometry property then we won't allow
+	// it to be added - this is because the topology resolved won't know which RFG to use.
+	if (rfg_finder.num_rfgs_found() > 1)
+	{
+		qWarning() <<
+			"Cannot add to topology - the focused feature has multiple RFGs for the "
+			"focused geometry property - could be a flowline which is not currently supported.";
+		return false;
+	}
+
 	// Currently we cannot handle a feature that contains more than one geometry property.
 	// This is because a topology geometry is referenced using a property delegate and
 	// this means a feature id and a property name. So to uniquely reference a geometry
