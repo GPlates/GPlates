@@ -79,7 +79,8 @@ namespace GPlatesGui
 			enum FileFormat
 			{
 				GMT,
-				SHAPEFILE
+				SHAPEFILE,
+				OGRGMT
 			};
 
 			explicit

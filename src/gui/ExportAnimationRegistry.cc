@@ -331,6 +331,21 @@ GPlatesGui::register_default_export_animation_types(
 					ExportReconstructedGeometryAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::RECONSTRUCTED_GEOMETRIES,
+					ExportAnimationType::OGRGMT),
+			ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
+				new ExportReconstructedGeometryAnimationStrategy::Configuration(
+						"reconstructed_%u_%0.2f.gmt",
+						ExportReconstructedGeometryAnimationStrategy::Configuration::SHAPEFILE,
+						default_reconstructed_geometry_file_export_options)),
+			&create_animation_strategy<ExportReconstructedGeometryAnimationStrategy>,
+			&create_export_options_widget<
+				GPlatesQtWidgets::ExportReconstructedGeometryOptionsWidget,
+				ExportReconstructedGeometryAnimationStrategy>,
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
 	//
 	// Export projected geometries
 	//
@@ -414,6 +429,23 @@ GPlatesGui::register_default_export_animation_types(
 					GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
 					ExportResolvedTopologyAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+				ExportAnimationType::RESOLVED_TOPOLOGIES,
+					ExportAnimationType::OGRGMT),
+		ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
+				new ExportResolvedTopologyAnimationStrategy::Configuration(
+					"Polygons.%P.%d.gmt",
+					ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
+					default_resolved_topological_boundary_export_options)),
+		&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+		&create_export_options_widget<
+			GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
+			ExportResolvedTopologyAnimationStrategy>,
+		&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+
+
 
 	//
 	// Export relative rotations
@@ -631,6 +663,22 @@ GPlatesGui::register_default_export_animation_types(
 					ExportFlowlineAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+				ExportAnimationType::FLOWLINES,
+				ExportAnimationType::OGRGMT),
+		ExportFlowlineAnimationStrategy::const_configuration_ptr(
+			new ExportFlowlineAnimationStrategy::Configuration(
+					"flowline_output_%u_%0.2f.gmt",
+					ExportFlowlineAnimationStrategy::Configuration::OGRGMT,
+					default_flowline_file_export_options)),
+		&create_animation_strategy<ExportFlowlineAnimationStrategy>,
+		&create_export_options_widget<
+			GPlatesQtWidgets::ExportFlowlineOptionsWidget,
+			ExportFlowlineAnimationStrategy>,
+		&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
 	//
 	// Export motion paths
 	//
@@ -669,6 +717,22 @@ GPlatesGui::register_default_export_animation_types(
 			&create_export_options_widget<
 					GPlatesQtWidgets::ExportMotionPathOptionsWidget,
 					ExportMotionPathAnimationStrategy>,
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+				ExportAnimationType::MOTION_PATHS,
+				ExportAnimationType::OGRGMT),
+			ExportMotionPathAnimationStrategy::const_configuration_ptr(
+				new ExportMotionPathAnimationStrategy::Configuration(
+					"motion_path_output_%u_%0.2f.gmt",
+					ExportMotionPathAnimationStrategy::Configuration::OGRGMT,
+					default_motion_path_file_export_options)),
+			&create_animation_strategy<ExportMotionPathAnimationStrategy>,
+			&create_export_options_widget<
+				GPlatesQtWidgets::ExportMotionPathOptionsWidget,
+				ExportMotionPathAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//

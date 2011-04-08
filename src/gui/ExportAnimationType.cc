@@ -120,6 +120,7 @@ namespace GPlatesGui
 				export_format_description_map[GMT]             =QObject::tr("GMT (*.xy)");
 				export_format_description_map[GPML]            =QObject::tr("GPML (*.gpml)");
 				export_format_description_map[SHAPEFILE]       =QObject::tr("Shapefiles (*.shp)");
+				export_format_description_map[OGRGMT]		   =QObject::tr("OGR-GMT (*.gmt)");
 				export_format_description_map[SVG]             =QObject::tr("SVG (*.svg)");
 				export_format_description_map[CSV_COMMA]       =QObject::tr("CSV file (comma delimited) (*.csv)");
 				export_format_description_map[CSV_SEMICOLON]   =QObject::tr("CSV file (semicolon delimited) (*.csv)");

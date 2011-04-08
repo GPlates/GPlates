@@ -73,6 +73,7 @@ namespace GPlatesGui
 		{
 			GMT,
 			SHAPEFILE,
+			OGRGMT,
 			SVG,
 			GPML,
 			CSV_COMMA,
