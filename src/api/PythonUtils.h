@@ -31,6 +31,11 @@
 
 #include <QString>
 
+namespace GPlatesAppLogic
+{
+	// Forward declarations.
+	class UserPreferences;
+}
 
 namespace GPlatesApi
 {
@@ -65,7 +70,8 @@ namespace GPlatesApi
 		 */
 		void
 		run_startup_scripts(
-				PythonExecutionThread *python_execution_thread);
+				PythonExecutionThread *python_execution_thread,
+				GPlatesAppLogic::UserPreferences &user_prefs);
 #endif
 	}
 }

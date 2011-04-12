@@ -28,6 +28,8 @@
 #include <QCoreApplication>
 #include <QSet>
 #include <QSettings>
+#include <QDir>
+#include <QDesktopServices>
 
 #include "UserPreferences.h"
 
@@ -49,13 +51,65 @@ namespace
 		sane.replace('/', '_');
 		return sane;
 	}
+
+	/**
+	 * Returns "magic" default preference values that are derived from system calls.
+	 * Returns null QVariant if no such magic key exists.
+	 */
+	QVariant
+	get_magic_default_value(
+			const QString &key)
+	{
+		// Yes, an if/else chain is a slightly ugly way to do this, but I want to ensure that
+		// the system calls get invoked *each time* the preference value is asked for, so that
+		// in the case of e.g. user changing their Location and therefore their proxy details
+		// in the middle of a GPlates session, GPlates still works seamlessly. Maybe that's overkill.
+		// FIXME: In fact, yeah, it's probably overkill. Make a note to change this to a member-data
+		// QSettings object that does not correspond to a file or resource, that we can load these
+		// magic key/values into and then merge in with all the other keys. Maybe around the same
+		// time we do the UI for the preferences.
+
+		if (key == "paths/python_user_script_dir") {
+			// Get the platform-specific "application user data" dir. Add "scripts/" to that.
+			//   Linux: ~/.local/share/data/GPlates/GPlates/
+			QDir local_scripts_dir(QDesktopServices::storageLocation(QDesktopServices::DataLocation) + "/scripts/");
+			return QVariant(local_scripts_dir.absolutePath());
+
+		} else if (key == "paths/python_system_script_dir") {
+			// Going to have to #ifdef this per-platform for now, there's no 'nice' way to query this through Qt.
+#if defined(Q_OS_LINUX)
+			return "/usr/share/gplates/scripts";
+
+#elif defined(Q_OS_MAC)
+			// While in theory the place for this would be in "/Library/Application Data" somewhere, we don't use
+			// a .pkg and don't want to "install" stuff - OSX users much prefer drag-n-drop .app bundles. So,
+			// the sample scripts resource would probably best be added to the bundle.
+			QDir app_scripts_dir(QCoreApplication::applicationDirPath() + "/../Resources/scripts/");
+			return QVariant(app_scripts_dir.absolutePath());
+
+#elif defined(Q_OS_WIN32)
+			// The Windows Installer should drop a scripts/ directory in whatever Program Files area the gplates.exe
+			// file lands in.
+			QDir progfile_scripts_dir(QCoreApplication::applicationDirPath() + "/scripts/");
+			return QVariant(progfile_scripts_dir.absolutePath());
+#else
+			return "scripts/";
+#endif
+
+		} else {
+			// No such magic key exists.
+			return QVariant();
+		}
+	}
 }
 
 
 GPlatesAppLogic::UserPreferences::UserPreferences():
 	d_defaults(":/DefaultPreferences.conf", QSettings::IniFormat)
 {
-	// Initialise names used to identify our settings in the OS preference system.
+	// Initialise names used to identify our settings and paths in the OS.
+	// DO NOT CHANGE THESE VALUES without due consideration to the breaking of previously used
+	// QDesktopServices paths and preference settings.
 	QCoreApplication::setOrganizationName("GPlates");
 	QCoreApplication::setOrganizationDomain("gplates.org");
 	QCoreApplication::setApplicationName("GPlates");
@@ -107,7 +161,7 @@ GPlatesAppLogic::UserPreferences::get_default_value(
 	if (default_exists(key)) {
 		return d_defaults.value(key);
 	} else {
-		return QVariant();
+		return get_magic_default_value(key);
 	}
 }
 
@@ -171,7 +225,11 @@ GPlatesAppLogic::UserPreferences::subkeys(
 	d_defaults.beginGroup(prefix);
 	QSet<QString> keys_default = d_defaults.allKeys().toSet();
 	d_defaults.endGroup();
-	
+
+	// FIXME: Include magic default keys in a better way, see @a get_magic_default_value() above.
+	keys_default.insert("paths/python_user_script_dir");
+	keys_default.insert("paths/python_system_script_dir");
+
 	// and merge them together to get the full list of possible keys.
 	keys.unite(keys_default);
 

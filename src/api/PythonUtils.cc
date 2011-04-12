@@ -27,6 +27,7 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QStringList>
 #include <QDebug>
 
 #include "PythonUtils.h"
@@ -34,6 +35,8 @@
 #include "PythonExecutionMonitor.h"
 #include "PythonExecutionThread.h"
 #include "PythonInterpreterLocker.h"
+
+#include "app-logic/UserPreferences.h"
 
 #include "global/CompilerWarnings.h"
 
@@ -99,39 +102,58 @@ namespace
 
 void
 GPlatesApi::PythonUtils::run_startup_scripts(
-		PythonExecutionThread *python_execution_thread)
+		PythonExecutionThread *python_execution_thread,
+		GPlatesAppLogic::UserPreferences &user_prefs)
 {
 	//
 	// We search for scripts in the following places:
-	//  - "scripts" subdirectory under the current working directory, and
-	//  - "scripts" subdirectory under the GPlates executable directory.
 	//
-	// FIXME: Make this more flexible, and look in places suitable for Linux (when
-	// GPlates is installed as a package).
+	//  - "scripts" subdirectory under the current working directory,
 	//
+	//  - "scripts" subdirectory in a system-specific area, for included sample scripts and
+	//    possible custom site-specific scripts.
+	//      - Linux: /usr/share/gplates/scripts/
+	//      - Mac OS X: the 'scripts/' directory is placed in the 'Resources/' directory
+	//        inside the application bundle.
+	//      - Windows: under the GPlates executable directory.
+	//
+	//  - "scripts" subdirectory in a user-specific application data area, for scripts the
+	//    user has created or downloaded separately.
+	//      - Linux: ~/.local/share/data/GPlates/GPlates/scripts/ yes two GPlates that is not a typo
+	//      - Mac OS X: somewhere in ~/Library/Application Data/gplates.org/GPlates I think; needs confirmation.
+	//      - Windows: Varies wildly depending on version, but would be found with the rest of the user data.
+	//
+	// The system-specific and user-specific scripts locations default to the most appropriate
+	// location for the platform, as defined in UserPreferences.cc, but can be customised by the
+	// user assuming we ever get a GUI for that.
+
+	// Only attempt to run *.py and *.pyc files through the interpreter, in case the scripts dir is cluttered.
+	QStringList filters;
+	filters << "*.py" << "*.pyc";
 
 	QDir cwd;
-	if (cwd.cd("scripts"))
-	{
+	cwd.setNameFilters(filters);
+	if (cwd.cd("scripts")) {
 		::run_startup_scripts(python_execution_thread, cwd);
 	}
 
-	// On MacOS X systems the 'scripts/' directory is placed in the 'Resources/' directory
-	// inside the application bundle. And the 'Resources/' directory is a sibling directory
-	// of the directory containing the executable.
-#if defined(Q_OS_MAC) || defined(Q_WS_MAC)
-	QDir app_dir(QCoreApplication::applicationDirPath() + "/../Resources");
-	if (app_dir.cd("scripts"))
-	{
-		::run_startup_scripts(python_execution_thread, app_dir);
+	// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
+	// The default location will be platform-dependent and is currently set up in UserPreferences.cc.
+	QDir system_scripts_dir(user_prefs.get_value("paths/python_system_script_dir").toString());
+	system_scripts_dir.setNameFilters(filters);
+	if (system_scripts_dir.exists() && system_scripts_dir.isReadable()) {
+		::run_startup_scripts(python_execution_thread, system_scripts_dir);
 	}
-#else
-	QDir app_dir(QCoreApplication::applicationDirPath());
-	if (app_dir.cd("scripts"))
-	{
-		::run_startup_scripts(python_execution_thread, app_dir);
+
+	// Also look in user-specific application data locations for scripts the user may have made.
+	// The default location will be platform dependent and is constructed based on what Qt tells us about
+	// the platform conventions.
+	QDir user_scripts_dir(user_prefs.get_value("paths/python_user_script_dir").toString());
+	user_scripts_dir.setNameFilters(filters);
+	if (user_scripts_dir.exists() && user_scripts_dir.isReadable()) {
+		::run_startup_scripts(python_execution_thread, user_scripts_dir);
 	}
-#endif
+
 }
 
 #else

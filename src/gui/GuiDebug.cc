@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QtGlobal>
 #include <QApplication>
 #include <QFontMetrics>
 #include <QLocale>
@@ -30,6 +31,7 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QMetaMethod>
+#include <QDesktopServices>
 #include <boost/foreach.hpp>
 
 #include "GuiDebug.h"
@@ -242,3 +244,24 @@ GPlatesGui::GuiDebug::debug_font_metrics()
 	qDebug() << "fm.lineSpacing() == " << fm.lineSpacing();
 	qDebug() << "fm.leading() == " << fm.leading();
 }
+
+
+void
+GPlatesGui::GuiDebug::debug_system_paths()
+{
+	qDebug() << "\nSYSTEM PATHS:";
+	qDebug() << "QDesktopServices::DesktopLocation ==" << QDesktopServices::storageLocation(QDesktopServices::DesktopLocation);
+	qDebug() << "QDesktopServices::DocumentsLocation ==" << QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
+	qDebug() << "QDesktopServices::FontsLocation ==" << QDesktopServices::storageLocation(QDesktopServices::FontsLocation);
+	qDebug() << "QDesktopServices::ApplicationsLocation ==" << QDesktopServices::storageLocation(QDesktopServices::ApplicationsLocation);
+	qDebug() << "QDesktopServices::MusicLocation ==" << QDesktopServices::storageLocation(QDesktopServices::MusicLocation);
+	qDebug() << "QDesktopServices::MoviesLocation ==" << QDesktopServices::storageLocation(QDesktopServices::MoviesLocation);
+	qDebug() << "QDesktopServices::PicturesLocation ==" << QDesktopServices::storageLocation(QDesktopServices::PicturesLocation);
+	qDebug() << "QDesktopServices::TempLocation ==" << QDesktopServices::storageLocation(QDesktopServices::TempLocation);
+	qDebug() << "QDesktopServices::HomeLocation ==" << QDesktopServices::storageLocation(QDesktopServices::HomeLocation);
+	qDebug() << "QDesktopServices::DataLocation ==" << QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+#if QT_VERSION >= 0x040500
+	qDebug() << "QDesktopServices::CacheLocation (4.5) ==" << QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
+#endif
+}
+

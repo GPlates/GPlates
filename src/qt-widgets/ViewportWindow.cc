@@ -2720,7 +2720,8 @@ GPlatesQtWidgets::ViewportWindow::showEvent(
 	GPlatesUtils::DeferCall<void>::defer_call(
 			boost::bind(
 				&GPlatesApi::PythonUtils::run_startup_scripts,
-				get_application_state().get_python_execution_thread()));
+				get_application_state().get_python_execution_thread(),
+				boost::ref(get_application_state().get_user_preferences())));
 #endif
 }
 
