@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -171,6 +171,9 @@
      <string>Fe&amp;atures</string>
     </property>
     <addaction name="action_Manage_Colouring"/>
+    <addaction name="separator"/>
+    <addaction name="action_Load_Symbol"/>
+    <addaction name="action_Unload_Symbol"/>
     <addaction name="separator"/>
     <addaction name="action_Manage_Small_Circles"/>
     <addaction name="action_View_Total_Reconstruction_Sequences"/>
@@ -1537,6 +1540,16 @@
   <action name="actionConnect_WFS">
    <property name="text">
     <string>Connect WFS</string>
+   </property>
+  </action>
+  <action name="action_Load_Symbol">
+   <property name="text">
+    <string>Load Symbol file (.sym)</string>
+   </property>
+  </action>
+  <action name="action_Unload_Symbol">
+   <property name="text">
+    <string>Unload Symbol file</string>
    </property>
   </action>
  </widget>

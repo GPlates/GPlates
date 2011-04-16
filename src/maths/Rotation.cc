@@ -152,6 +152,15 @@ GPlatesMaths::Rotation::operator*(
 	return UnitVector3D(v_rot.x(), v_rot.y(), v_rot.z());
 }
 
+const GPlatesMaths::Vector3D
+GPlatesMaths::Rotation::operator*(
+		const Vector3D &v) const
+{
+	return d_d * v +
+			(2.0 * dot(d_quat.vector_part(), v)) * d_quat.vector_part() +
+			cross(d_e, v);
+
+}
 
 const GPlatesMaths::Rotation
 GPlatesMaths::Rotation::create(

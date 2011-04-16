@@ -160,6 +160,8 @@ set(srcs
     ShapefileXmlWriter.h
     StructurePropertyCreatorMap.cc
     StructurePropertyCreatorMap.h
+    SymbolFileReader.cc
+    SymbolFileReader.h
     TemporaryFileRegistry.cc
     TemporaryFileRegistry.h
     XmlOutputInterface.cc

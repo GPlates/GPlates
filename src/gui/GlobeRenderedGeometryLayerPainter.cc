@@ -58,6 +58,7 @@
 #include "property-values/XsString.h"
 
 #include "view-operations/RenderedArrowedPolyline.h"
+#include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
@@ -67,9 +68,16 @@
 #include "view-operations/RenderedPolygonOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
 #include "view-operations/RenderedResolvedRaster.h"
+#include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedString.h"
 #include "view-operations/RenderedSmallCircle.h"
 #include "view-operations/RenderedSmallCircleArc.h"
+#include "view-operations/RenderedTriangleSymbol.h"
+
+// Temporary includes for triangle testing
+#include "view-operations/RenderedGeometryFactory.h"
+
+
 
 namespace 
 {
@@ -79,6 +87,8 @@ namespace
 	 */
 	const double GCA_DISTANCE_THRESHOLD_DOT = std::cos(GPlatesMaths::PI / 36.0);
 	const double TWO_PI = 2. * GPlatesMaths::PI;
+	const double PI_BY_TWO = GPlatesMaths::PI/2.;
+
 } // anonymous namespace
 
 
@@ -315,7 +325,22 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 	{
 		return;
 	}
+#if 0
+	//////////////////////////////////////////////////////////////////////////////////////
+	// Force triangle rendering for testing. This lets me easily create triangles via the
+	// digitisation tool, or by loading up point files.
+	GPlatesViewOperations::RenderedGeometry triangle =
+		GPlatesViewOperations::create_rendered_triangle_symbol(
+		    rendered_point_on_sphere.get_point_on_sphere(),
+		    rendered_point_on_sphere.get_colour(),
+		    true);
 
+	triangle.accept_visitor(*this);
+
+	return;
+	// End of triangle testing code.
+	/////////////////////////////////////////////////////////////////////////////////////
+#endif
 	const float point_size =
 			rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
 
@@ -1051,6 +1076,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::set_translucent_state(
 	line_state->gl_enable_line_smooth(GL_TRUE).gl_hint_line_smooth(GL_NICEST);
 	translucent_state->add_state_set(line_state);
 
+	GPlatesOpenGL::GLPolygonState::non_null_ptr_type polygon_state = GPlatesOpenGL::GLPolygonState::create();
+	polygon_state->gl_enable_polygon_smooth(GL_TRUE).gl_hint_polygon_smooth(GL_NICEST);
+	translucent_state->add_state_set(polygon_state);
+
 	render_graph_node.set_state_set(translucent_state);
 }
 
@@ -1349,3 +1378,285 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 		*d_nurbs_renderer);
 }
 
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
+	const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol)
+{
+    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_triangle_symbol);
+    if (!colour)
+    {
+            return;
+    }
+
+    bool filled = rendered_triangle_symbol.get_is_filled();
+
+    // Quick and dirty way to get triangle vertex coordinates at desired location:
+    // Define the triangle in the tangent plane at the north pole,
+    // then rotate the triangle down to required latitude, and
+    // then east/west to required longitude.
+    //
+    // (Two rotations are required to maintain the north-alignment).
+    //
+    //
+    // Can I use a new render node to do this rotation more efficiently?
+    //
+    // Reminder about coordinate system:
+    // x is out of the screen as we look at the globe on startup.
+    // y is towards right (east) as we look at the globe on startup.
+    // z is up...
+
+    // Get the point position.
+    const GPlatesMaths::PointOnSphere &pos =
+		    rendered_triangle_symbol.get_centre();
+
+    GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
+
+    static const GPlatesMaths::UnitVector3D axis1 = GPlatesMaths::UnitVector3D(0.,1.,0.);
+    GPlatesMaths::Rotation r1 =
+	    GPlatesMaths::Rotation::create(axis1,PI_BY_TWO - GPlatesMaths::convert_deg_to_rad(llp.latitude()));
+
+    static const GPlatesMaths::UnitVector3D axis2 = GPlatesMaths::UnitVector3D(0.,0.,1.);
+    GPlatesMaths::Rotation r2 =
+	    GPlatesMaths::Rotation::create(axis2,GPlatesMaths::convert_deg_to_rad(llp.longitude()));
+
+    GPlatesMaths::Rotation r3 = r2*r1;
+
+    double d = 0.02 * d_inverse_zoom_factor * rendered_triangle_symbol.get_size(); // fairly arbitrary initial half-altitude for testing.
+
+    // Triangle vertices defined in the plane z=1.
+    GPlatesMaths::Vector3D va(-d,0.,1.);
+    GPlatesMaths::Vector3D vb(0.5*d,-0.86*d,1.);
+    GPlatesMaths::Vector3D vc(0.5*d,0.86*d,1.);
+
+    // Rotate to desired location.
+    va = r3 * va;
+    vb = r3 * vb;
+    vc = r3 * vc;
+
+
+    vertex_type a = {va.x().dval(), va.y().dval(),va.z().dval(),Colour::to_rgba8(*colour)};
+    vertex_type b = {vb.x().dval(), vb.y().dval(),vb.z().dval(),Colour::to_rgba8(*colour)};
+    vertex_type c = {vc.x().dval(), vc.y().dval(),vc.z().dval(),Colour::to_rgba8(*colour)};
+
+    if (filled)
+    {
+	GPlatesOpenGL::GLStreamPrimitives<vertex_type> &triangle_stream =
+		d_paint_params->translucent_drawables_on_the_sphere.get_triangle_drawables();
+
+	GPlatesOpenGL::GLStreamTriangles<vertex_type> stream(triangle_stream);
+
+	// The polygon state is fill, front/back by default, so I shouldn't need
+	// to change anything here.
+
+	stream.begin_triangles();
+	stream.add_vertex(a);
+	stream.add_vertex(b);
+	stream.add_vertex(c);
+	stream.end_triangles();
+
+
+    }
+    else
+    {
+	const float line_width = rendered_triangle_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	LineDrawables &line_drawables =
+		d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+	GPlatesOpenGL::GLStreamLineStrips<vertex_type> stream_line_strips(*line_drawables.stream);
+
+	stream_line_strips.begin_line_strip();
+	stream_line_strips.add_vertex(a);
+	stream_line_strips.add_vertex(b);
+	stream_line_strips.add_vertex(c);
+	stream_line_strips.add_vertex(a);
+	stream_line_strips.end_line_strip();
+    }
+
+}
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
+	const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol)
+{
+    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_square_symbol);
+    if (!colour)
+    {
+	    return;
+    }
+
+    bool filled = rendered_square_symbol.get_is_filled();
+
+    // Define the square in the tangent plane at the north pole,
+    // then rotate down to required latitude, and
+    // then east/west to required longitude.
+    //
+    // (Two rotations are required to maintain the north-alignment).
+    //
+    //
+    // Can I use a new render node to do this rotation more efficiently?
+    //
+    // Reminder about coordinate system:
+    // x is out of the screen as we look at the globe on startup.
+    // y is towards right (east) as we look at the globe on startup.
+    // z is up...
+
+    // Get the point position.
+    const GPlatesMaths::PointOnSphere &pos =
+		    rendered_square_symbol.get_centre();
+
+    GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
+
+    static const GPlatesMaths::UnitVector3D axis1 = GPlatesMaths::UnitVector3D(0.,1.,0.);
+    GPlatesMaths::Rotation r1 =
+	    GPlatesMaths::Rotation::create(axis1,PI_BY_TWO - GPlatesMaths::convert_deg_to_rad(llp.latitude()));
+
+    static const GPlatesMaths::UnitVector3D axis2 = GPlatesMaths::UnitVector3D(0.,0.,1.);
+    GPlatesMaths::Rotation r2 =
+	    GPlatesMaths::Rotation::create(axis2,GPlatesMaths::convert_deg_to_rad(llp.longitude()));
+
+    GPlatesMaths::Rotation r3 = r2*r1;
+
+    double d = 0.01 * d_inverse_zoom_factor * rendered_square_symbol.get_size(); // fairly arbitrary initial half-altitude for testing.
+
+    // Make a triangle fan with centre (0,0,1)
+    GPlatesMaths::Vector3D v3d_a(0.,0.,1.);
+    GPlatesMaths::Vector3D v3d_b(-d,-d,1.);
+    GPlatesMaths::Vector3D v3d_c(-d,d,1.);
+    GPlatesMaths::Vector3D v3d_d(d,d,1.);
+    GPlatesMaths::Vector3D v3d_e(d,-d,1.);
+
+    // Rotate to desired location.
+    v3d_a = r3 * v3d_a;
+    v3d_b = r3 * v3d_b;
+    v3d_c = r3 * v3d_c;
+    v3d_d = r3 * v3d_d;
+    v3d_e = r3 * v3d_e;
+
+
+    vertex_type va = {v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour)};
+    vertex_type vb = {v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour)};
+    vertex_type vc = {v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour)};
+    vertex_type vd = {v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour)};
+    vertex_type ve = {v3d_e.x().dval(), v3d_e.y().dval(),v3d_e.z().dval(),Colour::to_rgba8(*colour)};
+
+    if (filled)
+    {
+	GPlatesOpenGL::GLStreamPrimitives<vertex_type> &triangle_fans_stream =
+		d_paint_params->translucent_drawables_on_the_sphere.get_triangle_drawables();
+
+	GPlatesOpenGL::GLStreamTriangleFans<vertex_type> stream(triangle_fans_stream);
+
+	// The polygon state is fill, front/back by default, so I shouldn't need
+	// to change anything here.
+
+	stream.begin_triangle_fan();
+	stream.add_vertex(va);
+	stream.add_vertex(vb);
+	stream.add_vertex(vc);
+	stream.add_vertex(vd);
+	stream.add_vertex(ve);
+	stream.add_vertex(vb);
+	stream.end_triangle_fan();
+
+
+    }
+    else
+    {
+	const float line_width = rendered_square_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	LineDrawables &line_drawables =
+		d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+	GPlatesOpenGL::GLStreamLineStrips<vertex_type> stream_line_strips(*line_drawables.stream);
+
+	stream_line_strips.begin_line_strip();
+	stream_line_strips.add_vertex(vb);
+	stream_line_strips.add_vertex(vc);
+	stream_line_strips.add_vertex(vd);
+	stream_line_strips.add_vertex(ve);
+	stream_line_strips.add_vertex(vb);
+	stream_line_strips.end_line_strip();
+    }
+
+}
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
+	const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol)
+{
+    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_cross_symbol);
+    if (!colour)
+    {
+	    return;
+    }
+
+    // Define the square in the tangent plane at the north pole,
+    // then rotate down to required latitude, and
+    // then east/west to required longitude.
+    //
+    // (Two rotations are required to maintain the north-alignment).
+    //
+    // Can I use a new render node to do this rotation more efficiently?
+    //
+    // Reminder about coordinate system:
+    // x is out of the screen as we look at the globe on startup.
+    // y is towards right (east) as we look at the globe on startup.
+    // z is up...
+
+    // Get the point position.
+    const GPlatesMaths::PointOnSphere &pos =
+		    rendered_cross_symbol.get_centre();
+
+    GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
+
+    static const GPlatesMaths::UnitVector3D axis1 = GPlatesMaths::UnitVector3D(0.,1.,0.);
+    GPlatesMaths::Rotation r1 =
+		GPlatesMaths::Rotation::create(axis1,PI_BY_TWO - GPlatesMaths::convert_deg_to_rad(llp.latitude()));
+
+    static const GPlatesMaths::UnitVector3D axis2 = GPlatesMaths::UnitVector3D(0.,0.,1.);
+    GPlatesMaths::Rotation r2 =
+	    GPlatesMaths::Rotation::create(axis2,GPlatesMaths::convert_deg_to_rad(llp.longitude()));
+
+    GPlatesMaths::Rotation r3 = r2*r1;
+
+	// fairly arbitrary initial half-altitude for testing.
+    double d = 0.01 * d_inverse_zoom_factor * rendered_cross_symbol.get_size(); 
+
+    // Set up the vertices of a cross with centre (0,0,1).
+    GPlatesMaths::Vector3D v3d_a(0.,d,1.);
+    GPlatesMaths::Vector3D v3d_b(0,-d,1.);
+    GPlatesMaths::Vector3D v3d_c(-d,0.,1.);
+    GPlatesMaths::Vector3D v3d_d(d,0.,1.);
+
+    // Rotate to desired location.
+    v3d_a = r3 * v3d_a;
+    v3d_b = r3 * v3d_b;
+    v3d_c = r3 * v3d_c;
+    v3d_d = r3 * v3d_d;
+
+
+    vertex_type va = {v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour)};
+    vertex_type vb = {v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour)};
+    vertex_type vc = {v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour)};
+    vertex_type vd = {v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour)};
+
+
+    const float line_width = rendered_cross_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+    LineDrawables &line_drawables =
+	    d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+    GPlatesOpenGL::GLStreamLineStrips<vertex_type> stream_line_strips(*line_drawables.stream);
+
+    stream_line_strips.begin_line_strip();
+    stream_line_strips.add_vertex(va);
+    stream_line_strips.add_vertex(vb);
+    stream_line_strips.end_line_strip();
+
+    stream_line_strips.begin_line_strip();
+    stream_line_strips.add_vertex(vc);
+    stream_line_strips.add_vertex(vd);
+    stream_line_strips.end_line_strip();
+
+}

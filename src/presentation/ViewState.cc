@@ -52,6 +52,7 @@
 #include "gui/MapTransform.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
+#include "gui/Symbol.h"
 #include "gui/TextOverlaySettings.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
@@ -98,7 +99,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_viewport_projection(
 			new GPlatesGui::ViewportProjection(GPlatesGui::ORTHOGRAPHIC)),
 	d_geometry_focus_highlight(
-			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection)),
+			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection,d_feature_type_symbol_map)),
 	d_feature_focus(
 			new GPlatesGui::FeatureFocus(application_state)),
 	d_visual_layers(
@@ -146,9 +147,42 @@ GPlatesPresentation::ViewState::ViewState(
 			d_application_state,
 			*this);
 
+#if 0
+	// Set up a symbol map for testing
+	GPlatesModel::FeatureType gpml_volcano_type =
+		GPlatesModel::FeatureType::create_gpml("Volcano");
+	GPlatesModel::FeatureType gpml_hot_spot_type =
+		GPlatesModel::FeatureType::create_gpml("HotSpot");
+	GPlatesModel::FeatureType gpml_magnetic_pick_type =
+		GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification");
+
+
+	GPlatesGui::Symbol volcano_symbol(
+		    GPlatesGui::Symbol::TRIANGLE,
+		    1,
+		    true);
+	GPlatesGui::Symbol hotspot_symbol(
+		    GPlatesGui::Symbol::SQUARE,
+		    1,
+		    true);
+	GPlatesGui::Symbol magnetic_pick_symbol(
+		    GPlatesGui::Symbol::SQUARE,
+		    1,
+		    false);
+
+
+	d_feature_type_symbol_map.insert(
+		    std::make_pair(gpml_volcano_type,volcano_symbol));
+	d_feature_type_symbol_map.insert(
+		    std::make_pair(gpml_hot_spot_type,hotspot_symbol));
+	d_feature_type_symbol_map.insert(
+		    std::make_pair(gpml_magnetic_pick_type,magnetic_pick_symbol));
+#endif
+
 	// Set up the ExportAnimationRegistry.
 	register_default_export_animation_types(
 			*d_export_animation_registry);
+
 }
 
 
@@ -405,6 +439,18 @@ GPlatesPresentation::ViewState::set_show_stars(
 	d_show_stars = show_stars;
 }
 
+
+const GPlatesGui::symbol_map_type &
+GPlatesPresentation::ViewState::get_feature_type_symbol_map() const
+{
+    return d_feature_type_symbol_map;
+}
+
+GPlatesGui::symbol_map_type &
+GPlatesPresentation::ViewState::get_feature_type_symbol_map()
+{
+    return d_feature_type_symbol_map;
+}
 
 const GPlatesGui::Colour &
 GPlatesPresentation::ViewState::get_background_colour() const

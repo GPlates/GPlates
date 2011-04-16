@@ -39,6 +39,8 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Layer.h"
 
+#include "gui/Symbol.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -466,6 +468,7 @@ namespace GPlatesPresentation
 		 * The number that will be given to the next visual layer created.
 		 */
 		int d_next_visual_layer_number;
+
 	};
 }
 

@@ -92,6 +92,7 @@
 #include "ShapefilePropertyMapper.h"
 #include "SmallCircleManager.h"
 #include "SpecifyAnchoredPlateIdDialog.h"
+#include "SymbolManagerDialog.h"
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
 #include "TotalReconstructionSequencesDialog.h"
@@ -120,6 +121,7 @@
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/RasterReader.h"
 #include "file-io/ShapefileReader.h"
+#include "file-io/SymbolFileReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 
 #include "global/GPlatesException.h"
@@ -957,6 +959,11 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
 			this, SLOT(pop_up_colouring_dialog()));
 	// ----
+	QObject::connect(action_Load_Symbol, SIGNAL(triggered()),
+			this, SLOT(handle_load_symbol_file()));
+	QObject::connect(action_Unload_Symbol, SIGNAL(triggered()),
+			this, SLOT(handle_unload_symbol_file()));
+	// ----
 	QObject::connect(action_Manage_Small_Circles, SIGNAL(triggered()),
 			this, SLOT(pop_up_small_circle_manager()));
 	QObject::connect(action_View_Total_Reconstruction_Sequences, SIGNAL(triggered()),
@@ -1547,6 +1554,51 @@ GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
 	}
 
 	QtWidgetUtils::pop_up_dialog(d_colouring_dialog_ptr.get());
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_load_symbol_file()
+{
+    QString filename = QFileDialog::getOpenFileName(
+		    this,
+		    QObject::tr("Open symbol file"),
+		    get_view_state().get_last_open_directory(),
+		    QObject::tr("Symbol file (*.sym)"));
+
+    try{
+	GPlatesFileIO::SymbolFileReader::read_file(
+		filename,
+		get_view_state().get_feature_type_symbol_map());
+    }
+    catch(...)
+    {
+
+    }
+    get_application_state().reconstruct();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_unload_symbol_file()
+{
+    get_view_state().get_feature_type_symbol_map().clear();
+    get_application_state().reconstruct();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_symbol_manager_dialog()
+{
+    if (!d_symbol_manager_dialog_ptr)
+    {
+	d_symbol_manager_dialog_ptr.reset(
+		    new SymbolManagerDialog(
+			this));
+    }
+
+    d_symbol_manager_dialog_ptr->show();
+    d_symbol_manager_dialog_ptr->activateWindow();
+    d_symbol_manager_dialog_ptr->raise();
 }
 
 

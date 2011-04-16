@@ -39,6 +39,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/CoRegistrationData.h"
+#include "app-logic/PropertyExtractors.h"
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
@@ -69,6 +70,35 @@
 namespace
 {
 	/**
+	 * Returns a GPlatesGui::Symbol for the feature type of the @a reconstruction_geometry, if
+	 * an appropriate entry in the @a feature_type_symbol_map exists.
+	 */
+	boost::optional<GPlatesGui::Symbol>
+	get_symbol(
+	    const boost::optional<GPlatesGui::symbol_map_type> &symbol_map,
+	    const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry)
+	{
+	    if (symbol_map)
+	    {
+		GPlatesAppLogic::FeatureTypePropertyExtractor extractor;
+		const boost::optional<GPlatesAppLogic::FeatureTypePropertyExtractor::return_type> feature_type =
+			    extractor(*reconstruction_geometry);
+
+		if (feature_type)
+		{
+		    GPlatesGui::symbol_map_type::const_iterator iter = symbol_map->find(*feature_type);
+
+		    if (iter != symbol_map->end())
+		    {
+			return iter->second;
+		    }
+		}
+	    }
+	    return boost::none;
+	}
+
+
+	/**
 	 * Creates a @a RenderedGeometry from @a geometry and wraps it in another @a RenderedGeometry
 	 * that references @a reconstruction_geometry.
 	 */
@@ -78,8 +108,13 @@ namespace
 			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
 			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
 			const boost::optional<GPlatesGui::Colour> &colour,
-			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none)
+			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none,
+			const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none)
 	{
+
+		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
+				feature_type_symbol_map, reconstruction_geometry);
+
 		// Create a RenderedGeometry for drawing the reconstructed geometry.
 		// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
 		// using ColourProxy.
@@ -88,7 +123,11 @@ namespace
 						rotation ? rotation.get() * geometry : geometry,
 						colour ? colour.get() : GPlatesGui::ColourProxy(reconstruction_geometry),
 						render_params.reconstruction_point_size_hint,
-						render_params.reconstruction_line_width_hint);
+						render_params.reconstruction_line_width_hint,
+						symbol);
+#if 0
+>>>>>>> .merge-right.r11332
+#endif
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.
@@ -202,11 +241,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 		GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const RenderParams &render_params,
 		const boost::optional<GPlatesGui::Colour> &colour,
-		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment) :
+		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
+		const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_render_params(render_params),
 	d_colour(colour),
-	d_reconstruction_adjustment(reconstruction_adjustment)
+	d_reconstruction_adjustment(reconstruction_adjustment),
+	d_feature_type_symbol_map(feature_type_symbol_map)
 {
 }
 
@@ -291,7 +332,15 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
-					rfg->geometry(), rfg, d_render_params, d_colour, d_reconstruction_adjustment);
+					rfg->geometry(), 
+					rfg, 
+					d_render_params,
+					d_colour, 
+					d_reconstruction_adjustment,
+					d_feature_type_symbol_map);
+#if 0
+>>>>>>> .merge-right.r11332
+#endif
 
 	// Add to the rendered geometry layer.
 	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -418,7 +467,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
-					rtb->resolved_topology_geometry(), rtb, d_render_params, d_colour);
+					rtb->resolved_topology_geometry(), 
+					rtb, 
+					d_render_params, 
+					d_colour);
 
 	// Add to the rendered geometry layer.
 	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -444,7 +496,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						*it, rtn, d_render_params, GPlatesGui::Colour::get_grey() );
+						*it, 
+						rtn, 
+						d_render_params, 
+						GPlatesGui::Colour::get_grey() );
 
 		// Add to the rendered geometry layer.
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -464,7 +519,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						*it, rtn, d_render_params, GPlatesGui::Colour::get_grey() );
+						*it, 
+						rtn, 
+						d_render_params, 
+						GPlatesGui::Colour::get_grey() );
 
 		// Add to the rendered geometry layer.
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -484,7 +542,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						*mesh_it, rtn, d_render_params, d_colour );
+						*mesh_it, 
+						rtn, 
+						d_render_params, 
+						d_colour );
 
 		// Add to the rendered geometry layer.
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -564,8 +625,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
-		rmp,
-		rendered_geom);
+			rmp,
+			rendered_geom);
 
 	// Add to the rendered geometry layer.
 	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
@@ -597,7 +658,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		{
 			GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						rfg->geometry(), crr, d_render_params, GPlatesGui::Colour::get_red());
+						rfg->geometry(), 
+						crr, 
+						d_render_params, 
+						GPlatesGui::Colour::get_red());
+
 			d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
 			
 			const PointOnSphere* point = dynamic_cast<const PointOnSphere*>(rfg->geometry().get());

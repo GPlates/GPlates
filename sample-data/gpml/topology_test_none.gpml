@@ -1223,4 +1223,132 @@
             <gml:name>more lines for testing</gml:name>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Volcano>
+            <gpml:identity>GPlates-22cf3618-345e-41f3-a028-2fd1c0ac559f</gpml:identity>
+            <gpml:revision>GPlates-91624e65-b960-4533-b3a6-a131157bb1d5</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>test volcano</gml:name>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>-5.20727 -12.1839</gml:pos>
+                </gml:Point>
+            </gpml:position>
+        </gpml:Volcano>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:HotSpot>
+            <gpml:identity>GPlates-3a7b649f-84e6-4b7a-b67d-542b7aee0642</gpml:identity>
+            <gpml:revision>GPlates-2a0825dc-0fe5-4982-8c19-2c9e3c7370a5</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>test hotspot</gml:name>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>-5.35742 -6.90528</gml:pos>
+                </gml:Point>
+            </gpml:position>
+        </gpml:HotSpot>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:MagneticAnomalyIdentification>
+            <gpml:identity>GPlates-bbb747ca-39a1-4a12-91a2-fa359f14a554</gpml:identity>
+            <gpml:revision>GPlates-fbb89c82-1751-4102-851d-3773953e8943</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>test mag anom</gml:name>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>-5.20727 -16.4392</gml:pos>
+                </gml:Point>
+            </gpml:position>
+        </gpml:MagneticAnomalyIdentification>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Seamount>
+            <gpml:identity>GPlates-0bac3a76-1888-424b-9de2-a08b322add87</gpml:identity>
+            <gpml:revision>GPlates-46e48a51-de5e-4940-8f8f-3297c1741c73</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>sample sea mount</gml:name>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>-5.75717 -1.9259</gml:pos>
+                </gml:Point>
+            </gpml:position>
+        </gpml:Seamount>
+    </gml:featureMember>
 </gpml:FeatureCollection>

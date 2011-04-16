@@ -1,0 +1,46 @@
+# Test GPlates symbol definition file 
+# Robin Watson, NGU, 21.12.10
+# 
+# This file format will be short-lived. 
+#
+# Each line of this file should be of the form:
+#
+# feature-type symbol-type symbol-size fill-state
+#
+# feature-type (text) should be the name of a gpml feature type, such as Volcano, HotSpot etc.
+# (but do not prefix with gpml)
+#
+# Currently we only have support for features with point-like geometry,
+# features with 'Position' in the Geometry Property panel of the Feature Creation Dialog
+#
+# symbol-type (text) must be one of:
+# TRIANGLE
+# SQUARE
+# CROSS
+#
+# symbol-size should be a positive integer. 
+# 
+# fill-state is optional and should be one of:
+# FILLED
+# UNFILLED
+#
+# The default fill-state is FILLED. 
+# Not all symbol-types will respect the fill-state (e.g. CROSS)
+#
+# To use this file in GPlates, load it into GPlates through Layers->Load Symbol File...
+# 
+# Some restrictions on current symbol file usage:
+# * Only one file at a time can be loaded
+# * Symbol rules in the file will apply to all loaded collections.
+# * Only point features will be drawn with symbols.
+# * Symbol mapping is only by feature type.
+# * Symbols are only drawn on the globe projection.
+#
+MagneticAnomalyIdentification CROSS 2
+Volcano TRIANGLE 2 FILLED
+HotSpot SQUARE 3 FILLED
+Seamount TRIANGLE 2 UNFILLED 
+#
+# END
+#
+

@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "gui/Symbol.h"
 #include "model/FeatureHandle.h"
 
 
@@ -55,7 +56,8 @@ namespace GPlatesGui
 	public:
 
 		GeometryFocusHighlight(
-			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection);
+			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+			const GPlatesGui::symbol_map_type &symbol_map);
 
 		virtual
 		~GeometryFocusHighlight()
@@ -106,6 +108,11 @@ namespace GPlatesGui
 		 * The layer of rendered geometries which is used for highlighting.
 		 */
 		GPlatesViewOperations::RenderedGeometryLayer *d_highlight_layer_ptr;
+
+		/**
+		 * A reference to the viewstate's feature-type-to-symbol-map
+		 */
+		const GPlatesGui::symbol_map_type &d_symbol_map;
 	};
 }
 

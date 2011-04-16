@@ -166,6 +166,8 @@ set(srcs
     Stars.h
     SvgExport.cc
     SvgExport.h
+    Symbol.cc
+    Symbol.h
     TextOverlay.cc
     TextOverlay.h
     TextOverlaySettings.cc

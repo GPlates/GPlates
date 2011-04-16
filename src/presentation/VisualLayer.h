@@ -37,6 +37,8 @@
 
 #include "app-logic/Layer.h"
 
+#include "gui/Symbol.h"
+
 #include "model/FeatureCollectionHandle.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -125,7 +127,9 @@ namespace GPlatesPresentation
 		 * @a RenderedGeometryCollection passed into the constructor.
 		 */
 		void
-		create_rendered_geometries();
+		create_rendered_geometries(
+		    const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map
+			= boost::none);
 
 		/**
 		 * Returns whether the given @a section of the visual layer is expanded in the

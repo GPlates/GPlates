@@ -34,6 +34,7 @@
 #include "app-logic/ReconstructionGeometryVisitor.h"
 
 #include "gui/Colour.h"
+#include "gui/Symbol.h"
 #include "gui/RasterColourPalette.h"
 
 #include "maths/Rotation.h"
@@ -133,8 +134,8 @@ namespace GPlatesPresentation
 				GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const RenderParams &render_params = RenderParams(),
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
-				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none);
-
+				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
+				const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none);
 
 		virtual
 		void
@@ -191,6 +192,7 @@ namespace GPlatesPresentation
 		RenderParams d_render_params;
 		boost::optional<GPlatesGui::Colour> d_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
+		boost::optional<GPlatesGui::symbol_map_type> d_feature_type_symbol_map;
 	};
 }
 

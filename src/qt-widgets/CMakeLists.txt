@@ -347,6 +347,9 @@ set(srcs
     SpecifyAnchoredPlateIdDialog.cc
     SpecifyAnchoredPlateIdDialog.h
     SpecifyAnchoredPlateIdDialogUi.ui
+    SymbolManagerDialog.cc
+    SymbolManagerDialog.h
+    SymbolManagerDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
     TaskPanelWidget.h

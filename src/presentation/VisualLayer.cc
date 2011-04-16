@@ -35,7 +35,10 @@
 #include "app-logic/Layer.h"
 #include "app-logic/ReconstructionGeometryCollection.h"
 
+#include "gui/Symbol.h"
+
 #include "file-io/FileInfo.h"
+
 
 
 GPlatesPresentation::VisualLayer::VisualLayer(
@@ -89,7 +92,8 @@ GPlatesPresentation::VisualLayer::get_layer_type() const
 
 
 void
-GPlatesPresentation::VisualLayer::create_rendered_geometries()
+GPlatesPresentation::VisualLayer::create_rendered_geometries(
+    const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map)
 {
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
@@ -129,11 +133,24 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries()
 	}
 
 	// This creates the RenderedGeometry's from the ReconstructionGeometry's.
+#if 0
+<<<<<<< .working
+	GPlatesPresentation::ReconstructionGeometryRenderer reconstruction_geometry_renderer(
+			*d_rendered_geometry_layer,
+			feature_type_symbol_map);
+=======
+#endif
 	ReconstructionGeometryRenderer::RenderParamsPopulator render_params_populator;
 	d_visual_layer_params->accept_visitor(render_params_populator);
 	ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			*d_rendered_geometry_layer,
-			render_params_populator.get_render_params());
+			render_params_populator.get_render_params(),
+			boost::none,
+            boost::none,
+			feature_type_symbol_map);
+#if 0
+>>>>>>> .merge-right.r11332
+#endif
 
 	// Iterate over the reconstruction geometries in the collection.
 	BOOST_FOREACH(GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry,

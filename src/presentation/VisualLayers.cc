@@ -37,6 +37,8 @@
 #include "app-logic/LayerTaskRegistry.h"
 #include "app-logic/ReconstructGraph.h"
 
+#include "gui/Symbol.h"
+
 #include "view-operations/RenderedGeometryLayer.h"
 
 
@@ -464,7 +466,8 @@ GPlatesPresentation::VisualLayers::create_rendered_geometries()
 	{
 		const visual_layer_ptr_type &visual_layer = visual_layer_map_entry.second;
 
-		visual_layer->create_rendered_geometries();
+		visual_layer->create_rendered_geometries(
+			    d_view_state.get_feature_type_symbol_map());
 	}
 }
 

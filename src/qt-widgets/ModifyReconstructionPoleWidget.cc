@@ -809,10 +809,16 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 
 	// This creates the RenderedGeometry's from the ReconstructedFeatureGeomtries
 	// using the colour 'white_colour'.
+	//
+	// Note that we don't have the feature_type_to_symbol_map available in this class
+	// at the moment, so we can't pass it to the Renderer, so any symbols will just
+	// get rendered as regular point-on-spheres.
 	GPlatesPresentation::ReconstructionGeometryRenderer initial_geometry_renderer(
 			*d_initial_geom_layer_ptr,
 			render_style_params,
-			white_colour);
+			white_colour,
+			boost::none,
+			boost::none);
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();
@@ -862,7 +868,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 			*d_dragged_geom_layer_ptr,
 			render_style_params,
 			silver_colour,
-			d_accum_orientation->rotation());
+			d_accum_orientation->rotation(),
+			boost::none);
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();

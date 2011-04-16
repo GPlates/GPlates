@@ -89,6 +89,11 @@ namespace GPlatesGui
 
 		virtual
 		void
+		visit_rendered_cross_symbol(
+				const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol);
+
+		virtual
+		void
 		visit_rendered_direction_arrow(
 				const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow);
 
@@ -96,6 +101,7 @@ namespace GPlatesGui
 		void
 		visit_rendered_ellipse(
 				const GPlatesViewOperations::RenderedEllipse &rendered_ellipse);
+
 
 		virtual
 		void
@@ -131,8 +137,18 @@ namespace GPlatesGui
 
 		virtual
 		void
+		visit_rendered_square_symbol(
+			const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol);
+
+		virtual
+		void
 		visit_rendered_string(
 				const GPlatesViewOperations::RenderedString &rendered_string);
+
+		virtual
+		void
+		visit_rendered_triangle_symbol(
+				const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol);
 
 		void
 		set_scale(

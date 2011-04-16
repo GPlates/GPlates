@@ -27,6 +27,7 @@
 #ifndef GPLATES_PRESENTATION_VIEWSTATE_H
 #define GPLATES_PRESENTATION_VIEWSTATE_H
 
+#include <map>
 #include <utility>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -35,7 +36,7 @@
 #include <QString>
 
 #include "global/PointerTraits.h"
-
+#include "gui/Symbol.h"
 #include "utils/VirtualProxy.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,6 +82,7 @@ namespace GPlatesGui
 	class TextOverlaySettings;
 	class ViewportProjection;
 	class ViewportZoom;
+
 }
 
 namespace GPlatesQtWidgets
@@ -103,10 +105,18 @@ namespace GPlatesPresentation
 			public QObject,
 			private boost::noncopyable
 	{
+
+
+
+
 		Q_OBJECT
 		
 	public:
 	
+
+
+
+
 		ViewState(
 				GPlatesAppLogic::ApplicationState &application_state);
 
@@ -251,6 +261,13 @@ namespace GPlatesPresentation
 				bool show_stars = true);
 
 
+		GPlatesGui::symbol_map_type &
+		get_feature_type_symbol_map();
+
+		const GPlatesGui::symbol_map_type &
+		get_feature_type_symbol_map() const;
+
+
 		const GPlatesGui::Colour &
 		get_background_colour() const;
 
@@ -319,6 +336,11 @@ namespace GPlatesPresentation
 
 		//! The viewport projection state.
 		boost::scoped_ptr<GPlatesGui::ViewportProjection> d_viewport_projection;
+
+		/**
+		 * Holds map of feature type to symbol.
+		 */
+		GPlatesGui::symbol_map_type d_feature_type_symbol_map;
 
 		/**
 		 * Renders the focused geometry highlighted.

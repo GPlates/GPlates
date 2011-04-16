@@ -117,9 +117,13 @@ namespace GPlatesGui
 
 		virtual
 		void
+		visit_rendered_cross_symbol(
+			const GPlatesViewOperations::RenderedCrossSymbol &);
+
+		virtual
+		void
 		visit_rendered_ellipse(
 				const GPlatesViewOperations::RenderedEllipse &rendered_ellipse);
-	
 	
 		virtual
 		void
@@ -159,12 +163,22 @@ namespace GPlatesGui
 		virtual
 		void
 		visit_rendered_small_circle_arc(
-				const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc);				
+				const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc);
+
+		virtual
+		void
+		visit_rendered_square_symbol(
+				 const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol);
 
 		virtual
 		void
 		visit_rendered_string(
 				const GPlatesViewOperations::RenderedString &rendered_string);
+
+		virtual
+		void
+		visit_rendered_triangle_symbol(
+				 const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol);
 
 
 		//! Typedef for a sequence of drawables.

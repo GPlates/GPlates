@@ -132,6 +132,7 @@ namespace GPlatesQtWidgets
 	class ShapefileAttributeViewerDialog;
 	class SmallCircleManager;
 	class SpecifyAnchoredPlateIdDialog;
+	class SymbolManagerDialog;
 	class TaskPanel;
 	class TotalReconstructionPolesDialog;
 	class TotalReconstructionSequencesDialog;
@@ -416,6 +417,15 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_colouring_dialog();
+
+		void
+		handle_load_symbol_file();
+
+		void 
+		handle_unload_symbol_file();
+
+		void
+		pop_up_symbol_manager_dialog();
 
 		void
 		pop_up_connect_wfs();
@@ -805,6 +815,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
 		boost::scoped_ptr<SmallCircleManager> d_small_circle_manager_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
+		boost::scoped_ptr<SymbolManagerDialog> d_symbol_manager_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionSequencesDialog> d_total_reconstruction_sequences_dialog_ptr;
 		boost::scoped_ptr<VisualLayersDialog> d_visual_layers_dialog_ptr;

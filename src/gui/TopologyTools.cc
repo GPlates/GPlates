@@ -1446,7 +1446,10 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 	GPlatesPresentation::ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			*d_focused_feature_layer_ptr,
 			render_style_params,
-			colour);
+			colour,
+			boost::none,
+			boost::none);
+
 	focused_rfg.get()->accept_visitor(reconstruction_geometry_renderer);
 
 	// Get the start and end points of the focused feature's geometry.
