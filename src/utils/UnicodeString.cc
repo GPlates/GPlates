@@ -132,7 +132,7 @@ std::operator<<(
 	// Ultimately, this whole problem would be avoided if we replaced all usage of std::ostream
 	// with std::wostream in the GPlates source code, and then used 'QString::utf16' instead of
 	// 'QString::toUtf8': http://doc.qt.nokia.com/4.4/qstring.html#utf16
-	os.write(bytes.constData(), bytes.count() + 1);
+	os.write(bytes.constData(), bytes.count());
 
 	return os;
 }
