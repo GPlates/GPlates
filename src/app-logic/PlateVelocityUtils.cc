@@ -284,6 +284,24 @@ GPlatesAppLogic::PlateVelocityUtils::detect_velocity_mesh_nodes(
 }
 
 
+bool
+GPlatesAppLogic::PlateVelocityUtils::detect_velocity_mesh_node(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
+{
+	if (!feature_ref.is_valid())
+	{
+		return false;
+	}
+
+	// Visitor to detect a mesh node feature.
+	DetectVelocityMeshNodes detect_velocity_mesh_nodes;
+
+	detect_velocity_mesh_nodes.visit_feature(feature_ref);
+
+	return detect_velocity_mesh_nodes.has_velocity_mesh_node_features();
+}
+
+
 GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes)

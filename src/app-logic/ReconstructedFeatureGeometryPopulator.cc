@@ -31,6 +31,7 @@
 
 #include "FlowlineUtils.h"
 #include "MotionPathUtils.h"
+#include "PlateVelocityUtils.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryCollection.h"
 #include "ReconstructionGeometryUtils.h"
@@ -273,6 +274,18 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::initialise_pre_feature_p
 		d_recon_rotation = d_reconstruction_tree->get_composed_absolute_rotation(
 				*d_reconstruction_params.get_recon_plate_id()).first;
 	}
+	else
+	{
+		d_recon_rotation = boost::none;
+	}
+
+	// A temporary hack to get around the problem of rotating MeshNode points (ie, points used
+	// to calculate velocities at static positions) when they have a zero plate ID but the
+	// anchor plate ID is *not* zero - causing a non-identity rotation.
+	if (PlateVelocityUtils::detect_velocity_mesh_node(feature_ref))
+	{
+		d_recon_rotation = boost::none;
+	}
 
 	//detect VGP feature and set the flag.
 	ReconstructionGeometryUtils::DetectPaleomagFeatures vgp_detector;
@@ -325,7 +338,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 			reconstructed_polyline = (*rot) * reconstructed_polyline;
 		}
 	} 
-	else if (plate_id) 
+	else if (d_recon_rotation) 
 	{
 		reconstructed_polyline = (*d_recon_rotation) * reconstructed_polyline;
 	}
@@ -366,7 +379,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 			reconstructed_multipoint = (*rot) * reconstructed_multipoint;
 		}
 	}
-	else if (plate_id)
+	else if (d_recon_rotation)
 	{
 		const FiniteRotation &r = *d_recon_rotation;
 		reconstructed_multipoint =
@@ -425,7 +438,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 			reconstructed_point = (*rot) * reconstructed_point;
 		}
 	}
-	else if (plate_id)
+	else if (d_recon_rotation)
 	{
 		const FiniteRotation &r = *d_recon_rotation;
 		reconstructed_point = r * gml_point.point();
@@ -463,7 +476,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 			
 		}
 	}
-	else if (plate_id)
+	else if (d_recon_rotation)
 	{
 		// Reconstruct the exterior PolygonOnSphere,
 		// then add it to the d_reconstruction_geometries_to_populate vector.
@@ -528,7 +541,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometryPopulator::handle_vgp_gml_point(
 
 	boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> reconstructed_point;
 
-	if (d_reconstruction_params.get_recon_plate_id()) 
+	if (d_recon_rotation) 
 	{
 		using namespace GPlatesMaths;
 		const FiniteRotation &r = *d_recon_rotation;

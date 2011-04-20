@@ -65,6 +65,14 @@ namespace GPlatesAppLogic
 		detect_velocity_mesh_nodes(
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
 
+		/**
+		 * Returns true if the specified feature can be used as a domain for velocity calculations
+		 * (currently this is feature type "gpml:MeshNode").
+		 */
+		bool
+		detect_velocity_mesh_node(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref);
+
 
 		/**
 		 * Creates a new feature collection containing a feature of type
