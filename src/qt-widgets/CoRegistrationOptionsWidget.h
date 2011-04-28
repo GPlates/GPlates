@@ -155,6 +155,7 @@ namespace GPlatesQtWidgets
 								this,
 								false));
 			}
+			d_application_state.reconstruct();
 			d_result_dialog->show();
  			d_result_dialog->activateWindow();
  			d_result_dialog->raise();

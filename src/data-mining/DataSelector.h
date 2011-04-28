@@ -238,7 +238,7 @@ namespace GPlatesDataMining
 		DataSelector(
 				const DataSelector&);
 		
-		//assignment
+		//assignment constructor
 		const DataSelector&
 		operator=(
 				const DataSelector&);
