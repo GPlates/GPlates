@@ -35,6 +35,7 @@
 #include "unit-test/DataSelectorTest.h"
 #include "unit-test/MultiThreadTest.h"
 #include "unit-test/FilterTest.h"
+#include "unit-test/CoregTest.h"
 
 
 GPlatesUnitTest::DataMiningTestSuite::DataMiningTestSuite(
@@ -48,6 +49,7 @@ GPlatesUnitTest::DataMiningTestSuite::DataMiningTestSuite(
 void 
 GPlatesUnitTest::DataMiningTestSuite::construct_maps()
 {
+	ADD_TESTSUITE(Coreg);
 	ADD_TESTSUITE(DataAssociationDataTable);
 	ADD_TESTSUITE(DataAssociation);
 	ADD_TESTSUITE(DataSelector);

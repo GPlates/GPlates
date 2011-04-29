@@ -17,6 +17,8 @@ set(srcs
     AppLogicTestSuite.h
     CanvasToolsTestSuite.cc
     CanvasToolsTestSuite.h
+    CoregTest.cc
+    CoregTest.h
     DataAssociationDataTableTest.cc
     DataAssociationDataTableTest.h
     DataAssociationTest.cc

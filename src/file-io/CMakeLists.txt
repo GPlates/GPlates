@@ -100,7 +100,7 @@ set(srcs
     OgrFormatMotionPathExport.cc
     OgrFormatMotionPathExport.h
     OgrFormatReconstructedFeatureGeometryExport.cc
-    OgrFormatReconstructedFeatureGeometryExport.h    
+    OgrFormatReconstructedFeatureGeometryExport.h
     OgrFormatResolvedTopologicalBoundaryExport.cc
     OgrFormatResolvedTopologicalBoundaryExport.h
     OgrGeometryExporter.cc
@@ -148,8 +148,6 @@ set(srcs
     ResolvedTopologicalBoundaryExportImpl.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
-
-
     ShapefileReader.cc
     ShapefileReader.h
     ShapefileUtils.cc
