@@ -133,6 +133,8 @@ ConnectWFSDialog::handle_accept()
 	
 	header.setValue("Content-type", "application/x-www-form-urlencoded");
 	header.setValue("Accept", "text/plain");
+	header.setValue("Host", url.host()); 
+
 	d_http->setHost(url.host());
 
 	if(checkBox_proxy->isChecked())
