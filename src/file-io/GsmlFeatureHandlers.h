@@ -45,6 +45,8 @@ namespace GPlatesFileIO
 		handle_feature_memeber(
 				FeatureCollectionHandle::weak_ref fc,
 				QByteArray&);
+		virtual 
+		~GsmlFeatureHandler() { }
 	protected:
 		/*
 		 * Override this function in subclass 
