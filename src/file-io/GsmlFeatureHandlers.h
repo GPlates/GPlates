@@ -32,59 +32,48 @@
 #include <QXmlQuery>
 #include <QBuffer>
 
+#include "GsmlConst.h"
 #include "model/FeatureCollectionHandle.h"
 
 namespace GPlatesFileIO
 {
-	class GsmlFeatureHandlers
+	using GPlatesModel::FeatureCollectionHandle;
+	class GsmlFeatureHandler
 	{
 	public:
-		
-		static
-		GsmlFeatureHandlers*
-		instance()
-		{
-			static GsmlFeatureHandlers* inst = 
-				new GsmlFeatureHandlers(GPlatesModel::FeatureCollectionHandle::weak_ref());
-			return inst;
-		}
-
-		inline
 		void
-		set_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::weak_ref fc)
-		{
-			d_feature_collection = fc;
-		}
-
-		inline
-		void
-		set_device(
-				QIODevice* device)
-		{
-			d_device = device;
-		}
-
-		void
-		handle_mapped_feature(
-				QBuffer& xml_data);
-
-		void
-		handle_fault_feature(
-				QBuffer&);
-
+		handle_feature_memeber(
+				FeatureCollectionHandle::weak_ref fc,
+				QByteArray&);
 	protected:
-		explicit
-		GsmlFeatureHandlers(
-				GPlatesModel::FeatureCollectionHandle::weak_ref fch):
-			d_feature_collection(fch)
+		/*
+		 * Override this function in subclass 
+		 * to change the behavior of GsmlFeatureHandler.                                                                  
+		*/
+		virtual
+		void
+		handle_gsml_feature(
+				const QString& feature_type_str,
+				FeatureCollectionHandle::weak_ref fc,
+				QBuffer& xml_data);
+	};
+
+	class GsmlFeatureHandlerFactory
+	{
+		/*
+		 * Give user an opportunity to use different GsmlFeatureHandler.
+		 * Change the factory if you want to equip a different GsmlFeatureHandler.                                                                  
+		*/
+	public:
+		static
+		boost::shared_ptr<GsmlFeatureHandler>
+		get_instance()
 		{
+			return boost::shared_ptr<GsmlFeatureHandler>(new GsmlFeatureHandler());
 		}
-		GsmlFeatureHandlers();
-		GsmlFeatureHandlers(const GsmlFeatureHandlers&);
-		GPlatesModel::FeatureCollectionHandle::weak_ref d_feature_collection;
-		QIODevice* d_device;
 	};
 }
 
 #endif  // GPLATES_FILEIO_GSMLFEATUREHANDLERS_H
+
+

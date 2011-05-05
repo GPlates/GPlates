@@ -39,11 +39,50 @@
 
 namespace GPlatesFileIO
 {
-
+	static const char * ReadErrorAccumulationExceptionName = 
+			"Read Error Accumulation Exception";
 	class ArbitraryXmlReader
 	{
 	public:
-		static
+		class ReadErrorAccumulationException: 
+			public GPlatesGlobal::Exception
+		{
+		public:
+			ReadErrorAccumulationException():
+				GPlatesGlobal::Exception(GPLATES_EXCEPTION_SOURCE)
+			{ }
+			~ReadErrorAccumulationException() throw()
+			{ }
+		protected:
+			void
+			write_message(
+					std::ostream &os) const
+			{
+				write_string_message(
+					os,
+					"Invalid ReadErrorAccumulation." 
+					"ArbitraryXmlReader has not been configurated properly.");
+			}
+
+			const char *
+			exception_name() const 
+			{
+				return ReadErrorAccumulationExceptionName;
+			}
+		};
+
+		/*
+		* TODO: This is not thread-safe.
+		* TODO: Create an instance for each thread.
+		*/
+		static 
+		ArbitraryXmlReader*
+		instance()
+		{
+			static ArbitraryXmlReader* p = new ArbitraryXmlReader();
+			return p;
+		}
+
 		void
 		read_file(
 				const File::Reference &file,
@@ -51,15 +90,52 @@ namespace GPlatesFileIO
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 
-		static
 		void
 		read_xml_data(
 				const File::Reference &file,
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
-				QByteArray& data);
+				GPlatesModel::ModelInterface &model,
+				QByteArray& data,
+				ReadErrorAccumulation &read_errors);
 		
+		ReadErrorAccumulation*
+		get_read_error_accumulation() const
+		{
+			if(!d_read_errors)
+			{
+				throw ReadErrorAccumulationException();
+			}
+			return d_read_errors;
+		}
+		
+		void
+		set_read_error_accumulation(
+				ReadErrorAccumulation* new_read_errors)
+		{
+			d_read_errors = new_read_errors;
+		}
 	private:
-		
+		ArbitraryXmlReader():d_read_errors(NULL) {}
+		ArbitraryXmlReader(const ArbitraryXmlReader&);
+		ReadErrorAccumulation* d_read_errors;
+
+		class SetErrorAccumulation
+		{
+		public:
+			SetErrorAccumulation(
+					ReadErrorAccumulation* error_accumulation,
+					ArbitraryXmlReader* parent):
+				d_parent(parent)
+			{
+				d_parent->set_read_error_accumulation(error_accumulation);
+			}
+			~SetErrorAccumulation()
+			{
+				d_parent->set_read_error_accumulation(NULL);
+			}
+		private:
+			ArbitraryXmlReader* d_parent;
+		};
 	};
 }
 

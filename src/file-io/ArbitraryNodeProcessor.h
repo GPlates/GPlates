@@ -25,53 +25,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_XMLNODEPROCESSORFACTORY_H
-#define GPLATES_FILEIO_XMLNODEPROCESSORFACTORY_H
+#ifndef GPLATES_FILEIO_ARBITRARYNODEPROCESSOR_H
+#define GPLATES_FILEIO_ARBITRARYNODEPROCESSOR_H
 
-#include <QBuffer>
 #include <vector>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include "model/FeatureCollectionHandle.h"
+#include <QBuffer>
+#include <QFile>
+#include <QString>
+#include <QXmlQuery>
 
 namespace GPlatesFileIO
 {
-	class GsmlPropertyHandlers;
-	class GsmlNodeProcessor;
-
-	class GsmlNodeProcessorFactory
+	class ArbitraryNodeProcessor
 	{
 	public:
-		explicit
-		GsmlNodeProcessorFactory(
-				GPlatesModel::FeatureHandle::weak_ref feature);
-
+		
+		virtual
 		void
-		process_with_property_processors(
-				const QString& feature_type,
-				QByteArray& data);
+		execute(
+				QBuffer& xml_data) = 0;
+		virtual
+		~ArbitraryNodeProcessor(){}
 
-		void
-		process_with_property_processors(
-				const QString& feature_type,
-				QBuffer& buf);
-
-	protected:
-		GsmlNodeProcessorFactory();
-		GsmlNodeProcessorFactory(
-					const GsmlNodeProcessorFactory&);
-
-		std::vector<boost::shared_ptr<GsmlNodeProcessor> >
-		create_property_processors(
-				const QString& feature_name);
-
-	private:
-		boost::shared_ptr<GsmlPropertyHandlers> d_property_handler;
 	};
-	
 }
 
-#endif  // GPLATES_FILEIO_XMLNODEPROCESSORFACTORY_H
-
-
+#endif  // GPLATES_FILEIO_ARBITRARYNODEPROCESSOR_H

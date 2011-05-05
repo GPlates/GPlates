@@ -24,30 +24,79 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <boost/foreach.hpp>
-
+#include <boost/bind.hpp>
 #include <QBuffer>
 
 #include "GsmlFeatureHandlers.h"
 #include "GsmlPropertyHandlers.h"
 #include "GsmlNodeProcessorFactory.h"
 
+#include "global/LogException.h"
+#include "utils/XQueryUtils.h"
+
+using namespace GPlatesUtils;
+using namespace GPlatesModel;
+
 void
-GPlatesFileIO::GsmlFeatureHandlers::handle_mapped_feature(
+GPlatesFileIO::GsmlFeatureHandler::handle_gsml_feature(
+		const QString& feature_type_str,
+		FeatureCollectionHandle::weak_ref fc,
 		QBuffer& xml_data)
 {
-	GPlatesModel::FeatureType feature_type(GPlatesModel::PropertyName::create_gml("MappedFeature"));
-	GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(
-			d_feature_collection,
-			feature_type);
+	FeatureHandle::weak_ref feature = FeatureHandle::create(
+			fc,
+			FeatureType(PropertyName::create_gml(feature_type_str)));
 
-	GsmlPropertyHandlers::instance()->set_feature(feature);
-	std::vector<boost::shared_ptr<GsmlNodeProcessor> > processors = 
-		GsmlNodeProcessorFactory::get_property_processors_for_mapped_feature();
-	BOOST_FOREACH(boost::shared_ptr<GsmlNodeProcessor>& p, processors)
-	{
-		p->execute(xml_data);
-	}
+	GsmlNodeProcessorFactory(feature).process_with_property_processors(
+			feature_type_str, 
+			xml_data);
 	return;
 }
+
+void
+GPlatesFileIO::GsmlFeatureHandler::handle_feature_memeber(
+		FeatureCollectionHandle::weak_ref fc,
+		QByteArray& xml_data)
+{
+	QBuffer buffer(&xml_data);
+	buffer.open(QIODevice::ReadOnly | QIODevice::Text);
+	if(!buffer.isOpen())
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,	
+			"Unable to open buffer.");
+	}
+	QXmlStreamReader reader(&buffer);
+	XQuery::next_start_element(reader);//gml:featureMember
+	XQuery::next_start_element(reader);//gsml:MappedFeature -- real feature type
+	QString feature_type = reader.name().toString();
+
+	std::vector<QByteArray> results = 
+		XQuery::evaluate(
+				xml_data,
+				"//gsml:"+ feature_type ,
+				boost::bind(&XQuery::is_empty,_1));
+
+	if(results.size() != 1)
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,	
+			"The number of feature is not 1. We are expecting one and only one feature here.");
+	}
+
+	QBuffer buf(&results[0]);
+	buf.open(QIODevice::ReadOnly | QIODevice::Text);
+	if(!buf.isOpen())
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,	
+			"Unable to open buffer.");
+	}
+	handle_gsml_feature(feature_type,fc,buf);
+}
+
+
+
+
 
 

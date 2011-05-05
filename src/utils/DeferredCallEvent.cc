@@ -63,6 +63,8 @@ GPlatesUtils::BlockingDeferredCallEvent::BlockingDeferredCallEvent(
 void
 GPlatesUtils::BlockingDeferredCallEvent::execute()
 {
+	//in case I forgot, d_deferred_call() could throw exception, 
+	//the waiting thread will wait forever.
 	d_deferred_call();
 	d_mutex.lock();
 	d_condition.wakeAll();

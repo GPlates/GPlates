@@ -26,75 +26,85 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
-#include "GsmlFeatureHandlers.h"
-#include "GsmlPropertyHandlers.h"
+#include "GsmlNodeProcessor.h"
 #include "GsmlNodeProcessorFactory.h"
+#include "GsmlFeaturesDef.h"
 
-using namespace GPlatesFileIO;
+GPlatesFileIO::GsmlNodeProcessorFactory::GsmlNodeProcessorFactory(
+		GPlatesModel::FeatureHandle::weak_ref f):
+	d_property_handler(new GsmlPropertyHandlers(f))
+{ }
 
-const QString mapped_feature_query = 
-		wfs_ns + gml_ns + gsml_ns + 
-		"declare variable $idx external; " +
-		"doc($data_source)/wfs:FeatureCollection/gml:featureMember[$idx]/gsml:MappedFeature";
-const QString geometry_property_query = 
-		gsml_ns + 
-		"declare variable $idx external; " +
-		"doc($data_source)/gsml:MappedFeature/gsml:shape[$idx]";
-
-#define REGISTER_FEATURE_PROCESSOR(name,container)                     \
-container.push_back(                                                   \
-		boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor>(           \
-				new GsmlNodeProcessor(                                 \
-						name ## _query,                                \
-						boost::bind(                                   \
-								&GsmlFeatureHandlers::handle_ ## name, \
-								GsmlFeatureHandlers::instance(),       \
-								_1))));
-
-#define REGISTER_PROPERTY_PROCESSOR(name,container)                    \
-container.push_back(                                                   \
-		boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor>(           \
-				new GsmlNodeProcessor(                                 \
-						name ## _query,                                \
-						boost::bind(                                   \
-								&GsmlPropertyHandlers::handle_ ## name,\
-								GsmlPropertyHandlers::instance(),      \
-								_1))));
-
-std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> >
-GPlatesFileIO::GsmlNodeProcessorFactory::create_feature_processors()
+void
+GPlatesFileIO::GsmlNodeProcessorFactory::process_with_property_processors(
+		const QString& feature_type,
+		QBuffer& buf)
 {
-	std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> > ret;
-	REGISTER_FEATURE_PROCESSOR(mapped_feature, ret);
-	return ret;
+	std::vector<boost::shared_ptr<GsmlNodeProcessor> > processors = 
+		create_property_processors(feature_type);
+	BOOST_FOREACH(boost::shared_ptr<GsmlNodeProcessor> p, processors)
+	{
+		p->execute(buf);
+	}
 }
 
 
 std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> >
-GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors_for_mapped_feature()
+GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors(
+		const QString& feature_name)
 {
-	std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> > ret;
-	REGISTER_PROPERTY_PROCESSOR(geometry_property,ret);
-	return ret;
+	std::vector<boost::shared_ptr<GsmlNodeProcessor> > processors;
+	const FeatureInfo* feature = NULL; 
+	for(unsigned i=0; i<sizeof(AllFeatures)/sizeof(FeatureInfo); i++)
+	{
+		if(feature_name == AllFeatures[i].name)
+		{
+			feature = &AllFeatures[i];
+			break;
+		}
+	}
+	if(!feature)
+	{
+		qWarning() << "Cannot find property processors for " + feature_name + ".";
+		return std::vector<boost::shared_ptr<GsmlNodeProcessor> >();
+	}
+	else
+	{
+		for(unsigned j=0; j<feature->property_num; j++)
+		{
+			processors.push_back(
+					boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor>(           
+							new GsmlNodeProcessor(                                 
+									feature->properties[j]->query,                                
+									boost::bind(                                   
+											feature->properties[j]->handler, 
+											d_property_handler,      
+											_1))));
+		}
+	}
+	return processors;
 }
 
-std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> >
-GPlatesFileIO::GsmlNodeProcessorFactory::get_feature_processors()
+
+void
+GPlatesFileIO::GsmlNodeProcessorFactory::process_with_property_processors(
+		const QString& feature_type,
+		QByteArray& data)
 {
-	static std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> > ps = 
-		create_feature_processors(); //initial once.
-	
-	return ps;
+	QBuffer buffer(&data);
+	buffer.open(QIODevice::ReadWrite | QIODevice::Text);
+	if(!buffer.isOpen())
+	{
+		qWarning() << QString("Cannot open buffer for reading xml data.");
+		return;
+	}
+	process_with_property_processors(feature_type,buffer);
+	buffer.close();
+	return;
 }
 
-std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> >
-GPlatesFileIO::GsmlNodeProcessorFactory::get_property_processors_for_mapped_feature()
-{
-	static std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> > ps = 
-		create_property_processors_for_mapped_feature(); //initial once.
-	
-	return ps;
-}
+
+
 
 
 

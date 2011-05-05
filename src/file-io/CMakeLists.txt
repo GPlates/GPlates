@@ -12,6 +12,7 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
+    ArbitraryNodeProcessor.h
     ArbitraryXmlProfile.cc
     ArbitraryXmlProfile.h
     ArbitraryXmlReader.cc
@@ -78,12 +79,15 @@ set(srcs
     GpmlOnePointSixReader.h
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
+    GsmlConst.h
     GsmlFeatureHandlers.cc
     GsmlFeatureHandlers.h
+    GsmlFeaturesDef.h
     GsmlNodeProcessor.cc
     GsmlNodeProcessor.h
     GsmlNodeProcessorFactory.cc
     GsmlNodeProcessorFactory.h
+    GsmlPropertyDef.h
     GsmlPropertyHandlers.cc
     GsmlPropertyHandlers.h
     LineReader.cc

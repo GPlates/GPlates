@@ -34,9 +34,8 @@ GPlatesFileIO::ArbitraryXmlReader::read_file(
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
-
-	GPlatesModel::FeatureCollectionHandle::weak_ref fc = file_ref.get_feature_collection();
-	profile->populate(file_ref,fc);
+	SetErrorAccumulation setter(&read_errors,this);
+	profile->populate(file_ref);
 }
 
 
@@ -44,10 +43,14 @@ void
 GPlatesFileIO::ArbitraryXmlReader::read_xml_data(
 		const File::Reference &file_ref,
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
-		QByteArray& data)
+		GPlatesModel::ModelInterface &model,
+		QByteArray& data,
+		ReadErrorAccumulation &read_errors)
 {
-	GPlatesModel::FeatureCollectionHandle::weak_ref fc = file_ref.get_feature_collection();
-	profile->populate(data,fc);
+	SetErrorAccumulation setter(&read_errors,this);
+	profile->populate(
+			data,
+			file_ref.get_feature_collection());
 }
 
 

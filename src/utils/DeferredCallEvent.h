@@ -265,6 +265,8 @@ namespace GPlatesUtils
 
 				mutex.lock();
 				QApplication::postEvent(qApp, ev);
+				//in case I forget, http://en.wikipedia.org/wiki/Spurious_wakeup
+				//we need to check if the return result is really ready.
 				condition.wait(&mutex);
 				mutex.unlock();
 

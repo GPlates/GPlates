@@ -23,7 +23,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <boost/foreach.hpp>
 
 #include <QByteArray>
@@ -33,56 +32,28 @@
 #include <QXmlSerializer>
 
 #include "GsmlNodeProcessor.h"
+#include "utils/XQueryUtils.h"
 
 void
 GPlatesFileIO::GsmlNodeProcessor::execute(
 		QBuffer& xml_data)
 {
-	for(int i=1; ;i++)
-	{
-		xml_data.reset();
-		d_query.bindVariable("data_source",&xml_data);
-		d_query.bindVariable("idx", QVariant(i));
-		d_query.setQuery(d_query_str);
+	std::vector<QByteArray> results = 
+		GPlatesUtils::XQuery::evaluate(
+				xml_data,
+				d_query_str,
+				&GPlatesUtils::XQuery::is_empty);
 
-		if (!d_query.isValid())
-		{
-			qWarning() << "The query is not valid.";
-			return;
-		}
-		QByteArray array;
-		QBuffer buffer(&array);
+	BOOST_FOREACH(QByteArray& data, results)
+	{
+		QBuffer buffer(&data);
 		buffer.open(QIODevice::ReadWrite | QIODevice::Text);
 		if(!buffer.isOpen())
 		{
 			qWarning() << "Cannot open buffer for output.";
+			continue;
 		}
-
-		QXmlSerializer serializer(d_query, &buffer);
-		if(d_query.evaluateTo(&serializer))
-		{
-			if(array.size() == 0)
-			{
-				qDebug() << "No more data.";
-				break;
-			}
-			buffer.reset();
-			try
-			{
-				d_handler(buffer);
-			}
-			catch(...)
-			{
-				buffer.close();
-				qDebug()<< "opps, something is wrong.";
-				throw;
-			}
-		}
-		else
-		{
-			qWarning() << "Failed to evaluate data.";
-			break;
-		}
+		d_handler(buffer);
 		buffer.close();
 	}
 }

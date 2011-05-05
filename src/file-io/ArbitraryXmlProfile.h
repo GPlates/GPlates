@@ -43,8 +43,7 @@ namespace GPlatesFileIO
 		virtual
 		void
 		populate(
-				const File::Reference&,
-				GPlatesModel::FeatureCollectionHandle::weak_ref) = 0;
+				const File::Reference&) = 0;
 
 		virtual
 		void

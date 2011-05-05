@@ -30,6 +30,7 @@
 #include <QXmlQuery>
 #include <QXmlResultItems>
 #include <QXmlSerializer>
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "GeoscimlProfile.h"
@@ -37,83 +38,58 @@
 #include "GsmlPropertyHandlers.h"
 #include "GsmlNodeProcessorFactory.h"
 
-const QString root_query = "doc($data_source)";
+#include "utils/XQueryUtils.h"
 
 void
 GPlatesFileIO::GeoscimlProfile::populate(
-		const File::Reference& file_ref,
-		GPlatesModel::FeatureCollectionHandle::weak_ref fch)
+		const File::Reference& file_ref)
 {
 	QString filename = file_ref.get_file_info().get_display_name(true);
 	QFile source(filename);
 	source.open(QFile::ReadOnly | QFile::Text);
 	if(!source.isOpen())
 	{
-		qWarning() << QString("cannot open xml file: %1.").arg(filename);
+		qWarning() << QString("Cannot open xml file: %1.").arg(filename);
 		return;
 	}
 
 	QByteArray array = source.readAll();
-	QBuffer buffer(&array);
-	buffer.open(QIODevice::ReadWrite | QIODevice::Text);
-	if(!buffer.isOpen())
-	{
-		qWarning() << QString("cannot open buffer for reading xml file.");
-		return;
-	}
-
-	try
-	{
-		GsmlFeatureHandlers::instance()->set_feature_collection(fch);
-		std::vector<boost::shared_ptr<GsmlNodeProcessor> > processors = 
-			GsmlNodeProcessorFactory::get_feature_processors();
-
-		BOOST_FOREACH(boost::shared_ptr<GsmlNodeProcessor>& p, processors)
-		{
-			p->execute(buffer);
-		}
-		
-	}
-	catch(const QString& err)
-	{
-		qWarning() << err;
-	}
-	buffer.close();
+	populate(array,file_ref.get_feature_collection());
 	source.close();
 	return;
 }
 
+using namespace GPlatesUtils;
 
 void
 GPlatesFileIO::GeoscimlProfile::populate(
 		QByteArray& xml_data,
 		GPlatesModel::FeatureCollectionHandle::weak_ref fch)
 {
-	QBuffer buffer(&xml_data);
-	buffer.open(QIODevice::ReadWrite | QIODevice::Text);
-	if(!buffer.isOpen())
-	{
-		qWarning() << QString("cannot open buffer for reading xml data.");
-		return;
-	}
-
 	try
 	{
-		GsmlFeatureHandlers::instance()->set_feature_collection(fch);
-		std::vector<boost::shared_ptr<GsmlNodeProcessor> > processors = 
-			GsmlNodeProcessorFactory::get_feature_processors();
-
-		BOOST_FOREACH(boost::shared_ptr<GsmlNodeProcessor>& p, processors)
+		std::vector<QByteArray> results = 
+			XQuery::evaluate(
+					xml_data,
+					"/wfs:FeatureCollection/gml:featureMember",
+					boost::bind(&XQuery::is_empty,_1));
+		if(results.size() == 0)
 		{
-			p->execute(buffer);
+			//This case covers GeoSciML data which has not been wrapped in wfs:FeatureCollection.
+			GsmlFeatureHandlerFactory::get_instance()->handle_feature_memeber(fch,xml_data);
 		}
-		
+		else
+		{
+			BOOST_FOREACH(QByteArray& array, results)
+			{
+				GsmlFeatureHandlerFactory::get_instance()->handle_feature_memeber(fch,array);
+			}
+		}
 	}
-	catch(const QString& err)
+	catch(const std::exception& ex)
 	{
-		qWarning() << err;
+		qWarning() << ex.what();
 	}
-	buffer.close();
 	return;
 }
 

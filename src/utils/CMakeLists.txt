@@ -50,6 +50,8 @@ set(srcs
     SetConst.h
     Singleton.h
     SmartNodeLinkedList.h
+    SpatialReferenceSystem.cc
+    SpatialReferenceSystem.h
     StringFormattingUtils.cc
     StringFormattingUtils.h
     StringSet.cc
@@ -67,6 +69,8 @@ set(srcs
     XmlNamespaces.h
     XPath.cc
     XPath.h
+    XQueryUtils.cc
+    XQueryUtils.h
 )
 
 

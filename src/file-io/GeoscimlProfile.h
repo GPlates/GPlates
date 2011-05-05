@@ -54,8 +54,7 @@ namespace GPlatesFileIO
 		
 		void
 		populate(
-				const File::Reference& xml_file,
-				GPlatesModel::FeatureCollectionHandle::weak_ref fch);
+				const File::Reference& xml_file);
 
 		void
 		populate(

@@ -35,60 +35,62 @@
 
 namespace GPlatesFileIO
 {
+	struct ReadErrorAccumulation;
+
 	class GsmlPropertyHandlers
 	{
 	public:
+		explicit
+		GsmlPropertyHandlers(
+				GPlatesModel::FeatureHandle::weak_ref fh);
 		
-		static
-		GsmlPropertyHandlers*
-		instance()
-		{
-			static GsmlPropertyHandlers* inst = 
-				new GsmlPropertyHandlers(GPlatesModel::FeatureHandle::weak_ref());
-			return inst;
-		}
-
+		/*
+		* Parse geometry data and create geometry property in GPlates model
+		*/
 		void
 		handle_geometry_property(
 				QBuffer&);
 
-		inline
+		/*
+		* Parse observation method data.
+		*/
 		void
-		set_feature(
-				GPlatesModel::FeatureHandle::weak_ref f)
-		{
-			d_feature = f;
-		}
+		handle_observation_method(
+				QBuffer&);
 
-		inline
+		/*
+		* Parse gml:name data.
+		*/
 		void
-		set_device(
-				QIODevice* device)
-		{
-			d_device = device;
-		}
+		handle_gml_name(
+				QBuffer&);
+		
+		/*
+		* Parse gml:description data.
+		*/
+		void
+		handle_gml_desc(
+				QBuffer&);
+
+		/*
+		* Parse occurrence property.
+		*/
+		void
+		handle_occurrence_property(
+				QBuffer&);
 
 	protected:
-
 		void
 		process_geometries(
 				QBuffer&,
 				const QString&);
 
-	protected:
-		explicit
-		GsmlPropertyHandlers(
-				GPlatesModel::FeatureHandle::weak_ref fh):
-			d_feature(fh)
-		{
-		}
-		GsmlPropertyHandlers();
-		GsmlPropertyHandlers(
-				const GsmlPropertyHandlers&);
+	private:
 		GPlatesModel::FeatureHandle::weak_ref d_feature;
-		QIODevice* d_device;
+		ReadErrorAccumulation* d_read_errors;
 	};
-	
 }
 
 #endif  // GPLATES_FILEIO_GSMLPROPERTYHANDLERS_H
+
+

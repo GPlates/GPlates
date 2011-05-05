@@ -269,7 +269,7 @@ GPlatesFileIO::read_feature_collection(
 			return GmapReader::read_file(file_ref, model, read_errors);
 
 		case FeatureCollectionFileFormat::GSML:
-			return ArbitraryXmlReader::read_file(
+			return ArbitraryXmlReader::instance()->read_file(
 					file_ref, 
 					boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
 					model, 

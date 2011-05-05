@@ -128,6 +128,48 @@ namespace GPlatesModel
 				unsigned long fixed_plate_id,
 				unsigned long moving_plate_id,
 				const std::vector<TotalReconstructionPoleData> &five_tuples);
+
+		/*
+		* Convenient function to create TopLevelPropertyInline 
+		*/
+		template<class PropertyValueType, class DataType>
+		inline
+		TopLevelPropertyInline::non_null_ptr_type
+		create_toplevel_property(
+				const PropertyName& property_name,
+				const DataType& data)
+		{
+			return TopLevelPropertyInline::create(
+					property_name,
+					PropertyValueType::create(data));
+		}
+
+		/*
+		* Convenient function to add TopLevelPropertyInline into feature. 
+		*/
+		template<class PropertyValueType, class DataType>
+		inline
+		void
+		add_property(
+				FeatureHandle::weak_ref feature,
+				const PropertyName& property_name,
+				const DataType& data)
+		{
+			feature->add(create_toplevel_property<PropertyValueType>(property_name, data));
+		}
+
+		/*
+		* Convenient function to add TopLevelPropertyInline into feature. 
+		*/
+		inline
+		void
+		add_property(
+				FeatureHandle::weak_ref feature,
+				const PropertyName& property_name,
+				GPlatesModel::PropertyValue::non_null_ptr_type value)
+		{
+			feature->add(TopLevelPropertyInline::create(property_name, value));
+		}
 	}
 }
 

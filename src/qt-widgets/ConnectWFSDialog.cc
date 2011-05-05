@@ -31,6 +31,7 @@
 #include <time.h>
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileIO.h"
 #include "file-io/ArbitraryXmlReader.h"
 #include "file-io/File.h"
 #include "file-io/GeoscimlProfile.h"
@@ -161,23 +162,23 @@ ConnectWFSDialog::hanle_wfs_response(
 {
 	if(d_canceled)
 	{
-		qDebug() << "Http request has been canceled by user.";
+		qDebug() << "The http request has been canceled by user.";
 		return;
 	}
 	if(err)
 	{
-		qWarning() << "Error happened during http request.";
+		qWarning() << "Error happened during the http request.";
 		return;
 	}
 	if(d_current_request_id != id)
 	{
-		qWarning() << "http request id does not match.";
+		qWarning() << "The http request id does not match.";
 		return;
 	}
 
 	if(d_finished_request_id.find(id) != d_finished_request_id.end())
 	{
-		qWarning() << "This http request has been finished.";
+		qWarning() << "The http request has finished.";
 		return;
 	}
 	d_finished_request_id.insert(id);
@@ -185,25 +186,15 @@ ConnectWFSDialog::hanle_wfs_response(
 	d_progress_dlg->setValue(8);
 	
 	QByteArray xml_data = d_http->readAll();
-	qDebug() << xml_data;
+	//qDebug() << xml_data;
+	
 	//temp file path
 	QString tmp_dir = QDir::tempPath();
 	QString file_base_name = lineEdit_name->text();
 	QString filename = tmp_dir + "/" + file_base_name;
 	
-	//create temp file
-	QFile tmp_file(filename);
-	tmp_file.open(QIODevice::ReadWrite | QIODevice::Text);
-	tmp_file.close();
+	d_app_state.get_feature_collection_file_io().load_xml_data(filename,xml_data);
 
-	const GPlatesFileIO::FileInfo file_info(filename);
-	GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file(file_info);
-	
-	GPlatesFileIO::ArbitraryXmlReader::read_xml_data(
-			file->get_reference(), 
-			boost::shared_ptr<GPlatesFileIO::ArbitraryXmlProfile>(new GPlatesFileIO::GeoscimlProfile()), 
-			xml_data);
-	d_app_state.get_feature_collection_file_state().add_file(file);
 	d_http->clearPendingRequests();
 	d_http->close();
 	d_progress_dlg->hide();

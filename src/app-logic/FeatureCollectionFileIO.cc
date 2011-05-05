@@ -27,9 +27,11 @@
 
 #include "app-logic/AppLogicUtils.h"
 
+#include "file-io/ArbitraryXmlReader.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/FeatureCollectionReaderWriter.h"
+#include "file-io/GeoscimlProfile.h"
 #include "file-io/ShapefileReader.h"
 
 #include "global/AssertionFailureException.h"
@@ -246,6 +248,35 @@ GPlatesAppLogic::FeatureCollectionFileIO::remap_shapefile_attributes(
 	emit_handle_read_errors_signal(read_errors);
 
 	emit remapped_shapefile_attributes(*this, file_ref);
+}
+
+
+void
+GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
+		const QString& name,
+		QByteArray &data)
+{
+	using namespace GPlatesFileIO;
+	ReadErrorAccumulation read_errors;
+
+	//create temp file
+	QFile tmp_file(name);
+	tmp_file.open(QIODevice::ReadWrite | QIODevice::Text);
+	tmp_file.close();
+
+	const FileInfo file_info(name);
+	File::non_null_ptr_type file = File::create_file(file_info);
+
+	ArbitraryXmlReader::instance()->read_xml_data(
+			file->get_reference(), 
+			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
+			d_model,
+			data,
+			read_errors);
+	d_file_state.add_file(file);
+
+	// Emit one signal for all loaded files.
+	emit_handle_read_errors_signal(read_errors);
 }
 
 

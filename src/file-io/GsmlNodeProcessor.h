@@ -36,53 +36,32 @@
 #include <QString>
 #include <QXmlQuery>
 
+#include "ArbitraryNodeProcessor.h"
+
 namespace GPlatesFileIO
 {
-	class GsmlNodeProcessor
+	class GsmlNodeProcessor : 
+		public ArbitraryNodeProcessor
 	{
 	public:
 
 		typedef boost::function<void(QBuffer&)> Handler;
 
-		explicit
 		GsmlNodeProcessor(
 				const QString& query_str,
-				Handler handler = 0):
+				Handler handler):
 			d_query_str(query_str),
 			d_handler(handler)
-		{
-		}
+		{ }
 
 		void
 		execute(
 				QBuffer& xml_data);
 
-		inline
-		void
-		set_handler(
-				Handler h)
-		{
-			d_handler = h;
-		}
-
-		inline
-		void
-		bind(
-				QIODevice* f)
-		{
-			d_query.bindVariable("data_source",f);
-			d_device = f;
-			if(!d_query.isValid())
-			{
-				d_query.setQuery(d_query_str);
-			}
-		}
-
 	protected:
 		QXmlQuery d_query;
 		QString d_query_str;
 		Handler d_handler;
-		QIODevice* d_device;
 	};
 	
 }
