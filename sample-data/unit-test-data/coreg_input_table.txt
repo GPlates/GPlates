@@ -1,0 +1,28 @@
+#Lines start with '#' are comments.
+#Empty line(s) is(are) using to separate sections
+
+rotation files:
+C:\gplates_src\data-mining-2011-feb-08\sample-data\unit-test-data\coreg_rotation.rot
+
+seed files:
+C:\gplates_src\data-mining-2011-feb-08\sample-data\unit-test-data\coreg_seed_points.gpml
+
+coreg files:
+C:\gplates_src\data-mining-2011-feb-08\sample-data\unit-test-data\coreg_target.gpml
+
+output path:
+./
+
+output prefix:
+unit_test_output
+
+time_range:
+#start time, end time, 	increment
+140,		 0, 		10
+
+input table:
+#feature collection name, 	coreg type(parameter), 		attribute name, 		data operator,   shape attr 
+coreg_target.gpml, 			Region_of_Interest (5000), 	Distance, 				Min,             false
+coreg_target.gpml, 			Region_of_Interest (5000), 	Presence, 				Lookup,			 false
+coreg_target.gpml, 			Region_of_Interest (5000), 	Number_In_Region, 		Lookup,			 false
+coreg_target.gpml, 			Region_of_Interest (5000), 	name, 					Lookup,			 false

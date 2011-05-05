@@ -1,0 +1,6 @@
+Seed Feature ID,Seed Feature begin time,Seed Feature end time,Distance,Presence,Number in Region,name
+GPlates-0298584d-7e8a-4cb8-bb16-7c6e743028db,distant past,distant future,NaN,false,0,NaN
+GPlates-2fa35113-711e-401a-936f-4f64e51ae644,distant past,distant future,1041.01,true,3,multipoints
+GPlates-36f759e1-6187-4533-a9e3-f9ed7da98404,distant past,distant future,2616.16,true,2,polyline
+GPlates-141a4fb7-3090-40d9-bb63-a9eff317d382,distant past,distant future,1731.49,true,3,multipoints
+GPlates-4719664d-6ae4-4503-807d-8228ba66cbf4,distant past,distant future,NaN,false,0,NaN

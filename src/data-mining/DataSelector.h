@@ -55,7 +55,7 @@
 namespace GPlatesDataMining
 {
 	/*
-	*Comments...
+	* 
 	*/
 	class DataSelector
 	{
@@ -69,23 +69,12 @@ namespace GPlatesDataMining
 				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> > FeatureCollectionRFGMap;
 
 		static
-		DataSelector* 
+		boost::shared_ptr<DataSelector> 
 		create(
 				const CoRegConfigurationTable& table)
 		{
-			return  new DataSelector(table) ;
+			return boost::shared_ptr<DataSelector>(new DataSelector(table));
 		}
-
-		/*
-		* Given the @a seed_collection and @a reconstruction, 
-		* the function returns the associated data in DataTable.
-		*/
-		void
-		select(
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref& seed_collection,	
-				const GPlatesAppLogic::Reconstruction* reconstruction,									
-				DataTable& ret														
-				);
 
 		
 		/*
@@ -238,7 +227,7 @@ namespace GPlatesDataMining
 		DataSelector(
 				const DataSelector&);
 		
-		//assignment constructor
+		//assignment 
 		const DataSelector&
 		operator=(
 				const DataSelector&);

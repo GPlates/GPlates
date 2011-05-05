@@ -78,8 +78,8 @@ namespace GPlatesGui
 
 		//! Typedef for a shared pointer to const @a Configuration.
 		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
-
-
+		
+		
 		static
 		const non_null_ptr_type
 		create(

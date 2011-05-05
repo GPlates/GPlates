@@ -35,14 +35,13 @@
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
 
-#include "data-mining/DataTable.h"
 #include "data-mining/CoRegConfigurationTable.h"
+#include "data-mining/DataTable.h"
+#include "data-mining/DataSelector.h"
 #include "model/FeatureCollectionHandle.h"
 
 namespace GPlatesAppLogic
 {
-	
-
 	class CoRegistrationLayerTaskParams :
 			public LayerTaskParams
 	{
@@ -158,14 +157,14 @@ namespace GPlatesAppLogic
 		CoRegistrationLayerTask()
 		{ }
 
-		//TODO: 
-		// This is a temporary function used to export co-registration data
-		// Later on, we are going to move export functionality to export dialog.
-		const QString
-		get_export_file_name(
-				const QString, //path
-				const QString, //base file name
-				const double); //reconstruction time
+		inline
+		void
+		refresh_data(
+				const GPlatesDataMining::DataTable& table)
+		{
+			GPlatesDataMining::DataSelector::set_data_table(table);
+			d_layer_params.d_call_back(GPlatesDataMining::DataSelector::get_data_table());
+		}
 
 		CoRegistrationLayerTaskParams d_layer_params;
 	};

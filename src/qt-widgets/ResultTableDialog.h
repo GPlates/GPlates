@@ -258,7 +258,7 @@ namespace GPlatesQtWidgets
 
 		void
 		highlight_seed();
-	
+
 	signals:
 		
 	private:

@@ -21,12 +21,8 @@ set(srcs
     CoregTest.h
     DataAssociationDataTableTest.cc
     DataAssociationDataTableTest.h
-    DataAssociationTest.cc
-    DataAssociationTest.h
     DataMiningTestSuite.cc
     DataMiningTestSuite.h
-    DataSelectorTest.cc
-    DataSelectorTest.h
     FeatureHandleTest.cc
     FeatureHandleTest.h
     FeatureVisitorsTestSuite.cc

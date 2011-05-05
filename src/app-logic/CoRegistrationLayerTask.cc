@@ -33,7 +33,6 @@
 
 #include "data-mining/CoRegConfigurationTable.h"
 #include "data-mining/DataTable.h"
-#include "data-mining/DataSelector.h"
 
 bool
 GPlatesAppLogic::CoRegistrationLayerTask::can_process_feature_collection(
@@ -93,7 +92,8 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 		GPlatesModel::integer_plate_id_type anchored_plate_id,
 		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
 {
-
+	using namespace GPlatesDataMining;
+	refresh_data(DataTable());
 	// Get the reconstruction tree input.
 	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree =
 			extract_reconstruction_tree(
@@ -103,7 +103,6 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 	{
 		// Expecting a single reconstruction tree.
 		qWarning() << "No reconstruction tree found.";
-		d_layer_params.d_call_back(GPlatesDataMining::DataTable());
 		return boost::none;
 	}
 
@@ -123,7 +122,6 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 	if (seeds_collection.empty()) 
 	{
 		qWarning() << "Seed collection is empty.";
-		d_layer_params.d_call_back(GPlatesDataMining::DataTable());
 		return boost::none;
 	}
 
@@ -134,29 +132,23 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 			"CoRegistration input Channel",
 			input_data);
 
-	if (co_reg_collection.empty() || NULL == d_layer_params.d_cfg_table) 
+	if (co_reg_collection.empty()) 
 	{
-		qWarning() << "Target collection or configuration table is empty.";
-		d_layer_params.d_call_back(GPlatesDataMining::DataTable());
+		qWarning() << "Target collection is empty.";
 		return boost::none;
 	}
 
-	CoRegistrationData::non_null_ptr_type data_ptr = 
-		CoRegistrationData::non_null_ptr_type(
-				new CoRegistrationData(*reconstruction_tree),
-				GPlatesUtils::NullIntrusivePointerHandler());
+	CoRegistrationData::non_null_ptr_type data_ptr(new CoRegistrationData(*reconstruction_tree));
 
-	boost::scoped_ptr< GPlatesDataMining::DataSelector > selector( 
-			GPlatesDataMining::DataSelector::create(
-					*d_layer_params.d_cfg_table) );
+	boost::shared_ptr< DataSelector > selector( 
+			DataSelector::create(*d_layer_params.d_cfg_table) );
 	
 	selector->select(
 			seeds_collection, 
 			co_reg_collection, 
 			data_ptr->data_table());
 	
-	d_layer_params.d_call_back(data_ptr->data_table());
-	GPlatesDataMining::DataSelector::set_data_table(data_ptr->data_table());
+	refresh_data(data_ptr->data_table());
 	
 #ifdef _DEBUG
 	std::cout << data_ptr->data_table() << std::endl;
@@ -170,15 +162,6 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 					CoRegistrationDataCollection));
 }
 
-const QString
-GPlatesAppLogic::CoRegistrationLayerTask::get_export_file_name(
-		const QString path,
-		const QString base_file_name,
-		const double time)
-{
-	QString time_str;
-	time_str.setNum(time);
-	return path + "/" + base_file_name + "_" + time_str + ".csv";
-}
+
 
 

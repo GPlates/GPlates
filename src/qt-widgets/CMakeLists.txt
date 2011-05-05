@@ -92,9 +92,6 @@ set(srcs
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
-    DataAssociationDialog.cc
-    DataAssociationDialog.h
-    DataAssociationDialogUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui

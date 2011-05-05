@@ -170,7 +170,6 @@
 
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ShapefilePropertyMapper.h"
-#include "qt-widgets/DataAssociationDialog.h"
 
 #include "utils/DeferredCallEvent.h"
 #include "utils/Profile.h"
@@ -1616,20 +1615,6 @@ GPlatesQtWidgets::ViewportWindow::pop_up_connect_wfs()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_data_association_dialog()
-{
-	if (!d_data_association_dialog_ptr)
-	{
-		d_data_association_dialog_ptr.reset(
-				new DataAssociationDialog(
-						get_application_state(),
-						get_view_state(),
-						this));
-	}
-	d_data_association_dialog_ptr->pop_up_dialog();
-}
-
-void
 GPlatesQtWidgets::ViewportWindow::pop_up_export_animation_dialog()
 {
 	if (!d_export_animation_dialog_ptr)
@@ -2370,19 +2355,6 @@ GPlatesQtWidgets::ViewportWindow::install_gui_debug_menu()
 	gui_debug->setObjectName("GuiDebug");
 }
 
-void
-GPlatesQtWidgets::ViewportWindow::install_data_mining_menu()
-{
-	QMenu *data_mining_menu = new QMenu(tr("&Data Mining"), this);
-	menuBar()->addMenu(data_mining_menu);
-	data_mining_menu->setTearOffEnabled(true);
-
-	// Add and connect actions to the menu.
-	QAction *actionData_Association = new QAction(tr("Data Association"), this);
-	data_mining_menu->addAction(actionData_Association);
-	QObject::connect(actionData_Association, SIGNAL(triggered()),
-		this, SLOT(pop_up_data_association_dialog()));
-}
 
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_shapefile_attribute_viewer_dialog()

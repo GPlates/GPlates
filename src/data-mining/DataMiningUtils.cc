@@ -26,6 +26,7 @@
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/ShapefileAttributeFinder.h"
+#include "file-io/FeatureCollectionReaderWriter.h"
 
 #include "OpaqueDataToDouble.h"
 #include "DataMiningUtils.h"
@@ -36,10 +37,8 @@
 //Data-mining temporary code
 bool enable_data_mining = false;
 
-using namespace GPlatesDataMining;
-
 boost::optional< double > 
-DataMiningUtils::minimum(
+GPlatesDataMining::DataMiningUtils::minimum(
 		const std::vector< double >& input)
 {
 	boost::optional< double >  ret = boost::none;
@@ -63,7 +62,7 @@ DataMiningUtils::minimum(
 
 
 void
-DataMiningUtils::convert_to_double_vector(
+GPlatesDataMining::DataMiningUtils::convert_to_double_vector(
 		std::vector<OpaqueData>::const_iterator begin,
 		std::vector<OpaqueData>::const_iterator end,
 		std::vector<double>& result)
@@ -83,7 +82,7 @@ DataMiningUtils::convert_to_double_vector(
 
 
 double
-DataMiningUtils::shortest_distance(
+GPlatesDataMining::DataMiningUtils::shortest_distance(
 		const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& seed_geos,
 		const GPlatesAppLogic::ReconstructedFeatureGeometry* geo)
 {
@@ -107,8 +106,8 @@ DataMiningUtils::shortest_distance(
 }
 
 
-OpaqueData
-DataMiningUtils::get_property_value_by_name(
+GPlatesDataMining::OpaqueData
+GPlatesDataMining::DataMiningUtils::get_property_value_by_name(
 		GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
 		QString name)
 {
@@ -132,8 +131,8 @@ DataMiningUtils::get_property_value_by_name(
 }
 
 
-OpaqueData
-DataMiningUtils::convert_qvariant_to_Opaque_data(
+GPlatesDataMining::OpaqueData
+GPlatesDataMining::DataMiningUtils::convert_qvariant_to_Opaque_data(
 		const QVariant& data)
 {
 	switch (data.type())
@@ -159,8 +158,8 @@ DataMiningUtils::convert_qvariant_to_Opaque_data(
 }
 
 
-OpaqueData
-DataMiningUtils::get_shape_file_value_by_name(
+GPlatesDataMining::OpaqueData
+GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 		GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
 		QString name)
 {
@@ -184,6 +183,35 @@ DataMiningUtils::get_shape_file_value_by_name(
 	}
 	return EmptyData;
 }
+
+std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+GPlatesDataMining::DataMiningUtils::load_files(
+		const std::vector<QString>& filenames,
+		std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
+		GPlatesFileIO::ReadErrorAccumulation* read_errors)
+{
+	using namespace GPlatesFileIO;
+	GPlatesModel::ModelInterface model;
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> ret;
+	ReadErrorAccumulation acc;
+	if(!read_errors)
+		read_errors = &acc;
+
+	BOOST_FOREACH(const QString& filename, filenames)
+	{
+		File::non_null_ptr_type file = File::create_file(FileInfo(filename));
+		files.push_back(file);
+		read_feature_collection(file->get_reference(), model, *read_errors);
+		ret.push_back(file->get_reference().get_feature_collection());
+	}
+	return ret;
+}
+
+
+
+
+
+
 
 
 

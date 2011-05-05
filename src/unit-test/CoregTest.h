@@ -25,17 +25,24 @@
 #ifndef GPLATES_UNIT_TEST_COREG_TEST_H
 #define GPLATES_UNIT_TEST_COREG_TEST_H
 
+#include <vector>
 #include <boost/test/unit_test.hpp>
 
 #include "unit-test/GPlatesTestSuite.h"
+#include "file-io/FileInfo.h"
+#include "file-io/File.h"
 
-namespace GPlatesUnitTest{
+namespace GPlatesDataMining
+{
+	class CoRegConfigurationTable;
+}
 
+namespace GPlatesUnitTest
+{
 	class CoregTest
 	{
 	public:
-		CoregTest()
-		{ }
+		CoregTest();
 
 		void 
 		test_case_1();
@@ -59,7 +66,64 @@ namespace GPlatesUnitTest{
 		test_case_7();
 
 	private:
+		/*
+		* Load test data files.
+		*/
+		void
+		load_test_data();
+
+		/*
+		* Return particular section of configuration file. 
+		*/
+		std::vector<QString>
+		load_cfg(
+				const QString& cfg_file,
+				const QString& section_name);
+
+		inline
+		QString
+		load_one_line_cfg(
+				const QString& cfg_file,
+				const QString& section_name)
+		{
+			std::vector<QString> cfgs = load_cfg(cfg_file,section_name);
+			return cfgs.size() ? cfgs[0] : QString();
+		}
+
+		/*
+		* Run the test at certain time.
+		*/
+		void
+		test(double time);
+
+		/*
+		* Check the result at certain time.
+		*/
+		bool
+		check_result(double time);
+
+		/*
+		* Populate CoRegConfigurationTable from configuration file.
+		*/
+		void
+		populate_cfg_table(
+				GPlatesDataMining::CoRegConfigurationTable& table,
+				const QString& filename);
 		
+		inline
+		QString
+		get_output_name(double time)
+		{
+			QString prefix = d_output_prefix.size() ? d_output_prefix : "coreg";
+			return prefix + "." + QString().setNum(time);
+		}
+
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_loaded_files;
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_rotation_fc;
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_seed_fc;
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_coreg_fc;
+		QString d_output_prefix;
+		QString d_output_path;
 	};
 
 	
@@ -76,4 +140,6 @@ namespace GPlatesUnitTest{
 	};
 }
 #endif //GPLATES_UNIT_TEST_COREG_TEST_H 
+
+
 

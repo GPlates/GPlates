@@ -34,6 +34,8 @@
 
 #include "OpaqueData.h"
 
+#include "file-io/File.h"
+#include "file-io/ReadErrorAccumulation.h"
 #include "model/FeatureHandle.h"
 
 namespace GPlatesAppLogic
@@ -46,14 +48,15 @@ namespace GPlatesDataMining
 	namespace DataMiningUtils
 	{
 		/*
-		* TODO: comments
+		* Return the minimum value 
+		* Return boost::none if the input vector is empty.
 		*/
 		boost::optional< double > 
 		minimum(
 				const std::vector< double >& input);
 
 		/*
-		* TODO: comments
+		* Convert a vector of OpaqueData to a vector of double.
 		*/
 		void
 		convert_to_double_vector(
@@ -62,7 +65,8 @@ namespace GPlatesDataMining
 				std::vector<double>& result);
 
 		/*
-		* TODO: comments
+		* Calculate the distances between each two geometries
+		* return the shortest distance.
 		*/
 		double
 		shortest_distance(
@@ -70,27 +74,38 @@ namespace GPlatesDataMining
 				const GPlatesAppLogic::ReconstructedFeatureGeometry* geo);
 		
 		/*
-		* TODO: comments
+		* Given the feature handle, find a property by the name.
 		*/
 		OpaqueData
 		get_property_value_by_name(
 				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
-				QString name);
+				QString prop_name);
 
 		/*
-		* TODO: comments
+		* Since the shape file visitor return QVariant,
+		* convert QVariant to OpaqueData
 		*/
 		OpaqueData
 		convert_qvariant_to_Opaque_data(
 				const QVariant& data);
 
 		/*
-		* TODO: comments
+		* Fine the shape file attribute from the given feature handle 
 		*/
 		OpaqueData
 		get_shape_file_value_by_name(
 				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
-				QString name);
+				QString attr_name);
+		
+		/*
+		* Given a list of file names, load all the files and
+		* return a vector of weak reference of feature collection handle
+		*/
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+		load_files(
+				const std::vector<QString>& filenames,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
+				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL);
 
 		static std::vector<
 				boost::tuple<

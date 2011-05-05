@@ -113,7 +113,6 @@ namespace GPlatesQtWidgets
 	class ConnectWFSDialog;
 	class ConfigureGraticulesDialog;
 	class ConfigureTextOverlayDialog;
-	class DataAssociationDialog;
 	class DockWidget;
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
@@ -449,9 +448,6 @@ namespace GPlatesQtWidgets
 		void
 		install_gui_debug_menu();
 
-		void
-		install_data_mining_menu();
-
 	protected:
 	
 		/**
@@ -669,9 +665,6 @@ namespace GPlatesQtWidgets
 		pop_up_total_reconstruction_sequences_dialog();
 
 		void
-		pop_up_data_association_dialog();
-
-		void
 		handle_visual_layer_added(
 				size_t index);
 
@@ -801,7 +794,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ConnectWFSDialog> d_connect_wfs_dialog_ptr;
 		boost::scoped_ptr<ConfigureGraticulesDialog> d_configure_graticules_dialog_ptr;
 		boost::scoped_ptr<ConfigureTextOverlayDialog> d_configure_text_overlay_dialog_ptr;
-		boost::scoped_ptr<DataAssociationDialog> d_data_association_dialog_ptr;
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
