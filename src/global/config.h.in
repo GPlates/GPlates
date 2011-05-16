@@ -140,3 +140,6 @@
 
 /* Whether GPlates is not built with Python support */
 #cmakedefine GPLATES_NO_PYTHON
+
+/* Whether GPlates is not built with Symbol stuff */
+#cmakedefine GPLATES_NO_SYMBOL
