@@ -51,9 +51,6 @@ namespace GPlatesDataMining
 	typedef boost::shared_ptr<DataRow> DataRowSharedPtr;
 	typedef boost::shared_ptr<OpaqueData>	   DataCellSharedPtr;
 
-	/*
-	* TODO: comments
-	*/ 
 	class DataRow
 	{
 	public:

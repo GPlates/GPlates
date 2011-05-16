@@ -59,11 +59,11 @@ namespace GPlatesQtWidgets
 	enum ConfigurationTableColumnEnum
 	{
 		FeatureCollectionName = 0,
-		AssociationType,
+		FilterType,
 		AttributeName,
 		Range,
-		DataOperator,
-		EndOFTheEnum
+		Reducer,
+		NumOfCol
 	};
 	/**
 	 * struct of QListWidgetItem so that we can display a list of FeatureCollection in
@@ -79,7 +79,6 @@ namespace GPlatesQtWidgets
 			QListWidgetItem(file_name),
 			file_ref(file),
 			label(file_name)
-			
 			{ }
 
 		const GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref;
@@ -121,7 +120,6 @@ namespace GPlatesQtWidgets
 			QTableWidgetItem(file_name),
 			file_ref(file),
 			label(file_name)
-			
 			{ }
 
 		const GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref;
@@ -250,7 +248,7 @@ namespace GPlatesQtWidgets
 				QListWidget *_listWidget_attributes);
 			
 		void
-		setup_data_operator_combobox(
+		setup_REDUCER_combobox(
 				const QString& attribute_name,	
 				QComboBox* combo);
 

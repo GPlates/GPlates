@@ -92,7 +92,7 @@ namespace GPlatesMaths
 
 			inline
 			const real_t
-			accuracy_tolerance_of_distance_on_sphere_surface() const
+			distance_tolerance() const
 			{
 				return acos(1 - d_dot_product_distance_accuracy_tolerance) * earth_radius();
 			}

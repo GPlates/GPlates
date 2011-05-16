@@ -25,6 +25,7 @@ foreach(boost_component ${boost_components})
 	endif(NOT Boost_${boost_component_uppercase}_FOUND)
 endforeach(boost_component)
 
+
 # The Boost unit test framework is optional, because we only need it for the
 # unit-test version of GPlates and it is possible to compile the GUI version
 # of GPlates without it, and it is statically linked, because it contains the
@@ -111,6 +112,7 @@ if ( NOT WIN32 )
 	endif ( GPlates_CGAL_DISABLE_ROUNDING_MATH_CHECK )
 endif ( NOT WIN32 )
 
+
 if ( NOT WIN32 )
 	# Restore CMAKE_BUILD_TYPE before we kludged it for CGAL (see above).
 	set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_BEFORE_CGAL})
@@ -188,6 +190,11 @@ set(unit_test_LIBS
     unit-test)
 endif (ADD_UNIT_TEST_TARGET)
 
+set(g_lib ${app_LIBS} ${util_LIBS} gui python-ext)
+foreach(dir ${g_lib})
+        AUX_SOURCE_DIRECTORY(${dir} g_lib_src)
+endforeach(dir)
+
 # Libraries used by the GUI version of GPlates.
 set(GPlates_LIBS
 	${gui_LIBS} ${presentation_LIBS} ${app_LIBS} ${util_LIBS})
@@ -264,7 +271,7 @@ set(internal_INCLUDE_DIRS
 	
 # All the GPlates subdirectories.
 set(ALL_GPlates_src_subdirs
-	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS} ${unit_test_LIBS})
+	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS} ${unit_test_LIBS} python-ext)
 
 #
 # Generate 'global/config.h' file from 'global/config.h.in' and add HAVE_CONFIG_H compiler definition so GPlates will look for it.
@@ -322,7 +329,7 @@ if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGR
     add_dependencies(presentation qt-widgets)
     add_dependencies(gui qt-widgets)
     add_dependencies(global run-gplates-extract-svn-info)
-    	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
+	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
     #add_dependencies(qt-widgets qt-resources)
 endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
 
@@ -407,6 +414,20 @@ if(NOT GPLATES_NO_PYTHON)
 	endif(WIN32)
 endif(NOT GPLATES_NO_PYTHON)
 
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
+
+if(WIN32)
+	add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
+	set_target_properties(gplates_ext PROPERTIES SUFFIX ".pyd")
+else(WIN32)
+	add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${g_lib_src})
+	set_target_properties(gplates_lib PROPERTIES COMPILE_FLAGS "-fPIC")
+	add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
+	add_dependencies(gplates_ext gplates_lib)
+endif(WIN32)
+
+set_target_properties(gplates_ext PROPERTIES PREFIX "")
+
 if (APPLE)
 	# Copy icon file to 'Resources' directory inside application bundle.
 	set_source_files_properties(${GPlates_ICON} PROPERTIES
@@ -476,6 +497,12 @@ endif (ADD_UNIT_TEST_TARGET)
 if (NOT GPLATES_NO_PYTHON)
 	target_link_libraries(pygplates ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
 endif (NOT GPLATES_NO_PYTHON)
+
+if(WIN32)
+	target_link_libraries(gplates_ext python-ext ${GPlates_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
+else(WIN32)
+	target_link_libraries(gplates_ext gplates_lib ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
+endif(WIN32)
 
 # Current binary directory must be included first for g++ pre-compiled headers.
 # There's a '_pch.h' file in current source and current binary directory however the '_pch.h.gch' pre-compiled header

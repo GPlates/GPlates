@@ -23,10 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */	
 
-#include "AssociationOperator.h"
+#include "Filter.h"
 #include "CoRegFilterMapReduceWorkFlowFactory.h"
 #include "CoRegConfigurationTable.h"
-#include "DataOperatorTypes.h"
+#include "ReducerTypes.h"
 #include "LookupReducer.h"
 #include "MinReducer.h"
 #include "MaxReducer.h"
@@ -56,14 +56,14 @@ GPlatesDataMining::FilterMapReduceWorkFlowFactory::create(
 	boost::shared_ptr<CoRegReducer> reducer;
 
 	//filter
-	switch(row.association_operator_type)
+	switch(row.filter_type)
 	{
 		case REGION_OF_INTEREST:
 			filter.reset(
 					new GenericFilter< InputSequence::const_iterator, InputSequence::iterator, RegionOfInterestFilter> (
 							RegionOfInterestFilter(
 									seed_geos, 
-									row.association_parameters.d_ROI_range)));
+									row.filter_cfg.d_ROI_range)));
 			break;
 		case SEED_ITSELF:
 			filter.reset(
@@ -71,6 +71,9 @@ GPlatesDataMining::FilterMapReduceWorkFlowFactory::create(
 							SeedSelfFilter(seed_geos)));
 			break;
 		case FEATURE_ID_LIST:
+			/*
+			* TODO:
+			*/
 			break;
 		default:
 			break;
@@ -82,7 +85,7 @@ GPlatesDataMining::FilterMapReduceWorkFlowFactory::create(
 	case CO_REGISTRATION_ATTRIBUTE:
 		mapper.reset(
 				new GenericMapper< CoRegMaper::InputIteratorType, CoRegMaper::OutputIteratorType, RFGToPropertyValueMapper> (
-							RFGToPropertyValueMapper(row.attribute_name, seed_geos)));
+							RFGToPropertyValueMapper(row.attr_name, seed_geos)));
 		break;
 
 	case DISTANCE_ATTRIBUTE:
@@ -97,7 +100,7 @@ GPlatesDataMining::FilterMapReduceWorkFlowFactory::create(
 	case SHAPE_FILE_ATTRIBUTE: 
 		mapper.reset(
 				new GenericMapper< CoRegMaper::InputIteratorType, CoRegMaper::OutputIteratorType, RFGToPropertyValueMapper> (
-							RFGToPropertyValueMapper(row.attribute_name, seed_geos,true)));
+							RFGToPropertyValueMapper(row.attr_name, seed_geos,true)));
 		break;
 	default:
 		break;
@@ -108,37 +111,37 @@ GPlatesDataMining::FilterMapReduceWorkFlowFactory::create(
 				new GenericReducer< CoRegReducer::InputIteratorType, CoRegReducer::OutputValueType, p> ( \
 						p())); 
 	//reducer
-	switch(row.data_operator_type)
+	switch(row.reducer_type)
 	{
-	case DATA_OPERATOR_MIN:
+	case REDUCER_MIN:
 		SET_REDUCER(MinReducer);
 		break;
 	
-	case DATA_OPERATOR_MAX:
+	case REDUCER_MAX:
 		SET_REDUCER(MaxReducer);
 		break;
 
-	case DATA_OPERATOR_MEAN:
+	case REDUCER_MEAN:
 		SET_REDUCER(MeanReducer);
 		break;
 	
-	case DATA_OPERATOR_VOTE:
+	case REDUCER_VOTE:
 		SET_REDUCER(VoteReducer);
 		break;
 
-	case DATA_OPERATOR_WEIGHTED_MEAN:
+	case REDUCER_WEIGHTED_MEAN:
 		SET_REDUCER(WeightedMeanReducer);
 		break;
 
-	case DATA_OPERATOR_MEDIAN:
+	case REDUCER_MEDIAN:
 		SET_REDUCER(MedianReducer);
 		break;
 
-	case DATA_OPERATOR_PERCENTILE:
+	case REDUCER_PERCENTILE:
 		SET_REDUCER(PercentileReducer);
 		break;
 	
-	case DATA_OPERATOR_LOOKUP:
+	case REDUCER_LOOKUP:
 	default:
 		SET_REDUCER(LookupReducer);
 		break;

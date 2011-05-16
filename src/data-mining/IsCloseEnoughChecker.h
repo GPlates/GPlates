@@ -49,7 +49,7 @@ namespace GPlatesDataMining
 
 	/*
 	* TODO: more comments
-	* Until function. Users are suppose to use this function.
+	* Until function. Users are encouraged to use this function.
 	*/
 	bool
 	is_close_enough(

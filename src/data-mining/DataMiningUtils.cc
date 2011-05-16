@@ -22,12 +22,16 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <fstream>
 #include <boost/foreach.hpp>
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/ShapefileAttributeFinder.h"
 #include "file-io/FeatureCollectionReaderWriter.h"
 
+#include "Filter.h"
+#include "CoRegConfigurationTable.h"
+#include "ReducerTypes.h"
 #include "OpaqueDataToDouble.h"
 #include "DataMiningUtils.h"
 #include "DualGeometryVisitor.h"
@@ -37,25 +41,21 @@
 //Data-mining temporary code
 bool enable_data_mining = false;
 
+using namespace GPlatesUtils;
+
 boost::optional< double > 
 GPlatesDataMining::DataMiningUtils::minimum(
 		const std::vector< double >& input)
 {
 	boost::optional< double >  ret = boost::none;
-
-	std::vector< double >::const_iterator it		= input.begin();
-	std::vector< double >::const_iterator it_end	= input.end();
+	std::vector< double >::const_iterator it = input.begin(), it_end = input.end();
 
 	for(; it != it_end; it++)
 	{
 		if(ret)
-		{
 			*ret = std::min( (*ret), (*it) );
-		}	
 		else
-		{
 			ret = *it;
-		}
 	}
 	return ret;
 }
@@ -70,13 +70,9 @@ GPlatesDataMining::DataMiningUtils::convert_to_double_vector(
 	boost::optional<double> tmp = boost::none;
 	for(; begin != end; begin++)
 	{
-		tmp = boost::apply_visitor(
-				ConvertOpaqueDataToDouble(),
-				*begin);
+		tmp = boost::apply_visitor(ConvertOpaqueDataToDouble(), *begin);
 		if(tmp)
-		{
 			result.push_back(*tmp);
-		}
 	}
 }
 
@@ -97,10 +93,9 @@ GPlatesDataMining::DataMiningUtils::shortest_distance(
 				&checker);
 		dual_visitor.apply();
 		boost::optional<double> tmp = checker.distance();
+	
 		if(tmp && ret > *tmp)
-		{
 			ret = *tmp;
-		}
 	}
 	return ret;
 }
@@ -112,13 +107,13 @@ GPlatesDataMining::DataMiningUtils::get_property_value_by_name(
 		QString name)
 {
 	using namespace GPlatesModel;
-	FeatureHandle::const_iterator it = feature_ref->begin();
-	FeatureHandle::const_iterator it_end = feature_ref->end();
+	FeatureHandle::const_iterator it = feature_ref->begin(), it_end = feature_ref->end();
+	
 	for(; it != it_end; it++)
 	{
-		if((*it)->property_name().get_name() == GPlatesUtils::make_icu_string_from_qstring(name))
+		if((*it)->property_name().get_name() == UnicodeString(name))
 		{
-			GetValueFromPropertyVisitor<OpaqueData> visitor;
+			GetValueFromPropertyVisitor visitor;
 			(*it)->accept_visitor(visitor);
 			std::vector<OpaqueData>& data_vec = visitor.get_data(); 
 			if(!data_vec.empty())
@@ -127,7 +122,7 @@ GPlatesDataMining::DataMiningUtils::get_property_value_by_name(
 			}
 		}
 	}
-	return boost::none;
+	return EmptyData;
 }
 
 
@@ -139,19 +134,16 @@ GPlatesDataMining::DataMiningUtils::convert_qvariant_to_Opaque_data(
 	{
 	case QVariant::Bool:
 		return OpaqueData(data.toBool());
-		break;
 
 	case QVariant::Int:
 		return OpaqueData(data.toInt());
-		break;
 		
 	case QVariant::Double:
 		return OpaqueData(data.toDouble());
-		break;
 
 	case QVariant::String:
 		return OpaqueData(data.toString());
-		break;
+	
 	default:
 		return EmptyData;
 	}
@@ -163,9 +155,8 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 		GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
 		QString name)
 {
-	using namespace GPlatesModel;
-	FeatureHandle::const_iterator it = feature_ref->begin();
-	FeatureHandle::const_iterator it_end = feature_ref->end();
+	GPlatesModel::FeatureHandle::const_iterator it = feature_ref->begin(), it_end = feature_ref->end();
+	
 	for(; it != it_end; it++)
 	{
 		if((*it)->property_name().get_name() == "shapefileAttributes")
@@ -206,6 +197,48 @@ GPlatesDataMining::DataMiningUtils::load_files(
 	}
 	return ret;
 }
+
+std::vector<QString>
+GPlatesDataMining::DataMiningUtils::load_cfg(
+		const QString& cfg_filename,
+		const QString& section_name)
+{
+	std::string str;
+	std::vector<QString> ret;
+	std::ifstream ifs ( cfg_filename.toStdString().c_str() , std::ifstream::in );
+
+	while (ifs.good()) // go to the line starting with section_name.
+	{
+		std::getline(ifs,str);
+		QString s(str.c_str());
+		s = s.trimmed().simplified();
+		if(s.startsWith(section_name))
+			break;
+	}
+
+	while (ifs.good())
+	{
+		std::getline(ifs,str);
+		QString s(str.c_str());
+		s = s.trimmed().simplified();
+
+		if(s.startsWith("#"))//skip comments
+			continue;
+		if(s.isEmpty()) //finish at an empty line.
+			break;
+		ret.push_back(s);
+		qDebug() << s;
+	}
+	return ret;
+}
+
+
+
+
+
+
+
+
 
 
 

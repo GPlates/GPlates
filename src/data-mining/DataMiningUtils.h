@@ -26,6 +26,7 @@
 #ifndef GPLATESDATAMINING_DATAMININGUTILS_H
 #define GPLATESDATAMINING_DATAMININGUTILS_H
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <QString>
@@ -45,6 +46,8 @@ namespace GPlatesAppLogic
 
 namespace GPlatesDataMining
 {
+	class CoRegConfigurationTable;
+
 	namespace DataMiningUtils
 	{
 		/*
@@ -106,6 +109,43 @@ namespace GPlatesDataMining
 				const std::vector<QString>& filenames,
 				std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
 				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL);
+
+		
+		inline
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+		load_files(
+				const std::vector<const char*>& filenames,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
+				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL)
+		{
+			std::vector<QString> new_filenames;
+			BOOST_FOREACH(const char* filename, filenames)
+			{
+				new_filenames.push_back(QString(filename));
+			}
+			return load_files(new_filenames,files);
+		}
+		
+		/*
+		* Return particular section of configuration file. 
+		*/
+		std::vector<QString>
+		load_cfg(
+				const QString& cfg_filename,
+				const QString& section_name);
+
+		/*
+		* Convenient function for loading cfg section having only one line.
+		*/
+		inline
+		QString
+		load_one_line_cfg(
+				const QString& cfg_file,
+				const QString& section_name)
+		{
+			std::vector<QString> cfgs = load_cfg(cfg_file,section_name);
+			return cfgs.size() ? cfgs[0] : QString();
+		}
 
 		static std::vector<
 				boost::tuple<

@@ -372,10 +372,10 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_add_button_clicked()
 		QComboBox* combo = new QComboBox();       
 		CoRegCfgTableWidget->setCellWidget(
 				row_num, 
-				DataOperator, 
+				Reducer, 
 				combo);
 
-		setup_data_operator_combobox(
+		setup_REDUCER_combobox(
 				attr_item->text(),
 				combo);
 
@@ -394,7 +394,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_add_button_clicked()
 		QComboBox* association_combo = new QComboBox();       
 		CoRegCfgTableWidget->setCellWidget(
 				row_num, 
-				AssociationType, 
+				FilterType, 
 				association_combo);
 		
 		setup_association_type_combobox(association_combo);
@@ -415,7 +415,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_add_button_clicked()
 
 
 void
-GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_data_operator_combobox(
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_REDUCER_combobox(
 		const QString& attribute_name,	
 		QComboBox* combo)
 {
@@ -427,41 +427,51 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_data_operator_combobox(
 
 	if(attribute_name == DISTANCE)
 	{
-		a_type = GPlatesDataMining::Number_Attribute;
+		combo->addItem(
+				QApplication::tr("Min"),
+				GPlatesDataMining::REDUCER_MIN);
+		return;
 	}
 
 	if(attribute_name == PRESENCE || attribute_name == NUM_ROI)
 	{
 		combo->addItem(
 				QApplication::tr("Lookup"), 
-				GPlatesDataMining::DATA_OPERATOR_LOOKUP);
+				GPlatesDataMining::REDUCER_LOOKUP);
 		return;
 	}
 
-	if(GPlatesDataMining::String_Attribute == a_type || GPlatesDataMining::Unknown_Type == a_type)
+	if(GPlatesDataMining::String_Attribute == a_type )
 	{
 		combo->addItem(
 				QApplication::tr("Lookup"), 
-				GPlatesDataMining::DATA_OPERATOR_LOOKUP);
+				GPlatesDataMining::REDUCER_LOOKUP);
 		combo->addItem(
 				QApplication::tr("Vote"),
-				GPlatesDataMining::DATA_OPERATOR_VOTE);
+				GPlatesDataMining::REDUCER_VOTE);
+		return;
 	}
 
 	if(GPlatesDataMining::Number_Attribute == a_type || GPlatesDataMining::Unknown_Type == a_type)
 	{
 		combo->addItem(
+				QApplication::tr("Lookup"), 
+				GPlatesDataMining::REDUCER_LOOKUP);
+		combo->addItem(
+				QApplication::tr("Vote"),
+				GPlatesDataMining::REDUCER_VOTE);
+		combo->addItem(
 				QApplication::tr("Min"),
-				GPlatesDataMining::DATA_OPERATOR_MIN);
+				GPlatesDataMining::REDUCER_MIN);
 		combo->addItem(
 				QApplication::tr("Max"),
-				GPlatesDataMining::DATA_OPERATOR_MAX);
+				GPlatesDataMining::REDUCER_MAX);
 		combo->addItem(
 				QApplication::tr("Mean"),
-				GPlatesDataMining::DATA_OPERATOR_MEAN);
+				GPlatesDataMining::REDUCER_MEAN);
 		combo->addItem(
 				QApplication::tr("Median"),
-				GPlatesDataMining::DATA_OPERATOR_MEDIAN);
+				GPlatesDataMining::REDUCER_MEDIAN);
 	}
 	return;
 }
@@ -474,9 +484,6 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_association_type_combobox
 	combo->addItem(
 			QApplication::tr("Region of Interest"),
 			GPlatesDataMining::REGION_OF_INTEREST);
-// 	combo->addItem(
-// 			QApplication::tr("TODO..."),
-// 			GPlatesDataMining::REGION_OF_INTEREST);
 	return;
 }
 
@@ -502,50 +509,41 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 		AttributeTableItem* attr_item = 
 			dynamic_cast< AttributeTableItem* > (
 					CoRegCfgTableWidget->item(i, AttributeName) );
-		QComboBox* data_operator = 
+		QComboBox* REDUCER = 
 			dynamic_cast< QComboBox* >(
-					CoRegCfgTableWidget->cellWidget(i, DataOperator) );
+					CoRegCfgTableWidget->cellWidget(i, Reducer) );
 		QDoubleSpinBox* spinbox_ROI_range = 
 			dynamic_cast< QDoubleSpinBox* >(
 					CoRegCfgTableWidget->cellWidget(i,Range) );
 		
 		if( !(	feature_collection_item &&
 				attr_item				&&
-				data_operator			&&
+				REDUCER			&&
 				spinbox_ROI_range) )
 		{
 			qWarning() << "Invalid input table item found! Skip this iteration";
 			continue;
 		}
 		
-		QString operator_name = data_operator->currentText();
-		GPlatesDataMining::DataOperatorType op = 
-			static_cast<GPlatesDataMining::DataOperatorType>(
-					data_operator->itemData(data_operator->currentIndex()).toUInt());
+		QString operator_name = REDUCER->currentText();
+		GPlatesDataMining::ReducerType op = 
+			static_cast<GPlatesDataMining::ReducerType>(
+					REDUCER->itemData(REDUCER->currentIndex()).toUInt());
 
 		GPlatesDataMining::ConfigurationTableRow row;
 
-		row.target_feature_collection_handle = 
+		row.target_fc = 
 				feature_collection_item->file_ref.get_file().get_feature_collection();
  
 		//TODO: TO BE IMPLEMENTED
-		row.association_operator_type = GPlatesDataMining::REGION_OF_INTEREST;
+		row.filter_type = GPlatesDataMining::REGION_OF_INTEREST;
 
-		row.association_parameters.d_ROI_range = spinbox_ROI_range->value();
-		row.attribute_name = attr_item->text();
+		row.filter_cfg.d_ROI_range = spinbox_ROI_range->value();
+		row.attr_name = attr_item->text();
 		row.attr_type = attr_item->attr_type;
-		row.data_operator_type = op;
+		row.reducer_type = op;
 
 		d_cfg_table.push_back(row);	
-
-		d_cfg_table.export_path() = ExportPathlineEdit->text();
-		//TODO:
-		//Validate the path here.
-// 		if(d_cfg_table.export_path().isEmpty())
-// 		{
-// 			qWarning() << "The export path is invalid";
-// 			return;
-// 		}
 	}
 	d_cfg_table.set_seeds_file(get_input_seed_files()); 
 	done(QDialog::Accepted);

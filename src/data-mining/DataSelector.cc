@@ -253,58 +253,18 @@ GPlatesDataMining::DataSelector::select(
 	get_table_desc_from_input_table(table_desc);
 	data_table.set_table_desc(table_desc);
 
-	//the main loop
 	//for each seed feature
 	BOOST_FOREACH(const FeatureRFGMap::value_type& seed_feature_and_rfg_pair, seed_feature_rfg_map)
 	{
 		DataRowSharedPtr row = DataRowSharedPtr(new DataRow); 
 		row->set_seed_rfgs(seed_feature_and_rfg_pair.second);
-
-		//Write out feature id as the first column so that each data row can be correlated. 
-		//This is a temporary solution and will be removed when layer framework is ready to handle this.
-		QString feature_id = 
-			seed_feature_and_rfg_pair.first->feature_id().get().qstring();
-
-		ReconstructionFeatureProperties visitor(false);
-		visitor.visit_feature(
-				WeakReference<const FeatureHandle>(
-						*seed_feature_and_rfg_pair.first));
-
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> 
-			begin_time = visitor.get_time_of_appearance(), 
-			end_time = visitor.get_time_of_dissappearance();
-
-		row->append_cell(OpaqueData(feature_id));
-		if(begin_time)
-		{
-			if((*begin_time).is_distant_past())
-				row->append_cell(OpaqueData(QString("distant past")));
-			else
-				row->append_cell(OpaqueData((*begin_time).value()));
-		}
-		else
-		{
-			row->append_cell(OpaqueData(EmptyData));
-		}
-
-		if(end_time)
-		{
-			if((*end_time).is_distant_future())
-				row->append_cell(OpaqueData(QString("distant future")));
-			else
-				row->append_cell(OpaqueData((*end_time).value()));
-		}
-		else
-		{
-			row->append_cell(OpaqueData(EmptyData));
-		}
-
+		append_seed_info(seed_feature_and_rfg_pair.first,row);
 		//for each row in input table
 		BOOST_FOREACH(const ConfigurationTableRow &config_row, d_configuration_table)
 		{
 			OpaqueData cell;
 			const FeatureCollectionHandle* fh = 
-					config_row.target_feature_collection_handle.handle_ptr();
+					config_row.target_fc.handle_ptr();
 			const ConfigurationTableRow optimised_cfg_row = 
 					optimize_cfg_table_row(
 							config_row,
@@ -347,10 +307,9 @@ GPlatesDataMining::DataSelector::get_target_collections_from_input_table(
 		if(	std::find(
 					target_collection.begin(),
 					target_collection.end(),
-					it->target_feature_collection_handle) ==
-			target_collection.end() )
+					it->target_fc) == target_collection.end() )
 		{
-			target_collection.push_back(it->target_feature_collection_handle);
+			target_collection.push_back(it->target_fc);
 		}
 	}
 }
@@ -365,7 +324,7 @@ GPlatesDataMining::DataSelector::get_table_desc_from_input_table(
 
 	for(; it != it_end; it++)
 	{
-		table_desc.push_back( it->attribute_name );
+		table_desc.push_back( it->attr_name );
 	}
 	return;
 }
@@ -508,7 +467,7 @@ GPlatesDataMining::DataSelector::construct_geometry_map(
 
 boost::shared_ptr< const GPlatesDataMining::AssociationOperator::AssociatedCollection > 
 GPlatesDataMining::DataSelector::retrieve_associated_data_from_cache(
-		AssociationOperatorParameters cfg,
+		FilterCfg cfg,
 		FeatureCollectionHandle::const_weak_ref target_feature_collection,
 		const CacheMap& cache_map)
 {
@@ -518,10 +477,10 @@ GPlatesDataMining::DataSelector::retrieve_associated_data_from_cache(
 
 	for ( ; it != ret.second; ++it)
 	{
-		if(cfg.d_associator_type != it->second->d_associator_cfg.d_associator_type)
+		if(cfg.d_filter_type != it->second->d_associator_cfg.d_filter_type)
 			continue;
 		
-		if(REGION_OF_INTEREST == cfg.d_associator_type)
+		if(REGION_OF_INTEREST == cfg.d_filter_type)
 		{
 			if(0.0 == GPlatesMaths::Real(cfg.d_ROI_range - it->second->d_associator_cfg.d_ROI_range))
 				return it->second;
@@ -579,7 +538,7 @@ GPlatesDataMining::DataSelector::insert_associated_data_into_cache(
 
 boost::shared_ptr< const GPlatesDataMining::AssociationOperator::AssociatedCollection > 
 GPlatesDataMining::DataSelector::retrieve_associated_data_from_cache(
-		GPlatesDataMining::AssociationOperatorParameters cfg,
+		GPlatesDataMining::FilterCfg cfg,
 		FeatureCollectionHandle::const_weak_ref target_feature_collection)
 {
 	return retrieve_associated_data_from_cache(
@@ -598,12 +557,12 @@ GPlatesDataMining::DataSelector::optimize_cfg_table_row(
 	ConfigurationTableRow modified_cfg_row = cfg_row;
 	if(is_feature_collection_contains_this_feature(target_feature_collection,seed_feature))
 	{
-		if(0.0 == GPlatesMaths::Real(cfg_row.association_parameters.d_ROI_range))
+		if(0.0 == GPlatesMaths::Real(cfg_row.filter_cfg.d_ROI_range))
 		{
 			//The target feature collection contains the seed feature and 
 			//the region of interest is zero, which implies the user wants
 			//to extract data from seed feature.
-			modified_cfg_row.association_operator_type = SEED_ITSELF;
+			modified_cfg_row.filter_type = SEED_ITSELF;
 		}
 	}
 	return modified_cfg_row;
@@ -615,10 +574,49 @@ GPlatesDataMining::DataSelector::is_cfg_table_valid()
 {
 	BOOST_FOREACH(const ConfigurationTableRow &config_row, d_configuration_table)
 	{
-		if(!config_row.target_feature_collection_handle.is_valid())
+		if(!config_row.target_fc.is_valid())
 			return false;
 	}
 	return true;
+}
+
+
+void
+GPlatesDataMining::DataSelector::append_seed_info(
+		const GPlatesModel::FeatureHandle* feature,
+		DataRowSharedPtr row)
+{
+	//Write out feature id as the first column so that each data row can be correlated. 
+	//This is a temporary solution and will be removed when layer framework is ready to handle this.
+	QString feature_id = feature->feature_id().get().qstring();
+
+	ReconstructionFeatureProperties visitor(false);
+	visitor.visit_feature(WeakReference<const FeatureHandle>(*feature));
+
+	boost::optional<GPlatesPropertyValues::GeoTimeInstant> 
+		begin_time = visitor.get_time_of_appearance(), 
+		end_time = visitor.get_time_of_dissappearance();
+
+	row->append_cell(OpaqueData(feature_id));
+	if(begin_time)
+	{
+		std::stringstream ss; ss << *begin_time ; 
+		row->append_cell(OpaqueData(QString(ss.str().c_str()).remove(QRegExp("[()]"))));
+	}
+	else
+	{
+		row->append_cell(OpaqueData(EmptyData));
+	}
+
+	if(end_time)
+	{
+		std::stringstream ss; ss << *end_time ; 
+		row->append_cell(OpaqueData(QString(ss.str().c_str()).remove(QRegExp("[()]"))));
+	}
+	else
+	{
+		row->append_cell(OpaqueData(EmptyData));
+	}
 }
 
 

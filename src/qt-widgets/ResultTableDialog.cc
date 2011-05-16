@@ -454,7 +454,12 @@ void
 ResultTableDialog::highlight_seed()
 {
 	QModelIndex idx = table_view->currentIndex();
-	QString id = idx.data().toString();
+	QString id;
+	if(idx.column()==0)
+		id = idx.data().toString();
+	else
+		id = idx.sibling(idx.row(),0).data().toString();
+
 	GPlatesAppLogic::FeatureCollectionFileState& file_state = 
 		d_view_state.get_application_state().get_feature_collection_file_state();
 	try

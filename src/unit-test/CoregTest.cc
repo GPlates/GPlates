@@ -41,7 +41,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/FeatureCollectionReaderWriter.h"
 
-//gplates-unit-test.exe --detect_memory_leaks=0 --G_test_to_run=*/Coreg
+//./gplates-unit-test --detect_memory_leaks=0 --G_test_to_run=*/Coreg
 
 const QString unit_test_data_path = "./unit-test-data/";
 const QString cfg_file = "coreg_input_table.txt";
@@ -187,6 +187,11 @@ GPlatesUnitTest::CoregTest::check_result(double time)
 	QString data_filename = unit_test_data_path + QString("/coreg_data_")+os.str().c_str()+".csv";
 	std::map<QString, QStringList> output =	load_result_data(o_filename);
 	std::map<QString, QStringList> expected = load_result_data(data_filename);
+	if(expected.size() == 0)
+	{
+		qDebug("Cannot find data files which contain expected result data.");
+		return false;
+	}
 	std::size_t data_size = output.size();
 	if(data_size != expected.size()) 
 		return false;
@@ -222,7 +227,7 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 		SHAPE_ATTR,//4
 		COL_NUM//5
 	};
-	std::map<QString, AssociationOperatorType> coreg_op_map;
+	std::map<QString, FilterType> coreg_op_map;
 	coreg_op_map["Region_of_Interest"] = REGION_OF_INTEREST;
 
 	std::map<QString, AttributeType> attr_map;
@@ -230,15 +235,15 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 	attr_map["Presence"] =			PRESENCE_ATTRIBUTE;
 	attr_map["Number_In_Region"] =	NUMBER_OF_PRESENCE_ATTRIBUTE;
 
-	std::map<QString, DataOperatorType> data_op_map;
-	data_op_map["Min"] =				DATA_OPERATOR_MIN;
-	data_op_map["Max"] = 				DATA_OPERATOR_MAX;
-	data_op_map["Mean"] = 				DATA_OPERATOR_MEAN;
-	data_op_map["Median"] = 			DATA_OPERATOR_MEDIAN;
-	data_op_map["Lookup"] = 			DATA_OPERATOR_LOOKUP;
-	data_op_map["Vote"] = 				DATA_OPERATOR_VOTE;
-	data_op_map["Weighted Mean"] =		DATA_OPERATOR_WEIGHTED_MEAN;
-	data_op_map["Percentile"] = 		DATA_OPERATOR_PERCENTILE;
+	std::map<QString, ReducerType> data_op_map;
+	data_op_map["Min"] =				REDUCER_MIN;
+	data_op_map["Max"] = 				REDUCER_MAX;
+	data_op_map["Mean"] = 				REDUCER_MEAN;
+	data_op_map["Median"] = 			REDUCER_MEDIAN;
+	data_op_map["Lookup"] = 			REDUCER_LOOKUP;
+	data_op_map["Vote"] = 				REDUCER_VOTE;
+	data_op_map["Weighted Mean"] =		REDUCER_WEIGHTED_MEAN;
+	data_op_map["Percentile"] = 		REDUCER_PERCENTILE;
 	
 	std::vector<QString> table_lines = load_cfg(unit_test_data_path + filename,"input table");
 	
@@ -258,7 +263,7 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 			if(file->get_reference().get_file_info().get_display_name(false) == items[FC_NAME])
 			{
 				qDebug() << "Find the feature collection.";
-				row.target_feature_collection_handle = file->get_reference().get_feature_collection();
+				row.target_fc = file->get_reference().get_feature_collection();
 			} 
 		}
 
@@ -268,18 +273,20 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 		std::string op_type_str;
 		double d = 0.0;
 		ss >> op_type_str; ss.ignore(256,'('); ss >> d; 
-		row.association_operator_type = coreg_op_map[op_type_str.c_str()];
-		row.association_parameters.d_ROI_range = d;
+		row.filter_type = coreg_op_map[op_type_str.c_str()];
+		row.filter_cfg.d_ROI_range = d;
 
 		std::map<QString, AttributeType>::iterator it = attr_map.find(items[ATTR_NAME].trimmed());
 		row.attr_type = it != attr_map.end() ?  it->second : CO_REGISTRATION_ATTRIBUTE;
-		row.attribute_name = items[ATTR_NAME].trimmed();
+		row.attr_name = items[ATTR_NAME].trimmed();
 		
-		row.data_operator_type = data_op_map[items[DATA_OP].trimmed()];
+		row.reducer_type = data_op_map[items[DATA_OP].trimmed()];
 
-		row.data_operator_parameters.d_is_shape_file_attr =
-			items[SHAPE_ATTR].trimmed() == "true" ? true : false;
-		
+		if(items[SHAPE_ATTR].trimmed() == "true")
+		{
+			row.attr_type = SHAPE_FILE_ATTRIBUTE;
+		}
+
 		table.push_back(row);
 	}
 }
@@ -292,7 +299,12 @@ GPlatesUnitTest::CoregTest::load_cfg(
 	std::string str;
 	std::vector<QString> ret;
 	std::ifstream ifs ( cfg_filename.toStdString().c_str() , std::ifstream::in );
-	
+	if(ifs.fail() || ifs.bad())
+	{
+		qWarning() << "Cannot open configuration file.";
+		return ret;
+	}
+
 	while (ifs.good()) // go to the line starting with section_name.
 	{
 		std::getline(ifs,str);
@@ -322,6 +334,13 @@ void
 GPlatesUnitTest::CoregTest::test_case_1()
 {
 	std::cout <<  "Begin to test co-registration case 1..." << std::endl;
+	std::ifstream ifs ( (unit_test_data_path + cfg_file).toStdString().c_str() , std::ifstream::in );
+	if(!ifs.good())
+	{
+		qDebug() << "Cannot open unit test configuration file -- " << (unit_test_data_path + cfg_file);
+		BOOST_CHECK(false);
+		return;
+	}
 	bool result = true;
 	std::size_t s_time = 140, e_time = 0, inc_time = 10;
 	QStringList times = load_one_line_cfg(unit_test_data_path + cfg_file, "time_range").split(',');
@@ -333,12 +352,12 @@ GPlatesUnitTest::CoregTest::test_case_1()
 	}
 	
 	std::size_t current = e_time;
-	for(; s_time >= current; current+=10)
+	for(; s_time >= current; current+=inc_time)
 	{
 		test(current);
 	}
 	current = e_time;
-	for(; s_time >= current; current+=10)
+	for(; s_time >= current; current+=inc_time)
 	{
 		BOOST_CHECK(result &= check_result(current));
 	}

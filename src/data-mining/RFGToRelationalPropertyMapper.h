@@ -31,7 +31,7 @@
 #include <boost/foreach.hpp>
 
 #include "DualGeometryVisitor.h"
-#include "DataOperatorTypes.h"
+#include "ReducerTypes.h"
 #include "DataMiningUtils.h"
 
 namespace GPlatesDataMining

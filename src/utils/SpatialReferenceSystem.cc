@@ -24,7 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <QDebug>
-#include <boost/scoped_ptr.hpp>
+#include <boost/scoped_array.hpp>
 #include "ogr_spatialref.h"
 #include "SpatialReferenceSystem.h"
 
@@ -36,9 +36,9 @@ GPlatesUtils::SpatialReferenceSystem::transform(
 {
 	//step 1: prepare input data.
 	std::size_t len = points.size();
-	boost::scoped_ptr<double> x(new double[len]);
-	boost::scoped_ptr<double> y(new double[len]);
-	boost::scoped_ptr<double> z;
+	boost::scoped_array<double> x(new double[len]);
+	boost::scoped_array<double> y(new double[len]);
+	boost::scoped_array<double> z;
 	
 	if(from.is_3D())
 	{

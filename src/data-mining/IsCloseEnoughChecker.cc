@@ -39,7 +39,7 @@ GPlatesDataMining::is_close_enough(
 	IsCloseEnoughChecker checker(
 			range 
 			+ 
-			SphereSettings::instance().accuracy_tolerance_of_distance_on_sphere_surface().dval());
+			SphereSettings::instance().distance_tolerance().dval());
 	DualGeometryVisitor< IsCloseEnoughChecker > dual_visitor(g1, g2, &checker);
 	dual_visitor.apply();
 	return checker.is_close_enough();
@@ -74,16 +74,9 @@ GPlatesDataMining::IsCloseEnoughChecker::execute(
 		d_distance = closeness.dval();
 	}
 	
-	//TODO: temporary code. will be changed soon.
 	using namespace GPlatesMaths::Spherical;
-	if((closeness - SphereSettings::instance().accuracy_tolerance_of_distance_on_sphere_surface()) > real_t(d_range))
-	{
-		d_is_close_enough = false;
-	}
-	else
-	{
-		d_is_close_enough = true;
-	}
+	d_is_close_enough =
+		(closeness - SphereSettings::instance().distance_tolerance()) > real_t(d_range) ? false : true;
 }
 
 

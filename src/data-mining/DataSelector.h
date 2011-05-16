@@ -32,11 +32,8 @@
 #include <map>
 
 #include "CoRegConfigurationTable.h"
-#include "AssociationOperator.h"
-#include "AssociationOperatorFactory.h"
+#include "Filter.h"
 #include "DataTable.h"
-#include "DataOperator.h"
-#include "DataOperatorFactory.h"
 
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructedFeatureGeometryPopulator.h"
@@ -109,7 +106,7 @@ namespace GPlatesDataMining
 		static
 		boost::shared_ptr< const AssociationOperator::AssociatedCollection > 
 		retrieve_associated_data_from_cache(
-				AssociationOperatorParameters,
+				FilterCfg,
 				GPlatesModel::FeatureCollectionHandle::const_weak_ref target_feature_collection,
 				const CacheMap& cache_map);
 
@@ -195,7 +192,7 @@ namespace GPlatesDataMining
 		*/
 		boost::shared_ptr< const AssociationOperator::AssociatedCollection > 
 		retrieve_associated_data_from_cache(
-				AssociationOperatorParameters,
+				FilterCfg,
 				GPlatesModel::FeatureCollectionHandle::const_weak_ref target_feature_collection);
 		/*
 		*
@@ -219,21 +216,23 @@ namespace GPlatesDataMining
 		*/
 		bool
 		is_cfg_table_valid();
+
+		void
+		append_seed_info(
+				const GPlatesModel::FeatureHandle*,
+				DataRowSharedPtr);
 		
 		//default constructor
 		DataSelector();
 
 		//copy constructor
-		DataSelector(
-				const DataSelector&);
+		DataSelector(const DataSelector&);
 		
 		//assignment 
 		const DataSelector&
-		operator=(
-				const DataSelector&);
+		operator=(const DataSelector&);
 
-		DataSelector(
-				const CoRegConfigurationTable &table) 
+		DataSelector(const CoRegConfigurationTable &table) 
 			: d_configuration_table(table)
 		{ }
 

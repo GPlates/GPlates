@@ -29,61 +29,28 @@
 #include <vector>
 #include <map>
 
-#include "AssociationOperator.h"
-#include "AssociationOperatorFactory.h"
-#include "DataOperator.h"
-#include "DataOperatorFactory.h"
+#include "Filter.h"
+#include "ReducerTypes.h"
 #include "DataTable.h"
-
 #include "app-logic/FeatureCollectionFileState.h"
-
 #include "model/FeatureHandle.h"
 
 namespace GPlatesDataMining
 {
-	/*
-	 * TODO:
-	*/
 	struct ConfigurationTableRow
 	{
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref target_feature_collection_handle;
-		AssociationOperatorType association_operator_type;
-		AssociationOperatorParameters association_parameters;
-		QString attribute_name;
+		GPlatesModel::FeatureCollectionHandle::const_weak_ref target_fc;
+		FilterType filter_type;
+		FilterCfg filter_cfg;
+		QString attr_name;
 		AttributeType attr_type;
-		DataOperatorType data_operator_type;
-		DataOperatorParameters data_operator_parameters;
+		ReducerType reducer_type;
 	};
 
-	/*
-	 * TODO:
-	*/
 	class CoRegConfigurationTable :
 		public std::vector< ConfigurationTableRow > 
 	{
 	public:
-		inline
-		AssociationOperatorType
-		associate_operator_type(
-				iterator iter)
-		{
-			return iter->association_operator_type;
-		}
-
-		inline
-		const QString&
-		export_path() const
-		{
-			return d_export_path;
-		}
-
-		inline
-		QString&
-		export_path() 
-		{
-			return d_export_path;
-		}
-
 		inline
 		void
 		set_seeds_file(
@@ -101,12 +68,22 @@ namespace GPlatesDataMining
 				const ConfigurationTableRow& input_row);
 
 	private:
-		//Put export path here temporarily. 
-		//Eventually, the export will be done in export dialog.
-		QString d_export_path;
-
 		std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> d_seed_files;
 	};
+
+	inline
+	std::ostream &
+	operator<<(
+			std::ostream &o,
+			const ConfigurationTableRow &g)
+	{
+		o << g.filter_type << "\t";
+		o << g.filter_cfg.d_ROI_range <<  "\t";
+		o << g.attr_name.toStdString() <<  "\t";
+		o << g.attr_type <<  "\t";
+		o << g.reducer_type << "\t";
+		return o;
+	}
 }
 #endif //GPLATESDATAMINING_COREGCONFIGURATIONTABLE_H
 

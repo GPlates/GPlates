@@ -295,6 +295,12 @@ namespace GPlatesGui
 		 * For example defining one static variable equal to another.
 		 * These functions have a local static colour variable.
 		 */
+		
+		/*
+		* These functions are defined in colour.cc with macro.
+		* For example. DEFINE_COLOUR(black, 0.0, 0.0, 0.0)
+		* Not all IDE can jump to the definition. Don't be confused.
+		*/
 		static const Colour &get_black();
 		static const Colour &get_white();
 		static const Colour &get_red();
