@@ -185,3 +185,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR false)
 # Use this if you want to avoid Visual Studio asking to reload a project in the middle of a build,
 # or Unix makefiles changing in middle of build, because a 'CMakeList.txt' file was changed.
 set(CMAKE_SUPPRESS_REGENERATION false)
+
+# Disable Python for release 1.1
+set(GPLATES_NO_PYTHON true)
