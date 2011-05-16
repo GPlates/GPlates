@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -172,9 +172,6 @@
     </property>
     <addaction name="action_Manage_Colouring"/>
     <addaction name="separator"/>
-    <addaction name="action_Load_Symbol"/>
-    <addaction name="action_Unload_Symbol"/>
-    <addaction name="separator"/>
     <addaction name="action_Manage_Small_Circles"/>
     <addaction name="action_View_Total_Reconstruction_Sequences"/>
     <addaction name="action_View_Shapefile_Attributes"/>
@@ -188,8 +185,6 @@
      <string>&amp;Utilities</string>
     </property>
     <addaction name="action_Calculate_Reconstruction_Pole"/>
-    <addaction name="separator"/>
-    <addaction name="action_Open_Python_Console"/>
    </widget>
    <widget class="QMenu" name="menu_Window">
     <property name="title">

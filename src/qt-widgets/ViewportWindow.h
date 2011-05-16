@@ -448,6 +448,12 @@ namespace GPlatesQtWidgets
 		void
 		install_gui_debug_menu();
 
+		void
+		install_symbol_menu();
+		
+		void
+		install_python_menu();
+
 	protected:
 	
 		/**
