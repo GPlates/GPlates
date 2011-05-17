@@ -1521,30 +1521,9 @@
     <string>View Online &amp;Documentation</string>
    </property>
   </action>
-  <action name="action_Open_Python_Console">
-   <property name="text">
-    <string>Open Python &amp;Console</string>
-   </property>
-   <property name="shortcut">
-    <string>F12</string>
-   </property>
-   <property name="shortcutContext">
-    <enum>Qt::ApplicationShortcut</enum>
-   </property>
-  </action>
   <action name="actionConnect_WFS">
    <property name="text">
     <string>Connect WFS</string>
-   </property>
-  </action>
-  <action name="action_Load_Symbol">
-   <property name="text">
-    <string>Load Symbol file (.sym)</string>
-   </property>
-  </action>
-  <action name="action_Unload_Symbol">
-   <property name="text">
-    <string>Unload Symbol file</string>
    </property>
   </action>
  </widget>
