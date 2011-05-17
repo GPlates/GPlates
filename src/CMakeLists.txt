@@ -271,8 +271,11 @@ set(internal_INCLUDE_DIRS
 	
 # All the GPlates subdirectories.
 set(ALL_GPlates_src_subdirs
-	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS} ${unit_test_LIBS} python-ext)
+	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS} ${unit_test_LIBS} )
 
+if(NOT GPLATES_NO_PYTHON)
+	set(ALL_GPlates_src_subdirs ${ALL_GPlates_src_subdirs} python-ext)
+endif(NOT GPLATES_NO_PYTHON)
 #
 # Generate 'global/config.h' file from 'global/config.h.in' and add HAVE_CONFIG_H compiler definition so GPlates will look for it.
 #
@@ -412,21 +415,23 @@ if(NOT GPLATES_NO_PYTHON)
 	if(WIN32)
 		set_target_properties(pygplates PROPERTIES SUFFIX ".pyd")
 	endif(WIN32)
-endif(NOT GPLATES_NO_PYTHON)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
 
-if(WIN32)
-	add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
-	set_target_properties(gplates_ext PROPERTIES SUFFIX ".pyd")
-else(WIN32)
-	add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${g_lib_src})
-	set_target_properties(gplates_lib PROPERTIES COMPILE_FLAGS "-fPIC")
-	add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
-	add_dependencies(gplates_ext gplates_lib)
-endif(WIN32)
+	if(WIN32)
+		add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
+		set_target_properties(gplates_ext PROPERTIES SUFFIX ".pyd")
+	else(WIN32)
+		add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${g_lib_src})
+		set_target_properties(gplates_lib PROPERTIES COMPILE_FLAGS "-fPIC")
+		add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
+		add_dependencies(gplates_ext gplates_lib)
+	endif(WIN32)
 
-set_target_properties(gplates_ext PROPERTIES PREFIX "")
+	set_target_properties(gplates_ext PROPERTIES PREFIX "")
+endif(NOT GPLATES_NO_PYTHON)
+
+
 
 if (APPLE)
 	# Copy icon file to 'Resources' directory inside application bundle.
@@ -496,13 +501,14 @@ if (ADD_UNIT_TEST_TARGET)
 endif (ADD_UNIT_TEST_TARGET)
 if (NOT GPLATES_NO_PYTHON)
 	target_link_libraries(pygplates ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
-endif (NOT GPLATES_NO_PYTHON)
 
-if(WIN32)
-	target_link_libraries(gplates_ext python-ext ${GPlates_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
-else(WIN32)
-	target_link_libraries(gplates_ext gplates_lib ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
-endif(WIN32)
+	if(WIN32)
+		target_link_libraries(gplates_ext python-ext ${GPlates_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
+	else(WIN32)
+		target_link_libraries(gplates_ext gplates_lib ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
+	endif(WIN32)
+
+endif (NOT GPLATES_NO_PYTHON)
 
 # Current binary directory must be included first for g++ pre-compiled headers.
 # There's a '_pch.h' file in current source and current binary directory however the '_pch.h.gch' pre-compiled header
