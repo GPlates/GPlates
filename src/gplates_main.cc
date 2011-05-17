@@ -330,12 +330,12 @@ int internal_main(int argc, char* argv[])
 		main_window_widget.install_gui_debug_menu();
 	}
 
-#ifndef GPLATES_NO_SYMBOL
-	main_window_widget.install_symbol_menu();
+#ifdef GPLATES_NO_SYMBOL
+	main_window_widget.hide_symbol_menu();
 #endif
 
-#ifndef GPLATES_NO_PYTHON
-	main_window_widget.install_python_menu();
+#ifdef GPLATES_NO_PYTHON
+	main_window_widget.hide_python_menu();
 #endif
 
 	install_instance(state);

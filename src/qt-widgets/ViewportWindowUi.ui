@@ -172,6 +172,9 @@
     </property>
     <addaction name="action_Manage_Colouring"/>
     <addaction name="separator"/>
+    <addaction name="action_Load_Symbol"/>
+    <addaction name="action_Unload_Symbol"/>
+    <addaction name="separator"/>
     <addaction name="action_Manage_Small_Circles"/>
     <addaction name="action_View_Total_Reconstruction_Sequences"/>
     <addaction name="action_View_Shapefile_Attributes"/>
@@ -185,6 +188,8 @@
      <string>&amp;Utilities</string>
     </property>
     <addaction name="action_Calculate_Reconstruction_Pole"/>
+    <addaction name="separator"/>
+    <addaction name="action_Open_Python_Console"/>
    </widget>
    <widget class="QMenu" name="menu_Window">
     <property name="title">
@@ -1494,6 +1499,9 @@
    <property name="text">
     <string>Manage &amp;Small Circles</string>
    </property>
+   <property name="visible">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="action_Choose_Background_Colour">
    <property name="text">
@@ -1521,9 +1529,39 @@
     <string>View Online &amp;Documentation</string>
    </property>
   </action>
+  <action name="action_Open_Python_Console">
+   <property name="text">
+    <string>Open Python &amp;Console</string>
+   </property>
+   <property name="shortcut">
+    <string>F12</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+   <property name="visible">
+    <bool>true</bool>
+   </property>
+  </action>
   <action name="actionConnect_WFS">
    <property name="text">
     <string>Connect WFS</string>
+   </property>
+  </action>
+  <action name="action_Load_Symbol">
+   <property name="text">
+    <string>Load Symbol file (.sym)</string>
+   </property>
+   <property name="visible">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="action_Unload_Symbol">
+   <property name="text">
+    <string>Unload Symbol file</string>
+   </property>
+   <property name="visible">
+    <bool>true</bool>
    </property>
   </action>
  </widget>

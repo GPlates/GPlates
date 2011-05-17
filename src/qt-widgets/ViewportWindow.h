@@ -449,10 +449,17 @@ namespace GPlatesQtWidgets
 		install_gui_debug_menu();
 
 		void
-		install_symbol_menu();
-		
+		hide_symbol_menu()
+		{
+			action_Load_Symbol->setVisible(false);
+			action_Unload_Symbol->setVisible(false);
+		}
+
 		void
-		install_python_menu();
+		hide_python_menu()
+		{
+			action_Open_Python_Console->setVisible(false);
+		}
 
 	protected:
 	

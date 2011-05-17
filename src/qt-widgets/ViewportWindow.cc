@@ -958,6 +958,11 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
 			this, SLOT(pop_up_colouring_dialog()));
 	// ----
+	QObject::connect(action_Load_Symbol, SIGNAL(triggered()),
+			this, SLOT(handle_load_symbol_file()));
+	QObject::connect(action_Unload_Symbol, SIGNAL(triggered()),
+			this, SLOT(handle_unload_symbol_file()));
+	// ----
 	QObject::connect(action_Manage_Small_Circles, SIGNAL(triggered()),
 			this, SLOT(pop_up_small_circle_manager()));
 	QObject::connect(action_View_Total_Reconstruction_Sequences, SIGNAL(triggered()),
@@ -1007,6 +1012,14 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 {
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
 			this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
+	d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
+			menu_Utilities,
+			action_Open_Python_Console,
+			get_application_state().get_python_execution_thread(),
+			this);
+	// ----
+	QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
+			this, SLOT(pop_up_python_console()));
 }
 
 
@@ -2340,53 +2353,6 @@ GPlatesQtWidgets::ViewportWindow::install_gui_debug_menu()
 	static GPlatesGui::GuiDebug *gui_debug = new GPlatesGui::GuiDebug(*this,
 			get_application_state(), this);
 	gui_debug->setObjectName("GuiDebug");
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::install_symbol_menu()
-{
-	menu_Features->addSeparator();
-
-	QAction *action_Load_Symbol;
-	action_Load_Symbol = new QAction(this);
-	action_Load_Symbol->setObjectName(QString::fromUtf8("action_Load_Symbol"));
-	menu_Features->addAction(action_Load_Symbol);
-	action_Load_Symbol->setText(QApplication::translate("ViewportWindow", "Load Symbol file (.sym)", 0, QApplication::UnicodeUTF8));
-
-	QAction *action_Unload_Symbol;
-	action_Unload_Symbol = new QAction(this);
-	action_Unload_Symbol->setObjectName(QString::fromUtf8("action_Unload_Symbol"));
-	menu_Features->addAction(action_Unload_Symbol);
-	action_Unload_Symbol->setText(QApplication::translate("ViewportWindow", "Unload Symbol file", 0, QApplication::UnicodeUTF8));
-	
-	// ----
-	QObject::connect(action_Load_Symbol, SIGNAL(triggered()),
-		this, SLOT(handle_load_symbol_file()));
-	QObject::connect(action_Unload_Symbol, SIGNAL(triggered()),
-		this, SLOT(handle_unload_symbol_file()));
-	// ----
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::install_python_menu()
-{
-	QAction *action_Open_Python_Console;
-	action_Open_Python_Console = new QAction(this);
-	action_Open_Python_Console->setObjectName(QString::fromUtf8("action_Open_Python_Console"));
-	action_Open_Python_Console->setShortcutContext(Qt::ApplicationShortcut);
-	menu_Utilities->addSeparator();
-	menu_Utilities->addAction(action_Open_Python_Console);
-	action_Open_Python_Console->setText(QApplication::translate("ViewportWindow", "Open Python &Console", 0, QApplication::UnicodeUTF8));
-	action_Open_Python_Console->setShortcut(QApplication::translate("ViewportWindow", "F12", 0, QApplication::UnicodeUTF8));
-	d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
-			menu_Utilities,
-			action_Open_Python_Console,
-			get_application_state().get_python_execution_thread(),
-			this);
-	// ----
-	QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
-			this, SLOT(pop_up_python_console()));
 }
 
 
