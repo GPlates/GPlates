@@ -36,10 +36,7 @@ GPlatesDataMining::is_close_enough(
 		const double range)
 {
 	using namespace GPlatesMaths::Spherical;
-	IsCloseEnoughChecker checker(
-			range 
-			+ 
-			SphereSettings::instance().distance_tolerance().dval());
+	IsCloseEnoughChecker checker(range);
 	DualGeometryVisitor< IsCloseEnoughChecker > dual_visitor(g1, g2, &checker);
 	dual_visitor.apply();
 	return checker.is_close_enough();
@@ -234,6 +231,8 @@ GPlatesDataMining::IsCloseEnoughChecker::test_proximity(
 		#ifdef _DEBUG
 		std::cout << "The distance is: " << d_distance <<std::endl;
 		#endif
+		if(d_distance > range)//this could happen due to the float point precision problem.
+			d_distance = range;
 
 		return d_distance;
 	}
