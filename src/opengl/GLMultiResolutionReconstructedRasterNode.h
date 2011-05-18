@@ -30,7 +30,7 @@
 
 #include <opengl/OpenGL.h>
 
-#include "GLMultiResolutionReconstructedRaster.h"
+#include "GLMultiResolutionStaticPolygonReconstructedRaster.h"
 #include "GLRenderGraphNode.h"
 #include "GLRenderGraphVisitor.h"
 
@@ -60,7 +60,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const GLMultiResolutionReconstructedRaster::non_null_ptr_type &reconstructed_raster)
+				const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &reconstructed_raster)
 		{
 			return non_null_ptr_type(new GLMultiResolutionReconstructedRasterNode(reconstructed_raster));
 		}
@@ -69,7 +69,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns multi-resolution reconstructed raster.
 		 */
-		GLMultiResolutionReconstructedRaster::non_null_ptr_type
+		GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type
 		get_multi_resolution_reconstructed_raster() const
 		{
 			return d_reconstructed_raster;
@@ -100,13 +100,13 @@ namespace GPlatesOpenGL
 		}
 
 	private:
-		GLMultiResolutionReconstructedRaster::non_null_ptr_type d_reconstructed_raster;
+		GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type d_reconstructed_raster;
 
 
 		//! Constructor.
 		explicit
 		GLMultiResolutionReconstructedRasterNode(
-				const GLMultiResolutionReconstructedRaster::non_null_ptr_type &raster) :
+				const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &raster) :
 			d_reconstructed_raster(raster)
 		{  }
 	};

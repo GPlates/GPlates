@@ -122,6 +122,7 @@ namespace GPlatesAppLogic
 			enum Reason
 			{
 				NotInAnyBoundaryOrNetwork,
+				InStaticPolygon,
 				InPlateBoundary,
 				InDeformationNetwork
 			};

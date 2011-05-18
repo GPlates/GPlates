@@ -89,7 +89,7 @@ namespace GPlatesPresentation
 		VisualLayer(
 				VisualLayers &visual_layers,
 				const VisualLayerRegistry &visual_layer_registry,
-				const GPlatesAppLogic::Layer &layer,
+				GPlatesAppLogic::Layer &layer,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				int layer_number);
 

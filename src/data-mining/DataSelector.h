@@ -35,8 +35,8 @@
 #include "Filter.h"
 #include "DataTable.h"
 
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructUtils.h"
-#include "app-logic/ReconstructedFeatureGeometryPopulator.h"
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
@@ -45,7 +45,6 @@
 #include "model/FeatureHandle.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
-#include "app-logic/ReconstructionGeometryCollection.h"
 
 #include "utils/UnicodeStringUtils.h"
 
@@ -79,8 +78,8 @@ namespace GPlatesDataMining
 		*/
 		void
 		select(
-				const std::vector<GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type>& seed_collection,	
-				const std::vector<GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type>& co_reg_collection,								
+				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>& seed_collection,	
+				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>& co_reg_collection,								
 				DataTable& ret														
 				);
 
@@ -185,7 +184,7 @@ namespace GPlatesDataMining
 		*/
 		void
 		construct_geometry_map(
-				const std::vector<GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type>&,
+				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>&,
 				FeatureGeometryMap& the_map);
 		/*
 		*

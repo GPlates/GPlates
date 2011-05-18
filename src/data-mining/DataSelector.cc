@@ -35,6 +35,8 @@
 #include "DataMiningUtils.h"
 #include "RegionOfInterestFilter.h"
 
+#include "app-logic/ReconstructionFeatureProperties.h"
+
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 
 #include "maths/Real.h"
@@ -50,31 +52,6 @@ using namespace GPlatesAppLogic;
 namespace
 {
 	using namespace GPlatesDataMining;
-	void
-	convert_to_reconstructed_feature_geometry_vector(
-			const std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type>& input,
-			std::vector<const ReconstructedFeatureGeometry*>& output)
-	{
-		BOOST_FOREACH(const ReconstructionGeometryCollection::non_null_ptr_to_const_type& rgc, input)
-		{
-			ReconstructionGeometryCollection::const_iterator it = rgc->begin(), it_end = rgc->end();
-			for(; it != it_end; it++)
-			{
-				//use dynamic case here since we are expecting ReconstructedFeatureGeometry
-				//it would be faster than double dispatch visitor
-				//the performance would not be a problem because the heritage structure is shallow. 
-				const ReconstructedFeatureGeometry* rfg = 
-					dynamic_cast<const ReconstructedFeatureGeometry*>((*it).get());
-				if(!rfg)
-				{
-					qWarning() << "Failed to cast from ReconstructionGeometry* to ReconstructedFeatureGeometry*";
-					continue; //We are expecting ReconstructedFeatureGeometry, the dynamic cast should not fail
-				}
-				else
-					output.push_back(rfg);
-			}
-		}
-	}
 
 	bool
 	is_feature_collection_contains_this_feature(
@@ -98,12 +75,15 @@ namespace
 			const ReconstructedFeatureGeometry* rfg2)
 	{
 		using namespace GPlatesMaths;
-		const PolygonOnSphere* p1 = dynamic_cast<const PolygonOnSphere*>(rfg1->geometry().get());
-		const PolygonOnSphere* p2 = dynamic_cast<const PolygonOnSphere*>(rfg2->geometry().get());
+		const PolygonOnSphere* p1 = dynamic_cast<const PolygonOnSphere*>(rfg1->reconstructed_geometry().get());
+		const PolygonOnSphere* p2 = dynamic_cast<const PolygonOnSphere*>(rfg2->reconstructed_geometry().get());
 		
+		// FIXME: If there are non-polygons mixed with polygon then it might be possible to
+		// get islands of polygons (separated by non-polygons) that aren't sorted correctly.
 		if(p1 && p2)
-			return SphericalArea::calculate_polygon_area(*p1) < SphericalArea::calculate_polygon_area(*p2);
-		
+		{
+			return p1->get_area() < p2->get_area();
+		}
 		if(p1)
 			return false;
 		
@@ -111,28 +91,6 @@ namespace
 			return true;
 		
 		return false;
-	}
-
-	std::vector< const ReconstructedFeatureGeometry* >
-	convert_reconstruction_geometry_collection_to_reconstructed_feature_geometry_vector(
-		ReconstructionGeometryCollection::const_iterator begin,
-		ReconstructionGeometryCollection::const_iterator end)
-	{
-		std::vector< const ReconstructedFeatureGeometry* > ret;
-		for(; begin != end; begin++)
-		{
-			//use dynamic case here since we are expecting ReconstructedFeatureGeometry
-			//it would be faster than double dispatch visitor
-			//the performance would not be a problem because the heritage structure is shallow. 
-			const ReconstructedFeatureGeometry* rfg = 
-				dynamic_cast<const ReconstructedFeatureGeometry*>((*begin).get());
-			if(!rfg)
-				continue;
-			else
-				ret.push_back(rfg);
-		}
-		std::sort(ret.begin(),ret.end(),less_area);
-		return ret;
 	}
 
 
@@ -143,40 +101,36 @@ DISABLE_GCC_WARNING("-Wshadow")
 
 	void
 	construct_feature_collection_handle_and_reconstructed_feature_geometries_map(
-			const std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type>& input,
+			const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>& input_rfgs,
 			std::vector< FeatureCollectionHandle::const_weak_ref > feature_collections,
 			DataSelector::FeatureCollectionRFGMap& output)
 	{
+		// Iterate over the feature collections.
 		BOOST_FOREACH(const FeatureCollectionHandle::const_weak_ref& fc, feature_collections)
 		{
-			std::vector<const ReconstructedFeatureGeometry*> empty_vector;
-			output.insert(std::make_pair(fc.handle_ptr(),empty_vector));
-		}
+			typedef std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> input_rfg_seq_type;
+			typedef std::vector< const ReconstructedFeatureGeometry* > output_rfg_seq_type;
 
-		BOOST_FOREACH(const ReconstructionGeometryCollection::non_null_ptr_to_const_type& rgc, input)
-		{
-			ReconstructionGeometryCollection::const_iterator it = rgc->begin(), it_end = rgc->end();
-			if(it == it_end)//empty ReconstructionGeometryCollection
-				continue;
-
-			//use dynamic case here since we are expecting ReconstructedFeatureGeometry
-			//it would be faster than double dispatch visitor
-			//the performance should not be a problem because the heritage structure is flat. 
-			const ReconstructedFeatureGeometry* rfg = 
-				dynamic_cast<const ReconstructedFeatureGeometry*>((*it).get());
-			
-			if(!rfg)
-				continue; //We are expecting ReconstructedFeatureGeometry, the dynamic cast should not fail
-
-			BOOST_FOREACH(const FeatureCollectionHandle::const_weak_ref& fc, feature_collections)
+			// Iterate over the input RFGs and associate each one with the current feature collection
+			// *if* they came from there.
+			output_rfg_seq_type output_rfgs;
+			for (input_rfg_seq_type::const_iterator input_rfg_iter = input_rfgs.begin();
+				input_rfg_iter != input_rfgs.end();
+				++input_rfg_iter)
 			{
-				if(is_feature_collection_contains_this_feature(fc.handle_ptr(), rfg->feature_handle_ptr()))
+				const ReconstructedFeatureGeometry::non_null_ptr_type &input_rfg = *input_rfg_iter;
+
+				if(is_feature_collection_contains_this_feature(fc.handle_ptr(), input_rfg->feature_handle_ptr()))
 				{
-					output[fc.handle_ptr()] = 
-						convert_reconstruction_geometry_collection_to_reconstructed_feature_geometry_vector(it, it_end);
+					output_rfgs.push_back(input_rfg.get());
 				}
 			}
 
+			// Sort the RFGs according to area if they are polygons.
+			std::sort(output_rfgs.begin(), output_rfgs.end(), less_area);
+
+			// Assign the vector of RFGs to their feature collection.
+			output[fc.handle_ptr()] = output_rfgs;
 		}
 	}
 
@@ -185,28 +139,26 @@ ENABLE_GCC_WARNING("-Wshadow")
 
 	void
 	construct_feature_and_reconstructed_feature_geometries_map(
-			const std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type>& rgcs,
+			const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>& rgcs,
 			DataSelector::FeatureRFGMap& output)
 	{
-		BOOST_FOREACH(const ReconstructionGeometryCollection::non_null_ptr_to_const_type& rgc, rgcs)
+		typedef std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> rfg_seq_type;
+
+		rfg_seq_type::const_iterator it = rgcs.begin(), it_end = rgcs.end();
+		for(; it != it_end; it++)
 		{
-			ReconstructionGeometryCollection::const_iterator it = rgc->begin(), it_end = rgc->end();
-			for(; it != it_end; it++)
+			const ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *it;
+
+			DataSelector::FeatureRFGMap::iterator map_it = output.find( rfg->feature_handle_ptr());
+		
+			if( map_it != output.end() )
 			{
-				const ReconstructedFeatureGeometry* rfg = 
-					dynamic_cast<const ReconstructedFeatureGeometry*>((*it).get());
-				if(!rfg)
-					continue;
-				else
-				{
-					DataSelector::FeatureRFGMap::iterator map_it = output.find( rfg->feature_handle_ptr());
-				
-					if( map_it != output.end() )
-						map_it->second.push_back(rfg);
-					else
-						//create a vector of length 1 which is initialized with rfg.
-						output[rfg->feature_handle_ptr()] = std::vector< const ReconstructedFeatureGeometry* > (1, rfg);
-				}
+				map_it->second.push_back(rfg.get());
+			}
+			else
+			{
+				//create a vector of length 1 which is initialized with rfg.
+				output[rfg->feature_handle_ptr()] = std::vector< const ReconstructedFeatureGeometry* > (1, rfg.get());
 			}
 		}
 	}
@@ -220,10 +172,8 @@ DISABLE_GCC_WARNING("-Wshadow")
 
 void
 GPlatesDataMining::DataSelector::select(
-		const std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type>
-			&seed_collection,	
-		const std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type>
-			&co_reg_collection,							
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &seed_collection,	
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &co_reg_collection,							
 		GPlatesDataMining::DataTable& data_table)
 {
 	//prepare the input data from layers
@@ -373,7 +323,7 @@ GPlatesDataMining::DataSelector::get_reconstructed_geometries(
 				ReconstructUtils::reconstruct(
 						*it,
 						*properties.get_recon_plate_id(),
-						*rec.get_default_reconstruction_tree());
+						*rec.get_default_reconstruction_layer_output()->get_reconstruction_tree());
 			geometries.push_back(geometry);
 		}
 		else
@@ -385,30 +335,23 @@ GPlatesDataMining::DataSelector::get_reconstructed_geometries(
 
 void
 GPlatesDataMining::DataSelector::construct_geometry_map(
-		const std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type>& RGCs,
+		const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>& RGCs,
 		FeatureGeometryMap& the_map)
 {
-	BOOST_FOREACH(const ReconstructionGeometryCollection::non_null_ptr_to_const_type& RGC, RGCs)
+	typedef std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> rfg_seq_type;
+
+	rfg_seq_type::const_iterator it = RGCs.begin(), it_end = RGCs.end();
+	for( ; it != it_end; it++)
 	{
-		ReconstructionGeometryCollection::const_iterator it = RGC->begin(), it_end = RGC->end();
-		for(; it != it_end; it++)
+		const ReconstructedFeatureGeometry* RFG = it->get();
+
+		FeatureGeometryMap::iterator map_it = the_map.find( RFG->feature_handle_ptr());
+		if( map_it != the_map.end() )
+			map_it->second.push_back(RFG->reconstructed_geometry());
+		else
 		{
-			const ReconstructedFeatureGeometry* RFG = 
-				dynamic_cast<const ReconstructedFeatureGeometry*>((*it).get());
-			
-			if(!RFG)
-				continue;
-			else
-			{
-				FeatureGeometryMap::iterator map_it = the_map.find( RFG->feature_handle_ptr());
-				if( map_it != the_map.end() )
-					map_it->second.push_back(RFG->geometry());
-				else
-				{
-					std::vector< GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type > tmp(1,RFG->geometry());
-					the_map[RFG->feature_handle_ptr()] = tmp;
-				}
-			}
+			std::vector< GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type > tmp(1,RFG->reconstructed_geometry());
+			the_map[RFG->feature_handle_ptr()] = tmp;
 		}
 	}
 }

@@ -31,8 +31,11 @@
 
 #include "GlobeRenderedGeometryCollectionPainter.h"
 
+#include "GlobeRenderedGeometryLayerPainter.h"
+
 #include "opengl/GLEnterOrLeaveStateSet.h"
 #include "opengl/GLStateSet.h"
+#include "opengl/GLRenderer.h"
 #include "opengl/GLUNurbsRenderer.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -62,12 +65,12 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 
 void
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint(
-		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
+		GPlatesOpenGL::GLRenderer &renderer,
 		const double &viewport_zoom_factor,
 		const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer)
 {
 	// Initialise our paint parameters so our visit methods can access them.
-	d_paint_params = PaintParams(render_graph_node, viewport_zoom_factor, nurbs_renderer);
+	d_paint_params = PaintParams(renderer, viewport_zoom_factor, nurbs_renderer);
 
 	// Draw the layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
@@ -92,19 +95,10 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 		return false;
 	}
 
-	// Create an internal node to represent the current rendered geometry layer.
-	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type rendered_layer_node =
-			GPlatesOpenGL::GLRenderGraphInternalNode::create();
-
 	// Create a state set that ensures this rendered layer will form a render sub group
 	// that will not get reordered with other layers by the renderer (to minimise state changes).
 	GPlatesOpenGL::GLStateSet::non_null_ptr_type state_set = GPlatesOpenGL::GLStateSet::create();
 	state_set->set_enable_render_sub_group();
-
-	rendered_layer_node->set_state_set(state_set);
-
-	// Add the render layer node to the parent render graph node.
-	d_paint_params->d_render_collection_node->add_child_node(rendered_layer_node);
 
 	// Draw the current rendered geometry layer.
 	GlobeRenderedGeometryLayerPainter rendered_geom_layer_painter(
@@ -117,7 +111,11 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 			d_visibility_tester,
 			d_colour_scheme);
 	rendered_geom_layer_painter.set_scale(d_scale);
-	rendered_geom_layer_painter.paint(rendered_layer_node);
+
+	// Paint the layer.
+	d_paint_params->d_renderer->push_state_set(state_set);
+	rendered_geom_layer_painter.paint(*d_paint_params->d_renderer);
+	d_paint_params->d_renderer->pop_state_set();
 
 	// We've already visited the rendered geometry layer so don't visit its rendered geometries.
 	return false;

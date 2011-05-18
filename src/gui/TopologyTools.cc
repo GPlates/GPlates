@@ -1444,13 +1444,17 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 
 	// This creates the RenderedGeometry's from the ReconstructionGeometry's.
 	GPlatesPresentation::ReconstructionGeometryRenderer reconstruction_geometry_renderer(
-			*d_focused_feature_layer_ptr,
 			render_style_params,
 			colour,
 			boost::none,
 			boost::none);
 
+
+	reconstruction_geometry_renderer.begin_render();
+
 	focused_rfg.get()->accept_visitor(reconstruction_geometry_renderer);
+
+	reconstruction_geometry_renderer.end_render(*d_focused_feature_layer_ptr);
 
 	// Get the start and end points of the focused feature's geometry.
 	// Since the geometry is in focus but has not been added to the topology
@@ -1460,7 +1464,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 		GPlatesMaths::PointOnSphere/*end point*/>
 			focus_feature_end_points =
 				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
-						*focused_rfg.get()->geometry());
+						*focused_rfg.get()->reconstructed_geometry());
 
 	// draw the focused end_points
 	draw_focused_geometry_end_points(
@@ -1706,7 +1710,8 @@ GPlatesGui::TopologyTools::reconstruct_sections()
 	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
 	// as input to other layers - when that happens we'll need to handle non-default trees too.
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-			d_application_state_ptr->get_current_reconstruction().get_default_reconstruction_tree();
+			d_application_state_ptr->get_current_reconstruction()
+				.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
 	const section_info_seq_type::size_type num_sections = d_section_info_seq.size();
 
@@ -2721,7 +2726,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 
 	// Get the geometry on sphere from the RFG.
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry_unreversed =
-			(*section_rfg)->geometry();
+			(*section_rfg)->reconstructed_geometry();
 
 	return VisibleSection(section_geometry_unreversed, section_index);
 }

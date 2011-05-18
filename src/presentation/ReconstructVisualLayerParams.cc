@@ -26,7 +26,9 @@
 #include "ReconstructVisualLayerParams.h"
 
 
-GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams() :
+GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams(
+		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
+	VisualLayerParams(layer_task_params),
 	d_vgp_draw_circular_error(true)
 {
 }

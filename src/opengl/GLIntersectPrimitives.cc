@@ -30,6 +30,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/SmallCircleBounds.h"
+
 
 GPlatesOpenGL::GLIntersect::Plane::Plane(
 		const GPlatesMaths::Vector3D &normal,
@@ -115,7 +117,7 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBox::OrientedBoundingBox(
 
 // This is the equivalent of about 6 metres (since globe has radius of ~6e+6 Kms).
 // We just don't want the OBB vector to be too small that numerical errors become a problem.
-const GPlatesMaths::real_t
+const double
 GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::DEGENERATE_HALF_LENGTH_THRESHOLD(1e-6);
 
 GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::OrientedBoundingBoxBuilder(
@@ -126,15 +128,55 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::OrientedBoundingBoxBuild
 	d_y_axis(obb_y_axis),
 	d_z_axis(obb_z_axis),
 	// The parentheses around min/max are to prevent the windows min/max macros
-	// from stuffing numeric_limits' min/max. Using 'float' instead of 'double'
-	// in case 'real_t' changes its internal type for some reason.
-	d_min_dot_x_axis((std::numeric_limits<float>::max)()),
-	d_max_dot_x_axis(-(std::numeric_limits<float>::max)()),
-	d_min_dot_y_axis((std::numeric_limits<float>::max)()),
-	d_max_dot_y_axis(-(std::numeric_limits<float>::max)()),
-	d_min_dot_z_axis((std::numeric_limits<float>::max)()),
-	d_max_dot_z_axis(-(std::numeric_limits<float>::max)())
+	// from stuffing numeric_limits' min/max.
+	d_min_dot_x_axis((std::numeric_limits<double>::max)()),
+	d_max_dot_x_axis(-(std::numeric_limits<double>::max)()),
+	d_min_dot_y_axis((std::numeric_limits<double>::max)()),
+	d_max_dot_y_axis(-(std::numeric_limits<double>::max)()),
+	d_min_dot_z_axis((std::numeric_limits<double>::max)()),
+	d_max_dot_z_axis(-(std::numeric_limits<double>::max)())
 {
+}
+
+
+GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::OrientedBoundingBoxBuilder(
+		const GPlatesMaths::BoundingSmallCircle &bounding_small_circle,
+		const GPlatesMaths::UnitVector3D &obb_x_axis,
+		const GPlatesMaths::UnitVector3D &obb_y_axis) :
+	d_x_axis(obb_x_axis),
+	d_y_axis(obb_y_axis),
+	d_z_axis(bounding_small_circle.get_centre())
+{
+	// The z-axis bounds are determined by directly the small circle.
+	d_min_dot_z_axis = bounding_small_circle.get_small_circle_boundary_cosine();
+	d_max_dot_z_axis = 1.0;
+
+	// If the small circle extends past the hemisphere (centred on the small circle centre)
+	// then our bounding box must enclose the full sphere along the OBB's x and y axes.
+	if (d_min_dot_z_axis < 0)
+	{
+		d_min_dot_x_axis = -1.0;
+		d_max_dot_x_axis = 1.0;
+
+		d_min_dot_y_axis = -1.0;
+		d_max_dot_y_axis = 1.0;
+	}
+	else // the small circle covers less than a hemisphere ...
+	{
+		// Find the radius of the small circle -
+		// this will be our min/max dot product along the OBB's x and y axes.
+		const double dot_z_axis_sqrd = d_min_dot_z_axis * d_min_dot_z_axis;
+		const double small_circle_radius =
+				(dot_z_axis_sqrd < 1.0)
+				? std::sqrt(1.0 - dot_z_axis_sqrd)
+				: 0;
+
+		d_min_dot_x_axis = -small_circle_radius;
+		d_max_dot_x_axis = small_circle_radius;
+
+		d_min_dot_y_axis = -small_circle_radius;
+		d_max_dot_y_axis = small_circle_radius;
+	}
 }
 
 
@@ -147,7 +189,7 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
 	// expand min/max projections if necessary.
 	//
 
-	const GPlatesMaths::real_t dot_x_axis = dot(point, d_x_axis);
+	const double dot_x_axis = dot(point, d_x_axis).dval();
 	if (dot_x_axis < d_min_dot_x_axis)
 	{
 		d_min_dot_x_axis = dot_x_axis;
@@ -157,7 +199,7 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
 		d_max_dot_x_axis = dot_x_axis;
 	}
 
-	const GPlatesMaths::real_t dot_y_axis = dot(point, d_y_axis);
+	const double dot_y_axis = dot(point, d_y_axis).dval();
 	if (dot_y_axis < d_min_dot_y_axis)
 	{
 		d_min_dot_y_axis = dot_y_axis;
@@ -167,7 +209,7 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
 		d_max_dot_y_axis = dot_y_axis;
 	}
 
-	const GPlatesMaths::real_t dot_z_axis = dot(point, d_z_axis);
+	const double dot_z_axis = dot(point, d_z_axis).dval();
 	if (dot_z_axis < d_min_dot_z_axis)
 	{
 		d_min_dot_z_axis = dot_z_axis;
@@ -175,6 +217,91 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
 	if (dot_z_axis > d_max_dot_z_axis)
 	{
 		d_max_dot_z_axis = dot_z_axis;
+	}
+}
+
+
+void
+GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
+		const GPlatesMaths::GreatCircleArc &gca)
+{
+	GPlatesMaths::update_min_max_dot_product(
+			d_x_axis, gca, d_min_dot_x_axis, d_max_dot_x_axis);
+
+	GPlatesMaths::update_min_max_dot_product(
+			d_y_axis, gca, d_min_dot_y_axis, d_max_dot_y_axis);
+
+	GPlatesMaths::update_min_max_dot_product(
+			d_z_axis, gca, d_min_dot_z_axis, d_max_dot_z_axis);
+}
+
+
+void
+GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
+		const GPlatesMaths::MultiPointOnSphere &multi_point)
+{
+	for (GPlatesMaths::MultiPointOnSphere::const_iterator multi_point_iter = multi_point.begin();
+		multi_point_iter != multi_point.end();
+		++multi_point_iter)
+	{
+		add(*multi_point_iter);
+	}
+}
+
+
+void
+GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add_filled_polygon(
+	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon)
+{
+	// Add the boundary of the polygon.
+	add(*polygon);
+
+	// Test each positive and negative OBB axis point for inclusion in the polygon.
+	// For each one that is included expand the respective dot product bound.
+
+	if (polygon->is_point_in_polygon(
+			GPlatesMaths::PointOnSphere(d_x_axis),
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
+		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+	{
+		d_max_dot_x_axis = 1.0;
+	}
+	if (polygon->is_point_in_polygon(
+			GPlatesMaths::PointOnSphere(-d_x_axis),
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
+		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+	{
+		d_min_dot_x_axis = -1.0;
+	}
+
+	if (polygon->is_point_in_polygon(
+			GPlatesMaths::PointOnSphere(d_y_axis),
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
+		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+	{
+		d_max_dot_y_axis = 1.0;
+	}
+	if (polygon->is_point_in_polygon(
+			GPlatesMaths::PointOnSphere(-d_y_axis),
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
+		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+	{
+		d_min_dot_y_axis = -1.0;
+	}
+
+	if (polygon->is_point_in_polygon(
+			GPlatesMaths::PointOnSphere(d_z_axis),
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
+		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+	{
+		d_max_dot_z_axis = 1.0;
+	}
+	if (polygon->is_point_in_polygon(
+			GPlatesMaths::PointOnSphere(-d_z_axis),
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
+		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+	{
+		d_min_dot_z_axis = -1.0;
 	}
 }
 
@@ -198,22 +325,22 @@ void
 GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add_projection(
 		const OrientedBoundingBox &obb,
 		GPlatesMaths::UnitVector3D &axis,
-		GPlatesMaths::real_t &min_dot_axis,
-		GPlatesMaths::real_t &max_dot_axis)
+		double &min_dot_axis,
+		double &max_dot_axis)
 {
 	// Project 'obb's centre point onto our axis.
-	const GPlatesMaths::real_t dot_obb_centre_with_axis = dot(obb.get_centre(), axis);
+	const double dot_obb_centre_with_axis = dot(obb.get_centre(), axis).dval();
 
 	// The maximum deviation of any corner point of 'obb' (from its centre) along our axis.
-	const GPlatesMaths::real_t max_abs_deviation_of_obb_along_axis =
-			abs(dot(obb.get_half_length_x_axis(), axis)) +
+	const double max_abs_deviation_of_obb_along_axis =
+			(abs(dot(obb.get_half_length_x_axis(), axis)) +
 			abs(dot(obb.get_half_length_y_axis(), axis)) +
-			abs(dot(obb.get_half_length_z_axis(), axis));
+			abs(dot(obb.get_half_length_z_axis(), axis))).dval();
 
 	// The min/max projection of 'obb' onto our axis.
-	const GPlatesMaths::real_t min_projection_onto_axis =
+	const double min_projection_onto_axis =
 			dot_obb_centre_with_axis - max_abs_deviation_of_obb_along_axis;
-	const GPlatesMaths::real_t max_projection_onto_axis =
+	const double max_projection_onto_axis =
 			dot_obb_centre_with_axis + max_abs_deviation_of_obb_along_axis;
 
 	// Expand the axis bounds as necessary.
@@ -233,15 +360,15 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::get_oriented_bounding_bo
 {
 	// Make sure points have been added to form the bounding volume.
 	// We can detect this by testing any min/max dot product is not
-	// it's initial value of min or max float.
+	// it's initial value of min or max double.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_min_dot_x_axis < (std::numeric_limits<float>::max)(),
+			d_min_dot_x_axis < (std::numeric_limits<double>::max)(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// The box half-lengths.
-	GPlatesMaths::real_t half_length_x_axis = 0.5 * (d_max_dot_x_axis - d_min_dot_x_axis);
-	GPlatesMaths::real_t half_length_y_axis = 0.5 * (d_max_dot_y_axis - d_min_dot_y_axis);
-	GPlatesMaths::real_t half_length_z_axis = 0.5 * (d_max_dot_z_axis - d_min_dot_z_axis);
+	double half_length_x_axis = 0.5 * (d_max_dot_x_axis - d_min_dot_x_axis);
+	double half_length_y_axis = 0.5 * (d_max_dot_y_axis - d_min_dot_y_axis);
+	double half_length_z_axis = 0.5 * (d_max_dot_z_axis - d_min_dot_z_axis);
 
 	// Make sure the half lengths are not too small that we can't
 	// form reasonable half-length oriented bounding box axes from them.
@@ -311,4 +438,20 @@ GPlatesOpenGL::GLIntersect::create_oriented_bounding_box_builder(
 
 	// Return a builder using the orthonormal axes.
 	return OrientedBoundingBoxBuilder(obb_x_axis, obb_y_axis, obb_z_axis);
+}
+
+
+GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder
+GPlatesOpenGL::GLIntersect::create_oriented_bounding_box_builder(
+		const GPlatesMaths::BoundingSmallCircle &bounding_small_circle)
+{
+	const GPlatesMaths::UnitVector3D &obb_z_axis = bounding_small_circle.get_centre();
+
+	const GPlatesMaths::UnitVector3D obb_y_axis = generate_perpendicular(obb_z_axis);
+
+	// The OBB x-axis is orthogonal to 'obb_y_axis' and 'obb_z_axis'.
+	const GPlatesMaths::UnitVector3D obb_x_axis(cross(obb_y_axis, obb_z_axis));
+
+	// Return a builder using the orthonormal axes that bound the small circle.
+	return OrientedBoundingBoxBuilder(bounding_small_circle, obb_x_axis, obb_y_axis);
 }

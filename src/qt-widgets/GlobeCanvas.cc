@@ -59,10 +59,7 @@
 #include "model/FeatureHandle.h"
 
 #include "opengl/GLCullVisitor.h"
-#include "opengl/GLRenderGraph.h"
-#include "opengl/GLRenderGraphDrawableNode.h"
-#include "opengl/GLRenderGraphInternalNode.h"
-#include "opengl/GLViewportNode.h"
+#include "opengl/GLRenderTargetType.h"
 
 #include "presentation/ViewState.h"
 
@@ -206,10 +203,12 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
+	d_make_context_current(*d_gl_context),
 	d_gl_render_target_manager(GPlatesOpenGL::GLRenderTargetManager::create(d_gl_context)),
 	d_gl_clear_buffers_state(GPlatesOpenGL::GLClearBuffersState::create()),
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
+	d_gl_model_view_transform(GPlatesOpenGL::GLTransform::create(GL_MODELVIEW)),
 	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_projection_transform_svg(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
@@ -261,10 +260,12 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			: GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
+	d_make_context_current(*d_gl_context),
 	d_gl_render_target_manager(GPlatesOpenGL::GLRenderTargetManager::create(d_gl_context)),
 	d_gl_clear_buffers_state(GPlatesOpenGL::GLClearBuffersState::create()),
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
+	d_gl_model_view_transform(GPlatesOpenGL::GLTransform::create(GL_MODELVIEW)),
 	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_projection_transform_svg(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
@@ -465,24 +466,61 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 		// Beginning rendering.
 		d_gl_context->begin_render();
 
-		// Create an empty render graph - it will get populated as we traverse
-		// the scene to be rendered.
-		GPlatesOpenGL::GLRenderGraph::non_null_ptr_type render_graph =
-				GPlatesOpenGL::GLRenderGraph::create();
 
-		// Initialise the render graph before we ask Globe to do its job.
-		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
-				initialise_render_graph(*render_graph, d_gl_projection_transform_svg);
+		// Set up a render queue and renderer.
+		GPlatesOpenGL::GLRenderQueue::non_null_ptr_type render_queue = GPlatesOpenGL::GLRenderQueue::create();
+		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = GPlatesOpenGL::GLRenderer::create(render_queue);
+
+		// Push a render target corresponding to the frame buffer (of the window).
+		// This will be the render target that the main scene is rendered to.
+		// It doesn't really matter whether the render target usage is serial or parallel
+		// because the render target is the framebuffer and we're not using the results
+		// of rendering to it (like we would a render texture).
+		renderer->push_render_target(
+				GPlatesOpenGL::GLFrameBufferRenderTargetType::create(),
+				GPlatesOpenGL::GLRenderer::RENDER_TARGET_USAGE_SERIAL);
+
+		// Create a state set to set (and restore) the viewport.
+		// Actually we don't bother restoring the viewport afterwards because once we return
+		// we've finished rendering so a restored viewport wouldn't be used.
+		GPlatesOpenGL::GLViewportState::non_null_ptr_type viewport_state =
+				GPlatesOpenGL::GLViewportState::create(d_gl_viewport);
+		// Push the viewport state set.
+		renderer->push_state_set(viewport_state);
+		// Let the transform state know of the new viewport.
+		// This is necessary since it is used to determine pixel projections in world space
+		// which are in turn used for level-of-detail selection for rasters, etc.
+		renderer->get_transform_state().set_viewport(d_gl_viewport);
+
+		// Clear the colour buffer of the main framebuffer.
+		renderer->push_state_set(d_gl_clear_buffers_state);
+		renderer->add_drawable(d_gl_clear_buffers);
+		renderer->pop_state_set();
+
+		// NOTE: We're pushing 'd_gl_projection_transform_svg' not 'd_gl_projection_transform'.
+		renderer->push_transform(*d_gl_projection_transform_svg);
+		renderer->push_transform(*d_gl_model_view_transform);
 
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-		// Fill up the render graph with more nodes.
+		// Paint the globe and its contents.
 		d_globe.paint_vector_output(
 				d_gl_context->get_shared_state(),
-				globe_render_graph_node,
+				*renderer,
 				viewport_zoom_factor,
 				calculate_scale());
 
-		draw_render_graph(*render_graph);
+		renderer->pop_transform(); // 'd_gl_model_view_transform'
+		renderer->pop_transform(); // 'd_gl_projection_transform_svg'
+
+		// Pop the viewport state set.
+		renderer->pop_state_set();
+
+		// Pop the main framebuffer.
+		renderer->pop_render_target();
+
+		// Now that the renderer has finished adding to the render queue...
+		// Draw the render queue - this is where everything is sent to OpenGL.
+		render_queue->draw(*d_gl_render_target_manager);
 
 		// Finished rendering.
 		d_gl_context->end_render();
@@ -544,6 +582,18 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 	// Initialise our context-like object first.
 	d_gl_context->initialise();
 
+	//
+	// Set up the initial model-view transform.
+	//
+	d_gl_model_view_transform->get_matrix().gl_load_identity();
+	d_gl_model_view_transform->get_matrix().gl_translate(EYE_X, EYE_Y, EYE_Z);
+	// Set up our universe coordinate system (the standard geometric one):
+	//   Z points up
+	//   Y points right
+	//   X points out of the screen
+	d_gl_model_view_transform->get_matrix().gl_rotate(-90.0, 1.0, 0.0, 0.0);
+	d_gl_model_view_transform->get_matrix().gl_rotate(-90.0, 0.0, 0.0, 1.0);
+
 	// If there ever happens to be two clear calls in the one render graph then this
 	// ensures they don't get grouped together (which would render to second clear obsolete).
 	d_gl_clear_buffers_state->set_enable_render_sub_group();
@@ -586,24 +636,59 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		// Beginning rendering.
 		d_gl_context->begin_render();
 
-		// Create an empty render graph - it will get populated as we traverse
-		// the scene to be rendered.
-		GPlatesOpenGL::GLRenderGraph::non_null_ptr_type render_graph =
-				GPlatesOpenGL::GLRenderGraph::create();
+		// Set up a render queue and renderer.
+		GPlatesOpenGL::GLRenderQueue::non_null_ptr_type render_queue = GPlatesOpenGL::GLRenderQueue::create();
+		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = GPlatesOpenGL::GLRenderer::create(render_queue);
 
-		// Initialise the render graph before we ask Globe to do its job.
-		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
-				initialise_render_graph(*render_graph, d_gl_projection_transform);
+		// Push a render target corresponding to the frame buffer (of the window).
+		// This will be the render target that the main scene is rendered to.
+		// It doesn't really matter whether the render target usage is serial or parallel
+		// because the render target is the framebuffer and we're not using the results
+		// of rendering to it (like we would a render texture).
+		renderer->push_render_target(
+				GPlatesOpenGL::GLFrameBufferRenderTargetType::create(),
+				GPlatesOpenGL::GLRenderer::RENDER_TARGET_USAGE_SERIAL);
+
+		// Create a state set to set (and restore) the viewport.
+		// Actually we don't bother restoring the viewport afterwards because once we return
+		// we've finished rendering so a restored viewport wouldn't be used.
+		GPlatesOpenGL::GLViewportState::non_null_ptr_type viewport_state =
+				GPlatesOpenGL::GLViewportState::create(d_gl_viewport);
+		// Push the viewport state set.
+		renderer->push_state_set(viewport_state);
+		// Let the transform state know of the new viewport.
+		// This is necessary since it is used to determine pixel projections in world space
+		// which are in turn used for level-of-detail selection for rasters, etc.
+		renderer->get_transform_state().set_viewport(d_gl_viewport);
+
+		// Clear the colour buffer of the main framebuffer.
+		renderer->push_state_set(d_gl_clear_buffers_state);
+		renderer->add_drawable(d_gl_clear_buffers);
+		renderer->pop_state_set();
+
+		renderer->push_transform(*d_gl_projection_transform);
+		renderer->push_transform(*d_gl_model_view_transform);
 
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 		const float scale = calculate_scale();
-		// Fill up the render graph with more nodes.
+		// Paint the globe and its contents.
 		d_globe.paint(
-				globe_render_graph_node,
+				*renderer,
 				viewport_zoom_factor,
 				scale);
 
-		draw_render_graph(*render_graph);
+		renderer->pop_transform(); // 'd_gl_model_view_transform'
+		renderer->pop_transform(); // 'd_gl_projection_transform'
+
+		// Pop the viewport state set.
+		renderer->pop_state_set();
+
+		// Pop the main framebuffer.
+		renderer->pop_render_target();
+
+		// Now that the renderer has finished adding to the render queue...
+		// Draw the render queue - this is where everything is sent to OpenGL.
+		render_queue->draw(*d_gl_render_target_manager);
 
 		// Finished rendering.
 		d_gl_context->end_render();
@@ -811,6 +896,10 @@ GPlatesQtWidgets::GlobeCanvas::handle_zoom_change()
 void
 GPlatesQtWidgets::GlobeCanvas::set_view() 
 {
+	//
+	// Set up the initial viewport and projection transform.
+	//
+
 	// NOTE: The projection transform for SVG output is different than for regular OpenGL rendering.
 	// This is because the far clip plane differs (because SVG output ignores depth buffering -
 	// it uses the OpenGL feedback mechanism which bypasses rasterisation - and hence the
@@ -938,74 +1027,6 @@ GPlatesQtWidgets::GlobeCanvas::clear_canvas(
 	// Apply the clear buffers colour (and depth, etc) to OpenGL and
 	// then clear the buffers.
 	draw(d_gl_clear_buffers, d_gl_clear_buffers_state);
-}
-
-
-GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
-GPlatesQtWidgets::GlobeCanvas::initialise_render_graph(
-		GPlatesOpenGL::GLRenderGraph &render_graph,
-		const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type &projection_transform)
-{
-	// Create a viewport node with the current viewport dimensions.
-	// All children of the viewport node will use this viewport.
-	GPlatesOpenGL::GLViewportNode::non_null_ptr_type viewport_node =
-			GPlatesOpenGL::GLViewportNode::create(d_gl_viewport);
-	// Add it to the render graph root node.
-	render_graph.get_root_node().add_child_node(viewport_node);
-
-	// Set the projection transform on the viewport node.
-	// It doesn't have to been set on it - it's just a convenient location
-	// and viewport and view projection are related.
-	viewport_node->set_transform(projection_transform);
-
-	// Create a drawable node to clear the frame buffers.
-	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type clear_buffers_drawable_node =
-			GPlatesOpenGL::GLRenderGraphDrawableNode::create(d_gl_clear_buffers);
-	clear_buffers_drawable_node->set_state_set(d_gl_clear_buffers_state);
-	// Add it to the viewport node.
-	// It will get drawn first because it's the first leaf node that
-	// will be visited in the tree.
-	viewport_node->add_child_node(clear_buffers_drawable_node);
-
-	//
-	// Set up the initial model-view transform.
-	//
-	GPlatesOpenGL::GLTransform::non_null_ptr_type model_view_transform =
-			GPlatesOpenGL::GLTransform::create(GL_MODELVIEW);
-	model_view_transform->get_matrix().gl_translate(EYE_X, EYE_Y, EYE_Z);
-	// Set up our universe coordinate system (the standard geometric one):
-	//   Z points up
-	//   Y points right
-	//   X points out of the screen
-	model_view_transform->get_matrix().gl_rotate(-90.0, 1.0, 0.0, 0.0);
-	model_view_transform->get_matrix().gl_rotate(-90.0, 0.0, 0.0, 1.0);
-
-	// Create an internal node to store the model-view transform.
-	// Only one transform can be stored on a node so just create a new child node.
-	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type model_view_transform_node =
-			GPlatesOpenGL::GLRenderGraphInternalNode::create();
-	model_view_transform_node->set_transform(model_view_transform);
-	// Add it to the viewport node.
-	viewport_node->add_child_node(model_view_transform_node);
-
-	return model_view_transform_node;
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::draw_render_graph(
-		GPlatesOpenGL::GLRenderGraph &render_graph)
-{
-	// Cull the render graph according to visibility.
-	GPlatesOpenGL::GLCullVisitor render_graph_culler;
-	render_graph.accept_visitor(render_graph_culler);
-
-	// Get the render queue generated by the render graph culler.
-	GPlatesOpenGL::GLRenderQueue::non_null_ptr_type render_queue =
-			render_graph_culler.get_render_queue();
-
-	// Draw the render queue.
-	render_queue->draw(*d_gl_render_target_manager);
 }
 
 

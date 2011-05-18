@@ -377,4 +377,4 @@ extern "C" {
 #endif // __WINDOWS__
 #include <QTextDocument>
 #include <QtXml/QXmlStreamReader>
-#include <Magick++.h>
+//#include <Magick++.h>

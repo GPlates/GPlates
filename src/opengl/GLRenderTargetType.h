@@ -69,6 +69,11 @@ namespace GPlatesOpenGL
 
 	/**
 	 * A frame buffer render target type - used simply for rendering to the main frame buffer.
+	 *
+	 * Use this when rendering the scene - if you need to render to a texture (that in turn will
+	 * later be used to render to the scene) then use @a GLTextureRenderTargetType instead.
+	 * If you use @a GLTextureRenderTargetType and the system has no support for off-screen
+	 * render targets then it will use the main framebuffer anyway (but it's taken care of for you).
 	 */
 	class GLFrameBufferRenderTargetType :
 			public GLRenderTargetType
@@ -97,6 +102,12 @@ namespace GPlatesOpenGL
 
 	/**
 	 * A texture render target type - used for rendering to a texture.
+	 *
+	 * It will use whatever support is has for rendering to a texture.
+	 * If the system has no support for off-screen render targets then it will fall back
+	 * on using the main framebuffer for rendering and then copying to a texture - and making sure
+	 * the appropriate part of the main framebuffer (the part used for rendering to the texture)
+	 * is restored - if the scene has been partially rendered to the main framebuffer already).
 	 */
 	class GLTextureRenderTargetType :
 			public GLRenderTargetType

@@ -176,7 +176,8 @@ namespace
 			GPlatesAppLogic::ReconstructUtils::reconstruct(
 			geometry,
 			conjugate_plate_id_widget->create_integer_plate_id_from_widget(),
-			*application_state_ptr->get_current_reconstruction().get_default_reconstruction_tree(),
+			*application_state_ptr->get_current_reconstruction()
+				.get_default_reconstruction_layer_output()->get_reconstruction_tree(),
 			true /*reverse_reconstruct*/);
 
 		// Create a property value using the present-day GeometryOnSphere and optionally
@@ -268,24 +269,24 @@ namespace
 
 		if (feature_type_opt && *feature_type_opt == flowline_type) {
 			recon_method_combo_box->setCurrentIndex(
-				GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION);
+				GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 			recon_method_combo_box->setEnabled(false);
 		}
 		else if (feature_type_opt && *feature_type_opt == motion_path_type)
 		{
 			recon_method_combo_box->setCurrentIndex(
-				GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID);
+				GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 			recon_method_combo_box->setEnabled(false);
 		}
 		else if (feature_type_opt && *feature_type_opt == mor_type)
 		{
 			recon_method_combo_box->setCurrentIndex(
-				GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION);
+				GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 			recon_method_combo_box->setEnabled(true);
 		}
 		else {
 			recon_method_combo_box->setCurrentIndex(
-				GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID);
+				GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 			recon_method_combo_box->setEnabled(true);
 		}
 	}
@@ -417,7 +418,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 			new ChooseGeometryPropertyWidget(
 				SelectionWidget::Q_LIST_WIDGET,
 				this)),
-	d_recon_method(GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID),
+	d_recon_method(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID),
 	d_customisable_feature_type_selected(false),
 	d_create_conjugate_isochron_checkbox(new QCheckBox(this))
 {
@@ -544,8 +545,8 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	QHBoxLayout *recon_method_layout;
 	QLabel * recon_method_label;
 	recon_method_label = new QLabel(this);
-	d_recon_method_combobox->insertItem(GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID, tr("By Plate ID"));
-	d_recon_method_combobox->insertItem(GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION, tr("Half Stage Rotation"));
+	d_recon_method_combobox->insertItem(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID, tr("By Plate ID"));
+	d_recon_method_combobox->insertItem(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION, tr("Half Stage Rotation"));
 	recon_method_layout = new QHBoxLayout;
 	QSizePolicy sizePolicy1(QSizePolicy::Expanding, QSizePolicy::Fixed);
 	d_recon_method_combobox->setSizePolicy(sizePolicy1);
@@ -813,7 +814,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 					GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
 
 		// If we are using half stage rotation, add right and left plate id.
-		if (GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION == d_recon_method)
+		if (GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION == d_recon_method)
 		{
 			feature->add(
 					GPlatesModel::TopLevelPropertyInline::create(
@@ -919,22 +920,22 @@ GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 {
 	switch (index)
 	{
-		case GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION:
+		case GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION:
 			d_plate_id_widget->setVisible(false);
 			d_conjugate_plate_id_widget->setVisible(false);
 			d_right_plate_id->setVisible(true);
 			d_left_plate_id->setVisible(true);
-			d_recon_method = GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION;
+			d_recon_method = GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION;
 			break;
 		
-		case GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID:
+		case GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID:
 			d_right_plate_id->setVisible(false);
 			d_left_plate_id->setVisible(false);
 			d_plate_id_widget->setVisible(true);
 			d_conjugate_plate_id_widget->setVisible(
 					should_offer_conjugate_plate_id_prop(
 							d_choose_feature_type_widget));
-			d_recon_method = GPlatesAppLogic::ReconstructionMethod::BY_PLATE_ID;
+			d_recon_method = GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID;
 			break;
 	}
 }
@@ -1090,24 +1091,35 @@ GPlatesQtWidgets::CreateFeatureDialog::add_geometry(
     //
     boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> present_day_geometry;
 
+	// The default reconstruction tree.
+	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
+			d_application_state_ptr->get_current_reconstruction()
+					.get_default_reconstruction_layer_output()->get_reconstruction_tree();
+	// A function to get reconstruction trees with.
+	GPlatesAppLogic::ReconstructionTreeCreator
+			reconstruction_tree_creator =
+					GPlatesAppLogic::get_cached_reconstruction_tree_creator(
+							default_reconstruction_tree->get_reconstruction_features(),
+							default_reconstruction_tree->get_reconstruction_time(),
+							default_reconstruction_tree->get_anchor_plate_id());
+
     // Until we have a reliable MOR reconstruction method, handle flowlines specially.
     if (flowline_selected(d_choose_feature_type_widget))
     {
 		present_day_geometry = GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
 			d_geometry_opt_ptr.get(),
-			d_application_state_ptr->get_current_reconstruction()
-			.get_default_reconstruction_tree(),
+			default_reconstruction_tree->get_reconstruction_time(),
+			reconstruction_tree_creator,
 			feature,
 			true /* reverse reconstruct */);
     }
-    else if (d_recon_method == GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION)
+    else if (d_recon_method == GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION)
     {
 		present_day_geometry = GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
 		    d_geometry_opt_ptr.get(),
 		    d_left_plate_id->create_integer_plate_id_from_widget(),
 		    d_right_plate_id->create_integer_plate_id_from_widget(),
-		    *d_application_state_ptr->get_current_reconstruction()
-		    .get_default_reconstruction_tree(),
+		    *default_reconstruction_tree,
 		    true /* reverse reconstruct */);
     }
     else
@@ -1115,8 +1127,7 @@ GPlatesQtWidgets::CreateFeatureDialog::add_geometry(
 		present_day_geometry = GPlatesAppLogic::ReconstructUtils::reconstruct(
 			d_geometry_opt_ptr.get(),
 			d_plate_id_widget->create_integer_plate_id_from_widget(),
-			*d_application_state_ptr->get_current_reconstruction()
-			.get_default_reconstruction_tree(),
+			*default_reconstruction_tree,
 			true /*reverse_reconstruct*/);
     }
 

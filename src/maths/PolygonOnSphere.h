@@ -34,16 +34,28 @@
 #include <utility>  // std::pair
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
+#include <boost/intrusive_ptr.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
+#include "PointInPolygon.h"
+#include "PolygonOrientation.h"
 
 #include "global/PreconditionViolationError.h"
 
 
 namespace GPlatesMaths
 {
+	// Forward declarations.
+	namespace PolygonOnSphereImpl
+	{
+		struct CachedCalculations;
+	}
+	class BoundingSmallCircle;
+	class InnerOuterBoundingSmallCircle;
+
+
 	/** 
 	 * Represents a polygon on the surface of a sphere. 
 	 *
@@ -299,6 +311,10 @@ namespace GPlatesMaths
 		}
 
 
+		virtual
+		~PolygonOnSphere();
+
+
 		/**
 		 * Clone this PolygonOnSphere instance, to create a duplicate instance on the heap.
 		 *
@@ -515,6 +531,7 @@ namespace GPlatesMaths
 		{
 			// Obviously, we should not swap the ref-counts of the instances.
 			d_seq.swap(other.d_seq);
+			d_cached_calculations.swap(other.d_cached_calculations);
 		}
 
 
@@ -559,6 +576,111 @@ namespace GPlatesMaths
 			return d_seq == other.d_seq;
 		}
 
+
+		//
+		// The following are cached calculations on the geometry data.
+		//
+
+		/**
+		 * Returns the sum of the points in this polygon (normalised).
+		 *
+		 * The result is cached on first call.
+		 */
+		const UnitVector3D &
+		get_centroid() const;
+
+
+		/**
+		 * Returns the small circle that bounds this polygon - the small circle centre
+		 * is the same as calculated by @a get_centroid.
+		 *
+		 * The result is cached on first call.
+		 */
+		const BoundingSmallCircle &
+		get_bounding_small_circle() const;
+
+
+		/**
+		 * Returns the inner and outer small circle bounds of this polygon - the small circle centre
+		 * is the same as calculated by @a get_centroid.
+		 *
+		 * The result is cached on first call.
+		 */
+		const InnerOuterBoundingSmallCircle &
+		get_inner_outer_bounding_small_circle() const;
+
+
+		/**
+		 * Returns the area of this polygon.
+		 *
+		 * See 'SphericalArea::calculate_polygon_area' for details.
+		 *
+		 * The result is cached on first call.
+		 */
+		real_t
+		get_area() const;
+
+		/**
+		 * Returns the signed area of this polygon.
+		 *
+		 * See 'SphericalArea::calculate_polygon_signed_area' for details.
+		 *
+		 * The result is cached on first call.
+		 */
+		real_t
+		get_signed_area() const;
+
+
+		/**
+		 * Returns the orientation of this polygon.
+		 *
+		 * See 'PolygonOrientation::calculate_polygon_orientation' for details.
+		 *
+		 * The result is cached on first call.
+		 */
+		PolygonOrientation::Orientation
+		get_orientation() const;
+
+
+		/**
+		 * Determines the speed versus memory trade-off of point-in-polygon tests.
+		 *
+		 * NOTE: This set up cost is a once-off cost that happens in the first call to
+		 * @a is_point_in_polygon or if you increase the speed.
+		 *
+		 * See PointInPolygon for more details. But in summary...
+		 *
+		 * Use:
+		 * LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
+		 * MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
+		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
+		 */
+		enum PointInPolygonSpeedAndMemory
+		{
+			LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE = 0,
+			MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE = 1,
+			HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE = 2
+		};
+
+		/**
+		 * Tests whether the specified point is inside this polygon.
+		 *
+		 * @a speed_and_memory determines how fast the point-in-polygon test should be
+		 * and how much memory it uses.
+		 *
+		 * NOTE: This set up cost is a once-off cost that happens in the first call to
+		 * @a is_point_in_polygon or if you increase the speed.
+		 *
+		 * You can increase the speed but you cannot reduce it - this is because it takes
+		 * longer to set up for the higher speed tests and reduces back to lower speeds
+		 * effectively removes the advantages gained.
+		 */
+		PointInPolygon::Result
+		is_point_in_polygon(
+				const PointOnSphere &point,
+				PointInPolygonSpeedAndMemory speed_and_memory =
+						MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) const;
+
 	private:
 
 		/**
@@ -574,9 +696,7 @@ namespace GPlatesMaths
 		 * default-constructor would, except that it should initialise the ref-count to
 		 * zero.
 		 */
-		PolygonOnSphere():
-			GeometryOnSphere()
-		{  }
+		PolygonOnSphere();
 
 
 		/**
@@ -592,10 +712,7 @@ namespace GPlatesMaths
 		 * copy-constructor would, except that it should initialise the ref-count to zero.
 		 */
 		PolygonOnSphere(
-				const PolygonOnSphere &other):
-			GeometryOnSphere(),
-			d_seq(other.d_seq)
-		{  }
+				const PolygonOnSphere &other);
 
 
 		/**
@@ -644,6 +761,17 @@ namespace GPlatesMaths
 		 */
 		seq_type d_seq;
 
+		/**
+		 * Useful calculations on the polygon data.
+		 *
+		 * These calculations are stored directly with the geometry instead of associating
+		 * them at a higher level since it's then much easier to query the same geometry
+		 * at various places throughout the code (and reuse results of previous queries).
+		 * This is made easier by the fact that the geometry data itself is immutable.
+		 *
+		 * This pointer is NULL until the first calculation is requested.
+		 */
+		mutable boost::intrusive_ptr<PolygonOnSphereImpl::CachedCalculations> d_cached_calculations;
 	};
 
 

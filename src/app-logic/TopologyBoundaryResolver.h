@@ -35,6 +35,8 @@
 
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionFeatureProperties.h"
+#include "ReconstructionTree.h"
+#include "ResolvedTopologicalBoundary.h"
 #include "TopologyBoundaryIntersections.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -57,18 +59,10 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesAppLogic
 {
-	class ReconstructionGeometryCollection;
-
 	/**
 	 * Finds all topological closed plate boundary features (in the features visited)
 	 * that exist at a particular reconstruction time and creates
-	 * @a ResolvedTopologicalBoundary objects for each one and stores them
-	 * in a @a ReconstructionGeometryCollection object.
-	 *
-	 * @pre the features referenced by any of these topological closed plate boundary features
-	 *      must have already been reconstructed and reference the same @a ReconstructionTree
-	 *      object referenced by the @a ReconstructionGeometryCollection object passed into
-	 *      the constructor of @a TopologyBoundaryResolver.
+	 * @a ResolvedTopologicalBoundary objects for each one.
 	 */
 	class TopologyBoundaryResolver: 
 		public GPlatesModel::FeatureVisitor,
@@ -76,8 +70,23 @@ namespace GPlatesAppLogic
 	{
 
 	public:
+		/**
+		 * The resolved dynamic polygons are appended to @a resolved_topological_boundaries.
+		 *
+		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
+		 * @param reconstructed_topological_boundary_sections are the reconstructed feature geometries
+		 *        of the topological boundary sections used to form the close plate polygons.
+		 * @param restrict_boundary_sections_to_same_reconstruction_tree is used to restrict the
+		 *        reconstructed topological boundary sections, specified with
+		 *        @a reconstructed_topological_boundary_sections, to those that were reconstructed
+		 *        using @a reconstruction_tree (ie, the same reconstruction tree associated with
+		 *        the resolved topological boundaries being generated).
+		 */
 		TopologyBoundaryResolver(
-				ReconstructionGeometryCollection &reconstruction_geometry_collection);
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_boundary_sections,
+				bool restrict_boundary_sections_to_same_reconstruction_tree = true);
 
 		virtual
 		~TopologyBoundaryResolver() 
@@ -157,7 +166,7 @@ namespace GPlatesAppLogic
 					d_source_feature_id(source_feature_id),
 					d_source_rfg(source_rfg),
 					d_use_reverse(false),
-					d_intersection_results(source_rfg->geometry())
+					d_intersection_results(source_rfg->reconstructed_geometry())
 				{  }
 
 				//! The feature id of the feature referenced by this topological section.
@@ -203,9 +212,27 @@ namespace GPlatesAppLogic
 			section_seq_type d_sections;
 		};
 
+		/**
+		 * The resolved topological boundaries we're generating.
+		 */
+		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &d_resolved_topological_boundaries;
 
-		//! Destination for resolved boundaries.
-		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
+		/**
+		 * The reconstruction tree associated with the resolved topological boundaries begin generated.
+		 */
+		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
+
+		/**
+		 * The reconstructed topogical boundary sections we're using to assemble our dynamic polygons.
+		 */
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &d_reconstructed_topological_boundary_sections;
+
+		/**
+		 * Boolean to determine whether to restrict the reconstructed topological boundary sections
+		 * to those that were reconstructed using the same reconstruction tree associated with
+		 * the resolved topological boundaries being generated.
+		 */
+		bool d_restrict_boundary_sections_to_same_reconstruction_tree;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;

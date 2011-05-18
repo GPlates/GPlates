@@ -894,7 +894,7 @@ GPlatesViewOperations::GeometryBuilder::add_secondary_geometry(
 					const GPlatesAppLogic::ReconstructedFeatureGeometry>(recon_geom.get());
 	if (rfg)
 	{
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = rfg.get()->geometry();
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = rfg.get()->reconstructed_geometry();
 	
 		SecondaryGeometry secondary_geometry(
 				rfg.get()->get_non_null_pointer_to_const(), geometry, index_of_vertex);

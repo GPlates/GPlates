@@ -122,9 +122,10 @@ GPlatesOpenGL::GLAgeGridCoverageSource::load_tile(
 		unsigned int texel_width,
 		unsigned int texel_height,
 		const GLTexture::shared_ptr_type &target_texture,
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		GLRenderer::RenderTargetUsageType render_target_usage)
 {
-	PROFILE_BEGIN(proxy_raster, "get_coverage_from_level");
+	PROFILE_BEGIN(proxy_raster, "GLAgeGridCoverageSource: get_coverage_from_level");
 	// Get the region of the raster covered by this tile at the level-of-detail of this tile.
 	boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type> raster_region_opt =
 			d_proxied_raster_resolver->get_coverage_from_level(

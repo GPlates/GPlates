@@ -132,12 +132,15 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 
 		// This creates the RenderedGeometry's using the highlight colour.
 		GPlatesPresentation::ReconstructionGeometryRenderer highlighted_geometry_renderer(
-				*d_highlight_layer_ptr,
 				render_style_params,
 				highlight_colour, 
 				boost::none,
 				d_symbol_map);
 
+		highlighted_geometry_renderer.begin_render();
+
 		reconstruction_geometry->accept_visitor(highlighted_geometry_renderer);
+
+		highlighted_geometry_renderer.end_render(*d_highlight_layer_ptr);
 	}
 }

@@ -28,8 +28,49 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "global/IntrusivePointerZeroRefCountException.h"
+
 #include "model/WeakObserverVisitor.h"
+
+
+GPlatesAppLogic::ReconstructedFeatureGeometry::ReconstructedFeatureGeometry(
+		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+		GPlatesModel::FeatureHandle &feature_handle_,
+		GPlatesModel::FeatureHandle::iterator property_iterator_,
+		const geometry_ptr_type &reconstructed_geometry_,
+		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_) :
+	ReconstructionGeometry(reconstruction_tree_),
+	WeakObserverType(feature_handle_),
+	d_property_iterator(property_iterator_),
+	d_reconstructed_geometry(reconstructed_geometry_),
+	d_reconstruction_plate_id(reconstruction_plate_id_),
+	d_time_of_formation(time_of_formation_)
+{
+}
+
+
+GPlatesAppLogic::ReconstructedFeatureGeometry::ReconstructedFeatureGeometry(
+		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+		GPlatesModel::FeatureHandle &feature_handle_,
+		GPlatesModel::FeatureHandle::iterator property_iterator_,
+		// NOTE: This is the *unreconstructed* geometry...
+		const geometry_ptr_type &resolved_geometry_,
+		const ReconstructMethodFiniteRotation::non_null_ptr_to_const_type &reconstruct_method_transform_,
+		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none) :
+	ReconstructionGeometry(reconstruction_tree_),
+	WeakObserverType(feature_handle_),
+	d_property_iterator(property_iterator_),
+	d_finite_rotation_reconstruction(
+			FiniteRotationReconstruction(
+					resolved_geometry_, reconstruct_method_transform_)),
+	d_reconstruction_plate_id(reconstruction_plate_id_),
+	d_time_of_formation(time_of_formation_)
+{
+}
 
 
 const GPlatesModel::FeatureHandle::weak_ref
@@ -40,6 +81,26 @@ GPlatesAppLogic::ReconstructedFeatureGeometry::get_feature_ref() const
 	} else {
 		return GPlatesModel::FeatureHandle::weak_ref();
 	}
+}
+
+
+const GPlatesAppLogic::ReconstructedFeatureGeometry::geometry_ptr_type &
+GPlatesAppLogic::ReconstructedFeatureGeometry::reconstructed_geometry() const
+{
+	// If there's no reconstructed geometry then it means we have a reconstruction instead -
+	// so reconstruct the resolved geometry now and cache the result.
+	if (!d_reconstructed_geometry)
+	{
+		// We've set up our constructors so that if there's no reconstructed geometry then
+		// there has to be a finite rotation reconstruction.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_finite_rotation_reconstruction,
+				GPLATES_ASSERTION_SOURCE);
+
+		d_reconstructed_geometry = d_finite_rotation_reconstruction->get_reconstructed_geometry();
+	}
+
+	return d_reconstructed_geometry.get();
 }
 
 

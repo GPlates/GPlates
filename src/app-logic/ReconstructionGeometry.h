@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,23 +28,14 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTIONGEOMETRY_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTIONGEOMETRY_H
 
-#include <boost/optional.hpp>
-
 #include "ReconstructionTree.h"
 #include "ReconstructionGeometryVisitor.h"
 
-#include "maths/GeometryOnSphere.h"
-#include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesAppLogic
 {
-	// Forward declaration to avoid circularity of headers.
-	class Reconstruction;
-	class ReconstructionGeometryCollection;
-
-
 	/**
 	 * Classes derived from @a ReconstructionGeometry contain geometry that has been
 	 * reconstructed to a particular geological time-instant.
@@ -53,24 +44,16 @@ namespace GPlatesAppLogic
 			public GPlatesUtils::ReferenceCount<ReconstructionGeometry>
 	{
 	public:
-		/**
-		 * A convenience typedef for a shared pointer to a non-const @a ReconstructionGeometry.
-		 */
+		//! A convenience typedef for a shared pointer to a non-const @a ReconstructionGeometry.
 		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionGeometry> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for a shared pointer to a const @a ReconstructionGeometry.
-		 */
+		//! A convenience typedef for a shared pointer to a const @a ReconstructionGeometry.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructionGeometry> non_null_ptr_to_const_type;
 
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<ReconstructionGeometry>.
-		 */
+		//! A convenience typedef for boost::intrusive_ptr<ReconstructionGeometry>.
 		typedef boost::intrusive_ptr<ReconstructionGeometry> maybe_null_ptr_type;
 
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<const ReconstructionGeometry>.
-		 */
+		//! A convenience typedef for boost::intrusive_ptr<const ReconstructionGeometry>.
 		typedef boost::intrusive_ptr<const ReconstructionGeometry> maybe_null_ptr_to_const_type;
 
 
@@ -78,17 +61,6 @@ namespace GPlatesAppLogic
 		~ReconstructionGeometry()
 		{  }
 
-		/**
-		 * Access the ReconstructionGeometryCollection instance which contains this ReconstructionGeometry.
-		 *
-		 * Note that this pointer will be NULL if this ReconstructionGeometry is not contained in
-		 * a ReconstructionGeometryCollection.
-		 */
-		GPlatesAppLogic::ReconstructionGeometryCollection *
-		reconstruction_geometry_collection() const
-		{
-			return d_reconstruction_geometry_collection_ptr;
-		}
 
 		/**
 		 * Access the ReconstructionTree that was used to reconstruct this ReconstructionGeometry.
@@ -98,39 +70,6 @@ namespace GPlatesAppLogic
 		{
 			return d_reconstruction_tree;
 		}
-
-		/**
-		 * Access the Reconstruction instance which indirectly (through a
-		 * @a ReconstructionGeoemtryCollection) contains this ReconstructionGeometry.
-		 *
-		 * Note that this pointer will be NULL if this ReconstructionGeometry is not contained in
-		 * a ReconstructionGeometryCollection AND that ReconstructionGeometryCollection is not
-		 * contained in a Reconstruction.
-		 */
-		Reconstruction *
-		reconstruction() const;
-
-		/**
-		 * Set the reconstruction geometry collection pointer.
-		 *
-		 * This function is intended to be invoked @em only when the ReconstructionGeometry is
-		 * sitting in the vector inside the ReconstructionGeometryCollection instance, since even a
-		 * copy-construction will reset the value of the reconstruction pointer back to NULL.
-		 *
-		 * WARNING:  This function should only be invoked by the code which is actually
-		 * assigning an ReconstructionGeometry instance into (the vector inside) a
-		 * ReconstructionGeometryCollection instance.
-		 *
-		 * NOTE: This method is const even though it modifies a data member.
-		 * This is so this ReconstructionGeometry can be added to a ReconstructionGeometryCollection
-		 * even if it's const.
-		 *
-		 * @throws PreconditionViolationError if this method has previously been called
-		 * on this object.
-		 */
-		void
-		set_collection_ptr(
-				GPlatesAppLogic::ReconstructionGeometryCollection *collection_ptr) const;
 
 		/**
 		 * Accept a ConstReconstructionGeometryVisitor instance.
@@ -149,7 +88,6 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryVisitor &visitor) = 0;
 
 	protected:
-
 		/**
 		 * Construct a ReconstructionGeometry instance.
 		 *
@@ -161,8 +99,7 @@ namespace GPlatesAppLogic
 		explicit
 		ReconstructionGeometry(
 				ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_) :
-			d_reconstruction_tree(reconstruction_tree_),
-			d_reconstruction_geometry_collection_ptr(NULL)
+			d_reconstruction_tree(reconstruction_tree_)
 		{  }
 
 	private:
@@ -170,23 +107,6 @@ namespace GPlatesAppLogic
 		 * The reconstruction tree used to reconstruct us.
 		 */
 		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
-
-		/**
-		 * This is the ReconstructionGeometryCollection instance which contains this ReconstructionGeometry.
-		 *
-		 * Note that we do NOT want this to be any sort of ref-counting pointer, since the
-		 * ReconstructionGeometryCollection instance which contains this ReconstructionGeometry,
-		 * does so using a ref-counting pointer; circularity of ref-counting pointers would
-		 * lead to memory leaks.
-		 *
-		 * Note that this pointer may be NULL.
-		 *
-		 * This pointer should only @em ever point to a ReconstructionGeometryColection instance
-		 * which @em does contain this ReconstructionGeometry inside its vector.  (This is the only
-		 * way we can guarantee that the ReconstructionGeometryCollection instance actually exists,
-		 * ie that the pointer is not a dangling pointer.)
-		 */
-		mutable GPlatesAppLogic::ReconstructionGeometryCollection *d_reconstruction_geometry_collection_ptr;
 	};
 }
 

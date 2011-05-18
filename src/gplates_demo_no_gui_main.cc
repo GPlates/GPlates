@@ -34,13 +34,12 @@
 #include <iostream>
 #include <utility>  /* std::pair */
 
-#include "app-logic/ReconstructLayerTaskParams.h"
-#include "app-logic/ReconstructedFeatureGeometryPopulator.h"
+#include "app-logic/ReconstructParams.h"
 #include "app-logic/Reconstruction.h"
-#include "app-logic/ReconstructionGeometryCollection.h"
 #include "app-logic/ReconstructionGraph.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreePopulator.h"
+#include "app-logic/ReconstructUtils.h"
 
 #include "model/Model.h"
 #include "model/ModelInterface.h"
@@ -433,10 +432,8 @@ output_as_gpml(
 
 void
 output_reconstructions(
-		GPlatesModel::FeatureCollectionHandle::iterator isochrons_begin,
-		GPlatesModel::FeatureCollectionHandle::iterator isochrons_end,
-		GPlatesModel::FeatureCollectionHandle::iterator total_recon_seqs_begin,
-		GPlatesModel::FeatureCollectionHandle::iterator total_recon_seqs_end)
+		GPlatesModel::FeatureCollectionHandle::weak_ref isochrons,
+		GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs)
 {
 	static const double recon_times_to_test[] = {
 		0.0,
@@ -453,6 +450,8 @@ output_reconstructions(
 	for (unsigned i = 0; i < num_recon_times_to_test; ++i) {
 		double recon_time = recon_times_to_test[i];
 
+		const GPlatesModel::integer_plate_id_type anchor_plate_id = 501;
+
 		GPlatesAppLogic::ReconstructionGraph graph(
 				recon_time,
 				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>()/*empty*/);
@@ -461,57 +460,46 @@ output_reconstructions(
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
 		GPlatesModel::FeatureCollectionHandle::iterator iter1 =
-				total_recon_seqs_begin;
-		for ( ; iter1 != total_recon_seqs_end; ++iter1) {
+				total_recon_seqs->begin();
+		for ( ; iter1 != total_recon_seqs->end(); ++iter1) {
 			rtp.visit_feature(iter1);
 		}
 
-		std::cout << "\n--> Building tree, root node: 501\n";
-		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(501);
-		GPlatesAppLogic::Reconstruction::non_null_ptr_type reconstruction =
-				GPlatesAppLogic::Reconstruction::create(recon_time, tree);
+		std::cout << "\n--> Building tree, root node: " << anchor_plate_id << " \n";
+		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(anchor_plate_id);
 
 		traverse_recon_tree(*tree);
 
-		GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type rgc =
-			GPlatesAppLogic::ReconstructionGeometryCollection::create(tree);
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstructable_features_collection(
+				1, isochrons);
 
-		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(*rgc,
-				GPlatesAppLogic::ReconstructLayerTaskParams());
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_features_collection(
+				1, total_recon_seqs);
 
-		GPlatesModel::FeatureCollectionHandle::iterator iter2 = isochrons_begin;
-		for ( ; iter2 != isochrons_end; ++iter2) {
-			rfgp.visit_feature(iter2);
-		}
-		reconstruction->add_reconstruction_geometries(rgc);
+		typedef std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> rfg_seq_type;
+		rfg_seq_type reconstructed_feature_geometries;
+		GPlatesAppLogic::ReconstructUtils::reconstruct(
+				reconstructed_feature_geometries,
+				recon_time,
+				anchor_plate_id,
+				reconstructable_features_collection,
+				reconstruction_features_collection);
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "
-			<< std::distance(reconstruction->begin_reconstruction_geometries(tree),
-					reconstruction->end_reconstruction_geometries(tree))
+				<< reconstructed_feature_geometries.size()
 				<< " reconstructed geometries."
 				<< std::endl;
 
 		std::cout << " > The reconstructed polylines are:\n";
-		GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator
-				iter3 = reconstruction->begin_reconstruction_geometries(tree);
-		GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator
-				end3 = reconstruction->end_reconstruction_geometries(tree);
+		rfg_seq_type::const_iterator iter3 = reconstructed_feature_geometries.begin();
+		const rfg_seq_type::const_iterator end3 = reconstructed_feature_geometries.end();
 		for ( ; iter3 != end3; ++iter3) {
-			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &rg =
-					*iter3;
-
-			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg =
-					dynamic_cast<const GPlatesAppLogic::ReconstructedFeatureGeometry *>(rg.get());
-			if ( ! rfg) {
-				// Why wasn't it an RFG?
-				std::cerr << "Why wasn't it a ReconstructedFeatureGeometry?" << std::endl;
-				std::exit(1);
-			}
+			GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type rfg = *iter3;
 
 			// We only care about polylines (since all the geometries in this function
 			// *should* be polylines), so let's just use a dynamic cast.
 			const GPlatesMaths::PolylineOnSphere *polyline =
-					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(rfg->geometry().get());
+					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(rfg->reconstructed_geometry().get());
 			if ( ! polyline) {
 				// Why wasn't it a polyline?
 				std::cerr << "Why wasn't it a polyline?" << std::endl;
@@ -567,14 +555,13 @@ main(int argc, char *argv[])
 			isochrons_and_total_recon_seqs =
 					::populate_feature_store(model);
 
-	GPlatesModel::FeatureCollectionHandle::const_weak_ref isochrons =
+	GPlatesModel::FeatureCollectionHandle::weak_ref isochrons =
 			isochrons_and_total_recon_seqs.first;
-	GPlatesModel::FeatureCollectionHandle::const_weak_ref total_recon_seqs =
+	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
 			isochrons_and_total_recon_seqs.second;
 
 	::output_as_gpml(isochrons->begin(), isochrons->end());
-//	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
-//			total_recon_seqs->features_begin(), total_recon_seqs->features_end());
+	//::output_reconstructions(isochrons, total_recon_seqs);
 
 	// Test GPML 1.6 reader.
 	if (argc > 1) {

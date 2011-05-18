@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <boost/shared_ptr.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/function.hpp>
@@ -543,10 +544,10 @@ namespace
 		channel_iterator_type channel_iter = input_channels.begin();
 		for (; channel_iter != input_channels.end(); ++channel_iter)
 		{
-			if (boost::get<0>(*channel_iter) == main_input_channel)
+			if (channel_iter->get_input_channel_name() == main_input_channel)
 			{
 				// FIXME: This is not efficient if the container is a vector.
-				typedef GPlatesAppLogic::Layer::input_channel_definition_type input_channel_definition_type;
+				typedef GPlatesAppLogic::LayerInputChannelType input_channel_definition_type;
 				input_channel_definition_type temp = *channel_iter;
 				input_channels.erase(channel_iter);
 				input_channels.insert(input_channels.begin(), temp);
@@ -562,10 +563,10 @@ GPlatesQtWidgets::VisualLayerWidget::set_input_channel_data(
 		const GPlatesAppLogic::Layer &layer,
 		const GPlatesGui::Colour &light_layer_colour)
 {
-	typedef GPlatesAppLogic::Layer::input_channel_definition_type input_channel_definition_type;
+	typedef GPlatesAppLogic::LayerInputChannelType input_channel_definition_type;
 
 	std::vector<input_channel_definition_type> input_channels =
-		layer.get_input_channel_definitions();
+		layer.get_input_channel_types();
 
 	// Make sure we have enough widgets in our pool to display all input channels.
 	if (input_channels.size() > d_input_channel_widgets.size())
@@ -595,12 +596,12 @@ GPlatesQtWidgets::VisualLayerWidget::set_input_channel_data(
 	widget_iterator_type widget_iter = d_input_channel_widgets.begin();
 	for (; channel_iter != input_channels.end(); ++channel_iter, ++widget_iter)
 	{
-		const input_channel_definition_type &input_channel_definition = *channel_iter;
+		const input_channel_definition_type &layer_input_channel_type = *channel_iter;
 		VisualLayerWidgetInternals::InputChannelWidget *input_channel_widget = *widget_iter;
 		input_channel_widget->set_data(
 				layer,
-				input_channel_definition,
-				layer.get_channel_inputs(input_channel_definition.get<0>()),
+				layer_input_channel_type,
+				layer.get_channel_inputs(layer_input_channel_type.get_input_channel_name()),
 				light_layer_colour);
 		input_channel_widget->show();
 	}
@@ -1061,7 +1062,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::InputChannelWi
 void
 GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 		const GPlatesAppLogic::Layer &layer,
-		const GPlatesAppLogic::Layer::input_channel_definition_type &input_channel_definition,
+		const GPlatesAppLogic::LayerInputChannelType &layer_input_channel_type,
 		const std::vector<GPlatesAppLogic::Layer::InputConnection> &input_connections,
 		const GPlatesGui::Colour &light_layer_colour)
 {
@@ -1075,11 +1076,11 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 	d_add_new_connection_widget->set_highlight_colour(background_colour);
 
 	// Update the channel name.
-	d_input_channel_name_label->setText(input_channel_definition.get<0>() + ":");
+	d_input_channel_name_label->setText(layer_input_channel_type.get_input_channel_name() + ":");
 
 	// Disable the add new connection button if the channel only takes one
 	// connection and we already have that.
-	if (input_channel_definition.get<2>() == GPlatesAppLogic::Layer::ONE_DATA_IN_CHANNEL &&
+	if (layer_input_channel_type.get_channel_data_arity() == GPlatesAppLogic::LayerInputChannelType::ONE_DATA_IN_CHANNEL &&
 			input_connections.size() >= 1)
 	{
 		d_add_new_connection_widget->setEnabled(false);
@@ -1087,19 +1088,20 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 	}
 	else
 	{
-		GPlatesAppLogic::Layer::LayerInputDataType input_data_type = input_channel_definition.get<1>();
-		if (input_data_type == GPlatesAppLogic::Layer::INPUT_FEATURE_COLLECTION_DATA)
-		{
-			populate_with_feature_collections(
-					layer,
-					input_channel_definition.get<0>());
-		}
-		else
+		const boost::optional< std::vector<GPlatesAppLogic::LayerTaskType::Type> > &input_data_types =
+				layer_input_channel_type.get_layer_input_data_types();
+		if (input_data_types)
 		{
 			populate_with_layers(
 					layer,
-					input_channel_definition.get<0>(),
-					input_data_type);
+					layer_input_channel_type.get_input_channel_name(),
+					input_data_types.get());
+		}
+		else
+		{
+			populate_with_feature_collections(
+					layer,
+					layer_input_channel_type.get_input_channel_name());
 		}
 	}
 
@@ -1199,23 +1201,9 @@ void
 GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_layers(
 		const GPlatesAppLogic::Layer &layer,
 		const QString &input_data_channel,
-		GPlatesAppLogic::Layer::LayerInputDataType input_data_type)
+		const std::vector<GPlatesAppLogic::LayerTaskType::Type> &input_data_types)
 {
 	d_add_new_connection_menu->clear();
-
-	GPlatesAppLogic::Layer::LayerOutputDataType output_data_type;
-	if (input_data_type == GPlatesAppLogic::Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA)
-	{
-		output_data_type = GPlatesAppLogic::Layer::OUTPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA;
-	}
-	else if (input_data_type == GPlatesAppLogic::Layer::INPUT_RECONSTRUCTION_TREE_DATA)
-	{
-		output_data_type = GPlatesAppLogic::Layer::OUTPUT_RECONSTRUCTION_TREE_DATA;
-	}
-	else
-	{
-		return;
-	}
 
 	const GPlatesAppLogic::ReconstructGraph &reconstruct_graph = d_application_state.get_reconstruct_graph();
 	const GPlatesPresentation::VisualLayerRegistry &visual_layer_registry =
@@ -1223,7 +1211,9 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 	unsigned int count = 0;
 	BOOST_FOREACH(const GPlatesAppLogic::Layer &outputting_layer, reconstruct_graph)
 	{
-		if (outputting_layer.get_output_definition() == output_data_type)
+		// If the current layer matches one of the types in the list of supported input data types.
+		if (std::find(input_data_types.begin(), input_data_types.end(), outputting_layer.get_type()) !=
+			input_data_types.end())
 		{
 			boost::weak_ptr<GPlatesPresentation::VisualLayer> outputting_visual_layer =
 				d_visual_layers.get_visual_layer(outputting_layer);

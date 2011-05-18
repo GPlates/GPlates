@@ -28,39 +28,9 @@
 #include "ReconstructUtils.h"
 
 
-const char *
+QString
 GPlatesAppLogic::LayerTask::get_reconstruction_tree_channel_name()
 {
-	static const char *RECONSTRUCTION_TREE_CHANNEL_NAME = "Reconstruction tree";
+	static const QString RECONSTRUCTION_TREE_CHANNEL_NAME = "Reconstruction tree";
 	return RECONSTRUCTION_TREE_CHANNEL_NAME;
 }
-
-
-boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type>
-GPlatesAppLogic::LayerTask::extract_reconstruction_tree(
-		const input_data_type &input_data,
-		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
-{
-	std::vector<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_trees;
-	extract_input_channel_data(
-			reconstruction_trees,
-			get_reconstruction_tree_channel_name(),
-			input_data);
-
-	// If there's no reconstruction tree in the channel then return
-	// the default reconstruction tree.
-	if (reconstruction_trees.empty())
-	{
-		return default_reconstruction_tree;
-	}
-
-	if (reconstruction_trees.size() > 1)
-	{
-		// Expecting a single reconstruction tree.
-		return boost::none;
-	}
-
-	// Return the sole reconstruction tree in the channel.
-	return reconstruction_trees.front();
-}
-

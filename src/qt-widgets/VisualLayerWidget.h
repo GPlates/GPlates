@@ -232,12 +232,12 @@ namespace GPlatesQtWidgets
 
 			/**
 			 * Causes this widget to display the @a input_connections for the input
-			 * channel defined by @a input_channel_definition.
+			 * channel defined by @a layer_input_channel_type.
 			 */
 			void
 			set_data(
 					const GPlatesAppLogic::Layer &layer,
-					const GPlatesAppLogic::Layer::input_channel_definition_type &input_channel_definition,
+					const GPlatesAppLogic::LayerInputChannelType &layer_input_channel_type,
 					const std::vector<GPlatesAppLogic::Layer::InputConnection> &input_connections,
 					const GPlatesGui::Colour &light_layer_colour);
 
@@ -252,7 +252,7 @@ namespace GPlatesQtWidgets
 			populate_with_layers(
 					const GPlatesAppLogic::Layer &layer,
 					const QString &input_data_channel,
-					GPlatesAppLogic::Layer::LayerInputDataType input_data_type);
+					const std::vector<GPlatesAppLogic::LayerTaskType::Type> &input_data_types);
 
 			GPlatesGui::VisualLayersProxy &d_visual_layers;
 			GPlatesAppLogic::ApplicationState &d_application_state;

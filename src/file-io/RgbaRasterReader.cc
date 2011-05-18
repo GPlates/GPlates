@@ -287,7 +287,7 @@ GPlatesFileIO::RgbaRasterReader::read_rgba_file(
 		region_y_offset = 0;
 	}
 
-	PROFILE_BLOCK("Read RGBA");
+	//PROFILE_BLOCK("Read RGBA");
 
 	GPlatesGui::rgba8_t * const dest_buf = new GPlatesGui::rgba8_t[region_width * region_height];
 	GPlatesGui::rgba8_t *dest_ptr = dest_buf;
@@ -628,7 +628,7 @@ GPlatesFileIO::RgbaRasterReader::convert_image_to_gl_and_append_to_rgba_file(
 
 		const unsigned int image_rect_height = argb_image_rect.height();
 
-		PROFILE_BLOCK("Write to RGBA file");
+		//PROFILE_BLOCK("Write to RGBA file");
 
 		// Iterate over the rows.
 		for (unsigned int i = 0; i < image_rect_height; ++i)

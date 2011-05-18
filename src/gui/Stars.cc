@@ -39,9 +39,9 @@
 #include "opengl/GLCompositeDrawable.h"
 #include "opengl/GLCompositeStateSet.h"
 #include "opengl/GLPointLinePolygonState.h"
-#include "opengl/GLRenderGraphDrawableNode.h"
+#include "opengl/GLRenderer.h"
 #include "opengl/GLStreamPrimitives.h"
-#include "opengl/Vertex.h"
+#include "opengl/GLVertex.h"
 
 #include "presentation/ViewState.h"
 
@@ -59,7 +59,7 @@ namespace
 	// that, because we use an orthographic projection for the globe...
 	const GLfloat RADIUS = 7.0f;
 
-	typedef GPlatesOpenGL::Vertex vertex_type;
+	typedef GPlatesOpenGL::GLColouredVertex vertex_type;
 
 	boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type>
 	create_stars_drawable(
@@ -69,7 +69,7 @@ namespace
 	{
 		// Add points to a stream.
 		GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream =
-			GPlatesOpenGL::create_stream<vertex_type>();
+			GPlatesOpenGL::GLStreamPrimitives<vertex_type>::create();
 		GPlatesOpenGL::GLStreamPoints<vertex_type> stream_points(*stream);
 		stream_points.begin_points();
 
@@ -98,7 +98,7 @@ namespace
 			// Randomising the distance to the stars gives a nicer 3D effect.
 			double radius = RADIUS + rand();
 
-			vertex_type vertex = { x * radius, y * radius, z * radius, colour };
+			vertex_type vertex(x * radius, y * radius, z * radius, colour);
 			stream_points.add_vertex(vertex);
 
 			++points_generated;
@@ -161,29 +161,27 @@ GPlatesGui::Stars::Stars(
 
 void
 GPlatesGui::Stars::paint(
-		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node)
+		GPlatesOpenGL::GLRenderer &renderer)
 {
 	if (d_view_state.get_show_stars())
 	{
-		draw_stars(render_graph_parent_node, d_small_stars_drawable, d_small_stars_state_set);
-		draw_stars(render_graph_parent_node, d_large_stars_drawable, d_large_stars_state_set);
+		draw_stars(renderer, d_small_stars_drawable, d_small_stars_state_set);
+		draw_stars(renderer, d_large_stars_drawable, d_large_stars_state_set);
 	}
 }
 
 
 void
 GPlatesGui::Stars::draw_stars(
-		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
+		GPlatesOpenGL::GLRenderer &renderer,
 		const boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> &stars_drawable,
 		const GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type &state_set)
 {
 	if (stars_drawable)
 	{
-		GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type small_stars_drawable_node =
-			GPlatesOpenGL::GLRenderGraphDrawableNode::create(stars_drawable.get());
-		small_stars_drawable_node->set_state_set(state_set);
-
-		render_graph_parent_node->add_child_node(small_stars_drawable_node);
+		renderer.push_state_set(state_set);
+		renderer.add_drawable(stars_drawable.get());
+		renderer.pop_state_set();
 	}
 }
 

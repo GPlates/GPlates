@@ -31,7 +31,6 @@
 
 namespace GPlatesAppLogic
 {
-	class AgeGridRaster;
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
@@ -136,15 +135,6 @@ namespace GPlatesModel
 		}
 
 		// Please keep these reconstruction geometry derivations ordered alphabetically.
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_age_grid_raster(
-				GPlatesAppLogic::AgeGridRaster &agr)
-		{  }
 
 		/**
 		 * Override this function in your own derived class.

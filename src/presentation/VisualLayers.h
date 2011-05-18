@@ -376,11 +376,11 @@ namespace GPlatesPresentation
 
 		visual_layer_ptr_type
 		create_visual_layer(
-				const GPlatesAppLogic::Layer &layer);
+				GPlatesAppLogic::Layer &layer);
 
 		void
 		add_layer(
-				const GPlatesAppLogic::Layer &layer);
+				GPlatesAppLogic::Layer &layer);
 
 		void
 		remove_layer(

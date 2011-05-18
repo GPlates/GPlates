@@ -67,7 +67,8 @@ GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 	// reconstruction tree layer.
 	// Later we might want to let the user choose.
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-			application_state.get_current_reconstruction().get_default_reconstruction_tree();
+			application_state.get_current_reconstruction()
+				.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
 	std::multimap<GPlatesModel::integer_plate_id_type,
 			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;

@@ -49,7 +49,6 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruction;
 	class ReconstructionTree;
 
 	namespace ReconstructionGeometryUtils
@@ -266,6 +265,9 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Template visitor class to find instances of @a ReconstructedFeatureGeometry.
+		 *
+		 * This class is only designed to use 'ReconstructedFeatureGeometry' or
+		 * 'const ReconstructedFeatureGeometry' as the template parameter.
 		 */
 		template <class ReconstructedFeatureGeometryType>
 		class ReconstructedFeatureGeometryTypeFinderBase :
@@ -796,54 +798,6 @@ namespace GPlatesAppLogic
 
 			return get_time_of_formation_visitor.get_time_of_formation();
 		}
-
-		/**
-		* Determines if there are any paleomag features in the collection.
-		*/
-		class DetectPaleomagFeatures:
-			public GPlatesModel::ConstFeatureVisitor
-		{
-		public:
-			DetectPaleomagFeatures() :
-				d_found_paleomag_features(false)
-			{  }
-
-
-			bool
-			has_paleomag_features() const
-			{
-				return d_found_paleomag_features;
-			}
-
-
-			virtual
-			bool
-			initialise_pre_feature_properties(
-					feature_handle_type &feature_handle)
-			{
-				if (d_found_paleomag_features)
-				{
-					// We've already found a paleomag feature so just return.
-					// NOTE: We don't actually want to visit the feature's properties.
-					return false;
-				}
-
-				static const GPlatesModel::FeatureType paleomag_feature_type = 
-					GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
-
-				if (feature_handle.feature_type() == paleomag_feature_type)
-				{
-					d_found_paleomag_features = true;
-				}
-
-				// NOTE: We don't actually want to visit the feature's properties.
-				return false;
-			}
-
-		private:
-			bool d_found_paleomag_features;
-		};
-
 	}
 }
 

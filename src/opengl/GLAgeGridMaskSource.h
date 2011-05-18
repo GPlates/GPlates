@@ -40,10 +40,8 @@
 #include "GLResourceManager.h"
 #include "GLStateSet.h"
 #include "GLTexture.h"
-#include "GLTextureCache.h"
 #include "GLTextureUtils.h"
-#include "GLVertexArray.h"
-#include "GLVertexElementArray.h"
+#include "GLVertexArrayDrawable.h"
 #include "GLViewport.h"
 #include "GLViewportState.h"
 
@@ -56,6 +54,7 @@
 #include "property-values/RawRaster.h"
 
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/ObjectCache.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -133,7 +132,8 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer);
+				GLRenderer &renderer,
+				GLRenderer::RenderTargetUsageType render_target_usage);
 
 
 		/**
@@ -150,9 +150,31 @@ namespace GPlatesOpenGL
 		class Tile
 		{
 		public:
-			mutable GLVolatileTexture low_byte_age_texture;
-			mutable GLVolatileTexture high_byte_age_texture;
-			mutable GLVolatileTexture intermediate_mask_texture;
+			GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type &
+			get_low_byte_age_texture(
+					GPlatesUtils::ObjectCache<GLTexture> &age_grid_texture_cache)
+			{
+				if (!low_byte_age_texture)
+				{
+					low_byte_age_texture = age_grid_texture_cache.allocate_volatile_object();
+				}
+				return low_byte_age_texture;
+			}
+
+			GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type &
+			get_high_byte_age_texture(
+					GPlatesUtils::ObjectCache<GLTexture> &age_grid_texture_cache)
+			{
+				if (!high_byte_age_texture)
+				{
+					high_byte_age_texture = age_grid_texture_cache.allocate_volatile_object();
+				}
+				return high_byte_age_texture;
+			}
+
+		private:
+			GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type low_byte_age_texture;
+			GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type high_byte_age_texture;
 		};
 
 		typedef std::vector<Tile> tile_seq_type;
@@ -225,19 +247,19 @@ namespace GPlatesOpenGL
 		unsigned int d_tile_texel_dimension;
 
 		/**
-		 * Texture cache for age grid mask texture.
+		 * Used to create new texture resources.
 		 */
-		GLTextureCache::non_null_ptr_type d_age_grid_mask_texture_cache;
+		GLTextureResourceManager::shared_ptr_type d_texture_resource_manager;
 
 		/**
 		 * Texture cache for the actual floating-point age values read from a proxied raster.
 		 */
-		GLTextureCache::non_null_ptr_type d_age_grid_texture_cache;
+		GPlatesUtils::ObjectCache<GLTexture>::shared_ptr_type d_age_grid_texture_cache;
 
 		/**
 		 * Used for render textures to store intermediate results.
 		 */
-		GLTextureCache::non_null_ptr_type d_intermediate_render_texture_cache;
+		GPlatesUtils::ObjectCache<GLTexture>::shared_ptr_type d_intermediate_render_texture_cache;
 
 		/**
 		 * The cached textures across the different levels of detail.
@@ -254,8 +276,7 @@ namespace GPlatesOpenGL
 		GLViewportState::non_null_ptr_type d_viewport_state;
 
 		// Used to draw a textured full-screen quad into render texture.
-		GLVertexArray::shared_ptr_type d_full_screen_quad_vertex_array;
-		GLVertexElementArray::non_null_ptr_type d_full_screen_quad_vertex_element_array;
+		GLVertexArrayDrawable::non_null_ptr_type d_full_screen_quad_drawable;
 
 		// The composite state sets used for each of the three render passes required to
 		// render an age grid mask.
@@ -326,7 +347,8 @@ namespace GPlatesOpenGL
 				const GLTexture::shared_ptr_type &target_texture,
 				const GLTexture::shared_ptr_type &high_byte_age_texture,
 				const GLTexture::shared_ptr_type &low_byte_age_texture,
-				GLRenderer &renderer);
+				GLRenderer &renderer,
+				GLRenderer::RenderTargetUsageType render_target_usage);
 
 		void
 		render_age_grid_intermediate_mask(

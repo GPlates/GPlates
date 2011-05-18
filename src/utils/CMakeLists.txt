@@ -37,6 +37,7 @@ set(srcs
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
+    ObjectCache.h
     ObjectPool.h
     OverloadResolution.h
     Parse.h
@@ -58,6 +59,7 @@ set(srcs
     StringSet.h
     StringUtils.cc
     StringUtils.h
+    SubjectObserverToken.h
     TypeTraits.h
     UnicodeString.cc
     UnicodeString.h

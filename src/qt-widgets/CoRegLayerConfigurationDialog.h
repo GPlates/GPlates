@@ -226,7 +226,7 @@ namespace GPlatesQtWidgets
 
 		inline
 		void
-		set_virtual_layer(
+		set_visual_layer(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
 		{
 			d_visual_layer = layer;

@@ -28,7 +28,6 @@
 
 #include "ExportAnimationRegistry.h"
 
-#include "ExportAnimationRegistry.h"
 #include "ExportCoRegistrationAnimationStrategy.h"
 #include "ExportFileNameTemplateValidationUtils.h"
 #include "ExportFlowlineAnimationStrategy.h"

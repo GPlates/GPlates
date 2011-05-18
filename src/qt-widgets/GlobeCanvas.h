@@ -50,7 +50,6 @@
 #include "opengl/GLClearBuffers.h"
 #include "opengl/GLClearBuffersState.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLRenderGraph.h"
 #include "opengl/GLRenderTargetManager.h"
 #include "opengl/GLTransform.h"
 #include "opengl/GLViewport.h"
@@ -491,6 +490,22 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 	private:
+		/**
+		 * Utility class to make the QGLWidget's OpenGL context current in @a GlobeCanvas constructor.
+		 *
+		 * This is so we can do OpenGL stuff in the @a GlobeCanvas constructor when normally
+		 * we'd have to wait until 'initializeGL()'.
+		 */
+		struct MakeGLContextCurrent
+		{
+			explicit
+			MakeGLContextCurrent(
+					GPlatesOpenGL::GLContext &gl_context)
+			{
+				gl_context.make_current();
+			}
+		};
+
 
 		GPlatesPresentation::ViewState &d_view_state;
 
@@ -499,6 +514,7 @@ namespace GPlatesQtWidgets
 		 * to minimise state changes.
 		 */
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
+		MakeGLContextCurrent d_make_context_current;
 
 		/**
 		 * Manages render targets and creates them as needed.
@@ -513,6 +529,9 @@ namespace GPlatesQtWidgets
 
 		//! The OpenGL viewport used to render the main scene into this canvas.
 		GPlatesOpenGL::GLViewport d_gl_viewport;
+
+		//! The current model-view transform for regular OpenGL rendering.
+		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_model_view_transform;
 
 		//! The current projection transform for regular OpenGL rendering.
 		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform;
@@ -633,18 +652,6 @@ namespace GPlatesQtWidgets
 		void
 		clear_canvas(
 				const QColor& color = Qt::black);
-
-		/**
-		 * Creates a render graph and sets up some state in preparation for globe drawing.
-		 */
-		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
-		initialise_render_graph(
-				GPlatesOpenGL::GLRenderGraph &render_graph,
-				const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type &projection_transform);
-
-		void
-		draw_render_graph(
-				GPlatesOpenGL::GLRenderGraph &render_graph);
 
 		//! Calculates scaling for lines, points and text based on size of canvas
 		float

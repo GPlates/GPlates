@@ -33,6 +33,9 @@
 
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
+#include "ReconstructionLayerProxy.h"
+
+#include "maths/types.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -47,18 +50,6 @@ namespace GPlatesAppLogic
 			public LayerTask
 	{
 	public:
-
-		/**
-		 * Can be used to create a layer automatically when a file is first loaded.
-		 */
-		static
-		bool
-		is_primary_layer_task_type()
-		{
-			return true;
-		}
-
-
 		static
 		bool
 		can_process_feature_collection(
@@ -82,8 +73,8 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		std::vector<Layer::input_channel_definition_type>
-		get_input_channel_definitions() const;
+		std::vector<LayerInputChannelType>
+		get_input_channel_types() const;
 
 
 		virtual
@@ -91,27 +82,53 @@ namespace GPlatesAppLogic
 		get_main_input_feature_collection_channel() const;
 
 
-		virtual
-		Layer::LayerOutputDataType
-		get_output_definition() const;
+		void
+		add_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		void
+		remove_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		void
+		modified_input_file(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
-		virtual
-		bool
-		is_topological_layer_task() const
+		void
+		add_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy)
 		{
-			return false;
+			// Ignore - we're only interested in input feature collections.
+		}
+
+		void
+		remove_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy)
+		{
+			// Ignore - we're only interested in input feature collections.
 		}
 
 
 		virtual
-		boost::optional<layer_task_data_type>
-		process(
+		void
+		update(
 				const Layer &layer_handle /* the layer invoking this */,
-				const input_data_type &input_data,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
+
+
+		LayerProxy::non_null_ptr_type
+		get_layer_proxy()
+		{
+			return d_reconstruction_layer_proxy;
+		}
 
 
 		virtual
@@ -122,11 +139,19 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-		static const char *RECONSTRUCTION_FEATURES_CHANNEL_NAME;
+		static const QString RECONSTRUCTION_FEATURES_CHANNEL_NAME;
 
 		LayerTaskParams d_layer_task_params;
 
-		ReconstructionLayerTask()
+		/**
+		 * The layer proxy at the output of the layer.
+		 */
+		ReconstructionLayerProxy::non_null_ptr_type d_reconstruction_layer_proxy;
+
+
+		//! Constructor.
+		ReconstructionLayerTask() :
+				d_reconstruction_layer_proxy(ReconstructionLayerProxy::create())
 		{  }
 	};
 }

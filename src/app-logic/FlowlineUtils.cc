@@ -308,10 +308,10 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::initialise_pre_feature_p
 void
 GPlatesAppLogic::FlowlineUtils::calculate_flowline(
         const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point,
-	const FlowlinePropertyFinder &flowline_parameters,
-	std::vector<GPlatesMaths::PointOnSphere> &flowline,
-	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &tree,
-	const std::vector<GPlatesMaths::FiniteRotation> &rotations)
+		const FlowlinePropertyFinder &flowline_parameters,
+		std::vector<GPlatesMaths::PointOnSphere> &flowline,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const std::vector<GPlatesMaths::FiniteRotation> &rotations)
 {
 	using namespace GPlatesMaths;
 
@@ -409,10 +409,12 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
     const std::vector<double> &flowline_times,
     const GPlatesModel::integer_plate_id_type &left_plate_id,
     const GPlatesModel::integer_plate_id_type &right_plate_id,
-    const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_ptr,
+	const ReconstructionTreeCreator &reconstruction_tree_creator,
     std::vector<GPlatesMaths::FiniteRotation> &seed_point_rotations)
 {
-    GPlatesModel::integer_plate_id_type anchor = tree_ptr->get_anchor_plate_id();
+	// The reconstruction tree for the current reconstruction time.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			reconstruction_tree_creator.get_reconstruction_tree(current_time);
 
     std::vector<double>::const_iterator
             t_iter = flowline_times.begin(),
@@ -428,17 +430,11 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
     for (; *t_iter < current_time; ++t_iter, ++t_prev_iter)
     {
 
-        GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_time_t_ptr =
-                GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-                    *t_iter,
-                    anchor,
-                    tree_ptr->get_reconstruction_features());
+        GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_time_t_ptr =
+                reconstruction_tree_creator.get_reconstruction_tree(*t_iter);
 
-        GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_prev_time_ptr =
-                GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-                    *t_prev_iter,
-                    anchor,
-                    tree_ptr->get_reconstruction_features());
+        GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_prev_time_ptr =
+				reconstruction_tree_creator.get_reconstruction_tree(*t_prev_iter);
 
         // The stage pole for the moving plate w.r.t. the fixed plate, from t_prev to t
         GPlatesMaths::FiniteRotation stage_pole =
@@ -458,17 +454,11 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
     if (*t_prev_iter < current_time)
     {
         // And one more, from the last time reached to the current time.
-        GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_time_t_ptr =
-                GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-                    *t_prev_iter,
-                    anchor,
-                    tree_ptr->get_reconstruction_features());
+        GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_time_t_ptr =
+ 				reconstruction_tree_creator.get_reconstruction_tree(*t_prev_iter);
 
-        GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_current_time_ptr =
-                GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-                    current_time,
-                    anchor,
-                    tree_ptr->get_reconstruction_features());
+        GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_current_time_ptr =
+ 				reconstruction_tree_creator.get_reconstruction_tree(current_time);
 
         GPlatesMaths::FiniteRotation stage_pole =
                 GPlatesAppLogic::ReconstructUtils::get_stage_pole(
@@ -487,12 +477,12 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type seed_points,
-	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type current_reconstruction_tree_ptr,
+	const double &current_time,
+	const ReconstructionTreeCreator &reconstruction_tree_creator,
 	const GPlatesModel::FeatureHandle::weak_ref &feature_handle,
 	bool reverse)
 {
-    GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder finder(
-		current_reconstruction_tree_ptr->get_reconstruction_time());
+    GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder finder(current_time);
     finder.visit_feature(feature_handle);
 
     if (!finder.can_correct_seed_point())
@@ -502,16 +492,20 @@ GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
 
     std::vector<GPlatesMaths::FiniteRotation> seed_point_rotations;
 
-    GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
-		current_reconstruction_tree_ptr->get_reconstruction_time(),
+   GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
+		current_time,
 		finder.get_times(),
 		finder.get_left_plate().get(),
 		finder.get_right_plate().get(),
-		current_reconstruction_tree_ptr,
+		reconstruction_tree_creator,
 		seed_point_rotations);
 
+ 	// The reconstruction tree for the current reconstruction time.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			reconstruction_tree_creator.get_reconstruction_tree(current_time);
+
     GPlatesMaths::FiniteRotation plate_correction =
-	    current_reconstruction_tree_ptr->get_composed_absolute_rotation(finder.get_left_plate().get()).first;
+			reconstruction_tree->get_composed_absolute_rotation(finder.get_left_plate().get()).first;
 
     if (reverse)
     {
@@ -535,7 +529,7 @@ GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
     const GPlatesModel::integer_plate_id_type &plate_1,
     const GPlatesModel::integer_plate_id_type &plate_2,
     const std::vector<double> &flowline_feature_times,
-    const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &tree,
+	const ReconstructionTreeCreator &reconstruction_tree_creator,
     const double &reconstruction_time)
 {
     std::vector<double> times;
@@ -553,14 +547,9 @@ GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
 	    iter = times.begin(),
 	    end = times.end();
 
-    GPlatesModel::integer_plate_id_type anchor = tree->get_anchor_plate_id();
-
     // Save the "previous" tree for use in the loop.
-    GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_prev_time_ptr =
-	    GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-	    *iter,
-	    anchor,
-	    tree->get_reconstruction_features());
+    GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_prev_time_ptr =
+	    reconstruction_tree_creator.get_reconstruction_tree(*iter);
 
     // Step forward beyond the current time
     ++iter;
@@ -568,11 +557,8 @@ GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
     for (; iter != end ; ++iter)
     {
 
-	    GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_time_t_ptr =
-		    GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-		    *iter,
-		    anchor,
-		    tree->get_reconstruction_features());
+	    GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_time_t_ptr =
+		    reconstruction_tree_creator.get_reconstruction_tree(*iter);
 
 	    GPlatesMaths::FiniteRotation stage_pole =
 		    GPlatesAppLogic::ReconstructUtils::get_stage_pole(
@@ -590,8 +576,12 @@ GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
 
     }
 
+ 	// The reconstruction tree for the current reconstruction time.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+
     GPlatesMaths::FiniteRotation correction =
-	    tree->get_composed_absolute_rotation(plate_1).first;
+	    reconstruction_tree->get_composed_absolute_rotation(plate_1).first;
 
 
     geometry_ = get_reverse(correction) * geometry_;

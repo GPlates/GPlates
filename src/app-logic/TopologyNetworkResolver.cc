@@ -39,7 +39,6 @@ POP_MSVC_WARNINGS
 
 #include "CgalUtils.h"
 #include "GeometryUtils.h"
-#include "ReconstructionGeometryCollection.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "Reconstruction.h"
@@ -70,9 +69,15 @@ POP_MSVC_WARNINGS
 
 
 GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
-			ReconstructionGeometryCollection &reconstruction_geometry_collection) :
-	d_reconstruction_geometry_collection(reconstruction_geometry_collection),
-	d_reconstruction_params(reconstruction_geometry_collection.get_reconstruction_time())
+		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+		const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_topological_sections,
+		bool restrict_topological_sections_to_same_reconstruction_tree) :
+	d_resolved_topological_networks(resolved_topological_networks),
+	d_reconstruction_tree(reconstruction_tree),
+	d_reconstructed_topological_sections(reconstructed_topological_sections),
+	d_restrict_topological_sections_to_same_reconstruction_tree(restrict_topological_sections_to_same_reconstruction_tree),
+	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
 {  
 	d_num_topologies = 0;
 }
@@ -291,12 +296,19 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_section_reconstruct
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
 	// Get the reconstructed geometry of the topological section's delegate.
-	// The referenced features must have been reconstructed using the
-	// reconstruction tree referenced by our destination reconstruction geometry collection.
+	// The referenced RFGs must be in our sequence of reconstructed topological sections
+	// and optionally have been reconstructed by the same reconstruction tree associated with
+	// the resolved topological networks being generated.
+	boost::optional<const ReconstructionTree &> restricted_reconstruction_tree;
+	if (d_restrict_topological_sections_to_same_reconstruction_tree)
+	{
+		restricted_reconstruction_tree = *d_reconstruction_tree;
+	}
 	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
 					geometry_delegate,
-					*d_reconstruction_geometry_collection.reconstruction_tree());
+					restricted_reconstruction_tree,
+					d_reconstructed_topological_sections);
 
 	// If no RFG was found then it's possible that the current reconstruction time is
 	// outside the age range of the feature this section is referencing.
@@ -782,7 +794,7 @@ std::cout << "Number of vertices after make_conforming_Gabriel_2: "
 	// Create the network.
 	const ResolvedTopologicalNetwork::non_null_ptr_type network =
 			ResolvedTopologicalNetwork::create(
-					d_reconstruction_geometry_collection.reconstruction_tree(),
+					d_reconstruction_tree,
 					delaunay_triangulation_2,
 					constrained_delaunay_triangulation_2,
 					*(current_top_level_propiter()->handle_weak_ref()),
@@ -792,7 +804,7 @@ std::cout << "Number of vertices after make_conforming_Gabriel_2: "
 					d_reconstruction_params.get_recon_plate_id(),
 					d_reconstruction_params.get_time_of_appearance());
 
-	d_reconstruction_geometry_collection.add_reconstruction_geometry(network);
+	d_resolved_topological_networks.push_back(network);
 }
 
 
@@ -809,6 +821,16 @@ GPlatesAppLogic::TopologyNetworkResolver::debug_output_topological_section_featu
 }
 
 
-//////////////////////////////////////////////////////////
-
-
+GPlatesAppLogic::TopologyNetworkResolver::ResolvedNetwork::Section::Section(
+		const GPlatesModel::FeatureId &source_feature_id,
+		const reconstructed_feature_geometry_non_null_ptr_type &source_rfg) :
+	d_source_feature_id(source_feature_id),
+	d_source_rfg(source_rfg),
+	d_use_reverse(false),
+	d_is_seed_point(false),
+	d_is_point(false),
+	d_is_line(false),
+	d_is_polygon(false),
+	d_intersection_results(source_rfg->reconstructed_geometry())
+{
+}

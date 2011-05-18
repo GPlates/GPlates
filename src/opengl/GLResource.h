@@ -110,12 +110,6 @@ namespace GPlatesOpenGL
 			d_resource_manager(resource_manager)
 		{  }
 	};
-
-
-	/**
-	 * Typedef for a texture object resource.
-	 */
-	typedef GLResource<GLuint, GLTextureObjectAllocator> GLTextureResource;
 }
 
 #endif // GPLATES_OPENGL_GLRESOURCE_H

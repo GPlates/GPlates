@@ -32,7 +32,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "MultiPointOnSphere.h"
-#include "PointInPolygon.h"
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "PolygonOrientation.h"
@@ -168,7 +167,6 @@ namespace GPlatesMaths
 
 	private:
 		PolygonOnSphere::non_null_ptr_to_const_type d_partitioning_polygon;
-		PointInPolygon::Polygon d_point_in_polygon_tester;
 		PolygonOrientation::Orientation d_partitioning_polygon_orientation;
 
 

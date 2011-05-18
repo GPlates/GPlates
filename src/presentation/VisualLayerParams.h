@@ -37,6 +37,7 @@
 namespace GPlatesAppLogic
 {
 	class Layer;
+	class LayerTaskParams;
 }
 
 namespace GPlatesPresentation
@@ -66,9 +67,10 @@ namespace GPlatesPresentation
 
 		static
 		non_null_ptr_type
-		create()
+		create(
+				GPlatesAppLogic::LayerTaskParams &layer_task_params)
 		{
-			return new VisualLayerParams();
+			return new VisualLayerParams(layer_task_params);
 		}
 
 		virtual
@@ -111,8 +113,17 @@ namespace GPlatesPresentation
 
 	protected:
 
-		VisualLayerParams()
+		explicit
+		VisualLayerParams(
+				GPlatesAppLogic::LayerTaskParams &layer_task_params) :
+			d_layer_task_params(layer_task_params)
 		{  }
+
+		GPlatesAppLogic::LayerTaskParams &
+		get_layer_task_params() const
+		{
+			return d_layer_task_params;
+		}
 
 		/**
 		 * Subclasses should call this method to cause the @a modified() signal to be
@@ -123,6 +134,9 @@ namespace GPlatesPresentation
 		{
 			emit modified();
 		}
+
+	private:
+		GPlatesAppLogic::LayerTaskParams &d_layer_task_params;
 	};
 }
 

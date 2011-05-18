@@ -32,13 +32,19 @@
 #include <QString>
 
 #include "LayerTask.h"
-#include "ReconstructLayerTaskParams.h"
+#include "LayerTaskParams.h"
+#include "ReconstructLayerProxy.h"
+#include "ReconstructParams.h"
+
+#include "maths/types.h"
 
 #include "model/FeatureCollectionHandle.h"
 
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
+
 	/**
 	 * A layer task that reconstructs geometries of features from feature collection(s).
 	 */
@@ -46,30 +52,58 @@ namespace GPlatesAppLogic
 			public LayerTask
 	{
 	public:
-
 		/**
-		 * Can be used to create a layer automatically when a file is first loaded.
+		 * App-logic parameters for a reconstruct layer.
 		 */
-		static
-		bool
-		is_primary_layer_task_type()
+		class Params :
+				public LayerTaskParams
 		{
-			return true;
-		}
+		public:
+			/**
+			 * Returns the 'const' reconstruct parameters.
+			 */
+			const ReconstructParams &
+			get_reconstruct_params() const;
+
+			/**
+			 * Returns the reconstruct parameters for modification.
+			 *
+			 * NOTE: This will cause the flush any cached reconstructed feature geometries
+			 * in this layer.
+			 */
+			ReconstructParams &
+			get_reconstruct_params();
+
+		private:
+			ReconstructParams d_reconstruct_params;
+
+			/**
+			 * Is true if the non-const version of @a get_reconstruct_params has been called.
+			 *
+			 * Used to let ReconstructLayerTask know that an external client has modified this state.
+			 *
+			 * ReconstructLayerTask will reset this explicitly.
+			 */
+			bool d_non_const_get_reconstruct_params_called;
+
+			Params();
+
+			// Make friend so can access constructor and @a d_non_const_get_reconstruct_params_called.
+			friend class ReconstructLayerTask;
+		};
 
 
 		static
 		bool
 		can_process_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				ApplicationState &application_state);
 
 
 		static
 		boost::shared_ptr<ReconstructLayerTask>
-		create_layer_task()
-		{
-			return boost::shared_ptr<ReconstructLayerTask>(new ReconstructLayerTask());
-		}
+		create_layer_task(
+				ApplicationState &application_state);
 
 
 		virtual
@@ -81,8 +115,8 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		std::vector<Layer::input_channel_definition_type>
-		get_input_channel_definitions() const;
+		std::vector<LayerInputChannelType>
+		get_input_channel_types() const;
 
 
 		virtual
@@ -91,26 +125,51 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		Layer::LayerOutputDataType
-		get_output_definition() const;
+		void
+		add_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		virtual
+		void
+		remove_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		void
+		modified_input_file(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		virtual
-		bool
-		is_topological_layer_task() const
-		{
-			return false;
-		}
+		void
+		add_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
+
+		virtual
+		void
+		remove_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
 
 
 		virtual
-		boost::optional<layer_task_data_type>
-		process(
+		void
+		update(
 				const Layer &layer_handle /* the layer invoking this */,
-				const input_data_type &input_data,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
+
+
+		virtual
+		LayerProxy::non_null_ptr_type
+		get_layer_proxy()
+		{
+			return d_reconstruct_layer_proxy;
+		}
 
 
 		virtual
@@ -121,11 +180,38 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-		static const char *RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
+		static const QString RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
 
-		ReconstructLayerTaskParams d_layer_task_params;
+		/**
+		 * Parameters used when reconstructing.
+		 */
+		Params d_layer_task_params;
 
-		ReconstructLayerTask()
+		/**
+		 * Keep track of the default reconstruction layer proxy.
+		 */
+		ReconstructionLayerProxy::non_null_ptr_type d_default_reconstruction_layer_proxy;
+
+		//! Are we using the default reconstruction layer proxy.
+		bool d_using_default_reconstruction_layer_proxy;
+
+		/**
+		 * Does all the reconstructing.
+		 *
+		 * NOTE: Should be declared after @a d_layer_task_params.
+		 */
+		ReconstructLayerProxy::non_null_ptr_type d_reconstruct_layer_proxy;
+
+
+		//! Constructor.
+		ReconstructLayerTask(
+				const ReconstructMethodRegistry &reconstruct_method_registry) :
+				d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
+				d_using_default_reconstruction_layer_proxy(true),
+				d_reconstruct_layer_proxy(
+						ReconstructLayerProxy::create(
+								reconstruct_method_registry,
+								d_layer_task_params.d_reconstruct_params))
 		{  }
 	};
 }

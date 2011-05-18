@@ -37,11 +37,9 @@
 #include "GLMultiResolutionRasterSource.h"
 #include "GLResourceManager.h"
 #include "GLTexture.h"
-#include "GLTextureCache.h"
 #include "GLTextureUtils.h"
 #include "GLTransformState.h"
 #include "GLVertexArray.h"
-#include "GLVertexArrayCache.h"
 #include "GLVertexElementArray.h"
 
 #include "maths/PointOnSphere.h"
@@ -49,7 +47,9 @@
 #include "property-values/Georeferencing.h"
 
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/ObjectCache.h"
 #include "utils/ReferenceCount.h"
+#include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesOpenGL
@@ -116,15 +116,21 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
+				const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager,
 				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM);
 
 
 		/**
-		 * Returns a token that clients can store with any cached data we render for them and
-		 * compare against their current token to determine if they need us to re-render.
+		 * Returns a subject token that clients can observe to see if they need to update themselves
+		 * (such as any cached data we render for them) by getting us to re-render.
 		 */
-		GLTextureUtils::ValidToken
-		get_current_valid_token();
+		const GPlatesUtils::SubjectToken &
+		get_subject_token() const
+		{
+			// We'll just use the valid token of the raster source - if they don't change then neither do we.
+			// If we had two input sources then we'd have to have our own valid token.
+			return d_raster_source->get_subject_token();
+		}
 
 
 		/**
@@ -213,7 +219,7 @@ namespace GPlatesOpenGL
 		public:
 			Tile(
 					const GLVertexArray::shared_ptr_to_const_type &vertex_array,
-					const GLVertexElementArray::non_null_ptr_to_const_type &vertex_element_array,
+					const GLVertexElementArray::shared_ptr_to_const_type &vertex_element_array,
 					const GLTexture::shared_ptr_to_const_type &texture);
 
 			/**
@@ -278,14 +284,16 @@ namespace GPlatesOpenGL
 					unsigned int v_lod_texel_offset_,
 					unsigned int num_u_lod_texels_,
 					unsigned int num_v_lod_texels_,
-					const GLVertexElementArray::non_null_ptr_to_const_type &vertex_element_array_)
+					const GLVertexElementArray::shared_ptr_to_const_type &vertex_element_array_,
+					GPlatesUtils::ObjectCache<GLVertexArray> &vertex_array_cache_,
+					GPlatesUtils::ObjectCache<GLTexture> &texture_cache_)
 			{
 				return non_null_ptr_type(new LevelOfDetailTile(
 						lod_level_,
 						x_geo_start_, x_geo_end_, y_geo_start_, y_geo_end_,
 						x_num_vertices_, y_num_vertices_, u_start_, u_end_, v_start_, v_end_,
 						u_lod_texel_offset_, v_lod_texel_offset_, num_u_lod_texels_, num_v_lod_texels_,
-						vertex_element_array_));
+						vertex_element_array_, vertex_array_cache_, texture_cache_));
 			}
 
 
@@ -382,7 +390,7 @@ namespace GPlatesOpenGL
 			 * The vertex indices used for this tile.
 			 * This is typically shared with other tiles.
 			 */
-			GLVertexElementArray::non_null_ptr_to_const_type vertex_element_array;
+			GLVertexElementArray::shared_ptr_to_const_type vertex_element_array;
 
 			//
 			// The following data members use @a GLCache because:
@@ -399,18 +407,18 @@ namespace GPlatesOpenGL
 			/**
 			 * The vertices required to draw this tile onto the globe.
 			 */
-			mutable GLVolatileVertexArray vertex_array;
+			GPlatesUtils::ObjectCache<GLVertexArray>::volatile_object_ptr_type vertex_array;
 
 			/**
 			 * The texture representation of the raster data for this tile.
 			 */
-			mutable GLVolatileTexture texture;
+			GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type texture;
 
 			/**
 			 * Keeps tracks of whether the source data has changed underneath us
 			 * and we need to reload our texture.
 			 */
-			mutable GLTextureUtils::ValidToken source_texture_valid_token;
+			mutable GPlatesUtils::ObserverToken source_texture_observer_token;
 
 		private:
 			//! Constructor.
@@ -430,7 +438,9 @@ namespace GPlatesOpenGL
 					unsigned int v_lod_texel_offset_,
 					unsigned int num_u_lod_texels_,
 					unsigned int num_v_lod_texels_,
-					const GLVertexElementArray::non_null_ptr_to_const_type &vertex_element_array_);
+					const GLVertexElementArray::shared_ptr_to_const_type &vertex_element_array_,
+					GPlatesUtils::ObjectCache<GLVertexArray> &vertex_array_cache_,
+					GPlatesUtils::ObjectCache<GLTexture> &texture_cache_);
 		};
 
 
@@ -547,7 +557,7 @@ namespace GPlatesOpenGL
 		//! Typedef for mapping a tile's vertex dimensions to vertex indices.
 		typedef std::map<
 				std::pair<unsigned int,unsigned int>,
-				GLVertexElementArray::non_null_ptr_to_const_type> vertex_element_array_map_type;
+				GLVertexElementArray::shared_ptr_to_const_type> vertex_element_array_map_type;
 
 
 		/**
@@ -559,11 +569,6 @@ namespace GPlatesOpenGL
 		 * The source of multi-resolution raster data.
 		 */
 		GLMultiResolutionRasterSource::non_null_ptr_type d_raster_source;
-
-		/**
-		 * Used to determine if we need to rebuild any cached textures due to source data changing.
-		 */
-		GLTextureUtils::ValidToken d_raster_source_valid_token;
 
 		//! Original raster width.
 		unsigned int d_raster_width;
@@ -598,6 +603,16 @@ namespace GPlatesOpenGL
 		float d_max_highest_resolution_texel_size_on_unit_sphere;
 
 		/**
+		 * Used to create new texture resources.
+		 */
+		GLTextureResourceManager::shared_ptr_type d_texture_resource_manager;
+
+		/**
+		 * Used to allocate vertex element arrays.
+		 */
+		GLVertexBufferResourceManager::shared_ptr_type d_vertex_buffer_resource_manager;
+
+		/**
 		 * This raster has its own cache of textures which gets reused/recycled as the
 		 * view pans across the raster.
 		 * Since the maximum number of screen pixels covered by a raster is bounded
@@ -607,7 +622,7 @@ namespace GPlatesOpenGL
 		 * zooms into a raster the visible part of the raster decreases to compensate for the
 		 * increased raster resolution being displayed.
 		 */
-		GLTextureCache::non_null_ptr_type d_texture_cache;
+		GPlatesUtils::ObjectCache<GLTexture>::shared_ptr_type d_texture_cache;
 
 		/**
 		 * A cache of vertex arrays to limit memory usage.
@@ -616,7 +631,7 @@ namespace GPlatesOpenGL
 		 * stored on the GPU in VRAM - in that case having a cache also means we are
 		 * not creating/destroying vertex buffer objects unnecessarily.
 		 */
-		GLVertexArrayCache::non_null_ptr_type d_vertex_array_cache;
+		GPlatesUtils::ObjectCache<GLVertexArray>::shared_ptr_type d_vertex_array_cache;
 
 		/**
 		 * Shared vertex indices used by the tiles of this raster.
@@ -660,6 +675,7 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
+				const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager,
 				RasterScanlineOrderType raster_scanline_order);
 
 		/**
@@ -765,7 +781,7 @@ namespace GPlatesOpenGL
 		 *
 		 * This is just the vertex indices (not the vertices themselves which differ for each tile).
 		 */
-		GLVertexElementArray::non_null_ptr_to_const_type
+		GLVertexElementArray::shared_ptr_to_const_type
 		get_vertex_element_array(
 				const unsigned int num_vertices_along_tile_x_edge,
 				const unsigned int num_vertices_along_tile_y_edge);
@@ -786,18 +802,11 @@ namespace GPlatesOpenGL
 		 */
 		void
 		get_visible_tiles(
-				const GLTransformState::FrustumPlanes &frustum_planes,
+				const GLFrustum &frustum_planes,
 				boost::uint32_t frustum_plane_mask,
 				const LevelOfDetail &lod,
 				const LevelOfDetail::OBBTreeNode &obb_tree_node,
 				std::vector<tile_handle_type> &visible_tiles) const;
-
-
-		/**
-		 * Updates our valid token to match that of our raster source.
-		 */
-		void
-		update_raster_source_valid_token();
 
 
 		/**

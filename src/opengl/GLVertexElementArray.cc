@@ -34,15 +34,16 @@
 
 #include "global/CompilerWarnings.h"
 
+#include "utils/Profile.h"
+
 
 void
 GPlatesOpenGL::GLVertexElementArray::gl_draw_elements(
 		GLenum mode,
 		GLsizei count,
-		GLenum type,
 		GLint indices_offset)
 {
-	const DrawElements draw_elements = { mode, count, type, indices_offset };
+	const DrawElements draw_elements = { mode, count, indices_offset };
 	d_draw_elements = draw_elements;
 }
 
@@ -56,7 +57,6 @@ GPlatesOpenGL::GLVertexElementArray::gl_draw_range_elements_EXT(
 		GLuint start,
 		GLuint end,
 		GLsizei count,
-		GLenum type,
 		GLint indices_offset)
 {
 	// If the extension is supported then also specify the 'start' and 'end'.
@@ -66,47 +66,56 @@ GPlatesOpenGL::GLVertexElementArray::gl_draw_range_elements_EXT(
 		d_draw_range_elements = draw_range_elements;
 	}
 
-	GLVertexElementArray::gl_draw_elements(mode, count, type, indices_offset);
+	GLVertexElementArray::gl_draw_elements(mode, count, indices_offset);
 }
-
-// We use macros in <GL/glew.h> that contain old-style casts.
-ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void
 GPlatesOpenGL::GLVertexElementArray::draw() const
 {
-	// If no array data has been specified then nothing to draw.
-	if (!d_array_data)
+	//PROFILE_FUNC();
+
+	// If no data has been set yet then do nothing.
+	if (!d_type)
 	{
 		return;
 	}
 
+	// Bind to the array so that when we set the vertex attribute pointers they
+	// will be directed to the bound array.
+	const GLubyte *array_data = d_array_data->bind();
+
 	if (d_draw_range_elements)
 	{
-		const void *indices = static_cast<const GLubyte *>(d_array_data->get_array()) +
-				d_draw_elements->indices_offset;
+		const void *indices = array_data + d_draw_elements->indices_offset;
 
 		glDrawRangeElementsEXT(
 				d_draw_elements->mode,
 				d_draw_range_elements->start,
 				d_draw_range_elements->end,
 				d_draw_elements->count,
-				d_draw_elements->type,
+				d_type.get(),
 				indices);
-		return;
 	}
-
-	if (d_draw_elements)
+	else if (d_draw_elements)
 	{
-		const void *indices = static_cast<const GLubyte *>(d_array_data->get_array()) +
-				d_draw_elements->indices_offset;
+		const void *indices = array_data + d_draw_elements->indices_offset;
 
 		glDrawElements(
 				d_draw_elements->mode,
 				d_draw_elements->count,
-				d_draw_elements->type,
+				d_type.get(),
 				indices);
-		return;
 	}
+
+	// We've finished binding the vertex element pointer to the bound array so
+	// release the binding to the array - we want to make sure we don't leave OpenGL
+	// in a non-default state when we're finished drawing - this can happen if the bound
+	// array is implemented using the vertex buffer objects OpenGL extension in which case
+	// if we don't unbind then any subsequent vertex element arrays (that are using plain CPU
+	// arrays) will not work.
+	d_array_data->unbind();
 }
+
+// We use macros in <GL/glew.h> that contain old-style casts.
+ENABLE_GCC_WARNING("-Wold-style-cast")

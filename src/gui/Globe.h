@@ -47,12 +47,16 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLUNurbsRenderer.h"
-#include "opengl/GLRenderGraphInternalNode.h"
 
 #include "presentation/VisualLayers.h"
 
 #include "utils/VirtualProxy.h"
 
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
 
 namespace GPlatesPresentation
 {
@@ -114,22 +118,19 @@ namespace GPlatesGui
 		/**
 		 * Paint the globe and all the visible features and rasters on it.
 		 *
-		 * @param render_graph_node the render graph node that all rendering should be attached to.
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
 		 */
 		void
 		paint(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
+				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
 				float scale);
 		
 		/*
-		 * A special version of the globe's paint() method more suitable
-		 * for vector output.
+		 * A special version of the globe's paint() method more suitable for vector output.
 		 *
-		 * @param render_graph_node the render graph node that all rendering should be attached to.
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
@@ -137,18 +138,9 @@ namespace GPlatesGui
 		void
 		paint_vector_output(
 				const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
+				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
 				float scale);
-
-		void
-		toggle_raster_display();
-
-		void
-		enable_raster_display();
-
-		void
-		disable_raster_display();
 
 	private:
 
@@ -203,21 +195,18 @@ namespace GPlatesGui
 		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
 
 		/**
-		 * Adds a render graph node to @a render_graph_node that transforms the view
-		 * according to the current globe orientation (and returns the node).
+		 * Create a transform to transform the view according to the current globe orientation.
 		 */
-		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
-		setup_globe_orientation_transform(
-					GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+		GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+		get_globe_orientation_transform() const;
 
 		/**
-		 * Create a render graph node.
+		 * Create a @a GLStateSet for a rendered layer.
 		 */
-		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
-		create_rendered_layer_node(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &parent_render_graph_node,
+		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+		get_rendered_layer_state(
 				GLboolean depth_test_flag = GL_TRUE,
-				GLboolean depth_write_flag = GL_FALSE);
+				GLboolean depth_write_flag = GL_FALSE) const;
 	};
 }
 

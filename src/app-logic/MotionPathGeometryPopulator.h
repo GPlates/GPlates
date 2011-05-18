@@ -29,13 +29,16 @@
 #define GPLATES_APP_LOGIC_MOTIONPATHGEOMETRYPOPULATOR_H
 
 #include <vector>
+#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include "MotionPathUtils.h"
 #include "ReconstructedMotionPath.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
+#include "ReconstructionTreeCreator.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
@@ -47,12 +50,6 @@
 
 namespace GPlatesAppLogic
 {
-
-
-
-
-	class ReconstructionGeometryCollection;
-
 	/**
 	 * Reconstructs motion path features
 	 */
@@ -61,10 +58,11 @@ namespace GPlatesAppLogic
 			private boost::noncopyable
 	{
 	public:
-
-
 		MotionPathGeometryPopulator(
-				ReconstructionGeometryCollection &reconstruction_geometry_collection);
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time);
+
 
 		virtual
 		~MotionPathGeometryPopulator()
@@ -101,9 +99,16 @@ namespace GPlatesAppLogic
 			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point,
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry);
 
-		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
 
-		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
+		/**
+		 * The @a ReconstructedFeatureGeometry objects generated during reconstruction.
+		 */
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &d_reconstructed_feature_geometries;
+
+		/**
+		 * The function to call (with a time/anchor argument) to get a @a ReconstructionTree.
+		 */
+		ReconstructionTreeCreator d_reconstruction_tree_creator;
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 

@@ -33,52 +33,101 @@
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
+#include "AppLogicFwd.h"
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
-#include "ReconstructRasterPolygons.h"
-#include "ReconstructionTree.h"
 
+#include "model/FeatureHandle.h"
 #include "model/FeatureCollectionHandle.h"
 
-#include "presentation/ViewState.h"
-
 #include "property-values/Georeferencing.h"
+#include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
+#include "property-values/TextContent.h"
 
 
 namespace GPlatesAppLogic
 {
 	/**
 	 * A layer task that resolves a geo-referenced raster (if it's time-dependent) and
-	 * optionally reconstructs it using an input channel containing polygons.
+	 * optionally reconstructs it using an input channel containing reconstructed polygons.
 	 *
-	 * Also there's another optional input channel referencing the output of an age grid
-	 * layer that provides improved resolution for masking those parts of the present-day
-	 * globe that don't exist in the past (eg, ocean floor near mid-ocean ridge).
+	 * Also there's another optional input channel referencing the output of another raster layer
+	 * that is expected to be an age grid raster. The age grid raster provides improved resolution
+	 * for masking those parts of the present-day globe that don't exist in the past
+	 * (eg, ocean floor near mid-ocean ridge).
 	 */
 	class RasterLayerTask :
 			public LayerTask
 	{
 	public:
 		/**
-		 * Returns the name and description of this layer task.
-		 *
-		 * This is useful for display to the user so they know what this layer does.
+		 * App-logic parameters for a raster layer.
 		 */
-		static
-		std::pair<QString, QString>
-		get_name_and_description();
-
-
-		/**
-		 * Can be used to create a layer automatically when a file is first loaded.
-		 */
-		static
-		bool
-		is_primary_layer_task_type()
+		class Params :
+				public LayerTaskParams
 		{
-			return true;
-		}
+		public:
+			//! Sets the name of the band, of the raster, selected for processing.
+			void
+			set_band_name(
+					const GPlatesPropertyValues::TextContent &band_name);
+
+
+			//! Returns the name of the band of the raster selected for processing.
+			const GPlatesPropertyValues::TextContent &
+			get_band_name() const;
+
+			//! Returns the list of band names that are in the raster feature.
+			const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &
+			get_band_names() const;
+
+			//! Returns the georeferencing of the raster feature.
+			const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+			get_georeferencing() const;
+
+			//! Returns the raster feature or boost::none if one is currently not set on the layer.
+			const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
+			get_raster_feature() const;
+
+		private:
+			//! The name of the band of the raster that has been selected for processing.
+			GPlatesPropertyValues::TextContent d_band_name;
+
+			//! The list of band names that were in the raster feature the last time we examined it.
+			GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type d_band_names;
+
+			//! The georeferencing of the raster.
+			boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> d_georeferencing;
+
+			//! The raster feature.
+			boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_raster_feature;
+
+			/**
+			 * Is true if @a set_band_name has been called - RasterLayerTask will reset this explicitly.
+			 *
+			 * Used to let RasterLayerTask know that an external client has modified this state.
+			 */
+			bool d_set_band_name_called;
+
+			Params();
+
+			//! Modifies the selected raster band and list of raster band names according to new feature.
+			void
+			set_raster_feature(
+					boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref);
+
+			//! Call this when the raster feature is modified.
+			void
+			raster_feature_modified();
+
+			//! Update state to reflect a new, or modified, raster feature.
+			void
+			updated_raster_feature();
+
+			// Make friend so can access constructor, @a d_set_band_name_called and private methods.
+			friend class RasterLayerTask;
+		};
 
 
 		static
@@ -95,6 +144,9 @@ namespace GPlatesAppLogic
 		}
 
 
+		~RasterLayerTask();
+
+
 		virtual
 		LayerTaskType::Type
 		get_layer_type() const
@@ -104,8 +156,8 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		std::vector<Layer::input_channel_definition_type>
-		get_input_channel_definitions() const;
+		std::vector<LayerInputChannelType>
+		get_input_channel_types() const;
 
 
 		virtual
@@ -114,28 +166,51 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		Layer::LayerOutputDataType
-		get_output_definition() const;
+		void
+		add_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		virtual
+		void
+		remove_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		virtual
+		void
+		modified_input_file(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		virtual
-		bool
-		is_topological_layer_task() const
-		{
-			return false;
-		}
+		void
+		add_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
+
+		virtual
+		void
+		remove_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
 
 
 		virtual
-		boost::optional<layer_task_data_type>
-		process(
+		void
+		update(
 				const Layer &layer_handle /* the layer invoking this */,
-				const input_data_type &input_data,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
 
-		
+
+		virtual
+		LayerProxy::non_null_ptr_type
+		get_layer_proxy();
+
+
 		virtual
 		LayerTaskParams &
 		get_layer_task_params()
@@ -143,39 +218,25 @@ namespace GPlatesAppLogic
 			return d_layer_task_params;
 		}
 
-
 	private:
-		static const char *RASTER_FEATURE_CHANNEL_NAME;
-		static const char *POLYGON_FEATURES_CHANNEL_NAME;
-		static const char *AGE_GRID_RASTER_CHANNEL_NAME;
+		static const QString RASTER_FEATURE_CHANNEL_NAME;
+		static const QString RECONSTRUCTED_POLYGONS_CHANNEL_NAME;
+		static const QString AGE_GRID_RASTER_CHANNEL_NAME;
+
 
 		/**
-		 * The polygons used to reconstruct the raster.
-		 *
-		 * These are present-day polygons that have their finite rotations updated
-		 * on reconstruction instead of generating new reconstructed polygon geometry.
+		 * Extra parameters for this layer.
 		 */
-		boost::optional<ReconstructRasterPolygons::non_null_ptr_type> d_reconstruct_raster_polygons;
+		Params d_layer_task_params;
 
 		/**
-		 * The feature collections currently connected to our 'POLYGON_FEATURES_CHANNEL_NAME' channel.
-		 *
-		 * When this changes we create a new @a d_reconstruct_raster_polygons which also
-		 * gets stored in the output @a ResolvedRaster and hence a new @a d_reconstruct_raster_polygons
-		 * indicates to clients a new set of polygons just as a new @a Georeferencing or a new
-		 * @a RawRaster indicate to clients changed raster position/data.
+		 * Resolves raster.
 		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_polygon_features_collection;
+		raster_layer_proxy_non_null_ptr_type d_raster_layer_proxy;
 
-		LayerTaskParams d_layer_task_params;
 
-		RasterLayerTask()
-		{  }
-
-		void
-		update_reconstruct_raster_polygons(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				const input_data_type &input_data);
+		//! Constructor.
+		RasterLayerTask();
 	};
 }
 

@@ -32,10 +32,10 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
+#include "AppLogicFwd.h"
 #include "CgalUtils.h"
 #include "PlateVelocityUtils.h"
 #include "ReconstructionGeometry.h"
-#include "TopologyUtils.h"
 
 #include "maths/PolygonOnSphere.h"
 
@@ -53,42 +53,25 @@ namespace GPlatesAppLogic
 			public GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle>
 	{
 	public:
-		/**
-		 * A convenience typedef for a non-null intrusive ptr to @a ResolvedTopologicalNetwork.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalNetwork>
-				non_null_ptr_type;
+		//! A convenience typedef for a non-null intrusive ptr to @a ResolvedTopologicalNetwork.
+		typedef GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalNetwork> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for a non-null intrusive ptr to @a ResolvedTopologicalNetwork.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalNetwork>
-				non_null_ptr_to_const_type;
+		//! A convenience typedef for a non-null intrusive ptr to @a ResolvedTopologicalNetwork.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalNetwork> non_null_ptr_to_const_type;
 
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<ResolvedTopologicalNetwork>.
-		 */
+		//! A convenience typedef for boost::intrusive_ptr<ResolvedTopologicalNetwork>.
 		typedef boost::intrusive_ptr<ResolvedTopologicalNetwork> maybe_null_ptr_type;
 
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<const ResolvedTopologicalNetwork>.
-		 */
+		//! A convenience typedef for boost::intrusive_ptr<const ResolvedTopologicalNetwork>.
 		typedef boost::intrusive_ptr<const ResolvedTopologicalNetwork> maybe_null_ptr_to_const_type;
 
-		/**
-		 * A convenience typedef for the WeakObserver base class of this class.
-		 */
+		//! A convenience typedef for the WeakObserver base class of this class.
 		typedef GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle> WeakObserverType;
 
-		/**
-		 * A convenience typedef for the geometry of this @a ResolvedTopologicalNetwork.
-		 */
-		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-				resolved_topology_geometry_ptr_type;
+		//! A convenience typedef for the geometry of this @a ResolvedTopologicalNetwork.
+		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_geometry_ptr_type;
 
-		/**
-		 * A convenience typedef for the geometry of a node of this RTN.
-		 */
+		//! A convenience typedef for the geometry of a node of this RTN.
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type node_geometry_ptr_type;
 
 
@@ -252,7 +235,7 @@ namespace GPlatesAppLogic
 		static
 		const non_null_ptr_type
 		create(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 				boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_2_type> delaunay_triangulation_2,
 				boost::shared_ptr<CgalUtils::cgal_constrained_delaunay_triangulation_2_type> constrained_delaunay_triangulation_2,
 				GPlatesModel::FeatureHandle &feature_handle,
@@ -544,7 +527,7 @@ namespace GPlatesAppLogic
 		 */
 		template <typename NodeForwardIter>
 		ResolvedTopologicalNetwork(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree_,
 				boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_2_type> delaunay_triangulation_2,
 				boost::shared_ptr<CgalUtils::cgal_constrained_delaunay_triangulation_2_type> constrained_delaunay_triangulation_2,
 				GPlatesModel::FeatureHandle &feature_handle,

@@ -78,6 +78,7 @@ void
 GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 		const QStringList &filenames)
 {
+
 	// Read all the files before we add them to the application state.
 	file_seq_type loaded_files = read_feature_collections(filenames);
 
@@ -86,10 +87,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 	// NOTE: It is important to load multiple files in one group here rather than
 	// reuse load_file() for each file because the file state will then send
 	// only one notification (instead of multiple notifications) which is needed in
-	// some cases where the files in the group depend on each other - an example is
-	// topological boundary features which get resolved after the notification and
-	// require any referenced features to be loaded into the model (and they might
-	// be in other files in the group).
+	// some cases where the files in the group depend on each other.
 	d_file_state.add_files(loaded_files);
 }
 

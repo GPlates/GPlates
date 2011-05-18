@@ -58,6 +58,9 @@ namespace GPlatesAppLogic
 				GPlatesGlobal::PointerTraits<ReconstructedFeatureGeometry>::non_null_ptr_type>
 						rfg_container_type;
 
+		typedef rfg_container_type::const_iterator const_iterator;
+
+
 		/**
 		 * Constructor.
 		 *
@@ -124,13 +127,13 @@ namespace GPlatesAppLogic
 			return d_found_rfgs.size();
 		}
 
-		rfg_container_type::const_iterator
+		const_iterator
 		found_rfgs_begin() const
 		{
 			return d_found_rfgs.begin();
 		}
 
-		rfg_container_type::const_iterator
+		const_iterator
 		found_rfgs_end() const
 		{
 			return d_found_rfgs.end();

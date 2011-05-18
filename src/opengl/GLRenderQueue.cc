@@ -37,13 +37,12 @@ GPlatesOpenGL::GLRenderQueue::GLRenderQueue() :
 	d_current_render_pass_depth(-1),
 	d_current_render_pass(NULL)
 {
+	push_render_pass();
 }
 
 
-GPlatesOpenGL::GLRenderOperationsTarget::non_null_ptr_type
-GPlatesOpenGL::GLRenderQueue::push_render_target(
-		const GLRenderTargetType::non_null_ptr_type &render_target_type,
-		const GLStateGraph::non_null_ptr_type &render_target_state_graph)
+void
+GPlatesOpenGL::GLRenderQueue::push_render_pass()
 {
 	++d_current_render_pass_depth;
 
@@ -55,14 +54,11 @@ GPlatesOpenGL::GLRenderQueue::push_render_target(
 
 	// Point to the next render pass.
 	d_current_render_pass = &*d_render_passes[d_current_render_pass_depth];
-
-	// Add the new render target onto the current render pass.
-	return d_current_render_pass->add_render_target(render_target_type, render_target_state_graph);
 }
 
 
 void
-GPlatesOpenGL::GLRenderQueue::pop_render_target()
+GPlatesOpenGL::GLRenderQueue::pop_render_pass()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_current_render_pass != NULL,

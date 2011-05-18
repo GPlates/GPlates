@@ -28,7 +28,6 @@
 #ifndef GPLATES_APPLOGIC_MOTIONPATHUTILS_H
 #define GPLATES_APPLOGIC_MOTIONPATHUTILS_H
 
-#include "app-logic/ReconstructionGeometryCollection.h"
 #include "app-logic/ReconstructionTree.h"
 #include "maths/PolylineOnSphere.h"
 #include "model/FeatureCollectionHandle.h"
@@ -44,9 +43,6 @@
 
 namespace GPlatesAppLogic
 {
-	class ReconstructionGeometryCollection;
-	class ReconstructionTree;
-
 	namespace MotionPathUtils
 	{
 

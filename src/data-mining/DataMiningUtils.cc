@@ -88,8 +88,8 @@ GPlatesDataMining::DataMiningUtils::shortest_distance(
 		//use (DEFAULT_RADIUS_OF_EARTH * PI) as range, so the distance can always be calculated.
 		IsCloseEnoughChecker checker((DEFAULT_RADIUS_OF_EARTH * PI), true);
 		DualGeometryVisitor< IsCloseEnoughChecker > dual_visitor(
-				*(geo->geometry()),
-				*(seed->geometry()),
+				*(geo->reconstructed_geometry()),
+				*(seed->reconstructed_geometry()),
 				&checker);
 		dual_visitor.apply();
 		boost::optional<double> tmp = checker.distance();

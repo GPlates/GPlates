@@ -30,8 +30,12 @@
 #include <cstdlib> // For std::size_t
 #include <opengl/OpenGL.h>
 
+#include "GLFrustum.h"
+#include "GLIntersectPrimitives.h"
 #include "GLTransform.h"
 
+#include "maths/CubeCoordinateFrame.h"
+#include "maths/PolygonOnSphere.h"
 #include "maths/UnitVector3D.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -52,24 +56,6 @@ namespace GPlatesOpenGL
 
 		//! A convenience typedef for a shared pointer to a const @a GLCubeSubdivision.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLCubeSubdivision> non_null_ptr_to_const_type;
-
-
-		/**
-		 * Identifies a face of the cube.
-		 *
-		 * These can be used as indices in your own arrays.
-		 */
-		enum CubeFaceType
-		{
-			POSITIVE_X = 0,
-			NEGATIVE_X,
-			POSITIVE_Y,
-			NEGATIVE_Y,
-			POSITIVE_Z,
-			NEGATIVE_Z,
-
-			NUM_FACES
-		};
 
 
 		/**
@@ -99,23 +85,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the projection matrix used to render a scene into a subdivision tile.
-		 *
-		 * @param level_of_detail represents the level of subdivision (0 means the whole cube face).
-		 * @param tile_u_offset represents the offset along the texture 'u' direction and
-		 *        must be in the range [0, 2^level_of_detail).
-		 * @param tile_v_offset represents the offset along the texture 'v' direction and
-		 *        must be in the range [0, 2^level_of_detail).
-		 */
-		GLTransform::non_null_ptr_to_const_type
-		get_projection_transform(
-				CubeFaceType cube_face,
-				unsigned int level_of_detail,
-				unsigned int tile_u_offset,
-				unsigned int tile_v_offset) const;
-
-
-		/**
 		 * Returns the view matrix used to render a scene into a subdivision tile.
 		 *
 		 * @param level_of_detail represents the level of subdivision (0 means the whole cube face).
@@ -126,7 +95,110 @@ namespace GPlatesOpenGL
 		 */
 		GLTransform::non_null_ptr_to_const_type
 		get_view_transform(
-				CubeFaceType cube_face,
+				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face) const;
+
+
+		/**
+		 * Returns the projection matrix used to render a scene into a subdivision tile.
+		 *
+		 * @param level_of_detail represents the level of subdivision (0 means the whole cube face).
+		 * @param tile_u_offset represents the offset along the texture 'u' direction and
+		 *        must be in the range [0, 2^level_of_detail).
+		 * @param tile_v_offset represents the offset along the texture 'v' direction and
+		 *        must be in the range [0, 2^level_of_detail).
+		 */
+		GLTransform::non_null_ptr_to_const_type
+		get_projection_transform(
+				unsigned int level_of_detail,
+				unsigned int tile_u_offset,
+				unsigned int tile_v_offset) const;
+
+
+		/**
+		 * Returns the six-plane frustum from the view-projection transform obtained from
+		 * @a get_view_transform and @a get_projection_transform.
+		 *
+		 * If you want to add in a model matrix also then better to use @a GLTransformState.
+		 */
+		GLFrustum
+		get_frustum(
+				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
+				unsigned int level_of_detail,
+				unsigned int tile_u_offset,
+				unsigned int tile_v_offset) const
+		{
+			return GLFrustum(
+					get_view_transform(cube_face)->get_matrix(),
+					get_projection_transform(level_of_detail, tile_u_offset, tile_v_offset)->get_matrix());
+		}
+
+
+		/**
+		 * Returns the polygon (on sphere) containing four great circle arcs that
+		 * bound the specified subdivision tile.
+		 *
+		 * The returned polygon is clockwise when viewed from above the surface of the sphere.
+		 *
+		 * Because the cube is a gnomic projection (displays all great circles as straight lines)
+		 * the projection of a subdivision frustum onto the sphere is bounded by four great
+		 * circle arcs which is a polygon.
+		 */
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+		get_bounding_polygon(
+				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
+				unsigned int level_of_detail,
+				unsigned int tile_u_offset,
+				unsigned int tile_v_offset) const;
+
+
+		/**
+		 * Returns the polygon (on sphere) containing four great circle arcs that
+		 * form the 'loose' bounds the specified subdivision tile.
+		 *
+		 * The loose bounds is the tile doubled in size (about the tile centre) on the plane
+		 * of the cube face.
+		 * In other words the tile size, on the cube face, is exactly double and the tile centre
+		 * is the same as the centre of the regular tile at the same location.
+		 * See class @a CubeQuadTreePartition for a detailed description on loose bounds.
+		 *
+		 * The returned polygon is clockwise when viewed from above the surface of the sphere.
+		 *
+		 * Because the cube is a gnomic projection (displays all great circles as straight lines)
+		 * the projection of a subdivision frustum onto the sphere is bounded by four great
+		 * circle arcs which is a polygon.
+		 */
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+		get_loose_bounding_polygon(
+				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
+				unsigned int level_of_detail,
+				unsigned int tile_u_offset,
+				unsigned int tile_v_offset) const;
+
+
+		/**
+		 * Returns the oriented bounding box (OBB) containing four great circle arcs that bound
+		 * the specified subdivision tile and the area inside them on the surface of the globe.
+		 */
+		GLIntersect::OrientedBoundingBox
+		get_oriented_bounding_box(
+				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
+				unsigned int level_of_detail,
+				unsigned int tile_u_offset,
+				unsigned int tile_v_offset) const;
+
+
+		/**
+		 * Returns the loose oriented bounding box (OBB) formed from the specified tile, but
+		 * with the tile doubled in size (about the tile centre) on the plane of the cube face.
+		 *
+		 * In other words the tile size, on the cube face, is exactly double and the tile centre
+		 * is the same as the centre of the regular tile at the same location.
+		 *
+		 * See class @a CubeQuadTreePartition for a detailed description on loose bounds.
+		 */
+		GLIntersect::OrientedBoundingBox
+		get_loose_oriented_bounding_box(
+				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
 				unsigned int level_of_detail,
 				unsigned int tile_u_offset,
 				unsigned int tile_v_offset) const;
@@ -142,17 +214,6 @@ namespace GPlatesOpenGL
 		}
 
 	private:
-		/**
-		 * Standard directions used by 3D graphics APIs for cube map textures so we'll adopt
-		 * the same convention.
-		 */
-		static const GPlatesMaths::UnitVector3D UV_FACE_DIRECTIONS[6][2];
-
-		/**
-		 * The normal vectors pointing outwards from each face.
-		 */
-		static const GPlatesMaths::UnitVector3D FACE_NORMALS[6];
-
 		/**
 		 * The dimensions of a subdivision tile in texels.
 		 */
@@ -172,6 +233,12 @@ namespace GPlatesOpenGL
 			d_near(zNear),
 			d_far(zFar)
 		{  }
+
+
+		static
+		GLIntersect::OrientedBoundingBox
+		create_oriented_bounding_box(
+				const GPlatesMaths::Vector3D face_corner_points[]);
 	};
 }
 

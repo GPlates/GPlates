@@ -31,7 +31,8 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/Layer.h"
-#include "app-logic/ReconstructLayerTaskParams.h"
+#include "app-logic/ReconstructLayerTask.h"
+#include "app-logic/ReconstructParams.h"
 
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
@@ -58,10 +59,13 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::populate(
 
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
 	{
-		// Acquire a pointer to a @a ReconstructLayerTaskParams.
+		// Acquire a pointer to a @a ReconstructParams.
+		// NOTE: Make sure we get a 'const' pointer to the reconstruct layer task params
+		// otherwise it will think we are modifying it which will mean the reconstruct
+		// layer will think it needs to regenerate its reconstructed feature geometries.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::ReconstructLayerTaskParams *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::ReconstructLayerTaskParams *>(
+		const GPlatesAppLogic::ReconstructLayerTask::Params *layer_task_params =
+			dynamic_cast<const GPlatesAppLogic::ReconstructLayerTask::Params *>(
 					&layer.get_layer_task_params());
 		if (!layer_task_params)
 		{
@@ -78,28 +82,29 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::populate(
 		}
 
 		// Handle visibility setting.
-		GPlatesAppLogic::ReconstructLayerTaskParams::VGPVisibilitySetting visibility_setting =
-			layer_task_params->get_vgp_visibility_setting();
+		GPlatesAppLogic::ReconstructParams::VGPVisibilitySetting visibility_setting =
+			layer_task_params->get_reconstruct_params().get_vgp_visibility_setting();
 		switch (visibility_setting)
 		{
-			case GPlatesAppLogic::ReconstructLayerTaskParams::ALWAYS_VISIBLE:
+			case GPlatesAppLogic::ReconstructParams::ALWAYS_VISIBLE:
 				radiobutton_always_visible->setChecked(true);
 				handle_always_visible();
 				break;
 
-			case GPlatesAppLogic::ReconstructLayerTaskParams::TIME_WINDOW:
+			case GPlatesAppLogic::ReconstructParams::TIME_WINDOW:
 				radiobutton_time_window->setChecked(true);
 				handle_time_window();
 				break;
 
-			case GPlatesAppLogic::ReconstructLayerTaskParams::DELTA_T_AROUND_AGE:
+			case GPlatesAppLogic::ReconstructParams::DELTA_T_AROUND_AGE:
 				radiobutton_delta_t_around_age->setChecked(true);
 				handle_delta_t();
 				break;
 		}
 
 		// Handle earliest and latest times.
-		const GPlatesPropertyValues::GeoTimeInstant &begin_time = layer_task_params->get_vgp_earliest_time();
+		const GPlatesPropertyValues::GeoTimeInstant &begin_time =
+				layer_task_params->get_reconstruct_params().get_vgp_earliest_time();
 		if (begin_time.is_distant_past())
 		{
 			spinbox_begin->setValue(0.0);
@@ -111,7 +116,8 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::populate(
 			spinbox_begin->setValue(begin_value);
 			checkbox_past->setChecked(false);
 		}
-		const GPlatesPropertyValues::GeoTimeInstant &end_time = layer_task_params->get_vgp_latest_time();
+		const GPlatesPropertyValues::GeoTimeInstant &end_time =
+				layer_task_params->get_reconstruct_params().get_vgp_latest_time();
 		if (end_time.is_distant_future())
 		{
 			spinbox_end->setValue(0.0);
@@ -125,7 +131,7 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::populate(
 		}
 
 		// Handle delta t.
-		spinbox_delta->setValue(layer_task_params->get_vgp_delta_t());
+		spinbox_delta->setValue(layer_task_params->get_reconstruct_params().get_vgp_delta_t());
 
 		// Handle circular error.
 		checkbox_error->setChecked(visual_layer_params->get_vgp_draw_circular_error());
@@ -185,10 +191,10 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
-		// Acquire a pointer to a @a ReconstructLayerTaskParams.
+		// Acquire a pointer to a @a ReconstructParams.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::ReconstructLayerTaskParams *layer_task_params =
-			dynamic_cast<GPlatesAppLogic::ReconstructLayerTaskParams *>(
+		GPlatesAppLogic::ReconstructLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::ReconstructLayerTask::Params *>(
 					&layer.get_layer_task_params());
 		if (!layer_task_params)
 		{
@@ -207,32 +213,32 @@ GPlatesQtWidgets::SetVGPVisibilityDialog::handle_apply()
 		// Handle visibility setting.
 		if (radiobutton_always_visible->isChecked())
 		{
-			layer_task_params->set_vgp_visibility_setting(
-					GPlatesAppLogic::ReconstructLayerTaskParams::ALWAYS_VISIBLE);
+			layer_task_params->get_reconstruct_params().set_vgp_visibility_setting(
+					GPlatesAppLogic::ReconstructParams::ALWAYS_VISIBLE);
 		}
 		else if (radiobutton_time_window->isChecked())
 		{
-			layer_task_params->set_vgp_visibility_setting(
-					GPlatesAppLogic::ReconstructLayerTaskParams::TIME_WINDOW);
+			layer_task_params->get_reconstruct_params().set_vgp_visibility_setting(
+					GPlatesAppLogic::ReconstructParams::TIME_WINDOW);
 		}
 		else if (radiobutton_delta_t_around_age->isChecked())
 		{
-			layer_task_params->set_vgp_visibility_setting(
-					GPlatesAppLogic::ReconstructLayerTaskParams::DELTA_T_AROUND_AGE);
+			layer_task_params->get_reconstruct_params().set_vgp_visibility_setting(
+					GPlatesAppLogic::ReconstructParams::DELTA_T_AROUND_AGE);
 		}
 
 		// Handle earliest and latest times.
 		GPlatesPropertyValues::GeoTimeInstant begin_time = checkbox_past->isChecked() ?
 			GPlatesPropertyValues::GeoTimeInstant::create_distant_past() :
 			GPlatesPropertyValues::GeoTimeInstant(spinbox_begin->value());
-		layer_task_params->set_vgp_earliest_time(begin_time);
+		layer_task_params->get_reconstruct_params().set_vgp_earliest_time(begin_time);
 		GPlatesPropertyValues::GeoTimeInstant end_time = checkbox_future->isChecked() ?
 			GPlatesPropertyValues::GeoTimeInstant::create_distant_future() :
 			GPlatesPropertyValues::GeoTimeInstant(spinbox_end->value());
-		layer_task_params->set_vgp_latest_time(end_time);
+		layer_task_params->get_reconstruct_params().set_vgp_latest_time(end_time);
 
 		// Handle delta t.
-		layer_task_params->set_vgp_delta_t(spinbox_delta->value());
+		layer_task_params->get_reconstruct_params().set_vgp_delta_t(spinbox_delta->value());
 
 		// Handle circular error.
 		if (visual_layer_params->get_vgp_draw_circular_error() != checkbox_error->isChecked())

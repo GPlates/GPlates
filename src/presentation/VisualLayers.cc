@@ -54,8 +54,8 @@ GPlatesPresentation::VisualLayers::VisualLayers(
 	connect_to_application_state_signals();
 
 	// Go through the reconstruct graph and add all the existing layers, if any.
-	const GPlatesAppLogic::ReconstructGraph &reconstruct_graph = application_state.get_reconstruct_graph();
-	BOOST_FOREACH(const GPlatesAppLogic::Layer &layer, reconstruct_graph)
+	GPlatesAppLogic::ReconstructGraph &reconstruct_graph = application_state.get_reconstruct_graph();
+	BOOST_FOREACH(GPlatesAppLogic::Layer layer, reconstruct_graph)
 	{
 		add_layer(layer);
 	}
@@ -289,7 +289,7 @@ GPlatesPresentation::VisualLayers::handle_layer_added(
 
 void
 GPlatesPresentation::VisualLayers::add_layer(
-		const GPlatesAppLogic::Layer &layer)
+		GPlatesAppLogic::Layer &layer)
 {
 	// Work out where the new layer should go.
 	std::size_t new_index = get_index_of_new_layer(static_cast<VisualLayerType::Type>(layer.get_type()));;
@@ -474,7 +474,7 @@ GPlatesPresentation::VisualLayers::create_rendered_geometries()
 
 GPlatesPresentation::VisualLayers::visual_layer_ptr_type
 GPlatesPresentation::VisualLayers::create_visual_layer(
-		const GPlatesAppLogic::Layer &layer)
+		GPlatesAppLogic::Layer &layer)
 {
 	// Create a new visual layer.
 	boost::shared_ptr<VisualLayer> visual_layer(

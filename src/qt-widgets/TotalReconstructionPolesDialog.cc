@@ -42,7 +42,9 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/Layer.h"
+#include "app-logic/LayerProxyUtils.h"
 #include "app-logic/LayerTaskType.h"
+#include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeEdge.h"
 
@@ -596,15 +598,18 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::update()
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
 		typedef GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_ptr_type;
-		boost::optional<reconstruction_tree_ptr_type> reconstruction_tree =
-			layer.get_output_data<reconstruction_tree_ptr_type>();
-
-		if (reconstruction_tree)
+		boost::optional<GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type>
+				reconstruction_tree_layer_proxy = layer.get_layer_output<
+						GPlatesAppLogic::ReconstructionLayerProxy>();
+		if (reconstruction_tree_layer_proxy)
 		{
-			fill_equivalent_table(**reconstruction_tree);
-			fill_relative_table(**reconstruction_tree);
-			fill_reconstruction_tree(**reconstruction_tree);
-			fill_circuit_tree(**reconstruction_tree);
+			reconstruction_tree_ptr_type reconstruction_tree =
+					reconstruction_tree_layer_proxy.get()->get_reconstruction_tree();
+
+			fill_equivalent_table(*reconstruction_tree);
+			fill_relative_table(*reconstruction_tree);
+			fill_reconstruction_tree(*reconstruction_tree);
+			fill_circuit_tree(*reconstruction_tree);
 		}
 
 		d_curr_visual_layer = visual_layer;

@@ -289,11 +289,18 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_file(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
+	// Block any calls to 'ApplicationState::reconstruct()' because we're going to
+	// call it at the end of this method.
+	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			d_view_state.get_application_state());
+
 	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it =
 			action_widget_ptr->get_file_reference();
 	
 	d_gui_file_io_feedback_ptr->reload_file(file_it);
-	d_view_state.get_application_state().reconstruct();
+
+	// Make sure 'ApplicationState::reconstruct()' gets called when all scopes exit.
+	scoped_reconstruct_guard.call_reconstruct_on_scope_exit();
 }
 
 

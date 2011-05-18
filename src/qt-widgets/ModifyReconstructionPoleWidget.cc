@@ -35,6 +35,8 @@
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/LayerProxyUtils.h"
+#include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
 
@@ -713,53 +715,60 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 	display_collection(plate_id_collection);	
 #endif
 
+	//
 	// Iterate over all the reconstruction geometries that were reconstructed using the same
 	// reconstruction tree as the focused feature geometry.
-	GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator iter =
-			d_application_state_ptr->get_current_reconstruction().begin_reconstruction_geometries(
-					*d_reconstruction_tree);
-	GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator end =
-			d_application_state_ptr->get_current_reconstruction().end_reconstruction_geometries(
-					*d_reconstruction_tree);
-	for ( ; iter != end; ++iter)
+	//
+
+	// Get the layer outputs.
+	const GPlatesAppLogic::Reconstruction::layer_output_seq_type &layer_outputs =
+			d_application_state_ptr->get_current_reconstruction().get_active_layer_outputs();
+
+	// Find those layer outputs that come from a reconstruct layer.
+	std::vector<GPlatesAppLogic::ReconstructLayerProxy *> reconstruct_outputs;
+	if (GPlatesAppLogic::LayerProxyUtils::get_layer_proxy_derived_type_sequence(
+			layer_outputs.begin(), layer_outputs.end(), reconstruct_outputs))
 	{
-		/**
-		 * FIXME: The following check should not be necessary, as the iterator, if it
-		 * has not reached the end, should always be valid. Remove this once we figure
-		 * out why GPlates keeps crashing...
-		 */
-		if ( ! iter.is_valid())
-		{
-			std::cerr << "Invalid iterator in ModifyReconstructionPoleWidget::populate_initial_geometries!" << std::endl;
-			continue;
-		}
-
-		const GPlatesAppLogic::ReconstructionGeometry *rg = (*iter).get();
-
-		// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
+		// Iterate over the *reconstruct* layers because...
+		// ...we're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
 		// for instance, are used to assign plate ids to regular features so we probably only
 		// want to look at geometries of regular features).
 		// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
 		// from ReconstructedFeatureGeometry.
-		boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
-				GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-						const GPlatesAppLogic::ReconstructedFeatureGeometry>(rg);
-		if (!rfg)
+		BOOST_FOREACH(
+				GPlatesAppLogic::ReconstructLayerProxy *reconstruct_layer_proxy,
+				reconstruct_outputs)
 		{
-			continue;
-		}
+			// Get the reconstructed feature geometries from the current layer.
+			typedef std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> rfg_seq_type;
+			rfg_seq_type reconstructed_feature_geometries;
+			reconstruct_layer_proxy->get_reconstructed_feature_geometries(reconstructed_feature_geometries);
 
-		// It's an RFG, so let's look at its reconstruction plate ID property (if
-		// there is one).
-		if (rfg.get()->reconstruction_plate_id())
-		{
-			// OK, so the RFG *does* have a reconstruction plate ID.
-			GPlatesModel::integer_plate_id_type rfg_plate_id = *rfg.get()->reconstruction_plate_id();
-			if (std::find(plate_id_collection.begin(), plate_id_collection.end(), rfg_plate_id) !=
-				plate_id_collection.end())
+			// Iterate over the RFGs.
+			for (rfg_seq_type::const_iterator rfg_iter = reconstructed_feature_geometries.begin();
+				rfg_iter != reconstructed_feature_geometries.end();
+				++rfg_iter)
 			{
-				d_reconstructed_feature_geometries.push_back(
-						rfg.get()->get_non_null_pointer_to_const());
+				const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
+
+				// Make sure the current RFG was created from the same reconstruction tree as
+				// the focused geometry.
+				if (rfg->reconstruction_tree() != *d_reconstruction_tree)
+				{
+					continue;
+				}
+
+				// It's an RFG, so let's look at its reconstruction plate ID property (if there is one).
+				if (rfg->reconstruction_plate_id())
+				{
+					// OK, so the RFG *does* have a reconstruction plate ID.
+					GPlatesModel::integer_plate_id_type rfg_plate_id = rfg->reconstruction_plate_id().get();
+					if (std::find(plate_id_collection.begin(), plate_id_collection.end(), rfg_plate_id) !=
+						plate_id_collection.end())
+					{
+						d_reconstructed_feature_geometries.push_back(rfg->get_non_null_pointer_to_const());
+					}
+				}
 			}
 		}
 	}
@@ -814,11 +823,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 	// at the moment, so we can't pass it to the Renderer, so any symbols will just
 	// get rendered as regular point-on-spheres.
 	GPlatesPresentation::ReconstructionGeometryRenderer initial_geometry_renderer(
-			*d_initial_geom_layer_ptr,
 			render_style_params,
 			white_colour,
 			boost::none,
 			boost::none);
+
+	initial_geometry_renderer.begin_render();
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();
@@ -829,6 +839,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 		// Visit the RFG with the renderer.
 		(*rfg_iter)->accept_visitor(initial_geometry_renderer);
 	}
+
+	initial_geometry_renderer.end_render(*d_initial_geom_layer_ptr);
 }
 
 
@@ -865,11 +877,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 	// This creates the RenderedGeometry's from the ReconstructedFeatureGeomtries
 	// using the colour 'silver_colour' and rotates geometries in the RFGs.
 	GPlatesPresentation::ReconstructionGeometryRenderer dragged_geometry_renderer(
-			*d_dragged_geom_layer_ptr,
 			render_style_params,
 			silver_colour,
 			d_accum_orientation->rotation(),
 			boost::none);
+
+	dragged_geometry_renderer.begin_render();
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();
@@ -880,6 +893,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 		// Visit the RFG with the renderer.
 		(*rfg_iter)->accept_visitor(dragged_geometry_renderer);
 	}
+
+	dragged_geometry_renderer.end_render(*d_dragged_geom_layer_ptr);
 }
 
 

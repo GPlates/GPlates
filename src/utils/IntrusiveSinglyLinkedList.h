@@ -37,6 +37,11 @@ namespace GPlatesUtils
 	 * A low-level intrusive singly-linked list to be used only where speed and
 	 * memory efficiency are required (otherwise a 'std::list' should be sufficient).
 	 *
+	 * NOTE: This list supports tail-sharing between lists - that is, multiple lists can share
+	 * the same common tail sequence of elements - all methods support this.
+	 * This can be useful when traversing a directed-acyclic graph structure and maintaining
+	 * a list of ancestors for each node in the graph.
+	 *
 	 * This class is designed to use minimal memory and only supports some basic list operations
 	 * and forward iteration over the list.
 	 *
@@ -61,7 +66,7 @@ namespace GPlatesUtils
 	 * from Node more than once - and should use different types for NodeTag to distinguish
 	 * between the lists.
 	 *
-	 * An example where an list node element is added to two different lists:
+	 * An example where a list node element is added to two different lists:
 	 *
 	 *   struct ElementNode :
 	 *      public IntrusiveSinglyLinkedList<ElementNode, FirstListTag>::Node,
@@ -115,6 +120,7 @@ namespace GPlatesUtils
 				public boost::forward_iteratable<Iterator<ElementNodeQualifiedType>, ElementNodeQualifiedType *>
 		{
 		public:
+			explicit
 			Iterator(
 					ElementNodeQualifiedType *node = NULL) :
 				d_node(node)
@@ -140,7 +146,7 @@ namespace GPlatesUtils
 				// Use "IntrusiveSinglyLinkedList<ElementNodeQualifiedType,NodeTag>::Node::" to pick the correct
 				// base class in case ElementNodeType inherits from more than once
 				// Node bass class (ie, is in more than one list).
-				d_node = d_node->IntrusiveSinglyLinkedList<ElementNodeQualifiedType, NodeTag>
+				d_node = d_node->IntrusiveSinglyLinkedList<ElementNodeType, NodeTag>
 						::Node::get_next_node();
 				return *this;
 			}
@@ -163,12 +169,45 @@ namespace GPlatesUtils
 		typedef Iterator<ElementNodeType> iterator;
 
 		//! Typedef for const iterator.
-		typedef Iterator< boost::add_const<ElementNodeType> > const_iterator;
+		typedef Iterator< typename boost::add_const<ElementNodeType>::type > const_iterator;
 
 
 		IntrusiveSinglyLinkedList() :
 			d_list(NULL)
 		{  }
+
+
+		/**
+		 * Copy constructor.
+		 *
+		 * NOTE: This shares (tail shares) the same elements as @a other_list.
+		 * Subsequent pushing and popping elements from either list will not affect
+		 * the other list. Although the memory management of the shared nodes is still
+		 * the responsibility of the caller.
+		 */
+		explicit
+		IntrusiveSinglyLinkedList(
+				const IntrusiveSinglyLinkedList &other_list) :
+			d_list(other_list.d_list)
+		{  }
+
+
+		/**
+		 * Assignment operator.
+		 *
+		 * This behaves like the copy constructor in that both lists tail share elements.
+		 *
+		 * It is the caller's responsibility to manage the memory of any elements referenced
+		 * by this list before assignment. For example, the previous elements might no longer be
+		 * referenced by anyone and then be released or reused.
+		 */
+		IntrusiveSinglyLinkedList &
+		operator=(
+				const IntrusiveSinglyLinkedList &other_list)
+		{
+			d_list = other_list.d_list;
+			return *this;
+		}
 
 
 		/**

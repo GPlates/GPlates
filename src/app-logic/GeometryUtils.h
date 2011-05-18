@@ -92,6 +92,17 @@ namespace GPlatesAppLogic
 		get_geometry_end_points(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 				bool reverse_points = false);
+
+
+		/**
+		 * Returns the small circle that bounds the specified geometry.
+		 *
+		 * Returns boost::none if the geometry is a @a PointOnSphere otherwise it returns
+		 * a valid bounding small circle.
+		 */
+		boost::optional<const GPlatesMaths::BoundingSmallCircle &>
+		get_geometry_bounding_small_circle(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
 		
 
 		/**

@@ -40,6 +40,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
+#include "maths/CubeQuadTreePartition.h"
+#include "maths/CubeQuadTreePartitionUtils.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
 #include "maths/types.h"
@@ -61,6 +63,10 @@ namespace GPlatesViewOperations
 	public:
 		//! Convenience typedef for rendered geometry index.
 		typedef RenderedGeometryLayer::rendered_geometry_index_type rendered_geometry_index_type;
+
+		//! Convenience typedef for rendered geometries spatial partition.
+		typedef RenderedGeometryLayer::rendered_geometries_spatial_partition_type
+				rendered_geometries_spatial_partition_type;
 
 		virtual
 		~RenderedGeometryLayerImpl()
@@ -85,9 +91,18 @@ namespace GPlatesViewOperations
 				rendered_geometry_index_type) const = 0;
 
 		virtual
+		boost::optional<const rendered_geometries_spatial_partition_type &>
+		get_rendered_geometries() const = 0;
+
+		virtual
 		void
 		add_rendered_geometry(
 				RenderedGeometry) = 0;
+
+		virtual
+		void
+		add_rendered_geometries(
+				const rendered_geometries_spatial_partition_type::non_null_ptr_type &rendered_geometries_spatial_partition) = 0;
 
 		virtual
 		void
@@ -105,6 +120,10 @@ namespace GPlatesViewOperations
 				public RenderedGeometryLayerImpl
 		{
 		public:
+			ZoomIndependentLayerImpl() :
+				d_is_rendered_geom_seq_valid(true)
+			{  }
+
 			virtual
 			void
 			set_viewport_zoom_factor(
@@ -117,7 +136,14 @@ namespace GPlatesViewOperations
 			bool
 			is_empty() const
 			{
-				return d_rendered_geom_seq.empty();
+				if (d_is_rendered_geom_seq_valid)
+				{
+					// All rendered geoms are in the sequence.
+					return d_rendered_geom_seq.empty();
+				}
+
+				// All rendered geoms are in the spatial partition.
+				return d_spatial_partition.get()->empty();
 			}
 
 
@@ -125,7 +151,14 @@ namespace GPlatesViewOperations
 			unsigned int
 			get_num_rendered_geometries() const
 			{
-				return d_rendered_geom_seq.size();
+				if (d_is_rendered_geom_seq_valid)
+				{
+					// All rendered geoms are in the sequence.
+					return d_rendered_geom_seq.size();
+				}
+
+				// All rendered geoms are in the spatial partition.
+				return d_spatial_partition.get()->size();
 			}
 
 			virtual
@@ -133,12 +166,30 @@ namespace GPlatesViewOperations
 			get_rendered_geometry(
 					rendered_geometry_index_type rendered_geom_index) const
 			{
-#if 0
- 				GPlatesGlobal::Assert(rendered_geom_index < d_rendered_geom_seq.size(),
- 						GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
-#endif
+				if (d_is_rendered_geom_seq_valid)
+				{
+					// All rendered geoms are in the sequence.
+					return d_rendered_geom_seq[rendered_geom_index];
+				}
 
+				// Copy from spatial partition to our internal sequence.
+				copy_spatial_partition_to_rendered_geometries_sequence();
+
+				// All rendered geoms are now in the sequence.
 				return d_rendered_geom_seq[rendered_geom_index];
+			}
+
+
+			virtual
+			boost::optional<const rendered_geometries_spatial_partition_type &>
+			get_rendered_geometries() const
+			{
+				if (!d_spatial_partition)
+				{
+					return boost::none;
+				}
+
+				return *d_spatial_partition.get();
 			}
 
 
@@ -147,7 +198,67 @@ namespace GPlatesViewOperations
 			add_rendered_geometry(
 					RenderedGeometry rendered_geom)
 			{
+				if (d_spatial_partition)
+				{
+					// We don't have any spatial extents for the rendered geometry so just add it
+					// to the root of the entire spatial partition.
+					d_spatial_partition.get()->add_unpartitioned(rendered_geom);
+
+					// Now that we're adding to the spatial partition we're invalidating
+					// the render geometries sequence.
+					d_is_rendered_geom_seq_valid = false;
+
+					return;
+				}
+
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						d_is_rendered_geom_seq_valid,
+						GPLATES_ASSERTION_SOURCE);
+
 				d_rendered_geom_seq.push_back(rendered_geom);
+			}
+
+
+			virtual
+			void
+			add_rendered_geometries(
+					const rendered_geometries_spatial_partition_type::non_null_ptr_type &spatial_partition)
+			{
+				// If first time we've added a spatial partition then add all the
+				// rendered geometries in the sequence to the new spatial partition.
+				if (!d_spatial_partition)
+				{
+					// Iterate over the rendered geometries in our sequence.
+					rendered_geom_seq_type::const_iterator rendered_geoms_iter =
+							d_rendered_geom_seq.begin();
+					const rendered_geom_seq_type::const_iterator rendered_geoms_end =
+							d_rendered_geom_seq.end();
+					for ( ; rendered_geoms_iter != rendered_geoms_end; ++rendered_geoms_iter)
+					{
+						const RenderedGeometry &rendered_geometry = *rendered_geoms_iter;
+
+						// Add to the root of the spatial partition (since have no spatial extent info).
+						spatial_partition->add_unpartitioned(rendered_geometry);
+					}
+
+					// Set our partition to the new one - we are now the owner.
+					d_spatial_partition = spatial_partition;
+
+					// Delay iterating over the spatial partition and adding its rendered geometries
+					// to our std::vector - clients may never need it in which case it would've
+					// been wasted effort. This is fairly common when a layer is rendered by visiting
+					// its spatial tree instead of retrieving the rendered geometries sequentially.
+					d_is_rendered_geom_seq_valid = false;
+				}
+				else // Not the first time we've added a spatial partition since the last clear...
+				{
+					// Merge the new spatial partition into the current one.
+					GPlatesMaths::CubeQuadTreePartitionUtils::merge(
+							*d_spatial_partition.get(),
+							*spatial_partition);
+
+					d_is_rendered_geom_seq_valid = false;
+				}
 			}
 
 
@@ -156,13 +267,39 @@ namespace GPlatesViewOperations
 			clear_rendered_geometries()
 			{
 				d_rendered_geom_seq.clear();
+				d_spatial_partition = boost::none;
+				d_is_rendered_geom_seq_valid = true;
 			}
 
 		private:
 			//! Typedef for sequence of @a RenderedGeometry objects.
 			typedef std::vector<RenderedGeometry> rendered_geom_seq_type;
 
-			rendered_geom_seq_type d_rendered_geom_seq;
+			mutable rendered_geom_seq_type d_rendered_geom_seq;
+			boost::optional<rendered_geometries_spatial_partition_type::non_null_ptr_type> d_spatial_partition;
+			mutable bool d_is_rendered_geom_seq_valid;
+
+
+			void
+			copy_spatial_partition_to_rendered_geometries_sequence() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						!d_is_rendered_geom_seq_valid && d_spatial_partition,
+						GPLATES_ASSERTION_SOURCE);
+
+				// Iterate over the cube quad tree and add the rendered geometries to our
+				// internal std::vector sequence.
+				d_rendered_geom_seq.clear();
+				d_rendered_geom_seq.reserve(d_spatial_partition.get()->size());
+				rendered_geometries_spatial_partition_type::const_iterator rendered_geoms_iter =
+						d_spatial_partition.get()->get_iterator();
+				for ( ; !rendered_geoms_iter.finished(); rendered_geoms_iter.next())
+				{
+					d_rendered_geom_seq.push_back(rendered_geoms_iter.get_element());
+				}
+
+				d_is_rendered_geom_seq_valid = true;
+			}
 		};
 
 
@@ -340,6 +477,33 @@ namespace GPlatesViewOperations
 			}
 
 
+			virtual
+			boost::optional<const rendered_geometries_spatial_partition_type &>
+			get_rendered_geometries() const
+			{
+				return boost::none;
+			}
+
+
+			virtual
+			void
+			add_rendered_geometries(
+					const rendered_geometries_spatial_partition_type::non_null_ptr_type &rendered_geometries_spatial_partition)
+			{
+				// We can't make use of the spatial partition since we're discarding some
+				// rendered geometries (only keeping one per zoom-dependent sampling bin).
+				// So we iterate over the rendered geometries in the spatial partition and
+				// add using our 'add_rendered_geometry' interface.
+
+				rendered_geometries_spatial_partition_type::const_iterator rendered_geoms_iter =
+						rendered_geometries_spatial_partition->get_iterator();
+				for ( ; !rendered_geoms_iter.finished(); rendered_geoms_iter.next())
+				{
+					add_rendered_geometry(rendered_geoms_iter.get_element());
+				}
+			}
+
+
 		private:
 			//! Typedef for sequence of zoom-independent @a RenderedGeometry objects.
 			typedef std::vector<RenderedGeometry> zoom_independent_seq_type;
@@ -484,6 +648,21 @@ GPlatesViewOperations::RenderedGeometryLayer::clear_rendered_geometries()
 #if 0
 	}
 #endif
+}
+
+
+boost::optional<const GPlatesViewOperations::RenderedGeometryLayer::rendered_geometries_spatial_partition_type &>
+GPlatesViewOperations::RenderedGeometryLayer::get_rendered_geometries() const
+{
+	return d_impl->get_rendered_geometries();
+}
+
+
+void
+GPlatesViewOperations::RenderedGeometryLayer::add_rendered_geometries(
+		const rendered_geometries_spatial_partition_type::non_null_ptr_type &rendered_geometries_spatial_partition)
+{
+	d_impl->add_rendered_geometries(rendered_geometries_spatial_partition);
 }
 
 

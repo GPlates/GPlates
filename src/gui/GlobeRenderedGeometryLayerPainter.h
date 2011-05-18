@@ -42,17 +42,24 @@
 #include "TextRenderer.h"
 #include "RenderSettings.h"
 
+#include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
 #include "maths/Vector3D.h"
 
-#include "opengl/GLRenderGraphInternalNode.h"
+#include "opengl/GLCubeSubdivisionCache.h"
 #include "opengl/GLStreamPrimitives.h"
+#include "opengl/GLTransformState.h"
 #include "opengl/GLUNurbsRenderer.h"
-#include "opengl/Vertex.h"
+#include "opengl/GLVertex.h"
 
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryVisitor.h"
 
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
 
 namespace GPlatesViewOperations
 {
@@ -96,7 +103,7 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &rendered_layer_node);
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		void
 		set_scale(
@@ -106,9 +113,6 @@ namespace GPlatesGui
 		}
 
 	private:
-
-		typedef GPlatesOpenGL::Vertex vertex_type;
-	
 		virtual
 		void
 		visit_rendered_arrowed_polyline(
@@ -180,7 +184,13 @@ namespace GPlatesGui
 		visit_rendered_triangle_symbol(
 				 const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol);
 
+		//! Typedef for a rendered geometries spatial partition.
+		typedef GPlatesMaths::CubeQuadTreePartition<GPlatesViewOperations::RenderedGeometry>
+				rendered_geometries_spatial_partition_type;
 
+		//! Typedef for a coloured vertex.
+		typedef GPlatesOpenGL::GLColouredVertex vertex_type;
+	
 		//! Typedef for a sequence of drawables.
 		typedef std::vector<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> drawable_seq_type;
 
@@ -243,12 +253,11 @@ namespace GPlatesGui
 
 			
 			/**
-			 * Adds all drawables for all primitives types as child render graph nodes
-			 * to @a render_graph_parent_node.
+			 * Paints all drawables for all primitives types.
 			 */
 			void
-			add_drawables(
-					GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_parent_node);
+			paint_drawables(
+					GPlatesOpenGL::GLRenderer &renderer);
 
 		private:
 			/**
@@ -284,20 +293,20 @@ namespace GPlatesGui
 			GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type d_quad_drawables;
 
 			void
-			add_points_drawable(
+			paint_points_drawable(
+					GPlatesOpenGL::GLRenderer &renderer,
 					float point_size,
-					const GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type &points_drawable,
-					GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_parent_node);
+					const GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type &points_drawable);
 
 			boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type>
 			get_lines_drawable(
 					LineDrawables &line_drawables);
 
 			void
-			add_lines_drawable(
+			paint_lines_drawable(
+					GPlatesOpenGL::GLRenderer &renderer,
 					float line_width,
-					const GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type &lines_drawable,
-					GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_parent_node);
+					const GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type &lines_drawable);
 		};
 
 
@@ -307,21 +316,24 @@ namespace GPlatesGui
 		class PaintParams
 		{
 		public:
+			explicit
 			PaintParams(
-					const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &
-							raster_primitives_on_the_sphere_node_,
-					const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &
-							text_off_the_sphere_node_) :
-				raster_primitives_on_the_sphere_node(raster_primitives_on_the_sphere_node_),
-				text_off_the_sphere_node(text_off_the_sphere_node_)
+					GPlatesOpenGL::GLRenderer &renderer_) :
+				renderer(&renderer_)
 			{  }
+
+
+			void
+			paint_text_off_the_sphere();
+
+
+			GPlatesOpenGL::GLRenderer *renderer;
 
 			PointLinePolygonDrawables drawables_off_the_sphere;
 			PointLinePolygonDrawables opaque_drawables_on_the_sphere;
 			PointLinePolygonDrawables translucent_drawables_on_the_sphere;
 
-			GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type raster_primitives_on_the_sphere_node;
-			GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type text_off_the_sphere_node;
+			drawable_seq_type text_off_the_sphere;
 		};
 
 
@@ -360,33 +372,43 @@ namespace GPlatesGui
 		static const float LINE_WIDTH_ADJUSTMENT;
 
 		/**
-		 * Visit each rendered geometry in our sequence.
+		 * Visit each rendered geometry in our sequence (or spatial partition).
 		 */
 		void
-		visit_rendered_geoms();
+		visit_rendered_geometries(
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		void
-		set_state_for_primitives_off_the_sphere(
-				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+		render_spatial_partition(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition);
 
 		void
-		set_state_for_non_raster_primitives_on_the_sphere(
-				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+		render_spatial_partition_quad_tree(
+				const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition,
+				rendered_geometries_spatial_partition_type::const_node_reference_type quad_tree_node,
+				PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type &cube_subdivision_loose_bounds,
+				const PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type::node_reference_type &loose_bounds_node,
+				const GPlatesOpenGL::GLFrustum &frustum_planes,
+				boost::uint32_t frustum_plane_mask);
 
-		void
-		set_state_for_raster_primitives_on_the_sphere(
-				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+		get_state_for_primitives_off_the_sphere();
 
-		void
-		set_state_for_text_off_the_sphere(
-				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+		get_state_for_non_raster_primitives_on_the_sphere();
+
+		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+		get_state_for_raster_primitives_on_the_sphere() const;
+
+		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+		get_state_for_text_off_the_sphere();
 
 		/**
 		 * Sets up alpha-blending and point/line anti-aliasing state.
 		 */
-		void
-		set_translucent_state(
-				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+		get_translucent_state();
 
 		/**
 		 * Determines the colour of a RenderedGeometry type using d_colour_scheme

@@ -73,7 +73,7 @@ namespace
 		visit_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
-			d_area = GPlatesMaths::SphericalArea::calculate_polygon_area(*polygon_on_sphere).dval() * d_radius * d_radius;
+			d_area = polygon_on_sphere->get_area().dval() * d_radius * d_radius;
 		}
 
 		const boost::optional<double> &

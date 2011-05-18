@@ -31,6 +31,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/ReconstructionTreeCreator.h"
 #include "app-logic/ReconstructionTreeEdge.h"
 #include "app-logic/ReconstructUtils.h"
 
@@ -99,7 +100,8 @@ GPlatesGui::ExportRotationParamsAnimationStrategy::do_export_iteration(
 		d_export_animation_context_ptr->view_state().get_application_state();
 
 	const GPlatesAppLogic::ReconstructionTree& tree1 = 
-		*application_state.get_current_reconstruction().get_default_reconstruction_tree();
+		*application_state.get_current_reconstruction()
+			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
 	
 	std::multimap<GPlatesModel::integer_plate_id_type,
@@ -115,7 +117,7 @@ GPlatesGui::ExportRotationParamsAnimationStrategy::do_export_iteration(
 	std::vector<GPlatesGui::CsvExport::LineDataType> data;
 	
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree2=
-		GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+		GPlatesAppLogic::create_reconstruction_tree(
 				tree1.get_reconstruction_time()+1,
 				tree1.get_anchor_plate_id(),
 				tree1.get_reconstruction_features());

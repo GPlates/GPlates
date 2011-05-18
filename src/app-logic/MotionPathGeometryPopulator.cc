@@ -35,7 +35,6 @@
 
 #include "Reconstruction.h"
 #include "ReconstructedFlowline.h"
-#include "ReconstructionGeometryCollection.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
 #include "ReconstructUtils.h"
@@ -59,13 +58,13 @@
 
 
 GPlatesAppLogic::MotionPathGeometryPopulator::MotionPathGeometryPopulator(
-		ReconstructionGeometryCollection &reconstruction_geometry_collection):
-	d_reconstruction_geometry_collection(reconstruction_geometry_collection),
-	d_reconstruction_tree(reconstruction_geometry_collection.reconstruction_tree()),
-	d_recon_time(
-		GPlatesPropertyValues::GeoTimeInstant(
-					reconstruction_geometry_collection.get_reconstruction_time())),
-	d_motion_track_property_finder(reconstruction_geometry_collection.get_reconstruction_time())
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time) :
+	d_reconstructed_feature_geometries(reconstructed_feature_geometries),
+	d_reconstruction_tree_creator(reconstruction_tree_creator),
+	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(reconstruction_time)),
+	d_motion_track_property_finder(reconstruction_time)
 {  }
 
 bool
@@ -99,7 +98,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::initialise_pre_feature_properties(
 
 		FlowlineUtils::fill_times_vector(
 			times,
-			d_reconstruction_tree->get_reconstruction_time(),
+			d_recon_time.value(),
 			d_motion_track_property_finder.get_times());
 
 		// We'll work from the current time, backwards in time.		
@@ -110,11 +109,10 @@ GPlatesAppLogic::MotionPathGeometryPopulator::initialise_pre_feature_properties(
 		for (; iter != end ; ++iter)
 		{
 
-			GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree_at_time_t_ptr = 
-				GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-				*iter,
-				*d_motion_track_property_finder.get_relative_plate_id(),
-				d_reconstruction_tree->get_reconstruction_features());
+			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_time_t_ptr =
+				d_reconstruction_tree_creator.get_reconstruction_tree(
+						*iter,
+						*d_motion_track_property_finder.get_relative_plate_id());
 
 			GPlatesMaths::FiniteRotation rot = tree_at_time_t_ptr->get_composed_absolute_rotation(
 				*d_motion_track_property_finder.get_reconstruction_plate_id()).first;
@@ -144,22 +142,26 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 		}
 	}	
 
+	// The reconstruction tree for the current reconstruction time.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
+
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
-				d_reconstruction_tree->get_composed_absolute_rotation(
+				reconstruction_tree->get_composed_absolute_rotation(
 					d_motion_track_property_finder.get_reconstruction_plate_id().get()).first *
 					gml_multi_point.multipoint();
 
 	try{
 
-		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type seed_point_rfg =
+		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type seed_point_rfg =
 			ReconstructedFeatureGeometry::create(
-				d_reconstruction_tree,
-				reconstructed_seed_geometry,
+				reconstruction_tree,
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()),
+				reconstructed_seed_geometry,
 				d_motion_track_property_finder.get_reconstruction_plate_id());
 
-		d_reconstruction_geometry_collection.add_reconstruction_geometry(seed_point_rfg);
+		d_reconstructed_feature_geometries.push_back(seed_point_rfg);
 
 	}
 	catch(...)
@@ -200,23 +202,27 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 		}
 	}	
 
+	// The reconstruction tree for the current reconstruction time.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
+
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
-		d_reconstruction_tree->get_composed_absolute_rotation(
+		reconstruction_tree->get_composed_absolute_rotation(
 			d_motion_track_property_finder.get_reconstruction_plate_id().get()).first *
 			gml_point.point();
 
 
 	try{
 
-		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type seed_point_rfg =
+		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type seed_point_rfg =
 			ReconstructedFeatureGeometry::create(
-			d_reconstruction_tree,
-			reconstructed_seed_geometry,
+			reconstruction_tree,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),
+			reconstructed_seed_geometry,
 			d_motion_track_property_finder.get_reconstruction_plate_id());
 
-		d_reconstruction_geometry_collection.add_reconstruction_geometry(seed_point_rfg);
+		d_reconstructed_feature_geometries.push_back(seed_point_rfg);
 
 	}
 	catch(...)
@@ -256,8 +262,12 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 		d_rotations);
 
 
+	// The reconstruction tree for the current reconstruction time.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
+
 	GPlatesMaths::FiniteRotation relative_plate_correction =
-		d_reconstruction_tree->get_composed_absolute_rotation(
+		reconstruction_tree->get_composed_absolute_rotation(
 		d_motion_track_property_finder.get_relative_plate_id().get()).first;
 
 	try{
@@ -268,9 +278,9 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 		// we just correct for that plate's motion. 
 		motion_track_points = relative_plate_correction * motion_track_points;
 
-		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type mtrg_ptr =
+		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type mtrg_ptr =
 			ReconstructedMotionPath::create(
-			d_reconstruction_tree,
+			reconstruction_tree,
 			present_day_seed_point_geometry,
 			reconstructed_seed_geometry,
 			motion_track_points,
@@ -278,7 +288,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()));
 
-		d_reconstruction_geometry_collection.add_reconstruction_geometry(mtrg_ptr);
+		d_reconstructed_feature_geometries.push_back(mtrg_ptr);
 
 	}
 	catch(...)

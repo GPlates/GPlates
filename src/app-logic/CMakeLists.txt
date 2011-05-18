@@ -11,12 +11,9 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
-    AgeGridLayerTask.cc
-    AgeGridLayerTask.h
-    AgeGridRaster.cc
-    AgeGridRaster.h
     ApplicationState.cc
     ApplicationState.h
+    AppLogicFwd.h
     AppLogicUtils.cc
     AppLogicUtils.h
     AssignPlateIds.cc
@@ -27,8 +24,12 @@ set(srcs
     ClassifyFeatureCollection.h
     CoRegistrationData.cc
     CoRegistrationData.h
+    CoRegistrationLayerProxy.cc
+    CoRegistrationLayerProxy.h
     CoRegistrationLayerTask.cc
     CoRegistrationLayerTask.h
+    ExtractRasterFeatureProperties.cc
+    ExtractRasterFeatureProperties.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
@@ -45,9 +46,12 @@ set(srcs
     GeometryUtils.h
     Layer.cc
     Layer.h
+    LayerInputChannelType.h
+    LayerProxy.h
+    LayerProxyUtils.h
+    LayerProxyVisitor.h
     LayerTask.cc
     LayerTask.h
-    LayerTaskDataType.h
     LayerTaskParams.h
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
@@ -68,19 +72,20 @@ set(srcs
     PlateVelocityUtils.h
     PropertyExtractors.cc
     PropertyExtractors.h
+    RasterLayerProxy.cc
+    RasterLayerProxy.h
     RasterLayerTask.cc
     RasterLayerTask.h
+    ReconstructContext.cc
+    ReconstructContext.h
     ReconstructedFeatureGeometry.cc
     ReconstructedFeatureGeometry.h
     ReconstructedFeatureGeometryFinder.cc
     ReconstructedFeatureGeometryFinder.h
-    ReconstructedFeatureGeometryPopulator.cc
-    ReconstructedFeatureGeometryPopulator.h
     ReconstructedFlowline.cc
     ReconstructedFlowline.h
     ReconstructedMotionPath.cc
     ReconstructedMotionPath.h
-    ReconstructedPaleomagGeometryPopulator.h
     ReconstructedVirtualGeomagneticPole.cc
     ReconstructedVirtualGeomagneticPole.h
     ReconstructGraph.cc
@@ -93,8 +98,6 @@ set(srcs
     ReconstructionFeatureProperties.h
     ReconstructionGeometry.cc
     ReconstructionGeometry.h
-    ReconstructionGeometryCollection.cc
-    ReconstructionGeometryCollection.h
     ReconstructionGeometryFinder.cc
     ReconstructionGeometryFinder.h
     ReconstructionGeometryUtils.cc
@@ -102,22 +105,40 @@ set(srcs
     ReconstructionGeometryVisitor.h
     ReconstructionGraph.cc
     ReconstructionGraph.h
+    ReconstructionLayerProxy.cc
+    ReconstructionLayerProxy.h
     ReconstructionLayerTask.cc
     ReconstructionLayerTask.h
-    ReconstructionMethod.cc
-    ReconstructionMethod.h
     ReconstructionTree.cc
     ReconstructionTree.h
+    ReconstructionTreeCreator.cc
+    ReconstructionTreeCreator.h
     ReconstructionTreeEdge.cc
     ReconstructionTreeEdge.h
     ReconstructionTreePopulator.cc
     ReconstructionTreePopulator.h
+    ReconstructLayerProxy.cc
+    ReconstructLayerProxy.h
     ReconstructLayerTask.cc
     ReconstructLayerTask.h
-    ReconstructLayerTaskParams.cc
-    ReconstructLayerTaskParams.h
-    ReconstructRasterPolygons.cc
-    ReconstructRasterPolygons.h
+    ReconstructMethodByPlateId.cc
+    ReconstructMethodByPlateId.h
+    ReconstructMethodFiniteRotation.h
+    ReconstructMethodFlowline.cc
+    ReconstructMethodFlowline.h
+    ReconstructMethodHalfStageRotation.cc
+    ReconstructMethodHalfStageRotation.h
+    ReconstructMethodInterface.h
+    ReconstructMethodMotionPath.cc
+    ReconstructMethodMotionPath.h
+    ReconstructMethodRegistry.cc
+    ReconstructMethodRegistry.h
+    ReconstructMethodType.cc
+    ReconstructMethodType.h
+    ReconstructMethodVirtualGeomagneticPole.cc
+    ReconstructMethodVirtualGeomagneticPole.h
+    ReconstructParams.cc
+    ReconstructParams.h
     ReconstructUtils.cc
     ReconstructUtils.h
     ResolvedRaster.cc
@@ -134,18 +155,24 @@ set(srcs
     TopologyBoundaryIntersections.h
     TopologyBoundaryResolver.cc
     TopologyBoundaryResolver.h
+    TopologyBoundaryResolverLayerProxy.cc
+    TopologyBoundaryResolverLayerProxy.h
     TopologyBoundaryResolverLayerTask.cc
     TopologyBoundaryResolverLayerTask.h
     TopologyInternalUtils.cc
     TopologyInternalUtils.h
     TopologyNetworkResolver.cc
     TopologyNetworkResolver.h
+    TopologyNetworkResolverLayerProxy.cc
+    TopologyNetworkResolverLayerProxy.h
     TopologyNetworkResolverLayerTask.cc
     TopologyNetworkResolverLayerTask.h
     TopologyUtils.cc
     TopologyUtils.h
     UserPreferences.cc
     UserPreferences.h
+    VelocityFieldCalculatorLayerProxy.cc
+    VelocityFieldCalculatorLayerProxy.h
     VelocityFieldCalculatorLayerTask.cc
     VelocityFieldCalculatorLayerTask.h
     VgpPartitionFeatureTask.cc

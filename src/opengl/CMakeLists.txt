@@ -15,11 +15,11 @@ set(srcs
     GLAgeGridCoverageSource.h
     GLAgeGridMaskSource.cc
     GLAgeGridMaskSource.h
+    GLArray.cc
     GLArray.h
     GLBindTextureState.cc
     GLBindTextureState.h
     GLBlendState.h
-    GLCache.h
     GLClearBuffers.h
     GLClearBuffersState.h
     GLCompositeDrawable.cc
@@ -30,12 +30,15 @@ set(srcs
     GLContext.h
     GLCubeSubdivision.cc
     GLCubeSubdivision.h
+    GLCubeSubdivisionCache.h
     GLCullVisitor.cc
     GLCullVisitor.h
     GLDepthRangeState.h
     GLDrawable.h
     GLEnterOrLeaveStateSet.h
     GLFragmentTestStates.h
+    GLFrustum.cc
+    GLFrustum.h
     GLIntersect.cc
     GLIntersect.h
     GLIntersectPrimitives.cc
@@ -49,15 +52,17 @@ set(srcs
     GLMultiResolutionRaster.h
     GLMultiResolutionRasterNode.h
     GLMultiResolutionRasterSource.h
-    GLMultiResolutionReconstructedRaster.cc
-    GLMultiResolutionReconstructedRaster.h
     GLMultiResolutionReconstructedRasterNode.h
+    GLMultiResolutionStaticPolygonReconstructedRaster.cc
+    GLMultiResolutionStaticPolygonReconstructedRaster.h
     GLPointLinePolygonState.cc
     GLPointLinePolygonState.h
     GLProxiedRasterSource.cc
     GLProxiedRasterSource.h
     GLRasterProxy.cc
     GLRasterProxy.h
+    GLReconstructedStaticPolygonMeshes.cc
+    GLReconstructedStaticPolygonMeshes.h
     GLRenderer.cc
     GLRenderer.h
     GLRenderGraph.cc
@@ -94,14 +99,15 @@ set(srcs
     GLStateGraphNode.h
     GLStateSet.h
     GLStreamPrimitives.h
+    GLText2DDrawable.cc
     GLText2DDrawable.h
     GLText3DNode.cc
     GLText3DNode.h
     GLTexture.cc
     GLTexture.h
-    GLTextureCache.h
     GLTextureEnvironmentState.cc
     GLTextureEnvironmentState.h
+    GLTextureResource.h
     GLTextureTransformState.cc
     GLTextureTransformState.h
     GLTextureUtils.cc
@@ -120,21 +126,22 @@ set(srcs
     GLUQuadricDrawable.h
     GLUtils.cc
     GLUtils.h
+    GLVertex.cc
+    GLVertex.h
     GLVertexArray.cc
     GLVertexArray.h
-    GLVertexArrayCache.h
     GLVertexArrayDrawable.h
+    GLVertexBufferResource.cc
+    GLVertexBufferResource.h
     GLVertexElementArray.cc
     GLVertexElementArray.h
     GLViewport.h
     GLViewportNode.h
     GLViewportState.h
-    GLVolatileObject.h
     OpenGL.h
     OpenGLBadAllocException.h
     OpenGLException.h
-    Vertex.cc
-    Vertex.h
+    OpenGLFwd.h
 )
 
 

@@ -90,7 +90,7 @@ namespace GPlatesQtWidgets
 			
 			if(d_coreg_layer_config_dialog)
 			{
-				d_coreg_layer_config_dialog->set_virtual_layer(d_current_visual_layer);
+				d_coreg_layer_config_dialog->set_visual_layer(d_current_visual_layer);
 			}
 			else
 			{
@@ -101,8 +101,8 @@ namespace GPlatesQtWidgets
 			}
 
 			boost::shared_ptr<GPlatesPresentation::VisualLayer> layer = d_current_visual_layer.lock();
-				GPlatesAppLogic::CoRegistrationLayerTaskParams* params = 
-					dynamic_cast<GPlatesAppLogic::CoRegistrationLayerTaskParams*> 
+				GPlatesAppLogic::CoRegistrationLayerTask::Params* params = 
+					dynamic_cast<GPlatesAppLogic::CoRegistrationLayerTask::Params*> 
 							(&layer->get_reconstruct_graph_layer().get_layer_task_params());
 			if(params)
 			{

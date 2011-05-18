@@ -212,7 +212,8 @@ GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry(
 					GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
 							d_focused_feature,
 							d_associated_geometry_property,
-							*reconstruction.get_default_reconstruction_tree());
+							*reconstruction.get_default_reconstruction_layer_output()
+								->get_reconstruction_tree());
 
 	if (!new_associated_rg)
 	{

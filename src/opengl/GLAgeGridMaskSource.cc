@@ -57,23 +57,6 @@
 #include "utils/Profile.h"
 
 
-namespace
-{
-	/**
-	 * Vertex information stored in an OpenGL vertex array used
-	 * for drawing full-screen textured quads into a render texture.
-	 */
-	struct Vertex
-	{
-		//! Vertex position.
-		GLfloat x, y, z;
-
-		//! Vertex texture coordinates.
-		GLfloat u, v;
-	};
-}
-
-
 boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type>
 GPlatesOpenGL::GLAgeGridMaskSource::create(
 		const double &reconstruction_time,
@@ -165,18 +148,13 @@ GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
 	d_raster_width(raster_width),
 	d_raster_height(raster_height),
 	d_tile_texel_dimension(tile_texel_dimension),
-	// Since the age grid mask changes dynamically as the reconstruction time changes
-	// we don't need to worry about caching so much - just enough caching so that panning
-	// the view doesn't mean every tile on screen needs to be regenerated - just the ones
-	// near the edges.
-	// This can be achieved by setting the cache size to one and just letting it grow as needed.
-	d_age_grid_mask_texture_cache(create_texture_cache(1, texture_resource_manager)),
+	d_texture_resource_manager(texture_resource_manager),
 	// For the actual age grid values themselves we'll use a bigger cache since these
 	// values don't change as the reconstruction time changes (unlike the age grid mask).
-	d_age_grid_texture_cache(create_texture_cache(200, texture_resource_manager)),
+	d_age_grid_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(200)),
 	// These textures don't really need a cache as we don't reuse their contents but it's
 	// easy to manage them with a cache.
-	d_intermediate_render_texture_cache(create_texture_cache(1, texture_resource_manager)),
+	d_intermediate_render_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(1)),
 	d_clear_buffers_state(GLClearBuffersState::create()),
 	d_clear_buffers(GLClearBuffers::create()),
 	d_mask_alpha_channel_state(GLMaskBuffersState::create()),
@@ -186,8 +164,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
 	// texels won't be accessed when rendering *using* the age grid tile so it's ok.
 	d_viewport(0, 0, tile_texel_dimension, tile_texel_dimension),
 	d_viewport_state(GLViewportState::create(d_viewport)),
-	d_full_screen_quad_vertex_array(GLVertexArray::create()),
-	d_full_screen_quad_vertex_element_array(GLVertexElementArray::create()),
+	d_full_screen_quad_drawable(GLUtils::create_full_screen_2D_textured_quad()),
 	d_first_render_pass_state(GLCompositeStateSet::create()),
 	d_second_render_pass_state(GLCompositeStateSet::create()),
 	d_third_render_pass_state(GLCompositeStateSet::create()),
@@ -221,26 +198,6 @@ GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
 	d_clear_buffers->gl_clear(GL_COLOR_BUFFER_BIT);
 	// Mask out writing to the colour channels when rendering the age grid mask.
 	d_mask_alpha_channel_state->gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-
-	// Initialise the vertex array for the full-screen quad.
-	const Vertex quad_vertices[4] =
-	{  //  x,  y, z, u, v
-		{ -1, -1, 0, 0, 0 },
-		{  1, -1, 0, 1, 0 },
-		{  1,  1, 0, 1, 1 },
-		{ -1,  1, 0, 0, 1 }
-	};
-	d_full_screen_quad_vertex_array->set_array_data(quad_vertices, quad_vertices + 4);
-	d_full_screen_quad_vertex_array->gl_enable_client_state(GL_VERTEX_ARRAY);
-	d_full_screen_quad_vertex_array->gl_enable_client_state(GL_TEXTURE_COORD_ARRAY);
-	d_full_screen_quad_vertex_array->gl_vertex_pointer(3, GL_FLOAT, sizeof(Vertex), 0);
-	d_full_screen_quad_vertex_array->gl_tex_coord_pointer(2, GL_FLOAT, sizeof(Vertex), 3 * sizeof(GLfloat));
-
-	// Initialise the vertex element array for the full-screen quad.
-	const GLushort quad_indices[4] = { 0, 1, 2, 3 };
-	d_full_screen_quad_vertex_element_array->set_array_data(quad_indices, quad_indices + 4);
-	d_full_screen_quad_vertex_element_array->gl_draw_range_elements_EXT(
-			GL_QUADS, 0/*start*/, 3/*end*/, 4/*count*/, GL_UNSIGNED_SHORT/*type*/, 0 /*indices_offset*/);
 
 	//
 	// Setup rendering state for the three age grid mask render passes.
@@ -305,7 +262,8 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 		unsigned int texel_width,
 		unsigned int texel_height,
 		const GLTexture::shared_ptr_type &target_texture,
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		GLRenderer::RenderTargetUsageType render_target_usage)
 {
 	// Get the tile corresponding to the request.
 	Tile &tile = get_tile(level, texel_x_offset, texel_y_offset);
@@ -370,7 +328,9 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 
 	// So now we have up to date high and low byte textures so we can render
 	// the age grid mask with them.
-	render_age_grid_mask(target_texture, high_byte_age_texture, low_byte_age_texture, renderer);
+	render_age_grid_mask(
+			target_texture, high_byte_age_texture, low_byte_age_texture,
+			renderer, render_target_usage);
 }
 
 
@@ -410,61 +370,42 @@ GPlatesOpenGL::GLAgeGridMaskSource::should_reload_high_and_low_byte_age_textures
 
 	// See if we've previously created our tile textures and
 	// see if they haven't been recycled by the texture cache.
-	boost::optional<GLTexture::shared_ptr_type> high_byte_age_texture_opt =
-			tile.high_byte_age_texture.get_object();
-	if (!high_byte_age_texture_opt)
+	
+	GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type &high_byte_age_volatile_texture =
+			tile.get_high_byte_age_texture(*d_age_grid_texture_cache);
+	high_byte_age_texture = high_byte_age_volatile_texture->get_cached_object();
+	if (!high_byte_age_texture)
 	{
 		should_reload = true;
 
-		// We need to allocate a new texture from the texture cache and fill it with data.
-		const std::pair<GLVolatileTexture, bool/*recycled*/> volatile_texture_result =
-				d_age_grid_texture_cache->allocate_object();
-
-		// Extract allocation results.
-		tile.high_byte_age_texture = volatile_texture_result.first;
-		const bool texture_was_recycled = volatile_texture_result.second;
-
-		// Get the tile texture again - this time it should have a valid texture.
-		high_byte_age_texture_opt = tile.high_byte_age_texture.get_object();
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				high_byte_age_texture_opt,
-				GPLATES_ASSERTION_SOURCE);
-
-		if (!texture_was_recycled)
+		high_byte_age_texture = high_byte_age_volatile_texture->recycle_an_unused_object();
+		if (!high_byte_age_texture)
 		{
-			create_tile_texture(high_byte_age_texture_opt.get());
+			high_byte_age_texture = high_byte_age_volatile_texture->set_cached_object(
+					GLTexture::create_as_auto_ptr(d_texture_resource_manager));
+
+			// The texture was just allocated so we need to create it in OpenGL.
+			create_tile_texture(high_byte_age_texture);
 		}
 	}
-	high_byte_age_texture = high_byte_age_texture_opt.get();
 
-	// See if we've previously created our tile textures and
-	// see if they haven't been recycled by the texture cache.
-	boost::optional<GLTexture::shared_ptr_type> low_byte_age_texture_opt =
-			tile.low_byte_age_texture.get_object();
-	if (!low_byte_age_texture_opt)
+	GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type &low_byte_age_volatile_texture =
+			tile.get_low_byte_age_texture(*d_age_grid_texture_cache);
+	low_byte_age_texture = low_byte_age_volatile_texture->get_cached_object();
+	if (!low_byte_age_texture)
 	{
 		should_reload = true;
 
-		// We need to allocate a new texture from the texture cache and fill it with data.
-		const std::pair<GLVolatileTexture, bool/*recycled*/> volatile_texture_result =
-				d_age_grid_texture_cache->allocate_object();
-
-		// Extract allocation results.
-		tile.low_byte_age_texture = volatile_texture_result.first;
-		const bool texture_was_recycled = volatile_texture_result.second;
-
-		// Get the tile texture again - this time it should have a valid texture.
-		low_byte_age_texture_opt = tile.low_byte_age_texture.get_object();
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				low_byte_age_texture_opt,
-				GPLATES_ASSERTION_SOURCE);
-
-		if (!texture_was_recycled)
+		low_byte_age_texture = low_byte_age_volatile_texture->recycle_an_unused_object();
+		if (!low_byte_age_texture)
 		{
-			create_tile_texture(low_byte_age_texture_opt.get());
+			low_byte_age_texture = low_byte_age_volatile_texture->set_cached_object(
+					GLTexture::create_as_auto_ptr(d_texture_resource_manager));
+
+			// The texture was just allocated so we need to create it in OpenGL.
+			create_tile_texture(low_byte_age_texture);
 		}
 	}
-	low_byte_age_texture = low_byte_age_texture_opt.get();
 
 	return should_reload;
 }
@@ -556,6 +497,8 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 		unsigned int texel_width,
 		unsigned int texel_height)
 {
+	PROFILE_FUNC();
+
 	boost::optional<GPlatesPropertyValues::FloatRawRaster::non_null_ptr_type> float_age_grid_tile =
 			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
 					GPlatesPropertyValues::FloatRawRaster>(*age_grid_tile);
@@ -593,12 +536,14 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
 		const GLTexture::shared_ptr_type &target_texture,
 		const GLTexture::shared_ptr_type &high_byte_age_texture,
 		const GLTexture::shared_ptr_type &low_byte_age_texture,
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		GLRenderer::RenderTargetUsageType render_target_usage)
 {
 	// Push a render target that will render to the tile texture.
 	renderer.push_render_target(
 			GLTextureRenderTargetType::create(
-					target_texture, d_tile_texel_dimension, d_tile_texel_dimension));
+					target_texture, d_tile_texel_dimension, d_tile_texel_dimension),
+			render_target_usage);
 
 	// Push the viewport state set.
 	renderer.push_state_set(d_viewport_state);
@@ -615,44 +560,35 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
 	// Mask writing to the alpha channel.
 	renderer.push_state_set(d_mask_alpha_channel_state);
 
-	// NOTE: We leave the model-view and projection matrices as identity as that is what we
-	// we need to draw a full-screen quad.
-
-	// The full-screen quad drawable.
-	GLVertexArrayDrawable::non_null_ptr_type full_screen_quad_drawable =
-			GLVertexArrayDrawable::create(
-					d_full_screen_quad_vertex_array, d_full_screen_quad_vertex_element_array);
-
 	//
 	// Set the state converting the age grid intermediate mask to the full mask.
 	//
 
 	// Simply allocate a new texture from the texture cache and fill it with data.
-	std::pair<GLVolatileTexture, bool/*recycled*/> volatile_texture_result =
-			d_intermediate_render_texture_cache->allocate_object();
-
-	// Extract allocation results.
-	boost::optional<GLTexture::shared_ptr_type> intermediate_texture =
-			volatile_texture_result.first.get_object();
-	const bool texture_was_recycled = volatile_texture_result.second;
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			intermediate_texture,
-			GPLATES_ASSERTION_SOURCE);
-
-	if (!texture_was_recycled)
+	GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type volatile_intermediate_texture =
+			d_intermediate_render_texture_cache->allocate_volatile_object();
+	GLTexture::shared_ptr_type intermediate_texture = volatile_intermediate_texture->get_cached_object();
+	if (!intermediate_texture)
 	{
-		create_tile_texture(intermediate_texture.get());
-	}
+		intermediate_texture = volatile_intermediate_texture->recycle_an_unused_object();
+		if (!intermediate_texture)
+		{
+			intermediate_texture = volatile_intermediate_texture->set_cached_object(
+					GLTexture::create_as_auto_ptr(d_texture_resource_manager));
 
+			// The texture was just allocated so we need to create it in OpenGL.
+			create_tile_texture(intermediate_texture);
+		}
+	}
 
 	// Render the high and low byte textures to the intermediate texture.
 	render_age_grid_intermediate_mask(
-			intermediate_texture.get(), high_byte_age_texture, low_byte_age_texture, renderer);
+			intermediate_texture, high_byte_age_texture, low_byte_age_texture, renderer);
 
 
 	// Create a state set that binds the intermediate texture to texture unit 0.
 	GLBindTextureState::non_null_ptr_type bind_age_grid_intermediate_texture = GLBindTextureState::create();
-	bind_age_grid_intermediate_texture->gl_bind_texture(GL_TEXTURE_2D, intermediate_texture.get());
+	bind_age_grid_intermediate_texture->gl_bind_texture(GL_TEXTURE_2D, intermediate_texture);
 
 	GLCompositeStateSet::non_null_ptr_type state_set = GLCompositeStateSet::create();
 
@@ -668,9 +604,11 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
 	alpha_test_state->gl_enable(GL_TRUE).gl_alpha_func(GL_LEQUAL, GLclampf(0));
 	state_set->add_state_set(alpha_test_state);
 
+	// NOTE: We leave the model-view and projection matrices as identity as that is what we
+	// we need to draw a full-screen quad.
 	renderer.push_state_set(state_set);
 	renderer.push_state_set(bind_age_grid_intermediate_texture);
-	renderer.add_drawable(full_screen_quad_drawable);
+	renderer.add_drawable(d_full_screen_quad_drawable);
 	renderer.pop_state_set();
 	renderer.pop_state_set();
 
@@ -691,10 +629,14 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
 		const GLTexture::shared_ptr_type &low_byte_age_texture,
 		GLRenderer &renderer)
 {
+	PROFILE_FUNC();
+
 	// Push a render target that will render to the tile texture.
+	// We can render to the target in parallel because we're caching the intermediate texture.
 	renderer.push_render_target(
 			GLTextureRenderTargetType::create(
-					intermediate_texture, d_tile_texel_dimension, d_tile_texel_dimension));
+					intermediate_texture, d_tile_texel_dimension, d_tile_texel_dimension),
+			GLRenderer::RENDER_TARGET_USAGE_PARALLEL);
 
 	// Push the viewport state set.
 	renderer.push_state_set(d_viewport_state);
@@ -708,14 +650,6 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
 
 	// Mask writing to the alpha channel.
 	renderer.push_state_set(d_mask_alpha_channel_state);
-
-	// NOTE: We leave the model-view and projection matrices as identity as that is what we
-	// we need to draw a full-screen quad.
-
-	// The full-screen quad drawable.
-	GLVertexArrayDrawable::non_null_ptr_type full_screen_quad_drawable =
-			GLVertexArrayDrawable::create(
-					d_full_screen_quad_vertex_array, d_full_screen_quad_vertex_element_array);
 
 
 	// Create a state set that binds the low byte age texture to texture unit 0.
@@ -738,9 +672,11 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
 	first_pass_alpha_test_state->gl_alpha_func(GL_GREATER, first_pass_alpha_ref);
 	renderer.push_state_set(first_pass_alpha_test_state);
 
+	// NOTE: We leave the model-view and projection matrices as identity as that is what we
+	// we need to draw a full-screen quad.
 	renderer.push_state_set(d_first_render_pass_state);
 	renderer.push_state_set(bind_low_byte_age_texture);
-	renderer.add_drawable(full_screen_quad_drawable);
+	renderer.add_drawable(d_full_screen_quad_drawable);
 	renderer.pop_state_set();
 	renderer.pop_state_set();
 
@@ -757,9 +693,11 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
 	second_pass_alpha_test_state->gl_alpha_func(GL_NOTEQUAL, second_pass_alpha_ref);
 	renderer.push_state_set(second_pass_alpha_test_state);
 
+	// NOTE: We leave the model-view and projection matrices as identity as that is what we
+	// we need to draw a full-screen quad.
 	renderer.push_state_set(d_second_render_pass_state);
 	renderer.push_state_set(bind_high_byte_age_texture);
-	renderer.add_drawable(full_screen_quad_drawable);
+	renderer.add_drawable(d_full_screen_quad_drawable);
 	renderer.pop_state_set();
 	renderer.pop_state_set();
 
@@ -776,9 +714,11 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
 	third_pass_alpha_test_state->gl_alpha_func(GL_GREATER, third_pass_alpha_ref);
 	renderer.push_state_set(third_pass_alpha_test_state);
 
+	// NOTE: We leave the model-view and projection matrices as identity as that is what we
+	// we need to draw a full-screen quad.
 	renderer.push_state_set(d_third_render_pass_state);
 	renderer.push_state_set(bind_high_byte_age_texture);
-	renderer.add_drawable(full_screen_quad_drawable);
+	renderer.add_drawable(d_full_screen_quad_drawable);
 	renderer.pop_state_set();
 	renderer.pop_state_set();
 

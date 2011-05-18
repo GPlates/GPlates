@@ -26,12 +26,12 @@
 
 #include <cstddef> // For std::size_t
 #include <vector>
+#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "TopologyBoundaryResolver.h"
 
 #include "GeometryUtils.h"
-#include "ReconstructionGeometryCollection.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "Reconstruction.h"
@@ -70,9 +70,15 @@
 
 
 GPlatesAppLogic::TopologyBoundaryResolver::TopologyBoundaryResolver(
-			ReconstructionGeometryCollection &reconstruction_geometry_collection) :
-	d_reconstruction_geometry_collection(reconstruction_geometry_collection),
-	d_reconstruction_params(reconstruction_geometry_collection.get_reconstruction_time())
+		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_boundary_sections,
+		bool restrict_boundary_sections_to_same_reconstruction_tree) :
+	d_resolved_topological_boundaries(resolved_topological_boundaries),
+	d_reconstruction_tree(reconstruction_tree),
+	d_reconstructed_topological_boundary_sections(reconstructed_topological_boundary_sections),
+	d_restrict_boundary_sections_to_same_reconstruction_tree(restrict_boundary_sections_to_same_reconstruction_tree),
+	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
 {  
 	d_num_topologies = 0;
 }
@@ -274,25 +280,31 @@ GPlatesAppLogic::TopologyBoundaryResolver::record_topological_section_reconstruc
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
 	// Get the reconstructed geometry of the topological section's delegate.
-	// The referenced features must have been reconstructed using the
-	// reconstruction tree referenced by our destination reconstruction geometry collection.
+	// The referenced RFGs must be in our sequence of reconstructed topological boundary sections
+	// and optionally have been reconstructed by the same reconstruction tree associated with
+	// the resolved topological boundaries being generated.
+	boost::optional<const ReconstructionTree &> restricted_reconstruction_tree;
+	if (d_restrict_boundary_sections_to_same_reconstruction_tree)
+	{
+		restricted_reconstruction_tree = *d_reconstruction_tree;
+	}
 	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
 					geometry_delegate,
-					*d_reconstruction_geometry_collection.reconstruction_tree());
-
-	// If no RFG was found then it's possible that the current reconstruction time is
-	// outside the age range of the feature this section is referencing.
-	// This is ok - it's not necessarily an error.
-	// We just won't add it to the list of boundary sections. This means either:
-	//  - rubber banding will occur between the two sections adjacent to this section
-	//    since this section is now missing, or
-	//  - one of the adjacent sections did not exist until just now (because of its age range)
-	//    and now it is popping in to replace the current section which is disappearing (an
-	//    example of this is a bunch of sections that are mid-ocean ridge features that do not
-	//    overlap in time and represent different geometries, from isochrons, of the same ridge).
+					restricted_reconstruction_tree,
+					d_reconstructed_topological_boundary_sections);
 	if (!source_rfg)
 	{
+		// If no RFG was found then it's possible that the current reconstruction time is
+		// outside the age range of the feature this section is referencing.
+		// This is ok - it's not necessarily an error.
+		// We just won't add it to the list of boundary sections. This means either:
+		//  - rubber banding will occur between the two sections adjacent to this section
+		//    since this section is now missing, or
+		//  - one of the adjacent sections did not exist until just now (because of its age range)
+		//    and now it is popping in to replace the current section which is disappearing (an
+		//    example of this is a bunch of sections that are mid-ocean ridge features that do not
+		//    overlap in time and represent different geometries, from isochrons, of the same ridge).
 		return boost::none;
 	}
 
@@ -587,7 +599,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 	//
 	ResolvedTopologicalBoundary::non_null_ptr_type rtg_ptr =
 		ResolvedTopologicalBoundary::create(
-			d_reconstruction_geometry_collection.reconstruction_tree(),
+			d_reconstruction_tree,
 			*plate_polygon,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),
@@ -596,7 +608,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 			d_reconstruction_params.get_recon_plate_id(),
 			d_reconstruction_params.get_time_of_appearance());
 
-	d_reconstruction_geometry_collection.add_reconstruction_geometry(rtg_ptr);
+	d_resolved_topological_boundaries.push_back(rtg_ptr);
 
 #if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 	//
@@ -609,13 +621,12 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 
 		ReconstructedFeatureGeometry::non_null_ptr_type rotated_reference_points_rfg =
 			ReconstructedFeatureGeometry::create(
-				d_reconstruction_geometry_collection.reconstruction_tree(),
+				d_reconstruction_tree,
 				rotated_reference_points_geom,
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()));
 
-		d_reconstruction_geometry_collection.add_reconstruction_geometry(
-				rotated_reference_points_rfg);
+		d_resolved_topological_boundaries.push_back(rotated_reference_points_rfg);
 	}
 #endif // if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 }

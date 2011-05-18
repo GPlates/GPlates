@@ -35,6 +35,8 @@
 #include <QString>
 #include <QIcon>
 
+#include "app-logic/LayerTaskParams.h"
+
 #include "VisualLayerGroup.h"
 #include "VisualLayerParams.h"
 #include "VisualLayerType.h"
@@ -97,11 +99,11 @@ namespace GPlatesPresentation
 		> create_options_widget_function_type;
 
 		/**
-		 * Convenience typedef for a function that takes no arguments and creates a
-		 * non-null intrusive pointer to an instance of VisualLayerParams (or one of
-		 * its derived classes).
+		 * Convenience typedef for a function that takes a layer task params argument and
+		 * creates a non-null intrusive pointer to an instance of VisualLayerParams
+		 * (or one of its derived classes).
 		 */
-		typedef boost::function< VisualLayerParams::non_null_ptr_type () >
+		typedef boost::function< VisualLayerParams::non_null_ptr_type (GPlatesAppLogic::LayerTaskParams &) >
 			create_visual_layer_params_function_type;
 
 		/**
@@ -221,7 +223,8 @@ namespace GPlatesPresentation
 		 */
 		VisualLayerParams::non_null_ptr_type
 		create_visual_layer_params(
-				VisualLayerType::Type visual_layer_type) const;
+				VisualLayerType::Type visual_layer_type,
+				GPlatesAppLogic::LayerTaskParams &layer_task_params) const;
 
 		/**
 		 * Returns whether the given @a visual_layer_type ever produces rendered

@@ -30,8 +30,10 @@
 #include "TopologyUtils.h"
 
 
-const char *GPlatesAppLogic::TopologyNetworkResolverLayerTask::TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME =
+const QString GPlatesAppLogic::TopologyNetworkResolverLayerTask::TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME =
 		"Topological network features";
+const QString GPlatesAppLogic::TopologyNetworkResolverLayerTask::TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME =
+		"Topological section features";
 
 
 bool
@@ -42,41 +44,47 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::can_process_feature_collectio
 }
 
 
-std::vector<GPlatesAppLogic::Layer::input_channel_definition_type>
-GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_input_channel_definitions() const
+std::vector<GPlatesAppLogic::LayerInputChannelType>
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_input_channel_types() const
 {
-	std::vector<Layer::input_channel_definition_type> input_channel_definitions;
+	std::vector<LayerInputChannelType> input_channel_types;
 
 	// Channel definition for the reconstruction tree.
-	input_channel_definitions.push_back(
-			boost::make_tuple(
+	input_channel_types.push_back(
+			LayerInputChannelType(
 					get_reconstruction_tree_channel_name(),
-					Layer::INPUT_RECONSTRUCTION_TREE_DATA,
-					Layer::ONE_DATA_IN_CHANNEL));
+					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
+					LayerTaskType::RECONSTRUCTION));
+
+	// Channel definition for the reconstructed topological section geometries referenced by
+	// the topological network features.
+	input_channel_types.push_back(
+			LayerInputChannelType(
+					TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME,
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
+					LayerTaskType::RECONSTRUCT));
 
 	// Channel definition for the topological network features.
-	input_channel_definitions.push_back(
-			boost::make_tuple(
+	input_channel_types.push_back(
+			LayerInputChannelType(
 					TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME,
-					Layer::INPUT_FEATURE_COLLECTION_DATA,
-					Layer::MULTIPLE_DATAS_IN_CHANNEL));
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
 
-	// There is a third input - the reconstructed topological section geometries referenced by
-	// the topological networks.
-	// But we don't need an input channel for them because:
+	// The referenced reconstructed topological section geometries have previously been obtained
+	// by referencing the weak observers of those referenced features (ReconstructedFeatureGeometry
+	// is a weak observer of a feature). This is basically a global search through all loaded
+	// features. And this required no special input channel (since we could just get the
+	// reconstructed feature geometries directly from the topological section feature themselves
+	// provided they've already been reconstructed).
 	//
-	// The referenced reconstructed feature geometries that comprise the topological sections
-	// will be obtained by referencing the weak observers of those referenced features
-	// (ReconstructedFeatureGeometry is a weak observer of a feature).
-	// And this requires no special input channel (since we can just get the reconstructed
-	// feature geometries directly from the topological section feature themselves provided
-	// they've already been reconstructed).
-	// We will however restrict our search of those reconstructed geometries to only those
-	// that were reconstructed with the above ReconstructionTree. This allows the possibility
-	// of having more than one set of topological networks, each using a different
-	// rotation model (ReconstructionTree) - for example for visual comparison on the globe.
+	// However we have now added an input channel to restrict that global search to those
+	// topological section features associated with the new input channel.
+	// 
+	// We will also, as done previously, restrict our search of those reconstructed geometries to
+	// only those that were reconstructed with the same ReconstructionTree.
+	// Except now it is a user option perhaps.
 
-	return input_channel_definitions;
+	return input_channel_types;
 }
 
 
@@ -87,55 +95,136 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_main_input_feature_collec
 }
 
 
-GPlatesAppLogic::Layer::LayerOutputDataType
-GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_output_definition() const
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	return Layer::OUTPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA;
+	if (input_channel_name == TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME)
+	{
+		d_topology_network_resolver_layer_proxy
+				->add_topological_network_feature_collection(feature_collection);
+	}
 }
 
 
-boost::optional<GPlatesAppLogic::layer_task_data_type>
-GPlatesAppLogic::TopologyNetworkResolverLayerTask::process(
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::remove_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	if (input_channel_name == TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME)
+	{
+		d_topology_network_resolver_layer_proxy
+				->remove_topological_network_feature_collection(feature_collection);
+	}
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::modified_input_file(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	if (input_channel_name == TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME)
+	{
+		// Let the reconstruct layer proxy know that one of the network feature collections has been modified.
+		d_topology_network_resolver_layer_proxy
+				->modified_topological_network_feature_collection(feature_collection);
+	}
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_layer_proxy_connection(
+		const QString &input_channel_name,
+		const LayerProxy::non_null_ptr_type &layer_proxy)
+{
+	if (input_channel_name == get_reconstruction_tree_channel_name())
+	{
+		// Make sure the input layer proxy is a reconstruction layer proxy.
+		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						ReconstructionLayerProxy>(layer_proxy);
+		if (reconstruction_layer_proxy)
+		{
+			// Stop using the default reconstruction layer proxy.
+			d_using_default_reconstruction_layer_proxy = false;
+
+			d_topology_network_resolver_layer_proxy->set_current_reconstruction_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
+		}
+	}
+	else if (input_channel_name == TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME)
+	{
+		// Make sure the input layer proxy is a reconstruct layer proxy.
+		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						ReconstructLayerProxy>(layer_proxy);
+		if (reconstruct_layer_proxy)
+		{
+			d_topology_network_resolver_layer_proxy->set_current_reconstruct_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::remove_input_layer_proxy_connection(
+		const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy)
+{
+	if (input_channel_name == get_reconstruction_tree_channel_name())
+	{
+		// Make sure the input layer proxy is a reconstruction layer proxy.
+		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						ReconstructionLayerProxy>(layer_proxy);
+		if (reconstruction_layer_proxy)
+		{
+			// Start using the default reconstruction layer proxy.
+			d_using_default_reconstruction_layer_proxy = true;
+
+			d_topology_network_resolver_layer_proxy->set_current_reconstruction_layer_proxy(
+					d_default_reconstruction_layer_proxy);
+		}
+	}
+	else if (input_channel_name == TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME)
+	{
+		// Make sure the input layer proxy is a reconstruct layer proxy.
+		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						ReconstructLayerProxy>(layer_proxy);
+		if (reconstruct_layer_proxy)
+		{
+			// Unset the reconstruct layer proxy.
+			d_topology_network_resolver_layer_proxy->set_current_reconstruct_layer_proxy(boost::none);
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::update(
 		const Layer &layer_handle /* the layer invoking this */,
-		const input_data_type &input_data,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
+		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
 {
-	//
-	// Get the reconstruction tree input.
-	//
-	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree =
-			extract_reconstruction_tree(
-					input_data,
-					default_reconstruction_tree);
-	if (!reconstruction_tree)
+	d_topology_network_resolver_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+
+	// If our layer proxy is currently using the default reconstruction layer proxy then
+	// tell our layer proxy about the new default reconstruction layer proxy.
+	if (d_using_default_reconstruction_layer_proxy)
 	{
-		// Expecting a single reconstruction tree.
-		return boost::none;
+		// Avoid setting it every update unless it's actually a different layer.
+		if (default_reconstruction_layer_proxy != d_default_reconstruction_layer_proxy)
+		{
+			d_topology_network_resolver_layer_proxy->set_current_reconstruction_layer_proxy(
+					default_reconstruction_layer_proxy);
+		}
 	}
-	
-	//
-	// Get the topological network features collection input.
-	//
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> topological_network_features_collection;
-	extract_input_channel_data(
-			topological_network_features_collection,
-			TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME,
-			input_data);
 
-	//
-	// Resolve the topological networks.
-	//
-	// The reconstruction tree is used to limit our search for reconstructed topological
-	// section geometries to those that were reconstructed with 'reconstruction_tree'.
-	//
-	const ReconstructionGeometryCollection::non_null_ptr_to_const_type
-			resolved_topology_networks_geometry_collection =
-					TopologyUtils::resolve_topological_networks(
-							reconstruction_tree.get(),
-							topological_network_features_collection);
-
-	// Return the resolved topology networks.
-	return layer_task_data_type(resolved_topology_networks_geometry_collection);
+	d_default_reconstruction_layer_proxy = default_reconstruction_layer_proxy;
 }

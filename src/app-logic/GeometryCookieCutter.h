@@ -31,6 +31,8 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
+#include "AppLogicFwd.h"
+
 #include "maths/PolygonIntersections.h"
 #include "maths/PolygonOnSphere.h"
 
@@ -39,11 +41,6 @@
 
 namespace GPlatesAppLogic
 {
-	class ReconstructedFeatureGeometry;
-	class ReconstructionGeometry;
-	class ReconstructionGeometryCollection;
-	class ResolvedTopologicalBoundary;
-
 	/**
 	 * Partitions geometry using dynamic resolved topological boundaries and/or
 	 * static reconstructed feature polygons.
@@ -82,7 +79,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Finds reconstructed polygon geometries to partition other geometry with.
 		 *
-		 * If @a resolved_topological_boundaries_collection is true then all
+		 * If @a resolved_topological_boundaries is true then all
 		 * @a ResolvedTopologicalBoundary objects found are used to partition geometry.
 		 *
 		 * If @a partition_using_static_polygons is true then all @a ReconstructedFeatureGeometry
@@ -90,10 +87,20 @@ namespace GPlatesAppLogic
 		 *
 		 * By default only topological plate polygons are used to partition geometry.
 		 * Both flags can be true (but probably not useful).
+		 *
+		 * The partitioning polygons are sorted from highest plate id to lowest.
+		 * This ensures that if there are any overlapping polygons in the (combined) set then
+		 * those with the highest plate id will partition before those with lower plate ids.
+		 *
+		 * The reason for choosing the plate that is furthest from the anchor is, I think,
+		 * because it provides more detailed rotations since plates further down the plate
+		 * circuit (or tree) are relative to plates higher up the tree and hence provide
+		 * extra detail.
 		 */
 		GeometryCookieCutter(
-				const ReconstructionGeometryCollection &reconstructed_geometries_collection,
-				boost::optional<const ReconstructionGeometryCollection &> resolved_topological_boundaries_collection,
+				const double &reconstruction_time,
+				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
 				bool partition_using_static_polygons);
 
 
@@ -129,6 +136,10 @@ namespace GPlatesAppLogic
 		/**
 		 * Finds which partitioning polygon boundary contains @a point.
 		 * Returns false if no containing boundaries are found.
+		 *
+		 * NOTE: If there are overlapping partitioning polygons and the specified point
+		 * is inside more that one polygon then the partitioning polygon with the highest
+		 * plate id is chosen. See the constructor comment for more details.
 		 */
 		boost::optional<const ReconstructionGeometry *>
 		partition_point(
@@ -154,10 +165,10 @@ namespace GPlatesAppLogic
 		{
 		public:
 			PartitioningGeometry(
-					const ResolvedTopologicalBoundary *resolved_topological_boundary);
+					const resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary);
 
 			PartitioningGeometry(
-					const ReconstructedFeatureGeometry *reconstructed_feature_geometry,
+					const reconstructed_feature_geometry_non_null_ptr_type &reconstructed_feature_geometry,
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon);
 
 
@@ -189,7 +200,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_resolved_topological_boundaries(
-				const ReconstructionGeometryCollection &resolved_topological_boundaries_collection);
+				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries);
 
 		/**
 		 * Adds all @a ReconstructedFeatureGeometry objects in @a reconstruction, that have
@@ -197,7 +208,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_reconstructed_feature_polygons(
-				const ReconstructionGeometryCollection &reconstruction_geometry_collection);
+				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries);
 
 		/**
 		 * Sorts the sequence of @a ReconstructionGeometry objects added with

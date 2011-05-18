@@ -186,7 +186,7 @@ namespace
 		/**
 		 * Shared pointer to @a ProfileLink object.
 		 */
-		typedef boost::shared_ptr<ProfileLink> pointer_type;
+		typedef profile_link_pool_type::shared_object_ptr_type pointer_type;
 
 		/**
 		 * Creates a ProfileLink and connects it between 'parent' and 'child'.
@@ -265,14 +265,7 @@ namespace
 			ProfileNode *parent,
 			ProfileNode *child)
 	{
-		ProfileLink *new_link = s_profile_link_pool.add(ProfileLink(parent, child));
-
-		return pointer_type(
-				new_link,
-				boost::bind(
-						&profile_link_pool_type::reuse,
-						boost::ref(s_profile_link_pool),
-						_1));
+		return s_profile_link_pool.add_with_auto_release(ProfileLink(parent, child));
 	}
 
 	inline

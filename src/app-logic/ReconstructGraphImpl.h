@@ -38,11 +38,13 @@
 #include <boost/weak_ptr.hpp>
 
 #include "FeatureCollectionFileState.h"
-#include "LayerTaskDataType.h"
+#include "LayerProxy.h"
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 
+#include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
+#include "model/WeakReferenceCallback.h"
 
 
 namespace GPlatesAppLogic
@@ -79,20 +81,7 @@ namespace GPlatesAppLogic
 			 */
 			explicit
 			Data(
-					const boost::optional<layer_task_data_type> &data = boost::none);
-
-			/**
-			 * Activates (or deactivates) this data (must be a file).
-			 *
-			 * @throws PreconditionViolationError if 'this' was *not* created using a file.
-			 *
-			 * FIXME: This is really a temporary method until file activation in
-			 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-			 * in the layers GUI. We could keep both but it might be confusing for the user.
-			 */
-			void
-			activate_input_file(
-					bool activate = true);
+					const LayerProxy::non_null_ptr_type &layer_proxy);
 
 			/**
 			 * Returns the input file.
@@ -101,6 +90,14 @@ namespace GPlatesAppLogic
 			 */
 			boost::optional<FeatureCollectionFileState::file_reference>
 			get_input_file() const;
+
+			/**
+			 * Returns the layer proxy.
+			 *
+			 * Returns true only if 'this' was created using a layer proxy.
+			 */
+			boost::optional<LayerProxy::non_null_ptr_type>
+			get_layer_proxy() const;
 
 			/**
 			 * Returns the layer outputting us.
@@ -125,25 +122,6 @@ namespace GPlatesAppLogic
 			void
 			set_outputting_layer(
 					const boost::weak_ptr<Layer> &outputting_layer);
-
-			/**
-			 * Returns the data contained within.
-			 *
-			 * False is returned under two situations:
-			 * - the data was set to false using @a set_data (or the constructor), or
-			 * - this data is currently deactivated (only applies if this data is a file).
-			 */
-			boost::optional<layer_task_data_type>
-			get_data() const;
-
-			/**
-			 * Sets the data - only makes sense if 'this' is the output of a layer.
-			 *
-			 * @throws PreconditionViolationError if @a set_outputting_layer was never called.
-			 */
-			void
-			set_data(
-					const boost::optional<layer_task_data_type> &data);
 
 			const connection_seq_type &
 			get_output_connections() const
@@ -172,17 +150,19 @@ namespace GPlatesAppLogic
 
 		private:
 			/**
-			 * Typedef for some state that differs depending on whether this data object
+			 * Typedef for the data that differs depending on whether this data object
 			 * is an input feature collection or the output of a layer.
 			 */
 			typedef boost::variant<
 					FeatureCollectionFileState::file_reference,
-					boost::weak_ptr<Layer> >
-							state_type;
+					LayerProxy::non_null_ptr_type>
+							data_type;
 
-			boost::optional<layer_task_data_type> d_data;
+			data_type d_data;
 			connection_seq_type d_output_connections;
-			state_type d_state;
+
+			// Only used if this data object is the output of a layer.
+			boost::optional< boost::weak_ptr<Layer> > d_outputting_layer;
 		};
 
 
@@ -190,14 +170,21 @@ namespace GPlatesAppLogic
 				public boost::noncopyable
 		{
 		public:
+			/**
+			 * @throws PreconditionViolationError if @a input_data is NULL.
+			 *
+			 * @a is_input_layer_active is only used if the input is a layer (ie, if the
+			 * input data is the output of another layer).
+			 */
 			LayerInputConnection(
 					const boost::shared_ptr<Data> &input_data,
 					const boost::weak_ptr<Layer> &layer_receiving_input,
-					const QString &layer_input_channel_name);
+					const QString &layer_input_channel_name,
+					bool is_input_layer_active = true);
 
 			~LayerInputConnection();
 
-			boost::shared_ptr<Data>
+			const boost::shared_ptr<Data> &
 			get_input_data() const
 			{
 				return d_input_data;
@@ -221,11 +208,76 @@ namespace GPlatesAppLogic
 			 */
 			void
 			disconnect_from_parent_layer();
+
+			/**
+			 * Called when the input layer has been activated/deactivated (if the input is a layer).
+			 *
+			 * This only applies if the input is a layer (ie, if the input data is the output
+			 * of another layer).
+			 *
+			 * This message will get delivered to the layer task of the layer receiving input
+			 * so that it knows whether to access the input layer or not. If the input layer is
+			 * inactive then the layer receiving input should not access it.
+			 */
+			void
+			input_layer_activated(
+					bool active);
+
+
+			//
+			// Implementation: Only to be used by class @a Layer.
+			//
+			// The layer receiving input is being destroyed so we shouldn't reference it
+			// or try to notify its layer task that a connection is being removed.
+			//
+			void
+			layer_receiving_input_is_being_destroyed();
 			
 		private:
+			/**
+			 * Receives notifications when input file, if connected to one, is modified.
+			 */
+			class FeatureCollectionModified :
+					public GPlatesModel::WeakReferenceCallback<const GPlatesModel::FeatureCollectionHandle>
+			{
+			public:
+				explicit
+				FeatureCollectionModified(
+						LayerInputConnection *layer_input_connection) :
+					d_layer_input_connection(layer_input_connection)
+				{
+				}
+
+				void
+				publisher_modified(
+						const modified_event_type &event)
+				{
+					d_layer_input_connection->modified_input_feature_collection();
+				}
+
+			private:
+				LayerInputConnection *d_layer_input_connection;
+			};
+
+			void
+			modified_input_feature_collection();
+
+
 			boost::shared_ptr<Data> d_input_data;
 			boost::weak_ptr<Layer> d_layer_receiving_input;
 			QString d_layer_input_channel_name;
+			bool d_is_input_layer_active;
+			bool d_can_access_layer_receiving_input;
+
+			/**
+			 * Keep a reference to the input feature collection just for our callback - if the
+			 * input is not a file then this data member is ignored.
+			 *
+			 * Only we have access to this weak ref and we make sure the client doesn't have
+			 * access to it. This is because any copies of this weak reference also get
+			 * copies of the callback thus allowing it to get called more than once per modification.
+			 */
+			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_input_feature_collection;
 		};
 
 
@@ -283,6 +335,9 @@ namespace GPlatesAppLogic
 				public boost::noncopyable
 		{
 		public:
+			/**
+			 * @throws PreconditionViolationError if @a layer_task is NULL.
+			 */
 			Layer(
 					const boost::shared_ptr<LayerTask> &layer_task,
 					ReconstructGraph &reconstruct_graph);
@@ -290,11 +345,10 @@ namespace GPlatesAppLogic
 			~Layer();
 
 			/**
-			 * If this layer has been deactivated then the output data generated by this
-			 * call will be empty (ie, boost::none).
+			 * Updates the layer task.
 			 */
 			void
-			execute(
+			update_layer_task(
 					const GPlatesAppLogic::Layer &layer_handle /* handle used by clients */,
 					Reconstruction &reconstruction,
 					GPlatesModel::integer_plate_id_type anchored_plate_id);
@@ -327,10 +381,16 @@ namespace GPlatesAppLogic
 				d_layer_task = layer_task;
 			}
 
-			const LayerTask *
+			const LayerTask &
 			get_layer_task() const
 			{
-				return d_layer_task.get();
+				return *d_layer_task;
+			}
+
+			LayerTask &
+			get_layer_task()
+			{
+				return *d_layer_task;
 			}
 
 			const LayerInputConnections &

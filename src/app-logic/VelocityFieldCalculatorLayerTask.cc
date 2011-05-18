@@ -24,17 +24,16 @@
  */
 
 #include "VelocityFieldCalculatorLayerTask.h"
-#include "TopologyBoundaryResolverLayerTask.h"
 
 #include "AppLogicUtils.h"
 #include "PlateVelocityUtils.h"
 
 
-const char *GPlatesAppLogic::VelocityFieldCalculatorLayerTask::MESH_POINT_FEATURES_CHANNEL_NAME =
-		"Mesh-point Features";
+const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME =
+		"Multi-point features";
 
-const char *GPlatesAppLogic::VelocityFieldCalculatorLayerTask::POLYGON_FEATURES_CHANNEL_NAME =
-		"Source Features";
+const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME =
+		"Reconstructed static/dynamic polygons/networks";
 
 
 bool
@@ -45,113 +44,220 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::can_process_feature_collectio
 }
 
 
-std::vector<GPlatesAppLogic::Layer::input_channel_definition_type>
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_definitions() const
+std::vector<GPlatesAppLogic::LayerInputChannelType>
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() const
 {
-	std::vector<Layer::input_channel_definition_type> input_channel_definitions;
+	std::vector<LayerInputChannelType> input_channel_types;
 
 	// Channel definition for the reconstruction tree.
-	input_channel_definitions.push_back(
-			boost::make_tuple(
+	input_channel_types.push_back(
+			LayerInputChannelType(
 					get_reconstruction_tree_channel_name(),
-					Layer::INPUT_RECONSTRUCTION_TREE_DATA,
-					Layer::ONE_DATA_IN_CHANNEL));
+					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
+					LayerTaskType::RECONSTRUCTION));
 
-	// Channel definition for the polygon features.
-	input_channel_definitions.push_back(
-			boost::make_tuple(
-					POLYGON_FEATURES_CHANNEL_NAME,
-					Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA,
-					Layer::MULTIPLE_DATAS_IN_CHANNEL));
+	// Channel definition for the surfaces on which to calculate velocities:
+	// - reconstructed static polygons, or
+	// - resolved topological dynamic polygons, or
+	// - resolved topological networks.
+	std::vector<LayerTaskType::Type> surfaces_input_channel_types;
+	surfaces_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
+	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER);
+	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
+	input_channel_types.push_back(
+			LayerInputChannelType(
+					RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME,
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
+					surfaces_input_channel_types));
 
-	// Channel definition for the mesh-point features.
-	input_channel_definitions.push_back(
-			boost::make_tuple(
-					MESH_POINT_FEATURES_CHANNEL_NAME,
-					Layer::INPUT_FEATURE_COLLECTION_DATA,
-					Layer::MULTIPLE_DATAS_IN_CHANNEL));
+	// Channel definition for the multi-point features.
+	// Any features really, just expecting features containing multi-point geometries.
+	// NOTE: Previously only accepted "MeshNode" features but now accept anything that
+	// 
+	input_channel_types.push_back(
+			LayerInputChannelType(
+					VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME,
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
 	
-	return input_channel_definitions;
+	return input_channel_types;
 }
 
 
 QString
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_main_input_feature_collection_channel() const
 {
-	return MESH_POINT_FEATURES_CHANNEL_NAME;
+	return VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME;
 }
 
 
-GPlatesAppLogic::Layer::LayerOutputDataType
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_output_definition() const
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	return Layer::OUTPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA;
+	if (input_channel_name == VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME)
+	{
+		d_velocity_field_calculator_layer_proxy
+				->add_multi_point_feature_collection(feature_collection);
+	}
 }
 
 
-boost::optional<GPlatesAppLogic::layer_task_data_type>
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::process(
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	if (input_channel_name == VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME)
+	{
+		d_velocity_field_calculator_layer_proxy
+				->remove_multi_point_feature_collection(feature_collection);
+	}
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::modified_input_file(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	if (input_channel_name == VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME)
+	{
+		// Let the velocity layer proxy know that one of the feature collections
+		// containing multi-points has been modified.
+		d_velocity_field_calculator_layer_proxy
+				->modified_multi_point_feature_collection(feature_collection);
+	}
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_layer_proxy_connection(
+		const QString &input_channel_name,
+		const LayerProxy::non_null_ptr_type &layer_proxy)
+{
+	if (input_channel_name == get_reconstruction_tree_channel_name())
+	{
+		// Make sure the input layer proxy is a reconstruction layer proxy.
+		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructionLayerProxy>(layer_proxy);
+		if (reconstruction_layer_proxy)
+		{
+			// Stop using the default reconstruction layer proxy.
+			d_using_default_reconstruction_layer_proxy = false;
+
+			d_velocity_field_calculator_layer_proxy->set_current_reconstruction_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
+		}
+	}
+	else if (input_channel_name == RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME)
+	{
+		// The input layer proxy is one of the following layer proxy types:
+		// - reconstruct,
+		// - topological boundary resolver,
+		// - topological network resolver.
+
+		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
+		if (reconstruct_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->add_reconstructed_polygons_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyBoundaryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyBoundaryResolverLayerProxy>(layer_proxy);
+		if (topological_boundary_resolver_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->add_topological_boundary_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_boundary_resolver_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyNetworkResolverLayerProxy *> topological_network_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
+		if (topological_network_resolver_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->add_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_layer_proxy_connection(
+		const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy)
+{
+	if (input_channel_name == get_reconstruction_tree_channel_name())
+	{
+		// Make sure the input layer proxy is a reconstruction layer proxy.
+		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						ReconstructionLayerProxy>(layer_proxy);
+		if (reconstruction_layer_proxy)
+		{
+			// Start using the default reconstruction layer proxy.
+			d_using_default_reconstruction_layer_proxy = true;
+
+			d_velocity_field_calculator_layer_proxy->set_current_reconstruction_layer_proxy(
+					d_default_reconstruction_layer_proxy);
+		}
+	}
+	else if (input_channel_name == RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME)
+	{
+		// The input layer proxy is one of the following layer proxy types:
+		// - reconstruct,
+		// - topological boundary resolver,
+		// - topological network resolver.
+
+		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
+		if (reconstruct_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->remove_reconstructed_polygons_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyBoundaryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyBoundaryResolverLayerProxy>(layer_proxy);
+		if (topological_boundary_resolver_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->remove_topological_boundary_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_boundary_resolver_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyNetworkResolverLayerProxy *> topological_network_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
+		if (topological_network_resolver_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->remove_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::update(
 		const Layer &layer_handle /* the layer invoking this */,
-		const input_data_type &input_data,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
+		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
 {
-	// Get the reconstruction tree input.
-	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree =
-			extract_reconstruction_tree(
-					input_data,
-					default_reconstruction_tree);
-	if (!reconstruction_tree)
+	d_velocity_field_calculator_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+
+	// If our layer proxy is currently using the default reconstruction layer proxy then
+	// tell our layer proxy about the new default reconstruction layer proxy.
+	if (d_using_default_reconstruction_layer_proxy)
 	{
-		// Expecting a single reconstruction tree.
-		return boost::none;
+		// Avoid setting it every update unless it's actually a different layer.
+		if (default_reconstruction_layer_proxy != d_default_reconstruction_layer_proxy)
+		{
+			d_velocity_field_calculator_layer_proxy->set_current_reconstruction_layer_proxy(
+					default_reconstruction_layer_proxy);
+		}
 	}
 
-	// Get the polygon features collection input.
-	std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> reconstructed_polygons;
-	extract_input_channel_data(
-			reconstructed_polygons,
-			POLYGON_FEATURES_CHANNEL_NAME,
-			input_data);
-
-	// Double check for no polygons 
-	if (reconstructed_polygons.empty()) {
-		return boost::none;
-	}
-
-	// Get the mesh-point features collection input.
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> mesh_point_feature_collections;
-	extract_input_channel_data(
-			mesh_point_feature_collections,
-			MESH_POINT_FEATURES_CHANNEL_NAME,
-			input_data);
-
-#if 0
-// NOTE: this style only used the first set found in reconstructed_polygons
-// I've added a new call below to solver the velocity field on all reconstructed_polygons
-// MT 2010-12-09
-	// Calculate the velocity fields.
-	const ReconstructionGeometryCollection::non_null_ptr_to_const_type
-			velocity_fields =
-					PlateVelocityUtils::solve_velocities(
-							*reconstruction_tree,
-							reconstruction_time,
-							anchored_plate_id,
-							mesh_point_feature_collections,
-							*reconstructed_polygons.front());
-#endif
-
-	// Calculate the velocity fields.
-	const ReconstructionGeometryCollection::non_null_ptr_to_const_type
-			velocity_fields =
-					PlateVelocityUtils::solve_velocities_on_multiple_recon_geom_collections(
-							*reconstruction_tree,
-							reconstruction_time,
-							anchored_plate_id,
-							mesh_point_feature_collections,
-							reconstructed_polygons);
-
-	// Return the velocity fields.
-	return layer_task_data_type(velocity_fields);
+	d_default_reconstruction_layer_proxy = default_reconstruction_layer_proxy;
 }

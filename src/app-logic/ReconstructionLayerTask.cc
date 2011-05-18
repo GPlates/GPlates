@@ -28,7 +28,7 @@
 #include "ReconstructUtils.h"
 
 
-const char *GPlatesAppLogic::ReconstructionLayerTask::RECONSTRUCTION_FEATURES_CHANNEL_NAME =
+const QString GPlatesAppLogic::ReconstructionLayerTask::RECONSTRUCTION_FEATURES_CHANNEL_NAME =
 		"Reconstruction features";
 
 
@@ -40,19 +40,18 @@ GPlatesAppLogic::ReconstructionLayerTask::can_process_feature_collection(
 }
 
 
-std::vector<GPlatesAppLogic::Layer::input_channel_definition_type>
-GPlatesAppLogic::ReconstructionLayerTask::get_input_channel_definitions() const
+std::vector<GPlatesAppLogic::LayerInputChannelType>
+GPlatesAppLogic::ReconstructionLayerTask::get_input_channel_types() const
 {
-	std::vector<Layer::input_channel_definition_type> input_channel_definitions;
+	std::vector<LayerInputChannelType> input_channel_types;
 
 	// Channel definition for the reconstruction features.
-	input_channel_definitions.push_back(
-			boost::make_tuple(
+	input_channel_types.push_back(
+			LayerInputChannelType(
 					RECONSTRUCTION_FEATURES_CHANNEL_NAME,
-					Layer::INPUT_FEATURE_COLLECTION_DATA,
-					Layer::MULTIPLE_DATAS_IN_CHANNEL));
-	
-	return input_channel_definitions;
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
+
+	return input_channel_types;
 }
 
 
@@ -63,39 +62,51 @@ GPlatesAppLogic::ReconstructionLayerTask::get_main_input_feature_collection_chan
 }
 
 
-GPlatesAppLogic::Layer::LayerOutputDataType
-GPlatesAppLogic::ReconstructionLayerTask::get_output_definition() const
+void
+GPlatesAppLogic::ReconstructionLayerTask::add_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	return Layer::OUTPUT_RECONSTRUCTION_TREE_DATA;
+	if (input_channel_name == RECONSTRUCTION_FEATURES_CHANNEL_NAME)
+	{
+		d_reconstruction_layer_proxy->add_reconstruction_feature_collection(feature_collection);
+	}
 }
 
 
-boost::optional<GPlatesAppLogic::layer_task_data_type>
-GPlatesAppLogic::ReconstructionLayerTask::process(
+void
+GPlatesAppLogic::ReconstructionLayerTask::remove_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+		
+{
+	if (input_channel_name == RECONSTRUCTION_FEATURES_CHANNEL_NAME)
+	{
+		d_reconstruction_layer_proxy->remove_reconstruction_feature_collection(feature_collection);
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructionLayerTask::modified_input_file(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	if (input_channel_name == RECONSTRUCTION_FEATURES_CHANNEL_NAME)
+	{
+		// Let the reconstruction layer proxy know that one of the rotation feature collections has been modified.
+		d_reconstruction_layer_proxy->modified_reconstruction_feature_collection(feature_collection);
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructionLayerTask::update(
 		const Layer &layer_handle /* the layer invoking this */,
-		const input_data_type &input_data,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionTree::non_null_ptr_to_const_type &/*default_reconstruction_tree*/)
+		const ReconstructionLayerProxy::non_null_ptr_type &/*default_reconstruction_layer_proxy*/)
 {
-	//
-	// Get the reconstruction features collection input.
-	//
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_features_collection;
-	extract_input_channel_data(
-			reconstruction_features_collection,
-			RECONSTRUCTION_FEATURES_CHANNEL_NAME,
-			input_data);
-
-	//
-	// Create the reconstruction tree.
-	//
-	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-			ReconstructUtils::create_reconstruction_tree(
-					reconstruction_time,
-					anchored_plate_id,
-					reconstruction_features_collection);
-
-	// Return the reconstruction tree.
-	return layer_task_data_type(reconstruction_tree);
+	d_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+	d_reconstruction_layer_proxy->set_current_anchor_plate_id(anchored_plate_id);
 }

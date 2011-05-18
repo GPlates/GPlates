@@ -27,9 +27,11 @@
 #define GPLATES_APP_LOGIC_PLATEVELOCITYUTILS_H
 
 #include <vector>
+#include <boost/function.hpp>
 #include <boost/optional.hpp>
 
-#include "TopologyUtils.h"
+#include "AppLogicFwd.h"
+#include "ReconstructionTreeCreator.h"
 
 #include "file-io/FileInfo.h"
 
@@ -42,18 +44,9 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
-// FIXME: There should be no view operation code here (this is app logic code).
-// Fix 'solve_velocities()' below to not create any rendered geometries (move to
-// a higher source code tier).
-#include "view-operations/RenderedGeometryCollection.h"
-
 
 namespace GPlatesAppLogic
 {
-	class Reconstruction;
-	class ReconstructionGeometryCollection;
-	class ReconstructionTree;
-
 	namespace PlateVelocityUtils
 	{
 		/**
@@ -93,62 +86,42 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Solves velocities for all loaded velocity feature collections.
+		 * Solves velocities for the specified:
+		 * - reconstructed static polygons,
+		 * - resolved topological boundaries,
+		 * - resolved topological networks.
 		 *
-		 * See @a PlateVelocityUtils::solve_velocities for details on
-		 * how the results are generated and where they are stored.
-		 */
-		const ReconstructionGeometryCollection::non_null_ptr_type
-		solve_velocities(
-				ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &mesh_point_feature_collections,
-				const ReconstructionGeometryCollection &reconstructed_polygons);
-
-		/**
-		 * Solves velocities for all loaded velocity feature collections.
+		 * Any, or all, of the above can be specified.
 		 *
-		 * See @a PlateVelocityUtils::solve_velocities for details on
-		 * how the results are generated and where they are stored.
-		 */
-		const ReconstructionGeometryCollection::non_null_ptr_type
-		solve_velocities_on_multiple_recon_geom_collections(
-				ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &mesh_point_feature_collections,
-				std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> &reconstructed_polygons);
-
-		/**
-		 * Solves velocities for mesh-point features in @a mesh_point_feature_collection
-		 * and stores the new MultiPointVectorField instances in
-		 * @a velocity_fields_to_populate.
+		 * The precedence is topological networks then topological boundaries then static polygons.
+		 * So if a point is in a topological network and a topological boundary then the velocity
+		 * in the topological network is calculated.
 		 *
-		 * The velocities are calculated at the domain points specified in each feature
-		 * (currently by the GmlMultiPoint in the gpml:VelocityField feature).
+		 * The positions at which velocities are calculated is determined by the multi-point
+		 * geometries inside the features in @a multi_point_feature_collections.
 		 *
-		 * The reconstruction trees @a reconstruction_tree_1 and @a reconstruction_tree_2
-		 * are used to calculate velocities and correspond to times
-		 * @a reconstruction_time_1 and @a reconstruction_time_2.
-		 * The larger the time delta the larger the calculated velocities will be.
+		 * The calculated velocities are stored in @a MultiPointVectorField instances (one per
+		 * input multi-point geometry) and appended to @a multi_point_velocity_fields.
 		 *
-		 * @a reconstruction_time_1 is "the" reconstruction time, and
-		 * @a reconstruction_tree_1 is "the" reconstruction tree.
+		 * Note that only the @a ReconstructedFeatureGeometry objects, in @a reconstructed_static_polygons,
+		 * that contain polygon geometry are used (other geometry types are ignored).
 		 *
-		 * FIXME: Presentation code should not be in here (this is app logic code).
-		 * Remove any rendered geometry code to the presentation tier.
+		 * @a get_reconstruction_tree_function is a function that returns a @a ReconstructionTree
+		 * given a reconstruction time. Internally it is used to retrieve a reconstruction tree
+		 * at @a reconstruction_time and "@a reconstruction_time + 1" in order to calculate velocities.
 		 */
 		void
-		solve_velocities_inner(
-				ReconstructionGeometryCollection &velocity_fields_to_populate,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &mesh_point_feature_collection,
-				const ReconstructionGeometryCollection &reconstructed_polygons,
-				ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_1,
-				ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_2,
-				const double &reconstruction_time_1,
-				const double &reconstruction_time_2,
-				GPlatesModel::integer_plate_id_type reconstruction_root);
+		solve_velocities(
+				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_velocity_fields,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &multi_point_feature_collections,
+				// NOTE: Not specifying default arguments because that forces definition of the recon geom classes
+				// (due to destructor of std::vector requiring non_null_ptr_type destructor requiring recon geom definition)
+				// and we are avoiding that due to a cyclic header dependency with "ResolvedTopologicalNetwork.h"...
+				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_static_polygons,
+				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
 
 
 		//////////////////////////////
@@ -209,7 +182,7 @@ namespace GPlatesAppLogic
 			 */
 			explicit
 			TopologicalNetworkVelocities(
-					const TopologyUtils::resolved_network_for_interpolation_query_type &
+					const TopologyUtils::resolved_network_for_interpolation_query_shared_ptr_type &
 							network_velocities_query) :
 				d_network_velocities_query(network_velocities_query)
 			{  }
@@ -243,7 +216,7 @@ namespace GPlatesAppLogic
 					std::vector<GPlatesMaths::VectorColatitudeLongitude> &network_velocities) const;
 
 		private:
-			TopologyUtils::resolved_network_for_interpolation_query_type d_network_velocities_query;
+			TopologyUtils::resolved_network_for_interpolation_query_shared_ptr_type d_network_velocities_query;
 		};
 
 

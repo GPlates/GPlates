@@ -15,8 +15,16 @@ set(srcs
     CalculateVelocity.h
     CartesianConvMatrix3D.cc
     CartesianConvMatrix3D.h
+    Centroid.cc
+    Centroid.h
     ConstGeometryOnSphereVisitor.h
+    CubeCoordinateFrame.cc
+    CubeCoordinateFrame.h
+    CubeQuadTree.h
+    CubeQuadTreeLocation.cc
+    CubeQuadTreeLocation.h
     CubeQuadTreePartition.h
+    CubeQuadTreePartitionUtils.h
     EllipseGenerator.cc
     EllipseGenerator.h
     FiniteRotation.cc
@@ -32,6 +40,7 @@ set(srcs
     GreatCircleArc.h
     GridOnSphere.cc
     GridOnSphere.h
+    HierarchicalTriangularMesh.h
     HighPrecision.h
     IndeterminateArcRotationAxisException.h
     IndeterminateResultException.h
@@ -47,6 +56,7 @@ set(srcs
     LatLonPoint.cc
     LatLonPoint.h
     MathematicalException.h
+    MathsFwd.h
     MathsUtils.cc
     MathsUtils.h
     MultiPointOnSphere.cc
@@ -61,6 +71,8 @@ set(srcs
     PointProximityHitDetail.h
     PolygonIntersections.cc
     PolygonIntersections.h
+    PolygonMesh.cc
+    PolygonMesh.h
     PolygonOnSphere.cc
     PolygonOnSphere.h
     PolygonOrientation.cc
@@ -84,6 +96,10 @@ set(srcs
     Rotation.h
     SmallCircle.cc
     SmallCircle.h
+    SmallCircleBounds.cc
+    SmallCircleBounds.h
+    SmallCircleCoverageMesh.cc
+    SmallCircleCoverageMesh.h
     SphereSettings.h
     SphericalArea.cc
     SphericalArea.h

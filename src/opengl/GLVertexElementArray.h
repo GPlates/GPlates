@@ -27,32 +27,58 @@
 #ifndef GPLATES_OPENGL_GLVERTEXELEMENTARRAY_H
 #define GPLATES_OPENGL_GLVERTEXELEMENTARRAY_H
 
+#include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
-#include <boost/shared_array.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
 
 #include "GLArray.h"
-
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/ReferenceCount.h"
+#include "GLVertexBufferResource.h"
 
 
 namespace GPlatesOpenGL
 {
 	/**
+	 * Traits class to find the size of a vertex element from its type.
+	 */
+	template <typename VertexElementType>
+	struct VertexElementTraits; // Unspecialised class intentionally not defined.
+
+	template <>
+	struct VertexElementTraits<GLubyte>
+	{
+		static const GLenum type = GL_UNSIGNED_BYTE;
+	};
+
+	template <>
+	struct VertexElementTraits<GLushort>
+	{
+		static const GLenum type = GL_UNSIGNED_SHORT;
+	};
+
+	template <>
+	struct VertexElementTraits<GLuint>
+	{
+		static const GLenum type = GL_UNSIGNED_INT;
+	};
+
+
+	/**
 	 * An array containing vertex indices into an OpenGL vertex array.
-	 * 
 	 */
 	class GLVertexElementArray :
 			public GPlatesUtils::ReferenceCount<GLVertexElementArray>
 	{
 	public:
 		//! A convenience typedef for a shared pointer to a non-const @a GLVertexElementArray.
-		typedef GPlatesUtils::non_null_intrusive_ptr<GLVertexElementArray> non_null_ptr_type;
+		typedef boost::shared_ptr<GLVertexElementArray> shared_ptr_type;
+		typedef boost::shared_ptr<const GLVertexElementArray> shared_ptr_to_const_type;
 
-		//! A convenience typedef for a shared pointer to a const @a GLVertexElementArray.
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GLVertexElementArray> non_null_ptr_to_const_type;
+		//! A convenience typedef for a weak pointer to a @a GLVertexElementArray.
+		typedef boost::weak_ptr<GLVertexElementArray> weak_ptr_type;
+		typedef boost::weak_ptr<const GLVertexElementArray> weak_ptr_to_const_type;
 
 
 		/**
@@ -61,10 +87,16 @@ namespace GPlatesOpenGL
 		 * You'll need to call @a set_array_data.
 		 */
 		static
-		non_null_ptr_type
-		create()
+		shared_ptr_type
+		create(
+				GLArray::UsageType usage = GLArray::USAGE_STATIC,
+				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
+						vertex_buffer_manager = boost::none)
 		{
-			return non_null_ptr_type(new GLVertexElementArray());
+			return shared_ptr_type(
+					new GLVertexElementArray(
+							GLArray::create(
+									GLArray::ARRAY_TYPE_VERTEX_ELEMENTS, usage, vertex_buffer_manager)));
 		}
 
 
@@ -75,15 +107,26 @@ namespace GPlatesOpenGL
 		 *
 		 * @a VertexElementType should be one of GLubyte, GLushort, or GLuint.
 		 * It is the type (and therefore size) of each vertex index stored in the array.
-		 * It must match the type specified in @a gl_draw_elements or @a gl_draw_range_elements_EXT.
+		 *
+		 * If @a vertex_buffer_manager is specified *and* vertex buffer objects are supported
+		 * then an OpenGL vertex buffer object is used internally to store the vertex indices.
 		 */
 		template <typename VertexElementType>
 		static
-		non_null_ptr_type
+		shared_ptr_type
 		create(
-				const std::vector<VertexElementType> &vertex_element_array)
+				const VertexElementType *elements,
+				const unsigned int num_elements,
+				GLArray::UsageType usage = GLArray::USAGE_STATIC,
+				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
+						vertex_buffer_manager = boost::none)
 		{
-			return non_null_ptr_type(new GLVertexElementArray(GLArray(vertex_element_array)));
+			return shared_ptr_type(
+					new GLVertexElementArray(
+							GLArray::create(
+									elements, num_elements,
+									GLArray::ARRAY_TYPE_VERTEX_ELEMENTS, usage, vertex_buffer_manager),
+							VertexElementTraits<VertexElementType>::type));
 		}
 
 
@@ -94,38 +137,52 @@ namespace GPlatesOpenGL
 		 *
 		 * @a VertexElementType should be one of GLubyte, GLushort, or GLuint.
 		 * It is the type (and therefore size) of each vertex index stored in the array.
-		 * It must match the type specified in @a gl_draw_elements or @a gl_draw_range_elements_EXT.
+		 *
+		 * If @a vertex_buffer_manager is specified *and* vertex buffer objects are supported
+		 * then an OpenGL vertex buffer object is used internally to store the vertex indices.
 		 */
-		template <typename VertexElementForwardIter>
+		template <typename VertexElementType>
 		static
-		non_null_ptr_type
+		shared_ptr_type
 		create(
-				VertexElementForwardIter begin,
-				VertexElementForwardIter end)
+				const std::vector<VertexElementType> &elements,
+				GLArray::UsageType usage = GLArray::USAGE_STATIC,
+				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
+						vertex_buffer_manager = boost::none)
 		{
-			return non_null_ptr_type(new GLVertexElementArray(GLArray(begin, end)));
+			return create(&elements[0], elements.size(), usage, vertex_buffer_manager);
 		}
 
 
 		/**
-		 * Creates a @a GLVertexElementArray object.
-		 * 
-		 * Ownership of the vertex element array data is shared internally.
+		 * Creates a @a GLVertexElementArray object that uses the same array data as
+		 * another @a GLVertexElementArray.
 		 *
-		 * @a VertexElementType should be one of GLubyte, GLushort, or GLuint.
-		 * It is the type (and therefore size) of each vertex index stored in the array.
-		 * It must match the type specified in @a gl_draw_elements or @a gl_draw_range_elements_EXT.
+		 * This is useful when you want to use the same set of indices but over several
+		 * different index ranges (because drawing different primitives in a single vertex array).
 		 *
-		 * When @a draw is called it will not do anything unless you call
-		 * @a gl_draw_elements or @a gl_draw_range_elements_EXT to setup the draw parameters.
+		 * However note that if you change the array data it will affect all @a GLVertexElementArray
+		 * instances sharing it.
+		 * NOTE: If you later call @a set_array_data, be careful not to change the VertexElementType
+		 * because it could mess up how other @a GLVertexElementArray instances (that share it) will see it.
 		 */
-		template <typename VertexElementType>
 		static
-		non_null_ptr_type
+		shared_ptr_type
 		create(
-				const boost::shared_array<VertexElementType> &vertex_element_array)
+				const GLArray::non_null_ptr_type &array_data,
+				GLenum type)
 		{
-			return non_null_ptr_type(new GLVertexElementArray(GLArray(vertex_element_array)));
+			return shared_ptr_type(new GLVertexElementArray(array_data, type));
+		}
+
+
+		/**
+		 * Returns the array data referenced by us.
+		 */
+		GLArray::non_null_ptr_type
+		get_array_data()
+		{
+			return d_array_data;
 		}
 
 
@@ -133,20 +190,16 @@ namespace GPlatesOpenGL
 		 * Specifies the array data to be used for this @a GLVertexElementArray.
 		 *
 		 * The vertex element array data is copied into an internal array.
-		 *
-		 * This method can be used to set the array data if the @a create overload
-		 * with no data was used to create 'this' object, or this method can be used
-		 * to change the array data.
-		 *
-		 * NOTE: If 'VertexElementType' is a different type to that passed to @a create
-		 * then you may need to call @a gl_draw_elements or @a glDrawRangeElementsExt again.
 		 */
 		template <typename VertexElementType>
 		void
 		set_array_data(
-				const std::vector<VertexElementType> &array_data)
+				const VertexElementType *elements,
+				const unsigned int num_elements)
 		{
-			d_array_data = GLArray(array_data);
+			d_array_data->set_array_data(elements, num_elements);
+
+			d_type = VertexElementTraits<VertexElementType>::type;
 		}
 
 
@@ -154,50 +207,13 @@ namespace GPlatesOpenGL
 		 * Specifies the array data to be used for this @a GLVertexElementArray.
 		 *
 		 * The vertex element array data is copied into an internal array.
-		 *
-		 * @a VertexElementType should be one of GLubyte, GLushort, or GLuint.
-		 * It is the type (and therefore size) of each vertex index stored in the array.
-		 * It must match the type specified in @a gl_draw_elements or @a gl_draw_range_elements_EXT.
-		 *
-		 * This method can be used to set the array data if the @a create overload
-		 * with no data was used to create 'this' object, or this method can be used
-		 * to change the array data.
-		 *
-		 * NOTE: If 'VertexElementType' is a different type to that passed to @a create
-		 * then you may need to call @a gl_draw_elements or @a glDrawRangeElementsExt again.
-		 */
-		template <typename VertexElementForwardIter>
-		void
-		set_array_data(
-				VertexElementForwardIter begin,
-				VertexElementForwardIter end)
-		{
-			d_array_data = GLArray(begin, end);
-		}
-
-
-		/**
-		 * Specifies the array data to be used for this @a GLVertexElementArray.
-		 * 
-		 * Ownership of the vertex element array data is shared internally.
-		 *
-		 * @a VertexElementType should be one of GLubyte, GLushort, or GLuint.
-		 * It is the type (and therefore size) of each vertex index stored in the array.
-		 * It must match the type specified in @a gl_draw_elements or @a gl_draw_range_elements_EXT.
-		 *
-		 * This method can be used to set the array data if the @a create overload
-		 * with no data was used to create 'this' object, or this method can be used
-		 * to change the array data.
-		 *
-		 * NOTE: If 'VertexElementType' is a different type to that passed to @a create
-		 * then you may need to call @a gl_draw_elements or @a glDrawRangeElementsExt again.
 		 */
 		template <typename VertexElementType>
 		void
 		set_array_data(
-				const boost::shared_array<VertexElementType> &array_data)
+				const std::vector<VertexElementType> &elements)
 		{
-			d_array_data = GLArray(array_data);
+			set_array_data(&elements[0], elements.size());
 		}
 
 
@@ -211,7 +227,6 @@ namespace GPlatesOpenGL
 		gl_draw_elements(
 				GLenum mode,
 				GLsizei count,
-				GLenum type,
 				GLint indices_offset);
 
 		/**
@@ -233,7 +248,6 @@ namespace GPlatesOpenGL
 				GLuint start,
 				GLuint end,
 				GLsizei count,
-				GLenum type,
 				GLint indices_offset);
 
 
@@ -250,7 +264,6 @@ namespace GPlatesOpenGL
 		{
 			GLenum mode;
 			GLsizei count;
-			GLenum type;
 			GLint indices_offset;
 		};
 		struct DrawRangeElementsEXT
@@ -263,21 +276,24 @@ namespace GPlatesOpenGL
 		/**
 		 * The opaque vertex index data.
 		 */
-		boost::optional<GLArray> d_array_data;
+		GLArray::non_null_ptr_type d_array_data;
+
+		/**
+		 * The type (and hence size) of a vertex index (if any data has been set).
+		 */
+		boost::optional<GLenum> d_type;
 
 		boost::optional<DrawElements> d_draw_elements;
 		boost::optional<DrawRangeElementsEXT> d_draw_range_elements;
 
 
-		//! Default constructor.
-		GLVertexElementArray()
-		{  }
-			
 		//! Constructor.
 		explicit
 		GLVertexElementArray(
-				const GLArray &vertex_element_array) :
-			d_array_data(vertex_element_array)
+				const GLArray::non_null_ptr_type &vertex_element_array,
+				const boost::optional<GLenum> &type = boost::none) :
+			d_array_data(vertex_element_array),
+			d_type(type)
 		{  }
 	};
 }

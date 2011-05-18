@@ -27,7 +27,6 @@
 #ifndef GPLATES_OPENGL_GLTEXTUREUTILS_H
 #define GPLATES_OPENGL_GLTEXTUREUTILS_H
 
-#include <boost/cstdint.hpp>
 #include <QColor>
 #include <QImage>
 #include <QRect>
@@ -131,48 +130,6 @@ namespace GPlatesOpenGL
 				const float text_scale = 1.0f,
 				const QColor &text_colour = QColor(255, 255, 255, 255)/*white*/,
 				const QColor &background_colour = QColor(0, 0, 0, 255)/*black*/);
-
-
-		/**
-		 * Used to determine if some data is still valid.
-		 *
-		 * This is currently used for texture tiles where a @a ValidToken is stored with
-		 * each cached texture and used in subsequent renders to determine if the cached
-		 * tile is still valid.
-		 */
-		class ValidToken
-		{
-		public:
-			ValidToken() :
-				d_invalidate_counter(0)
-			{  }
-
-			/**
-			 * Returns true if 'this' token matches that of @a current_token.
-			 *
-			 * Typically 'this' token is cached by the client and subsequently queried
-			 * against the current token to determine if their cache should be invalidated.
-			 */
-			bool
-			is_still_valid(
-					const ValidToken &current_token) const
-			{
-				return d_invalidate_counter == current_token.d_invalidate_counter;
-			}
-
-			/**
-			 * Invalidates this token such it will no longer return true in @a is_still_valid
-			 * when compared with a token that @a is_still_valid previously returned true for.
-			 */
-			void
-			invalidate()
-			{
-				d_invalidate_counter++;
-			}
-
-		private:
-			boost::intmax_t d_invalidate_counter;
-		};
 	}
 }
 

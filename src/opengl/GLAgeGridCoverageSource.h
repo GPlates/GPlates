@@ -50,6 +50,9 @@ namespace GPlatesOpenGL
 	 * An arbitrary dimension source of RGBA data extracted from the coverage of an age grid
 	 * raster into an RGBA image that contains white colour and the coverage in the alpha channel.
 	 *
+	 * NOTE: The inverse of the coverage is returned - this makes it easier to implement
+	 * the combining of age masking (for ocean regions) with polygon masking (for continent regions).
+	 *
 	 * The age grid raster itself is input via a proxied raster.
 	 */
 	class GLAgeGridCoverageSource :
@@ -114,7 +117,8 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer);
+				GLRenderer &renderer,
+				GLRenderer::RenderTargetUsageType render_target_usage);
 
 	private:
 		/**

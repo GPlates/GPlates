@@ -35,11 +35,11 @@
 
 #include "opengl/GLBlendState.h"
 #include "opengl/GLCompositeDrawable.h"
-#include "opengl/GLRenderGraphDrawableNode.h"
+#include "opengl/GLRenderer.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLTransform.h"
 #include "opengl/GLUQuadric.h"
-#include "opengl/Vertex.h"
+#include "opengl/GLVertex.h"
 
 #include "presentation/ViewState.h"
 
@@ -49,7 +49,7 @@ namespace
 	static const double RADIUS = 1.0;
 	static const unsigned int NUM_SLICES = 72;
 
-	typedef GPlatesOpenGL::Vertex vertex_type;
+	typedef GPlatesOpenGL::GLColouredVertex vertex_type;
 	typedef std::pair<double, double> double_pair;
 
 
@@ -87,25 +87,23 @@ namespace
 	{
 		static const GLfloat Z_VALUE = 0;
 		GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream =
-			GPlatesOpenGL::create_stream<vertex_type>();
+				GPlatesOpenGL::GLStreamPrimitives<vertex_type>::create();
 		GPlatesOpenGL::GLStreamTriangleStrips<vertex_type> stream_triangle_strips(*stream);
 		stream_triangle_strips.begin_triangle_strip();
 
 		for (std::vector<double_pair>::const_iterator iter = sin_cos_angles.begin();
 				iter != sin_cos_angles.end(); ++iter)
 		{
-			vertex_type outer_vertex = {
+			const vertex_type outer_vertex(
 				static_cast<GLfloat>(outer_radius * iter->first),
 				static_cast<GLfloat>(outer_radius * iter->second),
 				Z_VALUE,
-				outer_colour
-			};
-			vertex_type inner_vertex = {
+				outer_colour);
+			const vertex_type inner_vertex(
 				static_cast<GLfloat>(inner_radius * iter->first),
 				static_cast<GLfloat>(inner_radius * iter->second),
 				Z_VALUE,
-				inner_colour
-			};
+				inner_colour);
 
 			stream_triangle_strips.add_vertex(outer_vertex);
 			stream_triangle_strips.add_vertex(inner_vertex);
@@ -299,7 +297,7 @@ GPlatesGui::OpaqueSphere::OpaqueSphere(
 
 void
 GPlatesGui::OpaqueSphere::paint(
-		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
+		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesMaths::UnitVector3D &axis,
 		double angle_in_deg)
 {
@@ -310,11 +308,11 @@ GPlatesGui::OpaqueSphere::paint(
 		d_drawable = create_sphere_drawable(Colour::to_rgba8(d_colour));
 	}
 
-	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type drawable_node =
-			GPlatesOpenGL::GLRenderGraphDrawableNode::create(d_drawable);
-	drawable_node->set_transform(undo_rotation(axis, angle_in_deg));
-	drawable_node->set_state_set(d_state_set);
-
-	render_graph_parent_node->add_child_node(drawable_node);
+	GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type transform = undo_rotation(axis, angle_in_deg);
+	renderer.push_transform(*transform);
+	renderer.push_state_set(d_state_set);
+	renderer.add_drawable(d_drawable);
+	renderer.pop_state_set();
+	renderer.pop_transform();
 }
 

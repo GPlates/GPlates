@@ -37,15 +37,14 @@
 #include "presentation/ViewState.h"
 #include "file-io/ExportTemplateFilenameSequence.h"
 
-using namespace GPlatesQtWidgets;
 
-const QString ResultTableDialog::filter_csv(QObject::tr("CSV (*.csv)"));
-const QString ResultTableDialog::filter_csv_ext(QObject::tr("csv"));
-const QString ResultTableDialog::page_label_format("Page: %d/%d ");
+const QString GPlatesQtWidgets::ResultTableDialog::filter_csv(QObject::tr("CSV (*.csv)"));
+const QString GPlatesQtWidgets::ResultTableDialog::filter_csv_ext(QObject::tr("csv"));
+const QString GPlatesQtWidgets::ResultTableDialog::page_label_format("Page: %d/%d ");
 
 	
 void
-ResultTableDialog::update_page_label()
+GPlatesQtWidgets::ResultTableDialog::update_page_label()
 {
 	char tmp[20];
 	sprintf(
@@ -62,7 +61,7 @@ ResultTableDialog::update_page_label()
 }
 
 void 
-ResultTableDialog::update_time_label()
+GPlatesQtWidgets::ResultTableDialog::update_time_label()
 {
 	char tmp[50];
 	sprintf(
@@ -77,7 +76,7 @@ ResultTableDialog::update_time_label()
 					QApplication::UnicodeUTF8));
 }
 
-ResultTableDialog::ResultTableDialog(
+GPlatesQtWidgets::ResultTableDialog::ResultTableDialog(
 		const std::vector< DataTable > data_tables,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_,
@@ -139,7 +138,7 @@ ResultTableDialog::ResultTableDialog(
 
 
 void
-ResultTableDialog::init_controls()
+GPlatesQtWidgets::ResultTableDialog::init_controls()
 {
 	QHBoxLayout* hboxLayout_1;
 	QSpacerItem* spacerItem_1;
@@ -220,7 +219,7 @@ ResultTableDialog::init_controls()
 
 
 void
-ResultTableDialog::reject()
+GPlatesQtWidgets::ResultTableDialog::reject()
 {
 	d_page_index = 0;
 	d_page_num = 0;
@@ -229,7 +228,7 @@ ResultTableDialog::reject()
 }
 
 void
-ResultTableDialog::accept()
+GPlatesQtWidgets::ResultTableDialog::accept()
 {
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
 	filters.push_back(FileDialogFilter(filter_csv, filter_csv_ext));
@@ -252,14 +251,14 @@ ResultTableDialog::accept()
 }
 
 void
-ResultTableDialog::handle_next_page()
+GPlatesQtWidgets::ResultTableDialog::handle_next_page()
 {
 	d_page_index++;
 	update();
 }
 
 void
-ResultTableDialog::update()
+GPlatesQtWidgets::ResultTableDialog::update()
 {
 	if(d_page_index >= d_page_num)
 	{
@@ -290,7 +289,7 @@ ResultTableDialog::update()
 }
 
 void
-ResultTableDialog::handle_previous_page()
+GPlatesQtWidgets::ResultTableDialog::handle_previous_page()
 {
 	if(0 == d_page_index)
 	{
@@ -301,14 +300,14 @@ ResultTableDialog::handle_previous_page()
 }
 
 void
-ResultTableDialog::handle_goto_page()
+GPlatesQtWidgets::ResultTableDialog::handle_goto_page()
 {
 	d_page_index = spinBox_page->value() -1 ;
 	update();
 }
 
 void
-ResultTableDialog::handle_save_all()
+GPlatesQtWidgets::ResultTableDialog::handle_save_all()
 {
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
 	filters.push_back(FileDialogFilter(filter_csv, filter_csv_ext));
@@ -378,7 +377,7 @@ ResultTableDialog::handle_save_all()
 
 
 void
-ResultTableDialog::data_arrived(
+GPlatesQtWidgets::ResultTableDialog::data_arrived(
 		const DataTable& table)
 {
 	d_table_model_prt.reset(
@@ -395,7 +394,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 
 
 GPlatesModel::FeatureHandle::weak_ref
-ResultTableDialog::find_feature_by_id(
+GPlatesQtWidgets::ResultTableDialog::find_feature_by_id(
 		GPlatesAppLogic::FeatureCollectionFileState& state,
 		const QString& id)
 {
@@ -451,7 +450,7 @@ GPlatesQtWidgets::ResultTableModel::data(
 
 
 void
-ResultTableDialog::highlight_seed()
+GPlatesQtWidgets::ResultTableDialog::highlight_seed()
 {
 	QModelIndex idx = table_view->currentIndex();
 	QString id;

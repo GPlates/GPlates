@@ -322,7 +322,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 			++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
-			rfg->geometry()->accept_visitor(finder);
+			rfg->reconstructed_geometry()->accept_visitor(finder);
 		}
 	}
 
@@ -382,7 +382,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 
 			// Write the reconstructed geometry.
-			geom_exporter.export_geometry(rfg->geometry(),kvd_for_export); 
+			geom_exporter.export_geometry(rfg->reconstructed_geometry(),kvd_for_export); 
 		}
 	}
 
@@ -421,7 +421,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 			++rfg_iter)
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
-			rfg->geometry()->accept_visitor(finder);
+			rfg->reconstructed_geometry()->accept_visitor(finder);
 		}
 	}
 
@@ -484,7 +484,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 
 			// Write the reconstructed geometry.
-			geom_exporter.export_geometry(rfg->geometry(),kvd_for_export); 
+			geom_exporter.export_geometry(rfg->reconstructed_geometry(),kvd_for_export); 
 		}
 	}
 }

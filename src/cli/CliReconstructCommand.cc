@@ -23,12 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
+
 #include "CliReconstructCommand.h"
 #include "CliFeatureCollectionFileIO.h"
 #include "CliInvalidOptionValue.h"
 #include "CliRequiredOptionNotPresent.h"
 
-#include "app-logic/ReconstructLayerTaskParams.h"
+#include "app-logic/ReconstructParams.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
@@ -194,22 +196,23 @@ GPlatesCli::ReconstructCommand::run(
 	//
 
 	// Perform reconstruction.
-	const GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type
-			reconstruction_geometry_collection =
-					GPlatesAppLogic::ReconstructUtils::reconstruct(
-							GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-									d_recon_time,
-									d_anchor_plate_id,
-									reconstruction_feature_collections),
-							GPlatesAppLogic::ReconstructLayerTaskParams(),
-							reconstructable_feature_collections);
+	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+	GPlatesAppLogic::ReconstructUtils::reconstruct(
+			reconstructed_feature_geometries,
+			d_recon_time,
+			d_anchor_plate_id,
+			reconstructable_feature_collections,
+			reconstruction_feature_collections);
 
-	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
+	// Converts to raw pointers.
 	std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> reconstruct_feature_geom_seq;
-	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-			reconstruction_geometry_collection->begin(),
-			reconstruction_geometry_collection->end(),
-			reconstruct_feature_geom_seq);
+	reconstruct_feature_geom_seq.reserve(reconstructed_feature_geometries.size());
+	BOOST_FOREACH(
+			const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg,
+			reconstructed_feature_geometries)
+	{
+		reconstruct_feature_geom_seq.push_back(rfg.get());
+	}
 
 	// Get the sequence of reconstructable files as File pointers.
 	std::vector<const GPlatesFileIO::File::Reference *> reconstructable_file_ptrs;

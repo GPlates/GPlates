@@ -42,6 +42,7 @@
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
 	class LayerTask;
 
 	/**
@@ -197,7 +198,8 @@ namespace GPlatesAppLogic
 	 */
 	void
 	register_default_layer_task_types(
-			LayerTaskRegistry &layer_task_registry);
+			LayerTaskRegistry &layer_task_registry,
+			ApplicationState &application_state);
 }
 
 #endif // GPLATES_APP_LOGIC_LAYERTASKREGISTRY_H

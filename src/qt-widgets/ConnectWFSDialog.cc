@@ -38,9 +38,7 @@
 
 #include "ConnectWFSDialog.h"
 
-using namespace GPlatesQtWidgets;
-
-ConnectWFSDialog::ConnectWFSDialog(
+GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
 		GPlatesAppLogic::ApplicationState& app_state):
 	d_current_request_id(0),
 	d_app_state(app_state),
@@ -79,14 +77,14 @@ ConnectWFSDialog::ConnectWFSDialog(
 }
 
 
-ConnectWFSDialog::~ConnectWFSDialog()
+GPlatesQtWidgets::ConnectWFSDialog::~ConnectWFSDialog()
 {
 	delete d_progress_dlg;
 }
 
 
 void
-ConnectWFSDialog::handle_accept()
+GPlatesQtWidgets::ConnectWFSDialog::handle_accept()
 {
 	d_canceled = false;
 	//TODO:
@@ -149,14 +147,14 @@ ConnectWFSDialog::handle_accept()
 
 		
 void
-ConnectWFSDialog::handle_reject()
+GPlatesQtWidgets::ConnectWFSDialog::handle_reject()
 {
 	reject();
 }
 
 
 void
-ConnectWFSDialog::hanle_wfs_response(
+GPlatesQtWidgets::ConnectWFSDialog::hanle_wfs_response(
 		int id, 
 		bool err)
 {
@@ -202,7 +200,7 @@ ConnectWFSDialog::hanle_wfs_response(
 
 
 void
-ConnectWFSDialog::handle_proxy_state_change(int state)
+GPlatesQtWidgets::ConnectWFSDialog::handle_proxy_state_change(int state)
 {
 	if(Qt::Unchecked == state)
 	{
@@ -218,7 +216,7 @@ ConnectWFSDialog::handle_proxy_state_change(int state)
 
 
 void
-ConnectWFSDialog::handle_canceled()
+GPlatesQtWidgets::ConnectWFSDialog::handle_canceled()
 {
 	d_canceled = true;
 	d_http->clearPendingRequests();

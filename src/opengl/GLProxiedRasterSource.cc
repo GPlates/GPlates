@@ -122,7 +122,8 @@ GPlatesOpenGL::GLProxiedRasterSource::load_tile(
 		unsigned int texel_width,
 		unsigned int texel_height,
 		const GLTexture::shared_ptr_type &target_texture,
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		GLRenderer::RenderTargetUsageType render_target_usage)
 {
 	PROFILE_FUNC();
 

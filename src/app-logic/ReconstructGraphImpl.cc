@@ -31,7 +31,6 @@
 #include "ReconstructGraphImpl.h"
 
 #include "LayerTask.h"
-#include "ReconstructionGeometryCollection.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -41,16 +40,14 @@
 
 GPlatesAppLogic::ReconstructGraphImpl::Data::Data(
 		const FeatureCollectionFileState::file_reference &file) :
-	d_data(layer_task_data_type(file.get_file().get_feature_collection())),
-	d_state(file)
+	d_data(file)
 {
 }
 
 
 GPlatesAppLogic::ReconstructGraphImpl::Data::Data(
-		const boost::optional<layer_task_data_type> &data) :
-	d_data(data),
-	d_state(boost::weak_ptr<Layer>())
+		const LayerProxy::non_null_ptr_type &layer_proxy) :
+	d_data(layer_proxy)
 {
 }
 
@@ -61,7 +58,7 @@ GPlatesAppLogic::ReconstructGraphImpl::Data::get_input_file() const
 	// Attempt to cast to a file reference.
 	// This will only succeed if the constructor accepting a file was used to create 'this'.
 	const FeatureCollectionFileState::file_reference *input_file =
-			boost::get<FeatureCollectionFileState::file_reference>(&d_state);
+			boost::get<FeatureCollectionFileState::file_reference>(&d_data);
 
 	// If we have no input file then return false.
 	if (input_file == NULL)
@@ -73,21 +70,34 @@ GPlatesAppLogic::ReconstructGraphImpl::Data::get_input_file() const
 }
 
 
-boost::optional< boost::weak_ptr<GPlatesAppLogic::ReconstructGraphImpl::Layer> >
-GPlatesAppLogic::ReconstructGraphImpl::Data::get_outputting_layer() const
+boost::optional<GPlatesAppLogic::LayerProxy::non_null_ptr_type>
+GPlatesAppLogic::ReconstructGraphImpl::Data::get_layer_proxy() const
 {
-	// Attempt to cast to a layer.
-	// This will only succeed if the constructor accepting a file was not used to create 'this'.
-	const boost::weak_ptr<Layer> *outputting_layer =
-			boost::get< boost::weak_ptr<Layer> >(&d_state);
+	// Attempt to cast to a layer proxy.
+	// This will only succeed if the constructor accepting a layer proxy was used to create 'this'.
+	const LayerProxy::non_null_ptr_type *layer_proxy =
+			boost::get<LayerProxy::non_null_ptr_type>(&d_data);
 
-	// If we have no valid outputting layer then return false.
-	if (outputting_layer == NULL || outputting_layer->expired())
+	// If we have no layer proxy then return false.
+	if (layer_proxy == NULL)
 	{
 		return boost::none;
 	}
 
-	return *outputting_layer;
+	return *layer_proxy;
+}
+
+
+boost::optional< boost::weak_ptr<GPlatesAppLogic::ReconstructGraphImpl::Layer> >
+GPlatesAppLogic::ReconstructGraphImpl::Data::get_outputting_layer() const
+{
+	// If we have no valid outputting layer then return false.
+	if (!d_outputting_layer || d_outputting_layer->expired())
+	{
+		return boost::none;
+	}
+
+	return *d_outputting_layer;
 }
 
 
@@ -95,10 +105,10 @@ void
 GPlatesAppLogic::ReconstructGraphImpl::Data::set_outputting_layer(
 		const boost::weak_ptr<Layer> &outputting_layer)
 {
-	// Before we set the outputting layer we should ensure the constructor accepting
-	// a file was not used to create 'this'.
+	// Before we set the outputting layer we should ensure that
+	// the constructor accepting a file was *not* used to create 'this'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			boost::get< boost::weak_ptr<Layer> >(&d_state),
+			boost::get<LayerProxy::non_null_ptr_type>(&d_data),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Must also be a valid layer.
@@ -106,27 +116,7 @@ GPlatesAppLogic::ReconstructGraphImpl::Data::set_outputting_layer(
 			!outputting_layer.expired(),
 			GPLATES_ASSERTION_SOURCE);
 
-	d_state = outputting_layer;
-}
-
-
-boost::optional<GPlatesAppLogic::layer_task_data_type>
-GPlatesAppLogic::ReconstructGraphImpl::Data::get_data() const
-{
-	return d_data;
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraphImpl::Data::set_data(
-		const boost::optional<layer_task_data_type> &data)
-{
-	// Make sure we are the output of a layer.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			get_outputting_layer(),
-			GPLATES_ASSERTION_SOURCE);
-
-	d_data = data;
+	d_outputting_layer = outputting_layer;
 }
 
 
@@ -170,17 +160,115 @@ GPlatesAppLogic::ReconstructGraphImpl::Data::remove_output_connection(
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::LayerInputConnection(
 		const boost::shared_ptr<Data> &input_data,
 		const boost::weak_ptr<Layer> &layer_receiving_input,
-		const QString &layer_input_channel_name) :
+		const QString &layer_input_channel_name,
+		bool is_input_layer_active) :
 	d_input_data(input_data),
 	d_layer_receiving_input(layer_receiving_input),
-	d_layer_input_channel_name(layer_input_channel_name)
+	d_layer_input_channel_name(layer_input_channel_name),
+	d_is_input_layer_active(is_input_layer_active),
+	d_can_access_layer_receiving_input(true)
 {
+	// Input data should be non-NULL.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+		d_input_data,
+		GPLATES_ASSERTION_SOURCE);
+
 	d_input_data->add_output_connection(this);
+
+	//
+	// Notify the layer task of the layer receiving input from this connection
+	// that a new connection is being made.
+	//
+
+	const boost::shared_ptr<Layer> layer_receiving_input_shared_ptr(d_layer_receiving_input);
+	if (!layer_receiving_input_shared_ptr)
+	{
+		return;
+	}
+	LayerTask &layer_task = layer_receiving_input_shared_ptr->get_layer_task();
+
+	// First see if the input data refers to an input file.
+	const boost::optional<FeatureCollectionFileState::file_reference> input_file =
+			d_input_data->get_input_file();
+	if (input_file)
+	{
+		layer_task.add_input_file_connection(
+				d_layer_input_channel_name,
+				input_file->get_file().get_feature_collection());
+
+		// Register a model callback so we know when the input file has been modified.
+		d_callback_input_feature_collection = input_file->get_file().get_feature_collection();
+		d_callback_input_feature_collection.attach_callback(new FeatureCollectionModified(this));
+	}
+	else
+	{
+		// It's not an input file so it should be a layer proxy (the output of another layer).
+		const boost::optional<LayerProxy::non_null_ptr_type> input_layer_proxy =
+				d_input_data->get_layer_proxy();
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				input_layer_proxy,
+				GPLATES_ASSERTION_SOURCE);
+
+		// If the input layer is active then tell the output layer task to connect to the input layer.
+		if (d_is_input_layer_active)
+		{
+			layer_task.add_input_layer_proxy_connection(
+					d_layer_input_channel_name,
+					input_layer_proxy.get());
+		}
+	}
 }
 
 
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::~LayerInputConnection()
 {
+	//
+	// Notify the layer task of the layer receiving input from this connection
+	// that the connection is being removed.
+	//
+
+	if (d_can_access_layer_receiving_input)
+	{
+		const boost::shared_ptr<Layer> layer_receiving_input_shared_ptr(d_layer_receiving_input);
+		if (layer_receiving_input_shared_ptr)
+		{
+			LayerTask &layer_task = layer_receiving_input_shared_ptr->get_layer_task();
+
+			// First see if the input data refers to an input file.
+			const boost::optional<FeatureCollectionFileState::file_reference> input_file =
+					d_input_data->get_input_file();
+			if (input_file)
+			{
+				layer_task.remove_input_file_connection(
+						d_layer_input_channel_name,
+						input_file->get_file().get_feature_collection());
+			}
+			else
+			{
+				// It's not an input file so it should be a layer proxy (the output of another layer).
+				const boost::optional<LayerProxy::non_null_ptr_type> input_layer_proxy =
+						d_input_data->get_layer_proxy();
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						input_layer_proxy,
+						GPLATES_ASSERTION_SOURCE);
+
+				// If the input layer is active then tell the output layer task to disconnect from the input layer.
+				if (d_is_input_layer_active)
+				{
+					layer_task.remove_input_layer_proxy_connection(
+							d_layer_input_channel_name,
+							input_layer_proxy.get());
+
+					d_is_input_layer_active = false;
+				}
+			}
+		}
+	}
+
+	//
+	// Now continue on with destruction.
+	//
+
 	// Get the input data to disconnect from us.
 	// If we are the only owning reference of the input data then when this destructor
 	// has finished the input data will also get destroyed.
@@ -201,6 +289,92 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::disconnect_from_par
 	// owning reference to 'this'.
 	boost::shared_ptr<Layer>(d_layer_receiving_input)
 			->get_input_connections().remove_input_connection(d_layer_input_channel_name, this);
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::input_layer_activated(
+		bool active)
+{
+	// Since we're tracking the activation state of the input layer we should
+	// not be getting out of sync with it.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			active != d_is_input_layer_active,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_is_input_layer_active = active;
+
+	if (d_can_access_layer_receiving_input)
+	{
+		const boost::shared_ptr<Layer> layer_receiving_input_shared_ptr(d_layer_receiving_input);
+		if (layer_receiving_input_shared_ptr)
+		{
+			LayerTask &layer_task = layer_receiving_input_shared_ptr->get_layer_task();
+
+			// The input data should refer to a layer proxy (the output of another layer).
+			const boost::optional<LayerProxy::non_null_ptr_type> input_layer_proxy =
+					d_input_data->get_layer_proxy();
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					input_layer_proxy,
+					GPLATES_ASSERTION_SOURCE);
+
+			// Tell the layer proxy to add or remove the input layer proxy.
+			// NOTE: The layer connection is still in place but the layer task thinks
+			// that the connection has been made or lost.
+			if (d_is_input_layer_active)
+			{
+				// The input layer has just been activated.
+				layer_task.add_input_layer_proxy_connection(
+						d_layer_input_channel_name,
+						input_layer_proxy.get());
+			}
+			else
+			{
+				// The input layer has just been deactivated.
+				layer_task.remove_input_layer_proxy_connection(
+						d_layer_input_channel_name,
+						input_layer_proxy.get());
+			}
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::layer_receiving_input_is_being_destroyed()
+{
+	// We can no longer access the layer receiving with our weak_ptr because it is being
+	// destroyed and hence a shared_ptr to it could be in a partially invalid state.
+	d_can_access_layer_receiving_input = false;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::modified_input_feature_collection()
+{
+	//
+	// Notify the layer task of the layer receiving input from this connection
+	// that the input file (feature collection) has been modified.
+	//
+
+	if (d_can_access_layer_receiving_input)
+	{
+		const boost::shared_ptr<Layer> layer_receiving_input_shared_ptr(d_layer_receiving_input);
+		if (layer_receiving_input_shared_ptr)
+		{
+			LayerTask &layer_task = layer_receiving_input_shared_ptr->get_layer_task();
+
+			// Make sure this data refers to an input file.
+			const boost::optional<FeatureCollectionFileState::file_reference> input_file =
+					d_input_data->get_input_file();
+			if (input_file)
+			{
+				layer_task.modified_input_file(
+						d_layer_input_channel_name,
+						input_file->get_file().get_feature_collection());
+			}
+		}
+	}
 }
 
 
@@ -282,11 +456,13 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::Layer(
 		ReconstructGraph &reconstruct_graph) :
 	d_reconstruct_graph(&reconstruct_graph),
 	d_layer_task(layer_task),
-	d_output_data(new Data()),
+	d_output_data(new Data(layer_task->get_layer_proxy())),
 	d_active(true)
 {
-	// Default value for 'd_output_data' is what we want.
-	// It'll get written to later when the layer task is processed.
+	// Layer task should be non-NULL.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+		d_layer_task,
+		GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -294,86 +470,45 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::~Layer()
 {
 	// Get our output data to disconnect from its output connections.
 	d_output_data->disconnect_output_connections();
+
+	// Iterate over the input connections and tell them not to reference us via their weak_ptr
+	// because we are being destroyed and the shared_ptr to us could be in a partially invalid state.
+	const LayerInputConnections::connection_seq_type input_layer_connections =
+			d_input_data.get_input_connections();
+
+	// Iterate over the input connections of 'input_layer'.
+	BOOST_FOREACH(
+			const boost::shared_ptr<LayerInputConnection> &input_layer_connection,
+			input_layer_connections)
+	{
+		input_layer_connection->layer_receiving_input_is_being_destroyed();
+	}
 }
 
 
 // gcc isn't liking the BOOST_MPL_ASSERT.
 DISABLE_GCC_WARNING("-Wold-style-cast")
 void
-GPlatesAppLogic::ReconstructGraphImpl::Layer::execute(
+GPlatesAppLogic::ReconstructGraphImpl::Layer::update_layer_task(
 		const GPlatesAppLogic::Layer &layer_handle /* handle used by clients */,
 		Reconstruction &reconstruction,
 		GPlatesModel::integer_plate_id_type anchored_plate_id)
 {
-	// If this layer is not active then set the output data as empty.
+	// If this layer is not active then we don't add the layer proxy to 'reconstruction'.
 	if (!d_active)
 	{
-		d_output_data->set_data(boost::none);
 		return;
 	}
 
-	//
-	// Get this layer's input data.
-	//
-	LayerTask::input_data_type input_data_collection;
+	// Update the layer's task.
+	d_layer_task->update(
+			layer_handle,
+			reconstruction.get_reconstruction_time(),
+			anchored_plate_id,
+			reconstruction.get_default_reconstruction_layer_output());
 
-	// Iterate through this layer's input connections and copy the data pointed at
-	// to a new channel mapping that is more convenient for the layer task to process.
-	// It is more convenient in that the layer task doesn't have to traverse the various
-	// graph structures and which it should not have to know about.
-	const LayerInputConnections::input_connection_map_type &input_connection_map =
-			d_input_data.get_input_connection_map();
-	LayerInputConnections::input_connection_map_type::const_iterator input_connection_iter =
-			input_connection_map.begin();
-	LayerInputConnections::input_connection_map_type::const_iterator input_connection_end =
-			input_connection_map.end();
-	for ( ; input_connection_iter != input_connection_end; ++input_connection_iter)
-	{
-		const QString &input_channel_name = input_connection_iter->first;
-		const boost::shared_ptr<LayerInputConnection> &layer_input_connection =
-				input_connection_iter->second;
-
-		// If the input connection has data then add it to out input data collection.
-		const boost::optional<layer_task_data_type> &input_data =
-				layer_input_connection->get_input_data()->get_data();
-		if (input_data)
-		{
-			input_data_collection.insert(std::make_pair(input_channel_name, input_data.get()));
-		}
-	}
-
-	// Process the layer's task.
-	boost::optional<layer_task_data_type> layer_task_output =
-			d_layer_task->process(
-					layer_handle,
-					input_data_collection,
-					reconstruction.get_reconstruction_time(),
-					anchored_plate_id,
-					reconstruction.get_default_reconstruction_tree());
-
-	// Store the layer task output in the layer's output data.
-	d_output_data->set_data(layer_task_output);
-
-	// See if this layer's output data type is a reconstruction geometry collection.
-	// If so then add it to the reconstruction.
-	if (layer_task_output)
-	{
-		typedef ReconstructionGeometryCollection::non_null_ptr_to_const_type
-				reconstruction_geometry_collection_type;
-
-		// Generate compile time error if the bounded type in the 'layer_task_data_type' variant
-		// that corresponds to reconstruction geometry collections is changed.
-		BOOST_MPL_ASSERT((boost::mpl::contains<
-				layer_task_data_types,
-				reconstruction_geometry_collection_type>));
-
-		const reconstruction_geometry_collection_type *reconstruction_geometry_collection =
-				boost::get<reconstruction_geometry_collection_type>(&layer_task_output.get());
-		if (reconstruction_geometry_collection)
-		{
-			reconstruction.add_reconstruction_geometries(*reconstruction_geometry_collection);
-		}
-	}
+	// Add the layer output to the reconstruction.
+	reconstruction.add_active_layer_output(d_layer_task->get_layer_proxy());
 }
 ENABLE_GCC_WARNING("-Wold-style-cast")
 
@@ -382,7 +517,23 @@ void
 GPlatesAppLogic::ReconstructGraphImpl::Layer::activate(
 		bool active)
 {
+	// If the activation state isn't changing then do nothing.
+	if (active == d_active)
+	{
+		return;
+	}
+
 	d_active = active;
+
+	// Let any layer connections, connected to our output data, know that we are
+	// now active/inactive. This message will get delivered to the layer tasks of those
+	// layer connections so that they know whether to access our output data or not.
+	// If we're inactive then they should not access our output data.
+	const Data::connection_seq_type &output_connections = d_output_data->get_output_connections();
+	BOOST_FOREACH(LayerInputConnection *output_connection, output_connections)
+	{
+		output_connection->input_layer_activated(active);
+	}
 }
 
 

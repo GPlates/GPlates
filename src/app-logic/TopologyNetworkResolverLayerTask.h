@@ -26,6 +26,7 @@
  
 #ifndef GPLATES_APP_LOGIC_TOPOLOGYNETWORKRESOLVERLAYERTASK_H
 #define GPLATES_APP_LOGIC_TOPOLOGYNETWORKRESOLVERLAYERTASK_H
+#define GPLATES_APP_LOGIC_TOPOLOGYBOUNDARYRESOLVERLAYERTASK_H
 
 #include <utility>
 #include <boost/shared_ptr.hpp>
@@ -33,6 +34,7 @@
 
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
+#include "TopologyNetworkResolverLayerProxy.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -47,18 +49,6 @@ namespace GPlatesAppLogic
 			public LayerTask
 	{
 	public:
-
-		/**
-		 * Can be used to create a layer automatically when a file is first loaded.
-		 */
-		static
-		bool
-		is_primary_layer_task_type()
-		{
-			return true;
-		}
-
-
 		static
 		bool
 		can_process_feature_collection(
@@ -83,8 +73,8 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		std::vector<Layer::input_channel_definition_type>
-		get_input_channel_definitions() const;
+		std::vector<LayerInputChannelType>
+		get_input_channel_types() const;
 
 
 		virtual
@@ -93,26 +83,52 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		Layer::LayerOutputDataType
-		get_output_definition() const;
+		void
+		add_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		virtual
+		void
+		remove_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		virtual
+		void
+		modified_input_file(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		virtual
-		bool
-		is_topological_layer_task() const
-		{
-			return true;
-		}
+		void
+		add_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
+
+		virtual
+		void
+		remove_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
 
 
 		virtual
-		boost::optional<layer_task_data_type>
-		process(
+		void
+		update(
 				const Layer &layer_handle /* the layer invoking this */,
-				const input_data_type &input_data,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
+
+
+		virtual
+		LayerProxy::non_null_ptr_type
+		get_layer_proxy()
+		{
+			return d_topology_network_resolver_layer_proxy;
+		}
 
 
 		virtual
@@ -123,12 +139,31 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-		TopologyNetworkResolverLayerTask()
-		{  }
-
-		static const char *TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME;
+		static const QString TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME;
+		static const QString TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME;
 
 		LayerTaskParams d_layer_task_params;
+
+		/**
+		 * Keep track of the default reconstruction layer proxy.
+		 */
+		ReconstructionLayerProxy::non_null_ptr_type d_default_reconstruction_layer_proxy;
+
+		//! Are we using the default reconstruction layer proxy.
+		bool d_using_default_reconstruction_layer_proxy;
+
+		/**
+		 * Does all the resolving.
+		 */
+		TopologyNetworkResolverLayerProxy::non_null_ptr_type d_topology_network_resolver_layer_proxy;
+
+
+		//! Constructor.
+		TopologyNetworkResolverLayerTask() :
+				d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
+				d_using_default_reconstruction_layer_proxy(true),
+				d_topology_network_resolver_layer_proxy(TopologyNetworkResolverLayerProxy::create())
+		{  }
 	};
 }
 

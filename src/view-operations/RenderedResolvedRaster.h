@@ -33,15 +33,13 @@
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
 
-#include "app-logic/Layer.h"
-#include "app-logic/ReconstructRasterPolygons.h"
+#include "app-logic/ResolvedRaster.h"
 
 #include "gui/RasterColourPalette.h"
 
 #include "property-values/Georeferencing.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
-#include "property-values/TextContent.h"
 
 
 namespace GPlatesViewOperations
@@ -52,32 +50,10 @@ namespace GPlatesViewOperations
 	public:
 		explicit
 		RenderedResolvedRaster(
-				const GPlatesAppLogic::Layer &layer,
-				const GPlatesPropertyValues::TextContent &raster_band_name,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
-				const double &reconstruction_time,
-				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
-				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
-				const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-						reconstruct_raster_polygons = boost::none,
-				const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-						age_grid_georeferencing = boost::none,
-				const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-						age_grid_proxied_rasters = boost::none,
-				const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
-						age_grid_raster_band_names = boost::none) :
-			d_created_from_layer(layer),
-			d_raster_band_name(raster_band_name),
-			d_raster_colour_palette(raster_colour_palette),
-			d_reconstruction_time(reconstruction_time),
-			d_georeferencing(georeferencing),
-			d_proxied_rasters(proxied_rasters),
-			d_raster_band_names(raster_band_names),
-			d_reconstruct_raster_polygons(reconstruct_raster_polygons),
-			d_age_grid_georeferencing(age_grid_georeferencing),
-			d_age_grid_proxied_rasters(age_grid_proxied_rasters),
-			d_age_grid_raster_band_names(age_grid_raster_band_names)
+				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette) :
+			d_resolved_raster(resolved_raster),
+			d_raster_colour_palette(raster_colour_palette)
 		{  }
 
 		virtual
@@ -97,19 +73,10 @@ namespace GPlatesViewOperations
 			return GPlatesMaths::ProximityHitDetail::null;
 		}
 
-		/**
-		 * Returns the layer that this resolved raster was created in.
-		 */
-		const GPlatesAppLogic::Layer &
-		get_layer() const
+		GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type
+		get_resolved_raster() const
 		{
-			return d_created_from_layer;
-		}
-
-		const GPlatesPropertyValues::TextContent &
-		get_raster_band_name() const
-		{
-			return d_raster_band_name;
+			return d_resolved_raster;
 		}
 
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &
@@ -124,113 +91,20 @@ namespace GPlatesViewOperations
 		const double &
 		get_reconstruction_time() const
 		{
-			return d_reconstruction_time;
-		}
-
-		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &
-		get_georeferencing() const
-		{
-			return d_georeferencing;
-		}
-
-		const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
-		get_proxied_rasters() const
-		{
-			return d_proxied_rasters;
-		}
-
-		const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &
-		get_raster_band_names() const
-		{
-			return d_raster_band_names;
-		}
-
-		/**
-		 * Returns the optional polygon set used to reconstruct the raster.
-		 */
-		const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-		get_reconstruct_raster_polygons() const
-		{
-			return d_reconstruct_raster_polygons;
-		}
-
-		/**
-		 * Returns the georeferencing for the age grid raster.
-		 */
-		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-		get_age_grid_georeferencing() const
-		{
-			return d_age_grid_georeferencing;
-		}
-
-		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-		get_age_grid_proxied_rasters() const
-		{
-			return d_age_grid_proxied_rasters;
-		}
-
-		const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
-		get_age_grid_raster_band_names() const
-		{
-			return d_age_grid_raster_band_names;
+			return d_resolved_raster->get_reconstruction_time();
 		}
 
 	private:
 		/**
-		 * The layer that this resolved raster was created in.
+		 * The resolved raster.
 		 */
-		GPlatesAppLogic::Layer d_created_from_layer;
-
-		/**
-		 * The name of the band that the user has selected for visualisation.
-		 */
-		GPlatesPropertyValues::TextContent d_raster_band_name;
+		GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type d_resolved_raster;
 
 		/**
 		 * The colour palette used to colour integral and floating-point rasters.
 		 * Note that this colour palette is permitted to be invalid, e.g. for RGBA rasters.
 		 */
 		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type d_raster_colour_palette;
-
-		/**
-		 * The reconstruction time at which raster is resolved/reconstructed.
-		 */
-		double d_reconstruction_time;
-
-		/**
-		 * The georeferencing parameters to position the raster onto the globe.
-		 */
-		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
-
-		/**
-		 * The proxied rasters of the time-resolved GmlFile (in the case of time-dependent rasters).
-		 *
-		 * The band name will be used to look up the correct raster in the presentation code.
-		 * The user-selected band name is not accessible here since this is app-logic code.
-		 */
-		std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> d_proxied_rasters;
-
-		/**
-		 * The list of band names - one for each proxied raster.
-		 */
-		GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type d_raster_band_names;
-
-		/**
-		 * The optional polygon set used to reconstruct the raster.
-		 */
-		boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type>
-				d_reconstruct_raster_polygons;
-
-		/**
-		 * Georeferencing for the age grid raster.
-		 */
-		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
-				d_age_grid_georeferencing;
-
-		boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> >
-				d_age_grid_proxied_rasters;
-		boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type>
-				d_age_grid_raster_band_names;
 	};
 }
 

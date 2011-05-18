@@ -26,14 +26,17 @@
 #include <algorithm>
 #include <cstddef> // For std::size_t
 #include <iterator>
+#include <list>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
 #include "ApplicationState.h"
+#include "LayerProxyUtils.h"
 #include "LayerTask.h"
 #include "ReconstructGraph.h"
 #include "ReconstructGraphImpl.h"
+#include "ReconstructionLayerProxy.h"
 #include "ReconstructUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -43,7 +46,9 @@
 
 GPlatesAppLogic::ReconstructGraph::ReconstructGraph(
 		ApplicationState &application_state) :
-	d_application_state(application_state)
+	d_application_state(application_state),
+	d_identity_rotation_reconstruction_layer_proxy(
+			ReconstructionLayerProxy::create(1/*max_num_reconstruction_trees_in_cache*/))
 {
 }
 
@@ -144,8 +149,7 @@ GPlatesAppLogic::ReconstructGraph::set_default_reconstruction_tree_layer(
 	{
 		// Make sure we've been passed a reconstruction tree layer.
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				default_reconstruction_tree_layer.get_output_definition() ==
-						Layer::OUTPUT_RECONSTRUCTION_TREE_DATA,
+				default_reconstruction_tree_layer.get_type() == LayerTaskType::RECONSTRUCTION,
 				GPLATES_ASSERTION_SOURCE);
 		d_default_reconstruction_tree_layer = default_reconstruction_tree_layer;
 	}
@@ -171,63 +175,66 @@ GPlatesAppLogic::ReconstructGraph::get_default_reconstruction_tree_layer() const
 
 
 GPlatesAppLogic::Reconstruction::non_null_ptr_to_const_type
-GPlatesAppLogic::ReconstructGraph::execute_layer_tasks(
+GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 		const double &reconstruction_time)
 {
-	// Create a Reconstruction to store the outputs of each layer that generates
-	// reconstruction geometries.
-	// The default reconstruction tree will be the empty tree unless we later
-	// find a valid default reconstruction tree layer.
+	// Create a Reconstruction to store the layer proxies of each *active* layer.
+	// And the default reconstruction layer proxy will perform identity rotations unless we later
+	// find a valid default reconstruction layer proxy.
+	// NOTE: The specified reconstruction layer proxy will only get used if there are no
+	// reconstruction tree layers loaded.
+	// Also by keeping the same instance over time we avoid layers continually updating themselves,
+	// when it's unnecessary, because they think the default reconstruction layer is constantly
+	// being switched.
 	Reconstruction::non_null_ptr_type reconstruction =
 			Reconstruction::create(
 					reconstruction_time,
-					d_application_state.get_current_anchored_plate_id());
+					d_identity_rotation_reconstruction_layer_proxy);
 
 	// Get a shared reference to the default reconstruction tree layer if there is one.
 	layer_ptr_type default_reconstruction_tree_layer;
 	if (d_default_reconstruction_tree_layer.is_valid() &&
 		// FIXME: Should probably handle this elsewhere so we don't have to check here...
-		d_default_reconstruction_tree_layer.get_output_definition() ==
-			Layer::OUTPUT_RECONSTRUCTION_TREE_DATA)
+		d_default_reconstruction_tree_layer.get_type() == LayerTaskType::RECONSTRUCTION)
 	{
 		default_reconstruction_tree_layer =
 				layer_ptr_type(d_default_reconstruction_tree_layer.get_impl());
 	}
 
 	// Traverse the dependency graph to determine the order in which layers should be executed
-	// to that layers requiring input from other layers get executed later.
+	// so that layers requiring input from other layers get executed later.
 	const std::vector<layer_ptr_type> dependency_ordered_layers =
 			get_layer_dependency_order(default_reconstruction_tree_layer);
 
-	// Iterate over the layers and execute them in the correct order.
+	// Iterate over the layers and update them in the correct order.
 	BOOST_FOREACH(const layer_ptr_type &layer, dependency_ordered_layers)
 	{
 		// Pass a layer handle, that clients can use, when executing layer tasks.
 		const Layer layer_handle(layer);
 
 		// Execute the layer task.
-		layer->execute(
+		layer->update_layer_task(
 				layer_handle,
 				*reconstruction,
 				d_application_state.get_current_anchored_plate_id());
 
-		// If the layer just executed is the default reconstruction tree layer then
+		// If the layer just executed is the default reconstruction layer then
 		// store its output in the Reconstruction object.
 		// The Reconstruction object will get queried by subsequent layers for the default
-		// reconstruction tree.
+		// reconstruction layer proxy.
 		// NOTE: There should be no danger of another layer querying the default reconstruction
-		// tree before its generated due to the dependency order of execution of the layers.
+		// layer proxy before its set due to the dependency order of execution of the layers.
 		if (layer == default_reconstruction_tree_layer)
 		{
 			// Get the output of the default reconstruction tree layer.
-			boost::optional<ReconstructionTree::non_null_ptr_to_const_type>
-					default_reconstruction_tree =
-							d_default_reconstruction_tree_layer.get_output_data<
-									ReconstructionTree::non_null_ptr_to_const_type>();
-			if (default_reconstruction_tree)
+			boost::optional<ReconstructionLayerProxy::non_null_ptr_type>
+					default_reconstruction_tree_layer_proxy =
+							layer_handle.get_layer_output<ReconstructionLayerProxy>();
+			if (default_reconstruction_tree_layer_proxy)
 			{
 				// Store it in the output Reconstruction.
-				reconstruction->set_default_reconstruction_tree(default_reconstruction_tree.get());
+				reconstruction->set_default_reconstruction_layer_output(
+						default_reconstruction_tree_layer_proxy.get());
 			}
 		}
 	}
@@ -245,17 +252,8 @@ GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
 	//
 	const std::size_t num_layers = d_layers.size();
 
-	// Partition all layers into:
-	// * topological layers and their dependency ancestors, and
-	// * the rest.
-	// Topological layers are treated separately because features in topological layers
-	// can reference features in other layers even though the layers are not connected.
-	// Dependency ancestors of topological layers are grouped with the topological layers because
-	// they explicitly depend on the topological layers and hence must be executed after them.
-	std::set<layer_ptr_type> topological_layers_and_ancestors;
-	std::set<layer_ptr_type> other_layers;
-	partition_topological_layers_and_their_dependency_ancestors(
-			topological_layers_and_ancestors, other_layers);
+	// Add all the layers to a list.
+	std::list<layer_ptr_type> layers(d_layers.begin(), d_layers.end());
 
 	// The final sequence of dependency ordered layers to return to the caller.
 	std::vector<layer_ptr_type> dependency_ordered_layers;
@@ -266,35 +264,26 @@ GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
 
 	// If there's a default reconstruction tree layer then it should get executed first
 	// since layer's can be implicitly connected to it (that is they can be connected to
-	// it even though they have no explicit connections to it) - and since we pnly follow
+	// it even though they have no explicit connections to it) - and since we only follow
 	// explicit connections in the dependency graph we'll need to treat this as a special case.
 	if (default_reconstruction_tree_layer)
 	{
 		// The default reconstruction tree layer will be in the non-topological layers.
-		std::set<layer_ptr_type>::iterator default_recon_tree_layer_iter =
-				other_layers.find(default_reconstruction_tree_layer);
+		std::list<layer_ptr_type>::iterator default_recon_tree_layer_iter =
+			std::find(layers.begin(), layers.end(), default_reconstruction_tree_layer);
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				default_recon_tree_layer_iter != other_layers.end(),
+				default_recon_tree_layer_iter != layers.end(),
 				GPLATES_ASSERTION_SOURCE);
 
 		// Remove from the other layers list and add it here instead.
-		other_layers.erase(default_recon_tree_layer_iter);
+		layers.erase(default_recon_tree_layer_iter);
 
 		find_layer_dependency_order(
 				default_reconstruction_tree_layer, dependency_ordered_layers, all_layers_visited);
 	}
 
-	// Next iterate iterate over the other layers to build a dependency ordering.
-	BOOST_FOREACH(const layer_ptr_type &layer, other_layers)
-	{
-		find_layer_dependency_order(layer, dependency_ordered_layers, all_layers_visited);
-	}
-
-	// Next iterate iterate over the topological layers and their dependency ancestors
-	// to build a dependency ordering.
-	// This is done after the other layers since features in the topological layers
-	// can implicitly reference features in the other layers.
-	BOOST_FOREACH(const layer_ptr_type &layer, topological_layers_and_ancestors)
+	// Next iterate iterate over the remaining layers to build a dependency ordering.
+	BOOST_FOREACH(const layer_ptr_type &layer, layers)
 	{
 		find_layer_dependency_order(layer, dependency_ordered_layers, all_layers_visited);
 	}
@@ -305,37 +294,6 @@ GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
 			GPLATES_ASSERTION_SOURCE);
 
 	return dependency_ordered_layers;
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::partition_topological_layers_and_their_dependency_ancestors(
-		std::set<layer_ptr_type> &topological_layers_and_ancestors,
-		std::set<layer_ptr_type> &other_layers) const
-{
-	// First search all layers for any topological layers.
-	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
-	{
-		if (layer->get_layer_task()->is_topological_layer_task())
-		{
-			// Add the current layer to the list of topological layers and their dependency ancestors.
-			topological_layers_and_ancestors.insert(layer);
-
-			// Add any dependency ancestor layers.
-			find_dependency_ancestors_of_layer(
-					layer, topological_layers_and_ancestors);
-		}
-	}
-
-	// Insert the other remaining layers into the caller's sequence.
-	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
-	{
-		if (topological_layers_and_ancestors.find(layer) ==
-			topological_layers_and_ancestors.end())
-		{
-			other_layers.insert(layer);
-		}
-	}
 }
 
 

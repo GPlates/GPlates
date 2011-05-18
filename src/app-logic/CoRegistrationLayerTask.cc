@@ -33,6 +33,14 @@
 
 #include "data-mining/CoRegConfigurationTable.h"
 #include "data-mining/DataTable.h"
+#include "data-mining/DataSelector.h"
+
+
+const QString GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME =
+		"CoRegistration seed Channel";
+const QString GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME =
+		"CoRegistration input Channel";
+
 
 bool
 GPlatesAppLogic::CoRegistrationLayerTask::can_process_feature_collection(
@@ -42,126 +50,235 @@ GPlatesAppLogic::CoRegistrationLayerTask::can_process_feature_collection(
 }
 
 
-std::vector<GPlatesAppLogic::Layer::input_channel_definition_type>
-GPlatesAppLogic::CoRegistrationLayerTask::get_input_channel_definitions() const
+std::vector<GPlatesAppLogic::LayerInputChannelType>
+GPlatesAppLogic::CoRegistrationLayerTask::get_input_channel_types() const
 {
-	std::vector<Layer::input_channel_definition_type> input_channel_definitions;
+	std::vector<LayerInputChannelType> input_channel_types;
 
 	// Channel definition for the reconstruction tree.
-	input_channel_definitions.push_back(
-			boost::make_tuple(
+	input_channel_types.push_back(
+			LayerInputChannelType(
 					get_reconstruction_tree_channel_name(),
-					Layer::INPUT_RECONSTRUCTION_TREE_DATA,
-					Layer::ONE_DATA_IN_CHANNEL));
+					LayerInputChannelType::ONE_DATA_IN_CHANNEL));
 
-	input_channel_definitions.push_back(
-			boost::make_tuple(
-					"CoRegistration seed Channel",
-					Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA,
-					Layer::MULTIPLE_DATAS_IN_CHANNEL));
+	input_channel_types.push_back(
+			LayerInputChannelType(
+					CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME,
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
+					LayerTaskType::RECONSTRUCT));
 
-	input_channel_definitions.push_back(
-			boost::make_tuple(
-					"CoRegistration input Channel",
-					Layer::INPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA,
-					Layer::MULTIPLE_DATAS_IN_CHANNEL));
+	input_channel_types.push_back(
+			LayerInputChannelType(
+					CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME,
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
+					LayerTaskType::RECONSTRUCT));
 
-	return input_channel_definitions;
+	return input_channel_types;
 }
 
 
 QString
 GPlatesAppLogic::CoRegistrationLayerTask::get_main_input_feature_collection_channel() const
 {
-	return "CoRegistration Channel";
+	// The main input feature collection channel is not used because we only accept
+	// input from other layers - so this string should never be seen by users.
+	return QString("Unused Input File Channel");
 }
 
 
-GPlatesAppLogic::Layer::LayerOutputDataType
-GPlatesAppLogic::CoRegistrationLayerTask::get_output_definition() const
+void
+GPlatesAppLogic::CoRegistrationLayerTask::add_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	return Layer::OUTPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA;
+	// This layer type does not connect to any input files so nothing to do.
 }
 
 
-boost::optional<GPlatesAppLogic::layer_task_data_type>
-GPlatesAppLogic::CoRegistrationLayerTask::process(
+void
+GPlatesAppLogic::CoRegistrationLayerTask::remove_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	// This layer type does not connect to any input files so nothing to do.
+}
+
+
+void
+GPlatesAppLogic::CoRegistrationLayerTask::modified_input_file(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	// This layer type does not connect to any input files so nothing to do.
+}
+
+
+void
+GPlatesAppLogic::CoRegistrationLayerTask::add_input_layer_proxy_connection(
+		const QString &input_channel_name,
+		const LayerProxy::non_null_ptr_type &layer_proxy)
+{
+	if (input_channel_name == get_reconstruction_tree_channel_name())
+	{
+		// Make sure the input layer proxy is a reconstruction layer proxy.
+		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructionLayerProxy>(layer_proxy);
+		if (reconstruction_layer_proxy)
+		{
+			// Stop using the default reconstruction layer proxy.
+			d_using_default_reconstruction_layer_proxy = false;
+
+			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
+		}
+	}
+	else if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
+	{
+		// The seed geometries layer proxy.
+		boost::optional<ReconstructLayerProxy *> reconstructed_seed_geometries_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
+		if (reconstructed_seed_geometries_layer_proxy)
+		{
+			d_coregistration_layer_proxy->add_coregistration_seed_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstructed_seed_geometries_layer_proxy.get()));
+		}
+	}
+	else if (input_channel_name == CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME)
+	{
+		// The target geometries layer proxy.
+		boost::optional<ReconstructLayerProxy *> reconstructed_target_geometries_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
+		if (reconstructed_target_geometries_layer_proxy)
+		{
+			d_coregistration_layer_proxy->add_coregistration_target_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstructed_target_geometries_layer_proxy.get()));
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::CoRegistrationLayerTask::remove_input_layer_proxy_connection(
+		const QString &input_channel_name,
+		const LayerProxy::non_null_ptr_type &layer_proxy)
+{
+	if (input_channel_name == get_reconstruction_tree_channel_name())
+	{
+		// Make sure the input layer proxy is a reconstruction layer proxy.
+		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						ReconstructionLayerProxy>(layer_proxy);
+		if (reconstruction_layer_proxy)
+		{
+			// Start using the default reconstruction layer proxy.
+			d_using_default_reconstruction_layer_proxy = true;
+
+			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
+					d_default_reconstruction_layer_proxy);
+		}
+	}
+	else if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
+	{
+		// The seed geometries layer proxy.
+		boost::optional<ReconstructLayerProxy *> reconstructed_seed_geometries_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
+		if (reconstructed_seed_geometries_layer_proxy)
+		{
+			d_coregistration_layer_proxy->remove_coregistration_seed_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstructed_seed_geometries_layer_proxy.get()));
+		}
+	}
+	else if (input_channel_name == CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME)
+	{
+		// The target geometries layer proxy.
+		boost::optional<ReconstructLayerProxy *> reconstructed_target_geometries_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
+		if (reconstructed_target_geometries_layer_proxy)
+		{
+			d_coregistration_layer_proxy->remove_coregistration_target_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstructed_target_geometries_layer_proxy.get()));
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::CoRegistrationLayerTask::update(
 		const Layer &layer_handle /* the layer invoking this */,
-		const input_data_type &input_data,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
+		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
 {
-	using namespace GPlatesDataMining;
-	if(!d_layer_params.d_call_back || !d_layer_params.d_cfg_table)
+	d_coregistration_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+
+	// If the layer task params have been modified then update our reconstruct layer proxy.
+	if (d_layer_task_params.d_set_cfg_table_called)
+	{
+		// NOTE: Currently this doesn't really do anything because the layer proxy also
+		// has a reference to the table - but later it will have a copy of the configuration
+		// table and this will notify it that the copy should be updated.
+		d_coregistration_layer_proxy->set_current_coregistration_configuration_table(
+				*d_layer_task_params.d_cfg_table);
+
+		d_layer_task_params.d_set_cfg_table_called = false;
+	}
+
+	// If our layer proxy is currently using the default reconstruction layer proxy then
+	// tell our layer proxy about the new default reconstruction layer proxy.
+	if (d_using_default_reconstruction_layer_proxy)
+	{
+		// Avoid setting it every update unless it's actually a different layer.
+		if (default_reconstruction_layer_proxy != d_default_reconstruction_layer_proxy)
+		{
+			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
+					default_reconstruction_layer_proxy);
+		}
+	}
+
+	d_default_reconstruction_layer_proxy = default_reconstruction_layer_proxy;
+
+
+	//
+	// Here we deviate from the usual way layer proxies work by getting the co-reg layer proxy
+	// to do its processing here rather than the usual way of waiting until some client queries
+	// the layer proxy (such as during export or perhaps some other layer that uses us as input
+	// - currently there are none of these layers).
+	//
+	// TODO: After the 1.1 release I'll change this, but for now I'll keep it the way it was
+	// for minimum disturbance.
+	//
+
+	if(!d_layer_task_params.d_call_back || !d_layer_task_params.d_cfg_table)
 	{
 		//This case means layer parameters haven't be initialized. We should not proceed further from here.
-		return boost::none;
+		return;
 	}
-	refresh_data(DataTable());
+	refresh_data(GPlatesDataMining::DataTable());
 
-	// Get the reconstruction tree input.
-	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree =
-			extract_reconstruction_tree(
-					input_data,
-					default_reconstruction_tree);
-	if (!reconstruction_tree)
+	// Get the co-registration result data for the current reconstruction time.
+	boost::optional<CoRegistrationData::non_null_ptr_type> coregistration_data =
+			d_coregistration_layer_proxy->get_coregistration_data();
+
+	// Notify observers of the new results data.
+	if (coregistration_data)
 	{
-		// Expecting a single reconstruction tree.
-		qWarning() << "No reconstruction tree found.";
-		return boost::none;
-	}
-	
-	// Get seeds.
-	std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> seeds_collection;
-	extract_input_channel_data(
-			seeds_collection,
-			"CoRegistration seed Channel",
-			input_data);
-	
-	if (seeds_collection.empty()) 
-	{
-		qWarning() << "Seed collection is empty.";
-		return boost::none;
-	}
+		refresh_data(coregistration_data.get()->data_table());
 
-	// Get co-registration features collection.
-	std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> co_reg_collection;
-	extract_input_channel_data(
-			co_reg_collection,
-			"CoRegistration input Channel",
-			input_data);
-
-	if (co_reg_collection.empty()) 
-	{
-		qWarning() << "Target collection is empty.";
-		return boost::none;
-	}
-
-	CoRegistrationData::non_null_ptr_type data_ptr(new CoRegistrationData(*reconstruction_tree));
-
-	boost::shared_ptr< DataSelector > selector( 
-			DataSelector::create(*d_layer_params.d_cfg_table) );
-	
-	selector->select(
-			seeds_collection, 
-			co_reg_collection, 
-			data_ptr->data_table());
-	
-	refresh_data(data_ptr->data_table());
-	
 #ifdef _DEBUG
-	std::cout << data_ptr->data_table() << std::endl;
+		std::cout << coregistration_data.get()->data_table() << std::endl;
 #endif
-
-	ReconstructionGeometryCollection::non_null_ptr_type CoRegistrationDataCollection =
-			ReconstructionGeometryCollection::create(*reconstruction_tree);
-	CoRegistrationDataCollection->add_reconstruction_geometry(data_ptr);
-	return layer_task_data_type(
-			ReconstructionGeometryCollection::non_null_ptr_to_const_type(
-					CoRegistrationDataCollection));
+	}
 }
 
 
+void
+GPlatesAppLogic::CoRegistrationLayerTask::refresh_data(
+		const GPlatesDataMining::DataTable& table)
+{
+	GPlatesDataMining::DataSelector::set_data_table(table);
 
-
+	if (d_layer_task_params.d_call_back)
+	{
+		d_layer_task_params.d_call_back(GPlatesDataMining::DataSelector::get_data_table());
+	}
+}

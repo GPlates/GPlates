@@ -33,7 +33,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
-#include "ReconstructedFeatureGeometry.h"
+#include "AppLogicFwd.h"
 #include "ReconstructionFeatureProperties.h"
 #include "TopologyBoundaryIntersections.h"
 
@@ -57,18 +57,10 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesAppLogic
 {
-	class ReconstructionGeometryCollection;
-
 	/**
 	 * Finds all topological network features (in the features visited)
 	 * that exist at a particular reconstruction time and creates
-	 * @a ResolvedTopologicalNetwork objects for each one and stores them
-	 * in a @a ReconstructionGeometryCollection object.
-	 *
-	 * @pre the features referenced by any of these topological network features
-	 *      must have already been reconstructed and reference the same @a ReconstructionTree
-	 *      object referenced by the @a ReconstructionGeometryCollection object passed into
-	 *      the constructor of @a TopologyNetworkResolver.
+	 * @a ResolvedTopologicalNetwork objects for each one.
 	 */
 	class TopologyNetworkResolver: 
 		public GPlatesModel::FeatureVisitor,
@@ -76,8 +68,23 @@ namespace GPlatesAppLogic
 	{
 
 	public:
+		/**
+		 * The resolved networks are appended to @a resolved_topological_networks.
+		 *
+		 * @param reconstruction_tree is associated with the output resolved topological networks.
+		 * @param reconstructed_topological_sections are the reconstructed feature geometries
+		 *        of the topological sections used to form the networks.
+		 * @param restrict_topological_sections_to_same_reconstruction_tree is used to restrict the
+		 *        reconstructed topological boundary sections, specified with
+		 *        @a reconstructed_topological_sections, to those that were reconstructed
+		 *        using @a reconstruction_tree (ie, the same reconstruction tree associated with
+		 *        the resolved topological networks being generated).
+		 */
 		TopologyNetworkResolver(
-				ReconstructionGeometryCollection &reconstruction_geometry_collection);
+				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_topological_sections,
+				bool restrict_topological_sections_to_same_reconstruction_tree = true);
 
 		virtual
 		~TopologyNetworkResolver() 
@@ -156,22 +163,13 @@ namespace GPlatesAppLogic
 			public:
 				Section(
 						const GPlatesModel::FeatureId &source_feature_id,
-						const ReconstructedFeatureGeometry::non_null_ptr_type &source_rfg) :
-					d_source_feature_id(source_feature_id),
-					d_source_rfg(source_rfg),
-					d_use_reverse(false),
-					d_is_seed_point(false),
-					d_is_point(false),
-					d_is_line(false),
-					d_is_polygon(false),
-					d_intersection_results(source_rfg->geometry())
-				{  }
+						const reconstructed_feature_geometry_non_null_ptr_type &source_rfg);
 
 				//! The feature id of the feature referenced by this topological section.
 				GPlatesModel::FeatureId d_source_feature_id;
 
 				//! The source @a ReconstructedFeatureGeometry.
-				ReconstructedFeatureGeometry::non_null_ptr_type d_source_rfg;
+				reconstructed_feature_geometry_non_null_ptr_type d_source_rfg;
 
 				//! The optional start intersection - only topological line sections can have this.
 				boost::optional<Intersection> d_start_intersection;
@@ -220,8 +218,27 @@ namespace GPlatesAppLogic
 		};
 
 
-		//! Destination for resolved networks.
-		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
+		/**
+		 * The resolved topological networks we're generating.
+		 */
+		std::vector<resolved_topological_network_non_null_ptr_type> &d_resolved_topological_networks;
+
+		/**
+		 * The reconstruction tree associated with the resolved topological boundaries begin generated.
+		 */
+		reconstruction_tree_non_null_ptr_to_const_type d_reconstruction_tree;
+
+		/**
+		 * The reconstructed topogical sections we're using to assemble our networks.
+		 */
+		const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &d_reconstructed_topological_sections;
+
+		/**
+		 * Boolean to determine whether to restrict the reconstructed topological sections
+		 * to those that were reconstructed using the same reconstruction tree associated with
+		 * the resolved topological networks being generated.
+		 */
+		bool d_restrict_topological_sections_to_same_reconstruction_tree;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;

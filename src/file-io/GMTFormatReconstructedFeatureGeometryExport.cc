@@ -163,7 +163,7 @@ GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::export_geometries(
 			gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
 
 			// Write the reconstructed geometry.
-			geom_exporter.export_geometry(rfg->geometry()); 
+			geom_exporter.export_geometry(rfg->reconstructed_geometry()); 
 		}
 	}
 }

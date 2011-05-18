@@ -32,10 +32,13 @@
 #include <boost/optional.hpp>
 
 #include "opengl/GLDrawable.h"
-#include "opengl/GLRenderGraphDrawableNode.h"
-#include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLStateSet.h"
 
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
 
 namespace GPlatesPresentation
 {
@@ -60,13 +63,13 @@ namespace GPlatesGui
 
 		void
 		paint(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node);
+				GPlatesOpenGL::GLRenderer &renderer);
 
 	private:
 
 		void
 		draw_stars(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
+				GPlatesOpenGL::GLRenderer &renderer,
 				const boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> &stars_drawable,
 				const GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type &state_set);
 

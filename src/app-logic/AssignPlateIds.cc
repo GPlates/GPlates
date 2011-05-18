@@ -27,8 +27,9 @@
 
 #include "ClassifyFeatureCollection.h"
 #include "PartitionFeatureTask.h"
-#include "ReconstructLayerTaskParams.h"
+#include "ReconstructParams.h"
 #include "ReconstructUtils.h"
+#include "ResolvedTopologicalBoundary.h"
 #include "TopologyUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -54,35 +55,45 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		bool allow_partitioning_using_static_polygons) :
 	d_assign_plate_id_method(assign_plate_id_method),
 	d_feature_property_types_to_assign(feature_property_types_to_assign),
-	d_reconstruction_tree(
-			GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+	d_reconstruction_tree_cache(
+			get_cached_reconstruction_tree_creator(
+					reconstruction_feature_collections,
 					reconstruction_time,
 					anchor_plate_id,
-					reconstruction_feature_collections)),
-	d_reconstructed_geometries_collection(
-			GPlatesAppLogic::ReconstructUtils::reconstruct(
-					d_reconstruction_tree,
-					ReconstructLayerTaskParams(), // Note: VGP settings for any particular layer ignored.
-					partitioning_feature_collections))
+					10/*max_num_reconstruction_trees_in_cache*/))
 {
+	ReconstructMethodRegistry reconstruct_method_registry;
+	register_default_reconstruct_method_types(reconstruct_method_registry);
+
+	ReconstructUtils::reconstruct(
+			d_reconstructed_feature_geometries,
+			reconstruction_time,
+			anchor_plate_id,
+			reconstruct_method_registry,
+			partitioning_feature_collections,
+			d_reconstruction_tree_cache);
+
 	if (allow_partitioning_using_topological_plate_polygons)
 	{
-		d_resolved_topological_boundaries_collection =
-				TopologyUtils::resolve_topological_boundaries(
-						d_reconstruction_tree,
-						partitioning_feature_collections);
+		TopologyUtils::resolve_topological_boundaries(
+				d_resolved_topological_boundaries,
+				d_reconstruction_tree_cache.get_reconstruction_tree(),
+				d_reconstructed_feature_geometries,
+				partitioning_feature_collections);
 
 		d_geometry_cookie_cutter.reset(
 				new GeometryCookieCutter(
-						*d_reconstructed_geometries_collection,
-						**d_resolved_topological_boundaries_collection,
+						reconstruction_time,
+						d_reconstructed_feature_geometries,
+						d_resolved_topological_boundaries,
 						allow_partitioning_using_static_polygons));
 	}
 	else
 	{
 		d_geometry_cookie_cutter.reset(
 				new GeometryCookieCutter(
-						*d_reconstructed_geometries_collection,
+						reconstruction_time,
+						d_reconstructed_feature_geometries,
 						boost::none,
 						allow_partitioning_using_static_polygons));
 	}
@@ -90,9 +101,15 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.
 			get_partition_feature_tasks(
-					*d_reconstructed_geometries_collection->reconstruction_tree(),
+					*d_reconstruction_tree_cache.get_reconstruction_tree(),
 					assign_plate_id_method,
 					feature_property_types_to_assign);
+}
+
+
+GPlatesAppLogic::AssignPlateIds::~AssignPlateIds()
+{
+	// Destructor defined in '.cc' so have access to complete type of data members (for their destructors).
 }
 
 

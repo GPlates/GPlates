@@ -188,9 +188,9 @@ namespace GPlatesAppLogic
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_):
 			ReconstructedFeatureGeometry(
 					reconstruction_tree_,
-					geometry_ptr,
 					feature_handle,
 					property_iterator_,
+					geometry_ptr,
 					reconstruction_plate_id_,
 					time_of_formation_),
 			d_VGP_params(params)

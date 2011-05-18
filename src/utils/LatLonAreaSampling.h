@@ -526,7 +526,8 @@ namespace GPlatesUtils
 
 				// Store sample bin so we have a fixed address that we can point to.
 				SampleBin *const new_sample_bin = d_sample_bin_storage->add(
-						SampleBin(GPlatesMaths::LatLonPoint(d_latitude_centre, longitude_centre)));
+						SampleBin(GPlatesMaths::LatLonPoint(d_latitude_centre, longitude_centre))
+						).get_ptr();
 
 				// Add to the list of all SampleBins we own.
 				d_sample_bin_full_list.push_front(new_sample_bin);
@@ -797,8 +798,9 @@ namespace GPlatesUtils
 				[lat_lon_location.longitude()];
 
 		// Create a new entry - memory is owned by 'd_element_entry_storage'.
-		ElementEntry *element_entry = d_element_entry_storage.add(
-				ElementEntry(element, lat_lon_location, point_on_sphere_location));
+		ElementEntry *const element_entry = d_element_entry_storage.add(
+				ElementEntry(element, lat_lon_location, point_on_sphere_location)
+			).get_ptr();
 
 		// Add new entry to the sample bin and replace/append the sequence of
 		// sample elements (ie, each sample bin has one sample element that is the closest

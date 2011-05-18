@@ -27,23 +27,28 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTUTILS_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTUTILS_H
 
-#include <QDebug>
-
+#include <list>
+#include <map>
 #include <utility>
 #include <vector>
+#include <QDebug>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "ReconstructLayerTaskParams.h"
-#include "Reconstruction.h"
-#include "ReconstructionGeometryCollection.h"
+#include "AppLogicFwd.h"
+#include "ReconstructParams.h"
 #include "ReconstructionTree.h"
+#include "ReconstructionTreeCreator.h"
+#include "ReconstructMethodRegistry.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/GeometryOnSphere.h"
+#include "maths/types.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
+
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesAppLogic
@@ -76,82 +81,134 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Create and return a reconstruction tree for the reconstruction time @a time,
-		 * with root @a root.
-		 *
-		 * The feature collections in @a reconstruction_features_collection are expected to
-		 * contain reconstruction features (ie, total reconstruction sequences and absolute
-		 * reference frames).
-		 *
-		 * If @a reconstruction_features_collection is empty then the returned @a ReconstructionTree
-		 * will always give an identity rotation when queried for a composed absolute rotation.
-		 *
-		 * Question:  Do any of those other functions actually throw exceptions when
-		 * they're passed invalid weak_refs?  They should.
-		 */
-		const ReconstructionTree::non_null_ptr_type
-		create_reconstruction_tree(
-				const double &time,
-				GPlatesModel::integer_plate_id_type root,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstruction_features_collection =
-								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
-
-#if 0
-		/**
-		 * Same as the above overload of @a create_reconstruction_tree except that it accepts
-		 * a sequence of feature handles instead of a sequence of feature collections.
-		 */
-		const ReconstructionTree::non_null_ptr_type
-		create_reconstruction_tree(
-				const double &time,
-				GPlatesModel::integer_plate_id_type root,
-				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
-						reconstruction_features);
-#endif
-
-
-		/**
 		 * Returns true if @a feature_ref is reconstructable.
 		 *
 		 * This is any feature that can generate a @a ReconstructedFeatureGeometry when
 		 * @a reconstruct processes it.
+		 *
+		 * @a reconstruct_method_registry used to determined if the feature is reconstructable.
 		 */
 		bool
 		is_reconstructable_feature(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref);
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
+				const ReconstructMethodRegistry &reconstruct_method_registry);
+
+
+		/**
+		 * Same as other overload of @a is_reconstructable_feature but creates
+		 * a temporary @a ReconstructMethodRegistry object internally.
+		 */
+		inline
+		bool
+		is_reconstructable_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
+		{
+			ReconstructMethodRegistry reconstruct_method_registry;
+			register_default_reconstruct_method_types(reconstruct_method_registry);
+
+			return is_reconstructable_feature(feature_ref);
+		}
 
 
 		/**
 		 * Returns true if @a feature_collection contains any features that pass the
 		 * @a is_reconstructable_feature test.
+		 *
+		 * @a reconstruct_method_registry used to determined if the features are reconstructable.
 		 */
 		bool
 		has_reconstructable_features(
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				const ReconstructMethodRegistry &reconstruct_method_registry);
 
 
 		/**
-		 * Create and return a reconstruction geometry collection, containing
-		 * @a ReconstructionGeometry objects, by rotating feature geometries in
-		 * @a reconstructable_features_collection using @a reconstruction_tree.
-		 *
-		 * Only features that exist at the reconstruction time of @a reconstruction_tree
-		 * are rotated and generate reconstruction geometries.
-		 *
-		 * If @a reconstructable_features_collection is empty then the returned
-		 * @a ReconstructionGeometryCollection will contain no @a ReconstructionGeometry objects.
-		 *
-		 * Question:  Do any of those other functions actually throw exceptions when
-		 * they're passed invalid weak_refs?  They should.
+		 * Same as other overload of @a is_reconstructable_feature but creates
+		 * a temporary @a ReconstructMethodRegistry object internally.
 		 */
-		ReconstructionGeometryCollection::non_null_ptr_type
+		inline
+		bool
+		has_reconstructable_features(
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+		{
+			ReconstructMethodRegistry reconstruct_method_registry;
+			register_default_reconstruct_method_types(reconstruct_method_registry);
+
+			return has_reconstructable_features(feature_collection);
+		}
+
+
+		/**
+		 * Generate @a ReconstructedFeatureGeometry objects by reconstructing feature geometries in
+		 * @a reconstructable_features_collection using reconstruction trees obtained from
+		 * @a reconstruction_tree_creator.
+		 *
+		 * Note that a @a ReconstructionTreeCreator is passed in instead of a reconstruction tree.
+		 * This is because some reconstructable features require reconstruction trees at times
+		 * other than the specified @a reconstruction_time (eg, flowlines).
+		 *
+		 * Only features that exist at the reconstruction time @a reconstruction_time
+		 * are reconstructed and generate @a ReconstructedFeatureGeometry objects.
+		 *
+		 * @a reconstruct_method_registry used to determine which reconstruct methods should
+		 * be used for which reconstructable features.
+		 *
+		 * @a reconstruct_params are various parameters used for reconstructing - note that
+		 * different reconstruct methods will be interested in differents parameters.
+		 */
+		void
 		reconstruct(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				const ReconstructLayerTaskParams &reconstruct_params,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstructable_features_collection =
-								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
+				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const ReconstructMethodRegistry &reconstruct_method_registry,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const ReconstructParams &reconstruct_params = ReconstructParams());
+
+
+		/**
+		 * Same as other overload of @a reconstruct but creates temporary
+		 * @a ReconstructMethodRegistry and cached reconstruction tree creator objects internally.
+		 *
+		 * The internally created reconstruction tree cache is used to cache reconstruction trees if the
+		 * reconstructable features use reconstruction trees for times other than @a reconstruction_time.
+		 *
+		 * @a reconstruction_tree_cache_size is used to determine the maximum number of
+		 * reconstruction trees to cache if the reconstructable features use reconstruction
+		 * trees for reconstruction times other than @a reconstruction_time.
+		 */
+		inline
+		void
+		reconstruct(
+				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection =
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(),
+				const ReconstructParams &reconstruct_params = ReconstructParams(),
+				unsigned int reconstruction_tree_cache_size = 100)
+		{
+			ReconstructMethodRegistry reconstruct_method_registry;
+			register_default_reconstruct_method_types(reconstruct_method_registry);
+
+			ReconstructionTreeCreator reconstruction_tree_creator =
+					get_cached_reconstruction_tree_creator(
+							reconstruction_features_collection,
+							reconstruction_time,
+							anchor_plate_id,
+							reconstruction_tree_cache_size);
+
+			reconstruct(
+					reconstructed_feature_geometries,
+					reconstruction_time,
+					anchor_plate_id,
+					reconstruct_method_registry,
+					reconstructable_features_collection,
+					reconstruction_tree_creator,
+					reconstruct_params);
+		}
 
 
 		/**

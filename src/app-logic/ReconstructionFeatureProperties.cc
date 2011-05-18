@@ -135,7 +135,7 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_enumeration(
 	if (current_top_level_propname() == reconstruction_method_name)
 	{
 		// Note that this returns boost::none if string is not recognised.
-		d_recon_method = ReconstructionMethod::get_string_as_enum(enumeration.value());
+		d_recon_method = ReconstructMethod::get_string_as_enum(enumeration.value());
 	}
 }
 

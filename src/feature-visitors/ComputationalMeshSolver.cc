@@ -39,25 +39,29 @@
 
 #include "ComputationalMeshSolver.h"
 
+#include "app-logic/GeometryCookieCutter.h"
 #include "app-logic/PlateVelocityUtils.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/TopologyUtils.h"
-#include "app-logic/ReconstructionGeometryCollection.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "file-io/FileInfo.h"
 
-#include "maths/PolylineOnSphere.h"
-#include "maths/MultiPointOnSphere.h"
-#include "maths/LatLonPoint.h"
-#include "maths/ProximityCriteria.h"
-#include "maths/PolylineIntersections.h"
 #include "maths/CalculateVelocity.h"
 #include "maths/CartesianConvMatrix3D.h"
+#include "maths/LatLonPoint.h"
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
+#include "maths/PolylineIntersections.h"
+#include "maths/PolylineOnSphere.h"
+#include "maths/ProximityCriteria.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
@@ -93,26 +97,23 @@
 
 
 GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
-			const double &recon_time,
-			unsigned long root_plate_id,
-			//GPlatesAppLogic::Reconstruction &recon,
-			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &recon_tree,
-			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &recon_tree_2,
-			const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
-					resolved_boundaries_for_partitioning_geometry_query,
-			const GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type &
-					resolved_networks_for_velocity_interpolation,
-			GPlatesAppLogic::ReconstructionGeometryCollection &velocity_fields_to_populate,
-			bool should_keep_features_without_recon_plate_id):
+		std::vector<GPlatesAppLogic::multi_point_vector_field_non_null_ptr_type> &velocity_fields_to_populate,
+		const double &recon_time,
+		const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &recon_tree,
+		const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &recon_tree_2,
+		const GPlatesAppLogic::GeometryCookieCutter &reconstructed_static_polygons_query,
+		const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
+				resolved_boundaries_for_partitioning_geometry_query,
+		const GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type &
+				resolved_networks_for_velocity_interpolation,
+		bool should_keep_features_without_recon_plate_id):
+	d_velocity_fields_to_populate(velocity_fields_to_populate),
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
-	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_tree_ptr(recon_tree),
 	d_recon_tree_2_ptr(recon_tree_2),
-	d_resolved_boundaries_for_partitioning_geometry_query(
-			resolved_boundaries_for_partitioning_geometry_query),
-	d_resolved_networks_for_velocity_interpolation(
-			resolved_networks_for_velocity_interpolation),
-	d_velocity_fields_to_populate(&velocity_fields_to_populate),
+	d_reconstructed_static_polygons_query(reconstructed_static_polygons_query),
+	d_resolved_boundaries_for_partitioning_geometry_query(resolved_boundaries_for_partitioning_geometry_query),
+	d_resolved_networks_for_velocity_interpolation(resolved_networks_for_velocity_interpolation),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id),
 	d_feature_handle_ptr(NULL)
 {  
@@ -132,6 +133,9 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	// FIXME:  We should use property names rather than feature types to trigger behaviour.
 	// What property name would serve this purpose?
 
+	// Update: We now allow any feature type (not just "MeshNode"s) - if it contains multi-points
+	// then it will have velocities calculated.
+#if 0
 	// The following statement is an O(L log N) map-insertion, where N is the number of feature
 	// types currently loaded in GPlates and L is the average length of a feature-type string. 
 	// Because the local variable is static, the statement will be executed at most once in the
@@ -143,6 +147,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 		// Not a velocity field feature, so nothing to do here.
 		return;
 	}
+#endif
 	d_num_meshes += 1;
 
 	// else process this feature:
@@ -242,6 +247,31 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 }
 
 
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_line_string(
+		GPlatesPropertyValues::GmlLineString &gml_line_string)
+{
+	if ( ! d_accumulator->d_perform_reconstructions) {
+		return;
+	}
+
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_ptr =
+			gml_line_string.polyline();
+
+	// Since the domain is always stored as a multipoint create a new multipoint using
+	// the vertices of the polyline.
+	//
+	// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
+	// that stores a multi-point domain and a corresponding velocity field but the
+	// geometry property iterator (referenced by the MultiPointVectorField) will be
+	// a polyline geometry and not a multi-point geometry.
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type velocity_domain =
+			GPlatesMaths::MultiPointOnSphere::create_on_heap(
+					polyline_ptr->vertex_begin(), polyline_ptr->vertex_end());
+
+	generate_velocities_in_multipoint_domain(velocity_domain);
+}
+
 
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
@@ -251,29 +281,95 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 		return;
 	}
 
-	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multipoint_ptr =
-		gml_multi_point.multipoint();
-	
-	GPlatesMaths::MultiPointOnSphere::const_iterator iter = multipoint_ptr->begin();
-	GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint_ptr->end();
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type velocity_domain =
+			gml_multi_point.multipoint();
+
+	generate_velocities_in_multipoint_domain(velocity_domain);
+}
+
+
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_orientable_curve(
+		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+{
+	gml_orientable_curve.base_curve()->accept_visitor(*this);
+}
+
+
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_point(
+		GPlatesPropertyValues::GmlPoint &gml_point)
+{
+	if ( ! d_accumulator->d_perform_reconstructions) {
+		return;
+	}
+
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_ptr = gml_point.point();
+
+	// Since the domain is always stored as a multipoint create a new multipoint using the point.
+	//
+	// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
+	// that stores a multi-point domain and a corresponding velocity field but the
+	// geometry property iterator (referenced by the MultiPointVectorField) will be
+	// a point geometry and not a multi-point geometry.
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type velocity_domain =
+			GPlatesMaths::MultiPointOnSphere::create_on_heap(
+					point_ptr.get(), point_ptr.get() + 1);
+
+	generate_velocities_in_multipoint_domain(velocity_domain);
+}
+
+
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_polygon(
+		GPlatesPropertyValues::GmlPolygon &gml_polygon)
+{
+	if ( ! d_accumulator->d_perform_reconstructions) {
+		return;
+	}
+
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr = gml_polygon.exterior();
+
+	// Since the domain is always stored as a multipoint create a new multipoint using
+	// the vertices of the polygon.
+	//
+	// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
+	// that stores a multi-point domain and a corresponding velocity field but the
+	// geometry property iterator (referenced by the MultiPointVectorField) will be
+	// a polygon geometry and not a multi-point geometry.
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type velocity_domain =
+			GPlatesMaths::MultiPointOnSphere::create_on_heap(
+					polygon_ptr->vertex_begin(), polygon_ptr->vertex_end());
+
+	generate_velocities_in_multipoint_domain(velocity_domain);
+}
+
+
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::generate_velocities_in_multipoint_domain(
+		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &velocity_domain)
+{
+	GPlatesMaths::MultiPointOnSphere::const_iterator iter = velocity_domain->begin();
+	GPlatesMaths::MultiPointOnSphere::const_iterator end = velocity_domain->end();
 
 	GPlatesAppLogic::MultiPointVectorField::non_null_ptr_type vector_field_ptr =
 			GPlatesAppLogic::MultiPointVectorField::create_empty(
 					d_recon_tree_ptr,
-					multipoint_ptr,
+					velocity_domain,
 					*d_feature_handle_ptr,
 					*current_top_level_propiter());
 	GPlatesAppLogic::MultiPointVectorField::codomain_type::iterator field_iter =
 			vector_field_ptr->begin();
 
-	for ( ; iter != end; ++iter, ++field_iter) {
+	for ( ; iter != end; ++iter, ++field_iter)
+	{
 		d_num_points += 1;
 		process_point(*iter, *field_iter);
 	}
 
 	// Having created and populated the MultiPointVectorField, let's store it in the collection
 	// of velocity fields.
-	d_velocity_fields_to_populate->add_reconstruction_geometry(vector_field_ptr);
+	d_velocity_fields_to_populate.push_back(vector_field_ptr);
 }
 
 
@@ -319,13 +415,28 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 		return;
 	}
 
-    // else, point not found in any topology set the velocity values to 0 
-	using namespace GPlatesAppLogic;
+
+	//
+	// Next see if point is inside any static (reconstructed) polygons.
+	//
+
+	const boost::optional<const GPlatesAppLogic::ReconstructionGeometry *>
+			reconstructed_static_polygon_containing_point = 
+					d_reconstructed_static_polygons_query.partition_point(point);
+
+	if (reconstructed_static_polygon_containing_point)
+	{
+		process_point_in_static_polygon(
+				point, range_element, reconstructed_static_polygon_containing_point.get());
+		return;
+	}
+
+    // else, point not found in any topology or static polygons so set the velocity values to 0 
 
 	GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
-	MultiPointVectorField::CodomainElement::Reason reason =
-			MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
-	range_element = MultiPointVectorField::CodomainElement(zero_velocity, reason);
+	GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason =
+			GPlatesAppLogic::MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
+	range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(zero_velocity, reason);
 
 	// In the previous code, the point wasn't rendered if it wasn't in any boundary or network.
 
@@ -346,11 +457,10 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_network(
 {
 	const GPlatesMaths::Vector3D velocity_vector =
 			GPlatesMaths::convert_vector_from_colat_lon_to_xyz(point, velocity_colat_lon);
-	using namespace GPlatesAppLogic;
 
-	MultiPointVectorField::CodomainElement::Reason reason =
-			MultiPointVectorField::CodomainElement::InDeformationNetwork;
-	range_element = MultiPointVectorField::CodomainElement(velocity_vector, reason);
+	GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason =
+			GPlatesAppLogic::MultiPointVectorField::CodomainElement::InDeformationNetwork;
+	range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(velocity_vector, reason);
 	// In the previous code, the point was rendered black if it was in a deformation network.
 }
 
@@ -359,13 +469,13 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_plate_polygon(
 		const GPlatesMaths::PointOnSphere &point,
 		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
-		GPlatesAppLogic::TopologyUtils::resolved_topological_boundary_seq_type
+		const GPlatesAppLogic::TopologyUtils::resolved_topological_boundary_seq_type &
 				resolved_topological_boundaries_containing_point)
 {
 
 #ifdef DEBUG
 GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
-std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
+std::cout << "ComputationalMeshSolver::process_point_in_plate_polygon: " << llp << std::endl;
 #endif
 
 	boost::optional< std::pair<
@@ -378,12 +488,10 @@ std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 	{
 		// FIXME: do not paint the point any color ; leave it ?
 
-		using namespace GPlatesAppLogic;
-
 		GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
-		MultiPointVectorField::CodomainElement::Reason reason =
-				MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
-		range_element = MultiPointVectorField::CodomainElement(zero_velocity, reason);
+		GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason =
+				GPlatesAppLogic::MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
+		range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(zero_velocity, reason);
 
 		// In the previous code, the point wasn't rendered if it wasn't in any boundary or
 		// network.
@@ -399,11 +507,9 @@ std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 			GPlatesAppLogic::PlateVelocityUtils::calc_velocity_vector(
 					point, *d_recon_tree_ptr, *d_recon_tree_2_ptr, recon_plate_id);
 
-	using namespace GPlatesAppLogic;
-
-	MultiPointVectorField::CodomainElement::Reason reason =
-			MultiPointVectorField::CodomainElement::InPlateBoundary;
-	range_element = MultiPointVectorField::CodomainElement(vector_xyz, reason,
+	GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason =
+			GPlatesAppLogic::MultiPointVectorField::CodomainElement::InPlateBoundary;
+	range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(vector_xyz, reason,
 			recon_plate_id, resolved_topo_boundary);
 
 	// In the previous code, the point was rendered according to the plate ID if it was in a
@@ -411,6 +517,47 @@ std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 }
 
 
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_static_polygon(
+		const GPlatesMaths::PointOnSphere &point,
+		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
+		const GPlatesAppLogic::ReconstructionGeometry *reconstructed_static_polygon_containing_point)
+{
+
+#ifdef DEBUG
+GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+std::cout << "ComputationalMeshSolver::process_point_in_static_polygon: " << llp << std::endl;
+#endif
+
+	const boost::optional<GPlatesModel::integer_plate_id_type> recon_plate_id_opt =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(reconstructed_static_polygon_containing_point);
+	if (!recon_plate_id_opt)
+	{
+		// FIXME: do not paint the point any color ; leave it ?
+
+		GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
+		GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason =
+				GPlatesAppLogic::MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
+		range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(zero_velocity, reason);
+
+		// In the previous code, the point wasn't rendered if it wasn't in any boundary or
+		// network.
+
+		return; 
+	}
+
+	GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt.get();
+
+	// compute the velocity for this point
+	const GPlatesMaths::Vector3D vector_xyz =
+			GPlatesAppLogic::PlateVelocityUtils::calc_velocity_vector(
+					point, *d_recon_tree_ptr, *d_recon_tree_2_ptr, recon_plate_id);
+
+	GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason =
+			GPlatesAppLogic::MultiPointVectorField::CodomainElement::InStaticPolygon;
+	range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(vector_xyz, reason,
+			recon_plate_id, reconstructed_static_polygon_containing_point);
+}
 
 
 void

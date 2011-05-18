@@ -28,6 +28,8 @@
 
 #include "CoRegLayerConfigurationDialog.h"
 
+#include "app-logic/CoRegistrationLayerTask.h"
+
 #include "data-mining/PopulateShapeFileAttributesVisitor.h"
 #include "data-mining/CoRegConfigurationTable.h"
 
@@ -62,7 +64,8 @@ std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_seed_files() const
 {
 	// TODO: create a const for the channel name.
-	return get_input_files("CoRegistration seed Channel");
+	return get_input_files(
+			GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME);
 }
 
 
@@ -70,7 +73,8 @@ std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_target_files() const
 {
 	// TODO: create a const for the channel name.
-	return get_input_files("CoRegistration input Channel");
+	return get_input_files(
+			GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME);
 }
 
 

@@ -41,9 +41,10 @@ namespace GPlatesPresentation
 
 		static
 		non_null_ptr_type
-		create()
+		create(
+				GPlatesAppLogic::LayerTaskParams &layer_task_params)
 		{
-			return new ReconstructVisualLayerParams();
+			return new ReconstructVisualLayerParams(layer_task_params);
 		}
 
 		bool
@@ -77,7 +78,9 @@ namespace GPlatesPresentation
 
 	protected:
 
-		ReconstructVisualLayerParams();
+		explicit
+		ReconstructVisualLayerParams(
+				GPlatesAppLogic::LayerTaskParams &layer_task_params);
 
 	private:
 

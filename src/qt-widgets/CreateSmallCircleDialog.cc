@@ -33,6 +33,7 @@
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionTree.h"
+#include "app-logic/ReconstructionTreeCreator.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
@@ -150,16 +151,17 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_calculate()
 	// To create new trees, we need to know which reconstruction features should be used.
 	// We'll use the same features that have been used for the default reconstruction tree. 
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_tree = 	
-		d_application_state.get_current_reconstruction().get_default_reconstruction_tree();
+		d_application_state.get_current_reconstruction()
+			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_1 = 
-		GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+		GPlatesAppLogic::create_reconstruction_tree(
 		t1,
 		d_application_state.get_current_anchored_plate_id(),
 		default_tree->get_reconstruction_features());
 
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_2 = 
-		GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+		GPlatesAppLogic::create_reconstruction_tree(
 		t2,
 		d_application_state.get_current_anchored_plate_id(),
 		default_tree->get_reconstruction_features());

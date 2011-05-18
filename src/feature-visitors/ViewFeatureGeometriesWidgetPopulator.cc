@@ -35,6 +35,7 @@
 
 #include "ViewFeatureGeometriesWidgetPopulator.h"
 
+#include "app-logic/LayerProxyUtils.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -684,15 +685,25 @@ void
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geometries_for_feature(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
-	// Iterate through the ReconstructionTrees in the current reconstruction.
-	GPlatesAppLogic::Reconstruction::reconstruction_tree_const_iterator reconstruction_tree_iter =
-			d_reconstruction_ptr->begin_reconstruction_trees();
-	GPlatesAppLogic::Reconstruction::reconstruction_tree_const_iterator reconstruction_tree_end =
-			d_reconstruction_ptr->end_reconstruction_trees();
-	for ( ; reconstruction_tree_iter != reconstruction_tree_end; ++reconstruction_tree_iter)
+	// Get the layer outputs.
+	const GPlatesAppLogic::Reconstruction::layer_output_seq_type &layer_outputs =
+			d_reconstruction_ptr->get_active_layer_outputs();
+
+	// Find those layer outputs that come from a reconstruction tree layer.
+	std::vector<GPlatesAppLogic::ReconstructionLayerProxy *> reconstruction_outputs;
+	if (!GPlatesAppLogic::LayerProxyUtils::get_layer_proxy_derived_type_sequence(
+			layer_outputs.begin(), layer_outputs.end(), reconstruction_outputs))
 	{
-		const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree =
-				*reconstruction_tree_iter;
+		return;
+	}
+
+	// Iterate over the layers that have reconstruction tree outputs.
+	BOOST_FOREACH(
+			GPlatesAppLogic::ReconstructionLayerProxy *reconstruction_layer_proxy,
+			reconstruction_outputs)
+	{
+		const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+				reconstruction_layer_proxy->get_reconstruction_tree();
 
 		// Iterate through the RFGs that were reconstructed using 'reconstruction_tree'
 		// and that are observing 'feature_handle'.
@@ -712,7 +723,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geome
 		{
 			GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = rfgIter->get();
 
-			ReconstructedGeometryInfo info(rfg->property(), rfg->geometry());
+			ReconstructedGeometryInfo info(rfg->property(), rfg->reconstructed_geometry());
 			d_rfg_geometries.push_back(info);
 		}
 	}

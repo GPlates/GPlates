@@ -177,9 +177,9 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator):
 			ReconstructedFeatureGeometry(
 				reconstruction_tree_,
-				feature_geometry_ptr,
 				feature_handle,
 				property_iterator,
+				feature_geometry_ptr,
 				reconstruction_plate_id_,
 				boost::none),
 			d_feature_geometry(feature_geometry_ptr),

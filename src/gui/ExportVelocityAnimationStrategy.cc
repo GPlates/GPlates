@@ -51,8 +51,10 @@ POP_MSVC_WARNINGS
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ApplicationState.h"
 #include "app-logic/MultiPointVectorField.h"
+#include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/VelocityFieldCalculatorLayerProxy.h"
 
 #include "file-io/File.h"
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
@@ -331,27 +333,35 @@ namespace
 
 		const Reconstruction &reconstruction = application_state.get_current_reconstruction();
 
-		// Find any MultiPointVectorField objects in the reconstruction.
-		// The following code is copied from "ExportResolvedTopologyAnimationStrategy.cc".
-		Reconstruction::reconstruction_tree_const_iterator recon_trees_iter =
-				reconstruction.begin_reconstruction_trees();
-		Reconstruction::reconstruction_tree_const_iterator recon_trees_end =
-				reconstruction.end_reconstruction_trees();
-		for ( ; recon_trees_iter != recon_trees_end; ++recon_trees_iter)
+		// Get the layer outputs.
+		const GPlatesAppLogic::Reconstruction::layer_output_seq_type &layer_outputs =
+				reconstruction.get_active_layer_outputs();
+
+		// Find those layer outputs that come from velocity field calculator layers.
+		std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy *> velocity_field_outputs;
+		if (!GPlatesAppLogic::LayerProxyUtils::get_layer_proxy_derived_type_sequence(
+				layer_outputs.begin(), layer_outputs.end(), velocity_field_outputs))
 		{
-			const ReconstructionTree::non_null_ptr_to_const_type &recon_tree =
-					*recon_trees_iter;
-			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-					reconstruction.begin_reconstruction_geometries(recon_tree),
-					reconstruction.end_reconstruction_geometries(recon_tree),
-					vector_field_seq);
+			return;
 		}
-		// Temporarily patch a small bug relating to the 'd_reconstruction_tree_map' member
-		// in class Reconstruction.  This bug results in duplicate pointers in
-		// 'resolved_geom_seq'.
-		std::set<const GPlatesAppLogic::MultiPointVectorField *> unique_vector_field_set(
-				vector_field_seq.begin(), vector_field_seq.end());
-		vector_field_seq.assign(unique_vector_field_set.begin(), unique_vector_field_set.end());
+
+		// Iterate over the layers that have velocity field calculator outputs.
+		std::vector<multi_point_vector_field_non_null_ptr_type> multi_point_velocity_fields;
+		BOOST_FOREACH(
+				GPlatesAppLogic::VelocityFieldCalculatorLayerProxy *velocity_field_calculator_layer_proxy,
+				velocity_field_outputs)
+		{
+			velocity_field_calculator_layer_proxy->get_velocity_multi_point_vector_fields(
+					multi_point_velocity_fields);
+		}
+
+		// Convert sequence of non_null_ptr_type's to a sequence of raw pointers expected by the caller.
+		BOOST_FOREACH(
+				const multi_point_vector_field_non_null_ptr_type &multi_point_velocity_field,
+				multi_point_velocity_fields)
+		{
+			vector_field_seq.push_back(multi_point_velocity_field.get());
+		}
 
 #if 0  // Just for testing/demonstration.
 		vector_field_seq_type::const_iterator iter = vector_field_seq.begin();

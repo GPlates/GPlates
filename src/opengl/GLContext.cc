@@ -134,6 +134,46 @@ GPlatesOpenGL::GLContext::initialise()
 	}
 }
 
+
+void
+GPlatesOpenGL::GLContext::begin_render()
+{
+	get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources();
+	get_shared_state()->get_vertex_buffer_resource_manager()->deallocate_queued_resources();
+}
+
+
+void
+GPlatesOpenGL::GLContext::end_render()
+{
+	get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources();
+	get_shared_state()->get_vertex_buffer_resource_manager()->deallocate_queued_resources();
+
+	//
+	// Set the currently bound texture object to its default (which is zero).
+	// This effectively "stops using texture objects and returns to the unnamed default texture".
+	//
+
+	const std::size_t MAX_TEXTURE_UNITS = get_texture_parameters().gl_max_texture_units_ARB;
+
+	for (std::size_t texture_unit = 0; texture_unit < MAX_TEXTURE_UNITS; ++texture_unit)
+	{
+		// If the multitexture extension is not supported then MAX_TEXTURE_UNITS should be one.
+		if (GLEW_ARB_multitexture)
+		{
+			glClientActiveTextureARB(GL_TEXTURE0_ARB + texture_unit);
+		}
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	// Reset to the default OpenGL state (ie, point to texture unit 0).
+	if (GLEW_ARB_multitexture)
+	{
+		glClientActiveTextureARB(GL_TEXTURE0_ARB);
+	}
+}
+
 ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
@@ -162,6 +202,7 @@ GPlatesOpenGL::GLContext::get_render_target_factory()
 
 
 GPlatesOpenGL::GLContext::SharedState::SharedState() :
-	d_texture_resource_manager(GLTextureResourceManager::create())
+	d_texture_resource_manager(GLTextureResourceManager::create()),
+	d_vertex_buffer_resource_manager(GLVertexBufferResourceManager::create())
 {
 }

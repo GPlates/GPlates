@@ -23,23 +23,22 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
+#include <map>
 #include <QDebug>
 
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "ReconstructUtils.h"
 
 #include "AppLogicUtils.h"
-#include "FlowlineGeometryPopulator.h"
-#include "FlowlineUtils.h"
-#include "MotionPathGeometryPopulator.h"
-#include "ReconstructedFeatureGeometryPopulator.h"
-#include "ReconstructionGraph.h"
+#include "ReconstructContext.h"
 #include "ReconstructionTreePopulator.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
-#include "utils/NullIntrusivePointerHandler.h"
+#include "model/types.h"
 
 
 namespace
@@ -68,9 +67,7 @@ namespace
 		{
 			geometry->accept_visitor(*this);
 
-			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
-					d_reconstructed_geom.get(),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(d_reconstructed_geom.get());
 		}
 
 	private:
@@ -159,9 +156,7 @@ namespace
 		{
 			geometry->accept_visitor(*this);
 
-			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
-					d_reconstructed_geom.get(),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(d_reconstructed_geom.get());
 		}
 
 	private:
@@ -259,73 +254,33 @@ GPlatesAppLogic::ReconstructUtils::has_reconstruction_features(
 }
 
 
-const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
-GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-		const double &time,
-		GPlatesModel::integer_plate_id_type root,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstruction_features_collection)
-{
-	ReconstructionGraph graph(time, reconstruction_features_collection);
-	ReconstructionTreePopulator rtp(time, graph);
-
-	AppLogicUtils::visit_feature_collections(
-			reconstruction_features_collection.begin(),
-			reconstruction_features_collection.end(),
-			rtp);
-
-	// Build the reconstruction tree, using 'root' as the root of the tree.
-	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
-
-	return tree;
-}
-
-
-#if 0
-const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
-GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-		const double &time,
-		GPlatesModel::integer_plate_id_type root,
-		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &reconstruction_features)
-{
-	GPlatesModel::ReconstructionGraph graph(time);
-	GPlatesModel::ReconstructionTreePopulator rtp(time, graph);
-
-	BOOST_FOREACH(const GPlatesModel::FeatureHandle::weak_ref &feature_ref, reconstruction_features)
-	{
-		rtp.visit_feature(feature_ref);
-	}
-	
-	// Build the reconstruction tree, using 'root' as the root of the tree.
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
-
-	return tree;
-}
-#endif
-
-
 bool
 GPlatesAppLogic::ReconstructUtils::is_reconstructable_feature(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
+		const ReconstructMethodRegistry &reconstruct_method_registry)
 {
-	return ReconstructedFeatureGeometryPopulator::can_process(feature_ref);
+	// See if any reconstruct methods can reconstruct the current feature.
+	return reconstruct_method_registry.can_reconstruct_feature(feature_ref);
 }
 
 
 bool
 GPlatesAppLogic::ReconstructUtils::has_reconstructable_features(
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+		const ReconstructMethodRegistry &reconstruct_method_registry)
 {
-	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_iter = feature_collection->begin();
-	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_end = feature_collection->end();
-	for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
+	// Iterate over the features in the feature collection.
+	GPlatesModel::FeatureCollectionHandle::const_iterator features_iter = feature_collection->begin();
+	GPlatesModel::FeatureCollectionHandle::const_iterator features_end = feature_collection->end();
+	for ( ; features_iter != features_end; ++features_iter)
 	{
-		const GPlatesModel::FeatureHandle::const_weak_ref feature_ref =
-				(*feature_collection_iter)->reference();
+		const GPlatesModel::FeatureHandle::const_weak_ref feature_ref = (*features_iter)->reference();
 
-		if (is_reconstructable_feature(feature_ref))
+		// See if any reconstruct methods can reconstruct the current feature.
+		if (reconstruct_method_registry.can_reconstruct_feature(feature_ref))
 		{
-			return true; 
+			// Only need to be able to process one feature to be able to process the entire collection.
+			return true;
 		}
 	}
 
@@ -333,38 +288,28 @@ GPlatesAppLogic::ReconstructUtils::has_reconstructable_features(
 }
 
 
-GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type
+void
 GPlatesAppLogic::ReconstructUtils::reconstruct(
-		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-		const ReconstructLayerTaskParams &reconstruct_params,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstructable_features_collection)
+		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id,
+		const ReconstructMethodRegistry &reconstruct_method_registry,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const ReconstructParams &reconstruct_params)
 {
-	ReconstructionGeometryCollection::non_null_ptr_type reconstruction_geom_collection =
-			ReconstructionGeometryCollection::create(reconstruction_tree);
+	// Create a reconstruct context - it will determine which reconstruct method each
+	// reconstructable feature requires.
+	ReconstructContext reconstruct_context(
+			reconstruct_method_registry,
+			reconstruct_params,
+			reconstructable_features_collection);
 
-	ReconstructedFeatureGeometryPopulator rfgp(
-			*reconstruction_geom_collection,
-			reconstruct_params);
-
-	AppLogicUtils::visit_feature_collections(
-			reconstructable_features_collection.begin(),
-			reconstructable_features_collection.end(),
-			rfgp);
-
-	FlowlineGeometryPopulator fgp(*reconstruction_geom_collection);
-	AppLogicUtils::visit_feature_collections(
-			reconstructable_features_collection.begin(),
-			reconstructable_features_collection.end(),
-			fgp);
-
-	MotionPathGeometryPopulator mtgp(*reconstruction_geom_collection);
-	AppLogicUtils::visit_feature_collections(
-		reconstructable_features_collection.begin(),
-		reconstructable_features_collection.end(),
-		mtgp);
-
-	return reconstruction_geom_collection;
+	// Reconstruct the reconstructable features.
+	reconstruct_context.reconstruct(
+			reconstructed_feature_geometries,
+			reconstruction_tree_creator,
+			reconstruction_time);
 }
 
 

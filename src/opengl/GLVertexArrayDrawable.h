@@ -62,7 +62,7 @@ namespace GPlatesOpenGL
 		non_null_ptr_type
 		create(
 				const GLVertexArray::shared_ptr_to_const_type &vertex_array,
-				const GLVertexElementArray::non_null_ptr_to_const_type &vertex_element_array)
+				const GLVertexElementArray::shared_ptr_to_const_type &vertex_element_array)
 		{
 			return non_null_ptr_type(
 					new GLVertexArrayDrawable(vertex_array, vertex_element_array));
@@ -86,13 +86,13 @@ namespace GPlatesOpenGL
 
 	private:
 		GLVertexArray::shared_ptr_to_const_type d_vertex_array;
-		GLVertexElementArray::non_null_ptr_to_const_type d_vertex_element_array;
+		GLVertexElementArray::shared_ptr_to_const_type d_vertex_element_array;
 
 
 		//! Constructor.
 		GLVertexArrayDrawable(
 				const GLVertexArray::shared_ptr_to_const_type &vertex_array,
-				const GLVertexElementArray::non_null_ptr_to_const_type &vertex_element_array) :
+				const GLVertexElementArray::shared_ptr_to_const_type &vertex_element_array) :
 			d_vertex_array(vertex_array),
 			d_vertex_element_array(vertex_element_array)
 		{  }

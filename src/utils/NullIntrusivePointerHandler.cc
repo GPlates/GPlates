@@ -28,9 +28,16 @@
 #include "NullIntrusivePointerHandler.h"
 #include "NullNonNullIntrusivePointerException.h"
 
+#include "global/GPlatesAssert.h"
+
 
 void
 GPlatesUtils::NullIntrusivePointerHandler::operator()() const
 {
+#ifdef GPLATES_DEBUG
+	// Abort in debug mode so that we can observe the stack trace in the debugger.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#else
 	throw NullNonNullIntrusivePointerException(GPLATES_EXCEPTION_SOURCE);
+#endif
 }

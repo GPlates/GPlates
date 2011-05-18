@@ -284,7 +284,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_feat
 	if (d_focused_geometry)
 	{
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere =
-				d_focused_geometry->geometry();
+				d_focused_geometry->reconstructed_geometry();
 
 		// Initialise our GeometryBuilder with this geometry.
 		// Various canvas tools will then make changes to the geometry through
@@ -420,9 +420,21 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 
 	if (d_feature->feature_type() == flowline_type)
 	{
+		// The reconstruction tree.
+		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+				d_focused_geometry->reconstruction_tree();
+		// A function to get reconstruction trees with.
+		GPlatesAppLogic::ReconstructionTreeCreator
+				reconstruction_tree_creator =
+						GPlatesAppLogic::get_cached_reconstruction_tree_creator(
+								reconstruction_tree->get_reconstruction_features(),
+								reconstruction_tree->get_reconstruction_time(),
+								reconstruction_tree->get_anchor_plate_id());
+
 	    return GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
 			geometry_on_sphere,
-			d_focused_geometry->reconstruction_tree(),
+			reconstruction_tree->get_reconstruction_time(),
+			reconstruction_tree_creator,
 			d_feature,
 			true /* reverse reconstruct */);
 	}
@@ -434,7 +446,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 
 
 	if (visitor.get_reconstruction_method() == 
-		GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION)
+		GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION)
 	{
 		boost::optional<GPlatesModel::integer_plate_id_type> left_plate = visitor.get_left_plate_id();
 		boost::optional<GPlatesModel::integer_plate_id_type> right_plate = visitor.get_right_plate_id();

@@ -25,12 +25,16 @@
 
 #include <cmath>
 #include <iterator>
+#include <memory>
 #include <utility>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 
 #include "PointInPolygon.h"
 
+#include "Centroid.h"
 #include "PointOnSphere.h"
+#include "SmallCircleBounds.h"
 #include "Vector3D.h"
 
 #include "global/AssertionFailureException.h"
@@ -87,39 +91,20 @@ namespace GPlatesMaths
 			const PolygonOnSphere::vertex_const_iterator vertex_end = polygon.vertex_end();
 			for ( ; vertex_iter != vertex_end; ++vertex_iter)
 			{
-				const PointOnSphere &vertex = *vertex_iter;
-				const Vector3D point(vertex.position_vector());
-				summed_position = summed_position + point;
-			}
+				const boost::optional<GPlatesMaths::UnitVector3D> centroid =
+						Centroid::calculate_centroid(
+								polygon,
+								0.3/*polygon forms cone of roughly 145 degrees*/);
 
-			// If the magnitude of the summed vertex position is zero then all
-			// the points averaged to zero. This most likely happens when the
-			// vertices roughly form a great circle arc - which should be quite unlikely.
-			if (summed_position.magSqrd() <= 0.0)
-			{
-				// Iterate through the polygon edges and sum the edge midpoints
-				// instead of the vertices in an attempt to get a different answer.
-				summed_position = Vector3D(0,0,0);
-				PolygonOnSphere::const_iterator edge_iter = polygon.begin();
-				const PolygonOnSphere::const_iterator edge_end = polygon.end();
-				for ( ; edge_iter != edge_end; ++edge_iter)
+				if (!centroid)
 				{
-					const GreatCircleArc &edge = *edge_iter;
-					const Vector3D edge_mid_point(
-							(Vector3D(edge.start_point().position_vector()) +
-								Vector3D(edge.end_point().position_vector()))
-							.get_normalisation());
-					summed_position = summed_position + edge_mid_point;
-				}
-
-				if (summed_position.magSqrd() <= 0.0)
-				{
-					// The edge midpoints summed to origin so just bail out and
-					// return the north pole.
 					// FIXME: Either all point-in-polygon tests will be wrong or they
 					// will all be right and either way is equally likely at this point.
-					summed_position = Vector3D(0, 0, 1);
+					return UnitVector3D(0, 0, 1);
 				}
+
+				// Return the centroid.
+				return centroid.get();
 			}
 
 			// Return the centroid.
@@ -710,9 +695,15 @@ namespace GPlatesMaths
 		class SphericalLuneTree
 		{
 		public:
-			SphericalLuneTree(
+			/**
+			 * Creates a @a SphericalLuneTree.
+			 */
+			static
+			std::auto_ptr<SphericalLuneTree>
+			create(
 					const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-					bool build_ologn_hint);
+					bool build_ologn_hint,
+					bool keep_shared_reference_to_polygon);
 
 
 			unsigned int
@@ -767,20 +758,27 @@ namespace GPlatesMaths
 				LeafNode(
 						edge_sequence_index_type edge_sequences_start_index_,
 						unsigned int num_edge_sequences_,
-						const double &min_dot_product_of_poly_edges_to_centroid_antipodal_,
-						const double &max_dot_product_of_poly_edges_to_centroid_antipodal_) :
+						const InnerOuterBoundingSmallCircleBuilder &antipodal_centroid_bounds_builder_) :
 					edge_sequences_start_index(edge_sequences_start_index_),
 					num_edge_sequences(num_edge_sequences_),
-					min_dot_product_of_poly_edges_to_centroid_antipodal(
-							min_dot_product_of_poly_edges_to_centroid_antipodal_),
-					max_dot_product_of_poly_edges_to_centroid_antipodal(
-							max_dot_product_of_poly_edges_to_centroid_antipodal_)
+					antipodal_centroid_bounds(
+							antipodal_centroid_bounds_builder_.get_inner_outer_bounding_small_circle())
+				{  }
+
+				/**
+				 * Default constructor in case no sequences intersect spherical lune of leaf node.
+				 *
+				 * This shouldn't really happen but seems to in some situations.
+				 * FIXME: Find out why there's no intersections in some cases.
+				 */
+				LeafNode() :
+					edge_sequences_start_index(0),
+					num_edge_sequences(0)
 				{  }
 
 				edge_sequence_index_type edge_sequences_start_index;
 				unsigned int num_edge_sequences;
-				double min_dot_product_of_poly_edges_to_centroid_antipodal;
-				double max_dot_product_of_poly_edges_to_centroid_antipodal;
+				boost::optional<InnerOuterBoundingSmallCircle> antipodal_centroid_bounds;
 			};
 			typedef std::vector<LeafNode> leaf_node_seq_type;
 
@@ -819,24 +817,46 @@ namespace GPlatesMaths
 			};
 
 			/**
+			 * Builds the inner and outer bounding small circles used for quickly testing
+			 * if a point is inside/outside the polygon.
+			 */
+			class BoundsDataBuilder
+			{
+			public:
+				//! Constructor.
+				BoundsDataBuilder(
+						const UnitVector3D &polygon_centroid_antipodal,
+						const PolygonOnSphere &polygon);
+
+				/**
+				 * The small circle inner/outer bounds of all polygon edges relative
+				 * to the polygon centroid antipodal point.
+				 */
+				InnerOuterBoundingSmallCircleBuilder d_antipodal_centroid_bounds_builder;
+
+				/**
+				 * The parity of polygon edge crossings from polygon centroid to its antipodal point.
+				 */
+				unsigned int d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal;
+			};
+
+			/**
 			 * The inner and outer bounding small circles used for quickly testing
 			 * if a point is inside/outside the polygon.
 			 */
 			class BoundsData
 			{
 			public:
-				//! Default constructor.
-				BoundsData() :
-					d_min_dot_poly_edges_with_antipodal_centroid(1.0),
-					d_max_dot_poly_edges_with_antipodal_centroid(-1.0),
-					d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal(0)
-				{  }
+				//! Constructor.
+				explicit
+				BoundsData(
+						const BoundsDataBuilder &bounds_data_builder);
 
-				//! Minimum dot product of all polygon edges with polygon centroid antipodal.
-				double d_min_dot_poly_edges_with_antipodal_centroid;
-
-				//! Maximum dot product of all polygon edges with polygon centroid antipodal.
-				double d_max_dot_poly_edges_with_antipodal_centroid;
+				/**
+				 * The small circle inner/outer bounds of all polygon edges relative
+				 * to the polygon centroid antipodal point.
+				 */
+				InnerOuterBoundingSmallCircle d_antipodal_centroid_bounds;
 
 				/**
 				 * The parity of polygon edge crossings from polygon centroid to its antipodal point.
@@ -863,10 +883,10 @@ namespace GPlatesMaths
 				TreeData d_tree_data;
 
 				/**
-				 * Bounds data for the entire polygon - byproduct of calculating bounds for
+				 * Builds bounding data for the entire polygon - byproduct of calculating bounds for
 				 * the leaf nodes of the tree.
 				 */
-				BoundsData d_bounds_data;
+				BoundsDataBuilder d_bounds_data_builder;
 
 			private:
 				const PolygonOnSphere &d_polygon;
@@ -904,8 +924,16 @@ namespace GPlatesMaths
 			/**
 			 * A reference to ensure the polygon stays alive because we are storing
 			 * iterators into its internal structures.
+			 *
+			 * This is optional because the polygon itself might be caching *us* in
+			 * which case we would have circular shared pointers causing a memory leak.
 			 */
-			PolygonOnSphere::non_null_ptr_to_const_type d_polygon;
+			boost::optional<PolygonOnSphere::non_null_ptr_to_const_type> d_polygon_shared_pointer;
+
+			/**
+			 * The polygon reference to use when iterating over the polygon's points.
+			 */
+			const PolygonOnSphere &d_polygon;
 
 			/**
 			 * The antipodal of the polygon centroid that is also the start of the crossings
@@ -930,6 +958,13 @@ namespace GPlatesMaths
 			boost::optional<TreeData> d_tree_data;
 
 
+			SphericalLuneTree(
+					const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+					bool keep_shared_reference_to_polygon,
+					const UnitVector3D &polygon_centroid_antipodal,
+					const BoundsDataBuilder &bounds_data_builder,
+					const boost::optional<TreeData> &tree_data = boost::none);
+
 			unsigned int
 			get_num_polygon_edges_crossed(
 					const InternalNode &node,
@@ -937,14 +972,16 @@ namespace GPlatesMaths
 		};
 
 
-		SphericalLuneTree::SphericalLuneTree(
+		std::auto_ptr<SphericalLuneTree>
+		SphericalLuneTree::create(
 				const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-				bool build_ologn_hint) :
-			d_polygon(polygon),
+				bool build_ologn_hint,
+				bool keep_shared_reference_to_polygon)
+		{
 			// Get the point that is antipodal to the polygon centroid.
 			// This point is deemed to be outside the polygon (FIXME: which might not be true).
-			d_polygon_centroid_antipodal(-get_polygon_centroid(*polygon))
-		{
+			const UnitVector3D polygon_centroid_antipodal(-get_polygon_centroid(*polygon));
+
 			// Only build a tree if we've been asked to *and* there are enough polygon edges
 			// to make it worthwhile.
 			if (!build_ologn_hint ||
@@ -953,47 +990,49 @@ namespace GPlatesMaths
 				// Don't build a spherical lune tree.
 				// But can still benefit from the bounds data.
 
-				const edge_sequence_list_type all_polygon_edges(1,
-						EdgeSequence(d_polygon->begin(), d_polygon->end()));
+				BoundsDataBuilder bounds_data_builder(polygon_centroid_antipodal, *polygon);
+				bounds_data_builder.d_antipodal_centroid_bounds_builder.add(*polygon);
 
-				// Get the range of dot products (from polygon centroid antipodal) that all
-				// the polygon edges lie within.
-				// This will be used for early inside/outside point-in-polygon tests.
-				std::pair< double/*min dot product*/, double/*max dot product*/ >
-						dot_product_range_of_all_edges_to_polygon_centroid_antipodal =
-								get_dot_product_range_of_polygon_edges_to_point(
-										all_polygon_edges,
-										d_polygon_centroid_antipodal);
-				d_bounds_data.d_min_dot_poly_edges_with_antipodal_centroid =
-						dot_product_range_of_all_edges_to_polygon_centroid_antipodal.first;
-				d_bounds_data.d_max_dot_poly_edges_with_antipodal_centroid =
-						dot_product_range_of_all_edges_to_polygon_centroid_antipodal.second;
-
-				// Get the number of edges crossed from polygon centroid antipodal to polygon centroid.
-				// This will vary depending on which arbitrary crossings-arc is chosen (it's arbitrary
-				// because the arc start and end points are antipodal to each other), but it
-				// doesn't matter because we're only interested the parity which should be the same
-				// regardless of which arc is chosen.
-				d_bounds_data.d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal =
-						(1 & GPlatesMaths::PointInPolygon::get_num_polygon_edges_crossed(
-								all_polygon_edges.begin(), all_polygon_edges.end(),
-								d_polygon_centroid_antipodal,
-								-d_polygon_centroid_antipodal,
-								-1.0/*dot product polygon centroid with its antipodal point*/));
-
-				return;
+				return std::auto_ptr<SphericalLuneTree>(
+						new SphericalLuneTree(
+								polygon,
+								keep_shared_reference_to_polygon,
+								polygon_centroid_antipodal,
+								bounds_data_builder));
 			}
 
 			// Build the spherical lune tree.
-			TreeBuilder tree_builder(*polygon, d_polygon_centroid_antipodal);
+			TreeBuilder tree_builder(*polygon, polygon_centroid_antipodal);
 			tree_builder.build_tree();
 
 			// Copy the built tree structures - copying also has the advantage of removing
 			// any excess memory usage caused by std::vector.
-			d_tree_data = tree_builder.d_tree_data;
-
 			// Also copy the polygon bounds data built by the tree builder.
-			d_bounds_data = tree_builder.d_bounds_data;
+			return std::auto_ptr<SphericalLuneTree>(
+					new SphericalLuneTree(
+							polygon,
+							keep_shared_reference_to_polygon,
+							polygon_centroid_antipodal,
+							tree_builder.d_bounds_data_builder,
+							tree_builder.d_tree_data));
+		}
+
+
+		SphericalLuneTree::SphericalLuneTree(
+				const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+				bool keep_shared_reference_to_polygon,
+				const UnitVector3D &polygon_centroid_antipodal,
+				const BoundsDataBuilder &bounds_data_builder,
+				const boost::optional<TreeData> &tree_data) :
+			d_polygon(*polygon),
+			d_polygon_centroid_antipodal(polygon_centroid_antipodal),
+			d_bounds_data(bounds_data_builder),
+			d_tree_data(tree_data)
+		{
+			if (keep_shared_reference_to_polygon)
+			{
+				d_polygon_shared_pointer = polygon;
+			}
 		}
 
 
@@ -1005,11 +1044,13 @@ namespace GPlatesMaths
 			// First determine if we can get an early result to avoid testing the polygon edges.
 			//
 
-			const double test_point_dot_polygon_centroid_antipodal =
-					dot(d_polygon_centroid_antipodal, test_point).dval();
+			// Test the point against the outer/inner small circle bounds.
+			const InnerOuterBoundingSmallCircle::Result bounds_result =
+					d_bounds_data.d_antipodal_centroid_bounds.test(test_point);
 			// See if the test point is clearly outside the polygon.
-			if (test_point_dot_polygon_centroid_antipodal >
-				d_bounds_data.d_max_dot_poly_edges_with_antipodal_centroid)
+			// Note that this means inside the inner bounds since the centre of the bounding
+			// inner/outer small circles is polygon centroid *antipodal* point.
+			if (bounds_result == InnerOuterBoundingSmallCircle::INSIDE_INNER_BOUNDS)
 			{
 				// The test point is outside the polygon so no edges have been crossed
 				// from the polygon centroid antipodal point (which is also outside the polygon)
@@ -1020,8 +1061,7 @@ namespace GPlatesMaths
 			// edge (this is like a clearly-inside test except the centroid might not be
 			// inside the polygon so we'll take the result of the centroid test whether
 			// that's inside or outside).
-			if (test_point_dot_polygon_centroid_antipodal <
-				d_bounds_data.d_min_dot_poly_edges_with_antipodal_centroid)
+			if (bounds_result == InnerOuterBoundingSmallCircle::OUTSIDE_OUTER_BOUNDS)
 			{
 				return d_bounds_data.d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal;
 			}
@@ -1041,7 +1081,7 @@ namespace GPlatesMaths
 						dot(crossings_arc_start_point, crossings_arc_end_point).dval();
 
 				return GPlatesMaths::PointInPolygon::get_num_polygon_edges_crossed(
-							d_polygon->begin(), d_polygon->end(),
+							d_polygon.begin(), d_polygon.end(),
 							crossings_arc_start_point, crossings_arc_end_point,
 							crossings_arc_plane_normal, dot_crossings_arc_end_points);
 			}
@@ -1076,12 +1116,24 @@ namespace GPlatesMaths
 			// We've reached a leaf node...
 			const LeafNode &leaf_node = d_tree_data->d_leaf_nodes[child_node_index];
 
+			// FIXME: This was added because there are some situations where no intersections
+			// in spherical lune wedge of a leaf node are recorded - which shouldn't happen.
+			if (!leaf_node.antipodal_centroid_bounds)
+			{
+				// We'll be conservative and assume the test point is outside the polygon.
+				// Returning zero means no edges have been crossed from the polygon centroid
+				// antipodal point (which is also outside the polygon) to the test point.
+				return 0;
+			}
+
 			// First determine if we can get an early result to avoid testing the polygon edges.
-			const double test_point_dot_polygon_centroid_antipodal =
-					dot(d_polygon_centroid_antipodal, test_point).dval();
+			// Test the point against the outer/inner small circle bounds.
+			const InnerOuterBoundingSmallCircle::Result bounds_result =
+					leaf_node.antipodal_centroid_bounds.get().test(test_point);
 			// See if the test point is clearly outside the polygon.
-			if (test_point_dot_polygon_centroid_antipodal >
-				leaf_node.max_dot_product_of_poly_edges_to_centroid_antipodal)
+			// Note that this means inside the inner bounds since the centre of the bounding
+			// inner/outer small circles is polygon centroid *antipodal* point.
+			if (bounds_result == InnerOuterBoundingSmallCircle::INSIDE_INNER_BOUNDS)
 			{
 				// The test point is outside the polygon so no edges have been crossed
 				// from the polygon centroid antipodal point (which is also outside the polygon)
@@ -1092,8 +1144,7 @@ namespace GPlatesMaths
 			// edge in the current leaf node (this is like a clearly-inside test except
 			// the centroid might not be inside the polygon so we'll take the result of
 			// the centroid test whether that's inside or outside).
-			if (test_point_dot_polygon_centroid_antipodal <
-				leaf_node.min_dot_product_of_poly_edges_to_centroid_antipodal)
+			if (bounds_result == InnerOuterBoundingSmallCircle::OUTSIDE_OUTER_BOUNDS)
 			{
 				return d_bounds_data.d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal;
 			}
@@ -1111,8 +1162,40 @@ namespace GPlatesMaths
 					edge_sequence_list_end,
 					d_polygon_centroid_antipodal,
 					test_point,
-					test_point_dot_polygon_centroid_antipodal);
+					dot(test_point, d_polygon_centroid_antipodal).dval());
 		}
+
+
+		SphericalLuneTree::BoundsDataBuilder::BoundsDataBuilder(
+				const UnitVector3D &polygon_centroid_antipodal,
+				const PolygonOnSphere &polygon) :
+			d_antipodal_centroid_bounds_builder(polygon_centroid_antipodal)
+		{
+			const edge_sequence_list_type all_polygon_edges(1,
+					EdgeSequence(polygon.begin(), polygon.end()));
+
+			// Get the number of edges crossed from polygon centroid antipodal to polygon centroid.
+			// This will vary depending on which arbitrary crossings-arc is chosen (it's arbitrary
+			// because the arc start and end points are antipodal to each other), but it
+			// doesn't matter because we're only interested the parity which should be the same
+			// regardless of which arc is chosen.
+			d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal =
+					(1 & GPlatesMaths::PointInPolygon::get_num_polygon_edges_crossed(
+							all_polygon_edges.begin(), all_polygon_edges.end(),
+							polygon_centroid_antipodal,
+							-polygon_centroid_antipodal,
+							-1.0/*dot product polygon centroid with its antipodal point*/));
+		}
+
+
+		SphericalLuneTree::BoundsData::BoundsData(
+				const BoundsDataBuilder &bounds_data_builder) :
+			d_antipodal_centroid_bounds(
+					bounds_data_builder.d_antipodal_centroid_bounds_builder
+							.get_inner_outer_bounding_small_circle()),
+			d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal(
+					bounds_data_builder.d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal)
+		{  }
 
 
 		// '1e-4' represents an angular deviation of 0.34 minutes away from the plane.
@@ -1123,6 +1206,7 @@ namespace GPlatesMaths
 		SphericalLuneTree::TreeBuilder::TreeBuilder(
 				const PolygonOnSphere &polygon,
 				const UnitVector3D &polygon_centroid_antipodal) :
+			d_bounds_data_builder(polygon_centroid_antipodal, polygon),
 			d_polygon(polygon),
 			d_polygon_centroid_antipodal(polygon_centroid_antipodal),
 			d_polygon_centroid(-polygon_centroid_antipodal)
@@ -1135,21 +1219,6 @@ namespace GPlatesMaths
 			// 'AVERAGE_NUM_EDGES_PER_LEAF_NODE' edges the tree should not be full (of nodes).
 			d_max_tree_depth = static_cast<unsigned int>(
 					std::log(num_leaf_nodes) / std::log(2.0) + 1 - 1e-6);
-
-			const edge_sequence_list_type all_polygon_edges(1,
-					EdgeSequence(d_polygon.begin(), d_polygon.end()));
-
-			// Get the number of edges crossed from polygon centroid antipodal to polygon centroid.
-			// This will vary depending on which arbitrary crossings-arc is chosen (it's arbitrary
-			// because the arc start and end points are antipodal to each other), but it
-			// doesn't matter because we're only interested the parity which should be the same
-			// regardless of which arc is chosen.
-			d_bounds_data.d_parity_of_num_edges_crossed_from_polygon_centroid_to_antipodal =
-					(1 & GPlatesMaths::PointInPolygon::get_num_polygon_edges_crossed(
-							all_polygon_edges.begin(), all_polygon_edges.end(),
-							d_polygon_centroid_antipodal,
-							d_polygon_centroid,
-							-1.0/*dot product polygon centroid with its antipodal point*/));
 		}
 
 
@@ -1300,36 +1369,43 @@ namespace GPlatesMaths
 			// Get the range of dot products (from polygon centroid antipodal) that the
 			// intersecting polygon edges lie within.
 			// This will be used for early inside/outside point-in-polygon tests.
-			std::pair< double/*min dot product*/, double/*max dot product*/ >
-					dot_product_range_of_intersecting_edges_to_polygon_centroid_antipodal =
-							get_dot_product_range_of_polygon_edges_to_point(
-									sub_tree_edge_sequences,
-									d_polygon_centroid_antipodal);
-			const double &min_dot_intersecting_edges_to_polygon_centroid_antipodal =
-					dot_product_range_of_intersecting_edges_to_polygon_centroid_antipodal.first;
-			const double &max_dot_intersecting_edges_to_polygon_centroid_antipodal =
-					dot_product_range_of_intersecting_edges_to_polygon_centroid_antipodal.second;
 
-			// Find the min/max dot product over all polygon edges so far.
-			if (min_dot_intersecting_edges_to_polygon_centroid_antipodal <
-				d_bounds_data.d_min_dot_poly_edges_with_antipodal_centroid)
+			// Determine the bounds for the current subtree (which is a leaf).
+			InnerOuterBoundingSmallCircleBuilder leaf_node_bounds_data_builder(
+					d_polygon_centroid_antipodal);
+
+			// FIXME: It appears that there can be no intersections which shouldn't be possible
+			// so need to account for that here.
+			if (sub_tree_edge_sequences.empty())
 			{
-				d_bounds_data.d_min_dot_poly_edges_with_antipodal_centroid =
-						min_dot_intersecting_edges_to_polygon_centroid_antipodal;
-			}
-			if (max_dot_intersecting_edges_to_polygon_centroid_antipodal >
-				d_bounds_data.d_max_dot_poly_edges_with_antipodal_centroid)
-			{
-				d_bounds_data.d_max_dot_poly_edges_with_antipodal_centroid =
-						max_dot_intersecting_edges_to_polygon_centroid_antipodal;
+				// Just store a default-constructed LeafNode that contains no sequences of edges
+				// and no inner-outer bounding small circles.
+				const node_index_type leaf_node_index = d_tree_data.d_leaf_nodes.size();
+				d_tree_data.d_leaf_nodes.push_back(LeafNode());
+
+				// Return leaf node.
+				return std::make_pair(leaf_node_index, false/*internal node*/);
 			}
 
-			// Create a leaf node - it references edge that will be stored in the global list.
+			// Iterate over the edge sequences and build the bounds.
+			BOOST_FOREACH(const EdgeSequence &sub_tree_edge_sequence, sub_tree_edge_sequences)
+			{
+				// Expand/contract the outer/inner bounds as needed to include the
+				// current edge sequence.
+				leaf_node_bounds_data_builder.add(
+						sub_tree_edge_sequence.begin, sub_tree_edge_sequence.end);
+			}
+
+			// Expand/contract the outer/inner bounds of the entire spherical lune tree
+			// to include the current leaf node bounds.
+			d_bounds_data_builder.d_antipodal_centroid_bounds_builder.expand_bounds(
+					leaf_node_bounds_data_builder);
+
+			// Create a leaf node - it references edges that will be stored in the global list.
 			const LeafNode leaf_node(
 					d_tree_data.d_edge_sequences.size(),
 					sub_tree_edge_sequences.size(),
-					min_dot_intersecting_edges_to_polygon_centroid_antipodal,
-					max_dot_intersecting_edges_to_polygon_centroid_antipodal);
+					leaf_node_bounds_data_builder);
 			// Insert the edges that intersect the current spherical lune into the global list.
 			d_tree_data.d_edge_sequences.insert(d_tree_data.d_edge_sequences.end(),
 					sub_tree_edge_sequences.begin(), sub_tree_edge_sequences.end());
@@ -1490,10 +1566,8 @@ namespace GPlatesMaths
 GPlatesMaths::PointInPolygon::Result
 GPlatesMaths::PointInPolygon::is_point_in_polygon(
 		const PointOnSphere &point,
-		const PolygonOnSphere::non_null_ptr_to_const_type &polygon_ptr)
+		const PolygonOnSphere &polygon)
 {
-	const PolygonOnSphere &polygon = *polygon_ptr;
-
 	// Get the point that is antipodal to the polygon centroid.
 	// This point is deemed to be outside the polygon (FIXME: which might not be true).
 	const UnitVector3D crossings_arc_start_point = -get_polygon_centroid(polygon);
@@ -1517,16 +1591,13 @@ GPlatesMaths::PointInPolygon::is_point_in_polygon(
 
 
 GPlatesMaths::PointInPolygon::Polygon::Polygon(
-		const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-		bool build_ologn_hint) :
-	d_spherical_lune_tree(new SphericalLuneTree(polygon, build_ologn_hint))
+		const GPlatesGlobal::PointerTraits<const PolygonOnSphere>::non_null_ptr_type &polygon,
+		bool build_ologn_hint,
+		bool keep_shared_reference_to_polygon) :
+	d_spherical_lune_tree(
+			SphericalLuneTree::create(
+					polygon, build_ologn_hint, keep_shared_reference_to_polygon).release())
 {
-}
-
-
-GPlatesMaths::PointInPolygon::Polygon::~Polygon()
-{
-	// boost::scoped_ptr destructor requires complete type
 }
 
 

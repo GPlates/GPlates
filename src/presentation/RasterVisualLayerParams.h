@@ -33,12 +33,8 @@
 #include "gui/RasterColourPalette.h"
 
 #include "model/FeatureCollectionHandle.h"
-#include "model/FeatureHandle.h"
-#include "model/WeakReferenceCallback.h"
 
-#include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RasterType.h"
-#include "property-values/TextContent.h"
 
 
 namespace GPlatesPresentation
@@ -53,9 +49,10 @@ namespace GPlatesPresentation
 
 		static
 		non_null_ptr_type
-		create()
+		create(
+				GPlatesAppLogic::LayerTaskParams &layer_task_params)
 		{
-			return new RasterVisualLayerParams();
+			return new RasterVisualLayerParams(layer_task_params);
 		}
 
 		/**
@@ -87,25 +84,6 @@ namespace GPlatesPresentation
 		void
 		handle_layer_modified(
 				const GPlatesAppLogic::Layer &layer);
-
-		/** 
-		 * Returns the name of the band of the raster to be visualised.
-		 */
-		const GPlatesPropertyValues::TextContent &
-		get_band_name() const;
-
-		/**
-		 * Sets the name of the band of the raster to be visualised.
-		 */
-		void
-		set_band_name(
-				const GPlatesPropertyValues::TextContent &band_name);
-
-		/**
-		 * Returns the list of band names that are in the raster feature.
-		 */
-		const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &
-		get_band_names() const;
 
 		/**
 		 * Returns the filename of the file from which the current colour
@@ -146,92 +124,18 @@ namespace GPlatesPresentation
 
 	protected:
 
-		RasterVisualLayerParams();
+		explicit
+		RasterVisualLayerParams(
+				GPlatesAppLogic::LayerTaskParams &layer_task_params);
 
 	private:
-
 		/**
-		 * Listens to modified events from the feature collection in the main input channel.
-		 */
-		class RasterFeatureCollectionCallback :
-				public GPlatesModel::WeakReferenceCallback<GPlatesModel::FeatureCollectionHandle>
-		{
-		public:
-
-			RasterFeatureCollectionCallback(
-					RasterVisualLayerParams *params) :
-				d_params(params)
-			{  }
-
-			virtual
-			void
-			publisher_modified(
-					const modified_event_type &event)
-			{
-				d_params->rescan_raster_feature_collection();
-			}
-
-		private:
-
-			RasterVisualLayerParams *d_params;
-		};
-
-		/**
-		 * Rescan @a d_raster_feature_collection to see if the feature(s) it contains
-		 * has changed.
+		 * See if any pertinent properties have changed.
 		 */
 		void
-		rescan_raster_feature_collection();
-
-		// RasterFeatureCollectionCallback calls @a rescan_raster_feature_collection.
-		friend class RasterFeatureCollectionCallback;
-		
-		/**
-		 * Listens to modified events from the raster feature.
-		 */
-		class RasterFeatureCallback :
-				public GPlatesModel::WeakReferenceCallback<GPlatesModel::FeatureHandle>
-		{
-		public:
-
-			RasterFeatureCallback(
-					RasterVisualLayerParams *params) :
-				d_params(params)
-			{  }
-
-			virtual
-			void
-			publisher_modified(
-					const modified_event_type &event)
-			{
-				d_params->rescan_raster_feature();
-			}
-
-		private:
-
-			RasterVisualLayerParams *d_params;
-		};
-
-		/**
-		 * Rescan @a d_raster_feature to see if any pertinent properties have changed.
-		 */
-		void
-		rescan_raster_feature(
+		update(
 				bool always_emit_modified_signal = false);
 
-		// RasterFeatureCallback calls @a rescan_raster_feature.
-		friend class RasterFeatureCallback;
-
-		/**
-		 * The name of the band of the raster to be visualised.
-		 */
-		GPlatesPropertyValues::TextContent d_band_name;
-
-		/**
-		 * The list of band names that were in the raster feature the last time
-		 * we examined it.
-		 */
-		GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type d_band_names;
 
 		/**
 		 * If the current colour palette was loaded from a file (typically a
@@ -251,19 +155,6 @@ namespace GPlatesPresentation
 		 * The type of raster the last time we examined it.
 		 */
 		GPlatesPropertyValues::RasterType::Type d_raster_type;
-
-		/**
-		 * The feature collection that was used as the input into the main input
-		 * channel in the corresponding reconstructed raster layer.
-		 * This weak-ref is used to track changes to that feature collection.
-		 */
-		GPlatesModel::FeatureCollectionHandle::weak_ref d_raster_feature_collection;
-
-		/**
-		 * The raster feature in @a d_raster_feature_collection.
-		 * This weak-ref is used to track changes to that feature.
-		 */
-		GPlatesModel::FeatureHandle::weak_ref d_raster_feature;
 	};
 }
 

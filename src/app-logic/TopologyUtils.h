@@ -34,8 +34,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "ReconstructionGeometryCollection.h"
-#include "ReconstructionTree.h"
+#include "AppLogicFwd.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -47,10 +46,6 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruction;
-	class ResolvedTopologicalBoundary;
-	class ResolvedTopologicalNetwork;
-
 	/**
 	 * This namespace contains utilities that clients of topology-related functionality use.
 	 */
@@ -116,39 +111,48 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Create and return a reconstruction geometry collection, containing
-		 * @a ReconstructionGeometry objects, by resolving topological closed plate
-		 * boundaries in @a topological_boundary_features_collection.
+		 * Create and return a sequence of @a ResolvedTopologicalBoundary objects by resolving
+		 * topological closed plate boundaries in @a topological_closed_plate_polygon_features_collection.
 		 *
-		 * The boundaries are resolved by referencing features that themselves
-		 * reference @a reconstruction_tree. This limits resolving to those referenced
-		 * features that were reconstructed using @a reconstruction_tree.
+		 * The boundaries are resolved by referencing already reconstructed topological boundary
+		 * section features in @a reconstructed_topological_boundary_sections.
 		 *
-		 * If @a topological_boundary_features_collection is empty then the returned
-		 * @a ReconstructionGeometryCollection will contain no @a ReconstructionGeometry objects.
+		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
+		 * @param restrict_boundary_sections_to_same_reconstruction_tree is used to restrict the
+		 *        reconstructed topological boundary sections, specified with
+		 *        @a reconstructed_topological_boundary_sections, to those that were reconstructed
+		 *        using @a reconstruction_tree (ie, the same reconstruction tree associated with
+		 *        the resolved topological boundaries being generated).
 		 *
-		 * @pre the features referenced by any of these topological features
-		 *      must have already been reconstructed and currently exist in @a reconstruction.
+		 * NOTE: We request reconstructed feature geometries for the topological boundary sections
+		 * even though the topological resolving process does not require them explicitly
+		 * (it does a global lookup of RFGs hanging off the boundary section feature) because
+		 * it forces the caller to make sure the RFGs have actually been generated, otherwise
+		 * the global lookup will find nothing.
+		 * NOTE: They also serve the dual purpose of restricting the global search to only
+		 * those RFGs passed in via @a reconstructed_topological_boundary_sections - this is
+		 * useful for the higher-level layers system which restricts RFGs to those generated
+		 * by a *connected* layer (as opposed to all layers, ie *global*).
 		 */
-		ReconstructionGeometryCollection::non_null_ptr_type
+		void
 		resolve_topological_boundaries(
-				ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						topological_boundary_features_collection =
-								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
+				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_topological_boundary_sections,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
+				bool restrict_boundary_sections_to_same_reconstruction_tree = true);
 
 
 		/**
-		 * Finds all @a ResolvedTopologicalBoundary objects in @a reconstruction_geometry_collection
-		 * and returns a structure for partitioning geometry using the polygon
-		 * of each @a ResolvedTopologicalBoundary.
+		 * Returns a structure for partitioning geometry using the polygon
+		 * of each @a ResolvedTopologicalBoundary in @a resolved_topological_boundaries.
 		 *
-		 * The returned structure can tested tested like a bool - it's true
-		 * if any @a ResolvedTopologicalBoundary objects are found in @a reconstruction_geometry_collection.
+		 * The returned structure can tested tested like a bool - it's true if
+		 * @a resolved_topological_boundaries is not empty.
 		 */
 		resolved_boundaries_for_geometry_partitioning_query_type
 		query_resolved_topologies_for_geometry_partitioning(
-				const ReconstructionGeometryCollection &reconstruction_geometry_collection);
+				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries);
 
 
 		/**
@@ -229,7 +233,7 @@ namespace GPlatesAppLogic
 		 * Typedef for an interpolation query of a single resolved topology network.
 		 */
 		typedef boost::shared_ptr<ResolvedNetworkForInterpolationQuery>
-				resolved_network_for_interpolation_query_type;
+				resolved_network_for_interpolation_query_shared_ptr_type;
 
 		class ResolvedNetworksForInterpolationQuery;
 		/**
@@ -258,12 +262,12 @@ namespace GPlatesAppLogic
 
 		/**
 		 * A function that accepts a ResolvedTopologicalNetworkImpl pointer as
-		 * the first argument and a @a resolved_network_for_interpolation_query_type as
+		 * the first argument and a @a resolved_network_for_interpolation_query_shared_ptr_type as
 		 * the second argument.
 		 */
 		typedef void network_interpolation_query_callback_signature(
 				const ResolvedTopologicalNetwork *,
-				const resolved_network_for_interpolation_query_type &);
+				const resolved_network_for_interpolation_query_shared_ptr_type &);
 		typedef boost::function<network_interpolation_query_callback_signature>
 				network_interpolation_query_callback_type;
 
@@ -285,32 +289,41 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Create and return a reconstruction geometry collection, containing
-		 * @a ReconstructionGeometry objects, by resolving topological networks
-		 * in @a topological_network_features_collection.
+		 * Create and return a sequence of @a ResolvedTopologicalNetwork objects by resolving
+		 * topological networks in @a topological_network_features_collection.
 		 *
-		 * The networks are resolved by referencing features that themselves
-		 * reference @a reconstruction_tree. This limits resolving to those referenced
-		 * features that were reconstructed using @a reconstruction_tree.
+		 * The sections are resolved by referencing already reconstructed topological
+		 * section features in @a reconstructed_topological_sections.
 		 *
-		 * If @a topological_network_features_collection is empty then the returned
-		 * @a ReconstructionGeometryCollection will contain no @a ReconstructionGeometry objects.
+		 * @param reconstruction_tree is associated with the output resolved topological networks.
+		 * @param restrict_sections_to_same_reconstruction_tree is used to restrict the
+		 *        reconstructed topological sections, specified with
+		 *        @a reconstructed_topological_sections, to those that were reconstructed
+		 *        using @a reconstruction_tree (ie, the same reconstruction tree associated with
+		 *        the resolved topological networks being generated).
 		 *
-		 * @pre the features referenced by any of these topological features
-		 *      must have already been reconstructed and currently exist in @a reconstruction.
+		 * NOTE: We request reconstructed feature geometries for the topological sections
+		 * even though the topological resolving process does not require them explicitly
+		 * (it does a global lookup of RFGs hanging off the boundary section feature) because
+		 * it forces the caller to make sure the RFGs have actually been generated, otherwise
+		 * the global lookup will find nothing.
+		 * NOTE: They also serve the dual purpose of restricting the global search to only
+		 * those RFGs passed in via @a reconstructed_topological_sections - this is
+		 * useful for the higher-level layers system which restricts RFGs to those generated
+		 * by a *connected* layer (as opposed to all layers, ie *global*).
 		 */
-		ReconstructionGeometryCollection::non_null_ptr_type
+		void
 		resolve_topological_networks(
-				ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						topological_network_features_collection =
-								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
+				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_topological_sections,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
+				bool restrict_sections_to_same_reconstruction_tree = true);
 
 
 		/**
-		 * Finds all @a ResolvedTopologicalNetwork objects in @a reconstruction_geometry_collection
-		 * and generates a mapping from each point in each network to a tuple of scalars
-		 * using the function @a map_point_to_scalars_function.
+		 * Generates a mapping from each point in each network in @a resolved_topological_networks
+		 * to a tuple of scalars using the function @a map_point_to_scalars_function.
 		 *
 		 * The returned structure can be passed to @a interpolate_resolved_topology_networks.
 		 *
@@ -324,11 +337,11 @@ namespace GPlatesAppLogic
 		 *
 		 * @a network_interpolation_query_callback is an optional function that takes
 		 * a ResolvedTopologicalNetworkImpl pointer as the first argument and a
-		 * @a resolved_network_for_interpolation_query_type as a second argument and
+		 * @a resolved_network_for_interpolation_query_shared_ptr_type as a second argument and
 		 * can be used to let the caller know about the individual network queries.
 		 *
-		 * The returned structure can be tested like a bool - it's true
-		 * if any @a ResolvedTopologicalNetwork objects are found in @a reconstruction.
+		 * The returned structure can be tested like a bool - it's true if 
+		 * @a resolved_topological_networks is not empty.
 		 *
 		 * For example, to calculate 3D velocity vectors for each point in each network
 		 * you would pass a function that returned three scalars and you would set
@@ -336,7 +349,7 @@ namespace GPlatesAppLogic
 		 */
 		resolved_networks_for_interpolation_query_type
 		query_resolved_topology_networks_for_interpolation(
-				const ReconstructionGeometryCollection &reconstruction_geometry_collection,
+				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const map_point_to_scalars_function_type &map_point_to_scalars_function,
 				const unsigned int num_mapped_scalars_per_point,
 				const boost::any &map_point_to_scalars_user_data,
@@ -354,7 +367,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topology_network_scalars(
-				const resolved_network_for_interpolation_query_type &resolved_network_query,
+				const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query,
 				std::vector<GPlatesMaths::PointOnSphere> &network_points,
 				std::vector< std::vector<double> > &network_scalar_tuple_sequence);
 
@@ -396,7 +409,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional< std::vector<double> >
 		interpolate_resolved_topology_network(
-				const resolved_network_for_interpolation_query_type &resolved_network_query,
+				const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query,
 				const GPlatesMaths::PointOnSphere &point);
 	}
 }

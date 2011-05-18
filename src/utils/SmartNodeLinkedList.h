@@ -259,7 +259,7 @@ namespace GPlatesUtils
 		 */
 		explicit
 		SmartNodeLinkedList(
-				const element_type &null_elem_for_sentinel):
+				const element_type &null_elem_for_sentinel = element_type()):
 			d_sentinel(null_elem_for_sentinel)
 		{  }
 
@@ -279,6 +279,12 @@ namespace GPlatesUtils
 				const SmartNodeLinkedList &other):
 			d_sentinel(other.d_sentinel)
 		{  }
+
+		bool
+		empty() const
+		{
+			return !d_sentinel.has_neighbours();
+		}
 
 		iterator
 		begin()
@@ -307,6 +313,37 @@ namespace GPlatesUtils
 		operator=(
 				const SmartNodeLinkedList &other);
 	};
+
+
+	/**
+	 * This is equivalent to std::list::splice except there's no need to specify the
+	 * list objects themselves (as only the list node objects are required).
+	 *
+	 * Removes a linked list node referenced by @a where_to_remove_from_source_list
+	 * and inserts it before the linked list node referenced by @a where_to_insert_into_destination_list.
+	 */
+	template <typename T>
+	void
+	splice(
+			typename SmartNodeLinkedList<T>::iterator where_to_insert_into_destination_list,
+			typename SmartNodeLinkedList<T>::iterator where_to_remove_from_source_list)
+	{
+		where_to_remove_from_source_list.get()->splice_self_before(
+				*where_to_insert_into_destination_list.get());
+	}
+
+	/**
+	 * Same as the other overload of @a splice except directly referencing the node from source list.
+	 */
+	template <typename T>
+	void
+	splice(
+			typename SmartNodeLinkedList<T>::iterator where_to_insert_into_destination_list,
+			typename SmartNodeLinkedList<T>::Node &node_to_remove_from_source_list)
+	{
+		node_to_remove_from_source_list.splice_self_before(
+				*where_to_insert_into_destination_list.get());
+	}
 }
 
 #endif // GPLATES_UTILS_SMARTNODELINKEDLIST_H

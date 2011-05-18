@@ -23,11 +23,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "LayerTaskRegistry.h"
 
-#include "AgeGridLayerTask.h"
+#include "ApplicationState.h"
+#include "CoRegistrationLayerTask.h"
 #include "LayerTask.h"
 #include "LayerTaskRegistry.h"
 #include "RasterLayerTask.h"
@@ -36,7 +38,6 @@
 #include "TopologyBoundaryResolverLayerTask.h"
 #include "TopologyNetworkResolverLayerTask.h"
 #include "VelocityFieldCalculatorLayerTask.h"
-#include "CoRegistrationLayerTask.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -159,7 +160,8 @@ GPlatesAppLogic::LayerTaskRegistry::LayerTaskTypeInfo::LayerTaskTypeInfo(
 
 void
 GPlatesAppLogic::register_default_layer_task_types(
-		LayerTaskRegistry &layer_task_registry)
+		LayerTaskRegistry &layer_task_registry,
+		ApplicationState &application_state)
 {
 	//
 	// NOTE: The order in which layer tasks are registered does *not* matter.
@@ -174,8 +176,11 @@ GPlatesAppLogic::register_default_layer_task_types(
 	// Layer task that reconstructs geometries.
 	const LayerTaskRegistry::LayerTaskType reconstruct_layer_task_type =
 			layer_task_registry.register_layer_task_type(
-					&ReconstructLayerTask::create_layer_task,
-					&ReconstructLayerTask::can_process_feature_collection,
+					boost::bind(&ReconstructLayerTask::create_layer_task,
+							boost::ref(application_state)),
+					boost::bind(&ReconstructLayerTask::can_process_feature_collection,
+							_1,
+							boost::ref(application_state)),
 					GPlatesAppLogic::LayerTaskType::RECONSTRUCT);
 
 	// Layer task that reconstructs rasters.
@@ -183,12 +188,6 @@ GPlatesAppLogic::register_default_layer_task_types(
 			&RasterLayerTask::create_layer_task,
 			&RasterLayerTask::can_process_feature_collection,
 			GPlatesAppLogic::LayerTaskType::RASTER);
-
-	// Layer task that processes age grids.
-	layer_task_registry.register_layer_task_type(
-			&AgeGridLayerTask::create_layer_task,
-			&AgeGridLayerTask::can_process_feature_collection,
-			GPlatesAppLogic::LayerTaskType::AGE_GRID);
 
 	// Layer task to resolve topological closed plate boundaries.
 	layer_task_registry.register_layer_task_type(

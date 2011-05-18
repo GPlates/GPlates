@@ -28,11 +28,14 @@
 #ifndef GPLATES_APPLOGIC_FLOWLINEUTILS_H
 #define GPLATES_APPLOGIC_FLOWLINEUTILS_H
 
-#include "app-logic/ReconstructionGeometryCollection.h"
 #include "app-logic/ReconstructionTree.h"
+#include "app-logic/ReconstructionTreeCreator.h"
+
 #include "maths/PolylineOnSphere.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
+
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
@@ -43,12 +46,8 @@
 
 namespace GPlatesAppLogic
 {
-	class ReconstructionGeometryCollection;
-	class ReconstructionTree;
-
 	namespace FlowlineUtils
 	{
-
 		/**
 		* Determines if there are any flowline features in the collection.
 		*/
@@ -276,7 +275,7 @@ namespace GPlatesAppLogic
 			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &seed_point,
 			const FlowlinePropertyFinder &flowline_parameters,
 			std::vector<GPlatesMaths::PointOnSphere> &flowline,
-			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &tree,
+			const ReconstructionTreeCreator &reconstruction_tree_creator,
 			const std::vector<GPlatesMaths::FiniteRotation> &rotations);
 
 		/**
@@ -312,7 +311,8 @@ namespace GPlatesAppLogic
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_flowline_seed_points(
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type seed_points,
-			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type current_reconstruction_tree_ptr,
+			const double &current_time,
+			const ReconstructionTreeCreator &reconstruction_tree_creator,
 			const GPlatesModel::FeatureHandle::weak_ref &feature_handle,
 			bool reverse = false);
 
@@ -326,7 +326,7 @@ namespace GPlatesAppLogic
 			const std::vector<double> &flowline_times,
 			const GPlatesModel::integer_plate_id_type &left_plate_id,
 			const GPlatesModel::integer_plate_id_type &right_plate_id,
-			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_ptr,
+			const ReconstructionTreeCreator &reconstruction_tree_creator,
 			std::vector<GPlatesMaths::FiniteRotation> &seed_point_rotations);
 
 		/**
@@ -339,7 +339,7 @@ namespace GPlatesAppLogic
 		    const GPlatesModel::integer_plate_id_type &plate_1,
 		    const GPlatesModel::integer_plate_id_type &plate_2,
 		    const std::vector<double> &times,
-		    const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &tree,
+			const ReconstructionTreeCreator &reconstruction_tree_creator,
 		    const double &reconstruction_time);
 
 	}

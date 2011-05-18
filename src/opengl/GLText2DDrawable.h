@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -42,6 +42,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLTransformState;
+
 	/**
 	 * A drawable to render a text string in 2d window coordinates.
 	 *
@@ -80,6 +82,33 @@ namespace GPlatesOpenGL
 		}
 
 
+		/**
+		 * Creates a @a GLText2DDrawable object.
+		 *
+		 * Creates text @a string at position (@a x , @a y , @a z) in world coordinates
+		 * using a particular @a colour and @a font.
+		 *
+		 * @a transform_state is used to project from 3D world position into 2D viewport coordinates.
+		 *
+		 * @a x_offset and @a y_offset are the pixel coordinate shifts to offset the text from
+		 * where it would otherwise be.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				const GLTransformState &transform_state,
+				const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
+				double x,
+				double y,
+				double z,
+				const QString &string,
+				const GPlatesGui::Colour &colour,
+				int x_offset,
+				int y_offset,
+				const QFont &font = QFont(),
+				float scale = 1.0f);
+
+
 		virtual
 		void
 		bind() const
@@ -107,7 +136,7 @@ namespace GPlatesOpenGL
 		float d_scale;
 
 
-		//! Constructor.
+		//! Constructor for 2D text.
 		GLText2DDrawable(
 				const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
 				int x,

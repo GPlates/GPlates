@@ -35,6 +35,7 @@
 #include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <algorithm>  // std::swap
 #include <utility>  // std::pair
+#include <boost/intrusive_ptr.hpp>
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
@@ -43,6 +44,14 @@
 
 namespace GPlatesMaths
 {
+	// Forward declarations.
+	namespace PolylineOnSphereImpl
+	{
+		struct CachedCalculations;
+	}
+	class BoundingSmallCircle;
+
+
 	/** 
 	 * Represents a polyline on the surface of a sphere. 
 	 *
@@ -578,6 +587,10 @@ namespace GPlatesMaths
 		}
 
 
+		virtual
+		~PolylineOnSphere();
+
+
 		/**
 		 * Clone this PolylineOnSphere instance, to create a duplicate instance on the
 		 * heap.
@@ -775,6 +788,7 @@ namespace GPlatesMaths
 		{
 			// Obviously, we should not swap the ref-counts of the instances.
 			d_seq.swap(other.d_seq);
+			d_cached_calculations.swap(other.d_cached_calculations);
 		}
 
 
@@ -809,6 +823,29 @@ namespace GPlatesMaths
 				const real_t &latitude_exclusion_threshold,
 				real_t &closeness) const;
 
+
+		//
+		// The following are cached calculations on the geometry data.
+		//
+
+		/**
+		 * Returns the sum of the points in this polyline (normalised).
+		 *
+		 * The result is cached on first call.
+		 */
+		const UnitVector3D &
+		get_centroid() const;
+
+
+		/**
+		 * Returns the small circle that bounds this polyline - the small circle centre
+		 * is the same as calculated by @a get_centroid.
+		 *
+		 * The result is cached on first call.
+		 */
+		const BoundingSmallCircle &
+		get_bounding_small_circle() const;
+
 	private:
 
 		/**
@@ -824,9 +861,7 @@ namespace GPlatesMaths
 		 * default-constructor would, except that it should initialise the ref-count to
 		 * zero.
 		 */
-		PolylineOnSphere():
-			GeometryOnSphere()
-		{  }
+		PolylineOnSphere();
 
 
 		/**
@@ -842,10 +877,7 @@ namespace GPlatesMaths
 		 * copy-constructor would, except that it should initialise the ref-count to zero.
 		 */
 		PolylineOnSphere(
-				const PolylineOnSphere &other):
-			GeometryOnSphere(),
-			d_seq(other.d_seq)
-		{  }
+				const PolylineOnSphere &other);
 
 
 		/**
@@ -892,6 +924,17 @@ namespace GPlatesMaths
 		 */
 		seq_type d_seq;
 
+		/**
+		 * Useful calculations on the polyline data.
+		 *
+		 * These calculations are stored directly with the geometry instead of associating
+		 * them at a higher level since it's then much easier to query the same geometry
+		 * at various places throughout the code (and reuse results of previous queries).
+		 * This is made easier by the fact that the geometry data itself is immutable.
+		 *
+		 * This pointer is NULL until the first calculation is requested.
+		 */
+		mutable boost::intrusive_ptr<PolylineOnSphereImpl::CachedCalculations> d_cached_calculations;
 	};
 
 

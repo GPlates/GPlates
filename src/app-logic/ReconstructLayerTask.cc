@@ -25,42 +25,57 @@
 
 #include "ReconstructLayerTask.h"
 
+#include "ApplicationState.h"
 #include "AppLogicUtils.h"
+#include "LayerProxyUtils.h"
+#include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
 
 
-const char *GPlatesAppLogic::ReconstructLayerTask::RECONSTRUCTABLE_FEATURES_CHANNEL_NAME =
+const QString GPlatesAppLogic::ReconstructLayerTask::RECONSTRUCTABLE_FEATURES_CHANNEL_NAME =
 		"Reconstructable features";
 
 
 bool
 GPlatesAppLogic::ReconstructLayerTask::can_process_feature_collection(
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+		ApplicationState &application_state)
 {
-	return ReconstructUtils::has_reconstructable_features(feature_collection);
+	return ReconstructUtils::has_reconstructable_features(
+			feature_collection,
+			application_state.get_reconstruct_method_registry());
 }
 
 
-std::vector<GPlatesAppLogic::Layer::input_channel_definition_type>
-GPlatesAppLogic::ReconstructLayerTask::get_input_channel_definitions() const
+boost::shared_ptr<GPlatesAppLogic::ReconstructLayerTask>
+GPlatesAppLogic::ReconstructLayerTask::create_layer_task(
+		ApplicationState &application_state)
 {
-	std::vector<Layer::input_channel_definition_type> input_channel_definitions;
+	return boost::shared_ptr<ReconstructLayerTask>(
+			new ReconstructLayerTask(
+					application_state.get_reconstruct_method_registry()));
+}
+
+
+std::vector<GPlatesAppLogic::LayerInputChannelType>
+GPlatesAppLogic::ReconstructLayerTask::get_input_channel_types() const
+{
+	std::vector<LayerInputChannelType> input_channel_types;
 
 	// Channel definition for the reconstruction tree.
-	input_channel_definitions.push_back(
-			boost::make_tuple(
+	input_channel_types.push_back(
+			LayerInputChannelType(
 					get_reconstruction_tree_channel_name(),
-					Layer::INPUT_RECONSTRUCTION_TREE_DATA,
-					Layer::ONE_DATA_IN_CHANNEL));
+					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
+					LayerTaskType::RECONSTRUCTION));
 
 	// Channel definition for the reconstructable features.
-	input_channel_definitions.push_back(
-			boost::make_tuple(
+	input_channel_types.push_back(
+			LayerInputChannelType(
 					RECONSTRUCTABLE_FEATURES_CHANNEL_NAME,
-					Layer::INPUT_FEATURE_COLLECTION_DATA,
-					Layer::MULTIPLE_DATAS_IN_CHANNEL));
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
 	
-	return input_channel_definitions;
+	return input_channel_types;
 }
 
 
@@ -71,54 +86,142 @@ GPlatesAppLogic::ReconstructLayerTask::get_main_input_feature_collection_channel
 }
 
 
-GPlatesAppLogic::Layer::LayerOutputDataType
-GPlatesAppLogic::ReconstructLayerTask::get_output_definition() const
+void
+GPlatesAppLogic::ReconstructLayerTask::add_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	return Layer::OUTPUT_RECONSTRUCTED_GEOMETRY_COLLECTION_DATA;
+	if (input_channel_name == RECONSTRUCTABLE_FEATURES_CHANNEL_NAME)
+	{
+		d_reconstruct_layer_proxy->add_reconstructable_feature_collection(feature_collection);
+	}
 }
 
 
-boost::optional<GPlatesAppLogic::layer_task_data_type>
-GPlatesAppLogic::ReconstructLayerTask::process(
+void
+GPlatesAppLogic::ReconstructLayerTask::remove_input_file_connection(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	if (input_channel_name == RECONSTRUCTABLE_FEATURES_CHANNEL_NAME)
+	{
+		d_reconstruct_layer_proxy->remove_reconstructable_feature_collection(feature_collection);
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructLayerTask::modified_input_file(
+		const QString &input_channel_name,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	if (input_channel_name == RECONSTRUCTABLE_FEATURES_CHANNEL_NAME)
+	{
+		// Let the reconstruct layer proxy know that one of the reconstructable feature collections has been modified.
+		d_reconstruct_layer_proxy->modified_reconstructable_feature_collection(feature_collection);
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructLayerTask::add_input_layer_proxy_connection(
+		const QString &input_channel_name,
+		const LayerProxy::non_null_ptr_type &layer_proxy)
+{
+	if (input_channel_name == get_reconstruction_tree_channel_name())
+	{
+		// Make sure the input layer proxy is a reconstruction layer proxy.
+		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						ReconstructionLayerProxy>(layer_proxy);
+		if (reconstruction_layer_proxy)
+		{
+			// Stop using the default reconstruction layer proxy.
+			d_using_default_reconstruction_layer_proxy = false;
+
+			d_reconstruct_layer_proxy->set_current_reconstruction_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructLayerTask::remove_input_layer_proxy_connection(
+		const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy)
+{
+	if (input_channel_name == get_reconstruction_tree_channel_name())
+	{
+		// Make sure the input layer proxy is a reconstruction layer proxy.
+		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						ReconstructionLayerProxy>(layer_proxy);
+		if (reconstruction_layer_proxy)
+		{
+			// Start using the default reconstruction layer proxy.
+			d_using_default_reconstruction_layer_proxy = true;
+
+			d_reconstruct_layer_proxy->set_current_reconstruction_layer_proxy(
+					d_default_reconstruction_layer_proxy);
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructLayerTask::update(
 		const Layer &layer_handle /* the layer invoking this */,
-		const input_data_type &input_data,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
+		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
 {
-	//
-	// Get the reconstruction tree input.
-	//
-	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree =
-			extract_reconstruction_tree(
-					input_data,
-					default_reconstruction_tree);
-	if (!reconstruction_tree)
+	d_reconstruct_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+
+	// If the layer task params have been modified then update our reconstruct layer proxy.
+	if (d_layer_task_params.d_non_const_get_reconstruct_params_called)
 	{
-		// Expecting a single reconstruction tree.
-		return boost::none;
+		// NOTE: This should call the non-const version of 'Params::get_reconstruct_params()'
+		// so that it doesn't think we're modifying it.
+		d_reconstruct_layer_proxy->set_current_reconstruct_params(
+				d_layer_task_params.get_reconstruct_params());
+
+		d_layer_task_params.d_non_const_get_reconstruct_params_called = false;
 	}
 
-	//
-	// Get the reconstructable features collection input.
-	//
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstructable_features_collection;
-	extract_input_channel_data(
-			reconstructable_features_collection,
-			RECONSTRUCTABLE_FEATURES_CHANNEL_NAME,
-			input_data);
+	// If our layer proxy is currently using the default reconstruction layer proxy then
+	// tell our layer proxy about the new default reconstruction layer proxy.
+	if (d_using_default_reconstruction_layer_proxy)
+	{
+		// Avoid setting it every update unless it's actually a different layer.
+		if (default_reconstruction_layer_proxy != d_default_reconstruction_layer_proxy)
+		{
+			d_reconstruct_layer_proxy->set_current_reconstruction_layer_proxy(
+					default_reconstruction_layer_proxy);
+		}
+	}
 
-	//
-	// Perform the actual reconstruction using the reconstruction tree.
-	//
-	const ReconstructionGeometryCollection::non_null_ptr_to_const_type
-			reconstruction_geometry_collection =
-					ReconstructUtils::reconstruct(
-							reconstruction_tree.get(),
-							d_layer_task_params,
-							reconstructable_features_collection);
-
-	// Return the reconstruction geometry collection.
-	return layer_task_data_type(reconstruction_geometry_collection);
+	d_default_reconstruction_layer_proxy = default_reconstruction_layer_proxy;
 }
 
+
+GPlatesAppLogic::ReconstructLayerTask::Params::Params() :
+	d_non_const_get_reconstruct_params_called(false)
+{
+}
+
+
+const GPlatesAppLogic::ReconstructParams &
+GPlatesAppLogic::ReconstructLayerTask::Params::get_reconstruct_params() const
+{
+	return d_reconstruct_params;
+}
+
+
+GPlatesAppLogic::ReconstructParams &
+GPlatesAppLogic::ReconstructLayerTask::Params::get_reconstruct_params()
+{
+	d_non_const_get_reconstruct_params_called = true;
+
+	return d_reconstruct_params;
+}

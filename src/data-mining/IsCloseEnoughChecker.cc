@@ -88,7 +88,7 @@ GPlatesDataMining::IsCloseEnoughChecker::execute(
 	using namespace GPlatesMaths::PointInPolygon;
 	//if the point is inside a polygon, we assume the distance is 0
 	//TODO: maybe need a flag to control the assumption.
-	if(POINT_OUTSIDE_POLYGON != is_point_in_polygon(*point, polygon->get_non_null_pointer()))
+	if(POINT_OUTSIDE_POLYGON != polygon->is_point_in_polygon(*point))
 	{
 		if(d_calculate_distance_flag)
 		{

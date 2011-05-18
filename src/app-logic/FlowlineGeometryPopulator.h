@@ -29,12 +29,14 @@
 #define GPLATES_APP_LOGIC_FLOWLINEGEOMETRYPOPULATOR_H
 
 #include <vector>
+#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include "FlowlineUtils.h"
 #include "ReconstructedFlowline.h"
 #include "ReconstructionTree.h"
+#include "ReconstructionTreeCreator.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
@@ -46,11 +48,6 @@
 
 namespace GPlatesAppLogic
 {
-
-
-
-	class ReconstructionGeometryCollection;
-
 	/**
 	 * Reconstructs flowline features.
 	 *
@@ -62,10 +59,10 @@ namespace GPlatesAppLogic
 			private boost::noncopyable
 	{
 	public:
-
-
 		FlowlineGeometryPopulator(
-				ReconstructionGeometryCollection &reconstruction_geometry_collection);
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time);
 
 		virtual
 		~FlowlineGeometryPopulator()
@@ -125,9 +122,15 @@ namespace GPlatesAppLogic
 
 
 
-		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
+		/**
+		 * The @a ReconstructedFeatureGeometry objects generated during reconstruction.
+		 */
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &d_reconstructed_feature_geometries;
 
-		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
+		/**
+		 * The function to call (with a reconstruction time argument) to get a @a ReconstructionTree.
+		 */
+		ReconstructionTreeCreator d_reconstruction_tree_creator;
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 

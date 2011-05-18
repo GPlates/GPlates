@@ -36,6 +36,8 @@
 #include "ReadErrorAccumulationDialog.h"
 #include "ViewportWindow.h"
 
+#include "app-logic/RasterLayerTask.h"
+
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
 
@@ -118,19 +120,20 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			visual_layer.lock())
 	{
-		GPlatesPresentation::RasterVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
-					locked_visual_layer->get_visual_layer_params().get());
-		if (params)
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::RasterLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
 		{
 			// Populate the band combobox with the list of band names, and ensure that
 			// the correct one is selected.
 			int band_name_index = -1;
-			const GPlatesPropertyValues::TextContent &selected_band_name = params->get_band_name();
+			const GPlatesPropertyValues::TextContent &selected_band_name = layer_task_params->get_band_name();
 
 			band_combobox->clear();
 			const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &band_names =
-				params->get_band_names();
+				layer_task_params->get_band_names();
 			for (int i = 0; i != static_cast<int>(band_names.size()); ++i)
 			{
 				const GPlatesPropertyValues::TextContent &curr_band_name = band_names[i]->value();
@@ -142,22 +145,28 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 			}
 
 			band_combobox->setCurrentIndex(band_name_index);
+		}
 
+		GPlatesPresentation::RasterVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (visual_layer_params)
+		{
 			// Hide colour palette-related widgets if raster type is RGBA8.
-			bool is_rgba8 = (params->get_raster_type() == GPlatesPropertyValues::RasterType::RGBA8);
+			bool is_rgba8 = (visual_layer_params->get_raster_type() == GPlatesPropertyValues::RasterType::RGBA8);
 			palette_label->setVisible(!is_rgba8);
 			palette_widget->setVisible(!is_rgba8);
 			bool show_colour_scale = false;
 			if (!is_rgba8)
 			{
-				show_colour_scale = d_colour_scale_widget->populate(params->get_colour_palette());
+				show_colour_scale = d_colour_scale_widget->populate(visual_layer_params->get_colour_palette());
 			}
 			colour_scale_placeholder_widget->setVisible(show_colour_scale);
 
 			if (!is_rgba8)
 			{
 				// Populate the palette filename.
-				d_palette_filename_lineedit->setText(params->get_colour_palette_filename());
+				d_palette_filename_lineedit->setText(visual_layer_params->get_colour_palette_filename());
 			}
 		}
 	}
@@ -179,12 +188,14 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_band_combobox_activated(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
 	{
-		GPlatesPresentation::RasterVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
-					locked_visual_layer->get_visual_layer_params().get());
-		if (params)
+		// Set the band name in the app-logic layer params.
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::RasterLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
 		{
-			params->set_band_name(GPlatesUtils::UnicodeString(text));
+			layer_task_params->set_band_name(GPlatesUtils::UnicodeString(text));
 		}
 	}
 }

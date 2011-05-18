@@ -31,18 +31,23 @@
 #include <boost/shared_ptr.hpp>
 
 #include "ColourScheme.h"
-#include "GlobeRenderedGeometryLayerPainter.h"
+#include "GlobeVisibilityTester.h"
 #include "PersistentOpenGLObjects.h"
 #include "RenderSettings.h"
+#include "TextRenderer.h"
 
 #include "opengl/GLContext.h"
-#include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLUNurbsRenderer.h"
 
 #include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
 
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
 
 namespace GPlatesViewOperations
 {
@@ -52,9 +57,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	class GlobeRenderedGeometryLayerPainter;
-	class GlobeVisibilityTester;
-
 	/**
 	 * Draws rendered geometries (in a @a RenderedGeometryCollection) onto a
 	 * 3D orthographic view of the globe using OpenGL.
@@ -83,7 +85,7 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
+				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
 				const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer);
 
@@ -112,15 +114,15 @@ namespace GPlatesGui
 		struct PaintParams
 		{
 			PaintParams(
-					const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_collection_node,
+					GPlatesOpenGL::GLRenderer &renderer,
 					const double &viewport_zoom_factor,
 					const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer) :
-				d_render_collection_node(render_collection_node),
+				d_renderer(&renderer),
 				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
 				d_nurbs_renderer(nurbs_renderer)
 			{  }
 
-			GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type d_render_collection_node;
+			GPlatesOpenGL::GLRenderer *d_renderer;
 			double d_inverse_viewport_zoom_factor;
 			GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs_renderer;
 		};

@@ -34,6 +34,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 
 #include "unit-test/CoregTest.h"
 #include "app-logic/CoRegistrationData.h"
+#include "app-logic/ReconstructionTreeCreator.h"
 #include "data-mining/DataSelector.h"
 #include "data-mining/DataMiningUtils.h"
 #include "data-mining/OpaqueDataToQString.h"
@@ -103,32 +104,38 @@ GPlatesUnitTest::CoregTest::load_test_data()
 void
 GPlatesUnitTest::CoregTest::test(double time)
 {
-	//Create the reconstruction tree.
-	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-		ReconstructUtils::create_reconstruction_tree(
-				time, //time
-				0, //anchor plate
-				d_rotation_fc);
+	ReconstructMethodRegistry reconstruct_method_registry;
+	register_default_reconstruct_method_types(reconstruct_method_registry);
+
+	ReconstructionTreeCreator reconstruction_tree_creator =
+			get_cached_reconstruction_tree_creator(
+					d_rotation_fc,
+					time,
+					0/*anchor plate*/);
 	
 	//seed
-	std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> reconstructed_seeds;
-	reconstructed_seeds.push_back(
-			ReconstructUtils::reconstruct(
-					reconstruction_tree,
-					ReconstructLayerTaskParams(),
-					d_seed_fc));
-
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_seeds;
+	ReconstructUtils::reconstruct(
+			reconstructed_seeds,
+			time,
+			0, //anchor plate
+			reconstruct_method_registry,
+			d_seed_fc,
+			reconstruction_tree_creator);
 
 	// co-registration features collection.
-	std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> reconstructed_coreg;
-	reconstructed_coreg.push_back(
-			ReconstructUtils::reconstruct(
-					reconstruction_tree,
-					ReconstructLayerTaskParams(),
-					d_coreg_fc));
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_coreg;
+	ReconstructUtils::reconstruct(
+			reconstructed_coreg,
+			time,
+			0, //anchor plate
+			reconstruct_method_registry,
+			d_coreg_fc,
+			reconstruction_tree_creator);
 
-
-	CoRegistrationData::non_null_ptr_type data_ptr(new CoRegistrationData(reconstruction_tree));
+	CoRegistrationData::non_null_ptr_type data_ptr =
+			CoRegistrationData::create(
+					reconstruction_tree_creator.get_reconstruction_tree(time, 0/*anchor_plate_id*/));
 
 	CoRegConfigurationTable input_table;
 	populate_cfg_table(input_table,cfg_file);

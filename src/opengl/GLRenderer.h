@@ -28,6 +28,7 @@
 #define GPLATES_OPENGL_GLRENDERER_H
 
 #include <stack>
+#include <boost/optional.hpp>
 
 #include "GLDrawable.h"
 #include "GLRenderQueue.h"
@@ -57,6 +58,87 @@ namespace GPlatesOpenGL
 		//! A convenience typedef for a shared pointer to a const @a GLRenderer.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLRenderer> non_null_ptr_to_const_type;
 
+		/**
+		 * Enumerates the ways in which a render target can be used.
+		 *
+		 *
+		 * SERIAL:
+		 * A render target about to be pushed will get drawn immediately after
+		 * its parent render target (the one at the top of the current render
+		 * target stack before the new target is pushed) and when it is popped the parent
+		 * render target will resume drawing...
+		 *
+		 * Push render target A
+		 *   Draw D1
+		 *   Push render target B
+		 *     Draw D2
+		 *   Pop render target B
+		 *   Draw D3
+		 *   Push render target B
+		 *     Draw D4
+		 *   Pop render target B
+		 *   Draw D5
+		 * Pop render target A
+		 *
+		 * ...here D1 is drawn to A, D2 to B, D3 to A, D4 to B, and D5 to A, in that order.
+		 *
+		 * Note that although D1, D3 and D5 are drawn to the same render target A they *cannot*
+		 * be reordered if they share the same state (the rendering engine will normally do that
+		 * unless explicitly requested not to) - this is because render targets B and C force
+		 * a serialisation or barrier between D1 and D3 and between D3 and D5.
+		 *
+		 *
+		 * PARALLEL:
+		 * A render target about to be pushed will get drawn in a separate
+		 * render pass than its parent render target (the one at the top of the current render
+		 * target stack before the new target is pushed).
+		 *
+		 * Push render target A
+		 *   Draw D1
+		 *   Push render target B
+		 *     Draw D2
+		 *   Pop render target B
+		 *   Draw D3
+		 *   Push render target C
+		 *     Draw D4
+		 *   Pop render target C
+		 *   Draw D5
+		 * Pop render target A
+		 *
+		 * ...here D2 is drawn to B, D4 to C, and (D1,D3,D5) to A, in that order.
+		 *
+		 * Note that render targets B and C, being at the same level of the push hierarchy, will
+		 * get added to the same render pass and drawn serially with respect to each other.
+		 * Also note that, unlike the serial case, D1, D3 and D5 can be reordered relative to
+		 * each other if they share the same state - this is because render targets B and C
+		 * do *not* form a serialisation or barrier between D1, D3 and D5.
+		 *
+		 *
+		 * 'SERIAL' is best used when a single render target (such as a texture) is rendered to
+		 * multiple times per frame. In contract 'PARALLEL' is best used when a single render
+		 * target is only rendered to at most once per frame - so 'PARALLEL' is useful when
+		 * you want to cache rendering results over multiple frames to avoid having to
+		 * render the results each frame if the results don't change. 'PARALLEL' also has the
+		 * advantage of requiring fewer render target switches between the main framebuffer and
+		 * the render targets (in the examples above you can picture render target A as the main
+		 * framebuffer). Switches between the main framebuffer and the render targets can be costly
+		 * on some graphics systems (for example those that use pbuffers as they require a full
+		 * OpenGL context switch which is costly) so it makes sense to minimise them where possible.
+		 * A disadvantage of 'PARALLEL' is that it tends to require more memory as the above
+		 * examples show that 'PARALLEL' requires render targets B and C whereas 'SERIAL' only
+		 * requires render target B. In both examples you can imagine the rendered results of
+		 * D2 being used by D3 (as a texture lookup) and D4 being used by D5. In 'PARALLEL'
+		 * we're rendering both D2 and D4 before D1, D3 and D5 but in 'SERIAL' we're rendering
+		 * in strictly serial order D1, D2, D3, D4 and D5 and so D2 and D4 can be rendered to
+		 * the same render target because the results of D2 are used by D3 before D4 is rendered
+		 * and hence D4 can overwrite the results of D2 (ie, render to the same render target).
+		 */
+		enum RenderTargetUsageType
+		{
+			RENDER_TARGET_USAGE_SERIAL,
+			RENDER_TARGET_USAGE_PARALLEL
+		};
+
 
 		/**
 		 * Creates a @a GLRenderer object.
@@ -78,7 +160,8 @@ namespace GPlatesOpenGL
 		 */
 		void
 		push_render_target(
-				const GLRenderTargetType::non_null_ptr_type &render_target_type);
+				const GLRenderTargetType::non_null_ptr_type &render_target_type,
+				RenderTargetUsageType render_target_usage);
 
 		/**
 		 * Pop most recently pushed render target and associated state.
@@ -167,7 +250,7 @@ namespace GPlatesOpenGL
 			//! Constructor.
 			RenderTargetState(
 					const GLRenderTargetType::non_null_ptr_type &render_target_type,
-					GLRenderQueue &render_queue);
+					RenderTargetUsageType render_target_usage);
 
 
 			/**
@@ -197,9 +280,22 @@ namespace GPlatesOpenGL
 			GLStateGraph::non_null_ptr_type d_state_graph;
 
 			/**
-			 * All render operations are added to this target.
+			 * The type of render target (frame buffer or texture target).
 			 */
-			GLRenderOperationsTarget::non_null_ptr_type d_render_operations_target;
+			GLRenderTargetType::non_null_ptr_type d_render_target_type;
+
+			/**
+			 * Whether this render target should be used in serial or parallel.
+			 */
+			RenderTargetUsageType d_render_target_usage;
+
+			/**
+			 * All render operations are added to this target.
+			 *
+			 * It is optional because we only want to create it if the client
+			 * adds a drawable to the target.
+			 */
+			boost::optional<GLRenderOperationsTarget::non_null_ptr_type> d_render_operations_target;
 		};
 
 		//! Typedef for a stack of render target states.

@@ -118,9 +118,10 @@ namespace
 	// A function that instantiates the base VisualLayerParams class for use with
 	// create_visual_layer_params_function.
 	GPlatesPresentation::VisualLayerParams::non_null_ptr_type
-	default_visual_layer_params()
+	default_visual_layer_params(
+			GPlatesAppLogic::LayerTaskParams &layer_task_params)
 	{
-		return GPlatesPresentation::VisualLayerParams::create();
+		return GPlatesPresentation::VisualLayerParams::create(layer_task_params);
 	}
 }
 
@@ -337,14 +338,15 @@ GPlatesPresentation::VisualLayerRegistry::create_options_widget(
 
 GPlatesPresentation::VisualLayerParams::non_null_ptr_type
 GPlatesPresentation::VisualLayerRegistry::create_visual_layer_params(
-		VisualLayerType::Type visual_layer_type) const
+		VisualLayerType::Type visual_layer_type,
+		GPlatesAppLogic::LayerTaskParams &layer_task_params) const
 {
 	visual_layer_info_map_type::const_iterator iter = d_visual_layer_info_map.find(visual_layer_type);
 	if (iter != d_visual_layer_info_map.end())
 	{
-		return iter->second.create_visual_layer_params_function();
+		return iter->second.create_visual_layer_params_function(layer_task_params);
 	}
-	return VisualLayerParams::create();
+	return VisualLayerParams::create(layer_task_params);
 }
 
 
@@ -430,22 +432,6 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				RECONSTRUCTION),
 			&GPlatesQtWidgets::ReconstructionLayerOptionsWidget::create,
-			&default_visual_layer_params,
-			false);
-
-	// RASTERS group.
-	registry.register_visual_layer_type(
-			VisualLayerType::Type(AGE_GRID),
-			VisualLayerGroup::RASTERS,
-			"Age Grid",
-			"An age grid can be attached to a reconstructed raster layer to provide "
-			"smoother raster reconstructions.",
-			*html_colours.get_colour("darkturquoise"),
-			CreateAppLogicLayer(
-				reconstruct_graph,
-				layer_task_registry,
-				AGE_GRID),
-			&no_widget,
 			&default_visual_layer_params,
 			false);
 

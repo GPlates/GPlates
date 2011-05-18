@@ -28,76 +28,82 @@
 #define GPLATES_APP_LOGIC_COREGISTRATIONLAYERTASK_H
 
 #include <utility>
+#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QString>
 #include <QObject>
 
+#include "CoRegistrationLayerProxy.h"
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
+#include "ReconstructionLayerProxy.h"
 
 #include "data-mining/CoRegConfigurationTable.h"
 #include "data-mining/DataTable.h"
-#include "data-mining/DataSelector.h"
+
 #include "model/FeatureCollectionHandle.h"
 
 namespace GPlatesAppLogic
 {
-	class CoRegistrationLayerTaskParams :
-			public LayerTaskParams
-	{
-	public:
-		friend class CoRegistrationLayerTask;
-		
-		CoRegistrationLayerTaskParams():
-			d_cfg_table(NULL),
-			d_call_back(0)
-		{ }
-
-		void
-		set_cfg_table(
-				const GPlatesDataMining::CoRegConfigurationTable& table)
-		{
-			d_cfg_table = &table;
-		}
-
-		void
-		set_call_back(
-				boost::function<void(const GPlatesDataMining::DataTable&)> fun)
-		{
-			d_call_back = fun;
-		}
-
-	protected:
-
-		const GPlatesDataMining::CoRegConfigurationTable* d_cfg_table;
-		boost::function<void(const GPlatesDataMining::DataTable&)> d_call_back;
-	};
-
 	/**
-	 * 
+	 * A layer task that co-registers reconstructed seed geometries with reconstructed target features.
 	 */
 	class CoRegistrationLayerTask :
 			public LayerTask
 	{
-
 	public:
-
 		/**
-		 * Can be used to create a layer automatically when a file is first loaded.
+		 * App-logic parameters for a co-registration layer.
 		 */
-		static
-		bool
-		is_primary_layer_task_type()
+		class Params :
+				public LayerTaskParams
 		{
-			return true;
-		}
+		public:
+			void
+			set_cfg_table(
+					const GPlatesDataMining::CoRegConfigurationTable& table)
+			{
+				// TODO: Make a copy of the table just to be sure we're never left with a dangling pointer.
+				// For now keep a reference in case the data gets changed without our notification.
+				d_cfg_table = &table;
 
-		virtual
-		LayerTaskParams &
-		get_layer_task_params()
-		{
-			return d_layer_params;
-		}
+				// Let the owning @a CoRegistrationLayerTask object know the configuration has changed.
+				d_set_cfg_table_called = true;
+			}
+
+			void
+			set_call_back(
+					boost::function<void(const GPlatesDataMining::DataTable&)> call_back)
+			{
+				d_call_back = call_back;
+			}
+
+		private:
+			const GPlatesDataMining::CoRegConfigurationTable *d_cfg_table;
+			boost::function<void(const GPlatesDataMining::DataTable &)> d_call_back;
+
+			/**
+			 * Is true @a set_cfg_table has been called.
+			 *
+			 * Used to let CoRegistrationLayerTask know that an external client has modified this state.
+			 *
+			 * CoRegistrationLayerTask will reset this explicitly.
+			 *
+			 * This is not really used just yet because we keep a reference to the configuration
+			 * table - so if it changes without us knowing then we'll be using the latest configuration
+			 * data - TODO: make a copy instead of a reference and make sure clients set the table
+			 * through us rather than underneath us - this will allow the layer proxy to cache
+			 * result data and know when to flush its cache.
+			 */
+			bool d_set_cfg_table_called;
+
+			Params() :
+				d_set_cfg_table_called(false)
+			{  }
+
+			friend class CoRegistrationLayerTask;
+		};
+
 
 		static
 		bool
@@ -122,8 +128,8 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		std::vector<Layer::input_channel_definition_type>
-		get_input_channel_definitions() const;
+		std::vector<LayerInputChannelType>
+		get_input_channel_types() const;
 
 
 		virtual
@@ -132,41 +138,93 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		Layer::LayerOutputDataType
-		get_output_definition() const;
+		void
+		add_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		virtual
+		void
+		remove_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		void
+		modified_input_file(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		virtual
-		bool
-		is_topological_layer_task() const
-		{
-			return false;
-		}
+		void
+		add_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
+
+		virtual
+		void
+		remove_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
 
 
 		virtual
-		boost::optional<layer_task_data_type>
-		process(
+		void
+		update(
 				const Layer &layer_handle /* the layer invoking this */,
-				const input_data_type &input_data,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
 
-	private:
-		CoRegistrationLayerTask()
-		{ }
 
-		inline
-		void
-		refresh_data(
-				const GPlatesDataMining::DataTable& table)
+		virtual
+		LayerProxy::non_null_ptr_type
+		get_layer_proxy()
 		{
-			GPlatesDataMining::DataSelector::set_data_table(table);
-			d_layer_params.d_call_back(GPlatesDataMining::DataSelector::get_data_table());
+			return d_coregistration_layer_proxy;
 		}
 
-		CoRegistrationLayerTaskParams d_layer_params;
+
+		virtual
+		LayerTaskParams &
+		get_layer_task_params()
+		{
+			return d_layer_task_params;
+		}
+
+		//! Channel name of the CoRegistration seed geometries.
+		static const QString CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME;
+
+		//! Channel name of the CoRegistration target geometries.
+		static const QString CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME;
+
+	private:
+		Params d_layer_task_params;
+
+		/**
+		 * Keep track of the default reconstruction layer proxy.
+		 */
+		ReconstructionLayerProxy::non_null_ptr_type d_default_reconstruction_layer_proxy;
+
+		//! Are we using the default reconstruction layer proxy.
+		bool d_using_default_reconstruction_layer_proxy;
+
+		/**
+		 * Does the co-registration.
+		 */
+		CoRegistrationLayerProxy::non_null_ptr_type d_coregistration_layer_proxy;
+
+
+		//! Constructor.
+		CoRegistrationLayerTask() :
+				d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
+				d_using_default_reconstruction_layer_proxy(true),
+				d_coregistration_layer_proxy(CoRegistrationLayerProxy::create())
+		{  }
+
+		void
+		refresh_data(
+				const GPlatesDataMining::DataTable& table);
 	};
 }
 

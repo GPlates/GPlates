@@ -112,7 +112,8 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer);
+				GLRenderer &renderer,
+				GLRenderer::RenderTargetUsageType render_target_usage);
 
 
 		/**

@@ -32,9 +32,12 @@
 #include <boost/any.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/operators.hpp>
+#include <boost/optional.hpp>
 #include <QObject>
 
 #include "RenderedGeometry.h"
+
+#include "maths/MathsFwd.h"
 
 
 namespace GPlatesViewOperations
@@ -63,6 +66,9 @@ namespace GPlatesViewOperations
 
 		//! Typedef for pointer to rendered geometry layer implementation.
 		typedef boost::intrusive_ptr<RenderedGeometryLayerImpl> rendered_geometry_layer_impl_ptr_type;
+
+		//! Typedef for a spatial partition of rendered geometries.
+		typedef GPlatesMaths::CubeQuadTreePartition<RenderedGeometry> rendered_geometries_spatial_partition_type;
 
 
 		/**
@@ -126,6 +132,7 @@ namespace GPlatesViewOperations
 		RenderedGeometryLayer(
 				user_data_type user_data);
 
+
 		/**
 		 * Construct a zoom-dependent rendered geometry layer where the globe is divided
 		 * into roughly equal area latitude/longitude bins that the rendered geometries
@@ -151,7 +158,9 @@ namespace GPlatesViewOperations
 				const double &viewport_zoom_factor,
 				user_data_type user_data);
 
+
 		~RenderedGeometryLayer();
+
 
 		/**
 		 * Sets the viewport zoom factor.
@@ -162,9 +171,11 @@ namespace GPlatesViewOperations
 		set_viewport_zoom_factor(
 				const double &viewport_zoom_factor);
 
+
 		void
 		set_active(
 				bool active = true);
+
 
 		bool
 		is_active() const
@@ -172,34 +183,110 @@ namespace GPlatesViewOperations
 			return d_is_active;
 		}
 
+
 		bool
 		is_empty() const;
+
 
 		unsigned int
 		get_num_rendered_geometries() const;
 
+
+		/**
+		 * Returns the 'rendered_geom_index'th rendered geometry added via
+		 * @a add_rendered_geometry.
+		 *
+		 * NOTE: Using @a add_rendered_geometries will break this guarantee.
+		 *
+		 * NOTE: Once/if @a add_rendered_geometries is called after @a clear_rendered_geometries
+		 * then calls to this method, interleaved with adding more rendered geometries, will
+		 * cause this method to be slow.
+		 */
 		RenderedGeometry
 		get_rendered_geometry(
 				rendered_geometry_index_type rendered_geom_index) const;
 
-		//! Begin iterator over sequence of @a RenderedGeometry objects.
+
+		/**
+		 * Returns the rendered geometries in a spatial partition - however
+		 * @a add_rendered_geometries must have been called at least once.
+		 *
+		 * This is an alternative way to traverse the rendered geometries -
+		 * an alternative to @a get_rendered_geometry or iterating over the range
+		 * @a rendered_geometry_begin to @a rendered_geometry_end.
+		 *
+		 * Note that boost::none is returned if the implementation behind this
+		 * rendered geometry layer is zoom-dependent or if @a add_rendered_geometries
+		 * was never called after @a clear_rendered_geometries.
+		 */
+		boost::optional<const rendered_geometries_spatial_partition_type &>
+		get_rendered_geometries() const;
+
+
+		/**
+		 * Begin iterator for sequence of @a RenderedGeometry objects.
+		 *
+		 * The order of iteration is the same as the order of @a add_rendered_geometry calls.
+		 *
+		 * NOTE: Using @a add_rendered_geometries will break this guarantee.
+		 */
 		iterator
 		rendered_geometry_begin() const;
 
-		//! End iterator over sequence of @a RenderedGeometry objects.
+
+		/**
+		 * End iterator for sequence of @a RenderedGeometry objects.
+		 *
+		 * The order of iteration is the same as the order of @a add_rendered_geometry calls.
+		 *
+		 * NOTE: Using @a add_rendered_geometries will break this guarantee.
+		 */
 		iterator
 		rendered_geometry_end() const;
 
+
+		/**
+		 * Adds a rendered geometry to the list.
+		 *
+		 * The order added will be the order returned by @a get_rendered_geometry, or by
+		 * the iteration range @a rendered_geometry_begin and @a rendered_geometry_end,
+		 * *only* if @a clear_rendered_geometries is called after a call to
+		 * @a add_rendered_geometries and before this call.
+		 * In other words mixing @a add_rendered_geometry and @a add_rendered_geometries
+		 * in the same group of rendered geometries will cause undefined iteration order.
+		 */
 		void
 		add_rendered_geometry(
 				RenderedGeometry);
 
+
+		/**
+		 * Adds rendered geometries and passes ownership of the spatial partition into the layer.
+		 *
+		 * If the implementation behind this layer is zoom-independent then the spatial partition
+		 * is used as is, otherwise the spatial partition is simply traversed to get the
+		 * rendered geometries and then discarded.
+		 *
+		 * NOTE: Calling this will not guarantee that the order of rendered geometries added
+		 * will be the same as the order returned by @a get_rendered_geometry.
+		 *
+		 * NOTE: Caller should ideally give up ownership of the spatial partition or at least
+		 * not modify it after this call.
+		 */
+		void
+		add_rendered_geometries(
+				const GPlatesGlobal::PointerTraits<rendered_geometries_spatial_partition_type>::non_null_ptr_type &
+						rendered_geometries_spatial_partition);
+
+
 		void
 		clear_rendered_geometries();
+
 
 		void
 		accept_visitor(
 				ConstRenderedGeometryLayerVisitor &) const;
+
 
 		void
 		accept_visitor(

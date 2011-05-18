@@ -29,7 +29,12 @@
 
 #include <boost/optional.hpp>
 
+#include "maths/GreatCircleArc.h"
+#include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+#include "maths/SmallCircleBounds.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
@@ -327,12 +332,29 @@ namespace GPlatesOpenGL
 					const GPlatesMaths::UnitVector3D &obb_y_axis,
 					const GPlatesMaths::UnitVector3D &obb_z_axis);
 
+
+			/**
+			 * Creates a oriented bounding box builder that bounds a small circle -
+			 * the OBB z-axis will be the small circle centre.
+			 *
+			 * NOTE: the x and y axes *must* be orthonormal with each other *and*
+			 * the small circle centre.
+			 *
+			 * NOte that it's easier to use @a create_oriented_bounding_box_builder to call this instead.
+			 */
+			OrientedBoundingBoxBuilder(
+					const GPlatesMaths::BoundingSmallCircle &bounding_small_circle,
+					const GPlatesMaths::UnitVector3D &obb_x_axis,
+					const GPlatesMaths::UnitVector3D &obb_y_axis);
+
+
 			/**
 			 * Expand the current bounding box (if necessary) to include @a point.
 			 */
 			void
 			add(
 					const GPlatesMaths::UnitVector3D &point);
+
 
 			/**
 			 * Expand the current bounding box (if necessary) to include @a point.
@@ -344,6 +366,70 @@ namespace GPlatesOpenGL
 				add(point.position_vector());
 			}
 
+
+			/**
+			 * Expand the current bounding box (if necessary) to include a great circle arc.
+			 */
+			void
+			add(
+					const GPlatesMaths::GreatCircleArc &gca);
+
+
+			/**
+			 * Expand the current bounding box (if necessary) to include a sequence of great circle arcs.
+			 */
+			template <typename GreatCircleArcForwardIter>
+			void
+			add(
+					GreatCircleArcForwardIter great_circle_arc_begin,
+					GreatCircleArcForwardIter great_circle_arc_end);
+
+
+			/**
+			 * Expand the current bounding box (if necessary) to include a multi-point.
+			 */
+			void
+			add(
+					const GPlatesMaths::MultiPointOnSphere &multi_point);
+
+
+			/**
+			 * Expand the current bounding box (if necessary) to include a polyline.
+			 */
+			void
+			add(
+					const GPlatesMaths::PolylineOnSphere &polyline)
+			{
+				add(polyline.begin(), polyline.end());
+			}
+
+
+			/**
+			 * Expand the current bounding box (if necessary) to include a polygon.
+			 */
+			void
+			add(
+					const GPlatesMaths::PolygonOnSphere &polygon)
+			{
+				add(polygon.begin(), polygon.end());
+			}
+
+
+			/**
+			 * Expand the current bounding box (if necessary) to include a filled polygon.
+			 *
+			 * This add differs from the regular polygon add in that we are not just
+			 * adding the boundary of the polygon but also the interior of the polygon.
+			 *
+			 * If the polygon boundary contains any bounding box axes (at positive or negative
+			 * point on sphere) then respective bounds are expanded to include the respective
+			 * axis point on the sphere.
+			 */
+			void
+			add_filled_polygon(
+					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon);
+
+
 			/**
 			 * Expand the current bounding box (if necessary) to include another
 			 * oriented bounding box @a obb (that may have different axes).
@@ -351,6 +437,7 @@ namespace GPlatesOpenGL
 			void
 			add(
 					const OrientedBoundingBox &obb);
+
 
 			/**
 			 * Returns the oriented box bounding all points added so far.
@@ -373,31 +460,31 @@ namespace GPlatesOpenGL
 			GPlatesMaths::UnitVector3D d_z_axis;
 
 			// Min/max projection of bounded points onto OBB x-axis
-			GPlatesMaths::real_t d_min_dot_x_axis;
-			GPlatesMaths::real_t d_max_dot_x_axis;
+			double d_min_dot_x_axis;
+			double d_max_dot_x_axis;
 
 			// Min/max projection of bounded points onto OBB y-axis
-			GPlatesMaths::real_t d_min_dot_y_axis;
-			GPlatesMaths::real_t d_max_dot_y_axis;
+			double d_min_dot_y_axis;
+			double d_max_dot_y_axis;
 
 			// Min/max projection of bounded points onto OBB z-axis
-			GPlatesMaths::real_t d_min_dot_z_axis;
-			GPlatesMaths::real_t d_max_dot_z_axis;
+			double d_min_dot_z_axis;
+			double d_max_dot_z_axis;
 
 			/**
 			 * The half-length for a degenerate dimension of the bounding box.
 			 * A degenerate dimension happens when all bounded points project to the same
 			 * point (or very close to the same point) for a particular axis of the box.
 			 */
-			static const GPlatesMaths::real_t DEGENERATE_HALF_LENGTH_THRESHOLD;
+			static const double DEGENERATE_HALF_LENGTH_THRESHOLD;
 
 			//! Project @a obb along one of our axes and expand as necessary.
 			void
 			add_projection(
 					const OrientedBoundingBox &obb,
 					GPlatesMaths::UnitVector3D &axis,
-					GPlatesMaths::real_t &min_dot_axis,
-					GPlatesMaths::real_t &max_dot_axis);
+					double &min_dot_axis,
+					double &max_dot_axis);
 		};
 
 
@@ -425,6 +512,38 @@ namespace GPlatesOpenGL
 		OrientedBoundingBoxBuilder
 		create_oriented_bounding_box_builder(
 				const GPlatesMaths::UnitVector3D &obb_z_axis);
+
+
+		/**
+		 * Creates a oriented bounding box builder that bounds a small circle -
+		 * the OBB z-axis will be the small circle centre.
+		 *
+		 * Arbitrary x and y axes are created that are orthonormal with each other and
+		 * the small circle centre.
+		 */
+		OrientedBoundingBoxBuilder
+		create_oriented_bounding_box_builder(
+				const GPlatesMaths::BoundingSmallCircle &bounding_small_circle);
+
+
+		//
+		// Implementation
+		//
+
+
+		template <typename GreatCircleArcForwardIter>
+		void
+		OrientedBoundingBoxBuilder::add(
+				GreatCircleArcForwardIter great_circle_arc_begin,
+				GreatCircleArcForwardIter great_circle_arc_end)
+		{
+			for (GreatCircleArcForwardIter great_circle_arc_iter = great_circle_arc_begin;
+				great_circle_arc_iter != great_circle_arc_end;
+				++great_circle_arc_iter)
+			{
+				add(*great_circle_arc_iter);
+			}
+		}
 	}
 }
 

@@ -29,12 +29,15 @@
 
 #include <bitset>
 #include <vector>
+#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "AppLogicFwd.h"
 #include "GeometryCookieCutter.h"
-#include "ReconstructionGeometryCollection.h"
+#include "ReconstructionTreeCreator.h"
+#include "ReconstructUtils.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
@@ -49,7 +52,8 @@ namespace GPlatesAppLogic
 	 * Assigns reconstruction plate ids to feature(s) using resolved topological
 	 * boundaries (reconstructions of TopologicalClosedPlateBoundary features).
 	 */
-	class AssignPlateIds
+	class AssignPlateIds :
+			private boost::noncopyable
 	{
 	public:
 		//! Typedef for shared pointer to @a AssignPlateIds.
@@ -200,6 +204,9 @@ namespace GPlatesAppLogic
 		}
 
 
+		~AssignPlateIds();
+
+
 		/**
 		 * Returns true if we have partitioning polygons.
 		 */
@@ -252,21 +259,21 @@ namespace GPlatesAppLogic
 		feature_property_flags_type d_feature_property_types_to_assign;
 
 		/**
-		 * Reconstruction tree used to reconstruct 
+		 * Reconstruction tree cache.
 		 */
-		ReconstructionTree::non_null_ptr_type d_reconstruction_tree;
+		ReconstructionTreeCreator d_reconstruction_tree_cache;
 
 		/**
 		 * Contains the reconstructed static polygons used for cookie-cutting.
 		 *
 		 * Can also contain the topological section geometries referenced by topological polygons.
 		 */
-		ReconstructionGeometryCollection::non_null_ptr_type d_reconstructed_geometries_collection;
+		std::vector<reconstructed_feature_geometry_non_null_ptr_type> d_reconstructed_feature_geometries;
 
 		/**
 		 * Contains the resolved topological polygons used for cookie-cutting.
 		 */
-		boost::optional<ReconstructionGeometryCollection::non_null_ptr_type> d_resolved_topological_boundaries_collection;
+		std::vector<resolved_topological_boundary_non_null_ptr_type> d_resolved_topological_boundaries;
 
 		/**
 		 * Used to cookie cut geometries to find partitioning polygons.

@@ -33,7 +33,10 @@
 #include <QTreeWidget>
 
 #include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionGeometry.h"
+
 #include "gui/TreeWidgetBuilder.h"
+
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"

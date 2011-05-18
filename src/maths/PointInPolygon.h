@@ -27,16 +27,17 @@
 #define GPLATES_MATHS_POINTINPOLYGON_H
 
 #include <vector>
-#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 
-#include "PolygonOnSphere.h"
-#include "PolygonOrientation.h"
 #include "UnitVector3D.h"
+
+#include "global/PointerTraits.h"
 
 
 namespace GPlatesMaths
 {
 	class PointOnSphere;
+	class PolygonOnSphere;
 
 	namespace PointInPolygon
 	{
@@ -99,7 +100,7 @@ namespace GPlatesMaths
 		Result
 		is_point_in_polygon(
 				const PointOnSphere &point,
-				const PolygonOnSphere::non_null_ptr_to_const_type &polygon);
+				const PolygonOnSphere &polygon);
 
 
 		/**
@@ -129,13 +130,17 @@ namespace GPlatesMaths
 			 * There is early bounds testing regardless of the value of @a build_ologn_hint
 			 * which (in addition to caching any pre-processing) accounts for the significant
 			 * gains over the non-member point-in-polygon function.
+			 *
+			 * If @a keep_shared_reference_to_polygon is true then a shared pointer to @a polygon
+			 * is kept internally in order to ensure the polygon is alive when testing a point
+			 * against it. This is set to false by PolygonOnSphere itself since it has a
+			 * shared pointer to us (otherwise we'd get a memory island and hence a memory leak).
 			 */
 			explicit
 			Polygon(
-					const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-					bool build_ologn_hint = true);
-
-			~Polygon();
+					const GPlatesGlobal::PointerTraits<const PolygonOnSphere>::non_null_ptr_type &polygon,
+					bool build_ologn_hint = true,
+					bool keep_shared_reference_to_polygon = true);
 
 
 			/**
@@ -148,8 +153,10 @@ namespace GPlatesMaths
 		private:
 			/**
 			 * Bounds testing and an optional O(log(N)) tree (in the number of polygons edges N).
+			 *
+			 * Using a boost::shared_ptr instead of a boost::scoped_ptr to make this class copyable.
 			 */
-			boost::scoped_ptr<SphericalLuneTree> d_spherical_lune_tree;
+			boost::shared_ptr<SphericalLuneTree> d_spherical_lune_tree;
 		};
 	}
 }
