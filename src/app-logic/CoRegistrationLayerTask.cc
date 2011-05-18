@@ -93,7 +93,13 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 		const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
 {
 	using namespace GPlatesDataMining;
+	if(!d_layer_params.d_call_back || !d_layer_params.d_cfg_table)
+	{
+		//This case means layer parameters haven't be initialized. We should not proceed further from here.
+		return boost::none;
+	}
 	refresh_data(DataTable());
+
 	// Get the reconstruction tree input.
 	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree =
 			extract_reconstruction_tree(
@@ -105,13 +111,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::process(
 		qWarning() << "No reconstruction tree found.";
 		return boost::none;
 	}
-
-	if(!d_layer_params.d_call_back || !d_layer_params.d_cfg_table)
-	{
-		//This case means layer parameters haven't be initialized. We should not proceed further from here.
-		return boost::none;
-	}
-
+	
 	// Get seeds.
 	std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> seeds_collection;
 	extract_input_channel_data(
