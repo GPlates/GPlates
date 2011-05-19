@@ -37,11 +37,11 @@
 #include "presentation/ViewState.h"
 #include "file-io/ExportTemplateFilenameSequence.h"
 
+using namespace GPlatesDataMining;
 
 const QString GPlatesQtWidgets::ResultTableDialog::filter_csv(QObject::tr("CSV (*.csv)"));
 const QString GPlatesQtWidgets::ResultTableDialog::filter_csv_ext(QObject::tr("csv"));
 const QString GPlatesQtWidgets::ResultTableDialog::page_label_format("Page: %d/%d ");
-
 	
 void
 GPlatesQtWidgets::ResultTableDialog::update_page_label()
