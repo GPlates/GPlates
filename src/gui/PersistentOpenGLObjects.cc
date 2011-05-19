@@ -1285,9 +1285,9 @@ GPlatesGui::PersistentOpenGLObjects::GLLayers::remove_layer(
 
 
 GPlatesGui::PersistentOpenGLObjects::ListObjects::ListObjects(
-		const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &opengl_shared_state,
+		const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &opengl_shared_state_input,
 		const NonListObjects &non_list_objects) :
-	opengl_shared_state(opengl_shared_state),
+	opengl_shared_state(opengl_shared_state_input),
 	gl_layers(
 			non_list_objects.cube_subdivision,
 			non_list_objects.cube_subdivision_projection_transforms_cache,

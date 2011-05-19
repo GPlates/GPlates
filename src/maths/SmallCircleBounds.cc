@@ -99,8 +99,8 @@ GPlatesMaths::BoundingSmallCircle::Result
 GPlatesMaths::BoundingSmallCircle::test(
 		const MultiPointOnSphere &multi_point) const
 {
-	double point_min_dot_product = 1.0;
-	double point_max_dot_product = -1.0;
+	//double point_min_dot_product = 1.0;
+	//double point_max_dot_product = -1.0;
 
 	const PointOnSphere &first_point = *multi_point.begin();
 
@@ -337,8 +337,8 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::Result
 GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 		const MultiPointOnSphere &multi_point) const
 {
-	double point_min_dot_product = 1.0;
-	double point_max_dot_product = -1.0;
+	//double point_min_dot_product = 1.0;
+	//double point_max_dot_product = -1.0;
 
 	const PointOnSphere &first_point = *multi_point.begin();
 

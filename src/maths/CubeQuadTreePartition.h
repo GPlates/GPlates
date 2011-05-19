@@ -387,6 +387,7 @@ namespace GPlatesMaths
 			//! Implicit conversion constructor for converting non-const to const.
 			NodeReference(
 					const typename CubeQuadTreePartition<element_type>::template NodeReference<cube_quad_tree_node_type> &rhs) :
+				GPlatesUtils::SafeBool< NodeReference<NodeImplQualifiedType> >(rhs),
 				d_node_impl(rhs.d_node_impl)
 			{  }
 

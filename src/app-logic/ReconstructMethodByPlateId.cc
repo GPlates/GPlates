@@ -479,7 +479,7 @@ namespace GPlatesAppLogic
 				{
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon_interior = *it;
 
-					const ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+					const ReconstructedFeatureGeometry::non_null_ptr_type rfg_p =
 							ReconstructedFeatureGeometry::create(
 									d_reconstruction_tree,
 									*property.handle_weak_ref(),
@@ -488,7 +488,7 @@ namespace GPlatesAppLogic
 									d_reconstruction_rotation.get(),
 									d_reconstruction_params.get_recon_plate_id(),
 									d_reconstruction_params.get_time_of_appearance());
-					d_reconstructed_feature_geometries.push_back(rfg_ptr);
+					d_reconstructed_feature_geometries.push_back(rfg_p);
 				}
 			}
 
@@ -549,7 +549,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature(
 	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
 
-	ReconstructFeature reconstruct_feature(reconstructed_feature_geometries, reconstruction_tree);
+	ReconstructFeature recon_feature(reconstructed_feature_geometries, reconstruction_tree);
 
-	reconstruct_feature.visit_feature(feature_weak_ref);
+	recon_feature.visit_feature(feature_weak_ref);
 }

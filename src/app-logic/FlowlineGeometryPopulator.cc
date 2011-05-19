@@ -127,7 +127,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 				d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
 
-		GPlatesModel::integer_plate_id_type anchor = reconstruction_tree->get_anchor_plate_id();
+		//GPlatesModel::integer_plate_id_type anchor = reconstruction_tree->get_anchor_plate_id();
 		double current_time = reconstruction_tree->get_reconstruction_time();
 		std::vector<double> times = d_flowline_property_finder.get_times();
 
