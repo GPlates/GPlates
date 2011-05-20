@@ -187,7 +187,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR false)
 set(CMAKE_SUPPRESS_REGENERATION false)
 
 # Disable Python for release 1.1
-set(GPLATES_NO_PYTHON )
+set(GPLATES_NO_PYTHON true)
 
 # Disable Symbol for release 1.1
 set(GPLATES_NO_SYMBOL true)
