@@ -37,6 +37,12 @@
 #include "utils/Profile.h"
 
 
+
+const GLenum GPlatesOpenGL::VertexElementTraits<GLubyte>::type;
+const GLenum GPlatesOpenGL::VertexElementTraits<GLushort>::type;
+const GLenum GPlatesOpenGL::VertexElementTraits<GLuint>::type;
+
+
 void
 GPlatesOpenGL::GLVertexElementArray::gl_draw_elements(
 		GLenum mode,
