@@ -213,13 +213,15 @@ namespace{
 		void
 		gen_data(double time)
 		{
-			//Create the reconstruction tree.
-			ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-				ReconstructUtils::create_reconstruction_tree(
-				time, //time
-				0, //anchor plate
-				d_rotation_fc);
+#if 0
+			ReconstructMethodRegistry reconstruct_method_registry;
+			register_default_reconstruct_method_types(reconstruct_method_registry);
 
+			ReconstructionTreeCreator reconstruction_tree_creator =
+				get_cached_reconstruction_tree_creator(
+						d_rotation_fc,
+						time,
+						0/*anchor plate*/);
 			//seed
 			std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> reconstructed_seeds;
 			reconstructed_seeds.push_back(
@@ -242,7 +244,7 @@ namespace{
 			selector->select(reconstructed_seeds, reconstructed_coreg, result);
 			result.set_reconstruction_time(time);
 			d_result_table.push_back(result);
-			
+#endif			
 			return;
 		}
 

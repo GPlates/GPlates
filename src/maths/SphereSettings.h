@@ -42,7 +42,7 @@ namespace GPlatesMaths
 		const real_t DefaultEarthRadius = 6378.1;
 		const real_t PI = 3.14159265358979323846;
 		//TODO: This is suspicious and needs more investigation.
-		const real_t DotProductDistanceAccuracyTolerance = 1.0e-7; 
+		const real_t DotProductDistanceAccuracyTolerance = 0;//1.0e-7; 
 		//This is a dot-product value, -1 means the largest distance on sphere
 		const real_t MaxDotProductDistanceOnSphere = -1; 
 		//This is a dot-product value, 1 means the zero distance on sphere

@@ -3,7 +3,7 @@ import sys
 import gplates_ext
 from multiprocessing import Pool, Queue, Process
 
-path="C:/gplates_src/data-mining-2011-feb-08/sample-data/unit-test-data/"
+path="/home/mchin/gplates_src/trunk/sample-data/unit-test-data/"
 
 def load_cfg(co):
 	l=[]
@@ -15,7 +15,7 @@ def load_cfg(co):
 	l=[]
 	l.append(path+"coreg_rotation.rot");
 	co.load_recon_files(l);
-
+	co.set_output_prefix("coreg");
 	co.add_cfg_row("coreg_target.gpml, 		Region_of_Interest (5000), 		Presence, 				Lookup,			 false")
 	co.add_cfg_row("coreg_target.gpml, 		Region_of_Interest (5000),	 	Distance, 				Min,             false")
 	co.add_cfg_row("coreg_target.gpml, 		Region_of_Interest (5000), 		Presence, 				Lookup,			 false")
@@ -34,7 +34,7 @@ def process(time):
 def main(argv):
 	pool = Pool(processes=4)
 	result=pool.map(process,range(0,140,10))
-	print result	
+	print "Done. check the result in current working directory."	
 	
 if __name__ == "__main__":
 	main( sys.argv )
