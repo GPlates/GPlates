@@ -49,19 +49,19 @@ namespace GPlatesOpenGL
 	template <>
 	struct VertexElementTraits<GLubyte>
 	{
-		static const GLenum type = GL_UNSIGNED_BYTE;
+		static const GLenum type;
 	};
 
 	template <>
 	struct VertexElementTraits<GLushort>
 	{
-		static const GLenum type = GL_UNSIGNED_SHORT;
+		static const GLenum type;
 	};
 
 	template <>
 	struct VertexElementTraits<GLuint>
 	{
-		static const GLenum type = GL_UNSIGNED_INT;
+		static const GLenum type;
 	};
 
 

@@ -38,9 +38,9 @@
 
 
 
-const GLenum GPlatesOpenGL::VertexElementTraits<GLubyte>::type;
-const GLenum GPlatesOpenGL::VertexElementTraits<GLushort>::type;
-const GLenum GPlatesOpenGL::VertexElementTraits<GLuint>::type;
+const GLenum GPlatesOpenGL::VertexElementTraits<GLubyte>::type = GL_UNSIGNED_BYTE;
+const GLenum GPlatesOpenGL::VertexElementTraits<GLushort>::type = GL_UNSIGNED_SHORT;
+const GLenum GPlatesOpenGL::VertexElementTraits<GLuint>::type = GL_UNSIGNED_INT;
 
 
 void
