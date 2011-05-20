@@ -67,6 +67,7 @@ namespace GPlatesAppLogic
 	class LayerTaskRegistry;
 	class ReconstructGraph;
 	class ReconstructMethodRegistry;
+	class Serialization;
 	class SessionManagement;
 	class UserPreferences;
 
@@ -121,6 +122,12 @@ namespace GPlatesAppLogic
 		 */
 		FeatureCollectionFileIO &
 		get_feature_collection_file_io();
+
+		/**
+		 * Helper for dealing with e.g. boost::serialize
+		 */
+		GPlatesAppLogic::Serialization &
+		get_serialization();
 
 		/**
 		 * Stores/Loads loaded file information to and from persistent storage.
@@ -224,6 +231,20 @@ namespace GPlatesAppLogic
 		get_python_execution_thread()
 		{
 			return d_python_execution_thread;
+		}
+
+
+		/**
+		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
+		 * which would normally be triggered by a call to FeatureCollectionFileIO::load_files().
+		 *
+		 * This is called from SessionManagement during the loading of a previous Session.
+		 */
+		void
+		suppress_auto_layer_creation(
+				bool suppress)
+		{
+			d_suppress_auto_layer_creation = suppress;
 		}
 
 
@@ -390,6 +411,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::scoped_ptr<FeatureCollectionFileIO> d_feature_collection_file_io;
 
+		boost::scoped_ptr<Serialization> d_serialization_ptr;
 		boost::scoped_ptr<SessionManagement> d_session_management_ptr;
 
 		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
@@ -485,6 +507,12 @@ namespace GPlatesAppLogic
 		 * Memory is managed by Qt.
 		 */
 		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
+
+		/**
+		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
+		 * which would normally be triggered by a call to FeatureCollectionFileIO::load_files().
+		 */
+		bool d_suppress_auto_layer_creation;
 
 		/**
 		 * Make signal/slot connections that coordinate the application logic structure

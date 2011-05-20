@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,6 +37,7 @@
 #include <boost/variant.hpp>
 #include <boost/weak_ptr.hpp>
 
+
 #include "FeatureCollectionFileState.h"
 #include "LayerProxy.h"
 #include "Reconstruction.h"
@@ -60,6 +61,11 @@ namespace GPlatesAppLogic
 		class LayerInputConnection;
 
 
+		/**
+		 * Data objects in the Reconstruct Graph Implementation are a wrapper around the
+		 * two kinds of data you find in the graph. It can wrap around an input file,
+		 * or represent the output of another layer.
+		 */
 		class Data :
 				public boost::noncopyable
 		{
@@ -149,6 +155,7 @@ namespace GPlatesAppLogic
 			disconnect_output_connections();
 
 		private:
+
 			/**
 			 * Typedef for the data that differs depending on whether this data object
 			 * is an input feature collection or the output of a layer.
@@ -327,6 +334,7 @@ namespace GPlatesAppLogic
 			}
 
 		private:
+
 			input_connection_map_type d_connections;
 		};
 
@@ -421,6 +429,7 @@ namespace GPlatesAppLogic
 			get_layer_task_params();
 
 		private:
+
 			ReconstructGraph *d_reconstruct_graph;
 			boost::shared_ptr<LayerTask> d_layer_task;
 

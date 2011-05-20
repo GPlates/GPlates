@@ -34,6 +34,7 @@
 #include "ApplicationState.h"
 #include "FeatureCollectionFileState.h"
 #include "FeatureCollectionFileIO.h"
+#include "Serialization.h"
 #include "file-io/FileInfo.h"
 
 
@@ -60,9 +61,9 @@ namespace
 
 GPlatesAppLogic::SessionManagement::SessionManagement(
 		GPlatesAppLogic::ApplicationState &app_state):
+	QObject(NULL),
 	d_app_state_ptr(&app_state)
-{
-}
+{  }
 
 
 void
@@ -86,7 +87,10 @@ GPlatesAppLogic::SessionManagement::load_session(
 		// For now, maybe just clear and load everything?
 		unload_all_files();
 		
+		d_app_state_ptr->suppress_auto_layer_creation(true);
 		file_io.load_files(QStringList::fromSet(session_to_load.loaded_files()));
+		d_app_state_ptr->suppress_auto_layer_creation(false);
+		d_app_state_ptr->get_serialization().load_layers_state(session_to_load.layers_state());
 
 	} else {
 		// User is attempting to load a new session. Should we replace the old one?
@@ -95,7 +99,10 @@ GPlatesAppLogic::SessionManagement::load_session(
 		save_session();
 		unload_all_files();
 		
+		d_app_state_ptr->suppress_auto_layer_creation(true);
 		file_io.load_files(QStringList::fromSet(session_to_load.loaded_files()));
+		d_app_state_ptr->suppress_auto_layer_creation(false);
+		d_app_state_ptr->get_serialization().load_layers_state(session_to_load.layers_state());
 	}
 	// Thinking out loud:-
 	// save current session first, if any - may require a prompt up in a gui level
@@ -265,10 +272,12 @@ GPlatesAppLogic::SessionManagement::new_session_from_current_state()
 	Q_FOREACH(const QFileInfo &fi, files) {
 		filenames.insert(fi.absoluteFilePath());
 	}
+
+	GPlatesAppLogic::Session::LayersStateType layers_state = d_app_state_ptr->get_serialization().save_layers_state();
 	
 	// Create and return the new Session. It's a lightweight class, all the members
 	// are Qt pimpl-idiom stuff, passing it by value isn't a bad thing.
-	return Session(time, filenames);
+	return Session(time, filenames, layers_state);
 }
 
 

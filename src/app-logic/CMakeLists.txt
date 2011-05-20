@@ -147,6 +147,8 @@ set(srcs
     ResolvedTopologicalBoundary.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
+    Serialization.cc
+    Serialization.h
     Session.cc
     Session.h
     SessionManagement.cc

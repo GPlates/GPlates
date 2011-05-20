@@ -322,8 +322,7 @@ int internal_main(int argc, char* argv[])
 	main_window_widget.load_files(
 			command_line_options.line_format_filenames +
 				command_line_options.rotation_format_filenames);
-	// Make sure the appropriate tool status message is displayed at start up. 
-	main_window_widget.update_tools_and_status_message();
+
 	// Install an extra menu for developers to help debug GUI problems.
 	if (command_line_options.debug_gui)
 	{

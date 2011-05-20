@@ -2747,6 +2747,11 @@ GPlatesQtWidgets::ViewportWindow::showEvent(
 				get_application_state().get_python_execution_thread(),
 				boost::ref(get_application_state().get_user_preferences())));
 #endif
+
+	// We wait until the main window is visible before checking our status messages and
+	// View-dependent menu items are configured appropriately; this is largely because of
+	// the definition of ReconstructionViewWidget::globe_is_active().
+	update_tools_and_status_message();
 }
 
 

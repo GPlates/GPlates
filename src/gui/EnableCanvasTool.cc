@@ -288,6 +288,18 @@ GPlatesGui::EnableCanvasTool::update_insert_vertex_tool()
 void
 GPlatesGui::EnableCanvasTool::update_split_feature_tool()
 {
+	// If we're currently using the build or edit topology tool then disable this tool.
+	// This is because the topology tools set/modify the focused feature but for their
+	// own purpose of adding topology sections and not for specifying a focused feature
+	// for other tools to target.
+	if (d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::BUILD_TOPOLOGY ||
+		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY)
+	{
+		d_viewport_window->enable_split_feature_tool(false);
+		return;
+	}
+
+
 	if (
 		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE ||
 		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT ||

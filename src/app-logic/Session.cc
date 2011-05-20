@@ -29,6 +29,7 @@
 #include <QStringList>
 #include <QFileInfo>
 
+#define LATEST_SESSION_VERSION 1
 
 namespace
 {
@@ -70,10 +71,14 @@ namespace
 
 GPlatesAppLogic::Session::Session(
 		const QDateTime &_time,
-		const QSet<QString> &_files):
+		const QSet<QString> &_files,
+		const GPlatesAppLogic::Session::LayersStateType &_layers_state):
+	d_version(LATEST_SESSION_VERSION),	// A newly created Session should always have the most recent version number.
 	d_time(_time),
-	d_loaded_files(_files)
+	d_loaded_files(_files),
+	d_layers_state(_layers_state)
 {  }
+
 
 
 const QDateTime &
@@ -86,6 +91,12 @@ const QSet<QString> &
 GPlatesAppLogic::Session::loaded_files() const
 {
 	return d_loaded_files;
+}
+
+const GPlatesAppLogic::Session::LayersStateType &
+GPlatesAppLogic::Session::layers_state() const
+{
+	return d_layers_state;
 }
 
 
@@ -126,6 +137,7 @@ GPlatesAppLogic::Session::operator==(
 		const GPlatesAppLogic::Session &other) const
 {
 	// d_time has no effect on comparisons.
+	// d_layers_state similarly has no effect on comparisons; IMHO this is the best way to handle it.
 	return d_loaded_files == other.d_loaded_files;
 }
 
@@ -141,8 +153,10 @@ GPlatesAppLogic::UserPreferences::KeyValueMap
 GPlatesAppLogic::Session::serialise_to_prefs_map() const
 {
 	GPlatesAppLogic::UserPreferences::KeyValueMap map;
+	map.insert("version", LATEST_SESSION_VERSION);	// We always write out the most recent version.
 	map.insert("time", time());
 	map.insert("loaded_files", QVariant(QStringList::fromSet(loaded_files())));
+	map.insert("layers_state", QVariant(d_layers_state.toString()));
 	return map;
 }
 
@@ -151,9 +165,18 @@ GPlatesAppLogic::Session
 GPlatesAppLogic::Session::unserialise_from_prefs_map(
 		const GPlatesAppLogic::UserPreferences::KeyValueMap &map)
 {
+	// Note: The prefs KeyValueMap is a QMap of QStrings->QVariants. The .value() call we use here
+	// will use a default-constructed value if no such entry exists in the map, which should
+	// insulate us a little bit from outdated or incomplete Session entries.
+
+	int version = map.value("version").toInt();
 	QDateTime time = map.value("time").toDateTime();
 	QStringList loaded_files = map.value("loaded_files").toStringList();
-	GPlatesAppLogic::Session session(time, QSet<QString>::fromList(loaded_files));
+	LayersStateType layers_state;
+	layers_state.setContent(map.value("layers_state").toString());
+
+	GPlatesAppLogic::Session session(time, QSet<QString>::fromList(loaded_files), layers_state);
+	session.d_version = version;	// Only the Session class should be allowed to create Sessions with older version numbers, and only when reading a previously-written Session.
 	return session;
 }
 

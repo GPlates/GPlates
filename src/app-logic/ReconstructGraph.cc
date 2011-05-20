@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,6 +31,10 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
+#include <QDebug>
+#include "Serialization.h"
+
+
 #include "ApplicationState.h"
 #include "LayerProxyUtils.h"
 #include "LayerTask.h"
@@ -38,6 +42,7 @@
 #include "ReconstructGraphImpl.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructUtils.h"
+#include "Serialization.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -468,6 +473,39 @@ GPlatesAppLogic::ReconstructGraph::handle_file_state_file_about_to_be_removed(
 	// Remove the input file object.
 	d_input_files.erase(input_file_iter);
 }
+
+
+void
+GPlatesAppLogic::ReconstructGraph::debug_reconstruct_graph_state()
+{
+	qDebug() << "\nRECONSTRUCT GRAPH:-";
+	qDebug() << " INPUT FILES:-";
+	for (input_file_ptr_map_type::const_iterator it = d_input_files.begin(); it != d_input_files.end(); ++it) {
+		qDebug() << "   " << it->first.get_file().get_file_info().get_display_name(false);
+	}
+
+	qDebug() << " LAYERS:-";
+	BOOST_FOREACH(layer_ptr_type l_ptr, d_layers) {
+		const char *is_active = l_ptr->is_active()? "A" : " ";
+		const LayerTask &layer_task = l_ptr->get_layer_task();
+		qDebug() << "   " << is_active << "Type =" << layer_task.get_layer_type();
+		qDebug() << "      CONNECTIONS:-";
+		const ReconstructGraphImpl::LayerInputConnections &lics = l_ptr->get_input_connections();
+		const ReconstructGraphImpl::LayerInputConnections::input_connection_map_type &licmap =
+				lics.get_input_connection_map();
+		for (ReconstructGraphImpl::LayerInputConnections::input_connection_map_type::const_iterator it = licmap.begin();
+			  it != licmap.end(); ++it) {
+			boost::optional<FeatureCollectionFileState::file_reference> fileref = it->second->get_input_data()->get_input_file();
+			if (fileref) {
+				qDebug() << "       " << it->first << "<-" << fileref->get_file().get_file_info().get_display_name(false);
+			} else {
+				qDebug() << "       " << it->first << "<- something dynamic";
+			}
+		}
+	}
+
+}
+
 
 
 void

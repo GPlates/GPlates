@@ -72,6 +72,7 @@ namespace
 		if (key == "paths/python_user_script_dir") {
 			// Get the platform-specific "application user data" dir. Add "scripts/" to that.
 			//   Linux: ~/.local/share/data/GPlates/GPlates/
+			//   Windows 7: C:/Users/*/AppData/Local/GPlates/GPlates/
 			QDir local_scripts_dir(QDesktopServices::storageLocation(QDesktopServices::DataLocation) + "/scripts/");
 			return QVariant(local_scripts_dir.absolutePath());
 

@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -379,6 +379,15 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::Layer prev_default_reconstruction_tree_layer,
 				GPlatesAppLogic::Layer new_default_reconstruction_tree_layer);
 
+	public slots:
+
+		/**
+		 * Used by GuiDebug to print out current reconstruct graph state.
+		 */
+		void
+		debug_reconstruct_graph_state();
+
+
 	private:
 		//! Emits the @a layer_activation_changed signal.
 		void
@@ -406,6 +415,7 @@ namespace GPlatesAppLogic
 		friend class Layer;
 
 	private:
+
 		//! Typedef for a shared pointer to an input file.
 		typedef boost::shared_ptr<ReconstructGraphImpl::Data> input_file_ptr_type;
 

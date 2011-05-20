@@ -39,8 +39,10 @@
 #include "model/FeatureCollectionHandle.h"
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/Serialization.h"
 #include "app-logic/SessionManagement.h"
 #include "app-logic/UserPreferences.h"
+#include "app-logic/ReconstructGraph.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/TaskPanel.h"
 
@@ -158,7 +160,9 @@ GPlatesGui::GuiDebug::create_menu()
 	// Plus a few 'debug_' methods from specific classes as a submenu:-
 	add_slots_as_submenu(&(d_app_state_ptr->get_user_preferences()), "debug_", debug_menu);
 	add_slots_as_submenu(&(d_app_state_ptr->get_session_management()), "", debug_menu);
-	
+	add_slots_as_submenu(&(d_app_state_ptr->get_serialization()), "debug_", debug_menu);
+	add_slots_as_submenu(&(d_app_state_ptr->get_reconstruct_graph()), "debug_", debug_menu);
+
 	// For bonus points, let's add ALL no-argument slots from ViewportWindow and friends.
 	add_slots_as_submenu(d_viewport_window_ptr, "", debug_menu);
 	add_slots_as_submenu(d_viewport_window_ptr->task_panel_ptr(), "", debug_menu);

@@ -36,6 +36,7 @@
 #include "ReconstructGraph.h"
 #include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
+#include "Serialization.h"
 #include "SessionManagement.h"
 #include "UserPreferences.h"
 
@@ -295,6 +296,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
 					d_model, *d_feature_collection_file_state)),
+	d_serialization_ptr(new Serialization(*this)),
 	d_session_management_ptr(new SessionManagement(*this)),
 	d_user_preferences_ptr(new UserPreferences()),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
@@ -309,7 +311,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
 	d_python_runner(NULL),
-	d_python_execution_thread(NULL)
+	d_python_execution_thread(NULL),
+	d_suppress_auto_layer_creation(false)
 {
 	// Register default reconstruct method types with the reconstruct method registry.
 	register_default_reconstruct_method_types(*d_reconstruct_method_registry);
@@ -443,15 +446,18 @@ GPlatesAppLogic::ApplicationState::handle_file_state_files_added(
 	// so that we can then get new file objects from it.
 	d_reconstruct_graph->handle_file_state_files_added(file_state, new_files);
 
-	// Create new layers for the new files.
-	BOOST_FOREACH(FeatureCollectionFileState::file_reference new_file, new_files)
-	{
-		// Create a new layer for the current file (or create multiple layers if the
-		// feature collection contains features that can be processed by more than one layer type).
-		// We ignore the created layers because they've been added to the reconstruct graph
-		// and because they will automatically get removed/destroyed their associated
-		// input files (the ones that triggered this auto-layer-creation) have been unloaded.
-		create_layers(new_file);
+	// Special: Do not auto-create layers if we are loading a Session from SessionManagement.
+	if ( ! d_suppress_auto_layer_creation) {
+		// Create new layers for the new files.
+		BOOST_FOREACH(FeatureCollectionFileState::file_reference new_file, new_files)
+		{
+			// Create a new layer for the current file (or create multiple layers if the
+			// feature collection contains features that can be processed by more than one layer type).
+			// We ignore the created layers because they've been added to the reconstruct graph
+			// and because they will automatically get removed/destroyed their associated
+			// input files (the ones that triggered this auto-layer-creation) have been unloaded.
+			create_layers(new_file);
+		}
 	}
 }
 
@@ -563,6 +569,13 @@ GPlatesAppLogic::FeatureCollectionFileIO &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_io()
 {
 	return *d_feature_collection_file_io;
+}
+
+
+GPlatesAppLogic::Serialization &
+GPlatesAppLogic::ApplicationState::get_serialization()
+{
+	return *d_serialization_ptr;
 }
 
 

@@ -30,6 +30,7 @@
 #include <QSet>
 #include <QString>
 #include <QDateTime>
+#include <QDomDocument>
 
 #include "UserPreferences.h"
 
@@ -46,6 +47,13 @@ namespace GPlatesAppLogic
 	public:
 
 		/**
+		 * FIXME: For now, I'm just going to typedef the LayersStateType as a QDomDocument,
+		 * but I think that ideally I should possibly subclass it to add a few 'convenience'
+		 * methods that are more suitable for our saving/restoring operations.
+		 */
+		typedef QDomDocument LayersStateType;
+
+		/**
 		 * Construct a new Session object to represent a specific collection
 		 * of files that were loaded in GPlates at some time.
 		 *
@@ -54,17 +62,24 @@ namespace GPlatesAppLogic
 		 */
 		Session(
 				const QDateTime &_time,
-				const QSet<QString> &_files);
+				const QSet<QString> &_files,
+				const LayersStateType &_layers_state);
 
 		virtual
 		~Session()
 		{  }
+
+		int
+		version() const;
 		
 		const QDateTime &
 		time() const;
 		
 		const QSet<QString> &
 		loaded_files() const;
+
+		const LayersStateType &
+		layers_state() const;
 
 		/**
 		 * Textual description suitable for menus, e.g.
@@ -84,6 +99,8 @@ namespace GPlatesAppLogic
 		 * focus on whether the list of files match; this is so that
 		 * GPlates can be a bit smarter about how the Recent Sessions menu
 		 * operates w.r.t. people loading/saving prior sessions.
+		 *
+		 * Changes in Layer configuration should also not affect equality.
 		 */
 		bool
 		operator==(
@@ -116,6 +133,11 @@ namespace GPlatesAppLogic
 		 */
 
 		/**
+		 * Version number of this Session information, used for backwards compatibility.
+		 */
+		int d_version;
+
+		/**
 		 * The time when the session was saved; usually the time GPlates
 		 * last quit while these files were active.
 		 */
@@ -125,6 +147,12 @@ namespace GPlatesAppLogic
 		 * Which files were active when the session was saved.
 		 */
 		QSet<QString> d_loaded_files;
+
+		/**
+		 * The state of the Layers system, which in this case has been constructed
+		 * as an XML DOM.
+		 */
+		LayersStateType d_layers_state;
 	};
 }
 
