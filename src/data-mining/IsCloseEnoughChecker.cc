@@ -59,6 +59,12 @@ GPlatesDataMining::IsCloseEnoughChecker::execute(
 		const GPlatesMaths::PointOnSphere* point1,
 		const GPlatesMaths::PointOnSphere* point2)
 {
+	if((*point1) == (*point2))
+	{
+		d_distance = 0;
+		d_is_close_enough = true;
+		return;
+	}
 	real_t closeness = acos(calculate_closeness(*point1, *point2)) * DEFAULT_RADIUS_OF_EARTH;
 
 	#ifdef _DEBUG
