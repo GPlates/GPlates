@@ -54,6 +54,14 @@ namespace GPlatesAppLogic
 		typedef QDomDocument LayersStateType;
 
 		/**
+		 * Returns the session version corresponding to the current build of GPlates.
+		 */
+		static
+		int
+		get_latest_session_version();
+
+
+		/**
 		 * Construct a new Session object to represent a specific collection
 		 * of files that were loaded in GPlates at some time.
 		 *
@@ -127,6 +135,11 @@ namespace GPlatesAppLogic
 				const GPlatesAppLogic::UserPreferences::KeyValueMap &map);
 
 	private:
+		/**
+		 * The session version corresponding to the current build of GPlates.
+		 */
+		static const int LATEST_SESSION_VERSION = 1;
+
 		/*
 		 * Avoid putting heavy STL member data here, this class gets passed
 		 * around by value.
@@ -134,6 +147,8 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Version number of this Session information, used for backwards compatibility.
+		 *
+		 * Added at version one, so previous versions of GPlates will default to zero.
 		 */
 		int d_version;
 

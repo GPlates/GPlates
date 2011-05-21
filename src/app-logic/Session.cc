@@ -29,7 +29,6 @@
 #include <QStringList>
 #include <QFileInfo>
 
-#define LATEST_SESSION_VERSION 1
 
 namespace
 {
@@ -68,6 +67,12 @@ namespace
 }
 
 
+int
+GPlatesAppLogic::Session::get_latest_session_version()
+{
+	return LATEST_SESSION_VERSION;
+}
+
 
 GPlatesAppLogic::Session::Session(
 		const QDateTime &_time,
@@ -79,7 +84,11 @@ GPlatesAppLogic::Session::Session(
 	d_layers_state(_layers_state)
 {  }
 
-
+int
+GPlatesAppLogic::Session::version() const
+{
+	return d_version;
+}
 
 const QDateTime &
 GPlatesAppLogic::Session::time() const
@@ -169,7 +178,9 @@ GPlatesAppLogic::Session::unserialise_from_prefs_map(
 	// will use a default-constructed value if no such entry exists in the map, which should
 	// insulate us a little bit from outdated or incomplete Session entries.
 
+	// Added at version one, previous versions should default to zero.
 	int version = map.value("version").toInt();
+
 	QDateTime time = map.value("time").toDateTime();
 	QStringList loaded_files = map.value("loaded_files").toStringList();
 	LayersStateType layers_state;
