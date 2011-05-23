@@ -253,7 +253,7 @@ namespace GPlatesOpenGL
 			 * Nodes can not be created deeper than this.
 			 */
 			bool
-			is_node_as_maximum_depth(
+			is_node_at_maximum_depth(
 					const intersection_partition_type::node_type &node) const
 			{
 				return node.get_element().d_quad_tree_depth == MAXIMUM_DEPTH;

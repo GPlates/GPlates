@@ -37,12 +37,16 @@
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/ResolvedRaster.h"
 
+#include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
+
 #include "opengl/GLAgeGridCoverageSource.h"
 #include "opengl/GLAgeGridMaskSource.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLCubeSubdivision.h"
+#include "opengl/GLMultiResolutionCubeMesh.h"
 #include "opengl/GLMultiResolutionCubeRaster.h"
+#include "opengl/GLMultiResolutionFilledPolygons.h"
 #include "opengl/GLMultiResolutionRaster.h"
 #include "opengl/GLMultiResolutionStaticPolygonReconstructedRaster.h"
 #include "opengl/GLProxiedRasterSource.h"
@@ -54,6 +58,8 @@
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
+
+#include "view-operations/RenderedGeometry.h"
 
 
 namespace GPlatesAppLogic
@@ -89,6 +95,11 @@ namespace GPlatesGui
 
 		//! A convenience typedef for a shared pointer to a const @a PersistentOpenGLObjects.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const PersistentOpenGLObjects> non_null_ptr_to_const_type;
+
+		
+		//! Typedef for a spatial partition of filled polygons.
+		typedef GPlatesOpenGL::GLMultiResolutionFilledPolygons::filled_polygons_spatial_partition_type
+				filled_polygons_spatial_partition_type;
 
 
 		/**
@@ -182,6 +193,23 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &source_resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette);
+
+
+		/**
+		 * Renders filled polygons.
+		 *
+		 * These correspond to @a RenderedGeometry objects that have had their 'fill' option
+		 * turned on and can be polygons or polylines or multipoints - the latter two
+		 * geometry types are treated as an ordered sequence of points that join to form a polygon.
+		 *
+		 * A self-intersecting polygon is filled in those parts of the polygon that intersect the
+		 * polygon an odd numbers of times when a line is formed from the point (part) in question
+		 * to a point outside the exterior of the polygon. Same applies to polylines/multipoints.
+		 */
+		void
+		render_filled_polygons(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const filled_polygons_spatial_partition_type &filled_polygons);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -755,6 +783,38 @@ namespace GPlatesGui
 			 * non-list objects can still be shared).
 			 */
 			GLLayers gl_layers;
+
+			/**
+			 * Returns the multi-resolution filled polygons renderer.
+			 *
+			 * NOTE: This must be called when an OpenGL context is currently active.
+			 */
+			GPlatesOpenGL::GLMultiResolutionFilledPolygons::non_null_ptr_type
+			get_multi_resolution_filled_polygons() const;
+
+		private:
+			const NonListObjects &d_non_list_objects;
+
+			/**
+			 * Used to get a mesh for any cube quad tree node.
+			 *
+			 * NOTE: This can be shared by all layers since it contains no state specific
+			 * to anything a layer will draw with it.
+			 */
+			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type>
+					d_multi_resolution_cube_mesh;
+
+			/**
+			 * Used to render coloured filled polygons as raster masks (instead of polygon meshes).
+			 *
+			 * NOTE: This can be shared by all layers since it contains no state specific
+			 * to anything a layer will draw with it. The filled polygons specific state is
+			 * stored externally and maintained by the clients (eg, the filled polygon vertex arrays).
+			 *
+			 * NOTE: Must be defined after @a d_multi_resolution_cube_mesh since it's a dependency.
+			 */
+			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionFilledPolygons::non_null_ptr_type>
+					d_multi_resolution_filled_polygons;
 		};
 
 

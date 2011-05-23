@@ -136,11 +136,14 @@ namespace GPlatesUtils
 		 * If that limit will be exceeded then, to prevent that, the least-recently used object
 		 * will be recycled if it is not being referenced.
 		 * Otherwise the limit may have to be exceeded.
+		 *
+		 * NOTE: The default maximum number of objects is one which means the cache will grow
+		 * in size to accommodate the maximum cached object requests over time.
 		 */
 		static
 		shared_ptr_type
 		create(
-				std::size_t max_num_objects)
+				std::size_t max_num_objects = 1)
 		{
 			return shared_ptr_type(new ObjectCache(max_num_objects));
 		}
@@ -330,7 +333,7 @@ namespace GPlatesUtils
 					return boost::shared_ptr<ObjectType>();
 				}
 
-				return d_object_cache->return_cached_object_to_client(d_object_info_iter);
+				return d_object_cache->return_cached_object_to_client(*d_object_info_iter);
 			}
 
 
@@ -358,7 +361,7 @@ namespace GPlatesUtils
 
 				connect_to_cached_object();
 
-				return d_object_cache->return_cached_object_to_client(d_object_info_iter);
+				return d_object_cache->return_cached_object_to_client(*d_object_info_iter);
 			}
 
 
@@ -381,15 +384,11 @@ namespace GPlatesUtils
 						GPLATES_ASSERTION_SOURCE);
 
 				// Store the newly created object in the object cache.
-				d_object_info_iter = d_object_cache->add_cached_object(created_object);
-				// We should definitely have a cached object now.
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						d_object_info_iter,
-						GPLATES_ASSERTION_SOURCE);
+				d_object_info_iter = &d_object_cache->add_cached_object(created_object);
 
 				connect_to_cached_object();
 
-				return d_object_cache->return_cached_object_to_client(d_object_info_iter);
+				return d_object_cache->return_cached_object_to_client(*d_object_info_iter);
 			}
 
 
@@ -494,6 +493,48 @@ namespace GPlatesUtils
 					// Return to the object pool when no more shared_ptr's
 					ReturnVolatileObjectToPoolDeleter(
 							volatile_object_ptr, shared_from_this(), d_volatile_object_pool));
+		}
+
+
+		/**
+		 * Returns a direct reference to an unused object.
+		 *
+		 * This is useful if you just want to get an object but are not interested in reusing.
+		 * To reuse an object use @a allocate_volatile_object which keeps a reference to the
+		 * cached object.
+		 *
+		 * Returns boost::none if no unused objects are available in which case you'll need to
+		 * call the other overload of @a allocate_object that accepts a newly created object.
+		 */
+		boost::optional< boost::shared_ptr<ObjectType> >
+		allocate_object()
+		{
+			// Attempt to recycle an unused object.
+			typename object_seq_type::Node *object_info_iter = recycle_an_unused_object();
+			if (!object_info_iter)
+			{
+				return boost::none;
+			}
+
+			return return_cached_object_to_client(*object_info_iter);
+		}
+
+
+		/**
+		 * Adds the specified newly created object to the cache and returns a shared_ptr to the same
+		 * object that will release the object for reuse when all copies of the shared_ptr are destroyed.
+		 *
+		 * NOTE: You should call the other overload of @a allocate_object first to see if there's
+		 * any unused objects, otherwise the cache will continue to grow in size unnecessarily.
+		 */
+		boost::shared_ptr<ObjectType>
+		allocate_object(
+				std::auto_ptr<ObjectType> new_object)
+		{
+			// Store the newly created object in the object cache.
+			typename object_seq_type::Node &object_info_iter = add_cached_object(new_object);
+
+			return return_cached_object_to_client(object_info_iter);
 		}
 
 	private:
@@ -632,7 +673,7 @@ namespace GPlatesUtils
 		/**
 		 * Adds a newly created object to the cache.
 		 */
-		typename object_seq_type::Node *
+		typename object_seq_type::Node &
 		add_cached_object(
 				std::auto_ptr<ObjectType> new_object)
 		{
@@ -660,15 +701,15 @@ namespace GPlatesUtils
 			++d_num_objects_allocated;
 
 			// Return iterator to the object just added.
-			return cached_object_iter;
+			return *cached_object_iter;
 		}
 
 
 		boost::shared_ptr<ObjectType>
 		return_cached_object_to_client(
-				typename object_seq_type::Node *cached_object_iter)
+				typename object_seq_type::Node &cached_object_iter)
 		{
-			ObjectInfo &cached_object_info = cached_object_iter->element();
+			ObjectInfo &cached_object_info = cached_object_iter.element();
 
 			// If some clients out there already reference the cached object then
 			// just return another reference.
@@ -690,7 +731,7 @@ namespace GPlatesUtils
 			// Move the cached object list node to the end of the 'objects in use' list -
 			// this also removes it from the 'objects not in use' list.
 			// All lists are ordered least-recently to most-recently.
-			splice<ObjectInfo>(d_objects_in_use.end(), *cached_object_iter);
+			splice<ObjectInfo>(d_objects_in_use.end(), cached_object_iter);
 
 			// The list node remains valid even after the splice.
 			cached_object_info.is_object_in_use = true;

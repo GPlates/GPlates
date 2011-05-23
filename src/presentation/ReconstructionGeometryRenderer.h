@@ -77,7 +77,7 @@ namespace GPlatesPresentation
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT,
 					float reconstruction_point_size_hint_ =
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
-
+					bool fill_polygons_ = false,
 					// FIXME: Move this hard-coded value somewhere sensible...
 					float velocity_ratio_unit_vector_direction_to_globe_radius_ = 0.05f,
 
@@ -91,6 +91,7 @@ namespace GPlatesPresentation
 
 			float reconstruction_line_width_hint;
 			float reconstruction_point_size_hint;
+			bool fill_polygons;
 			float velocity_ratio_unit_vector_direction_to_globe_radius;
 
 			// Raster-specific parameters.
@@ -134,6 +135,10 @@ namespace GPlatesPresentation
 			void
 			visit_reconstruct_visual_layer_params(
 					const ReconstructVisualLayerParams &params);
+
+			void
+			visit_topology_boundary_visual_layer_params(
+					topology_boundary_visual_layer_params_type &params);
 
 			virtual
 			void

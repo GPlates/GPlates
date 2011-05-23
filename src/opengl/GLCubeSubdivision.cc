@@ -31,6 +31,21 @@
 #include "maths/PointOnSphere.h"
 
 
+GPlatesOpenGL::GLCubeSubdivision::GLCubeSubdivision(
+		std::size_t tile_texel_dimension,
+		GLdouble zNear,
+		GLdouble zFar) :
+	d_tile_texel_dimension(tile_texel_dimension),
+	d_near(zNear),
+	d_far(zFar)
+{
+	// Tile dimension should be a power-of-two.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			(tile_texel_dimension & (tile_texel_dimension - 1)) == 0,
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
 GPlatesOpenGL::GLCubeSubdivision::get_view_transform(
 		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face) const

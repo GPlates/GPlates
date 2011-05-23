@@ -142,11 +142,57 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Used to scale/translate the clip space [-1, 1] coordinates of a quad tree node
+		 * relative to its ancestor node.
+		 *
+		 * This is for situations when a tile is part of an ancestor tile and the ancestor tile
+		 * clip space range of [-1, 1] needs to be adjusted such that the descendant tile
+		 * now has a clip space range of [-1, 1].
+		 *
+		 * NOTE: This is the reverse of what @a QuadTreeUVTransform does with the addition
+		 * that here we work in the [-1, 1] range whereas u/v works in the [0, 1] range.
+		 */
+		class QuadTreeClipSpaceTransform
+		{
+		public:
+			//! Identity transformation.
+			QuadTreeClipSpaceTransform();
+
+			//! Scale/translate this quad tree child node relative to the identity transformation.
+			QuadTreeClipSpaceTransform(
+					unsigned int x_offset,
+					unsigned int y_offset);
+
+			//! Scale/translate this quad tree child node relative to its parent.
+			QuadTreeClipSpaceTransform(
+					const QuadTreeClipSpaceTransform &parent_clip_space_transform,
+					unsigned int x_offset,
+					unsigned int y_offset);
+
+			/**
+			 * Post-multiplies @a matrix with the appropriate scale and translation.
+			 */
+			void
+			transform(
+					GLMatrix &matrix) const;
+
+		private:
+			double d_scale;
+			double d_inverse_scale; // Avoids costly division.
+			double d_translate_x;
+			double d_translate_y;
+		};
+
+
+		/**
 		 * Used to scale/translate texture coordinates of a quad tree node relative
 		 * to its ancestor node.
 		 *
 		 * This is for situations when a tile is partially covered by an ancestor tile and hence
 		 * needs texture coordinate adjustments to locate the correct sub-part of the ancestor tile.
+		 *
+		 * NOTE: This is the reverse of what @a QuadTreeClipSpaceTransform does with the addition
+		 * that here we work in the [0, 1] range whereas clip space works in the [-1, 1] range.
 		 */
 		class QuadTreeUVTransform
 		{
@@ -173,8 +219,7 @@ namespace GPlatesOpenGL
 					GLMatrix &matrix) const;
 
 		private:
-			double d_scale_u;
-			double d_scale_v;
+			double d_scale;
 			double d_translate_u;
 			double d_translate_v;
 		};

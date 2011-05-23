@@ -386,7 +386,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 			GLArray::USAGE_STATIC,
 			d_vertex_buffer_resource_manager);
 
-	// Create a single OpenGL vertex array to contain the vertices of *all* polygon meshes.
+	// Create a single OpenGL vertex array to contain the vertex indices of *all* polygon meshes.
 	// Note that this vertex element array is never used to draw - it just contains the indices.
 	// Each polygon mesh drawable will creates its own vertex element array that shares the
 	// indices of this array.
@@ -645,7 +645,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 			.add_present_day_polygon_mesh(present_day_polygon_mesh_handle);
 
 	// Return if we've reached the maximum quad tree depth.
-	if (d_present_day_polygon_meshes_node_intersections.is_node_as_maximum_depth(intersections_quad_tree_node))
+	if (d_present_day_polygon_meshes_node_intersections.is_node_at_maximum_depth(intersections_quad_tree_node))
 	{
 		return;
 	}

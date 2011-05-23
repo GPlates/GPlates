@@ -124,6 +124,7 @@ namespace GPlatesViewOperations
 				const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
 				float point_size_hint = RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT,
 				float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT,
+				bool fill_polygon = false,
 				const boost::optional<GPlatesGui::Symbol> &symbol = boost::none);
 
 		/**
@@ -174,7 +175,8 @@ namespace GPlatesViewOperations
 		create_rendered_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
-				float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+				float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT,
+				bool filled = false);
 
 		/**
 		 * Creates a @a RenderedGeometry for a resolved raster.

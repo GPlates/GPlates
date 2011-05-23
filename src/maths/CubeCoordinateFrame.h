@@ -89,6 +89,24 @@ namespace GPlatesMaths
 
 
 		/**
+		 * An index into an array of cube corner points (eight points).
+		 */
+		typedef unsigned int cube_corner_index_type;
+
+		//! The number of corners in a cube.
+		const unsigned int NUM_CUBE_CORNERS = 8;
+
+
+		/**
+		 * An index into an array of cube edges (twelve edges).
+		 */
+		typedef unsigned int cube_edge_index_type;
+
+		//! The number of edges in a cube.
+		const unsigned int NUM_CUBE_EDGES = 12;
+
+
+		/**
 		 * Returns the cube face opposite the specified cube face.
 		 */
 		CubeFaceType
@@ -136,6 +154,84 @@ namespace GPlatesMaths
 				double &position_x_in_cube_face_coordinate_frame,
 				double &position_y_in_cube_face_coordinate_frame,
 				double &position_z_in_cube_face_coordinate_frame);
+
+
+		/**
+		 * Returns an index that can be used to index into any array of size eight
+		 * (representing the eight corner points of the cube).
+		 *
+		 * Boolean values for @a positive_x_axis and @a positive_y_axis value locate the
+		 * corner of the specified cube face and represent the local x/y coordinate frame
+		 * of the cube face.
+		 */
+		cube_corner_index_type
+		get_cube_corner_index(
+				CubeFaceType cube_face,
+				bool positive_x_axis,
+				bool positive_y_axis);
+
+		/**
+		 * Returns the corner point of the specified cube corner index.
+		 *
+		 * NOTE: The corner point is *not* on the sphere, it is on the actual cube centred
+		 * at the origin (like the sphere) and with a cube face length of two
+		 * (because it bounds the unit radius sphere).
+		 */
+		const Vector3D &
+		get_cube_corner(
+				cube_corner_index_type cube_corner_index);
+
+		/**
+		 * Returns the corner point, projected onto the sphere, of the specified cube corner index.
+		 */
+		const UnitVector3D &
+		get_projected_cube_corner(
+				cube_corner_index_type cube_corner_index);
+
+
+		/**
+		 * Returns an index that can be used to index into any array of size twelve
+		 * (representing the twelve edges of the cube).
+		 *
+		 * If @a x_axis is true then the edge is aligned with the local x-axis of the
+		 * specified cube face, otherwise it's aligned with the local y-axis.
+		 *
+		 * @a positive_orthogonal_axis identifies which of the two parallel edges, specified
+		 * by @a x_axis, should be used. For example if @a x_axis is true and
+		 * @a positive_orthogonal_axis is true then the edge aligned with the x-axis and that
+		 * has a positive local y value along the edge is chosen.
+		 *
+		 * @a reverse_edge_direction is set to true if the returned edge direction is in the
+		 * opposite direction to the local axis.
+		 */
+		cube_edge_index_type
+		get_cube_edge_index(
+				CubeFaceType cube_face,
+				bool x_axis,
+				bool positive_orthogonal_axis,
+				bool &reverse_edge_direction);
+
+		/**
+		 * Returns the edge direction of the specified cube edge index from
+		 * the edge start point to the edge end point.
+		 */
+		const UnitVector3D &
+		get_cube_edge_direction(
+				cube_edge_index_type cube_edge_index);
+
+		/**
+		 * Returns the start point of the edge of the specified cube edge index.
+		 */
+		cube_corner_index_type
+		get_cube_edge_start_point(
+				cube_edge_index_type cube_edge_index);
+
+		/**
+		 * Returns the end point of the edge of the specified cube edge index.
+		 */
+		cube_corner_index_type
+		get_cube_edge_end_point(
+				cube_edge_index_type cube_edge_index);
 
 
 		/**

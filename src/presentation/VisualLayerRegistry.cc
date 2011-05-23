@@ -31,6 +31,7 @@
 
 #include "RasterVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
+#include "TopologyBoundaryVisualLayerParams.h"
 
 #include "TopologyNetworkVisualLayerParams.h"
 #include "VelocityFieldCalculatorVisualLayerParams.h"
@@ -42,9 +43,12 @@
 
 #include "gui/HTMLColourNames.h"
 
+#include "qt-widgets/CoRegistrationOptionsWidget.h"
 #include "qt-widgets/RasterLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
+#include "qt-widgets/TopologyBoundaryResolverLayerOptionsWidget.h"
+
 #include "qt-widgets/TopologyNetworkResolverLayerOptionsWidget.h"
 #include "qt-widgets/VelocityFieldCalculatorLayerOptionsWidget.h"
 #include "qt-widgets/CoRegistrationOptionsWidget.h"
@@ -469,8 +473,8 @@ GPlatesPresentation::register_default_visual_layers(
 				reconstruct_graph,
 				layer_task_registry,
 				TOPOLOGY_BOUNDARY_RESOLVER),
-			&no_widget,
-			&default_visual_layer_params,
+			&GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::create,
+			&TopologyBoundaryVisualLayerParams::create,
 			true);
 
 	registry.register_visual_layer_type(

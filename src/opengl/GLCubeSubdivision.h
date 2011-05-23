@@ -72,6 +72,8 @@ namespace GPlatesOpenGL
 		 *
 		 * @a zNear and @a zFar specify the near and far distance (positive) of
 		 * the view frustums generated for each subdivision.
+		 *
+		 * @a throws PreconditionViolationError if @a tile_texel_dimension is not a power-of-two.
 		 */
 		static
 		non_null_ptr_type
@@ -228,11 +230,7 @@ namespace GPlatesOpenGL
 		GLCubeSubdivision(
 				std::size_t tile_texel_dimension,
 				GLdouble zNear,
-				GLdouble zFar) :
-			d_tile_texel_dimension(tile_texel_dimension),
-			d_near(zNear),
-			d_far(zFar)
-		{  }
+				GLdouble zFar);
 
 
 		static

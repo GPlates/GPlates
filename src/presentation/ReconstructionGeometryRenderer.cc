@@ -34,6 +34,7 @@
 
 #include "RasterVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
+#include "TopologyBoundaryVisualLayerParams.h"
 #include "ViewState.h"
 #include "VisualLayerParamsVisitor.h"
 
@@ -123,6 +124,7 @@ namespace
 						colour ? colour.get() : GPlatesGui::ColourProxy(reconstruction_geometry),
 						render_params.reconstruction_point_size_hint,
 						render_params.reconstruction_line_width_hint,
+						render_params.fill_polygons,
 						symbol);
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
@@ -138,6 +140,7 @@ namespace
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		float reconstruction_line_width_hint_,
 		float reconstruction_point_size_hint_,
+		bool fill_polygons_,
 		float velocity_ratio_unit_vector_direction_to_globe_radius_,
 		bool show_topological_network_delaunay_triangulation_,
 		bool show_topological_network_constrained_triangulation_,
@@ -147,7 +150,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		bool show_velocity_field_constrained_vectors_) :
 	reconstruction_line_width_hint(reconstruction_line_width_hint_),
 	reconstruction_point_size_hint(reconstruction_point_size_hint_),
-	velocity_ratio_unit_vector_direction_to_globe_radius( velocity_ratio_unit_vector_direction_to_globe_radius_),
+	fill_polygons(fill_polygons_),
+	velocity_ratio_unit_vector_direction_to_globe_radius(
+			velocity_ratio_unit_vector_direction_to_globe_radius_),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	vgp_draw_circular_error(true),
 	show_topological_network_mesh_triangulation( show_topological_network_mesh_triangulation_),
@@ -173,6 +178,15 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const ReconstructVisualLayerParams &params)
 {
 	d_render_params.vgp_draw_circular_error = params.get_vgp_draw_circular_error();
+	d_render_params.fill_polygons = params.get_fill_polygons();
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_topology_boundary_visual_layer_params(
+		topology_boundary_visual_layer_params_type &params)
+{
+	d_render_params.fill_polygons = params.get_fill_polygons();
 }
 
 
@@ -331,7 +345,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
-					rfg->reconstructed_geometry(), rfg, d_render_params, d_colour, d_reconstruction_adjustment, d_feature_type_symbol_map);
+					rfg->reconstructed_geometry(),
+					rfg,
+					d_render_params,
+					d_colour,
+					d_reconstruction_adjustment,
+					d_feature_type_symbol_map);
 
 	// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
 	render_reconstruction_geometry_on_sphere(rendered_geometry);

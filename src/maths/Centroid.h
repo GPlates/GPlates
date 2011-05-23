@@ -54,6 +54,17 @@ namespace GPlatesMaths
 				PointForwardIter begin,
 				PointForwardIter end);
 
+		/**
+		 * Returns the sum of the sequence of @a UnitVector3D objects.
+		 *
+		 * NOTE: Returned vector could be zero length if points average to zero.
+		 */
+		template <typename UnitVector3DForwardIter>
+		Vector3D
+		calculate_sum_vertices(
+				UnitVector3DForwardIter begin,
+				UnitVector3DForwardIter end);
+
 
 		/**
 		 * Calculates the centroid of the sequence of @a PointOnSphere objects.
@@ -67,6 +78,19 @@ namespace GPlatesMaths
 		calculate_points_centroid(
 				PointForwardIter begin,
 				PointForwardIter end);
+
+		/**
+		 * Calculates the centroid of the sequence of @a UnitVector3D objects.
+		 *
+		 * Returns false if centroid cannot be determined because points sum to the zero vector.
+		 *
+		 * @throws @a PreconditionViolationError if @a begin equals @a end.
+		 */
+		template <typename UnitVector3DForwardIter>
+		GPlatesMaths::UnitVector3D
+		calculate_vertices_centroid(
+				UnitVector3DForwardIter begin,
+				UnitVector3DForwardIter end);
 
 
 		/**
@@ -193,6 +217,33 @@ namespace GPlatesMaths
 			return summed_points_position;
 		}
 
+		template <typename UnitVector3DForwardIter>
+		Vector3D
+		calculate_sum_vertices(
+				UnitVector3DForwardIter points_begin,
+				UnitVector3DForwardIter points_end)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					points_begin != points_end,
+					GPLATES_ASSERTION_SOURCE);
+
+			// Iterate through the points and calculate the sum of vertex positions.
+			GPlatesMaths::Vector3D summed_points_position(0,0,0);
+
+			int num_vertices = 0;
+			for (UnitVector3DForwardIter points_iter = points_begin;
+				points_iter != points_end;
+				++points_iter, ++num_vertices)
+			{
+				const GPlatesMaths::UnitVector3D &point = *points_iter;
+
+				const GPlatesMaths::Vector3D vertex(point);
+				summed_points_position = summed_points_position + vertex;
+			}
+
+			return summed_points_position;
+		}
+
 
 		template <typename PointForwardIter>
 		GPlatesMaths::UnitVector3D
@@ -222,6 +273,39 @@ namespace GPlatesMaths
 				// as small circle centre) becomes larger than it would normally be resulting
 				// in less efficient intersection tests.
 				return points_begin->position_vector();
+			}
+
+			return summed_points_position.get_normalisation();
+		}
+
+		template <typename UnitVector3DForwardIter>
+		GPlatesMaths::UnitVector3D
+		calculate_vertices_centroid(
+				UnitVector3DForwardIter points_begin,
+				UnitVector3DForwardIter points_end)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					points_begin != points_end,
+					GPLATES_ASSERTION_SOURCE);
+
+			const Vector3D summed_points_position = calculate_sum_points(points_begin, points_end);
+
+			// If the magnitude of the summed vertex position is zero then all the points averaged
+			// to zero and hence we cannot get a centroid point.
+			// This most likely happens when the vertices roughly form a great circle arc.
+			if (summed_points_position.magSqrd() <= 0.0)
+			{
+				// Just return the first point - this is obviously not very good but it
+				// alleviates the caller from having to check an error code or catch an exception.
+				// Also it's extremely unlikely to happen.
+				// And even when 'summed_points_position.magSqrd()' is *very* close to zero
+				// but passes the test then the returned centroid is essentially random.
+				// TODO: Implement a more robust alternative for those clients that require
+				// an accurate centroid all the time - for most uses in GPlates the worst
+				// that happens is a small circle bounding some geometry (with centroid used
+				// as small circle centre) becomes larger than it would normally be resulting
+				// in less efficient intersection tests.
+				return *points_begin;
 			}
 
 			return summed_points_position.get_normalisation();

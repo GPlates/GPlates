@@ -51,6 +51,12 @@ namespace GPlatesMaths
 			 * These directions are the standard directions used by 3D graphics APIs for cube map
 			 * textures so we'll adopt the same convention.
 			 *
+			 * NOTE: I must've gotten these from Direct3D which uses a left-handed coordinate
+			 * system so that means we're currently using a left-handed coordinate system.
+			 *
+			 * FIXME: This will probably cause confusion in some areas so should change this to a
+			 * right-handed coordinate system.
+			 *
 			 * NOTE: This should be kept in sync with @a CUBE_FACE_COORDINATE_TRANSFORMS.
 			 */
 			const UnitVector3D CUBE_FACE_COORDINATES_FRAMES[NUM_FACES][NUM_AXES] =
@@ -83,12 +89,154 @@ namespace GPlatesMaths
 			 */
 			const CoordinateTransform CUBE_FACE_COORDINATE_TRANSFORMS[NUM_FACES][NUM_AXES] =
 			{
-				{ { Z_AXIS, -1 }, { Y_AXIS, -1 }, { X_AXIS,  1 } },
-				{ { Z_AXIS,  1 }, { Y_AXIS, -1 }, { X_AXIS, -1 } },
-				{ { X_AXIS,  1 }, { Z_AXIS,  1 }, { Y_AXIS,  1 } },
-				{ { X_AXIS,  1 }, { Z_AXIS, -1 }, { Y_AXIS, -1 } },
-				{ { X_AXIS,  1 }, { Y_AXIS, -1 }, { Z_AXIS,  1 } },
-				{ { X_AXIS, -1 }, { Y_AXIS, -1 }, { Z_AXIS, -1 } }
+				{ { Z_AXIS, -1 }, { Y_AXIS, -1 }, { X_AXIS,  1 } }, // POSITIVE_X
+				{ { Z_AXIS,  1 }, { Y_AXIS, -1 }, { X_AXIS, -1 } }, // NEGATIVE_X
+				{ { X_AXIS,  1 }, { Z_AXIS,  1 }, { Y_AXIS,  1 } }, // POSITIVE_Y
+				{ { X_AXIS,  1 }, { Z_AXIS, -1 }, { Y_AXIS, -1 } }, // NEGATIVE_Y
+				{ { X_AXIS,  1 }, { Y_AXIS, -1 }, { Z_AXIS,  1 } }, // POSITIVE_Z
+				{ { X_AXIS, -1 }, { Y_AXIS, -1 }, { Z_AXIS, -1 } }  // NEGATIVE_Z
+			};
+
+
+			/**
+			 * The indices of corner points for each face of the cube.
+			 *
+			 * NOTE: The array is indexed as [cube_face][positive_local_y][positive_local_x].
+			 *
+			 * NOTE: This should be kept in sync with @a CUBE_FACE_COORDINATE_TRANSFORMS.
+			 */
+			const cube_corner_index_type CUBE_CORNER_INDICES[NUM_FACES][2][2] =
+			{
+				{ { 7, 3 }, { 5, 1 } }, // POSITIVE_X
+				{ { 2, 6 }, { 0, 4 } }, // NEGATIVE_X
+				{ { 2, 3 }, { 6, 7 } }, // POSITIVE_Y
+				{ { 4, 5 }, { 0, 1 } }, // NEGATIVE_Y
+				{ { 6, 7 }, { 4, 5 } }, // POSITIVE_Z
+				{ { 3, 2 }, { 1, 0 } }  // NEGATIVE_Z
+			};
+
+			/**
+			 * The corner points of the cube as an indexable array.
+			 *
+			 * NOTE: This should be kept in sync with @a CUBE_FACE_COORDINATE_TRANSFORMS.
+			 */
+			const Vector3D CUBE_CORNERS[NUM_CUBE_CORNERS] =
+			{
+				Vector3D(-1,-1,-1),
+				Vector3D(+1,-1,-1),
+				Vector3D(-1,+1,-1),
+				Vector3D(+1,+1,-1),
+				Vector3D(-1,-1,+1),
+				Vector3D(+1,-1,+1),
+				Vector3D(-1,+1,+1),
+				Vector3D(+1,+1,+1)
+			};
+
+			/**
+			 * The projected corner points of the cube, projected onto the sphere, as an indexable array.
+			 *
+			 * NOTE: This should be kept in sync with @a CUBE_CORNERS.
+			 */
+			const UnitVector3D PROJECTED_CUBE_CORNERS[NUM_CUBE_CORNERS] =
+			{
+				Vector3D(-1,-1,-1).get_normalisation(),
+				Vector3D(+1,-1,-1).get_normalisation(),
+				Vector3D(-1,+1,-1).get_normalisation(),
+				Vector3D(+1,+1,-1).get_normalisation(),
+				Vector3D(-1,-1,+1).get_normalisation(),
+				Vector3D(+1,-1,+1).get_normalisation(),
+				Vector3D(-1,+1,+1).get_normalisation(),
+				Vector3D(+1,+1,+1).get_normalisation()
+			};
+
+
+			/**
+			 * Used to look up a component of the untransformed vector (in global coord frame).
+			 */
+			struct CubeEdgeInfo
+			{
+				cube_edge_index_type cube_edge_index;
+				bool is_local_axis_direction_opposite_edge_direction;
+			};
+
+			/**
+			 * The indices of cube edges for each face of the cube.
+			 *
+			 * NOTE: The array is indexed as [cube_face][is_local_x_axis][positive_orthogonal_axis].
+			 *
+			 * NOTE: This should be kept in sync with @a CUBE_FACE_COORDINATE_TRANSFORMS.
+			 */
+			const CubeEdgeInfo CUBE_EDGE_INDICES[NUM_FACES][2][2] =
+			{
+				{ { { 10,  true }, {  2,  true } }, { {  7,  true }, {  5,  true } } }, // POSITIVE_X
+				{ { {  1,  true }, {  9,  true } }, { {  6, false }, {  4, false } } }, // NEGATIVE_X
+				{ { {  6, false }, {  7, false } }, { {  3, false }, { 11, false } } }, // POSITIVE_Y
+				{ { {  4,  true }, {  5,  true } }, { {  8, false }, {  0, false } } }, // NEGATIVE_Y
+				{ { {  9,  true }, { 10,  true } }, { { 11, false }, {  8, false } } }, // POSITIVE_Z
+				{ { {  2,  true }, {  1,  true } }, { {  3,  true }, {  0,  true } } }  // NEGATIVE_Z
+			};
+
+			/**
+			 * The edge directions of the edges of the cube as an indexable array.
+			 *
+			 * NOTE: This should be kept in sync with @a CUBE_CORNERS.
+			 */
+			const UnitVector3D CUBE_EDGE_DIRECTIONS[NUM_CUBE_EDGES] =
+			{
+				UnitVector3D(1, 0, 0), // Edge  0: Corner 0 -> 1
+				UnitVector3D(0, 1, 0), // Edge  1: Corner 0 -> 2
+				UnitVector3D(0, 1, 0), // Edge  2: Corner 1 -> 3
+				UnitVector3D(1, 0, 0), // Edge  3: Corner 2 -> 3
+				UnitVector3D(0, 0, 1), // Edge  4: Corner 0 -> 4
+				UnitVector3D(0, 0, 1), // Edge  5: Corner 1 -> 5
+				UnitVector3D(0, 0, 1), // Edge  6: Corner 2 -> 6
+				UnitVector3D(0, 0, 1), // Edge  7: Corner 3 -> 7
+				UnitVector3D(1, 0, 0), // Edge  8: Corner 4 -> 5
+				UnitVector3D(0, 1, 0), // Edge  9: Corner 4 -> 6
+				UnitVector3D(0, 1, 0), // Edge 10: Corner 5 -> 7
+				UnitVector3D(1, 0, 0)  // Edge 11: Corner 6 -> 7
+			};
+
+			/**
+			 * The edge start points as indices into the cube corners.
+			 *
+			 * NOTE: This should be kept in sync with @a CUBE_CORNERS.
+			 */
+			const cube_edge_index_type CUBE_EDGE_START_POINTS[NUM_CUBE_EDGES] =
+			{
+				0, // Edge  0: Corner 0 -> 1
+				0, // Edge  1: Corner 0 -> 2
+				1, // Edge  2: Corner 1 -> 3
+				2, // Edge  3: Corner 2 -> 3
+				0, // Edge  4: Corner 0 -> 4
+				1, // Edge  5: Corner 1 -> 5
+				2, // Edge  6: Corner 2 -> 6
+				3, // Edge  7: Corner 3 -> 7
+				4, // Edge  8: Corner 4 -> 5
+				4, // Edge  9: Corner 4 -> 6
+				5, // Edge 10: Corner 5 -> 7
+				6  // Edge 11: Corner 6 -> 7
+			};
+
+			/**
+			 * The edge end points as indices into the cube corners.
+			 *
+			 * NOTE: This should be kept in sync with @a CUBE_CORNERS.
+			 */
+			const cube_edge_index_type CUBE_EDGE_END_POINTS[NUM_CUBE_EDGES] =
+			{
+				1, // Edge  0: Corner 0 -> 1
+				2, // Edge  1: Corner 0 -> 2
+				3, // Edge  2: Corner 1 -> 3
+				3, // Edge  3: Corner 2 -> 3
+				4, // Edge  4: Corner 0 -> 4
+				5, // Edge  5: Corner 1 -> 5
+				6, // Edge  6: Corner 2 -> 6
+				7, // Edge  7: Corner 3 -> 7
+				5, // Edge  8: Corner 4 -> 5
+				6, // Edge  9: Corner 4 -> 6
+				7, // Edge 10: Corner 5 -> 7
+				7  // Edge 11: Corner 6 -> 7
 			};
 
 
@@ -340,6 +488,70 @@ GPlatesMaths::CubeCoordinateFrame::get_cube_face_and_transformed_position(
 	}
 
 	return cube_face;
+}
+
+
+GPlatesMaths::CubeCoordinateFrame::cube_corner_index_type
+GPlatesMaths::CubeCoordinateFrame::get_cube_corner_index(
+		CubeFaceType cube_face,
+		bool positive_x_axis,
+		bool positive_y_axis)
+{
+	return CUBE_CORNER_INDICES[cube_face][positive_y_axis][positive_x_axis];
+}
+
+
+const GPlatesMaths::Vector3D &
+GPlatesMaths::CubeCoordinateFrame::get_cube_corner(
+		cube_corner_index_type cube_corner_index)
+{
+	return CUBE_CORNERS[cube_corner_index];
+}
+
+
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::CubeCoordinateFrame::get_projected_cube_corner(
+		cube_corner_index_type cube_corner_index)
+{
+	return PROJECTED_CUBE_CORNERS[cube_corner_index];
+}
+
+
+GPlatesMaths::CubeCoordinateFrame::cube_edge_index_type
+GPlatesMaths::CubeCoordinateFrame::get_cube_edge_index(
+		CubeFaceType cube_face,
+		bool x_axis,
+		bool positive_orthogonal_axis,
+		bool &reverse_edge_direction)
+{
+	const CubeEdgeInfo& cube_edge_info = CUBE_EDGE_INDICES[cube_face][x_axis][positive_orthogonal_axis];
+
+	reverse_edge_direction = cube_edge_info.is_local_axis_direction_opposite_edge_direction;
+	return cube_edge_info.cube_edge_index;
+}
+
+
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::CubeCoordinateFrame::get_cube_edge_direction(
+		cube_edge_index_type cube_edge_index)
+{
+	return CUBE_EDGE_DIRECTIONS[cube_edge_index];
+}
+
+
+GPlatesMaths::CubeCoordinateFrame::cube_corner_index_type
+GPlatesMaths::CubeCoordinateFrame::get_cube_edge_start_point(
+		cube_edge_index_type cube_edge_index)
+{
+	return CUBE_EDGE_START_POINTS[cube_edge_index];
+}
+
+
+GPlatesMaths::CubeCoordinateFrame::cube_corner_index_type
+GPlatesMaths::CubeCoordinateFrame::get_cube_edge_end_point(
+		cube_edge_index_type cube_edge_index)
+{
+	return CUBE_EDGE_END_POINTS[cube_edge_index];
 }
 
 

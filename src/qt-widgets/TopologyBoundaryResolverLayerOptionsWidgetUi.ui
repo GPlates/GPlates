@@ -1,25 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ReconstructLayerOptionsWidget</class>
- <widget class="QWidget" name="ReconstructLayerOptionsWidget">
+ <class>TopologyBoundaryResolverLayerOptionsWidget</class>
+ <widget class="QWidget" name="TopologyBoundaryResolverLayerOptionsWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>262</width>
-    <height>152</height>
+    <height>150</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="spacing">
-    <number>4</number>
-   </property>
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <item>
-    <widget class="QWidget" name="set_vgp_visibility_placeholder_widget" native="true"/>
-   </item>
    <item>
     <widget class="QCheckBox" name="fill_polygons">
      <property name="text">

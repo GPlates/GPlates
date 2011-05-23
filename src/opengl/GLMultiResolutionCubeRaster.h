@@ -158,7 +158,7 @@ namespace GPlatesOpenGL
 				d_is_leaf_node = false;
 			}
 
-			//! Make a friend so can construct and access data.
+			// Make a friend so can construct and access data.
 			friend class GLMultiResolutionCubeRaster;
 		};
 
@@ -169,13 +169,6 @@ namespace GPlatesOpenGL
 		 * This is what is actually traversed by the user once the cube quad tree has been created.
 		 */
 		typedef GPlatesMaths::CubeQuadTree<QuadTreeNode> cube_quad_tree_type;
-
-		/**
-		 * Typedef for a node of the cube quad tree.
-		 *
-		 * This is the wrapper node around @a QuadTreeNode used for quad tree traversal.
-		 */
-		typedef cube_quad_tree_type::node_type cube_quad_tree_node_type;
 
 
 		/**
@@ -315,7 +308,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a quad tree node if it is covered by the source raster.
 		 */
-		boost::optional<cube_quad_tree_node_type::ptr_type>
+		boost::optional<cube_quad_tree_type::node_type::ptr_type>
 		create_quad_tree_node(
 				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
 				GLTransformState &transform_state,

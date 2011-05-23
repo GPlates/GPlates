@@ -194,6 +194,15 @@ GPlatesGui::PersistentOpenGLObjects::render_raster(
 
 
 void
+GPlatesGui::PersistentOpenGLObjects::render_filled_polygons(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const filled_polygons_spatial_partition_type &filled_polygons)
+{
+	d_list_objects->get_multi_resolution_filled_polygons()->render(renderer, filled_polygons);
+}
+
+
+void
 GPlatesGui::PersistentOpenGLObjects::handle_layer_about_to_be_removed(
 		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		GPlatesAppLogic::Layer layer)
@@ -1295,8 +1304,36 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::ListObjects(
 			non_list_objects.cube_subdivision_loose_bounds_cache,
 			non_list_objects.cube_subdivision_bounding_polygons_cache,
 			opengl_shared_state->get_texture_resource_manager(),
-			opengl_shared_state->get_vertex_buffer_resource_manager())
+			opengl_shared_state->get_vertex_buffer_resource_manager()),
+	d_non_list_objects(non_list_objects)
 {
+}
+
+
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::non_null_ptr_type
+GPlatesGui::PersistentOpenGLObjects::ListObjects::get_multi_resolution_filled_polygons() const
+{
+	if (!d_multi_resolution_cube_mesh)
+	{
+		d_multi_resolution_cube_mesh =
+				GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type(
+						GPlatesOpenGL::GLMultiResolutionCubeMesh::create(
+								opengl_shared_state->get_texture_resource_manager(),
+								opengl_shared_state->get_vertex_buffer_resource_manager()));
+	}
+
+	if (!d_multi_resolution_filled_polygons)
+	{
+		d_multi_resolution_filled_polygons =
+				GPlatesOpenGL::GLMultiResolutionFilledPolygons::create(
+						d_multi_resolution_cube_mesh.get(),
+						d_non_list_objects.cube_subdivision_projection_transforms_cache,
+						d_non_list_objects.cube_subdivision_bounds_cache,
+						opengl_shared_state->get_texture_resource_manager(),
+						opengl_shared_state->get_vertex_buffer_resource_manager());
+	}
+
+	return d_multi_resolution_filled_polygons.get();
 }
 
 

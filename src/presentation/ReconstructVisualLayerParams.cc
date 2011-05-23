@@ -29,7 +29,8 @@
 GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams(
 		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
 	VisualLayerParams(layer_task_params),
-	d_vgp_draw_circular_error(true)
+	d_vgp_draw_circular_error(true),
+	d_fill_polygons(false)
 {
 }
 
@@ -49,3 +50,18 @@ GPlatesPresentation::ReconstructVisualLayerParams::set_vgp_draw_circular_error(
 	emit_modified();
 }
 
+
+void
+GPlatesPresentation::ReconstructVisualLayerParams::set_fill_polygons(
+		bool fill)
+{
+	d_fill_polygons = fill;
+	emit_modified();
+}
+
+
+bool
+GPlatesPresentation::ReconstructVisualLayerParams::get_fill_polygons() const
+{
+	return d_fill_polygons;
+}

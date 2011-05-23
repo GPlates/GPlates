@@ -46,8 +46,12 @@ set(srcs
     GLMaskBuffersState.h
     GLMatrix.cc
     GLMatrix.h
+    GLMultiResolutionCubeMesh.cc
+    GLMultiResolutionCubeMesh.h
     GLMultiResolutionCubeRaster.cc
     GLMultiResolutionCubeRaster.h
+    GLMultiResolutionFilledPolygons.cc
+    GLMultiResolutionFilledPolygons.h
     GLMultiResolutionRaster.cc
     GLMultiResolutionRaster.h
     GLMultiResolutionRasterNode.h

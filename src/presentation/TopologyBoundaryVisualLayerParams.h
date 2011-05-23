@@ -22,78 +22,72 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#ifndef GPLATES_PRESENTATION_RECONSTRUCTVISUALLAYERPARAMS_H
-#define GPLATES_PRESENTATION_RECONSTRUCTVISUALLAYERPARAMS_H
+
+#ifndef GPLATES_PRESENTATION_TOPOLOGYBOUNDARYVISUALLAYERPARAMS_H
+#define GPLATES_PRESENTATION_TOPOLOGYBOUNDARYVISUALLAYERPARAMS_H
 
 #include "VisualLayerParams.h"
 
 
 namespace GPlatesPresentation
 {
-	class ReconstructVisualLayerParams :
+	class TopologyBoundaryVisualLayerParams :
 			public VisualLayerParams
 	{
 	public:
-
-		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructVisualLayerParams> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructVisualLayerParams> non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<TopologyBoundaryVisualLayerParams> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const TopologyBoundaryVisualLayerParams> non_null_ptr_to_const_type;
 
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params)
+			GPlatesAppLogic::LayerTaskParams &layer_task_params)
 		{
-			return new ReconstructVisualLayerParams(layer_task_params);
+			return new TopologyBoundaryVisualLayerParams( layer_task_params );
 		}
-
-		bool
-		get_vgp_draw_circular_error() const;
-
-		void
-		set_vgp_draw_circular_error(
-				bool draw);
 
 		void
 		set_fill_polygons(
-				bool fill);
+				bool fill)
+		{
+			d_fill_polygons = fill;
+			emit_modified();
+		}
 
 		bool
-		get_fill_polygons() const;
+		get_fill_polygons() const
+		{
+			return d_fill_polygons;
+		}
 
-		/**
-		 * Override of virtual method in VirtualLayerParams base.
-		 */
 		virtual
 		void
 		accept_visitor(
 				ConstVisualLayerParamsVisitor &visitor) const
 		{
-			visitor.visit_reconstruct_visual_layer_params(*this);
+			visitor.visit_topology_boundary_visual_layer_params(*this);
 		}
 
-		/**
-		 * Override of virtual method in VirtualLayerParams base.
-		 */
 		virtual
 		void
 		accept_visitor(
 				VisualLayerParamsVisitor &visitor)
 		{
-			visitor.visit_reconstruct_visual_layer_params(*this);
+			visitor.visit_topology_boundary_visual_layer_params(*this);
 		}
 
 	protected:
-
 		explicit
-		ReconstructVisualLayerParams(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+		TopologyBoundaryVisualLayerParams( 
+				GPlatesAppLogic::LayerTaskParams &layer_task_params) :
+			VisualLayerParams(layer_task_params),
+			d_fill_polygons(false)
+		{  }
 
 	private:
 
-		bool d_vgp_draw_circular_error;
 		bool d_fill_polygons;
 	};
 }
 
-#endif // GPLATES_PRESENTATION_RASTERVISUALLAYERPARAMS_H
+#endif // GPLATES_PRESENTATION_TOPOLOGYBOUNDARYVISUALLAYERPARAMS_H

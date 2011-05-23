@@ -36,6 +36,8 @@ namespace GPlatesPresentation
 	class VelocityFieldCalculatorVisualLayerParams;
 	class RasterVisualLayerParams;
 	class ReconstructVisualLayerParams;
+	class TopologyBoundaryVisualLayerParams;
+
 	/**
 	 * This class is a base class for visitors that visit VisualLayerParams.
 	 * For convenience, typedefs are provided below to cover the const and non-const cases.
@@ -50,6 +52,7 @@ namespace GPlatesPresentation
 			topology_network_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<RasterVisualLayerParams, Const>::type raster_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ReconstructVisualLayerParams, Const>::type reconstruct_visual_layer_params_type;
+		typedef typename GPlatesUtils::SetConst<TopologyBoundaryVisualLayerParams, Const>::type topology_boundary_visual_layer_params_type;
 
 
 		typedef typename GPlatesUtils::SetConst<VelocityFieldCalculatorVisualLayerParams, Const>::type 
@@ -69,6 +72,13 @@ namespace GPlatesPresentation
 		void
 		visit_reconstruct_visual_layer_params(
 				reconstruct_visual_layer_params_type &params)
+		{  }
+
+
+		virtual
+		void
+		visit_topology_boundary_visual_layer_params(
+				topology_boundary_visual_layer_params_type &params)
 		{  }
 
 		virtual

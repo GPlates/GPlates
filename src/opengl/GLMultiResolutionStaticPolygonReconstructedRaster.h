@@ -110,14 +110,6 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Renders the reconstructed raster using the current transform state of @a renderer.
-		 *
-		 * The returned cached view is simply to prevent any internally cached textures, for the
-		 * current view, from being released once the render queue has been drawn.
-		 * It's ok to ignore it - the scene will still get rendered properly - however it's useful
-		 * when 'this' reconstructed raster is rendered in multiple camera views - if the returned
-		 * cached view is not stored until the next call on 'this' reconstructed raster (in this
-		 * camera) then another camera view might reuse some of the textures for itself which means
-		 * the next rendering of this view might have to regenerate them.
 		 */
 		void
 		render(
@@ -232,7 +224,7 @@ namespace GPlatesOpenGL
 		 * Matrix to convert texture coordinates from range [0,1] to range [0.25, 0.75] to
 		 * map to the interior 2x2 texel region of the 4x4 clip texture.
 		 */
-		GLMatrix d_xy_clip_texture_transform;
+		const GLMatrix &d_xy_clip_texture_transform;
 
 		// Used to draw a textured full-screen quad into render texture.
 		GLVertexArrayDrawable::non_null_ptr_type d_full_screen_quad_drawable;

@@ -3,7 +3,7 @@
 /**
  * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
  * Copyright (C) 2011 The University of Sydney, Australia
  *
@@ -22,11 +22,11 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#ifndef GPLATES_QTWIDGETS_RECONSTRUCTLAYEROPTIONSWIDGET_H
-#define GPLATES_QTWIDGETS_RECONSTRUCTLAYEROPTIONSWIDGET_H
 
-#include "ReconstructLayerOptionsWidgetUi.h"
+#ifndef GPLATES_QT_WIDGETS_TOPOLOGYBOUNDARYRESOLVERLAYEROPTIONSWIDGET_H
+#define GPLATES_QT_WIDGETS_TOPOLOGYBOUNDARYRESOLVERLAYEROPTIONSWIDGET_H
+
+#include "TopologyBoundaryResolverLayerOptionsWidgetUi.h"
 
 #include "LayerOptionsWidget.h"
 
@@ -44,16 +44,15 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declaration.
-	class SetVGPVisibilityDialog;
 	class ViewportWindow;
 
 	/**
-	 * ReconstructLayerOptionsWidget is used to show additional options for
-	 * reconstructed geometry layers in the visual layers widget.
+	 * TopologyBoundaryResolverLayerOptionsWidget is used to show additional options for
+	 * topology boundary layers in the visual layers widget.
 	 */
-	class ReconstructLayerOptionsWidget :
+	class TopologyBoundaryResolverLayerOptionsWidget :
 			public LayerOptionsWidget,
-			protected Ui_ReconstructLayerOptionsWidget
+			protected Ui_TopologyBoundaryResolverLayerOptionsWidget
 	{
 		Q_OBJECT
 
@@ -79,23 +78,19 @@ namespace GPlatesQtWidgets
 	private slots:
 
 		void
-		open_vgp_visibility_dialog();
-
-		void
 		handle_fill_polygons_clicked();
 
 	private:
 
-		explicit
-		ReconstructLayerOptionsWidget(
+		TopologyBoundaryResolverLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
 				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
+		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
-		SetVGPVisibilityDialog *d_set_vgp_visibility_dialog;
 
 		/**
 		 * The visual layer for which we are currently displaying options.
@@ -104,4 +99,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_RECONSTRUCTLAYEROPTIONSWIDGET_H
+#endif // GPLATES_QT_WIDGETS_TOPOLOGYBOUNDARYRESOLVERLAYEROPTIONSWIDGET_H

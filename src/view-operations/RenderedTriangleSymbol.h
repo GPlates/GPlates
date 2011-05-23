@@ -95,11 +95,11 @@ namespace GPlatesViewOperations
 			return d_line_width_hint;
 		}
 
-                bool
-                get_is_filled() const
-                {
-                    return d_is_filled;
-                }
+        bool
+        get_is_filled() const
+        {
+            return d_is_filled;
+        }
 
 		unsigned int
 		get_size() const

@@ -82,68 +82,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 	d_cube_subdivision_bounds_cache(cube_subdivision_bounds_cache),
 	d_texture_resource_manager(texture_resource_manager),
 	d_vertex_buffer_resource_manager(vertex_buffer_resource_manager),
+	d_xy_clip_texture_transform(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform()),
 	d_full_screen_quad_drawable(GLUtils::create_full_screen_2D_textured_quad())
 {
 	PROFILE_FUNC();
-
-	// Initialise clip texture transform to convert the clip-space range [-1, 1] to
-	// range [0.25, 0.75] to map to the interior 2x2 texel region of the 4x4 clip texture.
-	// Note that the scale is slightly less than 0.25 - this is to avoid seams/gaps between
-	// adjacent tiles - this can occur if a screen pixel centre (in render-target) falls right on
-	// the tile boundary - in this case slight numerical differences can mean the pixel is just
-	// outside the clip zone of both adjacent tiles and hence does not get drawn - this usually
-	// only happens when the view is aligned perfectly orthogonally to the tile boundary and this
-	// can be the case when GPlates first starts - once the user rotates the view with the mouse
-	// it generally isn't noticeable anymore. So the solution is to make the clip regions of
-	// adjacent tiles overlap very slightly - here the overlap is 1/20,000th of a texel assuming
-	// a 256x256 texel tile so the distortion should be very negligible and undetectable.
-	const double clip_texture_scale = 0.2499999;
-	d_xy_clip_texture_transform.gl_translate(0.5, 0.5, 0.0).gl_scale(clip_texture_scale, clip_texture_scale, 1.0);
-}
-
-
-void
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_xy_clip_texture()
-{
-	d_xy_clip_texture = GLTexture::create(d_texture_resource_manager);
-
-	// Bind the texture so its the current texture.
-	// Here we actually make a direct OpenGL call to bind the texture to the currently
-	// active texture unit. It doesn't matter what the current texture unit is because
-	// the only reason we're binding the texture object is so we can set its state =
-	// so that subsequent binds of this texture object, when we render the scene graph,
-	// will set that state to OpenGL.
-	d_xy_clip_texture->gl_bind_texture(GL_TEXTURE_2D);
-
-	//
-	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
-	// We are relying on the hard transition from white to black to clip for us.
-	//
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-	//
-	// The clip texture is a 4x4 image where the centre 2x2 texels are 1.0
-	// and the boundary texels are 0.0.
-	// We will use the alpha channel for alpha-testing (to discard clipped regions).
-	//
-	const GPlatesGui::rgba8_t mask_zero(0, 0, 0, 0);
-	const GPlatesGui::rgba8_t mask_one(255, 255, 255, 255);
-	const GPlatesGui::rgba8_t mask_image[16] =
-	{
-		mask_zero, mask_zero, mask_zero, mask_zero,
-		mask_zero, mask_one,  mask_one,  mask_zero,
-		mask_zero, mask_one,  mask_one,  mask_zero,
-		mask_zero, mask_zero, mask_zero, mask_zero
-	};
-
-	// Create the texture and load the data into it.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -247,7 +189,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	// OpenGL context here - because we're rendering.
 	if (!d_xy_clip_texture)
 	{
-		create_xy_clip_texture();
+		d_xy_clip_texture = GLTextureUtils::create_xy_clip_texture(d_texture_resource_manager);
 	}
 	if (!d_z_clip_texture)
 	{

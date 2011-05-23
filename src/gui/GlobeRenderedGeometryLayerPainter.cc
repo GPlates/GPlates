@@ -47,6 +47,7 @@
 #include "opengl/GLFragmentTestStates.h"
 #include "opengl/GLIntersect.h"
 #include "opengl/GLMaskBuffersState.h"
+#include "opengl/GLMultiResolutionFilledPolygons.h"
 #include "opengl/GLPointLinePolygonState.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLText2DDrawable.h"
@@ -110,7 +111,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Used to add line strips to the stream.
-	GPlatesOpenGL::GLStreamLineStrips<vertex_type> stream_line_strips(*line_drawables.stream);
+	GPlatesOpenGL::GLStreamLineStrips<coloured_vertex_type> stream_line_strips(*line_drawables.stream);
 
 	stream_line_strips.begin_line_strip();
 
@@ -140,7 +141,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 				const GPlatesMaths::UnitVector3D &start = gca.start_point().position_vector();
 
 				// Vertex representing the start point's position and colour.
-				const vertex_type start_vertex(start, rgba8_color);
+				const coloured_vertex_type start_vertex(start, rgba8_color);
 
 				stream_line_strips.add_vertex(start_vertex);
 			}
@@ -149,7 +150,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 			const GPlatesMaths::UnitVector3D &end = gca.end_point().position_vector();
 
 			// Vertex representing the end point's position and colour.
-			const vertex_type end_vertex(end, rgba8_color);
+			const coloured_vertex_type end_vertex(end, rgba8_color);
 
 			stream_line_strips.add_vertex(end_vertex);
 		}
@@ -220,6 +221,15 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 	// primitives that get batched up into vertex streams for efficient rendering.
 	visit_rendered_geometries(renderer);
 
+	//
+	// If any rendered polygons (or polylines/multipoints) are 'filled' then render them first.
+	// This way any vector geometry in this layer gets rendered on top and hence is visible.
+	//
+
+	renderer.push_state_set(get_state_for_filled_polygons_on_the_sphere());
+	d_paint_params->filled_drawables_on_the_sphere.paint_drawables(
+			renderer, *d_persistent_opengl_objects);
+	renderer.pop_state_set(); // 'get_state_for_filled_polygons_on_the_sphere'.
 
 	//
 	// Paint the point, line and polygon drawables with the appropriate state
@@ -330,9 +340,16 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition(
 		const PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type::node_reference_type
 				loose_bounds_root_node = cube_subdivision_loose_bounds.get_quad_tree_root_node(cube_face);
 
+		// Create a root quad tree node for the filled polygons spatial partition.
+		const filled_polygons_spatial_partition_type::node_reference_type
+				filled_polygons_quad_tree_root_node =
+						d_paint_params->filled_drawables_on_the_sphere.spatial_partition
+								->get_or_create_quad_tree_root_node(cube_face);
+
 		render_spatial_partition_quad_tree(
 				rendered_geometries_spatial_partition,
 				loose_quad_tree_root_node,
+				filled_polygons_quad_tree_root_node,
 				cube_subdivision_loose_bounds,
 				loose_bounds_root_node,
 				frustum_planes,
@@ -345,7 +362,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition(
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tree(
 		const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition,
-		rendered_geometries_spatial_partition_type::const_node_reference_type quad_tree_node,
+		rendered_geometries_spatial_partition_type::const_node_reference_type rendered_geometries_quad_tree_node,
+		filled_polygons_spatial_partition_type::node_reference_type filled_polygons_quad_tree_node,
 		PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type &cube_subdivision_loose_bounds,
 		const PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type::node_reference_type &loose_bounds_node,
 		const GPlatesOpenGL::GLFrustum &frustum_planes,
@@ -376,11 +394,19 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tre
 		frustum_plane_mask = out_frustum_plane_mask.get();
 	}
 
+
+	// Direct any filled drawables to the correct node in the filled polygons spatial partition.
+	d_paint_params->filled_drawables_on_the_sphere.current_node = filled_polygons_quad_tree_node;
+
 	// Visit the rendered geometries in the current quad tree node.
 	std::for_each(
-		quad_tree_node.begin(),
-		quad_tree_node.end(),
+		rendered_geometries_quad_tree_node.begin(),
+		rendered_geometries_quad_tree_node.end(),
 		boost::bind(&GPlatesViewOperations::RenderedGeometry::accept_visitor, _1, boost::ref(*this)));
+
+	// Direct filled drawables back to the root (unpartitioned) part of the filled polygons spatial partition.
+	d_paint_params->filled_drawables_on_the_sphere.current_node = boost::none;
+
 
 	//
 	// Iterate over the child quad tree nodes.
@@ -390,25 +416,38 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tre
 	{
 		for (unsigned int child_u_offset = 0; child_u_offset < 2; ++child_u_offset)
 		{
-			// See if there is a child node.
+			// See if there is a child node in the rendered geometries.
 			const rendered_geometries_spatial_partition_type::const_node_reference_type
-					quad_tree_child_node = quad_tree_node.get_child_node(
-							child_u_offset, child_v_offset);
+					child_rendered_geometries_quad_tree_node =
+							rendered_geometries_quad_tree_node.get_child_node(
+									child_u_offset, child_v_offset);
 
-			if (quad_tree_child_node)
+			if (!child_rendered_geometries_quad_tree_node)
 			{
-				const PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type::node_reference_type
-						child_loose_bounds_node = cube_subdivision_loose_bounds.get_child_node(
-								loose_bounds_node, child_u_offset, child_v_offset);
-
-				render_spatial_partition_quad_tree(
-						rendered_geometries_spatial_partition,
-						quad_tree_child_node,
-						cube_subdivision_loose_bounds,
-						child_loose_bounds_node,
-						frustum_planes,
-						frustum_plane_mask);
+				continue;
 			}
+
+			const PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type::node_reference_type
+					child_loose_bounds_node = cube_subdivision_loose_bounds.get_child_node(
+							loose_bounds_node, child_u_offset, child_v_offset);
+
+			// Create a new child node in the filled polygons spatial partition.
+			const filled_polygons_spatial_partition_type::node_reference_type
+					child_filled_polygons_quad_tree_node =
+							d_paint_params->filled_drawables_on_the_sphere.spatial_partition
+									->get_or_create_child_node(
+											filled_polygons_quad_tree_node,
+											child_u_offset,
+											child_v_offset);
+
+			render_spatial_partition_quad_tree(
+					rendered_geometries_spatial_partition,
+					child_rendered_geometries_quad_tree_node,
+					child_filled_polygons_quad_tree_node,
+					cube_subdivision_loose_bounds,
+					child_loose_bounds_node,
+					frustum_planes,
+					frustum_plane_mask);
 		}
 	}
 }
@@ -457,7 +496,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 			rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
 
 	// Get the stream for points of the current point size.
-	GPlatesOpenGL::GLStreamPrimitives<vertex_type> &stream =
+	GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type> &stream =
 			d_paint_params->translucent_drawables_on_the_sphere.get_point_drawables(point_size);
 
 	// Get the point position.
@@ -466,10 +505,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 
 	// Vertex representing the point's position and colour.
 	// Convert colour from floats to bytes to use less vertex memory.
-	const vertex_type vertex(pos, Colour::to_rgba8(*colour));
+	const coloured_vertex_type vertex(pos, Colour::to_rgba8(*colour));
 
 	// Used to add points to the stream.
-	GPlatesOpenGL::GLStreamPoints<vertex_type> stream_points(stream);
+	GPlatesOpenGL::GLStreamPoints<coloured_vertex_type> stream_points(stream);
 
 	stream_points.begin_points();
 	stream_points.add_vertex(vertex);
@@ -499,11 +538,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 			rendered_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
 
 	// Get the stream for points of the current point size.
-	GPlatesOpenGL::GLStreamPrimitives<vertex_type> &stream =
+	GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type> &stream =
 			d_paint_params->translucent_drawables_on_the_sphere.get_point_drawables(point_size);
 
 	// Used to add points to the stream.
-	GPlatesOpenGL::GLStreamPoints<vertex_type> stream_points(stream);
+	GPlatesOpenGL::GLStreamPoints<coloured_vertex_type> stream_points(stream);
 
 	stream_points.begin_points();
 
@@ -518,7 +557,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 		const GPlatesMaths::UnitVector3D &pos = point_iter->position_vector();
 
 		// Vertex representing the point's position and colour.
-		const vertex_type vertex(pos, rgba8_color);
+		const coloured_vertex_type vertex(pos, rgba8_color);
 
 		stream_points.add_vertex(vertex);
 	}
@@ -576,15 +615,35 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		return;
 	}
 
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
+			rendered_polygon_on_sphere.get_polygon_on_sphere();
+
+	if (rendered_polygon_on_sphere.get_is_filled())
+	{
+		const filled_polygon_type::non_null_ptr_type filled_polygon =
+				filled_polygon_type::create(*polygon_on_sphere, Colour::to_rgba8(colour.get()));
+
+		// If there's a destination node in the filled drawables spatial partition then add to that.
+		if (d_paint_params->filled_drawables_on_the_sphere.current_node)
+		{
+			d_paint_params->filled_drawables_on_the_sphere.spatial_partition->add(
+					filled_polygon,
+					d_paint_params->filled_drawables_on_the_sphere.current_node.get());
+		}
+		else // otherwise just add to the root of the spatial partition...
+		{
+			d_paint_params->filled_drawables_on_the_sphere.spatial_partition->add_unpartitioned(filled_polygon);
+		}
+
+		return;
+	}
+
 	const float line_width =
 			rendered_polygon_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 	// Get the drawables for lines of the current line width.
 	LineDrawables &line_drawables =
 			d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
-
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
-			rendered_polygon_on_sphere.get_polygon_on_sphere();
 
 	paint_great_circle_arcs(
 			polygon_on_sphere->begin(),
@@ -685,13 +744,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 	// Render a single line segment for the arrow body.
 
 	// Used to add lines to the stream.
-	GPlatesOpenGL::GLStreamLines<vertex_type> stream_lines(*line_drawables.stream);
+	GPlatesOpenGL::GLStreamLines<coloured_vertex_type> stream_lines(*line_drawables.stream);
 
 	stream_lines.begin_lines();
 
 	// Vertex representing the start and end point's position and colour.
-	const vertex_type start_vertex(start.x().dval(), start.y().dval(), start.z().dval(), rgba8_color);
-	const vertex_type end_vertex(end.x().dval(), end.y().dval(), end.z().dval(), rgba8_color);
+	const coloured_vertex_type start_vertex(start.x().dval(), start.y().dval(), start.z().dval(), rgba8_color);
+	const coloured_vertex_type end_vertex(end.x().dval(), end.y().dval(), end.z().dval(), rgba8_color);
 
 	stream_lines.add_vertex(start_vertex);
 	stream_lines.add_vertex(end_vertex);
@@ -872,7 +931,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Used to add line loops to the stream.
-	GPlatesOpenGL::GLStreamLineLoops<vertex_type> stream_line_loops(*line_drawables.stream);
+	GPlatesOpenGL::GLStreamLineLoops<coloured_vertex_type> stream_line_loops(*line_drawables.stream);
 
 	stream_line_loops.begin_line_loop();
 
@@ -881,7 +940,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
 		GPlatesMaths::UnitVector3D uv = ellipse_generator.get_point_on_ellipse(i);
 
 		// Vertex representing the ellipse point position and colour.
-		const vertex_type vertex(uv, rgba8_color);
+		const coloured_vertex_type vertex(uv, rgba8_color);
 
 		stream_line_loops.add_vertex(vertex);
 	}
@@ -895,7 +954,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
 		const GPlatesMaths::Vector3D &apex,
 		const GPlatesMaths::Vector3D &cone_axis,
 		rgba8_t rgba8_color,
-		GPlatesOpenGL::GLStreamPrimitives<vertex_type> &stream)
+		GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type> &stream)
 {
 	const GPlatesMaths::Vector3D centre_base_circle = apex - cone_axis;
 
@@ -961,11 +1020,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
 	// This is the default state for OpenGL so we don't need to set it.
 
 	// Used to add triangle fan to the stream.
-	GPlatesOpenGL::GLStreamTriangleFans<vertex_type> stream_triangle_fans(stream);
+	GPlatesOpenGL::GLStreamTriangleFans<coloured_vertex_type> stream_triangle_fans(stream);
 
 	stream_triangle_fans.begin_triangle_fan();
 
-	const vertex_type apex_vertex(apex.x().dval(), apex.y().dval(), apex.z().dval(), rgba8_color);
+	const coloured_vertex_type apex_vertex(apex.x().dval(), apex.y().dval(), apex.z().dval(), rgba8_color);
 	stream_triangle_fans.add_vertex(apex_vertex);
 
 	for (int vertex_index = 0;
@@ -973,12 +1032,12 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
 		++vertex_index)
 	{
 		const GPlatesMaths::Vector3D &boundary = cone_base_circle[vertex_index];
-		const vertex_type boundary_vertex(
+		const coloured_vertex_type boundary_vertex(
 				boundary.x().dval(), boundary.y().dval(), boundary.z().dval(), rgba8_color);
 		stream_triangle_fans.add_vertex(boundary_vertex);
 	}
 	const GPlatesMaths::Vector3D &last_circle = cone_base_circle[0];
-	const vertex_type last_circle_vertex(
+	const coloured_vertex_type last_circle_vertex(
 			last_circle.x().dval(), last_circle.y().dval(), last_circle.z().dval(), rgba8_color);
 	stream_triangle_fans.add_vertex(last_circle_vertex);
 
@@ -1075,6 +1134,55 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::get_state_for_raster_primitives_o
 
 
 GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+GPlatesGui::GlobeRenderedGeometryLayerPainter::get_state_for_filled_polygons_on_the_sphere() const
+{
+	//
+	// Filled polygons are rendered as rasters (textures) and hence the state set here
+	// is similar (in fact identical) to the state set for rasters.
+	//
+
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
+	// Set the alpha-blend state in case filled polygons are semi-transparent.
+	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
+			GPlatesOpenGL::GLBlendState::create();
+	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	state_set->add_state_set(blend_state);
+
+	// Set the alpha-test state to reject pixels where alpha is zero (they make no
+	// change or contribution to the framebuffer) - this is an optimisation.
+	GPlatesOpenGL::GLAlphaTestState::non_null_ptr_type alpha_test_state =
+			GPlatesOpenGL::GLAlphaTestState::create();
+	alpha_test_state->gl_enable(GL_TRUE).gl_alpha_func(GL_GREATER, GLclampf(0));
+	state_set->add_state_set(alpha_test_state);
+
+	//
+	// Note that we set the depth testing/writing state here rather than inside the
+	// filled polygon mask rendering machinery because here we know we are rendering to the scene
+	// and hence have a depth buffer attachment to the main framebuffer.
+	// In the mask rendering code there are certain paths that use render targets which
+	// currently don't have a depth buffer attachment (because it's not needed) and
+	// hence enabling depth testing in these paths can give corrupt results.
+	//
+
+	// Turn on depth testing.
+	GPlatesOpenGL::GLDepthTestState::non_null_ptr_type depth_test_state_set =
+			GPlatesOpenGL::GLDepthTestState::create();
+	depth_test_state_set->gl_enable(GL_TRUE);
+	state_set->add_state_set(depth_test_state_set);
+
+	// Turn off depth writes.
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type depth_mask_state_set =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	depth_mask_state_set->gl_depth_mask(GL_FALSE);
+	state_set->add_state_set(depth_mask_state_set);
+
+	return state_set;
+}
+
+
+GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
 GPlatesGui::GlobeRenderedGeometryLayerPainter::get_state_for_text_off_the_sphere()
 {
 	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
@@ -1127,13 +1235,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::get_translucent_state()
 
 
 GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::PointLinePolygonDrawables() :
-	d_triangle_drawables(GPlatesOpenGL::GLStreamPrimitives<vertex_type>::create()),
-	d_quad_drawables(GPlatesOpenGL::GLStreamPrimitives<vertex_type>::create())
+	d_triangle_drawables(GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type>::create()),
+	d_quad_drawables(GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type>::create())
 {
 }
 
 
-GPlatesOpenGL::GLStreamPrimitives<GPlatesGui::GlobeRenderedGeometryLayerPainter::vertex_type> &
+GPlatesOpenGL::GLStreamPrimitives<GPlatesGui::GlobeRenderedGeometryLayerPainter::coloured_vertex_type> &
 GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::get_point_drawables(
 		float point_size)
 {
@@ -1145,8 +1253,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::get_po
 	}
 
 	// Create a new stream.
-	GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream =
-			GPlatesOpenGL::GLStreamPrimitives<vertex_type>::create();
+	GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type>::non_null_ptr_type stream =
+			GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type>::create();
 	
 	d_point_drawables_map.insert(
 			point_size_to_drawables_map_type::value_type(point_size, stream));
@@ -1167,8 +1275,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::get_li
 	}
 
 	// Create a new stream.
-	GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream =
-			GPlatesOpenGL::GLStreamPrimitives<vertex_type>::create();
+	GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type>::non_null_ptr_type stream =
+			GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type>::create();
 
 	std::pair<line_width_to_drawables_map_type::iterator, bool> insert_result =
 			d_line_drawables_map.insert(
@@ -1190,7 +1298,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::paint_
 	// Iterate over the point size groups and paint them.
 	BOOST_FOREACH(point_size_to_drawables_map_type::value_type &point_size_entry, d_point_drawables_map)
 	{
-		GPlatesOpenGL::GLStreamPrimitives<vertex_type> &points_stream = *point_size_entry.second;
+		GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type> &points_stream = *point_size_entry.second;
 		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> points_drawable =
 				points_stream.get_drawable();
 		if (points_drawable)
@@ -1340,9 +1448,21 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::paint_
 
 
 GPlatesGui::GlobeRenderedGeometryLayerPainter::LineDrawables::LineDrawables(
-		const GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type &stream_) :
+		const GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type>::non_null_ptr_type &stream_) :
 	stream(stream_)
 {
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::FilledDrawables::paint_drawables(
+		GPlatesOpenGL::GLRenderer &renderer,
+		PersistentOpenGLObjects &persistent_opengl_objects)
+{
+	if (!spatial_partition->empty())
+	{
+		persistent_opengl_objects.render_filled_polygons(renderer, *spatial_partition);
+	}
 }
 
 
@@ -1437,6 +1557,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 		*d_nurbs_renderer);
 }
 
+
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 	const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol)
@@ -1493,46 +1614,44 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
     vc = r3 * vc;
 
 
-    vertex_type a(va.x().dval(), va.y().dval(),va.z().dval(),Colour::to_rgba8(*colour));
-    vertex_type b(vb.x().dval(), vb.y().dval(),vb.z().dval(),Colour::to_rgba8(*colour));
-    vertex_type c(vc.x().dval(), vc.y().dval(),vc.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type a(va.x().dval(), va.y().dval(),va.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type b(vb.x().dval(), vb.y().dval(),vb.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type c(vc.x().dval(), vc.y().dval(),vc.z().dval(),Colour::to_rgba8(*colour));
 
     if (filled)
     {
-	GPlatesOpenGL::GLStreamPrimitives<vertex_type> &triangle_stream =
-		d_paint_params->translucent_drawables_on_the_sphere.get_triangle_drawables();
+		GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type> &triangle_stream =
+			d_paint_params->translucent_drawables_on_the_sphere.get_triangle_drawables();
 
-	GPlatesOpenGL::GLStreamTriangles<vertex_type> stream(triangle_stream);
+		GPlatesOpenGL::GLStreamTriangles<coloured_vertex_type> stream(triangle_stream);
 
-	// The polygon state is fill, front/back by default, so I shouldn't need
-	// to change anything here.
+		// The polygon state is fill, front/back by default, so I shouldn't need
+		// to change anything here.
 
-	stream.begin_triangles();
-	stream.add_vertex(a);
-	stream.add_vertex(b);
-	stream.add_vertex(c);
-	stream.end_triangles();
-
-
+		stream.begin_triangles();
+		stream.add_vertex(a);
+		stream.add_vertex(b);
+		stream.add_vertex(c);
+		stream.end_triangles();
     }
     else
     {
-	const float line_width = rendered_triangle_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+		const float line_width = rendered_triangle_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
-	LineDrawables &line_drawables =
-		d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+		LineDrawables &line_drawables =
+			d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
 
-	GPlatesOpenGL::GLStreamLineStrips<vertex_type> stream_line_strips(*line_drawables.stream);
+		GPlatesOpenGL::GLStreamLineStrips<coloured_vertex_type> stream_line_strips(*line_drawables.stream);
 
-	stream_line_strips.begin_line_strip();
-	stream_line_strips.add_vertex(a);
-	stream_line_strips.add_vertex(b);
-	stream_line_strips.add_vertex(c);
-	stream_line_strips.add_vertex(a);
-	stream_line_strips.end_line_strip();
+		stream_line_strips.begin_line_strip();
+		stream_line_strips.add_vertex(a);
+		stream_line_strips.add_vertex(b);
+		stream_line_strips.add_vertex(c);
+		stream_line_strips.add_vertex(a);
+		stream_line_strips.end_line_strip();
     }
-
 }
+
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
@@ -1593,52 +1712,50 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
     v3d_e = r3 * v3d_e;
 
 
-    vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
-    vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
-    vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
-    vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
-    vertex_type ve(v3d_e.x().dval(), v3d_e.y().dval(),v3d_e.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type ve(v3d_e.x().dval(), v3d_e.y().dval(),v3d_e.z().dval(),Colour::to_rgba8(*colour));
 
     if (filled)
     {
-	GPlatesOpenGL::GLStreamPrimitives<vertex_type> &triangle_fans_stream =
-		d_paint_params->translucent_drawables_on_the_sphere.get_triangle_drawables();
+		GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type> &triangle_fans_stream =
+			d_paint_params->translucent_drawables_on_the_sphere.get_triangle_drawables();
 
-	GPlatesOpenGL::GLStreamTriangleFans<vertex_type> stream(triangle_fans_stream);
+		GPlatesOpenGL::GLStreamTriangleFans<coloured_vertex_type> stream(triangle_fans_stream);
 
-	// The polygon state is fill, front/back by default, so I shouldn't need
-	// to change anything here.
+		// The polygon state is fill, front/back by default, so I shouldn't need
+		// to change anything here.
 
-	stream.begin_triangle_fan();
-	stream.add_vertex(va);
-	stream.add_vertex(vb);
-	stream.add_vertex(vc);
-	stream.add_vertex(vd);
-	stream.add_vertex(ve);
-	stream.add_vertex(vb);
-	stream.end_triangle_fan();
-
-
+		stream.begin_triangle_fan();
+		stream.add_vertex(va);
+		stream.add_vertex(vb);
+		stream.add_vertex(vc);
+		stream.add_vertex(vd);
+		stream.add_vertex(ve);
+		stream.add_vertex(vb);
+		stream.end_triangle_fan();
     }
     else
     {
-	const float line_width = rendered_square_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+		const float line_width = rendered_square_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
-	LineDrawables &line_drawables =
-		d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+		LineDrawables &line_drawables =
+			d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
 
-	GPlatesOpenGL::GLStreamLineStrips<vertex_type> stream_line_strips(*line_drawables.stream);
+		GPlatesOpenGL::GLStreamLineStrips<coloured_vertex_type> stream_line_strips(*line_drawables.stream);
 
-	stream_line_strips.begin_line_strip();
-	stream_line_strips.add_vertex(vb);
-	stream_line_strips.add_vertex(vc);
-	stream_line_strips.add_vertex(vd);
-	stream_line_strips.add_vertex(ve);
-	stream_line_strips.add_vertex(vb);
-	stream_line_strips.end_line_strip();
+		stream_line_strips.begin_line_strip();
+		stream_line_strips.add_vertex(vb);
+		stream_line_strips.add_vertex(vc);
+		stream_line_strips.add_vertex(vd);
+		stream_line_strips.add_vertex(ve);
+		stream_line_strips.add_vertex(vb);
+		stream_line_strips.end_line_strip();
     }
-
 }
+
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
@@ -1695,10 +1812,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
     v3d_d = r3 * v3d_d;
 
 
-    vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
-    vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
-    vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
-    vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
 
 
     const float line_width = rendered_cross_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
@@ -1706,7 +1823,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
     LineDrawables &line_drawables =
 	    d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
 
-    GPlatesOpenGL::GLStreamLineStrips<vertex_type> stream_line_strips(*line_drawables.stream);
+    GPlatesOpenGL::GLStreamLineStrips<coloured_vertex_type> stream_line_strips(*line_drawables.stream);
 
     stream_line_strips.begin_line_strip();
     stream_line_strips.add_vertex(va);

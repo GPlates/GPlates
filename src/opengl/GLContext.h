@@ -113,7 +113,7 @@ namespace GPlatesOpenGL
 			 * Returns the texture resource manager.
 			 */
 			const boost::shared_ptr<GLTextureResourceManager> &
-			get_texture_resource_manager()
+			get_texture_resource_manager() const
 			{
 				return d_texture_resource_manager;
 			}
@@ -122,7 +122,7 @@ namespace GPlatesOpenGL
 			 * Returns the vertex buffer resource manager.
 			 */
 			const boost::shared_ptr<GLVertexBufferResourceManager> &
-			get_vertex_buffer_resource_manager()
+			get_vertex_buffer_resource_manager() const
 			{
 				return d_vertex_buffer_resource_manager;
 			}

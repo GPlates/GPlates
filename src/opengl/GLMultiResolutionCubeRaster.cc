@@ -261,7 +261,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::initialise_cube_quad_trees()
 						d_cube_subdivision_projection_transforms_cache->get_quad_tree_root_node(cube_face);
 
 		// Recursively generate a quad tree for the current cube face.
-		boost::optional<cube_quad_tree_node_type::ptr_type> quad_tree_root_node =
+		boost::optional<cube_quad_tree_type::node_type::ptr_type> quad_tree_root_node =
 				create_quad_tree_node(
 						cube_face,
 						*transform_state,
@@ -276,7 +276,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::initialise_cube_quad_trees()
 }
 
 
-boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::cube_quad_tree_node_type::ptr_type>
+boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::cube_quad_tree_type::node_type::ptr_type>
 GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
 		GLTransformState &transform_state,
@@ -313,7 +313,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 	}
 
 	// Create a quad tree node.
-	cube_quad_tree_node_type::ptr_type quad_tree_node =
+	cube_quad_tree_type::node_type::ptr_type quad_tree_node =
 			d_cube_quad_tree->create_node(
 					QuadTreeNode(
 							projection_transform,
@@ -350,7 +350,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 									child_v_offset);
 
 			// Returns a non-null child if child quad tree node is covered by source raster.
-			const boost::optional<cube_quad_tree_node_type::ptr_type> child_node =
+			const boost::optional<cube_quad_tree_type::node_type::ptr_type> child_node =
 					create_quad_tree_node(
 							cube_face,
 							transform_state,

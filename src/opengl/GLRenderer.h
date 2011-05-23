@@ -115,7 +115,7 @@ namespace GPlatesOpenGL
 		 *
 		 *
 		 * 'SERIAL' is best used when a single render target (such as a texture) is rendered to
-		 * multiple times per frame. In contract 'PARALLEL' is best used when a single render
+		 * multiple times per frame. In contrast 'PARALLEL' is best used when a single render
 		 * target is only rendered to at most once per frame - so 'PARALLEL' is useful when
 		 * you want to cache rendering results over multiple frames to avoid having to
 		 * render the results each frame if the results don't change. 'PARALLEL' also has the

@@ -62,11 +62,13 @@ namespace GPlatesViewOperations
 				const GPlatesGui::ColourProxy &colour,
 				float point_size_hint,
 				float line_width_hint,
+				bool fill_polygon,
 				const boost::optional<GPlatesGui::Symbol> &symbol_) :
 			d_geom_on_sphere(geom_on_sphere),
 			d_colour(colour),
 			d_point_size_hint(point_size_hint),
 			d_line_width_hint(line_width_hint),
+			d_fill_polygon(fill_polygon),
 			d_symbol(symbol_)
 			{  }
 
@@ -139,7 +141,7 @@ namespace GPlatesViewOperations
 					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 			{
 				d_rendered_geom = RenderedGeometryFactory::create_rendered_polygon_on_sphere(
-						polygon_on_sphere, d_colour, d_line_width_hint);
+						polygon_on_sphere, d_colour, d_line_width_hint, d_fill_polygon);
 			}
 
 			virtual
@@ -155,6 +157,7 @@ namespace GPlatesViewOperations
 			const GPlatesGui::ColourProxy &d_colour;
 			float d_point_size_hint;
 			float d_line_width_hint;
+			bool d_fill_polygon;
 			const boost::optional<GPlatesGui::Symbol> &d_symbol;
 			RenderedGeometry d_rendered_geom;
 		};
@@ -168,12 +171,13 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphe
 		const GPlatesGui::ColourProxy &colour,
 		float point_size_hint,
 		float line_width_hint,
+		bool fill_polygon,
 		const boost::optional<GPlatesGui::Symbol> &symbol)
 {
 	// This is used to determine the derived type of 'geom_on_sphere'
 	// and create a RenderedGeometryImpl for it.
 	CreateRenderedGeometryFromGeometryOnSphere create_rendered_geom(
-			geom_on_sphere, colour, point_size_hint, line_width_hint, symbol);
+			geom_on_sphere, colour, point_size_hint, line_width_hint, fill_polygon, symbol);
 
 	return create_rendered_geom.create_rendered_geometry();
 }
@@ -218,10 +222,11 @@ GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 		const GPlatesGui::ColourProxy &colour,
-		float line_width_hint)
+		float line_width_hint,
+		bool filled)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedPolygonOnSphere(
-			polygon_on_sphere, colour, line_width_hint));
+			polygon_on_sphere, colour, line_width_hint, filled));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
