@@ -35,6 +35,7 @@
 
 #include "AppLogicFwd.h"
 #include "ReconstructionFeatureProperties.h"
+#include "ResolvedTopologicalBoundary.h"
 #include "TopologyBoundaryIntersections.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -81,6 +82,7 @@ namespace GPlatesAppLogic
 		 *        the resolved topological networks being generated).
 		 */
 		TopologyNetworkResolver(
+				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_topological_sections,
@@ -97,6 +99,11 @@ namespace GPlatesAppLogic
 
 		virtual
 		void
+		finalise_post_feature_properties(
+				GPlatesModel::FeatureHandle &feature_handle);
+
+		virtual
+		void
 		visit_gpml_constant_value(
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
@@ -108,6 +115,11 @@ namespace GPlatesAppLogic
 		void
 		visit_gpml_time_window(
 				GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
+
+		virtual
+		void
+		visit_gpml_topological_interior(
+			 	GPlatesPropertyValues::GpmlTopologicalInterior &gpml_toplogical_interior);
 
 		virtual
 		void
@@ -215,8 +227,16 @@ namespace GPlatesAppLogic
 
 			//! Sequence of sections of the currently visited topological polygon.
 			section_seq_type d_sections;
+
+			//! Sequence of sections of the currently visited topological interior.
+			section_seq_type d_sections_interior;
 		};
 
+
+		/**
+		 * The resolved topological boundaries we're generating.
+		 */
+		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &d_resolved_topological_boundaries;
 
 		/**
 		 * The resolved topological networks we're generating.
@@ -252,9 +272,25 @@ namespace GPlatesAppLogic
 		//! The number of topologies visited.
 		int d_num_topologies;
 
+		//! controls on the triangulation
 		double d_shape_factor;
+		//! controls on the triangulation
 		double d_max_edge;
 
+		//! Visitor mode: controls where and how to visit TopologicalPoint and Line
+		bool d_is_visit_interior;
+
+		//! The feature property iterator of the GpmlTopologicalPolygon property.
+		boost::optional<feature_iterator_type> d_topological_polygon_feature_iterator;
+
+		/**
+		 * Create a @a ResolvedTopologicalBoundary from information gathered
+		 * from the most recently visited topological polygon
+		 * (stored in @a d_resolved_network) and add it to the @a Reconstruction.
+		 */
+		void
+		create_resolved_topology_boundary(
+				GPlatesModel::FeatureHandle &feature_handle);
 
 		/**
 		 * Create a @a ResolvedTopologicalNetwork from information gathered
@@ -262,8 +298,10 @@ namespace GPlatesAppLogic
 		 * (stored in @a d_resolved_network) and add it to the @a Reconstruction.
 		 */
 		void
-		create_resolved_topology_network();
+		create_resolved_topology_network(
+				GPlatesModel::FeatureHandle &feature_handle);
 
+		//! 
 		void
 		record_topological_sections(
 				std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &
@@ -281,31 +319,61 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureId &source_feature_id,
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate);
 
+
+		// validate sections
 		void
-		validate_topological_section_intersections();
+		validate_topological_section_intersections_boundary();
 
 		void
-		validate_topological_section_intersection(
+		validate_topological_section_intersection_boundary(
 				const std::size_t current_section_index);
 
 		void
-		process_topological_section_intersections();
+		validate_topological_section_intersections_interior();
 
 		void
-		process_topological_section_intersection(
+		validate_topological_section_intersection_interior(
+				const std::size_t current_section_index);
+
+
+		// process section intersections 
+		void
+		process_topological_section_intersections_boundary();
+
+		void
+		process_topological_section_intersection_boundary(
 				const std::size_t current_section_index,
 				const bool two_sections = false);
 
 		void
-		assign_boundary_segments();
+		process_topological_section_intersections_interior();
 
 		void
-		assign_boundary_segment(
+		process_topological_section_intersection_interior(
+				const std::size_t current_section_index,
+				const bool two_sections = false);
+
+
+		// assign segments geom
+		void
+		assign_boundary_segments_boundary();
+
+		void
+		assign_boundary_segment_boundary(
 				const std::size_t section_index);
 
 		void
-		debug_output_topological_section_feature_id(
-				const GPlatesModel::FeatureId &section_feature_id);
+		assign_boundary_segments_interior();
+
+		void
+		assign_boundary_segment_interior(
+				const std::size_t section_index);
+
+
+		// debugging 
+		void
+		debug_output_topological_section(
+				const ResolvedNetwork::Section &section);
 	};
 }
 

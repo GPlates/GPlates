@@ -33,6 +33,10 @@
 #include "FunctionDomainException.h"
 #include "HighPrecision.h"
 
+// uncomment to turn on warnings
+#if 0
+#def WARNINGS 
+#endif
 
 const GPlatesMaths::Real
 GPlatesMaths::sqrt(
@@ -82,7 +86,9 @@ GPlatesMaths::asin(
 			// minus one.  We'll return the asin of minus one, which is minus pi on
 			// two.
 			// FIXME:  We should log that we "corrected" this here.
+			#ifdef WARNINGS
 			std::cerr << "Corrected asin(" << HighPrecision<Real>(r) << ") to asin(-1)." << std::endl;
+			#endif
 			return Real(-GPlatesMaths::HALF_PI);
 		}
 	}
@@ -102,7 +108,9 @@ GPlatesMaths::asin(
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
 			// one.  We'll return the asin of one, which is pi on two.
 			// FIXME:  We should log that we "corrected" this here.
+			#ifdef WARNINGS
 			std::cerr << "Corrected asin(" << HighPrecision<Real>(r) << ") to asin(1)." << std::endl;
+			#endif
 			return Real(GPlatesMaths::HALF_PI);
 		}
 	}
@@ -131,7 +139,9 @@ GPlatesMaths::acos(
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
 			// minus one.  We'll return the acos of minus one, which is pi.
 			// FIXME:  We should log that we "corrected" this here.
+			#ifdef WARNINGS
 			std::cerr << "Corrected acos(" << HighPrecision<Real>(r) << ") to acos(-1)." << std::endl;
+			#endif
 			return Real(GPlatesMaths::PI);
 		}
 	}
@@ -151,7 +161,9 @@ GPlatesMaths::acos(
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
 			// one.  We'll return the acos of one, which is zero.
 			// FIXME:  We should log that we "corrected" this here.
+			#ifdef WARNINGS
 			std::cerr << "Corrected acos(" << HighPrecision<Real>(r) << ") to acos(1)." << std::endl;
+			#endif
 			return Real(0.0);
 		}
 	}

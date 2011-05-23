@@ -297,7 +297,6 @@ namespace GPlatesFileIO
 				// If we didn't find this information then look for the "sL" and "sR"
 				// data type codes in an old plates header if we can find one.
 				//
-
 				return d_sub_segment_type;
 			}
 
@@ -470,3 +469,5 @@ GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_slab_sub_segment_type(
 
 	return d_sub_segment_type;
 }
+
+

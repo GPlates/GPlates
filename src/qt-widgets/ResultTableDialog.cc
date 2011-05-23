@@ -77,7 +77,7 @@ GPlatesQtWidgets::ResultTableDialog::update_time_label()
 }
 
 GPlatesQtWidgets::ResultTableDialog::ResultTableDialog(
-		const std::vector< DataTable > data_tables,
+		const std::vector< GPlatesDataMining::DataTable > data_tables,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_,
 		bool old_version) :
@@ -378,7 +378,7 @@ GPlatesQtWidgets::ResultTableDialog::handle_save_all()
 
 void
 GPlatesQtWidgets::ResultTableDialog::data_arrived(
-		const DataTable& table)
+		const GPlatesDataMining::DataTable& table)
 {
 	d_table_model_prt.reset(
 			new ResultTableModel(table));

@@ -71,6 +71,8 @@ namespace GPlatesViewOperations
 		//! Line width for reconstruction layer.
 		const float POLE_MANIPULATION_LINE_WIDTH_HINT = 1.5f;
 
+		//! Line width for reconstruction layer.
+		const float TOPOLOGY_TOOL_LINE_WIDTH_HINT = 4.0f;
 	}
 
 	/**

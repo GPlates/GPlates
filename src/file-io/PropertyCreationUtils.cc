@@ -2047,6 +2047,27 @@ GPlatesFileIO::PropertyCreationUtils::create_string_list(
 }
 
 
+GPlatesPropertyValues::GpmlTopologicalInterior::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_topological_interior(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
+{
+	static const GPlatesModel::PropertyName 
+		STRUCTURAL_TYPE = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalInterior"),
+		SECTION = 
+			GPlatesModel::PropertyName::create_gpml("section");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> sections;
+
+	find_and_create_one_or_more(elem, &create_topological_section, SECTION, sections, read_errors);
+
+	return GPlatesPropertyValues::GpmlTopologicalInterior::create( sections );
+}
+
 GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_topological_polygon(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,

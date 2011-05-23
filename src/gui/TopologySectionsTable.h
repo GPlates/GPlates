@@ -60,7 +60,8 @@ namespace GPlatesGui
 		explicit
 		TopologySectionsTable(
 				QTableWidget &table,
-				TopologySectionsContainer &container,
+				TopologySectionsContainer &boundary_container,
+				TopologySectionsContainer &interior_container,
 				GPlatesGui::FeatureFocus &feature_focus);
 
 		virtual
@@ -82,6 +83,9 @@ namespace GPlatesGui
 		void
 		react_focus_feature_at_index(
 				GPlatesGui::TopologySectionsContainer::size_type index);
+
+		void
+		react_container_change(GPlatesGui::TopologySectionsContainer*);
 
 	private slots:
 		void
@@ -179,6 +183,12 @@ namespace GPlatesGui
 		 */
 		void
 		set_up_actions();
+
+		/**
+		 * Configures and connects up our QActions.
+		 */
+		void
+		set_up_connections_to_container(TopologySectionsContainer *ptr);
 
 		/**
 		 * Assigns our custom actions to a newly created ActionButtonBox,
@@ -290,6 +300,8 @@ namespace GPlatesGui
 		 * if we wanted to.
 		 */
 		TopologySectionsContainer *d_container_ptr;
+		TopologySectionsContainer *d_boundary_container_ptr;
+		TopologySectionsContainer *d_interior_container_ptr;
 
 		/**
 		 * Column information for setting up the table columns and converting

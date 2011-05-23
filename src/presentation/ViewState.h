@@ -258,7 +258,7 @@ namespace GPlatesPresentation
 
 		void
 		set_show_stars(
-				bool show_stars = true);
+				bool show_stars = false);
 
 
 		GPlatesGui::symbol_map_type &

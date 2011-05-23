@@ -373,7 +373,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesCanvasTools::MeasureDistanceState(
 				get_view_state().get_rendered_geometry_collection(),
 				*d_geometry_operation_target)),
-	d_topology_sections_container_ptr(
+	d_topology_boundary_sections_container_ptr(
+			new GPlatesGui::TopologySectionsContainer()),
+	d_topology_interior_sections_container_ptr(
 			new GPlatesGui::TopologySectionsContainer()),
 	d_feature_table_model_ptr(
 			new GPlatesGui::FeatureTableModel(
@@ -508,7 +510,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_topology_sections_table_ptr.reset(
 			new GPlatesGui::TopologySectionsTable(
 					*table_widget_topology_sections,
-					*d_topology_sections_container_ptr,
+					*d_topology_boundary_sections_container_ptr, 
+					*d_topology_interior_sections_container_ptr, 
 					get_view_state().get_feature_focus()));
 
 	// If the focused feature is modified, we may need to update the ShapefileAttributeViewerDialog.
@@ -615,7 +618,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_view_state(),
 				*this,
 				*d_feature_table_model_ptr,
-				*d_topology_sections_container_ptr,
+				//*d_topology_boundary_sections_container_ptr,
 				d_task_panel_ptr->topology_tools_widget(),
 				get_application_state());
 	GPlatesCanvasTools::EditTopology::non_null_ptr_type edit_topology_tool =
@@ -624,7 +627,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_view_state(),
 				*this,
 				*d_feature_table_model_ptr,
-				*d_topology_sections_container_ptr,
+				//*d_topology_boundary_sections_container_ptr,
 				d_task_panel_ptr->topology_tools_widget(),
 				get_application_state());
 	GPlatesCanvasTools::MeasureDistance::non_null_ptr_type measure_distance_tool =
@@ -2255,9 +2258,14 @@ GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
 void
 GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 {	
+// FIXME: 
+// There seems to be some sequencing bug where these actions_ never get enabled?
+// for now, just comment out ... 
+#if 0
 	bool globe_is_active = d_reconstruction_view_widget_ptr->globe_is_active();
 	action_Show_Arrow_Decorations->setEnabled(globe_is_active);
 	action_Show_Stars->setEnabled(globe_is_active);
+#endif
 }
 
 

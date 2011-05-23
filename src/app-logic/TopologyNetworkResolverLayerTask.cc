@@ -158,13 +158,13 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_layer_proxy_connect
 	else if (input_channel_name == TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME)
 	{
 		// Make sure the input layer proxy is a reconstruct layer proxy.
-		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+		boost::optional<ReconstructLayerProxy *> topological_sections_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<
 						ReconstructLayerProxy>(layer_proxy);
-		if (reconstruct_layer_proxy)
+		if (topological_sections_layer_proxy)
 		{
-			d_topology_network_resolver_layer_proxy->set_current_reconstruct_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+			d_topology_network_resolver_layer_proxy->add_topological_sections_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_sections_layer_proxy.get()));
 		}
 	}
 }
@@ -193,13 +193,13 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::remove_input_layer_proxy_conn
 	else if (input_channel_name == TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME)
 	{
 		// Make sure the input layer proxy is a reconstruct layer proxy.
-		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+		boost::optional<ReconstructLayerProxy *> topological_sections_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<
 						ReconstructLayerProxy>(layer_proxy);
-		if (reconstruct_layer_proxy)
+		if (topological_sections_layer_proxy)
 		{
-			// Unset the reconstruct layer proxy.
-			d_topology_network_resolver_layer_proxy->set_current_reconstruct_layer_proxy(boost::none);
+			d_topology_network_resolver_layer_proxy->remove_topological_sections_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_sections_layer_proxy.get()));
 		}
 	}
 }

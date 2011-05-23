@@ -59,7 +59,7 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 	// can't get any reconstructed topological boundary sections and we can't resolve any
 	// topological close plate polygons.
 	if (d_current_topological_closed_plate_polygon_feature_collections.empty() ||
-		!d_current_reconstruct_layer_proxy)
+		d_current_topological_sections_layer_proxies.get_input_layer_proxies().empty())
 	{
 		return;
 	}
@@ -85,11 +85,16 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 		d_cached_resolved_topological_boundaries =
 				std::vector<resolved_topological_boundary_non_null_ptr_type>();
 
-		// Get the reconstructed feature geometries.
-		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_topological_boundary_sections;
-		d_current_reconstruct_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
-				reconstructed_topological_boundary_sections,
-				reconstruction_time);
+		// Topological sections...
+		std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_topological_boundary_sections;
+		BOOST_FOREACH(
+				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &topological_sections_layer_proxy,
+				d_current_topological_sections_layer_proxies.get_input_layer_proxies())
+		{
+			topological_sections_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
+					reconstructed_topological_boundary_sections,
+					reconstruction_time);
+		}
 
 		// Resolve our closed plate polygon features into our sequence of resolved topological boundaries.
 		//
@@ -153,10 +158,24 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::set_current_reconstruction_
 
 
 void
-GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::set_current_reconstruct_layer_proxy(
-		const boost::optional<ReconstructLayerProxy::non_null_ptr_type> &reconstruct_layer_proxy)
+GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::add_topological_sections_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy)
 {
-	d_current_reconstruct_layer_proxy.set_input_layer_proxy(reconstruct_layer_proxy);
+	d_current_topological_sections_layer_proxies.add_input_layer_proxy(topological_sections_layer_proxy);
+
+	// The resolved topological boundaries are now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::remove_topological_sections_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy)
+{
+	d_current_topological_sections_layer_proxies.remove_input_layer_proxy(topological_sections_layer_proxy);
 
 	// The resolved topological boundaries are now invalid.
 	reset_cache();
@@ -246,6 +265,11 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::check_input_layer_proxies()
 	// See if the reconstruction layer proxy has changed.
 	check_input_layer_proxy(d_current_reconstruction_layer_proxy);
 
-	// See if the reconstruct layer proxy has changed.
-	check_input_layer_proxy(d_current_reconstruct_layer_proxy);
+	// See if any topological section layer proxies have changed.
+	BOOST_FOREACH(
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &topological_sections_layer_proxy,
+			d_current_topological_sections_layer_proxies.get_input_layer_proxies())
+	{
+		check_input_layer_proxy(topological_sections_layer_proxy);
+	}
 }

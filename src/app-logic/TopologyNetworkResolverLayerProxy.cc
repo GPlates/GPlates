@@ -28,6 +28,7 @@
 
 #include "TopologyNetworkResolverLayerProxy.h"
 
+#include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyUtils.h"
 
@@ -52,6 +53,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::~TopologyNetworkResolverLaye
 
 void
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_networks(
+		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 		const double &reconstruction_time)
 {
@@ -59,7 +61,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 	// can't get any reconstructed topological boundary sections and we can't resolve any
 	// topological networks.
 	if (d_current_topological_network_feature_collections.empty() ||
-		!d_current_reconstruct_layer_proxy)
+		d_current_topological_sections_layer_proxies.get_input_layer_proxies().empty())
 	{
 		return;
 	}
@@ -79,17 +81,21 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
 
-	if (!d_cached_resolved_topological_networks)
+	if (!d_cached_resolved_topologies)
 	{
-		// Create empty vector of resolved topological networks.
-		d_cached_resolved_topological_networks =
-				std::vector<resolved_topological_network_non_null_ptr_type>();
+		// Create empty vectors of resolved topological networks and associated boundaries.
+		d_cached_resolved_topologies = ResolvedTopologies(); 
 
-		// Get the reconstructed feature geometries.
+		// Topological sections...
 		std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_topological_sections;
-		d_current_reconstruct_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
-				reconstructed_topological_sections,
-				reconstruction_time);
+		BOOST_FOREACH(
+				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &topological_sections_layer_proxy,
+				d_current_topological_sections_layer_proxies.get_input_layer_proxies())
+		{
+			topological_sections_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
+					reconstructed_topological_sections,
+					reconstruction_time);
+		}
 
 		// Resolve our networks features into our sequence of resolved topological networks.
 		//
@@ -99,7 +105,8 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 		// to the same ReconstructionTree layer otherwise the topologies are not generated.
 		// This is the current behaviour but it might be too restrictive?
 		TopologyUtils::resolve_topological_networks(
-				d_cached_resolved_topological_networks.get(),
+				d_cached_resolved_topologies->resolved_topological_boundaries,
+				d_cached_resolved_topologies->resolved_topological_networks,
 				d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree(reconstruction_time),
 				reconstructed_topological_sections,
 				d_current_topological_network_feature_collections,
@@ -109,8 +116,13 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 	// Append our cached resolved topological networks to the caller's sequence.
 	resolved_topological_networks.insert(
 			resolved_topological_networks.end(),
-			d_cached_resolved_topological_networks->begin(),
-			d_cached_resolved_topological_networks->end());
+			d_cached_resolved_topologies->resolved_topological_networks.begin(),
+			d_cached_resolved_topologies->resolved_topological_networks.end());
+
+	resolved_topological_boundaries.insert(
+			resolved_topological_boundaries.end(),
+			d_cached_resolved_topologies->resolved_topological_boundaries.begin(),
+			d_cached_resolved_topologies->resolved_topological_boundaries.end());
 }
 
 
@@ -153,10 +165,24 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::set_current_reconstruction_l
 
 
 void
-GPlatesAppLogic::TopologyNetworkResolverLayerProxy::set_current_reconstruct_layer_proxy(
-		const boost::optional<ReconstructLayerProxy::non_null_ptr_type> &reconstruct_layer_proxy)
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::add_topological_sections_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy)
 {
-	d_current_reconstruct_layer_proxy.set_input_layer_proxy(reconstruct_layer_proxy);
+	d_current_topological_sections_layer_proxies.add_input_layer_proxy(topological_sections_layer_proxy);
+
+	// The resolved topological networks are now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::remove_topological_sections_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy)
+{
+	d_current_topological_sections_layer_proxies.remove_input_layer_proxy(topological_sections_layer_proxy);
 
 	// The resolved topological networks are now invalid.
 	reset_cache();
@@ -214,8 +240,8 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::modified_topological_network
 void
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::reset_cache()
 {
-	// Clear any cached resolved topological networks.
-	d_cached_resolved_topological_networks = boost::none;
+	// Clear any cached resolved topological networks and associated boundaries.
+	d_cached_resolved_topologies = boost::none;
 	d_cached_reconstruction_time = boost::none;
 }
 
@@ -246,6 +272,11 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::check_input_layer_proxies()
 	// See if the reconstruction layer proxy has changed.
 	check_input_layer_proxy(d_current_reconstruction_layer_proxy);
 
-	// See if the reconstruct layer proxy has changed.
-	check_input_layer_proxy(d_current_reconstruct_layer_proxy);
+	// See if any topological section layer proxies have changed.
+	BOOST_FOREACH(
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &topological_sections_layer_proxy,
+			d_current_topological_sections_layer_proxies.get_input_layer_proxies())
+	{
+		check_input_layer_proxy(topological_sections_layer_proxy);
+	}
 }

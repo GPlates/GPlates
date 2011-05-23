@@ -800,6 +800,7 @@ GPlatesQtWidgets::VisualLayerWidget::make_signal_slot_connections()
 			SIGNAL(link_activated()),
 			this,
 			SLOT(handle_rename_layer_link_activated()));
+
 	QObject::connect(
 			d_delete_layer_link,
 			SIGNAL(link_activated()),

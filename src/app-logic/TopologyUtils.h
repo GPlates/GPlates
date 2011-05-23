@@ -314,6 +314,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		resolve_topological_networks(
+				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_topological_sections,
@@ -390,6 +391,12 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional< std::vector<double> >
 		interpolate_resolved_topology_networks(
+				const resolved_networks_for_interpolation_query_type &resolved_networks_query,
+				const GPlatesMaths::PointOnSphere &point);
+
+		// as above , using the 2D+C triangulation for inteprolation
+		boost::optional< std::vector<double> >
+		interpolate_resolved_topology_networks_constrained(
 				const resolved_networks_for_interpolation_query_type &resolved_networks_query,
 				const GPlatesMaths::PointOnSphere &point);
 

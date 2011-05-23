@@ -31,6 +31,7 @@
 #include <iterator>
 #include <vector>
 
+
 #include "maths/LatLonPoint.h"
 
 #include "model/FeatureHandle.h"
@@ -40,6 +41,7 @@
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlTopologicalSection.h"
+
 
 namespace GPlatesGui
 {
@@ -255,7 +257,6 @@ namespace GPlatesGui
 		typedef container_type::size_type size_type;
 		typedef container_type::iterator iterator;
 		typedef container_type::const_iterator const_iterator;
-		
 
 		explicit
 		TopologySectionsContainer();
@@ -264,12 +265,18 @@ namespace GPlatesGui
 		~TopologySectionsContainer()
 		{  }
 
+		//! update the table from the container
+		void
+		update_table_from_container();
 
 		/**
 		 * Returns the number of topology sections in the container.
 		 */
 		size_type
 		size() const;
+		
+		size_type
+		size(int i) const;
 		
 		/**
 		 * Const 'begin' iterator of the underlying vector.
@@ -358,7 +365,8 @@ namespace GPlatesGui
 				I end_it)
 		{
 			// All new entries get inserted at the insertion point.
-			const size_type index = insertion_point();
+			//const size_type index = insertion_point();
+			size_type index = insertion_point();
 			// Use STL vector::insert with two input iterators for probably-fast
 			// insert (depending on iterator capability)
 			d_container.insert(d_container.begin() + index, begin_it, end_it);
@@ -376,8 +384,37 @@ namespace GPlatesGui
 					d_container.begin() + index/*original insertion point*/,
 					d_container.begin() + index + quantity);
 		}
-		
-		
+
+
+		template<typename ITR>
+		void
+		initialise(
+				int seq_num,
+				ITR begin_it,
+				ITR end_it)
+		{
+			// All new entries get inserted at the insertion point.
+			//const size_type index = insertion_point();
+			size_type index = insertion_point();
+			// Use STL vector::insert with two input iterators for probably-fast
+			// insert (depending on iterator capability)
+			d_container.insert(d_container.begin() + index, begin_it, end_it);
+			// We need to know how many just got added.
+			size_type quantity = std::distance(begin_it, end_it);
+			// ... because inserting will naturally bump the insertion point down n rows.
+			move_insertion_point(insertion_point() + quantity);
+			// ... and we need to emit appropriate signals.
+			// Adding iterator range for caller's convenience since caller may want
+			// an iterator but should not assume a random access iterator (we can however
+			// since this is our implementation).
+			emit entries_initialised(
+					seq_num,
+					index,
+					quantity,
+					d_container.begin() + index/*original insertion point*/,
+					d_container.begin() + index + quantity);
+		}
+
 		/**
 		 * Updates an existing TableRow in the collection.
 		 * 
@@ -437,6 +474,13 @@ namespace GPlatesGui
 		set_focus_feature_at_index( 
 				size_type index );
 
+		/**
+		 * The @a container_change(GPlatesGui::TopologySectionsContainer *) signal is emitted.
+		 */
+		void
+		set_container_ptr_in_table( 
+				GPlatesGui::TopologySectionsContainer *ptr);
+
 	public slots:
 
 		/**
@@ -455,7 +499,6 @@ namespace GPlatesGui
 		 */
 		void
 		clear();
-
 
 
 #if 0	// The following slots were only used to support easier testing before the platepolygon branch merge.
@@ -494,6 +537,10 @@ namespace GPlatesGui
 #endif	// testing slots.
 
 	signals:
+
+		//! emmited when table is updated
+		void
+		do_update();
 		
 		/**
 		 * Emitted when @a clear() is called and all data has been removed.
@@ -519,6 +566,18 @@ namespace GPlatesGui
 		void
 		entry_removed(
 				GPlatesGui::TopologySectionsContainer::size_type deleted_index);
+
+		/**
+		 * Emitted whenever the TopologySectionsContainer is initialized with 
+		 * a sequence of sections 
+		 */
+		void
+		entries_initialised(
+				int i,
+				GPlatesGui::TopologySectionsContainer::size_type inserted_index,
+				GPlatesGui::TopologySectionsContainer::size_type quantity,
+				GPlatesGui::TopologySectionsContainer::const_iterator inserted_begin,
+				GPlatesGui::TopologySectionsContainer::const_iterator inserted_end);
 
 		/**
 		 * Emitted whenever a number of entries have been inserted into the container.
@@ -548,6 +607,12 @@ namespace GPlatesGui
 		focus_feature_at_index(
 				GPlatesGui::TopologySectionsContainer::size_type index);
 		
+		/** 
+		 * Emitted whenever the container changes
+		 */ 
+		void
+		container_change(GPlatesGui::TopologySectionsContainer *);
+
 	private:
 
 		/**
@@ -562,7 +627,7 @@ namespace GPlatesGui
 		 */
 		TopologySectionsContainer::size_type d_insertion_point;
 
-		
+		std::vector<TopologySectionsContainer::size_type> d_insertion_points;
 	};
 }
 #endif // GPLATES_GUI_TOPOLOGYSECTIONSCONTAINER_H

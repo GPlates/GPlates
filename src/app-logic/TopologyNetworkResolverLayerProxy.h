@@ -71,13 +71,17 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns the resolved topological networks, for the current reconstruction time,
-		 * by appending them to them to @a resolved_topological_networks.
+		 * by appending them to them to @a resolved_topological_networks and @a resolved_topological_boundaries
 		 */
 		void
 		get_resolved_topological_networks(
+				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
 		{
-			get_resolved_topological_networks(resolved_topological_networks, d_current_reconstruction_time);
+			get_resolved_topological_networks(
+				resolved_topological_boundaries, 
+				resolved_topological_networks, 
+				d_current_reconstruction_time);
 		}
 
 
@@ -87,6 +91,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topological_networks(
+				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time);
 
@@ -143,11 +148,18 @@ namespace GPlatesAppLogic
 				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
 
 		/**
-		 * Set the reconstruct layer proxy used to reconstruct the topological sections.
+		 * Adds a reconstruct layer proxy used to reconstruct the topological sections.
 		 */
 		void
-		set_current_reconstruct_layer_proxy(
-				const boost::optional<ReconstructLayerProxy::non_null_ptr_type> &reconstruct_layer_proxy);
+		add_topological_sections_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy);
+
+		/**
+		 * Removes a reconstruct layer proxy used to reconstruct the topological sections.
+		 */
+		void
+		remove_topological_sections_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy);
 
 		/**
 		 * Add to the list of feature collections containing topological network features.
@@ -172,6 +184,15 @@ namespace GPlatesAppLogic
 
 	private:
 		/**
+		 * The cached resolved topologies.
+		 */
+		struct ResolvedTopologies
+		{
+			std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
+			std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
+		};
+
+		/**
 		 * The input feature collections to reconstruct.
 		 */
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_topological_network_feature_collections;
@@ -184,7 +205,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Used to get reconstructed features that form the topological sections.
 		 */
-		LayerProxyUtils::OptionalInputLayerProxy<ReconstructLayerProxy> d_current_reconstruct_layer_proxy;
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_topological_sections_layer_proxies;
 
 		/**
 		 * The current reconstruction time as set by the layer system.
@@ -192,10 +213,9 @@ namespace GPlatesAppLogic
 		double d_current_reconstruction_time;
 
 		/**
-		 * The cached reconstructed feature geometries.
+		 * The cached resolved topologies.
 		 */
-		boost::optional< std::vector<resolved_topological_network_non_null_ptr_type> >
-				d_cached_resolved_topological_networks;
+		boost::optional<ResolvedTopologies> d_cached_resolved_topologies;
 
 		/**
 		 * Cached reconstruction time.

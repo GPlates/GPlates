@@ -32,9 +32,10 @@
 namespace GPlatesPresentation
 {
 	// Forward declarations of supported VisualLayerParams derivations.
+	class TopologyNetworkVisualLayerParams;
+	class VelocityFieldCalculatorVisualLayerParams;
 	class RasterVisualLayerParams;
 	class ReconstructVisualLayerParams;
-
 	/**
 	 * This class is a base class for visitors that visit VisualLayerParams.
 	 * For convenience, typedefs are provided below to cover the const and non-const cases.
@@ -45,8 +46,14 @@ namespace GPlatesPresentation
 	public:
 
 		// Typedefs to give the supported derivations the appropriate const-ness.
+		typedef typename GPlatesUtils::SetConst<TopologyNetworkVisualLayerParams, Const>::type 
+			topology_network_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<RasterVisualLayerParams, Const>::type raster_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ReconstructVisualLayerParams, Const>::type reconstruct_visual_layer_params_type;
+
+
+		typedef typename GPlatesUtils::SetConst<VelocityFieldCalculatorVisualLayerParams, Const>::type 
+			velocity_field_calculator_visual_layer_params_type;
 
 		virtual
 		~VisualLayerParamsVisitorBase()
@@ -62,6 +69,18 @@ namespace GPlatesPresentation
 		void
 		visit_reconstruct_visual_layer_params(
 				reconstruct_visual_layer_params_type &params)
+		{  }
+
+		virtual
+		void
+		visit_topology_network_visual_layer_params(
+				topology_network_visual_layer_params_type &params)
+		{  }
+
+		virtual
+		void
+		visit_velocity_field_calculator_visual_layer_params(
+				velocity_field_calculator_visual_layer_params_type &params)
 		{  }
 
 	protected:

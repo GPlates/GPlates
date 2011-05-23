@@ -46,8 +46,9 @@
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/CubeQuadTreePartitionUtils.h"
 #include "maths/Rotation.h"
-
 #include "view-operations/RenderedGeometry.h"
+#include "presentation/VisualLayer.h"
+
 #include "view-operations/RenderedGeometryParameters.h"
 
 
@@ -76,8 +77,17 @@ namespace GPlatesPresentation
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT,
 					float reconstruction_point_size_hint_ =
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
+
 					// FIXME: Move this hard-coded value somewhere sensible...
-					float velocity_ratio_unit_vector_direction_to_globe_radius_ = 0.05f);
+					float velocity_ratio_unit_vector_direction_to_globe_radius_ = 0.05f,
+
+					bool show_topological_network_mesh_triangulation_ 			= true,
+					bool show_topological_network_constrained_triangulation_ 	= false,
+					bool show_topological_network_delaunay_triangulation_ 		= false,
+					bool show_topological_network_segment_velocity_				= true,
+					bool show_velocity_field_delaunay_vectors_					= true,
+					bool show_velocity_field_constrained_vectors_ 				= false
+			);
 
 			float reconstruction_line_width_hint;
 			float reconstruction_point_size_hint;
@@ -88,6 +98,16 @@ namespace GPlatesPresentation
 
 			// VGP-specific parameters.
 			bool vgp_draw_circular_error;
+
+			// Topological network settings:
+			bool show_topological_network_mesh_triangulation;
+			bool show_topological_network_delaunay_triangulation;
+			bool show_topological_network_constrained_triangulation;
+			bool show_topological_network_segment_velocity;
+
+			// VelocityFieldCalculator settings
+			bool show_velocity_field_delaunay_vectors;
+			bool show_velocity_field_constrained_vectors;
 		};
 
 
@@ -114,6 +134,16 @@ namespace GPlatesPresentation
 			void
 			visit_reconstruct_visual_layer_params(
 					const ReconstructVisualLayerParams &params);
+
+			virtual
+			void
+			visit_topology_network_visual_layer_params(
+					const TopologyNetworkVisualLayerParams &params);
+
+			virtual
+			void
+			visit_velocity_field_calculator_visual_layer_params(
+					const VelocityFieldCalculatorVisualLayerParams &params);
 
 		private:
 

@@ -330,6 +330,8 @@ GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
 }
 
 
+
+
 void
 GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 		std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_velocity_fields,

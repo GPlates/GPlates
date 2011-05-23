@@ -356,6 +356,12 @@ set(srcs
     TimeDependentRasterPage.cc
     TimeDependentRasterPage.h
     TimeDependentRasterPageUi.ui
+    TopologyNetworkPropertiesWidget.cc
+    TopologyNetworkPropertiesWidget.h
+    TopologyNetworkPropertiesWidgetUi.ui
+    TopologyNetworkResolverLayerOptionsWidget.cc
+    TopologyNetworkResolverLayerOptionsWidget.h
+    TopologyNetworkResolverLayerOptionsWidgetUi.ui
     TopologyToolsWidget.cc
     TopologyToolsWidget.h
     TopologyToolsWidgetUi.ui
@@ -370,6 +376,9 @@ set(srcs
     UninitialisedEditWidgetException.h
     UnsavedChangesWarningDialog.h
     UnsavedChangesWarningDialogUi.ui
+    VelocityFieldCalculatorLayerOptionsWidget.cc
+    VelocityFieldCalculatorLayerOptionsWidget.h
+    VelocityFieldCalculatorLayerOptionsWidgetUi.ui
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h
     ViewFeatureGeometriesWidgetUi.ui

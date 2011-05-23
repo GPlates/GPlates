@@ -42,6 +42,41 @@
 namespace
 {
 	bool
+	is_row_prev_neighbor_of_insert( int r, int i, int table_count )
+	{
+		// check insert at top of table 
+		if ( i == 0 ) {
+			// is row last entry in table ? 
+			if (r == (table_count - 1) )
+				return true;
+		} else {
+			// is row just above insert ?
+			if ( r == (i - 1) )
+				return true;
+		}
+		return false;
+	}
+
+	bool
+	is_row_next_neighbor_of_insert( int r, int i, int table_count )
+	{
+		// check insert at end of table
+		if ( i == (table_count - 1) ) {
+			// is row first entry in table ? 
+			if (r == 0)
+				return true;
+		} else {
+			// is row just below insert ?
+			if ( r == i + 1)
+				return true;
+		}
+		return false;
+	}
+
+
+		
+
+	bool
 	check_row_validity(
 			const GPlatesGui::TopologySectionsContainer::TableRow &entry)
 	{
@@ -95,54 +130,17 @@ namespace
 		
 		bool *d_guard_flag_ptr;
 	};
-
-
-	/**
-	 * Create controls for testing while the thing is running!
-	 *
-	 * I set this up because I needed to check the results of
-	 * non-table client code using the TopologySectionsContainer,
-	 * but no client code existed on my branch yet.
-	 * 
-	 * e.g.
-	 * box = new ActionButtonBox(4, 22, NULL);
-	 * add_test_action_for_slot(box, d_container_ptr, SLOT(clear()));
-	 */
-	void
-	add_test_action_for_slot(
-			GPlatesQtWidgets::ActionButtonBox *box,
-			QObject *target,
-			const char *slot_spec)
-	{
-		QAction *action = new QAction(QString(slot_spec), box);
-		action->setToolTip(QString("%1::%2").arg(target->metaObject()->className()).arg(slot_spec));
-		box->add_action(action);
-		QObject::connect(action, SIGNAL(triggered()),
-				target, slot_spec);
-	}
-	
-	void
-	make_testing_controls(
-			GPlatesGui::TopologySectionsContainer *container_ptr)
-	{
-		// Make an ActionButtonBox behave like a window (easy with Qt) and add some test actions to it.
-		GPlatesQtWidgets::ActionButtonBox *testing_controls = new GPlatesQtWidgets::ActionButtonBox(4, 22, NULL);
-		add_test_action_for_slot(testing_controls, container_ptr, SLOT(clear()));
-		add_test_action_for_slot(testing_controls, container_ptr, SLOT(reset_insertion_point()));
-		add_test_action_for_slot(testing_controls, container_ptr, SLOT(insert_test_data()));
-		add_test_action_for_slot(testing_controls, container_ptr, SLOT(move_insertion_point_idx_4()));
-		add_test_action_for_slot(testing_controls, container_ptr, SLOT(remove_idx_2()));
-		testing_controls->show();
-	}
 }
 
 
 GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 		QTableWidget &table,
-		TopologySectionsContainer &container,
+		TopologySectionsContainer &boundary_container,
+		TopologySectionsContainer &interior_container,
 		GPlatesGui::FeatureFocus &feature_focus):
 	d_table(&table),
-	d_container_ptr(&container),
+	d_boundary_container_ptr(&boundary_container),
+	d_interior_container_ptr(&interior_container),
 	d_action_box_row(-1),
 	d_remove_action(new QAction(&table)),
 	d_insert_above_action(new QAction(&table)),
@@ -154,52 +152,101 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	// Set up the actions we can use.
 	set_up_actions();
 	
+	// connect to all containers
+	set_up_connections_to_container( d_boundary_container_ptr );
+	set_up_connections_to_container( d_interior_container_ptr );
+
+	// set the default pointer
+	d_container_ptr = d_boundary_container_ptr;
+
 	// Set up the basic properties of the table.
 	set_up_table();
 
-#if 0	// Disabling special testing controls. Once we merge with the platepolygon branch, they won't be necessary.	
-	make_testing_controls(d_container_ptr);
-#endif
-
+	//
 	update_table();
-
-	// Listen to events from our container.
-	QObject::connect(d_container_ptr, SIGNAL(cleared()),
-			this, SLOT(clear_table()));
-	QObject::connect(d_container_ptr, SIGNAL(insertion_point_moved(GPlatesGui::TopologySectionsContainer::size_type)),
-			this, SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entry_removed(GPlatesGui::TopologySectionsContainer::size_type)),
-			this, SLOT(update_table()));
-	QObject::connect(
-			d_container_ptr,
-			SIGNAL(entries_inserted(
-					GPlatesGui::TopologySectionsContainer::size_type,
-					GPlatesGui::TopologySectionsContainer::size_type,
-					GPlatesGui::TopologySectionsContainer::const_iterator,
-					GPlatesGui::TopologySectionsContainer::const_iterator)),
-			this,
-			SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entry_modified(GPlatesGui::TopologySectionsContainer::size_type)),
-			this, SLOT(topology_section_modified(GPlatesGui::TopologySectionsContainer::size_type)));
-
-	QObject::connect(d_container_ptr, SIGNAL(focus_feature_at_index( GPlatesGui::TopologySectionsContainer::size_type)),
-			this, SLOT(react_focus_feature_at_index(GPlatesGui::TopologySectionsContainer::size_type)));
 
 	// Enable the table to receive mouse move events, so we can show/hide buttons
 	// based on the row being hovered over.
 	d_table->setMouseTracking(true);
-	QObject::connect(d_table, SIGNAL(cellEntered(int, int)),
-			this, SLOT(react_cell_entered(int, int)));
+
+	QObject::connect(
+		d_table, 
+		SIGNAL(cellEntered(int, int)),
+		this, 
+		SLOT(react_cell_entered(int, int)));
 
 	// Some cells may be user-editable: listen for changes.
-	QObject::connect(d_table, SIGNAL(cellChanged(int, int)),
-			this, SLOT(react_cell_changed(int, int)));
+	QObject::connect(
+		d_table, 
+		SIGNAL(cellChanged(int, int)),
+		this, 
+		SLOT(react_cell_changed(int, int)));
 
 	// Adjust focus via clicking on table rows.
-	QObject::connect(d_table, SIGNAL(cellClicked(int, int)),
-			this, SLOT(react_cell_clicked(int, int)));
+	QObject::connect(
+		d_table, 
+		SIGNAL(cellClicked(int, int)),
+		this, 
+		SLOT(react_cell_clicked(int, int)));
 }
 
+void
+GPlatesGui::TopologySectionsTable::set_up_connections_to_container(
+	TopologySectionsContainer *container_ptr)
+{
+	QObject::connect(
+		container_ptr, 
+		SIGNAL(do_update()),
+		this, 
+		SLOT(update_table()));
+
+	QObject::connect(
+		container_ptr, 
+		SIGNAL(cleared()),
+		this, 
+		SLOT(clear_table()));
+
+	QObject::connect(
+		container_ptr, 
+		SIGNAL(insertion_point_moved(GPlatesGui::TopologySectionsContainer::size_type)),
+		this, 
+		SLOT(update_table()));
+
+	QObject::connect(
+		container_ptr, 
+		SIGNAL(entry_removed(GPlatesGui::TopologySectionsContainer::size_type)),
+		this, 
+		SLOT(update_table()));
+
+	QObject::connect(
+		container_ptr,
+		SIGNAL(entries_inserted(
+			GPlatesGui::TopologySectionsContainer::size_type,
+			GPlatesGui::TopologySectionsContainer::size_type,
+			GPlatesGui::TopologySectionsContainer::const_iterator,
+			GPlatesGui::TopologySectionsContainer::const_iterator)),
+		this,
+		SLOT(update_table()));
+
+	QObject::connect(
+		container_ptr, 
+		SIGNAL(entry_modified(GPlatesGui::TopologySectionsContainer::size_type)),
+		this, 
+		SLOT(topology_section_modified(GPlatesGui::TopologySectionsContainer::size_type)));
+
+	QObject::connect(
+		container_ptr, 
+		SIGNAL(focus_feature_at_index( GPlatesGui::TopologySectionsContainer::size_type)),
+		this, 
+		SLOT(react_focus_feature_at_index(GPlatesGui::TopologySectionsContainer::size_type)));
+
+	QObject::connect(
+		container_ptr, 
+		SIGNAL(container_change(GPlatesGui::TopologySectionsContainer *)),
+		this, 
+		SLOT(react_container_change(GPlatesGui::TopologySectionsContainer *)));
+
+}
 
 void
 GPlatesGui::TopologySectionsTable::clear_table()
@@ -261,8 +308,11 @@ GPlatesGui::TopologySectionsTable::react_cell_changed(
 void
 GPlatesGui::TopologySectionsTable::react_remove_clicked()
 {
-	TopologySectionsContainer::size_type my_index = convert_table_row_to_data_index(get_current_action_box_row());
-	if (my_index > d_container_ptr->size()) {
+	TopologySectionsContainer::size_type my_index = 
+		convert_table_row_to_data_index(get_current_action_box_row());
+
+	if (my_index > d_container_ptr->size()) 
+	{
 		return;
 	}
 
@@ -275,9 +325,13 @@ void
 GPlatesGui::TopologySectionsTable::react_insert_above_clicked()
 {
 	// Insert "Above me", i.e. insertion point should replace this row.
-	TopologySectionsContainer::size_type my_index = convert_table_row_to_data_index(get_current_action_box_row());
+	TopologySectionsContainer::size_type my_index = 
+		convert_table_row_to_data_index(get_current_action_box_row());
+
 	TopologySectionsContainer::size_type target_index = my_index;
-	if (target_index == d_container_ptr->insertion_point()) {
+
+	if (target_index == d_container_ptr->insertion_point()) 
+	{
 		// It's already there. Nevermind.
 		return;
 	}
@@ -290,9 +344,13 @@ void
 GPlatesGui::TopologySectionsTable::react_insert_below_clicked()
 {
 	// Insert "Below me", i.e. insertion point should be this row + 1.
-	TopologySectionsContainer::size_type my_index = convert_table_row_to_data_index(get_current_action_box_row());
+	TopologySectionsContainer::size_type my_index = 
+		convert_table_row_to_data_index(get_current_action_box_row());
+
 	TopologySectionsContainer::size_type target_index = my_index + 1;
-	if (target_index == d_container_ptr->insertion_point()) {
+
+	if (target_index == d_container_ptr->insertion_point()) 
+	{
 		// It's already there. Nevermind.
 		return;
 	}
@@ -458,7 +516,8 @@ GPlatesGui::TopologySectionsTable::convert_table_row_to_data_index(
 		int row)
 {
 	TopologySectionsContainer::size_type index = static_cast<TopologySectionsContainer::size_type>(row);
-	if (index == d_container_ptr->insertion_point()) {
+	if (index == d_container_ptr->insertion_point()) 
+	{
 		// While the visual row requested corresponds to the special insertion point,
 		// and does not match any entry in the data vector, we can at least return
 		// the index of data that new entries would be inserted at.
@@ -551,11 +610,12 @@ void
 GPlatesGui::TopologySectionsTable::update_table_row_count()
 {
 	// One row for each data entry.
-	int rows = static_cast<int>(d_container_ptr->size());
+	int rows = static_cast<int>( d_container_ptr->size() );
 	// Plus one for the insertion point.
 	++rows;
-
+//// qDebug() << "TST: update_table_row_count: rows = " << rows;
 	d_table->setRowCount(rows);
+// // qDebug() << "TST: update_table_row_count: END";
 }
 
 
@@ -591,18 +651,41 @@ GPlatesGui::TopologySectionsTable::update_table_row(
 		TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
 		const TopologySectionsContainer::TableRow &entry = d_container_ptr->at(index);
 
-		if (check_row_validity(entry)) {
+#if 0
+qDebug() << "update_table_row()"
+	<< ": r = " << row 
+	<< "; i = " << get_current_insertion_point_row()  
+	<< "; c = " << d_table->rowCount();
+#endif
 
+		if (check_row_validity(entry)) 
+		{
 			if ( ! check_row_validity_geom(entry)) {
 				// Draw a yellow row
 				render_valid_row(row, entry, QColor("#FFFF00") );
 			} else {
-				// Draw a nice normal valid row.
-				render_valid_row(row, entry);
+				if ( is_row_prev_neighbor_of_insert(
+						row, get_current_insertion_point_row(), d_table->rowCount() ) )
+				{
+					// Draw a nice normal valid row, with color for prev neighbor.
+					render_valid_row(row, entry, QColor("blue") ); // green
+				}
+				else if ( is_row_next_neighbor_of_insert(
+						row, get_current_insertion_point_row(), d_table->rowCount() ) )
+				{
+					// Draw a nice normal valid row, with color for next neighbor.
+					render_valid_row(row, entry, QColor("green") ); // green
+				}
+				else 
+				{
+					// Draw a nice normal valid row.
+					render_valid_row(row, entry); 
+				}
+
 			}
 
 		} else {
-			// Draw a big red invalid row.
+			// Draw a red invalid row.
 			render_invalid_row(row, get_invalid_row_message(entry));
 		}
 	}
@@ -638,7 +721,7 @@ GPlatesGui::TopologySectionsTable::render_invalid_row(
 		QString reason)
 {
 	static const QColor invalid_fg = Qt::black;
-	static const QColor invalid_bg = QColor("#FF6149");
+	static const QColor invalid_bg = QColor("#FF6149"); // red 
 
 	// Table cells start off as NULL QTableWidgetItems. Fill in the blanks if needed.
 	int description_column = TopologySectionsTableColumns::COLUMN_ACTIONS + 1;
@@ -720,27 +803,47 @@ void
 GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 		int row)
 {
-	if (row < 0 || row >= d_table->rowCount()) {
-		return;
-	}
-	// Clicking the special Insertion Point row should have no effect.
-	if (row == get_current_insertion_point_row()) {
+	// Get the appropriate details about the feature from the container,
+	TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
+// // qDebug() << "TST: focus_feature_at_row: row = " << row << "; index = " << index << "; rowCount =" << d_table->rowCount();
+
+	// Check outer bounds
+	if (row < 0 || row >= d_table->rowCount() ) 
+	{
+// // qDebug() << "TST: focus_feature_at_row: row < 0 || >= rowCount";
 		return;
 	}
 
-	// Get the appropriate details about the feature from the container,
-	TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
+	// Clicking the special Insertion Point row should have no effect.
+	if (row == get_current_insertion_point_row()) 
+	{
+// qDebug() << "TST: focus_feature_at_row: row == get_cur_insert";
+		return;
+	}
+
 
 	const TopologySectionsContainer::TableRow &trow = d_container_ptr->at(index);
 
+	if (!trow.get_feature_ref().is_valid() )
+	{
+// qDebug() << "TST: focus_feature_at_row: ! trow.get_feature_ref().is_valid() )";
+	}
+
+	if (! trow.get_geometry_property().is_still_valid() )
+	{
+// qDebug() << "TST: focus_feature_at_row: ! trow.get_geometry_property().is_still_valid() ";
+	}
+		
 	// Do we have enough information?
-	if (trow.get_feature_ref().is_valid() && trow.get_geometry_property().is_still_valid()) {
+	if (trow.get_feature_ref().is_valid() && trow.get_geometry_property().is_still_valid()) 
+	{
 		// Then adjust the focus.
 		d_feature_focus_ptr->set_focus(trow.get_feature_ref(), trow.get_geometry_property());
 	
 		// And provide visual feedback for user.
 		d_table->selectRow(row);
 	}
+// qDebug() << "TST: END";
 }
 
 void
@@ -750,6 +853,14 @@ GPlatesGui::TopologySectionsTable::react_focus_feature_at_index(
 	d_table->selectRow( convert_data_index_to_table_row(index) );
 }
 
+void
+GPlatesGui::TopologySectionsTable::react_container_change(
+		 GPlatesGui::TopologySectionsContainer *ptr)
+{
+	//// qDebug() << "TST: react_container_change()";
+	// set the pointer
+	d_container_ptr = ptr;
+}
 
 void
 GPlatesGui::TopologySectionsTable::install_table_widget_item(

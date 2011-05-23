@@ -721,16 +721,15 @@ GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 		// so print debug message and return null feature reference.
 		if ( back_ref_targets.empty() )
 		{
-			qDebug() << "ERROR: No feature found for feature_id =";
-			qDebug() <<
-				GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
+			qDebug() 
+				<< "ERROR: missing feature for id ="
+				<< GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
 		}
 		else
 		{
-			qDebug() << "ERROR: More than one feature found for feature_id =";
-			qDebug() <<
-				GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
-			qDebug() << "ERROR: Unable to determine feature";
+			qDebug() 
+				<< "ERROR: multiple features for id ="
+				<< GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
 		}
 
 		// Return null feature reference.

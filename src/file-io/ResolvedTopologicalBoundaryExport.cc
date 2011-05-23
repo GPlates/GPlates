@@ -99,14 +99,31 @@ namespace GPlatesFileIO
 			 */
 			struct Output
 			{
-				resolved_geom_seq_type platepolygons;
+				// one file with all sub segments from all topologies 
 				sub_segment_group_seq_type lines;
+
+				// plate polygons
+				resolved_geom_seq_type platepolygons;
+
+				// plate polygon sub_segment types
 				sub_segment_group_seq_type ridge_transforms;
 				sub_segment_group_seq_type subductions;
 				sub_segment_group_seq_type left_subductions;
 				sub_segment_group_seq_type right_subductions;
 
+				// network polygons
+				resolved_geom_seq_type network_polygons;
+
+				// network polygon sub_segment types
+				sub_segment_group_seq_type network_ridge_transforms;
+				sub_segment_group_seq_type network_subductions;
+				sub_segment_group_seq_type network_left_subductions;
+				sub_segment_group_seq_type network_right_subductions;
+
+				// slab polygons
 				resolved_geom_seq_type slab_polygons;
+
+				// slab polygon sub_segment types
 				sub_segment_group_seq_type slab_edge_leading;
 				sub_segment_group_seq_type slab_edge_leading_left;
 				sub_segment_group_seq_type slab_edge_leading_right;
@@ -230,6 +247,124 @@ namespace GPlatesFileIO
 				}
 			}
 
+			void
+			add_topological_network_boundary_sub_segment(
+					const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment,
+					const double &reconstruction_time,
+					const OutputOptions &output_options,
+					Output &output)
+			{
+				// The export file with all subsegments (regardless of type).
+				if (output_options.export_network_polygon_subsegments_to_lines)
+				{
+					output.lines.back().sub_segments.push_back(&sub_segment);
+				}
+
+				// Also export the sub segment to another file based on its feature type.
+
+				// Determine the feature type of subsegment.
+				const SubSegmentType sub_segment_type =
+						get_sub_segment_type(sub_segment, reconstruction_time);
+
+				// Export subsegment depending on its feature type.
+				switch (sub_segment_type)
+				{
+				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT:
+					if (output_options.export_network_subductions)
+					{
+						output.network_subductions.back().sub_segments.push_back(&sub_segment);
+					}
+					if (output_options.export_network_left_subductions)
+					{
+						output.network_left_subductions.back().sub_segments.push_back(&sub_segment);
+					}
+					break;
+
+				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT:
+					if (output_options.export_network_subductions)
+					{
+						output.network_subductions.back().sub_segments.push_back(&sub_segment);
+					}
+					if (output_options.export_network_right_subductions)
+					{
+						output.network_right_subductions.back().sub_segments.push_back(&sub_segment);
+					}
+					break;
+
+				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN:
+					// We know it's a subduction zone but don't know if left or right
+					// so export to the subduction zone file only.
+					if (output_options.export_network_subductions)
+					{
+						output.network_subductions.back().sub_segments.push_back(&sub_segment);
+					}
+					break;
+
+				case SUB_SEGMENT_TYPE_OTHER:
+				default:
+					if (output_options.export_network_ridge_transforms)
+					{
+						output.network_ridge_transforms.back().sub_segments.push_back(&sub_segment);
+					}
+					break;
+				}
+			}
+
+
+
+			void
+			add_topological_network_boundary(
+					const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_geom,
+					const double &reconstruction_time,
+					const OutputOptions &output_options,
+					Output &output)
+			{
+				// Add the plate polygon if they are being exported.
+				if (output_options.export_all_network_polygons_to_a_single_file)
+				{
+					output.network_polygons.push_back(resolved_geom);
+				}
+
+				// The export file with all subsegments (regardless of type).
+				if (output_options.export_network_polygon_subsegments_to_lines)
+				{
+					output.lines.push_back(SubSegmentGroup(resolved_geom));
+				}
+				// The export file for all subductions.
+				if (output_options.export_network_subductions)
+				{
+					output.network_subductions.push_back(SubSegmentGroup(resolved_geom));
+				}
+				// The export file for all left subductions.
+				if (output_options.export_network_left_subductions)
+				{
+					output.network_left_subductions.push_back(SubSegmentGroup(resolved_geom));
+				}
+				// The export file for all right subductions.
+				if (output_options.export_network_right_subductions)
+				{
+					output.network_right_subductions.push_back(SubSegmentGroup(resolved_geom));
+				}
+				// The export file for all ridge transforms.
+				if (output_options.export_network_ridge_transforms)
+				{
+					output.network_ridge_transforms.push_back(SubSegmentGroup(resolved_geom));
+				}
+
+				// Iterate over the subsegments contained in the current resolved topological geometry.
+				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_iter =
+						resolved_geom->sub_segment_begin();
+				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_end =
+						resolved_geom->sub_segment_end();
+				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
+				{
+					add_topological_network_boundary_sub_segment(
+							*sub_segment_iter,
+							reconstruction_time,
+							output_options,
+							output);
+				}
+			}
 
 			void
 			add_topological_closed_plate_boundary(
@@ -452,6 +587,19 @@ namespace GPlatesFileIO
 								output_options,
 								output);
 					}
+
+
+					static const GPlatesModel::FeatureType network_type = 
+						GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
+					if (feature_ref->feature_type() == network_type)
+					{
+						add_topological_network_boundary(
+								resolved_geom,
+								reconstruction_time,
+								output_options,
+								output);
+					}
+
 				}
 			}
 
@@ -654,7 +802,8 @@ namespace GPlatesFileIO
 				//
 
 				if (output_options.export_plate_polygon_subsegments_to_lines ||
-					output_options.export_slab_polygon_subsegments_to_lines)
+					output_options.export_slab_polygon_subsegments_to_lines ||
+					output_options.export_network_polygon_subsegments_to_lines)
 				{
 					export_sub_segments(
 							target_dir,
@@ -701,8 +850,10 @@ namespace GPlatesFileIO
 						{
 							continue;
 						}
-						const QString place_holder_replacement =
-								QString::number(*resolved_geom->plate_id());
+
+						QString place_holder_replacement = "plate_";
+						const QString plate_id_string = QString::number(*resolved_geom->plate_id());
+						place_holder_replacement.append(plate_id_string);
 
 						// We're exporting a sequence of one resolved geometry to its own file.
 						resolved_geom_seq_type resolved_geoms(1, resolved_geom);
@@ -916,6 +1067,125 @@ namespace GPlatesFileIO
 							output.slab_edge_side,
 							feature_to_collection_map);
 				}
+
+				//
+				// Network polygons 
+				//
+
+				if (output_options.export_all_network_polygons_to_a_single_file)
+				{
+					export_resolved_topological_boundaries(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							NETWORK_POLYGON_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_networks,
+							output.network_polygons,
+							feature_to_collection_map);
+				}
+
+				// If we're also exporting each plate polygon to its own file.
+				if (output_options.export_individual_network_polygon_files)
+				{
+					// Iterate over the plate polygons and export each separately.
+					BOOST_FOREACH(
+							const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_geom,
+							output.network_polygons)
+					{
+						// We're expecting a plate id as that forms part of the filename.
+						if (!resolved_geom->plate_id())
+						{
+							continue;
+						}
+						QString place_holder_replacement = "network_";
+						const QString plate_id_string = QString::number(*resolved_geom->plate_id());
+						place_holder_replacement.append(plate_id_string);
+
+						// We're exporting a sequence of one resolved geometry to its own file.
+						resolved_geom_seq_type resolved_geoms(1, resolved_geom);
+
+						export_resolved_topological_boundaries(
+								target_dir,
+								file_basename,
+								placeholder_format_string,
+								export_format,
+								NETWORK_POLYGON_EXPORT_TYPE,
+								reconstruction_anchor_plate_id,
+								reconstruction_time,
+								place_holder_replacement,
+								resolved_geoms,
+								feature_to_collection_map);
+					}
+				}
+
+				//
+				// Network polygon subsegments.
+				//
+
+				if (output_options.export_network_ridge_transforms)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							NETWORK_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_network_ridge_transforms,
+							output.network_ridge_transforms,
+							feature_to_collection_map);
+				}
+
+				if (output_options.export_network_subductions)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							NETWORK_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_network_subductions,
+							output.network_subductions,
+							feature_to_collection_map);
+				}
+
+				if (output_options.export_network_left_subductions)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							NETWORK_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_network_left_subductions,
+							output.network_left_subductions,
+							feature_to_collection_map);
+				}
+
+				if (output_options.export_network_right_subductions)
+				{
+					export_sub_segments(
+							target_dir,
+							file_basename,
+							placeholder_format_string,
+							export_format,
+							NETWORK_POLYGON_SUB_SEGMENTS_EXPORT_TYPE,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							output_options.placeholder_network_right_subductions,
+							output.network_right_subductions,
+							feature_to_collection_map);
+				}
+
+
 			}
 		}
 	}

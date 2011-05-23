@@ -118,7 +118,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_vgp_render_settings(
 			GPlatesAppLogic::VGPRenderSettings::instance()),
 	d_last_open_directory(QDir::currentPath()),
-	d_show_stars(true),
+	d_show_stars(false),
 	d_background_colour(
 			new GPlatesGui::Colour(get_default_background_colour())),
 	d_graticule_settings(

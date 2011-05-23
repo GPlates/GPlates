@@ -364,7 +364,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::generate_velocities_in_multipoi
 	for ( ; iter != end; ++iter, ++field_iter)
 	{
 		d_num_points += 1;
-		process_point(*iter, *field_iter);
+		process_point_in_base_triangulation(*iter, *field_iter);
 	}
 
 	// Having created and populated the MultiPointVectorField, let's store it in the collection
@@ -374,7 +374,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::generate_velocities_in_multipoi
 
 
 void
-GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
+GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_base_triangulation(
 		const GPlatesMaths::PointOnSphere &point,
 		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element)
 {
@@ -391,7 +391,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 				GPlatesAppLogic::PlateVelocityUtils::convert_velocity_scalars_to_colatitude_longitude(
 						*interpolated_velocity_scalars);
 
-		process_point_in_network(point, range_element, velocity_colat_lon);
+		set_velocity_from_base_triangulation(point, range_element, velocity_colat_lon);
 		return;
 	}
 
@@ -450,7 +450,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 
 
 void
-GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_network(
+GPlatesFeatureVisitors::ComputationalMeshSolver::set_velocity_from_base_triangulation(
 		const GPlatesMaths::PointOnSphere &point, 
 		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
 		const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon)
@@ -463,6 +463,25 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_network(
 	range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(velocity_vector, reason);
 	// In the previous code, the point was rendered black if it was in a deformation network.
 }
+
+
+#if 0
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::set_velocity_from_constrained_triangulation(
+		const GPlatesMaths::PointOnSphere &point, 
+		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
+		const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon)
+{
+	const GPlatesMaths::Vector3D velocity_vector =
+			GPlatesMaths::convert_vector_from_colat_lon_to_xyz(point, velocity_colat_lon);
+	using namespace GPlatesAppLogic;
+
+	MultiPointVectorField::CodomainElement::Reason reason =
+			MultiPointVectorField::CodomainElement::InDeformationNetworkConstrainedInterpolation;
+	range_element = MultiPointVectorField::CodomainElement(velocity_vector, reason);
+	// In the previous code, the point was rendered black if it was in a deformation network.
+}
+#endif
 
 
 void

@@ -52,7 +52,6 @@
 
 #include "presentation/ViewState.h"
 
-#define HIDE_DEV_CODE
 
 namespace
 {
@@ -124,6 +123,7 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 {
 	setupUi(this);
 
+#if 0
 	// Set up the action button box to hold the remove all sections button.
 	ActionButtonBox *action_button_box = new ActionButtonBox(1, 16, this);
 	action_button_box->add_action(clear_action);
@@ -133,6 +133,7 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 	QtWidgetUtils::add_widget_to_placeholder(
 			action_button_box,
 			action_button_box_placeholder_widget);
+#endif
 
 	setup_widgets();
 	setup_connections();
@@ -157,51 +158,32 @@ GPlatesQtWidgets::TopologyToolsWidget::setup_widgets()
 
 	// add the Feature Summary Widget 
 	layout_section->addWidget( d_feature_summary_widget_ptr );
-
-	// 
-#ifdef HIDE_DEV_CODE
-	label_shape->setVisible(false);
-	spinbox_shape_factor->setVisible(false);
-	label_edge->setVisible(false);
-	spinbox_max_edge->setVisible(false);
-	button_mesh->setVisible(false);
-	combobox_topology_type->setVisible(false);
-
-	label_topology_type->setVisible(false);
-	combobox_topology_type->setCurrentIndex(1);
-	combobox_topology_type->setVisible(false);
-#endif
-
- 	// Set some defaults
- 	spinbox_shape_factor->setValue(0.125);
- 	spinbox_max_edge->setValue(5);
- 
- 	// Default state is disabled ; will change if Topology Type combobox is changed to Network 
- 	button_mesh->setEnabled( false );
- 	spinbox_shape_factor->setEnabled( false );
- 	spinbox_max_edge->setEnabled( false );
 }
 
 void
 GPlatesQtWidgets::TopologyToolsWidget::setup_connections()
 {
-	// Attach buttons to functions
+	// Attach widgets to functions
+	QObject::connect(
+		sections_combobox, 
+		SIGNAL(currentIndexChanged(int)),
+ 		this, 
+		SLOT(handle_sections_combobox_index_changed(int)));
+	
+	QObject::connect( button_remove_all_sections, SIGNAL(clicked()),
+ 		this, SLOT(handle_remove_all_sections()));
 
-	 QObject::connect( button_create, SIGNAL(clicked()),
+	QObject::connect( button_create, SIGNAL(clicked()),
  		this, SLOT(handle_create()));
 
-	 QObject::connect( button_add_feature, SIGNAL(clicked()),
- 		this, SLOT(handle_add_feature()));
+	QObject::connect( button_add_feature_boundary, SIGNAL(clicked()),
+ 		this, SLOT(handle_add_feature_boundary()));
 
-     QObject::connect( button_remove_feature, SIGNAL(clicked()),
+	QObject::connect( button_add_feature_interior, SIGNAL(clicked()),
+ 		this, SLOT(handle_add_feature_interior()));
+
+    QObject::connect( button_remove_feature, SIGNAL(clicked()),
         this, SLOT(handle_remove_feature()));
-
-    QObject::connect(combobox_topology_type, SIGNAL(activated(int)),
-        this, SLOT(handle_combobox_topology_type_changed(int)));
-
-    QObject::connect( button_mesh, SIGNAL( clicked() ),
-        this, SLOT(handle_mesh()));
-
 }
 
 
@@ -236,7 +218,9 @@ GPlatesQtWidgets::TopologyToolsWidget::clear()
 	lineedit_plate_id->clear();
 	lineedit_time_of_appearance->clear();
 	lineedit_time_of_disappearance->clear();
-	lineedit_number_of_sections->clear();
+
+	label_num_sections_boundary->setText( QString::number( 0 ) );
+	label_num_sections_interior->setText( QString::number( 0 ) );
 
 	d_feature_summary_widget_ptr->clear();
 }
@@ -291,65 +275,15 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
 		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
 	}
-
-    // Adjust the combobox widget to match the type 
-    if ( topology_type == GPlatesGlobal::UNKNOWN_TOPOLOGY)
-    {
-        combobox_topology_type->setCurrentIndex(0);
-    }
-    else if ( topology_type == GPlatesGlobal::PLATE_POLYGON)
-    {
-        combobox_topology_type->setCurrentIndex(1);
-    }
-    else if ( topology_type == GPlatesGlobal::SLAB_POLYGON)
-    {
-        combobox_topology_type->setCurrentIndex(2);
-    }
-    else if ( topology_type == GPlatesGlobal::DEFORMING_POLYGON)
-    {
-        combobox_topology_type->setCurrentIndex(3);
-    }
-    else if ( topology_type == GPlatesGlobal::NETWORK)
-    {
-        combobox_topology_type->setCurrentIndex(4);
-    }
-    else /* just in case ... */
-    {
-        combobox_topology_type->setCurrentIndex(0);
-    }
 }
 
+//
 void
-GPlatesQtWidgets::TopologyToolsWidget::handle_combobox_topology_type_changed(int index)
+GPlatesQtWidgets::TopologyToolsWidget::handle_sections_combobox_index_changed(int index)
 {
-	// call the tools fuction
-	d_topology_tools_ptr->handle_topology_type_changed(index);
-
-	// setEnable(true / false ) the various mesh widgets as needed 
- 	if( index == 0 ) 
- 	{
- 		button_mesh->setEnabled( false );
- 		spinbox_shape_factor->setEnabled( false );
- 		spinbox_max_edge->setEnabled( false );
- 	}
- 	else if ( index == 1 )
- 	{
- 		button_mesh->setEnabled( true );
- 		spinbox_shape_factor->setEnabled( true );
- 		spinbox_max_edge->setEnabled( true );
-	}
+	// call the tools fuctions
+	d_topology_tools_ptr->handle_sections_combobox_index_changed( index );
 }
-
-void
-GPlatesQtWidgets::TopologyToolsWidget::handle_mesh()
-{
-	// call the tools fuction with the values in the spin boxes
-	d_topology_tools_ptr->handle_mesh( 
-		spinbox_shape_factor->value(),
-		spinbox_max_edge->value()
-	);
-}
-
 
 void
 GPlatesQtWidgets::TopologyToolsWidget::handle_remove_all_sections()
@@ -361,7 +295,8 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_remove_all_sections()
 void
 GPlatesQtWidgets::TopologyToolsWidget::handle_create()
 {
-	if ( d_topology_tools_ptr->get_number_of_sections() < 1 )
+	// all topologies require one ore more boundary sections
+	if ( d_topology_tools_ptr->get_number_of_sections_boundary() < 1 )
 	{
 		// post warning 
 		QMessageBox::warning(this,
@@ -372,13 +307,13 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_create()
 		return;
 	}
 
+	// other section sequces are checked for in the d_create_feature_dialog
+
 	// check for existing topology
 	if ( ! d_topology_tools_ptr->get_topology_feature_ref().is_valid() )
 	{
-		// Check which item is currently selected in the combobox 
-		// and pop up the dialog with that item automatically selected 
-		int index = combobox_topology_type->currentIndex();
-		bool success = d_create_feature_dialog->display(index);
+		// pop up the dialog 
+		bool success = d_create_feature_dialog->display( 0 );
 
 		if ( ! success ) 
 		{
@@ -397,7 +332,7 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_create()
 }
 
 void
-GPlatesQtWidgets::TopologyToolsWidget::handle_add_feature()
+GPlatesQtWidgets::TopologyToolsWidget::handle_add_feature_boundary()
 {
 	// simple short cut for no op
 	if ( ! d_feature_focus_ptr->is_valid() )
@@ -406,7 +341,23 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_add_feature()
 	}
 
 	// call the tools fuction
-	d_topology_tools_ptr->handle_add_feature();
+	d_topology_tools_ptr->handle_add_feature_boundary();
+
+	// Flip tab to topoology
+	tabwidget_main->setCurrentWidget( tab_topology );
+}
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_add_feature_interior()
+{
+	// simple short cut for no op
+	if ( ! d_feature_focus_ptr->is_valid() )
+	{
+		return;
+	}
+
+	// call the tools fuction
+	d_topology_tools_ptr->handle_add_feature_interior();
 
 	// Flip tab to topoology
 	tabwidget_main->setCurrentWidget( tab_topology );

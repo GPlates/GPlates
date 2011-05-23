@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>724</width>
-    <height>700</height>
+    <height>790</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>580</width>
-    <height>600</height>
+    <height>790</height>
    </size>
   </property>
   <property name="acceptDrops">
@@ -255,6 +255,12 @@
    <addaction name="action_Edit_Topology"/>
   </widget>
   <widget class="QDockWidget" name="dock_search_results">
+   <property name="minimumSize">
+    <size>
+     <width>170</width>
+     <height>300</height>
+    </size>
+   </property>
    <property name="contextMenuPolicy">
     <enum>Qt::ActionsContextMenu</enum>
    </property>
@@ -838,6 +844,9 @@
     <bool>true</bool>
    </property>
    <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
     <bool>true</bool>
    </property>
    <property name="text">
@@ -1456,6 +1465,9 @@
     <bool>true</bool>
    </property>
    <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="enabled">
     <bool>true</bool>
    </property>
    <property name="text">

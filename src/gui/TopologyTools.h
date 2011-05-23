@@ -57,6 +57,7 @@
 #include "model/ModelInterface.h"
 
 #include "model/PropertyValue.h"
+#include "property-values/GpmlTopologicalInterior.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
@@ -105,7 +106,6 @@ namespace GPlatesGui
 			BUILD, EDIT
 		};
 
-
 		/** Constructor */
 		TopologyTools(
 				GPlatesPresentation::ViewState &view_state,
@@ -115,7 +115,6 @@ namespace GPlatesGui
 		void
 		activate(
 				CanvasToolMode);
-
 
 		void
 		deactivate();
@@ -131,18 +130,31 @@ namespace GPlatesGui
 		}
 
 
+		//! get the number of boundary sections
 		int
-		get_number_of_sections()
-		{
-			return d_topology_sections_container_ptr->size();
-		}
+		get_number_of_sections_boundary();
 
+		//! get the number of interior sections
+		int
+		get_number_of_sections_interior();
+
+		//! synchronize tools and widget
+		// NOTE : will call handle_sections_combobox_index_changed to change container pointer
+		void
+		synchronize_seq_num(int i);
+
+		//! called from the topology tools widget when the user or program changes the combo box
+		void
+		handle_sections_combobox_index_changed( int i );
 
 	public slots:
 		
 		void
 		handle_reconstruction();
 
+		void
+		unset_focus();
+		
 		void
 		set_focus(
 			GPlatesGui::FeatureFocus &feature_focus);
@@ -154,22 +166,9 @@ namespace GPlatesGui
 		//
 		// Slots for signals from TopologyToolsWidget or its FeatureCreationDialog
 		//
-
 		void
 		handle_create_new_feature(
 			GPlatesModel::FeatureHandle::weak_ref);
-
-		/**
-		 * The slot that gets called when the user changes the "Topology Type" combo box.
-		 */
-		void
-		handle_topology_type_changed(int index);
-
-		/**
-		 * The slot that gets called when the user clicks the Mesh button 
-		 */
-		void
-		handle_mesh(double shape_factor, double max_edge);
 
 
 		/**
@@ -182,7 +181,11 @@ namespace GPlatesGui
 		 * call @a handle_apply.
 		 */
 		void
-		handle_add_feature();
+		handle_add_feature_boundary();
+
+		//! same as above, but for the <gpml:interior> list of features
+		void
+		handle_add_feature_interior();
 
 		/**
 		 * The slot that gets called when the user clicks "Remove Focused Feature".
@@ -215,29 +218,52 @@ namespace GPlatesGui
 		handle_apply();
 
 		//
-		// Slots for signals from TopologySectionsContainer
+		// Slots for signals from either TopologySectionsContainer
 		//
-
-		void
-		react_cleared();
-
 		void
 		react_insertion_point_moved(
 			GPlatesGui::TopologySectionsContainer::size_type new_index);
-		
+
+		//
+		// Slots for signals from boundary TopologySectionsContainer
+		//
+
+		//! boundary react functions
 		void
-		react_entry_removed(
+		react_cleared_boundary();
+
+		void
+		react_entry_removed_boundary(
 			GPlatesGui::TopologySectionsContainer::size_type deleted_index);
 	
 		void
-		react_entries_inserted(
+		react_entries_inserted_boundary(
 			GPlatesGui::TopologySectionsContainer::size_type inserted_index,
 			GPlatesGui::TopologySectionsContainer::size_type quantity,
 			GPlatesGui::TopologySectionsContainer::const_iterator inserted_begin,
 			GPlatesGui::TopologySectionsContainer::const_iterator inserted_end);
 
 		void
-		react_entry_modified(
+		react_entry_modified_boundary(
+			GPlatesGui::TopologySectionsContainer::size_type modified_index);
+
+		//! Interior react functions
+		void
+		react_cleared_interior();
+
+		void
+		react_entry_removed_interior(
+			GPlatesGui::TopologySectionsContainer::size_type deleted_index);
+	
+		void
+		react_entries_inserted_interior(
+			GPlatesGui::TopologySectionsContainer::size_type inserted_index,
+			GPlatesGui::TopologySectionsContainer::size_type quantity,
+			GPlatesGui::TopologySectionsContainer::const_iterator inserted_begin,
+			GPlatesGui::TopologySectionsContainer::const_iterator inserted_end);
+
+		void
+		react_entry_modified_interior(
 			GPlatesGui::TopologySectionsContainer::size_type modified_index);
 
 	private:
@@ -373,6 +399,8 @@ namespace GPlatesGui
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_topology_geometry_layer_ptr,
+			d_boundary_geometry_layer_ptr,
+			d_interior_geometry_layer_ptr,
 			d_focused_feature_layer_ptr,
 			d_insertion_neighbors_layer_ptr,
 			d_segments_layer_ptr,
@@ -399,7 +427,8 @@ namespace GPlatesGui
 		/*
 		* pointer to the TopologySectionsContainer in ViewportWindow.
 		*/
-		GPlatesGui::TopologySectionsContainer *d_topology_sections_container_ptr;
+		GPlatesGui::TopologySectionsContainer *d_boundary_sections_container_ptr;
+		GPlatesGui::TopologySectionsContainer *d_interior_sections_container_ptr;
 
 		/**
 		* pointer to the TopologyToolsWidget in Task Panel
@@ -431,16 +460,18 @@ namespace GPlatesGui
 		 * This sequence matches the table row sequence in @a TopologySectionsContainer
 		 * and is updated whenever that is updated (by listening to its insert, etc signals).
 		 */
-		section_info_seq_type d_section_info_seq;
+		// section_info_seq_type d_section_info_seq;
+		section_info_seq_type d_boundary_section_info_seq;
+		section_info_seq_type d_interior_section_info_seq;
 
 		/**
 		 * Contains the intersection/rendering information of the current visible sections.
 		 */
-		visible_section_seq_type d_visible_section_seq;
-
+		visible_section_seq_type d_visible_boundary_section_seq;
+		visible_section_seq_type d_visible_interior_section_seq;
 
 		/**
-		 * An ordered collection of all the vertices in the topology.
+		 * An ordered collection of ALL the vertices in the topology.
 		 */
 		std::vector<GPlatesMaths::PointOnSphere> d_topology_vertices;
 
@@ -449,6 +480,18 @@ namespace GPlatesGui
 		 */
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
 			d_topology_geometry_opt_ptr;
+
+		/**
+		 * The boundary polygon gets processed into this geometry.
+		 */
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
+			d_boundary_geometry_opt_ptr;
+
+		/**
+		 * The interior geometires processed into this geometry.
+		 */
+		std::vector<boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> >
+			d_interior_geometry_opt_ptrs;
 
 		/*
 		 * The topology feature being edited (if using edit tool) or NULL (if using
@@ -461,6 +504,9 @@ namespace GPlatesGui
 		// max edge is the longest edge length
 		double d_max_edge;
 
+		// which sequence of sections is under going edit and display 
+		int d_seq_num;
+
 		//
 		// private functions 
 		//
@@ -469,7 +515,10 @@ namespace GPlatesGui
 		connect_to_focus_signals( bool state );
 
 		void
-		connect_to_topology_sections_container_signals( bool state );
+		connect_to_boundary_sections_container_signals( bool state );
+
+		void
+		connect_to_interior_sections_container_signals( bool state );
 
 		void
 		activate_build_mode();
@@ -509,7 +558,10 @@ namespace GPlatesGui
 
 		//! Reconstruct all sections.
 		void
-		reconstruct_sections();
+		reconstruct_boundary_sections();
+
+		void
+		reconstruct_interior_sections();
 
 		//! Process all intersections.
 		void
@@ -521,7 +573,7 @@ namespace GPlatesGui
 
 		//! Find section reversal flags to minimise any rubber banding distance.
 		void
-		determine_segment_reversals();
+		determine_boundary_segment_reversals();
 
 		/**
 		 * Find any contiguous sequences of sections that require rubber-banding
@@ -542,19 +594,38 @@ namespace GPlatesGui
 		/**
 		 * Recursive function to find section reversal flags that minimise rubber banding distance.
 		 */
-		std::vector<bool>
+		void
 		find_reverse_order_subset_to_minimize_rubber_banding(
-				double &length,
+				double &length_with_current_flipped,
+				double &length_with_current_not_flipped,
+				std::vector<bool> &reverse_order_seq_with_current_flipped,
+				std::vector<bool> &reverse_order_seq_with_current_not_flipped,
 				const std::vector<visible_section_seq_type::size_type> &reverse_section_subset,
-				const bool flip_reversal_flag,
 				const GPlatesMaths::PointOnSphere &start_section_head,
-				const GPlatesMaths::PointOnSphere &previous_section_tail,
+				const GPlatesMaths::PointOnSphere &current_section_flipped_geometry_tail,
+				const GPlatesMaths::PointOnSphere &current_section_not_flipped_geometry_tail,
 				visible_section_seq_type::size_type current_depth,
 				visible_section_seq_type::size_type total_depth);
+
+		void
+		choose_child_reverse_order_subset(
+				double &length,
+				std::vector<bool> &reverse_order_seq,
+				const double &length_with_next_flipped,
+				const double &length_with_next_not_flipped,
+				const std::vector<bool> &reverse_order_seq_with_next_flipped,
+				const std::vector<bool> &reverse_order_seq_with_next_not_flipped,
+				const GPlatesMaths::PointOnSphere &current_section_geometry_tail,
+				const GPlatesMaths::PointOnSphere &next_section_flipped_geometry_head,
+				const GPlatesMaths::PointOnSphere &next_section_not_flipped_geometry_head);
 
 		//! Assign the boundary subsegments.
 		void
 		assign_boundary_segments();
+
+		//! Assign the interior subsegments.
+		void
+		assign_interior_segments();
 
 		/**
 		 * Processes intersection between two adjacent visible sections.
@@ -569,21 +640,37 @@ namespace GPlatesGui
 		void
 		assign_boundary_segment(
 				const visible_section_seq_type::size_type visible_section_index);
+		void
+		assign_interior_segment(
+				const visible_section_seq_type::size_type visible_section_index);
 
 		const SectionInfo &
-		get_section_info(
+		get_boundary_section_info(
 				const VisibleSection &visible_section) const;
 
 		SectionInfo &
-		get_section_info(
+		get_boundary_section_info(
+				const VisibleSection &visible_section);
+
+		const SectionInfo &
+		get_interior_section_info(
+				const VisibleSection &visible_section) const;
+
+		SectionInfo &
+		get_interior_section_info(
 				const VisibleSection &visible_section);
 
 		boost::optional<visible_section_seq_type::const_iterator>
-		is_section_visible(
+		is_section_visible_boundary(
 				const section_info_seq_type::size_type section_index) const;
 
+		boost::optional<visible_section_seq_type::const_iterator>
+		is_section_visible_interior(
+				const section_info_seq_type::size_type section_index) const;
+
+
 		void
-		set_reverse_flag(
+		set_boundary_section_reverse_flag(
 				const section_info_seq_type::size_type section_index,
 				const bool new_reverse_flag);
 
@@ -602,14 +689,16 @@ namespace GPlatesGui
 		 * Find the matching topological sections given a feature reference and
 		 * a geometry feature property iterator.
 		 */
-		std::vector<int>
+		void
 		find_topological_section_indices(
+				int &seq_num,
+				std::vector<int> &indices,
 				const GPlatesModel::FeatureHandle::weak_ref &feature,
-				const GPlatesModel::FeatureHandle::iterator &properties_iter) const;
+				const GPlatesModel::FeatureHandle::iterator &properties_iter);
 		
 		//! Returns true if the focused feature can be added to the topology.
 		bool
-		can_insert_focused_feature_into_topology() const;
+		can_insert_focused_feature_into_topology();
 
 		void
 		create_child_rendered_layers();
@@ -623,12 +712,18 @@ namespace GPlatesGui
 		void
 		update_topology_vertices();
 
+		void
+		update_boundary_vertices();
+
+		void
+		update_interior_vertices();
+
 		/**
 		 * Creates the 'gpml:boundary' property value from the current topology state
 		 * and sets in on @a feature.
 		 */
 		void
-		convert_topology_to_boundary_feature_property(
+		convert_topology_to_feature_property(
 				const GPlatesModel::FeatureHandle::weak_ref &feature);
 
 		/**
@@ -637,8 +732,18 @@ namespace GPlatesGui
 		 */
 		void
 		create_topological_sections(
-				std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &
-						topological_sections);
+			std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &
+				topological_sections);
+
+		void
+		create_boundary_sections(
+			std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &
+				topological_sections);
+
+		void
+		create_interior_sections(
+			std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &
+				topological_sections);
 
 		void
 		clear_widgets_and_data();
@@ -646,7 +751,6 @@ namespace GPlatesGui
 		//
 		// Rendering methods
 		//
-
 		void
 		draw_all_layers_clear();
 
@@ -657,25 +761,33 @@ namespace GPlatesGui
 		draw_topology_geometry();
 
 		void 
-		draw_focused_geometry(
-				bool draw);
+		draw_boundary_geometry();
 
 		void 
-		draw_focused_geometry_end_points(
-				const GPlatesMaths::PointOnSphere &start_point,
-				const GPlatesMaths::PointOnSphere &end_point);
+		draw_interior_geometry();
 
 		void
 		draw_segments();
-
-		void
-		draw_end_points();
 
 		void
 		draw_intersection_points();
 
 		void
 		draw_insertion_neighbors();
+
+#if 0
+		void
+		draw_end_points();
+#endif
+
+		void 
+		draw_focused_geometry( bool draw);
+
+		void 
+		draw_focused_geometry_end_points(
+				const GPlatesMaths::PointOnSphere &start_point,
+				const GPlatesMaths::PointOnSphere &end_point);
+
 	};
 }
 

@@ -243,17 +243,33 @@ namespace GPlatesFeatureVisitors
 		generate_velocities_in_multipoint_domain(
 				const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &velocity_domain);
 
+		// 2D 
 		void
-		process_point(
+		process_point_in_base_triangulation(
 				const GPlatesMaths::PointOnSphere &point,
 				boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element);
 
 		void
-		process_point_in_network(
+		set_velocity_from_base_triangulation(
 				const GPlatesMaths::PointOnSphere &point,
 				boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
 				const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon);
 
+#if 0
+		// 2D+C 
+		void
+		process_point_in_constrained_triangulation(
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element);
+
+		void
+		set_velocity_from_constrained_triangulation(
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
+				const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon);
+#endif
+
+		// Plate Polygon
 		void
 		process_point_in_plate_polygon(
 				const GPlatesMaths::PointOnSphere &point,

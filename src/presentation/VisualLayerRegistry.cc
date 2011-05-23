@@ -32,6 +32,9 @@
 #include "RasterVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
 
+#include "TopologyNetworkVisualLayerParams.h"
+#include "VelocityFieldCalculatorVisualLayerParams.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/LayerTaskRegistry.h"
 #include "app-logic/LayerTaskType.h"
@@ -42,6 +45,8 @@
 #include "qt-widgets/RasterLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
+#include "qt-widgets/TopologyNetworkResolverLayerOptionsWidget.h"
+#include "qt-widgets/VelocityFieldCalculatorLayerOptionsWidget.h"
 #include "qt-widgets/CoRegistrationOptionsWidget.h"
 
 //Data-mining temporary code
@@ -453,23 +458,6 @@ GPlatesPresentation::register_default_visual_layers(
 
 	// DERIVED_DATA group.
 	registry.register_visual_layer_type(
-			VisualLayerType::Type(TOPOLOGY_NETWORK_RESOLVER),
-			VisualLayerGroup::DERIVED_DATA,
-			"Resolved Topological Networks",
-			"Deforming regions will be simulated dynamically by referencing topological section "
-			"features, that have been reconstructed to a geological time, and triangulating "
-			"the convex hull region defined by these reconstructed sections while excluding "
-			"any micro-block sections from the triangulation.",
-			*html_colours.get_colour("darkkhaki"),
-			CreateAppLogicLayer(
-				reconstruct_graph,
-				layer_task_registry,
-				TOPOLOGY_NETWORK_RESOLVER),
-			&no_widget,
-			&default_visual_layer_params,
-			true);
-
-	registry.register_visual_layer_type(
 			VisualLayerType::Type(TOPOLOGY_BOUNDARY_RESOLVER),
 			VisualLayerGroup::DERIVED_DATA,
 			"Resolved Topological Closed Plate Boundaries",
@@ -486,6 +474,23 @@ GPlatesPresentation::register_default_visual_layers(
 			true);
 
 	registry.register_visual_layer_type(
+			VisualLayerType::Type(TOPOLOGY_NETWORK_RESOLVER),
+			VisualLayerGroup::DERIVED_DATA,
+			"Resolved Topological Networks",
+			"Deforming regions will be simulated dynamically by referencing topological section "
+			"features, that have been reconstructed to a geological time, and triangulating "
+			"the convex hull region defined by these reconstructed sections while excluding "
+			"any micro-block sections from the triangulation.",
+			*html_colours.get_colour("darkkhaki"),
+			CreateAppLogicLayer(
+				reconstruct_graph,
+				layer_task_registry,
+				TOPOLOGY_NETWORK_RESOLVER),
+			&GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::create,
+			&TopologyNetworkVisualLayerParams::create,
+			true);
+
+	registry.register_visual_layer_type(
 			VisualLayerType::Type(VELOCITY_FIELD_CALCULATOR),
 			VisualLayerGroup::DERIVED_DATA,
 			"Calculated Velocity Fields",
@@ -496,8 +501,8 @@ GPlatesPresentation::register_default_visual_layers(
 				reconstruct_graph,
 				layer_task_registry,
 				VELOCITY_FIELD_CALCULATOR),
-			&no_widget,
-			&default_visual_layer_params,
+			&GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::create,
+			&VelocityFieldCalculatorVisualLayerParams::create,
 			true);
 
 	if (enable_data_mining) //Data-mining temporary code

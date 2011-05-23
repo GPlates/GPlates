@@ -58,6 +58,9 @@
 #include "maths/CalculateVelocity.h"
 #include "maths/MathsUtils.h"
 
+#include "presentation/TopologyNetworkVisualLayerParams.h"
+#include "presentation/VelocityFieldCalculatorVisualLayerParams.h"
+
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryParameters.h"
@@ -121,9 +124,6 @@ namespace
 						render_params.reconstruction_point_size_hint,
 						render_params.reconstruction_line_width_hint,
 						symbol);
-#if 0
->>>>>>> .merge-right.r11332
-#endif
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.
@@ -134,16 +134,28 @@ namespace
 }
 
 
+
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		float reconstruction_line_width_hint_,
 		float reconstruction_point_size_hint_,
-		float velocity_ratio_unit_vector_direction_to_globe_radius_) :
+		float velocity_ratio_unit_vector_direction_to_globe_radius_,
+		bool show_topological_network_delaunay_triangulation_,
+		bool show_topological_network_constrained_triangulation_,
+		bool show_topological_network_mesh_triangulation_,
+		bool show_topological_network_segment_velocity_,
+		bool show_velocity_field_delaunay_vectors_,
+		bool show_velocity_field_constrained_vectors_) :
 	reconstruction_line_width_hint(reconstruction_line_width_hint_),
 	reconstruction_point_size_hint(reconstruction_point_size_hint_),
-	velocity_ratio_unit_vector_direction_to_globe_radius(
-			velocity_ratio_unit_vector_direction_to_globe_radius_),
+	velocity_ratio_unit_vector_direction_to_globe_radius( velocity_ratio_unit_vector_direction_to_globe_radius_),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
-	vgp_draw_circular_error(true)
+	vgp_draw_circular_error(true),
+	show_topological_network_delaunay_triangulation( show_topological_network_delaunay_triangulation_),
+	show_topological_network_constrained_triangulation( show_topological_network_constrained_triangulation_),
+	show_topological_network_mesh_triangulation( show_topological_network_mesh_triangulation_),
+	show_topological_network_segment_velocity( show_topological_network_segment_velocity_),
+	show_velocity_field_delaunay_vectors( show_velocity_field_delaunay_vectors_),
+	show_velocity_field_constrained_vectors( show_velocity_field_constrained_vectors_)
 {
 }
 
@@ -161,6 +173,26 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const ReconstructVisualLayerParams &params)
 {
 	d_render_params.vgp_draw_circular_error = params.get_vgp_draw_circular_error();
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_topology_network_visual_layer_params(
+		const TopologyNetworkVisualLayerParams &params)
+{
+	d_render_params.show_topological_network_delaunay_triangulation = params.show_delaunay_triangulation();
+	d_render_params.show_topological_network_constrained_triangulation = params.show_constrained_triangulation();
+	d_render_params.show_topological_network_mesh_triangulation = params.show_mesh_triangulation(); 
+	d_render_params.show_topological_network_segment_velocity = params.show_segment_velocity();
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_velocity_field_calculator_visual_layer_params(
+		const VelocityFieldCalculatorVisualLayerParams &params)
+{
+	d_render_params.show_velocity_field_delaunay_vectors = params.show_delaunay_vectors();
+	d_render_params.show_velocity_field_constrained_vectors = params.show_constrained_vectors();
 }
 
 
@@ -449,79 +481,91 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
 
-#if 0 
-	//
-	// 2D total triangulation
-	//
-	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
-		geometries = rtn->resolved_topology_geometries_from_triangulation_2();
 
-	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-		it = geometries.begin();
-	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-		it_end = geometries.end();
-	for(; it !=it_end; it++)
+	// Check for Mesh Triangulation
+	if (d_render_params.show_topological_network_mesh_triangulation)
 	{
-		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				create_rendered_reconstruction_geometry(
-						*it, 
-						rtn, 
-						d_render_params, 
-						GPlatesGui::Colour::get_grey() );
+		const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
+			mesh_geometries = rtn->resolved_topology_geometries_from_mesh();
 
-		// Render the rendered geometry.
-		render(rendered_geometry);
-	}
-
-
-	//
-	// 2D + C Total Triangulation 
-	//
-	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
-		geometries = rtn->resolved_topology_geometries();
-	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-		it = geometries.begin();
-	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-		it_end = geometries.end();
-	for(; it !=it_end; it++)
-	{
-		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				create_rendered_reconstruction_geometry(
-						*it, 
-						rtn, 
-						d_render_params, 
-						GPlatesGui::Colour::get_grey() );
-
-		// Render the rendered geometry.
-		render(rendered_geometry);
-	}
-#endif
-
-	//
-	// Mesh triangulation
-	//
-	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
-		mesh_geometries = rtn->resolved_topology_geometries_mesh();
-	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-		mesh_it = mesh_geometries.begin();
-	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+			mesh_it = mesh_geometries.begin();
+		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
 		mesh_it_end = mesh_geometries.end();
-	for(; mesh_it !=mesh_it_end; mesh_it++)
-	{
-		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+		for(; mesh_it !=mesh_it_end; mesh_it++)
+		{
+			GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
 						*mesh_it, 
 						rtn, 
 						d_render_params, 
-						d_colour );
+						d_colour,
+						boost::none,
+						boost::none);
 
-		// Render the rendered geometry.
-		render(rendered_geometry);
+			
+			// Render the rendered geometry.
+			render(rendered_geometry);
+		}
+	}
+		
+	// check for drawing of 2D + C Triangulation 
+	if (d_render_params.show_topological_network_constrained_triangulation)
+	{
+		const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
+			geometries = rtn->resolved_topology_geometries_from_constrained();
+		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+			it = geometries.begin();
+		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+			it_end = geometries.end();
+		for(; it !=it_end; it++)
+		{
+			GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						*it, 
+						rtn, 
+						d_render_params, 
+						GPlatesGui::Colour::get_grey(),
+						boost::none,
+						boost::none);
+
+			// Add to the rendered geometry layer.
+			render(rendered_geometry);
+		}
 	}
 
-	
+	// check for drawing of 2D total triangulation
+	if (d_render_params.show_topological_network_delaunay_triangulation)
+	{
+		const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
+			geometries = rtn->resolved_topology_geometries_from_triangulation_2();
 
-	render_topological_network_velocities(rtn, d_render_params, d_colour);
+		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+			it = geometries.begin();
+		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+			it_end = geometries.end();
+		for(; it !=it_end; it++)
+		{
+			GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						*it, 
+						rtn, 
+						d_render_params, 
+						GPlatesGui::Colour::get_black(),
+						boost::none,
+						boost::none);
+
+			// Add to the rendered geometry layer.
+			render(rendered_geometry);
+		}
+	}
+
+	// check for drawing of network segment velocity vectors 
+	if (d_render_params.show_topological_network_segment_velocity)
+	{
+		render_topological_network_velocities(rtn, d_render_params, d_colour);
+	}
+
 }
 
 void

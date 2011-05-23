@@ -68,6 +68,7 @@
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTopologicalPolygon.h"
+#include "property-values/GpmlTopologicalInterior.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalIntersection.h"
@@ -92,7 +93,8 @@
 GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder()
 {
 	// clear the working vector
-	d_table_rows.clear();
+	d_boundary_sections.clear();
+	d_interior_sections.clear();
 }
 
 
@@ -109,18 +111,23 @@ GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_propertie
 	// use a property type different than TopologicalPolygon.
 	//
 	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
+	static const QString topology_slab_type_name("TopologicalSlabBoundary");
 	static const QString topology_network_type_name("TopologicalNetwork");
-	const QString feature_type = GPlatesUtils::make_qstring_from_icu_string( feature_handle.feature_type().get_name() );
+	const QString feature_type = GPlatesUtils::make_qstring_from_icu_string( 
+		feature_handle.feature_type().get_name() );
 
 	// Quick-out: No need to continue.
-	if ( ( feature_type != topology_boundary_type_name ) &&
+	if (
+		( feature_type != topology_boundary_type_name ) &&
+		( feature_type != topology_slab_type_name ) &&
 		( feature_type != topology_network_type_name ) )
 	{
 		return false; 
 	}
 
-	// clear the working vector
-	d_table_rows.clear();
+	// clear the working vectors
+	d_boundary_sections.clear();
+	d_interior_sections.clear();
 
 	// else process this feature's properties:
 	return true;
@@ -157,9 +164,6 @@ void
 GPlatesFeatureVisitors::TopologySectionsFinder::process_gpml_time_window(
 		const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
-#ifdef DEBUG
-std::cout << "TopologySectionsFinder::process_gpml_time_window()" << std::endl;
-#endif
 	gpml_time_window.time_dependent_value()->accept_visitor(*this);
 	gpml_time_window.valid_time()->accept_visitor(*this);
 }
@@ -169,9 +173,9 @@ void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_polygon(
 		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
 {
-#ifdef DEBUG
-std::cout << "TopologySectionsFinder::visit_gpml_topological_polygon" << std::endl;
-#endif
+	// Set the sequence number
+	d_seq_num = 0;
+
 	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator 
 		iter, end;
 	iter = gpml_toplogical_polygon.sections().begin();
@@ -185,12 +189,28 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_polygon" << std::en
 }
 
 void
+GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_interior(
+		const GPlatesPropertyValues::GpmlTopologicalInterior &gpml_toplogical_interior)
+{
+	// Set the sequence number
+	d_seq_num = 1;
+
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator 
+		iter, end;
+	iter = gpml_toplogical_interior.sections().begin();
+	end = gpml_toplogical_interior.sections().end();
+	// loop over all the sections
+	for ( ; iter != end; ++iter) 
+	{
+		// visit the rest of the gpml 
+		(*iter)->accept_visitor(*this);
+	}
+}
+
+void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line_section(
 		const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
 {  
-#ifdef DEBUG
-std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << std::endl;
-#endif
 	// source geom.'s value is a delegate 
 	// DO NOT visit the delegate with:
 	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
@@ -236,13 +256,15 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 	const GPlatesGui::TopologySectionsContainer::TableRow table_row(
 			src_geom_id, src_prop_name, use_reverse, click_point);
 
-	// append the working row to the vector
-	d_table_rows.push_back( table_row );
-
-#ifdef DEBUG
-qDebug() << "  src_geom_id = " << GPlatesUtils::make_qstring_from_icu_string(src_geom_id.get());
-qDebug() << "  use_reverse = " << use_reverse;
-#endif
+	// append the working row to the appropriate vector
+	if ( d_seq_num == 0 )
+	{
+		d_boundary_sections.push_back( table_row );
+	}	
+	else if ( d_seq_num == 1)
+	{
+		d_interior_sections.push_back( table_row );
+	}
 }
 
 
@@ -250,9 +272,6 @@ void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
 		const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
 {  
-#ifdef DEBUG
-std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl;
-#endif
 	// DO NOT visit the delegate with:
 	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
 
@@ -265,44 +284,39 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 	// No click point and no reverse for point sections.
 	const GPlatesGui::TopologySectionsContainer::TableRow table_row(src_geom_id, src_prop_name);
 
-	// append the working row to the vector
-	d_table_rows.push_back( table_row );
-
-#ifdef DEBUG
-qDebug() << "  src_geom_id = " << GPlatesUtils::make_qstring_from_icu_string(src_geom_id.get());
-#endif
+	// append the working row to the appropriate vector
+	if ( d_seq_num == 0 )
+	{
+		d_boundary_sections.push_back( table_row );
+	}	
+	else if ( d_seq_num == 1)
+	{
+		d_interior_sections.push_back( table_row );
+	}
 }
 		
-
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::report()
 {
-	std::cout << "-------------------------------------------------------------" << std::endl;
-	std::cout << "TopologySectionsFinder::report()" << std::endl;
-	std::cout << "number sections visited = " << d_table_rows.size() << std::endl;
-
-	GPlatesGui::TopologySectionsContainer::const_iterator section_iter = d_table_rows.begin();
-	GPlatesGui::TopologySectionsContainer::const_iterator section_end = d_table_rows.end();
-
-	for ( ; section_iter != section_end ; ++section_iter)
+	qDebug() << "-------------------------------------------------------------";
+	qDebug() << "TopologySectionsFinder::report()";
+	qDebug() << " ";
+	qDebug() << "Boundary sections found = " << d_boundary_sections.size();
+	GPlatesGui::TopologySectionsContainer::const_iterator section_itr = d_boundary_sections.begin();
+	GPlatesGui::TopologySectionsContainer::const_iterator section_end = d_boundary_sections.end();
+	for ( ; section_itr != section_end ; ++section_itr)
 	{
-		qDebug()
-			<< "id ="
-			<< GPlatesUtils::make_qstring_from_icu_string(section_iter->get_feature_id().get());
-		qDebug()
-			<< "reverse? = "
-			<< section_iter->get_reverse();
-
-		if (section_iter->get_present_day_click_point())
-		{
-			qDebug()
-				<< "click_point lat = "
-				<< GPlatesMaths::make_lat_lon_point(*section_iter->get_present_day_click_point()).latitude()
-				<< "; lon = "
-				<< GPlatesMaths::make_lat_lon_point(*section_iter->get_present_day_click_point()).longitude();
-		}
+	qDebug() << "id =" << GPlatesUtils::make_qstring_from_icu_string(section_itr->get_feature_id().get());
 	}
-	std::cout << "-------------------------------------------------------------" << std::endl;
+	qDebug() << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -";
+	qDebug() << "Interior sections found = " << d_interior_sections.size();
+	section_itr = d_interior_sections.begin();
+	section_end = d_interior_sections.end();
+	for ( ; section_itr != section_end ; ++section_itr)
+	{
+	qDebug() << "id =" << GPlatesUtils::make_qstring_from_icu_string(section_itr->get_feature_id().get());
+	}
+	qDebug() << "-------------------------------------------------------------";
 }
 

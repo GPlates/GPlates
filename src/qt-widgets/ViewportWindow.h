@@ -204,9 +204,16 @@ namespace GPlatesQtWidgets
 
 		/** Get a pointer to the TopologySectionsContainer */
 		GPlatesGui::TopologySectionsContainer &
-		topology_sections_container()
+		topology_boundary_sections_container()
 		{
-			return *d_topology_sections_container_ptr;	
+			return *d_topology_boundary_sections_container_ptr;	
+		}
+
+		/** Get a pointer to the TopologySectionsContainer */
+		GPlatesGui::TopologySectionsContainer &
+		topology_interior_sections_container()
+		{
+			return *d_topology_interior_sections_container_ptr;	
 		}
 
 		/** Get a pointer to the TaskPanel */
@@ -382,6 +389,12 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_topology_sections_table();
+
+		void
+		set_topology_sections_table_tab_text(QString s)
+		{
+			tabWidget->setTabText(1, s);
+		}
 
 		void
 		pop_up_read_errors_dialog();
@@ -854,7 +867,8 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<GPlatesCanvasTools::MeasureDistanceState> d_measure_distance_state_ptr;
 
 		//! The data behind the Topology Sections table.
-		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_sections_container_ptr;
+		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_boundary_sections_container_ptr;
+		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_interior_sections_container_ptr;
 
 		/**
 		 * Manages the 'Topology Sections' table, and is parented to it - Qt will clean up when the table disappears!

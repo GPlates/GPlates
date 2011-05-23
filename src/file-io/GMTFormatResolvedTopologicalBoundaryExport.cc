@@ -314,6 +314,10 @@ namespace GPlatesFileIO
 				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT:
 				case SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING_RIGHT:
 					return "sR";
+				case SUB_SEGMENT_TYPE_SLAB_EDGE_TRENCH:
+					return "SUB_SEGMENT_TYPE_SLAB_EDGE_TRENCH";
+				case SUB_SEGMENT_TYPE_SLAB_EDGE_SIDE:
+					return "SUB_SEGMENT_TYPE_SLAB_EDGE_SIDE";
 				default: 
 					return "??";
 				}
@@ -364,7 +368,7 @@ namespace GPlatesFileIO
 						source_feature->feature_type().get_name());
 			}
 
-		//
+			//
 			// The Header classes
 			//
 
@@ -465,7 +469,6 @@ namespace GPlatesFileIO
 					//qDebug() << "PlatePolygonSubSegmentHeader: name =" << feature_name;
 
 					// Get a two-letter PLATES data type code from the subsegment type 
-					// const QString feature_type_code = get_feature_type_code_2chars( sub_segment_type );
 					const QString feature_type_code = get_feature_type_code(
 							feature,
 							sub_segment_type);
@@ -534,142 +537,7 @@ namespace GPlatesFileIO
 				QString d_header_line;
 
 
-		#if 0
-		#endif
-
 			};
-
-		#if 0
-		// REMOVE
-
-			/**
-			 * Formats GMT header using GPlates8 format that looks like:
-			 *
-			 * ">sL    # name: Trenched_on NAP_PAC_1    # polygon: NAM    # use_reverse: no"
-			 */
-			class GMTReferenceSlabPolygonHeader :
-					public GMTExportHeader
-			{
-			public:
-				GMTReferenceSlabPolygonHeader(
-						const GPlatesModel::FeatureHandle::const_weak_ref &source_feature,
-						const GPlatesModel::FeatureHandle::const_weak_ref &platepolygon_feature,
-						const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment,
-						const SubSegmentType sub_segment_type)
-				{
-					static const GPlatesModel::PropertyName old_plates_header_property_name =
-						GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
-
-					const GPlatesPropertyValues::GpmlOldPlatesHeader *source_feature_old_plates_header = NULL;
-					GPlatesFeatureVisitors::get_property_value(
-							source_feature,
-							old_plates_header_property_name,
-							source_feature_old_plates_header);
-
-					// NOTE: 'source_feature_old_plates_header' could still be NULL
-					// but 'get_feature_name()' checks for NULL.
-					// We do this because we can still get a feature name even when it's NULL.
-					QString source_feature_name;
-					if (!get_feature_name(
-							source_feature_name, source_feature, source_feature_old_plates_header))
-					{
-						return;
-					}
-
-					const GPlatesPropertyValues::GpmlOldPlatesHeader *platepolygon_feature_old_plates_header = NULL;
-					GPlatesFeatureVisitors::get_property_value(
-							platepolygon_feature,
-							old_plates_header_property_name,
-							platepolygon_feature_old_plates_header);
-
-					// NOTE: 'platepolygon_feature_old_plates_header' could still be NULL
-					// but 'get_feature_name()' checks for NULL.
-					// We do this because we can still get a feature name even when it's NULL.
-					QString platepolygon_feature_name;
-					if (!get_feature_name(
-							platepolygon_feature_name, platepolygon_feature,
-							platepolygon_feature_old_plates_header))
-					{
-						return;
-					}
-
-					// Get a two-letter PLATES data type code from the subsegment type if
-					// it's a subduction zone, otherwise get the data type code from a
-					// GpmlOldPlatesHeader if there is one, otherwise get the full gpml
-					// feature type.
-					const QString feature_type_code = get_feature_type_code(
-							source_feature,
-							sub_segment_type,
-							source_feature_old_plates_header);
-
-					d_header_line =
-							feature_type_code +
-							"    # name: " +
-							source_feature_name +
-							"    # polygon: " +
-							platepolygon_feature_name +
-							"    # use_reverse: " +
-							(sub_segment.get_use_reverse() ? "yes" : "no");
-				}
-
-
-				virtual
-				void
-				get_feature_header_lines(
-						std::vector<QString>& header_lines) const
-				{
-					header_lines.push_back(d_header_line);
-				}
-
-			private:
-				QString d_header_line;
-
-
-				/**
-				 * Get a two-letter PLATES data type code from the subsegment type if
-				 * it's a subduction zone, otherwise get the data type code from a
-				 * GpmlOldPlatesHeader if there is one, otherwise get the full gpml
-				 * feature type.
-				 */
-				const QString
-				get_feature_type_code(
-						const GPlatesModel::FeatureHandle::const_weak_ref &source_feature,
-						const SubSegmentType sub_segment_type,
-						const GPlatesPropertyValues::GpmlOldPlatesHeader *source_feature_old_plates_header)
-				{
-					// First determine the PLATES data type code from the subsegment type.
-					// We do this because for subduction zones the subsegment type has
-					// already accounted for any direction reversal by reversing
-					// the subduction type.
-					//
-					// NOTE: we don't need to handle reverse direction of subsegment
-					// because variables of type 'SubSegmentType' already have this
-					// information in them.
-					if (sub_segment_type == SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING_LEFT)
-					{
-						return "sL";
-					}
-					if (sub_segment_type == SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING_RIGHT)
-					{
-						return "sR";
-					}
-					// Note: We don't test for SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN.
-
-					// The type is not a subduction left or right so just output the plates
-					// data type code if there is an old plates header.
-					if (source_feature_old_plates_header)
-					{
-						return GPlatesUtils::make_qstring_from_icu_string(
-								source_feature_old_plates_header->data_type_code());
-					}
-
-					// It's not a subduction zone and it doesn't have an old plates header
-					// so just return the full gpml feature type.
-					return GPlatesUtils::make_qstring_from_icu_string(
-							source_feature->feature_type().get_name());
-				}
-			};
-		#endif
 
 
 			/**
@@ -699,7 +567,6 @@ namespace GPlatesFileIO
 					//qDebug() << "SlabPolygonSubSegmentHeader: name =" << feature_name;
 
 					// Get a two-letter PLATES data type code from the subsegment type 
-					// const QString feature_type_code = get_feature_type_code_2chars( sub_segment_type );
 					const QString feature_type_code = get_feature_type_code(
 							feature,
 							sub_segment_type);
@@ -837,6 +704,55 @@ namespace GPlatesFileIO
 
 
 			/**
+			 * Formats GMT header for Network 
+			 */
+			class NetworkBoundaryStyleHeader :
+					public GMTExportHeader
+			{
+			public:
+				NetworkBoundaryStyleHeader(
+						const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+				{
+
+					// Get an OldPlatesHeader that contains attributes that are updated
+					// with GPlates properties where available.
+					GPlatesFileIO::OldPlatesHeader old_plates_header;
+					GPlatesFileIO::PlatesLineFormatHeaderVisitor plates_header_visitor;
+					plates_header_visitor.get_old_plates_header(
+							feature,
+							old_plates_header,
+							false/*append_feature_id_to_geographic_description*/);
+
+					GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type gpml_old_plates_header =
+							old_plates_header.create_gpml_old_plates_header();
+
+					d_header_line = ' ';
+
+					QString unk = "Unknown";
+
+					QString name;
+					if ( get_feature_name(name, feature, gpml_old_plates_header.get()) )
+					{
+						d_header_line.append( name );
+					}
+					else { d_header_line.append( unk ); }
+				}
+
+				virtual
+				void
+				get_feature_header_lines(
+						std::vector<QString>& header_lines) const
+				{
+					header_lines.push_back(d_header_line);
+				}
+
+			private:
+				QString d_header_line;
+			};
+
+
+
+			/**
 			 * Handles exporting of a feature's geometry and header to GMT format.
 			 */
 			class GMTFeatureExporter
@@ -948,6 +864,9 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 		case SLAB_POLYGON_EXPORT_TYPE:
 			gmt_export_header.reset(new SlabPolygonStyleHeader(feature_ref));
 			break;
+		case NETWORK_POLYGON_EXPORT_TYPE:
+			gmt_export_header.reset(new NetworkBoundaryStyleHeader(feature_ref));
+			break;
 		default:
 			// Shouldn't get here.
 			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -1033,6 +952,7 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 				gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(subsegment_feature_ref));
 				break;
 			case PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE:
+			case NETWORK_POLYGON_SUB_SEGMENTS_EXPORT_TYPE:
 				gmt_export_header.reset(
 						new PlatePolygonSubSegmentHeader(
 								subsegment_feature_ref,
@@ -1046,7 +966,7 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 								subsegment_feature_ref,
 								resolved_geom_feature_ref,
 								*sub_segment,
-								get_sub_segment_type(*sub_segment, reconstruction_time)));
+								get_slab_sub_segment_type(*sub_segment, reconstruction_time)));
 				break;
 			default:
 				// Shouldn't get here.

@@ -21,6 +21,8 @@ set(srcs
     ReconstructionGeometryRenderer.h
     ReconstructVisualLayerParams.cc
     ReconstructVisualLayerParams.h
+    TopologyNetworkVisualLayerParams.h
+    VelocityFieldCalculatorVisualLayerParams.h
     ViewState.cc
     ViewState.h
     VisualLayer.cc

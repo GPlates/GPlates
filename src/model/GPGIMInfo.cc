@@ -32,8 +32,6 @@
 
 #include "utils/UnicodeStringUtils.h"
 
-#define HIDE_DEV_CODE
-
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
 namespace
@@ -166,6 +164,7 @@ namespace
 		{ "Craton", "unclassifiedGeometry" },
 		{ "CrustalThickness", "outlineOf" },
 		{ "DynamicTopography", "outlineOf" },
+		{ "DisplacementPoint", "position" },
 		{ "ExtendedContinentalCrust", "outlineOf" },
 		{ "ExtendedContinentalCrust", "unclassifiedGeometry" },
 		{ "Fault", "centerLineOf" },
@@ -206,6 +205,14 @@ namespace
 		{ "MidOceanRidge", "outlineOf" },
 		{ "MidOceanRidge", "unclassifiedGeometry" },
 		{ "MotionPath", "seedPoints" },
+		{ "NavdatSampleMafic", "position" },
+		{ "NavdatSampleMafic", "unclassifiedGeometry" },
+		{ "NavdatSampleIntermediate", "position" },
+		{ "NavdatSampleIntermediate", "unclassifiedGeometry" },
+		{ "NavdatSampleFelsicLow", "position" },
+		{ "NavdatSampleFelsicLow", "unclassifiedGeometry" },
+		{ "NavdatSampleFelsicHigh", "position" },
+		{ "NavdatSampleFelsicHigh", "unclassifiedGeometry" },
 		{ "OceanicAge", "outlineOf" },
 		{ "OldPlatesGridMark", "centerLineOf" },
 		{ "OldPlatesGridMark", "unclassifiedGeometry" },
@@ -215,6 +222,9 @@ namespace
 		{ "PassiveContinentalBoundary", "centerLineOf" },
 		{ "PassiveContinentalBoundary", "outlineOf" },
 		{ "PassiveContinentalBoundary", "unclassifiedGeometry" },
+		{ "PoliticalBoundary", "centerLineOf" },
+		{ "PoliticalBoundary", "unclassifiedGeometry" },
+		{ "PolygonCentroidPoint", "position" },
 		{ "PseudoFault", "centerLineOf" },
 		{ "PseudoFault", "unclassifiedGeometry" },
 		{ "Roughness", "outlineOf" },
@@ -247,11 +257,15 @@ namespace
 		{ "TransitionalCrust", "unclassifiedGeometry" },
 		{ "UnclassifiedFeature", "centerLineOf" },
 		{ "UnclassifiedFeature", "outlineOf" },
+		{ "UnclassifiedFeature", "position" },
 		{ "UnclassifiedFeature", "unclassifiedGeometry" },
 		{ "Unconformity", "centerLineOf" },
 		{ "Unconformity", "unclassifiedGeometry" },
 		{ "UnknownContact", "centerLineOf" },
 		{ "UnknownContact", "unclassifiedGeometry" },
+		{ "Pluton", "outlineOf" },
+		{ "Pluton", "position" },
+		{ "Pluton", "unclassifiedGeometry" },
 		{ "Volcano", "outlineOf" },
 		{ "Volcano", "position" },
 		{ "Volcano", "unclassifiedGeometry" },
@@ -260,14 +274,12 @@ namespace
 
 	static const FeatureTypeInfo topological_feature_type_info_table[] = {
 		{ "TopologicalClosedPlateBoundary", "boundary" },
-#ifndef HIDE_DEV_CODE
 		{ "TopologicalSlabBoundary", "boundary" },
 		{ "TopologicalNetwork", "boundary" },
 		{ "UnclassifiedTopologcialFeature", "boundary" },
 		{ "UnclassifiedTopologcialFeature", "centerLineOf" },
 		{ "UnclassifiedTopologcialFeature", "outlineOf" },
 		{ "UnclassifiedTopologcialFeature", "unclassifiedGeometry" },
-#endif
 	};
 
 

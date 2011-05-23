@@ -79,6 +79,7 @@
 #include "property-values/GpmlStringList.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
+#include "property-values/GpmlTopologicalInterior.h"
 #include "property-values/GpmlTopologicalIntersection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
@@ -504,6 +505,14 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 		AS_PROP_VAL(create_time_dependent_property_value)
+
+
+		GPlatesPropertyValues::GpmlTopologicalInterior::non_null_ptr_type
+		create_topological_interior(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				ReadErrorAccumulation &read_errors);
+
+		AS_PROP_VAL(create_topological_interior)
 
 
 		GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type

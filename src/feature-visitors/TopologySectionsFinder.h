@@ -112,6 +112,11 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_gpml_topological_interior(
+		 		const GPlatesPropertyValues::GpmlTopologicalInterior &gpml_toplogical_interior);
+
+		virtual
+		void
 		visit_gpml_topological_line_section(
 				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
 
@@ -123,27 +128,51 @@ namespace GPlatesFeatureVisitors
 		void
 		report();
 
+		//! accesor functions for the boundary
 		GPlatesGui::TopologySectionsContainer::const_iterator
-		found_rows_begin()
+		boundary_sections_begin()
 		{
-			return d_table_rows.begin();
+			return d_boundary_sections.begin();
 		}
 			
 		GPlatesGui::TopologySectionsContainer::const_iterator
-		found_rows_end()
+		boundary_sections_end()
 		{
-			return d_table_rows.end();
+			return d_boundary_sections.end();
 		}
 
 		int 
-		number_of_rows()
+		number_of_boundary_sections()
 		{
-			return d_table_rows.size();
+			return d_boundary_sections.size();
+		}
+
+		//! accesor functions for the interior
+		GPlatesGui::TopologySectionsContainer::const_iterator
+		interior_sections_begin()
+		{
+			return d_interior_sections.begin();
+		}
+			
+		GPlatesGui::TopologySectionsContainer::const_iterator
+		interior_sections_end()
+		{
+			return d_interior_sections.end();
+		}
+
+		int 
+		number_of_interior_sections()
+		{
+			return d_interior_sections.size();
 		}
 
 	private:
-		// Collection of TableRows built from this features Topology data
-		GPlatesGui::TopologySectionsContainer::container_type d_table_rows;
+		// controls which container 
+		int d_seq_num;
+
+		// Collections of TableRows built from this feature's Topology data
+		GPlatesGui::TopologySectionsContainer::container_type d_boundary_sections;
+		GPlatesGui::TopologySectionsContainer::container_type d_interior_sections;
 	};
 }
 

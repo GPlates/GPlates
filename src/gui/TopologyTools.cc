@@ -131,7 +131,7 @@
 
 namespace
 {
-	//! Returns the wrapped previous index before @a index in @a sequence.
+	//! Returns the wrapped previous index before @@a index in @@a sequence.
 	template <class VectorSequenceType>
 	typename VectorSequenceType::size_type
 	get_prev_index(
@@ -150,7 +150,7 @@ namespace
 	}
 
 
-	//! Returns the wrapped next index after @a index in @a sequence.
+	//! Returns the wrapped next index after @@a index in @@a sequence.
 	template <class VectorSequenceType>
 	typename VectorSequenceType::size_type
 	get_next_index(
@@ -160,7 +160,7 @@ namespace
 		typename VectorSequenceType::size_type next_sequence_index = sequence_index;
 
 		++next_sequence_index;
-		if (next_sequence_index == sequence.size())
+		if (next_sequence_index >= sequence.size())
 		{
 			next_sequence_index = 0;
 		}
@@ -183,8 +183,8 @@ GPlatesGui::TopologyTools::TopologyTools(
 	create_child_rendered_layers();
 
 	// Set pointer to TopologySectionsContainer
-	d_topology_sections_container_ptr = &( d_viewport_window_ptr->topology_sections_container() );
-
+	d_boundary_sections_container_ptr = &(d_viewport_window_ptr->topology_boundary_sections_container());
+	d_interior_sections_container_ptr = &(d_viewport_window_ptr->topology_interior_sections_container());
 
 	// set the internal state flags
 	d_is_active = false;
@@ -206,12 +206,13 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 	d_is_active = true;
 
 	//
-	// Connect to signals second.
+	// Connect to signals
 	//
 
 	// 
 	// Connect to signals from Topology Sections Container
-	connect_to_topology_sections_container_signals( true );
+	connect_to_boundary_sections_container_signals( true );
+	connect_to_interior_sections_container_signals( true );
 
 	// Connect to focus signals from Feature Focus
 	connect_to_focus_signals( true );
@@ -223,13 +224,11 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 		this,
 		SLOT(handle_reconstruction()));
 
-
-	// NOTE: should this be in the constructor ?
 	// Set the pointer to the Topology Tools Widget 
 	d_topology_tools_widget_ptr = 
 		&( d_viewport_window_ptr->task_panel_ptr()->topology_tools_widget() );
 
-
+	// specialized activations
 	if ( d_mode == BUILD )
 	{
 		activate_build_mode();
@@ -239,9 +238,12 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 		activate_edit_mode();
 	}
 
-	// Draw the topology
-	draw_topology_geometry();
+	// synchronize the tools, container, widget, and table; default use the boundary
+	// note: will call handle_sections_combobox_index_changed() , which  will call update_and_redraw()
+	synchronize_seq_num( 0 );
 
+	// Draw the topology
+	// update_and_redraw
 
 	// 
 	// Report errors
@@ -291,11 +293,14 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 	// use a property type different than TopologicalPolygon.
 	//
 	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
+	static const QString topology_slab_type_name("TopologicalSlabBoundary");
 	static const QString topology_network_type_name("TopologicalNetwork");
 	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
 		(d_feature_focus_ptr->focused_feature())->feature_type().get_name() );
 
-	if ( feature_type_name == topology_boundary_type_name )
+	if ( 
+		( feature_type_name == topology_boundary_type_name ) ||
+		( feature_type_name == topology_slab_type_name ) )
 	{ 
 		d_topology_type = GPlatesGlobal::PLATE_POLYGON;
 	}
@@ -311,27 +316,23 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 	// Load the topology into the Topology Sections Table 
 	initialise_focused_topology();
 
-	// Set the num_sections in the TopologyToolsWidget
-	d_topology_tools_widget_ptr->display_number_of_sections(
-		d_topology_sections_container_ptr->size() );
-
 	// Load the topology into the Topology Widget
 	d_topology_tools_widget_ptr->display_topology(
 		d_feature_focus_ptr->focused_feature(),
 		d_feature_focus_ptr->associated_reconstruction_geometry(),
 		d_topology_type);
 
-	// NOTE: this will NOT trigger a set_focus signal with NULL ref ; 
-	// NOTE: the focus connection is below 
-	d_feature_focus_ptr->unset_focus();
-	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_viewport_window_ptr->feature_table_model().clear();
+	// unset focus 
+	unset_focus();
 
 	// Flip the ViewportWindow to the Topology Sections Table
 	d_viewport_window_ptr->choose_topology_sections_table();
 
 	// Flip the TopologyToolsWidget to the Toplogy Tab
 	d_topology_tools_widget_ptr->choose_topology_tab();
+
+	// update the table with the boundary
+	d_boundary_sections_container_ptr->update_table_from_container();
 }
 
 
@@ -341,7 +342,8 @@ GPlatesGui::TopologyTools::deactivate()
 	// Unset any focused feature
 	if ( d_feature_focus_ptr->is_valid() )
 	{
-		d_feature_focus_ptr->unset_focus();
+		// unset focus 
+		unset_focus();
 	}
 
 	// Flip the ViewportWindow to the Clicked Geometry Table
@@ -360,7 +362,8 @@ GPlatesGui::TopologyTools::deactivate()
 	connect_to_focus_signals( false );
 
 	// Disconnect from signals from Topology Sections Container.
-	connect_to_topology_sections_container_signals( false );
+	connect_to_boundary_sections_container_signals( false );
+	connect_to_interior_sections_container_signals( false );
 
 	// Disconnect to recon time changes.
 	QObject::disconnect(
@@ -380,10 +383,11 @@ GPlatesGui::TopologyTools::clear_widgets_and_data()
 	// clear the tables
 	d_viewport_window_ptr->feature_table_model().clear();
 
-	// Clear the TopologySectionsTable.
-	// NOTE: This will generate a signal that will call our 'react_cleared()'
+	// Clear the TopologySectionsContainer.
+	// NOTE: This will generate a signal that will call our 'react_cleared_FOO()'
 	// method which clear out our internal section sequence and redraw.
-	d_topology_sections_container_ptr->clear();
+	d_boundary_sections_container_ptr->clear();
+	d_interior_sections_container_ptr->clear();
 
 	// Set the topology feature ref to NULL
 	d_topology_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
@@ -398,55 +402,50 @@ GPlatesGui::TopologyTools::connect_to_focus_signals(bool state)
 		// Subscribe to focus events. 
 		QObject::connect(
 			d_feature_focus_ptr,
-			SIGNAL( focus_changed(
-				GPlatesGui::FeatureFocus &)),
+			SIGNAL( focus_changed( GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT( set_focus(
-				GPlatesGui::FeatureFocus &)));
+			SLOT( set_focus( GPlatesGui::FeatureFocus &)));
 	
 		QObject::connect(
 			d_feature_focus_ptr,
-			SIGNAL( focused_feature_modified(
-				GPlatesGui::FeatureFocus &)),
+			SIGNAL( focused_feature_modified( GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT( display_feature_focus_modified(
-				GPlatesGui::FeatureFocus &)));
+			SLOT( display_feature_focus_modified( GPlatesGui::FeatureFocus &)));
 	} 
 	else 
 	{
 		// Un-Subscribe to focus events. 
 		QObject::disconnect(
 			d_feature_focus_ptr, 
-			SIGNAL( focus_changed(
-				GPlatesGui::FeatureFocus &)),
+			SIGNAL( focus_changed( GPlatesGui::FeatureFocus &)),
 			this, 
 			0);
 	
 		QObject::disconnect(
 			d_feature_focus_ptr, 
-			SIGNAL( focused_feature_modified(
-				GPlatesGui::FeatureFocus &)),
+			SIGNAL( focused_feature_modified( GPlatesGui::FeatureFocus &)),
 			this, 
 			0);
 	}
 }
 
 
+
+// Boundary
 void
-GPlatesGui::TopologyTools::connect_to_topology_sections_container_signals(
-	bool state)
+GPlatesGui::TopologyTools::connect_to_boundary_sections_container_signals( bool state)
 {
 	if (state) 
 	{
 		QObject::connect(
-			d_topology_sections_container_ptr,
+			d_boundary_sections_container_ptr,
 			SIGNAL( cleared() ),
 			this,
-			SLOT( react_cleared() )
+			SLOT( react_cleared_boundary() )
 		);
 
 		QObject::connect(
-			d_topology_sections_container_ptr,
+			d_boundary_sections_container_ptr,
 			SIGNAL( insertion_point_moved(
 				GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
@@ -455,23 +454,21 @@ GPlatesGui::TopologyTools::connect_to_topology_sections_container_signals(
 		);
 
 		QObject::connect(
-			d_topology_sections_container_ptr,
-			SIGNAL( entry_removed(
-				GPlatesGui::TopologySectionsContainer::size_type) ),
+			d_boundary_sections_container_ptr,
+			SIGNAL( entry_removed( GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
-			SLOT( react_entry_removed(
-				GPlatesGui::TopologySectionsContainer::size_type) )
+			SLOT( react_entry_removed_boundary( GPlatesGui::TopologySectionsContainer::size_type) )
 		);
 
 		QObject::connect(
-			d_topology_sections_container_ptr,
+			d_boundary_sections_container_ptr,
 			SIGNAL( entries_inserted(
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::const_iterator,
 				GPlatesGui::TopologySectionsContainer::const_iterator) ),
-		this,
-			SLOT( react_entries_inserted(
+			this,
+			SLOT( react_entries_inserted_boundary(
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::const_iterator,
@@ -479,24 +476,88 @@ GPlatesGui::TopologyTools::connect_to_topology_sections_container_signals(
 		);
 
 		QObject::connect(
-			d_topology_sections_container_ptr,
-			SIGNAL( entry_modified(
-				GPlatesGui::TopologySectionsContainer::size_type) ),
+			d_boundary_sections_container_ptr,
+			SIGNAL( entry_modified( GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
-			SLOT( react_entry_modified(
-				GPlatesGui::TopologySectionsContainer::size_type) )
+			SLOT( react_entry_modified_boundary( GPlatesGui::TopologySectionsContainer::size_type) )
 		);
 	} 
 	else 
 	{
 		// Disconnect this receiver from all signals from TopologySectionsContainer:
-		QObject::disconnect(
-			d_topology_sections_container_ptr,
-			0,
-			this,
-			0
-		);
+		QObject::disconnect( d_boundary_sections_container_ptr, 0, this, 0);
 	}
+}
+
+// Interior
+void
+GPlatesGui::TopologyTools::connect_to_interior_sections_container_signals( bool state)
+{
+	if (state) 
+	{
+		QObject::connect(
+			d_interior_sections_container_ptr,
+			SIGNAL( cleared() ),
+			this,
+			SLOT( react_cleared_interior() )
+		);
+
+		QObject::connect(
+			d_interior_sections_container_ptr,
+			SIGNAL( insertion_point_moved(
+				GPlatesGui::TopologySectionsContainer::size_type) ),
+			this,
+			SLOT( react_insertion_point_moved(
+				GPlatesGui::TopologySectionsContainer::size_type) )
+		);
+
+		QObject::connect(
+			d_interior_sections_container_ptr,
+			SIGNAL( entry_removed( GPlatesGui::TopologySectionsContainer::size_type) ),
+			this,
+			SLOT( react_entry_removed_interior( GPlatesGui::TopologySectionsContainer::size_type) )
+		);
+
+		QObject::connect(
+			d_interior_sections_container_ptr,
+			SIGNAL( entries_inserted(
+				GPlatesGui::TopologySectionsContainer::size_type,
+				GPlatesGui::TopologySectionsContainer::size_type,
+				GPlatesGui::TopologySectionsContainer::const_iterator,
+				GPlatesGui::TopologySectionsContainer::const_iterator) ),
+			this,
+			SLOT( react_entries_inserted_interior(
+				GPlatesGui::TopologySectionsContainer::size_type,
+				GPlatesGui::TopologySectionsContainer::size_type,
+				GPlatesGui::TopologySectionsContainer::const_iterator,
+				GPlatesGui::TopologySectionsContainer::const_iterator) )
+		);
+
+		QObject::connect(
+			d_interior_sections_container_ptr,
+			SIGNAL( entry_modified( GPlatesGui::TopologySectionsContainer::size_type) ),
+			this,
+			SLOT( react_entry_modified_interior( GPlatesGui::TopologySectionsContainer::size_type) )
+		);
+	} 
+	else 
+	{
+		// Disconnect this receiver from all signals from TopologySectionsContainer:
+		QObject::disconnect( d_interior_sections_container_ptr, 0, this, 0);
+	}
+}
+
+
+int
+GPlatesGui::TopologyTools::get_number_of_sections_boundary()
+{
+	return ( d_viewport_window_ptr->topology_boundary_sections_container() ).size();
+}
+
+int
+GPlatesGui::TopologyTools::get_number_of_sections_interior()
+{
+	return ( d_viewport_window_ptr->topology_interior_sections_container() ).size();
 }
 
 
@@ -513,7 +574,7 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 
 	// Create a rendered layers to draw geometries.
 
-	// the topology is drawn on the bottom layer
+	// the topology vertices are drawn on the bottom layer
 	d_topology_geometry_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
@@ -528,10 +589,26 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
+	// NOTE: the boundary and interior layers are above vertices, segments, and intersections
+	// to help highlight the different lists of sections 
+
+	// boundary polygon
+	d_boundary_geometry_layer_ptr =
+		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+
+	// interior segments 
+	d_interior_geometry_layer_ptr =
+		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+
+#if 0
+// NOTE: this was just getting confusing so, remove it.
 	// head and tail points of src geometry 
 	d_end_points_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+#endif
 
 	// insert neighbors
 	d_insertion_neighbors_layer_ptr =
@@ -548,47 +625,15 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 
 	// Activate layers
 	d_topology_geometry_layer_ptr->set_active();
-	d_focused_feature_layer_ptr->set_active();
-	d_insertion_neighbors_layer_ptr->set_active();
 	d_segments_layer_ptr->set_active();
 	d_intersection_points_layer_ptr->set_active();
+	d_boundary_geometry_layer_ptr->set_active();
+	d_interior_geometry_layer_ptr->set_active();
+	d_insertion_neighbors_layer_ptr->set_active();
+#if 0
 	d_end_points_layer_ptr->set_active();
-}
-
-void
-GPlatesGui::TopologyTools::handle_topology_type_changed(int index)
-{
-#ifdef DEBUG
-std::cout << "GPlatesGui::TopologyTools::handle_topology_type_changed() " << std::endl;
 #endif
-
-	if (! d_is_active) { return; }
-
-	if      ( index == 0 ) { d_topology_type = GPlatesGlobal::UNKNOWN_TOPOLOGY; }
-	else if ( index == 1 ) { d_topology_type = GPlatesGlobal::PLATE_POLYGON; }
-	else if ( index == 2 ) { d_topology_type = GPlatesGlobal::SLAB_POLYGON; }
-	else if ( index == 3 ) { d_topology_type = GPlatesGlobal::DEFORMING_POLYGON; }
-	else if ( index == 4 ) { d_topology_type = GPlatesGlobal::NETWORK; }
-	else                   { d_topology_type = GPlatesGlobal::UNKNOWN_TOPOLOGY; }
-
-	// update the topology
-	update_and_redraw_topology();
-}
-
-void
-GPlatesGui::TopologyTools::handle_mesh(double shape_factor, double max_edge)
-{
-#ifdef DEBUG
-std::cout << "GPlatesGui::TopologyTools::handle_mesh(shape, max_edge)" << shape_factor << "," << max_edge << ";" << std::endl;
-#endif
-	if (! d_is_active) { return; }
-
-	// Set the values
-	d_shape_factor = shape_factor;
-	d_max_edge = max_edge;
-
-	// update the topology
-	update_and_redraw_topology();
+	d_focused_feature_layer_ptr->set_active();
 }
 
 void
@@ -624,18 +669,46 @@ GPlatesGui::TopologyTools::handle_unloaded_sections()
 	// the features).
 	//
 	section_info_seq_type::size_type section_index;
-	for (section_index = 0; section_index < d_section_info_seq.size(); ++section_index)
+
+	// process boundary
+	for (section_index = 0; section_index < d_boundary_section_info_seq.size(); ++section_index)
 	{
-		const SectionInfo &section_info = d_section_info_seq[section_index];
+		const SectionInfo &section_info = d_boundary_section_info_seq[section_index];
 
 		if (!GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 				section_info.d_table_row.get_feature_id()).is_valid())
 		{
-			// Clear the sections container - this will trigger our 'react_cleared' slot.
-			d_topology_sections_container_ptr->clear();
-			return;
+			// Clear the sections container - this will trigger our 'react_cleared_boundary' slot.
+			d_boundary_sections_container_ptr->clear();
+			break; // out of loop; 
 		}
 	}
+
+	// process interior
+	for (section_index = 0; section_index < d_interior_section_info_seq.size(); ++section_index)
+	{
+		const SectionInfo &section_info = d_interior_section_info_seq[section_index];
+
+		if (!GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
+				section_info.d_table_row.get_feature_id()).is_valid())
+		{
+			// Clear the sections container - this will trigger our 'react_cleared_interior' slot.
+			d_interior_sections_container_ptr->clear();
+			break; // out of loop; 
+		}
+	}
+
+	return;
+}
+
+void
+GPlatesGui::TopologyTools::unset_focus()
+{
+	// NOTE: this will trigger a set_focus signal with NULL ref
+	d_feature_focus_ptr->unset_focus();
+
+	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
+	d_viewport_window_ptr->feature_table_model().clear();
 }
 
 
@@ -651,20 +724,22 @@ GPlatesGui::TopologyTools::set_focus(
 	{
 		// Draw focused geometry.
 		draw_focused_geometry(true);
-
-		d_topology_tools_widget_ptr->choose_section_tab();
+		//d_topology_tools_widget_ptr->choose_section_tab();
 	}
 	else
 	{
 		// Clear focused geometry - we don't want the user to think they
 		// can add it as a section to the topology..
 		draw_focused_geometry(false);
-
-		d_topology_tools_widget_ptr->choose_topology_tab();
+		//d_topology_tools_widget_ptr->choose_topology_tab();
 	}
 
 	// display this feature ; or unset focus if it is a topology
 	display_focused_feature();
+
+	// display_focused_feature() may have called synch, 
+	// so make sure to set the tab back to sections
+	d_topology_tools_widget_ptr->choose_section_tab();
 }
 
 
@@ -684,100 +759,139 @@ GPlatesGui::TopologyTools::display_focused_feature()
 	// always check weak_refs!
 	if ( ! d_feature_focus_ptr->focused_feature().is_valid() ) { return; }
 
-#ifdef DEBUG
-qDebug() << "TopologyTools::display_focused_feature() = ";
-qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string(
-		d_feature_focus_ptr->focused_feature()->feature_id().get() );
-
-	static const GPlatesModel::PropertyName name_property_name = 
-		GPlatesModel::PropertyName::create_gml("name");
-
-	const GPlatesPropertyValues::XsString *name;
-	if ( GPlatesFeatureVisitors::get_property_value(
-			d_feature_focus_ptr->focused_feature(), name_property_name, name) )
-	{
-		qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
-	}
-
-	// feature id
-	GPlatesModel::FeatureId id = d_feature_focus_ptr->focused_feature()->feature_id();
-	qDebug() << "id = " << GPlatesUtils::make_qstring_from_icu_string( id.get() );
-
-	if ( d_feature_focus_ptr->associated_geometry_property().is_valid() ) { 
-		qDebug() << "associated_geometry_property valid " ;
-	} else { 
-		qDebug() << "associated_geometry_property invalid " ; 
-	}
-#endif
-
 	// check if the feature is in the topology 
-	const std::vector<int> topological_section_indices = find_topological_section_indices(
+	int found_sequence_num; // which sequce of sections the feature was found in
+	std::vector<int> found_indices; // indices in the sequence
+
+	find_topological_section_indices(
+			found_sequence_num,
+			found_indices,
 			d_feature_focus_ptr->focused_feature(),
 			d_feature_focus_ptr->associated_geometry_property());
 
-	// If focused feature found in topology boundary...
-	if (!topological_section_indices.empty())
+	if ( found_indices.empty() ) 
+	{ 
+		// focused feature not found in topology ... return
+		return; 
+	}
+	else 
 	{
-		// Flip to the Topology Sections Table
+		// focused feature was found in topology ... check where and highlight it 
+
+		// Set the ViewportWindow to the Topology Sections Table
 		d_viewport_window_ptr->choose_topology_sections_table();
 
-		// Pretend we clicked in the row corresponding to the first occurrence
-		// of the focused feature geometry in the topology (note that the geometry
-		// can occur multiple times in the topology).
+		// Pretend we clicked in the table row corresponding to the first occurrence
+		// of the focused feature geometry in the topology sections lists
+		// (note that the geometry can occur multiple times in the topology).
 	 	const TopologySectionsContainer::size_type container_section_index = 
-				static_cast<TopologySectionsContainer::size_type>(
-						topological_section_indices[0]);
+				static_cast<TopologySectionsContainer::size_type>( found_indices[0]);
 
-		d_topology_sections_container_ptr->set_focus_feature_at_index(
-				container_section_index);
+		// check for synchronize 
+		if ( found_sequence_num != d_topology_tools_widget_ptr->get_sections_combobox_index() )
+		{
+			// synchronize the tools, container, widget, and table
+			synchronize_seq_num( found_sequence_num );
+		}
+		// else, just continue 
+
+		// Connection between the focus and the Table via the containers
+		if ( found_sequence_num == 0)
+		{
+			d_boundary_sections_container_ptr->set_focus_feature_at_index( container_section_index);
+		}
+		else if ( found_sequence_num == 1)
+		{
+			d_interior_sections_container_ptr->set_focus_feature_at_index( container_section_index);
+		}
+		else
+		{
+			// focus feature not found in any seqence? something bad happened
+			return;
+		}
+
+		// Make sure to draw the focused feature
+		// FIXME: there is some bug in set_focus() and
+		// can_insert_focused_feature_into_topology() above
+		// such that the last item on the table does not pass all the checks,
+		// but still gets focused? , so draw it here
+		draw_focused_geometry(true);
 
 		return;
 	}
-
-	// else, not found on boundary 
-
-	// Flip to the Clicked Features tab
-	d_viewport_window_ptr->choose_clicked_geometry_table();
 }
 
 
-std::vector<int>
+void
 GPlatesGui::TopologyTools::find_topological_section_indices(
+		int &found_sequence_num,
+		std::vector<int> &found_indices,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-		const GPlatesModel::FeatureHandle::iterator &properties_iter) const
+		const GPlatesModel::FeatureHandle::iterator &properties_iter)
 {
-	std::vector<int> topological_section_indices;
-
 	if ( !(feature_ref.is_valid() && properties_iter.is_still_valid() ) )
 	{
-		// Return not found if either feature reference or property iterator is invalid.
-		return topological_section_indices;
+		// Return empty if either feature reference or property iterator is invalid.
+		found_sequence_num = -1;
+		return;
 	}
 
+	// Check boundary sections
 	GPlatesGui::TopologySectionsContainer::const_iterator sections_iter = 
-		d_topology_sections_container_ptr->begin();
-	const GPlatesGui::TopologySectionsContainer::const_iterator sections_end = 
-		d_topology_sections_container_ptr->end();
+		d_boundary_sections_container_ptr->begin();
+	GPlatesGui::TopologySectionsContainer::const_iterator sections_end = 
+		d_boundary_sections_container_ptr->end();
 
-	for (int section_index = 0;
-		sections_iter != sections_end;
-		++sections_iter, ++section_index)
+	for (int section_index = 0; sections_iter != sections_end; ++sections_iter, ++section_index)
 	{
 		// See if the feature reference and geometry property iterator matches.
 		if (feature_ref == sections_iter->get_feature_ref() &&
 			properties_iter == sections_iter->get_geometry_property())
 		{
-			topological_section_indices.push_back(section_index);
+			found_indices.push_back(section_index);
+		}
+
+	}
+
+	// return if the focused feature was found 
+	if (! found_indices.empty() )
+	{
+		found_sequence_num = 0;
+		return;
+	}
+
+	// 
+	// Check interior sections
+	GPlatesGui::TopologySectionsContainer::const_iterator i_sections_iter = 
+		d_interior_sections_container_ptr->begin();
+	GPlatesGui::TopologySectionsContainer::const_iterator i_sections_end = 
+		d_interior_sections_container_ptr->end();
+
+	for (int i_section_index=0; i_sections_iter != i_sections_end; ++i_sections_iter, ++i_section_index)
+	{
+		// See if the feature reference and geometry property iterator matches.
+		if (feature_ref == i_sections_iter->get_feature_ref() &&
+			properties_iter == i_sections_iter->get_geometry_property())
+		{
+			found_indices.push_back(i_section_index);
 		}
 	}
 
+	// return if the focused feature was found 
+	if (! found_indices.empty() )
+	{
+		found_sequence_num = 1;
+		return;
+	}
+
 	// Feature id not found.
-	return topological_section_indices;
+	found_sequence_num = -1;
+	return;
 }
 
 
 bool
-GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
+GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 {
 	// Can't insert focused feature if it's not valid.
 	if (!d_feature_focus_ptr->focused_feature().is_valid())
@@ -855,16 +969,28 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 	}
 #endif
 
-	// See if the focused feature is already in the topology.
-	const std::vector<int> topology_sections_indices = find_topological_section_indices(
+	// Check if the focused feature is already in the topology.
+	int found_sequence_num; // which sequce of sections the feature was found in
+	std::vector<int> found_indices; // indices in the sequence
+
+	find_topological_section_indices(
+			found_sequence_num,
+			found_indices,
 			d_feature_focus_ptr->focused_feature(),
 			d_feature_focus_ptr->associated_geometry_property());
 
-	// If it's not then we can add it.
-	if (topology_sections_indices.empty())
+	// If it's not then we can insert it.
+	if ( found_indices.empty() )
 	{
 		return true;
 	}
+	
+	// else, it's in one of the sequences already; don't let it in again 
+	return false;
+
+#if 0
+	// FIXME: the above return is just a super short cut ; 
+	// FIXME: we might want to fix the code below 
 
 	//
 	// The focused feature is already in the topology.
@@ -890,7 +1016,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 
 	// For two or less sections in the topology it doesn't make sense for them
 	// to be the same geometry - the user has no reason to do this.
-	if (d_section_info_seq.size() <= 2)
+	if (d_section_info_seqs[d_found_sequence_num].size() <= 2)
 	{
 		return false;
 	}
@@ -901,19 +1027,19 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 
 	// Make sure that we don't create a contiguous sequence of three sections with the
 	// same geometry when we insert the focused feature geometry.
-	if (std::find(topology_sections_indices.begin(), topology_sections_indices.end(),
-			static_cast<int>(get_prev_index(insert_section_index, d_section_info_seq)))
-				!= topology_sections_indices.end())
+	if (std::find(found_indices.begin(), found_indices.end(),
+			static_cast<int>(get_prev_index(insert_section_index, d_section_info_seqs[d_found_sequence_num])))
+				!= found_indices.end())
 	{
 		// Cannot insert same geometry after itself.
 		return false;
 	}
-	else if (std::find(topology_sections_indices.begin(), topology_sections_indices.end(), 
-				static_cast<int>(insert_section_index)) != topology_sections_indices.end())
+	else if (std::find(found_indices.begin(), found_indices.end(), 
+				static_cast<int>(insert_section_index)) != found_indices.end())
 	{
-		if (std::find(topology_sections_indices.begin(), topology_sections_indices.end(),
-				static_cast<int>(get_next_index(insert_section_index, d_section_info_seq)))
-					!= topology_sections_indices.end())
+		if (std::find(found_indices.begin(), found_indices.end(),
+				static_cast<int>(get_next_index(insert_section_index, d_section_info_seqs[d_found_sequence_num])))
+					!= found_indices.end())
 		{
 			// We'd be inserting in front of two sections with same geometry - not allowed.
 			return false;
@@ -921,6 +1047,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology() const
 	}
 
 	return true;
+#endif
 }
 
 
@@ -937,36 +1064,59 @@ GPlatesGui::TopologyTools::initialise_focused_topology()
 	// Visit the topology feature.
 	topo_sections_finder.visit_feature(d_topology_feature_ref);
 
-	// NOTE: This will generate a signal that will call our 'react_cleared()'
+	// NOTE: This will generate a signal that will call our 'react_cleared_FOO()'
 	// method which clear out our internal section sequence and redraw.
-	d_topology_sections_container_ptr->clear();
+	d_boundary_sections_container_ptr->clear();
+	d_interior_sections_container_ptr->clear();
 
-	// Iterate over the table rows found in the TopologySectionsFinder and
-	// insert them into the topology sections container.
-	// NOTE: This will generate a signal that will call our 'react_entries_inserted()'
+	//
+	// initialize Boundary Sections
+	//
+
+	// NOTE: This will generate a signal that will call our 'react_entries_insert()'
 	// method which will handle the building of our topology data structures.
-	d_topology_sections_container_ptr->insert(
-			topo_sections_finder.found_rows_begin(),
-			topo_sections_finder.found_rows_end());
+	d_boundary_sections_container_ptr->insert(
+			topo_sections_finder.boundary_sections_begin(),
+			topo_sections_finder.boundary_sections_end());
 
 	// Our internal section sequence should now be in sync with the topology sections container.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_section_info_seq.size() == d_topology_sections_container_ptr->size(),
+			d_boundary_section_info_seq.size() == d_boundary_sections_container_ptr->size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// Initialize with interior list
+	//
+
+	// NOTE: This will generate a signal that will call our 'react_entries_insert()'
+	// method which will handle the building of our topology data structures.
+	d_interior_sections_container_ptr->insert(
+			topo_sections_finder.interior_sections_begin(),
+			topo_sections_finder.interior_sections_end());
+
+	// Our internal section sequence should now be in sync with the topology sections container.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_interior_section_info_seq.size() == d_interior_sections_container_ptr->size(),
 			GPLATES_ASSERTION_SOURCE);
 }
 
 
+//
+// boundary react functions
+//
+
+
+
 void
-GPlatesGui::TopologyTools::react_cleared()
+GPlatesGui::TopologyTools::react_cleared_boundary()
 {
 	if (! d_is_active) { return; }
 
-	// Remove all our internal sections.
-	d_section_info_seq.clear();
+	d_boundary_section_info_seq.clear();
 
 	// Our internal section sequence should now be in sync with the topology sections container.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_section_info_seq.size() == d_topology_sections_container_ptr->size(),
+			d_boundary_section_info_seq.size() == d_boundary_sections_container_ptr->size(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Update topology and redraw.
@@ -975,59 +1125,33 @@ GPlatesGui::TopologyTools::react_cleared()
 
 
 void
-GPlatesGui::TopologyTools::react_insertion_point_moved(
-	GPlatesGui::TopologySectionsContainer::size_type new_index)
-{
-	if (! d_is_active) { return; }
-
-	// WARNING: We don't do anything with this slot because when a table row
-	// is inserted into the topology sections container it will emit two signals.
-	// The first being the 'insertion_point_moved' signal and then second being
-	// the 'entries_inserted' signal. However the second signal is where we
-	// update our internal 'd_section_info_seq' sequence to stay in sync with
-	// the topology sections container. So in this method we cannot assume that the
-	// two are in sync yet and hence we cannot really do anything here.
-	// However, the 'insertion_point_moved' signal usually happens with the
-	// 'entries_inserted' signal so we can do anything needed in our
-	// 'react_entries_inserted' slot instead.
-
-	// However, sometimes the insertion point is moved when new table rows are not
-	// being inserted (eg, the user has moved it via the sections table GUI).
-	// We can detect this by seeing if our internal sections sequence is in sync
-	// with the topology sections container.
-	// Besides, if they are out of sync then we shouldn't be doing anything anyway.
-	if (d_section_info_seq.size() == d_topology_sections_container_ptr->size())
-	{
-		draw_insertion_neighbors();
-	}
-}
-
-
-void
-GPlatesGui::TopologyTools::react_entry_removed(
+GPlatesGui::TopologyTools::react_entry_removed_boundary(
 	GPlatesGui::TopologySectionsContainer::size_type deleted_index)
 {
 	if (! d_is_active) { return; }
 
 	// Make sure delete index is not out of range.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			deleted_index < d_section_info_seq.size(),
+			deleted_index < d_boundary_section_info_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
+
 	// Remove from our internal section sequence.
-	d_section_info_seq.erase(d_section_info_seq.begin() + deleted_index);
+	d_boundary_section_info_seq.erase(d_boundary_section_info_seq.begin() + deleted_index);
 
 	// Our internal section sequence should now be in sync with the topology sections container.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_section_info_seq.size() == d_topology_sections_container_ptr->size(),
+			d_boundary_section_info_seq.size() == d_boundary_sections_container_ptr->size(),
 			GPLATES_ASSERTION_SOURCE);
+
+	// unset focus 
+	unset_focus();
 
 	// Update topology and redraw.
 	update_and_redraw_topology();
 }
 
-
 void
-GPlatesGui::TopologyTools::react_entries_inserted(
+GPlatesGui::TopologyTools::react_entries_inserted_boundary(
 		GPlatesGui::TopologySectionsContainer::size_type inserted_index,
 		GPlatesGui::TopologySectionsContainer::size_type quantity,
 		GPlatesGui::TopologySectionsContainer::const_iterator inserted_begin,
@@ -1041,8 +1165,8 @@ GPlatesGui::TopologyTools::react_entries_inserted(
 			inserted_begin,
 			inserted_end,
 			std::inserter(
-					d_section_info_seq,
-					d_section_info_seq.begin() + inserted_index),
+					d_boundary_section_info_seq,
+					d_boundary_section_info_seq.begin() + inserted_index),
 			// Calls the SectionInfo constructor with a TableRow as the argument...
 			boost::lambda::bind(
 					boost::lambda::constructor<SectionInfo>(),
@@ -1050,7 +1174,7 @@ GPlatesGui::TopologyTools::react_entries_inserted(
 
 	// Our internal section sequence should now be in sync with the topology sections container.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_section_info_seq.size() == d_topology_sections_container_ptr->size(),
+			d_boundary_section_info_seq.size() == d_boundary_sections_container_ptr->size(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Update topology and redraw.
@@ -1059,19 +1183,112 @@ GPlatesGui::TopologyTools::react_entries_inserted(
 
 
 void
-GPlatesGui::TopologyTools::react_entry_modified(
+GPlatesGui::TopologyTools::react_entry_modified_boundary(
 	GPlatesGui::TopologySectionsContainer::size_type modified_section_index)
 {
 	if (! d_is_active) { return; }
 
 	// Our section sequence should be in sync with the topology sections container.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_section_info_seq.size() == d_topology_sections_container_ptr->size(),
+			d_boundary_section_info_seq.size() == d_boundary_sections_container_ptr->size(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Copy the table row into our own internal sequence.
-	d_section_info_seq[modified_section_index].d_table_row =
-			d_topology_sections_container_ptr->at(modified_section_index);
+	d_boundary_section_info_seq[modified_section_index].d_table_row =
+			d_boundary_sections_container_ptr->at(modified_section_index);
+
+	// Update topology and redraw.
+	update_and_redraw_topology();
+}
+
+//
+// interior react functions
+//
+
+void
+GPlatesGui::TopologyTools::react_cleared_interior()
+{
+	if (! d_is_active) { return; }
+
+	d_interior_section_info_seq.clear();
+
+	// Our internal section sequence should now be in sync with the topology sections container.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_interior_section_info_seq.size() == d_interior_sections_container_ptr->size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Update topology and redraw.
+	update_and_redraw_topology();
+}
+
+
+
+void
+GPlatesGui::TopologyTools::react_insertion_point_moved(
+    GPlatesGui::TopologySectionsContainer::size_type new_index)
+{
+	// this check prevents the draw before the tables are filled upon init
+	if ( 
+		( d_boundary_section_info_seq.size() == d_boundary_sections_container_ptr->size() ) || 
+		( d_interior_section_info_seq.size() == d_interior_sections_container_ptr->size() ) )
+	{ 
+		draw_insertion_neighbors();
+	}
+}
+
+
+void
+GPlatesGui::TopologyTools::react_entry_removed_interior(
+	GPlatesGui::TopologySectionsContainer::size_type deleted_index)
+{
+	if (! d_is_active) { return; }
+
+	// Make sure delete index is not out of range.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			deleted_index < d_interior_section_info_seq.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Remove from our internal section sequence.
+	d_interior_section_info_seq.erase(d_interior_section_info_seq.begin() + deleted_index);
+
+	// Our internal section sequence should now be in sync with the topology sections container.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_interior_section_info_seq.size() == d_interior_sections_container_ptr->size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// unset focus 
+	unset_focus();
+
+	// Update topology and redraw.
+	update_and_redraw_topology();
+}
+
+void
+GPlatesGui::TopologyTools::react_entries_inserted_interior(
+		GPlatesGui::TopologySectionsContainer::size_type inserted_index,
+		GPlatesGui::TopologySectionsContainer::size_type quantity,
+		GPlatesGui::TopologySectionsContainer::const_iterator inserted_begin,
+		GPlatesGui::TopologySectionsContainer::const_iterator inserted_end)
+{
+	if (! d_is_active) { return; }
+
+	// Iterate over the table rows inserted in the topology sections container and
+	// also insert them into our internal section sequence structure.
+	std::transform(
+			inserted_begin,
+			inserted_end,
+			std::inserter(
+					d_interior_section_info_seq,
+					d_interior_section_info_seq.begin() + inserted_index),
+			// Calls the SectionInfo constructor with a TableRow as the argument...
+			boost::lambda::bind(
+					boost::lambda::constructor<SectionInfo>(),
+					boost::lambda::_1));
+
+	// Our internal section sequence should now be in sync with the topology sections container.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_interior_section_info_seq.size() == d_interior_sections_container_ptr->size(),
+			GPLATES_ASSERTION_SOURCE);
 
 	// Update topology and redraw.
 	update_and_redraw_topology();
@@ -1079,7 +1296,31 @@ GPlatesGui::TopologyTools::react_entry_modified(
 
 
 void
-GPlatesGui::TopologyTools::handle_add_feature()
+GPlatesGui::TopologyTools::react_entry_modified_interior(
+	GPlatesGui::TopologySectionsContainer::size_type modified_section_index)
+{
+	if (! d_is_active) { return; }
+
+	// Our section sequence should be in sync with the topology sections container.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_interior_section_info_seq.size() == d_interior_sections_container_ptr->size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Copy the table row into our own internal sequence.
+	d_interior_section_info_seq[modified_section_index].d_table_row =
+			d_interior_sections_container_ptr->at(modified_section_index);
+
+	// Update topology and redraw.
+	update_and_redraw_topology();
+}
+
+
+// 
+// Widget handle functions 
+//
+
+void
+GPlatesGui::TopologyTools::handle_add_feature_boundary()
 {
 	// adjust the mode
 	d_in_edit = true;
@@ -1096,13 +1337,17 @@ GPlatesGui::TopologyTools::handle_add_feature()
 		return;
 	}
 
+	// synchronize the tools, container, widget, and table
+	synchronize_seq_num( 0 );
+
 	// Flip the ViewportWindow to the Topology Sections Table
 	d_viewport_window_ptr->choose_topology_sections_table();
 
+	// Check for ReconstructionGeometry
 	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type rg_ptr =
-			d_feature_focus_ptr->associated_reconstruction_geometry();
-
-	// only insert features with a valid RG
+		d_feature_focus_ptr->associated_reconstruction_geometry();
+	
+	// Only insert features with a valid RG
 	if (! rg_ptr ) { return ; }
 
 	// Only insert features that have a ReconstructedFeatureGeometry.
@@ -1122,14 +1367,69 @@ GPlatesGui::TopologyTools::handle_add_feature()
 			rfg_ptr.get()->property());
 
 	// Insert the row.
-	// NOTE: This will generate a signal that will call our 'react_entries_inserted()'
+	// NOTE: This will generate a signal that will call our 'react_entries_inserted_boundary()'
 	// method which will handle the building of our topology data structures.
-	d_topology_sections_container_ptr->insert( table_row );
+	d_boundary_sections_container_ptr->insert( table_row );
 
-	// NOTE: this will trigger a set_focus signal with NULL ref
-	d_feature_focus_ptr->unset_focus();
-	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_viewport_window_ptr->feature_table_model().clear();
+	// unset focus 
+	unset_focus();
+}
+
+
+void
+GPlatesGui::TopologyTools::handle_add_feature_interior()
+{
+	// adjust the mode
+	d_in_edit = true;
+
+	// only allow adding of focused features
+	if ( ! d_feature_focus_ptr->is_valid() ) 
+	{ 
+		return;
+	}
+
+	// Check if we can insert the focused feature into the topology.
+	if (!can_insert_focused_feature_into_topology())
+	{
+		return;
+	}
+
+	// synchronize the tools, container, widget, and table
+	synchronize_seq_num( 1 );
+	
+	// Flip the ViewportWindow to the Topology Sections Table
+	d_viewport_window_ptr->choose_topology_sections_table();
+
+	// Check for ReconstructionGeometry
+	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type rg_ptr =
+		d_feature_focus_ptr->associated_reconstruction_geometry();
+	
+	// Only insert features with a valid RG
+	if (! rg_ptr ) { return ; }
+
+	// Only insert features that have a ReconstructedFeatureGeometry.
+	// We exclude features with a ResolvedTopologicalBoundary because those features are
+	// themselves topological boundaries and we're trying to build a topological boundary
+	// from ordinary features.
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg_ptr =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ReconstructedFeatureGeometry>(rg_ptr);
+	if (!rfg_ptr)
+	{
+		return;
+	}
+
+	// The table row to insert into the topology sections container.
+	const GPlatesGui::TopologySectionsContainer::TableRow table_row(
+			rfg_ptr.get()->property());
+
+	// Insert the row.
+	// NOTE: This will generate a signal that will call our 'react_entries_inserted_interior()'
+	// method which will handle the building of our topology data structures.
+	d_interior_sections_container_ptr->insert( table_row );
+
+	// unset focus 
+	unset_focus();
 }
 
 
@@ -1145,34 +1445,107 @@ GPlatesGui::TopologyTools::handle_remove_feature()
 		return;
 	}
 
-	const std::vector<int> topological_section_indices = find_topological_section_indices(
+	// check if the feature is in the topology 
+	int found_sequence_num; // which sequce of sections the feature was found in
+	std::vector<int> found_indices; // indices in the sequence
+
+	find_topological_section_indices(
+			found_sequence_num,
+			found_indices, 
 			d_feature_focus_ptr->focused_feature(),
 			d_feature_focus_ptr->associated_geometry_property());
 	
-	if ( !topological_section_indices.empty() )	
+	// If focused feature found in topology boundary...
+	if ( !found_indices.empty() )	
 	{
-		int check_index = topological_section_indices[0];
-		// remove it from the containter 
-		d_topology_sections_container_ptr->remove_at( check_index );
+		int check_index = found_indices[0];
 
-		// NOTE : this will then trigger  our react_entry_removed() 
-		// so no further action should be needed here ...
+		if ( found_sequence_num == 0)
+		{
+			// remove it from the boundary containter 
+			d_boundary_sections_container_ptr->remove_at( check_index );
+			// NOTE : this will then trigger  our react_entry_removed_boundary() 
+			// so no further action should be needed here ...
+		}
+		else if ( found_sequence_num == 1)
+		{
+			// remove it from the interior containter 
+			d_interior_sections_container_ptr->remove_at( check_index );
+			// NOTE : this will then trigger  our react_entry_removed_interior() 
+			// so no further action should be needed here ...
+		}
 	}
+}
+
+void
+GPlatesGui::TopologyTools::synchronize_seq_num(int i)
+{
+	// Adjust the combobox if necessary
+	if ( d_topology_tools_widget_ptr->get_sections_combobox_index() != i )
+	{
+		// flip the combobox ; will trigger handle_sections_combobox_index_changed()
+		d_topology_tools_widget_ptr->set_sections_combobox_index( i );
+	}
+	else
+	{
+		// just set the operating sequence
+		handle_sections_combobox_index_changed( i );
+	}
+	
+	// update seq_num
+	d_seq_num = i;
+}
+
+
+void
+GPlatesGui::TopologyTools::handle_sections_combobox_index_changed(int i)
+{
+	QString s("Topology Sections"); // default
+
+	// which sequnce of sections
+	if (i == 0)
+	{
+		// set interal state 
+		d_seq_num = 0;
+
+		s = QString("Topology Boundary Sections");
+		// set the container ptr in the sections table
+		d_boundary_sections_container_ptr->set_container_ptr_in_table(d_boundary_sections_container_ptr);
+		// update the table contnent 
+		d_boundary_sections_container_ptr->update_table_from_container();
+	}
+	else if ( i == 1)
+	{
+		// set interal state 
+		d_seq_num = 1;
+
+		s = QString("Topology Interior Sections");
+		// set the container ptr in the sections table
+		d_interior_sections_container_ptr->set_container_ptr_in_table(d_interior_sections_container_ptr);
+		// update the table contnent 
+		d_interior_sections_container_ptr->update_table_from_container();
+	}
+
+	// change the text on the table tab to match the current seq
+	d_viewport_window_ptr->set_topology_sections_table_tab_text( s );
+
+	// Update topology and redraw.; changing the combo box changes the color scheme 
+	update_and_redraw_topology();
 }
 
 
 void
 GPlatesGui::TopologyTools::handle_remove_all_sections()
 {
-	// NOTE: this will trigger a set_focus signal with NULL ref
-	d_feature_focus_ptr->unset_focus();
-	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_viewport_window_ptr->feature_table_model().clear();
+	// unset focus 
+	unset_focus();
 
 	// Remove all sections from the topology sections container.
-	// NOTE: This will generate a signal that will call our 'react_cleared()'
-	// method which clear out our internal section sequence and redraw.
-	d_topology_sections_container_ptr->clear();
+	// NOTE: This will generate a signal that will call our 'react_cleared_FOO()' functions
+	// which clear out our internal section sequence and redraw.
+
+	( d_viewport_window_ptr->topology_boundary_sections_container() ).clear();
+	( d_viewport_window_ptr->topology_interior_sections_container() ).clear();
 }
 
 
@@ -1187,7 +1560,7 @@ GPlatesGui::TopologyTools::handle_apply()
 
 	// Convert the current topology state to a 'gpml:boundary' property value
 	// and attach it to the topology feature reference.
-	convert_topology_to_boundary_feature_property(d_topology_feature_ref);
+	convert_topology_to_feature_property(d_topology_feature_ref);
 
 	// The topology feature has been modified so that it now behaves as a topological feature.
 	// Create any new layers required so the topological feature can be processed.
@@ -1195,6 +1568,7 @@ GPlatesGui::TopologyTools::handle_apply()
 			GPlatesAppLogic::get_file_reference_containing_feature(
 				d_application_state_ptr->get_feature_collection_file_state(),
 				d_topology_feature_ref);
+
 	if(file_ref)
 	{
 		d_application_state_ptr->update_layers(*file_ref);
@@ -1211,11 +1585,15 @@ GPlatesGui::TopologyTools::draw_all_layers_clear()
 {
 	// clear all layers
 	d_topology_geometry_layer_ptr->clear_rendered_geometries();
-	d_focused_feature_layer_ptr->clear_rendered_geometries();
-	d_insertion_neighbors_layer_ptr->clear_rendered_geometries();
 	d_segments_layer_ptr->clear_rendered_geometries();
-	d_end_points_layer_ptr->clear_rendered_geometries();
 	d_intersection_points_layer_ptr->clear_rendered_geometries();
+	d_boundary_geometry_layer_ptr->clear_rendered_geometries();
+	d_interior_geometry_layer_ptr->clear_rendered_geometries();
+	d_insertion_neighbors_layer_ptr->clear_rendered_geometries();
+#if 0
+	d_end_points_layer_ptr->clear_rendered_geometries();
+#endif
+	d_focused_feature_layer_ptr->clear_rendered_geometries();
 }
 
 
@@ -1233,22 +1611,18 @@ GPlatesGui::TopologyTools::draw_all_layers()
 
 	// draw all the layers
 	draw_topology_geometry();
+	draw_boundary_geometry();
+	draw_interior_geometry();
+
 	draw_segments();
-
-	// Don't draw the end points anymore since they were used to give the user
-	// an indication of the reversal direction of a segment so the user could change
-	// the reversal flag if they wanted, but now that a segment's reversal flag is
-	// automatically calculated in code we don't need this anymore (reduces visual clutter).
-#if 0
-	draw_end_points();
-#endif
-
 	draw_intersection_points();
 	draw_insertion_neighbors();
-	
+
+	// draw_end_points();
+
+#if 0 
 	// Don't draw the section click points anymore since they are not used to determine
 	// the boundary subsegment anymore (reduces visual clutter).
-#if 0
 	draw_click_points();
 #endif
 }
@@ -1259,32 +1633,8 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 {
 	d_topology_geometry_layer_ptr->clear_rendered_geometries();
 
-#if 0
-	if ( d_topology_type == GPlatesGlobal::NETWORK )
-	{
-		// FIXME: eventually we will want the network drawn here too, 
-		// but for now, don't draw the network, just let the Resolver do it
-	}
-	else
-#endif
-	{
-		if (d_topology_geometry_opt_ptr) 
-		{
-			// draw the single plate polygon 
-			// light grey
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::Colour(0.75, 0.75, 0.75, 1.0);
-
-			// Create rendered geometry.
-			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					*d_topology_geometry_opt_ptr,
-					colour,
-					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_LINE_WIDTH_HINT);
-			d_topology_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
-		}
-	}
-
+	// FIXME: we might want the network drawn here too, but for now, 
+	// don't draw the network, just let the Resolver do it
 
 	const GPlatesGui::Colour &point_colour = GPlatesGui::Colour::Colour(0.75, 0.75, 0.75, 1.0);
 
@@ -1308,100 +1658,83 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 	}
 }
 
-
 void
-GPlatesGui::TopologyTools::draw_insertion_neighbors()
+GPlatesGui::TopologyTools::draw_boundary_geometry()
 {
-	d_insertion_neighbors_layer_ptr->clear_rendered_geometries();
+	d_boundary_geometry_layer_ptr->clear_rendered_geometries();
 
-	// Our internal section sequence should be in sync with the topology sections container.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_section_info_seq.size() == d_topology_sections_container_ptr->size(),
-			GPLATES_ASSERTION_SOURCE);
+	// super short cut
+	if (!d_boundary_geometry_opt_ptr) { return; }
 
-	// If no visible sections then nothing to draw.
-	if (d_visible_section_seq.empty())
+	// Render the active topology section sequence in contrast to the topology verts (and network) 
+	GPlatesGui::Colour colour = GPlatesGui::Colour::Colour(0.05f, 0.05f, 0.05f, 1.0f); // dark grey
+	float point_size_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
+    float line_width_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
+
+	// check if boundary is the active sequnce
+	if ( d_topology_tools_widget_ptr->get_sections_combobox_index() != 0 ) // 0 = boundary list
 	{
-		return;
+		// Render the non-active topology sections sequence muted 
+		colour = GPlatesGui::Colour::Colour(0.75f, 0.75f, 0.75f, 1.0f); // light grey
+		point_size_hint = GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT;
+    	line_width_hint = GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT;
 	}
 
-	// Get the current insertion point in the topology sections container.
-	const GPlatesGui::TopologySectionsContainer::size_type insertion_point = 
-			d_topology_sections_container_ptr->insertion_point();
+	// Create rendered geometry.
+	const GPlatesViewOperations::RenderedGeometry rendered_geometry =
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+			*d_boundary_geometry_opt_ptr,
+			colour,
+			point_size_hint,
+			line_width_hint);
 
-	// Index of the geometry just before the insertion point.
-	GPlatesGui::TopologySectionsContainer::size_type prev_section_index =
-			get_prev_index(insertion_point, d_section_info_seq);
-
-	// Index of the geometry after the insertion point.
-	// This is actually the geometry at the insertion point index since we haven't
-	// inserted any geometry yet.
-	GPlatesGui::TopologySectionsContainer::size_type next_section_index = insertion_point;
-
-	// See if the section before the insertion point is currently visible by searching
-	// for its section index in the visible sections.
-	boost::optional<visible_section_seq_type::const_iterator> prev_visible_section_iter;
-	for (section_info_seq_type::size_type section_count = 0;
-		section_count < d_section_info_seq.size();
-		++section_count, prev_section_index = get_prev_index(prev_section_index, d_section_info_seq))
-	{
-		prev_visible_section_iter = is_section_visible(prev_section_index);
-
-		if (prev_visible_section_iter)
-		{
-			break;
-		}
-	}
-
-	if (prev_visible_section_iter &&
-			prev_visible_section_iter.get()->d_final_boundary_segment_unreversed_geom) 
-	{
-		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
-
-		// Create rendered geometry.
-		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				*prev_visible_section_iter.get()->d_section_geometry_unreversed,
-				colour,
-				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
-
-		d_insertion_neighbors_layer_ptr->add_rendered_geometry(rendered_geometry);
-	}
-
-
-	// See if the section at/after the insertion point is currently visible by searching
-	// for its section index in the visible sections.
-	boost::optional<visible_section_seq_type::const_iterator> next_visible_section_iter;
-	for (section_info_seq_type::size_type section_count = 0;
-		section_count < d_section_info_seq.size();
-		++section_count, next_section_index = get_next_index(next_section_index, d_section_info_seq))
-	{
-		next_visible_section_iter = is_section_visible(next_section_index);
-
-		if (next_visible_section_iter)
-		{
-			break;
-		}
-	}
-
-	if (next_visible_section_iter &&
-			next_visible_section_iter.get()->d_final_boundary_segment_unreversed_geom) 
-	{
-		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_black();
-
-		// Create rendered geometry.
-		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				*next_visible_section_iter.get()->d_section_geometry_unreversed,
-				colour,
-				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
-
-		d_insertion_neighbors_layer_ptr->add_rendered_geometry(rendered_geometry);
-	}
+	d_boundary_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
 }
 
+void
+GPlatesGui::TopologyTools::draw_interior_geometry()
+{
+	d_interior_geometry_layer_ptr->clear_rendered_geometries();
+
+	// super short cut for empty list
+	if ( d_interior_geometry_opt_ptrs.empty() ) { return; }
+
+	// Render the active topology section sequence in contrast to topology verts 
+	GPlatesGui::Colour colour = GPlatesGui::Colour::Colour(0.05f, 0.05f, 0.05f, 1.0f); // dark grey
+	float point_size_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
+    float line_width_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
+
+	// check if interior is the active sequnce
+	if ( d_topology_tools_widget_ptr->get_sections_combobox_index() != 1 ) // 1 = interior list
+	{
+		// Render the non-active topology sections sequence muted 
+		colour = GPlatesGui::Colour::Colour(0.75, 0.75, 0.75, 1.0); // light grey
+		point_size_hint = GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT;
+    	line_width_hint = GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT;
+	}
+
+	// draw all the interior sections
+	std::vector<boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> >::iterator itr;
+	std::vector<boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> >::iterator end;
+	itr = d_interior_geometry_opt_ptrs.begin();
+	end = d_interior_geometry_opt_ptrs.end();
+
+	for ( ; itr != end; ++itr )
+	{
+		if ( itr->get() )
+		{
+			// Create rendered geometry.
+			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+					itr->get(),
+					colour,
+					point_size_hint,
+					line_width_hint);
+
+			d_interior_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
+		}
+	}
+}
 
 void
 GPlatesGui::TopologyTools::draw_focused_geometry(
@@ -1448,7 +1781,6 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 			colour,
 			boost::none,
 			boost::none);
-
 
 	reconstruction_geometry_renderer.begin_render();
 
@@ -1523,8 +1855,10 @@ GPlatesGui::TopologyTools::draw_segments()
 	//
 
 	// Iterate over the visible sections and draw the subsegment geometry of each.
-	visible_section_seq_type::const_iterator visible_section_iter = d_visible_section_seq.begin();
-	visible_section_seq_type::const_iterator visible_section_end = d_visible_section_seq.end();
+	visible_section_seq_type::const_iterator visible_section_iter = 
+		d_visible_boundary_section_seq.begin();
+	visible_section_seq_type::const_iterator visible_section_end = 
+		d_visible_boundary_section_seq.end();
 	for ( ; visible_section_iter != visible_section_end; ++visible_section_iter)
 	{
 		if (visible_section_iter->d_final_boundary_segment_unreversed_geom)
@@ -1544,6 +1878,7 @@ GPlatesGui::TopologyTools::draw_segments()
 }
 
 
+#if 0
 void
 GPlatesGui::TopologyTools::draw_end_points()
 {
@@ -1552,8 +1887,10 @@ GPlatesGui::TopologyTools::draw_end_points()
 	const GPlatesGui::Colour &end_points_colour = GPlatesGui::Colour::get_grey();
 
 	// Iterate over the visible sections and draw the start and end point of each segment.
-	visible_section_seq_type::const_iterator visible_section_iter = d_visible_section_seq.begin();
-	visible_section_seq_type::const_iterator visible_section_end = d_visible_section_seq.end();
+	visible_section_seq_type::const_iterator visible_section_iter = 
+		d_visible_boundary_section_seq.begin();
+	visible_section_seq_type::const_iterator visible_section_end = 
+		d_visible_boundary_section_seq.end();
 	for ( ; visible_section_iter != visible_section_end; ++visible_section_iter)
 	{
 		if (visible_section_iter->d_section_start_point)
@@ -1566,7 +1903,8 @@ GPlatesGui::TopologyTools::draw_end_points()
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
 					segment_start,
 					end_points_colour,
-					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT);
+					//GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);
 
 			// Add to layer.
 			d_end_points_layer_ptr->add_rendered_geometry(start_point_rendered_geometry);
@@ -1582,13 +1920,15 @@ GPlatesGui::TopologyTools::draw_end_points()
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
 					segment_end,
 					end_points_colour,
-					GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT);
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT);
+					//GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT);
 
 			// Add to layer.
 			d_end_points_layer_ptr->add_rendered_geometry(end_point_rendered_geometry);
 		}
 	}
 }
+#endif
 
 
 void
@@ -1596,13 +1936,16 @@ GPlatesGui::TopologyTools::draw_intersection_points()
 {
 	d_intersection_points_layer_ptr->clear_rendered_geometries();
 
-	const GPlatesGui::Colour &intersection_points_colour = GPlatesGui::Colour::get_grey();
+	//const GPlatesGui::Colour &intersection_points_colour = GPlatesGui::Colour::get_grey();
+	const GPlatesGui::Colour &intersection_points_colour = GPlatesGui::Colour::get_black();
 
 	// Iterate over the visible sections and draw the start intersection of each segment.
 	// Since the start intersection of one segment is the same as the end intersection
 	// of the previous segment we do not need to draw the end intersection points.
-	visible_section_seq_type::const_iterator visible_section_iter = d_visible_section_seq.begin();
-	visible_section_seq_type::const_iterator visible_section_end = d_visible_section_seq.end();
+	visible_section_seq_type::const_iterator visible_section_iter = 
+		d_visible_boundary_section_seq.begin();
+	visible_section_seq_type::const_iterator visible_section_end = 
+		d_visible_boundary_section_seq.end();
 	for ( ; visible_section_iter != visible_section_end; ++visible_section_iter)
 	{
 		if (!visible_section_iter->d_intersection_point_with_prev)
@@ -1626,26 +1969,174 @@ GPlatesGui::TopologyTools::draw_intersection_points()
 }
 
 
+
+
+void
+GPlatesGui::TopologyTools::draw_insertion_neighbors()
+{
+	d_insertion_neighbors_layer_ptr->clear_rendered_geometries();
+
+	// local working vars
+	section_info_seq_type local_section_info_seq;
+	local_section_info_seq.clear();
+
+	visible_section_seq_type local_visible_section_seq;
+	local_visible_section_seq.clear();
+
+	GPlatesGui::TopologySectionsContainer *topology_sections_container_ptr;
+
+	// choose which sequence intersection neighbors to draw
+	if (d_seq_num == 0)
+	{
+		local_section_info_seq = d_boundary_section_info_seq;
+		local_visible_section_seq = d_visible_boundary_section_seq;
+
+		topology_sections_container_ptr = 
+			&(d_viewport_window_ptr->topology_boundary_sections_container());
+
+	}
+	else if ( d_seq_num == 1)
+	{
+		local_section_info_seq = d_interior_section_info_seq;
+		local_visible_section_seq = d_visible_interior_section_seq;
+
+		topology_sections_container_ptr = 
+			&(d_viewport_window_ptr->topology_interior_sections_container());
+	}
+	else
+		return;
+
+	// If no visible sections then nothing to draw.
+	if ( local_section_info_seq.empty() )
+	{
+		return;
+	}
+
+	// Get the current insertion point in the topology sections container.
+	const GPlatesGui::TopologySectionsContainer::size_type insertion_point = 
+		topology_sections_container_ptr->insertion_point();
+
+	// Index of the geometry just before the insertion point.
+	GPlatesGui::TopologySectionsContainer::size_type prev_neighbor_index =
+		get_prev_index(insertion_point, local_section_info_seq);
+
+	// Index of the geometry after the insertion point.
+	// This is actually the geometry at the insertion point index 
+	GPlatesGui::TopologySectionsContainer::size_type next_neighbor_index = 0;
+	if ( insertion_point == local_section_info_seq.size() )
+	{
+		next_neighbor_index = 0;
+	} else {
+		next_neighbor_index = insertion_point;
+	}
+
+#if 0
+qDebug() << "local_section_info_seq.size = " << local_section_info_seq.size();
+qDebug() << "local_visible_section_seq.size = " << local_visible_section_seq.size();
+qDebug() << "";
+qDebug() << "prev index = " << prev_neighbor_index;
+qDebug() << "insert idx = " << insertion_point;
+qDebug() << "next index = " << next_neighbor_index;
+qDebug() << "";
+#endif
+
+
+	// See if the section before the insertion point is currently visible by searching
+	// for its section index in the visible sections.
+	boost::optional<visible_section_seq_type::const_iterator> prev_visible_section_iter;
+	for (section_info_seq_type::size_type count_p = 0;
+		count_p < local_section_info_seq.size();
+		++count_p, prev_neighbor_index = get_prev_index(prev_neighbor_index, local_section_info_seq))
+	{
+		if ( d_seq_num == 0 ) {
+			prev_visible_section_iter = is_section_visible_boundary(prev_neighbor_index);
+		} else if (d_seq_num == 1) {
+			prev_visible_section_iter = is_section_visible_interior(prev_neighbor_index);
+		}
+
+		if (prev_visible_section_iter)
+		{
+			break;
+		}
+	}
+
+	if (prev_visible_section_iter &&
+			prev_visible_section_iter.get()->d_final_boundary_segment_unreversed_geom) 
+	{
+		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_blue();
+
+		// Create rendered geometry.
+		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				*prev_visible_section_iter.get()->d_section_geometry_unreversed,
+				colour,
+				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
+				GPlatesViewOperations::RenderedLayerParameters::TOPOLOGY_TOOL_LINE_WIDTH_HINT);
+
+		d_insertion_neighbors_layer_ptr->add_rendered_geometry(rendered_geometry);
+	}
+
+
+	// See if the section at/after the insertion point is currently visible by searching
+	// for its section index in the visible sections.
+	boost::optional<visible_section_seq_type::const_iterator> next_visible_section_iter;
+	for (section_info_seq_type::size_type count_n = 0;
+		count_n < local_section_info_seq.size();
+		++count_n, next_neighbor_index = get_next_index(next_neighbor_index, local_section_info_seq))
+	{
+		if (d_seq_num == 0) {
+			next_visible_section_iter = is_section_visible_boundary(next_neighbor_index);
+		} else if (d_seq_num == 1) {
+			next_visible_section_iter = is_section_visible_interior(next_neighbor_index);
+		}
+
+		if (next_visible_section_iter)
+		{
+			break;
+		}
+	}
+
+	if (next_visible_section_iter &&
+			next_visible_section_iter.get()->d_final_boundary_segment_unreversed_geom) 
+	{
+		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_green();
+
+		// Create rendered geometry.
+		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				*next_visible_section_iter.get()->d_section_geometry_unreversed,
+				colour,
+				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
+				GPlatesViewOperations::RenderedLayerParameters::TOPOLOGY_TOOL_LINE_WIDTH_HINT);
+
+		d_insertion_neighbors_layer_ptr->add_rendered_geometry(rendered_geometry);
+	}
+}
+
 void
 GPlatesGui::TopologyTools::update_and_redraw_topology()
 {
 	PROFILE_FUNC();
+	
+	// 
+	// update Boundary
+	//
 
 	//
 	// First iterate through the sections and reconstruct the currently visible
 	// ones (ie, the ones whose age range contains the current reconstruction time).
 	//
-	reconstruct_sections();
+	reconstruct_boundary_sections();
 
 	//
 	// Next iterate through the potential intersections of the visible sections.
 	//
-	if (d_visible_section_seq.size() == 2)
+	if (d_visible_boundary_section_seq.size() == 2)
 	{
 		// We treat two visible sections as a special case.
 		process_two_section_intersections();
 	}
-	else if (d_visible_section_seq.size() > 2)
+	else if (d_visible_boundary_section_seq.size() > 2)
 	{
 		process_intersections();
 	}
@@ -1658,7 +2149,7 @@ GPlatesGui::TopologyTools::update_and_redraw_topology()
 	// adjacent visible sections because they are the visible sections that need rubber-banding.
 	// Hence this needs to be done after intersection processing.
 	//
-	determine_segment_reversals();
+	determine_boundary_segment_reversals();
 
 	//
 	// Next iterate over all the visible sections and assign the boundary subsegments that
@@ -1666,15 +2157,31 @@ GPlatesGui::TopologyTools::update_and_redraw_topology()
 	//
 	assign_boundary_segments();
 
-	// Now that we've updated all the topology subsegments we can
-	// create the full set of topology vertices for display.
+	// Set the number of boundary sections in the TopologyToolsWidget
+	d_topology_tools_widget_ptr->display_number_of_sections_boundary(
+		d_boundary_sections_container_ptr->size() );
+
+	// 
+	// Interior ; see above for similar comments regarding these processing steps
+	//
+	reconstruct_interior_sections();
+
+	// NOTE: Do not process any intersections, or reverse code on the interior sections
+
+	assign_interior_segments();
+
+	d_topology_tools_widget_ptr->display_number_of_sections_interior(
+		d_interior_sections_container_ptr->size() );
+
+	//
+	// finalize total Topology 
+	//
+
+	// Now that we've updated all the topology boundary and interior subsegments 
+	// we can create the sets of vertices and geoms for display.
 	update_topology_vertices();
 
 	draw_all_layers();
-
-	// Set the num_sections in the TopologyToolsWidget
-	d_topology_tools_widget_ptr->display_number_of_sections(
-		d_topology_sections_container_ptr->size() );
 }
 
 
@@ -1700,11 +2207,11 @@ GPlatesGui::TopologyTools::does_topology_exist_at_current_recon_time() const
 
 
 void
-GPlatesGui::TopologyTools::reconstruct_sections()
+GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 {
 	// Clear the list of currently visible sections.
 	// We're going to repopulate it.
-	d_visible_section_seq.clear();
+	d_visible_boundary_section_seq.clear();
 
 	// Get the reconstruction tree output of the default reconstruction tree layer.
 	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
@@ -1713,12 +2220,12 @@ GPlatesGui::TopologyTools::reconstruct_sections()
 			d_application_state_ptr->get_current_reconstruction()
 				.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
-	const section_info_seq_type::size_type num_sections = d_section_info_seq.size();
+	const section_info_seq_type::size_type num_sections = d_boundary_section_info_seq.size();
 
 	section_info_seq_type::size_type section_index;
 	for (section_index = 0; section_index < num_sections; ++section_index)
 	{
-		SectionInfo &section_info = d_section_info_seq[section_index];
+		SectionInfo &section_info = d_boundary_section_info_seq[section_index];
 
 		// Create a structure that we can use to do intersection processing and
 		// rendering with.
@@ -1737,9 +2244,53 @@ GPlatesGui::TopologyTools::reconstruct_sections()
 
 		// Add to the list of currently visible sections - these are the sections
 		// that will be intersection processed.
-		d_visible_section_seq.push_back(*visible_section);
+		d_visible_boundary_section_seq.push_back(*visible_section);
 	}
 }
+
+void
+GPlatesGui::TopologyTools::reconstruct_interior_sections()
+{
+	// Clear the list of currently visible sections.
+	// We're going to repopulate it.
+	d_visible_interior_section_seq.clear();
+
+	// Get the reconstruction tree output of the default reconstruction tree layer.
+	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
+	// as input to other layers - when that happens we'll need to handle non-default trees too.
+	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+		d_application_state_ptr->get_current_reconstruction()
+			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
+
+	const section_info_seq_type::size_type num_sections = d_interior_section_info_seq.size();
+
+	section_info_seq_type::size_type section_index;
+	for (section_index = 0; section_index < num_sections; ++section_index)
+	{
+		SectionInfo &section_info = d_interior_section_info_seq[section_index];
+
+		// Create a structure that we can use to do intersection processing and
+		// rendering with.
+		//
+		// Returns false if section is not currently visible because it's age range
+		// does not contain the current reconstruction time.
+		const boost::optional<VisibleSection> visible_section =
+				section_info.reconstruct_section_info_from_table_row(
+						section_index,
+						*reconstruction_tree);
+
+		if (!visible_section)
+		{
+			continue;
+		}
+
+		// Add to the list of currently visible sections - these are the sections
+		// that will be intersection processed.
+		d_visible_interior_section_seq.push_back(*visible_section);
+	}
+}
+
+
 
 
 void
@@ -1747,10 +2298,11 @@ GPlatesGui::TopologyTools::process_intersections()
 {
 	// If we got here then we have three or more sections in total.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_visible_section_seq.size() > 2,
+			d_visible_boundary_section_seq.size() > 2,
 			GPLATES_ASSERTION_SOURCE);
 
-	const visible_section_seq_type::size_type num_visible_sections = d_visible_section_seq.size();
+	const visible_section_seq_type::size_type num_visible_sections = 
+		d_visible_boundary_section_seq.size();
 
 	visible_section_seq_type::size_type visible_section_index;
 	for (visible_section_index = 0;
@@ -1763,7 +2315,8 @@ GPlatesGui::TopologyTools::process_intersections()
 		// of 'visible_section_index - 1'.
 
 		const visible_section_seq_type::size_type prev_visible_section_index =
-				get_prev_index(visible_section_index, d_visible_section_seq);
+				get_prev_index(visible_section_index, d_visible_boundary_section_seq);
+
 		const visible_section_seq_type::size_type next_visible_section_index =
 				visible_section_index;
 
@@ -1782,7 +2335,7 @@ GPlatesGui::TopologyTools::process_intersection(
 	// Make sure the second visible section follows the first section.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			second_visible_section_index == get_next_index(
-					first_visible_section_index, d_visible_section_seq),
+					first_visible_section_index, d_visible_boundary_section_seq),
 			GPLATES_ASSERTION_SOURCE);
 
 	// If there's only one section we don't want to intersect it with itself.
@@ -1791,8 +2344,10 @@ GPlatesGui::TopologyTools::process_intersection(
 		return;
 	}
 
-	VisibleSection &first_visible_section = d_visible_section_seq[first_visible_section_index];
-	VisibleSection &second_visible_section = d_visible_section_seq[second_visible_section_index];
+	VisibleSection &first_visible_section = 
+		d_visible_boundary_section_seq[first_visible_section_index];
+	VisibleSection &second_visible_section = 
+		d_visible_boundary_section_seq[second_visible_section_index];
 
 	// If both sections refer to the same geometry then don't intersect.
 	// This can happen when the same geometry is added more than once to the topology
@@ -1814,7 +2369,7 @@ GPlatesGui::TopologyTools::process_intersection(
 	const boost::optional<GPlatesMaths::PointOnSphere> intersection =
 			second_visible_section.d_intersection_results.intersect_with_previous_section(
 					first_visible_section.d_intersection_results,
-					get_section_info(first_visible_section).d_table_row.get_reverse());
+					get_boundary_section_info(first_visible_section).d_table_row.get_reverse());
 
 	// Store the possible intersection point with each section.
 	// Was there an intersection?
@@ -1829,7 +2384,7 @@ GPlatesGui::TopologyTools::process_two_section_intersections()
 {
 	// If we got here then we have exactly two visible sections in total.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_visible_section_seq.size() == 2,
+			d_visible_boundary_section_seq.size() == 2,
 			GPLATES_ASSERTION_SOURCE);
 
 	//
@@ -1839,8 +2394,8 @@ GPlatesGui::TopologyTools::process_two_section_intersections()
 	// between two adjacent sections.
 	//
 
-	VisibleSection &first_visible_section = d_visible_section_seq[0];
-	VisibleSection &second_visible_section = d_visible_section_seq[1];
+	VisibleSection &first_visible_section = d_visible_boundary_section_seq[0];
+	VisibleSection &second_visible_section = d_visible_boundary_section_seq[1];
 
 	//
 	// Process the actual intersection(s).
@@ -1882,10 +2437,10 @@ GPlatesGui::TopologyTools::process_two_section_intersections()
 
 
 void
-GPlatesGui::TopologyTools::determine_segment_reversals()
+GPlatesGui::TopologyTools::determine_boundary_segment_reversals()
 {
 	// No need to determine reversal if there's only one visible segment.
-	if (d_visible_section_seq.size() < 2)
+	if (d_visible_boundary_section_seq.size() < 2)
 	{
 		return;
 	}
@@ -1939,7 +2494,8 @@ GPlatesGui::TopologyTools::find_reverse_section_subsets()
 	typedef std::vector< std::vector<visible_section_seq_type::size_type> >
 			reverse_section_subsets_type;
 
-	const visible_section_seq_type::size_type num_visible_sections = d_visible_section_seq.size();
+	const visible_section_seq_type::size_type num_visible_sections = 
+		d_visible_boundary_section_seq.size();
 
 	visible_section_seq_type::size_type index_of_first_section_that_only_intersects_previous_section =
 			boost::integer_traits<visible_section_seq_type::size_type>::const_max;
@@ -1955,7 +2511,7 @@ GPlatesGui::TopologyTools::find_reverse_section_subsets()
 		visible_section_index < num_visible_sections;
 		++visible_section_index)
 	{
-		VisibleSection &visible_section_info = d_visible_section_seq[visible_section_index];
+		VisibleSection &visible_section_info = d_visible_boundary_section_seq[visible_section_index];
 
 		found_a_valid_section = true;
 
@@ -2021,12 +2577,12 @@ GPlatesGui::TopologyTools::find_reverse_section_subsets()
 			++section_count, ++visible_section_index)
 		{
 			// Test for index wrap around.
-			if (visible_section_index == d_visible_section_seq.size())
+			if (visible_section_index == d_visible_boundary_section_seq.size())
 			{
 				visible_section_index = 0;
 			}
 
-			VisibleSection &visible_section_info = d_visible_section_seq[visible_section_index];
+			VisibleSection &visible_section_info = d_visible_boundary_section_seq[visible_section_index];
 
 			if (visible_section_info.d_intersection_results.only_intersects_previous_section())
 			{
@@ -2056,51 +2612,94 @@ GPlatesGui::TopologyTools::find_flip_reverse_order_flags(
 	// numeric_limits' max.
 	double min_length = (std::numeric_limits<double>::max)();
 	std::vector<bool> min_length_reverse_order_seq;
-	bool min_length_flip_parent_reverse_flag = false;
 
 	// Try reversing and not-reversing the first section in the sequence.
 	for (int flip_parent_reverse_flag = 0;
 		flip_parent_reverse_flag < 2;
 		++flip_parent_reverse_flag)
 	{
+		// The parent geometry end points for the current parent reversal flag.
 		std::pair<
 			GPlatesMaths::PointOnSphere/*start point*/,
 			GPlatesMaths::PointOnSphere/*end point*/>
-				geometry_start_and_endpoints = get_boundary_geometry_end_points(
+				parent_geometry_start_and_endpoints = get_boundary_geometry_end_points(
 						parent_visible_section_index, flip_parent_reverse_flag);
 		const GPlatesMaths::PointOnSphere &parent_geometry_head =
-				geometry_start_and_endpoints.first;
+				parent_geometry_start_and_endpoints.first;
 		const GPlatesMaths::PointOnSphere &parent_geometry_tail =
-				geometry_start_and_endpoints.second;
+				parent_geometry_start_and_endpoints.second;
 
-		// Try reversing and not-reversing the second section in the sequence.
-		for (int flip_child_reversal_flag = 0;
-			flip_child_reversal_flag < 2;
-			++flip_child_reversal_flag)
+		const visible_section_seq_type::size_type child_depth = 1;
+		const visible_section_seq_type::size_type child_visible_section_index =
+				reverse_section_subset[child_depth];
+
+		// The child geometry end points if its geometry is flipped.
+		std::pair<
+			GPlatesMaths::PointOnSphere/*start point*/,
+			GPlatesMaths::PointOnSphere/*end point*/>
+				child_section_start_and_endpoints_flipped = get_boundary_geometry_end_points(
+						child_visible_section_index, true);
+		const GPlatesMaths::PointOnSphere &child_section_flipped_geometry_head =
+				child_section_start_and_endpoints_flipped.first;
+		const GPlatesMaths::PointOnSphere &child_section_flipped_geometry_tail =
+				child_section_start_and_endpoints_flipped.second;
+
+
+		// The child geometry end points if its geometry is not flipped.
+		std::pair<
+			GPlatesMaths::PointOnSphere/*start point*/,
+			GPlatesMaths::PointOnSphere/*end point*/>
+				child_section_start_and_endpoints_not_flipped = get_boundary_geometry_end_points(
+						child_visible_section_index, false);
+		const GPlatesMaths::PointOnSphere &child_section_not_flipped_geometry_head =
+				child_section_start_and_endpoints_not_flipped.first;
+		const GPlatesMaths::PointOnSphere &child_section_not_flipped_geometry_tail =
+				child_section_start_and_endpoints_not_flipped.second;
+
+		// Recurse to find the two optimal sequences of reversal flags for each geometry
+		// in the sequence (excluding the parent geometry).
+		// These two sequences are based on whether the child geometry is flipped or not.
+		double length_with_child_flipped;
+		double length_with_child_not_flipped;
+		std::vector<bool> reverse_order_seq_with_child_flipped;
+		std::vector<bool> reverse_order_seq_with_child_not_flipped;
+		find_reverse_order_subset_to_minimize_rubber_banding(
+				length_with_child_flipped,
+				length_with_child_not_flipped,
+				reverse_order_seq_with_child_flipped,
+				reverse_order_seq_with_child_not_flipped,
+				reverse_section_subset,
+				parent_geometry_head/*start_section_head*/,
+				child_section_flipped_geometry_tail,
+				child_section_not_flipped_geometry_tail,
+				child_depth,
+				reverse_section_subset.size()/*total_depth*/);
+
+		// Choose which of the two optimal sequences of reversal flags to use based
+		// on the current reversal orientation of the parent geometry.
+		double length;
+		std::vector<bool> reverse_order_seq;
+		choose_child_reverse_order_subset(
+				length,
+				reverse_order_seq,
+				length_with_child_flipped,
+				length_with_child_not_flipped,
+				reverse_order_seq_with_child_flipped,
+				reverse_order_seq_with_child_not_flipped,
+				parent_geometry_tail,
+				child_section_flipped_geometry_head,
+				child_section_not_flipped_geometry_head);
+
+		// Add the reversal flag for the current parent orientation.
+		reverse_order_seq.push_back(flip_parent_reverse_flag);
+
+		// Keep track of the most optimal parent reversal.
+		if (length < min_length)
 		{
-			double length;
-			// Recursively try all combinations of reversal flags.
-			const std::vector<bool> reverse_order_seq =
-					find_reverse_order_subset_to_minimize_rubber_banding(
-							length,
-							reverse_section_subset,
-							flip_child_reversal_flag,
-							parent_geometry_head,
-							parent_geometry_tail,
-							1/*current_depth*/,
-							reverse_section_subset.size()/*total_depth*/);
-
-			if (length < min_length)
-			{
-				min_length = length;
-				min_length_reverse_order_seq = reverse_order_seq;
-				min_length_flip_parent_reverse_flag = flip_parent_reverse_flag;
-			}
+			min_length = length;
+			min_length_reverse_order_seq = reverse_order_seq;
 		}
 	}
-
-	// Add the flip reverse flag for the parent section of recursive descent.
-	min_length_reverse_order_seq.push_back(min_length_flip_parent_reverse_flag);
 
 	// The flip reverse flags were added in the opposite order to
 	// the section indices vector so we need to reverse them.
@@ -2110,33 +2709,20 @@ GPlatesGui::TopologyTools::find_flip_reverse_order_flags(
 }
 
 
-std::vector<bool>
+void
 GPlatesGui::TopologyTools::find_reverse_order_subset_to_minimize_rubber_banding(
-		double &length,
+		double &length_with_current_flipped,
+		double &length_with_current_not_flipped,
+		std::vector<bool> &reverse_order_seq_with_current_flipped,
+		std::vector<bool> &reverse_order_seq_with_current_not_flipped,
 		const std::vector<visible_section_seq_type::size_type> &reverse_section_subset,
-		const bool flip_reversal_flag,
 		const GPlatesMaths::PointOnSphere &start_section_head,
-		const GPlatesMaths::PointOnSphere &previous_section_tail,
+		const GPlatesMaths::PointOnSphere &current_section_flipped_geometry_tail,
+		const GPlatesMaths::PointOnSphere &current_section_not_flipped_geometry_tail,
 		visible_section_seq_type::size_type current_depth,
 		visible_section_seq_type::size_type total_depth)
 {
-	const visible_section_seq_type::size_type visible_section_index =
-			reverse_section_subset[current_depth];
-
-	std::pair<
-		GPlatesMaths::PointOnSphere/*start point*/,
-		GPlatesMaths::PointOnSphere/*end point*/>
-			geometry_start_and_endpoints = get_boundary_geometry_end_points(
-					visible_section_index, flip_reversal_flag);
-
-	const GPlatesMaths::PointOnSphere &geometry_head = geometry_start_and_endpoints.first;
-	const GPlatesMaths::PointOnSphere &geometry_tail = geometry_start_and_endpoints.second;
-
-	// Calculate angle between tail of previous section and head of current section.
-	length = acos(dot(
-				previous_section_tail.position_vector(),
-				geometry_head.position_vector())).dval();
-
+	// Start handling our child node straight away.
 	++current_depth;
 
 	if (current_depth >= total_depth)
@@ -2149,50 +2735,148 @@ GPlatesGui::TopologyTools::find_reverse_order_subset_to_minimize_rubber_banding(
 		// For these cases (non-zero intersections) the distance added is the same
 		// constant for all reversal paths so it doesn't affect comparison of
 		// the path distances.
-		length += acos(dot(
-					geometry_tail.position_vector(),
+
+		length_with_current_flipped = acos(dot(
+					current_section_flipped_geometry_tail.position_vector(),
 					start_section_head.position_vector())).dval();
 
-		return std::vector<bool>(1, flip_reversal_flag);
+		length_with_current_not_flipped = acos(dot(
+					current_section_not_flipped_geometry_tail.position_vector(),
+					start_section_head.position_vector())).dval();
+
+		return;
 	}
 
-	double length1;
-	std::vector<bool> reverse_order_seq1 = find_reverse_order_subset_to_minimize_rubber_banding(
-			length1,
+	const visible_section_seq_type::size_type next_visible_section_index =
+			reverse_section_subset[current_depth];
+
+	std::pair<
+		GPlatesMaths::PointOnSphere/*start point*/,
+		GPlatesMaths::PointOnSphere/*end point*/>
+			next_section_start_and_endpoints_flipped = get_boundary_geometry_end_points(
+					next_visible_section_index, true);
+
+	const GPlatesMaths::PointOnSphere &next_section_flipped_geometry_head =
+			next_section_start_and_endpoints_flipped.first;
+	const GPlatesMaths::PointOnSphere &next_section_flipped_geometry_tail =
+			next_section_start_and_endpoints_flipped.second;
+
+
+	std::pair<
+		GPlatesMaths::PointOnSphere/*start point*/,
+		GPlatesMaths::PointOnSphere/*end point*/>
+			next_section_start_and_endpoints_not_flipped = get_boundary_geometry_end_points(
+					next_visible_section_index, false);
+
+	const GPlatesMaths::PointOnSphere &next_section_not_flipped_geometry_head =
+			next_section_start_and_endpoints_not_flipped.first;
+	const GPlatesMaths::PointOnSphere &next_section_not_flipped_geometry_tail =
+			next_section_start_and_endpoints_not_flipped.second;
+
+
+	// Recurse to find the two optimal sequences of reversal flags for each geometry
+	// in the sequence (excluding the current geometry).
+	// These two sequences are based on whether the next geometry is flipped or not.
+	double length_with_next_flipped;
+	double length_with_next_not_flipped;
+	std::vector<bool> reverse_order_seq_with_next_flipped;
+	std::vector<bool> reverse_order_seq_with_next_not_flipped;
+	find_reverse_order_subset_to_minimize_rubber_banding(
+			length_with_next_flipped,
+			length_with_next_not_flipped,
+			reverse_order_seq_with_next_flipped,
+			reverse_order_seq_with_next_not_flipped,
 			reverse_section_subset,
-			false/*flip_reversal_flag*/,
 			start_section_head,
-			geometry_tail,
+			next_section_flipped_geometry_tail,
+			next_section_not_flipped_geometry_tail,
 			current_depth,
 			total_depth);
 
-	double length2;
-	std::vector<bool> reverse_order_seq2 = find_reverse_order_subset_to_minimize_rubber_banding(
-			length2,
-			reverse_section_subset,
-			true/*flip_reversal_flag*/,
-			start_section_head,
-			geometry_tail,
-			current_depth,
-			total_depth);
+	// Choose which of the two optimal sequences of reversal flags to use based
+	// on flipping the current geometry.
+	choose_child_reverse_order_subset(
+			length_with_current_flipped,
+			reverse_order_seq_with_current_flipped,
+			length_with_next_flipped,
+			length_with_next_not_flipped,
+			reverse_order_seq_with_next_flipped,
+			reverse_order_seq_with_next_not_flipped,
+			current_section_flipped_geometry_tail,
+			next_section_flipped_geometry_head,
+			next_section_not_flipped_geometry_head);
 
-	if (length1 < length2)
+	// Choose which of the two optimal sequences of reversal flags to use based
+	// on not flipping the current geometry.
+	choose_child_reverse_order_subset(
+			length_with_current_not_flipped,
+			reverse_order_seq_with_current_not_flipped,
+			length_with_next_flipped,
+			length_with_next_not_flipped,
+			reverse_order_seq_with_next_flipped,
+			reverse_order_seq_with_next_not_flipped,
+			current_section_not_flipped_geometry_tail,
+			next_section_flipped_geometry_head,
+			next_section_not_flipped_geometry_head);
+}
+
+
+void
+GPlatesGui::TopologyTools::choose_child_reverse_order_subset(
+		double &length,
+		std::vector<bool> &reverse_order_seq,
+		const double &length_with_next_flipped,
+		const double &length_with_next_not_flipped,
+		const std::vector<bool> &reverse_order_seq_with_next_flipped,
+		const std::vector<bool> &reverse_order_seq_with_next_not_flipped,
+		const GPlatesMaths::PointOnSphere &current_section_geometry_tail,
+		const GPlatesMaths::PointOnSphere &next_section_flipped_geometry_head,
+		const GPlatesMaths::PointOnSphere &next_section_not_flipped_geometry_head)
+{
+	// Calculate angle between tail of current section and head of next section (flipped).
+	const double length_current_with_next_flipped =
+			length_with_next_flipped +
+			acos(dot(
+					current_section_geometry_tail.position_vector(),
+					next_section_flipped_geometry_head.position_vector())).dval();
+
+	// Calculate angle between tail of current section and head of next section (not flipped).
+	const double length_current_with_next_not_flipped =
+			length_with_next_not_flipped +
+			acos(dot(
+					current_section_geometry_tail.position_vector(),
+					next_section_not_flipped_geometry_head.position_vector())).dval();
+
+	if (length_current_with_next_not_flipped < length_current_with_next_flipped)
 	{
-		length += length1;
-		reverse_order_seq1.push_back(flip_reversal_flag);
-		return reverse_order_seq1;
-	}
+		length = length_current_with_next_not_flipped;
 
-	length += length2;
-	reverse_order_seq2.push_back(flip_reversal_flag);
-	return reverse_order_seq2;
+		reverse_order_seq.reserve(reverse_order_seq_with_next_not_flipped.size() + 1);
+		reverse_order_seq.insert(
+				reverse_order_seq.end(),
+				reverse_order_seq_with_next_not_flipped.begin(),
+				reverse_order_seq_with_next_not_flipped.end());
+		reverse_order_seq.push_back(false/*next not flipped*/);
+	}
+	else
+	{
+		length = length_current_with_next_flipped;
+
+		reverse_order_seq.reserve(reverse_order_seq_with_next_flipped.size() + 1);
+		reverse_order_seq.insert(
+				reverse_order_seq.end(),
+				reverse_order_seq_with_next_flipped.begin(),
+				reverse_order_seq_with_next_flipped.end());
+		reverse_order_seq.push_back(true/*next flipped*/);
+	}
 }
 
 
 void
 GPlatesGui::TopologyTools::assign_boundary_segments()
 {
-	const visible_section_seq_type::size_type num_visible_sections = d_visible_section_seq.size();
+	const visible_section_seq_type::size_type num_visible_sections = 
+		d_visible_boundary_section_seq.size();
 
 	visible_section_seq_type::size_type visible_section_index;
 	for (visible_section_index = 0;
@@ -2209,9 +2893,9 @@ void
 GPlatesGui::TopologyTools::assign_boundary_segment(
 		const visible_section_seq_type::size_type visible_section_index)
 {
-	VisibleSection &visible_section = d_visible_section_seq[visible_section_index];
+	VisibleSection &visible_section = d_visible_boundary_section_seq[visible_section_index];
 
-	const bool reverse_flag = get_section_info(visible_section).d_table_row.get_reverse();
+	const bool reverse_flag = get_boundary_section_info(visible_section).d_table_row.get_reverse();
 
 	// Get the boundary segment for the current section.
 	// The reverse flag passed in is only used if the section did not intersect
@@ -2224,7 +2908,7 @@ GPlatesGui::TopologyTools::assign_boundary_segment(
 	// returns the flag we passed it.
 	const bool new_reverse_flag =
 			visible_section.d_intersection_results.get_reverse_flag(reverse_flag);
-	set_reverse_flag(visible_section.d_section_info_index, new_reverse_flag);
+	set_boundary_section_reverse_flag(visible_section.d_section_info_index, new_reverse_flag);
 
 	//
 	// Now that we've determined whether to reverse the section or not we can
@@ -2237,47 +2921,153 @@ GPlatesGui::TopologyTools::assign_boundary_segment(
 			section_geometry_end_points =
 				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
 						**visible_section.d_section_geometry_unreversed,
-						get_section_info(visible_section).d_table_row.get_reverse());
+						get_boundary_section_info(visible_section).d_table_row.get_reverse());
 	// Set the section start and end points.
 	visible_section.d_section_start_point = section_geometry_end_points.first;
 	visible_section.d_section_end_point = section_geometry_end_points.second;
 }
 
-	
+
+void
+GPlatesGui::TopologyTools::assign_interior_segments()
+{
+	const visible_section_seq_type::size_type num_visible_sections = 
+		d_visible_interior_section_seq.size();
+
+	visible_section_seq_type::size_type visible_section_index;
+	for (visible_section_index = 0;
+		visible_section_index < num_visible_sections;
+		++visible_section_index)
+	{
+		// Get the partitioned segment that will contribute to the plate boundary.
+		assign_interior_segment(visible_section_index);
+	}
+}
+
+
+void
+GPlatesGui::TopologyTools::assign_interior_segment(
+		const visible_section_seq_type::size_type visible_section_index)
+{
+	VisibleSection &visible_section = d_visible_interior_section_seq[visible_section_index];
+
+	const bool reverse_flag = get_interior_section_info(visible_section).d_table_row.get_reverse();
+
+	// Get the boundary segment for the current section.
+	// The reverse flag passed in is only used if the section did not intersect
+	// both its neighbours.
+	visible_section.d_final_boundary_segment_unreversed_geom =
+			visible_section.d_intersection_results.get_unreversed_boundary_segment(reverse_flag);
+
+#if 0
+//
+// NOTE: don't worry about reverse flags for interior sections; keep this here for reference
+//
+	// See if the reverse flag has been set by intersection processing - this
+	// happens if the visible section intersected both its neighbours otherwise it just
+	// returns the flag we passed it.
+	const bool new_reverse_flag =
+			visible_section.d_intersection_results.get_reverse_flag(reverse_flag);
+	set_reverse_flag(visible_section.d_section_info_index, new_reverse_flag);
+#endif
+
+	//
+	// Now that we've determined whether to reverse the section or not we can
+	// now generate the segment end-points.
+	//
+	// Get the start and end points of the current section's geometry.
+	std::pair<
+		GPlatesMaths::PointOnSphere/*start point*/,
+		GPlatesMaths::PointOnSphere/*end point*/>
+			section_geometry_end_points =
+				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+						**visible_section.d_section_geometry_unreversed,
+						get_interior_section_info(visible_section).d_table_row.get_reverse());
+
+	// Set the section start and end points.
+	visible_section.d_section_start_point = section_geometry_end_points.first;
+	visible_section.d_section_end_point = section_geometry_end_points.second;
+}
+
+
 const GPlatesGui::TopologyTools::SectionInfo &
-GPlatesGui::TopologyTools::get_section_info(
+GPlatesGui::TopologyTools::get_boundary_section_info(
 		const VisibleSection &visible_section) const
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			visible_section.d_section_info_index < d_section_info_seq.size(),
+			visible_section.d_section_info_index < d_boundary_section_info_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
 
-	return d_section_info_seq[visible_section.d_section_info_index];
+	return d_boundary_section_info_seq[visible_section.d_section_info_index];
 }
 
 	
 GPlatesGui::TopologyTools::SectionInfo &
-GPlatesGui::TopologyTools::get_section_info(
+GPlatesGui::TopologyTools::get_boundary_section_info(
 		const VisibleSection &visible_section)
 {
 	// Reuse const version.
 	return const_cast<SectionInfo &>(
-			static_cast<const TopologyTools *>(this)->get_section_info(visible_section));
+			static_cast<const TopologyTools *>(this)->get_boundary_section_info(visible_section));
 }
 
 
+	
+const GPlatesGui::TopologyTools::SectionInfo &
+GPlatesGui::TopologyTools::get_interior_section_info(
+		const VisibleSection &visible_section) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			visible_section.d_section_info_index < d_interior_section_info_seq.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_interior_section_info_seq[visible_section.d_section_info_index];
+}
+
+	
+GPlatesGui::TopologyTools::SectionInfo &
+GPlatesGui::TopologyTools::get_interior_section_info(
+		const VisibleSection &visible_section)
+{
+	// Reuse const version.
+	return const_cast<SectionInfo &>(
+			static_cast<const TopologyTools *>(this)->get_interior_section_info(visible_section));
+}
+
+
+
+
 boost::optional<GPlatesGui::TopologyTools::visible_section_seq_type::const_iterator>
-GPlatesGui::TopologyTools::is_section_visible(
+GPlatesGui::TopologyTools::is_section_visible_boundary(
 		const section_info_seq_type::size_type section_index) const
 {
 	const visible_section_seq_type::const_iterator visible_section_iter =
 			std::find_if(
-					d_visible_section_seq.begin(),
-					d_visible_section_seq.end(),
+					d_visible_boundary_section_seq.begin(),
+					d_visible_boundary_section_seq.end(),
 					boost::bind(&VisibleSection::d_section_info_index, _1) ==
 						boost::cref(section_index));
 
-	if (visible_section_iter == d_visible_section_seq.end())
+	if (visible_section_iter == d_visible_boundary_section_seq.end())
+	{
+		return boost::none;
+	}
+
+	return visible_section_iter;
+}
+
+boost::optional<GPlatesGui::TopologyTools::visible_section_seq_type::const_iterator>
+GPlatesGui::TopologyTools::is_section_visible_interior(
+		const section_info_seq_type::size_type section_index) const
+{
+	const visible_section_seq_type::const_iterator visible_section_iter =
+			std::find_if(
+					d_visible_interior_section_seq.begin(),
+					d_visible_interior_section_seq.end(),
+					boost::bind(&VisibleSection::d_section_info_index, _1) ==
+						boost::cref(section_index));
+
+	if (visible_section_iter == d_visible_interior_section_seq.end())
 	{
 		return boost::none;
 	}
@@ -2287,15 +3077,15 @@ GPlatesGui::TopologyTools::is_section_visible(
 
 
 void
-GPlatesGui::TopologyTools::set_reverse_flag(
+GPlatesGui::TopologyTools::set_boundary_section_reverse_flag(
 		const section_info_seq_type::size_type section_index,
 		const bool new_reverse_flag)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			section_index < d_section_info_seq.size(),
+			section_index < d_boundary_section_info_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
 
-	SectionInfo &section_info = d_section_info_seq[section_index];
+	SectionInfo &section_info = d_boundary_section_info_seq[section_index];
 
 	// An optimisation that only updates the topology sections container if
 	// the reverse flag has changed - this is because the topology sections table GUI
@@ -2313,23 +3103,25 @@ GPlatesGui::TopologyTools::flip_reverse_flag(
 		const section_info_seq_type::size_type section_index)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			section_index < d_section_info_seq.size(),
+			section_index < d_boundary_section_info_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
 
-	SectionInfo &section_info = d_section_info_seq[section_index];
+	SectionInfo &section_info = d_boundary_section_info_seq[section_index];
 
 	// Flip the reverse flag.
 	section_info.d_table_row.set_reverse(
 			!section_info.d_table_row.get_reverse());
 
 	// Let others know of the change to the reverse flag but
-	// we don't want to know about it because otherwise our 'react_entry_modified()'
-	// will get called.
-	// We've automatically determined the reverse flag rather than having
-	// the user specify it for us.
-	connect_to_topology_sections_container_signals(false);
-	d_topology_sections_container_ptr->update_at(section_index, section_info.d_table_row);
-	connect_to_topology_sections_container_signals(true);
+	// we don't want to know about it because otherwise a 'react_entry_modified_FOO()' will get called.
+	// We've automatically determined the reverse flag rather than having the user specify it for us.
+	connect_to_boundary_sections_container_signals( false );
+	connect_to_interior_sections_container_signals( false );
+
+	d_boundary_sections_container_ptr->update_at(section_index, section_info.d_table_row);
+
+	connect_to_boundary_sections_container_signals( true );
+	connect_to_interior_sections_container_signals( true );
 }
 
 
@@ -2340,10 +3132,10 @@ GPlatesGui::TopologyTools::get_boundary_geometry_end_points(
 		const visible_section_seq_type::size_type visible_section_index,
 		const bool flip_reversal_flag)
 {
-	VisibleSection &visible_section_info = d_visible_section_seq[visible_section_index];
+	VisibleSection &visible_section_info = d_visible_boundary_section_seq[visible_section_index];
 
 	const bool reverse_order =
-			get_section_info(visible_section_info).d_table_row.get_reverse()
+			get_boundary_section_info(visible_section_info).d_table_row.get_reverse()
 					^ flip_reversal_flag;
 
 	// NOTE: We must query the intersection results for the boundary segment
@@ -2372,12 +3164,12 @@ GPlatesGui::TopologyTools::handle_create_new_feature(
 namespace
 {
 	/**
-	 * Removes the first property named @a property_name from the feature if there currently is one.
+	 * Removes the first property named @@a property_name from the feature if there currently is one.
 	 *
 	 * Returns true if property was found and removed.
 	 */
 	bool
-	remove_boundary_property_from_feature(
+	remove_property_from_feature(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 			const GPlatesModel::PropertyName &property_name)
 	{
@@ -2411,7 +3203,6 @@ namespace
 
 		return false;
 	}
-
 
 	/**
 	 * Create the boundary property value from the topological sections.
@@ -2462,17 +3253,69 @@ namespace
 		// Create the PiecewiseAggregation
 		return GPlatesPropertyValues::GpmlPiecewiseAggregation::create(time_windows, topo_poly_type);
 	}
+
+	/**
+	 * Create the interior property value from the topological sections.
+	 */
+	GPlatesModel::PropertyValue::non_null_ptr_type
+	create_interior_property(
+			const std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &topological_sections,
+			const GPlatesModel::FeatureHandle::weak_ref &topology_feature_ref)
+	{
+		// Create the "interior" property for the topology feature.
+
+		// create the TopologicalInterior
+		GPlatesModel::PropertyValue::non_null_ptr_type topo_interior_value =
+			GPlatesPropertyValues::GpmlTopologicalInterior::create(topological_sections);
+
+		static const GPlatesPropertyValues::TemplateTypeParameterType topo_interior_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("TopologicalInterior");
+
+		// Create the ConstantValue
+		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type constant_value =
+			GPlatesPropertyValues::GpmlConstantValue::create(topo_interior_value, topo_interior_type);
+
+		// Get the time period for the feature's validTime prop
+		// FIXME: (Assuming a gml:TimePeriod, rather than a gml:TimeInstant!)
+		static const GPlatesModel::PropertyName valid_time_property_name =
+			GPlatesModel::PropertyName::create_gml("validTime");
+
+		const GPlatesPropertyValues::GmlTimePeriod *time_period_ptr;
+		GPlatesFeatureVisitors::get_property_value(
+			topology_feature_ref, valid_time_property_name, time_period_ptr);
+
+		const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type time_period =
+				time_period_ptr->deep_clone();
+
+		// Create the TimeWindow
+		GPlatesPropertyValues::GpmlTimeWindow tw = GPlatesPropertyValues::GpmlTimeWindow(
+				constant_value, 
+				time_period,
+				topo_interior_type);
+
+		// Use the time window
+		std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows;
+
+		time_windows.push_back(tw);
+
+		// Create the PiecewiseAggregation
+		return GPlatesPropertyValues::GpmlPiecewiseAggregation::create(time_windows, topo_interior_type);
+	}
+
 }
 
 
+
 void
-GPlatesGui::TopologyTools::convert_topology_to_boundary_feature_property(
+GPlatesGui::TopologyTools::convert_topology_to_feature_property(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
 	// double check for non existant features
 	if ( ! feature_ref.is_valid() ) { return; }
 
+	// 
 	// We're interested in the "boundary" property.
+	//
 	static const GPlatesModel::PropertyName boundary_prop_name = 
 			GPlatesModel::PropertyName::create_gpml("boundary");
 
@@ -2480,29 +3323,50 @@ GPlatesGui::TopologyTools::convert_topology_to_boundary_feature_property(
 	// Remove the "boundary" property from the topology feature if there currently is one.
 	// After this we'll add a new "boundary" property.
 	//
-	remove_boundary_property_from_feature(feature_ref, boundary_prop_name);
+	remove_property_from_feature(feature_ref, boundary_prop_name);
 
-	//
-	// Iterate over our sections and create a vector of GpmlTopologicalSection objects.
-	//
+	// Iterate over all sections and create vectors of GpmlTopologicalSection objects.
 	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
-			topological_sections;
-	create_topological_sections(topological_sections);
+			boundary_sections;
 
-	//
+	// create the boundary sections gpml from the data 
+	create_boundary_sections(boundary_sections);
+
 	// Create the boundary property value from the topological sections.
-	//
 	GPlatesModel::PropertyValue::non_null_ptr_type boundary_property_value =
-			create_boundary_property(topological_sections, feature_ref);
+			create_boundary_property(boundary_sections, feature_ref);
 
-	//
 	// Add the gpml:boundary property to the topology feature.
-	//
-	
 	feature_ref->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				boundary_prop_name,
 				boundary_property_value));
+
+	//
+	// Optionally, Create the interior property value from the topological sections.
+	//
+	if ( ! d_interior_section_info_seq.empty() )
+	{
+		// We're interested in the "interior" property.
+		static const GPlatesModel::PropertyName interior_prop_name = 
+				GPlatesModel::PropertyName::create_gpml("interior");
+
+		remove_property_from_feature(feature_ref, interior_prop_name);
+
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
+			interior_sections;
+
+		create_interior_sections(interior_sections);
+
+		GPlatesModel::PropertyValue::non_null_ptr_type interior_property_value =
+			create_interior_property(interior_sections, feature_ref);
+
+		// Add the gpml:boundary property to the topology feature.
+		feature_ref->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					interior_prop_name,
+					interior_property_value));
+	}
 
 	// Set the ball rolling again ...
 	d_application_state_ptr->reconstruct(); 
@@ -2510,18 +3374,15 @@ GPlatesGui::TopologyTools::convert_topology_to_boundary_feature_property(
 
 
 void
-GPlatesGui::TopologyTools::create_topological_sections(
-		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &topological_sections)
+GPlatesGui::TopologyTools::create_boundary_sections(
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &topological_sections)
 {
-	//
 	// Iterate over our sections and create a vector of GpmlTopologicalSection objects.
-	//
-
 	for (section_info_seq_type::size_type section_index = 0;
-		section_index < d_section_info_seq.size();
+		section_index < d_boundary_section_info_seq.size();
 		++section_index)
 	{
-		const SectionInfo &section_info = d_section_info_seq[section_index];
+		const SectionInfo &section_info = d_boundary_section_info_seq[section_index];
 
 		//
 		// We always create a start and end intersection even if a section doesn't intersect
@@ -2537,13 +3398,13 @@ GPlatesGui::TopologyTools::create_topological_sections(
 		// Is there an intersection with the previous section?
 		// We say yes always even if not intersecting at current reconstruction time.
 		const boost::optional<GPlatesModel::FeatureHandle::iterator> prev_intersection =
-				d_section_info_seq[get_prev_index(section_index, d_section_info_seq)]
+			d_boundary_section_info_seq[get_prev_index(section_index, d_boundary_section_info_seq)]
 						.d_table_row.get_geometry_property();
 
 		// Is there an intersection with the next section?
 		// We say yes always even if not intersecting at current reconstruction time.
 		const boost::optional<GPlatesModel::FeatureHandle::iterator> next_intersection =
-				d_section_info_seq[get_next_index(section_index, d_section_info_seq)]
+			d_boundary_section_info_seq[get_next_index(section_index, d_boundary_section_info_seq)]
 						.d_table_row.get_geometry_property();
 
 		// Create the GpmlTopologicalSection property value for the current section.
@@ -2554,6 +3415,65 @@ GPlatesGui::TopologyTools::create_topological_sections(
 								section_info.d_table_row.get_reverse(),
 								prev_intersection,
 								next_intersection);
+
+		if (!topological_section)
+		{
+			qDebug() << "ERROR: ======================================";
+			qDebug() << "ERROR: TopologyTools::create_topological_sections():";
+			qDebug() << "ERROR: failed to create GpmlTopologicalSection!";
+			qDebug() << "ERROR: continue to next element in Sections Table";
+			qDebug() << "ERROR: ======================================";
+			continue;
+		}
+
+		// Add the GpmlTopologicalSection pointer to the working vector
+		topological_sections.push_back(*topological_section);
+	}
+}
+
+void
+GPlatesGui::TopologyTools::create_interior_sections(
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &topological_sections)
+{
+	// Iterate over our sections and create a vector of GpmlTopologicalSection objects.
+	for (section_info_seq_type::size_type section_index = 0;
+		section_index < d_interior_section_info_seq.size();
+		++section_index)
+	{
+		const SectionInfo &section_info = d_interior_section_info_seq[section_index];
+
+		//
+		// We always create a start and end intersection even if a section doesn't intersect
+		// at the current reconstruction time.
+		// This is because it could intersect at a different reconstruction time.
+		// Currently the TopologyBoundaryResolver tries to intersect all sections with
+		// their neighbours (ignoring the GpmlTopologicalIntersection) anyway so it doesn't
+		// really matter - but we'll do it anyway just to keep things consistent.
+		//
+		// FIXME: Remove start/end GpmlTopologicalIntersection from the GPGIM.
+		//
+
+		// Is there an intersection with the previous section?
+		// We say yes always even if not intersecting at current reconstruction time.
+		const boost::optional<GPlatesModel::FeatureHandle::iterator> prev_intersection =
+			d_interior_section_info_seq[get_prev_index(section_index, d_interior_section_info_seq)]
+						.d_table_row.get_geometry_property();
+
+		// Is there an intersection with the next section?
+		// We say yes always even if not intersecting at current reconstruction time.
+		const boost::optional<GPlatesModel::FeatureHandle::iterator> next_intersection =
+			d_interior_section_info_seq[get_next_index(section_index, d_interior_section_info_seq)]
+						.d_table_row.get_geometry_property();
+
+		// Create the GpmlTopologicalSection property value for the current section.
+		boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
+				topological_section =
+						GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_section(
+								section_info.d_table_row.get_geometry_property(),
+								section_info.d_table_row.get_reverse(),
+								prev_intersection,
+								next_intersection);
+
 		if (!topological_section)
 		{
 			qDebug() << "ERROR: ======================================";
@@ -2575,7 +3495,8 @@ GPlatesGui::TopologyTools::show_numbers()
 {
 	qDebug() << "############################################################"; 
 	qDebug() << "TopologyTools::show_numbers: "; 
-	qDebug() << "d_topology_sections_container_ptr->size() = " << d_topology_sections_container_ptr->size(); 
+	qDebug() << "d_boundary_sections_container size() = " << d_boundary_sections_container_ptr->size(); 
+	qDebug() << "d_interior_sections_container size() = " << d_interior_sections_container_ptr->size(); 
 
 	//
 	// Show details about d_feature_focus_ptr
@@ -2625,18 +3546,34 @@ GPlatesGui::TopologyTools::show_numbers()
 
 }
 
-
 void
 GPlatesGui::TopologyTools::update_topology_vertices()
 {
-	// FIXME: Only handles the unbroken line and single-ring cases.
-
+	// clear the list of all vertices
 	d_topology_vertices.clear();
 
+	// fill the d_topology_vertices with boundary vertices
+	// build the boundary geom
+	update_boundary_vertices();
+
+	// fill the d_topology_vertices with interior vertices
+	// build the interior geoms
+	update_interior_vertices();
+}
+
+
+
+void
+GPlatesGui::TopologyTools::update_boundary_vertices()
+{
 	// Iterate over the visible subsegments and append their points to the sequence
 	// of topology vertices.
-	visible_section_seq_type::const_iterator visible_section_iter = d_visible_section_seq.begin();
-	visible_section_seq_type::const_iterator visible_section_end = d_visible_section_seq.end();
+	visible_section_seq_type::const_iterator visible_section_iter = 
+		d_visible_boundary_section_seq.begin();
+
+	visible_section_seq_type::const_iterator visible_section_end = 
+		d_visible_boundary_section_seq.end();
+
 	for ( ; visible_section_iter != visible_section_end; ++visible_section_iter)
 	{
 		const VisibleSection &visible_section = *visible_section_iter;
@@ -2646,7 +3583,7 @@ GPlatesGui::TopologyTools::update_topology_vertices()
 		GPlatesAppLogic::GeometryUtils::get_geometry_points(
 				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
 				d_topology_vertices,
-				get_section_info(visible_section).d_table_row.get_reverse());
+				get_boundary_section_info(visible_section).d_table_row.get_reverse());
 	}
 
 	// There's no guarantee that adjacent points in the table aren't identical.
@@ -2659,35 +3596,120 @@ GPlatesGui::TopologyTools::update_topology_vertices()
 	// geometry parts, and -this- function wouldn't need to duplicate the logic.
 	// FIXME 2: We should have a 'try {  } catch {  }' block to catch any exceptions
 	// thrown during the instantiation of the geometries.
-	d_topology_geometry_opt_ptr = boost::none;
+	d_boundary_geometry_opt_ptr = boost::none;
+	d_boundary_geometry_opt_ptr = boost::none;
 
 	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
 
 	if (num_topology_points == 0) 
 	{
 		validity = GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
-		d_topology_geometry_opt_ptr = boost::none;
+		d_boundary_geometry_opt_ptr = boost::none;
 	} 
 	else if (num_topology_points == 1) 
 	{
-		d_topology_geometry_opt_ptr = 
+		d_boundary_geometry_opt_ptr = 
 			GPlatesUtils::create_point_on_sphere(d_topology_vertices, validity);
 	} 
 	else if (num_topology_points == 2) 
 	{
-		d_topology_geometry_opt_ptr = 
+		d_boundary_geometry_opt_ptr = 
 			GPlatesUtils::create_polyline_on_sphere(d_topology_vertices, validity);
 	} 
 	else if (num_topology_points == 3 && d_topology_vertices.front() == d_topology_vertices.back()) 
 	{
-		d_topology_geometry_opt_ptr = 
+		d_boundary_geometry_opt_ptr = 
 			GPlatesUtils::create_polyline_on_sphere(d_topology_vertices, validity);
 	} 
 	else 
 	{
-		d_topology_geometry_opt_ptr = 
+		d_boundary_geometry_opt_ptr = 
 			GPlatesUtils::create_polygon_on_sphere(d_topology_vertices, validity);
 	}
+}
+
+void
+GPlatesGui::TopologyTools::update_interior_vertices()
+{
+	// tmp list of vertices for this section
+	std::vector<GPlatesMaths::PointOnSphere> section_vertices;
+
+	// Iterate over the visible subsegments and append their points to the sequence
+	// of topology vertices.
+	visible_section_seq_type::const_iterator visible_section_iter = 
+		d_visible_interior_section_seq.begin();
+
+	visible_section_seq_type::const_iterator visible_section_end = 
+		d_visible_interior_section_seq.end();
+
+	// clear out old pointers
+	d_interior_geometry_opt_ptrs.clear();
+
+	for ( ; visible_section_iter != visible_section_end; ++visible_section_iter)
+	{
+		const VisibleSection &visible_section = *visible_section_iter;
+
+		// Get the vertices from the possibly clipped section geometry
+		// and add them to the list of topology vertices.
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
+				d_topology_vertices,
+				get_interior_section_info(visible_section).d_table_row.get_reverse());
+
+		// Get the vertices for just this section
+		section_vertices.clear();
+
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
+				section_vertices,
+				get_interior_section_info(visible_section).d_table_row.get_reverse());
+
+		// There's no guarantee that adjacent points in the table aren't identical.
+		const std::vector<GPlatesMaths::PointOnSphere>::size_type num_points =
+				GPlatesMaths::count_distinct_adjacent_points(section_vertices);
+	
+		// FIXME: I think... we need some way to add data() to the 'header' QTWIs, so that
+		// we can immediately discover which bits are supposed to be polygon exteriors etc.
+		// Then the function calculate_label_for_item could do all our 'tagging' of
+		// geometry parts, and -this- function wouldn't need to duplicate the logic.
+		// FIXME 2: We should have a 'try {  } catch {  }' block to catch any exceptions
+		// thrown during the instantiation of the geometries.
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_opt_ptr = boost::none;
+	
+		GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
+	
+		if (num_points == 0) 
+		{
+			validity = GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
+			geometry_opt_ptr = boost::none;
+		} 
+		else if (num_points == 1) 
+		{
+			geometry_opt_ptr = 
+				GPlatesUtils::create_point_on_sphere(section_vertices, validity);
+		} 
+		else if (num_points == 2) 
+		{
+			geometry_opt_ptr = 
+				GPlatesUtils::create_polyline_on_sphere(section_vertices, validity);
+		} 
+		else if (num_points == 3 && section_vertices.front() == section_vertices.back()) 
+		{
+			geometry_opt_ptr = 
+				GPlatesUtils::create_polyline_on_sphere(section_vertices, validity);
+		} 
+		else 
+		{
+			// FIXME: how to differentiate between polyline and polygon? 
+			geometry_opt_ptr = 
+				GPlatesUtils::create_polyline_on_sphere(section_vertices, validity);
+		}
+
+		// append this geometry to the interior list
+		d_interior_geometry_opt_ptrs.push_back( geometry_opt_ptr );
+
+	} // end of loop over interior sections
+
 }
 
 
@@ -2730,3 +3752,5 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 
 	return VisibleSection(section_geometry_unreversed, section_index);
 }
+
+

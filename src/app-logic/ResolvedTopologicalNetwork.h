@@ -420,10 +420,10 @@ namespace GPlatesAppLogic
 		resolved_topology_geometries_from_triangulation_2() const;
 
 		const std::vector<resolved_topology_geometry_ptr_type>
-		resolved_topology_geometries() const;
+		resolved_topology_geometries_from_constrained() const;
 
 		const std::vector<resolved_topology_geometry_ptr_type>
-		resolved_topology_geometries_mesh() const;
+		resolved_topology_geometries_from_mesh() const;
 
 		/**
 		 * Access the cached plate ID, if it exists.

@@ -86,6 +86,8 @@ set(srcs
     GpmlTimeSample.h
     GpmlTimeWindow.cc
     GpmlTimeWindow.h
+    GpmlTopologicalInterior.cc
+    GpmlTopologicalInterior.h
     GpmlTopologicalIntersection.cc
     GpmlTopologicalIntersection.h
     GpmlTopologicalLineSection.cc

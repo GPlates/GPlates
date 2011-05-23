@@ -117,9 +117,8 @@ namespace GPlatesAppLogic
 			resolved_network_seq_type resolved_networks;
 		};
 
-
 		/**
-		 * Interpolates the scalars in a resolved network and returns them.
+		 * Interpolates the scalars in a resolved 2D network and returns them.
 		 */
 		boost::optional< std::vector<double> >
 		interpolate_resolved_topology_network(
@@ -127,6 +126,20 @@ namespace GPlatesAppLogic
 				const CgalUtils::cgal_point_2_type &cgal_point_2)
 		{
 			const ResolvedNetworkForInterpolationQuery &resolved_network = *resolved_network_query;
+
+			// Super short cut for points outside the Mesh
+			bool in_mesh = false;
+
+			in_mesh = CgalUtils::is_point_in_mesh(
+				cgal_point_2,
+				resolved_network.network->get_delaunay_triangulation_2(),
+				resolved_network.network->get_constrained_delaunay_triangulation_2() );
+
+			qDebug() << "interpolate_resolved_topology_network: in_mesh ?" << in_mesh;
+			if ( ! in_mesh )
+			{
+				return boost::none;
+			}
 
 			// 2D 
 			boost::optional<CgalUtils::interpolate_triangulation_query_type> interpolation_query =
@@ -167,7 +180,60 @@ namespace GPlatesAppLogic
 			// This will probably need to be changed if the topological networks can overlap.
 			return interpolated_scalars;
 		}
+
+		/**
+		 * Interpolates the scalars in a resolved 2D + C network and returns them.
+		 */
+		boost::optional< std::vector<double> >
+		interpolate_resolved_topology_network_constrained(
+				const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query,
+				const CgalUtils::cgal_point_2_type &cgal_point_2)
+		{
+			const ResolvedNetworkForInterpolationQuery &resolved_network = *resolved_network_query;
+
+			// 2D + C
+			boost::optional<CgalUtils::interpolate_triangulation_query_type> interpolation_query =
+					CgalUtils::query_interpolate_constrained_triangulation_2(
+							cgal_point_2,
+							resolved_network.network->get_delaunay_triangulation_2(),
+							resolved_network.network->get_constrained_delaunay_triangulation_2() );
+
+			// Return false if the point is not in the current network.
+			if (!interpolation_query)
+			{
+				return boost::none;
+			}
+
+			std::vector<double> interpolated_scalars;
+			interpolated_scalars.reserve(resolved_network.scalar_map_seq.size());
+
+			// Iterate through the scalar maps and interpolate for each scalar.
+			ResolvedNetworkForInterpolationQuery::scalar_map_seq_type::const_iterator scalar_maps_iter =
+					resolved_network.scalar_map_seq.begin();
+			ResolvedNetworkForInterpolationQuery::scalar_map_seq_type::const_iterator scalar_maps_end =
+					resolved_network.scalar_map_seq.end();
+			for ( ; scalar_maps_iter != scalar_maps_end; ++scalar_maps_iter)
+			{
+				// Get the map for the current scalar.
+				const CgalUtils::cgal_map_point_2_to_value_type &scalar_map = **scalar_maps_iter;
+
+				// FIXME : there will probably be a change to use the gradient_2 
+				// some where before this step ... 
+
+				// Interpolate the mapped values.
+				interpolated_scalars.push_back(
+						CgalUtils::interpolate_triangulation_2(
+								*interpolation_query,
+								scalar_map));
+			}
+
+			// We are currently just returning scalars interpolated from the first network
+			// that the point is found inside.
+			// This will probably need to be changed if the topological networks can overlap.
+			return interpolated_scalars;
+		}
 	}
+
 }
 
 
@@ -537,6 +603,7 @@ GPlatesAppLogic::TopologyUtils::has_topological_network_features(
 
 void
 GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
+		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 		const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_topological_sections,
@@ -545,6 +612,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 {
 	// Visit topological network features.
 	TopologyNetworkResolver topology_network_resolver(
+			resolved_topological_boundaries,
 			resolved_topological_networks,
 			reconstruction_tree,
 			reconstructed_topological_sections,
@@ -792,6 +860,43 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
 	// Point was not in any topology networks.
 	return boost::none;
 }
+
+boost::optional< std::vector<double> >
+GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks_constrained(
+		const resolved_networks_for_interpolation_query_type &resolved_networks_query,
+		const GPlatesMaths::PointOnSphere &point)
+{
+	// Return early if query does not exist.
+	if (!resolved_networks_query)
+	{
+		return boost::none;
+	}
+
+	const CgalUtils::cgal_point_2_type cgal_point_2 = CgalUtils::convert_point_to_cgal_2(point);
+
+	// Iterate through the resolved networks.
+	ResolvedNetworksForInterpolationQuery::resolved_network_seq_type::const_iterator rtn_iter =
+			resolved_networks_query->resolved_networks.begin();
+	ResolvedNetworksForInterpolationQuery::resolved_network_seq_type::const_iterator rtn_end =
+			resolved_networks_query->resolved_networks.end();
+	for ( ; rtn_iter != rtn_end; ++rtn_iter)
+	{
+		const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query = *rtn_iter;
+
+		const boost::optional< std::vector<double> > interpolated_scalars =
+				interpolate_resolved_topology_network_constrained(resolved_network_query, cgal_point_2);
+
+		// Continue to the next network if the point is not in the current network.
+		if (interpolated_scalars)
+		{
+			return interpolated_scalars;
+		}
+	}
+
+	// Point was not in any topology networks.
+	return boost::none;
+}
+
 
 
 boost::optional< std::vector<double> >

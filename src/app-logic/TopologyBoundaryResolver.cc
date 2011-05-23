@@ -504,6 +504,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::assign_boundary_segment(
 }
 
 
+// Final Creation Step
 void
 GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 {
@@ -597,7 +598,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 	//
 	// Create the RTB for the plate polygon.
 	//
-	ResolvedTopologicalBoundary::non_null_ptr_type rtg_ptr =
+	ResolvedTopologicalBoundary::non_null_ptr_type rtb_ptr =
 		ResolvedTopologicalBoundary::create(
 			d_reconstruction_tree,
 			*plate_polygon,
@@ -608,7 +609,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 			d_reconstruction_params.get_recon_plate_id(),
 			d_reconstruction_params.get_time_of_appearance());
 
-	d_resolved_topological_boundaries.push_back(rtg_ptr);
+	d_resolved_topological_boundaries.push_back(rtb_ptr);
 
 #if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 	//

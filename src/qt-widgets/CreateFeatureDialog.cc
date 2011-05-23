@@ -46,6 +46,7 @@
 #include "InformationDialog.h"
 #include "MotionPathPropertiesWidget.h"
 #include "QtWidgetUtils.h"
+#include "TopologyNetworkPropertiesWidget.h"
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
@@ -303,7 +304,9 @@ namespace
 	{
 		static QSet<QString> set;
 		set << "gpml:Flowline"
-			<< "gpml:MotionPath";
+			<< "gpml:MotionPath" 
+			<< "gpml:TopologicalNetwork" 
+			;
 		return set;
 	}
 
@@ -346,6 +349,7 @@ namespace
 	{
 		static const GPlatesModel::FeatureType flowline_type = GPlatesModel::FeatureType::create_gpml("Flowline");
 		static const GPlatesModel::FeatureType motion_path_type = GPlatesModel::FeatureType::create_gpml("MotionPath");
+		static const GPlatesModel::FeatureType topology_network_type = GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
 
 		// Get currently selected feature type
 		boost::optional<GPlatesModel::FeatureType> feature_type_opt =
@@ -361,6 +365,10 @@ namespace
 			else if (*feature_type_opt == motion_path_type)
 			{
 				return new GPlatesQtWidgets::MotionPathPropertiesWidget(application_state_ptr);
+			}
+			else if (*feature_type_opt == topology_network_type)
+			{
+				return new GPlatesQtWidgets::TopologyNetworkPropertiesWidget(application_state_ptr);
 			}
 		}
 
@@ -571,8 +579,8 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	right_and_left_plate_id_layout->setMargin(0);
 	d_left_plate_id->label()->setText(tr("&Left Plate ID:"));
 	d_right_plate_id->label()->setText(tr("&Right Plate ID:"));
-	right_and_left_plate_id_layout->addWidget(d_right_plate_id);
 	right_and_left_plate_id_layout->addWidget(d_left_plate_id);
+	right_and_left_plate_id_layout->addWidget(d_right_plate_id);
 	d_left_plate_id->setVisible(false);
 	d_right_plate_id->setVisible(false);
 

@@ -379,25 +379,46 @@ GPlatesGui::register_default_export_animation_types(
 	// Export resolved topologies
 	//
 
-	// By default don't export individual plate or slab polygons and
-	// don't export slab polygon subsegments to the 'lines' file.
+	// Set defaults 
 	const GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions
 			default_resolved_topological_boundary_export_options(
-					/*export_all_plate_polygons_to_a_single_file*/true,
-					/*export_all_slab_polygons_to_a_single_file*/true,
 					/*export_individual_plate_polygon_files*/false,
-					/*export_individual_slab_polygon_files*/false,
-					/*export_plate_polygon_subsegments_to_lines*/true,
-					/*export_slab_polygon_subsegments_to_lines*/false,
+					/*export_all_plate_polygons_to_a_single_file*/true,
+					/*export_plate_polygon_subsegments_to_lines*/false,
+
+					// NOTE: all of these must be set to true to enable the check box on the gui: 
+					// checkBox_export_plate_polygon_subsegments_to_type_files 
+
 					/*export_ridge_transforms*/true,
 					/*export_subductions*/true,
 					/*export_left_subductions*/true,
 					/*export_right_subductions*/true,
+
+					/*export_individual_network_boundary_files*/false,
+					/*export_all_network_boundaries_to_a_single_file*/true,
+					/*export_network_polygon_subsegments_to_lines*/false,
+
+					// NOTE: all of these must be set to true to enable the check box on the gui: 
+					// checkBox_export_networks_polygon_subsegments_to_type_files 
+
+					/*export_network_ridge_transforms*/true,
+					/*export_network_subductions*/true,
+					/*export_network_left_subductions*/true,
+					/*export_network_right_subductions*/true,
+
+					/*export_individual_slab_polygon_files*/false,
+					/*export_all_slab_polygons_to_a_single_file*/true,
+					/*export_slab_polygon_subsegments_to_lines*/false,
+
+					// NOTE: all of these must be set to true to enable the check box on the gui: 
+					// checkBox_export_slab_polygon_subsegments_to_type_files 
+
 					/*export_slab_edge_leading*/true,
 					/*export_slab_edge_leading_left*/true,
 					/*export_slab_edge_leading_right*/true,
 					/*export_slab_edge_trench*/true,
-					/*export_slab_edge_side*/true);
+					/*export_slab_edge_side*/true
+				);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(

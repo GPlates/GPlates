@@ -124,7 +124,8 @@ namespace GPlatesAppLogic
 				NotInAnyBoundaryOrNetwork,
 				InStaticPolygon,
 				InPlateBoundary,
-				InDeformationNetwork
+				InDeformationNetwork,
+				InDeformationNetworkConstrainedInterpolation,
 			};
 
 			/**
