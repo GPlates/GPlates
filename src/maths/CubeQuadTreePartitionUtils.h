@@ -114,7 +114,7 @@ namespace GPlatesMaths
 			{
 			public:
 				//! The maximum number of intersecting nodes.
-				static const int MAX_NUM_NODES = max_num_nodes;
+				static const unsigned int MAX_NUM_NODES = max_num_nodes;
 
 				//! Returns the number of intersecting nodes.
 				unsigned int

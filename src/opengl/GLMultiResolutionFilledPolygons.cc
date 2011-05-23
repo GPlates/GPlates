@@ -866,8 +866,6 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_from_poly
 		filled_drawables_iter != end_filled_drawables;
 		++filled_drawables_iter)
 	{
-		const filled_polygon_type &filled_drawable = **filled_drawables_iter;
-
 		// Set texture transform state on texture unit '0'.
 		GLTextureTransformState::non_null_ptr_type texture_transform_state = GLTextureTransformState::create();
 		GLMatrix texture_transform_matrix;
@@ -977,6 +975,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::allocate_tile_texture()
 	return tile_texture.get();
 }
 
+DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_texture(
@@ -1093,6 +1092,8 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_texture()
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
+
+ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void

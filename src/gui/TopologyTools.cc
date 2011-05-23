@@ -1636,7 +1636,7 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 	// FIXME: we might want the network drawn here too, but for now, 
 	// don't draw the network, just let the Resolver do it
 
-	const GPlatesGui::Colour &point_colour = GPlatesGui::Colour::Colour(0.75, 0.75, 0.75, 1.0);
+	const GPlatesGui::Colour &point_colour = GPlatesGui::Colour(0.75, 0.75, 0.75, 1.0);
 
 	// Loop over the topology vertices.
 	std::vector<GPlatesMaths::PointOnSphere>::const_iterator topology_point_iter =
@@ -1667,7 +1667,7 @@ GPlatesGui::TopologyTools::draw_boundary_geometry()
 	if (!d_boundary_geometry_opt_ptr) { return; }
 
 	// Render the active topology section sequence in contrast to the topology verts (and network) 
-	GPlatesGui::Colour colour = GPlatesGui::Colour::Colour(0.05f, 0.05f, 0.05f, 1.0f); // dark grey
+	GPlatesGui::Colour colour = GPlatesGui::Colour(0.05f, 0.05f, 0.05f, 1.0f); // dark grey
 	float point_size_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
     float line_width_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
 
@@ -1675,7 +1675,7 @@ GPlatesGui::TopologyTools::draw_boundary_geometry()
 	if ( d_topology_tools_widget_ptr->get_sections_combobox_index() != 0 ) // 0 = boundary list
 	{
 		// Render the non-active topology sections sequence muted 
-		colour = GPlatesGui::Colour::Colour(0.75f, 0.75f, 0.75f, 1.0f); // light grey
+		colour = GPlatesGui::Colour(0.75f, 0.75f, 0.75f, 1.0f); // light grey
 		point_size_hint = GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT;
     	line_width_hint = GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT;
 	}
@@ -1700,7 +1700,7 @@ GPlatesGui::TopologyTools::draw_interior_geometry()
 	if ( d_interior_geometry_opt_ptrs.empty() ) { return; }
 
 	// Render the active topology section sequence in contrast to topology verts 
-	GPlatesGui::Colour colour = GPlatesGui::Colour::Colour(0.05f, 0.05f, 0.05f, 1.0f); // dark grey
+	GPlatesGui::Colour colour = GPlatesGui::Colour(0.05f, 0.05f, 0.05f, 1.0f); // dark grey
 	float point_size_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
     float line_width_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
 
@@ -1708,7 +1708,7 @@ GPlatesGui::TopologyTools::draw_interior_geometry()
 	if ( d_topology_tools_widget_ptr->get_sections_combobox_index() != 1 ) // 1 = interior list
 	{
 		// Render the non-active topology sections sequence muted 
-		colour = GPlatesGui::Colour::Colour(0.75, 0.75, 0.75, 1.0); // light grey
+		colour = GPlatesGui::Colour(0.75, 0.75, 0.75, 1.0); // light grey
 		point_size_hint = GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT;
     	line_width_hint = GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT;
 	}
