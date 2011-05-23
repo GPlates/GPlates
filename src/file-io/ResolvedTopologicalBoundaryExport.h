@@ -146,8 +146,8 @@ namespace GPlatesFileIO
 					const QString &placeholder_slab_edge_trench_ = "slab_edges_trench",
 					const QString &placeholder_slab_edge_side_ = "slab_edges_side") :
 				// plate polygon options
-				export_all_plate_polygons_to_a_single_file(export_all_plate_polygons_to_a_single_file_),
 				export_individual_plate_polygon_files(export_individual_plate_polygon_files_),
+				export_all_plate_polygons_to_a_single_file(export_all_plate_polygons_to_a_single_file_),
 				export_plate_polygon_subsegments_to_lines(export_plate_polygon_subsegments_to_lines_),
 
 				export_ridge_transforms(export_ridge_transforms_),
@@ -156,8 +156,8 @@ namespace GPlatesFileIO
 				export_right_subductions(export_right_subductions_),
 
 			// network options
+			export_individual_network_polygon_files(export_individual_network_polygon_files_),
 			export_all_network_polygons_to_a_single_file(export_all_network_polygons_to_a_single_file_),
-			export_individual_network_polygon_files(export_individual_network_polygon_files_), 
 			export_network_polygon_subsegments_to_lines(export_network_polygon_subsegments_to_lines_),
 
 			export_network_ridge_transforms(export_network_ridge_transforms_),
@@ -166,8 +166,8 @@ namespace GPlatesFileIO
 			export_network_right_subductions(export_network_right_subductions_),
 
 				// slab polygon options 
-				export_all_slab_polygons_to_a_single_file(export_all_slab_polygons_to_a_single_file_),
 				export_individual_slab_polygon_files(export_individual_slab_polygon_files_),
+				export_all_slab_polygons_to_a_single_file(export_all_slab_polygons_to_a_single_file_),
 				export_slab_polygon_subsegments_to_lines(export_slab_polygon_subsegments_to_lines_),
 
 				export_slab_edge_leading(export_slab_edge_leading_),

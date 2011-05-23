@@ -36,12 +36,9 @@
 
 #include "utils/Profile.h"
 
-
-
 const GLenum GPlatesOpenGL::VertexElementTraits<GLubyte>::type = GL_UNSIGNED_BYTE;
 const GLenum GPlatesOpenGL::VertexElementTraits<GLushort>::type = GL_UNSIGNED_SHORT;
 const GLenum GPlatesOpenGL::VertexElementTraits<GLuint>::type = GL_UNSIGNED_INT;
-
 
 void
 GPlatesOpenGL::GLVertexElementArray::gl_draw_elements(

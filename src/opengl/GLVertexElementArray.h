@@ -64,6 +64,9 @@ namespace GPlatesOpenGL
 		static const GLenum type;
 	};
 
+// const GLenum GPlatesOpenGL::VertexElementTraits<GLubyte>::type;
+//const GLenum GPlatesOpenGL::VertexElementTraits<GLushort>::type;
+//const GLenum GPlatesOpenGL::VertexElementTraits<GLuint>::type;
 
 	/**
 	 * An array containing vertex indices into an OpenGL vertex array.
