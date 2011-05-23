@@ -38,9 +38,6 @@
 #include "GetValueFromPropertyVisitor.h"
 #include "IsCloseEnoughChecker.h"
 
-//Data-mining temporary code
-bool enable_data_mining = false;
-
 using namespace GPlatesUtils;
 
 boost::optional< double > 

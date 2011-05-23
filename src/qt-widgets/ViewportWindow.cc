@@ -183,10 +183,6 @@
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 
-
-//Data-mining temporary code
-extern bool enable_data_mining;
-
 void
 GPlatesQtWidgets::ViewportWindow::load_files(
 		const QStringList &filenames)
@@ -437,11 +433,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// toolbar buttons and menu items.
 	connect_menu_actions();
 
-// 	if(enable_data_mining)//Data-mining temporary code
-// 	{
-// 		install_data_mining_menu();
-// 	}
-	
 	// Duplicate the menu structure for the full-screen-mode GMenu.
 	populate_gmenu_from_menubar();
 	// Initialise various elements for full-screen-mode that must wait until after setupUi().

@@ -54,6 +54,7 @@
 
 //Data-mining temporary code
 extern bool enable_data_mining;
+bool enable_symbol_table = false;
 
 extern "C" void initpygplates();
 
@@ -82,6 +83,8 @@ namespace
 	const char *DEBUG_GUI_OPTION_NAME = "debug-gui";
 	//Data-mining temporary code: enable data-mining feature by secret command line option.
 	const char *DATA_MINING_OPTION_NAME = "data-mining";
+	//enable symbol-table feature by secret command line option.
+	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
 
 	void
 	print_usage(
@@ -142,6 +145,10 @@ namespace
 		input_options.hidden_options.add_options()
 			(DATA_MINING_OPTION_NAME, "Enable data mining feature");
 
+		// Temporary code. Add secret symbol-table options.
+		input_options.hidden_options.add_options()
+			(SYMBOL_TABLE_OPTION_NAME, "Enable symbol feature");
+
 		boost::program_options::variables_map vm;
 
 		try
@@ -197,6 +204,12 @@ namespace
 		if(vm.count(DATA_MINING_OPTION_NAME))
 		{
 			enable_data_mining = true;
+		}
+
+		//enable symbol-table feature by command line option.
+		if(vm.count(DATA_MINING_OPTION_NAME))
+		{
+			enable_symbol_table = true;
 		}
 
 		return command_line_options;
@@ -329,9 +342,8 @@ int internal_main(int argc, char* argv[])
 		main_window_widget.install_gui_debug_menu();
 	}
 
-#ifdef GPLATES_NO_SYMBOL
+if(!enable_symbol_table)
 	main_window_widget.hide_symbol_menu();
-#endif
 
 #ifdef GPLATES_NO_PYTHON
 	main_window_widget.hide_python_menu();

@@ -45,7 +45,7 @@
 #include "qt-widgets/CoRegistrationOptionsWidget.h"
 
 //Data-mining temporary code
-extern bool enable_data_mining;
+bool enable_data_mining = false;
 
 namespace
 {
