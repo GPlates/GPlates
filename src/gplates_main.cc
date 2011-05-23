@@ -207,7 +207,7 @@ namespace
 		}
 
 		//enable symbol-table feature by command line option.
-		if(vm.count(DATA_MINING_OPTION_NAME))
+		if(vm.count(SYMBOL_TABLE_OPTION_NAME))
 		{
 			enable_symbol_table = true;
 		}
