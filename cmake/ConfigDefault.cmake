@@ -20,8 +20,8 @@ set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the int
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION_MAJOR "1")
-set(GPLATES_PACKAGE_VERSION_MINOR "0")
-set(GPLATES_PACKAGE_VERSION_PATCH "1")
+set(GPLATES_PACKAGE_VERSION_MINOR "1")
+set(GPLATES_PACKAGE_VERSION_PATCH "0")
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION_MAJOR}.${GPLATES_PACKAGE_VERSION_MINOR}.${GPLATES_PACKAGE_VERSION_PATCH}")
@@ -69,7 +69,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # This is manually set when making GPlates *public* releases.
 # However, when making internal releases or just an ordinary developer build, leave it
 # empty; if it is empty, the revision number is automatically populated for you on build.
-set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "")
+set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "11643")
 
 # List the Qt plugins used by GPlates.
 # This is needed for packaging standalone versions of GPlates for a binary installer.
@@ -107,7 +107,7 @@ set(GPLATES_BINARY_INSTALL_EXTRAS "")
 # Set to 'true' if this is a public code release (to non-developers).
 # Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
-set(GPLATES_PUBLIC_RELEASE false)
+set(GPLATES_PUBLIC_RELEASE true)
 
 # Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
 # Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.
