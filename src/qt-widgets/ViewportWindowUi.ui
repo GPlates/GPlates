@@ -1512,7 +1512,7 @@
     <string>Manage &amp;Small Circles</string>
    </property>
    <property name="visible">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
   </action>
   <action name="action_Choose_Background_Colour">
