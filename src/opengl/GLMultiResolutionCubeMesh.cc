@@ -375,6 +375,8 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_mesh_vertices(
 	}
 }
 
+//for boost assert
+DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
 GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_array(
@@ -610,3 +612,6 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_quad_tree_mesh_drawables(
 
 	return mesh_quad_tree_node;
 }
+
+ENABLE_GCC_WARNING("-Wold-style-cast")
+
