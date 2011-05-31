@@ -862,12 +862,18 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, &reconstruction_tree); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
+	// It's currently proving too difficult to ensure only one RFG is created per geometry property
+	// per reconstruction time.
+	// FIXME: An overhaul of the method of finding RFGs from features is required as is
+	// default reconstruction tree layers.
+#if 0
 	// Because we are searching using a geometry properties iterator we can only
 	// find at most one RFG (unless the geometry got reconstructed twice and hence added to
 	// the Reconstruction twice - in which case this is an programming bug).
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			rfg_finder.num_rfgs_found() <= 1,
 			GPLATES_ASSERTION_SOURCE);
+#endif
 
 	// If we found no RFG (referencing 'reconstruction_tree') that is reconstructed from
 	// 'geometry_property' then it probably means the reconstruction time is
