@@ -191,6 +191,12 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 	// Also by keeping the same instance over time we avoid layers continually updating themselves,
 	// when it's unnecessary, because they think the default reconstruction layer is constantly
 	// being switched.
+	// 
+	// FIXME: Having to update the identity reconstruction layer proxy to prevent problems in other
+	// area is just dodgy. This whole default reconstruction tree layer has to be reevaluated.
+	d_identity_rotation_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+	d_identity_rotation_reconstruction_layer_proxy->set_current_anchor_plate_id(
+			d_application_state.get_current_anchored_plate_id());
 	Reconstruction::non_null_ptr_type reconstruction =
 			Reconstruction::create(
 					reconstruction_time,
