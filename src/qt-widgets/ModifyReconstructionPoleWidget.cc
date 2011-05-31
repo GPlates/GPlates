@@ -63,7 +63,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget
 	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&viewport_window)),
 	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr)),
 	d_should_constrain_latitude(false),
-	d_should_display_children(false),	
+	d_should_display_children(false),
+	d_is_active(false),
 	d_view_state_ptr(&view_state)
 {
 	setupUi(this);
