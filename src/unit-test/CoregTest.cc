@@ -38,6 +38,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 #include "data-mining/DataSelector.h"
 #include "data-mining/DataMiningUtils.h"
 #include "data-mining/OpaqueDataToQString.h"
+#include "data-mining/RegionOfInterestFilter.h"
 #include "model/ModelInterface.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/FeatureCollectionReaderWriter.h"
@@ -234,8 +235,6 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 		SHAPE_ATTR,//4
 		COL_NUM//5
 	};
-	std::map<QString, FilterType> coreg_op_map;
-	coreg_op_map["Region_of_Interest"] = REGION_OF_INTEREST;
 
 	std::map<QString, AttributeType> attr_map;
 	attr_map["Distance"] =			DISTANCE_ATTRIBUTE;
@@ -280,8 +279,8 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 		std::string op_type_str;
 		double d = 0.0;
 		ss >> op_type_str; ss.ignore(256,'('); ss >> d; 
-		row.filter_type = coreg_op_map[op_type_str.c_str()];
-		row.filter_cfg.d_ROI_range = d;
+		//TODO:
+		row.filter_cfg.reset(new RegionOfInterestFilter::Config(d));
 
 		std::map<QString, AttributeType>::iterator it = attr_map.find(items[ATTR_NAME].trimmed());
 		row.attr_type = it != attr_map.end() ?  it->second : CO_REGISTRATION_ATTRIBUTE;

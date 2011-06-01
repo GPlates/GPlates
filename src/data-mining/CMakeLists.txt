@@ -14,9 +14,13 @@ set(srcs
     CheckAttrTypeVisitor.h
     CoRegConfigurationTable.cc
     CoRegConfigurationTable.h
-    CoRegFilterMapReduceWorkFlow.h
-    CoRegFilterMapReduceWorkFlowFactory.cc
-    CoRegFilterMapReduceWorkFlowFactory.h
+    CoRegFilter.h
+    CoRegFilterCache.cc
+    CoRegFilterCache.h
+    CoRegFilterMapReduceFactory.cc
+    CoRegFilterMapReduceFactory.h
+    CoRegMapper.h
+    CoRegReducer.h
     DataMiningCache.h
     DataMiningUtils.cc
     DataMiningUtils.h
@@ -25,11 +29,11 @@ set(srcs
     DataTable.cc
     DataTable.h
     DualGeometryVisitor.h
-    Filter.h
     GetValueFromPropertyVisitor.cc
     GetValueFromPropertyVisitor.h
     IsCloseEnoughChecker.cc
     IsCloseEnoughChecker.h
+    LookupReducer.cc
     LookupReducer.h
     MaxReducer.h
     MeanReducer.h
@@ -42,12 +46,12 @@ set(srcs
     PercentileReducer.h
     PopulateShapeFileAttributesVisitor.cc
     PopulateShapeFileAttributesVisitor.h
-    ReducerTypes.h
     RegionOfInterestFilter.cc
     RegionOfInterestFilter.h
     RFGToPropertyValueMapper.h
     RFGToRelationalPropertyMapper.h
     SeedSelfFilter.h
+    Types.h
     VoteReducer.h
     WeightedMeanReducer.h
 )

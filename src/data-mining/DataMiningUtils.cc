@@ -28,10 +28,10 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/ShapefileAttributeFinder.h"
 #include "file-io/FeatureCollectionReaderWriter.h"
+#include "global/LogException.h"
 
-#include "Filter.h"
 #include "CoRegConfigurationTable.h"
-#include "ReducerTypes.h"
+#include "Types.h"
 #include "OpaqueDataToDouble.h"
 #include "DataMiningUtils.h"
 #include "DualGeometryVisitor.h"
@@ -44,15 +44,13 @@ boost::optional< double >
 GPlatesDataMining::DataMiningUtils::minimum(
 		const std::vector< double >& input)
 {
-	boost::optional< double >  ret = boost::none;
-	std::vector< double >::const_iterator it = input.begin(), it_end = input.end();
-
-	for(; it != it_end; it++)
+	std::vector< double >::const_iterator 
+		it = input.begin(), 
+		it_end = input.end();
+	boost::optional<double> ret=boost::none;
+	for(; it != it_end;	it++)
 	{
-		if(ret)
-			*ret = std::min( (*ret), (*it) );
-		else
-			ret = *it;
+		ret = ret ?  std::min(*ret, *it) :  *it;
 	}
 	return ret;
 }
@@ -64,12 +62,13 @@ GPlatesDataMining::DataMiningUtils::convert_to_double_vector(
 		std::vector<OpaqueData>::const_iterator end,
 		std::vector<double>& result)
 {
-	boost::optional<double> tmp = boost::none;
-	for(; begin != end; begin++)
+	for(; begin!=end; begin++)
 	{
-		tmp = boost::apply_visitor(ConvertOpaqueDataToDouble(), *begin);
-		if(tmp)
+		if(boost::optional<double> tmp = 
+			boost::apply_visitor(ConvertOpaqueDataToDouble(), *begin))
+		{
 			result.push_back(*tmp);
+		}
 	}
 }
 
@@ -79,7 +78,10 @@ GPlatesDataMining::DataMiningUtils::shortest_distance(
 		const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& seed_geos,
 		const GPlatesAppLogic::ReconstructedFeatureGeometry* geo)
 {
-	double ret = DEFAULT_RADIUS_OF_EARTH * PI;
+	if(seed_geos.empty())
+		throw GPlatesGlobal::LogException(GPLATES_EXCEPTION_SOURCE,"Invalid input");
+
+	double dist = -1;
 	BOOST_FOREACH(const GPlatesAppLogic::ReconstructedFeatureGeometry* seed, seed_geos)
 	{
 		//use (DEFAULT_RADIUS_OF_EARTH * PI) as range, so the distance can always be calculated.
@@ -90,21 +92,39 @@ GPlatesDataMining::DataMiningUtils::shortest_distance(
 				&checker);
 		dual_visitor.apply();
 		boost::optional<double> tmp = checker.distance();
+		if(!tmp)
+			continue;
 	
-		if(tmp && ret > *tmp)
-			ret = *tmp;
+		dist = (0 > dist) ? *tmp : (*tmp < dist) ? *tmp : dist;
 	}
-	return ret;
+	return dist;
+}
+
+double
+GPlatesDataMining::DataMiningUtils::shortest_distance(
+		const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& first,
+		const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& second)
+{
+	if(first.empty()||second.empty())
+		throw GPlatesGlobal::LogException(GPLATES_EXCEPTION_SOURCE,"Invalid input");
+
+	double dist = -1;
+	BOOST_FOREACH(const GPlatesAppLogic::ReconstructedFeatureGeometry* r, second)
+	{
+		double tmp = shortest_distance(first,r);
+		dist = (0 > dist) ? tmp : (tmp < dist) ? tmp : dist;
+	}
+	return dist;
 }
 
 
 GPlatesDataMining::OpaqueData
 GPlatesDataMining::DataMiningUtils::get_property_value_by_name(
-		GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+		const GPlatesModel::FeatureHandle* feature_ptr,
 		QString name)
 {
 	using namespace GPlatesModel;
-	FeatureHandle::const_iterator it = feature_ref->begin(), it_end = feature_ref->end();
+	FeatureHandle::const_iterator it = feature_ptr->begin(), it_end = feature_ptr->end();
 	
 	for(; it != it_end; it++)
 	{
@@ -149,10 +169,10 @@ GPlatesDataMining::DataMiningUtils::convert_qvariant_to_Opaque_data(
 
 GPlatesDataMining::OpaqueData
 GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
-		GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+		const GPlatesModel::FeatureHandle* feature_ptr,
 		QString name)
 {
-	GPlatesModel::FeatureHandle::const_iterator it = feature_ref->begin(), it_end = feature_ref->end();
+	GPlatesModel::FeatureHandle::const_iterator it = feature_ptr->begin(), it_end = feature_ptr->end();
 	
 	for(; it != it_end; it++)
 	{

@@ -20,13 +20,7 @@ set(srcs
     CopyConst.h
     DeferredCallEvent.cc
     DeferredCallEvent.h
-    Filter.h
-    FilterMapOutputHandler.h
-    FilterMapReduceWorkFlow.h
     FunctionTypes.h
-    GenericFilter.h
-    GenericMapper.h
-    GenericReducer.h
     GeometryCreationUtils.h
     IdStringSet.cc
     IdStringSet.h

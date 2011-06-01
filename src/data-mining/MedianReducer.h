@@ -29,42 +29,32 @@
 #include <QDebug>
 #include <boost/foreach.hpp>
 
+#include "CoRegReducer.h"
+
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
-	
-	typedef std::vector<OpaqueData> ReducerInputSequence;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class MedianReducer
+	class MedianReducer : public CoRegReducer
 	{
-	public:
-
-		/*
-		* TODO: comments....
-		*/
-		inline
+	protected:
 		OpaqueData
-		operator()(
-				ReducerInputSequence::const_iterator input_begin,
-				ReducerInputSequence::const_iterator input_end) 
+		exec(
+				ReducerInDataset::const_iterator in_first,
+				ReducerInDataset::const_iterator in_last) 
 		{
-			std::vector<double> array;
-			DataMiningUtils::convert_to_double_vector(
-					input_begin, 
-					input_end, 
-					array);
+			std::vector<OpaqueData> data;
+			extract_opaque_data(in_first, in_last, data);
+			std::vector<double> buf;
+			DataMiningUtils::convert_to_double_vector(data.begin() ,data.end(), buf);
 			/* 
 			* For even length vector, this function will return "upper" median. 
 			* If we want the traditional median of even length vector, 
 			* we need to run nth_element twice.
 			*/
-			std::vector<double>::iterator first = array.begin();
-			std::vector<double>::iterator last = array.end();
-			std::vector<double>::iterator middle = first + (last - first) / 2;
+			std::vector<double>::iterator 
+				first = buf.begin(), 
+				last  = buf.end(), 
+				middle = first + (last - first) / 2;
+			
 			std::nth_element(first, middle, last); 
 			return OpaqueData(*middle);
 		}

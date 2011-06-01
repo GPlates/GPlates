@@ -95,7 +95,6 @@ namespace GPlatesDataMining
 				const GPlatesPropertyValues::XsString &xs_string);
 
 	private:
-		std::map< QString, QVariant > d_attr_map;
 		std::vector < QString > d_names;
 	};
 }

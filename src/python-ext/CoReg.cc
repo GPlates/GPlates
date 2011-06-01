@@ -31,6 +31,7 @@
 #include "data-mining/DataSelector.h"
 #include "data-mining/DataMiningUtils.h"
 #include "data-mining/OpaqueDataToQString.h"
+#include "data-mining/RegionOfInterestFilter.h"
 #include "model/ModelInterface.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/FeatureCollectionReaderWriter.h"
@@ -213,7 +214,6 @@ namespace{
 		void
 		gen_data(double time)
 		{
-#if 0
 			ReconstructMethodRegistry reconstruct_method_registry;
 			register_default_reconstruct_method_types(reconstruct_method_registry);
 
@@ -223,28 +223,30 @@ namespace{
 						time,
 						0/*anchor plate*/);
 			//seed
-			std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> reconstructed_seeds;
-			reconstructed_seeds.push_back(
-				ReconstructUtils::reconstruct(
-				reconstruction_tree,
-				ReconstructLayerTaskParams(),
-				d_seed_fc));
-
+			std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_seeds;
+			ReconstructUtils::reconstruct(
+					reconstructed_seeds,
+					time,
+					0, //anchor plate
+					reconstruct_method_registry,
+					d_seed_fc,
+					reconstruction_tree_creator);
 
 			// co-registration features collection.
-			std::vector<ReconstructionGeometryCollection::non_null_ptr_to_const_type> reconstructed_coreg;
-			reconstructed_coreg.push_back(
-				ReconstructUtils::reconstruct(
-				reconstruction_tree,
-				ReconstructLayerTaskParams(),
-				d_coreg_fc));
+			std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_coreg;
+			ReconstructUtils::reconstruct(
+					reconstructed_coreg,
+					time,
+					0, //anchor plate
+					reconstruct_method_registry,
+					d_coreg_fc,
+					reconstruction_tree_creator);
 
 			boost::shared_ptr< DataSelector > selector(	DataSelector::create(d_cfg_table) );
 			DataTable result;
 			selector->select(reconstructed_seeds, reconstructed_coreg, result);
 			result.set_reconstruction_time(time);
 			d_result_table.push_back(result);
-#endif			
 			return;
 		}
 
@@ -319,9 +321,7 @@ namespace{
 				SHAPE_ATTR,//4
 				COL_NUM//5
 			};
-			std::map<QString, FilterType> filter_map;
-			filter_map["REGION_OF_INTEREST"] = REGION_OF_INTEREST;
-
+			
 			std::map<QString, AttributeType> attr_map;
 			attr_map["DISTANCE"] =			DISTANCE_ATTRIBUTE;
 			attr_map["PRESENCE"] =			PRESENCE_ATTRIBUTE;
@@ -360,8 +360,7 @@ namespace{
 			double d = 0.0;
 			ss >> op_type_str; ss.ignore(256,'('); ss >> d; 
 			boost::to_upper(op_type_str);
-			row.filter_type = filter_map[op_type_str.c_str()];
-			row.filter_cfg.d_ROI_range = d;
+			row.filter_cfg.reset(new RegionOfInterestFilter::Config(d));
 
 			std::map<QString, AttributeType>::iterator it = attr_map.find(items[ATTR_NAME].trimmed().toUpper());
 			row.attr_type = it != attr_map.end() ?  it->second : CO_REGISTRATION_ATTRIBUTE;

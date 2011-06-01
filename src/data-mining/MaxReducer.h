@@ -29,35 +29,38 @@
 #include <QDebug>
 #include <boost/foreach.hpp>
 
+#include "CoRegReducer.h"
+
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
-	
-	typedef std::vector<OpaqueData> ReducerInputSequence;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class MaxReducer
+	class MaxReducer : public CoRegReducer
 	{
 	public:
-
-		/*
-		* TODO: comments....
-		*/
-		inline
-		OpaqueData
-		operator()(
-				ReducerInputSequence::const_iterator input_begin,
-				ReducerInputSequence::const_iterator input_end) 
+		class Config : public CoRegReducer::Config
 		{
-			std::vector<double> array;
-			DataMiningUtils::convert_to_double_vector(
-					input_begin, 
-					input_end, 
-					array);
-			return OpaqueData(*max_element(array.begin(),array.end()));
+		public:
+			bool
+			is_same_type(const CoRegReducer::Config* other)
+			{
+				return dynamic_cast<const MaxReducer::Config*>(other);
+			}
+
+			~Config(){ }
+		};
+		
+		~MaxReducer(){}
+
+	protected:
+		OpaqueData
+		exec(
+				ReducerInDataset::const_iterator first,
+				ReducerInDataset::const_iterator last) 
+		{
+			std::vector<OpaqueData> data;
+			extract_opaque_data(first, last, data);
+			std::vector<double> buf;
+			DataMiningUtils::convert_to_double_vector(data.begin(), data.end(), buf);
+			return OpaqueData(*max_element(buf.begin(),buf.end()));
 		}
 	};
 }

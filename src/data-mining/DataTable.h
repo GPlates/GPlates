@@ -47,14 +47,12 @@ namespace GPlatesDataMining
 {
 	class DataRow;
 
-	typedef std::vector< QString > TableDesc;
+	typedef std::vector< QString > TableHeader;
 	typedef boost::shared_ptr<DataRow> DataRowSharedPtr;
-	typedef boost::shared_ptr<OpaqueData>	   DataCellSharedPtr;
 
 	class DataRow
 	{
 	public:
-		inline
 		void
 		get_cell(
 				unsigned column_index,
@@ -65,70 +63,60 @@ namespace GPlatesDataMining
 				qWarning() << "The column index which is used to get table cell is invalid";
 				return;
 			}
-			ret = *d_data[column_index];			
+			ret = d_data[column_index];			
 		}
 
 		void
 		append_cell(
 				const OpaqueData& val);
 
-		inline
+		void
+		append(
+				std::size_t len,
+				const OpaqueData& val)
+		{
+			d_data.insert(d_data.end(), len, val);
+		}
+		
+		OpaqueData&
+		operator[](std::size_t index)
+		{
+			return d_data[index];
+		}
+
 		size_t
 		size()
 		{
 			return d_data.size();
 		}
 
-		inline
-		void
-		set_seed_rfgs(
-				const std::vector< const GPlatesAppLogic::ReconstructedFeatureGeometry* >& seed_RFGs)
-		{
-			d_seed_RFGs = seed_RFGs;
-		}
-
-		inline
-		const std::vector< const GPlatesAppLogic::ReconstructedFeatureGeometry* >&
-		seed_rfgs() const
-		{
-			return d_seed_RFGs;
-		}
-
 	protected:
-		std::vector< DataCellSharedPtr > d_data;
-		std::vector< const GPlatesAppLogic::ReconstructedFeatureGeometry* > d_seed_RFGs;
+		std::vector< OpaqueData > d_data;
 	};
 
-	/*
-	* TODO:
-	*/
 	class DataTable : 
 		public std::vector<DataRowSharedPtr>
 	{
 	public:
-		inline
-		const TableDesc &
-		get_table_desc() const
+		const TableHeader &
+		table_header() const
 		{
-			return d_table_desc;
+			return d_table_header;
 		}
 
-		inline
 		void
-		set_table_desc(
-				TableDesc& desc)		
+		set_table_header(
+				TableHeader& header)		
 		{
-			d_table_desc = desc;
+			d_table_header = header;
 		}
 
-		inline
 		double
 		reconstruction_time() const
 		{
 			return d_reconstruction_time;
 		}
 
-		inline
 		void
 		set_reconstruction_time(
 					double& new_time)
@@ -138,12 +126,25 @@ namespace GPlatesDataMining
 
 		void 
 		export_as_CSV(
-				const QString& filename) const;		
+				const QString& filename) const;
+
+		std::size_t
+		data_index() const
+		{
+			return d_data_index;
+		}
+
+		void
+		set_data_index(std::size_t idx)
+		{
+			d_data_index = idx;
+		}
 
 
 	protected:
-		TableDesc d_table_desc;
+		TableHeader d_table_header;
 		double d_reconstruction_time;
+		std::size_t d_data_index;
 
 	};
 

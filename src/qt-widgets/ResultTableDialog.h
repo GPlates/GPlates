@@ -127,7 +127,7 @@ namespace GPlatesQtWidgets
 				const QModelIndex &parent_ = QModelIndex()) const
 		{
 			//fix here
-			return d_table.get_table_desc().size();
+			return d_table.table_header().size();
 		}
 		
 		/**
@@ -155,9 +155,9 @@ namespace GPlatesQtWidgets
 			{
 				if (role == Qt::DisplayRole) 
 				{
-					if(d_table.get_table_desc().size() - section > 0)
+					if(d_table.table_header().size() - section > 0)
 					{
-						return d_table.get_table_desc()[section];
+						return d_table.table_header()[section];
 					}
 				} 
 				else if (role == Qt::ToolTipRole) 

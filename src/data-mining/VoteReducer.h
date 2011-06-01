@@ -30,37 +30,39 @@
 #include <QDebug>
 #include <boost/foreach.hpp>
 
+#include "CoRegReducer.h"
 #include "OpaqueDataToQString.h"
 
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
-	typedef std::vector<OpaqueData> ReducerInputSequence;
-
-	class VoteReducer
+	class VoteReducer : public CoRegReducer
 	{
-	public:
-
-		inline
+	protected:
 		OpaqueData
-		operator()(
-				ReducerInputSequence::const_iterator input_begin,
-				ReducerInputSequence::const_iterator input_end) 
+		exec(
+				ReducerInDataset::const_iterator input_begin,
+				ReducerInDataset::const_iterator input_end) 
 		{
+			std::vector<OpaqueData> data;
+			extract_opaque_data(input_begin, input_end, data);
+
 			std::pair<QString, unsigned> tmp("N/A",0);
 			std::vector<QString> tmp_vector;
-			for(; input_begin != input_end; input_begin++)
+			BOOST_FOREACH(OpaqueData& d, data)
 			{
 				tmp_vector.push_back(
-					boost::apply_visitor(
-						ConvertOpaqueDataToString(),
-						*input_begin));
+						boost::apply_visitor(
+								ConvertOpaqueDataToString(),
+								d));
 			}
+			
 			std::sort(tmp_vector.begin(),tmp_vector.end());
+			
 			unsigned count = 0;
 			std::vector<QString>::iterator 
 				begin = tmp_vector.begin(),
 			    end = tmp_vector.end();
+			
 			for(; begin != end; begin+=count)
 			{
 				count = std::count(begin,end,*begin);

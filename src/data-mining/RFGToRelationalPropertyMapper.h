@@ -30,78 +30,63 @@
 
 #include <boost/foreach.hpp>
 
+#include "CoRegMapper.h"
 #include "DualGeometryVisitor.h"
-#include "ReducerTypes.h"
+#include "Types.h"
 #include "DataMiningUtils.h"
 
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
-	
-	typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> InputSequence;
-	typedef std::vector<OpaqueData> OutputSequence;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class RFGToRelationalPropertyMapper
+	class RFGToRelationalPropertyMapper : public CoRegMapper
 	{
 	public:
-
-		explicit
 		RFGToRelationalPropertyMapper(
 				const AttributeType attr_type,
-				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& seed_geos):
+				CoRegMapper::RFGVector seeds):
 			d_attr_type(attr_type),
-			d_seed_geos(seed_geos)
+			d_seed_geos(seeds)
 		{ }
 
-
-		/*
-		* TODO: comments....
-		*/
-		template< class OutputType, class OutputMode>
-		int
-		operator()(
-				InputSequence::const_iterator input_begin,
-				InputSequence::const_iterator input_end,
-				FilterMapOutputHandler<OutputType, OutputMode> &handler)
+		void
+		process(
+				CoRegMapper::MapperInDataset::const_iterator input_begin,
+				CoRegMapper::MapperInDataset::const_iterator input_end,
+				CoRegMapper::MapperOutDataset &output)
 		{
-			int count = 0;
+			unsigned dis = 0;
 			switch(d_attr_type)
 			{
 				case DISTANCE_ATTRIBUTE:
 					for(;input_begin != input_end; input_begin++)
 					{
-						handler.insert(
-								OpaqueData(DataMiningUtils::shortest_distance(d_seed_geos,*input_begin)));
-						count++;
+						output.push_back(boost::make_tuple(
+								OpaqueData(DataMiningUtils::shortest_distance(d_seed_geos,input_begin->second)),
+								input_begin->second));
 					}
-					return count;
-
+					break;
 				case PRESENCE_ATTRIBUTE:
-					handler.insert(
-							OpaqueData((input_begin != input_end)));
-					return 1; // for "Presence" attribute, the length of output is always 1.
-				
+					output.push_back(boost::make_tuple(
+							OpaqueData((input_begin != input_end)),
+							CoRegMapper::RFGVector()));
+					break;
 				case NUMBER_OF_PRESENCE_ATTRIBUTE:
-					handler.insert(
-							OpaqueData(static_cast<unsigned>(std::distance(input_begin,input_end))));
-					return 1; // for "Number of Presence" attribute, the length of output is always 1.
-				
+					dis = static_cast<unsigned>(std::distance(input_begin,input_end));
+					output.push_back(boost::make_tuple(OpaqueData(dis),CoRegMapper::RFGVector()));
+					break;
+				case CO_REGISTRATION_ATTRIBUTE:
+				case SHAPE_FILE_ATTRIBUTE:
 				default:
-					return 0;
+					break;
 			}
+			return;
 		}
 
-
 		virtual
-		~RFGToRelationalPropertyMapper(){}			
+		~RFGToRelationalPropertyMapper(){ }			
 
 	protected:
 		const AttributeType d_attr_type;
-		const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& d_seed_geos;
+		CoRegMapper::RFGVector d_seed_geos;
 	};
 }
 #endif //GPLATESDATAMINING_RFGTORELATIONALPROPERTYMAPPER_H

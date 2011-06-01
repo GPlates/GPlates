@@ -27,85 +27,78 @@
 #include <boost/foreach.hpp>
 
 #include "CoRegConfigurationTable.h"
-
+#include "RegionOfInterestFilter.h"
 #include "global/GPlatesAssert.h"
 
 namespace
 {
 	using namespace GPlatesDataMining;
+	
 	bool
-	compare_cfg_table_rows(
-			ConfigurationTableRow row_1,
-			ConfigurationTableRow row_2)
+	compare_feature_collection(
+			const ConfigurationTableRow& row_1,
+			const ConfigurationTableRow& row_2)
 	{
-		const GPlatesModel::FeatureCollectionHandle *fch_1 = row_1.target_fc.handle_ptr();
-		const GPlatesModel::FeatureCollectionHandle *fch_2 = row_2.target_fc.handle_ptr();
-		if(fch_1 > fch_2)
-		{
-			return true;
-		}
-		else if(fch_1 == fch_2)
-		{
-			if( row_1.filter_type > row_2.filter_type)
-			{
-				return true;
-			}
-			else if(
-					(row_1.filter_type == REGION_OF_INTEREST) 
-					 && 
-					(row_2.filter_type == REGION_OF_INTEREST)
-					)
-			{
-				if( row_1.filter_cfg.d_ROI_range > 
-					row_2.filter_cfg.d_ROI_range )
-				{
-					return true;
-				}
-			}
-		}
-		return false;
+		return row_1.target_fc.handle_ptr() < row_2.target_fc.handle_ptr();
+	}
+
+	bool
+	compare_filter_type(
+			const ConfigurationTableRow& row_1,
+			const ConfigurationTableRow& row_2)
+	{
+		return row_1.filter_cfg->filter_name() < row_2.filter_cfg->filter_name();
+	}
+
+	bool
+	compare_filter(
+			const ConfigurationTableRow& row_1,
+			const ConfigurationTableRow& row_2)
+	{
+		return row_2.filter_cfg < row_1.filter_cfg ;
 	}
 }
-
 
 void
 GPlatesDataMining::CoRegConfigurationTable::optimize()
 {
-	//sort the cfg table so that co-registration cache can be used to optimize performance.
-	std::sort(begin(), end(), compare_cfg_table_rows);
+	group_and_sort();
+	d_optimized = true;
+}
 
-	std::vector<ConfigurationTableRow>* table = this;
-	//check the if the input data set is seed data.
-	//if so, a special filter will be used to optimize performance.
-	BOOST_FOREACH(ConfigurationTableRow& row, *table)
+
+void
+GPlatesDataMining::CoRegConfigurationTable::group_and_sort()
+{
+	for(std::size_t i=0; i<d_rows.size(); i++)//keep the original index.
+		d_rows[i].index = i;
+
+	//group by feature collection
+	std::sort(begin(), end(), compare_feature_collection);
+	
+	iterator it = begin(), it_end = end();
+	while(it != it_end)
 	{
-		if(is_seed_feature_collection(row))
+		std::pair<iterator,iterator> bounds;
+		bounds = std::equal_range(it, it_end, *it, compare_feature_collection);
+		it = bounds.second;
+		iterator inner_it = bounds.first, inner_it_end =--bounds.second;
+		std::sort(inner_it, inner_it_end, compare_filter_type); // sort by filter type
+		while(inner_it != inner_it_end)
 		{
-			if(0.0 == GPlatesMaths::Real(row.filter_cfg.d_ROI_range))
+			std::pair<iterator,iterator> inner_bounds;
+			inner_bounds = std::equal_range(inner_it, inner_it_end, *inner_it, compare_filter_type);
+			inner_it = inner_bounds.second;
+			if(dynamic_cast<RegionOfInterestFilter*> (inner_bounds.first->filter_cfg.get()))//if it is region of interest filter, sort by range.
 			{
-				row.filter_type = SEED_ITSELF;
+				std::sort(inner_bounds.first,inner_bounds.second,compare_filter);
 			}
 		}
 	}
-
 }
 
 
-bool
-GPlatesDataMining::CoRegConfigurationTable::is_seed_feature_collection(
-		const ConfigurationTableRow& input_row)
-{
-	using namespace GPlatesAppLogic;
-	BOOST_FOREACH(const FeatureCollectionFileState::file_reference &file_ref, d_seed_files)
-	{
-		if( file_ref.get_file().get_feature_collection().handle_ptr() == 
-			input_row.target_fc.handle_ptr() )
-		{
-			return true;
-		}
-	}
-	return false;
-}
+
 
 
 

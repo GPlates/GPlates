@@ -34,8 +34,7 @@ void
 GPlatesDataMining::DataRow::append_cell(
 		const OpaqueData &val)
 {
-	DataCellSharedPtr ptr(new OpaqueData(val));
-	d_data.push_back(ptr);
+	d_data.push_back(val);
 }
 
 
@@ -48,7 +47,7 @@ GPlatesDataMining::DataTable::export_as_CSV(
 
 	std::vector<GPlatesGui::CsvExport::LineDataType> vector_table;
 
-	vector_table.push_back(d_table_desc);
+	vector_table.push_back(d_table_header);
 
 	for(; iter != iter_end; iter++) //for each row
 	{

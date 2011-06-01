@@ -76,13 +76,26 @@ namespace GPlatesDataMining
 				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& seed_geos,
 				const GPlatesAppLogic::ReconstructedFeatureGeometry* geo);
 		
+		double
+		shortest_distance(
+				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& first,
+				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& second);
 		/*
 		* Given the feature handle, find a property by the name.
 		*/
 		OpaqueData
 		get_property_value_by_name(
-				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+				const GPlatesModel::FeatureHandle* feature_prt,
 				QString prop_name);
+	
+		inline
+		OpaqueData
+		get_property_value_by_name(
+				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+				QString prop_name)
+		{
+			return get_property_value_by_name(feature_ref.handle_ptr(), prop_name);
+		}
 
 		/*
 		* Since the shape file visitor return QVariant,
@@ -97,8 +110,17 @@ namespace GPlatesDataMining
 		*/
 		OpaqueData
 		get_shape_file_value_by_name(
-				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+				const GPlatesModel::FeatureHandle* feature_ptr,
 				QString attr_name);
+
+		inline
+		OpaqueData
+		get_shape_file_value_by_name(
+				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+				QString attr_name)
+		{
+			return get_shape_file_value_by_name(feature_ref.handle_ptr(),attr_name);
+		}
 		
 		/*
 		* Given a list of file names, load all the files and

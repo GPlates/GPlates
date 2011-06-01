@@ -26,14 +26,10 @@
 #define GPLATESDATAMINING_SEEDSELFFILTER_H
 
 #include <vector>
-
 #include <QDebug>
-
 #include <boost/foreach.hpp>
 
-#include "CoRegFilterMapReduceWorkFlow.h"
-
-#include "utils/FilterMapOutputHandler.h"
+#include "CoRegFilter.h"
 
 namespace GPlatesAppLogic
 {
@@ -42,43 +38,65 @@ namespace GPlatesAppLogic
 
 namespace GPlatesDataMining
 {
-	typedef FilterInputSequence InputSequence;
-	typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> SeedType;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class SeedSelfFilter
+	class SeedSelfFilter : public CoRegFilter
 	{
 	public:
+		class Config : public CoRegFilter::Config
+		{
+		public:
+			CoRegFilter*
+			create_filter(const CoRegFilter::RFGVector& seed)
+			{
+				return new SeedSelfFilter(seed);
+			}
+
+			bool
+			is_same_type(const CoRegFilter::Config* other)
+			{
+				return dynamic_cast<const SeedSelfFilter*>(other);
+			}
+
+			const QString
+			filter_name()
+			{
+				return "Seed";
+			}
+
+			bool
+			operator< (const CoRegFilter::Config& other)
+			{
+				return false;
+			}
+
+			bool
+			operator==(const CoRegFilter::Config&) 
+			{
+				return true;
+			}
+
+			~Config(){ }
+		};
+
 		explicit
 		SeedSelfFilter(
-				const SeedType& seed):
-			d_seed(seed)
+				const CoRegFilter::RFGVector& seed_rfgs):
+			d_seed_rfgs(seed_rfgs)
 			{ }
-
-
-		/*
-		* TODO: comments....
-		*/
-		template<class OutputType, class OutputMode>
-		inline
-		int
-		operator()(
-				InputSequence::const_iterator input_begin,
-				InputSequence::const_iterator input_end,
-				FilterMapOutputHandler<OutputType, OutputMode> &handler) 
+			
+		void
+		process(
+				CoRegFilter::RFGVector::const_iterator input_begin,
+				CoRegFilter::RFGVector::const_iterator input_end,
+				CoRegFilter::RFGVector& output) 
 		{
-			BOOST_FOREACH(const SeedType::value_type &seed, d_seed)
-			{
-				handler.insert(seed);
-			}
-			return d_seed.size();
+			output = d_seed_rfgs;
+			return;
 		}
 
+		~SeedSelfFilter(){ }
+
 	protected:
-		const SeedType& d_seed;
+		const CoRegFilter::RFGVector& d_seed_rfgs;
 	};
 }
 #endif //GPLATESDATAMINING_SEEDSELFFILTER_H

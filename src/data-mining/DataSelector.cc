@@ -23,14 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <map>
-#include <algorithm>
 #include <QCoreApplication>
 
 #include "global/CompilerWarnings.h"
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
 
-#include "CoRegFilterMapReduceWorkFlowFactory.h"
+#include "CoRegFilterCache.h"
+#include "CoRegFilterMapReduceFactory.h"
 #include "DataSelector.h"
 #include "DataMiningUtils.h"
 #include "RegionOfInterestFilter.h"
@@ -61,7 +61,7 @@ namespace
 		if(!(feature_collection && feature))
 			return false;
 		
-		BOOST_FOREACH(const FeatureHandle::non_null_ptr_to_const_type& fh, *feature_collection)
+		BOOST_FOREACH(FeatureHandle::non_null_ptr_to_const_type fh, *feature_collection)
 		{
 			if(fh.get() == feature)
 				return true;
@@ -100,67 +100,95 @@ namespace
 DISABLE_GCC_WARNING("-Wshadow")
 
 	void
-	construct_feature_collection_handle_and_reconstructed_feature_geometries_map(
-			const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>& input_rfgs,
-			std::vector< FeatureCollectionHandle::const_weak_ref > feature_collections,
+	gen_feature_collection_rfgs_map(
+			const std::vector<ReconstructedFeatureGeometry*>& input_rfgs,
+			const std::vector<const FeatureCollectionHandle*>& fcs,
 			DataSelector::FeatureCollectionRFGMap& output)
-	{
+	{	
 		// Iterate over the feature collections.
-		BOOST_FOREACH(const FeatureCollectionHandle::const_weak_ref& fc, feature_collections)
+		BOOST_FOREACH(const FeatureCollectionHandle* fc, fcs)
 		{
-			typedef std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> input_rfg_seq_type;
-			typedef std::vector< const ReconstructedFeatureGeometry* > output_rfg_seq_type;
+			typedef std::vector< const ReconstructedFeatureGeometry* > rfg_seq_type;
 
 			// Iterate over the input RFGs and associate each one with the current feature collection
 			// *if* they came from there.
-			output_rfg_seq_type output_rfgs;
-			for (input_rfg_seq_type::const_iterator input_rfg_iter = input_rfgs.begin();
-				input_rfg_iter != input_rfgs.end();
-				++input_rfg_iter)
+			rfg_seq_type output_rfgs;
+			BOOST_FOREACH(const ReconstructedFeatureGeometry* rfg, input_rfgs)
 			{
-				const ReconstructedFeatureGeometry::non_null_ptr_type &input_rfg = *input_rfg_iter;
-
-				if(is_feature_collection_contains_this_feature(fc.handle_ptr(), input_rfg->feature_handle_ptr()))
+				if(is_feature_collection_contains_this_feature(fc, rfg->feature_handle_ptr()))
 				{
-					output_rfgs.push_back(input_rfg.get());
+					output_rfgs.push_back(rfg);
 				}
 			}
-
-			// Sort the RFGs according to area if they are polygons.
-			std::sort(output_rfgs.begin(), output_rfgs.end(), less_area);
-
 			// Assign the vector of RFGs to their feature collection.
-			output[fc.handle_ptr()] = output_rfgs;
+			output[fc] = output_rfgs;
 		}
+	}
+
+	void
+	gen_feature_collection_rfgs_map(
+			const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>& input_rfgs,
+			const std::vector<const FeatureCollectionHandle*>& feature_collections,
+			DataSelector::FeatureCollectionRFGMap& output)
+{
+	std::vector<ReconstructedFeatureGeometry*> rfgs;
+	BOOST_FOREACH(const ReconstructedFeatureGeometry::non_null_ptr_type r, input_rfgs)
+	{
+		rfgs.push_back(r.get());
+	}
+	return gen_feature_collection_rfgs_map(rfgs, feature_collections, output);
+}
+
+	void
+	gen_feature_collection_rfgs_map(
+			const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>& input_rfgs,
+			const std::vector<FeatureCollectionHandle::const_weak_ref>& feature_collections,
+			DataSelector::FeatureCollectionRFGMap& output)
+	{
+		std::vector<const FeatureCollectionHandle*> fcs;
+		BOOST_FOREACH(const FeatureCollectionHandle::const_weak_ref fh, feature_collections)
+		{
+			fcs.push_back(fh.handle_ptr());
+		}
+		return gen_feature_collection_rfgs_map(input_rfgs, fcs, output);
 	}
 
 // See above
 ENABLE_GCC_WARNING("-Wshadow")
 
 	void
-	construct_feature_and_reconstructed_feature_geometries_map(
-			const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>& rgcs,
+	gen_feature_rfg_map(
+			const std::vector<const ReconstructedFeatureGeometry*>& rfgs,
 			DataSelector::FeatureRFGMap& output)
 	{
-		typedef std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> rfg_seq_type;
-
-		rfg_seq_type::const_iterator it = rgcs.begin(), it_end = rgcs.end();
-		for(; it != it_end; it++)
+		BOOST_FOREACH(const ReconstructedFeatureGeometry* r, rfgs)
 		{
-			const ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *it;
+			GPlatesModel::FeatureHandle* f = r->feature_handle_ptr();
+			DataSelector::FeatureRFGMap::iterator map_it = output.find(f);
 
-			DataSelector::FeatureRFGMap::iterator map_it = output.find( rfg->feature_handle_ptr());
-		
-			if( map_it != output.end() )
+			if( map_it != output.end() )//found it.
 			{
-				map_it->second.push_back(rfg.get());
+				map_it->second.push_back(r);
 			}
 			else
 			{
 				//create a vector of length 1 which is initialized with rfg.
-				output[rfg->feature_handle_ptr()] = std::vector< const ReconstructedFeatureGeometry* > (1, rfg.get());
+				output[f] = std::vector<const ReconstructedFeatureGeometry*>(1, r);
 			}
 		}
+	}
+
+	void
+	gen_feature_rfg_map(
+			const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>& rgcs,
+			DataSelector::FeatureRFGMap& output)
+	{
+		std::vector<const ReconstructedFeatureGeometry*> rfgs;
+		BOOST_FOREACH(const ReconstructedFeatureGeometry::non_null_ptr_type r, rgcs)
+		{
+			rfgs.push_back(r.get());
+		}
+		gen_feature_rfg_map(rfgs,output);
 	}
 }
 
@@ -172,69 +200,64 @@ DISABLE_GCC_WARNING("-Wshadow")
 
 void
 GPlatesDataMining::DataSelector::select(
-		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &seed_collection,	
-		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &co_reg_collection,							
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &seed_rfgs,	
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &target_rfgs,							
 		GPlatesDataMining::DataTable& data_table)
 {
-	//prepare the input data from layers
-	FeatureCollectionRFGMap target_feature_collection_rfg_map;
-	FeatureRFGMap seed_feature_rfg_map;
-		
-	std::vector< FeatureCollectionHandle::const_weak_ref > target_collections;
-	get_target_collections_from_input_table(target_collections);
-	construct_feature_and_reconstructed_feature_geometries_map(seed_collection, seed_feature_rfg_map);
-	construct_feature_collection_handle_and_reconstructed_feature_geometries_map(
-			co_reg_collection,
-			target_collections,
-			target_feature_collection_rfg_map);
-
 	if(!is_cfg_table_valid())
 	{
-		qWarning() << "The configuration table contains invalid data.";
-		d_configuration_table.clear();
+		qWarning() << "The configuration table contains invalid data. Do nothing and return.";
 		return;
 	}
+		
+	std::vector<const FeatureCollectionHandle*> target_fcs;
+	get_target_collections(target_fcs);
 
-	//populate the table description
-	TableDesc table_desc;
-	table_desc.push_back("Seed Feature ID");
-	table_desc.push_back("Seed Feature begin time");
-	table_desc.push_back("Seed Feature end time");
-	get_table_desc_from_input_table(table_desc);
-	data_table.set_table_desc(table_desc);
+	//The data from layer framework cannot be used directly.
+	//convert the input data 
+	d_seed_feature_rfg_map.clear();
+	d_target_fc_rfg_map.clear();
+	gen_feature_rfg_map(seed_rfgs, d_seed_feature_rfg_map);
+	gen_feature_collection_rfgs_map(target_rfgs, target_fcs, d_target_fc_rfg_map);
 
+	populate_table_header(data_table);
 	//for each seed feature
-	BOOST_FOREACH(const FeatureRFGMap::value_type& seed_feature_and_rfg_pair, seed_feature_rfg_map)
+	BOOST_FOREACH(const FeatureRFGMap::value_type& seed_feature_rfg_pair, d_seed_feature_rfg_map)
 	{
 		DataRowSharedPtr row = DataRowSharedPtr(new DataRow); 
-		row->set_seed_rfgs(seed_feature_and_rfg_pair.second);
-		append_seed_info(seed_feature_and_rfg_pair.first,row);
-		//for each row in input table
-		BOOST_FOREACH(const ConfigurationTableRow &config_row, d_configuration_table)
-		{
-			OpaqueData cell;
-			const FeatureCollectionHandle* fh = 
-					config_row.target_fc.handle_ptr();
-			const ConfigurationTableRow optimised_cfg_row = 
-					optimize_cfg_table_row(
-							config_row,
-							seed_feature_and_rfg_pair.first,
-							fh);
-			
-			boost::shared_ptr< CoRegFilterMapReduceWorkFlow > workflow =
-				FilterMapReduceWorkFlowFactory::create(optimised_cfg_row, seed_feature_and_rfg_pair.second);
+		fill_seed_info(seed_feature_rfg_pair.first,row);
+		//append placeholder for real data below.
+		row->append(d_cfg_table.size(),EmptyData);
 
-			if(!workflow)
+		CoRegFilterCache filter_cache;
+		//for each row in cfg table
+		const CoRegConfigurationTable& const_table = d_cfg_table;//must use the const table.
+		BOOST_FOREACH(const ConfigurationTableRow &config_row, const_table)
+		{
+			boost::shared_ptr< CoRegFilter > filter;
+			boost::shared_ptr< CoRegMapper > mapper;
+			boost::shared_ptr<CoRegReducer> reduer;
+			boost::tie(filter,mapper,reduer)=
+					create_filter_map_reduce(config_row, seed_feature_rfg_pair.second);
+			//filter
+			CoRegFilter::RFGVector filter_result;
+			if(!filter_cache.find(config_row, filter_result))
 			{
-				qWarning() << "Failed to create CoRegFilterMapReduceWorkFlow.";
-				continue;
+				const FeatureCollectionHandle* fh =	config_row.target_fc.handle_ptr();
+				CoRegFilter::RFGVector::const_iterator it_s = d_target_fc_rfg_map[fh].begin(), it_e = d_target_fc_rfg_map[fh].end();
+				filter->process(it_s, it_e,	filter_result);
+				filter_cache.insert(config_row,filter_result);
 			}
 
-			workflow->execute(
-					target_feature_collection_rfg_map[fh].begin(),
-					target_feature_collection_rfg_map[fh].end(),
-					cell);
-			row->append_cell(cell);
+			//map
+			CoRegMapper::MapperOutDataset map_result;
+			FeatureRFGMap map_input;
+			gen_feature_rfg_map(filter_result, map_input);//convert filter output to mapper input.
+			mapper->process(map_input.begin(),map_input.end(),map_result);
+
+			//reduce
+			(*row)[config_row.index + data_table.data_index()] = 
+					reduer->process(map_result.begin(), map_result.end());;
 		}
 		data_table.push_back(row);
 	}
@@ -244,278 +267,29 @@ GPlatesDataMining::DataSelector::select(
 // See above
 ENABLE_GCC_WARNING("-Wshadow")
 
-
 void
-GPlatesDataMining::DataSelector::get_target_collections_from_input_table(
-		std::vector< FeatureCollectionHandle::const_weak_ref >&  target_collection)
+GPlatesDataMining::DataSelector::get_target_collections(
+		std::vector<const FeatureCollectionHandle*>&  target_collection) const
 {
-	CoRegConfigurationTable::const_iterator 
-		it = d_configuration_table.begin(), it_end = d_configuration_table.end();
-	
-	for(; it != it_end; it++)
+	const CoRegConfigurationTable& table = d_cfg_table;
+	BOOST_FOREACH(const ConfigurationTableRow& row, table)
 	{
 		if(	std::find(
 					target_collection.begin(),
 					target_collection.end(),
-					it->target_fc) == target_collection.end() )
+					row.target_fc.handle_ptr()) == target_collection.end() )
 		{
-			target_collection.push_back(it->target_fc);
+			target_collection.push_back(row.target_fc.handle_ptr());
 		}
 	}
-}
-
-
-void
-GPlatesDataMining::DataSelector::get_table_desc_from_input_table(
-		TableDesc& table_desc)			
-{
-	CoRegConfigurationTable::const_iterator 
-		it = d_configuration_table.begin(), it_end = d_configuration_table.end();
-
-	for(; it != it_end; it++)
-	{
-		table_desc.push_back( it->attr_name );
-	}
-	return;
-}
-
-
-void
-GPlatesDataMining::DataSelector::get_reconstructed_geometries(
-		FeatureHandle::non_null_ptr_to_const_type feature,
-		std::vector< GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type	>& geometries)
-{
-	GPlatesFeatureVisitors::GeometryFinder geo_finder;
-	geo_finder.visit_feature( feature->reference() );
-
-	geometries.insert(
-			geometries.end(),
-			geo_finder.found_geometries_begin(),
-			geo_finder.found_geometries_end());
-}
-
-
-void
-GPlatesDataMining::DataSelector::get_reconstructed_geometries(
-		FeatureHandle::non_null_ptr_to_const_type feature,
-		std::vector< GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type	>& geometries,
-		const GPlatesAppLogic::Reconstruction& rec)
-{
-	using namespace GPlatesFeatureVisitors;
-	GeometryFinder geo_finder;
-	geo_finder.visit_feature( feature->reference() );
-	
-	GeometryFinder::geometry_container_const_iterator 
-		it = geo_finder.found_geometries_begin(),
-		it_end = geo_finder.found_geometries_end();
-
-	ReconstructionFeatureProperties properties(rec.get_reconstruction_time());
-	properties.visit_feature(feature->reference());
-	
-	if(!properties.is_feature_defined_at_recon_time())
-		return;
-
-	for(; it != it_end; it++)
-	{
-		if(properties.get_recon_plate_id())
-		{
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
-				ReconstructUtils::reconstruct(
-						*it,
-						*properties.get_recon_plate_id(),
-						*rec.get_default_reconstruction_layer_output()->get_reconstruction_tree());
-			geometries.push_back(geometry);
-		}
-		else
-			geometries.push_back(*it);
-	}
-
-}
-
-
-void
-GPlatesDataMining::DataSelector::construct_geometry_map(
-		const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>& RGCs,
-		FeatureGeometryMap& the_map)
-{
-	typedef std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> rfg_seq_type;
-
-	rfg_seq_type::const_iterator it = RGCs.begin(), it_end = RGCs.end();
-	for( ; it != it_end; it++)
-	{
-		const ReconstructedFeatureGeometry* RFG = it->get();
-
-		FeatureGeometryMap::iterator map_it = the_map.find( RFG->feature_handle_ptr());
-		if( map_it != the_map.end() )
-			map_it->second.push_back(RFG->reconstructed_geometry());
-		else
-		{
-			std::vector< GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type > tmp(1,RFG->reconstructed_geometry());
-			the_map[RFG->feature_handle_ptr()] = tmp;
-		}
-	}
-}
-
-
-void
-GPlatesDataMining::DataSelector::construct_geometry_map(
-		const FeatureCollectionHandle::const_weak_ref& feature_collection,
-		FeatureGeometryMap& the_map,
-		const Reconstruction* reconstruction)
-
-{
-	FeatureCollectionHandle::const_iterator 
-		it = feature_collection->begin(), it_end = feature_collection->end();
-
-	for(; it != it_end; it++)
-	{
-		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> tmp;
-
-		FeatureGeometryMap::iterator map_it = the_map.find( (*it).get());
-
-		if( map_it != the_map.end() )//The entry is already in the map. Do nothing and return.
-			return;
-		else
-		{
-			if(reconstruction)
-				get_reconstructed_geometries( *it, tmp, *reconstruction);
-			else
-				get_reconstructed_geometries( *it, tmp );
-			
-			the_map[(*it).get()] = tmp;
-		}
-	}
-}
-
-
-void
-GPlatesDataMining::DataSelector::construct_geometry_map(
-		const FeatureCollectionHandle::const_weak_ref& seed_collection,	
-		const std::vector< FeatureCollectionHandle::const_weak_ref >& target_collection,							/*In*/
-		const Reconstruction* reconstruction)													/*In*/
-{
-	d_seed_geometry_map.clear();
-	d_target_geometry_map.clear();
-
-	construct_geometry_map(seed_collection, d_seed_geometry_map, reconstruction);
-
-	std::vector < FeatureCollectionHandle::const_weak_ref >::const_iterator
-		it = target_collection.begin(),
-		it_end = target_collection.end();
-
-	for(; it != it_end; it++)
-		construct_geometry_map((*it), d_target_geometry_map, reconstruction);
-}
-
-
-boost::shared_ptr< const GPlatesDataMining::AssociationOperator::AssociatedCollection > 
-GPlatesDataMining::DataSelector::retrieve_associated_data_from_cache(
-		FilterCfg cfg,
-		FeatureCollectionHandle::const_weak_ref target_feature_collection,
-		const CacheMap& cache_map)
-{
-	std::pair< CacheMap::const_iterator, CacheMap::const_iterator > ret =
-		cache_map.equal_range(target_feature_collection);
-	CacheMap::const_iterator it = ret.first;
-
-	for ( ; it != ret.second; ++it)
-	{
-		if(cfg.d_filter_type != it->second->d_associator_cfg.d_filter_type)
-			continue;
-		
-		if(REGION_OF_INTEREST == cfg.d_filter_type)
-		{
-			if(0.0 == GPlatesMaths::Real(cfg.d_ROI_range - it->second->d_associator_cfg.d_ROI_range))
-				return it->second;
-			
-			if(cfg.d_ROI_range < it->second->d_associator_cfg.d_ROI_range)
-			{
-				boost::shared_ptr< AssociationOperator::AssociatedCollection > result(
-						new AssociationOperator::AssociatedCollection());
-				result->d_reconstruction_time = it->second->d_reconstruction_time;
-				result->d_associator_cfg =  it->second->d_associator_cfg;
-				result->d_seed = it->second->d_seed;
-				AssociationOperator::AssociatedCollection::FeatureDistanceMap::const_iterator 
-					inner_it =  it->second->d_associated_features.begin(),
-					inner_it_end =  it->second->d_associated_features.end();
-
-				for(; inner_it != inner_it_end; ++inner_it)
-				{
-					if(DataMiningUtils::minimum(inner_it->second) <= cfg.d_ROI_range)
-					{
-						result->d_associated_features.insert(*inner_it);
-					}
-				}
-#ifdef _DEBUG
-				qDebug() << "Associated data cache hit!";
-#endif
-				return result;
-			}
-		}
-	}
-	return boost::shared_ptr< const AssociationOperator::AssociatedCollection >();
-}
-
-
-void
-GPlatesDataMining::DataSelector::insert_associated_data_into_cache(
-		boost::shared_ptr< const GPlatesDataMining::AssociationOperator::AssociatedCollection > data,
-		FeatureCollectionHandle::const_weak_ref target_feature_collection,
-		CacheMap& cache_map)
-{
-	cache_map.insert(std::make_pair(target_feature_collection, data));
-}
-
-
-void
-GPlatesDataMining::DataSelector::insert_associated_data_into_cache(
-		boost::shared_ptr< const GPlatesDataMining::AssociationOperator::AssociatedCollection > data,
-		FeatureCollectionHandle::const_weak_ref  target_feature_collection)
-{
-	insert_associated_data_into_cache(
-			data,
-			target_feature_collection,
-			d_associated_data_cache);
-}
-
-
-boost::shared_ptr< const GPlatesDataMining::AssociationOperator::AssociatedCollection > 
-GPlatesDataMining::DataSelector::retrieve_associated_data_from_cache(
-		GPlatesDataMining::FilterCfg cfg,
-		FeatureCollectionHandle::const_weak_ref target_feature_collection)
-{
-	return retrieve_associated_data_from_cache(
-			cfg,
-			target_feature_collection,
-			d_associated_data_cache);
-}
-
-
-const GPlatesDataMining::ConfigurationTableRow
-GPlatesDataMining::DataSelector::optimize_cfg_table_row(
-		const GPlatesDataMining::ConfigurationTableRow& cfg_row,
-		const FeatureHandle* seed_feature,
-		const FeatureCollectionHandle* target_feature_collection)
-{
-	ConfigurationTableRow modified_cfg_row = cfg_row;
-	if(is_feature_collection_contains_this_feature(target_feature_collection,seed_feature))
-	{
-		if(0.0 == GPlatesMaths::Real(cfg_row.filter_cfg.d_ROI_range))
-		{
-			//The target feature collection contains the seed feature and 
-			//the region of interest is zero, which implies the user wants
-			//to extract data from seed feature.
-			modified_cfg_row.filter_type = SEED_ITSELF;
-		}
-	}
-	return modified_cfg_row;
 }
 
 
 bool
-GPlatesDataMining::DataSelector::is_cfg_table_valid()
+GPlatesDataMining::DataSelector::is_cfg_table_valid() const
 {
-	BOOST_FOREACH(const ConfigurationTableRow &config_row, d_configuration_table)
+	const CoRegConfigurationTable& table = d_cfg_table;
+	BOOST_FOREACH(const ConfigurationTableRow &config_row, table)
 	{
 		if(!config_row.target_fc.is_valid())
 			return false;
@@ -525,43 +299,37 @@ GPlatesDataMining::DataSelector::is_cfg_table_valid()
 
 
 void
-GPlatesDataMining::DataSelector::append_seed_info(
+GPlatesDataMining::DataSelector::fill_seed_info(
 		const GPlatesModel::FeatureHandle* feature,
 		DataRowSharedPtr row)
 {
 	//Write out feature id as the first column so that each data row can be correlated. 
 	//This is a temporary solution and will be removed when layer framework is ready to handle this.
 	QString feature_id = feature->feature_id().get().qstring();
-
-	ReconstructionFeatureProperties visitor(false);
-	visitor.visit_feature(WeakReference<const FeatureHandle>(*feature));
-
-	boost::optional<GPlatesPropertyValues::GeoTimeInstant> 
-		begin_time = visitor.get_time_of_appearance(), 
-		end_time = visitor.get_time_of_dissappearance();
-
 	row->append_cell(OpaqueData(feature_id));
-	if(begin_time)
-	{
-		std::stringstream ss; ss << *begin_time ; 
-		row->append_cell(OpaqueData(QString(ss.str().c_str()).remove(QRegExp("[()]"))));
-	}
-	else
-	{
-		row->append_cell(OpaqueData(EmptyData));
-	}
-
-	if(end_time)
-	{
-		std::stringstream ss; ss << *end_time ; 
-		row->append_cell(OpaqueData(QString(ss.str().c_str()).remove(QRegExp("[()]"))));
-	}
-	else
-	{
-		row->append_cell(OpaqueData(EmptyData));
-	}
+	//seed valid time.
+	row->append_cell(DataMiningUtils::get_property_value_by_name(feature,"validTime"));
 }
 
+
+void
+GPlatesDataMining::DataSelector::populate_table_header(
+		GPlatesDataMining::DataTable& data_table) const 
+{
+	//populate the table header
+	TableHeader table_header;
+	table_header.push_back("Seed Feature ID");
+	table_header.push_back("Seed Valid Time");
+	data_table.set_data_index(2);
+
+	const CoRegConfigurationTable& table = d_cfg_table;
+	
+	BOOST_FOREACH(const ConfigurationTableRow& row, table)
+	{
+		table_header.push_back(row.attr_name);
+	}
+	data_table.set_table_header(table_header);
+}
 
 // Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
 // This is here at the end of the file because the problem resides in a template

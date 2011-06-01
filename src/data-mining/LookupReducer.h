@@ -30,73 +30,44 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <maths/MathsUtils.h>
-
+#include "CoRegReducer.h"
 #include "DataMiningUtils.h"
+
+#include <maths/MathsUtils.h>
 
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
-	
-	typedef std::vector<OpaqueData> ReducerInputSequence;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class LookupReducer
+	class LookupReducer : public CoRegReducer
 	{
+		typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> RFGs;
 	public:
-
-		/*
-		* TODO: comments....
-		*/
-		inline
-		OpaqueData
-		operator()(
-				ReducerInputSequence::const_iterator input_begin,
-				ReducerInputSequence::const_iterator input_end) 
+		class Config : public CoRegReducer::Config
 		{
-			size_t size = std::distance(input_begin,input_end);
-			if(size == 1)
+		public:
+			bool
+			is_same_type(const CoRegReducer::Config* other)
 			{
-				return *input_begin;
+				return dynamic_cast<const LookupReducer::Config*>(other);
 			}
-			else if(size == 0)
-			{
-				return EmptyData;
-			}
-			else
-			{
-				if(DataMiningUtils::RFG_INDEX_VECTOR.size() != size)
-				{
-					qWarning() << "The RFG_INDEX_VECTOR and input data has different size.";
-					size = std::min(DataMiningUtils::RFG_INDEX_VECTOR.size(),size);
-				}
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> seed_geos;
-				const GPlatesAppLogic::ReconstructedFeatureGeometry* target_geo;
-				double min_distance = -1;
-				size_t idx = 0;
 
-				for(size_t i=0; i<size; i++)
-				{
-					boost::tie(seed_geos, target_geo) = DataMiningUtils::RFG_INDEX_VECTOR.at(i);
-					double d = DataMiningUtils::shortest_distance(seed_geos, target_geo);
-					if(GPlatesMaths::are_slightly_more_strictly_equal(d,0))
-					{
-						std::advance(input_begin,i);
-						return *input_begin;
-					}
-					if(min_distance < 0 || min_distance > d)
-					{
-						min_distance = d;
-						idx = i;
-					}
-				}
-				std::advance(input_begin,idx);
-				return *input_begin;
-			}
-		}
+			~Config(){ }
+		};
+
+		explicit
+		LookupReducer(const RFGs& seeds) :
+			d_seeds(seeds)
+		{ }
+		
+		virtual
+		~LookupReducer(){ }
+
+	protected:
+		OpaqueData
+		exec(
+				ReducerInDataset::const_iterator input_begin,
+				ReducerInDataset::const_iterator input_end) ;
+	protected:
+		RFGs d_seeds;
 	};
 }
 #endif
