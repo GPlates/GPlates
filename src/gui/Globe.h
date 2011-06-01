@@ -56,6 +56,7 @@
 namespace GPlatesOpenGL
 {
 	class GLRenderer;
+	class GLTransform;
 }
 
 namespace GPlatesPresentation
@@ -118,6 +119,10 @@ namespace GPlatesGui
 		/**
 		 * Paint the globe and all the visible features and rasters on it.
 		 *
+		 * The three projection transforms differ only in their far clip plane distance.
+		 * One includes only the front half of the globe, another includes the full globe and
+		 * another is long enough to allow rendering of the stars.
+		 *
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
@@ -126,10 +131,15 @@ namespace GPlatesGui
 		paint(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
-				float scale);
+				float scale,
+				const GPlatesOpenGL::GLTransform &projection_transform_include_half_globe,
+				const GPlatesOpenGL::GLTransform &projection_transform_include_full_globe,
+				const GPlatesOpenGL::GLTransform &projection_transform_include_stars);
 		
 		/*
 		 * A special version of the globe's paint() method more suitable for vector output.
+		 *
+		 * NOTE: Unlike @a paint the caller must have pushed the projection transform onto @a renderer.
 		 *
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater

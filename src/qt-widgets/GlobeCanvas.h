@@ -533,22 +533,30 @@ namespace GPlatesQtWidgets
 		//! The current model-view transform for regular OpenGL rendering.
 		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_model_view_transform;
 
-		//! The current projection transform for regular OpenGL rendering.
-		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform;
+		/**
+		 * The current projection transform for OpenGL rendering of the front visible half of the globe.
+		 *
+		 * This is used for rendering an opaque globe (only the front half is visible) and for
+		 * rendering SVG output since it uses the OpenGL feedback mechanism which bypasses
+		 * rasterisation and hence the transformation pipeline is required for clipping
+		 * (ie, the far clip plane).
+		 */
+		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform_include_half_globe;
 
 		/**
-		 * The current projection transform for OpenGL rendering for SVG output.
+		 * The current projection transform for OpenGL rendering of the full globe.
 		 *
-		 * This is different than the regular OpenGL rendering transform because the
-		 * far clip plane differs (because SVG output ignores depth buffering - it uses
-		 * the OpenGL feedback mechanism which bypasses rasterisation - and hence the
-		 * opaque disc through the centre of the globe does not occlude vector geometry
-		 * on the back side of the globe and hence is visible in the SVG output).
-		 * The solution is to set the far clip plane to pass through the globe centre
-		 * (effectively doing the equivalent of the opaque disc but in the transformation
-		 * pipeline instead of the rasterisation pipeline).
+		 * This is used when rendering a transparent globe since the rear half of the globe then
+		 * becomes visible.
 		 */
-		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform_svg;
+		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform_include_full_globe;
+
+		/**
+		 * The current projection transform for rendering stars.
+		 *
+		 * The far clip plane distance is large enough to include the stars.
+		 */
+		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform_include_stars;
 
 		//! Keeps track of OpenGL objects that persist from one render to another.
 		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
