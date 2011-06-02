@@ -30,7 +30,11 @@
 #include <string>
 #include <QString>
 #include <map>
+#include <boost/version.hpp>
+
+#if BOOST_VERSION > 103600
 #include <boost/unordered_map.hpp>
+#endif
 
 #include "CoRegConfigurationTable.h"
 #include "CoRegFilterCache.h"
@@ -54,6 +58,7 @@ namespace GPlatesDataMining
 	class DataSelector
 	{
 	public:
+#if BOOST_VERSION > 103600
 		typedef boost::unordered_map< 
 				const GPlatesModel::FeatureHandle*,
 				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
@@ -63,7 +68,18 @@ namespace GPlatesDataMining
 				const GPlatesModel::FeatureCollectionHandle*,
 				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
 									> FeatureCollectionRFGMap;
+#else
+		 typedef std::map<
+                                const GPlatesModel::FeatureHandle*,
+                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
+                                                                        > FeatureRFGMap;
 
+                typedef std::map<
+                                const GPlatesModel::FeatureCollectionHandle*,
+                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
+                                                                        > FeatureCollectionRFGMap;
+
+#endif
 		static
 		boost::shared_ptr<DataSelector> 
 		create(

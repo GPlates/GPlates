@@ -24,8 +24,12 @@
  */	
 #ifndef GPLATESDATAMINING_COREGMAPPER_H
 #define GPLATESDATAMINING_COREGMAPPER_H
+#include <boost/version.hpp>
 
+#if BOOST_VERSION > 103600
 #include <boost/unordered_map.hpp>
+#endif
+
 #include <boost/tuple/tuple.hpp>
 #include <vector>
 
@@ -46,6 +50,7 @@ namespace GPlatesDataMining
 	class CoRegMapper
 	{
 	public:
+#if BOOST_VERSION > 103600
 		typedef boost::unordered_map< 
 				const GPlatesModel::FeatureHandle*,
 				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
@@ -56,7 +61,18 @@ namespace GPlatesDataMining
 				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
 										> 
 							>MapperOutDataset;
+#else
+		typedef std::map<
+                                const GPlatesModel::FeatureHandle*,
+                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
+                                                                        > MapperInDataset;
 
+                typedef std::vector<boost::tuple<
+                                OpaqueData,
+                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
+                                                                                >
+                                                        >MapperOutDataset;
+#endif
 		typedef std::vector<
 			const GPlatesAppLogic::ReconstructedFeatureGeometry*> RFGVector;
 
