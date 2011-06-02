@@ -51,10 +51,7 @@
 
 #include "utils/Profile.h"
 #include "utils/CommandLineParser.h"
-
-//Data-mining temporary code
-extern bool enable_data_mining;
-bool enable_symbol_table = false;
+#include "utils/ComponentManager.h"
 
 extern "C" void initpygplates();
 
@@ -81,10 +78,12 @@ namespace
 	const char *ROTATION_FILE_OPTION_NAME = "rotation-file";
 	const char *LINE_FILE_OPTION_NAME = "line-file";
 	const char *DEBUG_GUI_OPTION_NAME = "debug-gui";
-	//Data-mining temporary code: enable data-mining feature by secret command line option.
+	//enable data-mining feature by secret command line option.
 	const char *DATA_MINING_OPTION_NAME = "data-mining";
 	//enable symbol-table feature by secret command line option.
 	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
+	//enable python by secret command line option.
+	const char *PYTHON_OPTION_NAME = "python";
 
 	void
 	print_usage(
@@ -141,13 +140,17 @@ namespace
 			(DEBUG_GUI_OPTION_NAME, "Enable GUI debugging menu")
 			;
 
-		// Temporary code. Add secret data-mining options.
+		//Add secret data-mining options.
 		input_options.hidden_options.add_options()
 			(DATA_MINING_OPTION_NAME, "Enable data mining feature");
 
-		// Temporary code. Add secret symbol-table options.
+		//Add secret symbol-table options.
 		input_options.hidden_options.add_options()
 			(SYMBOL_TABLE_OPTION_NAME, "Enable symbol feature");
+
+		//Add secret python options.
+		input_options.hidden_options.add_options()
+			(PYTHON_OPTION_NAME, "Enable python");
 
 		boost::program_options::variables_map vm;
 
@@ -200,16 +203,26 @@ namespace
 		{
 			command_line_options.debug_gui = true;
 		}
-		//Data-mining temporary code: enable data mining feature by command line option.
+
+		using namespace GPlatesUtils;
 		if(vm.count(DATA_MINING_OPTION_NAME))
 		{
-			enable_data_mining = true;
+			ComponentManager::instance().enable(
+				ComponentManager::Component::data_mining());
 		}
 
 		//enable symbol-table feature by command line option.
 		if(vm.count(SYMBOL_TABLE_OPTION_NAME))
 		{
-			enable_symbol_table = true;
+			ComponentManager::instance().enable(
+				ComponentManager::Component::symbology());
+		}
+
+		//enable python by command line option.
+		if(vm.count(PYTHON_OPTION_NAME))
+		{
+			ComponentManager::instance().enable(
+				ComponentManager::Component::python());
 		}
 
 		return command_line_options;
@@ -324,7 +337,7 @@ int internal_main(int argc, char* argv[])
 			qapplication.argc(), qapplication.argv());
 
 	initialise_python(argv[0]);
-
+	//FIXME: clean up this.
 	// The application state, view state and main window are stored in this object.
 	// Note that ViewState starts the Python execution thread, so Python threading
 	// support must have been set up already before we get here.
@@ -342,14 +355,20 @@ int internal_main(int argc, char* argv[])
 		main_window_widget.install_gui_debug_menu();
 	}
 
-if(!enable_symbol_table)
-	main_window_widget.hide_symbol_menu();
+	using namespace GPlatesUtils;
+	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::symbology()))
+	{
+		main_window_widget.hide_symbol_menu();
+	}
 
-#ifdef GPLATES_NO_PYTHON
-	main_window_widget.hide_python_menu();
-#endif
-
-	install_instance(state);
+	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
+	{
+		main_window_widget.hide_python_menu();
+	}
+	else
+	{
+		install_instance(state);
+	}
 
 	main_window_widget.show();
 	return qapplication.exec();
