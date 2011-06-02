@@ -56,6 +56,7 @@ namespace GPlatesApi
 		explicit
 		PythonRunner(
 				GPlatesAppLogic::ApplicationState &application_state,
+				const boost::python::object &,
 				QObject *parent_ = NULL);
 
 		virtual

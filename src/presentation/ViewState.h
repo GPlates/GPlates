@@ -53,12 +53,6 @@
 // FIXME remove this header
 #include "view-operations/RenderedGeometryCollection.h"
 
-
-namespace GPlatesApi
-{
-	class Sleeper;
-}
-
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -415,11 +409,7 @@ namespace GPlatesPresentation
 		 * Stores information about the export animation types.
 		 */
 		boost::scoped_ptr<GPlatesGui::ExportAnimationRegistry> d_export_animation_registry;
-
-		/**
-		 * Replaces Python's time.sleep() with our own implementation.
-		 */
-		boost::scoped_ptr<GPlatesApi::Sleeper> d_sleeper;
+			
 	};
 }
 

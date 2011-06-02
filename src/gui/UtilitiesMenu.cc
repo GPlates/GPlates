@@ -41,12 +41,12 @@ Q_DECLARE_METATYPE( boost::function< void () > )
 GPlatesGui::UtilitiesMenu::UtilitiesMenu(
 		QMenu *utilities_menu,
 		QAction *before_action,
-		GPlatesApi::PythonExecutionThread *python_execution_thread,
+		GPlatesUtils::PythonManager& python_manager,
 		QObject *parent_) :
 	QObject(parent_),
 	d_utilities_menu(utilities_menu),
 	d_before_action(utilities_menu->insertSeparator(before_action)),
-	d_python_execution_thread(python_execution_thread),
+	d_python_manager(python_manager),
 	d_action_group(new QActionGroup(this))
 {
 	QObject::connect(
@@ -99,6 +99,7 @@ GPlatesGui::UtilitiesMenu::handle_action_triggered(
 
 #if !defined(GPLATES_NO_PYTHON)
 	GPlatesApi::PythonExecutionMonitor monitor;
+	d_python_execution_thread = d_python_manager.get_python_execution_thread();
 	d_python_execution_thread->exec_function(callback, &monitor);
 	monitor.exec();
 #else

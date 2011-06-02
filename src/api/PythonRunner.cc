@@ -32,17 +32,18 @@
 
 #include "PythonExecutionMonitor.h"
 #include "PythonInterpreterLocker.h"
-
+#include "api/Sleeper.h"
 #include "app-logic/ApplicationState.h"
 
 #include "global/CompilerWarnings.h"
 
 #include "utils/DeferredCallEvent.h"
 #include "utils/StringUtils.h"
-
+#include "utils/PythonManager.h"
 
 GPlatesApi::PythonRunner::PythonRunner(
 		GPlatesAppLogic::ApplicationState &application_state,
+		const  boost::python::object &main_namespace,
 		QObject *parent_) :
 	QObject(parent_),
 	d_application_state(application_state)
@@ -51,7 +52,6 @@ GPlatesApi::PythonRunner::PythonRunner(
 	using namespace boost::python;
 
 	PythonInterpreterLocker interpreter_locker;
-	const object &main_namespace = application_state.get_python_main_namespace();
 
 	try
 	{
@@ -302,8 +302,8 @@ GPlatesApi::PythonRunner::eval_string(
 		std::wstring wstring = GPlatesUtils::make_wstring_from_qstring(string);
 		result = d_eval(
 				wstring,
-				d_application_state.get_python_main_namespace(),
-				d_application_state.get_python_main_namespace());
+				d_application_state.get_python_manager().get_python_main_namespace(),
+				d_application_state.get_python_manager().get_python_main_namespace());
 	}
 	catch (const error_already_set &)
 	{

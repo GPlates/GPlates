@@ -42,8 +42,6 @@
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 
-#include "global/python.h"
-
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
@@ -54,10 +52,9 @@
 // This header gets included in a lot of other files and we want to reduce compile times.
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace GPlatesApi
+namespace GPlatesUtils
 {
-	class PythonRunner;
-	class PythonExecutionThread;
+	class PythonManager;
 }
 
 namespace GPlatesAppLogic
@@ -141,6 +138,12 @@ namespace GPlatesAppLogic
 		GPlatesAppLogic::UserPreferences &
 		get_user_preferences();
 
+		GPlatesUtils::PythonManager&
+		get_python_manager()
+		{
+			return *d_python_manager_ptr;
+		}
+
 		/**
 		 * Returns the registry of various ways to reconstruct a feature
 		 * into @a ReconstructedFeatureGeometry objects.
@@ -200,39 +203,6 @@ namespace GPlatesAppLogic
 		{
 			return d_update_default_reconstruction_tree_layer;
 		}
-
-#if !defined(GPLATES_NO_PYTHON)
-		const boost::python::object &
-		get_python_main_module() const
-		{
-			return d_python_main_module;
-		}
-
-		const boost::python::object &
-		get_python_main_namespace() const
-		{
-			return d_python_main_namespace;
-		}
-#endif
-
-		/**
-		 * Returns an object that runs Python on the main thread.
-		 */
-		GPlatesApi::PythonRunner *
-		get_python_runner() const
-		{
-			return d_python_runner;
-		}
-
-		/**
-		 * Returns a thread on which Python code can be run off the main thread.
-		 */
-		GPlatesApi::PythonExecutionThread *
-		get_python_execution_thread()
-		{
-			return d_python_execution_thread;
-		}
-
 
 		/**
 		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
@@ -416,6 +386,7 @@ namespace GPlatesAppLogic
 
 		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
 
+		boost::scoped_ptr<GPlatesUtils::PythonManager> d_python_manager_ptr;
 		/**
 		 * A registry for various ways to reconstruct a feature into @a ReconstructedFeatureGeometry objects.
 		 */
@@ -433,7 +404,7 @@ namespace GPlatesAppLogic
 		 * It also is solely responsible for generating the complete aggregate reconstruction.
 		 */
 		boost::scoped_ptr<ReconstructGraph> d_reconstruct_graph;
-
+		
 		/**
 		 * A mapping of all primary layers (auto-generated when a file is loaded)
 		 * to the auto-generated layers.
@@ -480,33 +451,6 @@ namespace GPlatesAppLogic
 		 * should be called when all @a ScopedReconstructGuard objects go out of scope.
 		 */
 		bool d_reconstruct_on_scope_exit;
-
-#if !defined(GPLATES_NO_PYTHON)
-		/**
-		 * The "__main__" Python module.
-		 */
-		boost::python::object d_python_main_module;
-
-		/**
-		 * The "__dict__" attribute of the "__main__" Python module.
-		 * This is useful for passing into exec() and eval() for context.
-		 */
-		boost::python::object d_python_main_namespace;
-#endif
-
-		/**
-		 * Runs Python code on the main thread.
-		 *
-		 * Memory managed by Qt.
-		 */
-		GPlatesApi::PythonRunner *d_python_runner;
-
-		/**
-		 * The thread on which Python is executed, off the main thread.
-		 *
-		 * Memory is managed by Qt.
-		 */
-		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
 
 		/**
 		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),

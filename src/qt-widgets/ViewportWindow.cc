@@ -101,6 +101,7 @@
 #include "api/DeferredApiCall.h"
 #include "api/PythonInterpreterLocker.h"
 #include "api/PythonUtils.h"
+#include "api/Sleeper.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/AppLogicUtils.h"
@@ -173,6 +174,7 @@
 
 #include "utils/DeferredCallEvent.h"
 #include "utils/Profile.h"
+#include "utils/PythonManager.h"
 
 #include "view-operations/ActiveGeometryOperation.h"
 #include "view-operations/CloneOperation.h"
@@ -310,12 +312,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_view_state(),
 				this)),
 	d_mesh_dialog_ptr(NULL),
-	d_python_console_dialog_ptr(
-			new PythonConsoleDialog(
-				get_application_state(),
-				get_view_state(),
-				this,
-				this)),
+	d_python_console_dialog_ptr(NULL),
 	d_read_errors_dialog_ptr(
 			new ReadErrorAccumulationDialog(this)),
 	d_set_camera_viewpoint_dialog_ptr(NULL),
@@ -1009,7 +1006,7 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 	d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
 			menu_Utilities,
 			action_Open_Python_Console,
-			get_application_state().get_python_execution_thread(),
+			get_application_state().get_python_manager(),
 			this);
 	// ----
 	QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
@@ -2717,7 +2714,15 @@ GPlatesQtWidgets::ViewportWindow::open_online_documentation()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
 {
-	// Note: this dialog is constructed in the ViewportWindow constructor.
+	if(!d_python_console_dialog_ptr)
+	{
+		d_python_console_dialog_ptr.reset(
+				new PythonConsoleDialog(
+				get_application_state(),
+				get_view_state(),
+				this,
+				this));
+	}
 	QtWidgetUtils::pop_up_dialog(d_python_console_dialog_ptr.get());
 }
 
@@ -2743,7 +2748,7 @@ GPlatesQtWidgets::ViewportWindow::showEvent(
 	GPlatesUtils::DeferCall<void>::defer_call(
 			boost::bind(
 				&GPlatesApi::PythonUtils::run_startup_scripts,
-				get_application_state().get_python_execution_thread(),
+				get_application_state().get_python_manager().get_python_execution_thread(),
 				boost::ref(get_application_state().get_user_preferences())));
 #endif
 

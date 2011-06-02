@@ -33,6 +33,7 @@
 #include <QActionGroup>
 #include <QString>
 
+#include "utils/PythonManager.h"
 
 namespace GPlatesApi
 {
@@ -56,7 +57,7 @@ namespace GPlatesGui
 		UtilitiesMenu(
 				QMenu *utilities_menu,
 				QAction *before_action,
-				GPlatesApi::PythonExecutionThread *python_execution_thread,
+				GPlatesUtils::PythonManager& python_manager,
 				QObject *parent_ = NULL);
 
 		virtual
@@ -82,6 +83,7 @@ namespace GPlatesGui
 
 		QMenu *d_utilities_menu;
 		QAction *d_before_action;
+		GPlatesUtils::PythonManager& d_python_manager;
 		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
 
 		typedef std::map<QString, QMenu *> submenus_map_type;

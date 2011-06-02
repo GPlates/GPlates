@@ -33,7 +33,6 @@
 #include "VisualLayers.h"
 
 #include "api/Sleeper.h"
-
 #include "app-logic/ApplicationState.h"
 #include "app-logic/VGPRenderSettings.h"
 
@@ -129,9 +128,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_text_overlay_settings(
 			new GPlatesGui::TextOverlaySettings()),
 	d_export_animation_registry(
-			new GPlatesGui::ExportAnimationRegistry()),
-	d_sleeper(
-			new GPlatesApi::Sleeper())
+			new GPlatesGui::ExportAnimationRegistry())
 {
 	connect_to_viewport_zoom();
 

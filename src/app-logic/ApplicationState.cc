@@ -40,15 +40,12 @@
 #include "SessionManagement.h"
 #include "UserPreferences.h"
 
-#include "api/PythonExecutionThread.h"
-#include "api/PythonInterpreterLocker.h"
-#include "api/PythonRunner.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "utils/PythonManager.h"
 
 namespace
 {
@@ -299,6 +296,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_serialization_ptr(new Serialization(*this)),
 	d_session_management_ptr(new SessionManagement(*this)),
 	d_user_preferences_ptr(new UserPreferences()),
+	d_python_manager_ptr(new GPlatesUtils::PythonManager()),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_reconstruct_graph(new ReconstructGraph(*this)),
@@ -310,8 +308,6 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 			Reconstruction::create(d_reconstruction_time)),
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
-	d_python_runner(NULL),
-	d_python_execution_thread(NULL),
 	d_suppress_auto_layer_creation(false)
 {
 	// Register default reconstruct method types with the reconstruct method registry.
@@ -321,29 +317,6 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	register_default_layer_task_types(*d_layer_task_registry, *this);
 
 	mediate_signal_slot_connections();
-
-#if !defined(GPLATES_NO_PYTHON)
-	using namespace boost::python;
-
-	// Hold references to the main module and its namespace for easy access from
-	// all parts of GPlates.
-	GPlatesApi::PythonInterpreterLocker interpreter_locker;
-	try
-	{
-		d_python_main_module = import("__main__");
-		d_python_main_namespace = d_python_main_module.attr("__dict__");
-	}
-	catch (const error_already_set &)
-	{
-		PyErr_Print();
-	}
-#endif
-
-	// These two must be set up after d_python_main_module and
-	// d_python_main_namespace have been set.
-	d_python_runner = new GPlatesApi::PythonRunner(*this, this);
-	d_python_execution_thread = new GPlatesApi::PythonExecutionThread(*this, this);
-	d_python_execution_thread->start(QThread::IdlePriority);
 }
 
 
@@ -366,11 +339,6 @@ GPlatesAppLogic::ApplicationState::~ApplicationState()
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
 
-	// Stop the Python execution thread.
-	static const int WAIT_TIME = 1000 /* milliseconds */;
-	d_python_execution_thread->quit_event_loop();
-	d_python_execution_thread->wait(WAIT_TIME);
-	d_python_execution_thread->terminate();
 }
 
 

@@ -35,16 +35,20 @@
 #include "PythonInterpreterLocker.h"
 #include "PythonRunner.h"
 
+#include "api/Sleeper.h"
 #include "app-logic/ApplicationState.h"
 
 #include "utils/DeferredCallEvent.h"
+#include "utils/PythonManager.h"
 
 
 GPlatesApi::PythonExecutionThread::PythonExecutionThread(
 		GPlatesAppLogic::ApplicationState &application_state,
+		const  boost::python::object &main_namespace,
 		QObject *parent_) :
 	QThread(parent_),
 	d_application_state(application_state),
+	d_namespace(main_namespace),
 	d_python_runner(NULL),
 	d_event_loop(NULL),
 	d_python_thread_id(0)
@@ -229,7 +233,7 @@ GPlatesApi::PythonExecutionThread::run()
 	QEventLoop event_loop;
 	d_event_loop = &event_loop;
 #if !defined(GPLATES_NO_PYTHON)
-	d_python_runner = new PythonRunner(d_application_state);
+	d_python_runner = new PythonRunner(d_application_state, d_namespace);
 
 	// Connect to signals from PythonRunner so we can forward them.
 	QObject::connect(
@@ -250,7 +254,7 @@ GPlatesApi::PythonExecutionThread::run()
 
 	// Get the Python thread id for the current thread.
 	using namespace boost::python;
-	const object &main_namespace = d_application_state.get_python_main_namespace();
+	const object &main_namespace = d_application_state.get_python_manager().get_python_main_namespace();
 	PythonInterpreterLocker interpreter_locker;
 	try
 	{

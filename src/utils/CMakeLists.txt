@@ -17,6 +17,7 @@ set(srcs
     CallStackTracker.h
     CommandLineParser.cc
     CommandLineParser.h
+    ComponentManager.h
     CopyConst.h
     DeferredCallEvent.cc
     DeferredCallEvent.h
@@ -37,6 +38,8 @@ set(srcs
     Parse.h
     Profile.cc
     Profile.h
+    PythonManager.cc
+    PythonManager.h
     QtFormattingUtils.h
     Reducer.h
     ReferenceCount.h

@@ -46,7 +46,7 @@
 #include "api/ConsoleWriter.h"
 
 #include "gui/EventBlackout.h"
-
+#include "utils/PythonManager.h"
 
 namespace GPlatesApi
 {
@@ -266,6 +266,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
+		GPlatesUtils::PythonManager& d_python_manager;
 		ViewportWindow *d_viewport_window;
 
 		/**

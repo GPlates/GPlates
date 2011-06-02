@@ -44,6 +44,7 @@
 #include "gui/UtilitiesMenu.h"
 
 #include "utils/StringUtils.h"
+#include "utils/PythonManager.h"
 
 
 GPlatesPresentation::Application::Application() :
@@ -64,7 +65,7 @@ namespace
 			const object &string)
 	{
 		GPlatesApi::PythonRunner *python_runner =
-			application.get_application_state().get_python_runner();
+			application.get_application_state().get_python_manager().get_python_runner();
 		GPlatesApi::PythonExecutionMonitor monitor;
 
 		GPlatesApi::PythonInterpreterLocker interpreter_locker;
@@ -86,7 +87,7 @@ namespace
 			const str &coding)
 	{
 		GPlatesApi::PythonRunner *python_runner =
-			application.get_application_state().get_python_runner();
+			application.get_application_state().get_python_manager().get_python_runner();
 		GPlatesApi::PythonExecutionMonitor monitor;
 
 		GPlatesApi::PythonInterpreterLocker interpreter_locker;
@@ -116,7 +117,7 @@ namespace
 			const object &string)
 	{
 		GPlatesApi::PythonRunner *python_runner =
-			application.get_application_state().get_python_runner();
+			application.get_application_state().get_python_manager().get_python_runner();
 		GPlatesApi::PythonExecutionMonitor monitor;
 
 		GPlatesApi::PythonInterpreterLocker interpreter_locker;

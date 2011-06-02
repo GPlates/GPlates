@@ -34,6 +34,7 @@
 #include <QStringList>
 #include <QTextStream>
 
+#include "app-logic/ApplicationState.h"
 #include "api/PythonInterpreterLocker.h"
 #include "api/Sleeper.h"
 
@@ -52,6 +53,7 @@
 #include "utils/Profile.h"
 #include "utils/CommandLineParser.h"
 #include "utils/ComponentManager.h"
+#include "utils/PythonManager.h"
 
 extern "C" void initpygplates();
 
@@ -336,13 +338,9 @@ int internal_main(int argc, char* argv[])
 	CommandLineOptions command_line_options = process_command_line_options(
 			qapplication.argc(), qapplication.argv());
 
-	initialise_python(argv[0]);
-	//FIXME: clean up this.
-	// The application state, view state and main window are stored in this object.
-	// Note that ViewState starts the Python execution thread, so Python threading
-	// support must have been set up already before we get here.
-	GPlatesPresentation::Application state;
-	GPlatesQtWidgets::ViewportWindow &main_window_widget = state.get_viewport_window();
+	
+	GPlatesPresentation::Application g_app;
+	GPlatesQtWidgets::ViewportWindow &main_window_widget = g_app.get_viewport_window();
 	
 	// Set up the main window widget.
 	main_window_widget.load_files(
@@ -367,7 +365,14 @@ int internal_main(int argc, char* argv[])
 	}
 	else
 	{
-		install_instance(state);
+		initialise_python(argv[0]);
+		GPlatesAppLogic::ApplicationState& state = g_app.get_application_state();
+		GPlatesUtils::PythonManager& m = state.get_python_manager();
+		
+		if(!m.is_initialized())
+			m.initialize(state);
+		
+		install_instance(g_app);
 	}
 
 	main_window_widget.show();

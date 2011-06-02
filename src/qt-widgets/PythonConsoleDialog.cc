@@ -56,6 +56,7 @@
 #include "api/PythonExecutionThread.h"
 #include "api/PythonRunner.h"
 #include "api/PythonUtils.h"
+#include "api/Sleeper.h"
 
 #include "app-logic/ApplicationState.h"
 
@@ -70,7 +71,7 @@
 #include "presentation/ViewState.h"
 
 #include "utils/DeferredCallEvent.h"
-
+#include "utils/PythonManager.h"
 
 namespace
 {
@@ -207,7 +208,7 @@ GPlatesQtWidgets::PythonConsoleDialog::PythonConsoleDialog(
 		QWidget *parent_)
 	: QDialog(parent_, Qt::Window)
 	, d_application_state(application_state)
-	, d_python_execution_thread(application_state.get_python_execution_thread())
+	, d_python_manager(application_state.get_python_manager())
 	, d_viewport_window(viewport_window)
 	, d_output_textedit(new ConsoleTextEdit(this))
 	, d_open_file_dialog(
@@ -248,6 +249,10 @@ GPlatesQtWidgets::PythonConsoleDialog::PythonConsoleDialog(
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_output_textedit,
 			output_placeholder_widget);
+
+	if(!d_python_manager.is_initialized())
+		d_python_manager.initialize(application_state);
+	d_python_execution_thread = d_python_manager.get_python_execution_thread();
 
 	make_signal_slot_connections();
 
@@ -312,7 +317,7 @@ GPlatesQtWidgets::PythonConsoleDialog::make_signal_slot_connections()
 			SLOT(handle_system_exit_exception_raised(int, QString )));
 
 	// PythonRunner signals from Python code running on the main thread.
-	GPlatesApi::PythonRunner *python_runner = d_application_state.get_python_runner();
+	GPlatesApi::PythonRunner *python_runner = d_application_state.get_python_manager().get_python_runner();
 	QObject::connect(
 			python_runner,
 			SIGNAL(exec_or_eval_started()),
