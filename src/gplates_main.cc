@@ -359,20 +359,18 @@ int internal_main(int argc, char* argv[])
 		main_window_widget.hide_symbol_menu();
 	}
 
+	initialise_python(argv[0]);
+        GPlatesAppLogic::ApplicationState& state = g_app.get_application_state();
+        GPlatesUtils::PythonManager& m = state.get_python_manager();
+
+        if(!m.is_initialized())
+               m.initialize(state);
+
+        install_instance(g_app);
+
 	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
 	{
 		main_window_widget.hide_python_menu();
-	}
-	else
-	{
-		initialise_python(argv[0]);
-		GPlatesAppLogic::ApplicationState& state = g_app.get_application_state();
-		GPlatesUtils::PythonManager& m = state.get_python_manager();
-		
-		if(!m.is_initialized())
-			m.initialize(state);
-		
-		install_instance(g_app);
 	}
 
 	main_window_widget.show();

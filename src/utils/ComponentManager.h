@@ -88,7 +88,7 @@ namespace GPlatesUtils
 		void
 		enable(Component t)
 		{
-			d_switchs.set((std::size_t)t);
+			d_switchs.set(t);
 		}
 
 		void 

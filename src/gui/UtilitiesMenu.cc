@@ -33,7 +33,7 @@
 #include "api/PythonExecutionMonitor.h"
 #include "api/PythonExecutionThread.h"
 #include "api/PythonInterpreterLocker.h"
-
+#include "api/Sleeper.h"
 
 Q_DECLARE_METATYPE( boost::function< void () > )
 

@@ -172,6 +172,7 @@
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ShapefilePropertyMapper.h"
 
+#include "utils/ComponentManager.h"
 #include "utils/DeferredCallEvent.h"
 #include "utils/Profile.h"
 #include "utils/PythonManager.h"
@@ -1003,14 +1004,18 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 {
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
 			this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
-	d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
-			menu_Utilities,
-			action_Open_Python_Console,
-			get_application_state().get_python_manager(),
-			this);
-	// ----
-	QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
-			this, SLOT(pop_up_python_console()));
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(
+			GPlatesUtils::ComponentManager::Component::python()))
+	{
+		d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
+				menu_Utilities,
+				action_Open_Python_Console,
+				get_application_state().get_python_manager(),
+				this);
+		// ----
+		QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
+				this, SLOT(pop_up_python_console()));
+	}
 }
 
 
@@ -2743,13 +2748,17 @@ GPlatesQtWidgets::ViewportWindow::showEvent(
 		QShowEvent *ev)
 {
 #if !defined(GPLATES_NO_PYTHON)
-	// We defer this so that we can guarantee that the user interface is ready
-	// before we start running Python scripts.
-	GPlatesUtils::DeferCall<void>::defer_call(
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(
+		GPlatesUtils::ComponentManager::Component::python()))
+	{
+		// We defer this so that we can guarantee that the user interface is ready
+		// before we start running Python scripts.
+		GPlatesUtils::DeferCall<void>::defer_call(
 			boost::bind(
 				&GPlatesApi::PythonUtils::run_startup_scripts,
 				get_application_state().get_python_manager().get_python_execution_thread(),
 				boost::ref(get_application_state().get_user_preferences())));
+	}
 #endif
 
 	// We wait until the main window is visible before checking our status messages and

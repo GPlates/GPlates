@@ -26,8 +26,7 @@
 */
 #ifndef GPLATES_UTILS_PYTHON_MANAGER_H
 #define GPLATES_UTILS_PYTHON_MANAGER_H
-
-#include "api/Sleeper.h"
+#include <boost/scoped_ptr.hpp>
 #include "global/GPlatesException.h"
 #include "global/python.h"
 
@@ -40,6 +39,7 @@ namespace GPlatesApi
 {
 	class PythonRunner;
 	class PythonExecutionThread;
+	class Sleeper;
 }
 
 namespace GPlatesUtils
@@ -146,7 +146,7 @@ namespace GPlatesUtils
 		/**
 		 * Replaces Python's time.sleep() with our own implementation.
 		 */
-		boost::scoped_ptr<GPlatesApi::Sleeper> d_sleeper;
+		boost::scoped_ptr< GPlatesApi::Sleeper > d_sleeper;
 
 		bool d_inited;
 	};

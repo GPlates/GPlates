@@ -28,11 +28,13 @@
 
 #include <map>
 #include <boost/function.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <QObject>
 #include <QMenu>
 #include <QActionGroup>
 #include <QString>
 
+#include "api/Sleeper.h"
 #include "utils/PythonManager.h"
 
 namespace GPlatesApi

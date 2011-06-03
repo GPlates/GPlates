@@ -44,7 +44,7 @@
 #include "api/AbstractConsole.h"
 #include "api/ConsoleReader.h"
 #include "api/ConsoleWriter.h"
-
+#include "api/Sleeper.h"
 #include "gui/EventBlackout.h"
 #include "utils/PythonManager.h"
 

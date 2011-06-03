@@ -44,7 +44,7 @@
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
-
+#include "api/Sleeper.h"
 #include "utils/PythonManager.h"
 
 namespace
