@@ -43,11 +43,13 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 {
 	setupUi(this);
 
+#if 0
 	QObject::connect(
 			constrained_checkbox,
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_constrained_clicked()));
+#endif
 
 	QObject::connect(
 			triangulation_checkbox,
@@ -86,7 +88,7 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			constrained_checkbox->setChecked(params->show_constrained_vectors());
+			//constrained_checkbox->setChecked(params->show_constrained_vectors());
 			triangulation_checkbox->setChecked(params->show_delaunay_vectors());
 		}
 	}
@@ -112,7 +114,7 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_constrained_
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			params->set_show_constrained_vectors(constrained_checkbox->isChecked());
+			//params->set_show_constrained_vectors(constrained_checkbox->isChecked());
 		}
 	}
 }
