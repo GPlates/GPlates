@@ -120,7 +120,8 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
 	// But it can't be larger than the maximum texture dimension for the current system.
 	//
 	// NOTE: An OpenGL context must be active at this point.
-	if (d_polygon_stencil_texel_dimension > GLContext::get_texture_parameters().gl_max_texture_size)
+	if (d_polygon_stencil_texel_dimension >
+		boost::numeric_cast<unsigned int>(GLContext::get_texture_parameters().gl_max_texture_size))
 	{
 		d_polygon_stencil_texel_dimension = GLContext::get_texture_parameters().gl_max_texture_size;
 	}
