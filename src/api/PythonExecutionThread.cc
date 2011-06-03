@@ -41,7 +41,7 @@
 #include "utils/DeferredCallEvent.h"
 #include "utils/PythonManager.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::PythonExecutionThread::PythonExecutionThread(
 		GPlatesAppLogic::ApplicationState &application_state,
 		const  boost::python::object &main_namespace,
@@ -55,7 +55,6 @@ GPlatesApi::PythonExecutionThread::PythonExecutionThread(
 {  }
 
 
-#if !defined(GPLATES_NO_PYTHON)
 void
 GPlatesApi::PythonExecutionThread::exec_interactive_command(
 		const QString &command,

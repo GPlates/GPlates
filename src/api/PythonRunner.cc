@@ -41,6 +41,7 @@
 #include "utils/StringUtils.h"
 #include "utils/PythonManager.h"
 
+#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::PythonRunner::PythonRunner(
 		GPlatesAppLogic::ApplicationState &application_state,
 		const  boost::python::object &main_namespace,
@@ -48,7 +49,6 @@ GPlatesApi::PythonRunner::PythonRunner(
 	QObject(parent_),
 	d_application_state(application_state)
 {
-#if !defined(GPLATES_NO_PYTHON)
 	using namespace boost::python;
 
 	PythonInterpreterLocker interpreter_locker;
@@ -86,9 +86,8 @@ GPlatesApi::PythonRunner::PythonRunner(
 		std::cerr << "Could not obtain reference to __builtin__.eval function." << std::endl;
 		PyErr_Print();
 	}
-#endif
 }
-
+#endif
 
 GPlatesApi::PythonRunner::~PythonRunner()
 {

@@ -48,13 +48,13 @@ GPlatesUtils::PythonManager::initialize(GPlatesAppLogic::ApplicationState& state
 	{
 		PyErr_Print();
 	}
-#endif
 
 	// These two must be set up after d_python_main_module and
 	// d_python_main_namespace have been set.
 	d_python_runner = new GPlatesApi::PythonRunner(state, d_python_main_namespace,this);
 	d_python_execution_thread = new GPlatesApi::PythonExecutionThread(state,d_python_main_namespace, this);
 	d_python_execution_thread->start(QThread::IdlePriority);
+#endif
 	d_inited = true;
 }
 

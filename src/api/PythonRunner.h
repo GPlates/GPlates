@@ -52,13 +52,13 @@ namespace GPlatesApi
 		Q_OBJECT
 
 	public:
-
+#if !defined(GPLATES_NO_PYTHON)
 		explicit
 		PythonRunner(
 				GPlatesAppLogic::ApplicationState &application_state,
 				const boost::python::object &,
 				QObject *parent_ = NULL);
-
+#endif
 		virtual
 		~PythonRunner();
 
@@ -148,10 +148,8 @@ namespace GPlatesApi
 		void
 		handle_system_exit(
 				PythonExecutionMonitor *monitor);
-#endif
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
-#if !defined(GPLATES_NO_PYTHON)
 		boost::python::object d_console;
 		boost::python::object d_compile;
 		boost::python::object d_eval;

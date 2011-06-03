@@ -358,7 +358,7 @@ int internal_main(int argc, char* argv[])
 	{
 		main_window_widget.hide_symbol_menu();
 	}
-
+#if !defined(GPLATES_NO_PYTHON)
 	initialise_python(argv[0]);
         GPlatesAppLogic::ApplicationState& state = g_app.get_application_state();
         GPlatesUtils::PythonManager& m = state.get_python_manager();
@@ -369,6 +369,7 @@ int internal_main(int argc, char* argv[])
         install_instance(g_app);
 
 	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
+#endif
 	{
 		main_window_widget.hide_python_menu();
 	}

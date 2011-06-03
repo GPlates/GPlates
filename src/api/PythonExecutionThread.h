@@ -59,14 +59,13 @@ namespace GPlatesApi
 		Q_OBJECT
 
 	public:
-
+#if !defined(GPLATES_NO_PYTHON)
 		explicit
 		PythonExecutionThread(
 				GPlatesAppLogic::ApplicationState &application_state,
 				const  boost::python::object &main_namespace,
 				QObject *parent_);
 
-#if !defined(GPLATES_NO_PYTHON)
 		/**
 		 * Executes @a command as entered on an interactive console on this thread,
 		 * monitored from another thread by @a monitor.
@@ -258,9 +257,10 @@ namespace GPlatesApi
 				QString exit_error_message);
 
 	private:
-
+#if !defined(GPLATES_NO_PYTHON)
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		const  boost::python::object & d_namespace;
+#endif
 		PythonRunner *d_python_runner;
 		QEventLoop *d_event_loop;
 		long d_python_thread_id;
