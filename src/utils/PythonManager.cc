@@ -60,10 +60,12 @@ GPlatesUtils::PythonManager::initialize(GPlatesAppLogic::ApplicationState& state
 
 GPlatesUtils::PythonManager::~PythonManager()
 {
+#if !defined(GPLATES_NO_PYTHON)
 	// Stop the Python execution thread.
 	static const int WAIT_TIME = 1000 /* milliseconds */;
 	d_python_execution_thread->quit_event_loop();
 	d_python_execution_thread->wait(WAIT_TIME);
 	d_python_execution_thread->terminate();
+#endif
 }
 
