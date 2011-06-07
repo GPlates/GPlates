@@ -678,6 +678,10 @@ namespace GPlatesGui
 		flip_reverse_flag(
 				const section_info_seq_type::size_type section_index);
 
+		void
+		flip_reverse_flag(
+				VisibleSection &visible_section_info);
+
 		std::pair<
 				GPlatesMaths::PointOnSphere/*start point*/,
 				GPlatesMaths::PointOnSphere/*end point*/>

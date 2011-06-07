@@ -2458,36 +2458,43 @@ GPlatesGui::TopologyTools::determine_boundary_segment_reversals()
 	// of reverse flags to see which minimised the rubber-banding distance).
 	// The rubber banding distance is the distance from the tail of one section to the
 	// head of the next section - added up over the visible sections in a sequence.
-	const std::vector< std::vector<section_info_seq_type::size_type> > reverse_section_subsets =
+	const std::vector< std::vector<section_info_seq_type::size_type> > reverse_visible_section_subsets =
 			find_reverse_section_subsets();
 
 	// Iterate over the section sequences.
 	std::size_t reverse_section_subset_index;
 	for (reverse_section_subset_index = 0;
-		reverse_section_subset_index < reverse_section_subsets.size();
+		reverse_section_subset_index < reverse_visible_section_subsets.size();
 		++reverse_section_subset_index)
 	{
-		const std::vector<visible_section_seq_type::size_type> &reverse_section_subset =
-				reverse_section_subsets[reverse_section_subset_index];
+		const std::vector<visible_section_seq_type::size_type> &reverse_visible_section_subset =
+				reverse_visible_section_subsets[reverse_section_subset_index];
 
 		// Get a vector of flags that determine whether to flip the reverse flag of
-		// each section or not.
+		// each visible section or not.
 		const std::vector<bool> flip_reverse_order_seq =
-				find_flip_reverse_order_flags(reverse_section_subset);
+				find_flip_reverse_order_flags(reverse_visible_section_subset);
 
 		// Now that we've calculated which reverse flags needed to be flipped
 		// we can go and flip them.
 		std::size_t reverse_section_indices_index;
 		for (reverse_section_indices_index = 0;
-			reverse_section_indices_index < reverse_section_subset.size();
+			reverse_section_indices_index < reverse_visible_section_subset.size();
 			++reverse_section_indices_index)
 		{
-			const section_info_seq_type::size_type reverse_section_index =
-					reverse_section_subset[reverse_section_indices_index];
-
 			if (flip_reverse_order_seq[reverse_section_indices_index])
 			{
-				flip_reverse_flag(reverse_section_index);
+				const visible_section_seq_type::size_type reverse_visible_section_index =
+						reverse_visible_section_subset[reverse_section_indices_index];
+
+				// NOTE: Need to call the overload of 'flip_reverse_flag' that accepts a
+				// 'VisibleSection' instead of a section index because there can be a mismatch
+				// between visible section indices and regular section indices - for example,
+				// if a section is not visible.
+				VisibleSection &reverse_visible_section =
+						d_visible_boundary_section_seq[reverse_visible_section_index];
+
+				flip_reverse_flag(reverse_visible_section);
 			}
 		}
 	}
@@ -3128,6 +3135,18 @@ GPlatesGui::TopologyTools::flip_reverse_flag(
 
 	connect_to_boundary_sections_container_signals( true );
 	connect_to_interior_sections_container_signals( true );
+}
+
+
+void
+GPlatesGui::TopologyTools::flip_reverse_flag(
+		VisibleSection &visible_section_info)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			visible_section_info.d_section_info_index < d_boundary_section_info_seq.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	flip_reverse_flag(visible_section_info.d_section_info_index);
 }
 
 
