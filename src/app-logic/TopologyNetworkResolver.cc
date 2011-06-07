@@ -910,7 +910,7 @@ qDebug() << "\ncreate_resolved_topology_boundary: Loop over BOUNDARY d_resolved_
 	}
 
 	//
-	// Create the RTB for the plate polygon.
+	// Create the RTB 
 	//
 	ResolvedTopologicalBoundary::non_null_ptr_type rtb_ptr =
 		ResolvedTopologicalBoundary::create(
@@ -990,6 +990,9 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network(
 
 	// All the points to create the cgal_delaunay_triangulation_2_type
 	std::vector<GPlatesMaths::PointOnSphere> all_network_points;
+
+	// All the points on the boundary of the cgal_delaunay_triangulation_2_type
+	std::vector<GPlatesMaths::PointOnSphere> boundary_points;
 
 	// Points per section; temporary list used in the for loop below 
 	std::vector<GPlatesMaths::PointOnSphere> section_points;
@@ -1101,7 +1104,8 @@ debug_output_topological_section(section);
 				// save and add to constrained triangulation later
 				GPlatesAppLogic::GeometryUtils::get_geometry_points(
 					*section.d_final_boundary_segment_unreversed_geom.get(),
-					scattered_points,
+					//scattered_points,
+					boundary_points,
 					section.d_use_reverse);
 				//qDebug() << "section_points.size(): " << section_points.size();
 
@@ -1113,10 +1117,12 @@ debug_output_topological_section(section);
 				// this is a single multi point feature section
 				GPlatesAppLogic::GeometryUtils::get_geometry_points(
 						*section.d_final_boundary_segment_unreversed_geom.get(),
-						section_points,
+						//section_points,
+						boundary_points,
 						section.d_use_reverse);
 				//qDebug() << "section_points.size(): " << section_points.size();
 
+#if 0
 				// 2D + C
 				// add multipoint with all connections between points contrained 
 				GPlatesAppLogic::CgalUtils::insert_points_into_constrained_delaunay_triangulation_2(
@@ -1124,6 +1130,7 @@ debug_output_topological_section(section);
 					section_points.begin(), 
 					section_points.end(),
 					true);
+#endif
 
 				continue; // to next section of the topology
 			}
@@ -1135,11 +1142,11 @@ debug_output_topological_section(section);
 					//qDebug() << "if ( !section.d_start_intersection && !section.d_start_intersection )";
 
 					// this is probably an isolated non-intersecting line on the boundary
-					// or inside the region
 					// save and add to constrained triangulation later
 					GPlatesAppLogic::GeometryUtils::get_geometry_points(
 						*section.d_final_boundary_segment_unreversed_geom.get(),
-						group_of_related_points,
+						//group_of_related_points,
+						boundary_points,
 						section.d_use_reverse);
 					//qDebug() << "non intersect section_points.size(): " << section_points.size();
 				}
@@ -1148,10 +1155,12 @@ debug_output_topological_section(section);
 					// this is a single line feature, possibly clipped by intersections
 					GPlatesAppLogic::GeometryUtils::get_geometry_points(
 							*section.d_final_boundary_segment_unreversed_geom.get(),
-							section_points,
+							//section_points,
+							boundary_points,
 							section.d_use_reverse);
 					//qDebug() << "section_points.size(): " << section_points.size();
 
+#if 0
 					// 2D + C
 					// add as a contrained line segment ; do not contrain begin and end
 					GPlatesAppLogic::CgalUtils::insert_points_into_constrained_delaunay_triangulation_2(
@@ -1159,6 +1168,7 @@ debug_output_topological_section(section);
 						section_points.begin(), 
 						section_points.end(),
 						false);
+#endif
 				}
 
 				continue; // to next section of the topology
@@ -1169,10 +1179,12 @@ debug_output_topological_section(section);
 				// this is a single polygon feature
 				GPlatesAppLogic::GeometryUtils::get_geometry_points(
 						*section.d_final_boundary_segment_unreversed_geom.get(),
-						section_points,
+						//section_points,
+						boundary_points,
 						section.d_use_reverse);
 				//qDebug() << "section_points.size(): " << section_points.size();
 				
+#if 0
 				// 2D + C
 				// add as a contrained line segment ; do contrain begin and end
 				GPlatesAppLogic::CgalUtils::insert_points_into_constrained_delaunay_triangulation_2(
@@ -1180,6 +1192,7 @@ debug_output_topological_section(section);
 					section_points.begin(), 
 					section_points.end(),
 					true);
+#endif
 
 				continue; // to next section of the topology
 			}
@@ -1188,7 +1201,22 @@ debug_output_topological_section(section);
 
 	} // end of loop over sections
 
+/// ZZZZ 
+qDebug() << "all_network_points.size(): " << all_network_points.size();
+qDebug() << "boundary_points.size(): " << boundary_points.size();
+
+	// 2D + C
+	// add boundary_points as contrained ; do contrain begin and end
+	GPlatesAppLogic::CgalUtils::insert_points_into_constrained_delaunay_triangulation_2(
+		*constrained_delaunay_triangulation_2, 
+		boundary_points.begin(), 
+		boundary_points.end(),
+		true);
+
+
+
 qDebug() << "\ncreate_resolved_topology_network: Loop over INTERIOR d_resolved_network.d_sections_interior\n";
+
 	// 
 	// Iterate over the sections of the interior 
 	//
@@ -1198,7 +1226,7 @@ qDebug() << "\ncreate_resolved_topology_network: Loop over INTERIOR d_resolved_n
 	{
 		const ResolvedNetwork::Section &section = *section_iter;
 
-// debug_output_topological_section(section);
+debug_output_topological_section(section);
 
 		// clear out the old list of points
 		section_points.clear();

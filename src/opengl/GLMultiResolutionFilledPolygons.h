@@ -41,6 +41,8 @@
 #include "GLTexture.h"
 #include "GLTransformState.h"
 #include "GLVertex.h"
+#include "GLVertexArray.h"
+#include "GLVertexElementArray.h"
 
 #include "app-logic/ReconstructMethodFiniteRotation.h"
 
@@ -54,6 +56,7 @@
 #include "maths/UnitVector3D.h"
 
 #include "utils/ObjectCache.h"
+#include "utils/Profile.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -121,6 +124,8 @@ namespace GPlatesOpenGL
 					boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type>
 							transform = boost::none)
 			{
+				//PROFILE_FUNC();
+
 				return non_null_ptr_type(
 						new FilledPolygon(
 								polygon.vertex_begin(),
@@ -142,6 +147,8 @@ namespace GPlatesOpenGL
 					boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type>
 							transform = boost::none)
 			{
+				//PROFILE_FUNC();
+
 				return non_null_ptr_type(
 						new FilledPolygon(
 								polyline.vertex_begin(),
@@ -167,6 +174,8 @@ namespace GPlatesOpenGL
 					boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type>
 							transform = boost::none)
 			{
+				//PROFILE_FUNC();
+
 				return non_null_ptr_type(new FilledPolygon(begin_points, end_points, colour, transform));
 			}
 
@@ -248,6 +257,8 @@ namespace GPlatesOpenGL
 					boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type> transform) :
 				d_transform(transform)
 			{
+				//PROFILE_FUNC();
+
 				if (num_points < 3)
 				{
 					return;
@@ -313,6 +324,8 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Creates a @a GLMultiResolutionFilledPolygons object.
+		 *
+		 * NOTE: An OpenGL context must currently be active.
 		 */
 		static
 		non_null_ptr_type
@@ -432,8 +445,18 @@ namespace GPlatesOpenGL
 		 */
 		unsigned int d_polygon_stencil_texel_dimension;
 
-		// Used to draw a textured full-screen quad into render texture.
-		GLVertexArrayDrawable::non_null_ptr_type d_full_screen_quad_drawable;
+		/**
+		 * Used to draw multiple sub-viewport rendered polygon quads into a single render texture.
+		 *
+		 * By grouping all polygon rendered quads from a polygon stencil texture into one draw
+		 * call we minimise the overhead of separate draw calls to OpenGL.
+		 */
+		GLVertexElementArray::shared_ptr_type d_polygon_stencil_quads_vertex_element_array;
+
+		/**
+		 * The vertex array containing the vertices for @a d_polygon_stencil_quads_vertex_element_array.
+		 */
+		GLVertexArray::shared_ptr_type d_polygon_stencil_quads_vertex_array;
 
 		//
 		// Used to clear the render target colour buffer.
@@ -529,8 +552,7 @@ namespace GPlatesOpenGL
 		void
 		render_filled_polygons_from_polygon_stencil_texture(
 				GLRenderer &renderer,
-				const filled_polygon_seq_type::const_iterator begin_filled_drawables,
-				const filled_polygon_seq_type::const_iterator end_filled_drawables);
+				const unsigned int num_polygons_in_group);
 
 		void
 		get_filled_polygons(
@@ -554,6 +576,9 @@ namespace GPlatesOpenGL
 
 		void
 		create_polygon_stencil_texture();
+
+		void
+		create_polygon_stencil_quads_vertex_and_index_arrays();
 	};
 }
 
