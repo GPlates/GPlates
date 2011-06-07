@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,7 @@
 #define GPLATES_GUI_FILEIOFEEDBACK_H
 
 #include <QObject>
+#include <QPointer>
 #include <QString>
 #include <QList>
 #include <QUrl>
@@ -213,6 +214,9 @@ namespace GPlatesGui
 		 * history; higher numbers dig further into the past. Attempting to
 		 * load a "session slot" which does not exist does nothing - the menu
 		 * should match the correct number of slots anyway.
+		 *
+		 * If necessary, the Unsaved Changes warning dialog will be shown, so the
+		 * user can save or cancel the operation.
 		 */
 		void
 		open_previous_session(

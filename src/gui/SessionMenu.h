@@ -43,7 +43,6 @@ namespace GPlatesAppLogic
 namespace GPlatesGui
 {
 	class FileIOFeedback;
-	class UnsavedChangesTracker;
 
 	/**
 	 * This class is responsible for providing the user interface to
@@ -60,7 +59,6 @@ namespace GPlatesGui
 		SessionMenu(
 				GPlatesAppLogic::ApplicationState &app_state_,
 				GPlatesGui::FileIOFeedback &file_io_feedback_,
-				GPlatesGui::UnsavedChangesTracker &unsaved_changes_tracker_,
 				QObject *parent_ = NULL);
 
 		virtual
@@ -110,12 +108,6 @@ namespace GPlatesGui
 		 * Pointer to FileIOFeedback, to initiate change while trapping exceptions.
 		 */
 		GPlatesGui::FileIOFeedback *d_file_io_feedback_ptr;
-
-		/**
-		 * Pointer to UnsavedChangesTracker, in case session loading would clobber
-		 * unsaved changes in existing session.
-		 */
-		GPlatesGui::UnsavedChangesTracker *d_unsaved_changes_tracker_ptr;
 
 		/**
 		 * Guarded pointer to the QMenu we are allowed to mess with.

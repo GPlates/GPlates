@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,8 +24,10 @@
  */
 
 #include <boost/foreach.hpp>
+#include <boost/noncopyable.hpp>
 #include <QDebug>
 #include <QFileInfo>
+#include <QFile>
 #include <QList>
 
 #include "SessionManagement.h"
@@ -40,6 +42,10 @@
 
 namespace
 {
+	/**
+	 * Return a list of QFileInfo objects for each loaded file in the application.
+	 * Does not return entries for files with no filename (i.e. "New Feature Collection"s that only exist in memory).
+	 */
 	QList<QFileInfo>
 	loaded_file_info(
 			GPlatesAppLogic::FeatureCollectionFileState &file_state)
@@ -52,9 +58,68 @@ namespace
 				loaded_files)
 		{
 			const GPlatesFileIO::FileInfo &file_info = file_ref.get_file().get_file_info();
-			files << file_info.get_qfileinfo();
+			if ( ! file_info.get_qfileinfo().absoluteFilePath().isEmpty()) {
+				files << file_info.get_qfileinfo();
+			}
 		}
 		return files;
+	}
+	
+	/**
+	 * Enable RAII style 'lock' on temporarily disabling automatic layer creation
+	 * within app-state for as long as the current scope holds onto this object.
+	 */
+	class SuppressAutoLayerCreationRAII :
+			private boost::noncopyable
+	{
+	public:
+		SuppressAutoLayerCreationRAII(
+				GPlatesAppLogic::ApplicationState &_app_state):
+			d_app_state_ptr(&_app_state)
+		{
+			// Suppress auto-creation of layers because we have session information regarding which
+			// layers should be created and what their connections should be.
+			d_app_state_ptr->suppress_auto_layer_creation(true);
+		}
+		
+		~SuppressAutoLayerCreationRAII()
+		{
+			d_app_state_ptr->suppress_auto_layer_creation(false);
+		}
+		
+		GPlatesAppLogic::ApplicationState *d_app_state_ptr;
+	};
+	
+	
+	/**
+	 * Since attempting to load some files which do not exist (amongst a list of otherwise-okay files)
+	 * will currently fail part-way through with an exception, we apply this function to remove any
+	 * such problematic files from a Session's file-list prior to asking FeatureCollectionFileIO to load
+	 * them.
+	 *
+	 * FIXME:
+	 * Ideally, this modification of the file list would not be done, and the file-io layer would have
+	 * a nice means of triggering a GUI action to open a dialog listing the problem files and ask the
+	 * user if they would like to:-
+	 *    a) Skip over the problem files, load the others
+	 *    b) Try again, I've fixed it now
+	 *    c) Abort the entire file-loading endeavour
+	 * Of course, this requires quite a bit of structural enhancements to the code to allow file-io to
+	 * signal the gui level (and go back again) cleanly. So as a cheaper bugfix, I'm just stripping out
+	 * the bad filenames. The only problem is, the Layers state will still get loaded as though such
+	 * a file exists and I'm not entirely sure if that'll work.
+	 */
+	QSet<QString>
+	strip_bad_filenames(
+			QSet<QString> filenames)
+	{
+		QSet<QString> good_filenames;
+		Q_FOREACH(QString filename, filenames) {
+			if (QFile::exists(filename)) {
+				good_filenames.insert(filename);
+			}
+		}
+		return good_filenames;
 	}
 }
 
@@ -102,16 +167,18 @@ GPlatesAppLogic::SessionManagement::load_session(
 		// Layers state not saved in this version so allow application state to auto-create layers.
 		// The layers won't be connected though, but when the session is saved they will be because
 		// the session will be saved with the latest version.
-		file_io.load_files(QStringList::fromSet(session_to_load.loaded_files()));
+		file_io.load_files(QStringList::fromSet(strip_bad_filenames(session_to_load.loaded_files())));
 		break;
 
 	case 1:
 	default:
-		// Suppress auto-creation of layers because we have session information regarding which
-		// layers should be created and what their connections should be.
-		d_app_state_ptr->suppress_auto_layer_creation(true);
-		file_io.load_files(QStringList::fromSet(session_to_load.loaded_files()));
-		d_app_state_ptr->suppress_auto_layer_creation(false);
+		// Suppress auto-creation of layers during this scope because we have session information
+		// regarding which layers should be created and what their connections should be.
+		// Needs to be RAII in case load_files() throws an exception which it totally will do as
+		// soon as you take your eyes off it.
+		SuppressAutoLayerCreationRAII raii(*d_app_state_ptr);
+
+		file_io.load_files(QStringList::fromSet(strip_bad_filenames(session_to_load.loaded_files())));
 		// New in version 1 is save/restore of layer type and connections.
 		d_app_state_ptr->get_serialization().load_layers_state(session_to_load.layers_state());
 		break;
@@ -123,11 +190,6 @@ GPlatesAppLogic::SessionManagement::load_session(
 		break;
 #endif
 	}
-
-	// Thinking out loud:-
-	// save current session first, if any - may require a prompt up in a gui level
-	// asking user if they want to overwrite current, or append loaded session onto current.
-	// of course if they want to re-load the session they're already in, don't save first.
 }
 
 
@@ -193,11 +255,35 @@ GPlatesAppLogic::SessionManagement::unload_all_files()
 
 
 void
+GPlatesAppLogic::SessionManagement::unload_all_unnamed_files()
+{
+	GPlatesAppLogic::FeatureCollectionFileState &file_state = d_app_state_ptr->get_feature_collection_file_state();
+	GPlatesAppLogic::FeatureCollectionFileIO &file_io = d_app_state_ptr->get_feature_collection_file_io();
+
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+			file_state.get_loaded_files();
+	BOOST_FOREACH(
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
+			loaded_files)
+	{
+		const GPlatesFileIO::FileInfo &file_info = file_ref.get_file().get_file_info();
+		if (file_info.get_qfileinfo().absoluteFilePath().isEmpty()) {
+			file_io.unload_file(file_ref);
+		}
+	}
+}
+
+
+void
 GPlatesAppLogic::SessionManagement::close_event_hook()
 {
 	// if user wants to auto-save at end (default), save.
 	GPlatesAppLogic::UserPreferences &prefs = d_app_state_ptr->get_user_preferences();
 	if (prefs.get_value("session/auto_save_on_quit").toBool()) {
+		// Note that we ALWAYS save_session on (normal) exit, to ensure that any old sessions
+		// get updated to new versions, to update the timestamp, and to ensure that if a
+		// user was only opening GPlates to mess with some Layers state, that it will be
+		// preserved.
 		save_session();
 	}
 }
