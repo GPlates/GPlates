@@ -32,6 +32,7 @@
 #include "CliAssignPlateIdsCommand.h"
 #include "CliConvertFileFormatCommand.h"
 #include "CliReconstructCommand.h"
+#include "CliRelativeTotalRotation.h"
 
 
 namespace GPlatesCli
@@ -44,7 +45,8 @@ namespace GPlatesCli
 		typedef boost::mpl::vector<
 				AssignPlateIdsCommand,
 				ConvertFileFormatCommand,
-				ReconstructCommand
+				ReconstructCommand,
+				RelativeTotalRotationCommand
 		> command_types;
 	}
 }
