@@ -485,6 +485,10 @@ namespace GPlatesMaths
 		 * will be set to the pair of iterator of type PointForwardIter which
 		 * point to the guilty points.  If no adjacent points are found
 		 * to be antipodal, this parameter will not be modified.
+		 *
+		 * If @a ignore_insufficient_distinct_points is 'true' then the sequence of points
+		 * is *not* validated for insufficient distinct points.
+		 * The default is to validate for insufficient distinct points.
 		 */
 		template<typename PointForwardIter>
 		static
@@ -492,7 +496,8 @@ namespace GPlatesMaths
 		evaluate_construction_parameter_validity(
 				PointForwardIter begin,
 				PointForwardIter end,
-				std::pair<PointForwardIter, PointForwardIter> &invalid_points);
+				std::pair<PointForwardIter, PointForwardIter> &invalid_points,
+				bool ignore_insufficient_distinct_points = false);
 
 		/**
 		 * Evaluate the validity of the construction-parameters.
@@ -524,17 +529,21 @@ namespace GPlatesMaths
 		 * will be set to the pair of const_iterators of @a coll which
 		 * point to the guilty points.  If no adjacent points are found
 		 * to be antipodal, this parameter will not be modified.
+		 *
+		 * If @a ignore_insufficient_distinct_points is 'true' then the sequence of points
+		 * is *not* validated for insufficient distinct points.
+		 * The default is to validate for insufficient distinct points.
 		 */
 		template<typename C>
 		static
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
 				const C &coll,
-				std::pair<typename C::const_iterator, typename C::const_iterator> &
-						invalid_points)
+				std::pair<typename C::const_iterator, typename C::const_iterator> & invalid_points,
+				bool ignore_insufficient_distinct_points = false)
 		{
 			return evaluate_construction_parameter_validity(
-					coll.begin(), coll.end(), invalid_points);
+					coll.begin(), coll.end(), invalid_points, ignore_insufficient_distinct_points);
 		}
 
 
@@ -559,6 +568,20 @@ namespace GPlatesMaths
 		 * delimited by the forward iterators @a begin and @a end and return
 		 * an intrusive_ptr which points to the newly-created instance.
 		 *
+		 * If @a throw_if_insufficient_distinct_points is true then throws
+		 * @a InvalidPointsForPolygonConstructionError if there are insufficient points for
+		 * the polyline *because* some points are indistinct and counted as one point.
+		 * NOTE: If the total number of *indistinct* points is insufficient then an exception
+		 * will be thrown regardless of this flag.
+		 * This flag is 'false' by default but should be set to 'true' whenever data is loaded
+		 * into GPlates (ie, at any input to GPlates such as file IO). This flag was added to
+		 * prevent exceptions being thrown when reconstructing very small polyline containing only
+		 * a few points (eg, a polyline with 4 points might contain 2 distinct points when it's
+		 * loaded from a file but, due to numerical precision, contain only 1 distinct point after
+		 * it is rotated to a new polyline thus raising an exception when one it not really needed
+		 * or desired - because the polyline was good enough to load into GPlates therefore any
+		 * rotation of it should also be successful).
+		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
 		template<typename PointForwardIter>
@@ -566,7 +589,8 @@ namespace GPlatesMaths
 		const non_null_ptr_to_const_type
 		create_on_heap(
 				PointForwardIter begin,
-				PointForwardIter end);
+				PointForwardIter end,
+				bool throw_if_insufficient_distinct_points = false);
 
 		/**
 		 * Create a new PolylineOnSphere instance on the heap from the sequence of points
@@ -581,9 +605,10 @@ namespace GPlatesMaths
 		static
 		const non_null_ptr_to_const_type
 		create_on_heap(
-				const C &coll)
+				const C &coll,
+				bool throw_if_insufficient_distinct_points = false)
 		{
-			return create_on_heap(coll.begin(), coll.end());
+			return create_on_heap(coll.begin(), coll.end(), throw_if_insufficient_distinct_points);
 		}
 
 
@@ -896,7 +921,8 @@ namespace GPlatesMaths
 		generate_segments_and_swap(
 				PolylineOnSphere &poly,
 				PointForwardIter begin,
-				PointForwardIter end);
+				PointForwardIter end,
+				bool throw_if_insufficient_distinct_points);
 
 		/**
 		 * Attempt to create a line-segment defined by the points @a p1 and @a p2; append
@@ -1026,13 +1052,18 @@ namespace GPlatesMaths
 	PolylineOnSphere::evaluate_construction_parameter_validity(
 			PointForwardIter begin,
 			PointForwardIter end,
-			std::pair<PointForwardIter, PointForwardIter> &invalid_points)
+			std::pair<PointForwardIter, PointForwardIter> &invalid_points,
+			bool ignore_insufficient_distinct_points)
 	{
-		const unsigned num_points = count_distinct_adjacent_points(begin, end);
-		if (num_points < s_min_num_collection_points) {
-			// The collection does not contain enough distinct points to create even
-			// one line-segment.
-			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
+		if (!ignore_insufficient_distinct_points)
+		{
+			const unsigned num_points = count_distinct_adjacent_points(begin, end);
+			if (num_points < s_min_num_collection_points)
+			{
+				// The collection does not contain enough distinct points to create even
+				// one line-segment.
+				return INVALID_INSUFFICIENT_DISTINCT_POINTS;
+			}
 		}
 
 		PointForwardIter prev;
@@ -1079,11 +1110,12 @@ namespace GPlatesMaths
 	const PolylineOnSphere::non_null_ptr_to_const_type
 	PolylineOnSphere::create_on_heap(
 			PointForwardIter begin,
-			PointForwardIter end)
+			PointForwardIter end,
+			bool throw_if_insufficient_distinct_points)
 	{
 		PolylineOnSphere::non_null_ptr_type ptr(new PolylineOnSphere(),
 				GPlatesUtils::NullIntrusivePointerHandler());
-		generate_segments_and_swap(*ptr, begin, end);
+		generate_segments_and_swap(*ptr, begin, end, throw_if_insufficient_distinct_points);
 		return ptr;
 	}
 
@@ -1136,13 +1168,24 @@ namespace GPlatesMaths
 	PolylineOnSphere::generate_segments_and_swap(
 			PolylineOnSphere &poly,
 			PointForwardIter begin,
-			PointForwardIter end)
+			PointForwardIter end,
+			bool throw_if_insufficient_distinct_points)
 	{
 		std::pair<PointForwardIter, PointForwardIter> invalid_points;
+		// NOTE: We ignore determination of insufficient distinct points if we are *not*
+		// throwing an exception for it.
 		ConstructionParameterValidity v =
-				evaluate_construction_parameter_validity(begin, end, invalid_points);
-		if (v != VALID) {
-			throw InvalidPointsForPolylineConstructionError(GPLATES_EXCEPTION_SOURCE, v);
+				evaluate_construction_parameter_validity(
+						begin,
+						end,
+						invalid_points,
+						!throw_if_insufficient_distinct_points);
+		if (v != VALID)
+		{
+			if (v != INVALID_INSUFFICIENT_DISTINCT_POINTS || throw_if_insufficient_distinct_points)
+			{
+				throw InvalidPointsForPolylineConstructionError(GPLATES_EXCEPTION_SOURCE, v);
+			}
 		}
 
 		// Make it easier to provide strong exception safety by appending the new segments
