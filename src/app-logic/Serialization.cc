@@ -182,18 +182,30 @@ namespace
 	{
 		// What layer are we going to connect things to?
 		GPlatesAppLogic::Layer to_layer = idmap.value(el.attribute("to"));
+		if ( ! to_layer.is_valid()) {
+			// Fail, destination Layer is not valid.
+			return GPlatesAppLogic::Layer::InputConnection();	// an invalid InputConnection.
+		}
 
 		// Before we can create a InputConnection, we must first know what type of connection to make.
 		QString input_channel = el.attribute("input_channel_name");
 		if (el.attribute("type") == "InputFile") {
 			// What file are we going to take the data from?
 			GPlatesAppLogic::Layer::InputFile from_file = get_input_file_by_id(fs, rg, el.attribute("from"));
+			if ( ! from_file.is_valid()) {
+				// Fail, source InputFile is not valid.
+				return GPlatesAppLogic::Layer::InputConnection();	// an invalid InputConnection.
+			}
 			GPlatesAppLogic::Layer::InputConnection ic = to_layer.connect_input_to_file(from_file, input_channel);
 			return ic;
 
 		} else if (el.attribute("type") == "Layer") {
 			// What layer are we going to take the data from?
 			GPlatesAppLogic::Layer from_layer = idmap.value(el.attribute("from"));
+			if ( ! from_layer.is_valid()) {
+				// Fail, source Layer is not valid.
+				return GPlatesAppLogic::Layer::InputConnection();	// an invalid InputConnection.
+			}
 			GPlatesAppLogic::Layer::InputConnection ic = to_layer.connect_input_to_layer_output(from_layer, input_channel);
 			return ic;
 
@@ -220,6 +232,22 @@ namespace
 		return el;
 	}
 
+
+	/**
+	 * Confirms whether the given InputConnection is valid for the purposes of serialisation.
+	 */
+	bool
+	valid_input_connection(
+			const GPlatesAppLogic::Layer::InputConnection &con)
+	{
+		// If an InputConnection is a file-type connection, and the InputFile has an empty filename
+		// (i.e. a temporary in-memory feature collection only), it is not valid for session saving.
+		if (con.get_input_file() && con.get_input_file()->get_file_info().get_qfileinfo().absoluteFilePath().isEmpty()) {
+			return false;
+		}
+		// Otherwise, just ensure the InputConnection reference is still a valid reference (it should be).
+		return con.is_valid();
+	}		
 }
 
 
@@ -288,7 +316,13 @@ GPlatesAppLogic::Serialization::save_layers_state()
 	const std::vector<FeatureCollectionFileState::file_reference> loaded_files =
 			d_app_state_ptr->get_feature_collection_file_state().get_loaded_files();
 	BOOST_FOREACH(const FeatureCollectionFileState::file_reference &file_ref, loaded_files) {
-		el_files.appendChild(save_input_file(dom, rg, rg.get_input_file(file_ref)));
+		// List all *valid* InputFiles, excluding those with empty filenames.
+		if ( ! file_ref.get_file().get_file_info().get_qfileinfo().absoluteFilePath().isEmpty()) {
+			Layer::InputFile infile = rg.get_input_file(file_ref);
+			if (infile.is_valid()) {
+				el_files.appendChild(save_input_file(dom, rg, infile));
+			}
+		}
 	}
 
 
@@ -317,12 +351,17 @@ GPlatesAppLogic::Serialization::save_layers_state()
 	for (ReconstructGraph::iterator it = rg.begin(); it != rg.end(); ++it) {
 		std::vector<Layer::InputConnection> connections = it->get_all_inputs();
 		BOOST_FOREACH(const Layer::InputConnection &con, connections) {
-			el_connections.appendChild(save_layer_connection(dom, rg, con, idmap));
+			// Make sure to skip over InputConnections that refer to an empty-filename InputFile.
+			if (valid_input_connection(con)) {
+				el_connections.appendChild(save_layer_connection(dom, rg, con, idmap));
+			}
 		}
 	}
 
 	return dom;
 }
+
+
 void
 GPlatesAppLogic::Serialization::load_layers_state(
 		const GPlatesAppLogic::Session::LayersStateType &dom)
@@ -356,7 +395,9 @@ GPlatesAppLogic::Serialization::load_layers_state(
 	QDomElement el_default_recon = el_root.firstChildElement("DefaultReconstructionTree");
 	if ( ! el_default_recon.isNull() && el_default_recon.hasAttribute("layer")) {
 		Layer default_recon_layer = idmap.value(el_default_recon.attribute("layer"));
-		rg.set_default_reconstruction_tree_layer(default_recon_layer);
+		if (default_recon_layer.is_valid()) {
+			rg.set_default_reconstruction_tree_layer(default_recon_layer);
+		}
 	}
 
 	// Then we need to reconnect Layers.
@@ -364,7 +405,10 @@ GPlatesAppLogic::Serialization::load_layers_state(
 	for (QDomElement el_con = el_connections.firstChildElement("InputConnection");
 		  ! el_con.isNull();
 		  el_con = el_con.nextSiblingElement("InputConnection")) {
-		load_layer_connection(d_app_state_ptr->get_feature_collection_file_state(), ltr, rg, el_con, idmap);
+		// Only attempt to load <InputConnection>s that don't look broken (with an empty "to" or "from" attribute)
+		if ( ! el_con.attribute("from").isEmpty() && ! el_con.attribute("to").isEmpty()) {
+			load_layer_connection(d_app_state_ptr->get_feature_collection_file_state(), ltr, rg, el_con, idmap);
+		}
 	}
 
 	// Aaaand we're done.

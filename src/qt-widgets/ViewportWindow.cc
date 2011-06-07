@@ -275,7 +275,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::SessionMenu(
 				get_application_state(),
 				*d_file_io_feedback_ptr,
-				*d_unsaved_changes_tracker_ptr,
 				this)),
 	d_dock_state_ptr(
 			new GPlatesGui::DockState(
@@ -2124,23 +2123,36 @@ void
 GPlatesQtWidgets::ViewportWindow::closeEvent(
 		QCloseEvent *close_event)
 {
+	// FIXME: Refactor the code below into some app-logic type thing,
+	//        and then merely call it from here (checking the bool return value naturally)
+
+	// STEP 1: UNSAVED CHANGES WARNING
+	
+	// Check for unsaved changes and potentially give the user a chance to save/abort/etc.
+	bool close_ok = d_unsaved_changes_tracker_ptr->close_event_hook();
+	if ( ! close_ok) {
+		// User is Not OK with quitting GPlates at this point.
+		close_event->ignore();
+		return;
+	}
+
+	// STEP 2: RECORDING SESSION DETAILS
+	
+	// Unload all empty-filename feature collections, triggering the removal of their layer info,
+	// so that the Session we record as being the user's previous session is self-consistent.
+	get_application_state().get_session_management().unload_all_unnamed_files();
 	// Remember the current set of loaded files for next time.
 	get_application_state().get_session_management().close_event_hook();
 
-	// Check for unsaved changes and potentially give the user a chance to save/abort/etc.
-	bool close_ok = d_unsaved_changes_tracker_ptr->close_event_hook();
-	if (close_ok) {
-		// User is OK with quitting GPlates at this point.
-		close_event->accept();
-		// If we decide to accept the close event, we should also tidy up after ourselves.
-		close_all_dialogs();
-		// Make sure we really do quit - stray dialogs not caught by @a close_all_dialogs()
-		// (e.g. PyQt windows) will keep GPlates open.
-		QCoreApplication::quit();
-	} else {
-		// User is Not OK with quitting GPlates at this point.
-		close_event->ignore();
-	}
+	// STEP 3: FINAL TIDY-UP BEFORE QUITTING
+
+	// User is OK with quitting GPlates at this point.
+	close_event->accept();
+	// If we decide to accept the close event, we should also tidy up after ourselves.
+	close_all_dialogs();
+	// Make sure we really do quit - stray dialogs not caught by @a close_all_dialogs()
+	// (e.g. PyQt windows) will keep GPlates open.
+	QCoreApplication::quit();
 }
 
 
