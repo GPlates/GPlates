@@ -120,6 +120,49 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 }
 
 
+void
+GPlatesAppLogic::ReconstructGraph::add_file(
+		const FeatureCollectionFileState::file_reference &file)
+{
+	// Wrap a new Data object around the file.
+	const boost::shared_ptr<ReconstructGraphImpl::Data> input_file_impl(
+			new ReconstructGraphImpl::Data(file));
+
+	// Add to our internal mapping of file indices to InputFile's.
+	std::pair<input_file_ptr_map_type::const_iterator, bool> insert_result =
+			d_input_files.insert(std::make_pair(file, input_file_impl));
+
+	// The file shouldn't already exist in the map.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			insert_result.second,
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::remove_file(
+		const FeatureCollectionFileState::file_reference &file)
+{
+	// Search for the file that's about to be removed.
+	const input_file_ptr_map_type::iterator input_file_iter =
+			d_input_files.find(file);
+
+	// We should be able to find the file in our internal map.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			input_file_iter != d_input_files.end(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// The input file corresponding to the file about to be removed.
+	ReconstructGraphImpl::Data *input_file_impl = input_file_iter->second.get();
+
+	// Get the input file to disconnect all connections that use it as input.
+	input_file_impl->disconnect_output_connections();
+
+	// Remove the input file object.
+	d_input_files.erase(input_file_iter);
+}
+
+
 GPlatesAppLogic::Layer::InputFile
 GPlatesAppLogic::ReconstructGraph::get_input_file(
 		const FeatureCollectionFileState::file_reference input_file)
@@ -370,114 +413,6 @@ GPlatesAppLogic::ReconstructGraph::find_layer_dependency_order(
 
 	// Add the current layer after all child layers have been added.
 	dependency_ordered_layers.push_back(layer);
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::handle_file_state_files_added(
-		FeatureCollectionFileState &file_state,
-		const std::vector<FeatureCollectionFileState::file_reference> &new_files)
-{
-	BOOST_FOREACH(FeatureCollectionFileState::file_reference new_file, new_files)
-	{
-		// Wrap a new Data object around the file.
-		const boost::shared_ptr<ReconstructGraphImpl::Data> input_file_impl(
-				new ReconstructGraphImpl::Data(new_file));
-
-		// Add to our internal mapping of file indices to InputFile's.
-		std::pair<input_file_ptr_map_type::const_iterator, bool> insert_result =
-				d_input_files.insert(std::make_pair(new_file, input_file_impl));
-
-		// The file shouldn't already exist in the map.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				insert_result.second,
-				GPLATES_ASSERTION_SOURCE);
-	}
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::handle_file_state_file_about_to_be_removed(
-		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_about_to_be_removed)
-{
-	// Search for the file that's about to be removed.
-	const input_file_ptr_map_type::iterator input_file_iter =
-			d_input_files.find(file_about_to_be_removed);
-
-	// We should be able to find the file in our internal map.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			input_file_iter != d_input_files.end(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// The input file corresponding to the file about to be removed.
-	ReconstructGraphImpl::Data *input_file_impl = input_file_iter->second.get();
-
-#if 1 // TODO: Remove this when the user can explicit remove a layer.
-	// Iterate over all layers that are directly connected to the file about to be removed
-	// and remove any layers that:
-	//   1) reference that file on their *main* input channel, *and*
-	//   2) have no other input files at the *main* input channel.
-	// This effectively removes layers that currently have *one* input file on thei
-	// main input channel that's about to be removed.
-	// NOTE: This avoids removing layers that, by default, never have any input on their
-	// main channel - this is a relatively new occurrence that wasn't initially planned for
-	// (ie, all layers were expected to have some input on their main channel) but will
-	// happen when the Small Circle layer is implemented - as this layer will have input
-	// data entered by the user (in a dialog) and passed to the app-logic layer via a
-	// LayerTaskParams derived class.
-	std::vector<Layer> layers_to_remove;
-	BOOST_FOREACH(
-			ReconstructGraphImpl::LayerInputConnection *input_file_connection,
-			input_file_impl->get_output_connections())
-	{
-		const layer_ptr_type layer_receiving_file_input(
-				input_file_connection->get_layer_receiving_input());
-
-		if (!layer_receiving_file_input)
-		{
-			continue;
-		}
-
-		Layer layer(layer_receiving_file_input);
-
-		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
-
-		const std::vector<Layer::InputConnection> input_connections =
-				layer.get_channel_inputs(main_input_channel);
-		// We only remove layers that currently have one input file on the main channel
-		// (that's about to be removed).
-		if (input_connections.size() != 1)
-		{
-			continue;
-		}
-
-		// Make sure the input connects to a file rather than the output of another layer.
-		boost::optional<Layer::InputFile> input_file = input_connections[0].get_input_file();
-		if (!input_file)
-		{
-			continue;
-		}
-
-		// If the sole input file on the main channel matches the file about to be removed.
-		if (input_file->get_file() == file_about_to_be_removed)
-		{
-			layers_to_remove.push_back(layer);
-		}
-	}
-
-	// Remove any layers that need removing.
-	BOOST_FOREACH(const Layer &layer_to_remove, layers_to_remove)
-	{
-		remove_layer(layer_to_remove);
-	}
-#endif
-
-	// Get the input file to disconnect all connections that use it as input.
-	input_file_impl->disconnect_output_connections();
-
-	// Remove the input file object.
-	d_input_files.erase(input_file_iter);
 }
 
 

@@ -157,6 +157,28 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Adds a file to the graph but it is currently not connected to any layers.
+		 *
+		 * Used to be a slot but is now called directly by @a ApplicationState when it is
+		 * notified of a newly loaded file.
+		 */
+		void
+		add_file(
+				const FeatureCollectionFileState::file_reference &file);
+
+
+		/**
+		 * Removes a file from the graph and disconnects from any connected layers.
+		 *
+		 * Used to be a slot but is now called directly by @a ApplicationState when it is
+		 * notified that a file is about to be unloaded.
+		 */
+		void
+		remove_file(
+				const FeatureCollectionFileState::file_reference &file);
+
+
+		/**
 		 * Gets the input file handle for @a input_file.
 		 *
 		 * The returned file is a weak reference and does not need to be stored anywhere.
@@ -263,37 +285,22 @@ namespace GPlatesAppLogic
 		}
 
 
-		///////////////////////////////////////////////////////////////
-		// The following public methods are used by ApplicationState //
-		///////////////////////////////////////////////////////////////
-
-
 		/**
 		 * Updates the layer tasks in the current reconstruction graph.
 		 *
+		 * Should be called when the reconstruct graph is modified (including add/remove
+		 * layer connections, modified layers, etc) and when the feature data inside any
+		 * input files is modified in any way.
+		 *
 		 * Returns a list of the layer proxies at the output of each *active* layer and
 		 * the default reconstruction tree if there is one.
+		 *
+		 * NOTE: This is currently only called by @a ApplicationState.
 		 */
 		Reconstruction::non_null_ptr_to_const_type
 		update_layer_tasks(
 				const double &reconstruction_time);
 
-
-		// NOTE: all signals/slots should use namespace scope for all arguments
-		//       otherwise differences between signals and slots will cause Qt
-		//       to not be able to connect them at runtime.
-
-		// Used to be a slot but is now called directly by @a ApplicationState.
-		void
-		handle_file_state_files_added(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files);
-
-		// Used to be a slot but is now called directly by @a ApplicationState.
-		void
-		handle_file_state_file_about_to_be_removed(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments

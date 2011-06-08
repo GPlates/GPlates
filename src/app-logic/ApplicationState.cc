@@ -439,12 +439,16 @@ GPlatesAppLogic::ApplicationState::handle_file_state_files_added(
 	// 'reconstruct' caused by layer signals, which is unnecessary if we're going to call it anyway.
 	ScopedReconstructGuard scoped_reconstruct_guard(*this, true/*reconstruct_on_scope_exit*/);
 
-	// Pass the signal onto the reconstruct graph first.
-	// We do this rather than connect it to the signal directly so we can control
-	// the order in which things happen.
-	// In this case we want the reconstruct graph to know about the new files first
-	// so that we can then get new file objects from it.
-	d_reconstruct_graph->handle_file_state_files_added(file_state, new_files);
+	// Add the new files to the reconstruct graph.
+	BOOST_FOREACH(FeatureCollectionFileState::file_reference new_file, new_files)
+	{
+		// Pass the signal onto the reconstruct graph first.
+		// We do this rather than connect it to the signal directly so we can control
+		// the order in which things happen.
+		// In this case we want the reconstruct graph to know about the new files first
+		// so that we can then get new file objects from it.
+		d_reconstruct_graph->add_file(new_file);
+	}
 
 	// Special: Do not auto-create layers if we are loading a Session from SessionManagement.
 	if ( ! d_suppress_auto_layer_creation) {
@@ -547,7 +551,7 @@ GPlatesAppLogic::ApplicationState::handle_file_state_file_about_to_be_removed(
 	// Pass the signal onto the reconstruct graph first.
 	// We do this rather than connect it to the signal directly so we can control
 	// the order in which things happen.
-	d_reconstruct_graph->handle_file_state_file_about_to_be_removed(file_state, file_about_to_be_removed);
+	d_reconstruct_graph->remove_file(file_about_to_be_removed);
 }
 
 
