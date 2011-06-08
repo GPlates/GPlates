@@ -495,48 +495,6 @@ GPlatesAppLogic::ApplicationState::handle_file_state_file_about_to_be_removed(
 		// Remove all layers auto-created for the file about to be removed.
 		BOOST_FOREACH(const Layer &layer_to_remove, layers_to_remove)
 		{
-			// FIXME: We need to do something about the ambiguity of changing the default
-			// reconstruction tree layer under the nose of the user.
-			// This shouldn't really be done here and it's dodgy because we're assuming no one
-			// else is setting the default reconstruction tree layer.
-#if 1
-			//
-			// Before removing the layer see if it's the current default reconstruction tree layer.
-			if (layer_to_remove == current_default_reconstruction_tree_layer)
-			{
-				// If there are any recently set defaults.
-				if (!d_default_reconstruction_tree_layer_stack.empty())
-				{
-					// The current default should match the top of the stack unless
-					// someone else is setting the default (FIXME: this is quite likely).
-					if (current_default_reconstruction_tree_layer ==
-						d_default_reconstruction_tree_layer_stack.top())
-					{
-						// Remove the current default from the top of the stack.
-						d_default_reconstruction_tree_layer_stack.pop();
-					}
-
-					// Remove any invalid layers from the stack (these are the result of
-					// removed layers caused by unloaded rotation files).
-					while (!d_default_reconstruction_tree_layer_stack.empty() &&
-						!d_default_reconstruction_tree_layer_stack.top().is_valid())
-					{
-						d_default_reconstruction_tree_layer_stack.pop();
-					}
-
-					// Get the most recently set (and valid) default.
-					if (!d_default_reconstruction_tree_layer_stack.empty())
-					{
-						const Layer new_default_reconstruction_tree_layer =
-								d_default_reconstruction_tree_layer_stack.top();
-
-						d_reconstruct_graph->set_default_reconstruction_tree_layer(
-								new_default_reconstruction_tree_layer);
-					}
-				}
-			}
-#endif
-
 			// Remove the auto-created layer.
 			if (layer_to_remove.is_valid())
 			{
@@ -868,9 +826,6 @@ GPlatesAppLogic::ApplicationState::create_layer(
 		{
 			d_reconstruct_graph->set_default_reconstruction_tree_layer(new_layer);
 		}
-
-		// Keep track of the default reconstruction tree layers set.
-		d_default_reconstruction_tree_layer_stack.push(new_layer);
 	}
 
 	// Keep track of the layers auto-created for each file loaded.

@@ -93,12 +93,10 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 		layer.is_valid(),
 		GPLATES_ASSERTION_SOURCE);
 
-	// If we're removing the default reconstruction tree layer then
-	// set the new default reconstruction tree layer as none.
-	if (layer == d_default_reconstruction_tree_layer)
-	{
-		set_default_reconstruction_tree_layer();
-	}
+	// If the layer being removed is the current default reconstruction tree layer then
+	// remove it as a default reconstruction tree layer.
+	// Also handles case where layer being removed is a previous default reconstruction tree layer.
+	handle_default_reconstruction_tree_layer_removal(layer);
 
 	// Deactivate the layer which will emit a signal if the layer is currently active.
 	layer.activate(false);
@@ -183,42 +181,41 @@ GPlatesAppLogic::ReconstructGraph::get_input_file(
 
 void
 GPlatesAppLogic::ReconstructGraph::set_default_reconstruction_tree_layer(
-		const Layer &default_reconstruction_tree_layer)
+		const Layer &new_default_reconstruction_tree_layer)
 {
+	// Make sure we've been passed a valid reconstruction tree layer.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			new_default_reconstruction_tree_layer.get_type() == LayerTaskType::RECONSTRUCTION &&
+					new_default_reconstruction_tree_layer.is_valid(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const Layer prev_default_reconstruction_tree_layer = get_default_reconstruction_tree_layer();
+
 	// If the default reconstruction tree layer isn't changing then do nothing.
-	if (default_reconstruction_tree_layer == d_default_reconstruction_tree_layer)
+	if (new_default_reconstruction_tree_layer == prev_default_reconstruction_tree_layer)
 	{
 		return;
 	}
 
-	const Layer prev_default_reconstruction_tree_layer = d_default_reconstruction_tree_layer;
-
-	if (default_reconstruction_tree_layer.is_valid())
-	{
-		// Make sure we've been passed a reconstruction tree layer.
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				default_reconstruction_tree_layer.get_type() == LayerTaskType::RECONSTRUCTION,
-				GPLATES_ASSERTION_SOURCE);
-		d_default_reconstruction_tree_layer = default_reconstruction_tree_layer;
-	}
-	else
-	{
-		// If the weak reference is invalid then there will be no default reconstruction tree layer.
-		d_default_reconstruction_tree_layer = Layer();
-	}
+	d_default_reconstruction_tree_layer_stack.push_back(new_default_reconstruction_tree_layer);
 
 	// Let clients know of the new default reconstruction tree layer.
 	emit default_reconstruction_tree_layer_changed(
 			*this,
 			prev_default_reconstruction_tree_layer,
-			d_default_reconstruction_tree_layer);
+			new_default_reconstruction_tree_layer);
 }
 
 
 GPlatesAppLogic::Layer
 GPlatesAppLogic::ReconstructGraph::get_default_reconstruction_tree_layer() const
 {
-	return d_default_reconstruction_tree_layer;
+	if (d_default_reconstruction_tree_layer_stack.empty())
+	{
+		return Layer();
+	}
+
+	return d_default_reconstruction_tree_layer_stack.back();
 }
 
 
@@ -247,12 +244,12 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 
 	// Get a shared reference to the default reconstruction tree layer if there is one.
 	layer_ptr_type default_reconstruction_tree_layer;
-	if (d_default_reconstruction_tree_layer.is_valid() &&
+	if (get_default_reconstruction_tree_layer().is_valid() &&
 		// FIXME: Should probably handle this elsewhere so we don't have to check here...
-		d_default_reconstruction_tree_layer.get_type() == LayerTaskType::RECONSTRUCTION)
+		get_default_reconstruction_tree_layer().get_type() == LayerTaskType::RECONSTRUCTION)
 	{
 		default_reconstruction_tree_layer =
-				layer_ptr_type(d_default_reconstruction_tree_layer.get_impl());
+				layer_ptr_type(get_default_reconstruction_tree_layer().get_impl());
 	}
 
 	// Traverse the dependency graph to determine the order in which layers should be executed
@@ -294,6 +291,73 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 	}
 
 	return reconstruction;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::handle_default_reconstruction_tree_layer_removal(
+		const Layer &layer_being_removed)
+{
+	// If the layer being removed is one of the current or previous default reconstruction tree
+	// layers then remove it from the default reconstruction tree layer stack.
+	const default_reconstruction_tree_layer_stack_type::iterator default_recon_tree_iter =
+			std::find(
+					d_default_reconstruction_tree_layer_stack.begin(),
+					d_default_reconstruction_tree_layer_stack.end(),
+					layer_being_removed);
+	if (default_recon_tree_iter == d_default_reconstruction_tree_layer_stack.end())
+	{
+		return;
+	}
+	// If we get here then the layer being removed is either the current or a previous default
+	// reconstruction tree layer.
+
+	// If the layer was a previous default then simply remove it from the stack of default layers.
+	if (layer_being_removed != get_default_reconstruction_tree_layer())
+	{
+		// Remove all occurrences in the stack - the same layer may have been the default
+		// reconstruction tree layer more than once.
+		d_default_reconstruction_tree_layer_stack.erase(
+				std::remove(
+						d_default_reconstruction_tree_layer_stack.begin(),
+						d_default_reconstruction_tree_layer_stack.end(),
+						layer_being_removed),
+				d_default_reconstruction_tree_layer_stack.end());
+		return;
+	}
+	// If we get here then the layer being removed is the current default reconstruction tree layer.
+
+	// The current default reconstruction tree layer.
+	const Layer prev_default_reconstruction_tree_layer = layer_being_removed;
+
+	// Remove all occurrences in the stack - the same layer may have been the default
+	// reconstruction tree layer more than once.
+	d_default_reconstruction_tree_layer_stack.erase(
+			std::remove(
+					d_default_reconstruction_tree_layer_stack.begin(),
+					d_default_reconstruction_tree_layer_stack.end(),
+					layer_being_removed),
+			d_default_reconstruction_tree_layer_stack.end());
+
+	// Get the new default reconstruction tree layer if there is one.
+	Layer new_default_reconstruction_tree_layer;
+	if (!d_default_reconstruction_tree_layer_stack.empty())
+	{
+		new_default_reconstruction_tree_layer = d_default_reconstruction_tree_layer_stack.back();
+
+		// Make sure the previous default reconstruction tree layer is valid.
+		// It should be if we removed any layers from this stack when those layers were removed.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				new_default_reconstruction_tree_layer.is_valid(),
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+	// Let clients know of the new default reconstruction tree layer even if there are no
+	// default reconstruction trees left.
+	emit default_reconstruction_tree_layer_changed(
+			*this,
+			prev_default_reconstruction_tree_layer,
+			new_default_reconstruction_tree_layer);
 }
 
 

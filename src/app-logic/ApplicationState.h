@@ -28,7 +28,6 @@
 
 #include <list>
 #include <map>
-#include <stack>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -391,9 +390,6 @@ namespace GPlatesAppLogic
 				FeatureCollectionFileState::file_reference,
 				layer_seq_type> file_to_primary_layers_mapping_type;
 
-		//! Typedef for a stack of reconstruction tree layers.
-		typedef std::stack<Layer> default_reconstruction_tree_layer_stack_type;
-
 		//! The model store.
 		GPlatesModel::ModelInterface d_model;
 
@@ -439,13 +435,6 @@ namespace GPlatesAppLogic
 		 * to the auto-generated layers.
 		 */
 		file_to_primary_layers_mapping_type d_file_to_primary_layers_mapping;
-
-		/**
-		 * Keeps track of the default reconstruction tree layers set as rotation files are loaded.
-		 * When the rotation file for the current default layer is unloaded the most recent
-		 * valid layer is set as the new default.
-		 */
-		default_reconstruction_tree_layer_stack_type d_default_reconstruction_tree_layer_stack;
 
 		/**
 		 * If true, changes the default reconstruction tree layer upon loading a rotation file.

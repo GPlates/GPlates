@@ -207,27 +207,24 @@ namespace GPlatesAppLogic
 		 * ignore the default reconstruction tree layer.
 		 *
 		 * Disabling or destroying the default reconstruction tree layer will result in
-		 * layers that implicitly connect to it to use identity rotations for all plates.
-		 *
-		 * If @a default_reconstruction_tree_layer is invalid then there will be no
-		 * default reconstruction tree layer - this is the way to specify no default layer.
+		 * layers that currently implicitly connect to it to use identity rotations for all plates.
 		 *
 		 * Emits the @a default_reconstruction_tree_layer_changed signal if the default
 		 * reconstruction tree layer changed.
 		 *
-		 * @a throws PreconditionViolationError if @a default_reconstruction_tree_layer is valid,
-		 * but the layer it refers to is not a reconstruction tree layer.
+		 * @a throws PreconditionViolationError if @a default_reconstruction_tree_layer is *invalid*
+		 * or if it does *not* refer to a reconstruction tree layer type.
 		 */
 		void
 		set_default_reconstruction_tree_layer(
-				const Layer &default_reconstruction_tree_layer = Layer());
+				const Layer &default_reconstruction_tree_layer);
 
 
 		/**
 		 * Returns the current default reconstruction tree layer.
 		 *
 		 * NOTE: Check the returned weak reference is valid before using since
-		 * there may be no default layer.
+		 * there may be no default layer currently set.
 		 */
 		Layer
 		get_default_reconstruction_tree_layer() const;
@@ -379,6 +376,9 @@ namespace GPlatesAppLogic
 		 *
 		 * An invalid layer means no layer (in other words there was or will be
 		 * no default reconstruction tree layer).
+		 *
+		 * NOTE: Either the previous or new default reconstruction tree layer could be invalid -
+		 * if going from no default to a default or vice versa respectively.
 		 */
 		void
 		default_reconstruction_tree_layer_changed(
@@ -430,6 +430,9 @@ namespace GPlatesAppLogic
 		typedef std::map<FeatureCollectionFileState::file_reference, input_file_ptr_type>
 				input_file_ptr_map_type;
 
+		//! Typedef for a stack of reconstruction tree layers.
+		typedef std::vector<Layer> default_reconstruction_tree_layer_stack_type;
+
 
 		ApplicationState &d_application_state;
 
@@ -437,10 +440,12 @@ namespace GPlatesAppLogic
 		layer_ptr_seq_type d_layers;
 
 		/**
-		 * The default reconstruction tree layer.
-		 * Can be invalid if no default layer set or if the default layer was destroyed.
+		 * Keeps track of the default reconstruction tree layers set as rotation files are loaded.
+		 *
+		 * When the rotation file for the current default reconstruction tree layer is unloaded
+		 * the most recent valid reconstruction tree layer, if there is one, is set as the new default.
 		 */
-		Layer d_default_reconstruction_tree_layer;
+		default_reconstruction_tree_layer_stack_type d_default_reconstruction_tree_layer_stack;
 
 		/**
 		 * Used if there are no reconstruction tree layers currently loaded.
@@ -449,6 +454,16 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructionLayerProxy::non_null_ptr_type d_identity_rotation_reconstruction_layer_proxy;
 
+
+		/**
+		 * Handles removal of the current (or a previous) default reconstruction tree layer.
+		 *
+		 * Does nothing if the layer about to be removed is not a current or previous
+		 * default reconstruction tree layer.
+		 */
+		void
+		handle_default_reconstruction_tree_layer_removal(
+				const Layer &layer_being_removed);
 
 		/**
 		 * Determines an order of layers that will not violate the dependency graph -
