@@ -248,6 +248,59 @@ namespace
 		// Otherwise, just ensure the InputConnection reference is still a valid reference (it should be).
 		return con.is_valid();
 	}		
+
+
+#if 0 // sketch of serialisation code for Auto Created Layers
+	/**
+	 * Turn a SOME_SORT_OF_AUTO_CREATED_LAYER_RELATIONSHIP into a QDomElement.
+	 * Does not add this element anywhere in the DOM tree, just makes it.
+	 */
+	QDomElement
+	save_auto_created_layer_relationship(
+			GPlatesAppLogic::Session::LayersStateType dom,
+			/* Might have to pass your Wrapper in here as well, if you need it to look up details,*/
+			const SOME_SORT_OF_AUTO_CREATED_LAYER_RELATIONSHIP &rel,
+			LayerIdMap &idmap)
+	{
+		QDomElement el = dom.createElement("AutoCreatedLayer");
+		// Identify InputFiles by filepath (currently, anyway).
+		el.setAttribute("owner", rel.GET_THE_OWNING_INPUTFILE()->get_file_info().get_qfileinfo().absoluteFilePath());
+		// Identify Layer objects by looking up an arbitrary ID.
+		el.setAttribute("layer", idmap.value(rel.GET_THE_LAYER_WHAT_WAS_AUTO_CREATED()));
+
+		return el;
+	}
+
+	/**
+	 * Load a SOME_SORT_OF_AUTO_CREATED_LAYER_RELATIONSHIP into the ReconstructGraph wrapper thing
+	 * from a QDomElement.
+	 */
+	void
+	load_auto_created_layer_relationship(
+			GPlatesAppLogic::FeatureCollectionFileState &fs,
+			GPlatesAppLogic::ReconstructGraph &rg,
+			/* Might have to pass your Wrapper in here as well, if you need it to set details,*/
+			QDomElement el,
+			IdLayerMap &idmap)
+	{
+		// Which layer is the one that was auto-created?
+		GPlatesAppLogic::Layer layer = idmap.value(el.attribute("layer"));
+		if ( ! layer.is_valid()) {
+			// Fail, Layer is not valid.
+			return;
+		}
+
+		// What file "owns" the auto-created layer?
+		GPlatesAppLogic::Layer::InputFile owner = get_input_file_by_id(fs, rg, el.attribute("owner"));
+		if ( ! owner.is_valid()) {
+			// Fail, InputFile is not valid.
+			return;
+		}
+
+		// Given owner and layer, we can now restore the auto-created-layer relationship... somehow!
+		// TODO: That thing I just said
+	}
+#endif // sketch of serialisation code for Auto Created Layers
 }
 
 
@@ -358,6 +411,18 @@ GPlatesAppLogic::Serialization::save_layers_state()
 		}
 	}
 
+
+#if 0  // sketch of serialisation code for Auto Created Layers
+	// Oh and also, list all the auto-created layer relationships.
+	QDomElement el_autocreated = dom.createElement("AutoCreatedLayerMap");
+	el_root.appendChild(el_autocreated);
+
+	// Iterate over them... somehow!
+	BOOST_FOREACH(const SOME_SORT_OF_AUTO_CREATED_LAYER_RELATIONSHIP &rel, SOME_WAY_OF_GETTING_THOSE) {
+		el_autocreated.appendChild(save_auto_created_layer_relationship(dom, rg, rel, idmap));
+	}
+#endif
+
 	return dom;
 }
 
@@ -410,6 +475,21 @@ GPlatesAppLogic::Serialization::load_layers_state(
 			load_layer_connection(d_app_state_ptr->get_feature_collection_file_state(), ltr, rg, el_con, idmap);
 		}
 	}
+	
+	
+#if 0  // sketch of serialisation code for Auto Created Layers
+	// Then we need to reinstate the information about which layers were auto-created from which files.
+	QDomElement el_autocreated = el_root.firstChildElement("AutoCreatedLayerMap");
+	for (QDomElement el_rel = el_autocreated.firstChildElement("AutoCreatedLayer");
+		  ! el_rel.isNull();
+		  el_rel = el_rel.nextSiblingElement("AutoCreatedLayer")) {
+		// Only attempt to load relationships that don't look broken (with an empty "owner" or "layer" attribute)
+		if ( ! el_rel.attribute("owner").isEmpty() && ! el_rel.attribute("layer").isEmpty()) {
+			load_auto_created_layer_relationship(d_app_state_ptr->get_feature_collection_file_state(), rg, el_rel, idmap);
+		}
+	}
+#endif
+
 
 	// Aaaand we're done.
 }
