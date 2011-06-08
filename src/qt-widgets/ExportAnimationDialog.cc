@@ -32,6 +32,10 @@
 #include "gui/AnimationController.h"
 #include "gui/ExportAnimationStrategy.h"
 
+#include "presentation/ViewState.h"
+#include "app-logic/ApplicationState.h"
+#include "app-logic/UserPreferences.h"
+
 
 GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 		GPlatesGui::AnimationController &animation_controller,
@@ -63,8 +67,10 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	stackedWidget->setCurrentIndex(0);
 	tableWidget_range->setFocus();
 	
-	lineEdit_range_path->setText(QDir::currentPath());
-	d_single_path=QDir::currentPath();
+	QString default_export_dir = view_state_.get_application_state().get_user_preferences()
+			.get_value("paths/default_export_dir").toString();
+	lineEdit_range_path->setText(default_export_dir);
+	d_single_path = default_export_dir;
 		
 	update_target_directory(lineEdit_range_path->text());
 	
