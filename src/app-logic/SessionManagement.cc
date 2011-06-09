@@ -132,6 +132,25 @@ GPlatesAppLogic::SessionManagement::SessionManagement(
 
 
 void
+GPlatesAppLogic::SessionManagement::clear_session()
+{
+	// Unloading all files should remove all auto-created layers but any user-created layers
+	// will not be removed so we'll have to remove them explicitly - if we don't then the number
+	// of user-created layers increases continuously as we switch between sessions.
+	unload_all_files();
+
+	// Copy remaining user-created layers into an array before removing them to avoid iteration issues.
+	const std::vector<GPlatesAppLogic::Layer> user_created_layers(
+			d_app_state_ptr->get_reconstruct_graph().begin(),
+			d_app_state_ptr->get_reconstruct_graph().end());
+	BOOST_FOREACH(GPlatesAppLogic::Layer layer, user_created_layers)
+	{
+		d_app_state_ptr->get_reconstruct_graph().remove_layer(layer);
+	}
+}
+
+
+void
 GPlatesAppLogic::SessionManagement::load_session(
 		const GPlatesAppLogic::Session &session_to_load)
 {
@@ -150,15 +169,17 @@ GPlatesAppLogic::SessionManagement::load_session(
 		// NOTE: "Reloading" layer relationships may prove complicated.
 		
 		// For now, maybe just clear and load everything?
-		unload_all_files();
 
 	} else {
 		// User is attempting to load a new session. Should we replace the old one?
 		// For now, the answer is yes - always unload the original files first.
 		// However, before we do that, save the current session.
 		save_session();
-		unload_all_files();
 	}
+
+	// Clear the current session so there's no files loaded and
+	// no auto-created or user-created layers left.
+	clear_session();
 
 	// Loading session depends on the version...
 	switch (session_to_load.version())

@@ -147,6 +147,12 @@ namespace GPlatesAppLogic
 
 	private:
 
+		/**
+		 * Clear the current session so there's no files loaded and
+		 * no auto-created or user-created layers left.
+		 */
+		void
+		clear_session();
 
 		void
 		store_recent_session_list(
