@@ -164,21 +164,6 @@ namespace GPlatesAppLogic
 		get_reconstruct_graph();
 
 		/**
-		 * Create any auto-generate layers necessary and connect to @a file_ref.
-		 *
-		 * This is needed for situations where a file is added (and hence any
-		 * appropriate auto-generate layers are created) but then it is modified
-		 * (for example, a new feature is added) such that a new type of autogenerate
-		 * layer needs to be created.
-		 *
-		 * FIXME: This should not need to be called explicitly. Eventually it can
-		 * be detected by listening for modifications to feature collections.
-		 */
-		void
-		update_layers(
-				const FeatureCollectionFileState::file_reference &file_ref);
-
-		/**
 		 * If @a update_default is true, this updates the default reconstruction tree
 		 * when the user loads a new rotation file.
 		 */

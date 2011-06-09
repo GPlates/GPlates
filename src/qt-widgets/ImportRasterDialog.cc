@@ -62,6 +62,7 @@
 
 #include "model/FeatureHandle.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 #include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -345,6 +346,11 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 
 	if (exec() == QDialog::Accepted)
 	{
+		// We want to merge model events across this scope so that only one model event
+		// is generated instead of many as we incrementally modify the feature below.
+		GPlatesModel::NotificationGuard model_notification_guard(
+				d_application_state.get_model_interface().access_model());
+
 		// By the time that we got up to here, we would've collected all the
 		// information we need to create the raster feature.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -376,10 +382,11 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 			file_io_file_ref.get_feature_collection();
 		feature_collection->add(feature);
-
-		// Create a new raster layer.
-		// FIXME: We should not have to do this here explicitly!
-		d_application_state.update_layers(app_logic_file_ref);
+		
+		// Release the model notification guard now that we've finished modifying the feature.
+		// Provided there are no nested guards this should notify model observers.
+		// We want any observers to see the changes before continuing so that everyone's in sync.
+		model_notification_guard.release_guard();
 
 		// Then save the file.
 		if (d_save_after_finish)

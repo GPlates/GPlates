@@ -2683,10 +2683,6 @@ GPlatesQtWidgets::ViewportWindow::clone_feature_with_dialog()
 	{
 		d_clone_operation_ptr->clone_focused_feature(
 				dialog_result->first.get_file().get_feature_collection());
-		if (dialog_result->second)
-		{
-			get_application_state().update_layers(dialog_result->first);
-		}
 	}
 }
 

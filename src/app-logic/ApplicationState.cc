@@ -430,12 +430,3 @@ GPlatesAppLogic::ApplicationState::end_reconstruct_on_scope_exit(
 		reconstruct();
 	}
 }
-
-
-void
-GPlatesAppLogic::ApplicationState::update_layers(
-		const FeatureCollectionFileState::file_reference &file_ref)
-{
-	// Do nothing for now...
-	// Will be removing this in the next changeset.
-}

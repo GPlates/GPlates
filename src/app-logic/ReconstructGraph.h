@@ -52,6 +52,7 @@
 #include "ReconstructionLayerProxy.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/WeakReferenceCallback.h"
 
 
 namespace GPlatesAppLogic
@@ -452,13 +453,79 @@ namespace GPlatesAppLogic
 		friend class Layer;
 
 	private:
-
 		//! Typedef for a shared pointer to an input file.
 		typedef boost::shared_ptr<ReconstructGraphImpl::Data> input_file_ptr_type;
 
-		//! Typedef for a sequence of input files with file references as map keys.
-		typedef std::map<FeatureCollectionFileState::file_reference, input_file_ptr_type>
-				input_file_ptr_map_type;
+		/**
+		 * Keeps a strong reference to an input file and receives notifications when it is modified.
+		 */
+		class InputFileInfo
+		{
+		public:
+			InputFileInfo(
+					ReconstructGraph &reconstruct_graph,
+					const input_file_ptr_type &input_file_ptr) :
+				d_input_file_ptr(input_file_ptr),
+				d_callback_input_feature_collection(
+						input_file_ptr->get_input_file()->get_file().get_feature_collection())
+			{
+				// Register a model callback so we know when the input file has been modified.
+				d_callback_input_feature_collection.attach_callback(
+						new FeatureCollectionModified(
+								reconstruct_graph,
+								Layer::InputFile(input_file_ptr)));
+			}
+
+			//! Returns the strong reference to the input file.
+			const input_file_ptr_type &
+			get_input_file_ptr() const
+			{
+				return d_input_file_ptr;
+			}
+
+		private:
+			/**
+			 * The model callback that notifies us when the feature collection in the input file is modified.
+			 */
+			struct FeatureCollectionModified :
+					public GPlatesModel::WeakReferenceCallback<const GPlatesModel::FeatureCollectionHandle>
+			{
+				FeatureCollectionModified(
+						ReconstructGraph &reconstruct_graph,
+						const Layer::InputFile &input_file) :
+					d_reconstruct_graph(&reconstruct_graph),
+					d_input_file(input_file)
+				{  }
+
+				void
+				publisher_modified(
+						const modified_event_type &event)
+				{
+					d_reconstruct_graph->modified_input_file(d_input_file);
+				}
+
+				ReconstructGraph *d_reconstruct_graph;
+				Layer::InputFile d_input_file;
+			};
+
+			/**
+			 * A strong reference to the input file.
+			 */
+			input_file_ptr_type d_input_file_ptr;
+
+			/**
+			 * Keep a weak reference to the input feature collection just for our callback.
+			 *
+			 * Only we have access to this weak ref and we make sure the client doesn't have
+			 * access to it. This is because any copies of this weak reference also get
+			 * copies of the callback thus allowing it to get called more than once per modification.
+			 */
+			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_input_feature_collection;
+		};
+
+
+		//! Typedef for a sequence of input files with @a InputFileInfo as map keys.
+		typedef std::map<FeatureCollectionFileState::file_reference, InputFileInfo> input_file_info_map_type;
 
 		//! Typedef for a stack of reconstruction tree layers.
 		typedef std::vector<Layer> default_reconstruction_tree_layer_stack_type;
@@ -469,7 +536,16 @@ namespace GPlatesAppLogic
 		 */
 		const LayerTaskRegistry &d_layer_task_registry;
 
-		input_file_ptr_map_type d_input_files;
+		/**
+		 * The input files in the reconstruct graph.
+		 *
+		 * This should represent all currently loaded files.
+		 */
+		input_file_info_map_type d_input_files;
+
+		/**
+		 * The layers added to the reconstruct graph.
+		 */
 		layer_ptr_seq_type d_layers;
 
 		/**
@@ -487,6 +563,14 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructionLayerProxy::non_null_ptr_type d_identity_rotation_reconstruction_layer_proxy;
 
+
+		/**
+		 * Called by @a FeatureCollectionModified callback when the feature collection inside
+		 * an input file is modified.
+		 */
+		void
+		modified_input_file(
+				const Layer::InputFile &input_file);
 
 		/**
 		 * Auto-creates layers that can process the features in the specified file.

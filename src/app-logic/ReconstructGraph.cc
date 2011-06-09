@@ -27,6 +27,7 @@
 #include <cstddef> // For std::size_t
 #include <iterator>
 #include <list>
+#include <set>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
@@ -67,9 +68,12 @@ GPlatesAppLogic::ReconstructGraph::add_file(
 	const boost::shared_ptr<ReconstructGraphImpl::Data> input_file_impl(
 			new ReconstructGraphImpl::Data(file));
 
+	// The input file entry stored in the map of input file references to input files.
+	const InputFileInfo input_file_info(*this, input_file_impl);
+
 	// Add to our internal mapping of file indices to InputFile's.
-	std::pair<input_file_ptr_map_type::const_iterator, bool> insert_result =
-			d_input_files.insert(std::make_pair(file, input_file_impl));
+	std::pair<input_file_info_map_type::const_iterator, bool> insert_result =
+			d_input_files.insert(std::make_pair(file, input_file_info));
 
 	// The file shouldn't already exist in the map.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -93,8 +97,7 @@ GPlatesAppLogic::ReconstructGraph::remove_file(
 		const FeatureCollectionFileState::file_reference &file)
 {
 	// Search for the file that's about to be removed.
-	const input_file_ptr_map_type::iterator input_file_iter =
-			d_input_files.find(file);
+	const input_file_info_map_type::iterator input_file_iter = d_input_files.find(file);
 
 	// We should be able to find the file in our internal map.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -102,13 +105,15 @@ GPlatesAppLogic::ReconstructGraph::remove_file(
 			GPLATES_ASSERTION_SOURCE);
 
 	// The input file corresponding to the file about to be removed.
-	input_file_ptr_type input_file_impl = input_file_iter->second;
+	const InputFileInfo &input_file_info = input_file_iter->second;
+
+	const input_file_ptr_type input_file_ptr = input_file_info.get_input_file_ptr();
 
 	// Destroy auto-created layers for the file about to be removed.
-	auto_destroy_layers_for_input_file_about_to_be_removed(Layer::InputFile(input_file_impl));
+	auto_destroy_layers_for_input_file_about_to_be_removed(Layer::InputFile(input_file_ptr));
 
 	// Get the input file to disconnect all connections that use it as input.
-	input_file_impl->disconnect_output_connections();
+	input_file_ptr->disconnect_output_connections();
 
 	// Remove the input file object.
 	d_input_files.erase(input_file_iter);
@@ -120,7 +125,7 @@ GPlatesAppLogic::ReconstructGraph::get_input_file(
 		const FeatureCollectionFileState::file_reference input_file)
 {
 	// Search for the input file.
-	input_file_ptr_map_type::const_iterator input_file_iter = d_input_files.find(input_file);
+	input_file_info_map_type::const_iterator input_file_iter = d_input_files.find(input_file);
 
 	// We should have all currently loaded files covered.
 	// If the specified file cannot be found then something is broken.
@@ -128,8 +133,13 @@ GPlatesAppLogic::ReconstructGraph::get_input_file(
 			input_file_iter != d_input_files.end(),
 			GPLATES_ASSERTION_SOURCE);
 
+	// The input file info corresponding to the file.
+	const InputFileInfo &input_file_info = input_file_iter->second;
+
+	const input_file_ptr_type input_file_ptr = input_file_info.get_input_file_ptr();
+
 	// Return to caller as a weak reference.
-	return Layer::InputFile(input_file_iter->second);
+	return Layer::InputFile(input_file_ptr);
 }
 
 
@@ -305,6 +315,83 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 	}
 
 	return reconstruction;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::modified_input_file(
+		const Layer::InputFile &input_file)
+{
+	std::cerr << "ReconstructGraph::modified_input_file" << std::endl;
+
+	//
+	// First iterate over the output connections of the modified input file to find all layer
+	// types that are currently processing the input file.
+	//
+
+	// The current set of layer types that are processing the input file.
+	// A layer processes an input file when that file is connected to the *main* input channel of the layer.
+	std::set<LayerTaskType::Type> layer_types_processing_input_file;
+
+	const ReconstructGraphImpl::Data::connection_seq_type &output_connections =
+			input_file_ptr_type(input_file.get_impl())->get_output_connections();
+	BOOST_FOREACH(
+			const ReconstructGraphImpl::LayerInputConnection *output_connection,
+			output_connections)
+	{
+		const layer_ptr_type layer_receiving_file_input(output_connection->get_layer_receiving_input());
+
+		Layer layer(layer_receiving_file_input);
+
+		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
+
+		const std::vector<Layer::InputConnection> input_connections = layer.get_channel_inputs(main_input_channel);
+
+		// Iterate over the input connections on the main input channel.
+		std::vector<Layer::InputConnection>::const_iterator input_connection_iter = input_connections.begin();
+		std::vector<Layer::InputConnection>::const_iterator input_connection_end = input_connections.end();
+		for ( ; input_connection_iter != input_connection_end; ++input_connection_iter)
+		{
+			// If the input connects to a file (ie, not the output of another layer) *and*
+			// that file is the input file then we have found a layer that is processing the
+			// input file so add the layer type to the list.
+			boost::optional<Layer::InputFile> main_channel_input_file = input_connection_iter->get_input_file();
+			if (main_channel_input_file &&
+				main_channel_input_file.get() == input_file)
+			{
+				layer_types_processing_input_file.insert(layer.get_type());
+				break;
+			}
+		}
+	}
+
+	//
+	// The file has changed so find out all layer types that can process the file.
+	// This may have changed since we last checked.
+	//
+
+	const std::vector<LayerTaskRegistry::LayerTaskType> new_layer_task_types =
+			d_layer_task_registry.get_layer_task_types_to_auto_create_for_loaded_file(
+					input_file.get_feature_collection());
+
+	//
+	// If there are any new layer types not covered by the previous layer types then
+	// auto-create respective layers to process the input file.
+	// An example is the user saving a topology feature in a feature collection that only
+	// contains non-topology features - hence a topology layer will need to be created.
+	//
+	
+	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType new_layer_task_type, new_layer_task_types)
+	{
+		// If a layer task of the current type doesn't yet exist then create a layer for it.
+		if (layer_types_processing_input_file.find(new_layer_task_type.get_layer_type()) ==
+			layer_types_processing_input_file.end())
+		{
+			const boost::shared_ptr<LayerTask> new_layer_task = new_layer_task_type.create_layer_task();
+
+			const Layer new_layer = auto_create_layer(input_file, new_layer_task, AutoCreateLayerParams());
+		}
+	}
 }
 
 
@@ -630,7 +717,7 @@ GPlatesAppLogic::ReconstructGraph::debug_reconstruct_graph_state()
 {
 	qDebug() << "\nRECONSTRUCT GRAPH:-";
 	qDebug() << " INPUT FILES:-";
-	for (input_file_ptr_map_type::const_iterator it = d_input_files.begin(); it != d_input_files.end(); ++it) {
+	for (input_file_info_map_type::const_iterator it = d_input_files.begin(); it != d_input_files.end(); ++it) {
 		qDebug() << "   " << it->first.get_file().get_file_info().get_display_name(false);
 	}
 

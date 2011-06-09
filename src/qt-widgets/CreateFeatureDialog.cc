@@ -67,6 +67,7 @@
 #include "model/GPGIMInfo.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 
 #include "presentation/ViewState.h"
 
@@ -800,6 +801,11 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 
 	try
 	{
+		// We want to merge model events across this scope so that only one model event
+		// is generated instead of many as we incrementally modify the feature below.
+		GPlatesModel::NotificationGuard model_notification_guard(
+				d_application_state_ptr->get_model_interface().access_model());
+
 		// Get the FeatureCollection the user has selected.
 		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> collection_file_iter =
 			d_choose_feature_collection_widget->get_file_reference();
@@ -891,10 +897,14 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 				d_application_state_ptr
 				);
 		}
-
-		// Ensure a layer gets created for the new feature.
-		d_application_state_ptr->update_layers(collection_file_iter.first);
 		
+		// Release the model notification guard now that we've finished modifying the feature.
+		// Provided there are no nested guards this should notify model observers.
+		// We want any observers to see the changes before we emit signals because we don't
+		// know whose listening on those signals and they may be expecting model observers to
+		// be up-to-date with the modified model.
+		model_notification_guard.release_guard();
+
 		emit feature_created(feature);
 
 		// If the user got into digitisation mode because they clicked the
