@@ -453,11 +453,13 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::get_input_connecti
 
 GPlatesAppLogic::ReconstructGraphImpl::Layer::Layer(
 		const boost::shared_ptr<LayerTask> &layer_task,
-		ReconstructGraph &reconstruct_graph) :
+		ReconstructGraph &reconstruct_graph,
+		bool auto_created) :
 	d_reconstruct_graph(&reconstruct_graph),
 	d_layer_task(layer_task),
 	d_output_data(new Data(layer_task->get_layer_proxy())),
-	d_active(true)
+	d_active(true),
+	d_auto_created(auto_created)
 {
 	// Layer task should be non-NULL.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(

@@ -27,7 +27,6 @@
 #define GPLATES_APP_LOGIC_APPLICATIONSTATE_H
 
 #include <list>
-#include <map>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -382,14 +381,6 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
-		//! Typedef for a sequence of layers.
-		typedef std::list<Layer> layer_seq_type;
-
-		//! Typedef for map of loaded files to primary (auto-generated) layers.
-		typedef std::map<
-				FeatureCollectionFileState::file_reference,
-				layer_seq_type> file_to_primary_layers_mapping_type;
-
 		//! The model store.
 		GPlatesModel::ModelInterface d_model;
 
@@ -427,14 +418,10 @@ namespace GPlatesAppLogic
 		 * to input feature collections.
 		 *
 		 * It also is solely responsible for generating the complete aggregate reconstruction.
+		 *
+		 * NOTE: This must be declared after @a d_layer_task_registry since it uses it.
 		 */
 		boost::scoped_ptr<ReconstructGraph> d_reconstruct_graph;
-
-		/**
-		 * A mapping of all primary layers (auto-generated when a file is loaded)
-		 * to the auto-generated layers.
-		 */
-		file_to_primary_layers_mapping_type d_file_to_primary_layers_mapping;
 
 		/**
 		 * If true, changes the default reconstruction tree layer upon loading a rotation file.
@@ -523,29 +510,6 @@ namespace GPlatesAppLogic
 		void
 		end_reconstruct_on_scope_exit(
 				bool reconstruct_on_scope_exit);
-
-		/**
-		 * Creates all layer tasks that can process @a input_feature_collection.
-		 */
-		std::vector< boost::shared_ptr<LayerTask> >
-		create_layer_tasks(
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &input_feature_collection);
-
-		/**
-		 * Creates new layer(s) that can process the feature collection in @a input_file_ref and
-		 * connects the feature collection to the main input of each new layer.
-		 */
-		void
-		create_layers(
-				const FeatureCollectionFileState::file_reference &input_file_ref);
-
-		/**
-		 * Creates a new layer using @a layer_task and connects @a file_ref to the main input channel.
-		 */
-		Layer
-		create_layer(
-				const FeatureCollectionFileState::file_reference &file_ref,
-				const boost::shared_ptr<LayerTask> &layer_task);
 
 		// Make friend so can call @a begin_reconstruct_on_scope_exit and @a end_reconstruct_on_scope_exit.
 		friend class ScopedReconstructGuard;

@@ -607,8 +607,18 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-
 		boost::weak_ptr<ReconstructGraphImpl::Layer> d_impl;
+
+	// FIXME: These method are public but should be private.
+	// They are public so save/restore session can access them externally.
+	// Perhaps can have serialise/unserialise methods.
+	public:
+		bool
+		get_auto_created() const;
+
+		void
+		set_auto_created(
+				bool auto_created = true);
 	};
 }
 

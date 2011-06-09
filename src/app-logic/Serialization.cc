@@ -66,6 +66,7 @@ namespace
 		el.setAttribute("type", layer.get_type());
 		el.setAttribute("main_input_channel", layer.get_main_input_feature_collection_channel());
 		el.setAttribute("is_active", layer.is_active() ? 1 : 0);
+		el.setAttribute("auto_created", layer.get_auto_created() ? 1 : 0);
 		return el;
 	}
 
@@ -100,6 +101,7 @@ namespace
 		GPlatesAppLogic::LayerTaskType::Type layer_task_id =
 				static_cast<GPlatesAppLogic::LayerTaskType::Type>(el.attribute("type").toInt());
 		int is_active = el.attribute("is_active").toInt();
+		int auto_created = el.attribute("auto_created").toInt();
 		GPlatesAppLogic::LayerTaskRegistry::LayerTaskType ltt = get_layer_task_type(ltr, layer_task_id);
 
 		// Before we can create a Layer, we must first create a LayerTask.
@@ -108,6 +110,10 @@ namespace
 		// Finally, can we create a Layer?
 		GPlatesAppLogic::Layer layer = rg.add_layer(lt_ptr);
 		layer.activate( is_active == 1 ? true : false );
+		// Was the layer originally auto-created ?
+		// This is needed so the layer can be auto-destroyed if the input file on its
+		// main input channel is later unloaded by the user.
+		layer.set_auto_created( auto_created == 1 ? true : false );
 
 		// Store ID for this layer.
 		idmap.insert(el.attribute("id"), layer);

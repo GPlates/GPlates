@@ -35,9 +35,9 @@
 #include "Serialization.h"
 
 
-#include "ApplicationState.h"
 #include "LayerProxyUtils.h"
 #include "LayerTask.h"
+#include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructGraphImpl.h"
 #include "ReconstructionLayerProxy.h"
@@ -50,11 +50,86 @@
 
 
 GPlatesAppLogic::ReconstructGraph::ReconstructGraph(
-		ApplicationState &application_state) :
-	d_application_state(application_state),
+		const LayerTaskRegistry &layer_task_registry) :
+	d_layer_task_registry(layer_task_registry),
 	d_identity_rotation_reconstruction_layer_proxy(
 			ReconstructionLayerProxy::create(1/*max_num_reconstruction_trees_in_cache*/))
 {
+}
+
+
+GPlatesAppLogic::Layer::InputFile
+GPlatesAppLogic::ReconstructGraph::add_file(
+		const FeatureCollectionFileState::file_reference &file,
+		boost::optional<AutoCreateLayerParams> auto_create_layers)
+{
+	// Wrap a new Data object around the file.
+	const boost::shared_ptr<ReconstructGraphImpl::Data> input_file_impl(
+			new ReconstructGraphImpl::Data(file));
+
+	// Add to our internal mapping of file indices to InputFile's.
+	std::pair<input_file_ptr_map_type::const_iterator, bool> insert_result =
+			d_input_files.insert(std::make_pair(file, input_file_impl));
+
+	// The file shouldn't already exist in the map.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			insert_result.second,
+			GPLATES_ASSERTION_SOURCE);
+
+	// The input file to return to the caller as a weak reference.
+	const Layer::InputFile input_file(input_file_impl);
+
+	if (auto_create_layers)
+	{
+		auto_create_layers_for_new_input_file(input_file, auto_create_layers.get());
+	}
+
+	return input_file;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::remove_file(
+		const FeatureCollectionFileState::file_reference &file)
+{
+	// Search for the file that's about to be removed.
+	const input_file_ptr_map_type::iterator input_file_iter =
+			d_input_files.find(file);
+
+	// We should be able to find the file in our internal map.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			input_file_iter != d_input_files.end(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// The input file corresponding to the file about to be removed.
+	input_file_ptr_type input_file_impl = input_file_iter->second;
+
+	// Destroy auto-created layers for the file about to be removed.
+	auto_destroy_layers_for_input_file_about_to_be_removed(Layer::InputFile(input_file_impl));
+
+	// Get the input file to disconnect all connections that use it as input.
+	input_file_impl->disconnect_output_connections();
+
+	// Remove the input file object.
+	d_input_files.erase(input_file_iter);
+}
+
+
+GPlatesAppLogic::Layer::InputFile
+GPlatesAppLogic::ReconstructGraph::get_input_file(
+		const FeatureCollectionFileState::file_reference input_file)
+{
+	// Search for the input file.
+	input_file_ptr_map_type::const_iterator input_file_iter = d_input_files.find(input_file);
+
+	// We should have all currently loaded files covered.
+	// If the specified file cannot be found then something is broken.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			input_file_iter != d_input_files.end(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Return to caller as a weak reference.
+	return Layer::InputFile(input_file_iter->second);
 }
 
 
@@ -119,67 +194,6 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 
 
 void
-GPlatesAppLogic::ReconstructGraph::add_file(
-		const FeatureCollectionFileState::file_reference &file)
-{
-	// Wrap a new Data object around the file.
-	const boost::shared_ptr<ReconstructGraphImpl::Data> input_file_impl(
-			new ReconstructGraphImpl::Data(file));
-
-	// Add to our internal mapping of file indices to InputFile's.
-	std::pair<input_file_ptr_map_type::const_iterator, bool> insert_result =
-			d_input_files.insert(std::make_pair(file, input_file_impl));
-
-	// The file shouldn't already exist in the map.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			insert_result.second,
-			GPLATES_ASSERTION_SOURCE);
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::remove_file(
-		const FeatureCollectionFileState::file_reference &file)
-{
-	// Search for the file that's about to be removed.
-	const input_file_ptr_map_type::iterator input_file_iter =
-			d_input_files.find(file);
-
-	// We should be able to find the file in our internal map.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			input_file_iter != d_input_files.end(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// The input file corresponding to the file about to be removed.
-	ReconstructGraphImpl::Data *input_file_impl = input_file_iter->second.get();
-
-	// Get the input file to disconnect all connections that use it as input.
-	input_file_impl->disconnect_output_connections();
-
-	// Remove the input file object.
-	d_input_files.erase(input_file_iter);
-}
-
-
-GPlatesAppLogic::Layer::InputFile
-GPlatesAppLogic::ReconstructGraph::get_input_file(
-		const FeatureCollectionFileState::file_reference input_file)
-{
-	// Search for the input file.
-	input_file_ptr_map_type::const_iterator input_file_iter = d_input_files.find(input_file);
-
-	// We should have all currently loaded files covered.
-	// If the specified file cannot be found then something is broken.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			input_file_iter != d_input_files.end(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Return to caller as a weak reference.
-	return Layer::InputFile(input_file_iter->second);
-}
-
-
-void
 GPlatesAppLogic::ReconstructGraph::set_default_reconstruction_tree_layer(
 		const Layer &new_default_reconstruction_tree_layer)
 {
@@ -221,7 +235,8 @@ GPlatesAppLogic::ReconstructGraph::get_default_reconstruction_tree_layer() const
 
 GPlatesAppLogic::Reconstruction::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchored_plated_id)
 {
 	// Create a Reconstruction to store the layer proxies of each *active* layer.
 	// And the default reconstruction layer proxy will perform identity rotations unless we later
@@ -235,8 +250,7 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 	// FIXME: Having to update the identity reconstruction layer proxy to prevent problems in other
 	// area is just dodgy. This whole default reconstruction tree layer has to be reevaluated.
 	d_identity_rotation_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction_time);
-	d_identity_rotation_reconstruction_layer_proxy->set_current_anchor_plate_id(
-			d_application_state.get_current_anchored_plate_id());
+	d_identity_rotation_reconstruction_layer_proxy->set_current_anchor_plate_id(anchored_plated_id);
 	Reconstruction::non_null_ptr_type reconstruction =
 			Reconstruction::create(
 					reconstruction_time,
@@ -267,7 +281,7 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 		layer->update_layer_task(
 				layer_handle,
 				*reconstruction,
-				d_application_state.get_current_anchored_plate_id());
+				anchored_plated_id);
 
 		// If the layer just executed is the default reconstruction layer then
 		// store its output in the Reconstruction object.
@@ -291,6 +305,137 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 	}
 
 	return reconstruction;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::auto_create_layers_for_new_input_file(
+		const Layer::InputFile &input_file,
+		const AutoCreateLayerParams &auto_create_layer_params)
+{
+	//
+	// Create a new layer for the input file (or create multiple layers if the feature collection
+	// contains features that can be processed by more than one layer type).
+	//
+
+	const GPlatesModel::FeatureCollectionHandle::weak_ref input_feature_collection =
+			input_file.get_file().get_file().get_feature_collection();
+
+	// Look for layer task types that we should create to process the loaded feature collection.
+	const std::vector<LayerTaskRegistry::LayerTaskType> layer_task_types =
+			d_layer_task_registry.get_layer_task_types_to_auto_create_for_loaded_file(
+					input_feature_collection);
+
+	// Iterate over the compatible layer task types and create layers.
+	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, layer_task_types)
+	{
+		const boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task =
+				layer_task_type.create_layer_task();
+		if (layer_task)
+		{
+			auto_create_layer(input_file, layer_task.get(), auto_create_layer_params);
+		}
+	}
+}
+
+
+GPlatesAppLogic::Layer
+GPlatesAppLogic::ReconstructGraph::auto_create_layer(
+		const Layer::InputFile &input_file,
+		const boost::shared_ptr<LayerTask> &layer_task,
+		const AutoCreateLayerParams &auto_create_layer_params)
+{
+	// Create a new layer using the layer task.
+	// This will emit a signal to notify clients of a new layer.
+	Layer new_layer = add_layer(layer_task);
+
+	// Mark the layer as having been auto-created.
+	// This will cause the layer to be auto-destroyed when 'input_file' is unloaded.
+	new_layer.set_auto_created(true);
+
+	//
+	// Connect the file to the input of the new layer.
+	//
+
+	// Get the main feature collection input channel for our layer.
+	const QString main_input_feature_collection_channel =
+			new_layer.get_main_input_feature_collection_channel();
+
+	// Connect the input file to the main input channel of the new layer.
+	new_layer.connect_input_to_file(
+			input_file,
+			main_input_feature_collection_channel);
+
+	// Set the new default reconstruction tree if we're updating the default *and*
+	// the new layer type is a reconstruction tree layer.
+	if (auto_create_layer_params.update_default_reconstruction_tree_layer &&
+		new_layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)
+	{
+		set_default_reconstruction_tree_layer(new_layer);
+	}
+
+	return new_layer;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::auto_destroy_layers_for_input_file_about_to_be_removed(
+		const Layer::InputFile &input_file_about_to_be_removed)
+{
+	// Destroy layers that were auto-created from the specified file.
+	// NOTE: If the user explicitly created a layer then it will never get removed automatically -
+	// the user must also explicitly destroy the layer - this is even the case when all files
+	// connected to that layer are unloaded (the user still has to explicitly destroy the layer).
+
+	std::vector<Layer> layers_to_remove;
+
+	// Iterate over the output connections of the input file that's about to be removed.
+	const ReconstructGraphImpl::Data::connection_seq_type &output_connections =
+			input_file_ptr_type(input_file_about_to_be_removed.get_impl())->get_output_connections();
+	BOOST_FOREACH(
+			const ReconstructGraphImpl::LayerInputConnection *output_connection,
+			output_connections)
+	{
+		const layer_ptr_type layer_receiving_file_input(output_connection->get_layer_receiving_input());
+
+		Layer layer(layer_receiving_file_input);
+
+		// If the layer was not auto-created then we shouldn't auto-destroy it.
+		if (!layer.get_auto_created())
+		{
+			continue;
+		}
+
+		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
+
+		const std::vector<Layer::InputConnection> input_connections = layer.get_channel_inputs(main_input_channel);
+		// We only remove layers that currently have one input file on the main channel.
+		if (input_connections.size() != 1)
+		{
+			continue;
+		}
+
+		// Make sure the input connects to a file rather than the output of another layer.
+		boost::optional<Layer::InputFile> main_channel_input_file = input_connections[0].get_input_file();
+		if (!main_channel_input_file)
+		{
+			continue;
+		}
+
+		// If the sole input file on the main channel matches the file about to be removed then
+		// we can remove the layer.
+		if (main_channel_input_file.get() == input_file_about_to_be_removed)
+		{
+			layers_to_remove.push_back(layer);
+		}
+	}
+
+	// Remove any layers that need removing.
+	// We do this last to avoid any issues iterating over layer connections above.
+	BOOST_FOREACH(const Layer &layer_to_remove, layers_to_remove)
+	{
+		remove_layer(layer_to_remove);
+	}
 }
 
 

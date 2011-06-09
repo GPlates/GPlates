@@ -394,6 +394,35 @@ GPlatesAppLogic::Layer::get_layer_proxy() const
 }
 
 
+bool
+GPlatesAppLogic::Layer::get_auto_created() const
+{
+	// Throw our own exception to track location of throw.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_valid(),
+			GPLATES_ASSERTION_SOURCE);
+
+	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(d_impl);
+
+	return layer_impl->get_auto_created();
+}
+
+
+void
+GPlatesAppLogic::Layer::set_auto_created(
+		bool auto_created)
+{
+	// Throw our own exception to track location of throw.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_valid(),
+			GPLATES_ASSERTION_SOURCE);
+
+	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(d_impl);
+
+	layer_impl->set_auto_created(auto_created);
+}
+
+
 GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::Layer::InputFile::get_file() const
 {

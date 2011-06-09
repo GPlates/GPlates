@@ -36,6 +36,7 @@
 #include <boost/mpl/contains.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -57,6 +58,7 @@ namespace GPlatesAppLogic
 {
 	class ApplicationState;
 	class LayerTask;
+	class LayerTaskRegistry;
 
 	namespace ReconstructGraphImpl
 	{
@@ -101,12 +103,80 @@ namespace GPlatesAppLogic
 		typedef boost::transform_iterator<make_layer_fn_type,
 				layer_ptr_seq_type::iterator> iterator;
 
+		/**
+		 * Parameters that determine what to do when auto-creating layers (when adding a new file).
+		 */
+		struct AutoCreateLayerParams
+		{
+			/**
+			 * The default is to update the default reconstruction tree layer.
+			 */
+			AutoCreateLayerParams(
+					bool update_default_reconstruction_tree_layer_ = true) :
+				update_default_reconstruction_tree_layer(update_default_reconstruction_tree_layer_)
+			{  }
+
+			/**
+			 * Do we update the default reconstruction tree layer when loading a rotation file ?
+			 */
+			bool update_default_reconstruction_tree_layer;
+		};
+
 
 		/**
 		 * Constructor.
 		 */
 		ReconstructGraph(
-				ApplicationState &application_state);
+				const LayerTaskRegistry &layer_task_registry);
+
+
+		/**
+		 * Adds a file to the graph.
+		 *
+		 * If @a auto_create_layers is true then layer(s) are also created that can process
+		 * the features in the file (if any) and connected to the file.
+		 * Note that multiple layers can be created for one file depending on the types of features in it.
+		 *
+		 * Typically @a auto_create_layers is valid but can be boost::none when restoring a session
+		 * because that also restores the created layers explicitly (rather than auto-creating them).
+		 *
+		 * Used to be a slot but is now called directly by @a ApplicationState when it is
+		 * notified of a newly loaded file.
+		 */
+		Layer::InputFile
+		add_file(
+				const FeatureCollectionFileState::file_reference &file,
+				boost::optional<AutoCreateLayerParams> auto_create_layers = AutoCreateLayerParams());
+
+
+		/**
+		 * Removes a file from the graph and disconnects from any connected layers.
+		 *
+		 * Used to be a slot but is now called directly by @a ApplicationState when it is
+		 * notified that a file is about to be unloaded.
+		 */
+		void
+		remove_file(
+				const FeatureCollectionFileState::file_reference &file);
+
+
+		/**
+		 * Gets the input file handle for @a input_file.
+		 *
+		 * The returned file is a weak reference and does not need to be stored anywhere.
+		 * It's typically passed straight to Layer::connect_to_input_file.
+		 *
+		 * If this file gets unloaded by the user then the returned weak reference will
+		 * become invalid and all layers connecting to this input file will lose those
+		 * connections automatically. This is the primary reason for having this method.
+		 * If any layer has no more input connections on its main channel input then that
+		 * layer will be removed automatically and destroyed.
+		 *
+		 * @throws PreconditionViolationError if @a input_file is not a currently loaded file.
+		 */
+		Layer::InputFile
+		get_input_file(
+				const FeatureCollectionFileState::file_reference input_file);
 
 
 		/**
@@ -154,47 +224,6 @@ namespace GPlatesAppLogic
 		void
 		remove_layer(
 				Layer layer);
-
-
-		/**
-		 * Adds a file to the graph but it is currently not connected to any layers.
-		 *
-		 * Used to be a slot but is now called directly by @a ApplicationState when it is
-		 * notified of a newly loaded file.
-		 */
-		void
-		add_file(
-				const FeatureCollectionFileState::file_reference &file);
-
-
-		/**
-		 * Removes a file from the graph and disconnects from any connected layers.
-		 *
-		 * Used to be a slot but is now called directly by @a ApplicationState when it is
-		 * notified that a file is about to be unloaded.
-		 */
-		void
-		remove_file(
-				const FeatureCollectionFileState::file_reference &file);
-
-
-		/**
-		 * Gets the input file handle for @a input_file.
-		 *
-		 * The returned file is a weak reference and does not need to be stored anywhere.
-		 * It's typically passed straight to Layer::connect_to_input_file.
-		 *
-		 * If this file gets unloaded by the user then the returned weak reference will
-		 * become invalid and all layers connecting to this input file will lose those
-		 * connections automatically. This is the primary reason for having this method.
-		 * If any layer has no more input connections on its main channel input then that
-		 * layer will be removed automatically and destroyed.
-		 *
-		 * @throws PreconditionViolationError if @a input_file is not a currently loaded file.
-		 */
-		Layer::InputFile
-		get_input_file(
-				const FeatureCollectionFileState::file_reference input_file);
 
 
 		/**
@@ -296,7 +325,8 @@ namespace GPlatesAppLogic
 		 */
 		Reconstruction::non_null_ptr_to_const_type
 		update_layer_tasks(
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchored_plated_id);
 
 
 	signals:
@@ -434,7 +464,10 @@ namespace GPlatesAppLogic
 		typedef std::vector<Layer> default_reconstruction_tree_layer_stack_type;
 
 
-		ApplicationState &d_application_state;
+		/**
+		 * Used to create layer task when auto-creating layers (when adding a file).
+		 */
+		const LayerTaskRegistry &d_layer_task_registry;
 
 		input_file_ptr_map_type d_input_files;
 		layer_ptr_seq_type d_layers;
@@ -454,6 +487,30 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructionLayerProxy::non_null_ptr_type d_identity_rotation_reconstruction_layer_proxy;
 
+
+		/**
+		 * Auto-creates layers that can process the features in the specified file.
+		 */
+		void
+		auto_create_layers_for_new_input_file(
+				const Layer::InputFile &input_file,
+				const AutoCreateLayerParams &auto_create_layer_params);
+
+		/**
+		 * Creates a layer given the specified layer task and connects to the specified input file.
+		 */
+		Layer
+		auto_create_layer(
+				const Layer::InputFile &input_file,
+				const boost::shared_ptr<LayerTask> &layer_task,
+				const AutoCreateLayerParams &auto_create_layer_params);
+
+		/**
+		 * Auto-destroyes layers that were auto-created from the specified input file.
+		 */
+		void
+		auto_destroy_layers_for_input_file_about_to_be_removed(
+				const Layer::InputFile &input_file_about_to_be_removed);
 
 		/**
 		 * Handles removal of the current (or a previous) default reconstruction tree layer.
