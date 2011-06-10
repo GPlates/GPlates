@@ -488,33 +488,6 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::~Layer()
 }
 
 
-// gcc isn't liking the BOOST_MPL_ASSERT.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-void
-GPlatesAppLogic::ReconstructGraphImpl::Layer::update_layer_task(
-		const GPlatesAppLogic::Layer &layer_handle /* handle used by clients */,
-		Reconstruction &reconstruction,
-		GPlatesModel::integer_plate_id_type anchored_plate_id)
-{
-	// If this layer is not active then we don't add the layer proxy to 'reconstruction'.
-	if (!d_active)
-	{
-		return;
-	}
-
-	// Update the layer's task.
-	d_layer_task->update(
-			layer_handle,
-			reconstruction.get_reconstruction_time(),
-			anchored_plate_id,
-			reconstruction.get_default_reconstruction_layer_output());
-
-	// Add the layer output to the reconstruction.
-	reconstruction.add_active_layer_output(d_layer_task->get_layer_proxy());
-}
-ENABLE_GCC_WARNING("-Wold-style-cast")
-
-
 void
 GPlatesAppLogic::ReconstructGraphImpl::Layer::activate(
 		bool active)
@@ -536,6 +509,9 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::activate(
 	{
 		output_connection->input_layer_activated(active);
 	}
+
+	// Notify the layer task of the change in active state.
+	d_layer_task->activate(active);
 }
 
 

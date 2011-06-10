@@ -184,7 +184,8 @@ namespace
 			GPlatesAppLogic::LayerTaskRegistry &ltr,
 			GPlatesAppLogic::ReconstructGraph &rg,
 			QDomElement el,
-			IdLayerMap &idmap)
+			IdLayerMap &idmap,
+			int session_version)
 	{
 		// What layer are we going to connect things to?
 		GPlatesAppLogic::Layer to_layer = idmap.value(el.attribute("to"));
@@ -195,6 +196,33 @@ namespace
 
 		// Before we can create a InputConnection, we must first know what type of connection to make.
 		QString input_channel = el.attribute("input_channel_name");
+
+		// Handle deprecated connections from old session versions.
+		if (session_version < 2)
+		{
+			// Version 1 added a connection for topological boundary sections in topology layers.
+			// Version 2 then deprecated this connection and so versions 2 and above can simply
+			// ignore the connection without loss of functionality.
+			if (to_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER)
+			{
+				// Note that the following string literal is deprecated and so this is now
+				// the only instance of it in the GPlates source code.
+				if (input_channel == "Topological boundary section features")
+				{
+					return GPlatesAppLogic::Layer::InputConnection();	// a deprecated InputConnection.
+				}
+			}
+			if (to_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
+			{
+				// Note that the following string literal is deprecated and so this is now
+				// the only instance of it in the GPlates source code.
+				if (input_channel == "Topological section features")
+				{
+					return GPlatesAppLogic::Layer::InputConnection();	// a deprecated InputConnection.
+				}
+			}
+		}
+
 		if (el.attribute("type") == "InputFile") {
 			// What file are we going to take the data from?
 			GPlatesAppLogic::Layer::InputFile from_file = get_input_file_by_id(fs, rg, el.attribute("from"));
@@ -254,59 +282,6 @@ namespace
 		// Otherwise, just ensure the InputConnection reference is still a valid reference (it should be).
 		return con.is_valid();
 	}		
-
-
-#if 0 // sketch of serialisation code for Auto Created Layers
-	/**
-	 * Turn a SOME_SORT_OF_AUTO_CREATED_LAYER_RELATIONSHIP into a QDomElement.
-	 * Does not add this element anywhere in the DOM tree, just makes it.
-	 */
-	QDomElement
-	save_auto_created_layer_relationship(
-			GPlatesAppLogic::Session::LayersStateType dom,
-			/* Might have to pass your Wrapper in here as well, if you need it to look up details,*/
-			const SOME_SORT_OF_AUTO_CREATED_LAYER_RELATIONSHIP &rel,
-			LayerIdMap &idmap)
-	{
-		QDomElement el = dom.createElement("AutoCreatedLayer");
-		// Identify InputFiles by filepath (currently, anyway).
-		el.setAttribute("owner", rel.GET_THE_OWNING_INPUTFILE()->get_file_info().get_qfileinfo().absoluteFilePath());
-		// Identify Layer objects by looking up an arbitrary ID.
-		el.setAttribute("layer", idmap.value(rel.GET_THE_LAYER_WHAT_WAS_AUTO_CREATED()));
-
-		return el;
-	}
-
-	/**
-	 * Load a SOME_SORT_OF_AUTO_CREATED_LAYER_RELATIONSHIP into the ReconstructGraph wrapper thing
-	 * from a QDomElement.
-	 */
-	void
-	load_auto_created_layer_relationship(
-			GPlatesAppLogic::FeatureCollectionFileState &fs,
-			GPlatesAppLogic::ReconstructGraph &rg,
-			/* Might have to pass your Wrapper in here as well, if you need it to set details,*/
-			QDomElement el,
-			IdLayerMap &idmap)
-	{
-		// Which layer is the one that was auto-created?
-		GPlatesAppLogic::Layer layer = idmap.value(el.attribute("layer"));
-		if ( ! layer.is_valid()) {
-			// Fail, Layer is not valid.
-			return;
-		}
-
-		// What file "owns" the auto-created layer?
-		GPlatesAppLogic::Layer::InputFile owner = get_input_file_by_id(fs, rg, el.attribute("owner"));
-		if ( ! owner.is_valid()) {
-			// Fail, InputFile is not valid.
-			return;
-		}
-
-		// Given owner and layer, we can now restore the auto-created-layer relationship... somehow!
-		// TODO: That thing I just said
-	}
-#endif // sketch of serialisation code for Auto Created Layers
 }
 
 
@@ -417,25 +392,14 @@ GPlatesAppLogic::Serialization::save_layers_state()
 		}
 	}
 
-
-#if 0  // sketch of serialisation code for Auto Created Layers
-	// Oh and also, list all the auto-created layer relationships.
-	QDomElement el_autocreated = dom.createElement("AutoCreatedLayerMap");
-	el_root.appendChild(el_autocreated);
-
-	// Iterate over them... somehow!
-	BOOST_FOREACH(const SOME_SORT_OF_AUTO_CREATED_LAYER_RELATIONSHIP &rel, SOME_WAY_OF_GETTING_THOSE) {
-		el_autocreated.appendChild(save_auto_created_layer_relationship(dom, rg, rel, idmap));
-	}
-#endif
-
 	return dom;
 }
 
 
 void
 GPlatesAppLogic::Serialization::load_layers_state(
-		const GPlatesAppLogic::Session::LayersStateType &dom)
+		const GPlatesAppLogic::Session::LayersStateType &dom,
+		int session_version)
 {
 	// We should already have Impl::Data objects loaded due to the way we suppressed the auto-layer-creation code.
 	// So we'll have the InputFile objects available. We *could* load those separately later, but I'm happy enough
@@ -478,23 +442,10 @@ GPlatesAppLogic::Serialization::load_layers_state(
 		  el_con = el_con.nextSiblingElement("InputConnection")) {
 		// Only attempt to load <InputConnection>s that don't look broken (with an empty "to" or "from" attribute)
 		if ( ! el_con.attribute("from").isEmpty() && ! el_con.attribute("to").isEmpty()) {
-			load_layer_connection(d_app_state_ptr->get_feature_collection_file_state(), ltr, rg, el_con, idmap);
+			load_layer_connection(
+					d_app_state_ptr->get_feature_collection_file_state(), ltr, rg, el_con, idmap, session_version);
 		}
 	}
-	
-	
-#if 0  // sketch of serialisation code for Auto Created Layers
-	// Then we need to reinstate the information about which layers were auto-created from which files.
-	QDomElement el_autocreated = el_root.firstChildElement("AutoCreatedLayerMap");
-	for (QDomElement el_rel = el_autocreated.firstChildElement("AutoCreatedLayer");
-		  ! el_rel.isNull();
-		  el_rel = el_rel.nextSiblingElement("AutoCreatedLayer")) {
-		// Only attempt to load relationships that don't look broken (with an empty "owner" or "layer" attribute)
-		if ( ! el_rel.attribute("owner").isEmpty() && ! el_rel.attribute("layer").isEmpty()) {
-			load_auto_created_layer_relationship(d_app_state_ptr->get_feature_collection_file_state(), rg, el_rel, idmap);
-		}
-	}
-#endif
 
 
 	// Aaaand we're done.

@@ -82,6 +82,13 @@ namespace GPlatesAppLogic
 		get_main_input_feature_collection_channel() const;
 
 
+		virtual
+		void
+		activate(
+				bool active)
+		{  }
+
+
 		void
 		add_input_file_connection(
 				const QString &input_channel_name,
@@ -118,10 +125,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		update(
-				const Layer &layer_handle /* the layer invoking this */,
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
+				const Reconstruction::non_null_ptr_type &reconstruction);
 
 
 		LayerProxy::non_null_ptr_type

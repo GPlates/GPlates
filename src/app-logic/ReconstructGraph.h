@@ -110,7 +110,8 @@ namespace GPlatesAppLogic
 		struct AutoCreateLayerParams
 		{
 			/**
-			 * The default is to update the default reconstruction tree layer.
+			 * The default is to update the default reconstruction tree layer if a new
+			 * reconstruction tree layer is auto-created.
 			 */
 			AutoCreateLayerParams(
 					bool update_default_reconstruction_tree_layer_ = true) :
@@ -605,34 +606,6 @@ namespace GPlatesAppLogic
 		void
 		handle_default_reconstruction_tree_layer_removal(
 				const Layer &layer_being_removed);
-
-		/**
-		 * Determines an order of layers that will not violate the dependency graph -
-		 * in other words does not execute a layer before its input layers have been executed.
-		 */
-		std::vector<layer_ptr_type>
-		get_layer_dependency_order(
-				const layer_ptr_type &default_reconstruction_tree_layer) const;
-
-		/**
-		 * Find dependency ancestors of @a layer and appends them to @a ancestor_layers.
-		 */
-		void
-		find_dependency_ancestors_of_layer(
-				const layer_ptr_type &layer,
-				std::set<layer_ptr_type> &ancestor_layers) const;
-
-		/**
-		 * Determines a dependency ordering of the dependency graph rooted at @a layer and
-		 * outputs the ordered results to @a dependency_ordered_layers.
-		 *
-		 * @a all_layers_visited is used to avoid visiting the same layer more than once.
-		 */
-		void
-		find_layer_dependency_order(
-				const layer_ptr_type &layer,
-				std::vector<layer_ptr_type> &dependency_ordered_layers,
-				std::set<layer_ptr_type> &all_layers_visited) const;
 	};
 }
 

@@ -75,6 +75,9 @@ namespace GPlatesAppLogic
 		 * @param reconstruction_tree is associated with the output resolved topological networks.
 		 * @param reconstructed_topological_sections are the reconstructed feature geometries
 		 *        of the topological sections used to form the networks.
+		 *        We don't reference them directly but by forcing clients to produce them we
+		 *        ensure they exist while we search for them indirectly via feature observers.
+		 *        If clients didn't produce them, or forgot to, then we'd find no RFGs during the global search.
 		 * @param restrict_topological_sections_to_same_reconstruction_tree is used to restrict the
 		 *        reconstructed topological boundary sections, specified with
 		 *        @a reconstructed_topological_sections, to those that were reconstructed
@@ -250,6 +253,10 @@ namespace GPlatesAppLogic
 
 		/**
 		 * The reconstructed topogical sections we're using to assemble our networks.
+		 *
+		 * NOTE: We don't reference them directly but by forcing clients to produce them we
+		 * ensure they exist while we search for them indirectly via feature observers.
+		 * If the client didn't produce them, or forgot to, then we'd find no RFGs during the global search.
 		 */
 		const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &d_reconstructed_topological_sections;
 

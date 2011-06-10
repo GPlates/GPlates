@@ -248,70 +248,80 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchored_plated_id)
 {
-	// Create a Reconstruction to store the layer proxies of each *active* layer.
-	// And the default reconstruction layer proxy will perform identity rotations unless we later
-	// find a valid default reconstruction layer proxy.
-	// NOTE: The specified reconstruction layer proxy will only get used if there are no
-	// reconstruction tree layers loaded.
-	// Also by keeping the same instance over time we avoid layers continually updating themselves,
-	// when it's unnecessary, because they think the default reconstruction layer is constantly
-	// being switched.
-	// 
-	// FIXME: Having to update the identity reconstruction layer proxy to prevent problems in other
-	// area is just dodgy. This whole default reconstruction tree layer has to be reevaluated.
-	d_identity_rotation_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction_time);
-	d_identity_rotation_reconstruction_layer_proxy->set_current_anchor_plate_id(anchored_plated_id);
-	Reconstruction::non_null_ptr_type reconstruction =
-			Reconstruction::create(
-					reconstruction_time,
-					d_identity_rotation_reconstruction_layer_proxy);
+	// Determine a default reconstruction layer proxy.
+	boost::optional<ReconstructionLayerProxy::non_null_ptr_type> default_reconstruction_layer_proxy;
 
-	// Get a shared reference to the default reconstruction tree layer if there is one.
-	layer_ptr_type default_reconstruction_tree_layer;
+	// If we have a default reconstruction tree layer that's active then use that.
 	if (get_default_reconstruction_tree_layer().is_valid() &&
+		get_default_reconstruction_tree_layer().is_active() &&
 		// FIXME: Should probably handle this elsewhere so we don't have to check here...
 		get_default_reconstruction_tree_layer().get_type() == LayerTaskType::RECONSTRUCTION)
 	{
-		default_reconstruction_tree_layer =
-				layer_ptr_type(get_default_reconstruction_tree_layer().get_impl());
+		// Get the output of the default reconstruction tree layer.
+		default_reconstruction_layer_proxy =
+				get_default_reconstruction_tree_layer().get_layer_output<ReconstructionLayerProxy>();
 	}
 
-	// Traverse the dependency graph to determine the order in which layers should be executed
-	// so that layers requiring input from other layers get executed later.
-	const std::vector<layer_ptr_type> dependency_ordered_layers =
-			get_layer_dependency_order(default_reconstruction_tree_layer);
-
-	// Iterate over the layers and update them in the correct order.
-	BOOST_FOREACH(const layer_ptr_type &layer, dependency_ordered_layers)
+	// Otherwise use the identity rotation reconstruction layer proxy.
+	if (!default_reconstruction_layer_proxy)
 	{
-		// Pass a layer handle, that clients can use, when executing layer tasks.
-		const Layer layer_handle(layer);
+		// NOTE: The specified reconstruction layer proxy will only get used if there are no
+		// reconstruction tree layers loaded.
+		// Also by keeping the same instance over time we avoid layers continually updating themselves,
+		// when it's unnecessary, because they think the default reconstruction layer is constantly
+		// being switched.
+		//
+		// FIXME: Having to update the identity reconstruction layer proxy to prevent problems in other
+		// area is just dodgy. This whole default reconstruction tree layer has to be reevaluated.
+		d_identity_rotation_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+		d_identity_rotation_reconstruction_layer_proxy->set_current_anchor_plate_id(anchored_plated_id);
 
-		// Execute the layer task.
-		layer->update_layer_task(
-				layer_handle,
-				*reconstruction,
-				anchored_plated_id);
+		default_reconstruction_layer_proxy = d_identity_rotation_reconstruction_layer_proxy;
+	}
 
-		// If the layer just executed is the default reconstruction layer then
-		// store its output in the Reconstruction object.
-		// The Reconstruction object will get queried by subsequent layers for the default
-		// reconstruction layer proxy.
-		// NOTE: There should be no danger of another layer querying the default reconstruction
-		// layer proxy before its set due to the dependency order of execution of the layers.
-		if (layer == default_reconstruction_tree_layer)
+	// Create a Reconstruction to store the layer proxies of each *active* layer and
+	// the default reconstruction layer proxy.
+	Reconstruction::non_null_ptr_type reconstruction =
+			Reconstruction::create(
+					reconstruction_time,
+					anchored_plated_id,
+					default_reconstruction_layer_proxy.get());
+
+	// Iterate over the layers and add the active ones to the Reconstruction object.
+	// We do this loop first so we can then pass the Reconstruction to all layers as we update
+	// them in the second loop - some layers like topology layers references other layers without
+	// going through their input channels and hence need to know about all active layers.
+	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
+	{
+		// If this layer is not active then we don't add the layer proxy to the current reconstruction.
+		if (!layer->is_active())
 		{
-			// Get the output of the default reconstruction tree layer.
-			boost::optional<ReconstructionLayerProxy::non_null_ptr_type>
-					default_reconstruction_tree_layer_proxy =
-							layer_handle.get_layer_output<ReconstructionLayerProxy>();
-			if (default_reconstruction_tree_layer_proxy)
-			{
-				// Store it in the output Reconstruction.
-				reconstruction->set_default_reconstruction_layer_output(
-						default_reconstruction_tree_layer_proxy.get());
-			}
+			continue;
 		}
+
+		// Add the layer output (proxy) to the reconstruction.
+		reconstruction->add_active_layer_output(layer->get_layer_task().get_layer_proxy());
+	}
+
+	// Iterate over the layers again and update them.
+	// Note that the layers can be updated in any order - it is only when their layer proxy
+	// interfaces are queried that they will reference any dependency layers and that won't
+	// happen until after we're finished here and have returned.
+	//
+	// In any case the layers now operate in a pull model where a layer directly makes requests
+	// to its dependencies layers and so on, whereas previously layers operated in a push model
+	// that required dependency layers to produce output before the executing layers that
+	// depended on them thus required layers to be executed in dependency order.
+	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
+	{
+		// If this layer is not active then we don't add the layer proxy to the current reconstruction.
+		if (!layer->is_active())
+		{
+			continue;
+		}
+
+		// Update the layer's task.
+		layer->get_layer_task().update(reconstruction);
 	}
 
 	return reconstruction;
@@ -322,8 +332,6 @@ void
 GPlatesAppLogic::ReconstructGraph::modified_input_file(
 		const Layer::InputFile &input_file)
 {
-	std::cerr << "ReconstructGraph::modified_input_file" << std::endl;
-
 	//
 	// First iterate over the output connections of the modified input file to find all layer
 	// types that are currently processing the input file.
@@ -389,7 +397,12 @@ GPlatesAppLogic::ReconstructGraph::modified_input_file(
 		{
 			const boost::shared_ptr<LayerTask> new_layer_task = new_layer_task_type.create_layer_task();
 
-			const Layer new_layer = auto_create_layer(input_file, new_layer_task, AutoCreateLayerParams());
+			const Layer new_layer = auto_create_layer(
+					input_file,
+					new_layer_task,
+					// We don't want to set a new default reconstruction tree layer if one gets
+					// created because it might surprise the user (ie, they're not loading a rotation file).
+					AutoCreateLayerParams(false/*update_default_reconstruction_tree_layer_*/));
 		}
 	}
 }
@@ -590,125 +603,6 @@ GPlatesAppLogic::ReconstructGraph::handle_default_reconstruction_tree_layer_remo
 			*this,
 			prev_default_reconstruction_tree_layer,
 			new_default_reconstruction_tree_layer);
-}
-
-
-std::vector<GPlatesAppLogic::ReconstructGraph::layer_ptr_type>
-GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
-		const layer_ptr_type &default_reconstruction_tree_layer) const
-{
-	//
-	// Iterate over the layers traverse the dependency graph to determine execution order.
-	//
-	const std::size_t num_layers = d_layers.size();
-
-	// Add all the layers to a list.
-	std::list<layer_ptr_type> layers(d_layers.begin(), d_layers.end());
-
-	// The final sequence of dependency ordered layers to return to the caller.
-	std::vector<layer_ptr_type> dependency_ordered_layers;
-	dependency_ordered_layers.reserve(num_layers);
-
-	// Keep track of all layers visited when traversing dependency graph below.
-	std::set<layer_ptr_type> all_layers_visited;
-
-	// If there's a default reconstruction tree layer then it should get executed first
-	// since layer's can be implicitly connected to it (that is they can be connected to
-	// it even though they have no explicit connections to it) - and since we only follow
-	// explicit connections in the dependency graph we'll need to treat this as a special case.
-	if (default_reconstruction_tree_layer)
-	{
-		// The default reconstruction tree layer will be in the non-topological layers.
-		std::list<layer_ptr_type>::iterator default_recon_tree_layer_iter =
-			std::find(layers.begin(), layers.end(), default_reconstruction_tree_layer);
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				default_recon_tree_layer_iter != layers.end(),
-				GPLATES_ASSERTION_SOURCE);
-
-		// Remove from the other layers list and add it here instead.
-		layers.erase(default_recon_tree_layer_iter);
-
-		find_layer_dependency_order(
-				default_reconstruction_tree_layer, dependency_ordered_layers, all_layers_visited);
-	}
-
-	// Next iterate iterate over the remaining layers to build a dependency ordering.
-	BOOST_FOREACH(const layer_ptr_type &layer, layers)
-	{
-		find_layer_dependency_order(layer, dependency_ordered_layers, all_layers_visited);
-	}
-
-	// The number of layers returned should be equal to the total number of layers.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			dependency_ordered_layers.size() == num_layers,
-			GPLATES_ASSERTION_SOURCE);
-
-	return dependency_ordered_layers;
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::find_dependency_ancestors_of_layer(
-		const layer_ptr_type &layer,
-		std::set<layer_ptr_type> &ancestor_layers) const
-{
-	// Iterate over the output connections of 'layer'.
-	const ReconstructGraphImpl::Data::connection_seq_type &layer_output_connections =
-			layer->get_output_data()->get_output_connections();
-	BOOST_FOREACH(
-			const ReconstructGraphImpl::LayerInputConnection *layer_output_connection,
-			layer_output_connections)
-	{
-		const layer_ptr_type parent_layer(layer_output_connection->get_layer_receiving_input());
-
-		// Insert the current parent layer into the sequence of ancestor layers.
-		// If it has already been visited/inserted then continue to the next parent layer.
-		if (!ancestor_layers.insert(parent_layer).second)
-		{
-			continue;
-		}
-
-		// Traverse ancestor graph of the current parent layer.
-		find_dependency_ancestors_of_layer(parent_layer, ancestor_layers);
-	}
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::find_layer_dependency_order(
-		const layer_ptr_type &layer,
-		std::vector<layer_ptr_type> &dependency_ordered_layers,
-		std::set<layer_ptr_type> &all_layers_visited) const
-{
-	// Attempt to add the current layer to list of all layers visited.
-	if (!all_layers_visited.insert(layer).second)
-	{
-		// The current layer has already been visited so nothing needs to be done.
-		return;
-	}
-
-	// Iterate over the input connections of 'layer'.
-	const ReconstructGraphImpl::LayerInputConnections::connection_seq_type layer_input_connections =
-			layer->get_input_connections().get_input_connections();
-	BOOST_FOREACH(
-			const boost::shared_ptr<ReconstructGraphImpl::LayerInputConnection> &layer_input_connection,
-			layer_input_connections)
-	{
-		// See if the current input connection connects to the output of another layer.
-		const boost::optional< boost::weak_ptr<ReconstructGraphImpl::Layer> > layer_child_weak_ref =
-				layer_input_connection->get_input_data()->get_outputting_layer();
-		if (layer_child_weak_ref)
-		{
-			const layer_ptr_type layer_child(layer_child_weak_ref.get());
-
-			// Traverse the dependency graph of the current child layer.
-			find_layer_dependency_order(
-					layer_child, dependency_ordered_layers, all_layers_visited);
-		}
-	}
-
-	// Add the current layer after all child layers have been added.
-	dependency_ordered_layers.push_back(layer);
 }
 
 

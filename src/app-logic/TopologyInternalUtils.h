@@ -150,6 +150,8 @@ namespace GPlatesAppLogic
 		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
 		 * for the geometry property referenced by the property delegate @a geometry_delegate.
 		 *
+		 * NOTE: The RFGs must be generated before calling this function otherwise no RFGs will be found.
+		 *
 		 * Returns false if:
 		 * - there is *not* exactly *one* feature referencing the delegate feature id
 		 *   (in this case an error message is output to the console), or
@@ -170,14 +172,14 @@ namespace GPlatesAppLogic
 		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-				const boost::optional<const ReconstructionTree &> &reconstruction_tree = boost::none,
-				const boost::optional<const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &> &
-						restrict_reconstructed_feature_geometries = boost::none);
+				const boost::optional<const ReconstructionTree &> &reconstruction_tree = boost::none);
 
 
 		/**
 		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
 		 * for the geometry properties iterator @a geometry_property.
+		 *
+		 * NOTE: The RFGs must be generated before calling this function otherwise no RFGs will be found.
 		 *
 		 * Returns false if:
 		 * - @a geometry_property is invalid, or

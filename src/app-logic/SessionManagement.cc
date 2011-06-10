@@ -201,7 +201,9 @@ GPlatesAppLogic::SessionManagement::load_session(
 
 		file_io.load_files(QStringList::fromSet(strip_bad_filenames(session_to_load.loaded_files())));
 		// New in version 1 is save/restore of layer type and connections.
-		d_app_state_ptr->get_serialization().load_layers_state(session_to_load.layers_state());
+		d_app_state_ptr->get_serialization().load_layers_state(
+				session_to_load.layers_state(),
+				session_to_load.version());
 		break;
 
 #if 0

@@ -48,6 +48,7 @@ set(srcs
     Layer.h
     LayerInputChannelType.h
     LayerProxy.h
+    LayerProxyUtils.cc
     LayerProxyUtils.h
     LayerProxyVisitor.h
     LayerTask.cc

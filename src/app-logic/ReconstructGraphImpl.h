@@ -354,15 +354,6 @@ namespace GPlatesAppLogic
 			~Layer();
 
 			/**
-			 * Updates the layer task.
-			 */
-			void
-			update_layer_task(
-					const GPlatesAppLogic::Layer &layer_handle /* handle used by clients */,
-					Reconstruction &reconstruction,
-					GPlatesModel::integer_plate_id_type anchored_plate_id);
-
-			/**
 			 * Activates (or deactivates) this layer.
 			 *
 			 * Output data, for this layer, will only be generated (the next time

@@ -240,24 +240,21 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_layer_proxy_conn
 
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::update(
-		const Layer &layer_handle /* the layer invoking this */,
-		const double &reconstruction_time,
-		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
+		const Reconstruction::non_null_ptr_type &reconstruction)
 {
-	d_velocity_field_calculator_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+	d_velocity_field_calculator_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 
 	// If our layer proxy is currently using the default reconstruction layer proxy then
 	// tell our layer proxy about the new default reconstruction layer proxy.
 	if (d_using_default_reconstruction_layer_proxy)
 	{
 		// Avoid setting it every update unless it's actually a different layer.
-		if (default_reconstruction_layer_proxy != d_default_reconstruction_layer_proxy)
+		if (reconstruction->get_default_reconstruction_layer_output() != d_default_reconstruction_layer_proxy)
 		{
 			d_velocity_field_calculator_layer_proxy->set_current_reconstruction_layer_proxy(
-					default_reconstruction_layer_proxy);
+					reconstruction->get_default_reconstruction_layer_output());
 		}
 	}
 
-	d_default_reconstruction_layer_proxy = default_reconstruction_layer_proxy;
+	d_default_reconstruction_layer_proxy = reconstruction->get_default_reconstruction_layer_output();
 }

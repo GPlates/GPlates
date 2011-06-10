@@ -28,8 +28,10 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTION_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTION_H
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
+#include "LayerProxyUtils.h"
 #include "ReconstructionLayerProxy.h"
 
 #include "maths/Real.h"
@@ -74,9 +76,10 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
 		{
-			return non_null_ptr_type(new Reconstruction(reconstruction_time, default_reconstruction_layer_proxy));
+			return non_null_ptr_type(new Reconstruction(reconstruction_time, anchor_plate_id, default_reconstruction_layer_proxy));
 		}
 
 
@@ -87,9 +90,10 @@ namespace GPlatesAppLogic
 		static
 		const non_null_ptr_type
 		create(
-				const double &reconstruction_time)
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id)
 		{
-			return non_null_ptr_type(new Reconstruction(reconstruction_time));
+			return non_null_ptr_type(new Reconstruction(reconstruction_time, anchor_plate_id));
 		}
 
 
@@ -115,13 +119,50 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the reconstruction time used for all reconstruction trees and
-		 * all reconstructed geometries.
+		 * Returns the sequence of *active* layer outputs, for this reconstruction, that are
+		 * of the specified type 'LayerProxyDerivedType'.
+		 *
+		 * Returns true if any active layer outputs of the specified type were found.
+		 */
+		template <class LayerProxyDerivedType>
+		bool
+		get_active_layer_outputs(
+				std::vector<typename LayerProxyDerivedType::non_null_ptr_type> &filtered_active_layer_outputs) const
+		{
+			// Find the active layer proxies of the specified type.
+			std::vector<LayerProxyDerivedType *> filtered_active_layer_proxies;
+			LayerProxyUtils::get_layer_proxy_derived_type_sequence(
+					d_active_layer_outputs.begin(), d_active_layer_outputs.end(), filtered_active_layer_proxies);
+
+			// Convert to non-null intrusive pointers.
+			filtered_active_layer_outputs.reserve(filtered_active_layer_proxies.size());
+			BOOST_FOREACH(LayerProxyDerivedType *filtered_active_layer_proxy, filtered_active_layer_proxies)
+			{
+				filtered_active_layer_outputs.push_back(get_non_null_pointer(filtered_active_layer_proxy));
+			}
+
+			// Did we find any ?
+			return !filtered_active_layer_outputs.empty();
+		}
+
+
+		/**
+		 * Returns the reconstruction time used for all reconstruction trees and all reconstructed geometries.
 		 */
 		const double &
 		get_reconstruction_time() const
 		{
 			return d_reconstruction_time.dval();
+		}
+
+
+		/**
+		 * Returns the anchor plate id used for all reconstruction trees and all reconstructed geometries.
+		 */
+		GPlatesModel::integer_plate_id_type
+		get_anchor_plate_id() const
+		{
+			return d_anchor_plate_id;
 		}
 
 		
@@ -157,6 +198,11 @@ namespace GPlatesAppLogic
 		GPlatesMaths::Real d_reconstruction_time;
 
 		/**
+		 * The anchor plate id used for all reconstructions.
+		 */
+		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
+
+		/**
 		 * The reconstruction layer proxy used to reconstruct layers that are not explicitly
 		 * connected to an input reconstruction layer.
 		 */
@@ -174,6 +220,7 @@ namespace GPlatesAppLogic
 		 */
 		Reconstruction(
 				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
 
 		/**
@@ -182,7 +229,8 @@ namespace GPlatesAppLogic
 		 */
 		explicit
 		Reconstruction(
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id);
 	};
 }
 

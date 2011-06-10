@@ -90,7 +90,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_anchored_plate_id(0),
 	d_reconstruction(
 			// Empty reconstruction
-			Reconstruction::create(d_reconstruction_time)),
+			Reconstruction::create(d_reconstruction_time, d_anchored_plate_id)),
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
 	d_python_runner(NULL),

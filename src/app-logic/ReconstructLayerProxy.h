@@ -489,11 +489,18 @@ namespace GPlatesAppLogic
 		{  }
 
 
+	// This method is public so that @a ReconstructLayerTask can flush any RFGs when
+	// it is deactivated - this is done so that topologies will no longer find the RFGs
+	// when they lookup observers of topological section features.
+	// This issue exists because the topology layers do not restrict topological sections
+	// to their input channels (and hence have no input channels for topological sections).
+	public:
 		/**
 		 * Resets any cached variables forcing them to be recalculated next time they're accessed.
 		 */
 		void
 		reset_reconstructed_feature_geometry_caches();
+	private:
 
 
 		/**

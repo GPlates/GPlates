@@ -26,11 +26,14 @@
 #ifndef GPLATES_APP_LOGIC_LAYERPROXYUTILS_H
 #define GPLATES_APP_LOGIC_LAYERPROXYUTILS_H
 
+#include <algorithm>
 #include <utility>
 #include <vector>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
+#include "AppLogicFwd.h"
 #include "LayerProxyVisitor.h"
 
 #include "global/GPlatesAssert.h"
@@ -44,6 +47,8 @@
 
 namespace GPlatesAppLogic
 {
+	class Reconstruction;
+
 	namespace LayerProxyUtils
 	{
 		///////////////
@@ -91,6 +96,23 @@ namespace GPlatesAppLogic
 				LayerProxyForwardIter layer_proxies_begin,
 				LayerProxyForwardIter layer_proxies_end,
 				ContainerOfLayerProxyDerivedType &layer_proxy_derived_type_seq);
+
+
+		/**
+		 * Returns the reconstructed feature geometries from all active reconstruct layers
+		 * in the specified reconstruction.
+		 *
+		 * This is useful for topological features that reference other features as topological
+		 * sections - the other features could be in any layer so all layers are reconstructed.
+		 *
+		 * NOTE: Typically each layer will keep a cache of its reconstructed feature geometries
+		 * for the reconstruction time - so unless the reconstruction time has changed since
+		 * @a reconstruction was created then this should be a fairly inexpensive call.
+		 */
+		void
+		get_reconstructed_feature_geometries(
+				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				const Reconstruction &reconstruction);
 
 
 		/**
@@ -321,6 +343,64 @@ namespace GPlatesAppLogic
 			get_input_layer_proxies()
 			{
 				return d_seq;
+			}
+
+			/**
+			 * Sets the input layer proxies.
+			 *
+			 * Returns true if the specified layers proxies differs from the current sequence,
+			 * otherwise returns false to indicate no change to the sequence.
+			 * Note that the order of proxies in @a input_layer_proxies is not important for this.
+			 */
+			bool
+			set_input_layer_proxies(
+					const std::vector<typename LayerProxyType::non_null_ptr_type> &src_input_layer_proxies)
+			{
+				bool input_layer_proxies_updated = false;
+
+				// If the number of input layer proxies has changed then we've been updated.
+				if (src_input_layer_proxies.size() != d_seq.size())
+				{
+					input_layer_proxies_updated = true;
+				}
+				else
+				{
+					// Both sequences are the same size.
+					// Iterate over our internal sequence.
+					typename seq_type::iterator input_layer_proxy_iter = d_seq.begin();
+					const typename seq_type::iterator input_layer_proxy_end = d_seq.end();
+					for ( ; input_layer_proxy_iter != input_layer_proxy_end; ++input_layer_proxy_iter)
+					{
+						// Search the source (caller's) sequence for the current input layer proxy.
+						typename std::vector<typename LayerProxyType::non_null_ptr_type>::const_iterator
+								src_layer_proxy_iter = std::find(
+										src_input_layer_proxies.begin(),
+										src_input_layer_proxies.end(),
+										input_layer_proxy_iter->get_input_layer_proxy());
+
+						// If it wasn't found then the source sequence and our internal sequence differ.
+						if (src_layer_proxy_iter == src_input_layer_proxies.end())
+						{
+							input_layer_proxies_updated = true;
+							break;
+						}
+					}
+				}
+
+				// Re-initialise our internal sequence if it's different to the caller's.
+				if (input_layer_proxies_updated)
+				{
+					d_seq.clear();
+
+					BOOST_FOREACH(
+							const typename LayerProxyType::non_null_ptr_type &src_input_layer_proxy,
+							src_input_layer_proxies)
+					{
+						add_input_layer_proxy(src_input_layer_proxy);
+					}
+				}
+
+				return input_layer_proxies_updated;
 			}
 
 

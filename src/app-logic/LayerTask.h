@@ -36,6 +36,7 @@
 #include "LayerInputChannelType.h"
 #include "LayerProxy.h"
 #include "LayerTaskType.h"
+#include "Reconstruction.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
@@ -104,6 +105,15 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Activates (or deactivates) this layer tasks to reflect active state of owning layer.
+		 */
+		virtual
+		void
+		activate(
+				bool active) = 0;
+
+
+		/**
 		 * An input file has been connected on the specified input channel.
 		 */
 		virtual
@@ -168,18 +178,13 @@ namespace GPlatesAppLogic
 		 * This can happen for instance if a dependent layer changes and this layer needs to
 		 * flush any cached data as a result.
 		 *
-		 * NOTE: Each layer proxy should listen for model change events and have its layer
-		 * connection changes propagated to it so it should already know about changes to
-		 * this layer - so this method is really just to respond to changes in other layers or
-		 * changes in any input feature collections.
+		 * NOTE: Each layer proxy already knows about its layer connection changes so this method is
+		 * really just to respond to changes in other layers or changes in any input feature collections.
 		 */
 		virtual
 		void
 		update(
-				const Layer &layer_handle /* the layer invoking this */,
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy) = 0;
+				const Reconstruction::non_null_ptr_type &reconstruction) = 0;
 
 
 		/**
