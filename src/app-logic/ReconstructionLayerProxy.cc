@@ -29,6 +29,8 @@
 
 #include "ReconstructUtils.h"
 
+#include "global/GPlatesAssert.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -91,6 +93,30 @@ namespace GPlatesAppLogic
 				return d_reconstruction_layer_proxy->get_reconstruction_tree();
 			}
 
+
+			//! Changes the default reconstruction time.
+			virtual
+			void
+			set_default_reconstruction_time(
+					const double &reconstruction_time)
+			{
+				// This method shouldn't be called because we're delegating to a
+				// ReconstructionLayerProxy and the default should be set directly on that instead.
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			}
+
+
+			//! Changes the default anchor plate id.
+			virtual
+			void
+			set_default_anchor_plate_id(
+					GPlatesModel::integer_plate_id_type anchor_plate_id)
+			{
+				// This method shouldn't be called because we're delegating to a
+				// ReconstructionLayerProxy and the default should be set directly on that instead.
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			}
+
 		private:
 			ReconstructionLayerProxy::non_null_ptr_type d_reconstruction_layer_proxy;
 		};
@@ -122,10 +148,8 @@ GPlatesAppLogic::ReconstructionLayerProxy::get_reconstruction_tree(
 	{
 		d_cached_reconstruction_trees = get_cached_reconstruction_tree_creator(
 				d_current_reconstruction_feature_collections,
-				// Use the current time/anchor - it doesn't matter though because we never use
-				// the defaults when calling 'd_cached_reconstruction_trees'...
-				d_current_reconstruction_time,
-				d_current_anchor_plate_id,
+				d_current_reconstruction_time.dval()/*default_reconstruction_time*/,
+				d_current_anchor_plate_id/*default_anchor_plate_id*/,
 				d_max_num_reconstruction_trees_in_cache);
 	}
 
@@ -140,6 +164,8 @@ GPlatesAppLogic::ReconstructionLayerProxy::get_reconstruction_tree(
 GPlatesAppLogic::ReconstructionTreeCreator
 GPlatesAppLogic::ReconstructionLayerProxy::get_reconstruction_tree_creator()
 {
+	// Note that 'set_default_reconstruction_time()' and 'set_default_anchor_plate_id()'
+	// should not be called on this 
 	return get_delegate_reconstruction_tree_creator(GPlatesUtils::get_non_null_pointer(this));
 }
 
@@ -148,10 +174,25 @@ void
 GPlatesAppLogic::ReconstructionLayerProxy::set_current_reconstruction_time(
 		const double &reconstruction_time)
 {
+	if (d_current_reconstruction_time == GPlatesMaths::real_t(reconstruction_time))
+	{
+		// The current reconstruction time hasn't changed so avoid updating any observers unnecessarily.
+		return;
+	}
 	d_current_reconstruction_time = reconstruction_time;
+
+	// If 'd_cached_reconstruction_trees' is currently valid then set the new
+	// default reconstruction time. This is not strictly necessary since we always call it
+	// with an explicit reconstruction time argument but it's better to be safe.
+	if (d_cached_reconstruction_trees)
+	{
+		d_cached_reconstruction_trees->set_default_reconstruction_time(d_current_reconstruction_time.dval());
+	}
 
 	// Note that we don't invalidate our cache because if a reconstruction tree is
 	// not cached for a requested reconstruction time then a new tree is created.
+	// But observers need to be aware that the default reconstruction time has changed.
+	d_subject_token.invalidate();
 }
 
 
@@ -159,10 +200,25 @@ void
 GPlatesAppLogic::ReconstructionLayerProxy::set_current_anchor_plate_id(
 		GPlatesModel::integer_plate_id_type anchor_plate_id)
 {
+	if (d_current_anchor_plate_id == anchor_plate_id)
+	{
+		// The current anchor plate id hasn't changed so avoid updating any observers unnecessarily.
+		return;
+	}
 	d_current_anchor_plate_id = anchor_plate_id;
+
+	// If 'd_cached_reconstruction_trees' is currently valid then set the new
+	// default anchor plate id. This is not strictly necessary since we always call it
+	// with an explicit anchor plate id argument but it's better to be safe.
+	if (d_cached_reconstruction_trees)
+	{
+		d_cached_reconstruction_trees->set_default_anchor_plate_id(d_current_anchor_plate_id);
+	}
 
 	// Note that we don't invalidate our cache because if a reconstruction tree is
 	// not cached for a requested anchor plate id then a new tree is created.
+	// But observers need to be aware that the default anchor plate id has changed.
+	d_subject_token.invalidate();
 }
 
 
