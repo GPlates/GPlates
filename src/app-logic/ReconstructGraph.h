@@ -133,6 +133,31 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Adds a group of files to the graph.
+		 *
+		 * NOTE: Use this instead of separate calls to @a add_file when a group of files
+		 * has just been loaded (as a group). This is because all files in the group will
+		 * be added to this @a ReconstructGraph first before any auto-creation of layers -
+		 * since the creation of layers emits signals and clients might then try to access
+		 * a file that has not yet been added (resulting in an exception).
+		 *
+		 * If @a auto_create_layers is true then layer(s) are also created that can process
+		 * the features in the file (if any) and connected to the file.
+		 * Note that multiple layers can be created for one file depending on the types of features in it.
+		 *
+		 * Typically @a auto_create_layers is valid but can be boost::none when restoring a session
+		 * because that also restores the created layers explicitly (rather than auto-creating them).
+		 *
+		 * Used to be a slot but is now called directly by @a ApplicationState when it is
+		 * notified of a newly loaded file.
+		 */
+		void
+		add_files(
+				const std::vector<FeatureCollectionFileState::file_reference> &files,
+				boost::optional<AutoCreateLayerParams> auto_create_layers = AutoCreateLayerParams());
+
+
+		/**
 		 * Adds a file to the graph.
 		 *
 		 * If @a auto_create_layers is true then layer(s) are also created that can process
@@ -564,6 +589,13 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructionLayerProxy::non_null_ptr_type d_identity_rotation_reconstruction_layer_proxy;
 
+
+		/**
+		 * Adds the specified file but does not attempt any auto-creation of layers for it.
+		 */
+		Layer::InputFile
+		add_file_internal(
+				const FeatureCollectionFileState::file_reference &file);
 
 		/**
 		 * Called by @a FeatureCollectionModified callback when the feature collection inside
