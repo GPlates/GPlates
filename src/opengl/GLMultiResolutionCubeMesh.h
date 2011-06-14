@@ -33,6 +33,7 @@
 #include "GLMatrix.h"
 #include "GLTexture.h"
 #include "GLTextureResource.h"
+#include "GLTextureUtils.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
 #include "GLVertexArray.h"
@@ -108,15 +109,25 @@ namespace GPlatesOpenGL
 			 *
 			 * The returned matrix should post-multiply the matrix returned by
 			 * @a get_clip_texture_clip_space_to_texture_space_transform in order to convert from
-			 * clip space [-1, 1] to the appropriate opaque texels in the clip texture.
+			 * clip space [-1, 1] to the appropriate opaque texels (inner 2x2) in the clip texture,
+			 * and for the full tile texture.
+			 *
+			 * Also the returned matrix should post-multiply the matrix returned by
+			 * @a get_tile_texture_clip_space_to_texture_space_transform in order to convert from
+			 * clip space [-1, 1] to the *full* tile texture.
 			 *
 			 * If boost::none is returned then no clip texture is required because the drawable
 			 * mesh for the specified quad tree node exactly matches the area of the corresponding tile.
-			 * This means @a get_clip_texture_clip_space_to_texture_space_transform isn't required either.
+			 * This means @a get_clip_texture_clip_space_to_texture_space_transform and
+			 * @a get_tile_texture_clip_space_to_texture_space_transform aren't required either.
 			 *
 			 * boost::none is returned until you traverse deeper in the quad tree than the
 			 * pre-generated mesh quad tree at which point texture clipping is required since
 			 * the mesh is larger than the current quad tree node tile.
+			 *
+			 * NOTE: The above texture matrix matrix multiplies are not needed if the
+			 * the projection transform of the tile's frustum is used because this already
+			 * takes into account the clip space adjustments.
 			 */
 			const boost::optional<GLUtils::QuadTreeClipSpaceTransform> &
 			get_clip_texture_clip_space_transform() const
@@ -228,7 +239,21 @@ namespace GPlatesOpenGL
 		GLMatrix
 		get_clip_texture_clip_space_to_texture_space_transform() const
 		{
-			return d_xy_clip_texture_transform;
+			return GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform();
+		}
+
+
+		/**
+		 * Returns the matrix that transforms clip-space [-1, 1] to the appropriate texture
+		 * coordinates in the tile texture [0, 1].
+		 *
+		 * This differs from the clip texture in that the *full* tile texture is mapped whereas
+		 * only the inner 2x2 texels of the clip texture are mapped.
+		 */
+		GLMatrix
+		get_tile_texture_clip_space_to_texture_space_transform() const
+		{
+			return GLUtils::get_clip_space_to_texture_space_transform();
 		}
 
 	private:
@@ -238,8 +263,10 @@ namespace GPlatesOpenGL
 		 * A value of 7 fits in nicely with the size of a 16-bit vertex element array because
 		 * (1<<7) is 128 and 128x128 tiles per cube face where each tile has 4 vertices means
 		 * 65536 vertices which fits exactly into 16-bit vertex indices.
+		 * NOTE: 7 is quite dense so using 6 instead (still takes a lot of zoom to get to 6 so
+		 * the clip texture should only be needed for high zoom levels).
 		 */
-		static const unsigned int MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH = 7;
+		static const unsigned int MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH = 6;
 
 		/**
 		 * The maximum number of mesh tiles across the length of a cube face.
@@ -273,12 +300,6 @@ namespace GPlatesOpenGL
 		 * covers the tile area exactly and no clip texture is needed.
 		 */
 		GLTexture::shared_ptr_type d_xy_clip_texture;
-
-		/**
-		 * Matrix to convert texture coordinates from range [0,1] to range [0.25, 0.75] to
-		 * map to the interior 2x2 texel region of the 4x4 clip texture.
-		 */
-		const GLMatrix &d_xy_clip_texture_transform;
 
 		/**
 		 * All mesh drawables within a cube face share a single vertex array.
