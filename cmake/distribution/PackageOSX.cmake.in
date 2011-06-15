@@ -32,7 +32,11 @@ IF (NOT "@GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING@")
 	IF (SVN_VERSION_RESULT)
 		MESSAGE(STATUS "Unable to determine svn version number for non-public release - ignoring.")
 	ELSE (SVN_VERSION_RESULT)
-		SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "@GPLATES_PACKAGE_VERSION@_r${SVN_VERSION_OUTPUT}")
+		# The 'svnversion' command can output a range of revisions with a colon separator - but this causes problems
+		# with filenames so we'll remove the colon and the end revision after it.
+		STRING(REGEX REPLACE ":.*$" "" SVN_VERSION ${SVN_VERSION_OUTPUT})
+		# Set the updated package version.
+		SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "@GPLATES_PACKAGE_VERSION@_r${SVN_VERSION}")
 	ENDIF (SVN_VERSION_RESULT)
 ENDIF (NOT "@GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING@")
 
@@ -161,23 +165,18 @@ function(gp_item_default_embedded_path_override item default_embedded_path_var)
   set(${default_embedded_path_var} "${path}" PARENT_SCOPE)
 endfunction(gp_item_default_embedded_path_override)
 
-# Get the location, inside the staging area location, to copy the application bundle to.
-EXECUTE_PROCESS(
-		COMMAND "@OSX_GET_BUNDLE_STAGING_AREA_LOCATION_SHELL_SCRIPT@" "@CMAKE_SOURCE_DIR@" "@GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING@"
-		RESULT_VARIABLE OSX_GET_BUNDLE_STAGING_AREA_LOCATION_RESULT
-		OUTPUT_VARIABLE OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-	   )
 
-IF (OSX_GET_BUNDLE_STAGING_AREA_LOCATION_RESULT)
-		MESSAGE(FATAL_ERROR "Error determining location in CPack staging area to copy built Mac OSX bundle to.")
-ENDIF (OSX_GET_BUNDLE_STAGING_AREA_LOCATION_RESULT)
+# The path location to the bundle staging area.
+SET(OSX_GET_BUNDLE_STAGING_AREA_LOCATION "@STAGING_AREA_FOR_CPACK@/@GPLATES_PACKAGE_NAME@-${GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION}")
 
+# Make sure the staging area directory exists.
+EXECUTE_PROCESS(COMMAND "@CMAKE_COMMAND@" -E make_directory "@STAGING_AREA_FOR_CPACK@")
+EXECUTE_PROCESS(COMMAND "@CMAKE_COMMAND@" -E make_directory "${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}")
 
 # Copy the application bundle to the staging area location.
-MESSAGE("Bundle location is ${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}")
+MESSAGE("Bundle location is ${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}")
 EXECUTE_PROCESS(
-		COMMAND "@OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT@" "${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}"
+		COMMAND "@OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT@" "${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}"
 		RESULT_VARIABLE OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_RESULT
 	   )
 
@@ -189,7 +188,7 @@ ENDIF (OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_RESULT)
 # This will copy any non-system libraries into the bundle making it standalone.
 # fixup_bundle() will generate a FATAL_ERROR if bundle fails validation.
 include(BundleUtilities)
-fixup_bundle("${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app"
+fixup_bundle("${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}/@GPLATES_MAIN_TARGET@.app"
 	"@GPLATES_QT_PLUGINS_ABSOLUTE@"
 	"@GPLATES_QT_PLUGIN_PATHS_ABSOLUTE@;/usr/local/lib;/usr/lib;/opt/local/lib")
 
@@ -199,7 +198,7 @@ fixup_bundle("${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGE
 EXECUTE_PROCESS(
 		COMMAND "@CMAKE_COMMAND@" -E copy
 			"@GPLATES_SOURCE_DISTRIBUTION_DIR@/qt.conf" 
-			"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/qt.conf" 
+			"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/qt.conf" 
 		RESULT_VARIABLE COPY_QT_CONF_RESULT
 		)
 
@@ -213,7 +212,7 @@ ENDIF (COPY_QT_CONF_RESULT)
 # First create the scripts target directory in the bundle.
 EXECUTE_PROCESS(
 		COMMAND "@CMAKE_COMMAND@" -E make_directory
-			"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts" 
+			"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts" 
 		RESULT_VARIABLE MAKE_SCRIPTS_DIR_RESULT
 		)
 IF (MAKE_SCRIPTS_DIR_RESULT)
@@ -223,7 +222,7 @@ ELSE (MAKE_SCRIPTS_DIR_RESULT)
 	EXECUTE_PROCESS(
 			COMMAND "@CMAKE_COMMAND@" -E copy_directory
 				"@CMAKE_SOURCE_DIR@/scripts" 
-				"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts" 
+				"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts" 
 			RESULT_VARIABLE COPY_SCRIPTS_DIR_RESULT
 			)
 	IF (COPY_SCRIPTS_DIR_RESULT)
@@ -232,7 +231,7 @@ ELSE (MAKE_SCRIPTS_DIR_RESULT)
 		# Finally remove the 'scripts/.svn' subdirectory copied over from the source tree.
 		EXECUTE_PROCESS(
 				COMMAND "@CMAKE_COMMAND@" -E remove_directory
-					"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_OUTPUT}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts/.svn" 
+					"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}/@GPLATES_MAIN_TARGET@.app/Contents/Resources/scripts/.svn" 
 				RESULT_VARIABLE COPY_SCRIPTS_DIR_RESULT
 				)
 	ENDIF (COPY_SCRIPTS_DIR_RESULT)

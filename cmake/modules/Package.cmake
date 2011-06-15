@@ -368,8 +368,6 @@ IF (APPLE)
 	# Set some configure variables that will be used by the following "CONFIGURE_FILE()" commands.
 	SET(BUILT_BUNDLE "${EXECUTABLE_OUTPUT_PATH}/${GPLATES_MAIN_TARGET}.app")
 	SET(PACKAGE_CPACK_CONFIG "${GPLATES_BINARY_DISTRIBUTION_DIR}/Package.cpack")
-	SET(OSX_GET_BUNDLE_STAGING_AREA_LOCATION_SHELL_SCRIPT
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh")
 	SET(OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT
 		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh")
 	SET(OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT
@@ -394,7 +392,6 @@ IF (APPLE)
 	# When the shell scripts get created by configure_file it should copy the file permissions.
 	EXECUTE_PROCESS(
 			COMMAND chmod +x
-			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh.in"
 			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh.in"
 			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/CreateInstallerFromStandaloneBundle.sh.in"
 			RESULT_VARIABLE EXECUTE_CHMOD_RESULT
@@ -407,10 +404,6 @@ IF (APPLE)
 			"${OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT}.")
 			MESSAGE("You will need to set their execute permissions manually.")
 	ENDIF (EXECUTE_CHMOD_RESULT)
-
-	# Configure the shell scripts.
-	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh.in"
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh" @ONLY IMMEDIATE)
 
 	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh.in"
 		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh" @ONLY IMMEDIATE)
