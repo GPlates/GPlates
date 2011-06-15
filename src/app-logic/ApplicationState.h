@@ -27,8 +27,6 @@
 #define GPLATES_APP_LOGIC_APPLICATIONSTATE_H
 
 #include <list>
-#include <map>
-#include <stack>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -167,21 +165,6 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructGraph &
 		get_reconstruct_graph();
-
-		/**
-		 * Create any auto-generate layers necessary and connect to @a file_ref.
-		 *
-		 * This is needed for situations where a file is added (and hence any
-		 * appropriate auto-generate layers are created) but then it is modified
-		 * (for example, a new feature is added) such that a new type of autogenerate
-		 * layer needs to be created.
-		 *
-		 * FIXME: This should not need to be called explicitly. Eventually it can
-		 * be detected by listening for modifications to feature collections.
-		 */
-		void
-		update_layers(
-				const FeatureCollectionFileState::file_reference &file_ref);
 
 		/**
 		 * If @a update_default is true, this updates the default reconstruction tree
@@ -353,17 +336,6 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
-		//! Typedef for a sequence of layers.
-		typedef std::list<Layer> layer_seq_type;
-
-		//! Typedef for map of loaded files to primary (auto-generated) layers.
-		typedef std::map<
-				FeatureCollectionFileState::file_reference,
-				layer_seq_type> file_to_primary_layers_mapping_type;
-
-		//! Typedef for a stack of reconstruction tree layers.
-		typedef std::stack<Layer> default_reconstruction_tree_layer_stack_type;
-
 		//! The model store.
 		GPlatesModel::ModelInterface d_model;
 
@@ -402,22 +374,11 @@ namespace GPlatesAppLogic
 		 * to input feature collections.
 		 *
 		 * It also is solely responsible for generating the complete aggregate reconstruction.
+		 *
+		 * NOTE: This must be declared after @a d_layer_task_registry since it uses it.
 		 */
 		boost::scoped_ptr<ReconstructGraph> d_reconstruct_graph;
 		
-		/**
-		 * A mapping of all primary layers (auto-generated when a file is loaded)
-		 * to the auto-generated layers.
-		 */
-		file_to_primary_layers_mapping_type d_file_to_primary_layers_mapping;
-
-		/**
-		 * Keeps track of the default reconstruction tree layers set as rotation files are loaded.
-		 * When the rotation file for the current default layer is unloaded the most recent
-		 * valid layer is set as the new default.
-		 */
-		default_reconstruction_tree_layer_stack_type d_default_reconstruction_tree_layer_stack;
-
 		/**
 		 * If true, changes the default reconstruction tree layer upon loading a rotation file.
 		 */
@@ -478,29 +439,6 @@ namespace GPlatesAppLogic
 		void
 		end_reconstruct_on_scope_exit(
 				bool reconstruct_on_scope_exit);
-
-		/**
-		 * Creates all layer tasks that can process @a input_feature_collection.
-		 */
-		std::vector< boost::shared_ptr<LayerTask> >
-		create_layer_tasks(
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &input_feature_collection);
-
-		/**
-		 * Creates new layer(s) that can process the feature collection in @a input_file_ref and
-		 * connects the feature collection to the main input of each new layer.
-		 */
-		void
-		create_layers(
-				const FeatureCollectionFileState::file_reference &input_file_ref);
-
-		/**
-		 * Creates a new layer using @a layer_task and connects @a file_ref to the main input channel.
-		 */
-		Layer
-		create_layer(
-				const FeatureCollectionFileState::file_reference &file_ref,
-				const boost::shared_ptr<LayerTask> &layer_task);
 
 		// Make friend so can call @a begin_reconstruct_on_scope_exit and @a end_reconstruct_on_scope_exit.
 		friend class ScopedReconstructGuard;

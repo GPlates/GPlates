@@ -36,6 +36,7 @@
 #include <boost/mpl/contains.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -51,12 +52,14 @@
 #include "ReconstructionLayerProxy.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/WeakReferenceCallback.h"
 
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
 	class LayerTask;
+	class LayerTaskRegistry;
 
 	namespace ReconstructGraphImpl
 	{
@@ -101,12 +104,81 @@ namespace GPlatesAppLogic
 		typedef boost::transform_iterator<make_layer_fn_type,
 				layer_ptr_seq_type::iterator> iterator;
 
+		/**
+		 * Parameters that determine what to do when auto-creating layers (when adding a new file).
+		 */
+		struct AutoCreateLayerParams
+		{
+			/**
+			 * The default is to update the default reconstruction tree layer if a new
+			 * reconstruction tree layer is auto-created.
+			 */
+			AutoCreateLayerParams(
+					bool update_default_reconstruction_tree_layer_ = true) :
+				update_default_reconstruction_tree_layer(update_default_reconstruction_tree_layer_)
+			{  }
+
+			/**
+			 * Do we update the default reconstruction tree layer when loading a rotation file ?
+			 */
+			bool update_default_reconstruction_tree_layer;
+		};
+
 
 		/**
 		 * Constructor.
 		 */
 		ReconstructGraph(
-				ApplicationState &application_state);
+				const LayerTaskRegistry &layer_task_registry);
+
+
+		/**
+		 * Adds a file to the graph.
+		 *
+		 * If @a auto_create_layers is true then layer(s) are also created that can process
+		 * the features in the file (if any) and connected to the file.
+		 * Note that multiple layers can be created for one file depending on the types of features in it.
+		 *
+		 * Typically @a auto_create_layers is valid but can be boost::none when restoring a session
+		 * because that also restores the created layers explicitly (rather than auto-creating them).
+		 *
+		 * Used to be a slot but is now called directly by @a ApplicationState when it is
+		 * notified of a newly loaded file.
+		 */
+		Layer::InputFile
+		add_file(
+				const FeatureCollectionFileState::file_reference &file,
+				boost::optional<AutoCreateLayerParams> auto_create_layers = AutoCreateLayerParams());
+
+
+		/**
+		 * Removes a file from the graph and disconnects from any connected layers.
+		 *
+		 * Used to be a slot but is now called directly by @a ApplicationState when it is
+		 * notified that a file is about to be unloaded.
+		 */
+		void
+		remove_file(
+				const FeatureCollectionFileState::file_reference &file);
+
+
+		/**
+		 * Gets the input file handle for @a input_file.
+		 *
+		 * The returned file is a weak reference and does not need to be stored anywhere.
+		 * It's typically passed straight to Layer::connect_to_input_file.
+		 *
+		 * If this file gets unloaded by the user then the returned weak reference will
+		 * become invalid and all layers connecting to this input file will lose those
+		 * connections automatically. This is the primary reason for having this method.
+		 * If any layer has no more input connections on its main channel input then that
+		 * layer will be removed automatically and destroyed.
+		 *
+		 * @throws PreconditionViolationError if @a input_file is not a currently loaded file.
+		 */
+		Layer::InputFile
+		get_input_file(
+				const FeatureCollectionFileState::file_reference input_file);
 
 
 		/**
@@ -157,25 +229,6 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Gets the input file handle for @a input_file.
-		 *
-		 * The returned file is a weak reference and does not need to be stored anywhere.
-		 * It's typically passed straight to Layer::connect_to_input_file.
-		 *
-		 * If this file gets unloaded by the user then the returned weak reference will
-		 * become invalid and all layers connecting to this input file will lose those
-		 * connections automatically. This is the primary reason for having this method.
-		 * If any layer has no more input connections on its main channel input then that
-		 * layer will be removed automatically and destroyed.
-		 *
-		 * @throws PreconditionViolationError if @a input_file is not a currently loaded file.
-		 */
-		Layer::InputFile
-		get_input_file(
-				const FeatureCollectionFileState::file_reference input_file);
-
-
-		/**
 		 * Sets the current default reconstruction tree layer.
 		 *
 		 * Any layers that require a reconstruction tree input but are not explicitly
@@ -185,27 +238,24 @@ namespace GPlatesAppLogic
 		 * ignore the default reconstruction tree layer.
 		 *
 		 * Disabling or destroying the default reconstruction tree layer will result in
-		 * layers that implicitly connect to it to use identity rotations for all plates.
-		 *
-		 * If @a default_reconstruction_tree_layer is invalid then there will be no
-		 * default reconstruction tree layer - this is the way to specify no default layer.
+		 * layers that currently implicitly connect to it to use identity rotations for all plates.
 		 *
 		 * Emits the @a default_reconstruction_tree_layer_changed signal if the default
 		 * reconstruction tree layer changed.
 		 *
-		 * @a throws PreconditionViolationError if @a default_reconstruction_tree_layer is valid,
-		 * but the layer it refers to is not a reconstruction tree layer.
+		 * @a throws PreconditionViolationError if @a default_reconstruction_tree_layer is *invalid*
+		 * or if it does *not* refer to a reconstruction tree layer type.
 		 */
 		void
 		set_default_reconstruction_tree_layer(
-				const Layer &default_reconstruction_tree_layer = Layer());
+				const Layer &default_reconstruction_tree_layer);
 
 
 		/**
 		 * Returns the current default reconstruction tree layer.
 		 *
 		 * NOTE: Check the returned weak reference is valid before using since
-		 * there may be no default layer.
+		 * there may be no default layer currently set.
 		 */
 		Layer
 		get_default_reconstruction_tree_layer() const;
@@ -263,37 +313,23 @@ namespace GPlatesAppLogic
 		}
 
 
-		///////////////////////////////////////////////////////////////
-		// The following public methods are used by ApplicationState //
-		///////////////////////////////////////////////////////////////
-
-
 		/**
 		 * Updates the layer tasks in the current reconstruction graph.
 		 *
+		 * Should be called when the reconstruct graph is modified (including add/remove
+		 * layer connections, modified layers, etc) and when the feature data inside any
+		 * input files is modified in any way.
+		 *
 		 * Returns a list of the layer proxies at the output of each *active* layer and
 		 * the default reconstruction tree if there is one.
+		 *
+		 * NOTE: This is currently only called by @a ApplicationState.
 		 */
 		Reconstruction::non_null_ptr_to_const_type
 		update_layer_tasks(
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchored_plated_id);
 
-
-		// NOTE: all signals/slots should use namespace scope for all arguments
-		//       otherwise differences between signals and slots will cause Qt
-		//       to not be able to connect them at runtime.
-
-		// Used to be a slot but is now called directly by @a ApplicationState.
-		void
-		handle_file_state_files_added(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files);
-
-		// Used to be a slot but is now called directly by @a ApplicationState.
-		void
-		handle_file_state_file_about_to_be_removed(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -372,6 +408,9 @@ namespace GPlatesAppLogic
 		 *
 		 * An invalid layer means no layer (in other words there was or will be
 		 * no default reconstruction tree layer).
+		 *
+		 * NOTE: Either the previous or new default reconstruction tree layer could be invalid -
+		 * if going from no default to a default or vice versa respectively.
 		 */
 		void
 		default_reconstruction_tree_layer_changed(
@@ -415,25 +454,108 @@ namespace GPlatesAppLogic
 		friend class Layer;
 
 	private:
-
 		//! Typedef for a shared pointer to an input file.
 		typedef boost::shared_ptr<ReconstructGraphImpl::Data> input_file_ptr_type;
 
-		//! Typedef for a sequence of input files with file references as map keys.
-		typedef std::map<FeatureCollectionFileState::file_reference, input_file_ptr_type>
-				input_file_ptr_map_type;
+		/**
+		 * Keeps a strong reference to an input file and receives notifications when it is modified.
+		 */
+		class InputFileInfo
+		{
+		public:
+			InputFileInfo(
+					ReconstructGraph &reconstruct_graph,
+					const input_file_ptr_type &input_file_ptr) :
+				d_input_file_ptr(input_file_ptr),
+				d_callback_input_feature_collection(
+						input_file_ptr->get_input_file()->get_file().get_feature_collection())
+			{
+				// Register a model callback so we know when the input file has been modified.
+				d_callback_input_feature_collection.attach_callback(
+						new FeatureCollectionModified(
+								reconstruct_graph,
+								Layer::InputFile(input_file_ptr)));
+			}
+
+			//! Returns the strong reference to the input file.
+			const input_file_ptr_type &
+			get_input_file_ptr() const
+			{
+				return d_input_file_ptr;
+			}
+
+		private:
+			/**
+			 * The model callback that notifies us when the feature collection in the input file is modified.
+			 */
+			struct FeatureCollectionModified :
+					public GPlatesModel::WeakReferenceCallback<const GPlatesModel::FeatureCollectionHandle>
+			{
+				FeatureCollectionModified(
+						ReconstructGraph &reconstruct_graph,
+						const Layer::InputFile &input_file) :
+					d_reconstruct_graph(&reconstruct_graph),
+					d_input_file(input_file)
+				{  }
+
+				void
+				publisher_modified(
+						const modified_event_type &event)
+				{
+					d_reconstruct_graph->modified_input_file(d_input_file);
+				}
+
+				ReconstructGraph *d_reconstruct_graph;
+				Layer::InputFile d_input_file;
+			};
+
+			/**
+			 * A strong reference to the input file.
+			 */
+			input_file_ptr_type d_input_file_ptr;
+
+			/**
+			 * Keep a weak reference to the input feature collection just for our callback.
+			 *
+			 * Only we have access to this weak ref and we make sure the client doesn't have
+			 * access to it. This is because any copies of this weak reference also get
+			 * copies of the callback thus allowing it to get called more than once per modification.
+			 */
+			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_input_feature_collection;
+		};
 
 
-		ApplicationState &d_application_state;
+		//! Typedef for a sequence of input files with @a InputFileInfo as map keys.
+		typedef std::map<FeatureCollectionFileState::file_reference, InputFileInfo> input_file_info_map_type;
 
-		input_file_ptr_map_type d_input_files;
+		//! Typedef for a stack of reconstruction tree layers.
+		typedef std::vector<Layer> default_reconstruction_tree_layer_stack_type;
+
+
+		/**
+		 * Used to create layer task when auto-creating layers (when adding a file).
+		 */
+		const LayerTaskRegistry &d_layer_task_registry;
+
+		/**
+		 * The input files in the reconstruct graph.
+		 *
+		 * This should represent all currently loaded files.
+		 */
+		input_file_info_map_type d_input_files;
+
+		/**
+		 * The layers added to the reconstruct graph.
+		 */
 		layer_ptr_seq_type d_layers;
 
 		/**
-		 * The default reconstruction tree layer.
-		 * Can be invalid if no default layer set or if the default layer was destroyed.
+		 * Keeps track of the default reconstruction tree layers set as rotation files are loaded.
+		 *
+		 * When the rotation file for the current default reconstruction tree layer is unloaded
+		 * the most recent valid reconstruction tree layer, if there is one, is set as the new default.
 		 */
-		Layer d_default_reconstruction_tree_layer;
+		default_reconstruction_tree_layer_stack_type d_default_reconstruction_tree_layer_stack;
 
 		/**
 		 * Used if there are no reconstruction tree layers currently loaded.
@@ -444,32 +566,46 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Determines an order of layers that will not violate the dependency graph -
-		 * in other words does not execute a layer before its input layers have been executed.
-		 */
-		std::vector<layer_ptr_type>
-		get_layer_dependency_order(
-				const layer_ptr_type &default_reconstruction_tree_layer) const;
-
-		/**
-		 * Find dependency ancestors of @a layer and appends them to @a ancestor_layers.
+		 * Called by @a FeatureCollectionModified callback when the feature collection inside
+		 * an input file is modified.
 		 */
 		void
-		find_dependency_ancestors_of_layer(
-				const layer_ptr_type &layer,
-				std::set<layer_ptr_type> &ancestor_layers) const;
+		modified_input_file(
+				const Layer::InputFile &input_file);
 
 		/**
-		 * Determines a dependency ordering of the dependency graph rooted at @a layer and
-		 * outputs the ordered results to @a dependency_ordered_layers.
+		 * Auto-creates layers that can process the features in the specified file.
+		 */
+		void
+		auto_create_layers_for_new_input_file(
+				const Layer::InputFile &input_file,
+				const AutoCreateLayerParams &auto_create_layer_params);
+
+		/**
+		 * Creates a layer given the specified layer task and connects to the specified input file.
+		 */
+		Layer
+		auto_create_layer(
+				const Layer::InputFile &input_file,
+				const boost::shared_ptr<LayerTask> &layer_task,
+				const AutoCreateLayerParams &auto_create_layer_params);
+
+		/**
+		 * Auto-destroyes layers that were auto-created from the specified input file.
+		 */
+		void
+		auto_destroy_layers_for_input_file_about_to_be_removed(
+				const Layer::InputFile &input_file_about_to_be_removed);
+
+		/**
+		 * Handles removal of the current (or a previous) default reconstruction tree layer.
 		 *
-		 * @a all_layers_visited is used to avoid visiting the same layer more than once.
+		 * Does nothing if the layer about to be removed is not a current or previous
+		 * default reconstruction tree layer.
 		 */
 		void
-		find_layer_dependency_order(
-				const layer_ptr_type &layer,
-				std::vector<layer_ptr_type> &dependency_ordered_layers,
-				std::set<layer_ptr_type> &all_layers_visited) const;
+		handle_default_reconstruction_tree_layer_removal(
+				const Layer &layer_being_removed);
 	};
 }
 

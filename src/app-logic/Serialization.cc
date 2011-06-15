@@ -66,6 +66,7 @@ namespace
 		el.setAttribute("type", layer.get_type());
 		el.setAttribute("main_input_channel", layer.get_main_input_feature_collection_channel());
 		el.setAttribute("is_active", layer.is_active() ? 1 : 0);
+		el.setAttribute("auto_created", layer.get_auto_created() ? 1 : 0);
 		return el;
 	}
 
@@ -100,6 +101,7 @@ namespace
 		GPlatesAppLogic::LayerTaskType::Type layer_task_id =
 				static_cast<GPlatesAppLogic::LayerTaskType::Type>(el.attribute("type").toInt());
 		int is_active = el.attribute("is_active").toInt();
+		int auto_created = el.attribute("auto_created").toInt();
 		GPlatesAppLogic::LayerTaskRegistry::LayerTaskType ltt = get_layer_task_type(ltr, layer_task_id);
 
 		// Before we can create a Layer, we must first create a LayerTask.
@@ -108,6 +110,10 @@ namespace
 		// Finally, can we create a Layer?
 		GPlatesAppLogic::Layer layer = rg.add_layer(lt_ptr);
 		layer.activate( is_active == 1 ? true : false );
+		// Was the layer originally auto-created ?
+		// This is needed so the layer can be auto-destroyed if the input file on its
+		// main input channel is later unloaded by the user.
+		layer.set_auto_created( auto_created == 1 ? true : false );
 
 		// Store ID for this layer.
 		idmap.insert(el.attribute("id"), layer);
@@ -178,7 +184,8 @@ namespace
 			GPlatesAppLogic::LayerTaskRegistry &ltr,
 			GPlatesAppLogic::ReconstructGraph &rg,
 			QDomElement el,
-			IdLayerMap &idmap)
+			IdLayerMap &idmap,
+			int session_version)
 	{
 		// What layer are we going to connect things to?
 		GPlatesAppLogic::Layer to_layer = idmap.value(el.attribute("to"));
@@ -189,6 +196,33 @@ namespace
 
 		// Before we can create a InputConnection, we must first know what type of connection to make.
 		QString input_channel = el.attribute("input_channel_name");
+
+		// Handle deprecated connections from old session versions.
+		if (session_version < 2)
+		{
+			// Version 1 added a connection for topological boundary sections in topology layers.
+			// Version 2 then deprecated this connection and so versions 2 and above can simply
+			// ignore the connection without loss of functionality.
+			if (to_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER)
+			{
+				// Note that the following string literal is deprecated and so this is now
+				// the only instance of it in the GPlates source code.
+				if (input_channel == "Topological boundary section features")
+				{
+					return GPlatesAppLogic::Layer::InputConnection();	// a deprecated InputConnection.
+				}
+			}
+			if (to_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
+			{
+				// Note that the following string literal is deprecated and so this is now
+				// the only instance of it in the GPlates source code.
+				if (input_channel == "Topological section features")
+				{
+					return GPlatesAppLogic::Layer::InputConnection();	// a deprecated InputConnection.
+				}
+			}
+		}
+
 		if (el.attribute("type") == "InputFile") {
 			// What file are we going to take the data from?
 			GPlatesAppLogic::Layer::InputFile from_file = get_input_file_by_id(fs, rg, el.attribute("from"));
@@ -364,7 +398,8 @@ GPlatesAppLogic::Serialization::save_layers_state()
 
 void
 GPlatesAppLogic::Serialization::load_layers_state(
-		const GPlatesAppLogic::Session::LayersStateType &dom)
+		const GPlatesAppLogic::Session::LayersStateType &dom,
+		int session_version)
 {
 	// We should already have Impl::Data objects loaded due to the way we suppressed the auto-layer-creation code.
 	// So we'll have the InputFile objects available. We *could* load those separately later, but I'm happy enough
@@ -407,9 +442,11 @@ GPlatesAppLogic::Serialization::load_layers_state(
 		  el_con = el_con.nextSiblingElement("InputConnection")) {
 		// Only attempt to load <InputConnection>s that don't look broken (with an empty "to" or "from" attribute)
 		if ( ! el_con.attribute("from").isEmpty() && ! el_con.attribute("to").isEmpty()) {
-			load_layer_connection(d_app_state_ptr->get_feature_collection_file_state(), ltr, rg, el_con, idmap);
+			load_layer_connection(
+					d_app_state_ptr->get_feature_collection_file_state(), ltr, rg, el_con, idmap, session_version);
 		}
 	}
+
 
 	// Aaaand we're done.
 }

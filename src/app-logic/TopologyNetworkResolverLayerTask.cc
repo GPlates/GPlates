@@ -32,8 +32,6 @@
 
 const QString GPlatesAppLogic::TopologyNetworkResolverLayerTask::TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME =
 		"Topological network features";
-const QString GPlatesAppLogic::TopologyNetworkResolverLayerTask::TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME =
-		"Topological section features";
 
 
 bool
@@ -56,29 +54,22 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_input_channel_types() con
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RECONSTRUCTION));
 
-	// Channel definition for the reconstructed topological section geometries referenced by
-	// the topological network features.
-	input_channel_types.push_back(
-			LayerInputChannelType(
-					TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME,
-					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
-					LayerTaskType::RECONSTRUCT));
-
 	// Channel definition for the topological network features.
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
 
-	// The referenced reconstructed topological section geometries have previously been obtained
-	// by referencing the weak observers of those referenced features (ReconstructedFeatureGeometry
+	// The referenced reconstructed topological section geometries are obtained by referencing
+	// the weak observers of those referenced features (ReconstructedFeatureGeometry
 	// is a weak observer of a feature). This is basically a global search through all loaded
-	// features. And this required no special input channel (since we could just get the
+	// features. And this requires no special input channel (since we could just get the
 	// reconstructed feature geometries directly from the topological section feature themselves
 	// provided they've already been reconstructed).
 	//
-	// However we have now added an input channel to restrict that global search to those
-	// topological section features associated with the new input channel.
+	// So the main requirement of this layer task is to get ReconstructedFeatureGeometry objects
+	// from all active "Reconstructed Geometries" layers because we don't know which ones contain
+	// the referenced topological section features.
 	// 
 	// We will also, as done previously, restrict our search of those reconstructed geometries to
 	// only those that were reconstructed with the same ReconstructionTree.
@@ -92,6 +83,19 @@ QString
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_main_input_feature_collection_channel() const
 {
 	return TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME;
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerTask::activate(
+		bool active)
+{
+	// If deactivated then specify an empty set of topological sections layer proxies.
+	if (!active)
+	{
+		d_topology_network_resolver_layer_proxy->set_current_topological_sections_layer_proxies(
+				std::vector<GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type>());
+	}
 }
 
 
@@ -155,18 +159,6 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_layer_proxy_connect
 					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME)
-	{
-		// Make sure the input layer proxy is a reconstruct layer proxy.
-		boost::optional<ReconstructLayerProxy *> topological_sections_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<
-						ReconstructLayerProxy>(layer_proxy);
-		if (topological_sections_layer_proxy)
-		{
-			d_topology_network_resolver_layer_proxy->add_topological_sections_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(topological_sections_layer_proxy.get()));
-		}
-	}
 }
 
 
@@ -190,41 +182,35 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::remove_input_layer_proxy_conn
 					d_default_reconstruction_layer_proxy);
 		}
 	}
-	else if (input_channel_name == TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME)
-	{
-		// Make sure the input layer proxy is a reconstruct layer proxy.
-		boost::optional<ReconstructLayerProxy *> topological_sections_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<
-						ReconstructLayerProxy>(layer_proxy);
-		if (topological_sections_layer_proxy)
-		{
-			d_topology_network_resolver_layer_proxy->remove_topological_sections_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(topological_sections_layer_proxy.get()));
-		}
-	}
 }
 
 
 void
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::update(
-		const Layer &layer_handle /* the layer invoking this */,
-		const double &reconstruction_time,
-		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
+		const Reconstruction::non_null_ptr_type &reconstruction)
 {
-	d_topology_network_resolver_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+	d_topology_network_resolver_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
+
+	// Find those layer outputs that come from a reconstruct layer.
+	// These will be our topological sections layer proxies.
+	// NOTE: We reference all active reconstruct layers because we don't know which ones contain
+	// the topological sections that our topologies are referencing (it's a global lookup).
+	std::vector<GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type> topological_sections_layer_proxies;
+	reconstruction->get_active_layer_outputs<GPlatesAppLogic::ReconstructLayerProxy>(topological_sections_layer_proxies);
+	// Notify our layer proxy of the topological sections layer proxies.
+	d_topology_network_resolver_layer_proxy->set_current_topological_sections_layer_proxies(topological_sections_layer_proxies);
 
 	// If our layer proxy is currently using the default reconstruction layer proxy then
 	// tell our layer proxy about the new default reconstruction layer proxy.
 	if (d_using_default_reconstruction_layer_proxy)
 	{
 		// Avoid setting it every update unless it's actually a different layer.
-		if (default_reconstruction_layer_proxy != d_default_reconstruction_layer_proxy)
+		if (reconstruction->get_default_reconstruction_layer_output() != d_default_reconstruction_layer_proxy)
 		{
 			d_topology_network_resolver_layer_proxy->set_current_reconstruction_layer_proxy(
-					default_reconstruction_layer_proxy);
+					reconstruction->get_default_reconstruction_layer_output());
 		}
 	}
 
-	d_default_reconstruction_layer_proxy = default_reconstruction_layer_proxy;
+	d_default_reconstruction_layer_proxy = reconstruction->get_default_reconstruction_layer_output();
 }

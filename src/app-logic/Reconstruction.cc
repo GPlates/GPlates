@@ -32,16 +32,20 @@
 
 GPlatesAppLogic::Reconstruction::Reconstruction(
 		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy) :
 	d_reconstruction_time(reconstruction_time),
+	d_anchor_plate_id(anchor_plate_id),
 	d_default_reconstruction_layer_proxy(default_reconstruction_layer_proxy)
 {
 }
 
 
 GPlatesAppLogic::Reconstruction::Reconstruction(
-		const double &reconstruction_time) :
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id) :
 	d_reconstruction_time(reconstruction_time),
+	d_anchor_plate_id(anchor_plate_id),
 	// Create a reconstruction layer proxy that performs identity rotations...
 	d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create())
 {

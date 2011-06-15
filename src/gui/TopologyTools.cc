@@ -30,6 +30,7 @@
 #include <limits>
 #include <map>
 
+#include <boost/foreach.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/construct.hpp>
@@ -57,6 +58,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructedFeatureGeometryFinder.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionFeatureProperties.h"
@@ -88,6 +90,7 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 
 #include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
@@ -917,6 +920,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 		return false;
 	}
 
+#if 0
 	// Find the RFGs, referencing the focused feature and the focused geometry property.
 	GPlatesAppLogic::ReconstructedFeatureGeometryFinder rfg_finder(
 			d_feature_focus_ptr->associated_geometry_property(),
@@ -927,7 +931,6 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	// per reconstruction time.
 	// FIXME: An overhaul of the method of finding RFGs from features is required as is
 	// default reconstruction tree layers.
-#if 0
 	// If there is more than one RFG for the focused geometry property then we won't allow
 	// it to be added - this is because the topology resolved won't know which RFG to use.
 	if (rfg_finder.num_rfgs_found() > 1)
@@ -1568,17 +1571,6 @@ GPlatesGui::TopologyTools::handle_apply()
 	// and attach it to the topology feature reference.
 	convert_topology_to_feature_property(d_topology_feature_ref);
 
-	// The topology feature has been modified so that it now behaves as a topological feature.
-	// Create any new layers required so the topological feature can be processed.
-	const boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_ref =
-			GPlatesAppLogic::get_file_reference_containing_feature(
-				d_application_state_ptr->get_feature_collection_file_state(),
-				d_topology_feature_ref);
-
-	if(file_ref)
-	{
-		d_application_state_ptr->update_layers(*file_ref);
-	}
 	// Now that we're finished building/editing the topology switch to the
 	// tool used to choose a feature - this will allow the user to select
 	// another topology for editing or do something else altogether.
@@ -2219,6 +2211,16 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 	// We're going to repopulate it.
 	d_visible_boundary_section_seq.clear();
 
+	// Generate RFGs for all active ReconstructLayer's.
+	// This is needed because we are about to search the topological section features for
+	// their RFGs and if we don't generate the RFGs then they might not be found.
+	//
+	// The RFGs - we'll keep them active until we've finished searching for RFGs below.
+	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
+			reconstructed_feature_geometries,
+			d_application_state_ptr->get_current_reconstruction());
+
 	// Get the reconstruction tree output of the default reconstruction tree layer.
 	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
 	// as input to other layers - when that happens we'll need to handle non-default trees too.
@@ -2260,6 +2262,16 @@ GPlatesGui::TopologyTools::reconstruct_interior_sections()
 	// Clear the list of currently visible sections.
 	// We're going to repopulate it.
 	d_visible_interior_section_seq.clear();
+
+	// Generate RFGs for all active ReconstructLayer's.
+	// This is needed because we are about to search the topological section features for
+	// their RFGs and if we don't generate the RFGs then they might not be found.
+	//
+	// The RFGs - we'll keep them active until we've finished searching for RFGs below.
+	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
+			reconstructed_feature_geometries,
+			d_application_state_ptr->get_current_reconstruction());
 
 	// Get the reconstruction tree output of the default reconstruction tree layer.
 	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
@@ -3338,6 +3350,11 @@ GPlatesGui::TopologyTools::convert_topology_to_feature_property(
 	// double check for non existant features
 	if ( ! feature_ref.is_valid() ) { return; }
 
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many as we incrementally modify the feature below.
+	GPlatesModel::NotificationGuard model_notification_guard(
+			d_application_state_ptr->get_model_interface().access_model());
+
 	// 
 	// We're interested in the "boundary" property.
 	//
@@ -3393,7 +3410,10 @@ GPlatesGui::TopologyTools::convert_topology_to_feature_property(
 					interior_property_value));
 	}
 
-	// Set the ball rolling again ...
+	// Do a new reconstruction since the feature has changed.
+	// But first release the model notification guard so other observers can adjust to the
+	// modified feature first.
+	model_notification_guard.release_guard();
 	d_application_state_ptr->reconstruct(); 
 }
 

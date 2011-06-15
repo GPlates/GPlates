@@ -87,6 +87,23 @@ GPlatesAppLogic::ReconstructLayerTask::get_main_input_feature_collection_channel
 
 
 void
+GPlatesAppLogic::ReconstructLayerTask::activate(
+		bool active)
+{
+	// If deactivated then specify an empty set of topological sections layer proxies.
+	if (!active)
+	{
+		// This method flushes any RFGs contained in the layer proxy.
+		// This is done so that topologies will no longer find the RFGs when they lookup observers
+		// of topological section features.
+		// This issue exists because the topology layers do not restrict topological sections
+		// to their input channels (and hence have no input channels for topological sections).
+		d_reconstruct_layer_proxy->reset_reconstructed_feature_geometry_caches();
+	}
+}
+
+
+void
 GPlatesAppLogic::ReconstructLayerTask::add_input_file_connection(
 		const QString &input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
@@ -171,12 +188,9 @@ GPlatesAppLogic::ReconstructLayerTask::remove_input_layer_proxy_connection(
 
 void
 GPlatesAppLogic::ReconstructLayerTask::update(
-		const Layer &layer_handle /* the layer invoking this */,
-		const double &reconstruction_time,
-		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
+		const Reconstruction::non_null_ptr_type &reconstruction)
 {
-	d_reconstruct_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+	d_reconstruct_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 
 	// If the layer task params have been modified then update our reconstruct layer proxy.
 	if (d_layer_task_params.d_non_const_get_reconstruct_params_called)
@@ -194,21 +208,21 @@ GPlatesAppLogic::ReconstructLayerTask::update(
 	if (d_using_default_reconstruction_layer_proxy)
 	{
 		// Avoid setting it every update unless it's actually a different layer.
-		if (default_reconstruction_layer_proxy != d_default_reconstruction_layer_proxy)
+		if (reconstruction->get_default_reconstruction_layer_output() != d_default_reconstruction_layer_proxy)
 		{
 			d_reconstruct_layer_proxy->set_current_reconstruction_layer_proxy(
-					default_reconstruction_layer_proxy);
+					reconstruction->get_default_reconstruction_layer_output());
 		}
 	}
 
-	d_default_reconstruction_layer_proxy = default_reconstruction_layer_proxy;
+	d_default_reconstruction_layer_proxy = reconstruction->get_default_reconstruction_layer_output();
 
 	// HACK: Just for the 1.1 release we'll update to the latest reconstructed feature geometries.
 #if 1
 	std::vector<ReconstructContext::Reconstruction> reconstructed_feature_geometries;
 	d_reconstruct_layer_proxy->get_reconstructed_feature_geometries(
 			reconstructed_feature_geometries,
-			reconstruction_time);
+			reconstruction->get_reconstruction_time());
 #endif
 }
 

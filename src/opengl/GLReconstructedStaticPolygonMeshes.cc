@@ -380,6 +380,12 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 		}
 	}
 
+	// If we don't have any polygon meshes for some reason then just return.
+	if (all_polygon_meshes_vertices.empty() || all_polygon_meshes_indices.empty())
+	{
+		return;
+	}
+
 	// Create a single OpenGL vertex array to contain the vertices of *all* polygon meshes.
 	d_polygon_meshes_vertex_array = GLVertexArray::create(
 			all_polygon_meshes_vertices,

@@ -63,14 +63,16 @@ namespace GPlatesAppLogic
 	 * Wrapper around a layer of @a ReconstructGraph that can be used to query the layer.
 	 */
 	class Layer :
-			public boost::equivalent<Layer>
+			public boost::equivalent<Layer>,
+			public boost::equality_comparable<Layer>
 	{
 	public:
 		/**
 		 * Wrapper around an input file to a layer.
 		 */
 		class InputFile :
-				public boost::equivalent<InputFile>
+				public boost::equivalent<InputFile>,
+				public boost::equality_comparable<InputFile>
 		{
 		public:
 			//! Constructor.
@@ -146,7 +148,8 @@ namespace GPlatesAppLogic
 		 * Wrapper around an input connection of a layer.
 		 */
 		class InputConnection :
-				public boost::equivalent<InputConnection>
+				public boost::equivalent<InputConnection>,
+				public boost::equality_comparable<InputConnection>
 		{
 		public:
 			//! Constructor.
@@ -604,8 +607,18 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-
 		boost::weak_ptr<ReconstructGraphImpl::Layer> d_impl;
+
+	// FIXME: These method are public but should be private.
+	// They are public so save/restore session can access them externally.
+	// Perhaps can have serialise/unserialise methods.
+	public:
+		bool
+		get_auto_created() const;
+
+		void
+		set_auto_created(
+				bool auto_created = true);
 	};
 }
 

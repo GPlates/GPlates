@@ -67,223 +67,6 @@ namespace
 	{
 		return old_anchor_plate_id != new_anchor_plate_id;
 	}
-
-
-	/**
-	 * Connect the output of one layer to the input of another.
-	 */
-	void
-	connect_layer_input_to_layer_output(
-			GPlatesAppLogic::Layer& layer_receiving_input,
-			const GPlatesAppLogic::Layer& layer_giving_output)
-	{
-		const std::vector<GPlatesAppLogic::LayerInputChannelType> input_channel_types = 
-				layer_receiving_input.get_input_channel_types();
-
-		BOOST_FOREACH(
-				const GPlatesAppLogic::LayerInputChannelType &input_channel_type,
-				input_channel_types)
-		{
-			const boost::optional< std::vector<GPlatesAppLogic::LayerTaskType::Type> > &
-					supported_input_data_types =
-							input_channel_type.get_layer_input_data_types();
-			// If the current layer type (of layer giving output) matches the supported input types...
-			if (supported_input_data_types &&
-				std::find(
-					supported_input_data_types->begin(),
-					supported_input_data_types->end(),
-					layer_giving_output.get_type()) != supported_input_data_types->end())
-			{
-				layer_receiving_input.connect_input_to_layer_output(
-						layer_giving_output,
-						input_channel_type.get_input_channel_name());
-				break;
-			}
-		}
-	}
-
-
-	/**
-	 * The layer is a velocity field calculator layer so look for any topology resolver layers
-	 * and connect their outputs to the velocity layer input.
-	 */
-	template <typename LayerForwardIter>
-	void
-	connect_velocity_field_calculator_layer_input_to_topology_resolver_layer_outputs(
-			GPlatesAppLogic::Layer& velocity_layer,
-			LayerForwardIter layers_begin,
-			LayerForwardIter layers_end)
-	{
-		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
-		{
-			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&
-			   layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
-			{
-				continue;
-			}
-			GPlatesAppLogic::Layer topology_layer = *layer_iter;
-
-			connect_layer_input_to_layer_output(velocity_layer, topology_layer);
-		}
-	}
-
-
-	/**
-	 * The layer is a topology resolver layer so look for any velocity field calculator layers
-	 * and connect the topology resolver output to the input of the velocity layers.
-	 */
-	template <typename LayerForwardIter>
-	void
-	connect_topology_resolver_layer_output_to_velocity_field_calculator_layer_inputs(
-			const GPlatesAppLogic::Layer& topology_layer,
-			LayerForwardIter layers_begin,
-			LayerForwardIter layers_end)
-	{
-		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
-		{
-			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
-			{
-				continue;
-			}
-			GPlatesAppLogic::Layer velocity_layer = *layer_iter;
-
-			connect_layer_input_to_layer_output(velocity_layer, topology_layer);
-		}
-	}
-
-
-	/**
-	 * The layer is a reconstruct layer so look for any topology layers
-	 * and connect the reconstruct layer output to the input of the topology layers.
-	 */
-	template <typename LayerForwardIter>
-	void
-	connect_reconstruct_layer_output_to_topology_resolver_layer_inputs(
-			const GPlatesAppLogic::Layer& reconstruct_layer,
-			LayerForwardIter layers_begin,
-			LayerForwardIter layers_end)
-	{
-		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
-		{
-			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&
-				layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
-			{
-				continue;
-			}
-			GPlatesAppLogic::Layer topology_layer = *layer_iter;
-
-			connect_layer_input_to_layer_output(topology_layer, reconstruct_layer);
-		}
-	}
-
-
-	/**
-	 * The layer is a topology layer so look for any reconstruct layers
-	 * and connect the topology layer input to the reconstruct layer outputs.
-	 */
-	template <typename LayerForwardIter>
-	void
-	connect_topology_resolver_layer_input_to_reconstruct_layer_outputs(
-			GPlatesAppLogic::Layer& topology_layer,
-			LayerForwardIter layers_begin,
-			LayerForwardIter layers_end)
-	{
-		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
-		{
-			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
-			{
-				continue;
-			}
-			GPlatesAppLogic::Layer reconstruct_layer = *layer_iter;
-
-			connect_layer_input_to_layer_output(topology_layer, reconstruct_layer);
-		}
-	}
-
-
-	/**
-	 * If there are any new reconstruct layers or any new topology layers then connect them up.
-	 */
-	template <typename OldLayersForwardIter, typename NewLayersForwardIter>
-	void
-	connect_reconstruct_layer_outputs_to_topology_resolver_layer_inputs(
-			OldLayersForwardIter old_layers_begin,
-			OldLayersForwardIter old_layers_end,
-			NewLayersForwardIter new_layers_begin,
-			NewLayersForwardIter new_layers_end)
-	{
-		// If there's a *new* reconstruct layer then connect it to any *old* topology layer inputs.
-		for (NewLayersForwardIter new_layer_iter = new_layers_begin;
-			new_layer_iter != new_layers_end;
-			new_layer_iter++)
-		{
-			if (new_layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
-			{
-				continue;
-			}
-			GPlatesAppLogic::Layer new_reconstruct_layer = *new_layer_iter;
-
-			connect_reconstruct_layer_output_to_topology_resolver_layer_inputs(
-					new_reconstruct_layer, old_layers_begin, old_layers_end);
-		}
-
-		// If there's a *new* topology layer then connect it to any *old* reconstruct layer outputs.
-		for (NewLayersForwardIter new_layer_iter = new_layers_begin;
-			new_layer_iter != new_layers_end;
-			new_layer_iter++)
-		{
-			if (new_layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&
-				new_layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
-			{
-				continue;
-			}
-			GPlatesAppLogic::Layer new_topology_layer = *new_layer_iter;
-
-			connect_topology_resolver_layer_input_to_reconstruct_layer_outputs(
-					new_topology_layer, old_layers_begin, old_layers_end);
-		}
-
-		// If there's a *new* reconstruct layer then connect it to any *new* topology layer inputs.
-		// Note that this also takes care of any *new* topology layer needing connection to any
-		// *new* reconstruct layer outputs.
-		for (NewLayersForwardIter new_layer_iter = new_layers_begin;
-			new_layer_iter != new_layers_end;
-			new_layer_iter++)
-		{
-			if (new_layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
-			{
-				continue;
-			}
-			GPlatesAppLogic::Layer new_reconstruct_layer = *new_layer_iter;
-
-			connect_reconstruct_layer_output_to_topology_resolver_layer_inputs(
-					new_reconstruct_layer, new_layers_begin, new_layers_end);
-		}
-	}
-
-
-	/**
-	 * Returns true if @a layer_task_type matches any layers types in @a layer_list.
-	 */
-	bool
-	is_the_layer_task_in_the_layer_list(
-			GPlatesAppLogic::LayerTaskType::Type layer_task_type,
-			const std::list<GPlatesAppLogic::Layer>& layer_list)
-	{
-		BOOST_FOREACH(GPlatesAppLogic::Layer layer, layer_list)
-		{
-			if (!layer.is_valid())
-			{
-				continue;
-			}
-
-			if (layer_task_type == layer.get_type())
-			{
-				return true;
-			}
-		}
-		return false;
-	}
 }
 
 
@@ -299,13 +82,13 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_python_manager_ptr(new GPlatesUtils::PythonManager()),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
-	d_reconstruct_graph(new ReconstructGraph(*this)),
+	d_reconstruct_graph(new ReconstructGraph(*d_layer_task_registry)),
 	d_update_default_reconstruction_tree_layer(true),
 	d_reconstruction_time(0.0),
 	d_anchored_plate_id(0),
 	d_reconstruction(
 			// Empty reconstruction
-			Reconstruction::create(d_reconstruction_time)),
+			Reconstruction::create(d_reconstruction_time, d_anchored_plate_id)),
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
 	d_suppress_auto_layer_creation(false)
@@ -390,7 +173,7 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 
 	// Get each layer to update itself in response to any changes that caused this
 	// 'reconstruct' method to get called.
-	d_reconstruction = d_reconstruct_graph->update_layer_tasks(d_reconstruction_time);
+	d_reconstruction = d_reconstruct_graph->update_layer_tasks(d_reconstruction_time, d_anchored_plate_id);
 
 	emit reconstructed(*this);
 }
@@ -407,25 +190,22 @@ GPlatesAppLogic::ApplicationState::handle_file_state_files_added(
 	// 'reconstruct' caused by layer signals, which is unnecessary if we're going to call it anyway.
 	ScopedReconstructGuard scoped_reconstruct_guard(*this, true/*reconstruct_on_scope_exit*/);
 
-	// Pass the signal onto the reconstruct graph first.
-	// We do this rather than connect it to the signal directly so we can control
-	// the order in which things happen.
-	// In this case we want the reconstruct graph to know about the new files first
-	// so that we can then get new file objects from it.
-	d_reconstruct_graph->handle_file_state_files_added(file_state, new_files);
+	// If we're not suppressing auto-creation of layers then auto-create layers.
+	// An example of suppression is loading a Session from SessionManagement which explicitly
+	// restores the auto-created layers itself.
+	boost::optional<ReconstructGraph::AutoCreateLayerParams> auto_create_layers;
+	if (!d_suppress_auto_layer_creation)
+	{
+		auto_create_layers =
+				ReconstructGraph::AutoCreateLayerParams(
+						// Do we update the default reconstruction tree layer when loading a rotation file ?
+						d_update_default_reconstruction_tree_layer);
+	}
 
-	// Special: Do not auto-create layers if we are loading a Session from SessionManagement.
-	if ( ! d_suppress_auto_layer_creation) {
-		// Create new layers for the new files.
-		BOOST_FOREACH(FeatureCollectionFileState::file_reference new_file, new_files)
-		{
-			// Create a new layer for the current file (or create multiple layers if the
-			// feature collection contains features that can be processed by more than one layer type).
-			// We ignore the created layers because they've been added to the reconstruct graph
-			// and because they will automatically get removed/destroyed their associated
-			// input files (the ones that triggered this auto-layer-creation) have been unloaded.
-			create_layers(new_file);
-		}
+	// Add the new files to the reconstruct graph.
+	BOOST_FOREACH(FeatureCollectionFileState::file_reference new_file, new_files)
+	{
+		d_reconstruct_graph->add_file(new_file, auto_create_layers);
 	}
 }
 
@@ -442,80 +222,10 @@ GPlatesAppLogic::ApplicationState::handle_file_state_file_about_to_be_removed(
 	// 'reconstruct' caused by layer signals, which is unnecessary if we're going to call it anyway.
 	ScopedReconstructGuard scoped_reconstruct_guard(*this, true/*reconstruct_on_scope_exit*/);
 
-	// Destroy auto-created layers for the file about to be removed.
-	// NOTE: If the user explicitly created a layer then it will never get removed automatically -
-	// the user must also explicitly destroy the layer - this is even the case when all files
-	// connected to that layer are unloaded (the user still has to explicitly destroy the layer).
-	const file_to_primary_layers_mapping_type::iterator remove_layers_iter =
-			d_file_to_primary_layers_mapping.find(file_about_to_be_removed);
-	if (remove_layers_iter != d_file_to_primary_layers_mapping.end())
-	{
-		const layer_seq_type &layers_to_remove = remove_layers_iter->second;
-
-		// The current default reconstruction tree layer (if any).
-		const Layer current_default_reconstruction_tree_layer =
-				d_reconstruct_graph->get_default_reconstruction_tree_layer();
-
-		// Remove all layers auto-created for the file about to be removed.
-		BOOST_FOREACH(const Layer &layer_to_remove, layers_to_remove)
-		{
-			// FIXME: We need to do something about the ambiguity of changing the default
-			// reconstruction tree layer under the nose of the user.
-			// This shouldn't really be done here and it's dodgy because we're assuming no one
-			// else is setting the default reconstruction tree layer.
-#if 1
-			//
-			// Before removing the layer see if it's the current default reconstruction tree layer.
-			if (layer_to_remove == current_default_reconstruction_tree_layer)
-			{
-				// If there are any recently set defaults.
-				if (!d_default_reconstruction_tree_layer_stack.empty())
-				{
-					// The current default should match the top of the stack unless
-					// someone else is setting the default (FIXME: this is quite likely).
-					if (current_default_reconstruction_tree_layer ==
-						d_default_reconstruction_tree_layer_stack.top())
-					{
-						// Remove the current default from the top of the stack.
-						d_default_reconstruction_tree_layer_stack.pop();
-					}
-
-					// Remove any invalid layers from the stack (these are the result of
-					// removed layers caused by unloaded rotation files).
-					while (!d_default_reconstruction_tree_layer_stack.empty() &&
-						!d_default_reconstruction_tree_layer_stack.top().is_valid())
-					{
-						d_default_reconstruction_tree_layer_stack.pop();
-					}
-
-					// Get the most recently set (and valid) default.
-					if (!d_default_reconstruction_tree_layer_stack.empty())
-					{
-						const Layer new_default_reconstruction_tree_layer =
-								d_default_reconstruction_tree_layer_stack.top();
-
-						d_reconstruct_graph->set_default_reconstruction_tree_layer(
-								new_default_reconstruction_tree_layer);
-					}
-				}
-			}
-#endif
-
-			// Remove the auto-created layer.
-			if (layer_to_remove.is_valid())
-			{
-				d_reconstruct_graph->remove_layer(layer_to_remove);
-			}
-		}
-
-		// We don't need to track the auto-generated layers for the file being removed.
-		d_file_to_primary_layers_mapping.erase(remove_layers_iter);
-	}
-
 	// Pass the signal onto the reconstruct graph first.
 	// We do this rather than connect it to the signal directly so we can control
 	// the order in which things happen.
-	d_reconstruct_graph->handle_file_state_file_about_to_be_removed(file_state, file_about_to_be_removed);
+	d_reconstruct_graph->remove_file(file_about_to_be_removed);
 }
 
 
@@ -687,188 +397,4 @@ GPlatesAppLogic::ApplicationState::end_reconstruct_on_scope_exit(
 
 		reconstruct();
 	}
-}
-
-
-std::vector< boost::shared_ptr<GPlatesAppLogic::LayerTask> >
-GPlatesAppLogic::ApplicationState::create_layer_tasks(
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &input_feature_collection)
-{
-	// Look for layer task types that we should create to process the loaded feature collection.
-	const std::vector<LayerTaskRegistry::LayerTaskType> layer_task_types =
-			d_layer_task_registry->get_layer_task_types_to_auto_create_for_loaded_file(
-					input_feature_collection);
-
-	// The sequence of layer tasks to return to the caller.
-	std::vector< boost::shared_ptr<LayerTask> > layer_tasks;
-	layer_tasks.reserve(layer_task_types.size());
-
-	// Iterate over the compatible layer task types and create layer tasks.
-	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, layer_task_types)
-	{
-		const boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task =
-				layer_task_type.create_layer_task();
-		if (layer_task)
-		{
-			// Add to sequence returned to the caller.
-			layer_tasks.push_back(*layer_task);
-		}
-	}
-
-	return layer_tasks;
-}
-
-
-void
-GPlatesAppLogic::ApplicationState::update_layers(
-		const FeatureCollectionFileState::file_reference &file_ref)
-{
-	// If we need to call 'reconstruct' then do it through a scoped object - that way
-	// it can get delayed if there's an enclosing scoped object (higher in the call chain).
-	ScopedReconstructGuard scoped_reconstruct_guard(*this);
-
-	const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-			file_ref.get_file().get_feature_collection();
-
-	// The file may have changed so find out what layer types should be created to
-	// process the file.
-	// This may have changed since we last checked.
-	const std::vector<LayerTaskRegistry::LayerTaskType> new_layer_task_types =
-			d_layer_task_registry->get_layer_task_types_to_auto_create_for_loaded_file(
-					feature_collection);
-
-	// Copy the old layers for the current file - for later.
-	const std::vector<Layer> old_layers(
-			d_file_to_primary_layers_mapping[file_ref].begin(),
-			d_file_to_primary_layers_mapping[file_ref].end());
-	std::vector<Layer> new_layers;
-	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, new_layer_task_types)
-	{
-		// Get the layers auto-created from 'file_ref'.
-		const layer_seq_type &layers_created_from_file =
-				d_file_to_primary_layers_mapping[file_ref];
-
-		// If a layer task of the current type hasn't yet been created for 'file_ref'
-		// then create one.
-		if (!is_the_layer_task_in_the_layer_list(
-				layer_task_type.get_layer_type(),
-				layers_created_from_file))
-		{
-			const boost::shared_ptr<LayerTask> layer_task = layer_task_type.create_layer_task();
-
-			const Layer new_layer = create_layer(file_ref, layer_task);
-			new_layers.push_back(new_layer);
-		}
-	}
-
-	// If there is more than one layer created for the same input file then we might need
-	// to connect the layers to each other depending on the types of layers.
-	// Note that we only connect up a new layer to an old layer or vice versa (or new to new)
-	// but never an old layer to an old layer as that should have already been done.
-	connect_reconstruct_layer_outputs_to_topology_resolver_layer_inputs(
-			old_layers.begin(), old_layers.end(),
-			new_layers.begin(), new_layers.end());
-
-	if (!new_layers.empty())
-	{
-		// We want to call 'reconstruct' (when all scopes exit).
-		scoped_reconstruct_guard.call_reconstruct_on_scope_exit();
-	}
-}
-
-
-GPlatesAppLogic::Layer
-GPlatesAppLogic::ApplicationState::create_layer(
-		const FeatureCollectionFileState::file_reference &input_file_ref,
-		const boost::shared_ptr<LayerTask> &layer_task)
-{
-	// Create a new layer using the layer task.
-	// This will emit a signal in ReconstructGraph to notify clients of a new layer.
-	Layer new_layer = d_reconstruct_graph->add_layer(layer_task);
-
-	//
-	// Connect the feature collection to the input of the new layer.
-	//
-
-	// Get the main feature collection input channel for our layer.
-	const QString main_input_feature_collection_channel =
-			new_layer.get_main_input_feature_collection_channel();
-
-	// Get an input file object from the reconstruct graph.
-	const Layer::InputFile input_file = d_reconstruct_graph->get_input_file(input_file_ref);
-	// Connect the input file to the main input channel.
-	new_layer.connect_input_to_file(
-			input_file,
-			main_input_feature_collection_channel);
-
-	// If the layer is a velocity field calculator then look for any topology resolver layers
-	// and connect their outputs to the velocity layer input.
-	if (new_layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
-	{
-		connect_velocity_field_calculator_layer_input_to_topology_resolver_layer_outputs(
-				new_layer,
-				d_reconstruct_graph->begin(),
-				d_reconstruct_graph->end());
-	}
-
-	// If the layer is a topology resolver then look for any velocity field calculator layers
-	// and connect the topology resolver output to the input of the velocity layers.
-	if (new_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER ||
-		new_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
-	{
-		connect_topology_resolver_layer_output_to_velocity_field_calculator_layer_inputs(
-				new_layer, 
-				d_reconstruct_graph->begin(),
-				d_reconstruct_graph->end());
-	}
-
-	// FIXME: We need to do something about the ambiguity of changing the default
-	// reconstruction tree layer under the nose of the user.
-	// This shouldn't really be done here and it's dodgy because we're assuming no one
-	// else is setting the default reconstruction tree layer.
-	if (new_layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)
-	{
-		if (d_update_default_reconstruction_tree_layer)
-		{
-			d_reconstruct_graph->set_default_reconstruction_tree_layer(new_layer);
-		}
-
-		// Keep track of the default reconstruction tree layers set.
-		d_default_reconstruction_tree_layer_stack.push(new_layer);
-	}
-
-	// Keep track of the layers auto-created for each file loaded.
-	d_file_to_primary_layers_mapping[input_file_ref].push_back(new_layer);
-
-	return new_layer;
-}
-
-
-void
-GPlatesAppLogic::ApplicationState::create_layers(
-		const FeatureCollectionFileState::file_reference &input_file_ref)
-{
-	const GPlatesModel::FeatureCollectionHandle::weak_ref new_feature_collection =
-			input_file_ref.get_file().get_feature_collection();
-
-	// Create the layer tasks that can processes the feature collection in the input file.
-	const std::vector< boost::shared_ptr<LayerTask> > layer_tasks =
-			create_layer_tasks(new_feature_collection);
-
-	// Create a new layer for each layer task.
-	std::vector<Layer> new_layers;
-	BOOST_FOREACH(const boost::shared_ptr<LayerTask> &layer_task, layer_tasks)
-	{
-		const Layer new_layer = create_layer(input_file_ref, layer_task);
-		new_layers.push_back(new_layer);
-	}
-
-	// If there is more than one layer created for the same input file then we might need
-	// to connect the layers to each other depending on the types of layers.
-	// NOTE: Since we have just created layers for this file for the first time the
-	// total number of layers created so far is the same as the number of new layers just created.
-	const std::vector<Layer> old_layers; // Empty
-	connect_reconstruct_layer_outputs_to_topology_resolver_layer_inputs(
-			old_layers.begin(), old_layers.end(),
-			new_layers.begin(), new_layers.end());
 }

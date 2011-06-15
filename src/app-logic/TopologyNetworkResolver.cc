@@ -399,8 +399,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_section_reconstruct
 	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
 					geometry_delegate,
-					restricted_reconstruction_tree,
-					d_reconstructed_topological_sections);
+					restricted_reconstruction_tree);
 
 	// If no RFG was found then it's possible that the current reconstruction time is
 	// outside the age range of the feature this section is referencing.

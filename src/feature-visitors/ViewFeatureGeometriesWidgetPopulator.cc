@@ -697,6 +697,16 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geome
 		return;
 	}
 
+	// Generate RFGs for all active ReconstructLayer's.
+	// This is needed because we are about to search the feature for its RFGs and
+	// if we don't generate the RFGs then they might not be found.
+	//
+	// The RFGs - we'll keep them active until we've finished searching for RFGs below.
+	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
+			reconstructed_feature_geometries,
+			*d_reconstruction_ptr);
+
 	// Iterate over the layers that have reconstruction tree outputs.
 	BOOST_FOREACH(
 			GPlatesAppLogic::ReconstructionLayerProxy *reconstruction_layer_proxy,
@@ -710,7 +720,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geome
 		//
 		// Usually we'll only get RFGs from single ReconstructionTree but it's possible for
 		// the user to hook up the same reconstructable feature collection to multiple
-		// reconstruction layers with each layer using a different ReconstructionTree.
+		// reconstruct layers with each layer using a different ReconstructionTree.
 		// In this case we'll be displaying the same geometry property more than once (where
 		// each displayed geometry was reconstructed with a different reconstruction tree).
 		GPlatesAppLogic::ReconstructedFeatureGeometryFinder rfgFinder(reconstruction_tree.get());

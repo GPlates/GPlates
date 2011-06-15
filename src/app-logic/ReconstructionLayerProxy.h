@@ -84,7 +84,7 @@ namespace GPlatesAppLogic
 		ReconstructionTree::non_null_ptr_to_const_type
 		get_reconstruction_tree()
 		{
-			return get_reconstruction_tree(d_current_reconstruction_time, d_current_anchor_plate_id);
+			return get_reconstruction_tree(d_current_reconstruction_time.dval(), d_current_anchor_plate_id);
 		}
 
 
@@ -114,7 +114,7 @@ namespace GPlatesAppLogic
 		get_reconstruction_tree(
 				GPlatesModel::integer_plate_id_type anchor_plate_id)
 		{
-			return get_reconstruction_tree(d_current_reconstruction_time, anchor_plate_id);
+			return get_reconstruction_tree(d_current_reconstruction_time.dval(), anchor_plate_id);
 		}
 
 
@@ -221,7 +221,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The current reconstruction time as set by the layer system.
 		 */
-		double d_current_reconstruction_time;
+		GPlatesMaths::real_t d_current_reconstruction_time;
 
 		/**
 		 * The current anchored plate id as set by the layer system.

@@ -96,19 +96,23 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 					reconstruction_time);
 		}
 
-		// Resolve our closed plate polygon features into our sequence of resolved topological boundaries.
-		//
-		// NOTE: Should we restrict the topological sections to be reconstructed using
-		// the same reconstruction tree that's associated with the resolved topological boundaries?
-		// This means both the Reconstruct layer and the Topology layer must both be connected
-		// to the same ReconstructionTree layer otherwise the topologies are not generated.
-		// This is the current behaviour but it might be too restrictive?
-		TopologyUtils::resolve_topological_boundaries(
-				d_cached_resolved_topological_boundaries.get(),
-				d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree(reconstruction_time),
-				reconstructed_topological_boundary_sections,
-				d_current_topological_closed_plate_polygon_feature_collections,
-				true/*restrict_boundary_sections_to_same_reconstruction_tree*/);
+		// We only resolve boundaries if we have topological sections.
+		if (!reconstructed_topological_boundary_sections.empty())
+		{
+			// Resolve our closed plate polygon features into our sequence of resolved topological boundaries.
+			//
+			// NOTE: Should we restrict the topological sections to be reconstructed using
+			// the same reconstruction tree that's associated with the resolved topological boundaries?
+			// This means both the Reconstruct layer and the Topology layer must both be connected
+			// to the same ReconstructionTree layer otherwise the topologies are not generated.
+			// This is the current behaviour but it might be too restrictive?
+			TopologyUtils::resolve_topological_boundaries(
+					d_cached_resolved_topological_boundaries.get(),
+					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree(reconstruction_time),
+					reconstructed_topological_boundary_sections,
+					d_current_topological_closed_plate_polygon_feature_collections,
+					true/*restrict_boundary_sections_to_same_reconstruction_tree*/);
+		}
 	}
 
 	// Append our cached resolved topological boundaries to the caller's sequence.
@@ -158,24 +162,14 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::set_current_reconstruction_
 
 
 void
-GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::add_topological_sections_layer_proxy(
-		const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy)
+GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::set_current_topological_sections_layer_proxies(
+		const std::vector<ReconstructLayerProxy::non_null_ptr_type> &topological_sections_layer_proxies)
 {
-	d_current_topological_sections_layer_proxies.add_input_layer_proxy(topological_sections_layer_proxy);
-
-	// The resolved topological boundaries are now invalid.
-	reset_cache();
-
-	// Polling observers need to update themselves with respect to us.
-	d_subject_token.invalidate();
-}
-
-
-void
-GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::remove_topological_sections_layer_proxy(
-		const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy)
-{
-	d_current_topological_sections_layer_proxies.remove_input_layer_proxy(topological_sections_layer_proxy);
+	// If the topological sections layer proxies are the same ones as last time then no invalidation necessary.
+	if (!d_current_topological_sections_layer_proxies.set_input_layer_proxies(topological_sections_layer_proxies))
+	{
+		return;
+	}
 
 	// The resolved topological boundaries are now invalid.
 	reset_cache();

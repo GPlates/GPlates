@@ -27,6 +27,7 @@
 #include <cstddef> // For std::size_t
 #include <iterator>
 #include <list>
+#include <set>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
@@ -35,9 +36,9 @@
 #include "Serialization.h"
 
 
-#include "ApplicationState.h"
 #include "LayerProxyUtils.h"
 #include "LayerTask.h"
+#include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructGraphImpl.h"
 #include "ReconstructionLayerProxy.h"
@@ -50,11 +51,95 @@
 
 
 GPlatesAppLogic::ReconstructGraph::ReconstructGraph(
-		ApplicationState &application_state) :
-	d_application_state(application_state),
+		const LayerTaskRegistry &layer_task_registry) :
+	d_layer_task_registry(layer_task_registry),
 	d_identity_rotation_reconstruction_layer_proxy(
 			ReconstructionLayerProxy::create(1/*max_num_reconstruction_trees_in_cache*/))
 {
+}
+
+
+GPlatesAppLogic::Layer::InputFile
+GPlatesAppLogic::ReconstructGraph::add_file(
+		const FeatureCollectionFileState::file_reference &file,
+		boost::optional<AutoCreateLayerParams> auto_create_layers)
+{
+	// Wrap a new Data object around the file.
+	const boost::shared_ptr<ReconstructGraphImpl::Data> input_file_impl(
+			new ReconstructGraphImpl::Data(file));
+
+	// The input file entry stored in the map of input file references to input files.
+	const InputFileInfo input_file_info(*this, input_file_impl);
+
+	// Add to our internal mapping of file indices to InputFile's.
+	std::pair<input_file_info_map_type::const_iterator, bool> insert_result =
+			d_input_files.insert(std::make_pair(file, input_file_info));
+
+	// The file shouldn't already exist in the map.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			insert_result.second,
+			GPLATES_ASSERTION_SOURCE);
+
+	// The input file to return to the caller as a weak reference.
+	const Layer::InputFile input_file(input_file_impl);
+
+	if (auto_create_layers)
+	{
+		auto_create_layers_for_new_input_file(input_file, auto_create_layers.get());
+	}
+
+	return input_file;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::remove_file(
+		const FeatureCollectionFileState::file_reference &file)
+{
+	// Search for the file that's about to be removed.
+	const input_file_info_map_type::iterator input_file_iter = d_input_files.find(file);
+
+	// We should be able to find the file in our internal map.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			input_file_iter != d_input_files.end(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// The input file corresponding to the file about to be removed.
+	const InputFileInfo &input_file_info = input_file_iter->second;
+
+	const input_file_ptr_type input_file_ptr = input_file_info.get_input_file_ptr();
+
+	// Destroy auto-created layers for the file about to be removed.
+	auto_destroy_layers_for_input_file_about_to_be_removed(Layer::InputFile(input_file_ptr));
+
+	// Get the input file to disconnect all connections that use it as input.
+	input_file_ptr->disconnect_output_connections();
+
+	// Remove the input file object.
+	d_input_files.erase(input_file_iter);
+}
+
+
+GPlatesAppLogic::Layer::InputFile
+GPlatesAppLogic::ReconstructGraph::get_input_file(
+		const FeatureCollectionFileState::file_reference input_file)
+{
+	// Search for the input file.
+	input_file_info_map_type::const_iterator input_file_iter = d_input_files.find(input_file);
+
+	// We should have all currently loaded files covered.
+	// If the specified file cannot be found then something is broken.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			input_file_iter != d_input_files.end(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// The input file info corresponding to the file.
+	const InputFileInfo &input_file_info = input_file_iter->second;
+
+	const input_file_ptr_type input_file_ptr = input_file_info.get_input_file_ptr();
+
+	// Return to caller as a weak reference.
+	return Layer::InputFile(input_file_ptr);
 }
 
 
@@ -93,12 +178,10 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 		layer.is_valid(),
 		GPLATES_ASSERTION_SOURCE);
 
-	// If we're removing the default reconstruction tree layer then
-	// set the new default reconstruction tree layer as none.
-	if (layer == d_default_reconstruction_tree_layer)
-	{
-		set_default_reconstruction_tree_layer();
-	}
+	// If the layer being removed is the current default reconstruction tree layer then
+	// remove it as a default reconstruction tree layer.
+	// Also handles case where layer being removed is a previous default reconstruction tree layer.
+	handle_default_reconstruction_tree_layer_removal(layer);
 
 	// Deactivate the layer which will emit a signal if the layer is currently active.
 	layer.activate(false);
@@ -120,364 +203,406 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 }
 
 
-GPlatesAppLogic::Layer::InputFile
-GPlatesAppLogic::ReconstructGraph::get_input_file(
-		const FeatureCollectionFileState::file_reference input_file)
-{
-	// Search for the input file.
-	input_file_ptr_map_type::const_iterator input_file_iter = d_input_files.find(input_file);
-
-	// We should have all currently loaded files covered.
-	// If the specified file cannot be found then something is broken.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			input_file_iter != d_input_files.end(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Return to caller as a weak reference.
-	return Layer::InputFile(input_file_iter->second);
-}
-
-
 void
 GPlatesAppLogic::ReconstructGraph::set_default_reconstruction_tree_layer(
-		const Layer &default_reconstruction_tree_layer)
+		const Layer &new_default_reconstruction_tree_layer)
 {
+	// Make sure we've been passed a valid reconstruction tree layer.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			new_default_reconstruction_tree_layer.get_type() == LayerTaskType::RECONSTRUCTION &&
+					new_default_reconstruction_tree_layer.is_valid(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const Layer prev_default_reconstruction_tree_layer = get_default_reconstruction_tree_layer();
+
 	// If the default reconstruction tree layer isn't changing then do nothing.
-	if (default_reconstruction_tree_layer == d_default_reconstruction_tree_layer)
+	if (new_default_reconstruction_tree_layer == prev_default_reconstruction_tree_layer)
 	{
 		return;
 	}
 
-	const Layer prev_default_reconstruction_tree_layer = d_default_reconstruction_tree_layer;
-
-	if (default_reconstruction_tree_layer.is_valid())
-	{
-		// Make sure we've been passed a reconstruction tree layer.
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				default_reconstruction_tree_layer.get_type() == LayerTaskType::RECONSTRUCTION,
-				GPLATES_ASSERTION_SOURCE);
-		d_default_reconstruction_tree_layer = default_reconstruction_tree_layer;
-	}
-	else
-	{
-		// If the weak reference is invalid then there will be no default reconstruction tree layer.
-		d_default_reconstruction_tree_layer = Layer();
-	}
+	d_default_reconstruction_tree_layer_stack.push_back(new_default_reconstruction_tree_layer);
 
 	// Let clients know of the new default reconstruction tree layer.
 	emit default_reconstruction_tree_layer_changed(
 			*this,
 			prev_default_reconstruction_tree_layer,
-			d_default_reconstruction_tree_layer);
+			new_default_reconstruction_tree_layer);
 }
 
 
 GPlatesAppLogic::Layer
 GPlatesAppLogic::ReconstructGraph::get_default_reconstruction_tree_layer() const
 {
-	return d_default_reconstruction_tree_layer;
+	if (d_default_reconstruction_tree_layer_stack.empty())
+	{
+		return Layer();
+	}
+
+	return d_default_reconstruction_tree_layer_stack.back();
 }
 
 
 GPlatesAppLogic::Reconstruction::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchored_plated_id)
 {
-	// Create a Reconstruction to store the layer proxies of each *active* layer.
-	// And the default reconstruction layer proxy will perform identity rotations unless we later
-	// find a valid default reconstruction layer proxy.
-	// NOTE: The specified reconstruction layer proxy will only get used if there are no
-	// reconstruction tree layers loaded.
-	// Also by keeping the same instance over time we avoid layers continually updating themselves,
-	// when it's unnecessary, because they think the default reconstruction layer is constantly
-	// being switched.
-	// 
-	// FIXME: Having to update the identity reconstruction layer proxy to prevent problems in other
-	// area is just dodgy. This whole default reconstruction tree layer has to be reevaluated.
-	d_identity_rotation_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction_time);
-	d_identity_rotation_reconstruction_layer_proxy->set_current_anchor_plate_id(
-			d_application_state.get_current_anchored_plate_id());
+	// Determine a default reconstruction layer proxy.
+	boost::optional<ReconstructionLayerProxy::non_null_ptr_type> default_reconstruction_layer_proxy;
+
+	// If we have a default reconstruction tree layer that's active then use that.
+	if (get_default_reconstruction_tree_layer().is_valid() &&
+		get_default_reconstruction_tree_layer().is_active() &&
+		// FIXME: Should probably handle this elsewhere so we don't have to check here...
+		get_default_reconstruction_tree_layer().get_type() == LayerTaskType::RECONSTRUCTION)
+	{
+		// Get the output of the default reconstruction tree layer.
+		default_reconstruction_layer_proxy =
+				get_default_reconstruction_tree_layer().get_layer_output<ReconstructionLayerProxy>();
+	}
+
+	// Otherwise use the identity rotation reconstruction layer proxy.
+	if (!default_reconstruction_layer_proxy)
+	{
+		// NOTE: The specified reconstruction layer proxy will only get used if there are no
+		// reconstruction tree layers loaded.
+		// Also by keeping the same instance over time we avoid layers continually updating themselves,
+		// when it's unnecessary, because they think the default reconstruction layer is constantly
+		// being switched.
+		//
+		// FIXME: Having to update the identity reconstruction layer proxy to prevent problems in other
+		// area is just dodgy. This whole default reconstruction tree layer has to be reevaluated.
+		d_identity_rotation_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+		d_identity_rotation_reconstruction_layer_proxy->set_current_anchor_plate_id(anchored_plated_id);
+
+		default_reconstruction_layer_proxy = d_identity_rotation_reconstruction_layer_proxy;
+	}
+
+	// Create a Reconstruction to store the layer proxies of each *active* layer and
+	// the default reconstruction layer proxy.
 	Reconstruction::non_null_ptr_type reconstruction =
 			Reconstruction::create(
 					reconstruction_time,
-					d_identity_rotation_reconstruction_layer_proxy);
+					anchored_plated_id,
+					default_reconstruction_layer_proxy.get());
 
-	// Get a shared reference to the default reconstruction tree layer if there is one.
-	layer_ptr_type default_reconstruction_tree_layer;
-	if (d_default_reconstruction_tree_layer.is_valid() &&
-		// FIXME: Should probably handle this elsewhere so we don't have to check here...
-		d_default_reconstruction_tree_layer.get_type() == LayerTaskType::RECONSTRUCTION)
+	// Iterate over the layers and add the active ones to the Reconstruction object.
+	// We do this loop first so we can then pass the Reconstruction to all layers as we update
+	// them in the second loop - some layers like topology layers references other layers without
+	// going through their input channels and hence need to know about all active layers.
+	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
 	{
-		default_reconstruction_tree_layer =
-				layer_ptr_type(d_default_reconstruction_tree_layer.get_impl());
+		// If this layer is not active then we don't add the layer proxy to the current reconstruction.
+		if (!layer->is_active())
+		{
+			continue;
+		}
+
+		// Add the layer output (proxy) to the reconstruction.
+		reconstruction->add_active_layer_output(layer->get_layer_task().get_layer_proxy());
 	}
 
-	// Traverse the dependency graph to determine the order in which layers should be executed
-	// so that layers requiring input from other layers get executed later.
-	const std::vector<layer_ptr_type> dependency_ordered_layers =
-			get_layer_dependency_order(default_reconstruction_tree_layer);
-
-	// Iterate over the layers and update them in the correct order.
-	BOOST_FOREACH(const layer_ptr_type &layer, dependency_ordered_layers)
+	// Iterate over the layers again and update them.
+	// Note that the layers can be updated in any order - it is only when their layer proxy
+	// interfaces are queried that they will reference any dependency layers and that won't
+	// happen until after we're finished here and have returned.
+	//
+	// In any case the layers now operate in a pull model where a layer directly makes requests
+	// to its dependencies layers and so on, whereas previously layers operated in a push model
+	// that required dependency layers to produce output before the executing layers that
+	// depended on them thus required layers to be executed in dependency order.
+	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
 	{
-		// Pass a layer handle, that clients can use, when executing layer tasks.
-		const Layer layer_handle(layer);
-
-		// Execute the layer task.
-		layer->update_layer_task(
-				layer_handle,
-				*reconstruction,
-				d_application_state.get_current_anchored_plate_id());
-
-		// If the layer just executed is the default reconstruction layer then
-		// store its output in the Reconstruction object.
-		// The Reconstruction object will get queried by subsequent layers for the default
-		// reconstruction layer proxy.
-		// NOTE: There should be no danger of another layer querying the default reconstruction
-		// layer proxy before its set due to the dependency order of execution of the layers.
-		if (layer == default_reconstruction_tree_layer)
+		// If this layer is not active then we don't add the layer proxy to the current reconstruction.
+		if (!layer->is_active())
 		{
-			// Get the output of the default reconstruction tree layer.
-			boost::optional<ReconstructionLayerProxy::non_null_ptr_type>
-					default_reconstruction_tree_layer_proxy =
-							layer_handle.get_layer_output<ReconstructionLayerProxy>();
-			if (default_reconstruction_tree_layer_proxy)
-			{
-				// Store it in the output Reconstruction.
-				reconstruction->set_default_reconstruction_layer_output(
-						default_reconstruction_tree_layer_proxy.get());
-			}
+			continue;
 		}
+
+		// Update the layer's task.
+		layer->get_layer_task().update(reconstruction);
 	}
 
 	return reconstruction;
 }
 
 
-std::vector<GPlatesAppLogic::ReconstructGraph::layer_ptr_type>
-GPlatesAppLogic::ReconstructGraph::get_layer_dependency_order(
-		const layer_ptr_type &default_reconstruction_tree_layer) const
+void
+GPlatesAppLogic::ReconstructGraph::modified_input_file(
+		const Layer::InputFile &input_file)
 {
 	//
-	// Iterate over the layers traverse the dependency graph to determine execution order.
+	// First iterate over the output connections of the modified input file to find all layer
+	// types that are currently processing the input file.
 	//
-	const std::size_t num_layers = d_layers.size();
 
-	// Add all the layers to a list.
-	std::list<layer_ptr_type> layers(d_layers.begin(), d_layers.end());
+	// The current set of layer types that are processing the input file.
+	// A layer processes an input file when that file is connected to the *main* input channel of the layer.
+	std::set<LayerTaskType::Type> layer_types_processing_input_file;
 
-	// The final sequence of dependency ordered layers to return to the caller.
-	std::vector<layer_ptr_type> dependency_ordered_layers;
-	dependency_ordered_layers.reserve(num_layers);
-
-	// Keep track of all layers visited when traversing dependency graph below.
-	std::set<layer_ptr_type> all_layers_visited;
-
-	// If there's a default reconstruction tree layer then it should get executed first
-	// since layer's can be implicitly connected to it (that is they can be connected to
-	// it even though they have no explicit connections to it) - and since we only follow
-	// explicit connections in the dependency graph we'll need to treat this as a special case.
-	if (default_reconstruction_tree_layer)
-	{
-		// The default reconstruction tree layer will be in the non-topological layers.
-		std::list<layer_ptr_type>::iterator default_recon_tree_layer_iter =
-			std::find(layers.begin(), layers.end(), default_reconstruction_tree_layer);
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				default_recon_tree_layer_iter != layers.end(),
-				GPLATES_ASSERTION_SOURCE);
-
-		// Remove from the other layers list and add it here instead.
-		layers.erase(default_recon_tree_layer_iter);
-
-		find_layer_dependency_order(
-				default_reconstruction_tree_layer, dependency_ordered_layers, all_layers_visited);
-	}
-
-	// Next iterate iterate over the remaining layers to build a dependency ordering.
-	BOOST_FOREACH(const layer_ptr_type &layer, layers)
-	{
-		find_layer_dependency_order(layer, dependency_ordered_layers, all_layers_visited);
-	}
-
-	// The number of layers returned should be equal to the total number of layers.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			dependency_ordered_layers.size() == num_layers,
-			GPLATES_ASSERTION_SOURCE);
-
-	return dependency_ordered_layers;
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::find_dependency_ancestors_of_layer(
-		const layer_ptr_type &layer,
-		std::set<layer_ptr_type> &ancestor_layers) const
-{
-	// Iterate over the output connections of 'layer'.
-	const ReconstructGraphImpl::Data::connection_seq_type &layer_output_connections =
-			layer->get_output_data()->get_output_connections();
+	const ReconstructGraphImpl::Data::connection_seq_type &output_connections =
+			input_file_ptr_type(input_file.get_impl())->get_output_connections();
 	BOOST_FOREACH(
-			const ReconstructGraphImpl::LayerInputConnection *layer_output_connection,
-			layer_output_connections)
+			const ReconstructGraphImpl::LayerInputConnection *output_connection,
+			output_connections)
 	{
-		const layer_ptr_type parent_layer(layer_output_connection->get_layer_receiving_input());
-
-		// Insert the current parent layer into the sequence of ancestor layers.
-		// If it has already been visited/inserted then continue to the next parent layer.
-		if (!ancestor_layers.insert(parent_layer).second)
-		{
-			continue;
-		}
-
-		// Traverse ancestor graph of the current parent layer.
-		find_dependency_ancestors_of_layer(parent_layer, ancestor_layers);
-	}
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::find_layer_dependency_order(
-		const layer_ptr_type &layer,
-		std::vector<layer_ptr_type> &dependency_ordered_layers,
-		std::set<layer_ptr_type> &all_layers_visited) const
-{
-	// Attempt to add the current layer to list of all layers visited.
-	if (!all_layers_visited.insert(layer).second)
-	{
-		// The current layer has already been visited so nothing needs to be done.
-		return;
-	}
-
-	// Iterate over the input connections of 'layer'.
-	const ReconstructGraphImpl::LayerInputConnections::connection_seq_type layer_input_connections =
-			layer->get_input_connections().get_input_connections();
-	BOOST_FOREACH(
-			const boost::shared_ptr<ReconstructGraphImpl::LayerInputConnection> &layer_input_connection,
-			layer_input_connections)
-	{
-		// See if the current input connection connects to the output of another layer.
-		const boost::optional< boost::weak_ptr<ReconstructGraphImpl::Layer> > layer_child_weak_ref =
-				layer_input_connection->get_input_data()->get_outputting_layer();
-		if (layer_child_weak_ref)
-		{
-			const layer_ptr_type layer_child(layer_child_weak_ref.get());
-
-			// Traverse the dependency graph of the current child layer.
-			find_layer_dependency_order(
-					layer_child, dependency_ordered_layers, all_layers_visited);
-		}
-	}
-
-	// Add the current layer after all child layers have been added.
-	dependency_ordered_layers.push_back(layer);
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::handle_file_state_files_added(
-		FeatureCollectionFileState &file_state,
-		const std::vector<FeatureCollectionFileState::file_reference> &new_files)
-{
-	BOOST_FOREACH(FeatureCollectionFileState::file_reference new_file, new_files)
-	{
-		// Wrap a new Data object around the file.
-		const boost::shared_ptr<ReconstructGraphImpl::Data> input_file_impl(
-				new ReconstructGraphImpl::Data(new_file));
-
-		// Add to our internal mapping of file indices to InputFile's.
-		std::pair<input_file_ptr_map_type::const_iterator, bool> insert_result =
-				d_input_files.insert(std::make_pair(new_file, input_file_impl));
-
-		// The file shouldn't already exist in the map.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				insert_result.second,
-				GPLATES_ASSERTION_SOURCE);
-	}
-}
-
-
-void
-GPlatesAppLogic::ReconstructGraph::handle_file_state_file_about_to_be_removed(
-		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_about_to_be_removed)
-{
-	// Search for the file that's about to be removed.
-	const input_file_ptr_map_type::iterator input_file_iter =
-			d_input_files.find(file_about_to_be_removed);
-
-	// We should be able to find the file in our internal map.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			input_file_iter != d_input_files.end(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// The input file corresponding to the file about to be removed.
-	ReconstructGraphImpl::Data *input_file_impl = input_file_iter->second.get();
-
-#if 1 // TODO: Remove this when the user can explicit remove a layer.
-	// Iterate over all layers that are directly connected to the file about to be removed
-	// and remove any layers that:
-	//   1) reference that file on their *main* input channel, *and*
-	//   2) have no other input files at the *main* input channel.
-	// This effectively removes layers that currently have *one* input file on thei
-	// main input channel that's about to be removed.
-	// NOTE: This avoids removing layers that, by default, never have any input on their
-	// main channel - this is a relatively new occurrence that wasn't initially planned for
-	// (ie, all layers were expected to have some input on their main channel) but will
-	// happen when the Small Circle layer is implemented - as this layer will have input
-	// data entered by the user (in a dialog) and passed to the app-logic layer via a
-	// LayerTaskParams derived class.
-	std::vector<Layer> layers_to_remove;
-	BOOST_FOREACH(
-			ReconstructGraphImpl::LayerInputConnection *input_file_connection,
-			input_file_impl->get_output_connections())
-	{
-		const layer_ptr_type layer_receiving_file_input(
-				input_file_connection->get_layer_receiving_input());
-
-		if (!layer_receiving_file_input)
-		{
-			continue;
-		}
+		const layer_ptr_type layer_receiving_file_input(output_connection->get_layer_receiving_input());
 
 		Layer layer(layer_receiving_file_input);
 
 		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
 
-		const std::vector<Layer::InputConnection> input_connections =
-				layer.get_channel_inputs(main_input_channel);
-		// We only remove layers that currently have one input file on the main channel
-		// (that's about to be removed).
+		const std::vector<Layer::InputConnection> input_connections = layer.get_channel_inputs(main_input_channel);
+
+		// Iterate over the input connections on the main input channel.
+		std::vector<Layer::InputConnection>::const_iterator input_connection_iter = input_connections.begin();
+		std::vector<Layer::InputConnection>::const_iterator input_connection_end = input_connections.end();
+		for ( ; input_connection_iter != input_connection_end; ++input_connection_iter)
+		{
+			// If the input connects to a file (ie, not the output of another layer) *and*
+			// that file is the input file then we have found a layer that is processing the
+			// input file so add the layer type to the list.
+			boost::optional<Layer::InputFile> main_channel_input_file = input_connection_iter->get_input_file();
+			if (main_channel_input_file &&
+				main_channel_input_file.get() == input_file)
+			{
+				layer_types_processing_input_file.insert(layer.get_type());
+				break;
+			}
+		}
+	}
+
+	//
+	// The file has changed so find out all layer types that can process the file.
+	// This may have changed since we last checked.
+	//
+
+	const std::vector<LayerTaskRegistry::LayerTaskType> new_layer_task_types =
+			d_layer_task_registry.get_layer_task_types_to_auto_create_for_loaded_file(
+					input_file.get_feature_collection());
+
+	//
+	// If there are any new layer types not covered by the previous layer types then
+	// auto-create respective layers to process the input file.
+	// An example is the user saving a topology feature in a feature collection that only
+	// contains non-topology features - hence a topology layer will need to be created.
+	//
+	
+	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType new_layer_task_type, new_layer_task_types)
+	{
+		// If a layer task of the current type doesn't yet exist then create a layer for it.
+		if (layer_types_processing_input_file.find(new_layer_task_type.get_layer_type()) ==
+			layer_types_processing_input_file.end())
+		{
+			const boost::shared_ptr<LayerTask> new_layer_task = new_layer_task_type.create_layer_task();
+
+			const Layer new_layer = auto_create_layer(
+					input_file,
+					new_layer_task,
+					// We don't want to set a new default reconstruction tree layer if one gets
+					// created because it might surprise the user (ie, they're not loading a rotation file).
+					AutoCreateLayerParams(false/*update_default_reconstruction_tree_layer_*/));
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::auto_create_layers_for_new_input_file(
+		const Layer::InputFile &input_file,
+		const AutoCreateLayerParams &auto_create_layer_params)
+{
+	//
+	// Create a new layer for the input file (or create multiple layers if the feature collection
+	// contains features that can be processed by more than one layer type).
+	//
+
+	const GPlatesModel::FeatureCollectionHandle::weak_ref input_feature_collection =
+			input_file.get_file().get_file().get_feature_collection();
+
+	// Look for layer task types that we should create to process the loaded feature collection.
+	const std::vector<LayerTaskRegistry::LayerTaskType> layer_task_types =
+			d_layer_task_registry.get_layer_task_types_to_auto_create_for_loaded_file(
+					input_feature_collection);
+
+	// Iterate over the compatible layer task types and create layers.
+	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, layer_task_types)
+	{
+		const boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task =
+				layer_task_type.create_layer_task();
+		if (layer_task)
+		{
+			auto_create_layer(input_file, layer_task.get(), auto_create_layer_params);
+		}
+	}
+}
+
+
+GPlatesAppLogic::Layer
+GPlatesAppLogic::ReconstructGraph::auto_create_layer(
+		const Layer::InputFile &input_file,
+		const boost::shared_ptr<LayerTask> &layer_task,
+		const AutoCreateLayerParams &auto_create_layer_params)
+{
+	// Create a new layer using the layer task.
+	// This will emit a signal to notify clients of a new layer.
+	Layer new_layer = add_layer(layer_task);
+
+	// Mark the layer as having been auto-created.
+	// This will cause the layer to be auto-destroyed when 'input_file' is unloaded.
+	new_layer.set_auto_created(true);
+
+	//
+	// Connect the file to the input of the new layer.
+	//
+
+	// Get the main feature collection input channel for our layer.
+	const QString main_input_feature_collection_channel =
+			new_layer.get_main_input_feature_collection_channel();
+
+	// Connect the input file to the main input channel of the new layer.
+	new_layer.connect_input_to_file(
+			input_file,
+			main_input_feature_collection_channel);
+
+	// Set the new default reconstruction tree if we're updating the default *and*
+	// the new layer type is a reconstruction tree layer.
+	if (auto_create_layer_params.update_default_reconstruction_tree_layer &&
+		new_layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)
+	{
+		set_default_reconstruction_tree_layer(new_layer);
+	}
+
+	return new_layer;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::auto_destroy_layers_for_input_file_about_to_be_removed(
+		const Layer::InputFile &input_file_about_to_be_removed)
+{
+	// Destroy layers that were auto-created from the specified file.
+	// NOTE: If the user explicitly created a layer then it will never get removed automatically -
+	// the user must also explicitly destroy the layer - this is even the case when all files
+	// connected to that layer are unloaded (the user still has to explicitly destroy the layer).
+
+	std::vector<Layer> layers_to_remove;
+
+	// Iterate over the output connections of the input file that's about to be removed.
+	const ReconstructGraphImpl::Data::connection_seq_type &output_connections =
+			input_file_ptr_type(input_file_about_to_be_removed.get_impl())->get_output_connections();
+	BOOST_FOREACH(
+			const ReconstructGraphImpl::LayerInputConnection *output_connection,
+			output_connections)
+	{
+		const layer_ptr_type layer_receiving_file_input(output_connection->get_layer_receiving_input());
+
+		Layer layer(layer_receiving_file_input);
+
+		// If the layer was not auto-created then we shouldn't auto-destroy it.
+		if (!layer.get_auto_created())
+		{
+			continue;
+		}
+
+		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
+
+		const std::vector<Layer::InputConnection> input_connections = layer.get_channel_inputs(main_input_channel);
+		// We only remove layers that currently have one input file on the main channel.
 		if (input_connections.size() != 1)
 		{
 			continue;
 		}
 
 		// Make sure the input connects to a file rather than the output of another layer.
-		boost::optional<Layer::InputFile> input_file = input_connections[0].get_input_file();
-		if (!input_file)
+		boost::optional<Layer::InputFile> main_channel_input_file = input_connections[0].get_input_file();
+		if (!main_channel_input_file)
 		{
 			continue;
 		}
 
-		// If the sole input file on the main channel matches the file about to be removed.
-		if (input_file->get_file() == file_about_to_be_removed)
+		// If the sole input file on the main channel matches the file about to be removed then
+		// we can remove the layer.
+		if (main_channel_input_file.get() == input_file_about_to_be_removed)
 		{
 			layers_to_remove.push_back(layer);
 		}
 	}
 
 	// Remove any layers that need removing.
+	// We do this last to avoid any issues iterating over layer connections above.
 	BOOST_FOREACH(const Layer &layer_to_remove, layers_to_remove)
 	{
 		remove_layer(layer_to_remove);
 	}
-#endif
+}
 
-	// Get the input file to disconnect all connections that use it as input.
-	input_file_impl->disconnect_output_connections();
 
-	// Remove the input file object.
-	d_input_files.erase(input_file_iter);
+void
+GPlatesAppLogic::ReconstructGraph::handle_default_reconstruction_tree_layer_removal(
+		const Layer &layer_being_removed)
+{
+	// If the layer being removed is one of the current or previous default reconstruction tree
+	// layers then remove it from the default reconstruction tree layer stack.
+	const default_reconstruction_tree_layer_stack_type::iterator default_recon_tree_iter =
+			std::find(
+					d_default_reconstruction_tree_layer_stack.begin(),
+					d_default_reconstruction_tree_layer_stack.end(),
+					layer_being_removed);
+	if (default_recon_tree_iter == d_default_reconstruction_tree_layer_stack.end())
+	{
+		return;
+	}
+	// If we get here then the layer being removed is either the current or a previous default
+	// reconstruction tree layer.
+
+	// If the layer was a previous default then simply remove it from the stack of default layers.
+	if (layer_being_removed != get_default_reconstruction_tree_layer())
+	{
+		// Remove all occurrences in the stack - the same layer may have been the default
+		// reconstruction tree layer more than once.
+		d_default_reconstruction_tree_layer_stack.erase(
+				std::remove(
+						d_default_reconstruction_tree_layer_stack.begin(),
+						d_default_reconstruction_tree_layer_stack.end(),
+						layer_being_removed),
+				d_default_reconstruction_tree_layer_stack.end());
+		return;
+	}
+	// If we get here then the layer being removed is the current default reconstruction tree layer.
+
+	// The current default reconstruction tree layer.
+	const Layer prev_default_reconstruction_tree_layer = layer_being_removed;
+
+	// Remove all occurrences in the stack - the same layer may have been the default
+	// reconstruction tree layer more than once.
+	d_default_reconstruction_tree_layer_stack.erase(
+			std::remove(
+					d_default_reconstruction_tree_layer_stack.begin(),
+					d_default_reconstruction_tree_layer_stack.end(),
+					layer_being_removed),
+			d_default_reconstruction_tree_layer_stack.end());
+
+	// Get the new default reconstruction tree layer if there is one.
+	Layer new_default_reconstruction_tree_layer;
+	if (!d_default_reconstruction_tree_layer_stack.empty())
+	{
+		new_default_reconstruction_tree_layer = d_default_reconstruction_tree_layer_stack.back();
+
+		// Make sure the previous default reconstruction tree layer is valid.
+		// It should be if we removed any layers from this stack when those layers were removed.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				new_default_reconstruction_tree_layer.is_valid(),
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+	// Let clients know of the new default reconstruction tree layer even if there are no
+	// default reconstruction trees left.
+	emit default_reconstruction_tree_layer_changed(
+			*this,
+			prev_default_reconstruction_tree_layer,
+			new_default_reconstruction_tree_layer);
 }
 
 
@@ -486,7 +611,7 @@ GPlatesAppLogic::ReconstructGraph::debug_reconstruct_graph_state()
 {
 	qDebug() << "\nRECONSTRUCT GRAPH:-";
 	qDebug() << " INPUT FILES:-";
-	for (input_file_ptr_map_type::const_iterator it = d_input_files.begin(); it != d_input_files.end(); ++it) {
+	for (input_file_info_map_type::const_iterator it = d_input_files.begin(); it != d_input_files.end(); ++it) {
 		qDebug() << "   " << it->first.get_file().get_file_info().get_display_name(false);
 	}
 

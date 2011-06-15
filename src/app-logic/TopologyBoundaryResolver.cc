@@ -291,8 +291,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::record_topological_section_reconstruc
 	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
 					geometry_delegate,
-					restricted_reconstruction_tree,
-					d_reconstructed_topological_boundary_sections);
+					restricted_reconstruction_tree);
 	if (!source_rfg)
 	{
 		// If no RFG was found then it's possible that the current reconstruction time is

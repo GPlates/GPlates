@@ -141,7 +141,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The session version corresponding to the current build of GPlates.
 		 */
-		static const int LATEST_SESSION_VERSION = 1;
+		static const int LATEST_SESSION_VERSION = 2;
 
 		/*
 		 * Avoid putting heavy STL member data here, this class gets passed
