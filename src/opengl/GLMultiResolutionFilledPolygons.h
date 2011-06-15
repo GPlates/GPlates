@@ -523,7 +523,8 @@ namespace GPlatesOpenGL
 		create_tile_state_set(
 				const GLTexture::shared_ptr_to_const_type &tile_texture,
 				const GLTransform &projection_transform,
-				const GLTransform &view_transform);
+				const GLTransform &view_transform,
+				bool clip_to_tile_frustum);
 
 		void
 		render_tile_to_scene(

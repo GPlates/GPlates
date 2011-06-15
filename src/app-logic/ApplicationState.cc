@@ -203,10 +203,10 @@ GPlatesAppLogic::ApplicationState::handle_file_state_files_added(
 	}
 
 	// Add the new files to the reconstruct graph.
-	BOOST_FOREACH(FeatureCollectionFileState::file_reference new_file, new_files)
-	{
-		d_reconstruct_graph->add_file(new_file, auto_create_layers);
-	}
+	// NOTE: We add them to the reconstruct graph as a group to avoid the problem of slots,
+	// connected to its layer creation, attempting to access any of the loaded files and expecting
+	// them to have been added to the reconstruct graph.
+	d_reconstruct_graph->add_files(new_files, auto_create_layers);
 }
 
 

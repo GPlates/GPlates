@@ -59,10 +59,51 @@ GPlatesAppLogic::ReconstructGraph::ReconstructGraph(
 }
 
 
+void
+GPlatesAppLogic::ReconstructGraph::add_files(
+		const std::vector<FeatureCollectionFileState::file_reference> &files,
+		boost::optional<AutoCreateLayerParams> auto_create_layers)
+{
+	std::vector<Layer::InputFile> input_files;
+
+	// Add all the files to our graph first before we create any layers.
+	BOOST_FOREACH(const FeatureCollectionFileState::file_reference &file, files)
+	{
+		input_files.push_back(add_file_internal(file));
+	}
+
+	// Any auto-creation of layers is done after *all* files have been added to the graph.
+	// This is in case any clients attempt to access any of the files when the auto-creation
+	// of layers emits signals (that clients connect to).
+	if (auto_create_layers)
+	{
+		BOOST_FOREACH(const Layer::InputFile &input_file, input_files)
+		{
+			auto_create_layers_for_new_input_file(input_file, auto_create_layers.get());
+		}
+	}
+}
+
+
 GPlatesAppLogic::Layer::InputFile
 GPlatesAppLogic::ReconstructGraph::add_file(
 		const FeatureCollectionFileState::file_reference &file,
 		boost::optional<AutoCreateLayerParams> auto_create_layers)
+{
+	const Layer::InputFile input_file = add_file_internal(file);
+
+	if (auto_create_layers)
+	{
+		auto_create_layers_for_new_input_file(input_file, auto_create_layers.get());
+	}
+
+	return input_file;
+}
+
+
+GPlatesAppLogic::Layer::InputFile
+GPlatesAppLogic::ReconstructGraph::add_file_internal(
+		const FeatureCollectionFileState::file_reference &file)
 {
 	// Wrap a new Data object around the file.
 	const boost::shared_ptr<ReconstructGraphImpl::Data> input_file_impl(
@@ -81,14 +122,7 @@ GPlatesAppLogic::ReconstructGraph::add_file(
 			GPLATES_ASSERTION_SOURCE);
 
 	// The input file to return to the caller as a weak reference.
-	const Layer::InputFile input_file(input_file_impl);
-
-	if (auto_create_layers)
-	{
-		auto_create_layers_for_new_input_file(input_file, auto_create_layers.get());
-	}
-
-	return input_file;
+	return Layer::InputFile(input_file_impl);
 }
 
 

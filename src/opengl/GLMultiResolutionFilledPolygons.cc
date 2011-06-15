@@ -549,11 +549,13 @@ GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_state_set(
 		const GLTexture::shared_ptr_to_const_type &tile_texture,
 		const GLTransform &projection_transform,
-		const GLTransform &view_transform)
+		const GLTransform &view_transform,
+		bool clip_to_tile_frustum)
 {
 	// The composite state to return to the caller.
 	GLCompositeStateSet::non_null_ptr_type tile_state_set = GLCompositeStateSet::create();
 
+	// State for the tile texture.
 	GLUtils::set_frustum_texture_state(
 			*tile_state_set,
 			tile_texture,
@@ -561,6 +563,22 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_state_set(
 			view_transform.get_matrix(),
 			0/*texture_unit*/,
 			GL_REPLACE);
+
+	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
+	// cannot provide a drawable that's bounded by the cube quad tree node tile and so
+	// we need to use a clip texture.
+	if (clip_to_tile_frustum)
+	{
+		// State for the clip texture.
+		GLUtils::set_frustum_texture_state(
+				*tile_state_set,
+				d_multi_resolution_cube_mesh->get_clip_texture(),
+				projection_transform.get_matrix(),
+				view_transform.get_matrix(),
+				1/*texture_unit*/,
+				GL_MODULATE,
+				GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
+	}
 
 	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
 	// might not be rendering directly to the final render target and hence we don't
@@ -628,14 +646,20 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 			*projection_transform,
 			*view_transform);
 
+	// Get the mesh covering the current quad tree node tile.
+	GLDrawable::non_null_ptr_to_const_type mesh_drawable = mesh_quad_tree_node.get_mesh_drawable();
+
+	// See if we've traversed deep enough in the cube mesh quad tree to require using a clip
+	// texture - this occurs because the cube mesh has nodes only to a certain depth.
+	const bool clip_to_tile_frustum = mesh_quad_tree_node.get_clip_texture_clip_space_transform();
+
 	// Prepare for rendering the current tile.
 	const GLStateSet::non_null_ptr_to_const_type tile_state_set =
-			create_tile_state_set(tile_texture, *projection_transform, *view_transform);
-
-	// Get the mesh covering the current quad tree node tile.
-	//
-	// TODO: If we recurse deep enough we have to also use the clip texture.
-	GLDrawable::non_null_ptr_to_const_type mesh_drawable = mesh_quad_tree_node.get_mesh_drawable();
+			create_tile_state_set(
+					tile_texture,
+					*projection_transform,
+					*view_transform,
+					clip_to_tile_frustum);
 
 	// Push the tile state set.
 	renderer.push_state_set(tile_state_set);
