@@ -50,6 +50,92 @@
 #include "global/PreconditionViolationError.h"
 
 
+namespace
+{
+	/**
+	 * Connect the output of one layer to the input of another.
+	 */
+	void
+	connect_layer_input_to_layer_output(
+			GPlatesAppLogic::Layer& layer_receiving_input,
+			const GPlatesAppLogic::Layer& layer_giving_output)
+	{
+		const std::vector<GPlatesAppLogic::LayerInputChannelType> input_channel_types = 
+				layer_receiving_input.get_input_channel_types();
+
+		BOOST_FOREACH(
+				const GPlatesAppLogic::LayerInputChannelType &input_channel_type,
+				input_channel_types)
+		{
+			const boost::optional< std::vector<GPlatesAppLogic::LayerTaskType::Type> > &
+					supported_input_data_types =
+							input_channel_type.get_layer_input_data_types();
+			// If the current layer type (of layer giving output) matches the supported input types...
+			if (supported_input_data_types &&
+				std::find(
+					supported_input_data_types->begin(),
+					supported_input_data_types->end(),
+					layer_giving_output.get_type()) != supported_input_data_types->end())
+			{
+				layer_receiving_input.connect_input_to_layer_output(
+						layer_giving_output,
+						input_channel_type.get_input_channel_name());
+				break;
+			}
+		}
+	}
+
+
+	/**
+	 * The layer is a velocity field calculator layer so look for any topology resolver layers
+	 * and connect their outputs to the velocity layer input.
+	 */
+	template <typename LayerForwardIter>
+	void
+	connect_velocity_field_calculator_layer_input_to_topology_resolver_layer_outputs(
+			GPlatesAppLogic::Layer& velocity_layer,
+			LayerForwardIter layers_begin,
+			LayerForwardIter layers_end)
+	{
+		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
+		{
+			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&
+			   layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
+			{
+				continue;
+			}
+			GPlatesAppLogic::Layer topology_layer = *layer_iter;
+
+			connect_layer_input_to_layer_output(velocity_layer, topology_layer);
+		}
+	}
+
+
+	/**
+	 * The layer is a topology resolver layer so look for any velocity field calculator layers
+	 * and connect the topology resolver output to the input of the velocity layers.
+	 */
+	template <typename LayerForwardIter>
+	void
+	connect_topology_resolver_layer_output_to_velocity_field_calculator_layer_inputs(
+			const GPlatesAppLogic::Layer& topology_layer,
+			LayerForwardIter layers_begin,
+			LayerForwardIter layers_end)
+	{
+		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
+		{
+			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
+			{
+				continue;
+			}
+			GPlatesAppLogic::Layer velocity_layer = *layer_iter;
+
+			connect_layer_input_to_layer_output(velocity_layer, topology_layer);
+		}
+	}
+}
+
+
 GPlatesAppLogic::ReconstructGraph::ReconstructGraph(
 		const LayerTaskRegistry &layer_task_registry) :
 	d_layer_task_registry(layer_task_registry),
@@ -487,18 +573,13 @@ GPlatesAppLogic::ReconstructGraph::auto_create_layer(
 	// This will cause the layer to be auto-destroyed when 'input_file' is unloaded.
 	new_layer.set_auto_created(true);
 
-	//
-	// Connect the file to the input of the new layer.
-	//
-
-	// Get the main feature collection input channel for our layer.
-	const QString main_input_feature_collection_channel =
-			new_layer.get_main_input_feature_collection_channel();
-
-	// Connect the input file to the main input channel of the new layer.
-	new_layer.connect_input_to_file(
-			input_file,
-			main_input_feature_collection_channel);
+	// Make any auto-connections to/from this layer.
+	// This includes the connection of the input file and any other connections needed.
+	// NOTE: We don't really want to encourage the other connections so currently we only auto-connect
+	// velocity layers to topology layers and we will probably try to find a way to avoid this
+	// such as grouping layers to make it easier for the user to connect the twelve CitcomS
+	// mesh cap files to topologies in one go rather than twelve goes.
+	auto_connect_layer(new_layer, input_file);
 
 	// Set the new default reconstruction tree if we're updating the default *and*
 	// the new layer type is a reconstruction tree layer.
@@ -509,6 +590,48 @@ GPlatesAppLogic::ReconstructGraph::auto_create_layer(
 	}
 
 	return new_layer;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
+		Layer layer,
+		const Layer::InputFile &main_input_channel_input_file)
+{
+	//
+	// Connect the file to the input of the new layer.
+	//
+
+	// Get the main feature collection input channel for our layer.
+	const QString main_input_feature_collection_channel =
+			layer.get_main_input_feature_collection_channel();
+
+	// Connect the input file to the main input channel of the new layer.
+	layer.connect_input_to_file(
+			main_input_channel_input_file,
+			main_input_feature_collection_channel);
+
+	//
+	// Do other layer-specific connections.
+	// FIXME: Find a way to make it easier for the user to make connections so that these
+	// auto-connections are not needed - auto-connections might end up making connections
+	// that the user didn't want - eg, connecting *multiple* topologies to velocity layers.
+	//
+
+	// If the layer is a velocity field calculator then look for any topology resolver layers
+	// and connect their outputs to the velocity layer input.
+	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
+	{
+		connect_velocity_field_calculator_layer_input_to_topology_resolver_layer_outputs(layer, begin(), end());
+	}
+
+	// If the layer is a topology resolver then look for any velocity field calculator layers
+	// and connect the topology resolver output to the input of the velocity layers.
+	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER ||
+		layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
+	{
+		connect_topology_resolver_layer_output_to_velocity_field_calculator_layer_inputs(layer, begin(), end());
+	}
 }
 
 
