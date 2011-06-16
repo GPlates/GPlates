@@ -277,6 +277,9 @@ int internal_main(int argc, char* argv[])
 	
 	if(ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
 	{
+#ifdef GPLATES_NO_PYTHON
+		app->get_application_state().get_python_manager().initialize(*app);
+#else
 		try{
 			app->get_application_state().get_python_manager().initialize();
 		}
@@ -287,6 +290,7 @@ int internal_main(int argc, char* argv[])
 			qWarning() << ss.str().c_str();
 			main_window_widget.hide_python_menu();
 		}
+#endif
 	}
 	else
 	{
