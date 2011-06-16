@@ -72,6 +72,8 @@ DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <CGAL/interpolation_functions.h>
 #include <CGAL/Interpolation_gradient_fitting_traits_2.h>
 #include <CGAL/sibson_gradient_fitting.h>
+#include <CGAL/centroid.h>
+#include <CGAL/barycenter.h>
 POP_MSVC_WARNINGS
 
 //POP_GCC_WARNINGS

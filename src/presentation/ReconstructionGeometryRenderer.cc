@@ -531,8 +531,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// check for drawing of 2D + C Triangulation 
 	if (d_render_params.show_topological_network_constrained_triangulation)
 	{
+		// FIXME: at some point we might want to propagate control up to something like 
+		// d_render_params.clip_constrained ... ?  for now hard code to true ...
+		bool clip_to_mesh = true; 
 		const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
-			geometries = rtn->resolved_topology_geometries_from_constrained();
+			geometries = rtn->resolved_topology_geometries_from_constrained( clip_to_mesh );
 		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
 			it = geometries.begin();
 		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
@@ -556,8 +559,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// check for drawing of 2D total triangulation
 	if (d_render_params.show_topological_network_delaunay_triangulation)
 	{
+		// FIXME: at some point we might want to propagate control up to something like 
+		// d_render_params.clip_constrained ... ?  for now hard code to true ...
+		bool clip_to_mesh = true; 
+
 		const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
-			geometries = rtn->resolved_topology_geometries_from_triangulation_2();
+			geometries = rtn->resolved_topology_geometries_from_triangulation_2( clip_to_mesh );
 
 		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
 			it = geometries.begin();

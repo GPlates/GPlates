@@ -417,10 +417,10 @@ namespace GPlatesAppLogic
 		 * of a @a geometry_ptr_type.
 		 */
 		const std::vector<resolved_topology_geometry_ptr_type>
-		resolved_topology_geometries_from_triangulation_2() const;
+		resolved_topology_geometries_from_triangulation_2(bool clip_to_mesh) const;
 
 		const std::vector<resolved_topology_geometry_ptr_type>
-		resolved_topology_geometries_from_constrained() const;
+		resolved_topology_geometries_from_constrained(bool clip_to_mesh) const;
 
 		const std::vector<resolved_topology_geometry_ptr_type>
 		resolved_topology_geometries_from_mesh() const;
