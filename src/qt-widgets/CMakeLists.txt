@@ -302,6 +302,9 @@ set(srcs
     ReconstructLayerOptionsWidget.cc
     ReconstructLayerOptionsWidget.h
     ReconstructLayerOptionsWidgetUi.ui
+    RenderSettingDialog.cc
+    RenderSettingDialog.h
+    RenderSettingDialogUi.ui
     ResultTableDialog.cc
     ResultTableDialog.h
     ResultTableDialogUi.ui

@@ -33,11 +33,13 @@
 #include <QEventLoop>
 #include <QString>
 
+#include "global/LogException.h"
 #include "global/python.h"
+#include "PythonExecutionMonitor.h"
+#include "PythonUtils.h"
+#include "PythonRunner.h"
 
-#include "AbstractPythonRunner.h"
-
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -53,16 +55,12 @@ namespace GPlatesApi
 	 * The thread on which Python gets executed, away from the main thread.
 	 */
 	class PythonExecutionThread :
-			public QThread,
-			public AbstractPythonRunner
+			public QThread
 	{
 		Q_OBJECT
 
 	public:
-#if !defined(GPLATES_NO_PYTHON)
-		explicit
 		PythonExecutionThread(
-				GPlatesAppLogic::ApplicationState &application_state,
 				const  boost::python::object &main_namespace,
 				QObject *parent_);
 
@@ -80,8 +78,7 @@ namespace GPlatesApi
 		virtual
 		void
 		exec_interactive_command(
-				const QString &command,
-				PythonExecutionMonitor *monitor);
+				const QString &command);
 
 		/**
 		 * Resets the buffer in the interactive console (e.g. when the user presses
@@ -112,8 +109,7 @@ namespace GPlatesApi
 		virtual
 		void
 		exec_string(
-				const QString &string,
-				PythonExecutionMonitor *monitor);
+				const QString &string);
 
 		/**
 		 * Executes @a filename as a Python script, monitored from another thread by
@@ -139,7 +135,6 @@ namespace GPlatesApi
 		void
 		exec_file(
 				const QString &filename,
-				PythonExecutionMonitor *monitor,
 				const QString &filename_encoding);
 
 		/**
@@ -156,8 +151,7 @@ namespace GPlatesApi
 		virtual
 		void
 		eval_string(
-				const QString &string,
-				PythonExecutionMonitor *monitor);
+				const QString &string);
 
 		/**
 		 * Executes the given @a function, monitored from another thread by @a monitor.
@@ -169,8 +163,7 @@ namespace GPlatesApi
 		virtual
 		void
 		exec_function(
-				const boost::function< void () > &function,
-				PythonExecutionMonitor *monitor);
+				const boost::function< void () > &function);
 
 		/**
 		 * Evaluates the given @a function, which returns a Python object, monitored
@@ -184,9 +177,8 @@ namespace GPlatesApi
 		virtual
 		void
 		eval_function(
-				const boost::function< boost::python::object () > &function,
-				PythonExecutionMonitor *monitor);
-#endif
+				const boost::function< boost::python::object () > &function);
+
 
 		/**
 		 * Quit the event loop, if it is running.
@@ -215,20 +207,14 @@ namespace GPlatesApi
 		void
 		raise_keyboard_interrupt_exception();
 
+		
+		bool
+		continue_interactive_input()
+		{
+			return d_monitor.continue_interactive_input();
+		}
+
 	signals:
-
-		/**
-		 * Emitted when any execution or evaluation is started on the thread.
-		 */
-		void
-		exec_or_eval_started();
-
-		/**
-		 * Emitted when any execution or evaluation has finished on the thread.
-		 */
-		void
-		exec_or_eval_finished();
-
 		/**
 		 * Emitted when an unhandled Python SystemExit exception is raised in the thread.
 		 */
@@ -243,29 +229,58 @@ namespace GPlatesApi
 		void
 		run();
 
+		void
+		check_python_runner()
+		{
+			if(!d_python_runner)
+			{
+				throw GPlatesGlobal::LogException(
+						GPLATES_EXCEPTION_SOURCE,
+						"Python Runner has not been initialized yet.");
+			}
+
+		}
+
+		void
+		run_in_python_thread(
+				boost::function< void () > &f)
+		{
+			if(PythonUtils::is_main_thread())
+			{
+				PythonUtils::ThreadSwitchGuard g;
+				qRegisterMetaType<boost::function< void () > >("boost::function< void () >");
+				QMetaObject::invokeMethod(
+						d_python_runner, 
+						"exec_function_slot", 
+						Qt::AutoConnection,
+						Q_ARG(boost::function< void () > , f));
+				wait_done();
+			}
+		}
+
+		void
+		wait_done()
+		{
+			d_monitor.exec();
+		}
+
 	private slots:
-
-		void
-		handle_exec_or_eval_started();
-
-		void
-		handle_exec_or_eval_finished();
 
 		void
 		handle_system_exit_exception_raised(
 				int exit_status,
-				QString exit_error_message);
+				QString exit_error_message)
+		{
+			emit system_exit_exception_raised(exit_status, exit_error_message);
+		}
 
 	private:
-#if !defined(GPLATES_NO_PYTHON)
-		GPlatesAppLogic::ApplicationState &d_application_state;
 		const  boost::python::object & d_namespace;
-#endif
 		PythonRunner *d_python_runner;
 		QEventLoop *d_event_loop;
 		long d_python_thread_id;
-		mutable QMutex d_state_mutex;
+		PythonExecutionMonitor d_monitor;
 	};
 }
-
+#endif   //GPLATES_NO_PYTHON
 #endif  // GPLATES_API_PYTHONEXECUTIONTHREAD_H

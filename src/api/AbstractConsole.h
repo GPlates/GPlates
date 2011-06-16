@@ -25,11 +25,11 @@
 
 #ifndef GPLATES_API_ABSTRACTCONSOLE_H
 #define GPLATES_API_ABSTRACTCONSOLE_H
-
 #include <QString>
 
-#include "global/python.h"
+#if !defined(GPLATES_NO_PYTHON)
 
+#include "global/python.h"
 
 namespace GPlatesApi
 {
@@ -57,7 +57,7 @@ namespace GPlatesApi
 				const QString &text,
 				bool error = false) = 0;
 
-#if !defined(GPLATES_NO_PYTHON)
+
 		/**
 		 * Appends the stringified version of @a obj to the console. The @a error
 		 * flag indicates whether it should be decorated as an error message or not.
@@ -69,7 +69,7 @@ namespace GPlatesApi
 		append_text(
 				const boost::python::object &obj,
 				bool error = false) = 0;
-#endif
+
 
 		/**
 		 * Prompts the user for a line of input.
@@ -81,5 +81,5 @@ namespace GPlatesApi
 		read_line() = 0;
 	};
 }
-
+#endif   //GPLATES_NO_PYTHON
 #endif  // GPLATES_API_ABSTRACTCONSOLE_H

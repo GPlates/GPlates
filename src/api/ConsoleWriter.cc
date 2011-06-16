@@ -31,7 +31,7 @@
 #include "PythonInterpreterUnlocker.h"
 #include "PythonUtils.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace
 {
 	const char *
@@ -52,7 +52,6 @@ GPlatesApi::ConsoleWriter::ConsoleWriter(
 	d_error(error),
 	d_console(console)
 {
-#if !defined(GPLATES_NO_PYTHON)
 	using namespace boost::python;
 	const char *stream_name = get_stream_name(error);
 
@@ -69,15 +68,13 @@ GPlatesApi::ConsoleWriter::ConsoleWriter(
 	catch (const error_already_set &)
 	{
 		std::cerr << "Could not replace Python's sys." << stream_name << "." << std::endl;
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
-#endif
 }
 
 
 GPlatesApi::ConsoleWriter::~ConsoleWriter()
 {
-#if !defined(GPLATES_NO_PYTHON)
 	using namespace boost::python;
 	const char *stream_name = get_stream_name(d_error);
 
@@ -92,13 +89,12 @@ GPlatesApi::ConsoleWriter::~ConsoleWriter()
 	catch (const error_already_set &)
 	{
 		std::cerr << "Could not restore Python's sys." << stream_name << "." << std::endl;
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
-#endif
 }
 
 
-#if !defined(GPLATES_NO_PYTHON)
+
 void
 GPlatesApi::ConsoleWriter::write(
 		const boost::python::object &text)
@@ -117,6 +113,7 @@ GPlatesApi::ConsoleWriter::write(
 		std::cerr << "Failed to write to console" << std::endl;
 		// Do not call @a PyErr_Print() here because that would attempt to write to
 		// sys.stderr, which would end up calling this, and... you get the idea.
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
 }
 
@@ -129,5 +126,5 @@ export_console_writer()
 	class_<GPlatesApi::ConsoleWriter, boost::noncopyable>("GPlatesConsoleWriter")
 		.def("write", &GPlatesApi::ConsoleWriter::write);
 }
-#endif
+#endif //GPLATES_NO_PYTHON
 

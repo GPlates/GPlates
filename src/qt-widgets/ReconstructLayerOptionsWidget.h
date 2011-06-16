@@ -82,6 +82,9 @@ namespace GPlatesQtWidgets
 		open_vgp_visibility_dialog();
 
 		void
+		open_render_setting_dlg();
+		
+		void
 		handle_fill_polygons_clicked();
 
 	private:

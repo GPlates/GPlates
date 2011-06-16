@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-import gplates_ext
+import pygplates
 from multiprocessing import Pool, Queue, Process
 
 path="/home/mchin/gplates_src/trunk/sample-data/unit-test-data/"

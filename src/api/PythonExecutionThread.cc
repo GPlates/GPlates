@@ -31,10 +31,10 @@
 
 #include "PythonExecutionThread.h"
 
-#include "PythonExecutionMonitor.h"
 #include "PythonInterpreterLocker.h"
 #include "PythonRunner.h"
 
+#include "api/PythonUtils.h"
 #include "api/Sleeper.h"
 #include "app-logic/ApplicationState.h"
 
@@ -43,11 +43,9 @@
 
 #if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::PythonExecutionThread::PythonExecutionThread(
-		GPlatesAppLogic::ApplicationState &application_state,
 		const  boost::python::object &main_namespace,
 		QObject *parent_) :
 	QThread(parent_),
-	d_application_state(application_state),
 	d_namespace(main_namespace),
 	d_python_runner(NULL),
 	d_event_loop(NULL),
@@ -57,147 +55,125 @@ GPlatesApi::PythonExecutionThread::PythonExecutionThread(
 
 void
 GPlatesApi::PythonExecutionThread::exec_interactive_command(
-		const QString &command,
-		PythonExecutionMonitor *monitor)
+		const QString &command)
 {
-	QMutexLocker lock(&d_state_mutex);
-	if (d_python_runner != NULL)
-	{
-		QCoreApplication::postEvent(
+	check_python_runner();
+
+	boost::function< void () > f = 
+		boost::bind(
+				&PythonRunner::exec_interactive_command,
 				d_python_runner,
-				new GPlatesUtils::DeferredCallEvent(
-					boost::bind(
-						&PythonRunner::exec_interactive_command,
-						boost::ref(*d_python_runner),
-						command,
-						monitor)));
-	}
+				command,
+				&d_monitor);
+
+	run_in_python_thread(f);
 }
 
 
 void
 GPlatesApi::PythonExecutionThread::reset_interactive_buffer()
 {
-	QMutexLocker lock(&d_state_mutex);
-	if (d_python_runner != NULL)
-	{
-		QCoreApplication::postEvent(
-				d_python_runner,
-				new GPlatesUtils::DeferredCallEvent(
-					boost::bind(
-						&PythonRunner::reset_interactive_buffer,
-						boost::ref(*d_python_runner))));
-	}
+	check_python_runner();
+
+	boost::function< void () > f = 
+		boost::bind(
+				&PythonRunner::reset_interactive_buffer,
+				d_python_runner);
+
+	run_in_python_thread(f);
 }
 
 
 void
 GPlatesApi::PythonExecutionThread::exec_string(
-		const QString &string,
-		PythonExecutionMonitor *monitor)
+		const QString &string)
 {
-	QMutexLocker lock(&d_state_mutex);
-	if (d_python_runner != NULL)
-	{
-		QCoreApplication::postEvent(
+	check_python_runner();
+
+	boost::function< void () > f = 
+		boost::bind(
+				&PythonRunner::exec_string,
 				d_python_runner,
-				new GPlatesUtils::DeferredCallEvent(
-					boost::bind(
-						&PythonRunner::exec_string,
-						boost::ref(*d_python_runner),
-						string,
-						monitor)));
-	}
+				string,
+				&d_monitor);
+
+	run_in_python_thread(f);
 }
 
 
 void
 GPlatesApi::PythonExecutionThread::exec_file(
 		const QString &filename,
-		PythonExecutionMonitor *monitor,
 		const QString &filename_encoding)
 {
-	QMutexLocker lock(&d_state_mutex);
-	if (d_python_runner != NULL)
-	{
-		QCoreApplication::postEvent(
+	check_python_runner();
+
+	boost::function< void () > f = 
+		boost::bind(
+				&PythonRunner::exec_file,
 				d_python_runner,
-				new GPlatesUtils::DeferredCallEvent(
-					boost::bind(
-						&PythonRunner::exec_file,
-						boost::ref(*d_python_runner),
-						filename,
-						monitor,
-						filename_encoding)));
-	}
+				filename,
+				filename_encoding,
+				&d_monitor);
+
+	run_in_python_thread(f);
 }
 
 
 void
 GPlatesApi::PythonExecutionThread::eval_string(
-		const QString &string,
-		PythonExecutionMonitor *monitor)
+		const QString &string)
 {
-	QMutexLocker lock(&d_state_mutex);
-	if (d_python_runner != NULL)
-	{
-		QCoreApplication::postEvent(
+	check_python_runner();
+
+	boost::function< void () > f = 
+		boost::bind(
+				&PythonRunner::eval_string,
 				d_python_runner,
-				new GPlatesUtils::DeferredCallEvent(
-					boost::bind(
-						&PythonRunner::eval_string,
-						boost::ref(*d_python_runner),
-						string,
-						monitor)));
-	}
+				string,
+				&d_monitor);
+
+	run_in_python_thread(f);
 }
 
 
 void
 GPlatesApi::PythonExecutionThread::exec_function(
-		const boost::function< void () > &function,
-		PythonExecutionMonitor *monitor)
+		const boost::function< void () > &function)
 {
-	QMutexLocker lock(&d_state_mutex);
-	if (d_python_runner != NULL)
-	{
-		QCoreApplication::postEvent(
+	check_python_runner();
+
+	boost::function< void () > f = 
+		boost::bind(
+				&PythonRunner::exec_function,
 				d_python_runner,
-				new GPlatesUtils::DeferredCallEvent(
-					boost::bind(
-						&PythonRunner::exec_function,
-						boost::ref(*d_python_runner),
-						function,
-						monitor)));
-	}
+				function,
+				&d_monitor);
+
+	run_in_python_thread(f);
 }
 
 
 void
 GPlatesApi::PythonExecutionThread::eval_function(
-		const boost::function< boost::python::object () > &function,
-		PythonExecutionMonitor *monitor)
+		const boost::function< boost::python::object () > &function)
 {
-	QMutexLocker lock(&d_state_mutex);
-	if (d_python_runner != NULL)
-	{
-		QCoreApplication::postEvent(
+	check_python_runner();
+
+	boost::function< void () > f = 
+		boost::bind(
+				&PythonRunner::eval_function,
 				d_python_runner,
-				new GPlatesUtils::DeferredCallEvent(
-					boost::bind(
-						&PythonRunner::eval_function,
-						boost::ref(*d_python_runner),
-						function,
-						monitor)));
-	}
+				function,
+				&d_monitor);
+
+	run_in_python_thread(f);
 }
-#endif
 
 
 void
 GPlatesApi::PythonExecutionThread::quit_event_loop()
 {
-	QMutexLocker lock(&d_state_mutex);
 	if (d_event_loop != NULL)
 	{
 		d_event_loop->quit();
@@ -208,7 +184,6 @@ GPlatesApi::PythonExecutionThread::quit_event_loop()
 long
 GPlatesApi::PythonExecutionThread::get_python_thread_id() const
 {
-	QMutexLocker lock(&d_state_mutex);
 	return d_python_thread_id;
 }
 
@@ -216,98 +191,40 @@ GPlatesApi::PythonExecutionThread::get_python_thread_id() const
 void
 GPlatesApi::PythonExecutionThread::raise_keyboard_interrupt_exception()
 {
-#if !defined(GPLATES_NO_PYTHON)
-	QMutexLocker lock(&d_state_mutex);
 	PythonInterpreterLocker interpreter_locker;
 	PyThreadState_SetAsyncExc(d_python_thread_id, PyExc_KeyboardInterrupt);
-#endif
 }
 
 
 void
 GPlatesApi::PythonExecutionThread::run()
 {
-	d_state_mutex.lock();
-
 	QEventLoop event_loop;
 	d_event_loop = &event_loop;
-#if !defined(GPLATES_NO_PYTHON)
-	d_python_runner = new PythonRunner(d_application_state, d_namespace);
-
-	// Connect to signals from PythonRunner so we can forward them.
-	QObject::connect(
-			d_python_runner,
-			SIGNAL(exec_or_eval_started()),
-			this,
-			SLOT(handle_exec_or_eval_started()));
-	QObject::connect(
-			d_python_runner,
-			SIGNAL(exec_or_eval_finished()),
-			this,
-			SLOT(handle_exec_or_eval_finished()));
-	QObject::connect(
-			d_python_runner,
-			SIGNAL(system_exit_exception_raised(int, QString )),
-			this,
-			SLOT(handle_system_exit_exception_raised(int, QString )));
+	d_python_runner = new PythonRunner(d_namespace);
 
 	// Get the Python thread id for the current thread.
 	using namespace boost::python;
-	const object &main_namespace = d_application_state.get_python_manager().get_python_main_namespace();
-	PythonInterpreterLocker interpreter_locker;
-	try
 	{
-		if (PyRun_SimpleString("import thread"))
+		PythonInterpreterLocker interpreter_locker;
+		try
 		{
-			throw error_already_set();
+			PyRun_SimpleString("import thread");
+			d_python_thread_id = extract<long>(eval("thread.get_ident()", d_namespace, d_namespace));
+			PyRun_SimpleString("del thread");
 		}
-		d_python_thread_id = extract<long>(eval("thread.get_ident()", main_namespace, main_namespace));
-		if (PyRun_SimpleString("del thread"))
+		catch (const error_already_set &)
 		{
-			throw error_already_set();
+			qWarning() << GPlatesApi::PythonUtils::get_error_message();
 		}
 	}
-	catch (const error_already_set &)
-	{
-		PyErr_Print();
-	}
-	interpreter_locker.release();
-#endif
-
-	d_state_mutex.unlock();
 
 	event_loop.exec();
 
-	d_state_mutex.lock();
-	
 	d_python_thread_id = 0;
 	delete d_python_runner;
 	d_python_runner = NULL;
 	d_event_loop = NULL;
-
-	d_state_mutex.unlock();
 }
 
-
-void
-GPlatesApi::PythonExecutionThread::handle_exec_or_eval_started()
-{
-	emit exec_or_eval_started();
-}
-
-
-void
-GPlatesApi::PythonExecutionThread::handle_exec_or_eval_finished()
-{
-	emit exec_or_eval_finished();
-}
-
-
-void
-GPlatesApi::PythonExecutionThread::handle_system_exit_exception_raised(
-		int exit_status,
-		QString exit_error_message)
-{
-	emit system_exit_exception_raised(exit_status, exit_error_message);
-}
-
+#endif // GPLATES_NO_PYTHON

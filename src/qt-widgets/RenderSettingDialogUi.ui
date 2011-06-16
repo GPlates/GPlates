@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>RenderSettingDialog</class>
+ <widget class="QDialog" name="RenderSettingDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>502</width>
+    <height>585</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>340</width>
+    <height>340</height>
+   </size>
+  </property>
+  <property name="acceptDrops">
+   <bool>true</bool>
+  </property>
+  <property name="windowTitle">
+   <string>Render Setting</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
+    <normaloff>:/gnome_stock_color_16.png</normaloff>:/gnome_stock_color_16.png</iconset>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QCheckBox" name="use_global_checkbox">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Use &amp;Global Scheme</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QSplitter" name="splitter">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <widget class="QTableWidget" name="categories_table">
+      <property name="minimumSize">
+       <size>
+        <width>120</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="tabKeyNavigation">
+       <bool>false</bool>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+      <property name="horizontalScrollMode">
+       <enum>QAbstractItemView::ScrollPerItem</enum>
+      </property>
+      <property name="gridStyle">
+       <enum>Qt::NoPen</enum>
+      </property>
+      <property name="columnCount">
+       <number>1</number>
+      </property>
+      <column/>
+     </widget>
+     <widget class="QFrame" name="right_side_frame">
+      <property name="autoFillBackground">
+       <bool>true</bool>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Sunken</enum>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QListWidget" name="schemes_list">
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="widget" native="true">
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <property name="margin">
+           <number>6</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <widget class="QPushButton" name="open_button">
+              <property name="text">
+               <string>&amp;Open...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="add_button">
+              <property name="text">
+               <string>&amp;Add...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="edit_button">
+              <property name="text">
+               <string>&amp;Edit...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="remove_button">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>&amp;Remove</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QCheckBox" name="show_thumbnails_checkbox">
+       <property name="text">
+        <string>Show &amp;Thumbnails</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>501</width>
+         <height>17</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="close_button">
+       <property name="text">
+        <string>&amp;Close</string>
+       </property>
+       <property name="default">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc"/>
+ </resources>
+ <connections/>
+</ui>

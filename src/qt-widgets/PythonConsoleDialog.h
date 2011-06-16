@@ -25,7 +25,6 @@
  
 #ifndef GPLATES_QTWIDGETS_PYTHONCONSOLEDIALOG_H
 #define GPLATES_QTWIDGETS_PYTHONCONSOLEDIALOG_H
-
 #include <boost/scoped_ptr.hpp>
 #include <QDialog>
 #include <QWidget>
@@ -68,6 +67,7 @@ namespace GPlatesPresentation
 	class ViewState;
 }
 
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesQtWidgets
 {
 	// Forward declarations.
@@ -91,7 +91,6 @@ namespace GPlatesQtWidgets
 
 	public:
 
-		explicit
 		PythonConsoleDialog(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
@@ -114,7 +113,7 @@ namespace GPlatesQtWidgets
 				const QString &text,
 				bool error = false);
 
-#if !defined(GPLATES_NO_PYTHON)
+
 		/**
 		 * Appends the stringified version of @a obj to the console. The @a error
 		 * flag indicates whether it should be decorated as an error message or not.
@@ -130,7 +129,7 @@ namespace GPlatesQtWidgets
 		append_text(
 				const boost::python::object &obj,
 				bool error = false);
-#endif
+
 
 		/**
 		 * Prompts the user for a line of input. This function pops up a modal dialog
@@ -162,6 +161,12 @@ namespace GPlatesQtWidgets
 		 */
 		QString
 		get_last_non_blank_line() const;
+
+		void
+		show_cancel_widget(GPlatesGui::EventBlackout*);
+
+		void 
+		hide_cancel_widget(GPlatesGui::EventBlackout*);
 
 	public slots:
 
@@ -217,18 +222,6 @@ namespace GPlatesQtWidgets
 		handle_save_button_clicked();
 
 		void
-		handle_thread_exec_or_eval_started();
-
-		void
-		handle_thread_exec_or_eval_finished();
-
-		void
-		handle_python_runner_exec_or_eval_started();
-
-		void
-		handle_python_runner_exec_or_eval_finished();
-
-		void
 		handle_system_exit_exception_raised(
 				int exit_status,
 				QString exit_error_message);
@@ -250,12 +243,10 @@ namespace GPlatesQtWidgets
 				const QString &text,
 				bool error);
 
-#if !defined(GPLATES_NO_PYTHON)
 		void
 		do_append_object(
 				const boost::python::object &obj,
 				bool error);
-#endif
 
 		QString
 		do_read_line();
@@ -319,22 +310,13 @@ namespace GPlatesQtWidgets
 		 */
 		bool d_disable_close;
 
-		/**
-		 * If true, we stopped the event blackout temporarily because the PythonRunner
-		 * started to run something on the main thread.
-		 */
-		bool d_stopped_event_blackout_for_python_runner;
+		
 
 		/**
 		 * A menu that allows the user to run recently-run scripts.
 		 */
 		QMenu *d_recent_scripts_menu;
-
-		/**
-		 * Lock down the user interface during Python execution.
-		 */
-		GPlatesGui::EventBlackout d_event_blackout;
-
+				
 		/**
 		 * Allows the user to cancel execution with a GUI widget.
 		 */
@@ -575,5 +557,5 @@ namespace GPlatesQtWidgets
 		bool d_on_blank_line;
 	};
 }
-
+#endif  //GPLATES_NO_PYTHON
 #endif  // GPLATES_QTWIDGETS_PYTHONCONSOLEDIALOG_H

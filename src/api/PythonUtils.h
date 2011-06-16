@@ -28,9 +28,17 @@
 
 // This needs to go before the <QString> due to compile problems on the Mac.
 #include "global/python.h"
-
+#include <QApplication>
+#include <QDebug>
 #include <QString>
+#include <QThread>
 
+#include "api/PythonInterpreterLocker.h"
+#include "api/PythonInterpreterUnlocker.h"
+#include "presentation/Application.h"
+#include "utils/PythonManager.h"
+
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesAppLogic
 {
 	// Forward declarations.
@@ -44,7 +52,24 @@ namespace GPlatesApi
 
 	namespace PythonUtils
 	{
-#if !defined(GPLATES_NO_PYTHON)
+		class ThreadSwitchGuard
+		{
+		public:
+			ThreadSwitchGuard()
+			{
+				d_gil_state = PyGILState_Ensure();
+				d_thread_state =  PyEval_SaveThread();
+			}
+
+			~ThreadSwitchGuard()
+			{
+				PyEval_RestoreThread(d_thread_state);
+				PyGILState_Release(d_gil_state);
+			}
+		private:
+			PyGILState_STATE d_gil_state;
+			PyThreadState *d_thread_state;
+		};
 		/**
 		 * Stringifies @a obj.
 		 *
@@ -72,8 +97,39 @@ namespace GPlatesApi
 		run_startup_scripts(
 				PythonExecutionThread *python_execution_thread,
 				GPlatesAppLogic::UserPreferences &user_prefs);
-#endif
+
+		QString
+		get_error_message();
+
+		inline
+		bool
+		is_main_thread()
+		{
+			return QThread::currentThread() == qApp->thread();
+		}
+
+		inline
+		GPlatesUtils::PythonManager&
+		python_manager()
+		{
+			return GPlatesPresentation::Application::instance()->get_application_state().get_python_manager();
+		}
+
+		inline
+		void
+		run_in_main_thread(
+				const boost::function< void () > &f)
+		{
+			qRegisterMetaType< boost::function< void () > >("boost::function< void () >");
+			ThreadSwitchGuard g;
+			QMetaObject::invokeMethod(
+					&python_manager(), 
+					"exec_function_slot", 
+					Qt::BlockingQueuedConnection,
+					Q_ARG(boost::function< void () > , f));
+			return ;
+		}
 	}
 }
-
+#endif   //GPLATES_NO_PYTHON)
 #endif  // GPLATES_API_PYTHONUTILS_H

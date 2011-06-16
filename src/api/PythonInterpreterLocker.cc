@@ -22,13 +22,12 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include "PythonInterpreterLocker.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::PythonInterpreterLocker::PythonInterpreterLocker(
 		bool ensure_) :
 	d_has_gil(false)
@@ -58,9 +57,7 @@ GPlatesApi::PythonInterpreterLocker::ensure()
 			GPLATES_ASSERTION_SOURCE);
 
 	d_has_gil = true;
-#if !defined(GPLATES_NO_PYTHON)
 	d_gil_state = PyGILState_Ensure();
-#endif
 }
 
 
@@ -73,8 +70,8 @@ GPlatesApi::PythonInterpreterLocker::release()
 			GPLATES_ASSERTION_SOURCE);
 
 	d_has_gil = false;
-#if !defined(GPLATES_NO_PYTHON)
 	PyGILState_Release(d_gil_state);
-#endif
 }
+
+#endif //GPLATES_NO_PYTHON
 

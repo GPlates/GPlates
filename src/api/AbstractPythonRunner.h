@@ -31,7 +31,7 @@
 
 #include "global/python.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	// Forward declaration.
@@ -53,7 +53,7 @@ namespace GPlatesApi
 		~AbstractPythonRunner()
 		{  }
 
-#if !defined(GPLATES_NO_PYTHON)
+
 		/**
 		 * Executes @a command as entered on an interactive console.
 		 *
@@ -111,8 +111,8 @@ namespace GPlatesApi
 		void
 		exec_file(
 				const QString &filename,
-				PythonExecutionMonitor *monitor,
-				const QString &filename_encoding) = 0;
+				const QString &filename_encoding, 
+				PythonExecutionMonitor *monitor) = 0;
 
 		/**
 		 * Evaluates the Python expression contained in @a string.
@@ -150,8 +150,9 @@ namespace GPlatesApi
 		eval_function(
 				const boost::function< boost::python::object () > &function,
 				PythonExecutionMonitor *monitor) = 0;
-#endif
 	};
 }
+
+#endif //GPLATES_NO_PYTHON
 
 #endif  // GPLATES_API_ABSTRACTPYTHONRUNNER_H

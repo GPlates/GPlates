@@ -46,29 +46,13 @@ GPlatesGui::UtilitiesMenu::UtilitiesMenu(
 	QObject(parent_),
 	d_utilities_menu(utilities_menu),
 	d_before_action(utilities_menu->insertSeparator(before_action)),
-	d_python_manager(python_manager),
-	d_action_group(new QActionGroup(this))
-{
-	QObject::connect(
-			d_action_group,
-			SIGNAL(triggered(QAction *)),
-			this,
-			SLOT(handle_action_triggered(QAction *)));
-}
+	d_python_manager(python_manager)
+{ }
 
 
 
 GPlatesGui::UtilitiesMenu::~UtilitiesMenu()
-{
-#if !defined(GPLATES_NO_PYTHON)
-	GPlatesApi::PythonInterpreterLocker interpreter_locker;
-#endif
-
-	BOOST_FOREACH(QAction *action, d_action_group->actions())
-	{
-		delete action;
-	}
-}
+{ }
 
 
 void
@@ -83,25 +67,25 @@ GPlatesGui::UtilitiesMenu::add_utility(
 	QVariant qv;
 	qv.setValue(callback);
 	new_action->setData(qv);
-	d_action_group->addAction(new_action);
-
+	QObject::connect(
+			new_action,
+			SIGNAL(triggered()),
+			this,
+			SLOT(handle_action_triggered()));
 	cat_menu->addAction(new_action);
 }
 
 
 void
-GPlatesGui::UtilitiesMenu::handle_action_triggered(
-		QAction *action)
+GPlatesGui::UtilitiesMenu::handle_action_triggered()
 {
+	QAction *action = qobject_cast<QAction *>(sender());
 	// Extract the callback from the action and call it.
 	typedef boost::function< void () > callback_type;
 	callback_type callback = action->data().value<callback_type>();
 
 #if !defined(GPLATES_NO_PYTHON)
-	GPlatesApi::PythonExecutionMonitor monitor;
-	d_python_execution_thread = d_python_manager.get_python_execution_thread();
-	d_python_execution_thread->exec_function(callback, &monitor);
-	monitor.exec();
+	d_python_manager.get_python_execution_thread()->exec_function(callback);
 #else
 	callback();
 #endif

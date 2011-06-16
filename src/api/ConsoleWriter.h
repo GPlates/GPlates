@@ -25,12 +25,11 @@
 
 #ifndef GPLATES_API_CONSOLEWRITER_H
 #define GPLATES_API_CONSOLEWRITER_H
-
 #include "global/python.h"
 
 #include "AbstractConsole.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -47,7 +46,6 @@ namespace GPlatesApi
 	class ConsoleWriter
 	{
 	public:
-
 		explicit
 		ConsoleWriter(
 				bool error = false,
@@ -55,20 +53,17 @@ namespace GPlatesApi
 
 		~ConsoleWriter();
 
-#if !defined(GPLATES_NO_PYTHON)
+
 		void
 		write(
 				const boost::python::object &text);
-#endif
 
 	private:
-
 		bool d_error;
 		AbstractConsole *d_console;
-#if !defined(GPLATES_NO_PYTHON)
 		boost::python::object d_old_object;
-#endif
+
 	};
 }
-
+#endif   //GPLATES_NO_PYTHON
 #endif  // GPLATES_API_CONSOLEWRITER_H

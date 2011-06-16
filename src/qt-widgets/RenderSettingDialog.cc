@@ -1,9 +1,9 @@
-/* $Id:  $ */
+/* $Id: ColouringDialog.cc 10521 2010-12-11 06:33:37Z elau $ */
 
 /**
  * \file 
- * $Revision: 7584 $
- * $Date: 2010-02-10 19:29:36 +1100 (Wed, 10 Feb 2010) $
+ * $Revision: 10521 $
+ * $Date: 2010-12-11 17:33:37 +1100 (Sat, 11 Dec 2010) $ 
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
  *
@@ -22,27 +22,4 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <boost/python.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#include <vector>
-
-void
-register_co_registration();
-
-using namespace boost::python;
-BOOST_PYTHON_MODULE(gplates_ext)
-{
- 	class_<std::vector<std::string> >("StrVec")
- 		.def(vector_indexing_suite<std::vector<std::string> >());
-
-	register_co_registration();
-}
-
-
-
-
-
-
-
-
-
+#include "RenderSettingDialog.h"

@@ -6,19 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>262</width>
-    <height>152</height>
+    <width>284</width>
+    <height>73</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="spacing">
-    <number>4</number>
-   </property>
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
    <item>
     <widget class="QWidget" name="set_vgp_visibility_placeholder_widget" native="true"/>
+   </item>
+   <item>
+    <widget class="QWidget" name="render_setting_placeholder_widget" native="true"/>
    </item>
    <item>
     <widget class="QCheckBox" name="fill_polygons">

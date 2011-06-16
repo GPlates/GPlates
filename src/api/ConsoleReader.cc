@@ -22,7 +22,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <iostream>
 
 #include "ConsoleReader.h"
@@ -30,16 +29,15 @@
 #include "PythonInterpreterLocker.h"
 #include "PythonInterpreterUnlocker.h"
 
+#include "api/PythonUtils.h"
 #include "utils/StringUtils.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::ConsoleReader::ConsoleReader(
 		AbstractConsole *console) :
 	d_console(console)
 {
-#if !defined(GPLATES_NO_PYTHON)
 	using namespace boost::python;
-
 	PythonInterpreterLocker interpreter_locker;
 	try
 	{
@@ -53,17 +51,14 @@ GPlatesApi::ConsoleReader::ConsoleReader(
 	catch (const error_already_set &)
 	{
 		std::cerr << "Could not replace Python's sys.stdin." << std::endl;
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
-#endif
 }
 
 
 GPlatesApi::ConsoleReader::~ConsoleReader()
 {
-#if !defined(GPLATES_NO_PYTHON)
 	using namespace boost::python;
-
 	PythonInterpreterLocker interpreter_locker;
 	try
 	{
@@ -75,13 +70,11 @@ GPlatesApi::ConsoleReader::~ConsoleReader()
 	catch (const error_already_set &)
 	{
 		std::cerr << "Could not restore Python's sys.stdin." << std::endl;
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
-#endif
 }
 
 
-#if !defined(GPLATES_NO_PYTHON)
 boost::python::object
 GPlatesApi::ConsoleReader::readline()
 {
@@ -121,5 +114,5 @@ export_console_reader()
 	class_<GPlatesApi::ConsoleReader, boost::noncopyable>("GPlatesConsoleReader")
 		.def("readline", &GPlatesApi::ConsoleReader::readline);
 }
-#endif
+#endif //GPLATES_NO_PYTHON
 

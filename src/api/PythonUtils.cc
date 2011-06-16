@@ -35,6 +35,7 @@
 #include "PythonExecutionMonitor.h"
 #include "PythonExecutionThread.h"
 #include "PythonInterpreterLocker.h"
+#include "PythonRunner.h"
 
 #include "app-logic/UserPreferences.h"
 
@@ -89,12 +90,9 @@ namespace
 		QFileInfoList file_list = dir.entryInfoList(QDir::Files, QDir::Name);
 		BOOST_FOREACH(QFileInfo file, file_list)
 		{
-			PythonExecutionMonitor monitor;
 			python_execution_thread->exec_file(
 					file.absoluteFilePath(),
-					&monitor,
 					"utf-8"); // FIXME: hard coded codec
-			monitor.exec();
 		}
 	}
 }
@@ -154,6 +152,40 @@ GPlatesApi::PythonUtils::run_startup_scripts(
 		::run_startup_scripts(python_execution_thread, user_scripts_dir);
 	}
 
+}
+
+
+DISABLE_GCC_WARNING("-Wold-style-cast")
+
+QString
+GPlatesApi::PythonUtils::get_error_message()
+{
+	PythonInterpreterLocker interpreter_locker;
+
+	QString msg;
+	PyObject *type = NULL, *value = NULL, *bt = NULL;
+
+	PyErr_Fetch(&type, &value, &bt);
+
+	if(!(type && value))
+	{
+		msg = "Unknown error.";
+	}
+	else
+	{
+		PyObject *p_str;
+		if ((p_str=PyObject_Str(type)) && PyString_Check(p_str))
+			msg.append(PyString_AsString(p_str)).append("\n");
+		Py_XDECREF(p_str);
+	
+		if ((p_str=PyObject_Str(value)) && PyString_Check(p_str)) 
+			msg.append(PyString_AsString(value)).append("\n");
+		Py_XDECREF(p_str);
+	}
+	Py_XDECREF(type);
+	Py_XDECREF(value);
+	Py_XDECREF(bt);
+	return msg;
 }
 
 #else

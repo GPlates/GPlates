@@ -55,8 +55,6 @@
 #include "utils/ComponentManager.h"
 #include "utils/PythonManager.h"
 
-extern "C" void initpygplates();
-
 namespace
 {
 	/**
@@ -229,90 +227,6 @@ namespace
 
 		return command_line_options;
 	}
-
-	void
-	initialise_python(
-			char *program_name)
-	{
-#if !defined(GPLATES_NO_PYTHON)
-		using namespace boost::python;
-
-		// Initialise the embedded Python interpreter.
-		char GPLATES_MODULE_NAME[] = "pygplates";
-		if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
-		{
-			PyErr_Print();
-			abort();
-		}
-
-		Py_SetProgramName(program_name);
-		Py_Initialize();
-
-		// Initialise Python threading support; this grabs the Global Interpreter Lock
-		// for this thread.
-		PyEval_InitThreads();
-
-		// But then we give up the GIL, so that PythonInterpreterLocker may now be used.
-		PyEval_SaveThread();
-
-		GPlatesApi::PythonInterpreterLocker interpreter_locker;
-
-		// Load the pygplates module.
-		try
-		{
-			object main_module = import("__main__");
-			object main_namespace = main_module.attr("__dict__");
-			object pygplates_module = import("pygplates");
-			main_namespace["pygplates"] = pygplates_module;
-		}
-		catch (const error_already_set &)
-		{
-			std::cerr << "Fatal error while loading pygplates module" << std::endl;
-			PyErr_Print();
-			abort();
-		}
-
-		// Importing "sys" enables the printing of the value of expressions in
-		// the interactive Python console window, and importing "builtin" enables
-		// the magic variable "_" (the last result in the interactive window).
-		// We then delete them so that the packages don't linger around, but their
-		// effect remains even after deletion.
-		// Note: using boost::python::exec doesn't achieve the desired effects.
-		if (PyRun_SimpleString("import sys, __builtin__; del sys; del __builtin__"))
-		{
-			std::cerr << "Failed to import sys, __builtin__" << std::endl;
-			PyErr_Print();
-		}
-
-		// Get rid of some built-in functions.
-		if (PyRun_SimpleString("import __builtin__; del __builtin__.copyright, __builtin__.credits, __builtin__.license, __builtin__"))
-		{
-			std::cerr << "Failed to delete some built-in functions" << std::endl;
-			PyErr_Print();
-		}
-#endif
-	}
-
-	void
-	install_instance(
-			GPlatesPresentation::Application &state)
-	{
-#if !defined(GPLATES_NO_PYTHON)
-		using namespace boost::python;
-
-		try
-		{
-			// Give Python access to the Application (Instance) object.
-			GPlatesApi::PythonInterpreterLocker interpreter_locker;
-			object pygplates_module = import("pygplates");
-			pygplates_module.attr("instance") = ptr(&state);
-		}
-		catch (const error_already_set &)
-		{
-			PyErr_Print();
-		}
-#endif
-	}
 }
 
 int internal_main(int argc, char* argv[])
@@ -339,13 +253,13 @@ int internal_main(int argc, char* argv[])
 			qapplication.argc(), qapplication.argv());
 
 	
-	GPlatesPresentation::Application g_app;
-	GPlatesQtWidgets::ViewportWindow &main_window_widget = g_app.get_viewport_window();
+	GPlatesPresentation::Application* app = GPlatesPresentation::Application::instance();
+	GPlatesQtWidgets::ViewportWindow &main_window_widget = app->get_viewport_window();
 	
 	// Set up the main window widget.
 	main_window_widget.load_files(
 			command_line_options.line_format_filenames +
-				command_line_options.rotation_format_filenames);
+			command_line_options.rotation_format_filenames);
 
 	// Install an extra menu for developers to help debug GUI problems.
 	if (command_line_options.debug_gui)
@@ -358,23 +272,27 @@ int internal_main(int argc, char* argv[])
 	{
 		main_window_widget.hide_symbol_menu();
 	}
-#if !defined(GPLATES_NO_PYTHON)
-	initialise_python(argv[0]);
-        GPlatesAppLogic::ApplicationState& state = g_app.get_application_state();
-        GPlatesUtils::PythonManager& m = state.get_python_manager();
-
-        if(!m.is_initialized())
-               m.initialize(state);
-
-        install_instance(g_app);
-
-	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
-#endif
+    	
+	main_window_widget.show();
+	
+	if(ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
+	{
+		try{
+			app->get_application_state().get_python_manager().initialize();
+		}
+		catch(const PythonInitFailed& ex)
+		{
+			std::stringstream ss;
+			ex.write(ss);
+			qWarning() << ss.str().c_str();
+			main_window_widget.hide_python_menu();
+		}
+	}
+	else
 	{
 		main_window_widget.hide_python_menu();
 	}
 
-	main_window_widget.show();
 	return qapplication.exec();
 
 	// Note: Because we are using Boost.Python, Py_Finalize() should not be called.

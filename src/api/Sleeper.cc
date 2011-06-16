@@ -22,19 +22,15 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <iostream>
-
+#include "api/PythonUtils.h"
 #include "Sleeper.h"
-
 #include "PythonInterpreterLocker.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::Sleeper::Sleeper()
 {
-#if !defined(GPLATES_NO_PYTHON)
 	using namespace boost::python;
-
 	PythonInterpreterLocker interpreter_locker;
 	try
 	{
@@ -43,7 +39,7 @@ GPlatesApi::Sleeper::Sleeper()
 		d_old_object = time_module.attr("sleep");
 
 		// Replace time.sleep with our own functor.
-		if (PyRun_SimpleString(
+		PyRun_SimpleString(
 				"import time\n"
 				"class GPlatesSleeper:\n"
 				"	def __init__(self):\n"
@@ -57,25 +53,19 @@ GPlatesApi::Sleeper::Sleeper()
 				"			self.original_sleep(0)\n"
 				"		self.original_sleep((duration - int(duration)) / times_per_second)\n"
 				"time.sleep = GPlatesSleeper()\n"
-				"del time, GPlatesSleeper\n"))
-		{
-			throw error_already_set();
-		}
+				"del time, GPlatesSleeper\n");
 	}
 	catch (const error_already_set &)
 	{
 		std::cerr << "Could not replace time.sleep." << std::endl;
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
-#endif
 }
 
 
 GPlatesApi::Sleeper::~Sleeper()
 {
-#if !defined(GPLATES_NO_PYTHON)
 	using namespace boost::python;
-
 	PythonInterpreterLocker interpreter_locker;
 	try
 	{
@@ -87,8 +77,8 @@ GPlatesApi::Sleeper::~Sleeper()
 	catch (const error_already_set &)
 	{
 		std::cerr << "Could not restore time.sleep." << std::endl;
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
-#endif
 }
 
+#endif //GPLATES_NO_PYTHON

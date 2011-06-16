@@ -28,7 +28,7 @@
 
 #include "global/python.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -43,18 +43,14 @@ namespace GPlatesApi
 	class Sleeper
 	{
 	public:
-
-		explicit
 		Sleeper();
 
 		~Sleeper();
 
 	private:
-
-#if !defined(GPLATES_NO_PYTHON)
 		boost::python::object d_old_object;
-#endif
+
 	};
 }
-
+#endif  //GPLATES_NO_PYTHON
 #endif  // GPLATES_API_SLEEPER_H

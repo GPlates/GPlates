@@ -42,18 +42,24 @@ void export_instance();
 // qt-widgets directory.
 void export_main_window();
 
+void export_co_registration();
+
 BOOST_PYTHON_MODULE(pygplates)
 {
+#ifdef GPLATES_PYTHON_EMBEDDING
 	// api directory.
 	export_console_reader();
 	export_console_writer();
 	export_feature_collection();
-
+	
 	// presentation directory.
 	export_instance();
 
 	// qt-widgets directory.
 	export_main_window();
+
+#endif	
+	export_co_registration();
 }
 
 #else

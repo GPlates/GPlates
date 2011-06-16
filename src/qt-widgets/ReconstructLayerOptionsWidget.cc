@@ -57,6 +57,20 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			SIGNAL(link_activated()),
 			this,
 			SLOT(open_vgp_visibility_dialog()));
+	
+	LinkWidget *render_setting_link = new LinkWidget(
+			tr("Render Setting..."), this);
+	QtWidgetUtils::add_widget_to_placeholder(
+			render_setting_link,
+			render_setting_placeholder_widget);
+	QObject::connect(
+			render_setting_link,
+			SIGNAL(link_activated()),
+			this,
+			SLOT(open_render_setting_dlg()));
+
+	render_setting_link->setVisible(false);
+	
 	QObject::connect(
 			fill_polygons,
 			SIGNAL(clicked()),
@@ -111,6 +125,13 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_vgp_visibility_dialog()
 
 	// This dialog is shown modally.
 	d_set_vgp_visibility_dialog->exec();
+}
+
+
+void
+GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_render_setting_dlg()
+{
+	d_viewport_window->pop_up_render_setting_dialog();
 }
 
 

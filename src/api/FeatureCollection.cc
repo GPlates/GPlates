@@ -22,12 +22,11 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include "FeatureCollection.h"
 
 #include "global/python.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::FeatureCollection::FeatureCollection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) :
 	d_feature_collection(feature_collection.handle_ptr())
@@ -41,7 +40,6 @@ GPlatesApi::FeatureCollection::size() const
 }
 
 
-#if !defined(GPLATES_NO_PYTHON)
 void
 export_feature_collection()
 {
@@ -50,5 +48,5 @@ export_feature_collection()
 	class_<GPlatesApi::FeatureCollection, GPlatesApi::FeatureCollection::non_null_ptr_type, boost::noncopyable>("FeatureCollection", no_init /* for now, disable creation */)
 		.add_property("size", &GPlatesApi::FeatureCollection::size);
 }
-#endif
+#endif   //GPLATES_NO_PYTHON
 

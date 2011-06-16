@@ -30,7 +30,7 @@
 
 #include "AbstractConsole.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -55,18 +55,14 @@ namespace GPlatesApi
 
 		~ConsoleReader();
 
-#if !defined(GPLATES_NO_PYTHON)
+
 		boost::python::object
 		readline();
-#endif
 
 	private:
-
 		AbstractConsole *d_console;
-#if !defined(GPLATES_NO_PYTHON)
 		boost::python::object d_old_object;
-#endif
 	};
 }
-
+#endif // GPLATES_NO_PYTHON
 #endif  // GPLATES_API_CONSOLEREADER_H

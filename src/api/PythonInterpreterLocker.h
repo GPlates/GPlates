@@ -28,7 +28,7 @@
 
 #include "global/python.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -90,10 +90,10 @@ namespace GPlatesApi
 	private:
 
 		bool d_has_gil;
-#if !defined(GPLATES_NO_PYTHON)
+
 		PyGILState_STATE d_gil_state;
-#endif
+
 	};
 }
-
+#endif  //GPLATES_NO_PYTHON
 #endif  // GPLATES_API_PYTHONINTERPRETERLOCKER_H

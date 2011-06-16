@@ -28,7 +28,7 @@
 
 #include "global/python.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -82,11 +82,8 @@ namespace GPlatesApi
 		restore_thread();
 
 	private:
-
-#if !defined(GPLATES_NO_PYTHON)
 		PyThreadState *d_thread_state;
-#endif
 	};
 }
-
+#endif  //GPLATES_NO_PYTHON
 #endif  // GPLATES_API_PYTHONINTERPRETERLOCKER_H

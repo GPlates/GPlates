@@ -22,7 +22,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <boost/python.hpp>
 #include <boost/algorithm/string.hpp>
 #include <iostream>
 
@@ -32,6 +31,7 @@
 #include "data-mining/DataMiningUtils.h"
 #include "data-mining/OpaqueDataToQString.h"
 #include "data-mining/RegionOfInterestFilter.h"
+#include "global/python.h"
 #include "model/ModelInterface.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/FeatureCollectionReaderWriter.h"
@@ -40,6 +40,7 @@ using namespace GPlatesAppLogic;
 using namespace GPlatesFileIO;
 using namespace GPlatesDataMining;
 using namespace GPlatesModel;
+#if !defined(GPLATES_NO_PYTHON)
 using namespace boost::python;
 namespace{
 	class CoRegistration
@@ -383,7 +384,7 @@ namespace{
 }
 
 void
-register_co_registration()
+export_co_registration()
 {
 	bool    (CoRegistration::*exec)()				 	 = &CoRegistration::exec;
 	bool    (CoRegistration::*exec_file)(const char*)    = &CoRegistration::exec;
@@ -410,6 +411,7 @@ register_co_registration()
 		.def("clear_cfg_rows",				&CoRegistration::clear_cfg_rows)
 		;
 }
+#endif
 
 
 

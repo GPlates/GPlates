@@ -47,7 +47,6 @@ namespace GPlatesUtils
 
 		static const QEvent::Type TYPE;
 
-		explicit
 		AbstractDeferredCallEvent();
 
 		virtual

@@ -31,11 +31,37 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+#include "global/GPlatesException.h"
 #include "global/python.h"
+#include "utils/CallStackTracker.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
+	class PythonExecutionMonitorNotInMainGUIThread : 
+		public GPlatesGlobal::Exception
+	{
+	public:
+		PythonExecutionMonitorNotInMainGUIThread(
+			const GPlatesUtils::CallStack::Trace &exception_source) :
+		GPlatesGlobal::Exception(exception_source)
+		{ }
+		//GPLATES_EXCEPTION_SOURCE
+	protected:
+		const char *
+			exception_name() const
+		{
+			return "PythonExecutionMonitorNotInMainGUIThread";
+		}
+
+		void
+			write_message(
+			std::ostream &os) const
+		{
+			os << "The Python Execution Monitor must live in main GUI thread.";
+		}
+	};
+
 	/**
 	 * Provides a local event loop that runs parallel to a @a PythonExecutionThread
 	 * and allows the main GUI thread to remain responsive while waiting for
@@ -43,8 +69,10 @@ namespace GPlatesApi
 	 *
 	 * It is assumed that instances of this class live on the main GUI thread.
 	 */
-	class PythonExecutionMonitor
+	class PythonExecutionMonitor : public QObject
 	{
+		Q_OBJECT
+
 	public:
 
 		/**
@@ -62,7 +90,6 @@ namespace GPlatesApi
 		/**
 		 * Constructs a @a PythonExecutionMonitor.
 		 */
-		explicit
 		PythonExecutionMonitor();
 
 		/**
@@ -72,7 +99,6 @@ namespace GPlatesApi
 		bool
 		continue_interactive_input() const;
 
-#if !defined(GPLATES_NO_PYTHON)
 		/**
 		 * If we are monitoring an evaluation of a Python expression, returns the
 		 * value of that expression if the evaluation was successful.
@@ -82,7 +108,6 @@ namespace GPlatesApi
 		{
 			return d_evaluation_result;
 		}
-#endif
 
 		/**
 		 * Once execution or evaluation has finished, returns the reason why execution
@@ -156,7 +181,6 @@ namespace GPlatesApi
 		void
 		signal_exec_finished();
 
-#if !defined(GPLATES_NO_PYTHON)
 		/**
 		 * Stops the local event loop, after the evaluation of a Python expression
 		 * has finished.
@@ -169,7 +193,6 @@ namespace GPlatesApi
 		void
 		signal_eval_finished(
 				const boost::python::object &result);
-#endif
 
 		/**
 		 * Sets the finish reason to be @a SYSTEM_EXIT_EXCEPTION, so that the
@@ -197,30 +220,33 @@ namespace GPlatesApi
 		void
 		set_other_exception_raised();
 
-	private:
-
+	private slots:
 		void
 		handle_exec_interactive_command_finished(
 				bool continue_interactive_input_);
-
+	private:
 		void
 		handle_exec_finished();
 
-#if !defined(GPLATES_NO_PYTHON)
 		void
 		handle_eval_finished(
 				const boost::python::object &result);
-#endif
 
 		void
 		handle_system_exit_exception_raised(
 				int exit_status,
 				QString exit_error_message);
 
+		void
+		stop_monitor();
+
+
+		PythonExecutionMonitor(const PythonExecutionMonitor&);
+
 		bool d_continue_interactive_input;
-#if !defined(GPLATES_NO_PYTHON)
+
 		boost::python::object d_evaluation_result;
-#endif
+
 
 		QEventLoop d_event_loop;
 
@@ -229,5 +255,5 @@ namespace GPlatesApi
 		QString d_exit_error_message;
 	};
 }
-
+#endif  //GPLATES_NO_PYTHON
 #endif  // GPLATES_API_PYTHONEXECUTIONMONITOR_H

@@ -26,9 +26,14 @@
 */
 #ifndef GPLATES_UTILS_PYTHON_MANAGER_H
 #define GPLATES_UTILS_PYTHON_MANAGER_H
+#include <QDir>
+#include <QFileInfoList>
 #include <boost/scoped_ptr.hpp>
+
 #include "global/GPlatesException.h"
 #include "global/python.h"
+#include "gui/EventBlackout.h"
+#include "presentation/Application.h"
 
 namespace GPlatesAppLogic
 {
@@ -42,9 +47,21 @@ namespace GPlatesApi
 	class Sleeper;
 }
 
+namespace GPlatesPresentation
+{
+	class Application;
+}
+
+namespace GPlatesQtWidgets
+{
+	class PythonConsoleDialog;
+}
+
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesUtils
 {
-	class PyManagerNotReady : GPlatesGlobal::Exception
+	class PyManagerNotReady : 
+		public GPlatesGlobal::Exception
 	{
 	public:
 		PyManagerNotReady(
@@ -54,28 +71,62 @@ namespace GPlatesUtils
 		//GPLATES_EXCEPTION_SOURCE
 	protected:
 		const char *
-			exception_name() const
+		exception_name() const
 		{
 			return "Python Manager Uninitialized Exception";
 		}
 
 		void
-			write_message(
-			std::ostream &os) const
+		write_message(
+				std::ostream &os) const
 		{
 			os << "The Python Manager has not been initialized yet.";
 		}
 	};
 
-	class PythonManager : public QObject
+	class PythonInitFailed : 
+		public GPlatesGlobal::Exception
 	{
 	public:
-		void initialize(GPlatesAppLogic::ApplicationState&);
-		bool is_initialized(){return d_inited;}
-		PythonManager() : d_inited(false){}
-		~PythonManager();
+		PythonInitFailed(
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			GPlatesGlobal::Exception(exception_source)
+		{ }
+		//GPLATES_EXCEPTION_SOURCE
+	protected:
+		const char *
+		exception_name() const
+		{
+			return "PythonInitFailed Exception";
+		}
 
-#if !defined(GPLATES_NO_PYTHON)
+		void
+		write_message(
+				std::ostream &os) const
+		{
+			os << "Error occurred during python initialization.";
+		}
+	};
+
+	class PythonManager : public QObject
+	{
+
+		Q_OBJECT
+
+	public:
+		void initialize();
+		bool is_initialized(){return d_inited;}
+		PythonManager() : 
+			d_python_main_thread_runner(NULL),
+			d_python_execution_thread(NULL),
+			d_sleeper(NULL),
+			d_inited(false), 
+			d_python_console_dialog_ptr(NULL),
+			d_stopped_event_blackout_for_python_runner(false)
+		{ }
+
+		~PythonManager();
+#if 0
 		const boost::python::object &
 		get_python_main_module() const
 		{
@@ -88,16 +139,26 @@ namespace GPlatesUtils
 			return d_python_main_namespace;
 		}
 #endif
+		void
+		init_python_interpreter(
+				std::string program_name = "gplates");
 
-		/**
-		 * Returns an object that runs Python on the main thread.
-		 */
-		GPlatesApi::PythonRunner *
-		get_python_runner() const
-		{
-			check_init();
-			return d_python_runner;
-		}
+		void
+		init_python_console();
+
+		void
+		pop_up_python_console();
+
+		void 
+		register_utils_scripts();
+
+		QFileInfoList
+		get_scripts();
+
+		void
+		register_script(
+				const QString& name, 
+				const QString& encoding);
 
 		/**
 		 * Returns a thread on which Python code can be run off the main thread.
@@ -109,7 +170,65 @@ namespace GPlatesUtils
 			return d_python_execution_thread;
 		}
 
+		void
+		python_runner_started();
+
+		void
+		python_runner_finished();
+
+	signals:
+		void
+		system_exit_exception_raised(
+				int exit_status,
+				QString exit_error_message);
+
+	protected:
+		class PythonExecGuard
+		{
+		public:
+			PythonExecGuard(
+					PythonManager* pm) :
+				d_pm(pm)
+			{
+				d_pm->python_started();
+			}
+
+			~PythonExecGuard()
+			{
+				d_pm->python_finished();
+			}
+		private:
+			PythonManager * d_pm;
+		};
+
+		friend class PythonExecGuard;
+
+	public slots:
+		
+		void
+		exec_function_slot(
+				const boost::function< void () > &f)
+		{
+			PythonExecGuard g(this);
+			f();
+			return;
+		}
+
 	private:
+		void
+		python_started();
+
+		void
+		python_finished();
+		
+		void
+		add_sys_path();
+		/*
+		* I wrote this function. But I don't like it.
+		* It'd better if we init python in PythonManager constructor.
+		* However, currently, we cannot do that.
+		* Sort this out someday pls.
+		*/
 		void
 		check_init() const
 		{
@@ -117,7 +236,6 @@ namespace GPlatesUtils
 				throw PyManagerNotReady(GPLATES_EXCEPTION_SOURCE);
 		}
 
-#if !defined(GPLATES_NO_PYTHON)
 		/**
 		 * The "__main__" Python module.
 		 */
@@ -128,13 +246,12 @@ namespace GPlatesUtils
 		 * This is useful for passing into exec() and eval() for context.
 		 */
 		boost::python::object d_python_main_namespace;
-#endif
 		/**
 		 * Runs Python code on the main thread.
 		 *
 		 * Memory managed by Qt.
 		 */
-		GPlatesApi::PythonRunner *d_python_runner;
+		GPlatesApi::PythonRunner *d_python_main_thread_runner;
 
 		/**
 		 * The thread on which Python is executed, off the main thread.
@@ -146,11 +263,37 @@ namespace GPlatesUtils
 		/**
 		 * Replaces Python's time.sleep() with our own implementation.
 		 */
-		boost::scoped_ptr< GPlatesApi::Sleeper > d_sleeper;
+		GPlatesApi::Sleeper* d_sleeper;
 
 		bool d_inited;
+
+		GPlatesQtWidgets::PythonConsoleDialog* d_python_console_dialog_ptr;
+
+		std::vector<QDir> d_scripts_paths;
+
+		/**
+		 * If true, we stopped the event blackout temporarily because the PythonRunner
+		 * started to run something on the main thread.
+		*/
+		bool d_stopped_event_blackout_for_python_runner;
+	
+		/**
+		 * Lock down the user interface during Python execution.
+		*/
+		GPlatesGui::EventBlackout d_event_blackout;
 	};
 }
+#else
+namespace GPlatesUtils
+{
+	class PythonManager : public QObject
+	{
+	public:
+		void initialize(GPlatesPresentation::Application& app){app.get_viewport_window().hide_python_menu();}
+		void pop_up_python_console(){}
+	};
+}
+#endif    //GPLATES_NO_PYTHON
 #endif    //GPLATES_UTILS_PYTHON_MANAGER_H
 
 

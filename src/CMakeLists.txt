@@ -190,11 +190,6 @@ set(unit_test_LIBS
     unit-test)
 endif (ADD_UNIT_TEST_TARGET)
 
-set(g_lib ${app_LIBS} ${util_LIBS} gui python-ext)
-foreach(dir ${g_lib})
-        AUX_SOURCE_DIRECTORY(${dir} g_lib_src)
-endforeach(dir)
-
 # Libraries used by the GUI version of GPlates.
 set(GPlates_LIBS
 	${gui_LIBS} ${presentation_LIBS} ${app_LIBS} ${util_LIBS})
@@ -274,7 +269,7 @@ set(ALL_GPlates_src_subdirs
 	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS} ${unit_test_LIBS} )
 
 if(NOT GPLATES_NO_PYTHON)
-	set(ALL_GPlates_src_subdirs ${ALL_GPlates_src_subdirs} python-ext)
+	set(ALL_GPlates_src_subdirs ${ALL_GPlates_src_subdirs} )
 endif(NOT GPLATES_NO_PYTHON)
 #
 # Generate 'global/config.h' file from 'global/config.h.in' and add HAVE_CONFIG_H compiler definition so GPlates will look for it.
@@ -406,29 +401,26 @@ set(GPLATES_MAIN_TARGET gplates)
 
 # Add Python module library target.
 if(NOT GPLATES_NO_PYTHON)
+
+	foreach(dir ${ALL_GPlates_src_subdirs})
+		AUX_SOURCE_DIRECTORY(${dir} all_gplates_src)
+	endforeach(dir)
+
 	message(STATUS "Adding GPlates Python module.")
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
-	add_library(pygplates MODULE EXCLUDE_FROM_ALL
-		${target_GPlates_SRCS}
-		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
-	set_target_properties(pygplates PROPERTIES PREFIX "")
+	add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${all_gplates_src})
+    add_library(pygplates MODULE EXCLUDE_FROM_ALL api/Python.cc )
+    add_dependencies(pygplates gplates_lib)
+	add_dependencies(gplates_lib gplates)
+	
 	if(WIN32)
 		set_target_properties(pygplates PROPERTIES SUFFIX ".pyd")
-	endif(WIN32)
-
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
-
-	if(WIN32)
-		add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
-		set_target_properties(gplates_ext PROPERTIES SUFFIX ".pyd")
 	else(WIN32)
-		add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${g_lib_src})
-		set_target_properties(gplates_lib PROPERTIES COMPILE_FLAGS "-fPIC")
-		add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
-		add_dependencies(gplates_ext gplates_lib)
-	endif(WIN32)
+	    set_target_properties(gplates_lib PROPERTIES COMPILE_FLAGS "-fPIC")
+    endif(WIN32)
 
-	set_target_properties(gplates_ext PROPERTIES PREFIX "")
+	set_target_properties(pygplates PROPERTIES PREFIX "")
+	
 endif(NOT GPLATES_NO_PYTHON)
 
 
@@ -500,14 +492,9 @@ if (ADD_UNIT_TEST_TARGET)
 	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LIBS} ${dependency_LIBS} ${GPlates_unit_test_LIBS})
 endif (ADD_UNIT_TEST_TARGET)
 if (NOT GPLATES_NO_PYTHON)
-	target_link_libraries(pygplates ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
-
-	if(WIN32)
-		target_link_libraries(gplates_ext python-ext ${GPlates_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
-	else(WIN32)
-		target_link_libraries(gplates_ext gplates_lib ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
-	endif(WIN32)
-
+	
+	target_link_libraries(pygplates gplates_lib ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
+    
 endif (NOT GPLATES_NO_PYTHON)
 
 # Current binary directory must be included first for g++ pre-compiled headers.

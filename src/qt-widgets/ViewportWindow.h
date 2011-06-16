@@ -110,6 +110,7 @@ namespace GPlatesQtWidgets
 	class CalculateReconstructionPoleDialog;
 	class ChooseFeatureCollectionDialog;
 	class ColouringDialog;
+	class RenderSettingDialog;
 	class ConnectWFSDialog;
 	class ConfigureGraticulesDialog;
 	class ConfigureTextOverlayDialog;
@@ -255,7 +256,7 @@ namespace GPlatesQtWidgets
 		{
 			return *d_utilities_menu_ptr;
 		}
-
+	
 	public slots:
 		
 		void
@@ -429,6 +430,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_colouring_dialog();
+
+		void
+		pop_up_render_setting_dialog();
 
 		void
 		handle_load_symbol_file();
@@ -760,9 +764,6 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_python_console();
 
-		void
-		handle_python_console_text_changed();
-
 	private:
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
@@ -817,6 +818,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
 		boost::scoped_ptr<ChooseFeatureCollectionDialog> d_choose_feature_collection_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
+		boost::scoped_ptr<RenderSettingDialog> d_render_setting_dialog_ptr;
 		boost::scoped_ptr<ConnectWFSDialog> d_connect_wfs_dialog_ptr;
 		boost::scoped_ptr<ConfigureGraticulesDialog> d_configure_graticules_dialog_ptr;
 		boost::scoped_ptr<ConfigureTextOverlayDialog> d_configure_text_overlay_dialog_ptr;
@@ -826,7 +828,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
 		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
 		boost::scoped_ptr<PreferencesDialog> d_preferences_dialog_ptr;
-		boost::scoped_ptr<PythonConsoleDialog> d_python_console_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;

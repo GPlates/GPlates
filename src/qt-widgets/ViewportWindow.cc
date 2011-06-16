@@ -85,6 +85,7 @@
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
+#include "RenderSettingDialog.h"
 #include "SaveFileDialog.h"
 #include "SetCameraViewpointDialog.h"
 #include "SetProjectionDialog.h"
@@ -312,7 +313,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_view_state(),
 				this)),
 	d_mesh_dialog_ptr(NULL),
-	d_python_console_dialog_ptr(NULL),
 	d_read_errors_dialog_ptr(
 			new ReadErrorAccumulationDialog(this)),
 	d_set_camera_viewpoint_dialog_ptr(NULL),
@@ -732,14 +732,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SIGNAL(layer_added(size_t)),
 			this,
 			SLOT(handle_visual_layer_added(size_t)));
-
-	// We display the last line from the Python console dialog in the status bar.
-	QObject::connect(
-			d_python_console_dialog_ptr.get(),
-			SIGNAL(text_changed()),
-			this,
-			SLOT(handle_python_console_text_changed()));
-
+	
 	set_internal_release_window_title();
 }
 
@@ -1548,6 +1541,22 @@ GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
 	}
 
 	QtWidgetUtils::pop_up_dialog(d_colouring_dialog_ptr.get());
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_render_setting_dialog()
+{
+	if (!d_render_setting_dialog_ptr)
+	{
+		d_render_setting_dialog_ptr.reset(
+				new RenderSettingDialog(
+						get_view_state(),
+						d_reconstruction_view_widget_ptr->globe_and_map_widget(),
+						*d_read_errors_dialog_ptr,
+						this));
+	}
+	QtWidgetUtils::pop_up_dialog(d_render_setting_dialog_ptr.get());
 }
 
 
@@ -2727,27 +2736,7 @@ GPlatesQtWidgets::ViewportWindow::open_online_documentation()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
 {
-	if(!d_python_console_dialog_ptr)
-	{
-		d_python_console_dialog_ptr.reset(
-				new PythonConsoleDialog(
-				get_application_state(),
-				get_view_state(),
-				this,
-				this));
-	}
-	QtWidgetUtils::pop_up_dialog(d_python_console_dialog_ptr.get());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_python_console_text_changed()
-{
-	QString line = d_python_console_dialog_ptr->get_last_non_blank_line();
-	if (!line.isEmpty())
-	{
-		status_message(tr("Last Python output: ") + line);
-	}
+	get_application_state().get_python_manager().pop_up_python_console();
 }
 
 
@@ -2755,20 +2744,6 @@ void
 GPlatesQtWidgets::ViewportWindow::showEvent(
 		QShowEvent *ev)
 {
-#if !defined(GPLATES_NO_PYTHON)
-	if(GPlatesUtils::ComponentManager::instance().is_enabled(
-		GPlatesUtils::ComponentManager::Component::python()))
-	{
-		// We defer this so that we can guarantee that the user interface is ready
-		// before we start running Python scripts.
-		GPlatesUtils::DeferCall<void>::defer_call(
-			boost::bind(
-				&GPlatesApi::PythonUtils::run_startup_scripts,
-				get_application_state().get_python_manager().get_python_execution_thread(),
-				boost::ref(get_application_state().get_user_preferences())));
-	}
-#endif
-
 	// We wait until the main window is visible before checking our status messages and
 	// View-dependent menu items are configured appropriately; this is largely because of
 	// the definition of ReconstructionViewWidget::globe_is_active().

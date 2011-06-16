@@ -25,15 +25,15 @@
 
 #ifndef GPLATES_API_PYTHONRUNNER_H
 #define GPLATES_API_PYTHONRUNNER_H
-
+#include <boost/any.hpp>
 #include <QString>
 #include <QObject>
 
 #include "AbstractPythonRunner.h"
-
+#include "api/PythonUtils.h"
 #include "global/python.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -52,17 +52,13 @@ namespace GPlatesApi
 		Q_OBJECT
 
 	public:
-#if !defined(GPLATES_NO_PYTHON)
-		explicit
+
 		PythonRunner(
-				GPlatesAppLogic::ApplicationState &application_state,
 				const boost::python::object &,
 				QObject *parent_ = NULL);
-#endif
 		virtual
 		~PythonRunner();
 
-#if !defined(GPLATES_NO_PYTHON)
 		virtual
 		void
 		exec_interactive_command(
@@ -83,8 +79,8 @@ namespace GPlatesApi
 		void
 		exec_file(
 				const QString &filename,
-				PythonExecutionMonitor *monitor,
-				const QString &filename_encoding);
+				const QString &filename_encoding,
+				PythonExecutionMonitor *monitor);
 
 		virtual
 		void
@@ -103,20 +99,54 @@ namespace GPlatesApi
 		eval_function(
 				const boost::function< boost::python::object () > &function,
 				PythonExecutionMonitor *monitor);
-#endif
-
+		
 	signals:
-
-		void
-		exec_or_eval_started();
-
-		void
-		exec_or_eval_finished();
-
 		void
 		system_exit_exception_raised(
 				int exit_status,
 				QString exit_error_message);
+
+	protected:
+		void
+		python_started()
+		{
+			GPlatesApi::PythonUtils::python_manager().python_runner_started();
+		}
+
+		void
+		python_finished()
+		{
+			GPlatesApi::PythonUtils::python_manager().python_runner_finished();
+		}
+
+		class PythonExecGuard
+		{
+		public:
+			PythonExecGuard(
+					PythonRunner* runner) :
+			d_runner(runner)
+			{
+				d_runner->python_started();
+			}
+
+			~PythonExecGuard()
+			{
+				d_runner->python_finished();
+			}
+		private:
+			PythonRunner * d_runner;
+		};
+
+		friend class PythonExecGuard;
+
+	public slots:
+		void
+		exec_function_slot(
+				const boost::function< void () > &f)
+		{
+			PythonExecGuard g(this);
+			f();
+		}
 
 	protected:
 
@@ -126,8 +156,6 @@ namespace GPlatesApi
 				QEvent *ev);
 
 	private:
-
-#if !defined(GPLATES_NO_PYTHON)
 		/**
 		 * Resets the interactive console's buffer.
 		 */
@@ -149,13 +177,14 @@ namespace GPlatesApi
 		handle_system_exit(
 				PythonExecutionMonitor *monitor);
 
-		GPlatesAppLogic::ApplicationState &d_application_state;
+		const boost::python::object& d_namespace;
 		boost::python::object d_console;
 		boost::python::object d_compile;
 		boost::python::object d_eval;
-#endif
 	};
-
 }
+#endif //GPLATES_NO_PYTHON
+#endif // GPLATES_API_PYTHONRUNNER_H
 
-#endif  // GPLATES_API_PYTHONRUNNER_H
+
+
