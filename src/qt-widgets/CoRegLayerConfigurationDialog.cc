@@ -314,6 +314,9 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::populate_coregistration_attribu
 			feature_collection_ref, 
 			attr_names);
 	
+	//hack for Jo
+	attr_names.insert(GPlatesModel::PropertyName::create_gpml("gpml feature type"));
+
 	std::set< GPlatesModel::PropertyName >::const_iterator it = attr_names.begin();
 	std::set< GPlatesModel::PropertyName >::const_iterator it_end = attr_names.end();
 
@@ -325,7 +328,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::populate_coregistration_attribu
 					*it,
 					CO_REGISTRATION_ATTRIBUTE);
 
-		if(GPlatesUtils::make_qstring_from_icu_string((*it).get_name()) == "shapefileAttributes")
+		if((*it).get_name() == "shapefileAttributes")
 		{
 			add_shape_file_attrs(
 					feature_collection_ref,
@@ -378,7 +381,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_add_button_clicked()
 				Reducer, 
 				combo);
 
-		setup_REDUCER_combobox(
+		setup_reducer_combobox(
 				attr_item->text(),
 				combo);
 
@@ -418,7 +421,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_add_button_clicked()
 
 
 void
-GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_REDUCER_combobox(
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_reducer_combobox(
 		const QString& attribute_name,	
 		QComboBox* combo)
 {

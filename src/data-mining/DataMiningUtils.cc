@@ -126,6 +126,12 @@ GPlatesDataMining::DataMiningUtils::get_property_value_by_name(
 	using namespace GPlatesModel;
 	FeatureHandle::const_iterator it = feature_ptr->begin(), it_end = feature_ptr->end();
 	
+	//hack for Jo
+	if(name == "gpml feature type")
+	{
+		return feature_ptr->feature_type().get_name().qstring();
+	}
+
 	for(; it != it_end; it++)
 	{
 		if((*it)->property_name().get_name() == UnicodeString(name))
