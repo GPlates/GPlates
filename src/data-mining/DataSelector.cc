@@ -220,7 +220,9 @@ GPlatesDataMining::DataSelector::select(
 	gen_feature_rfg_map(seed_rfgs, d_seed_feature_rfg_map);
 	gen_feature_collection_rfgs_map(target_rfgs, target_fcs, d_target_fc_rfg_map);
 
-	populate_table_header(data_table);
+	data_table.set_data_index(d_data_index);
+	data_table.set_table_header(d_table_header);
+
 	//for each seed feature
 	BOOST_FOREACH(const FeatureRFGMap::value_type& seed_feature_rfg_pair, d_seed_feature_rfg_map)
 	{
@@ -313,22 +315,21 @@ GPlatesDataMining::DataSelector::fill_seed_info(
 
 
 void
-GPlatesDataMining::DataSelector::populate_table_header(
-		GPlatesDataMining::DataTable& data_table) const 
+GPlatesDataMining::DataSelector::populate_table_header()  
 {
 	//populate the table header
-	TableHeader table_header;
-	table_header.push_back("Seed Feature ID");
-	table_header.push_back("Seed Valid Time");
-	data_table.set_data_index(2);
+	
+	d_table_header.push_back("Seed Feature ID");
+	d_table_header.push_back("Seed Valid Time");
+	d_data_index = 2;
 
 	const CoRegConfigurationTable& table = d_cfg_table;
 	
 	BOOST_FOREACH(const ConfigurationTableRow& row, table)
 	{
-		table_header.push_back(row.attr_name);
+		d_table_header.push_back(row.attr_name);
 	}
-	data_table.set_table_header(table_header);
+	
 }
 
 // Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.

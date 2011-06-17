@@ -436,6 +436,15 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_reducer_combobox(
 		combo->addItem(
 				QApplication::tr("Min"),
 				GPlatesDataMining::REDUCER_MIN);
+		combo->addItem(
+				QApplication::tr("Max"),
+				GPlatesDataMining::REDUCER_MAX);
+		combo->addItem(
+				QApplication::tr("Mean"),
+				GPlatesDataMining::REDUCER_MEAN);
+		combo->addItem(
+				QApplication::tr("Median"),
+				GPlatesDataMining::REDUCER_MEDIAN);
 		return;
 	}
 

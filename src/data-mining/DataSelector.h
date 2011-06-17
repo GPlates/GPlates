@@ -115,7 +115,7 @@ namespace GPlatesDataMining
 		}
 
 		void
-		populate_table_header(DataTable& data_table) const;
+		populate_table_header();
 
 		~DataSelector()
 		{ }
@@ -148,9 +148,11 @@ namespace GPlatesDataMining
 		const DataSelector&
 		operator=(const DataSelector&);
 
-		DataSelector(const CoRegConfigurationTable &table) 
-			: d_cfg_table(table)
+		DataSelector(const CoRegConfigurationTable &table) : 
+			d_cfg_table(table),
+			d_data_index(0)
 		{
+			populate_table_header();
 			if(!d_cfg_table.is_optimized())
 				d_cfg_table.optimize();
 		}
@@ -159,7 +161,8 @@ namespace GPlatesDataMining
 
 		FeatureCollectionRFGMap d_target_fc_rfg_map;
 		FeatureRFGMap d_seed_feature_rfg_map;
-
+		TableHeader d_table_header;
+		unsigned d_data_index;
 		/*
 		* TODO:
 		* Need to remove the "static" in the future.
