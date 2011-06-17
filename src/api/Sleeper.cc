@@ -82,3 +82,5 @@ GPlatesApi::Sleeper::~Sleeper()
 }
 
 #endif //GPLATES_NO_PYTHON
+
+
