@@ -320,7 +320,8 @@ namespace GPlatesFileIO
 					Output &output)
 			{
 				// Add the plate polygon if they are being exported.
-				if (output_options.export_all_network_polygons_to_a_single_file)
+				if (output_options.export_all_network_polygons_to_a_single_file ||
+					output_options.export_individual_network_polygon_files)
 				{
 					output.network_polygons.push_back(resolved_geom);
 				}
@@ -374,7 +375,8 @@ namespace GPlatesFileIO
 					Output &output)
 			{
 				// Add the plate polygon if they are being exported.
-				if (output_options.export_all_plate_polygons_to_a_single_file)
+				if (output_options.export_all_plate_polygons_to_a_single_file ||
+					output_options.export_individual_plate_polygon_files)
 				{
 					output.platepolygons.push_back(resolved_geom);
 				}
@@ -491,7 +493,8 @@ namespace GPlatesFileIO
 					Output &output)
 			{
 				// Add the slab polygon if they are being exported.
-				if (output_options.export_all_slab_polygons_to_a_single_file)
+				if (output_options.export_all_slab_polygons_to_a_single_file ||
+					output_options.export_individual_slab_polygon_files)
 				{
 					output.slab_polygons.push_back(resolved_geom);
 				}
