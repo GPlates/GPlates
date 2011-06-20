@@ -1212,6 +1212,8 @@ GPlatesFileIO::ResolvedTopologicalBoundaryExport::get_export_file_format(
 	{
 	case FeatureCollectionFileFormat::GMT:
 		return GMT;
+	case FeatureCollectionFileFormat::OGRGMT:
+		return OGRGMT;
 	case FeatureCollectionFileFormat::SHAPEFILE:
 		return SHAPEFILE;
 	default:

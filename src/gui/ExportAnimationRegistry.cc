@@ -450,6 +450,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportResolvedTopologyAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
+#if 0 // Not yet supported...
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 				ExportAnimationType::RESOLVED_TOPOLOGIES,
@@ -464,6 +465,7 @@ GPlatesGui::register_default_export_animation_types(
 					GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
 					ExportResolvedTopologyAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+#endif
 
 
 
