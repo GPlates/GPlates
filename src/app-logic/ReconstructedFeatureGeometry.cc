@@ -34,6 +34,8 @@
 
 #include "model/WeakObserverVisitor.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesAppLogic::ReconstructedFeatureGeometry::ReconstructedFeatureGeometry(
 		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
@@ -96,6 +98,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometry::reconstructed_geometry() const
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				d_finite_rotation_reconstruction,
 				GPLATES_ASSERTION_SOURCE);
+
+		//PROFILE_BLOCK("ReconstructedFeatureGeometry::reconstructed_geometry: transform geometry");
 
 		d_reconstructed_geometry = d_finite_rotation_reconstruction->get_reconstructed_geometry();
 	}

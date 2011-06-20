@@ -51,34 +51,26 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
 
 	if (!d_cached_reconstructed_feature_geometries)
 	{
+		// Reconstruct our features into a sequence of ReconstructContext::Reconstruction's.
+		// It takes only slightly longer (eg, 7.4msec versus 7.22msec) to generate a sequence
+		// of ReconstructContext::Reconstruction's versus a sequence of RFGs but it means if
+		// another client then requests the ReconstructContext::Reconstruction's then they will
+		// be cached and won't have to be calculated - doing it the other way around doesn't work.
+		std::vector<ReconstructContext::Reconstruction> reconstructions;
+		get_reconstructed_feature_geometries(reconstructions, reconstruction_time);
+
 		// Create empty vector of RFGs.
 		d_cached_reconstructed_feature_geometries =
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>();
 
-		// Optimisation is to use the cached RFGs in the other cached format if they are available.
-		if (d_cached_reconstructions)
+		// Copy the RFGs already cached in the ReconstructContext::Reconstruction's into this cached format.
+		// The ReconstructContext::Reconstruction's store an RFG and a geometry property handle.
+		// This format only needs the RFG.
+		d_cached_reconstructed_feature_geometries->reserve(reconstructions.size());
+		BOOST_FOREACH(const ReconstructContext::Reconstruction &reconstruction, reconstructions)
 		{
-			// Copy the RFGs already cached into the this cached format.
-			// The other format stores an RFG and a geometry property handle.
-			// This format only needs the RFG.
-			d_cached_reconstructed_feature_geometries->reserve(d_cached_reconstructions->size());
-			BOOST_FOREACH(
-					const ReconstructContext::Reconstruction &reconstruction,
-					d_cached_reconstructions.get())
-			{
-				d_cached_reconstructed_feature_geometries->push_back(
-						reconstruction.get_reconstructed_feature_geometry());
-			}
-		}
-		else
-		{
-			// Reconstruct our features into our sequence of RFGs.
-			d_reconstruct_context.reconstruct(
-					d_cached_reconstructed_feature_geometries.get(),
-					// Used to call when a reconstruction tree is needed for any time/anchor.
-					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
-					// Also pass in the current time.
-					reconstruction_time);
+			d_cached_reconstructed_feature_geometries->push_back(
+					reconstruction.get_reconstructed_feature_geometry());
 		}
 	}
 
@@ -157,6 +149,8 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries_spa
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
 		get_reconstructed_feature_geometries(reconstructed_feature_geometries, reconstruction_time);
 
+		//PROFILE_BLOCK("ReconstructLayerProxy::get_reconstructed_feature_geometries_spatial_partition: ");
+
 		// Add the RFGs to a new spatial partition to return to the caller.
 		d_cached_reconstructed_feature_geometries_spatial_partition =
 				reconstructed_feature_geometries_spatial_partition_type::create(
@@ -226,9 +220,11 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions_spatial_partition(
 
 	if (!d_cached_reconstructions_spatial_partition)
 	{
-		// Reconstruct our features into a sequence of RFGs.
+		// Reconstruct our features into a sequence of ReconstructContext::Reconstruction's.
 		std::vector<ReconstructContext::Reconstruction> reconstructions;
 		get_reconstructed_feature_geometries(reconstructions, reconstruction_time);
+
+		//PROFILE_BLOCK("ReconstructLayerProxy::get_reconstructions_spatial_partition: ");
 
 		// Add the RFGs to a new spatial partition to return to the caller.
 		d_cached_reconstructions_spatial_partition =

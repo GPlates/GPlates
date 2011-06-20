@@ -49,6 +49,8 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 
+#include "utils/Profile.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -143,10 +145,6 @@ namespace GPlatesAppLogic
 			{
 				const GPlatesModel::FeatureHandle::const_weak_ref feature_ref = feature_handle.reference();
 
-				// Firstly find a reconstruction plate ID and reconstruct method.
-				ReconstructionFeatureProperties reconstruction_params;
-				reconstruction_params.visit_feature(feature_ref);
-
 				// Feature must have a plate id or a BY_PLATE_ID reconstruct method property.
 				// We are lenient here because a lot of features have a reconstruction plate id
 				// but don't have 'ReconstructMethod::BY_PLATE_ID' specified.
@@ -159,7 +157,12 @@ namespace GPlatesAppLogic
 				// sequence which also lists least specialised to most specialised reconstruct
 				// methods and so we are the least specialised and also get queried last - so if
 				// there are any more specialised methods then they will have precedence.
+
 #if 0
+				// Firstly find a reconstruction plate ID and reconstruct method.
+				ReconstructionFeatureProperties reconstruction_params;
+				reconstruction_params.visit_feature(feature_ref);
+
 				if (!reconstruction_params.get_recon_plate_id() &&
 					reconstruction_params.get_reconstruction_method() != ReconstructMethod::BY_PLATE_ID)
 				{
@@ -321,7 +324,7 @@ namespace GPlatesAppLogic
 		 * Reconstructs a feature using its present day geometry and its plate Id.
 		 */
 		class ReconstructFeature :
-				public GPlatesModel::FeatureVisitor
+				public GPlatesModel::FeatureVisitorThatGuaranteesNotToModify
 		{
 		public:
 			explicit
@@ -338,6 +341,8 @@ namespace GPlatesAppLogic
 			initialise_pre_feature_properties(
 					GPlatesModel::FeatureHandle &feature_handle)
 			{
+				//PROFILE_FUNC();
+
 				const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature_handle.reference();
 
 				// Firstly find the reconstruction plate ID.
@@ -545,6 +550,8 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
 {
+	//PROFILE_FUNC();
+
 	// Get the reconstruction tree for the reconstruction time.
 	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);

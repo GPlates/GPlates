@@ -472,6 +472,57 @@ boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_age_grid_mask_multi_resolution_cube_raster(
 		const double &reconstruction_time)
 {
+	check_input_raster();
+
+	// Rebuild the age grid *mask* cube raster if necessary.
+	if (!d_age_grid_mask_multi_resolution_cube_raster)
+	{
+		if (!d_age_grid_mask_multi_resolution_source)
+		{
+			// Get the present-day age grid raster.
+			boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> age_grid_raster =
+					d_age_grid_raster_layer_proxy->get_proxied_raster(0/*present-day*/);
+			if (!age_grid_raster)
+			{
+				// Unable to get proxied raster so nothing we can do.
+				return boost::none;
+			}
+
+			d_age_grid_mask_multi_resolution_source =
+					GPlatesOpenGL::GLAgeGridMaskSource::create(
+							reconstruction_time,
+							age_grid_raster.get(),
+							d_texture_resource_manager);
+			if (!d_age_grid_mask_multi_resolution_source)
+			{
+				// Unable to get age grid mask source so nothing we can do.
+				return boost::none;
+			}
+		}
+
+		if (!d_age_grid_mask_multi_resolution_raster)
+		{
+			// Create an age grid mask multi-resolution raster.
+			GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_mask_multi_resolution_raster =
+					GPlatesOpenGL::GLMultiResolutionRaster::create(
+							d_age_grid_raster_layer_proxy->get_georeferencing().get(),
+							d_age_grid_mask_multi_resolution_source.get(),
+							d_texture_resource_manager,
+							d_vertex_buffer_resource_manager);
+
+			d_age_grid_mask_multi_resolution_raster = age_grid_mask_multi_resolution_raster;
+		}
+
+		// Create an age grid mask multi-resolution cube raster.
+		GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_mask_multi_resolution_cube_raster =
+				GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
+						d_age_grid_mask_multi_resolution_raster.get(),
+						d_cube_subdivision_projection_transforms_cache,
+						d_texture_resource_manager);
+
+		d_age_grid_mask_multi_resolution_cube_raster = age_grid_mask_multi_resolution_cube_raster;
+	}
+
 	update(reconstruction_time);
 
 	return d_age_grid_mask_multi_resolution_cube_raster;
@@ -482,6 +533,55 @@ boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_age_grid_coverage_multi_resolution_cube_raster(
 		const double &reconstruction_time)
 {
+	check_input_raster();
+
+	// Rebuild the age grid *coverage* cube raster if necessary.
+	if (!d_age_grid_coverage_multi_resolution_cube_raster)
+	{
+		if (!d_age_grid_coverage_multi_resolution_source)
+		{
+			// Get the present-day age grid raster.
+			boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> age_grid_raster =
+					d_age_grid_raster_layer_proxy->get_proxied_raster(0/*present-day*/);
+			if (!age_grid_raster)
+			{
+				// Unable to get proxied raster so nothing we can do.
+				return boost::none;
+			}
+
+			d_age_grid_coverage_multi_resolution_source =
+					GPlatesOpenGL::GLAgeGridCoverageSource::create(
+							age_grid_raster.get());
+			if (!d_age_grid_coverage_multi_resolution_source)
+			{
+				// Unable to get age grid coverage source so nothing we can do.
+				return boost::none;
+			}
+		}
+
+		if (!d_age_grid_coverage_multi_resolution_raster)
+		{
+			// Create an age grid coverage multi-resolution raster.
+			GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_coverage_multi_resolution_raster =
+					GPlatesOpenGL::GLMultiResolutionRaster::create(
+							d_age_grid_raster_layer_proxy->get_georeferencing().get(),
+							d_age_grid_coverage_multi_resolution_source.get(),
+							d_texture_resource_manager,
+							d_vertex_buffer_resource_manager);
+
+			d_age_grid_coverage_multi_resolution_raster = age_grid_coverage_multi_resolution_raster;
+		}
+
+		// Create an age grid coverage multi-resolution cube raster.
+		GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_coverage_multi_resolution_cube_raster =
+				GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
+						d_age_grid_coverage_multi_resolution_raster.get(),
+						d_cube_subdivision_projection_transforms_cache,
+						d_texture_resource_manager);
+
+		d_age_grid_coverage_multi_resolution_cube_raster = age_grid_coverage_multi_resolution_cube_raster;
+	}
+
 	update(reconstruction_time);
 
 	return d_age_grid_coverage_multi_resolution_cube_raster;
@@ -520,8 +620,7 @@ GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::is_required_direct_or_in
 
 
 void
-GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::update(
-		const double &reconstruction_time)
+GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::check_input_raster()
 {
 	if (!d_age_grid_raster_layer_proxy->get_georeferencing())
 	{
@@ -551,111 +650,15 @@ GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::update(
 		d_age_grid_raster_layer_proxy->get_raster_feature_subject_token().update_observer(
 				d_age_grid_raster_feature_observer_token);
 	}
+}
 
-	// Rebuild the age grid *mask* cube raster if necessary.
-	if (!d_age_grid_mask_multi_resolution_cube_raster)
-	{
-		if (!d_age_grid_mask_multi_resolution_source)
-		{
-			// Get the present-day age grid raster.
-			boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> age_grid_raster =
-					d_age_grid_raster_layer_proxy->get_proxied_raster(0/*present-day*/);
-			if (!age_grid_raster)
-			{
-				// Unable to get proxied raster so nothing we can do.
-				return;
-			}
 
-			d_age_grid_mask_multi_resolution_source =
-					GPlatesOpenGL::GLAgeGridMaskSource::create(
-							reconstruction_time,
-							age_grid_raster.get(),
-							d_texture_resource_manager);
-			if (!d_age_grid_mask_multi_resolution_source)
-			{
-				// Unable to get age grid mask source so nothing we can do.
-				return;
-			}
-		}
-
-		if (!d_age_grid_mask_multi_resolution_raster)
-		{
-			// Create an age grid mask multi-resolution raster.
-			GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_mask_multi_resolution_raster =
-					GPlatesOpenGL::GLMultiResolutionRaster::create(
-							d_age_grid_raster_layer_proxy->get_georeferencing().get(),
-							d_age_grid_mask_multi_resolution_source.get(),
-							d_texture_resource_manager,
-							d_vertex_buffer_resource_manager);
-
-			d_age_grid_mask_multi_resolution_raster = age_grid_mask_multi_resolution_raster;
-		}
-
-		if (!d_age_grid_mask_multi_resolution_cube_raster)
-		{
-			// Create an age grid mask multi-resolution cube raster.
-			GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_mask_multi_resolution_cube_raster =
-					GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
-							d_age_grid_mask_multi_resolution_raster.get(),
-							d_cube_subdivision_projection_transforms_cache,
-							d_texture_resource_manager);
-
-			d_age_grid_mask_multi_resolution_cube_raster = age_grid_mask_multi_resolution_cube_raster;
-		}
-	}
-
+void
+GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::update(
+		const double &reconstruction_time)
+{
 	// Update the reconstruction time for the age grid mask.
 	d_age_grid_mask_multi_resolution_source.get()->update_reconstruction_time(reconstruction_time);
-
-	// Rebuild the age grid *coverage* cube raster if necessary.
-	if (!d_age_grid_mask_multi_resolution_cube_raster)
-	{
-		if (!d_age_grid_coverage_multi_resolution_source)
-		{
-			// Get the present-day age grid raster.
-			boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> age_grid_raster =
-					d_age_grid_raster_layer_proxy->get_proxied_raster(0/*present-day*/);
-			if (!age_grid_raster)
-			{
-				// Unable to get proxied raster so nothing we can do.
-				return;
-			}
-
-			d_age_grid_coverage_multi_resolution_source =
-					GPlatesOpenGL::GLAgeGridCoverageSource::create(
-							age_grid_raster.get());
-			if (!d_age_grid_coverage_multi_resolution_source)
-			{
-				// Unable to get age grid coverage source so nothing we can do.
-				return;
-			}
-		}
-
-		if (!d_age_grid_coverage_multi_resolution_raster)
-		{
-			// Create an age grid coverage multi-resolution raster.
-			GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_coverage_multi_resolution_raster =
-					GPlatesOpenGL::GLMultiResolutionRaster::create(
-							d_age_grid_raster_layer_proxy->get_georeferencing().get(),
-							d_age_grid_coverage_multi_resolution_source.get(),
-							d_texture_resource_manager,
-							d_vertex_buffer_resource_manager);
-
-			d_age_grid_coverage_multi_resolution_raster = age_grid_coverage_multi_resolution_raster;
-		}
-
-		if (!d_age_grid_coverage_multi_resolution_cube_raster)
-		{
-			// Create an age grid coverage multi-resolution cube raster.
-			GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_coverage_multi_resolution_cube_raster =
-					GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
-							d_age_grid_coverage_multi_resolution_raster.get(),
-							d_cube_subdivision_projection_transforms_cache,
-							d_texture_resource_manager);
-
-			d_age_grid_coverage_multi_resolution_cube_raster = age_grid_coverage_multi_resolution_cube_raster;
-		}
-	}
 }
 
 
@@ -886,7 +889,10 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 								d_cube_subdivision_projection_transforms_cache,
 								d_cube_subdivision_bounds_cache,
 								d_texture_resource_manager,
-								d_vertex_buffer_resource_manager);
+								d_vertex_buffer_resource_manager,
+								GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::AgeGridParams(
+										age_grid_mask_cube_raster.get(),
+										age_grid_coverage_cube_raster.get()));
 
 				return d_reconstructed_raster;
 			}
@@ -910,6 +916,12 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 	if (d_reconstructed_polygon_meshes_layer_usage)
 	{
 		d_reconstructed_polygon_meshes_layer_usage.get()->update(reconstruction_time);
+	}
+
+	// See if the age grid needs updating.
+	if (d_age_grid_layer_usage)
+	{
+		d_age_grid_layer_usage.get()->update(reconstruction_time);
 	}
 
 	return d_reconstructed_raster;

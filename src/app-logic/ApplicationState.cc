@@ -49,6 +49,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "utils/Profile.h"
+
 
 namespace
 {
@@ -206,6 +208,8 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 	// Get each layer to update itself in response to any changes that caused this
 	// 'reconstruct' method to get called.
 	d_reconstruction = d_reconstruct_graph->update_layer_tasks(d_reconstruction_time, d_anchored_plate_id);
+
+	//PROFILE_BLOCK("ApplicationState::reconstruct: emit reconstructed");
 
 	emit reconstructed(*this);
 }

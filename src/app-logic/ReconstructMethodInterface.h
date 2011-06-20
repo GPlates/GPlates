@@ -131,7 +131,6 @@ namespace GPlatesAppLogic
 		 * other than @a reconstruction_time.
 		 * This is useful for reconstructing flowlines since the function might be hooked up
 		 * to a reconstruction tree cache.
-		 *
 		 * NOTE: Calling 'set_default_reconstruction_time()' or 'set_default_anchor_plate_id'
 		 * can result in a thrown exception. These defaults are managed by the caller and
 		 * should not be altered.

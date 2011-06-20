@@ -33,6 +33,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesAppLogic::ReconstructContext::ReconstructContext(
 		const ReconstructMethodRegistry &reconstruct_method_registry,
@@ -151,6 +153,8 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
 {
+	//PROFILE_BLOCK("ReconstructContext::reconstruct: ReconstructedFeatureGeometry's");
+
 	// Iterate over the reconstruct method features.
 	BOOST_FOREACH(
 			const ReconstructMethodFeatures &reconstruct_method_features,
@@ -186,6 +190,8 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
 {
+	//PROFILE_BLOCK("ReconstructContext::reconstruct: Reconstruction's");
+
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
 	if (!have_assigned_geometry_property_handles())

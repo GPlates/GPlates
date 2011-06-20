@@ -405,6 +405,11 @@ namespace GPlatesGui
 			get_age_grid_coverage_multi_resolution_cube_raster(
 					const double &reconstruction_time);
 
+			//! See if needs updating.
+			void
+			update(
+					const double &reconstruction_time);
+
 			//! Let clients know we've rebuilt our age grid cube rasters.
 			const GPlatesUtils::SubjectToken &
 			get_rebuild_subject_token();
@@ -433,8 +438,7 @@ namespace GPlatesGui
 			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_age_grid_coverage_multi_resolution_cube_raster;
 
 			void
-			update(
-					const double &reconstruction_time);
+			check_input_raster();
 		};
 
 

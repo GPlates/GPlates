@@ -122,7 +122,7 @@ namespace GPlatesOpenGL
 			typedef GPlatesUtils::non_null_intrusive_ptr<const PresentDayPolygonMeshMembership> non_null_ptr_to_const_type;
 
 
-			//! Initially no polygon meshes are in the membership set.
+			//! Initially no polygon meshes are in the membership set to false.
 			static
 			non_null_ptr_type
 			create(
@@ -131,10 +131,21 @@ namespace GPlatesOpenGL
 				return non_null_ptr_type(new PresentDayPolygonMeshMembership(num_polygon_meshes));
 			}
 
+			//! Used to directly set the polygon meshes membership.
+			static
+			non_null_ptr_type
+			create(
+					const boost::dynamic_bitset<> &polygon_meshes_membership)
+			{
+				return non_null_ptr_type(new PresentDayPolygonMeshMembership(polygon_meshes_membership));
+			}
+
 
 			/**
 			 * Returns a bitset that can be indexed by @a present_day_polygon_mesh_handle_type
-			 * to test for membership. Or it can be compared against another bitset.
+			 * to test for membership.
+			 *
+			 * Or it can be compared against another bitset of the same size (ie, same total number of polygon meshes).
 			 */
 			const boost::dynamic_bitset<> &
 			get_polygon_meshes_membership() const
@@ -160,6 +171,13 @@ namespace GPlatesOpenGL
 			PresentDayPolygonMeshMembership(
 					unsigned int num_polygon_meshes) :
 				d_polygon_meshes_membership(num_polygon_meshes)
+			{  }
+
+			//! Constructor sets flags to match @a polygon_meshes_membership.
+			explicit
+			PresentDayPolygonMeshMembership(
+					const boost::dynamic_bitset<> &polygon_meshes_membership) :
+				d_polygon_meshes_membership(polygon_meshes_membership)
 			{  }
 		};
 
@@ -327,6 +345,69 @@ namespace GPlatesOpenGL
 		typedef std::vector<ReconstructedPolygonMeshTransformGroup>
 				reconstructed_polygon_mesh_transform_group_seq_type;
 
+		/**
+		 * Contains all reconstructed polygon meshes for all transforms.
+		 */
+		class ReconstructedPolygonMeshTransformsGroups :
+				public GPlatesUtils::ReferenceCount<ReconstructedPolygonMeshTransformsGroups>
+		{
+		public:
+			typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructedPolygonMeshTransformsGroups> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructedPolygonMeshTransformsGroups> non_null_ptr_to_const_type;
+
+
+			//! Initially no polygon meshes are in the membership set.
+			static
+			non_null_ptr_type
+			create(
+					const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+					unsigned int num_polygon_meshes)
+			{
+				return non_null_ptr_type(new ReconstructedPolygonMeshTransformsGroups(transform_groups, num_polygon_meshes));
+			}
+
+
+			/**
+			 * Returns the sequence of transforms groups for the reconstructed polygon meshes.
+			 */
+			const reconstructed_polygon_mesh_transform_group_seq_type &
+			get_transform_groups() const
+			{
+				return d_transform_groups;
+			}
+
+			/**
+			 * Returns the present-day polygon meshes for *all* transform groups.
+			 */
+			const PresentDayPolygonMeshMembership &
+			get_present_day_polygon_meshes() const
+			{
+				return *d_present_day_polygon_meshes;
+			}
+
+		private:
+			reconstructed_polygon_mesh_transform_group_seq_type d_transform_groups;
+
+			PresentDayPolygonMeshMembership::non_null_ptr_type d_present_day_polygon_meshes;
+
+			/**
+			 * Constructor sets present day polygon meshes flags to union of flags of @a transform_groups.
+			 */
+			ReconstructedPolygonMeshTransformsGroups(
+					const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+					unsigned int num_polygon_meshes) :
+				d_transform_groups(transform_groups),
+				d_present_day_polygon_meshes(
+						gather_present_day_polygon_mesh_memberships(transform_groups, num_polygon_meshes))
+			{  }
+
+			static
+			PresentDayPolygonMeshMembership::non_null_ptr_type
+			gather_present_day_polygon_mesh_memberships(
+					const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+					unsigned int num_polygon_meshes);
+		};
+
 
 		/**
 		 * Typedef for a sequence of OpenGL drawables representing the present day polygon meshes.
@@ -429,9 +510,8 @@ namespace GPlatesOpenGL
 		 * The visibility is determined by the view frustum that is in turn determined by the
 		 * specified transform state.
 		 */
-		void
+		ReconstructedPolygonMeshTransformsGroups::non_null_ptr_to_const_type
 		get_visible_reconstructed_polygon_meshes(
-				reconstructed_polygon_mesh_transform_group_seq_type &reconstructed_polygon_mesh_transform_groups,
 				const GLTransformState &transform_state);
 
 	private:
@@ -509,7 +589,7 @@ namespace GPlatesOpenGL
 		 * spatial partition node.
 		 */
 		void
-		get_visible_reconstructed_polygon_meshes(
+		get_visible_reconstructed_polygon_meshes_from_quad_tree(
 				reconstructed_polygon_mesh_transform_group_seq_type &reconstructed_polygon_mesh_transform_groups,
 				reconstructed_polygon_mesh_transform_group_map_type &reconstructed_polygon_mesh_transform_group_map,
 				unsigned int num_polygon_meshes,

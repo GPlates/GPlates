@@ -62,6 +62,8 @@
 #include "presentation/TopologyNetworkVisualLayerParams.h"
 #include "presentation/VelocityFieldCalculatorVisualLayerParams.h"
 
+#include "utils/Profile.h"
+
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryParameters.h"

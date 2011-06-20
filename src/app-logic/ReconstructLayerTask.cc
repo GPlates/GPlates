@@ -216,14 +216,6 @@ GPlatesAppLogic::ReconstructLayerTask::update(
 	}
 
 	d_default_reconstruction_layer_proxy = reconstruction->get_default_reconstruction_layer_output();
-
-	// HACK: Just for the 1.1 release we'll update to the latest reconstructed feature geometries.
-#if 1
-	std::vector<ReconstructContext::Reconstruction> reconstructed_feature_geometries;
-	d_reconstruct_layer_proxy->get_reconstructed_feature_geometries(
-			reconstructed_feature_geometries,
-			reconstruction->get_reconstruction_time());
-#endif
 }
 
 
