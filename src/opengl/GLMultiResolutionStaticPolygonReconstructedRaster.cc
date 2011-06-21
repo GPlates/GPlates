@@ -1916,3 +1916,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_age_mas
 }
 
 ENABLE_GCC_WARNING("-Wold-style-cast")
+
+// It seems some template instantiations happen at the end of the file.
+// Disabling shadow warning caused by boost object_pool (used by GPlatesUtils::ObjectCache).
+DISABLE_GCC_WARNING("-Wshadow")
+
