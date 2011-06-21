@@ -210,8 +210,11 @@ namespace GPlatesMaths
 		 * point to the guilty points.  If no adjacent points are found
 		 * to be antipodal, this parameter will not be modified.
 		 *
-		 * If @a ignore_insufficient_distinct_points is 'true' then the sequence of points
-		 * is *not* validated for insufficient distinct points.
+		 * If @a check_distinct_points is 'true' then the sequence of points
+		 * is validated for insufficient *distinct* points, otherwise it is validated
+		 * for insufficient points (regardless of whether they are distinct or not).
+		 * Distinct points are points that are separated by an epsilon distance (any
+		 * points within epsilon distance from each other are counted as one point).
 		 * The default is to validate for insufficient distinct points.
 		 */
 		template<typename ForwardIter>
@@ -221,7 +224,7 @@ namespace GPlatesMaths
 				ForwardIter begin,
 				ForwardIter end,
 				std::pair<ForwardIter, ForwardIter> &invalid_points,
-				bool ignore_insufficient_distinct_points = false);
+				bool check_distinct_points = true);
 
 		/**
 		 * Evaluate the validity of the construction-parameters.
@@ -254,8 +257,11 @@ namespace GPlatesMaths
 		 * point to the guilty points.  If no adjacent points are found
 		 * to be antipodal, this parameter will not be modified.
 		 *
-		 * If @a ignore_insufficient_distinct_points is 'true' then the sequence of points
-		 * is *not* validated for insufficient distinct points.
+		 * If @a check_distinct_points is 'true' then the sequence of points
+		 * is validated for insufficient *distinct* points, otherwise it is validated
+		 * for insufficient points (regardless of whether they are distinct or not).
+		 * Distinct points are points that are separated by an epsilon distance (any
+		 * points within epsilon distance from each other are counted as one point).
 		 * The default is to validate for insufficient distinct points.
 		 */
 		template<typename C>
@@ -264,10 +270,10 @@ namespace GPlatesMaths
 		evaluate_construction_parameter_validity(
 				const C &coll,
 				std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points,
-				bool ignore_insufficient_distinct_points = false)
+				bool check_distinct_points = true)
 		{
 			return evaluate_construction_parameter_validity(
-					coll.begin(), coll.end(), invalid_points, ignore_insufficient_distinct_points);
+					coll.begin(), coll.end(), invalid_points, check_distinct_points);
 		}
 
 
@@ -292,11 +298,13 @@ namespace GPlatesMaths
 		 * in the range @a begin / @a end, and return an intrusive_ptr which points to
 		 * the newly-created instance.
 		 *
-		 * If @a throw_if_insufficient_distinct_points is true then throws
-		 * @a InvalidPointsForPolygonConstructionError if there are insufficient points for
-		 * the polygon *because* some points are indistinct and counted as one point.
-		 * NOTE: If the total number of *indistinct* points is insufficient then an exception
-		 * will be thrown regardless of this flag.
+		 * If @a check_distinct_points is 'true' then the sequence of points
+		 * is validated for insufficient *distinct* points, otherwise it is validated
+		 * for insufficient points (regardless of whether they are distinct or not).
+		 * Distinct points are points that are separated by an epsilon distance (ie, any
+		 * points within epsilon distance from each other are counted as one point).
+		 * The default is to validate for insufficient *indistinct* points.
+		 *
 		 * This flag is 'false' by default but should be set to 'true' whenever data is loaded
 		 * into GPlates (ie, at any input to GPlates such as file IO). This flag was added to
 		 * prevent exceptions being thrown when reconstructing very small polygons containing only
@@ -306,6 +314,10 @@ namespace GPlatesMaths
 		 * or desired - because the polygon was good enough to load into GPlates therefore any
 		 * rotation of it should also be successful).
 		 *
+		 * @throws InvalidPointsForPolygonConstructionError if there are insufficient points for the polygon.
+		 * If @a check_distinct_points is true then the number of *distinct* points is counted,
+		 * otherwise the number of *indistinct* points (ie, the total number of points) is counted.
+		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
 		template<typename ForwardIter>
@@ -314,7 +326,7 @@ namespace GPlatesMaths
 		create_on_heap(
 				ForwardIter begin,
 				ForwardIter end,
-				bool throw_if_insufficient_distinct_points = false);
+				bool check_distinct_points = false);
 
 		/**
 		 * Create a new PolygonOnSphere instance on the heap from the sequence of points
@@ -323,9 +335,6 @@ namespace GPlatesMaths
 		 * @a coll should be a sequential STL container (list, vector, ...) of
 		 * PointOnSphere.
 		 *
-		 * NOTE: See comment on other overload of @a create_on_heap for a description of
-		 * @a throw_if_insufficient_distinct_points.
-		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
 		template<typename C>
@@ -333,9 +342,9 @@ namespace GPlatesMaths
 		const non_null_ptr_to_const_type
 		create_on_heap(
 				const C &coll,
-				bool throw_if_insufficient_distinct_points = false)
+				bool check_distinct_points = false)
 		{
-			return create_on_heap(coll.begin(), coll.end(), throw_if_insufficient_distinct_points);
+			return create_on_heap(coll.begin(), coll.end(), check_distinct_points);
 		}
 
 
@@ -760,7 +769,7 @@ namespace GPlatesMaths
 				PolygonOnSphere &poly,
 				ForwardIter begin,
 				ForwardIter end,
-				bool throw_if_insufficient_distinct_points);
+				bool check_distinct_points);
 
 
 		/**
@@ -810,11 +819,12 @@ namespace GPlatesMaths
 			ForwardIter begin,
 			ForwardIter end,
 			std::pair<ForwardIter, ForwardIter> &invalid_points,
-			bool ignore_insufficient_distinct_points)
+			bool check_distinct_points)
 	{
-		if (!ignore_insufficient_distinct_points)
+		unsigned int num_points = 0;
+		if (check_distinct_points)
 		{
-			unsigned num_points = count_distinct_adjacent_points(begin, end);
+			num_points = count_distinct_adjacent_points(begin, end);
 			// Don't forget that the polygon "wraps around" from the last point to the first.
 			// This 'count_distinct_adjacent_points' doesn't consider the first and last points
 			// of the sequence to be adjacent, but we do.  Hence, if the first and last points
@@ -831,11 +841,17 @@ namespace GPlatesMaths
 					--num_points;
 				}
 			}
-			if (num_points < s_min_num_collection_points) {
-				// The collection does not contain enough distinct points to create a
-				// closed, well-defined polygon.
-				return INVALID_INSUFFICIENT_DISTINCT_POINTS;
-			}
+		}
+		else
+		{
+			num_points = std::distance(begin, end);
+		}
+
+		if (num_points < s_min_num_collection_points)
+		{
+			// The collection does not contain enough distinct points to create a
+			// closed, well-defined polygon.
+			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
 		// This for-loop is identical to the corresponding code in PolylineOnSphere.
@@ -919,12 +935,12 @@ namespace GPlatesMaths
 	PolygonOnSphere::create_on_heap(
 			ForwardIter begin,
 			ForwardIter end,
-			bool throw_if_insufficient_distinct_points)
+			bool check_distinct_points)
 	{
 		PolygonOnSphere::non_null_ptr_type ptr(
 				new PolygonOnSphere(),
 				GPlatesUtils::NullIntrusivePointerHandler());
-		generate_segments_and_swap(*ptr, begin, end, throw_if_insufficient_distinct_points);
+		generate_segments_and_swap(*ptr, begin, end, check_distinct_points);
 		return ptr;
 	}
 
@@ -981,22 +997,17 @@ namespace GPlatesMaths
 			PolygonOnSphere &poly,
 	 		ForwardIter begin,
 			ForwardIter end,
-			bool throw_if_insufficient_distinct_points)
+			bool check_distinct_points)
 	{
 		std::pair<ForwardIter, ForwardIter> invalid_points;
-		// NOTE: We ignore determination of insufficient distinct points if we are *not*
-		// throwing an exception for it.
 		ConstructionParameterValidity v =
 				evaluate_construction_parameter_validity(
 						begin, end,
 						invalid_points,
-						!throw_if_insufficient_distinct_points);
+						check_distinct_points);
 		if (v != VALID)
 		{
-			if (v != INVALID_INSUFFICIENT_DISTINCT_POINTS || throw_if_insufficient_distinct_points)
-			{
-				throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, v);
-			}
+			throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, v);
 		}
 
 		// Make it easier to provide strong exception safety by appending the new segments
