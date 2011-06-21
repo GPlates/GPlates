@@ -231,6 +231,13 @@ namespace
 
 int internal_main(int argc, char* argv[])
 {
+	//on Ubuntu Natty, we need to set this env variable to avoid the funny looking of spherical grid.
+	#if defined(linux) || defined(__linux__) || defined(__linux)
+	{
+	    char v[]= "MESA_NO_SSE=1"; 
+	    putenv(v);
+	}
+	#endif
 	// Sanity check: Proceed only if we have access to infinity and NaN.
 	// This should pass on all systems that we support.
 	GPlatesMaths::assert_has_infinity_and_nan();
