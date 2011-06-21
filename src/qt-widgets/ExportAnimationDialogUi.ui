@@ -166,6 +166,9 @@
             </item>
             <item row="2" column="2" >
              <widget class="QDoubleSpinBox" name="widget_time_increment" >
+              <property name="decimals">
+               <number>4</number>
+              </property>
               <property name="minimum" >
                <double>0.010000000000000</double>
               </property>
