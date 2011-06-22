@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -66,6 +66,19 @@ namespace GPlatesGui
 				const QString &text)
 		{
 			d_text = text;
+		}
+
+		int
+		get_decimal_places() const
+		{
+			return d_decimal_places;
+		}
+
+		void
+		set_decimal_places(
+				int dp)
+		{
+			d_decimal_places = dp;
 		}
 
 		const QFont &
@@ -160,6 +173,7 @@ namespace GPlatesGui
 		}
 
 		static const char *DEFAULT_TEXT;
+		static const int DEFAULT_DECIMAL_PLACES;
 		static const GPlatesGui::Colour DEFAULT_COLOUR;
 		static const Anchor DEFAULT_ANCHOR;
 		static const int DEFAULT_X_OFFSET;
@@ -170,6 +184,7 @@ namespace GPlatesGui
 	private:
 
 		QString d_text;
+		int d_decimal_places;
 		QFont d_font;
 		GPlatesGui::Colour d_colour;
 		Anchor d_anchor;

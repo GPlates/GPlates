@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -56,7 +56,7 @@ GPlatesGui::TextOverlay::paint(
 
 	// Substitute %f for the current reconstruction time.
 	QLocale loc;
-	QString time = loc.toString(d_application_state.get_current_reconstruction_time(), 'f', 2);
+	QString time = loc.toString(d_application_state.get_current_reconstruction_time(), 'f', settings.get_decimal_places());
 	QString substituted = settings.get_text();
 	substituted.replace("%f", time);
 

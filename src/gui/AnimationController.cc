@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -234,6 +234,15 @@ GPlatesGui::AnimationController::calculate_time_for_frame(
 	
 	return GPlatesUtils::AnimationSequence::calculate_time_for_frame(
 			seq, frame);
+}
+
+
+GPlatesUtils::AnimationSequence::SequenceInfo
+GPlatesGui::AnimationController::get_sequence() const
+{
+	return GPlatesUtils::AnimationSequence::calculate_sequence(
+			start_time(), end_time(), time_increment(),
+			should_finish_exactly_on_end_time());
 }
 
 
