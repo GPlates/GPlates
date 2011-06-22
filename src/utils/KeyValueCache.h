@@ -245,16 +245,27 @@ namespace GPlatesUtils
 		// Note that the 'erase' function does not throw.
 		Loki::ScopeGuard guard_key_value_insert = Loki::MakeGuard(
 				GPlatesUtils::OverloadResolution::resolve<
-						GPlatesUtils::OverloadResolution::mem_fn_types<key_value_map_type>::erase1>(
+						typename GPlatesUtils::OverloadResolution::mem_fn_types<key_value_map_type>::erase1>(
 								&key_value_map_type::erase),
 				d_key_value_map,
 				new_key_value_map_iter);
 
 		// Add to the back of the ordered list where most-recent requests go.
-		key_value_order_seq_type::iterator new_key_value_order_iter =
+		typename key_value_order_seq_type::iterator new_key_value_order_iter =
 				d_key_value_order_seq.insert(
 						d_key_value_order_seq.end(),
 						new_key_value_map_iter);
+
+		// Undo the insert if an exception is thrown.
+		// Note that the 'erase' function does not throw.
+		Loki::ScopeGuard guard_key_value_order_insert = Loki::MakeGuard(
+				GPlatesUtils::OverloadResolution::resolve<
+						key_value_order_seq_type,
+						typename key_value_order_seq_type::iterator,
+						GPlatesUtils::OverloadResolution::Params<typename key_value_order_seq_type::iterator> >(
+								&key_value_order_seq_type::erase),
+				d_key_value_order_seq,
+				new_key_value_order_iter);
 
 		// Create a new value object (from 'key').
 		const ValueObjectInfo value_object_info =
@@ -267,6 +278,15 @@ namespace GPlatesUtils
 		typename value_object_seq_type::iterator new_value_object_iter =
 				d_value_objects.insert(d_value_objects.end(), value_object_info);
 
+		// Undo the insert if an exception is thrown.
+		// Note that the 'erase' function does not throw.
+		Loki::ScopeGuard guard_value_object_seq_insert = Loki::MakeGuard(
+				GPlatesUtils::OverloadResolution::resolve<
+						value_object_seq_type,
+						void,
+						GPlatesUtils::OverloadResolution::Params<> >(&value_object_seq_type::pop_back),
+				d_value_objects);
+
 		// Store the new value object iterator in the key/value map.
 		new_key_value_map_iter->second = new_value_object_iter;
 
@@ -274,6 +294,8 @@ namespace GPlatesUtils
 
 		// We've made it this far so we can dismiss the undos.
 		guard_key_value_insert.Dismiss();
+		guard_key_value_order_insert.Dismiss();
+		guard_value_object_seq_insert.Dismiss(); 
 
 		return new_value_object_iter->value_object;
 	}
