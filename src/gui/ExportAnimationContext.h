@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -36,6 +36,7 @@
 #include "ExportAnimationStrategy.h"
 #include "ExportAnimationType.h"
 
+#include "utils/AnimationSequenceUtils.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
 
@@ -124,6 +125,34 @@ namespace GPlatesGui
 
 		const GPlatesGui::AnimationController &
 		animation_controller() const;
+		
+		/**
+		 * The SequenceInfo configured by the export dialog may be different from the
+		 * global one configured in the AnimationController, due to export dialogs
+		 * being smushed together. ExportAnimationStrategy should use *this* accessor
+		 * to determine the appropriate range for a filename sequence.
+		 */
+		GPlatesUtils::AnimationSequence::SequenceInfo
+		get_sequence()
+		{
+			return d_sequence_info;
+		}
+
+		/**
+		 * The SequenceInfo configured by the export dialog may be different from the
+		 * global one configured in the AnimationController, due to export dialogs
+		 * being smushed together. ExportAnimationDialog should use *this* accessor
+		 * to set the appropriate range before any calls to add_export_animation_strategy
+		 * to ensure that the filename templates within those strategies are using
+		 * the appropriate sequence.
+		 */
+		void
+		set_sequence(
+				const GPlatesUtils::AnimationSequence::SequenceInfo &seq)
+		{
+			d_sequence_info = seq;
+		}
+		                                
 
 		GPlatesPresentation::ViewState &
 		view_state();
@@ -148,9 +177,9 @@ namespace GPlatesGui
 		 *
 		 * Returns true on success, false if interrupted.
 		 *
-		 * Note: passing in reference to ExportAnimationContext because
-		 * one day we'll want to move these export_ methods out of this
-		 * dialog, but we still need to update the progress bar.
+		 * Before calling this final export step, you are expected to have
+		 * configured the context by calling set_sequence() and
+		 * add_export_animation_strategy()
 		 */
 		bool
 		do_export();
@@ -199,7 +228,14 @@ namespace GPlatesGui
 		 * ExportAnimationContext, AnimateDialog and AnimateControlWidget.
 		 */
 		GPlatesGui::AnimationController *d_animation_controller_ptr;
-				
+		
+		/**
+		 * And this is just the currently-set-up animation sequence, which
+		 * now may differ from the global animation in the AnimationController
+		 * because the Export Snapshot/Sequence dialogs were smushed together.
+		 */
+		GPlatesUtils::AnimationSequence::SequenceInfo d_sequence_info;
+		
 		/**
 		 * View State pointer, which needs to be accessible to the various
 		 * strategies so that they can get access to things like the current

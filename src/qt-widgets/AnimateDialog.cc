@@ -269,16 +269,18 @@ int
 GPlatesQtWidgets::AnimateDialog::ma_to_slider_units(
 		const double &ma)
 {
+	const double slider_unit_multiplier = 10000;
+	
 	// QSlider uses integers for it's min, max, and current values.
 	// We convert from reconstruction times to 'slider units' by
-	// multiplying by 100 and negating the value if necessary
+	// multiplying by 10000 (for 4 d.p. per Ma) and negating the value if necessary
 	// (so that the slider always moves left-to-right)
-	if (widget_start_time->value() > widget_end_time->value()) {
+	if (d_animation_controller_ptr->start_time() > d_animation_controller_ptr->end_time()) {
 		// Left - Right on the slider corresponds to Past - Future (Large Ma. - Small Ma.)
-		return 0 - static_cast<int>(ma * 100 + 0.5);
+		return 0 - static_cast<int>(ma * slider_unit_multiplier + 0.5);
 	} else {
 		// Left - Right on the slider corresponds to Future - Past (Small Ma. - Large Ma.)
-		return static_cast<int>(ma * 100 + 0.5);
+		return static_cast<int>(ma * slider_unit_multiplier + 0.5);
 	}
 }
 
@@ -287,16 +289,18 @@ double
 GPlatesQtWidgets::AnimateDialog::slider_units_to_ma(
 		const int &slider_pos)
 {
+	const double slider_unit_multiplier = 10000;
+
 	// QSlider uses integers for it's min, max, and current values.
 	// We convert from reconstruction times to 'slider units' by
-	// multiplying by 100 and negating the value if necessary
+	// multiplying by 10000 (for 4 d.p. per Ma) and negating the value if necessary
 	// (so that the slider always moves left-to-right)
-	if (widget_start_time->value() > widget_end_time->value()) {
+	if (d_animation_controller_ptr->start_time() > d_animation_controller_ptr->end_time()) {
 		// Left - Right on the slider corresponds to Past - Future (Large Ma. - Small Ma.)
-		return (0 - slider_pos) / 100.0;
+		return (0 - slider_pos) / slider_unit_multiplier;
 	} else {
 		// Left - Right on the slider corresponds to Future - Past (Small Ma. - Large Ma.)
-		return slider_pos / 100.0;
+		return slider_pos / slider_unit_multiplier;
 	}
 }
 
@@ -311,6 +315,10 @@ GPlatesQtWidgets::AnimateDialog::recalculate_slider()
 	slider_current_time->setMinimum(ma_to_slider_units(start_time));
 	slider_current_time->setMaximum(ma_to_slider_units(end_time));
 	slider_current_time->setValue(ma_to_slider_units(current_time));
+
+	slider_current_time->setSingleStep(ma_to_slider_units(1));
+	slider_current_time->setPageStep(ma_to_slider_units(10));
+	slider_current_time->setTickInterval(ma_to_slider_units(1));
 }
 
 

@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,6 +32,9 @@
 
 const char *
 GPlatesGui::TextOverlaySettings::DEFAULT_TEXT = "%f Ma";
+
+const int
+GPlatesGui::TextOverlaySettings::DEFAULT_DECIMAL_PLACES = 2;
 
 const GPlatesGui::Colour
 GPlatesGui::TextOverlaySettings::DEFAULT_COLOUR = GPlatesGui::Colour::get_white();
@@ -69,6 +72,7 @@ namespace
 
 GPlatesGui::TextOverlaySettings::TextOverlaySettings() :
 	d_text(DEFAULT_TEXT),
+	d_decimal_places(DEFAULT_DECIMAL_PLACES),
 	d_font(get_default_font()),
 	d_colour(DEFAULT_COLOUR),
 	d_anchor(DEFAULT_ANCHOR),

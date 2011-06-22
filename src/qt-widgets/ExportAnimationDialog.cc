@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009,2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,6 +35,8 @@
 #include "presentation/ViewState.h"
 #include "app-logic/ApplicationState.h"
 #include "app-logic/UserPreferences.h"
+
+#include "utils/AnimationSequenceUtils.h"
 
 
 GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
@@ -92,12 +94,6 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	tableWidget_single->setSortingEnabled(true);
 	tableWidget_range->setSortingEnabled(true);
 
-#ifndef _DEBUG
-	button_single_remove_all->setVisible(false);
-	button_single_add_all->setVisible(false);
-	button_range_remove_all->setVisible(false);
-	button_range_add_all->setVisible(false);
-#endif
 
 	// Handle my buttons and spinboxes:
 	QObject::connect(button_Use_View_Time_start_time, SIGNAL(clicked()),
@@ -105,8 +101,8 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	QObject::connect(button_Use_View_Time_end_time, SIGNAL(clicked()),
 			this, SLOT(set_end_time_value_to_view_time()));
 
-	QObject::connect(button_single_use_main_win, SIGNAL(clicked()),
-			this, SLOT(set_time_to_view_time()));
+	QObject::connect(button_Use_View_Time_snapshot_time, SIGNAL(clicked()),
+			this, SLOT(set_snapshot_time_to_view_time()));
 
 	QObject::connect(widget_start_time, SIGNAL(valueChanged(double)),
 			this, SLOT(react_start_time_spinbox_changed(double)));
@@ -142,14 +138,11 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	QObject::connect(button_remove, SIGNAL(clicked()),
 			this, SLOT(react_remove_export_clicked()));
 
-	QObject::connect(button_single_remove_all, SIGNAL(clicked()),
-			this, SLOT(react_remove_all_clicked()));
-	QObject::connect(button_single_add_all, SIGNAL(clicked()),
-			this, SLOT(react_add_all_clicked()));
-	QObject::connect(button_range_remove_all, SIGNAL(clicked()),
-			this, SLOT(react_remove_all_clicked()));
-	QObject::connect(button_range_add_all, SIGNAL(clicked()),
-			this, SLOT(react_add_all_clicked()));
+	// Remove buttons should only be available if there is something selected.
+	QObject::connect(tableWidget_range, SIGNAL(itemSelectionChanged()),
+			this, SLOT(handle_export_selection_changed()));
+	QObject::connect(tableWidget_single, SIGNAL(itemSelectionChanged()),
+			this, SLOT(handle_export_selection_changed()));
 
 	QObject::connect(button_choose_path, SIGNAL(clicked()),
 			this, SLOT(react_choose_target_directory_clicked()));
@@ -176,6 +169,7 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	
 	// Initialise other widgets to match the current export settings.
 	recalculate_progress_bar();
+	handle_export_selection_changed();
 	
 	// We might actually need the 'exactly on end time' checkbox.
 	handle_options_changed();
@@ -355,13 +349,14 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_parameters()
 {
 	QTableWidget * table_widget = NULL;
 	QString path;
+	GPlatesUtils::AnimationSequence::SequenceInfo seq = d_animation_controller_ptr->get_sequence();
+
 	if (radioButton_single->isChecked())
 	{
 		table_widget=tableWidget_single;
 		path=lineEdit_single_path->text();
-		d_animation_controller_ptr->set_start_time(spinBox_single_time->value());
-		d_animation_controller_ptr->set_end_time(spinBox_single_time->value());
-		d_animation_controller_ptr->set_time_increment(1);
+		seq = GPlatesUtils::AnimationSequence::calculate_sequence(
+					widget_snapshot_time->value(), widget_snapshot_time->value(), 1, false);
 	}
 	else
 	{
@@ -369,6 +364,14 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_parameters()
 		path=lineEdit_range_path->text();
 	}
 	
+	// Since the exporter is now used for snapshots as well as animation ranges, we need to inform
+	// the ExportAnimationContext about the time range it will be iterating over (as it may not
+	// correspond with the global animation).
+	// It is important we do this BEFORE adding export animation strategies as they will initialise
+	// ExportTemplateFilenameSequences based on the range we set here.
+	d_export_animation_context_ptr->set_sequence(seq);
+	
+
 	for (int i=0; i<table_widget->rowCount();i++)
 	{
 		const GPlatesGui::ExportAnimationType::Type export_type =
@@ -394,6 +397,7 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_parameters()
 				export_id, export_configuration);
 	}
 }
+
 
 void
 GPlatesQtWidgets::ExportAnimationDialog::react_export_button_clicked()
@@ -473,6 +477,15 @@ GPlatesQtWidgets::ExportAnimationDialog::react_remove_export_clicked()
 	}
 	
 }
+
+
+void
+GPlatesQtWidgets::ExportAnimationDialog::handle_export_selection_changed()
+{
+	button_remove->setDisabled(tableWidget_range->selectedItems().isEmpty());
+	button_single_remove->setDisabled(tableWidget_single->selectedItems().isEmpty());
+}
+
 
 void
 GPlatesQtWidgets::ExportAnimationDialog::insert_item(
@@ -681,43 +694,4 @@ GPlatesQtWidgets::ExportAnimationDialog::update_target_directory(
 	}
 	return ret;
 	
-}
-
-void
-GPlatesQtWidgets::ExportAnimationDialog::react_remove_all_clicked()
-{
-	QTableWidget *tableWidget = NULL;
-	if (d_is_single_frame)
-	{
-		tableWidget = tableWidget_single;
-	}
-	else
-	{
-		tableWidget = tableWidget_range;
-	}
-	
-	while (tableWidget->rowCount())
-	{
-		tableWidget->removeRow(0);
-	}
-
-	d_configure_parameters_dialog_ptr->initialise(tableWidget);
-}
-
-void
-GPlatesQtWidgets::ExportAnimationDialog::react_add_all_clicked()
-{
-	QTableWidget *tableWidget = NULL;
-	if (d_is_single_frame)
-	{
-		tableWidget = tableWidget_single;
-	}
-	else
-	{
-		tableWidget = tableWidget_range;
-	}
-
-	// Add any exports that have not been added so far.
-	// This will in turn call our 'insert_item' method for each remaining export to be added.
-	d_configure_parameters_dialog_ptr->add_all_remaining_exports();
 }

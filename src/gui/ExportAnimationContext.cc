@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -47,6 +47,7 @@ GPlatesGui::ExportAnimationContext::ExportAnimationContext(
 		GPlatesQtWidgets::ViewportWindow &viewport_window_):
 	d_export_animation_dialog_ptr(&export_animation_dialog_),
 	d_animation_controller_ptr(&animation_controller_),
+	d_sequence_info(animation_controller_.get_sequence()),
 	d_view_state(&view_state_),
 	d_viewport_window(&viewport_window_),
 	d_abort_now(false),
@@ -86,7 +87,7 @@ GPlatesGui::ExportAnimationContext::do_export()
 	d_abort_now = false;
 	
 	// Determine how many frames we need to iterate through.
-	std::size_t length = d_animation_controller_ptr->duration_in_frames();
+	std::size_t length = d_sequence_info.duration_in_frames;
 
 	// Set the progress bar to 0 - we haven't finished writing frame 1 yet.
 	d_export_animation_dialog_ptr->update_progress_bar(length, 0);
@@ -102,9 +103,9 @@ GPlatesGui::ExportAnimationContext::do_export()
 		}
 		
 		// Manipulate the View to set the correct time, ready for the export strategies to do their thing.
-		update_status_message(QObject::tr("Reconstructing to %1 Ma...")
-				.arg(d_animation_controller_ptr->calculate_time_for_frame(frame_index), 0, 'f', 2 ));
-		d_animation_controller_ptr->set_view_frame(frame_index);
+		double time = GPlatesUtils::AnimationSequence::calculate_time_for_frame(d_sequence_info, frame_index);
+		update_status_message(QObject::tr("Reconstructing to %1 Ma...").arg(time, 0, 'f', 2 ));
+		d_animation_controller_ptr->set_view_time(time);
 		
 
 		// Run through each of the exporters for one iteration.
