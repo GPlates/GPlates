@@ -28,6 +28,45 @@
 
 #include "ReconstructLayerProxy.h"
 
+#include "maths/CubeQuadTreePartitionUtils.h"
+
+
+namespace GPlatesAppLogic
+{
+	namespace
+	{
+		/**
+		 * Helper function for 'GPlatesMaths::CubeQuadTreePartitionUtils::mirror' when mirroring
+		 * elements at the root of a cube quad tree.
+		 */
+		inline
+		void
+		add_reconstruction_to_root_element_of_rfg_spatial_partition(
+				ReconstructLayerProxy::reconstructed_feature_geometries_spatial_partition_type &rfg_spatial_partition,
+				const ReconstructContext::Reconstruction &reconstruction)
+		{
+			rfg_spatial_partition.add_unpartitioned(
+					reconstruction.get_reconstructed_feature_geometry());
+		}
+
+		/**
+		 * Helper function for 'GPlatesMaths::CubeQuadTreePartitionUtils::mirror' when mirroring
+		 * elements at a quad node of a cube quad tree.
+		 */
+		inline
+		void
+		add_reconstruction_to_node_element_of_rfg_spatial_partition(
+				ReconstructLayerProxy::reconstructed_feature_geometries_spatial_partition_type &rfg_spatial_partition,
+				ReconstructLayerProxy::reconstructed_feature_geometries_spatial_partition_type::node_reference_type rfg_node,
+				const ReconstructContext::Reconstruction &reconstruction)
+		{
+			rfg_spatial_partition.add(
+					reconstruction.get_reconstructed_feature_geometry(),
+					rfg_node);
+		}
+	}
+}
+
 
 void
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
@@ -145,54 +184,29 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries_spa
 
 	if (!d_cached_reconstructed_feature_geometries_spatial_partition)
 	{
-		// Reconstruct our features into a sequence of RFGs.
-		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
-		get_reconstructed_feature_geometries(reconstructed_feature_geometries, reconstruction_time);
-
-		//PROFILE_BLOCK("ReconstructLayerProxy::get_reconstructed_feature_geometries_spatial_partition: ");
+		// Reconstruct our features into a spatial partition of ReconstructContext::Reconstruction's.
+		// It takes only slightly longer to generate a spatial partition of
+		// ReconstructContext::Reconstruction's versus a spatial partition of RFGs but it means if
+		// another client then requests the ReconstructContext::Reconstruction's then they will
+		// be cached and won't have to be calculated - doing it the other way around doesn't work.
+		GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type
+				reconstructions_spatial_partition =
+						get_reconstructions_spatial_partition(reconstruction_time);
 
 		// Add the RFGs to a new spatial partition to return to the caller.
 		d_cached_reconstructed_feature_geometries_spatial_partition =
 				reconstructed_feature_geometries_spatial_partition_type::create(
 						DEFAULT_SPATIAL_PARTITION_DEPTH);
-		BOOST_FOREACH(
-				const ReconstructedFeatureGeometry::non_null_ptr_type &rfg,
-				reconstructed_feature_geometries)
-		{
-			// NOTE: To avoid reconstructing geometries on the CPU when it might not be needed
-			// (graphics card can transform much faster so when only visualising it's not needed)
-			// we add the *unreconstructed* geometry (and a finite rotation) to the spatial partition.
-			// The spatial partition will rotate only the centroid of the *unreconstructed*
-			// geometry (instead of reconstructing the entire geometry) and then use that as the
-			// insertion location (along with the *unreconstructed* geometry's bounding circle extents).
 
-			// See if the reconstruction can be represented as a finite rotation.
-			const boost::optional<ReconstructedFeatureGeometry::FiniteRotationReconstruction> &
-					finite_rotation_reconstruction = rfg->finite_rotation_reconstruction();
-			if (finite_rotation_reconstruction)
-			{
-				// The resolved geometry is the *unreconstructed* geometry (but still possibly
-				// the result of a lookup of a time-dependent geometry property).
-				const GPlatesMaths::GeometryOnSphere &resolved_geometry =
-						*finite_rotation_reconstruction->get_resolved_geometry();
-				const GPlatesMaths::FiniteRotation &finite_rotation =
-						finite_rotation_reconstruction->get_reconstruct_method_finite_rotation()
-								->get_finite_rotation();
-
-				d_cached_reconstructed_feature_geometries_spatial_partition.get()->add(
-						rfg, resolved_geometry, finite_rotation);
-			}
-			else
-			{
-				// It's not a finite rotation so we can't assume the geometry has rigidly rotated.
-				// Hence we can't assume it's shape is the same and hence can't assume the
-				// small circle bounding radius is the same.
-				// So just get the reconstructed geometry and insert it into the spatial partition.
-				// The appropriate bounding small circle will be generated for it when it's added.
-				d_cached_reconstructed_feature_geometries_spatial_partition.get()->add(
-						rfg, *rfg->reconstructed_geometry());
-			}
-		}
+		// For each ReconstructContext::Reconstruction in the spatial partition generate an RFG
+		// in the RFG spatial partition using methods
+		// 'render_to_spatial_partition_root' and 'render_to_spatial_partition_quad_tree_node'
+		// to do the transformations.
+		GPlatesMaths::CubeQuadTreePartitionUtils::mirror(
+				*d_cached_reconstructed_feature_geometries_spatial_partition.get(),
+				*reconstructions_spatial_partition,
+				&add_reconstruction_to_root_element_of_rfg_spatial_partition,
+				&add_reconstruction_to_node_element_of_rfg_spatial_partition);
 	}
 
 	return d_cached_reconstructed_feature_geometries_spatial_partition.get();

@@ -121,7 +121,7 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Reconstructs the specified feature at the specified reconstruction time and returns
-		 * one more more reconstructed feature geometries.
+		 * one or more reconstructed feature geometries.
 		 *
 		 * NOTE: Only features that exist at the specified @a reconstruction_time will be reconstructed.
 		 *

@@ -26,6 +26,7 @@
 #include <list>
 #include <map>
 #include <utility>
+#include <boost/bind.hpp>
 
 #include "ReconstructionTreeCreator.h"
 
@@ -35,6 +36,8 @@
 
 #include "global/PreconditionViolationError.h"
 #include "global/GPlatesAssert.h"
+
+#include "utils/KeyValueCache.h"
 
 
 namespace GPlatesAppLogic
@@ -61,8 +64,9 @@ namespace GPlatesAppLogic
 				d_reconstruction_features_collection(reconstruction_features_collection),
 				d_default_reconstruction_time(default_reconstruction_time),
 				d_default_anchor_plate_id(default_anchor_plate_id),
-				d_max_num_reconstruction_trees_in_cache(reconstruction_tree_cache_size),
-				d_num_reconstruction_trees_in_cache(0)
+				d_cache(
+						boost::bind(&ReconstructionTreeCache::create_reconstruction_tree_from_cache_key, this, _1),
+						reconstruction_tree_cache_size)
 			{  }
 
 
@@ -71,7 +75,10 @@ namespace GPlatesAppLogic
 			ReconstructionTree::non_null_ptr_to_const_type
 			get_reconstruction_tree(
 					const double &reconstruction_time,
-					GPlatesModel::integer_plate_id_type anchor_plate_id);
+					GPlatesModel::integer_plate_id_type anchor_plate_id)
+			{
+				return d_cache.get_value(cache_key_type(reconstruction_time, anchor_plate_id));
+			}
 
 
 			//! Returns the reconstruction tree for the specified time and the *default* anchored plate id.
@@ -126,130 +133,41 @@ namespace GPlatesAppLogic
 			void
 			clear()
 			{
-				d_reconstruction_tree_map.clear();
-				d_reconstruction_tree_order.clear();
-				d_num_reconstruction_trees_in_cache = 0;
+				d_cache.clear();
 			}
 
 		private:
-			//! Typedef to map a (reconstruction time, anchor plate id) pair to a reconstruction tree.
-			typedef std::map<
-					std::pair<GPlatesMaths::real_t, GPlatesModel::integer_plate_id_type>,
-					ReconstructionTree::non_null_ptr_to_const_type>
-							reconstruction_tree_map_type;
+			//! Typedef for the key in the reconstruction tree cache.
+			typedef std::pair<GPlatesMaths::real_t, GPlatesModel::integer_plate_id_type> cache_key_type;
 
-			//! Typedef to track least-recently to most-recently requested reconstruction times.
-			typedef std::list<reconstruction_tree_map_type::iterator> reconstruction_tree_order_seq_type;
+			//! Typedef for the value in the reconstruction tree cache.
+			typedef ReconstructionTree::non_null_ptr_to_const_type cache_value_type;
+
+			//! Typedef for the reconstruction tree cache.
+			typedef GPlatesUtils::KeyValueCache<cache_key_type, cache_value_type> cache_type;
 
 
 			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_reconstruction_features_collection;
 			GPlatesMaths::real_t d_default_reconstruction_time;
 			GPlatesModel::integer_plate_id_type d_default_anchor_plate_id;
 
-			const unsigned int d_max_num_reconstruction_trees_in_cache;
-			reconstruction_tree_order_seq_type d_reconstruction_tree_order;
-			reconstruction_tree_map_type d_reconstruction_tree_map;
-			unsigned int d_num_reconstruction_trees_in_cache;
+			cache_type d_cache;
 
 
 			/**
-			 * Returns the reconstruction tree for the specified time/anchor if it exists.
+			 * Creates a reconstruction tree given the cache key (reconstruction time and anchor plate id).
 			 */
-			boost::optional<ReconstructionTree::non_null_ptr_to_const_type>
-			have_reconstruction_tree(
-					const double &reconstruction_time,
-					GPlatesModel::integer_plate_id_type anchor_plate_id);
-
-			/**
-			 * Adds a reconstruction tree to the cache for the specified time/anchor.
-			 */
-			void
-			add_reconstruction_tree(
-					const double &reconstruction_time,
-					GPlatesModel::integer_plate_id_type anchor_plate_id,
-					const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree);
-		};
-
-
-		ReconstructionTree::non_null_ptr_to_const_type
-		ReconstructionTreeCache::get_reconstruction_tree(
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id)
-		{
-			// See if there's a reconstruction tree cached for the specified time/anchor.
-			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> cached_reconstruction_tree =
-					have_reconstruction_tree(reconstruction_time, anchor_plate_id);
-
-			// Create a new reconstruction tree if one isn't cached for the specified time/anchor.
-			if (!cached_reconstruction_tree)
+			ReconstructionTree::non_null_ptr_type
+			create_reconstruction_tree_from_cache_key(
+					const cache_key_type &key)
 			{
 				// Create a reconstruction tree for the specified time/anchor.
-				cached_reconstruction_tree = create_reconstruction_tree(
-						reconstruction_time,
-						anchor_plate_id,
+				return create_reconstruction_tree(
+						key.first.dval()/*reconstruction_time*/,
+						key.second/*anchor_plate_id*/,
 						d_reconstruction_features_collection);
-
-				// Add to the cache.
-				add_reconstruction_tree(
-						reconstruction_time,
-						anchor_plate_id,
-						cached_reconstruction_tree.get());
 			}
-
-			return cached_reconstruction_tree.get();
-		}
-
-
-		boost::optional<ReconstructionTree::non_null_ptr_to_const_type>
-		ReconstructionTreeCache::have_reconstruction_tree(
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id)
-		{
-			reconstruction_tree_map_type::iterator recon_tree_iter =
-					d_reconstruction_tree_map.find(
-							std::make_pair(reconstruction_time, anchor_plate_id)/*key*/);
-			if (recon_tree_iter == d_reconstruction_tree_map.end())
-			{
-				return boost::none;
-			}
-
-			return recon_tree_iter->second;
-		}
-
-
-		void
-		ReconstructionTreeCache::add_reconstruction_tree(
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree)
-		{
-			// If we already have the maximum number of reconstruction trees cached then
-			// release the least-recently requested one to free a slot.
-			if (d_num_reconstruction_trees_in_cache == d_max_num_reconstruction_trees_in_cache)
-			{
-				// Pop off the front of the list where the least-recent requests are.
-				reconstruction_tree_map_type::iterator reconstruction_tree_map_entry =
-						d_reconstruction_tree_order.front();
-				d_reconstruction_tree_map.erase(reconstruction_tree_map_entry);
-				d_reconstruction_tree_order.pop_front();
-				--d_num_reconstruction_trees_in_cache;
-			}
-
-			std::pair<reconstruction_tree_map_type::iterator, bool> insert_result =
-					d_reconstruction_tree_map.insert(
-							reconstruction_tree_map_type::value_type(
-									std::make_pair(reconstruction_time, anchor_plate_id)/*key*/,
-									reconstruction_tree/*value*/));
-
-			// The reconstruction time shouldn't already exist in the map.
-			// If it does for some reason then we'll just leave the corresponding reconstruction tree in there.
-			if (insert_result.second)
-			{
-				// Add to the back of the list where most-recent requests go.
-				d_reconstruction_tree_order.push_back(insert_result.first);
-				++d_num_reconstruction_trees_in_cache;
-			}
-		}
+		};
 	}
 }
 
