@@ -104,6 +104,14 @@ namespace GPlatesAppLogic
 			}
 
 
+			virtual
+			void
+			visit_gpml_constant_value(
+				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+			{
+				gpml_constant_value.value()->accept_visitor(*this);
+			}
+
 			std::vector<ReconstructMethodInterface::Geometry> &d_present_day_geometries;
 		};
 	}
