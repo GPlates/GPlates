@@ -261,11 +261,10 @@ namespace GPlatesUtils
 		Loki::ScopeGuard guard_key_value_order_insert = Loki::MakeGuard(
 				GPlatesUtils::OverloadResolution::resolve<
 						key_value_order_seq_type,
-						typename key_value_order_seq_type::iterator,
-						GPlatesUtils::OverloadResolution::Params<typename key_value_order_seq_type::iterator> >(
-								&key_value_order_seq_type::erase),
-				d_key_value_order_seq,
-				new_key_value_order_iter);
+						void,
+						GPlatesUtils::OverloadResolution::Params<> >(
+								&key_value_order_seq_type::pop_back),
+				d_key_value_order_seq);
 
 		// Create a new value object (from 'key').
 		const ValueObjectInfo value_object_info =
