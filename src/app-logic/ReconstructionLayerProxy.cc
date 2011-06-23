@@ -191,8 +191,16 @@ GPlatesAppLogic::ReconstructionLayerProxy::set_current_reconstruction_time(
 
 	// Note that we don't invalidate our cache because if a reconstruction tree is
 	// not cached for a requested reconstruction time then a new tree is created.
+
+	// UPDATE: Don't need to notify observers of change in reconstruction time because all layers
+	// can easily find this out. We want to avoid observer updates here in case any of them
+	// cache calculations based on the reconstruction time - if we told them we had changed they
+	// would have no way of knowing that only the reconstruction time changed and hence they
+	// would be forced to flush their caches losing any benefit of caching over reconstruction times.
+#if 0
 	// But observers need to be aware that the default reconstruction time has changed.
 	d_subject_token.invalidate();
+#endif
 }
 
 

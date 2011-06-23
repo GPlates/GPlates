@@ -68,47 +68,56 @@ namespace GPlatesAppLogic
 }
 
 
+GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
+		const ReconstructMethodRegistry &reconstruct_method_registry,
+		const ReconstructParams &reconstruct_params,
+		unsigned int max_num_reconstructions_in_cache) :
+	d_reconstruct_method_registry(reconstruct_method_registry),
+	d_reconstruct_context(reconstruct_method_registry),
+	// Start off with a reconstruction layer proxy that does identity rotations.
+	d_current_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
+	d_current_reconstruction_time(0),
+	d_current_reconstruct_params(reconstruct_params),
+	d_reconstruction_cache(&create_empty_reconstruction_info, max_num_reconstructions_in_cache)
+{
+}
+
+
 void
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+		const ReconstructParams &reconstruct_params,
 		const double &reconstruction_time)
 {
-	// See if the reconstruction time has changed.
-	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
-	{
-		// The reconstructed feature geometries are now invalid.
-		reset_reconstructed_feature_geometry_caches();
-
-		// Note that observers don't need to be updated when the time changes - if they
-		// have reconstructed feature geometries for a different time they don't need
-		// to be updated just because some other client requested a different time.
-		d_cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
-	}
-
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
 
-	if (!d_cached_reconstructed_feature_geometries)
+	// Lookup the cached ReconstructionInfo associated with the reconstruction time and reconstruct params.
+	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
+	ReconstructionInfo &reconstruction_info = d_reconstruction_cache.get_value(reconstruction_cache_key);
+
+	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
+	if (!reconstruction_info.cached_reconstructed_feature_geometries)
 	{
 		// Reconstruct our features into a sequence of ReconstructContext::Reconstruction's.
 		// It takes only slightly longer (eg, 7.4msec versus 7.22msec) to generate a sequence
 		// of ReconstructContext::Reconstruction's versus a sequence of RFGs but it means if
 		// another client then requests the ReconstructContext::Reconstruction's then they will
 		// be cached and won't have to be calculated - doing it the other way around doesn't work.
-		std::vector<ReconstructContext::Reconstruction> reconstructions;
-		get_reconstructed_feature_geometries(reconstructions, reconstruction_time);
+		std::vector<ReconstructContext::Reconstruction> &reconstructions =
+				get_or_create_reconstructions_internal(reconstruction_info, reconstruct_params, reconstruction_time);
 
 		// Create empty vector of RFGs.
-		d_cached_reconstructed_feature_geometries =
+		reconstruction_info.cached_reconstructed_feature_geometries =
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>();
 
 		// Copy the RFGs already cached in the ReconstructContext::Reconstruction's into this cached format.
 		// The ReconstructContext::Reconstruction's store an RFG and a geometry property handle.
 		// This format only needs the RFG.
-		d_cached_reconstructed_feature_geometries->reserve(reconstructions.size());
+		reconstruction_info.cached_reconstructed_feature_geometries->reserve(reconstructions.size());
 		BOOST_FOREACH(const ReconstructContext::Reconstruction &reconstruction, reconstructions)
 		{
-			d_cached_reconstructed_feature_geometries->push_back(
+			reconstruction_info.cached_reconstructed_feature_geometries->push_back(
 					reconstruction.get_reconstructed_feature_geometry());
 		}
 	}
@@ -116,85 +125,64 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
 	// Append our cached RFGs to the caller's sequence.
 	reconstructed_feature_geometries.insert(
 			reconstructed_feature_geometries.end(),
-			d_cached_reconstructed_feature_geometries->begin(),
-			d_cached_reconstructed_feature_geometries->end());
+			reconstruction_info.cached_reconstructed_feature_geometries->begin(),
+			reconstruction_info.cached_reconstructed_feature_geometries->end());
 }
 
 
 void
-GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
-		std::vector<ReconstructContext::Reconstruction> &reconstructed_feature_geometries,
+GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions(
+		std::vector<ReconstructContext::Reconstruction> &reconstructions,
+		const ReconstructParams &reconstruct_params,
 		const double &reconstruction_time)
 {
-	// See if the reconstruction time has changed.
-	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
-	{
-		// The reconstructed feature geometries are now invalid.
-		reset_reconstructed_feature_geometry_caches();
-
-		// Note that observers don't need to be updated when the time changes - if they
-		// have reconstructed feature geometries for a different time they don't need
-		// to be updated just because some other client requested a different time.
-		d_cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
-	}
-
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
 
-	if (!d_cached_reconstructions)
-	{
-		// Create empty vector of RFGs.
-		d_cached_reconstructions = std::vector<ReconstructContext::Reconstruction>();
+	// Lookup the cached ReconstructionInfo associated with the reconstruction time and reconstruct params.
+	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
+	ReconstructionInfo &reconstruction_info = d_reconstruction_cache.get_value(reconstruction_cache_key);
 
-		// Reconstruct our features into our sequence of RFGs.
-		d_reconstruct_context.reconstruct(
-				d_cached_reconstructions.get(),
-				// Used to call when a reconstruction tree is needed for any time/anchor.
-				d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
-				// Also pass in the current time.
-				reconstruction_time);
+	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
+	if (!reconstruction_info.cached_reconstructions)
+	{
+		get_or_create_reconstructions_internal(reconstruction_info, reconstruct_params, reconstruction_time);
 	}
 
 	// Append our cached RFGs to the caller's sequence.
-	reconstructed_feature_geometries.insert(
-			reconstructed_feature_geometries.end(),
-			d_cached_reconstructions->begin(),
-			d_cached_reconstructions->end());
+	reconstructions.insert(
+			reconstructions.end(),
+			reconstruction_info.cached_reconstructions->begin(),
+			reconstruction_info.cached_reconstructions->end());
 }
 
 
 GPlatesAppLogic::ReconstructLayerProxy::reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries_spatial_partition(
+		const ReconstructParams &reconstruct_params,
 		const double &reconstruction_time)
 {
-	// See if the reconstruction time has changed.
-	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
-	{
-		// The reconstructed feature geometries are now invalid.
-		reset_reconstructed_feature_geometry_caches();
-
-		// Note that observers don't need to be updated when the time changes - if they
-		// have reconstructed feature geometries for a different time they don't need
-		// to be updated just because some other client requested a different time.
-		d_cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
-	}
-
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
 
-	if (!d_cached_reconstructed_feature_geometries_spatial_partition)
+	// Lookup the cached ReconstructionInfo associated with the reconstruction time and reconstruct params.
+	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
+	ReconstructionInfo &reconstruction_info = d_reconstruction_cache.get_value(reconstruction_cache_key);
+
+	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
+	if (!reconstruction_info.cached_reconstructed_feature_geometries_spatial_partition)
 	{
 		// Reconstruct our features into a spatial partition of ReconstructContext::Reconstruction's.
 		// It takes only slightly longer to generate a spatial partition of
 		// ReconstructContext::Reconstruction's versus a spatial partition of RFGs but it means if
 		// another client then requests the ReconstructContext::Reconstruction's then they will
 		// be cached and won't have to be calculated - doing it the other way around doesn't work.
-		GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type
-				reconstructions_spatial_partition =
-						get_reconstructions_spatial_partition(reconstruction_time);
+		reconstructions_spatial_partition_type::non_null_ptr_to_const_type reconstructions_spatial_partition =
+				get_or_create_reconstructions_spatial_partition_internal(
+						reconstruction_info, reconstruct_params, reconstruction_time);
 
 		// Add the RFGs to a new spatial partition to return to the caller.
-		d_cached_reconstructed_feature_geometries_spatial_partition =
+		reconstruction_info.cached_reconstructed_feature_geometries_spatial_partition =
 				reconstructed_feature_geometries_spatial_partition_type::create(
 						DEFAULT_SPATIAL_PARTITION_DEPTH);
 
@@ -203,91 +191,36 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries_spa
 		// 'render_to_spatial_partition_root' and 'render_to_spatial_partition_quad_tree_node'
 		// to do the transformations.
 		GPlatesMaths::CubeQuadTreePartitionUtils::mirror(
-				*d_cached_reconstructed_feature_geometries_spatial_partition.get(),
+				*reconstruction_info.cached_reconstructed_feature_geometries_spatial_partition.get(),
 				*reconstructions_spatial_partition,
 				&add_reconstruction_to_root_element_of_rfg_spatial_partition,
 				&add_reconstruction_to_node_element_of_rfg_spatial_partition);
 	}
 
-	return d_cached_reconstructed_feature_geometries_spatial_partition.get();
+	return reconstruction_info.cached_reconstructed_feature_geometries_spatial_partition.get();
 }
 
 
 GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions_spatial_partition(
+		const ReconstructParams &reconstruct_params,
 		const double &reconstruction_time)
 {
-	// See if the reconstruction time has changed.
-	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
-	{
-		// The reconstructed feature geometries are now invalid.
-		reset_reconstructed_feature_geometry_caches();
-
-		// Note that observers don't need to be updated when the time changes - if they
-		// have reconstructed feature geometries for a different time they don't need
-		// to be updated just because some other client requested a different time.
-		d_cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
-	}
-
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
 
-	if (!d_cached_reconstructions_spatial_partition)
+	// Lookup the cached ReconstructionInfo associated with the reconstruction time and reconstruct params.
+	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
+	ReconstructionInfo &reconstruction_info = d_reconstruction_cache.get_value(reconstruction_cache_key);
+
+	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
+	if (!reconstruction_info.cached_reconstructions_spatial_partition)
 	{
-		// Reconstruct our features into a sequence of ReconstructContext::Reconstruction's.
-		std::vector<ReconstructContext::Reconstruction> reconstructions;
-		get_reconstructed_feature_geometries(reconstructions, reconstruction_time);
-
-		//PROFILE_BLOCK("ReconstructLayerProxy::get_reconstructions_spatial_partition: ");
-
-		// Add the RFGs to a new spatial partition to return to the caller.
-		d_cached_reconstructions_spatial_partition =
-				reconstructions_spatial_partition_type::create(
-						DEFAULT_SPATIAL_PARTITION_DEPTH);
-		BOOST_FOREACH(
-				const ReconstructContext::Reconstruction &reconstruction,
-				reconstructions)
-		{
-			// NOTE: To avoid reconstructing geometries on the CPU when it might not be needed
-			// (graphics card can transform much faster so when only visualising it's not needed)
-			// we add the *unreconstructed* geometry (and a finite rotation) to the spatial partition.
-			// The spatial partition will rotate only the centroid of the *unreconstructed*
-			// geometry (instead of reconstructing the entire geometry) and then use that as the
-			// insertion location (along with the *unreconstructed* geometry's bounding circle extents).
-
-			const ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
-					reconstruction.get_reconstructed_feature_geometry();
-
-			// See if the reconstruction can be represented as a finite rotation.
-			const boost::optional<ReconstructedFeatureGeometry::FiniteRotationReconstruction> &
-					finite_rotation_reconstruction = rfg->finite_rotation_reconstruction();
-			if (finite_rotation_reconstruction)
-			{
-				// The resolved geometry is the *unreconstructed* geometry (but still possibly
-				// the result of a lookup of a time-dependent geometry property).
-				const GPlatesMaths::GeometryOnSphere &resolved_geometry =
-						*finite_rotation_reconstruction->get_resolved_geometry();
-				const GPlatesMaths::FiniteRotation &finite_rotation =
-						finite_rotation_reconstruction->get_reconstruct_method_finite_rotation()
-								->get_finite_rotation();
-
-				d_cached_reconstructions_spatial_partition.get()->add(
-						reconstruction, resolved_geometry, finite_rotation);
-			}
-			else
-			{
-				// It's not a finite rotation so we can't assume the geometry has rigidly rotated.
-				// Hence we can't assume it's shape is the same and hence can't assume the
-				// small circle bounding radius is the same.
-				// So just get the reconstructed geometry and insert it into the spatial partition.
-				// The appropriate bounding small circle will be generated for it when it's added.
-				d_cached_reconstructions_spatial_partition.get()->add(
-						reconstruction, *rfg->reconstructed_geometry());
-			}
-		}
+		get_or_create_reconstructions_spatial_partition_internal(
+				reconstruction_info, reconstruct_params, reconstruction_time);
 	}
 
-	return d_cached_reconstructions_spatial_partition.get();
+	return reconstruction_info.cached_reconstructions_spatial_partition.get();
 }
 
 
@@ -414,10 +347,35 @@ void
 GPlatesAppLogic::ReconstructLayerProxy::set_current_reconstruction_time(
 		const double &reconstruction_time)
 {
+	if (d_current_reconstruction_time == GPlatesMaths::real_t(reconstruction_time))
+	{
+		// The current reconstruction time hasn't changed so avoid updating any observers unnecessarily.
+		return;
+	}
 	d_current_reconstruction_time = reconstruction_time;
 
-	// Note that we don't reset our caches because we only do that when the client
-	// requests a reconstruction time that differs from the cached reconstruction time.
+	// Note that we don't invalidate our cache because if a reconstruction is
+	// not cached for a requested reconstruction time then a new reconstruction is created.
+	// But observers need to be aware that the default reconstruction time has changed.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::ReconstructLayerProxy::set_current_reconstruct_params(
+		const ReconstructParams &reconstruct_params)
+{
+	if (d_current_reconstruct_params == reconstruct_params)
+	{
+		// The current reconstruct params haven't changed so avoid updating any observers unnecessarily.
+		return;
+	}
+	d_current_reconstruct_params = reconstruct_params;
+
+	// Note that we don't invalidate our cache because if a reconstruction is
+	// not cached for a requested reconstruct params then a new reconstruction is created.
+	// But observers need to be aware that the default reconstruct params have changed.
+	d_subject_token.invalidate();
 }
 
 
@@ -514,29 +472,10 @@ GPlatesAppLogic::ReconstructLayerProxy::modified_reconstructable_feature_collect
 
 
 void
-GPlatesAppLogic::ReconstructLayerProxy::set_current_reconstruct_params(
-		const ReconstructParams &reconstruct_params)
-{
-	// Update the parameters to use for reconstructing.
-	d_reconstruct_context.set_reconstruct_params(reconstruct_params);
-
-	// The reconstructed feature geometries are now invalid.
-	reset_reconstructed_feature_geometry_caches();
-
-	// Polling observers need to update themselves.
-	d_subject_token.invalidate();
-}
-
-
-void
 GPlatesAppLogic::ReconstructLayerProxy::reset_reconstructed_feature_geometry_caches()
 {
-	// Clear any cached reconstructed feature geometries.
-	d_cached_reconstructed_feature_geometries = boost::none;
-	d_cached_reconstructions = boost::none;
-	d_cached_reconstructed_feature_geometries_spatial_partition = boost::none;
-	d_cached_reconstructions_spatial_partition = boost::none;
-	d_cached_reconstruction_time = boost::none;
+	// Clear any cached reconstructed feature geometries for any reconstruction times and reconstruct params.
+	d_reconstruction_cache.clear();
 }
 
 
@@ -559,7 +498,7 @@ GPlatesAppLogic::ReconstructLayerProxy::check_input_layer_proxy(
 	// See if the input layer proxy has changed.
 	if (!input_layer_proxy_wrapper.is_up_to_date())
 	{
-		// The velocities are now invalid.
+		// The reconstructed feature geometries are now invalid.
 		reset_reconstructed_feature_geometry_caches();
 
 		// We're now up-to-date with respect to the input layer proxy.
@@ -576,4 +515,99 @@ GPlatesAppLogic::ReconstructLayerProxy::check_input_layer_proxies()
 {
 	// See if the reconstruction layer proxy has changed.
 	check_input_layer_proxy(d_current_reconstruction_layer_proxy);
+}
+
+
+std::vector<GPlatesAppLogic::ReconstructContext::Reconstruction> &
+GPlatesAppLogic::ReconstructLayerProxy::get_or_create_reconstructions_internal(
+		ReconstructionInfo &reconstruction_info,
+		const ReconstructParams &reconstruct_params,
+		const double &reconstruction_time)
+{
+	// If they're already cached then nothing to do.
+	if (reconstruction_info.cached_reconstructions)
+	{
+		return reconstruction_info.cached_reconstructions.get();
+	}
+
+	// Create empty vector of reconstructions.
+	reconstruction_info.cached_reconstructions = std::vector<ReconstructContext::Reconstruction>();
+
+	// Reconstruct our features into our sequence of RFGs.
+	d_reconstruct_context.reconstruct(
+			reconstruction_info.cached_reconstructions.get(),
+			reconstruct_params,
+			// Used to call when a reconstruction tree is needed for any time/anchor.
+			d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
+			// Also pass in the current time.
+			reconstruction_time);
+
+	return reconstruction_info.cached_reconstructions.get();
+}
+
+
+GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructLayerProxy::get_or_create_reconstructions_spatial_partition_internal(
+		ReconstructionInfo &reconstruction_info,
+		const ReconstructParams &reconstruct_params,
+		const double &reconstruction_time)
+{
+	// If they're already cached then nothing to do.
+	if (reconstruction_info.cached_reconstructions_spatial_partition)
+	{
+		return reconstruction_info.cached_reconstructions_spatial_partition.get();
+	}
+
+	// Reconstruct our features into a sequence of ReconstructContext::Reconstruction's.
+	std::vector<ReconstructContext::Reconstruction> &reconstructions =
+			get_or_create_reconstructions_internal(
+					reconstruction_info, reconstruct_params, reconstruction_time);
+
+	//PROFILE_BLOCK("ReconstructLayerProxy::get_reconstructions_spatial_partition: ");
+
+	// Add the RFGs to a new spatial partition to return to the caller.
+	reconstruction_info.cached_reconstructions_spatial_partition =
+			reconstructions_spatial_partition_type::create(
+					DEFAULT_SPATIAL_PARTITION_DEPTH);
+	BOOST_FOREACH(const ReconstructContext::Reconstruction &reconstruction, reconstructions)
+	{
+		// NOTE: To avoid reconstructing geometries on the CPU when it might not be needed
+		// (graphics card can transform much faster so when only visualising it's not needed)
+		// we add the *unreconstructed* geometry (and a finite rotation) to the spatial partition.
+		// The spatial partition will rotate only the centroid of the *unreconstructed*
+		// geometry (instead of reconstructing the entire geometry) and then use that as the
+		// insertion location (along with the *unreconstructed* geometry's bounding circle extents).
+
+		const ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
+				reconstruction.get_reconstructed_feature_geometry();
+
+		// See if the reconstruction can be represented as a finite rotation.
+		const boost::optional<ReconstructedFeatureGeometry::FiniteRotationReconstruction> &
+				finite_rotation_reconstruction = rfg->finite_rotation_reconstruction();
+		if (finite_rotation_reconstruction)
+		{
+			// The resolved geometry is the *unreconstructed* geometry (but still possibly
+			// the result of a lookup of a time-dependent geometry property).
+			const GPlatesMaths::GeometryOnSphere &resolved_geometry =
+					*finite_rotation_reconstruction->get_resolved_geometry();
+			const GPlatesMaths::FiniteRotation &finite_rotation =
+					finite_rotation_reconstruction->get_reconstruct_method_finite_rotation()
+							->get_finite_rotation();
+
+			reconstruction_info.cached_reconstructions_spatial_partition.get()->add(
+					reconstruction, resolved_geometry, finite_rotation);
+		}
+		else
+		{
+			// It's not a finite rotation so we can't assume the geometry has rigidly rotated.
+			// Hence we can't assume it's shape is the same and hence can't assume the
+			// small circle bounding radius is the same.
+			// So just get the reconstructed geometry and insert it into the spatial partition.
+			// The appropriate bounding small circle will be generated for it when it's added.
+			reconstruction_info.cached_reconstructions_spatial_partition.get()->add(
+					reconstruction, *rfg->reconstructed_geometry());
+		}
+	}
+
+	return reconstruction_info.cached_reconstructions_spatial_partition.get();
 }

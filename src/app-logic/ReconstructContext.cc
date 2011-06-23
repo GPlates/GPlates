@@ -38,22 +38,12 @@
 
 GPlatesAppLogic::ReconstructContext::ReconstructContext(
 		const ReconstructMethodRegistry &reconstruct_method_registry,
-		const ReconstructParams &reconstruct_params,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstructable_feature_collections) :
-	d_reconstruct_params(reconstruct_params)
+				reconstructable_feature_collections)
 {
 	reassign_reconstruct_methods_to_features(
 			reconstruct_method_registry,
 			reconstructable_feature_collections);
-}
-
-
-void
-GPlatesAppLogic::ReconstructContext::set_reconstruct_params(
-		const ReconstructParams &reconstruct_params)
-{
-	d_reconstruct_params = reconstruct_params;
 }
 
 
@@ -150,6 +140,7 @@ GPlatesAppLogic::ReconstructContext::get_present_day_geometries()
 void
 GPlatesAppLogic::ReconstructContext::reconstruct(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+		const ReconstructParams &reconstruct_params,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
 {
@@ -176,7 +167,7 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 			reconstruct_method.reconstruct_feature(
 					reconstructed_feature_geometries,
 					feature_ref,
-					d_reconstruct_params,
+					reconstruct_params,
 					reconstruction_tree_creator,
 					reconstruction_time);
 		}
@@ -187,6 +178,7 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 void
 GPlatesAppLogic::ReconstructContext::reconstruct(
 		std::vector<Reconstruction> &reconstructions,
+		const ReconstructParams &reconstruct_params,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
 {
@@ -221,7 +213,7 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 			reconstruct_method.reconstruct_feature(
 					reconstructed_feature_geometries,
 					feature_ref,
-					d_reconstruct_params,
+					reconstruct_params,
 					reconstruction_tree_creator,
 					reconstruction_time);
 

@@ -125,18 +125,9 @@ namespace GPlatesAppLogic
 		explicit
 		ReconstructContext(
 				const ReconstructMethodRegistry &reconstruct_method_registry,
-				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstructable_feature_collections =
 								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
-
-
-		/**
-		 * Update the parameters to use when reconstructing.
-		 */
-		void
-		set_reconstruct_params(
-				const ReconstructParams &reconstruct_params = ReconstructParams());
 
 
 		/**
@@ -198,6 +189,7 @@ namespace GPlatesAppLogic
 		void
 		reconstruct(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const ReconstructParams &reconstruct_params,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time);
 
@@ -213,6 +205,7 @@ namespace GPlatesAppLogic
 		void
 		reconstruct(
 				std::vector<Reconstruction> &reconstructed_feature_geometries,
+				const ReconstructParams &reconstruct_params,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time);
 
@@ -263,11 +256,6 @@ namespace GPlatesAppLogic
 		//! Typedef or a sequence of reconstruct methods and their associated features.
 		typedef std::vector<ReconstructMethodFeatures> reconstruct_method_features_seq_type;
 
-
-		/**
-		 * The parameter to use when reconstructing.
-		 */
-		ReconstructParams d_reconstruct_params;
 
 		//! Grouping of features with their reconstruct method.
 		reconstruct_method_features_seq_type d_reconstruct_method_features_seq;

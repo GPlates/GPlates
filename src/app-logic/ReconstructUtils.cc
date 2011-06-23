@@ -302,12 +302,12 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 	// reconstructable feature requires.
 	ReconstructContext reconstruct_context(
 			reconstruct_method_registry,
-			reconstruct_params,
 			reconstructable_features_collection);
 
 	// Reconstruct the reconstructable features.
 	reconstruct_context.reconstruct(
 			reconstructed_feature_geometries,
+			reconstruct_params,
 			reconstruction_tree_creator,
 			reconstruction_time);
 }

@@ -26,7 +26,10 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTPARAMS_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTPARAMS_H
 
+#include <boost/operators.hpp>
 #include <boost/optional.hpp>
+
+#include "maths/types.h"
 
 #include "property-values/GeoTimeInstant.h"
 
@@ -37,7 +40,9 @@ namespace GPlatesAppLogic
 	 * ReconstructParams is used to store additional parameters for reconstructing
 	 * features into @a ReconstructedFeatureGeometry objects.
 	 */
-	class ReconstructParams
+	class ReconstructParams :
+			public boost::less_than_comparable<ReconstructParams>,
+			public boost::equality_comparable<ReconstructParams>
 	{
 	public:
 
@@ -95,7 +100,7 @@ namespace GPlatesAppLogic
 		double
 		get_vgp_delta_t() const
 		{
-			return d_vgp_delta_t;
+			return d_vgp_delta_t.dval();
 		}
 
 		void
@@ -109,6 +114,16 @@ namespace GPlatesAppLogic
 		should_draw_vgp(
 				double current_time,
 				const boost::optional<double> &age) const;
+
+		//! Equality comparison operator.
+		bool
+		operator==(
+				const ReconstructParams &rhs) const;
+
+		//! Less than comparison operator.
+		bool
+		operator<(
+				const ReconstructParams &rhs) const;
 
 	private:
 
@@ -130,7 +145,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Delta used for time window around VGP age.                                                                     
 		 */
-		double d_vgp_delta_t;
+		GPlatesMaths::real_t d_vgp_delta_t;
 	};
 }
 
