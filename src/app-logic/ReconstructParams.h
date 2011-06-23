@@ -58,6 +58,39 @@ namespace GPlatesAppLogic
 		explicit
 		ReconstructParams();
 
+
+		/**
+		 * Sets whether we reconstruct by-plate-id outside the feature's active time period.
+		 *
+		 * The constructor defaults the value to 'false'.
+		 *
+		 * If this is set to 'true' then features that are reconstructed by-plate-id (ie, using
+		 * ReconstructMethod::BY_PLATE_ID) will be reconstructed *both* inside and outside their
+		 * active time period - the time range over which the geological feature actually exists.
+		 *
+		 * This is currently used by raster reconstruction when assisted by an age grid because
+		 * we don't want the ocean floor polygons to disappear (because the age grid determines
+		 * when the ocean floor disappears, but we still need the polygon regions and hence still
+		 * need the reconstructed polygons).
+		 *
+		 * This might also be useful for seed/target data co-registration to co-register data
+		 * that has already been subducted.
+		 *
+		 * TODO: Add an expansion of the active time range (eg, [5,10] -> [4,11] if expanding +/-1).
+		 */
+		void
+		set_reconstruct_by_plate_id_outside_active_time_period(
+				bool reconstruct_outside_active_time_period)
+		{
+			d_reconstruct_by_plate_id_outside_active_time_period = reconstruct_outside_active_time_period;
+		}
+
+		bool
+		get_reconstruct_by_plate_id_outside_active_time_period() const
+		{
+			return d_reconstruct_by_plate_id_outside_active_time_period;
+		}
+
 		VGPVisibilitySetting
 		get_vgp_visibility_setting() const
 		{
@@ -126,6 +159,10 @@ namespace GPlatesAppLogic
 				const ReconstructParams &rhs) const;
 
 	private:
+		/**
+		 * Do we reconstruct by-plate-id outside the feature's active time period.
+		 */
+		bool d_reconstruct_by_plate_id_outside_active_time_period;
 
 		/**
 		 * Enum indicating what sort of VGP visibility we have.                                                                

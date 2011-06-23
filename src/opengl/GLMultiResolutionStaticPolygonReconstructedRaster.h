@@ -442,7 +442,7 @@ namespace GPlatesOpenGL
 
 		bool
 		cull_quad_tree(
-				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
+				const present_day_polygon_mesh_membership_type &reconstructed_polygon_mesh_membership,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
 				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
 				const cube_subdivision_bounds_cache_type::node_reference_type &bounds_cache_node,
@@ -472,7 +472,7 @@ namespace GPlatesOpenGL
 		render_tile_to_scene(
 				GLRenderer &renderer,
 				const GLStateSet::non_null_ptr_to_const_type &render_scene_tile_state_set,
-				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
+				const present_day_polygon_mesh_membership_type &reconstructed_polygon_mesh_membership,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
 				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
 				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables);

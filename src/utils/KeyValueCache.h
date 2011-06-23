@@ -58,8 +58,6 @@ namespace GPlatesUtils
 	 *
 	 * This differs from the class @a ObjectCache in the following ways:
 	 * - ObjectCache does not have a key (the object stored in the cache is the equivalent of the value),
-	 * - ObjectCache recycles least-recently *requested* object whereas KeyValueCache recycles
-	 *   least-recently *created* object (FIXME: least-recently *requested* is better),
 	 * - with ObjectCache the cached object will not be recycled until client(s) release strong reference to it,
 	 * - with ObjectCache the client is responsible for creating a new object if none can be recycled,
 	 *   and with KeyValueCache the cache itself creates a new object if it's key doesn't exist in the cache,
@@ -86,15 +84,7 @@ namespace GPlatesUtils
 		 */
 		KeyValueCache(
 				const create_value_object_function_type &create_value_object_function,
-				unsigned int maximum_num_values_in_cache) :
-			d_create_value_object_function(create_value_object_function),
-			d_maximum_num_value_objects_in_cache(maximum_num_values_in_cache),
-			d_num_value_objects_in_cache(0)
-		{
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					maximum_num_values_in_cache > 0,
-					GPLATES_ASSERTION_SOURCE);
-		}
+				unsigned int maximum_num_values_in_cache);
 
 
 		/**
@@ -167,6 +157,20 @@ namespace GPlatesUtils
 	////////////////////
 
 	
+	template <typename KeyType, typename ValueType>
+	KeyValueCache<KeyType,ValueType>::KeyValueCache(
+			const create_value_object_function_type &create_value_object_function,
+			unsigned int maximum_num_values_in_cache) :
+		d_create_value_object_function(create_value_object_function),
+		d_maximum_num_value_objects_in_cache(maximum_num_values_in_cache),
+		d_num_value_objects_in_cache(0)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				maximum_num_values_in_cache > 0,
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+
 	template <typename KeyType, typename ValueType>
 	void
 	KeyValueCache<KeyType,ValueType>::clear()

@@ -682,7 +682,8 @@ GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage:
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage::get_reconstructed_static_polygon_meshes(
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		bool reconstructing_with_age_grid)
 {
 	// If we're not up-to-date with respect to the present day polygons in the reconstruct layer proxy...
 	if (!d_reconstructed_static_polygon_meshes_layer_proxy->get_reconstructable_feature_collections_subject_token()
@@ -704,8 +705,7 @@ GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage:
 				GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create(
 						d_reconstructed_static_polygon_meshes_layer_proxy->get_present_day_polygon_meshes(),
 						d_reconstructed_static_polygon_meshes_layer_proxy->get_present_day_geometries(),
-						d_reconstructed_static_polygon_meshes_layer_proxy->get_reconstructions_spatial_partition(
-								reconstruction_time),
+						d_reconstructed_static_polygon_meshes_layer_proxy->get_reconstructions_spatial_partition(reconstruction_time),
 						d_cube_subdivision_projection_transforms_cache,
 						d_cube_subdivision_loose_bounds_cache,
 						d_cube_subdivision_bounding_polygons_cache,
@@ -719,7 +719,7 @@ GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage:
 				d_reconstructed_polygons_observer_token);
 	}
 
-	update(reconstruction_time);
+	update(reconstruction_time, reconstructing_with_age_grid);
 
 	return d_reconstructed_static_polygon_meshes.get();
 }
@@ -727,34 +727,67 @@ GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage:
 
 void
 GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage::update(
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		bool reconstructing_with_age_grid)
 {
 	// Do we need to update the reconstructed static polygons meshes for the current reconstruction time?
-	bool need_to_update_reconstruction_time = false;
+	bool need_to_update = false;
 
 	if (d_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
 	{
-		need_to_update_reconstruction_time = true;
+		need_to_update = true;
 
 		d_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+	}
+
+	if (d_reconstructing_with_age_grid != reconstructing_with_age_grid)
+	{
+		need_to_update = true;
+
+		d_reconstructing_with_age_grid = reconstructing_with_age_grid;
 	}
 
 	// If we're not up-to-date with respect to the reconstructed polygons in the reconstruct layer proxy...
 	if (!d_reconstructed_static_polygon_meshes_layer_proxy->get_subject_token().is_observer_up_to_date(
 			d_reconstructed_polygons_observer_token))
 	{
-		need_to_update_reconstruction_time = true;
+		need_to_update = true;
 
 		// We are now up-to-date with respect to the reconstructed polygons in the reconstruct layer proxy.
 		d_reconstructed_static_polygon_meshes_layer_proxy->get_subject_token().update_observer(
 				d_reconstructed_polygons_observer_token);
 	}
 
-	if (need_to_update_reconstruction_time)
+	if (need_to_update)
 	{
+		//
+		// Update
+		//
+
+		// The reconstructions spatial partition for *active* features.
+		const GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type
+				reconstructions_spatial_partition = d_reconstructed_static_polygon_meshes_layer_proxy
+						->get_reconstructions_spatial_partition(reconstruction_time);
+
+		// The reconstructions spatial partition for *active* or *inactive* features.
+		boost::optional<GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type>
+						active_or_inactive_reconstructions_spatial_partition;
+		// It's only needed if we've been asked to help reconstruct a raster with the aid of an age grid.
+		if (reconstructing_with_age_grid)
+		{
+			// Use the same reconstruct params but specify that reconstructions should include *inactive* features also.
+			GPlatesAppLogic::ReconstructParams reconstruct_params =
+					d_reconstructed_static_polygon_meshes_layer_proxy->get_current_reconstruct_params();
+			reconstruct_params.set_reconstruct_by_plate_id_outside_active_time_period(true);
+
+			// Get a new reconstructions spatial partition that includes *inactive* reconstructions.
+			active_or_inactive_reconstructions_spatial_partition = d_reconstructed_static_polygon_meshes_layer_proxy
+						->get_reconstructions_spatial_partition(reconstruct_params, reconstruction_time);
+		}
+
 		d_reconstructed_static_polygon_meshes.get()->update(
-				d_reconstructed_static_polygon_meshes_layer_proxy->get_reconstructions_spatial_partition(
-						reconstruction_time));
+				reconstructions_spatial_partition,
+				active_or_inactive_reconstructions_spatial_partition);
 	}
 }
 
@@ -862,7 +895,7 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 		}
 		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_static_polygon_meshes =
 				d_reconstructed_polygon_meshes_layer_usage.get()->get_reconstructed_static_polygon_meshes(
-						reconstruction_time);
+						reconstruction_time, d_age_grid_layer_usage/*reconstructing_with_age_grid*/);
 
 		// We are reconstructing a raster - let's see if we are also using an age grid to help out.
 		if (d_age_grid_layer_usage)
@@ -915,7 +948,10 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 	// See if the reconstructed polygon meshes need updating.
 	if (d_reconstructed_polygon_meshes_layer_usage)
 	{
-		d_reconstructed_polygon_meshes_layer_usage.get()->update(reconstruction_time);
+		d_reconstructed_polygon_meshes_layer_usage.get()->update(
+				reconstruction_time,
+				// If we have an age grid then the reconstructed polygon meshes needs to do extra work...
+				d_age_grid_layer_usage);
 	}
 
 	// See if the age grid needs updating.

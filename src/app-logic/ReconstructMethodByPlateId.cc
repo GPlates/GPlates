@@ -30,6 +30,7 @@
 #include "PlateVelocityUtils.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructMethodFiniteRotation.h"
+#include "ReconstructParams.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/MultiPointOnSphere.h"
@@ -330,7 +331,9 @@ namespace GPlatesAppLogic
 			explicit
 			ReconstructFeature(
 					std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+					const ReconstructParams &reconstruct_params,
 					const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree) :
+				d_reconstruct_params(reconstruct_params),
 				d_reconstruction_tree(reconstruction_tree),
 				d_reconstruction_params(reconstruction_tree->get_reconstruction_time()),
 				d_reconstructed_feature_geometries(reconstructed_feature_geometries)
@@ -348,8 +351,10 @@ namespace GPlatesAppLogic
 				// Firstly find the reconstruction plate ID.
 				d_reconstruction_params.visit_feature(feature_ref);
 
-				// Secondly the feature must be defined at the reconstruction time.
-				if (!d_reconstruction_params.is_feature_defined_at_recon_time())
+				// Secondly the feature must be defined at the reconstruction time, *unless* we've been
+				// requested to reconstruct for all times (even times when the feature is not defined).
+				if (!d_reconstruct_params.get_reconstruct_by_plate_id_outside_active_time_period() &&
+					!d_reconstruction_params.is_feature_defined_at_recon_time())
 				{
 					// Don't reconstruct.
 					return false;
@@ -506,6 +511,7 @@ namespace GPlatesAppLogic
 			}
 
 		private:
+			const ReconstructParams &d_reconstruct_params;
 			ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
 			ReconstructionFeatureProperties d_reconstruction_params;
 			boost::optional<Transform::non_null_ptr_type> d_reconstruction_rotation;
@@ -546,7 +552,7 @@ void
 GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
-		const ReconstructParams &/*reconstruct_params*/,
+		const ReconstructParams &reconstruct_params,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
 {
@@ -556,7 +562,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature(
 	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
 
-	ReconstructFeature recon_feature(reconstructed_feature_geometries, reconstruction_tree);
+	ReconstructFeature recon_feature(reconstructed_feature_geometries, reconstruct_params, reconstruction_tree);
 
 	recon_feature.visit_feature(feature_weak_ref);
 }

@@ -32,6 +32,7 @@ GPlatesAppLogic::ReconstructParams::INITIAL_VGP_DELTA_T = 5.;
 
 
 GPlatesAppLogic::ReconstructParams::ReconstructParams() :
+	d_reconstruct_by_plate_id_outside_active_time_period(false),
 	d_vgp_visibility_setting(DELTA_T_AROUND_AGE),
 	d_vgp_earliest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_past()),
 	d_vgp_latest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_future()),
@@ -86,7 +87,9 @@ bool
 GPlatesAppLogic::ReconstructParams::operator==(
 		const ReconstructParams &rhs) const
 {
-	return d_vgp_visibility_setting == rhs.d_vgp_visibility_setting &&
+	return
+		d_reconstruct_by_plate_id_outside_active_time_period == rhs.d_reconstruct_by_plate_id_outside_active_time_period &&
+		d_vgp_visibility_setting == rhs.d_vgp_visibility_setting &&
 		d_vgp_earliest_time == rhs.d_vgp_earliest_time &&
 		d_vgp_latest_time == rhs.d_vgp_latest_time &&
 		d_vgp_delta_t == rhs.d_vgp_delta_t;
@@ -97,6 +100,15 @@ bool
 GPlatesAppLogic::ReconstructParams::operator<(
 		const ReconstructParams &rhs) const
 {
+	if (d_reconstruct_by_plate_id_outside_active_time_period < rhs.d_reconstruct_by_plate_id_outside_active_time_period)
+	{
+		return true;
+	}
+	if (d_reconstruct_by_plate_id_outside_active_time_period > rhs.d_reconstruct_by_plate_id_outside_active_time_period)
+	{
+		return false;
+	}
+
 	if (d_vgp_visibility_setting < rhs.d_vgp_visibility_setting)
 	{
 		return true;

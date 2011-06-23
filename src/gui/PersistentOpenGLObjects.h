@@ -466,12 +466,14 @@ namespace GPlatesGui
 			 */
 			GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 			get_reconstructed_static_polygon_meshes(
-					const double &reconstruction_time);
+					const double &reconstruction_time,
+					bool reconstructing_with_age_grid);
 
 			//! See if needs updating.
 			void
 			update(
-					const double &reconstruction_time);
+					const double &reconstruction_time,
+					bool reconstructing_with_age_grid);
 
 			//! Let clients know we've rebuilt our reconstructed static polygon meshes.
 			const GPlatesUtils::SubjectToken &
@@ -499,6 +501,7 @@ namespace GPlatesGui
 			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
 					d_reconstructed_static_polygon_meshes;
 			boost::optional<GPlatesMaths::real_t> d_reconstruction_time;
+			boost::optional<bool> d_reconstructing_with_age_grid;
 		};
 
 

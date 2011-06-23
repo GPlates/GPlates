@@ -351,6 +351,29 @@ namespace GPlatesAppLogic
 
 
 		//
+		// Getting current reconstruct params and reconstruction time as set by the layer system.
+		//
+
+		/**
+		 * Gets the current reconstruction time as set by the layer system.
+		 */
+		const double &
+		get_current_reconstruction_time() const
+		{
+			return d_current_reconstruction_time;
+		}
+
+		/**
+		 * Gets the parameters used for reconstructing.
+		 */
+		const ReconstructParams &
+		get_current_reconstruct_params() const
+		{
+			return d_current_reconstruct_params;
+		}
+
+
+		//
 		// Getting a present day objects.
 		//
 
