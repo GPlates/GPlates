@@ -138,11 +138,11 @@ namespace GPlatesAppLogic
 		 * Returns the reconstructed feature geometries, for the current reconstruct params and
 		 * current reconstruction time, by appending them to @a reconstructed_feature_geometries.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructed_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries)
 		{
-			get_reconstructed_feature_geometries(
+			return get_reconstructed_feature_geometries(
 					reconstructed_feature_geometries, d_current_reconstruct_params, d_current_reconstruction_time);
 		}
 
@@ -150,12 +150,12 @@ namespace GPlatesAppLogic
 		 * Returns the reconstructed feature geometries, for the specified reconstruct params and
 		 * current reconstruction time, by appending them to @a reconstructed_feature_geometries.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructed_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const ReconstructParams &reconstruct_params)
 		{
-			get_reconstructed_feature_geometries(
+			return get_reconstructed_feature_geometries(
 					reconstructed_feature_geometries, reconstruct_params, d_current_reconstruction_time);
 		}
 
@@ -163,20 +163,22 @@ namespace GPlatesAppLogic
 		 * Returns the reconstructed feature geometries, for the current reconstruct params and
 		 * specified reconstruction time, by appending them to @a reconstructed_feature_geometries.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructed_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const double &reconstruction_time)
 		{
-			get_reconstructed_feature_geometries(
+			return get_reconstructed_feature_geometries(
 					reconstructed_feature_geometries, d_current_reconstruct_params, reconstruction_time);
 		}
 
 		/**
 		 * Returns the reconstructed feature geometries, for the specified reconstruct params and
 		 * reconstruction time, by appending them to @a reconstructed_feature_geometries.
+		 *
+		 * Returns the reconstruct handle that identifies the reconstructed feature geometries.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructed_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const ReconstructParams &reconstruct_params,
@@ -191,23 +193,23 @@ namespace GPlatesAppLogic
 		 * Returns the reconstructed feature geometries, for the current reconstruction time,
 		 * by appending them to @a reconstructions.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructions(
 				std::vector<ReconstructContext::Reconstruction> &reconstructions)
 		{
-			get_reconstructions(reconstructions, d_current_reconstruct_params, d_current_reconstruction_time);
+			return get_reconstructions(reconstructions, d_current_reconstruct_params, d_current_reconstruction_time);
 		}
 
 		/**
 		 * Returns the reconstructions, for the specified reconstruct params and
 		 * current reconstruction time, by appending them to @a reconstructions.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructions(
 				std::vector<ReconstructContext::Reconstruction> &reconstructions,
 				const ReconstructParams &reconstruct_params)
 		{
-			get_reconstructions(
+			return get_reconstructions(
 					reconstructions, reconstruct_params, d_current_reconstruction_time);
 		}
 
@@ -215,12 +217,12 @@ namespace GPlatesAppLogic
 		 * Returns the reconstructions, for the current reconstruct params and
 		 * specified reconstruction time, by appending them to @a reconstructions.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructions(
 				std::vector<ReconstructContext::Reconstruction> &reconstructions,
 				const double &reconstruction_time)
 		{
-			get_reconstructions(
+			return get_reconstructions(
 					reconstructions, d_current_reconstruct_params, reconstruction_time);
 		}
 
@@ -234,8 +236,10 @@ namespace GPlatesAppLogic
 		 *
 		 * This geometry property handle can be used to index into the sequence of present day
 		 * geometries returned by @a get_present_day_geometries.
+		 *
+		 * Returns the reconstruct handle that identifies the reconstructed feature geometries.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructions(
 				std::vector<ReconstructContext::Reconstruction> &reconstructions,
 				const ReconstructParams &reconstruct_params,
@@ -251,10 +255,11 @@ namespace GPlatesAppLogic
 		 * reconstruct params and the current reconstruction time.
 		 */
 		reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
-		get_reconstructed_feature_geometries_spatial_partition()
+		get_reconstructed_feature_geometries_spatial_partition(
+				ReconstructHandle::type *reconstruct_handle = NULL)
 		{
 			return get_reconstructed_feature_geometries_spatial_partition(
-					d_current_reconstruct_params, d_current_reconstruction_time);
+					d_current_reconstruct_params, d_current_reconstruction_time, reconstruct_handle);
 		}
 
 		/**
@@ -263,10 +268,11 @@ namespace GPlatesAppLogic
 		 */
 		reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
 		get_reconstructed_feature_geometries_spatial_partition(
-				const ReconstructParams &reconstruct_params)
+				const ReconstructParams &reconstruct_params,
+				ReconstructHandle::type *reconstruct_handle = NULL)
 		{
 			return get_reconstructed_feature_geometries_spatial_partition(
-					reconstruct_params, d_current_reconstruction_time);
+					reconstruct_params, d_current_reconstruction_time, reconstruct_handle);
 		}
 
 		/**
@@ -275,15 +281,19 @@ namespace GPlatesAppLogic
 		 */
 		reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
 		get_reconstructed_feature_geometries_spatial_partition(
-				const double &reconstruction_time)
+				const double &reconstruction_time,
+				ReconstructHandle::type *reconstruct_handle = NULL)
 		{
 			return get_reconstructed_feature_geometries_spatial_partition(
-					d_current_reconstruct_params, reconstruction_time);
+					d_current_reconstruct_params, reconstruction_time, reconstruct_handle);
 		}
 
 		/**
 		 * Returns the spatial partition of reconstructed feature geometries for the specified
 		 * reconstruct params and reconstruction time.
+		 *
+		 * If @a reconstruct_handle is not NULL then the reconstruct handle that identifies
+		 * the reconstructed feature geometries in the spatial partition is returned.
 		 *
 		 * The maximum depth of the quad trees in each cube face of the spatial partition
 		 * is @a DEFAULT_SPATIAL_PARTITION_DEPTH.
@@ -291,7 +301,8 @@ namespace GPlatesAppLogic
 		reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
 		get_reconstructed_feature_geometries_spatial_partition(
 				const ReconstructParams &reconstruct_params,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				ReconstructHandle::type *reconstruct_handle = NULL);
 
 
 		//
@@ -303,10 +314,11 @@ namespace GPlatesAppLogic
 		 * the current reconstruction time.
 		 */
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
-		get_reconstructions_spatial_partition()
+		get_reconstructions_spatial_partition(
+				ReconstructHandle::type *reconstruct_handle = NULL)
 		{
 			return get_reconstructions_spatial_partition(
-					d_current_reconstruct_params, d_current_reconstruction_time);
+					d_current_reconstruct_params, d_current_reconstruction_time, reconstruct_handle);
 		}
 
 		/**
@@ -315,10 +327,11 @@ namespace GPlatesAppLogic
 		 */
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
 		get_reconstructions_spatial_partition(
-				const ReconstructParams &reconstruct_params)
+				const ReconstructParams &reconstruct_params,
+				ReconstructHandle::type *reconstruct_handle = NULL)
 		{
 			return get_reconstructions_spatial_partition(
-					reconstruct_params, d_current_reconstruction_time);
+					reconstruct_params, d_current_reconstruction_time, reconstruct_handle);
 		}
 
 		/**
@@ -327,10 +340,11 @@ namespace GPlatesAppLogic
 		 */
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
 		get_reconstructions_spatial_partition(
-				const double &reconstruction_time)
+				const double &reconstruction_time,
+				ReconstructHandle::type *reconstruct_handle = NULL)
 		{
 			return get_reconstructions_spatial_partition(
-					d_current_reconstruct_params, reconstruction_time);
+					d_current_reconstruct_params, reconstruction_time, reconstruct_handle);
 		}
 
 		/**
@@ -341,13 +355,17 @@ namespace GPlatesAppLogic
 		 * into the sequences returned by @a get_present_day_geometries and
 		 * @a get_present_day_geometries_spatial_partition_locations.
 		 *
+		 * If @a reconstruct_handle is not NULL then the reconstruct handle that identifies
+		 * the reconstructed feature geometries in the spatial partition is returned.
+		 *
 		 * The maximum depth of the quad trees in each cube face of the spatial partition
 		 * is @a DEFAULT_SPATIAL_PARTITION_DEPTH.
 		 */
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
 		get_reconstructions_spatial_partition(
 				const ReconstructParams &reconstruct_params,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				ReconstructHandle::type *reconstruct_handle = NULL);
 
 
 		//
@@ -545,6 +563,12 @@ namespace GPlatesAppLogic
 		struct ReconstructionInfo
 		{
 			/**
+			 * The reconstruct handle that identifies all cached reconstructed feature geometries
+			 * in this structure.
+			 */
+			boost::optional<ReconstructHandle::type> cached_reconstruct_handle;
+
+			/**
 			 * The cached reconstructed feature geometries.
 			 */
 			boost::optional< std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> >
@@ -710,7 +734,7 @@ namespace GPlatesAppLogic
 		 * if they're not already cached.
 		 */
 		std::vector<ReconstructContext::Reconstruction> &
-		get_or_create_reconstructions_internal(
+		cache_reconstructions(
 				ReconstructionInfo &reconstruction_info,
 				const ReconstructParams &reconstruct_params,
 				const double &reconstruction_time);
@@ -721,7 +745,7 @@ namespace GPlatesAppLogic
 		 * reconstruction time if it's not already cached.
 		 */
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
-		get_or_create_reconstructions_spatial_partition_internal(
+		cache_reconstructions_spatial_partition(
 				ReconstructionInfo &reconstruction_info,
 				const ReconstructParams &reconstruct_params,
 				const double &reconstruction_time);

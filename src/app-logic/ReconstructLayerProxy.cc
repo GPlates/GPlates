@@ -83,7 +83,7 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
 }
 
 
-void
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const ReconstructParams &reconstruct_params,
@@ -105,7 +105,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
 		// another client then requests the ReconstructContext::Reconstruction's then they will
 		// be cached and won't have to be calculated - doing it the other way around doesn't work.
 		std::vector<ReconstructContext::Reconstruction> &reconstructions =
-				get_or_create_reconstructions_internal(reconstruction_info, reconstruct_params, reconstruction_time);
+				cache_reconstructions(reconstruction_info, reconstruct_params, reconstruction_time);
 
 		// Create empty vector of RFGs.
 		reconstruction_info.cached_reconstructed_feature_geometries =
@@ -127,10 +127,12 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
 			reconstructed_feature_geometries.end(),
 			reconstruction_info.cached_reconstructed_feature_geometries->begin(),
 			reconstruction_info.cached_reconstructed_feature_geometries->end());
+
+	return reconstruction_info.cached_reconstruct_handle.get();
 }
 
 
-void
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions(
 		std::vector<ReconstructContext::Reconstruction> &reconstructions,
 		const ReconstructParams &reconstruct_params,
@@ -146,7 +148,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions(
 	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
 	if (!reconstruction_info.cached_reconstructions)
 	{
-		get_or_create_reconstructions_internal(reconstruction_info, reconstruct_params, reconstruction_time);
+		cache_reconstructions(reconstruction_info, reconstruct_params, reconstruction_time);
 	}
 
 	// Append our cached RFGs to the caller's sequence.
@@ -154,13 +156,16 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions(
 			reconstructions.end(),
 			reconstruction_info.cached_reconstructions->begin(),
 			reconstruction_info.cached_reconstructions->end());
+
+	return reconstruction_info.cached_reconstruct_handle.get();
 }
 
 
 GPlatesAppLogic::ReconstructLayerProxy::reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries_spatial_partition(
 		const ReconstructParams &reconstruct_params,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		ReconstructHandle::type *reconstruct_handle)
 {
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
@@ -178,7 +183,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries_spa
 		// another client then requests the ReconstructContext::Reconstruction's then they will
 		// be cached and won't have to be calculated - doing it the other way around doesn't work.
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type reconstructions_spatial_partition =
-				get_or_create_reconstructions_spatial_partition_internal(
+				cache_reconstructions_spatial_partition(
 						reconstruction_info, reconstruct_params, reconstruction_time);
 
 		// Add the RFGs to a new spatial partition to return to the caller.
@@ -197,6 +202,13 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries_spa
 				&add_reconstruction_to_node_element_of_rfg_spatial_partition);
 	}
 
+	// If the caller wants the reconstruct handle then return it.
+	if (reconstruct_handle)
+	{
+		*reconstruct_handle = reconstruction_info.cached_reconstruct_handle.get();
+	}
+
+	// Return the cached spatial partition.
 	return reconstruction_info.cached_reconstructed_feature_geometries_spatial_partition.get();
 }
 
@@ -204,7 +216,8 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries_spa
 GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions_spatial_partition(
 		const ReconstructParams &reconstruct_params,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		ReconstructHandle::type *reconstruct_handle)
 {
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
@@ -216,10 +229,17 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions_spatial_partition(
 	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
 	if (!reconstruction_info.cached_reconstructions_spatial_partition)
 	{
-		get_or_create_reconstructions_spatial_partition_internal(
+		cache_reconstructions_spatial_partition(
 				reconstruction_info, reconstruct_params, reconstruction_time);
 	}
 
+	// If the caller wants the reconstruct handle then return it.
+	if (reconstruct_handle)
+	{
+		*reconstruct_handle = reconstruction_info.cached_reconstruct_handle.get();
+	}
+
+	// Return the cached spatial partition.
 	return reconstruction_info.cached_reconstructions_spatial_partition.get();
 }
 
@@ -519,7 +539,7 @@ GPlatesAppLogic::ReconstructLayerProxy::check_input_layer_proxies()
 
 
 std::vector<GPlatesAppLogic::ReconstructContext::Reconstruction> &
-GPlatesAppLogic::ReconstructLayerProxy::get_or_create_reconstructions_internal(
+GPlatesAppLogic::ReconstructLayerProxy::cache_reconstructions(
 		ReconstructionInfo &reconstruction_info,
 		const ReconstructParams &reconstruct_params,
 		const double &reconstruction_time)
@@ -533,8 +553,8 @@ GPlatesAppLogic::ReconstructLayerProxy::get_or_create_reconstructions_internal(
 	// Create empty vector of reconstructions.
 	reconstruction_info.cached_reconstructions = std::vector<ReconstructContext::Reconstruction>();
 
-	// Reconstruct our features into our sequence of RFGs.
-	d_reconstruct_context.reconstruct(
+	// Reconstruct our features into our sequence of cached RFGs.
+	reconstruction_info.cached_reconstruct_handle = d_reconstruct_context.reconstruct(
 			reconstruction_info.cached_reconstructions.get(),
 			reconstruct_params,
 			// Used to call when a reconstruction tree is needed for any time/anchor.
@@ -547,7 +567,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_or_create_reconstructions_internal(
 
 
 GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type
-GPlatesAppLogic::ReconstructLayerProxy::get_or_create_reconstructions_spatial_partition_internal(
+GPlatesAppLogic::ReconstructLayerProxy::cache_reconstructions_spatial_partition(
 		ReconstructionInfo &reconstruction_info,
 		const ReconstructParams &reconstruct_params,
 		const double &reconstruction_time)
@@ -560,7 +580,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_or_create_reconstructions_spatial_pa
 
 	// Reconstruct our features into a sequence of ReconstructContext::Reconstruction's.
 	std::vector<ReconstructContext::Reconstruction> &reconstructions =
-			get_or_create_reconstructions_internal(
+			cache_reconstructions(
 					reconstruction_info, reconstruct_params, reconstruction_time);
 
 	//PROFILE_BLOCK("ReconstructLayerProxy::get_reconstructions_spatial_partition: ");

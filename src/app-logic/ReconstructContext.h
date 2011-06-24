@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 
 #include "ReconstructedFeatureGeometry.h"
+#include "ReconstructHandle.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructParams.h"
@@ -185,8 +186,11 @@ namespace GPlatesAppLogic
 		/**
 		 * Reconstructs the features specified in the constructor, or the most recent call
 		 * to @a reassign_reconstruct_methods_to_features, to the specified reconstruction time.
+		 *
+		 * This method will get the next (incremented) global reconstruct handle and store it
+		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 */
-		void
+		ReconstructHandle::type
 		reconstruct(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const ReconstructParams &reconstruct_params,
@@ -198,11 +202,14 @@ namespace GPlatesAppLogic
 		 * Reconstructs the features specified in the constructor, or the most recent call
 		 * to @a reassign_reconstruct_methods_to_features, to the specified reconstruction time.
 		 *
+		 * This method will get the next (incremented) global reconstruct handle and store it
+		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
+		 *
 		 * This differs from the other overload of @a reconstruct in that this method also
 		 * associates each reconstructed feature geometry with the feature geometry property
 		 * it was reconstructed from.
 		 */
-		void
+		ReconstructHandle::type
 		reconstruct(
 				std::vector<Reconstruction> &reconstructed_feature_geometries,
 				const ReconstructParams &reconstruct_params,

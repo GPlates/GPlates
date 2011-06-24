@@ -43,13 +43,15 @@ GPlatesAppLogic::ReconstructedFeatureGeometry::ReconstructedFeatureGeometry(
 		GPlatesModel::FeatureHandle::iterator property_iterator_,
 		const geometry_ptr_type &reconstructed_geometry_,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_) :
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
+		boost::optional<ReconstructHandle::type> reconstruct_handle_) :
 	ReconstructionGeometry(reconstruction_tree_),
 	WeakObserverType(feature_handle_),
 	d_property_iterator(property_iterator_),
 	d_reconstructed_geometry(reconstructed_geometry_),
 	d_reconstruction_plate_id(reconstruction_plate_id_),
-	d_time_of_formation(time_of_formation_)
+	d_time_of_formation(time_of_formation_),
+	d_reconstruct_handle(reconstruct_handle_)
 {
 }
 
@@ -62,7 +64,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometry::ReconstructedFeatureGeometry(
 		const geometry_ptr_type &resolved_geometry_,
 		const ReconstructMethodFiniteRotation::non_null_ptr_to_const_type &reconstruct_method_transform_,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none) :
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
+		boost::optional<ReconstructHandle::type> reconstruct_handle_) :
 	ReconstructionGeometry(reconstruction_tree_),
 	WeakObserverType(feature_handle_),
 	d_property_iterator(property_iterator_),
@@ -70,7 +73,8 @@ GPlatesAppLogic::ReconstructedFeatureGeometry::ReconstructedFeatureGeometry(
 			FiniteRotationReconstruction(
 					resolved_geometry_, reconstruct_method_transform_)),
 	d_reconstruction_plate_id(reconstruction_plate_id_),
-	d_time_of_formation(time_of_formation_)
+	d_time_of_formation(time_of_formation_),
+	d_reconstruct_handle(reconstruct_handle_)
 {
 }
 

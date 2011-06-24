@@ -137,7 +137,7 @@ GPlatesAppLogic::ReconstructContext::get_present_day_geometries()
 }
 
 
-void
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructContext::reconstruct(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const ReconstructParams &reconstruct_params,
@@ -145,6 +145,9 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 		const double &reconstruction_time)
 {
 	//PROFILE_BLOCK("ReconstructContext::reconstruct: ReconstructedFeatureGeometry's");
+
+	// Get the next global reconstruct handle - it'll be stored in each RFG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
 
 	// Iterate over the reconstruct method features.
 	BOOST_FOREACH(
@@ -167,15 +170,18 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 			reconstruct_method.reconstruct_feature(
 					reconstructed_feature_geometries,
 					feature_ref,
+					reconstruct_handle,
 					reconstruct_params,
 					reconstruction_tree_creator,
 					reconstruction_time);
 		}
 	}
+
+	return reconstruct_handle;
 }
 
 
-void
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructContext::reconstruct(
 		std::vector<Reconstruction> &reconstructions,
 		const ReconstructParams &reconstruct_params,
@@ -190,6 +196,9 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 	{
 		assign_geometry_property_handles();
 	}
+
+	// Get the next global reconstruct handle - it'll be stored in each RFG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
 
 	// Iterate over the reconstruct method features.
 	BOOST_FOREACH(
@@ -213,6 +222,7 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 			reconstruct_method.reconstruct_feature(
 					reconstructed_feature_geometries,
 					feature_ref,
+					reconstruct_handle,
 					reconstruct_params,
 					reconstruction_tree_creator,
 					reconstruction_time);
@@ -253,6 +263,8 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 			}
 		}
 	}
+
+	return reconstruct_handle;
 }
 
 

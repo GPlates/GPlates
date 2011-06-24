@@ -150,6 +150,9 @@ namespace GPlatesAppLogic
 		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
 		 * for the geometry property referenced by the property delegate @a geometry_delegate.
 		 *
+		 * If @a reconstruct_handle is specified then an RFG is returned only if it has a
+		 * reconstruct handle in that set.
+		 *
 		 * NOTE: The RFGs must be generated before calling this function otherwise no RFGs will be found.
 		 *
 		 * Returns false if:
@@ -172,12 +175,16 @@ namespace GPlatesAppLogic
 		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-				const boost::optional<const ReconstructionTree &> &reconstruction_tree = boost::none);
+				const boost::optional<const ReconstructionTree &> &reconstruction_tree = boost::none,
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 
 		/**
 		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
 		 * for the geometry properties iterator @a geometry_property.
+		 *
+		 * If @a reconstruct_handle is specified then an RFG is returned only if it has a
+		 * reconstruct handle in that set.
 		 *
 		 * NOTE: The RFGs must be generated before calling this function otherwise no RFGs will be found.
 		 *
@@ -190,7 +197,8 @@ namespace GPlatesAppLogic
 		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
-				const ReconstructionTree &reconstruction_tree);
+				const ReconstructionTree &reconstruction_tree,
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 
 		/**

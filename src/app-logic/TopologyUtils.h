@@ -35,6 +35,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "AppLogicFwd.h"
+#include "ReconstructHandle.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -118,28 +119,22 @@ namespace GPlatesAppLogic
 		 * section features in @a reconstructed_topological_boundary_sections.
 		 *
 		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
+		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
+		 *        identifies the subset, of all RFGs observing the topological section features,
+		 *        that should be searched when resolving the topological boundaries.
+		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
 		 * @param restrict_boundary_sections_to_same_reconstruction_tree is used to restrict the
 		 *        reconstructed topological boundary sections, specified with
 		 *        @a reconstructed_topological_boundary_sections, to those that were reconstructed
 		 *        using @a reconstruction_tree (ie, the same reconstruction tree associated with
 		 *        the resolved topological boundaries being generated).
-		 *
-		 * NOTE: We request reconstructed feature geometries for the topological boundary sections
-		 * even though the topological resolving process does not require them explicitly
-		 * (it does a global lookup of RFGs hanging off the boundary section feature) because
-		 * it forces the caller to make sure the RFGs have actually been generated, otherwise
-		 * the global lookup will find nothing.
-		 * NOTE: They also serve the dual purpose of restricting the global search to only
-		 * those RFGs passed in via @a reconstructed_topological_boundary_sections - this is
-		 * useful for the higher-level layers system which restricts RFGs to those generated
-		 * by a *connected* layer (as opposed to all layers, ie *global*).
 		 */
 		void
 		resolve_topological_boundaries(
 				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
-				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_topological_boundary_sections,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
+				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none,
 				bool restrict_boundary_sections_to_same_reconstruction_tree = true);
 
 

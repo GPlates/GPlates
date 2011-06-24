@@ -34,6 +34,7 @@
 #include <boost/optional.hpp>
 
 #include "ReconstructedFeatureGeometry.h"
+#include "ReconstructHandle.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
 #include "ResolvedTopologicalBoundary.h"
@@ -74,11 +75,10 @@ namespace GPlatesAppLogic
 		 * The resolved dynamic polygons are appended to @a resolved_topological_boundaries.
 		 *
 		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
-		 * @param reconstructed_topological_boundary_sections are the reconstructed feature geometries
-		 *        of the topological boundary sections used to form the close plate polygons.
-		 *        We don't reference them directly but by forcing clients to produce them we
-		 *        ensure they exist while we search for them indirectly via feature observers.
-		 *        If clients didn't produce them, or forgot to, then we'd find no RFGs during the global search.
+		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
+		 *        identifies the subset, of all RFGs observing the topological section features,
+		 *        that should be searched when resolving the topological boundaries.
+		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
 		 * @param restrict_boundary_sections_to_same_reconstruction_tree is used to restrict the
 		 *        reconstructed topological boundary sections, specified with
 		 *        @a reconstructed_topological_boundary_sections, to those that were reconstructed
@@ -88,7 +88,7 @@ namespace GPlatesAppLogic
 		TopologyBoundaryResolver(
 				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_boundary_sections,
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
 				bool restrict_boundary_sections_to_same_reconstruction_tree = true);
 
 		virtual
@@ -232,7 +232,7 @@ namespace GPlatesAppLogic
 		 * ensure they exist while we search for them indirectly via feature observers.
 		 * If the client didn't produce them, or forgot to, then we'd find no RFGs during the global search.
 		 */
-		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &d_reconstructed_topological_boundary_sections;
+		boost::optional<std::vector<ReconstructHandle::type> > d_topological_sections_reconstruct_handles;
 
 		/**
 		 * Boolean to determine whether to restrict the reconstructed topological boundary sections

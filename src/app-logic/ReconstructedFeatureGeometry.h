@@ -30,6 +30,7 @@
 
 #include <boost/optional.hpp>
 
+#include "ReconstructHandle.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructMethodFiniteRotation.h"
 
@@ -144,7 +145,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				const geometry_ptr_type &reconstructed_geometry_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none)
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
 			return non_null_ptr_type(
 					new ReconstructedFeatureGeometry(
@@ -153,7 +155,8 @@ namespace GPlatesAppLogic
 							property_iterator_,
 							reconstructed_geometry_,
 							reconstruction_plate_id_,
-							time_of_formation_));
+							time_of_formation_,
+							reconstruct_handle_));
 		}
 
 
@@ -185,7 +188,8 @@ namespace GPlatesAppLogic
 				const geometry_ptr_type &resolved_geometry_,
 				const ReconstructMethodFiniteRotation::non_null_ptr_to_const_type &reconstruct_method_transform_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none)
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
 			return non_null_ptr_type(
 					new ReconstructedFeatureGeometry(
@@ -195,7 +199,8 @@ namespace GPlatesAppLogic
 							resolved_geometry_,
 							reconstruct_method_transform_,
 							reconstruction_plate_id_,
-							time_of_formation_));
+							time_of_formation_,
+							reconstruct_handle_));
 		}
 
 
@@ -349,6 +354,20 @@ namespace GPlatesAppLogic
 		}
 
 		/**
+		 * Returns the optional reconstruct handle that this RFG was created with.
+		 *
+		 * The main reason this was added was to enable identification of an RFG among a list
+		 * of RFG observers of a feature - this is useful when searching for an RFG that was
+		 * generated in a specific scenario (reconstruct handle) such a topological section
+		 * geometries that are found via the topological section feature.
+		 */
+		const boost::optional<ReconstructHandle::type> &
+		get_reconstruct_handle() const
+		{
+			return d_reconstruct_handle;
+		}
+
+		/**
 		 * Accept a ConstReconstructionGeometryVisitor instance.
 		 */
 		virtual
@@ -378,8 +397,9 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle &feature_handle_,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				const geometry_ptr_type &reconstructed_geometry_,
-				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_);
+				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none);
 
 		ReconstructedFeatureGeometry(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
@@ -388,8 +408,9 @@ namespace GPlatesAppLogic
 				// NOTE: This is the *unreconstructed* geometry...
 				const geometry_ptr_type &resolved_geometry_,
 				const ReconstructMethodFiniteRotation::non_null_ptr_to_const_type &reconstruct_method_transform_,
-				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_);
+				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none);
 
 	private:
 		/**
@@ -440,6 +461,11 @@ namespace GPlatesAppLogic
 		 * feature geometries by age.
 		 */
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
+
+		/**
+		 * An optional reconstruct handle that can be used by clients to identify where this RFG came from.
+		 */
+		boost::optional<ReconstructHandle::type> d_reconstruct_handle;
 	};
 }
 

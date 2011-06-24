@@ -93,6 +93,7 @@ set(srcs
     ReconstructGraph.h
     ReconstructGraphImpl.cc
     ReconstructGraphImpl.h
+    ReconstructHandle.h
     Reconstruction.cc
     Reconstruction.h
     ReconstructionFeatureProperties.cc

@@ -87,13 +87,19 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 
 		// Topological sections...
 		std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_topological_boundary_sections;
+		std::vector<ReconstructHandle::type> topological_sections_reconstruct_handles;
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &topological_sections_layer_proxy,
 				d_current_topological_sections_layer_proxies.get_input_layer_proxies())
 		{
-			topological_sections_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
-					reconstructed_topological_boundary_sections,
-					reconstruction_time);
+			// Get the potential topological section RFGs.
+			const ReconstructHandle::type reconstruct_handle =
+					topological_sections_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
+							reconstructed_topological_boundary_sections,
+							reconstruction_time);
+
+			// Add the reconstruct handle to our list.
+			topological_sections_reconstruct_handles.push_back(reconstruct_handle);
 		}
 
 		// We only resolve boundaries if we have topological sections.
@@ -108,9 +114,9 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 			// This is the current behaviour but it might be too restrictive?
 			TopologyUtils::resolve_topological_boundaries(
 					d_cached_resolved_topological_boundaries.get(),
-					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree(reconstruction_time),
-					reconstructed_topological_boundary_sections,
 					d_current_topological_closed_plate_polygon_feature_collections,
+					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree(reconstruction_time),
+					topological_sections_reconstruct_handles,
 					true/*restrict_boundary_sections_to_same_reconstruction_tree*/);
 		}
 	}

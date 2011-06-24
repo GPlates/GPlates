@@ -743,7 +743,8 @@ GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-		const boost::optional<const ReconstructionTree &> &reconstruction_tree)
+		const boost::optional<const ReconstructionTree &> &reconstruction_tree,
+		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
 			geometry_delegate.feature_id());
@@ -765,15 +766,47 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 			reconstruction_tree ? &reconstruction_tree.get() : NULL); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> found_rfgs;
+	if (reconstruct_handles)
+	{
+		// Search the found RFGs for those that have reconstruct handles in 'reconstruct_handles'.
+		for (ReconstructedFeatureGeometryFinder::const_iterator rfg_iter = rfg_finder.found_rfgs_begin();
+			rfg_iter != rfg_finder.found_rfgs_end();
+			++rfg_iter)
+		{
+			const ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
+			const boost::optional<ReconstructHandle::type> &rfg_reconstruct_handle = rfg->get_reconstruct_handle();
+			if (!rfg_reconstruct_handle)
+			{
+				continue;
+			}
+
+			// Search the sequence of restricted reconstruct handles for a match.
+			for (std::vector<ReconstructHandle::type>::const_iterator reconstruct_handle_iter = reconstruct_handles->begin();
+				reconstruct_handle_iter != reconstruct_handles->end();
+				++reconstruct_handle_iter)
+			{
+				if (rfg_reconstruct_handle == *reconstruct_handle_iter)
+				{
+					found_rfgs.push_back(rfg);
+				}
+			}
+		}
+	}
+	else
+	{
+		found_rfgs.insert(found_rfgs.end(), rfg_finder.found_rfgs_begin(), rfg_finder.found_rfgs_end());
+	}
+
 // FIXME: MULTIPLE GEOM
 
 	// If we found no RFG (optionally referencing 'reconstruction_tree') that is reconstructed from
 	// 'geometry_property' then it probably means the reconstruction time is
 	// outside the age range of the feature containing 'geometry_property'.
 	// This is ok - it's not necessarily an error.
-	if (rfg_finder.num_rfgs_found() == 0)
+	if (found_rfgs.size() == 0)
 	{ 
-		int num = rfg_finder.num_rfgs_found();
+		int num = found_rfgs.size();
 		qDebug() << "ERROR: " << num << "Reconstruction Feature Geometries (RFGs) found for:";
 		qDebug() << "  feature id =" 
 			<< GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
@@ -794,11 +827,11 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 // a RFG by searching feature observers but anyone could be holding a reference to an RFG thus
 // keeping it alive and interfering with this RFG search.
 #if 0
-    else if (rfg_finder.num_rfgs_found() > 1)
+    else if (found_rfgs.size() > 1)
     {
         // We should only return boost::none for the case == 0, as above.
         // For the case >1 we return the rfg_finder.found_rfgs_begin() as normally
-        int num = rfg_finder.num_rfgs_found();
+        int num = found_rfgs.size();
         qDebug() << "WARNING: " << num << "Reconstruction Feature Geometries (RFGs) found for:";
         qDebug() << "  feature id =" 
 			<< GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
@@ -814,18 +847,16 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
     }
 #endif
 
-	// Get the first RFG found.
-	const ReconstructedFeatureGeometry::non_null_ptr_type rfg = *rfg_finder.found_rfgs_begin();
-
-	// Return the RFG.
-	return rfg;
+	// Return the first RFG found.
+	return found_rfgs.front();
 }
 
 
 boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
-		const ReconstructionTree &reconstruction_tree)
+		const ReconstructionTree &reconstruction_tree,
+		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	/*
 	if (!geometry_property.is_valid())

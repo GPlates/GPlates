@@ -155,8 +155,11 @@ namespace GPlatesAppLogic
 		 *
 		 * @a reconstruct_params are various parameters used for reconstructing - note that
 		 * different reconstruct methods will be interested in differents parameters.
+		 *
+		 * This function will get the next (incremented) global reconstruct handle and store it
+		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 */
-		void
+		ReconstructHandle::type
 		reconstruct(
 				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
 				const double &reconstruction_time,
@@ -177,9 +180,12 @@ namespace GPlatesAppLogic
 		 * @a reconstruction_tree_cache_size is used to determine the maximum number of
 		 * reconstruction trees to cache if the reconstructable features use reconstruction
 		 * trees for reconstruction times other than @a reconstruction_time.
+		 *
+		 * This function will get the next (incremented) global reconstruct handle and store it
+		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 */
 		inline
-		void
+		ReconstructHandle::type
 		reconstruct(
 				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
 				const double &reconstruction_time,
@@ -200,7 +206,7 @@ namespace GPlatesAppLogic
 							anchor_plate_id,
 							reconstruction_tree_cache_size);
 
-			reconstruct(
+			return reconstruct(
 					reconstructed_feature_geometries,
 					reconstruction_time,
 					anchor_plate_id,
