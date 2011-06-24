@@ -685,57 +685,22 @@ void
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geometries_for_feature(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
-	// Get the layer outputs.
-	const GPlatesAppLogic::Reconstruction::layer_output_seq_type &layer_outputs =
-			d_reconstruction_ptr->get_active_layer_outputs();
-
-	// Find those layer outputs that come from a reconstruction tree layer.
-	std::vector<GPlatesAppLogic::ReconstructionLayerProxy *> reconstruction_outputs;
-	if (!GPlatesAppLogic::LayerProxyUtils::get_layer_proxy_derived_type_sequence(
-			layer_outputs.begin(), layer_outputs.end(), reconstruction_outputs))
-	{
-		return;
-	}
-
-	// Generate RFGs for all active ReconstructLayer's.
-	// This is needed because we are about to search the feature for its RFGs and
-	// if we don't generate the RFGs then they might not be found.
-	//
-	// The RFGs - we'll keep them active until we've finished searching for RFGs below.
-	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
-	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
-			reconstructed_feature_geometries,
+	// Get the RFGs (and generate if not already), for all active ReconstructLayer's, that reference the feature.
+	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> found_rfgs;
+	GPlatesAppLogic::LayerProxyUtils::find_reconstructed_feature_geometries_of_feature(
+			found_rfgs,
+			feature_handle.reference(),
 			*d_reconstruction_ptr);
 
-	// Iterate over the layers that have reconstruction tree outputs.
-	BOOST_FOREACH(
-			GPlatesAppLogic::ReconstructionLayerProxy *reconstruction_layer_proxy,
-			reconstruction_outputs)
+	GPlatesAppLogic::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator rfg_iter;
+	for (rfg_iter = found_rfgs.begin();
+		rfg_iter != found_rfgs.end();
+		++rfg_iter)
 	{
-		const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-				reconstruction_layer_proxy->get_reconstruction_tree();
+		GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = rfg_iter->get();
 
-		// Iterate through the RFGs that were reconstructed using 'reconstruction_tree'
-		// and that are observing 'feature_handle'.
-		//
-		// Usually we'll only get RFGs from single ReconstructionTree but it's possible for
-		// the user to hook up the same reconstructable feature collection to multiple
-		// reconstruct layers with each layer using a different ReconstructionTree.
-		// In this case we'll be displaying the same geometry property more than once (where
-		// each displayed geometry was reconstructed with a different reconstruction tree).
-		GPlatesAppLogic::ReconstructedFeatureGeometryFinder rfgFinder(reconstruction_tree.get());
-		rfgFinder.find_rfgs_of_feature(&feature_handle);
-
-		GPlatesAppLogic::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator rfgIter;
-		for (rfgIter = rfgFinder.found_rfgs_begin();
-			rfgIter != rfgFinder.found_rfgs_end();
-			++rfgIter)
-		{
-			GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = rfgIter->get();
-
-			ReconstructedGeometryInfo info(rfg->property(), rfg->reconstructed_geometry());
-			d_rfg_geometries.push_back(info);
-		}
+		ReconstructedGeometryInfo info(rfg->property(), rfg->reconstructed_geometry());
+		d_rfg_geometries.push_back(info);
 	}
 }
 

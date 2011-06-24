@@ -150,23 +150,32 @@ namespace GPlatesAppLogic
 		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
 		 * for the geometry property referenced by the property delegate @a geometry_delegate.
 		 *
-		 * If @a reconstruct_handle is specified then an RFG is returned only if it has a
+		 * If @a reconstruct_handles is specified then an RFG is returned only if it has a
 		 * reconstruct handle in that set.
+		 *
+		 * NOTE: If more than one RFG is found then the first found is returned and an error message
+		 * is output to the console.
 		 *
 		 * NOTE: The RFGs must be generated before calling this function otherwise no RFGs will be found.
 		 *
 		 * Returns false if:
 		 * - there is *not* exactly *one* feature referencing the delegate feature id
 		 *   (in this case an error message is output to the console), or
-		 * - there is no RFG (optionally referencing @a reconstruction_tree) that is reconstructed from
-		 *   @a geometry_delegate (this probably means the reconstruction time is
-		 *   outside the age range of the feature containing @a geometry_property) and
-		 *   in this case *no* error message is output, or
-		 * - (if @a reconstruction_tree is not boost::none) there are more than one RFGs
-		 *   (optionally referencing @a reconstruction_tree) that are referencing
-		 *   the delegate feature (this means there are multiple geometry properties
-		 *   in the delegate feature that have the same delegate property name) and
-		 *   in this case an error message is output to the console.
+		 * - there are *no* RFGs satisfying the specified constraints (reconstruction tree and
+		 *  reconstruct handles) and in this case an error message is output to the console.
+		 *
+		 * If there is no RFG that is reconstructed from @a geometry_delegate, and satisfying the
+		 * other constraints, then it probably means the reconstruction time is outside the
+		 * age range of the delegate feature).
+		 *
+		 * If there is more than one RFG referencing the delegate feature then either:
+		 * - there are multiple geometry properties in the delegate feature that have the same
+		 *   delegate property name, and/or
+		 * - somewhere, in GPlates, more than one RFG is being generated for the same
+		 *   property iterator (might currently happen with flowlines - although we should
+		 *   consider moving away from that behaviour), and/or
+		 * - the same delegate feature is reconstructed more than once in different reconstruction
+		 *   contexts (eg, multiple layers reconstructing the same feature).
 		 *
 		 * WARNING: Property delegates need to be improved because they do not uniquely
 		 * identify a property since they use the property name and a feature can
@@ -175,7 +184,7 @@ namespace GPlatesAppLogic
 		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-				const boost::optional<const ReconstructionTree &> &reconstruction_tree = boost::none,
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none,
 				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 
@@ -183,21 +192,34 @@ namespace GPlatesAppLogic
 		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
 		 * for the geometry properties iterator @a geometry_property.
 		 *
-		 * If @a reconstruct_handle is specified then an RFG is returned only if it has a
+		 * If @a reconstruct_handles is specified then an RFG is returned only if it has a
 		 * reconstruct handle in that set.
+		 *
+		 * NOTE: If more than one RFG is found then the first found is returned and an error message
+		 * is output to the console.
 		 *
 		 * NOTE: The RFGs must be generated before calling this function otherwise no RFGs will be found.
 		 *
 		 * Returns false if:
 		 * - @a geometry_property is invalid, or
-		 * - there is no RFG (optionally referencing @a reconstruction_tree) that is reconstructed from
-		 *   @a geometry_property (this probably means the reconstruction time is
-		 *   outside the age range of the feature containing @a geometry_property).
+		 * - there are *no* RFGs satisfying the specified constraints (reconstruction tree and
+		 *   reconstruct handles) and in this case an error message is output to the console.
+		 *
+		 * If there is no RFG that is reconstructed from @a geometry_property, and satisfying the
+		 * other constraints, then it probably means the reconstruction time is outside the
+		 * age range of the feature containing @a geometry_property).
+		 *
+		 * If there is more than one RFG referencing the feature (containing @a geometry_property) then either:
+		 * - somewhere, in GPlates, more than one RFG is being generated for the same
+		 *   property iterator (might currently happen with flowlines - although we should
+		 *   consider moving away from that behaviour), and/or
+		 * - the same feature (containing @a geometry_property) is reconstructed more than once in
+		 *   different reconstruction contexts (eg, multiple layers reconstructing the same feature).
 		 */
 		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
-				const ReconstructionTree &reconstruction_tree,
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 

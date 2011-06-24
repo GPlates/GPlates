@@ -283,10 +283,10 @@ GPlatesAppLogic::TopologyBoundaryResolver::record_topological_section_reconstruc
 	// The referenced RFGs must be in our sequence of reconstructed topological boundary sections
 	// and optionally have been reconstructed by the same reconstruction tree associated with
 	// the resolved topological boundaries being generated.
-	boost::optional<const ReconstructionTree &> restricted_reconstruction_tree;
+	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> restricted_reconstruction_tree;
 	if (d_restrict_boundary_sections_to_same_reconstruction_tree)
 	{
-		restricted_reconstruction_tree = *d_reconstruction_tree;
+		restricted_reconstruction_tree = d_reconstruction_tree;
 	}
 	// If we need to restrict the topological section RFGs to specific reconstruct handles...
 	boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles;

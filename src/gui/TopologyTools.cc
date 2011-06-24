@@ -2217,8 +2217,10 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 	//
 	// The RFGs - we'll keep them active until we've finished searching for RFGs below.
 	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+	std::vector<GPlatesAppLogic::ReconstructHandle::type> reconstruct_handles;
 	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 			reconstructed_feature_geometries,
+			reconstruct_handles,
 			d_application_state_ptr->get_current_reconstruction());
 
 	// Get the reconstruction tree output of the default reconstruction tree layer.
@@ -2243,7 +2245,8 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 		const boost::optional<VisibleSection> visible_section =
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
-						*reconstruction_tree);
+						reconstruction_tree,
+						reconstruct_handles);
 
 		if (!visible_section)
 		{
@@ -2269,8 +2272,10 @@ GPlatesGui::TopologyTools::reconstruct_interior_sections()
 	//
 	// The RFGs - we'll keep them active until we've finished searching for RFGs below.
 	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+	std::vector<GPlatesAppLogic::ReconstructHandle::type> reconstruct_handles;
 	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 			reconstructed_feature_geometries,
+			reconstruct_handles,
 			d_application_state_ptr->get_current_reconstruction());
 
 	// Get the reconstruction tree output of the default reconstruction tree layer.
@@ -2295,7 +2300,8 @@ GPlatesGui::TopologyTools::reconstruct_interior_sections()
 		const boost::optional<VisibleSection> visible_section =
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
-						*reconstruction_tree);
+						reconstruction_tree,
+						reconstruct_handles);
 
 		if (!visible_section)
 		{
@@ -3773,13 +3779,15 @@ GPlatesGui::TopologyTools::VisibleSection::VisibleSection(
 boost::optional<GPlatesGui::TopologyTools::VisibleSection>
 GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		std::size_t section_index,
-		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree) const
+		const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		const std::vector<GPlatesAppLogic::ReconstructHandle::type> &reconstruct_handles) const
 {
 	// Find the RFG, in the current Reconstruction, for the current topological section.
 	boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> section_rfg =
 			GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 					d_table_row.get_geometry_property(),
-					reconstruction_tree);
+					reconstruction_tree,
+					reconstruct_handles);
 
 	// If no RFG was found then either:
 	// - the feature id could not be resolved (feature not loaded or loaded twice), or
