@@ -181,8 +181,6 @@ set(srcs
     VelocityFieldCalculatorLayerTask.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h
-    VGPRenderSettings.cc
-    VGPRenderSettings.h
 )
 
 

@@ -64,7 +64,6 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 	class FeatureCollectionFileIO;
 	class Reconstruction;
-	class VGPRenderSettings;
 }
 
 namespace GPlatesGui
@@ -232,18 +231,6 @@ namespace GPlatesPresentation
 		get_main_viewport_max_dimension() const;
 
 
-		inline
-		const GPlatesAppLogic::VGPRenderSettings &
-		get_vgp_render_settings() const
-		{
-			return *d_vgp_render_settings;
-		}
-
-
-		GPlatesAppLogic::VGPRenderSettings &
-		get_vgp_render_settings();
-
-
 		QString &
 		get_last_open_directory();
 
@@ -379,11 +366,6 @@ namespace GPlatesPresentation
 		 * Used for scaling additional globes and maps.
 		 */
 		std::pair<int, int> d_main_viewport_dimensions;
-
-		/**
-		 * Stores render settings for VirtualGeomagneticPole features.                                                                     
-		 */
-		boost::scoped_ptr<GPlatesAppLogic::VGPRenderSettings> d_vgp_render_settings;
 
 		/**
 		 * Stores the directory containing the files last opened, or the last opened
