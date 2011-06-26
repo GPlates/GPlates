@@ -921,27 +921,6 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	}
 
 #if 0
-	// Find the RFGs, referencing the focused feature and the focused geometry property.
-	GPlatesAppLogic::ReconstructedFeatureGeometryFinder rfg_finder(
-			d_feature_focus_ptr->associated_geometry_property(),
-			d_feature_focus_ptr->associated_reconstruction_geometry()->reconstruction_tree().get()); 
-	rfg_finder.find_rfgs_of_feature(d_feature_focus_ptr->focused_feature());
-
-	// It's currently proving too difficult to ensure only one RFG is created per geometry property
-	// per reconstruction time.
-	// FIXME: An overhaul of the method of finding RFGs from features is required as is
-	// default reconstruction tree layers.
-	// If there is more than one RFG for the focused geometry property then we won't allow
-	// it to be added - this is because the topology resolved won't know which RFG to use.
-	if (rfg_finder.num_rfgs_found() > 1)
-	{
-		qWarning() <<
-			"Cannot add to topology - the focused feature has multiple RFGs for the "
-			"focused geometry property - could be a flowline which is not currently supported.";
-		return false;
-	}
-#endif
-
 	// Currently we cannot handle a feature that contains more than one geometry property.
 	// This is because a topology geometry is referenced using a property delegate and
 	// this means a feature id and a property name. So to uniquely reference a geometry
@@ -964,7 +943,6 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
 	geometry_type_finder.visit_feature(d_feature_focus_ptr->focused_feature());
 
-#if 0
 // NOTE: MULTIPLE GEOM FIXME
 	if (geometry_type_finder.has_found_multiple_geometries_of_the_same_type())
 	{
@@ -993,18 +971,22 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	{
 		return true;
 	}
-	
-	// else, it's in one of the sequences already; don't let it in again 
-	return false;
-
-#if 0
-	// FIXME: the above return is just a super short cut ; 
-	// FIXME: we might want to fix the code below 
 
 	//
 	// The focused feature is already in the topology.
+	//
+
+	// If the focused feature is in the topology *interior* then return false since it
+	// can only be added once to the interior.
+	// FIXME: We really should be using enums instead of 0 or 1 for the sequence numbers and
+	// call it SequenceType is better.
+	if (found_sequence_num == 1)
+	{
+		return false;
+	}
+
 	// It is possible to have the focused feature geometry occur more than
-	// once in the topology under certain conditions:
+	// once in the topology *boundary* under certain conditions:
 	// - it must be separated from itself by other geometry sections, or
 	// - there must be no contiguous sequence of more than two of the focused
 	//   feature geometry *and* it can only be inserted before itself, not after.
@@ -1025,19 +1007,19 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 
 	// For two or less sections in the topology it doesn't make sense for them
 	// to be the same geometry - the user has no reason to do this.
-	if (d_section_info_seqs[d_found_sequence_num].size() <= 2)
+	if (d_boundary_section_info_seq.size() <= 2)
 	{
 		return false;
 	}
 
 	// Get the current insertion point 
 	const section_info_seq_type::size_type insert_section_index =
-			d_topology_sections_container_ptr->insertion_point();
+			d_boundary_sections_container_ptr->insertion_point();
 
 	// Make sure that we don't create a contiguous sequence of three sections with the
 	// same geometry when we insert the focused feature geometry.
 	if (std::find(found_indices.begin(), found_indices.end(),
-			static_cast<int>(get_prev_index(insert_section_index, d_section_info_seqs[d_found_sequence_num])))
+			static_cast<int>(get_prev_index(insert_section_index, d_boundary_section_info_seq)))
 				!= found_indices.end())
 	{
 		// Cannot insert same geometry after itself.
@@ -1047,7 +1029,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 				static_cast<int>(insert_section_index)) != found_indices.end())
 	{
 		if (std::find(found_indices.begin(), found_indices.end(),
-				static_cast<int>(get_next_index(insert_section_index, d_section_info_seqs[d_found_sequence_num])))
+				static_cast<int>(get_next_index(insert_section_index, d_boundary_section_info_seq)))
 					!= found_indices.end())
 		{
 			// We'd be inserting in front of two sections with same geometry - not allowed.
@@ -1056,7 +1038,6 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	}
 
 	return true;
-#endif
 }
 
 
