@@ -100,7 +100,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_geometry_focus_highlight(
 			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection,d_feature_type_symbol_map)),
 	d_feature_focus(
-			new GPlatesGui::FeatureFocus(application_state)),
+			new GPlatesGui::FeatureFocus(*this)),
 	d_visual_layers(
 			new VisualLayers(
 				d_application_state,

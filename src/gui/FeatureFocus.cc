@@ -24,17 +24,19 @@
  */
 
 #include <boost/none.hpp>
+#include <QDebug>
 
 #include "FeatureFocus.h"
 
-#include "app-logic/ApplicationState.h"
-#include "app-logic/ReconstructGraph.h"
-#include "app-logic/Reconstruction.h"
-#include "app-logic/ReconstructionGeometryFinder.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "model/FeatureHandle.h"
 #include "model/WeakReferenceCallback.h"
+
+#include "presentation/ViewState.h"
+
+#include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryUtils.h"
 
 
 namespace
@@ -70,15 +72,17 @@ namespace
 
 
 GPlatesGui::FeatureFocus::FeatureFocus(
-		GPlatesAppLogic::ApplicationState &application_state):
-	d_application_state_ptr(&application_state)
+		GPlatesPresentation::ViewState &view_state):
+	d_rendered_geometry_collection(view_state.get_rendered_geometry_collection())
 {
-	// Get notified whenever a new reconstruction occurs.
+	// Get notified whenever the rendered geometry collection gets updated.
 	QObject::connect(
-			d_application_state_ptr,
-			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
+			&d_rendered_geometry_collection,
+			SIGNAL(collection_was_updated(
+					GPlatesViewOperations::RenderedGeometryCollection &,
+					GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
 			this,
-			SLOT(handle_reconstruction(GPlatesAppLogic::ApplicationState &)));
+			SLOT(handle_rendered_geometry_collection_update()));
 }
 
 
@@ -148,7 +152,7 @@ GPlatesGui::FeatureFocus::set_focus(
 	d_associated_geometry_property = new_associated_property;
 
 	// Find the ReconstructionGeometry associated with the geometry property.
-	find_new_associated_reconstruction_geometry(d_application_state_ptr->get_current_reconstruction());
+	find_new_associated_reconstruction_geometry();
 
 	// tell the rest of the application about the new focus
 	emit focus_changed(*this);
@@ -166,15 +170,20 @@ GPlatesGui::FeatureFocus::set_focus(
 	}
 	
 	// Locate a geometry property within the feature.
-	GPlatesAppLogic::ReconstructionGeometryFinder finder;
-	finder.find_rgs_of_feature(new_feature_ref);
-	if (finder.found_rgs_begin() != finder.found_rgs_end()) {
-		// Found something, just focus the first one.
-		set_focus(new_feature_ref, *finder.found_rgs_begin());
-	} else {
+	// Note that there could be multiple geometry properties in which case we'll
+	// choose the first since the caller hasn't specified a particular property.
+	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geometries_observing_feature;
+	if (!GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_observing_feature(
+		reconstruction_geometries_observing_feature,
+		d_rendered_geometry_collection,
+		new_feature_ref))
+	{
 		// None found, we cannot focus this.
 		unset_focus();
 	}
+
+	// Found something, just focus the first one.
+	set_focus(new_feature_ref, reconstruction_geometries_observing_feature.front());
 }
 
 
@@ -190,8 +199,7 @@ GPlatesGui::FeatureFocus::unset_focus()
 
 
 void
-GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry(
-		const GPlatesAppLogic::Reconstruction &reconstruction)
+GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry()
 {
 	if ( !d_focused_feature.is_valid() ||
 		!d_associated_geometry_property.is_still_valid())
@@ -202,31 +210,29 @@ GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry(
 		return;
 	}
 
-	// Find the new associated ReconstructionGeometry for the currently-focused feature (if any).
-	//
-	// When the reconstruction is re-calculated, it will be populated with all-new
-	// RGs.  The old RGs will be meaningless (but due to the power of intrusive-ptrs,
-	// the associated RG currently referenced by this class will still exist).
-	boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
-			new_associated_rg =
-					GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
-							d_focused_feature,
-							d_associated_geometry_property,
-							*reconstruction.get_default_reconstruction_layer_output()
-								->get_reconstruction_tree());
-
-	if (!new_associated_rg)
+	// Get any ReconstructionGeometry objects (observing the focused feature) that are visible in
+	// all active layers of the RenderedGeometryCollection - this is the output of the current
+	// reconstruction and provides a more convenient means to get the visible geometries.
+	// If we used the current Reconstruction object and iterated over the layer outputs it wouldn't
+	// be as easy due to the varied richness of the interface provided by the layer outputs (layer proxies) -
+	// in other words for each layer we would need to know how to generate reconstruction geometries
+	// amongst all the other interface methods provided by each layer.
+	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geometries_observing_feature;
+	if (!GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_observing_feature(
+		reconstruction_geometries_observing_feature,
+		d_rendered_geometry_collection,
+		d_focused_feature,
+		d_associated_geometry_property))
 	{
 		// We looked at the relevant reconstruction geometries in the new reconstruction, without
 		// finding a match.  Thus, it appears that there is no RG in the new reconstruction which
-		// corresponds to the current associated geometry property and reconstruction tree.
+		// corresponds to the current associated geometry property.
 		//
 		// When there is no RG found, we lose the associated RG.  This will be apparent to the user
-		// if he increments the reconstruction time to a time when there is no RG (meaning that the
-		// associated RG will become NULL). However the geometry property and reconstruction tree
-		// used by the RG will still be non-null so when the user then steps back one increment to
-		// where he was before, a new RG will be found that uses the same geometry property and
-		// so the RG will be non-null once again.
+		// if the reconstruction time is incremented to a time when there is no RG (meaning that the
+		// associated RG will become NULL). However the geometry property used by the RG will still
+		// be non-null so when the user then steps back one increment, a new RG will be found that
+		// uses the same geometry property and so the RG will be non-null once again.
 		d_associated_reconstruction_geometry = NULL;
 
 		// NOTE: We don't change the associated geometry property since
@@ -236,8 +242,19 @@ GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry(
 		return;
 	}
 
+	// Actually we don't want to generate a debug message because it'll get output for every
+	// reconstruction time change while the current feature is focused.
+#if 0
+	if (reconstruction_geometries_observing_feature.size() > 1)
+	{
+		qDebug() <<
+			"WARNING: More than one reconstruction geometry for focused feature "
+			"geometry property - choosing the first one found.";
+	}
+#endif
+
 	// Assign the new associated reconstruction geometry.
-	d_associated_reconstruction_geometry = new_associated_rg.get().get();
+	d_associated_reconstruction_geometry = reconstruction_geometries_observing_feature.front().get();
 }
 
 
@@ -273,13 +290,17 @@ GPlatesGui::FeatureFocus::announce_deletion_of_focused_feature()
 
 
 void
-GPlatesGui::FeatureFocus::handle_reconstruction(
-		GPlatesAppLogic::ApplicationState &application_state)
+GPlatesGui::FeatureFocus::handle_rendered_geometry_collection_update()
 {
-	find_new_associated_reconstruction_geometry(
-			application_state.get_current_reconstruction());
+	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type
+			old_associated_reconstruction_geometry = d_associated_reconstruction_geometry;
 
-	// A new ReconstructionGeometry has been found so we should
-	// emit a signal in case clients need to know this.
-	emit focus_changed(*this);
+	find_new_associated_reconstruction_geometry();
+
+	if (d_associated_reconstruction_geometry != old_associated_reconstruction_geometry)
+	{
+		// A new ReconstructionGeometry has been found so we should
+		// emit a signal in case clients need to know this.
+		emit focus_changed(*this);
+	}
 }
