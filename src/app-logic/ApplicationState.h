@@ -50,11 +50,6 @@
 // This header gets included in a lot of other files and we want to reduce compile times.
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace GPlatesGui
-{
-	class PythonManager;
-}
-
 namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileIO;
@@ -135,12 +130,7 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesAppLogic::UserPreferences &
 		get_user_preferences();
-
-		GPlatesGui::PythonManager&
-		get_python_manager()
-		{
-			return *d_python_manager_ptr;
-		}
+		
 
 		/**
 		 * Returns the registry of various ways to reconstruct a feature
@@ -358,7 +348,6 @@ namespace GPlatesAppLogic
 
 		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
 
-		boost::scoped_ptr<GPlatesGui::PythonManager> d_python_manager_ptr;
 		/**
 		 * A registry for various ways to reconstruct a feature into @a ReconstructedFeatureGeometry objects.
 		 */

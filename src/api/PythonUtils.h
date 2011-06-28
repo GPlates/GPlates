@@ -112,7 +112,7 @@ namespace GPlatesApi
 		GPlatesGui::PythonManager&
 		python_manager()
 		{
-			return GPlatesPresentation::Application::instance()->get_application_state().get_python_manager();
+			return GPlatesPresentation::Application::instance()->get_view_state().get_python_manager();
 		}
 		
 		template<class Type>

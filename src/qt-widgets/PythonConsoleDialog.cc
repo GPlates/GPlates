@@ -67,11 +67,11 @@
 #include "global/python.h"
 
 #include "gui/PythonConsoleHistory.h"
+#include "gui/PythonManager.h"
 
 #include "presentation/ViewState.h"
 
 #include "utils/DeferredCallEvent.h"
-#include "gui/PythonManager.h"
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace
@@ -207,7 +207,7 @@ GPlatesQtWidgets::PythonConsoleDialog::PythonConsoleDialog(
 		QWidget *parent_)
 	: QDialog(parent_, Qt::Window)
 	, d_application_state(application_state)
-	, d_python_manager(application_state.get_python_manager())
+	, d_python_manager(view_state.get_python_manager())
 	, d_viewport_window(viewport_window)
 	, d_output_textedit(new ConsoleTextEdit(this))
 	, d_open_file_dialog(
@@ -300,7 +300,7 @@ GPlatesQtWidgets::PythonConsoleDialog::make_signal_slot_connections()
 			SLOT(handle_system_exit_exception_raised(int, QString )));
 
 	QObject::connect(
-			&d_application_state.get_python_manager(),
+			&GPlatesApi::PythonUtils::python_manager(),
 			SIGNAL(system_exit_exception_raised(int, QString )),
 			this,
 			SLOT(handle_system_exit_exception_raised(int, QString )));

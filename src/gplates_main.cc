@@ -286,10 +286,10 @@ int internal_main(int argc, char* argv[])
 	if(ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
 	{
 #ifdef GPLATES_NO_PYTHON
-		app->get_application_state().get_python_manager().initialize(*app);
+		app->get_view_state().get_python_manager().initialize(*app);
 #else
 		try{
-			app->get_application_state().get_python_manager().initialize();
+			app->get_view_state().get_python_manager().initialize();
 		}
 		catch(const PythonInitFailed& ex)
 		{

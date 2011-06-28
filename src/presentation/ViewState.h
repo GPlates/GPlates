@@ -72,6 +72,7 @@ namespace GPlatesGui
 	class FeatureFocus;
 	class GraticuleSettings;
 	class MapTransform;
+	class PythonManager;
 	class RenderSettings;
 	class TextOverlaySettings;
 	class ViewportProjection;
@@ -289,6 +290,12 @@ namespace GPlatesPresentation
 		GPlatesGui::ExportAnimationRegistry &
 		get_export_animation_registry() const;
 
+		GPlatesGui::PythonManager&
+		get_python_manager()
+		{
+			return *d_python_manager_ptr;
+		}
+
 	private slots:
 
 
@@ -410,6 +417,7 @@ namespace GPlatesPresentation
 		 */
 		boost::scoped_ptr<GPlatesGui::ExportAnimationRegistry> d_export_animation_registry;
 			
+		boost::scoped_ptr<GPlatesGui::PythonManager> d_python_manager_ptr;
 	};
 }
 

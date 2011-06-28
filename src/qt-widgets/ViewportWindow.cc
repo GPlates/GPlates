@@ -1002,7 +1002,7 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 		d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
 				menu_Utilities,
 				action_Open_Python_Console,
-				get_application_state().get_python_manager(),
+				get_view_state().get_python_manager(),
 				this);
 		// ----
 		QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
@@ -2720,7 +2720,7 @@ GPlatesQtWidgets::ViewportWindow::open_online_documentation()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
 {
-	get_application_state().get_python_manager().pop_up_python_console();
+	GPlatesApi::PythonUtils::python_manager().pop_up_python_console();
 }
 
 

@@ -44,8 +44,6 @@
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
-#include "api/Sleeper.h"
-#include "gui/PythonManager.h"
 
 namespace
 {
@@ -79,7 +77,6 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_serialization_ptr(new Serialization(*this)),
 	d_session_management_ptr(new SessionManagement(*this)),
 	d_user_preferences_ptr(new UserPreferences()),
-	d_python_manager_ptr(new GPlatesGui::PythonManager()),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_reconstruct_graph(new ReconstructGraph(*d_layer_task_registry)),

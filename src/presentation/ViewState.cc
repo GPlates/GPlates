@@ -49,6 +49,7 @@
 #include "gui/GeometryFocusHighlight.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
+#include "gui/PythonManager.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
 #include "gui/Symbol.h"
@@ -128,7 +129,8 @@ GPlatesPresentation::ViewState::ViewState(
 	d_text_overlay_settings(
 			new GPlatesGui::TextOverlaySettings()),
 	d_export_animation_registry(
-			new GPlatesGui::ExportAnimationRegistry())
+			new GPlatesGui::ExportAnimationRegistry()),
+	d_python_manager_ptr(new GPlatesGui::PythonManager())
 {
 	connect_to_viewport_zoom();
 
