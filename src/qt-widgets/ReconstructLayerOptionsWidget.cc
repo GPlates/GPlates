@@ -86,6 +86,19 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::set_data(
 		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
 {
 	d_current_visual_layer = visual_layer;
+
+	// Set the state of the filled polygon checkbox.
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::ReconstructVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::ReconstructVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+
+		if (visual_layer_params)
+		{
+			fill_polygons->setChecked(visual_layer_params->get_fill_polygons());
+		}
+	}
 }
 
 
