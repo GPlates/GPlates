@@ -44,6 +44,8 @@ set(srcs
     CsvExport.h
     DockState.cc
     DockState.h
+    DrawStyleManager.cc
+    DrawStyleManager.h
     EnableCanvasTool.cc
     EnableCanvasTool.h
     EventBlackout.cc
@@ -148,6 +150,8 @@ set(srcs
     ProjectionException.h
     PythonConsoleHistory.cc
     PythonConsoleHistory.h
+    PythonManager.cc
+    PythonManager.h
     QGLWidgetTextRenderer.cc
     QGLWidgetTextRenderer.h
     RasterColourPalette.cc

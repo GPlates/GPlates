@@ -40,7 +40,7 @@
 
 #include "utils/DeferredCallEvent.h"
 #include "utils/StringUtils.h"
-#include "utils/PythonManager.h"
+#include "gui/PythonManager.h"
 
 #if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::PythonRunner::PythonRunner(

@@ -15,7 +15,7 @@
     <widget class="QWidget" name="set_vgp_visibility_placeholder_widget" native="true"/>
    </item>
    <item>
-    <widget class="QWidget" name="render_setting_placeholder_widget" native="true"/>
+    <widget class="QWidget" name="draw_style_placeholder_widget" native="true"/>
    </item>
    <item>
     <widget class="QCheckBox" name="fill_polygons">

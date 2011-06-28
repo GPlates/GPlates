@@ -71,7 +71,7 @@
 #include "presentation/ViewState.h"
 
 #include "utils/DeferredCallEvent.h"
-#include "utils/PythonManager.h"
+#include "gui/PythonManager.h"
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace
@@ -1278,8 +1278,8 @@ GPlatesQtWidgets::ConsoleTextEdit::scroll_to_bottom()
 	verticalScrollBar()->triggerAction(QAbstractSlider::SliderToMaximum);
 }
 
-void
-GPlatesQtWidgets::PythonConsoleDialog::show_cancel_widget(GPlatesGui::EventBlackout* eb)
+QWidget *
+GPlatesQtWidgets::PythonConsoleDialog::show_cancel_widget()
 {
 	// Because this dialog is exempt from the event blackout, we need to manually
 	// disable a few things.
@@ -1292,21 +1292,20 @@ GPlatesQtWidgets::PythonConsoleDialog::show_cancel_widget(GPlatesGui::EventBlack
 	d_monitor_widget = new PythonExecutionMonitorWidget(
 			d_python_execution_thread,
 			isVisible() ? static_cast<QWidget *>(this) : d_viewport_window);
-	eb->add_blackout_exemption(d_monitor_widget);
-	return ;
+	return d_monitor_widget;
 }
 
-void
-GPlatesQtWidgets::PythonConsoleDialog::hide_cancel_widget(GPlatesGui::EventBlackout* eb)
+QWidget *
+GPlatesQtWidgets::PythonConsoleDialog::hide_cancel_widget()
 {
+	QWidget * ret = d_monitor_widget;
 	d_output_textedit->set_input_widget_visible(true);
 	run_script_button->setEnabled(true);
 	save_button->setEnabled(true);
 	d_disable_close = false;
-	eb->remove_blackout_exemption(d_monitor_widget);
 	d_monitor_widget->deleteLater();
 	d_monitor_widget = NULL;
-	return ;
+	return ret;
 }
 
 

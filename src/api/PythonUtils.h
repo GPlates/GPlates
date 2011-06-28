@@ -36,7 +36,7 @@
 #include "api/PythonInterpreterLocker.h"
 #include "api/PythonInterpreterUnlocker.h"
 #include "presentation/Application.h"
-#include "utils/PythonManager.h"
+#include "gui/PythonManager.h"
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesAppLogic
@@ -109,12 +109,47 @@ namespace GPlatesApi
 		}
 
 		inline
-		GPlatesUtils::PythonManager&
+		GPlatesGui::PythonManager&
 		python_manager()
 		{
 			return GPlatesPresentation::Application::instance()->get_application_state().get_python_manager();
 		}
+		
+		template<class Type>
+		void
+		helper_fun(
+				const boost::function< Type () > &f,
+				boost::any* ret)
+		{
+			*ret = f();
+		}
 
+		template<class ReturnType>
+		ReturnType
+		run_in_main_thread(
+				const boost::function< ReturnType () > &f)
+		{
+			if(is_main_thread())
+				return f();
+
+			boost::any retVal;
+			boost::function<void ()> fun = 
+				boost::bind(
+						&helper_fun<ReturnType>,
+						f,
+						&retVal);
+			qRegisterMetaType< boost::function< void () > >("boost::function< void () >");
+			ThreadSwitchGuard g;
+			QMetaObject::invokeMethod(
+				&python_manager(), 
+				"exec_function_slot", 
+				Qt::BlockingQueuedConnection,
+				Q_ARG(boost::function<void () > , fun)
+				);
+			return  boost::any_cast<ReturnType>(retVal);
+		}
+
+		template<>
 		inline
 		void
 		run_in_main_thread(

@@ -33,7 +33,6 @@
 #include "global/GPlatesException.h"
 #include "global/python.h"
 #include "gui/EventBlackout.h"
-#include "presentation/Application.h"
 
 namespace GPlatesAppLogic
 {
@@ -58,7 +57,7 @@ namespace GPlatesQtWidgets
 }
 
 #if !defined(GPLATES_NO_PYTHON)
-namespace GPlatesUtils
+namespace GPlatesGui
 {
 	class PyManagerNotReady : 
 		public GPlatesGlobal::Exception
@@ -126,19 +125,7 @@ namespace GPlatesUtils
 		{ }
 
 		~PythonManager();
-#if 0
-		const boost::python::object &
-		get_python_main_module() const
-		{
-			return d_python_main_module;
-		}
 
-		const boost::python::object &
-		get_python_main_namespace() const
-		{
-			return d_python_main_namespace;
-		}
-#endif
 		void
 		init_python_interpreter(
 				std::string program_name = "gplates");
@@ -159,6 +146,20 @@ namespace GPlatesUtils
 		register_script(
 				const QString& name, 
 				const QString& encoding);
+
+		void
+		register_py_obj(
+				const QString& name, 
+				const boost::python::object& obj)
+		{
+			d_python_main_namespace[name.toStdString()] = obj;
+		}
+
+		boost::python::object
+		get_py_obj(const QString& name)
+		{
+			return d_python_main_namespace[name.toStdString()];
+		}
 
 		/**
 		 * Returns a thread on which Python code can be run off the main thread.
@@ -210,8 +211,7 @@ namespace GPlatesUtils
 				const boost::function< void () > &f)
 		{
 			PythonExecGuard g(this);
-			f();
-			return;
+			return f();
 		}
 
 	private:
@@ -267,6 +267,9 @@ namespace GPlatesUtils
 
 		bool d_inited;
 
+		/*
+		* TODO: This dialog should be taken out from python manager -- MC.
+		*/
 		GPlatesQtWidgets::PythonConsoleDialog* d_python_console_dialog_ptr;
 
 		std::vector<QDir> d_scripts_paths;

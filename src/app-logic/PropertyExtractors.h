@@ -113,9 +113,7 @@ namespace GPlatesAppLogic
 
 		typedef GPlatesMaths::Real return_type;
 
-		AgePropertyExtractor(
-				const ApplicationState &application_state) :
-			d_application_state(application_state)
+		AgePropertyExtractor()
 		{  }
 
 		const boost::optional<return_type>
@@ -124,7 +122,6 @@ namespace GPlatesAppLogic
 	
 	private:
 
-		const ApplicationState &d_application_state;
 	};
 
 	/**

@@ -25,7 +25,7 @@ def load_cfg(co):
 	co.add_cfg_row("coreg_target.gpml, 		Region_of_Interest (5000), 		PLATEID1,				Lookup,			 true")
 	
 def process(time):
-	co=gplates_ext.CoRegistration();
+	co=pygplates.CoRegistration();
 	load_cfg(co)
 	co.run(time)
 	co.export()

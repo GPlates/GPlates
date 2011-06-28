@@ -97,6 +97,9 @@ set(srcs
     DigitisationWidgetUi.ui
     DockWidget.cc
     DockWidget.h
+    DrawStyleDialog.cc
+    DrawStyleDialog.h
+    DrawStyleDialogUi.ui
     EditAffineTransformGeoreferencingWidget.cc
     EditAffineTransformGeoreferencingWidget.h
     EditAffineTransformGeoreferencingWidgetUi.ui
@@ -302,9 +305,6 @@ set(srcs
     ReconstructLayerOptionsWidget.cc
     ReconstructLayerOptionsWidget.h
     ReconstructLayerOptionsWidgetUi.ui
-    RenderSettingDialog.cc
-    RenderSettingDialog.h
-    RenderSettingDialogUi.ui
     ResultTableDialog.cc
     ResultTableDialog.h
     ResultTableDialogUi.ui

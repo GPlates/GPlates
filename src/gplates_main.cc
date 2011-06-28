@@ -53,7 +53,7 @@
 #include "utils/Profile.h"
 #include "utils/CommandLineParser.h"
 #include "utils/ComponentManager.h"
-#include "utils/PythonManager.h"
+#include "gui/PythonManager.h"
 
 namespace
 {
@@ -274,6 +274,7 @@ int internal_main(int argc, char* argv[])
 		main_window_widget.install_gui_debug_menu();
 	}
 
+	using namespace GPlatesGui;
 	using namespace GPlatesUtils;
 	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::symbology()))
 	{

@@ -41,7 +41,7 @@ Q_DECLARE_METATYPE( boost::function< void () > )
 GPlatesGui::UtilitiesMenu::UtilitiesMenu(
 		QMenu *utilities_menu,
 		QAction *before_action,
-		GPlatesUtils::PythonManager& python_manager,
+		GPlatesGui::PythonManager& python_manager,
 		QObject *parent_) :
 	QObject(parent_),
 	d_utilities_menu(utilities_menu),

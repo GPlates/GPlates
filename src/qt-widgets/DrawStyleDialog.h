@@ -23,10 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_RENDERSETTINGDIALOG_H
-#define GPLATES_QTWIDGETS_RENDERSETTINGDIALOG_H
+#ifndef GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
+#define GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
 
-#include "RenderSettingDialogUi.h"
+#include "DrawStyleDialogUi.h"
+#include "gui/DrawStyleManager.h"
 
 namespace GPlatesAppLogic
 {
@@ -48,25 +49,55 @@ namespace GPlatesQtWidgets
 	class GlobeAndMapWidget;
 	class ReadErrorAccumulationDialog;
 
-	class RenderSettingDialog  : 
+	class DrawStyleDialog  : 
 			public QDialog, 
-			protected Ui_RenderSettingDialog 
+			protected Ui_DrawStyleDialog
 	{
 		Q_OBJECT
 
 	public:
-		RenderSettingDialog(
+		DrawStyleDialog(
 			GPlatesPresentation::ViewState &view_state,
-			const GlobeAndMapWidget &existing_globe_and_map_widget,
-			ReadErrorAccumulationDialog &read_error_accumulation_dialog,
-			QWidget* parent_ = NULL)
-		{
-			setupUi(this);
-		}
+			boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
+			QWidget* parent_ = NULL);
 
+		~DrawStyleDialog()
+		{
+			qDebug() << "destructing DrawStyleDialog";
+		}
+		
+		void
+		init_catagory_table();
+
+		void
+		init_dlg();
+
+	protected:
+		void
+		make_signal_slot_connections();
+
+		void
+		set_style();
+
+		void
+		load_category(const GPlatesGui::StyleCatagory* );
+				
 	private slots:
+		void
+		handle_close_button_clicked();
+
+		void
+		handle_categories_table_cell_changed(
+				int current_row,
+				int current_column,
+				int previous_row,
+				int previous_column);
 
 	private:
+		static const std::size_t ICON_SIZE = 145;
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
+		QIcon d_blank_icon;
+		GPlatesGui::DrawStyleManager* d_style_mgr;
 	};
 }
 

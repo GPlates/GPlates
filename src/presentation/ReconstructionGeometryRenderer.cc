@@ -54,6 +54,7 @@
 #include "data-mining/DataTable.h"
 
 #include "gui/Colour.h"
+#include "gui/DrawStyleManager.h"
 #include "gui/PlateIdColourPalettes.h"
 
 #include "maths/CalculateVelocity.h"
@@ -109,11 +110,14 @@ namespace
 			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
 			const boost::optional<GPlatesGui::Colour> &colour,
 			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none,
-			const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none)
+			const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,
+			const GPlatesGui::DrawStyle style = GPlatesGui::DrawStyle())
 	{
 
 		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
 				feature_type_symbol_map, reconstruction_geometry);
+		
+		qDebug() << "hehe, the dummy draw style is : " << style.dummy;
 
 		// Create a RenderedGeometry for drawing the reconstructed geometry.
 		// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
@@ -214,11 +218,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 		const RenderParams &render_params,
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
-		const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map) :
+		const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map,
+		const GPlatesGui::StyleAdapter* sa) :
 	d_render_params(render_params),
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment),
-	d_feature_type_symbol_map(feature_type_symbol_map)
+	d_feature_type_symbol_map(feature_type_symbol_map),
+	d_style_adapter(sa)
 {
 }
 
@@ -342,7 +348,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
-
+	GPlatesGui::DrawStyle ds = d_style_adapter? d_style_adapter->get_style(rfg->get_feature_ref()) : GPlatesGui::DrawStyle();
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
 					rfg->reconstructed_geometry(),
@@ -350,7 +356,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 					d_render_params,
 					d_colour,
 					d_reconstruction_adjustment,
-					d_feature_type_symbol_map);
+					d_feature_type_symbol_map,
+					ds);
 
 	// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
 	render_reconstruction_geometry_on_sphere(rendered_geometry);

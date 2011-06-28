@@ -30,7 +30,8 @@ GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams(
 		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
 	VisualLayerParams(layer_task_params),
 	d_vgp_draw_circular_error(true),
-	d_fill_polygons(false)
+	d_fill_polygons(false),
+	d_style(NULL)
 {
 }
 

@@ -39,6 +39,8 @@ void export_feature_collection();
 // presentation directory.
 void export_instance();
 
+void export_style();
+
 // qt-widgets directory.
 void export_main_window();
 
@@ -57,6 +59,8 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	// qt-widgets directory.
 	export_main_window();
+
+	export_style();
 
 #endif	
 	export_co_registration();

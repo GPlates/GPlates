@@ -85,7 +85,7 @@
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
-#include "RenderSettingDialog.h"
+#include "DrawStyleDialog.h"
 #include "SaveFileDialog.h"
 #include "SetCameraViewpointDialog.h"
 #include "SetProjectionDialog.h"
@@ -176,7 +176,7 @@
 #include "utils/ComponentManager.h"
 #include "utils/DeferredCallEvent.h"
 #include "utils/Profile.h"
-#include "utils/PythonManager.h"
+#include "gui/PythonManager.h"
 
 #include "view-operations/ActiveGeometryOperation.h"
 #include "view-operations/CloneOperation.h"
@@ -1545,22 +1545,6 @@ GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_render_setting_dialog()
-{
-	if (!d_render_setting_dialog_ptr)
-	{
-		d_render_setting_dialog_ptr.reset(
-				new RenderSettingDialog(
-						get_view_state(),
-						d_reconstruction_view_widget_ptr->globe_and_map_widget(),
-						*d_read_errors_dialog_ptr,
-						this));
-	}
-	QtWidgetUtils::pop_up_dialog(d_render_setting_dialog_ptr.get());
-}
-
-
-void
 GPlatesQtWidgets::ViewportWindow::handle_load_symbol_file()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -2749,49 +2733,4 @@ GPlatesQtWidgets::ViewportWindow::showEvent(
 	// the definition of ReconstructionViewWidget::globe_is_active().
 	update_tools_and_status_message();
 }
-
-
-#if !defined(GPLATES_NO_PYTHON)
-namespace
-{
-	void
-	status_message(
-			GPlatesQtWidgets::ViewportWindow &viewport_window,
-			const boost::python::object &obj)
-	{
-		GPlatesApi::PythonInterpreterLocker interpreter_locker;
-		viewport_window.status_message(GPlatesApi::PythonUtils::stringify_object(obj, "utf-8")); // FIXME: hard coded codec
-	}
-
-#if 0
-	void
-	status_message2(
-			GPlatesQtWidgets::ViewportWindow &viewport_window,
-			const GPlatesQtWidgets::ViewportWindow &,
-			const boost::python::object &obj)
-	{
-		GPlatesApi::PythonInterpreterLocker interpreter_locker;
-		viewport_window.status_message(GPlatesApi::PythonUtils::stringify_object(obj, "utf-8")); // FIXME: hard coded codec
-	}
-#endif
-}
-
-
-void
-export_main_window()
-{
-	using namespace boost::python;
-	using namespace GPlatesApi::DeferredApiCall;
-
-	class_<GPlatesQtWidgets::ViewportWindow, boost::noncopyable>("MainWindow", no_init /* scripts cannot create more of these! */)
-		.def("set_status_message",
-				GPLATES_DEFERRED_API_CALL(&::status_message, ArgReferenceWrappings<ref>()))
-#if 0
-		// This is an example of how to supply more than one parameter to ArgReferenceWrappings.
-		.def("set_status_message2",
-				GPLATES_DEFERRED_API_CALL(&::status_message2, (ArgReferenceWrappings<ref, cref>()) ))
-#endif
-		;
-}
-#endif
 

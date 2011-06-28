@@ -38,8 +38,6 @@ set(srcs
     Parse.h
     Profile.cc
     Profile.h
-    PythonManager.cc
-    PythonManager.h
     QtFormattingUtils.h
     Reducer.h
     ReferenceCount.h

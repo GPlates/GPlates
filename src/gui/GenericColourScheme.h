@@ -63,7 +63,6 @@ namespace GPlatesGui
 		 * pointer passes to this instance of GenericColourScheme; the memory pointed
 		 * at by the pointer is deallocated when this instance is destructed.
 		 */
-		explicit
 		GenericColourScheme(
 				typename ColourPaletteType::non_null_ptr_type colour_palette_ptr,
 				const PropertyExtractorType &property_extractor) :

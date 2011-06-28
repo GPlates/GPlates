@@ -45,6 +45,7 @@ namespace GPlatesQtWidgets
 {
 	// Forward declaration.
 	class SetVGPVisibilityDialog;
+	class DrawStyleDialog;
 	class ViewportWindow;
 
 	/**
@@ -82,14 +83,13 @@ namespace GPlatesQtWidgets
 		open_vgp_visibility_dialog();
 
 		void
-		open_render_setting_dlg();
+		open_draw_style_setting_dlg();
 		
 		void
 		handle_fill_polygons_clicked();
 
 	private:
 
-		explicit
 		ReconstructLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
@@ -99,6 +99,7 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		ViewportWindow *d_viewport_window;
 		SetVGPVisibilityDialog *d_set_vgp_visibility_dialog;
+		DrawStyleDialog		   *d_draw_style_dialog_ptr;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

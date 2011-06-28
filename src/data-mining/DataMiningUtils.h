@@ -121,6 +121,11 @@ namespace GPlatesDataMining
 		{
 			return get_shape_file_value_by_name(feature_ref.handle_ptr(),attr_name);
 		}
+
+		GPlatesFileIO::File::non_null_ptr_type 
+		load_file(
+				const QString fn,
+				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL);
 		
 		/*
 		* Given a list of file names, load all the files and

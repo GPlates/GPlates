@@ -37,6 +37,7 @@
 #include "app-logic/LayerTaskRegistry.h"
 #include "app-logic/ReconstructGraph.h"
 
+#include "gui/DrawStyleManager.h"
 #include "gui/Symbol.h"
 
 #include "view-operations/RenderedGeometryLayer.h"
@@ -194,6 +195,12 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 			&d_application_state,
 			SIGNAL(reconstructed(
 					GPlatesAppLogic::ApplicationState &)),
+			this,
+			SLOT(create_rendered_geometries()));
+
+	QObject::connect(
+			GPlatesGui::DrawStyleManager::instance(),
+			SIGNAL(draw_style_changed()),
 			this,
 			SLOT(create_rendered_geometries()));
 

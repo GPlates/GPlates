@@ -45,7 +45,7 @@
 #include "api/ConsoleWriter.h"
 #include "api/Sleeper.h"
 #include "gui/EventBlackout.h"
-#include "utils/PythonManager.h"
+#include "gui/PythonManager.h"
 
 namespace GPlatesApi
 {
@@ -55,6 +55,8 @@ namespace GPlatesApi
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+
+
 }
 
 namespace GPlatesGui
@@ -162,11 +164,11 @@ namespace GPlatesQtWidgets
 		QString
 		get_last_non_blank_line() const;
 
-		void
-		show_cancel_widget(GPlatesGui::EventBlackout*);
+		QWidget*
+		show_cancel_widget();
 
-		void 
-		hide_cancel_widget(GPlatesGui::EventBlackout*);
+		QWidget* 
+		hide_cancel_widget();
 
 	public slots:
 
@@ -257,7 +259,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
-		GPlatesUtils::PythonManager& d_python_manager;
+		GPlatesGui::PythonManager& d_python_manager;
 		ViewportWindow *d_viewport_window;
 
 		/**

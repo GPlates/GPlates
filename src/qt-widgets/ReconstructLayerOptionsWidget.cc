@@ -25,6 +25,7 @@
 
 #include "ReconstructLayerOptionsWidget.h"
 
+#include "DrawStyleDialog.h"
 #include "LinkWidget.h"
 #include "QtWidgetUtils.h"
 #include "SetVGPVisibilityDialog.h"
@@ -43,7 +44,8 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
 	d_viewport_window(viewport_window),
-	d_set_vgp_visibility_dialog(NULL)
+	d_set_vgp_visibility_dialog(NULL),
+	d_draw_style_dialog_ptr(NULL)
 {
 	setupUi(this);
 
@@ -58,18 +60,17 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			this,
 			SLOT(open_vgp_visibility_dialog()));
 	
-	LinkWidget *render_setting_link = new LinkWidget(
-			tr("Render Setting..."), this);
+	LinkWidget *draw_style_link = new LinkWidget(
+			tr("Draw Style Setting..."), this);
+	draw_style_link->setVisible(false);
 	QtWidgetUtils::add_widget_to_placeholder(
-			render_setting_link,
-			render_setting_placeholder_widget);
+			draw_style_link,
+			draw_style_placeholder_widget);
 	QObject::connect(
-			render_setting_link,
+			draw_style_link,
 			SIGNAL(link_activated()),
 			this,
-			SLOT(open_render_setting_dlg()));
-
-	render_setting_link->setVisible(false);
+			SLOT(open_draw_style_setting_dlg()));
 	
 	QObject::connect(
 			fill_polygons,
@@ -129,9 +130,17 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_vgp_visibility_dialog()
 
 
 void
-GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_render_setting_dlg()
+GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_draw_style_setting_dlg()
 {
-	d_viewport_window->pop_up_render_setting_dialog();
+	if (!d_draw_style_dialog_ptr)
+	{
+		d_draw_style_dialog_ptr = new DrawStyleDialog(
+				GPlatesPresentation::Application::instance()->get_view_state(),
+				d_current_visual_layer,
+				&d_viewport_window->visual_layers_dialog());
+	}
+	d_draw_style_dialog_ptr->init_dlg();
+	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 }
 
 

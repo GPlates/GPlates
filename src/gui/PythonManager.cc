@@ -45,7 +45,7 @@
 extern "C" void initpygplates();
 
 void
-GPlatesUtils::PythonManager::initialize() 
+GPlatesGui::PythonManager::initialize() 
 {
 	if(d_inited)
 	{
@@ -74,7 +74,7 @@ GPlatesUtils::PythonManager::initialize()
 	}
 }
 
-GPlatesUtils::PythonManager::~PythonManager()
+GPlatesGui::PythonManager::~PythonManager()
 {
 	// Stop the Python execution thread.
 	static const int WAIT_TIME = 1000 /* milliseconds */;
@@ -94,7 +94,7 @@ GPlatesUtils::PythonManager::~PythonManager()
 }
 
 void
-GPlatesUtils::PythonManager::init_python_interpreter(std::string program_name)
+GPlatesGui::PythonManager::init_python_interpreter(std::string program_name)
 {
 	using namespace boost::python;
 
@@ -164,7 +164,7 @@ GPlatesUtils::PythonManager::init_python_interpreter(std::string program_name)
 
 
 QFileInfoList
-GPlatesUtils::PythonManager::get_scripts()
+GPlatesGui::PythonManager::get_scripts()
 {
 	GPlatesAppLogic::UserPreferences& user_prefs = 
 		GPlatesPresentation::Application::instance()->get_application_state().get_user_preferences();
@@ -202,7 +202,7 @@ GPlatesUtils::PythonManager::get_scripts()
 }
 
 void
-GPlatesUtils::PythonManager::add_sys_path()
+GPlatesGui::PythonManager::add_sys_path()
 {
 	GPlatesApi::PythonInterpreterLocker interpreter_locker;
 	PyRun_SimpleString("import sys");
@@ -216,7 +216,7 @@ GPlatesUtils::PythonManager::add_sys_path()
 
 
 void 
-GPlatesUtils::PythonManager::register_utils_scripts()
+GPlatesGui::PythonManager::register_utils_scripts()
 {
 	// We need to wait for the user interface is ready
 	// before we start running Python scripts.
@@ -230,7 +230,7 @@ GPlatesUtils::PythonManager::register_utils_scripts()
 
 
 void
-GPlatesUtils::PythonManager::register_script(
+GPlatesGui::PythonManager::register_script(
 		const QString& name, 
 		const QString& encoding)
 {
@@ -254,7 +254,7 @@ GPlatesUtils::PythonManager::register_script(
 }
 
 void
-GPlatesUtils::PythonManager::init_python_console()
+GPlatesGui::PythonManager::init_python_console()
 {
 	using namespace GPlatesPresentation;
 	if(!d_python_console_dialog_ptr)
@@ -269,7 +269,7 @@ GPlatesUtils::PythonManager::init_python_console()
 
 
 void
-GPlatesUtils::PythonManager::pop_up_python_console()
+GPlatesGui::PythonManager::pop_up_python_console()
 {
 	if(d_python_console_dialog_ptr)
 	{	
@@ -279,7 +279,7 @@ GPlatesUtils::PythonManager::pop_up_python_console()
 
 
 void
-GPlatesUtils::PythonManager::python_started()
+GPlatesGui::PythonManager::python_started()
 {
 	// We need to stop the event blackout if it has started. This is because one of
 	// the reasons to run code on the main thread is to run PyQt related code - and
@@ -295,7 +295,7 @@ GPlatesUtils::PythonManager::python_started()
 
 
 void
-GPlatesUtils::PythonManager::python_finished()
+GPlatesGui::PythonManager::python_finished()
 {
 	// Restore the event blackout if it was started before we stopped it when code
 	// started to run on the main thread.
@@ -307,28 +307,28 @@ GPlatesUtils::PythonManager::python_finished()
 }
 
 void
-GPlatesUtils::PythonManager::python_runner_started()
+GPlatesGui::PythonManager::python_runner_started()
 {
 	d_event_blackout.start();
-	boost::function<void ()> f = 
+	boost::function<QWidget* ()> f = 
 		boost::bind(
 				&GPlatesQtWidgets::PythonConsoleDialog::show_cancel_widget,
-				d_python_console_dialog_ptr,
-				&d_event_blackout);
-	GPlatesApi::PythonUtils::run_in_main_thread(f);
+				d_python_console_dialog_ptr);
+	QWidget* w = GPlatesApi::PythonUtils::run_in_main_thread(f);
+	d_event_blackout.add_blackout_exemption(w);
 }
 
 
 void
-GPlatesUtils::PythonManager::python_runner_finished()
+GPlatesGui::PythonManager::python_runner_finished()
 {
 	d_event_blackout.stop();
-	boost::function<void ()> f = 
+	boost::function<QWidget* ()> f = 
 		boost::bind(
 				&GPlatesQtWidgets::PythonConsoleDialog::hide_cancel_widget,
-				d_python_console_dialog_ptr,
-				&d_event_blackout);
-	GPlatesApi::PythonUtils::run_in_main_thread(f);
+				d_python_console_dialog_ptr);
+	QWidget* w = GPlatesApi::PythonUtils::run_in_main_thread(f);
+	d_event_blackout.remove_blackout_exemption(w);
 }
 
 #endif //GPLATES_NO_PYTHON

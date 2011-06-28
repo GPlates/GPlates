@@ -198,6 +198,23 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 	return EmptyData;
 }
 
+GPlatesFileIO::File::non_null_ptr_type
+GPlatesDataMining::DataMiningUtils::load_file(
+		const QString fn,
+		GPlatesFileIO::ReadErrorAccumulation* read_errors)
+{
+	using namespace GPlatesFileIO;
+	GPlatesModel::ModelInterface model;
+	GPlatesModel::FeatureCollectionHandle::weak_ref ret;
+	ReadErrorAccumulation acc;
+	if(!read_errors)
+		read_errors = &acc;
+
+	File::non_null_ptr_type file = File::create_file(FileInfo(fn));
+	read_feature_collection(file->get_reference(), model, *read_errors);
+	return file;	
+}
+
 std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
 GPlatesDataMining::DataMiningUtils::load_files(
 		const std::vector<QString>& filenames,

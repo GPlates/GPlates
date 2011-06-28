@@ -40,6 +40,7 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
+#include "gui/DrawStyleManager.h"
 #include "gui/Symbol.h"
 #include "gui/RasterColourPalette.h"
 
@@ -180,7 +181,8 @@ namespace GPlatesPresentation
 				const RenderParams &render_params = RenderParams(),
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
-				const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none);
+				const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,
+				const GPlatesGui::StyleAdapter* sa = NULL);
 
 		/**
 		 * Must be called before any rendering including visiting any reconstruction geometries.
@@ -312,6 +314,7 @@ namespace GPlatesPresentation
 		boost::optional<GPlatesGui::Colour> d_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
 		boost::optional<GPlatesGui::symbol_map_type> d_feature_type_symbol_map;
+		const GPlatesGui::StyleAdapter* d_style_adapter;
 
 		/**
 		 * All rendered geometries are added to this spatial partition.

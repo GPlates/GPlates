@@ -211,7 +211,103 @@ namespace{
 			return;
 		}
 
+		boost::python::list
+		feature_ids(boost::python::object file)
+		{
+			boost::python::list ret;
+			File::non_null_ptr_type file_ptr = 
+				DataMiningUtils::load_file(QString(boost::python::extract<const char*>(file)));
+			FeatureCollectionHandle::weak_ref fch = file_ptr->get_reference().get_feature_collection();
+			BOOST_FOREACH(FeatureHandle::non_null_ptr_to_const_type fh, *fch)
+			{
+				ret.append(
+							boost::python::object(
+									fh->feature_id().get().qstring().toStdString()));
+			}
+			return ret;
+		}
+
+		boost::python::list
+		roi_filter(
+				boost::python::object time, 
+				boost::python::object range, 
+				boost::python::object seed_id)
+		{
+			double t = boost::python::extract<double>(time);
+			double r = boost::python::extract<double>(range);
+			QString s_id = QString(boost::python::extract<const char*>(seed_id));
+			boost::python::list ret_list;
+			qDebug() << t; qDebug() << r; qDebug() << s_id;
+
+			ReconstructMethodRegistry reconstruct_method_registry;
+			register_default_reconstruct_method_types(reconstruct_method_registry);
+
+			ReconstructionTreeCreator reconstruction_tree_creator =
+				get_cached_reconstruction_tree_creator(
+						d_rotation_fc,
+						t,
+						0/*anchor plate*/);
+			//seed
+			std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_seeds;
+			ReconstructUtils::reconstruct(
+					reconstructed_seeds,
+					t,
+					0, //anchor plate
+					reconstruct_method_registry,
+					d_seed_fc,
+					reconstruction_tree_creator);
+
+			// co-registration features collection.
+			std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_coreg;
+			ReconstructUtils::reconstruct(
+					reconstructed_coreg,
+					t,
+					0, //anchor plate
+					reconstruct_method_registry,
+					d_coreg_fc,
+					reconstruction_tree_creator);
+
+			RegionOfInterestFilter::Config filter_cfg(r);
+			std::vector<const ReconstructedFeatureGeometry*> s_rfgs = get_seed_rfg(s_id,reconstructed_seeds);
+			boost::scoped_ptr<CoRegFilter> f( filter_cfg.create_filter(s_rfgs) );
+			
+			std::vector<const ReconstructedFeatureGeometry*> co_rfgs, ret_rfgs;
+			BOOST_FOREACH(ReconstructedFeatureGeometry::non_null_ptr_type rfg, reconstructed_coreg)
+			{
+				co_rfgs.push_back(rfg.get());
+			}
+			f->process(co_rfgs.begin(), co_rfgs.end(), ret_rfgs);
+
+			std::set<QString> r_ids;
+			BOOST_FOREACH(const ReconstructedFeatureGeometry* r, ret_rfgs)
+			{
+				r_ids.insert(r->feature_handle_ptr()->feature_id().get().qstring());
+			}
+			BOOST_FOREACH(const QString& s, r_ids)
+			{
+				ret_list.append(boost::python::object(s.toStdString()));
+			}
+			return ret_list;
+		}
+
 	protected:
+		std::vector<const ReconstructedFeatureGeometry*>
+		get_seed_rfg(
+				const QString& id,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>& rfgs)
+		{
+			std::vector<const ReconstructedFeatureGeometry*> ret;
+			BOOST_FOREACH(const ReconstructedFeatureGeometry::non_null_ptr_type r, rfgs)
+			{
+				GPlatesModel::FeatureHandle* f = r->feature_handle_ptr();
+				if(id == f->feature_id().get().qstring())
+				{
+					ret.push_back(r.get());
+				}
+			}
+			return ret;
+		}
+
 		void
 		gen_data(double time)
 		{
@@ -373,6 +469,7 @@ namespace{
 				row.attr_type =  SHAPE_FILE_ATTRIBUTE;
 			return row;
 		}
+		
 	private:
 		std::vector<File::non_null_ptr_type> d_rotation_files, d_seed_files, d_coreg_files;
 		std::vector<FeatureCollectionHandle::weak_ref> d_rotation_fc, d_seed_fc,d_coreg_fc;
@@ -409,6 +506,8 @@ export_co_registration()
 		.def("dump",						&CoRegistration::print)
 		.def("export",						&CoRegistration::export_data)
 		.def("clear_cfg_rows",				&CoRegistration::clear_cfg_rows)
+		.def("feature_ids",					&CoRegistration::feature_ids)
+		.def("roi_filter",					&CoRegistration::roi_filter)
 		;
 }
 #endif
