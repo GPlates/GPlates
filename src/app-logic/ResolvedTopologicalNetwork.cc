@@ -125,9 +125,13 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_t
 						GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
 					ret.push_back(resolved_topology_network_triangle);
 				}
+				catch (std::exception &exc)
+				{
+					qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
+				}
 				catch(...)
 				{
-					// std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+					qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
 				}
 			}
 		}
@@ -141,9 +145,13 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_t
 					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
 				ret.push_back(resolved_topology_network_triangle);
 			}
+			catch (std::exception &exc)
+			{
+				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
+			}
 			catch(...)
 			{
-				// std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
 			}
 		}
 	}
@@ -211,9 +219,13 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_c
 						GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
 					ret.push_back(resolved_topology_network_triangle);
 				}
+				catch (std::exception &exc)
+				{
+					qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
+				}
 				catch(...)
 				{
-					// std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+					qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
 				}
 			}
 		}
@@ -227,9 +239,13 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_c
 					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
 				ret.push_back(resolved_topology_network_triangle);
 			}
+			catch (std::exception &exc)
+			{
+				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
+			}
 			catch(...)
 			{
-				// std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
 			}
 		} 
 	}
@@ -283,9 +299,13 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_m
 					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
 				ret.push_back(resolved_topology_network_triangle);
 			}
+			catch (std::exception &exc)
+			{
+				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
+			}
 			catch(...)
 			{
-				// std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
 			}
 		} 
 	}

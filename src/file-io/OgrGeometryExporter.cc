@@ -55,9 +55,13 @@ GPlatesFileIO::OgrGeometryExporter::OgrGeometryExporter(
 	try{
 		d_ogr_writer = new OgrWriter(d_filename,multiple_geometries);
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "Exception caught creating OgrWriter: " << exc.what();
+	}
 	catch(...)
 	{
-		qDebug() << "Exception caught creating OgrWriter.";
+		qWarning() << "Exception caught creating OgrWriter: Unknown error";
 	}
 }
 
@@ -82,9 +86,13 @@ GPlatesFileIO::OgrGeometryExporter::visit_multi_point_on_sphere(
 		d_ogr_writer->write_multi_point_feature(multi_point_on_sphere,d_key_value_dictionary);
 
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "Exception caught writing multi-point to shapefile: " << exc.what();
+	}
 	catch(...)
 	{
-		qDebug() << "Exception caught writing multi-point to shapefile.";
+		qWarning() << "Exception caught writing multi-point to shapefile: Unknown error";
 	}
 }
 
@@ -101,9 +109,13 @@ GPlatesFileIO::OgrGeometryExporter::visit_point_on_sphere(
 		d_ogr_writer->write_point_feature(point_on_sphere,d_key_value_dictionary);
 
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "Exception caught writing point to shapefile: " << exc.what();
+	}
 	catch(...)
 	{
-		qDebug() << "Exception caught writing point to shapefile.";
+		qWarning() << "Exception caught writing point to shapefile: Unknown error";
 	}
 }
 
@@ -120,9 +132,13 @@ GPlatesFileIO::OgrGeometryExporter::visit_polygon_on_sphere(
 		d_ogr_writer->write_polygon_feature(polygon_on_sphere,d_key_value_dictionary);
 
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "Exception caught writing polygon to shapefile: " << exc.what();
+	}
 	catch(...)
 	{
-		qDebug() << "Exception caught writing polygon to shapefile.";
+		qWarning() << "Exception caught writing polygon to shapefile: Unknown error";
 	}
 }
 
@@ -139,9 +155,13 @@ GPlatesFileIO::OgrGeometryExporter::visit_polyline_on_sphere(
 	{
 		d_ogr_writer->write_polyline_feature(polyline_on_sphere,d_key_value_dictionary);
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "Exception caught writing polyline to shapefile: " << exc.what();
+	}
 	catch(...)
 	{
-		qDebug() << "Exception caught writing polyline to shapefile.";
+		qWarning() << "Exception caught writing polyline to shapefile: Unknown error";
 	}
 }
 

@@ -1558,15 +1558,21 @@ GPlatesQtWidgets::ViewportWindow::handle_load_symbol_file()
 		    get_view_state().get_last_open_directory(),
 		    QObject::tr("Symbol file (*.sym)"));
 
-    try{
-	GPlatesFileIO::SymbolFileReader::read_file(
-		filename,
-		get_view_state().get_feature_type_symbol_map());
+    try
+	{
+		GPlatesFileIO::SymbolFileReader::read_file(
+			filename,
+			get_view_state().get_feature_type_symbol_map());
     }
-    catch(...)
-    {
+	catch (std::exception &exc)
+	{
+		qWarning() << "Failed to load symbol file: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "Failed to load symbol file: unknown error";
+    }
 
-    }
     get_application_state().reconstruct();
 }
 
@@ -2099,10 +2105,14 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file(
 	try{
 		d_reconstruction_view_widget_ptr->active_view().create_svg_output(filename);
 	}
-	catch(...)
+	catch (std::exception &exc)
 	{
-		std::cerr << "Caught exception creating SVG output." << std::endl;
+		qWarning() << "Caught exception creating SVG output: " << exc.what();
 	}
+	catch (...)
+	{
+		qWarning() << "Caught exception creating SVG output: unknown error";
+    }
 }
 
 

@@ -399,6 +399,15 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 						GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 				d_unsaved_changes_tracker->handle_model_has_changed();
 			}
+			catch (std::exception &exc)
+			{
+				QString message = tr("An error occurred while saving the file '%1': '%2' -"
+						" Please use the Manage Feature Collections dialog "
+						"on the File menu to save the new feature collection manually.")
+						.arg(file_info.get_display_name(false/*use_absolute_path_name*/)
+						.arg(exc.what()));
+				QMessageBox::critical(parentWidget(), "Save Raster", message);
+			}
 			catch (...)
 			{
 				QMessageBox::critical(parentWidget(), "Save Raster",

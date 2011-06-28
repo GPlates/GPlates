@@ -511,8 +511,14 @@ namespace GPlatesAppLogic
 						//qDebug() << "before constrained_delaunay_triangulation_2.insert_constraint(v1,v2)";
 						constrained_delaunay_triangulation_2.insert_constraint(v1, v2);
 					}
+					catch (std::exception &exc)
+					{
+						qWarning() << exc.what();
+						continue;
+					}
 					catch (...)
 					{
+						qWarning() << "insert_points_into_constrained_delaunay_triangulation_2: Unknown error";
 						//qDebug() << "constrained_delaunay_triangulation_2.insert_constraint(v1,v2) failed!";
 						continue; // to next vertex ?
 					}
@@ -594,8 +600,14 @@ namespace GPlatesAppLogic
 							//qDebug() << "before insert_constraint: v1 != v2";
 							constrained_delaunay_triangulation_2.insert_constraint(v1, v2);
 						}
+						catch (std::exception &exc)
+						{
+							qWarning() << exc.what();
+							continue;
+						}
 						catch (...)
 						{
+							qWarning() << "insert_points_into_constrained_delaunay_triangulation_2: Unknown error";
 							//qDebug() << "constrained_delaunay_triangulation_2.insert_constraint(v1,v2) failed!";
 							continue; // to next vertex ?
 						}

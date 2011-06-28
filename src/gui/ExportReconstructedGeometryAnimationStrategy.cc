@@ -83,7 +83,8 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 
 	// Here's where we do the actual work of exporting of the RFGs,
 	// given frame_index, filename, reconstructable files and geoms, and target_dir. Etc.
-	try {
+	try
+	{
 
 		// TODO: Get 'export_single_output_file' and 'export_per_input_file' from user (via GUI).
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_feature_geometries(
@@ -95,10 +96,20 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 			d_configuration->file_options.export_to_a_single_file,
 			d_configuration->file_options.export_to_multiple_files);
 
-	} catch (...) {
+	}
+	catch (std::exception &exc)
+	{
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error writing reconstructed geometry file \"%1\": %2")
+					.arg(full_filename)
+					.arg(exc.what()));
+		return false;
+	}
+	catch (...)
+	{
 		// FIXME: Catch all proper exceptions we might get here.
 		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Error writing reconstructed geometry file \"%1\"!").arg(full_filename));
+			QObject::tr("Error writing reconstructed geometry file \"%1\": unknown error!").arg(full_filename));
 		return false;
 	}
 	

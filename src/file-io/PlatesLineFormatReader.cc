@@ -2064,12 +2064,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		}
 		catch (std::exception &exc)
 		{
-			qWarning() << exc.what();
+			qWarning() << "PlatesLineFormatReader.cc:create_feature_with_geometries: " << exc.what();
 		}
 		catch (...)
 		{
-			qWarning() << "Unknown error";
-			qWarning() << "FIXME:  We really should report this properly!";
+			qWarning() << "PlatesLineFormatReader.cc:create_feature_with_geometries: Unknown error";
 		}
 	}
 

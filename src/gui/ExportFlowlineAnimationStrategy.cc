@@ -116,7 +116,8 @@ GPlatesGui::ExportFlowlineAnimationStrategy::do_export_iteration(
 		.arg(frame_index) );
 
 
-	try {
+	try
+	{
 
 
 		// TODO: Get 'export_single_output_file' and 'export_per_input_file' from user (via GUI).
@@ -129,10 +130,20 @@ GPlatesGui::ExportFlowlineAnimationStrategy::do_export_iteration(
 			d_configuration->file_options.export_to_a_single_file,
 			d_configuration->file_options.export_to_multiple_files);
 
-	} catch (...) {
+	}
+	catch (std::exception &exc)
+	{
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error writing reconstructed flowline file \"%1\": %2")
+					.arg(full_filename)
+					.arg(exc.what()));
+		return false;
+	}
+	catch (...)
+	{
 		// FIXME: Catch all proper exceptions we might get here.
 		d_export_animation_context_ptr->update_status_message(
-			QObject::tr("Error writing reconstructed flowline file \"%1\"!").arg(full_filename));
+			QObject::tr("Error writing reconstructed flowline file \"%1\": unknown error!").arg(full_filename));
 		return false;
 	}
 

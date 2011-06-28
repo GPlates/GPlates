@@ -1313,7 +1313,7 @@ GPlatesFileIO::ShapefileReader::handle_point(
 				}
 				catch (...)
 				{
-					qWarning() << "Unknown error";
+					qWarning() << "GPlatesFileIO::ShapefileReader::handle_point: Unknown error";
 
 					read_errors.d_recoverable_errors.push_back(
 						GPlatesFileIO::ReadErrorOccurrence(
@@ -1362,8 +1362,19 @@ GPlatesFileIO::ShapefileReader::handle_multi_point(
 				add_attributes_to_feature(feature,read_errors,source,location);
 				d_loaded_geometries++;
 			}
+			catch (std::exception &exc)
+			{
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_point: " << exc.what();
+				read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidShapefileMultiPoint,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+			}
 			catch(...)
 			{
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_point: Unknown error";
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 						source,
@@ -1418,7 +1429,7 @@ GPlatesFileIO::ShapefileReader::handle_linestring(
 	}
 	catch (std::exception &exc)
 	{
-		qWarning() << exc.what();
+		qWarning() << "GPlatesFileIO::ShapefileReader::handle_linestring: " << exc.what();
 
 		read_errors.d_recoverable_errors.push_back(
 			GPlatesFileIO::ReadErrorOccurrence(
@@ -1429,7 +1440,7 @@ GPlatesFileIO::ShapefileReader::handle_linestring(
 	}
 	catch (...)
 	{
-		qWarning() << "Unknown error";
+		qWarning() << "GPlatesFileIO::ShapefileReader::handle_linestring: Unknown error";
 
 		read_errors.d_recoverable_errors.push_back(
 			GPlatesFileIO::ReadErrorOccurrence(
@@ -1502,7 +1513,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_linestring(
 			}
 			catch (std::exception &exc)
 			{
-				qWarning() << exc.what();
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_linestring: " << exc.what();
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
@@ -1513,7 +1524,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_linestring(
 			}
 			catch (...)
 			{
-				qWarning() << "Unknown error";
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_linestring: Unknown error";
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
@@ -1553,7 +1564,7 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 		}
 		catch (std::exception &exc)
 		{
-			qWarning() << exc.what();
+			qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: " << exc.what();
 
 			read_errors.d_recoverable_errors.push_back(
 				GPlatesFileIO::ReadErrorOccurrence(
@@ -1564,7 +1575,7 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 		}
 		catch (...)
 		{
-			qWarning() << "Unknown error";
+			qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: Unknown error";
 
 			read_errors.d_recoverable_errors.push_back(
 				GPlatesFileIO::ReadErrorOccurrence(
@@ -1598,7 +1609,7 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 			}
 			catch (std::exception &exc)
 			{
-				qWarning() << exc.what();
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: " << exc.what();
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
@@ -1609,7 +1620,7 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 			}
 			catch (...)
 			{
-				qWarning() << "Unknown error";
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: Unknown error";
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
@@ -1658,7 +1669,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 			}
 			catch (std::exception &exc)
 			{
-				qWarning() << exc.what();
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: " << exc.what();
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
@@ -1669,7 +1680,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 			}
 			catch (...)
 			{
-				qWarning() << "Unknown error";
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: Unknown error";
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
@@ -1699,7 +1710,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 				}
 				catch (std::exception &exc)
 				{
-					qWarning() << exc.what();
+					qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: " << exc.what();
 
 					read_errors.d_recoverable_errors.push_back(
 						GPlatesFileIO::ReadErrorOccurrence(
@@ -1710,7 +1721,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 				}
 				catch (...)
 				{
-					qWarning() << "Unknown error";
+					qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: Unknown error";
 
 					read_errors.d_recoverable_errors.push_back(
 						GPlatesFileIO::ReadErrorOccurrence(

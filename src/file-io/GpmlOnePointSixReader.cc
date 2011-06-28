@@ -144,9 +144,14 @@ namespace
 				Utils::append_warning(
 						ex.location(), params, ex.description(),
 						IO::ReadErrors::FeatureNotInterpreted);
-			} catch (...) {
-				// FIXME: Remove this eventually:
-				std::cout << "Caught exception of unknown type!" << std::endl;
+			} catch (std::exception &exc) {
+				qWarning() << "GpmlOnePointSixReader.cc:read_property: " << exc.what();
+				Utils::append_warning(
+						node, params, 
+						IO::ReadErrors::ParseError,
+						IO::ReadErrors::FeatureNotInterpreted);
+			} catch(...) {
+				qWarning() << "GpmlOnePointSixReader.cc:read_property: Unknown error";
 				Utils::append_warning(
 						node, params, 
 						IO::ReadErrors::ParseError,
@@ -614,8 +619,10 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 				}
 				reader.device()->waitForReadyRead(1000);
 			}
-		} catch (...) {
-			std::cerr << "Caught some kind of exception." << std::endl;
+		} catch (std::exception &exc) {
+			qWarning() << "GpmlOnePointSixReader.cc:read_root_element: " << exc.what();
+		} catch(...) {
+			qWarning() << "GpmlOnePointSixReader.cc:read_root_element: Unknown error";
 		}
 
 		if (reader.error()) {
