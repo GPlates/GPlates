@@ -123,6 +123,13 @@ namespace GPlatesGui
 				const ExportAnimationStrategy::const_configuration_base_ptr &cfg);
 
 
+		void
+		clear_export_animation_strategies()
+		{
+			d_exporter_map.clear();
+		}
+
+
 		const GPlatesGui::AnimationController &
 		animation_controller() const;
 		
@@ -208,12 +215,6 @@ namespace GPlatesGui
 				ExportAnimationStrategy::non_null_ptr_type> 
 			exporter_map_type;
 
-
-		void
-		cleanup_exporters_map()
-		{
-			d_exporter_map.clear();
-		}
 
 		/**
 		 * Pointer back to the ExportAnimationDialog, so that we can update
