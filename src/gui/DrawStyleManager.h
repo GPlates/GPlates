@@ -128,6 +128,8 @@ namespace GPlatesGui
 		unsigned d_id;
 	};
 
+#ifndef GPLATES_NO_PYTHON
+
 	class PythonStyleAdapter : 
 		public StyleAdapter
 	{
@@ -161,6 +163,7 @@ namespace GPlatesGui
 		boost::python::object d_obj;
 	};
 
+#endif
 
 	class ColourStyleAdapter : 
 		public StyleAdapter

@@ -287,7 +287,8 @@ namespace GPlatesGui
 	};
 }
 #else
-namespace GPlatesUtils
+#include "presentation/Application.h"
+namespace GPlatesGui
 {
 	class PythonManager : public QObject
 	{
