@@ -592,6 +592,12 @@ namespace GPlatesFileIO
 					}
 
 
+					//
+					// NOTE: We're just exporting the ResolvedTopologicalBoundary of the network.
+					// Networks now create ResolvedTopologicalNetwork *and*
+					// ResolvedTopologicalBoundary objects.
+					// However here we are only exporting the boundary.
+					//
 					static const GPlatesModel::FeatureType network_type = 
 						GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
 					if (feature_ref->feature_type() == network_type)
@@ -1072,7 +1078,12 @@ namespace GPlatesFileIO
 				}
 
 				//
-				// Network polygons 
+				// Network polygons
+				//
+				// NOTE: We're just exporting the ResolvedTopologicalBoundary of the network.
+				// Networks now create ResolvedTopologicalNetwork *and*
+				// ResolvedTopologicalBoundary objects.
+				// However here we are only exporting the boundary.
 				//
 
 				if (output_options.export_all_network_polygons_to_a_single_file)
