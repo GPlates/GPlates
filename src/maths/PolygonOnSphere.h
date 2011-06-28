@@ -215,7 +215,7 @@ namespace GPlatesMaths
 		 * for insufficient points (regardless of whether they are distinct or not).
 		 * Distinct points are points that are separated by an epsilon distance (any
 		 * points within epsilon distance from each other are counted as one point).
-		 * The default is to validate for insufficient distinct points.
+		 * The default is to validate for insufficient *indistinct* points.
 		 */
 		template<typename ForwardIter>
 		static
@@ -224,7 +224,7 @@ namespace GPlatesMaths
 				ForwardIter begin,
 				ForwardIter end,
 				std::pair<ForwardIter, ForwardIter> &invalid_points,
-				bool check_distinct_points = true);
+				bool check_distinct_points = false);
 
 		/**
 		 * Evaluate the validity of the construction-parameters.
@@ -262,7 +262,7 @@ namespace GPlatesMaths
 		 * for insufficient points (regardless of whether they are distinct or not).
 		 * Distinct points are points that are separated by an epsilon distance (any
 		 * points within epsilon distance from each other are counted as one point).
-		 * The default is to validate for insufficient distinct points.
+		 * The default is to validate for insufficient *indistinct* points.
 		 */
 		template<typename C>
 		static
@@ -270,7 +270,7 @@ namespace GPlatesMaths
 		evaluate_construction_parameter_validity(
 				const C &coll,
 				std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points,
-				bool check_distinct_points = true)
+				bool check_distinct_points = false)
 		{
 			return evaluate_construction_parameter_validity(
 					coll.begin(), coll.end(), invalid_points, check_distinct_points);

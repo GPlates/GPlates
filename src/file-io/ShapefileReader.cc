@@ -89,15 +89,8 @@ namespace
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 	{
-		// NOTE: We throw an exception if there are insufficient distinct points because
-		// we only want to load polylines into GPlates that satisfy this criteria.
-		// Once a polyline is successfully loaded into GPlates we should be able to rotate it,
-		// and hence create a new rotated polyline, such that it could contain insufficient distinct
-		// points (after rotation due to numerical precision) in which case the creation of
-		// the rotated polyline will be asked not to throw an exception on insufficient distinct points.
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-			GPlatesMaths::PolylineOnSphere::create_on_heap(
-				list_of_points, true/*throw_if_insufficient_distinct_points*/);
+			GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
 
 		GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 			GPlatesPropertyValues::GmlLineString::create(polyline);
@@ -125,15 +118,8 @@ namespace
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 	{
-		// NOTE: We throw an exception if there are insufficient distinct points because
-		// we only want to load polygons into GPlates that satisfy this criteria.
-		// Once a polygon is successfully loaded into GPlates we should be able to rotate it,
-		// and hence create a new rotated polygon, such that it could contain insufficient distinct
-		// points (after rotation due to numerical precision) in which case the creation of
-		// the rotated polygon will be asked not to throw an exception on insufficient distinct points.
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon =
-			GPlatesMaths::PolygonOnSphere::create_on_heap(
-				list_of_points, true/*throw_if_insufficient_distinct_points*/);
+			GPlatesMaths::PolygonOnSphere::create_on_heap(list_of_points);
 
 		GPlatesPropertyValues::GmlPolygon::non_null_ptr_type gml_polygon =
 			GPlatesPropertyValues::GmlPolygon::create(polygon);
@@ -860,15 +846,8 @@ GPlatesFileIO::ShapefileReader::create_polygon_feature_from_list(
 			
 	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
 
-	// NOTE: We throw an exception if there are insufficient distinct points because
-	// we only want to load polygons into GPlates that satisfy this criteria.
-	// Once a polygon is successfully loaded into GPlates we should be able to rotate it,
-	// and hence create a new rotated polygon, such that it could contain insufficient distinct
-	// points (after rotation due to numerical precision) in which case the creation of
-	// the rotated polygon will be asked not to throw an exception on insufficient distinct points.
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
-		GPlatesMaths::PolygonOnSphere::create_on_heap(
-			list_of_points, true/*throw_if_insufficient_distinct_points*/);
+		GPlatesMaths::PolygonOnSphere::create_on_heap(list_of_points);
 
 	GPlatesPropertyValues::GmlPolygon::non_null_ptr_type gml_polygon =
 		GPlatesPropertyValues::GmlPolygon::create(polygon_on_sphere);
@@ -896,15 +875,8 @@ GPlatesFileIO::ShapefileReader::create_line_feature_from_list(
 {
 	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
 
-	// NOTE: We throw an exception if there are insufficient distinct points because
-	// we only want to load polylines into GPlates that satisfy this criteria.
-	// Once a polyline is successfully loaded into GPlates we should be able to rotate it,
-	// and hence create a new rotated polyline, such that it could contain insufficient distinct
-	// points (after rotation due to numerical precision) in which case the creation of
-	// the rotated polyline will be asked not to throw an exception on insufficient distinct points.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-		GPlatesMaths::PolylineOnSphere::create_on_heap(
-			list_of_points, true/*throw_if_insufficient_distinct_points*/);
+		GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
 
 	GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 		GPlatesPropertyValues::GmlLineString::create(polyline);
