@@ -2720,7 +2720,7 @@ GPlatesQtWidgets::ViewportWindow::open_online_documentation()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
 {
-	GPlatesApi::PythonUtils::python_manager().pop_up_python_console();
+	d_view_state.get_python_manager().pop_up_python_console();
 }
 
 
