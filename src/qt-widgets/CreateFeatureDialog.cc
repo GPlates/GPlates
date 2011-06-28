@@ -744,10 +744,14 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 		d_listwidget_geometry_destinations->setFocus();
 		d_button_create->setEnabled(false);
 		button_create_and_save->setEnabled(false);
+		// Make sure it's null (or "None") because it's accessed even when it's not visible.
+		d_conjugate_plate_id_widget->set_null(true);
 		d_conjugate_plate_id_widget->setVisible(
 			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
 			should_offer_conjugate_plate_id_prop(
 			d_choose_feature_type_widget));
+		// Make sure it's unchecked because it's accessed even when it's not visible.
+		d_create_conjugate_isochron_checkbox->setChecked(false);
 		d_create_conjugate_isochron_checkbox->setVisible(
 			should_offer_create_conjugate_isochron_checkbox(
 			d_choose_feature_type_widget));
@@ -816,17 +820,6 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
 
 
-
-		// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
-		GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
-				d_plate_id_widget->create_property_value_from_widget();
-		GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
-				GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-					GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
-
 		// If we are using half stage rotation, add right and left plate id.
 		if (GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION == d_recon_method)
 		{
@@ -846,6 +839,18 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 					GPlatesModel::TopLevelPropertyInline::create(
 							GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
 							recon_method_value));
+		}
+		else // Not using a half-stage rotation...
+		{
+			// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
+			GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
+					d_plate_id_widget->create_property_value_from_widget();
+			GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+						GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
 		}
 
 		// Add a gpml:conjugatePlateId Property.
