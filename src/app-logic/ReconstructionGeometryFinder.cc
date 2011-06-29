@@ -39,74 +39,36 @@ namespace
 {
 	inline
 	bool
-	property_name_matches(
-			const GPlatesAppLogic::ReconstructedFeatureGeometry &rfg,
-			const GPlatesModel::PropertyName &property_name_to_match)
-	{
-		return rfg.property().is_still_valid() &&
-			((*rfg.property())->property_name() == property_name_to_match);
-	}
-
-	inline
-	bool
-	property_name_matches(
-		const GPlatesAppLogic::ReconstructedFlowline &rf,
-		const GPlatesModel::PropertyName &property_name_to_match)
-	{
-		return rf.property().is_still_valid() &&
-			((*rf.property())->property_name() == property_name_to_match);
-	}
-
-	inline
-	bool
-	property_name_matches(
-		const GPlatesAppLogic::ReconstructedMotionPath &rmp,
-		const GPlatesModel::PropertyName &property_name_to_match)
-	{
-		return rmp.property().is_still_valid() &&
-			((*rmp.property())->property_name() == property_name_to_match);
-	}
-
-
-	inline
-	bool
-	property_name_matches(
-			const GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp,
-			const GPlatesModel::PropertyName &property_name_to_match)
-	{
-		return rvgp.property().is_still_valid() &&
-			((*rvgp.property())->property_name() == property_name_to_match);
-	}
-
-	inline
-	bool
-	property_name_matches(
-			const GPlatesAppLogic::ResolvedTopologicalBoundary &rtb,
-			const GPlatesModel::PropertyName &property_name_to_match)
-	{
-		return rtb.property().is_still_valid() &&
-			((*rtb.property())->property_name() == property_name_to_match);
-	}
-
-
-	inline
-	bool
-	property_name_matches(
-			const GPlatesAppLogic::ResolvedTopologicalNetwork &rtn,
-			const GPlatesModel::PropertyName &property_name_to_match)
-	{
-		return rtn.property().is_still_valid() &&
-			((*rtn.property())->property_name() == property_name_to_match);
-	}
-
-
-	inline
-	bool
 	reconstruction_tree_matches(
 			const GPlatesAppLogic::ReconstructionGeometry &rg,
-			const GPlatesAppLogic::ReconstructionTree *reconstruction_tree_to_match)
+			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_to_match)
 	{
 		return (rg.reconstruction_tree() == reconstruction_tree_to_match);
+	}
+
+
+	template <class ReconstructionGeometryDerivedType>
+	inline
+	bool
+	property_name_matches(
+			const ReconstructionGeometryDerivedType &rg,
+			const GPlatesModel::PropertyName &property_name_to_match)
+	{
+		return rg.property().is_still_valid() &&
+			((*rg.property())->property_name() == property_name_to_match);
+	}
+
+
+	template <class ReconstructionGeometryDerivedType>
+	inline
+	bool
+	properties_iterator_matches(
+			const ReconstructionGeometryDerivedType &rg,
+			const GPlatesModel::FeatureHandle::iterator &properties_iterator_to_match)
+	{
+		const GPlatesModel::FeatureHandle::iterator &iter = rg.property();
+		return iter.is_still_valid() &&
+			(iter == properties_iterator_to_match);
 	}
 }
 
@@ -158,30 +120,32 @@ GPlatesAppLogic::ReconstructionGeometryFinder::visit_resolved_topological_networ
 template <class ReconstructionGeometryDerivedType>
 void
 GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstruction_geometry_derived_type(
-		ReconstructionGeometryDerivedType &recon_geom_derived_obj)
+		ReconstructionGeometryDerivedType &rg)
 {
-	if (d_property_name_to_match && d_reconstruction_tree_to_match) {
-		// Both a property-name-to-match and a ReconstructionTree-to-match were supplied, so
-		// limit the results to those RGs which reference that ReconstructionTree
-		// and were reconstructed from a geometry with that property name.
-		if (property_name_matches(recon_geom_derived_obj, *d_property_name_to_match) &&
-				reconstruction_tree_matches(recon_geom_derived_obj, d_reconstruction_tree_to_match)) {
-			d_found_rgs.push_back(recon_geom_derived_obj.get_non_null_pointer());
-		}
-	} else if (d_property_name_to_match) {
-		// A property-name-to-match was supplied, so limit the results to those RGs which
-		// were reconstructed from a geometry with that property name.
-		if (property_name_matches(recon_geom_derived_obj, *d_property_name_to_match)) {
-			d_found_rgs.push_back(recon_geom_derived_obj.get_non_null_pointer());
-		}
-	} else if (d_reconstruction_tree_to_match) {
-		// A ReconstructionTree-to-match was supplied, so limit the results to those RGs which
-		// reference that ReconstructionTree.
-		if (reconstruction_tree_matches(recon_geom_derived_obj, d_reconstruction_tree_to_match)) {
-			d_found_rgs.push_back(recon_geom_derived_obj.get_non_null_pointer());
-		}
-	} else {
-		// Collect any and all RGs.
-		d_found_rgs.push_back(recon_geom_derived_obj.get_non_null_pointer());
+	// If a ReconstructionTree-to-match was supplied then limit the results to those RGs which
+	// reference that ReconstructionTree.
+	if (d_reconstruction_tree_to_match &&
+		!reconstruction_tree_matches(rg, d_reconstruction_tree_to_match.get()))
+	{
+		return;
 	}
+
+	// If a property-name-to-match was supplied then limit the results to those RGs which
+	// were reconstructed from a geometry with that property name.
+	if (d_property_name_to_match &&
+		!property_name_matches(rg, d_property_name_to_match.get()))
+	{
+		return;
+	}
+
+	// If a properties-iterator-to-match was supplied then limit the results to those RGs which
+	// were reconstructed from a geometry with that properties iterator.
+	if (d_properties_iterator_to_match &&
+		!properties_iterator_matches(rg, d_properties_iterator_to_match.get()))
+	{
+		return;
+	}
+
+	// If we get here then collect any and all RGs.
+	d_found_rgs.push_back(rg.get_non_null_pointer());
 }

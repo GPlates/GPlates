@@ -152,7 +152,6 @@ GPlatesGui::ExportAnimationContext::do_export()
 
 	// Update dialog - successful finish.
 	d_export_running = false;
-	cleanup_exporters_map();
 	update_status_message(QObject::tr("Export Finished."));
 	return true;
 }

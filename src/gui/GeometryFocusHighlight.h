@@ -102,7 +102,12 @@ namespace GPlatesGui
 		 */
 		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_geometry;
 
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
+		/**
+		 * Used to find the visible reconstruction geometries as a short-list for searching
+		 * for new reconstruction geometries for a new reconstruction because we don't want to
+		 * pick up any old or invisible reconstruction geometries.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
 		/**
 		 * The layer of rendered geometries which is used for highlighting.

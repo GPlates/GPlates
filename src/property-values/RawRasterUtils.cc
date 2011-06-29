@@ -397,8 +397,14 @@ GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster(
 		image.write(filename.toStdString());
 		return true;
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster: " << exc.what();
+		return false;
+	}
 	catch (...)
 	{
+		qWarning() << "GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster: unknown error";
 		return false;
 	}
 }

@@ -26,60 +26,11 @@
 #ifndef GPLATES_UTILS_SUBJECTOBSERVERTOKEN_H
 #define GPLATES_UTILS_SUBJECTOBSERVERTOKEN_H
 
-#include <boost/cstdint.hpp>
+#include "Counter64.h"
 
 
 namespace GPlatesUtils
 {
-	namespace Implementation
-	{
-#ifdef BOOST_NO_INT64_T
-		/**
-		 * Just in case we happen to run into a compiler without 64-bit integers.
-		 *
-		 * Shouldn't really happen on any systems that Qt supports but better to be sure.
-		 */
-		class InvalidateCounterType
-		{
-		public:
-			//! Constructor to instantiate from a 32-bit integer (defaults to zero).
-			explicit
-			InvalidateCounterType(
-					boost::uint32_t low = 0) :
-				d_high(0),
-				d_low(low)
-			{  }
-
-			InvalidateCounterType &
-			operator++()
-			{
-				++d_low;
-				if (d_low == 0) // integer overflow
-				{
-					++d_high;
-				}
-				return *this;
-			}
-
-			bool
-			operator==(
-					const InvalidateCounterType &other) const
-			{
-				return d_low == other.d_low && d_high == other.d_high;
-			}
-
-		private:
-			boost::uint32_t d_high, d_low; // This should be portable.
-		};
-
-		typedef InvalidateCounterType invalidate_counter_type;
-#else
-		// Use built-in 64-bit integers where available.
-		typedef boost::uint64_t invalidate_counter_type;
-#endif
-	}
-
-
 	/**
 	 * Used to effect a simple polling version of the subject-observer pattern.
 	 *
@@ -115,11 +66,11 @@ namespace GPlatesUtils
 		void
 		reset()
 		{
-			d_invalidate_counter = 0;
+			d_invalidate_counter = Counter64(0);
 		}
 
 	private:
-		Implementation::invalidate_counter_type d_invalidate_counter;
+		Counter64 d_invalidate_counter;
 
 		friend class SubjectToken;
 	};
@@ -189,7 +140,7 @@ namespace GPlatesUtils
 		}
 
 	private:
-		Implementation::invalidate_counter_type d_invalidate_counter;
+		Counter64 d_invalidate_counter;
 	};
 }
 

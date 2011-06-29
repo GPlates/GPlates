@@ -47,6 +47,11 @@ namespace GPlatesPresentation
 	class ViewState;
 }
 
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
+}
+
 namespace GPlatesGui
 {
 	class FeatureFocus;
@@ -343,11 +348,10 @@ namespace GPlatesGui
 				GPlatesGui::FeatureFocus &feature_focus);
 
 		/**
-		 * Update the internal @a ReconstructionGeometries for the new reconstruction.
+		 * Update the internal @a ReconstructionGeometries when the rendered geometry collection is updated.
 		 */
 		void
-		handle_reconstruction(
-				GPlatesAppLogic::ApplicationState &application_state);
+		handle_rendered_geometry_collection_update();
 
 		QModelIndex
 		current_index() {
@@ -357,6 +361,14 @@ namespace GPlatesGui
 	private:
 		
 		FeatureFocus *d_feature_focus_ptr;
+
+		/**
+		 * Used to find the visible reconstruction geometries as a short-list for searching
+		 * for new reconstruction geometries for a new reconstruction because we don't want to
+		 * pick up any old or invisible reconstruction geometries.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
+
 		geometry_sequence_type d_sequence;
 	
 		QModelIndex d_current_index;

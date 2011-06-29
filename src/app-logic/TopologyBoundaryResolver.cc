@@ -72,11 +72,11 @@
 GPlatesAppLogic::TopologyBoundaryResolver::TopologyBoundaryResolver(
 		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_topological_boundary_sections,
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
 		bool restrict_boundary_sections_to_same_reconstruction_tree) :
 	d_resolved_topological_boundaries(resolved_topological_boundaries),
 	d_reconstruction_tree(reconstruction_tree),
-	d_reconstructed_topological_boundary_sections(reconstructed_topological_boundary_sections),
+	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
 	d_restrict_boundary_sections_to_same_reconstruction_tree(restrict_boundary_sections_to_same_reconstruction_tree),
 	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
 {  
@@ -283,15 +283,23 @@ GPlatesAppLogic::TopologyBoundaryResolver::record_topological_section_reconstruc
 	// The referenced RFGs must be in our sequence of reconstructed topological boundary sections
 	// and optionally have been reconstructed by the same reconstruction tree associated with
 	// the resolved topological boundaries being generated.
-	boost::optional<const ReconstructionTree &> restricted_reconstruction_tree;
+	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> restricted_reconstruction_tree;
 	if (d_restrict_boundary_sections_to_same_reconstruction_tree)
 	{
-		restricted_reconstruction_tree = *d_reconstruction_tree;
+		restricted_reconstruction_tree = d_reconstruction_tree;
 	}
+	// If we need to restrict the topological section RFGs to specific reconstruct handles...
+	boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles;
+	if (d_topological_sections_reconstruct_handles)
+	{
+		topological_sections_reconstruct_handles = d_topological_sections_reconstruct_handles.get();
+	}
+	// Find the topological section RFG.
 	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
 					geometry_delegate,
-					restricted_reconstruction_tree);
+					restricted_reconstruction_tree,
+					topological_sections_reconstruct_handles);
 	if (!source_rfg)
 	{
 		// If no RFG was found then it's possible that the current reconstruction time is

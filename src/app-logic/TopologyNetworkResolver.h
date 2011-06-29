@@ -34,6 +34,7 @@
 #include <boost/optional.hpp>
 
 #include "AppLogicFwd.h"
+#include "ReconstructHandle.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "TopologyBoundaryIntersections.h"
@@ -73,11 +74,10 @@ namespace GPlatesAppLogic
 		 * The resolved networks are appended to @a resolved_topological_networks.
 		 *
 		 * @param reconstruction_tree is associated with the output resolved topological networks.
-		 * @param reconstructed_topological_sections are the reconstructed feature geometries
-		 *        of the topological sections used to form the networks.
-		 *        We don't reference them directly but by forcing clients to produce them we
-		 *        ensure they exist while we search for them indirectly via feature observers.
-		 *        If clients didn't produce them, or forgot to, then we'd find no RFGs during the global search.
+		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
+		 *        identifies the subset, of all RFGs observing the topological section features,
+		 *        that should be searched when resolving the topological boundaries.
+		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
 		 * @param restrict_topological_sections_to_same_reconstruction_tree is used to restrict the
 		 *        reconstructed topological boundary sections, specified with
 		 *        @a reconstructed_topological_sections, to those that were reconstructed
@@ -88,7 +88,7 @@ namespace GPlatesAppLogic
 				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_topological_sections,
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
 				bool restrict_topological_sections_to_same_reconstruction_tree = true);
 
 		virtual
@@ -252,13 +252,13 @@ namespace GPlatesAppLogic
 		reconstruction_tree_non_null_ptr_to_const_type d_reconstruction_tree;
 
 		/**
-		 * The reconstructed topogical sections we're using to assemble our networks.
+		 * The reconstructed topogical boundary sections we're using to assemble our dynamic polygons.
 		 *
 		 * NOTE: We don't reference them directly but by forcing clients to produce them we
 		 * ensure they exist while we search for them indirectly via feature observers.
 		 * If the client didn't produce them, or forgot to, then we'd find no RFGs during the global search.
 		 */
-		const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &d_reconstructed_topological_sections;
+		boost::optional<std::vector<ReconstructHandle::type> > d_topological_sections_reconstruct_handles;
 
 		/**
 		 * Boolean to determine whether to restrict the reconstructed topological sections

@@ -35,9 +35,12 @@
 
 #include "AppLogicFwd.h"
 #include "LayerProxyVisitor.h"
+#include "ReconstructHandle.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
+
+#include "model/FeatureHandle.h"
 
 #include "utils/CopyConst.h"
 #include "utils/non_null_intrusive_ptr.h"
@@ -102,6 +105,9 @@ namespace GPlatesAppLogic
 		 * Returns the reconstructed feature geometries from all active reconstruct layers
 		 * in the specified reconstruction.
 		 *
+		 * The reconstruct handles associated with the reconstructed feature geometries are
+		 * appended to @a reconstruct_handles.
+		 *
 		 * This is useful for topological features that reference other features as topological
 		 * sections - the other features could be in any layer so all layers are reconstructed.
 		 *
@@ -112,6 +118,18 @@ namespace GPlatesAppLogic
 		void
 		get_reconstructed_feature_geometries(
 				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				std::vector<ReconstructHandle::type> &reconstruct_handles,
+				const Reconstruction &reconstruction);
+
+
+		/**
+		 * Returns the reconstructed feature geometries, referencing the feature @a feature_ref,
+		 * and limited to those generated from all active reconstruct layers in @a reconstruction.
+		 */
+		void
+		find_reconstructed_feature_geometries_of_feature(
+				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				const Reconstruction &reconstruction);
 
 

@@ -33,25 +33,17 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesAppLogic::ReconstructContext::ReconstructContext(
 		const ReconstructMethodRegistry &reconstruct_method_registry,
-		const ReconstructParams &reconstruct_params,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstructable_feature_collections) :
-	d_reconstruct_params(reconstruct_params)
+				reconstructable_feature_collections)
 {
 	reassign_reconstruct_methods_to_features(
 			reconstruct_method_registry,
 			reconstructable_feature_collections);
-}
-
-
-void
-GPlatesAppLogic::ReconstructContext::set_reconstruct_params(
-		const ReconstructParams &reconstruct_params)
-{
-	d_reconstruct_params = reconstruct_params;
 }
 
 
@@ -145,12 +137,18 @@ GPlatesAppLogic::ReconstructContext::get_present_day_geometries()
 }
 
 
-void
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructContext::reconstruct(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+		const ReconstructParams &reconstruct_params,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
 {
+	//PROFILE_BLOCK("ReconstructContext::reconstruct: ReconstructedFeatureGeometry's");
+
+	// Get the next global reconstruct handle - it'll be stored in each RFG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
 	// Iterate over the reconstruct method features.
 	BOOST_FOREACH(
 			const ReconstructMethodFeatures &reconstruct_method_features,
@@ -172,26 +170,35 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 			reconstruct_method.reconstruct_feature(
 					reconstructed_feature_geometries,
 					feature_ref,
-					d_reconstruct_params,
+					reconstruct_handle,
+					reconstruct_params,
 					reconstruction_tree_creator,
 					reconstruction_time);
 		}
 	}
+
+	return reconstruct_handle;
 }
 
 
-void
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructContext::reconstruct(
 		std::vector<Reconstruction> &reconstructions,
+		const ReconstructParams &reconstruct_params,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
 {
+	//PROFILE_BLOCK("ReconstructContext::reconstruct: Reconstruction's");
+
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
 	if (!have_assigned_geometry_property_handles())
 	{
 		assign_geometry_property_handles();
 	}
+
+	// Get the next global reconstruct handle - it'll be stored in each RFG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
 
 	// Iterate over the reconstruct method features.
 	BOOST_FOREACH(
@@ -215,7 +222,8 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 			reconstruct_method.reconstruct_feature(
 					reconstructed_feature_geometries,
 					feature_ref,
-					d_reconstruct_params,
+					reconstruct_handle,
+					reconstruct_params,
 					reconstruction_tree_creator,
 					reconstruction_time);
 
@@ -255,6 +263,8 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 			}
 		}
 	}
+
+	return reconstruct_handle;
 }
 
 

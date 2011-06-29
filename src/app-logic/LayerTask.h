@@ -178,6 +178,8 @@ namespace GPlatesAppLogic
 		 * This can happen for instance if a dependent layer changes and this layer needs to
 		 * flush any cached data as a result.
 		 *
+		 * NOTE: @a reconstruction contains all active layer proxies including 'this' one.
+		 *
 		 * NOTE: Each layer proxy already knows about its layer connection changes so this method is
 		 * really just to respond to changes in other layers or changes in any input feature collections.
 		 */

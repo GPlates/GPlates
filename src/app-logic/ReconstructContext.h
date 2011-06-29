@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 
 #include "ReconstructedFeatureGeometry.h"
+#include "ReconstructHandle.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructParams.h"
@@ -125,18 +126,9 @@ namespace GPlatesAppLogic
 		explicit
 		ReconstructContext(
 				const ReconstructMethodRegistry &reconstruct_method_registry,
-				const ReconstructParams &reconstruct_params = ReconstructParams(),
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstructable_feature_collections =
 								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
-
-
-		/**
-		 * Update the parameters to use when reconstructing.
-		 */
-		void
-		set_reconstruct_params(
-				const ReconstructParams &reconstruct_params = ReconstructParams());
 
 
 		/**
@@ -194,10 +186,14 @@ namespace GPlatesAppLogic
 		/**
 		 * Reconstructs the features specified in the constructor, or the most recent call
 		 * to @a reassign_reconstruct_methods_to_features, to the specified reconstruction time.
+		 *
+		 * This method will get the next (incremented) global reconstruct handle and store it
+		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 */
-		void
+		ReconstructHandle::type
 		reconstruct(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const ReconstructParams &reconstruct_params,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time);
 
@@ -206,13 +202,17 @@ namespace GPlatesAppLogic
 		 * Reconstructs the features specified in the constructor, or the most recent call
 		 * to @a reassign_reconstruct_methods_to_features, to the specified reconstruction time.
 		 *
+		 * This method will get the next (incremented) global reconstruct handle and store it
+		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
+		 *
 		 * This differs from the other overload of @a reconstruct in that this method also
 		 * associates each reconstructed feature geometry with the feature geometry property
 		 * it was reconstructed from.
 		 */
-		void
+		ReconstructHandle::type
 		reconstruct(
 				std::vector<Reconstruction> &reconstructed_feature_geometries,
+				const ReconstructParams &reconstruct_params,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time);
 
@@ -263,11 +263,6 @@ namespace GPlatesAppLogic
 		//! Typedef or a sequence of reconstruct methods and their associated features.
 		typedef std::vector<ReconstructMethodFeatures> reconstruct_method_features_seq_type;
 
-
-		/**
-		 * The parameter to use when reconstructing.
-		 */
-		ReconstructParams d_reconstruct_params;
 
 		//! Grouping of features with their reconstruct method.
 		reconstruct_method_features_seq_type d_reconstruct_method_features_seq;

@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTLAYERPROXY_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTLAYERPROXY_H
 
+#include <utility>
 #include <vector>
 #include <boost/optional.hpp>
 
@@ -40,6 +41,7 @@
 #include "maths/PolygonMesh.h"
 #include "maths/types.h"
 
+#include "utils/KeyValueCache.h"
 #include "utils/SubjectObserverToken.h"
 
 
@@ -97,62 +99,136 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * The maximum number of reconstructions to cache for different
+		 * reconstruction time / reconstruct param combinations -
+		 * each combination represents one cached object.
+		 *
+		 * WARNING: This value has a direct affect on the memory used by GPlates.
+		 * Setting this too high can result in significant memory usage.
+		 * The cache is mainly to allow multiple clients to make different reconstruction
+		 * requests (eg, different reconstruction time and/or reconstruct params) without
+		 * each one invalidating the cache and forcing already calculated results (for a
+		 * particular reconstruction time / reconstruct params pair) to be calculated again
+		 * in the same frame).
+		 */
+		static const unsigned int MAX_NUM_RECONSTRUCTIONS_IN_CACHE = 4;
+
+
+		/**
 		 * Creates a @a ReconstructLayerProxy object.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const ReconstructMethodRegistry &reconstruct_method_registry,
-				const ReconstructParams &reconstruct_params = ReconstructParams())
+				const ReconstructParams &reconstruct_params = ReconstructParams(),
+				unsigned int max_num_reconstructions_in_cache = MAX_NUM_RECONSTRUCTIONS_IN_CACHE)
 		{
-			return non_null_ptr_type(new ReconstructLayerProxy(reconstruct_method_registry, reconstruct_params));
+			return non_null_ptr_type(
+					new ReconstructLayerProxy(
+							reconstruct_method_registry, reconstruct_params, max_num_reconstructions_in_cache));
 		}
 
 
+		//
+		// Getting a sequence of @a ReconstructedFeatureGeometry objects.
+		//
+
 		/**
-		 * Returns the reconstructed feature geometries, for the current reconstruction time,
-		 * by appending them to @a reconstructed_feature_geometries.
+		 * Returns the reconstructed feature geometries, for the current reconstruct params and
+		 * current reconstruction time, by appending them to @a reconstructed_feature_geometries.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructed_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries)
 		{
-			get_reconstructed_feature_geometries(reconstructed_feature_geometries, d_current_reconstruction_time);
+			return get_reconstructed_feature_geometries(
+					reconstructed_feature_geometries, d_current_reconstruct_params, d_current_reconstruction_time);
 		}
 
-
 		/**
-		 * Returns the reconstructed feature geometries, at the specified time, by appending
-		 * them to @a reconstructed_feature_geometries.
+		 * Returns the reconstructed feature geometries, for the specified reconstruct params and
+		 * current reconstruction time, by appending them to @a reconstructed_feature_geometries.
 		 */
-		void
+		ReconstructHandle::type
 		get_reconstructed_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const ReconstructParams &reconstruct_params)
+		{
+			return get_reconstructed_feature_geometries(
+					reconstructed_feature_geometries, reconstruct_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the reconstructed feature geometries, for the current reconstruct params and
+		 * specified reconstruction time, by appending them to @a reconstructed_feature_geometries.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_geometries(
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const double &reconstruction_time)
+		{
+			return get_reconstructed_feature_geometries(
+					reconstructed_feature_geometries, d_current_reconstruct_params, reconstruction_time);
+		}
+
+		/**
+		 * Returns the reconstructed feature geometries, for the specified reconstruct params and
+		 * reconstruction time, by appending them to @a reconstructed_feature_geometries.
+		 *
+		 * Returns the reconstruct handle that identifies the reconstructed feature geometries.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_geometries(
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const ReconstructParams &reconstruct_params,
 				const double &reconstruction_time);
 
+
+		//
+		// Getting a sequence of @a ReconstructContext::Reconstruction objects.
+		//
 
 		/**
 		 * Returns the reconstructed feature geometries, for the current reconstruction time,
-		 * by appending them to @a reconstructed_feature_geometries.
-		 *
-		 * Note that ReconstructContext::Reconstruction::get_geometry_property_handle can index
-		 * into the sequences returned by @a get_present_day_geometries and
-		 * @a get_present_day_geometries_spatial_partition_locations.
-		 *
-		 * This geometry property handle can be used to index into the sequence of present day
-		 * geometries returned by @a get_present_day_geometries.
+		 * by appending them to @a reconstructions.
 		 */
-		void
-		get_reconstructed_feature_geometries(
-				std::vector<ReconstructContext::Reconstruction> &reconstructed_feature_geometries)
+		ReconstructHandle::type
+		get_reconstructions(
+				std::vector<ReconstructContext::Reconstruction> &reconstructions)
 		{
-			get_reconstructed_feature_geometries(reconstructed_feature_geometries, d_current_reconstruction_time);
+			return get_reconstructions(reconstructions, d_current_reconstruct_params, d_current_reconstruction_time);
 		}
 
+		/**
+		 * Returns the reconstructions, for the specified reconstruct params and
+		 * current reconstruction time, by appending them to @a reconstructions.
+		 */
+		ReconstructHandle::type
+		get_reconstructions(
+				std::vector<ReconstructContext::Reconstruction> &reconstructions,
+				const ReconstructParams &reconstruct_params)
+		{
+			return get_reconstructions(
+					reconstructions, reconstruct_params, d_current_reconstruction_time);
+		}
 
 		/**
-		 * Returns the reconstructed feature geometries, at the specified time, by appending
-		 * them to @a reconstructed_feature_geometries.
+		 * Returns the reconstructions, for the current reconstruct params and
+		 * specified reconstruction time, by appending them to @a reconstructions.
+		 */
+		ReconstructHandle::type
+		get_reconstructions(
+				std::vector<ReconstructContext::Reconstruction> &reconstructions,
+				const double &reconstruction_time)
+		{
+			return get_reconstructions(
+					reconstructions, d_current_reconstruct_params, reconstruction_time);
+		}
+
+		/**
+		 * Returns the reconstructions, for the specified reconstruct params and
+		 * reconstruction time, by appending them to @a reconstructions.
 		 *
 		 * Note that ReconstructContext::Reconstruction::get_geometry_property_handle can index
 		 * into the sequences returned by @a get_present_day_geometries and
@@ -160,68 +236,164 @@ namespace GPlatesAppLogic
 		 *
 		 * This geometry property handle can be used to index into the sequence of present day
 		 * geometries returned by @a get_present_day_geometries.
+		 *
+		 * Returns the reconstruct handle that identifies the reconstructed feature geometries.
 		 */
-		void
-		get_reconstructed_feature_geometries(
-				std::vector<ReconstructContext::Reconstruction> &reconstructed_feature_geometries,
+		ReconstructHandle::type
+		get_reconstructions(
+				std::vector<ReconstructContext::Reconstruction> &reconstructions,
+				const ReconstructParams &reconstruct_params,
 				const double &reconstruction_time);
 
 
+		//
+		// Getting a spatial partition of @a ReconstructedFeatureGeometry objects.
+		//
+
 		/**
-		 * Returns the reconstructed feature geometries, at the current reconstruction time, in a spatial partition.
-		 *
-		 * The maximum depth of the quad trees in each cube face of the spatial partition
-		 * is @a DEFAULT_SPATIAL_PARTITION_DEPTH.
+		 * Returns the spatial partition of reconstructed feature geometries for the current
+		 * reconstruct params and the current reconstruction time.
 		 */
 		reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
-		get_reconstructed_feature_geometries_spatial_partition()
+		get_reconstructed_feature_geometries_spatial_partition(
+				ReconstructHandle::type *reconstruct_handle = NULL)
 		{
-			return get_reconstructed_feature_geometries_spatial_partition(d_current_reconstruction_time);
+			return get_reconstructed_feature_geometries_spatial_partition(
+					d_current_reconstruct_params, d_current_reconstruction_time, reconstruct_handle);
 		}
 
+		/**
+		 * Returns the spatial partition of reconstructed feature geometries for the specified
+		 * reconstruct params and the current reconstruction time.
+		 */
+		reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
+		get_reconstructed_feature_geometries_spatial_partition(
+				const ReconstructParams &reconstruct_params,
+				ReconstructHandle::type *reconstruct_handle = NULL)
+		{
+			return get_reconstructed_feature_geometries_spatial_partition(
+					reconstruct_params, d_current_reconstruction_time, reconstruct_handle);
+		}
 
 		/**
-		 * Returns the reconstructed feature geometries, at the specified time, in a spatial partition.
+		 * Returns the spatial partition of reconstructed feature geometries for the current
+		 * reconstruct params and the specified reconstruction time.
+		 */
+		reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
+		get_reconstructed_feature_geometries_spatial_partition(
+				const double &reconstruction_time,
+				ReconstructHandle::type *reconstruct_handle = NULL)
+		{
+			return get_reconstructed_feature_geometries_spatial_partition(
+					d_current_reconstruct_params, reconstruction_time, reconstruct_handle);
+		}
+
+		/**
+		 * Returns the spatial partition of reconstructed feature geometries for the specified
+		 * reconstruct params and reconstruction time.
+		 *
+		 * If @a reconstruct_handle is not NULL then the reconstruct handle that identifies
+		 * the reconstructed feature geometries in the spatial partition is returned.
 		 *
 		 * The maximum depth of the quad trees in each cube face of the spatial partition
 		 * is @a DEFAULT_SPATIAL_PARTITION_DEPTH.
 		 */
 		reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_to_const_type
 		get_reconstructed_feature_geometries_spatial_partition(
-				const double &reconstruction_time);
+				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time,
+				ReconstructHandle::type *reconstruct_handle = NULL);
 
+
+		//
+		// Getting a spatial partition of @a ReconstructContext::Reconstruction objects.
+		//
 
 		/**
-		 * Returns the reconstructed feature geometries, at the current reconstruction time, in a spatial partition.
-		 *
-		 * Note that ReconstructContext::Reconstruction::get_geometry_property_handle can index
-		 * into the sequences returned by @a get_present_day_geometries and
-		 * @a get_present_day_geometries_spatial_partition_locations.
-		 *
-		 * The maximum depth of the quad trees in each cube face of the spatial partition
-		 * is @a DEFAULT_SPATIAL_PARTITION_DEPTH.
+		 * Returns the spatial partition of reconstructions for the current reconstruct params and
+		 * the current reconstruction time.
 		 */
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
-		get_reconstructions_spatial_partition()
+		get_reconstructions_spatial_partition(
+				ReconstructHandle::type *reconstruct_handle = NULL)
 		{
-			return get_reconstructions_spatial_partition(d_current_reconstruction_time);
+			return get_reconstructions_spatial_partition(
+					d_current_reconstruct_params, d_current_reconstruction_time, reconstruct_handle);
 		}
 
+		/**
+		 * Returns the spatial partition of reconstructions for the specified reconstruct params and
+		 * the current reconstruction time.
+		 */
+		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
+		get_reconstructions_spatial_partition(
+				const ReconstructParams &reconstruct_params,
+				ReconstructHandle::type *reconstruct_handle = NULL)
+		{
+			return get_reconstructions_spatial_partition(
+					reconstruct_params, d_current_reconstruction_time, reconstruct_handle);
+		}
 
 		/**
-		 * Returns the reconstructed feature geometries, at the specified time, in a spatial partition.
+		 * Returns the spatial partition of reconstructions for the current reconstruct params and
+		 * the specified reconstruction time.
+		 */
+		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
+		get_reconstructions_spatial_partition(
+				const double &reconstruction_time,
+				ReconstructHandle::type *reconstruct_handle = NULL)
+		{
+			return get_reconstructions_spatial_partition(
+					d_current_reconstruct_params, reconstruction_time, reconstruct_handle);
+		}
+
+		/**
+		 * Returns the spatial partition of reconstructions for the specified
+		 * reconstruct params and reconstruction time.
 		 *
 		 * Note that ReconstructContext::Reconstruction::get_geometry_property_handle can index
 		 * into the sequences returned by @a get_present_day_geometries and
 		 * @a get_present_day_geometries_spatial_partition_locations.
+		 *
+		 * If @a reconstruct_handle is not NULL then the reconstruct handle that identifies
+		 * the reconstructed feature geometries in the spatial partition is returned.
 		 *
 		 * The maximum depth of the quad trees in each cube face of the spatial partition
 		 * is @a DEFAULT_SPATIAL_PARTITION_DEPTH.
 		 */
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
 		get_reconstructions_spatial_partition(
-				const double &reconstruction_time);
+				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time,
+				ReconstructHandle::type *reconstruct_handle = NULL);
 
+
+		//
+		// Getting current reconstruct params and reconstruction time as set by the layer system.
+		//
+
+		/**
+		 * Gets the current reconstruction time as set by the layer system.
+		 */
+		const double &
+		get_current_reconstruction_time() const
+		{
+			return d_current_reconstruction_time;
+		}
+
+		/**
+		 * Gets the parameters used for reconstructing.
+		 */
+		const ReconstructParams &
+		get_current_reconstruct_params() const
+		{
+			return d_current_reconstruct_params;
+		}
+
+
+		//
+		// Getting a present day objects.
+		//
 
 		/**
 		 * Returns the present day geometries of the current set of reconstructable feature
@@ -234,7 +406,6 @@ namespace GPlatesAppLogic
 		 */
 		const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &
 		get_present_day_geometries();
-
 
 		/**
 		 * Returns the present day geometries of the current set of reconstructable feature
@@ -259,7 +430,6 @@ namespace GPlatesAppLogic
 		const std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> > &
 		get_present_day_polygon_meshes();
 
-
 		/**
 		 * Returns the present day geometries in a spatial partition.
 		 *
@@ -275,7 +445,6 @@ namespace GPlatesAppLogic
 		 */
 		geometries_spatial_partition_type::non_null_ptr_to_const_type
 		get_present_day_geometries_spatial_partition();
-
 
 		/**
 		 * Returns the present day geometries in a spatial partition.
@@ -350,6 +519,13 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 		/**
+		 * Sets the parameters used for reconstructing.
+		 */
+		void
+		set_current_reconstruct_params(
+				const ReconstructParams &reconstruct_params);
+
+		/**
 		 * Set the reconstruction layer proxy used to rotate the feature geometries.
 		 */
 		void
@@ -377,14 +553,61 @@ namespace GPlatesAppLogic
 		modified_reconstructable_feature_collection(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
-		/**
-		 * Sets the parameters used for reconstructing.
-		 */
-		void
-		set_current_reconstruct_params(
-				const ReconstructParams &reconstruct_params);
-
 	private:
+		/**
+		 * Contains optional reconstructed feature geometries as sequences and spatial partitions.
+		 *
+		 * Each instance of this structure represents cached reconstruction information for
+		 * a specific reconstruction time and reconstruct parameters.
+		 */
+		struct ReconstructionInfo
+		{
+			/**
+			 * The reconstruct handle that identifies all cached reconstructed feature geometries
+			 * in this structure.
+			 */
+			boost::optional<ReconstructHandle::type> cached_reconstruct_handle;
+
+			/**
+			 * The cached reconstructed feature geometries.
+			 */
+			boost::optional< std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> >
+					cached_reconstructed_feature_geometries;
+
+			/**
+			 * The cached reconstructed feature geometries in the form of
+			 * ReconstructContext::Reconstruction objects.
+			 */
+			boost::optional< std::vector<ReconstructContext::Reconstruction> > cached_reconstructions;
+
+			/**
+			 * The cached reconstructed feature geometries spatial partition.
+			 */
+			boost::optional<reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_type>
+					cached_reconstructed_feature_geometries_spatial_partition;
+
+			/**
+			 * The cached reconstructions spatial partition.
+			 */
+			boost::optional<reconstructions_spatial_partition_type::non_null_ptr_type>
+					cached_reconstructions_spatial_partition;
+		};
+
+		//! Typedef for the key type to the reconstruction cache (reconstruction time and reconstruct params).
+		typedef std::pair<GPlatesMaths::real_t, ReconstructParams> reconstruction_cache_key_type;
+
+		//! Typedef for the value type stored in the reconstruction cache.
+		typedef ReconstructionInfo reconstruction_cache_value_type;
+
+		/**
+		 * Typedef for a cache of reconstruction information keyed by reconstruction time and reconstruct params.
+		 */
+		typedef GPlatesUtils::KeyValueCache<
+				reconstruction_cache_key_type,
+				reconstruction_cache_value_type>
+						reconstruction_cache_type;
+
+
 		/**
 		 * Used to associate features with reconstruct methods.
 		 */
@@ -413,28 +636,14 @@ namespace GPlatesAppLogic
 		double d_current_reconstruction_time;
 
 		/**
-		 * The cached reconstructed feature geometries.
+		 * The current reconstruct parameters as set by the layer system.
 		 */
-		boost::optional< std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> >
-				d_cached_reconstructed_feature_geometries;
+		ReconstructParams d_current_reconstruct_params;
 
 		/**
-		 * The cached reconstructed feature geometries in the form of
-		 * ReconstructContext::Reconstruction objects.
+		 * The various reconstructions cached according to reconstruction time and reconstruct params.
 		 */
-		boost::optional< std::vector<ReconstructContext::Reconstruction> > d_cached_reconstructions;
-
-		/**
-		 * The cached reconstructed feature geometries spatial partition.
-		 */
-		boost::optional<reconstructed_feature_geometries_spatial_partition_type::non_null_ptr_type>
-				d_cached_reconstructed_feature_geometries_spatial_partition;
-
-		/**
-		 * The cached reconstructions spatial partition.
-		 */
-		boost::optional<reconstructions_spatial_partition_type::non_null_ptr_type>
-				d_cached_reconstructions_spatial_partition;
+		reconstruction_cache_type d_reconstruction_cache;
 
 		/**
 		 * The cached present day geometries of the reconstructable features.
@@ -461,11 +670,6 @@ namespace GPlatesAppLogic
 				d_cached_present_day_geometries_spatial_partition_locations;
 
 		/**
-		 * Cached reconstruction time.
-		 */
-		boost::optional<GPlatesMaths::real_t> d_cached_reconstruction_time;
-
-		/**
 		 * Used to notify polling observers that we've been updated.
 		 */
 		mutable GPlatesUtils::SubjectToken d_subject_token;
@@ -480,13 +684,8 @@ namespace GPlatesAppLogic
 		explicit
 		ReconstructLayerProxy(
 				const ReconstructMethodRegistry &reconstruct_method_registry,
-				const ReconstructParams &reconstruct_params) :
-			d_reconstruct_method_registry(reconstruct_method_registry),
-			d_reconstruct_context(reconstruct_method_registry, reconstruct_params),
-			// Start off with a reconstruction layer proxy that does identity rotations.
-			d_current_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
-			d_current_reconstruction_time(0)
-		{  }
+				const ReconstructParams &reconstruct_params,
+				unsigned int max_num_reconstructions_in_cache);
 
 
 	// This method is public so that @a ReconstructLayerTask can flush any RFGs when
@@ -528,6 +727,44 @@ namespace GPlatesAppLogic
 		 */
 		void
 		check_input_layer_proxies();
+
+
+		/**
+		 * Generates reconstructions for the specified reconstruct params and reconstruction time
+		 * if they're not already cached.
+		 */
+		std::vector<ReconstructContext::Reconstruction> &
+		cache_reconstructions(
+				ReconstructionInfo &reconstruction_info,
+				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time);
+
+
+		/**
+		 * Generates a reconstructions spatial partition for the specified reconstruct params and
+		 * reconstruction time if it's not already cached.
+		 */
+		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
+		cache_reconstructions_spatial_partition(
+				ReconstructionInfo &reconstruction_info,
+				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time);
+
+
+		/**
+		 * Utility method used by @a reconstruction_cache_type when it needs a new @a ReconstructionInfo
+		 * for a new reconstruction time / reconstruct params input pair.
+		 *
+		 * It is empty because we will cache the optional members as needed.
+		 * We're just using @a reconstruction_cache_type to evict least-recently requested reconstructions.
+		 */
+		static
+		ReconstructionInfo
+		create_empty_reconstruction_info(
+				const reconstruction_cache_key_type &)
+		{
+			return ReconstructionInfo();
+		}
 	};
 }
 

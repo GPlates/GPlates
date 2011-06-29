@@ -65,7 +65,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	ReconstructMethodRegistry reconstruct_method_registry;
 	register_default_reconstruct_method_types(reconstruct_method_registry);
 
-	ReconstructUtils::reconstruct(
+	const ReconstructHandle::type reconstruct_handle = ReconstructUtils::reconstruct(
 			d_reconstructed_feature_geometries,
 			reconstruction_time,
 			anchor_plate_id,
@@ -75,11 +75,12 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 
 	if (allow_partitioning_using_topological_plate_polygons)
 	{
+		std::vector<ReconstructHandle::type> reconstruct_handles(1, reconstruct_handle);
 		TopologyUtils::resolve_topological_boundaries(
 				d_resolved_topological_boundaries,
+				partitioning_feature_collections,
 				d_reconstruction_tree_cache.get_reconstruction_tree(),
-				d_reconstructed_feature_geometries,
-				partitioning_feature_collections);
+				reconstruct_handles);
 
 		d_geometry_cookie_cutter.reset(
 				new GeometryCookieCutter(

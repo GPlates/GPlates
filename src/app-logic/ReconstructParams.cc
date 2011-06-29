@@ -32,6 +32,7 @@ GPlatesAppLogic::ReconstructParams::INITIAL_VGP_DELTA_T = 5.;
 
 
 GPlatesAppLogic::ReconstructParams::ReconstructParams() :
+	d_reconstruct_by_plate_id_outside_active_time_period(false),
 	d_vgp_visibility_setting(DELTA_T_AROUND_AGE),
 	d_vgp_earliest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_past()),
 	d_vgp_latest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_future()),
@@ -66,9 +67,9 @@ GPlatesAppLogic::ReconstructParams::should_draw_vgp(
 			if (age)
 			{
 				GPlatesPropertyValues::GeoTimeInstant earliest_time =
-					GPlatesPropertyValues::GeoTimeInstant(*age + d_vgp_delta_t);
+					GPlatesPropertyValues::GeoTimeInstant(*age + d_vgp_delta_t.dval());
 				GPlatesPropertyValues::GeoTimeInstant latest_time =
-					GPlatesPropertyValues::GeoTimeInstant(*age - d_vgp_delta_t);
+					GPlatesPropertyValues::GeoTimeInstant(*age - d_vgp_delta_t.dval());
 				
 				if ((geo_time.is_later_than_or_coincident_with(earliest_time)) &&
 					(geo_time.is_earlier_than_or_coincident_with(latest_time)))
@@ -81,3 +82,68 @@ GPlatesAppLogic::ReconstructParams::should_draw_vgp(
 	return false;
 }
 
+
+bool
+GPlatesAppLogic::ReconstructParams::operator==(
+		const ReconstructParams &rhs) const
+{
+	return
+		d_reconstruct_by_plate_id_outside_active_time_period == rhs.d_reconstruct_by_plate_id_outside_active_time_period &&
+		d_vgp_visibility_setting == rhs.d_vgp_visibility_setting &&
+		d_vgp_earliest_time == rhs.d_vgp_earliest_time &&
+		d_vgp_latest_time == rhs.d_vgp_latest_time &&
+		d_vgp_delta_t == rhs.d_vgp_delta_t;
+}
+
+
+bool
+GPlatesAppLogic::ReconstructParams::operator<(
+		const ReconstructParams &rhs) const
+{
+	if (d_reconstruct_by_plate_id_outside_active_time_period < rhs.d_reconstruct_by_plate_id_outside_active_time_period)
+	{
+		return true;
+	}
+	if (d_reconstruct_by_plate_id_outside_active_time_period > rhs.d_reconstruct_by_plate_id_outside_active_time_period)
+	{
+		return false;
+	}
+
+	if (d_vgp_visibility_setting < rhs.d_vgp_visibility_setting)
+	{
+		return true;
+	}
+	if (d_vgp_visibility_setting > rhs.d_vgp_visibility_setting)
+	{
+		return false;
+	}
+
+	if (d_vgp_earliest_time < rhs.d_vgp_earliest_time)
+	{
+		return true;
+	}
+	if (d_vgp_earliest_time > rhs.d_vgp_earliest_time)
+	{
+		return false;
+	}
+
+	if (d_vgp_latest_time < rhs.d_vgp_latest_time)
+	{
+		return true;
+	}
+	if (d_vgp_latest_time > rhs.d_vgp_latest_time)
+	{
+		return false;
+	}
+
+	if (d_vgp_delta_t < rhs.d_vgp_delta_t)
+	{
+		return true;
+	}
+	if (d_vgp_delta_t > rhs.d_vgp_delta_t)
+	{
+		return false;
+	}
+
+	return false;
+}

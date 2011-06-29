@@ -62,6 +62,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::GLReconstructedStaticPolygonM
 	d_present_day_polygon_meshes_node_intersections(polygon_meshes.size()),
 	d_reconstructions_spatial_partition(reconstructions_spatial_partition)
 {
+	//PROFILE_FUNC();
+
 	create_polygon_mesh_drawables(polygon_meshes);
 
 	find_present_day_polygon_mesh_node_intersections(present_day_geometries, polygon_meshes);
@@ -70,15 +72,17 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::GLReconstructedStaticPolygonM
 
 void
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::update(
-		const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition)
+		const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition,
+		boost::optional<reconstructions_spatial_partition_type::non_null_ptr_to_const_type>
+						active_or_inactive_reconstructions_spatial_partition)
 {
 	d_reconstructions_spatial_partition = reconstructions_spatial_partition;
+	d_active_or_inactive_reconstructions_spatial_partition = active_or_inactive_reconstructions_spatial_partition;
 }
 
 
-void
-GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes(
-		reconstructed_polygon_mesh_transform_group_seq_type &reconstructed_polygon_mesh_transform_groups,
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTransformsGroups::non_null_ptr_to_const_type
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes(
 		const GLTransformState &transform_state)
 {
 	PROFILE_FUNC();
@@ -87,6 +91,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_pol
 	// Iterate over the current reconstructed polygons and determine which ones intersect the view frustum.
 	//
 
+	reconstructed_polygon_mesh_transform_group_seq_type reconstructed_polygon_mesh_transform_groups;
+
 	// Keep track of which reconstructed polygon mesh transform groups are associated with
 	// which finite rotations.
 	reconstructed_polygon_mesh_transform_group_map_type reconstructed_polygon_mesh_transform_group_map;
@@ -94,14 +100,34 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_pol
 	// The total number of polygon meshes.
 	const unsigned int num_polygon_meshes = d_present_day_polygon_mesh_drawables.size();
 
+	// We only add invisible (outside the view frustum) reconstructed polygons if we are
+	// working with an age grid that needs them which only happens if we've been supplied with
+	// active-or-inactive reconstructions.
+	const bool cull_invisible_reconstructions = !d_active_or_inactive_reconstructions_spatial_partition;
+
 	// Add any reconstructed polygons that exist in the root of the reconstructions cube quad tree.
 	// These are the ones that were too big to fit into any loose cube face.
-	add_visible_reconstructed_polygon_meshes(
+	add_reconstructed_polygon_meshes(
 			reconstructed_polygon_mesh_transform_groups,
 			reconstructed_polygon_mesh_transform_group_map,
 			num_polygon_meshes,
 			d_reconstructions_spatial_partition->begin_root_elements(),
-			d_reconstructions_spatial_partition->end_root_elements());
+			d_reconstructions_spatial_partition->end_root_elements(),
+			true/*active_reconstructions_only*/,
+			// At the root level everthing is considered visible...
+			true/*visible*/);
+	if (d_active_or_inactive_reconstructions_spatial_partition)
+	{
+		add_reconstructed_polygon_meshes(
+				reconstructed_polygon_mesh_transform_groups,
+				reconstructed_polygon_mesh_transform_group_map,
+				num_polygon_meshes,
+				d_active_or_inactive_reconstructions_spatial_partition.get()->begin_root_elements(),
+				d_active_or_inactive_reconstructions_spatial_partition.get()->end_root_elements(),
+				false/*active_reconstructions_only*/,
+				// At the root level everthing is considered visible...
+				true/*visible*/);
+	}
 
 	// Get the view frustum planes.
 	const GLFrustum &frustum_planes = transform_state.get_current_frustum_planes_in_model_space();
@@ -117,9 +143,20 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_pol
 				reconstructions_quad_tree_root = d_reconstructions_spatial_partition
 						->get_quad_tree_root_node(cube_face);
 
+		// The root node of the current active-or-inactive reconstructions quad tree, if we
+		// have the corresponding spatial partition.
+		reconstructions_spatial_partition_type::const_node_reference_type active_or_inactive_reconstructions_quad_tree_root;
+		if (d_active_or_inactive_reconstructions_spatial_partition)
+		{
+			// The root node of the current active-or-inactive reconstructions quad tree.
+			active_or_inactive_reconstructions_quad_tree_root =
+					d_active_or_inactive_reconstructions_spatial_partition.get()
+							->get_quad_tree_root_node(cube_face);
+		}
+
 		// If there are no reconstructed feature geometries in the current loose cube face
 		// then continue to next cube face.
-		if (!reconstructions_quad_tree_root)
+		if (!reconstructions_quad_tree_root && !active_or_inactive_reconstructions_quad_tree_root)
 		{
 			continue;
 		}
@@ -129,32 +166,44 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_pol
 				loose_bounds_quad_tree_root =
 						d_cube_subdivision_loose_bounds_cache->get_quad_tree_root_node(cube_face);
 
-		get_visible_reconstructed_polygon_meshes(
+		get_reconstructed_polygon_meshes_from_quad_tree(
 				reconstructed_polygon_mesh_transform_groups,
 				reconstructed_polygon_mesh_transform_group_map,
 				num_polygon_meshes,
 				reconstructions_quad_tree_root,
+				active_or_inactive_reconstructions_quad_tree_root,
 				loose_bounds_quad_tree_root,
+				cull_invisible_reconstructions,
+				true/*visible*/,
 				frustum_planes,
 				// There are six frustum planes initially active
 				GLFrustum::ALL_PLANES_ACTIVE_MASK);
 	}
+
+	return ReconstructedPolygonMeshTransformsGroups::create(
+			reconstructed_polygon_mesh_transform_groups,
+			num_polygon_meshes);
 }
 
 
 void
-GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes(
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes_from_quad_tree(
 		reconstructed_polygon_mesh_transform_group_seq_type &reconstructed_polygon_mesh_transform_groups,
 		reconstructed_polygon_mesh_transform_group_map_type &reconstructed_polygon_mesh_transform_group_map,
 		unsigned int num_polygon_meshes,
 		const reconstructions_spatial_partition_type::const_node_reference_type &reconstructions_quad_tree_node,
+		const reconstructions_spatial_partition_type::const_node_reference_type &active_or_inactive_reconstructions_quad_tree_node,
 		const cube_subdivision_loose_bounds_cache_type::node_reference_type &loose_bounds_quad_tree_node,
+		const bool cull_invisible_reconstructions,
+		bool visible,
 		const GLFrustum &frustum_planes,
 		boost::uint32_t frustum_plane_mask)
 {
 	// If the frustum plane mask is zero then it means we are entirely inside the view frustum.
 	// So only test for intersection if the mask is non-zero.
-	if (frustum_plane_mask != 0)
+	// Also if the parent node was not visible (intersecting view frustum) then we don't need
+	// to test visibility.
+	if (visible && (frustum_plane_mask != 0))
 	{
 		boost::shared_ptr<const cube_subdivision_loose_bounds_cache_type::element_type>
 				loose_bounds_cached_element =
@@ -172,8 +221,14 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_pol
 						frustum_plane_mask);
 		if (!out_frustum_plane_mask)
 		{
-			// No intersection so quad tree node is outside view frustum and we can cull it.
-			return;
+			// If we are culling quad tree nodes outside the view frustum then return early.
+			if (cull_invisible_reconstructions)
+			{
+				return;
+			}
+
+			// The current quad sub-tree at this node is not visible in the view frustum.
+			visible = false;
 		}
 
 		// Update the frustum plane mask so we only test against those planes that
@@ -184,12 +239,28 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_pol
 	}
 
 	// Add the polygon meshes of the current quad tree node to the visible list.
-	add_visible_reconstructed_polygon_meshes(
-			reconstructed_polygon_mesh_transform_groups,
-			reconstructed_polygon_mesh_transform_group_map,
-			num_polygon_meshes,
-			reconstructions_quad_tree_node.begin(),
-			reconstructions_quad_tree_node.end());
+	if (reconstructions_quad_tree_node)
+	{
+		add_reconstructed_polygon_meshes(
+				reconstructed_polygon_mesh_transform_groups,
+				reconstructed_polygon_mesh_transform_group_map,
+				num_polygon_meshes,
+				reconstructions_quad_tree_node.begin(),
+				reconstructions_quad_tree_node.end(),
+				true/*active_reconstructions_only*/,
+				visible);
+	}
+	if (active_or_inactive_reconstructions_quad_tree_node)
+	{
+		add_reconstructed_polygon_meshes(
+				reconstructed_polygon_mesh_transform_groups,
+				reconstructed_polygon_mesh_transform_group_map,
+				num_polygon_meshes,
+				active_or_inactive_reconstructions_quad_tree_node.begin(),
+				active_or_inactive_reconstructions_quad_tree_node.end(),
+				false/*active_reconstructions_only*/,
+				visible);
+	}
 
 	//
 	// Iterate over the child quad tree nodes.
@@ -200,12 +271,24 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_pol
 		for (unsigned int child_u_offset = 0; child_u_offset < 2; ++child_u_offset)
 		{
 			// See if there are reconstructed feature geometries in the current child node.
-			const reconstructions_spatial_partition_type::const_node_reference_type
-					reconstructions_child_quad_tree_node =
-							reconstructions_quad_tree_node.get_child_node(
-									child_u_offset, child_v_offset);
+			reconstructions_spatial_partition_type::const_node_reference_type child_reconstructions_quad_tree_node;
+			if (reconstructions_quad_tree_node)
+			{
+				child_reconstructions_quad_tree_node =
+						reconstructions_quad_tree_node.get_child_node(
+								child_u_offset, child_v_offset);
+			}
 
-			if (!reconstructions_child_quad_tree_node)
+			// See if there are reconstructed feature geometries in the current child node.
+			reconstructions_spatial_partition_type::const_node_reference_type child_active_or_inactive_reconstructions_quad_tree_node;
+			if (active_or_inactive_reconstructions_quad_tree_node)
+			{
+				child_active_or_inactive_reconstructions_quad_tree_node =
+						active_or_inactive_reconstructions_quad_tree_node.get_child_node(
+								child_u_offset, child_v_offset);
+			}
+
+			if (!child_reconstructions_quad_tree_node && !child_active_or_inactive_reconstructions_quad_tree_node)
 			{
 				continue;
 			}
@@ -218,12 +301,15 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_pol
 									child_u_offset,
 									child_v_offset);
 
-			get_visible_reconstructed_polygon_meshes(
+			get_reconstructed_polygon_meshes_from_quad_tree(
 					reconstructed_polygon_mesh_transform_groups,
 					reconstructed_polygon_mesh_transform_group_map,
 					num_polygon_meshes,
-					reconstructions_child_quad_tree_node,
+					child_reconstructions_quad_tree_node,
+					child_active_or_inactive_reconstructions_quad_tree_node,
 					child_loose_bounds_quad_tree_node,
+					cull_invisible_reconstructions,
+					visible,
 					frustum_planes,
 					frustum_plane_mask);
 		}
@@ -232,12 +318,14 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_pol
 
 
 void
-GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_visible_reconstructed_polygon_meshes(
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_meshes(
 		reconstructed_polygon_mesh_transform_group_seq_type &reconstructed_polygon_mesh_transform_groups,
 		reconstructed_polygon_mesh_transform_group_map_type &reconstructed_polygon_mesh_transform_group_map,
 		unsigned int num_polygon_meshes,
 		const reconstructions_spatial_partition_type::element_const_iterator &begin_reconstructions,
-		const reconstructions_spatial_partition_type::element_const_iterator &end_reconstructions)
+		const reconstructions_spatial_partition_type::element_const_iterator &end_reconstructions,
+		bool active_reconstructions_only,
+		bool visible)
 {
 	// Iterate over the sequence of reconstructions.
 	for (reconstructions_spatial_partition_type::element_const_iterator reconstructions_iter = begin_reconstructions;
@@ -317,8 +405,25 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_visible_reconstructed_pol
 		ReconstructedPolygonMeshTransformGroup &reconstructed_polygon_mesh_transform_group =
 				reconstructed_polygon_mesh_transform_groups[transform_group_index];
 
-		// Finally add the polygon mesh to the membership list of the current transform group.
-		reconstructed_polygon_mesh_transform_group.add_present_day_polygon_mesh(present_day_geometry_index);
+		// Finally add the polygon mesh to the appropriate membership list of the current transform group.
+		if (active_reconstructions_only)
+		{
+			if (visible)
+			{
+				reconstructed_polygon_mesh_transform_group.add_visible_present_day_polygon_mesh_for_active_reconstruction(
+						present_day_geometry_index);
+			}
+			reconstructed_polygon_mesh_transform_group.add_all_present_day_polygon_mesh_for_active_reconstruction(
+					present_day_geometry_index);
+		}
+		else
+		{
+			if (visible)
+			{
+				reconstructed_polygon_mesh_transform_group.add_visible_present_day_polygon_mesh_for_active_or_inactive_reconstruction(
+						present_day_geometry_index);
+			}
+		}
 	}
 }
 
@@ -787,4 +892,70 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::PresentDayPolygonMeshesNodeIn
 	}
 
 	return *child_node;
+}
+
+
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::PresentDayPolygonMeshMembership::non_null_ptr_type
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTransformsGroups
+	::gather_visible_present_day_polygon_mesh_memberships_for_active_reconstructions(
+		const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+		unsigned int num_polygon_meshes)
+{
+	// All bitset's have the same number of flags.
+	// Initially they are all false.
+	boost::dynamic_bitset<> polygon_mesh_membership(num_polygon_meshes);
+
+	// Combine the flags of all transform groups.
+	BOOST_FOREACH(const ReconstructedPolygonMeshTransformGroup &transform_group, transform_groups)
+	{
+		polygon_mesh_membership |=
+				transform_group.get_visible_present_day_polygon_meshes_for_active_reconstructions()
+						.get_polygon_meshes_membership();
+	}
+
+	return PresentDayPolygonMeshMembership::create(polygon_mesh_membership);
+}
+
+
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::PresentDayPolygonMeshMembership::non_null_ptr_type
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTransformsGroups
+	::gather_visible_present_day_polygon_mesh_memberships_for_active_or_inactive_reconstructions(
+		const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+		unsigned int num_polygon_meshes)
+{
+	// All bitset's have the same number of flags.
+	// Initially they are all false.
+	boost::dynamic_bitset<> polygon_mesh_membership(num_polygon_meshes);
+
+	// Combine the flags of all transform groups.
+	BOOST_FOREACH(const ReconstructedPolygonMeshTransformGroup &transform_group, transform_groups)
+	{
+		polygon_mesh_membership |=
+				transform_group.get_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions()
+						.get_polygon_meshes_membership();
+	}
+
+	return PresentDayPolygonMeshMembership::create(polygon_mesh_membership);
+}
+
+
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::PresentDayPolygonMeshMembership::non_null_ptr_type
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTransformsGroups
+	::gather_all_present_day_polygon_mesh_memberships_for_active_reconstructions(
+		const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+		unsigned int num_polygon_meshes)
+{
+	// All bitset's have the same number of flags.
+	// Initially they are all false.
+	boost::dynamic_bitset<> polygon_mesh_membership(num_polygon_meshes);
+
+	// Combine the flags of all transform groups.
+	BOOST_FOREACH(const ReconstructedPolygonMeshTransformGroup &transform_group, transform_groups)
+	{
+		polygon_mesh_membership |=
+				transform_group.get_all_present_day_polygon_meshes_for_active_reconstructions()
+						.get_polygon_meshes_membership();
+	}
+
+	return PresentDayPolygonMeshMembership::create(polygon_mesh_membership);
 }

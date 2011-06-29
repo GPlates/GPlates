@@ -176,23 +176,33 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
+		//! Typedef for sequence of @a ReconstructionGeometry objects.
+		typedef std::vector<ReconstructionGeometry::non_null_ptr_to_const_type> reconstruction_geom_seq_type;
+
 		/**
-		 * Finds the @a ReconstructionGeometry that was generated from the same geometry property
-		 * as @a reconstruction_geometry and that was reconstructed using @a reconstruction_tree.
+		 * Finds the @a ReconstructionGeometry objects that were generated from the same geometry property
+		 * as @a reconstruction_geometry and that were optionally reconstructed using @a reconstruction_tree
+		 * and that are from the subset of reconstruction geometries in @a reconstruction_geometries_subset.
+		 *
+		 * Returns true if any were found.
 		 *
 		 * This is useful for tracking reconstruction geometries as the reconstruction time,
 		 * and hence reconstruction tree, changes.
 		 */
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type>
-		find_reconstruction_geometry(
+		bool
+		find_reconstruction_geometries_observing_feature(
+				reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
+				const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 				const ReconstructionGeometry &reconstruction_geometry,
-				const ReconstructionTree &reconstruction_tree);
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none);
 
 
 		/**
-		 * Finds the @a ReconstructionGeometry that was generated from the geometry property
-		 * @a geometry_property_iterator in feature @a feature_ref and
-		 * that was reconstructed using @a reconstruction_tree.
+		 * Finds the @a ReconstructionGeometry objects from feature @a feature_ref and that were
+		 * optionally reconstructed using @a reconstruction_tree and that are from the subset of
+		 * reconstruction geometries in @a reconstruction_geometries_subset.
+		 *
+		 * Returns true if any were found.
 		 *
 		 * This is useful for tracking reconstruction geometries as the reconstruction time,
 		 * and hence reconstruction tree, changes.
@@ -204,11 +214,29 @@ namespace GPlatesAppLogic
 		 * but don't have the old @a ReconstructionGeometry any more - in this case we can
 		 * keep track of the feature and the geometry property and supply a new reconstruction tree.
 		 */
-		boost::optional<ReconstructionGeometry::non_null_ptr_to_const_type>
-		find_reconstruction_geometry(
+		bool
+		find_reconstruction_geometries_observing_feature(
+				reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
+				const reconstruction_geom_seq_type &reconstruction_geometries_subset,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none);
+
+
+		/**
+		 * Finds the @a ReconstructionGeometry objects that were optionally generated from the
+		 * geometry property @a geometry_property_iterator in feature @a feature_ref and that were
+		 * optionally reconstructed using @a reconstruction_tree and that are from the subset of
+		 * reconstruction geometries in @a reconstruction_geometries_subset.
+		 *
+		 * Returns true if any were found.
+		 */
+		bool
+		find_reconstruction_geometries_observing_feature(
+				reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
+				const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
-				const ReconstructionTree &reconstruction_tree);
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none);
 
 
 		////////////////////

@@ -30,6 +30,7 @@
 #include <boost/optional.hpp>
 
 #include "ReconstructionGeometry.h"
+#include "ReconstructionTree.h"
 
 #include "model/FeatureHandle.h"
 #include "model/PropertyName.h"
@@ -38,8 +39,6 @@
 
 namespace GPlatesAppLogic
 {
-	class ReconstructionTree;
-	
 	/**
 	 * This weak observer visitor finds all the reconstruction geometries (RGs) which
 	 * are observing a given feature (eg, ReconstructedFeatureGeometry
@@ -55,16 +54,18 @@ namespace GPlatesAppLogic
 	public:
 		typedef std::vector<ReconstructionGeometry::non_null_ptr_type> rg_container_type;
 
+		typedef rg_container_type::const_iterator const_iterator;
+
+
 		/**
 		 * Constructor.
 		 *
-		 * If a non-NULL ReconstructionTree pointer is supplied to the optional parameter
-		 * @a reconstruction_tree_to_match, the results will be limited to those RGs that
-		 * reference that ReconstructionTree instance.
+		 * If a ReconstructionTree is supplied to the optional parameter @a reconstruction_tree_to_match,
+		 * the results will be limited to those RGs that reference that ReconstructionTree instance.
 		 */
 		explicit
 		ReconstructionGeometryFinder(
-				const ReconstructionTree *reconstruction_tree_to_match = NULL):
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none) :
 			d_reconstruction_tree_to_match(reconstruction_tree_to_match)
 		{  }
 
@@ -74,15 +75,35 @@ namespace GPlatesAppLogic
 		 * Limit the results to those RGs reconstructed from a geometry with the property
 		 * name @a property_name_to_match.
 		 *
-		 * If a non-NULL ReconstructionTree pointer is supplied to the optional parameter
-		 * @a reconstruction_tree_to_match, the results will be limited to those RGs that
-		 * reference that ReconstructionTree instance.
+		 * If a ReconstructionTree is supplied to the optional parameter @a reconstruction_tree_to_match,
+		 * the results will be limited to those RFGs that reference that ReconstructionTree instance.
 		 */
 		explicit
 		ReconstructionGeometryFinder(
 				const GPlatesModel::PropertyName &property_name_to_match,
-				const ReconstructionTree *reconstruction_tree_to_match = NULL):
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none) :
 			d_property_name_to_match(property_name_to_match),
+			d_reconstruction_tree_to_match(reconstruction_tree_to_match)
+		{  }
+
+		/**
+		 * Constructor.
+		 *
+		 * Limit the result to that RG reconstructed from a geometry with the feature
+		 * properties iterator @a properties_iterator_to_match.
+		 *
+		 * NOTE: Since @a properties_iterator_to_match can only reference a single property in
+		 * a single feature, we can find at most one matching RG (so @a num_rgs_found should
+		 * only return zero or one).
+		 *
+		 * If a ReconstructionTree is supplied to the optional parameter @a reconstruction_tree_to_match,
+		 * the results will be limited to those RGs that reference that ReconstructionTree instance.
+		 */
+		explicit
+		ReconstructionGeometryFinder(
+				const GPlatesModel::FeatureHandle::iterator &properties_iterator_to_match,
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none):
+			d_properties_iterator_to_match(properties_iterator_to_match),
 			d_reconstruction_tree_to_match(reconstruction_tree_to_match)
 		{  }
 
@@ -99,13 +120,13 @@ namespace GPlatesAppLogic
 			return d_found_rgs.size();
 		}
 
-		rg_container_type::const_iterator
+		const_iterator
 		found_rgs_begin() const
 		{
 			return d_found_rgs.begin();
 		}
 
-		rg_container_type::const_iterator
+		const_iterator
 		found_rgs_end() const
 		{
 			return d_found_rgs.end();
@@ -178,7 +199,9 @@ namespace GPlatesAppLogic
 
 	private:
 		boost::optional<GPlatesModel::PropertyName> d_property_name_to_match;
-		const ReconstructionTree *d_reconstruction_tree_to_match;
+		boost::optional<GPlatesModel::FeatureHandle::iterator> d_properties_iterator_to_match;
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> d_reconstruction_tree_to_match;
+
 		rg_container_type d_found_rgs;
 
 

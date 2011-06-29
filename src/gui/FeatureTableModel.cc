@@ -42,22 +42,30 @@
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+
 #include "feature-visitors/GeometryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
+
 #include "model/types.h"
 #include "model/FeatureHandle.h"
+
 #include "presentation/ViewState.h"
+
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/XsString.h"
+
 #include "utils/QtFormattingUtils.h"
 #include "utils/UnicodeStringUtils.h"
+
+#include "view-operations/RenderedGeometryUtils.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -602,12 +610,17 @@ GPlatesGui::FeatureTableModel::FeatureTableModel(
 		GPlatesPresentation::ViewState &view_state,
 		QObject *parent_):
 	QAbstractTableModel(parent_),
-	d_feature_focus_ptr(&view_state.get_feature_focus())
+	d_feature_focus_ptr(&view_state.get_feature_focus()),
+	d_rendered_geometry_collection(view_state.get_rendered_geometry_collection())
 {
-	QObject::connect(&view_state.get_application_state(),
-			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
+	// Get notified whenever the rendered geometry collection gets updated.
+	QObject::connect(
+			&d_rendered_geometry_collection,
+			SIGNAL(collection_was_updated(
+					GPlatesViewOperations::RenderedGeometryCollection &,
+					GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
 			this,
-			SLOT(handle_reconstruction(GPlatesAppLogic::ApplicationState &)));
+			SLOT(handle_rendered_geometry_collection_update()));
 
 	QObject::connect(d_feature_focus_ptr,
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
@@ -777,8 +790,7 @@ GPlatesGui::FeatureTableModel::handle_feature_modified(
 
 
 void
-GPlatesGui::FeatureTableModel::handle_reconstruction(
-		GPlatesAppLogic::ApplicationState &application_state)
+GPlatesGui::FeatureTableModel::handle_rendered_geometry_collection_update()
 {
 	std::vector<int> rows_to_remove;
 
@@ -789,19 +801,28 @@ GPlatesGui::FeatureTableModel::handle_reconstruction(
 	geometry_sequence_type::iterator end = d_sequence.end();
 	for ( ; it != end; ++it, ++row)
 	{
-		// FIXME: For the time being assume there's only one reconstruction tree active
-		// (the default reconstruction tree from the default reconstruction tree layer).
-		// It will soon be possible for the user to connect up a non-default reconstruction tree
-		// in which case we'll need to handle this better.
 #if 1
 		// Find the new ReconstructionGeometry, if any, from inside the current Reconstruction
 		// that corresponds to the current ReconstructionGeometry.
 		const GPlatesAppLogic::ReconstructionGeometry &old_rg = *it->reconstruction_geometry;
-		boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> new_rg =
-				GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
-						old_rg,
-						*application_state.get_current_reconstruction()
-							.get_default_reconstruction_layer_output()->get_reconstruction_tree());
+
+		// If no new reconstruction geometry could be found then it's possible the
+		// current reconstruction time is outside the begin/end valid time range of the
+		// current feature in which case we'll just leave it in case the time changes back again
+		// in which case the reconstruction geometry will become highlighted again.
+		GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geometries_observing_feature;
+		if (!GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_observing_feature(
+				reconstruction_geometries_observing_feature,
+				d_rendered_geometry_collection,
+				old_rg))
+		{
+			//rows_to_remove.push_back(row);
+			continue;
+		}
+
+		// Change the reconstruction geometry for the current row.
+		// If there was more than one match then pick the first found.
+		it->reconstruction_geometry = reconstruction_geometries_observing_feature.front();
 #else
 		const boost::optional<GPlatesAppLogic::Layer> &recon_tree_layer =
 				it->reconstruction_tree_layer;
@@ -834,7 +855,6 @@ GPlatesGui::FeatureTableModel::handle_reconstruction(
 				GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
 						old_rg,
 						*reconstruction_tree.get());
-#endif
 
 		// If no new reconstruction geometry could be found then it's possible the
 		// current reconstruction time is outside the begin/end valid time range of the
@@ -848,6 +868,7 @@ GPlatesGui::FeatureTableModel::handle_reconstruction(
 
 		// Change the reconstruction geometry for the current row.
 		it->reconstruction_geometry = new_rg.get();
+#endif
 
 		// Notify of the change.
 		QModelIndex idx_begin = index(row, 0);

@@ -72,6 +72,8 @@ DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <CGAL/interpolation_functions.h>
 #include <CGAL/Interpolation_gradient_fitting_traits_2.h>
 #include <CGAL/sibson_gradient_fitting.h>
+#include <CGAL/centroid.h>
+#include <CGAL/barycenter.h>
 POP_MSVC_WARNINGS
 
 //POP_GCC_WARNINGS
@@ -509,8 +511,14 @@ namespace GPlatesAppLogic
 						//qDebug() << "before constrained_delaunay_triangulation_2.insert_constraint(v1,v2)";
 						constrained_delaunay_triangulation_2.insert_constraint(v1, v2);
 					}
+					catch (std::exception &exc)
+					{
+						qWarning() << exc.what();
+						continue;
+					}
 					catch (...)
 					{
+						qWarning() << "insert_points_into_constrained_delaunay_triangulation_2: Unknown error";
 						//qDebug() << "constrained_delaunay_triangulation_2.insert_constraint(v1,v2) failed!";
 						continue; // to next vertex ?
 					}
@@ -592,8 +600,14 @@ namespace GPlatesAppLogic
 							//qDebug() << "before insert_constraint: v1 != v2";
 							constrained_delaunay_triangulation_2.insert_constraint(v1, v2);
 						}
+						catch (std::exception &exc)
+						{
+							qWarning() << exc.what();
+							continue;
+						}
 						catch (...)
 						{
+							qWarning() << "insert_points_into_constrained_delaunay_triangulation_2: Unknown error";
 							//qDebug() << "constrained_delaunay_triangulation_2.insert_constraint(v1,v2) failed!";
 							continue; // to next vertex ?
 						}

@@ -434,6 +434,7 @@ GPlatesQtWidgets::ExportAnimationDialog::react_export_button_clicked()
 	set_export_abort_button_state(true);
 	set_export_parameters();
 	d_export_animation_context_ptr->do_export();
+	d_export_animation_context_ptr->clear_export_animation_strategies();
 	set_export_abort_button_state(false);
 	
 }

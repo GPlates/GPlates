@@ -331,7 +331,9 @@ namespace GPlatesAppLogic
 			explicit
 			ReconstructFeature(
 					std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+					const ReconstructHandle::type &reconstruct_handle,
 					const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree) :
+				d_reconstruct_handle(reconstruct_handle),
 				d_reconstruction_tree(reconstruction_tree),
 				d_reconstruction_params(reconstruction_tree->get_reconstruction_time()),
 				d_reconstructed_feature_geometries(reconstructed_feature_geometries)
@@ -403,7 +405,8 @@ namespace GPlatesAppLogic
 								gml_line_string.polyline(),
 								d_reconstruction_rotation.get(),
 								d_reconstruction_params.get_recon_plate_id(),
-								d_reconstruction_params.get_time_of_appearance());
+								d_reconstruction_params.get_time_of_appearance(),
+								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
 			}
 
@@ -422,7 +425,8 @@ namespace GPlatesAppLogic
 								gml_multi_point.multipoint(),
 								d_reconstruction_rotation.get(),
 								d_reconstruction_params.get_recon_plate_id(),
-								d_reconstruction_params.get_time_of_appearance());
+								d_reconstruction_params.get_time_of_appearance(),
+								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
 			}
 
@@ -449,7 +453,8 @@ namespace GPlatesAppLogic
 								gml_point.point(),
 								d_reconstruction_rotation.get(),
 								d_reconstruction_params.get_recon_plate_id(),
-								d_reconstruction_params.get_time_of_appearance());
+								d_reconstruction_params.get_time_of_appearance(),
+								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
 			}
 
@@ -468,7 +473,8 @@ namespace GPlatesAppLogic
 								gml_polygon.exterior(),
 								d_reconstruction_rotation.get(),
 								d_reconstruction_params.get_recon_plate_id(),
-								d_reconstruction_params.get_time_of_appearance());
+								d_reconstruction_params.get_time_of_appearance(),
+								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
 					
 				// Repeat the same procedure for each of the interior rings, if any.
@@ -486,7 +492,8 @@ namespace GPlatesAppLogic
 									polygon_interior,
 									d_reconstruction_rotation.get(),
 									d_reconstruction_params.get_recon_plate_id(),
-									d_reconstruction_params.get_time_of_appearance());
+									d_reconstruction_params.get_time_of_appearance(),
+									d_reconstruct_handle);
 					d_reconstructed_feature_geometries.push_back(rfg_p);
 				}
 			}
@@ -500,6 +507,7 @@ namespace GPlatesAppLogic
 			}
 
 		private:
+			const ReconstructHandle::type &d_reconstruct_handle;
 			ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
 			ReconstructionFeatureProperties d_reconstruction_params;
 			boost::optional<Transform::non_null_ptr_type> d_reconstruction_rotation;
@@ -540,6 +548,7 @@ void
 GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
+		const ReconstructHandle::type &reconstruct_handle,
 		const ReconstructParams &/*reconstruct_params*/,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
@@ -548,7 +557,7 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature(
 	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
 
-	ReconstructFeature visitor(reconstructed_feature_geometries, reconstruction_tree);
+	ReconstructFeature visitor(reconstructed_feature_geometries, reconstruct_handle, reconstruction_tree);
 
 	visitor.visit_feature(feature_weak_ref);
 }

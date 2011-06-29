@@ -30,89 +30,137 @@
 #include "ReconstructionTree.h"
 
 
-boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
-GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
+namespace GPlatesAppLogic
+{
+	namespace
+	{
+		/**
+		 * Returns those reconstruction geometries found by @a rg_finder that are in the subset
+		 * @a reconstruction_geometries_subset.
+		 */
+		bool
+		get_reconstruction_geometries_subset(
+				ReconstructionGeometryUtils::reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
+				const ReconstructionGeometryUtils::reconstruction_geom_seq_type &reconstruction_geometries_subset,
+				const ReconstructionGeometryFinder &rg_finder)
+		{
+			bool found_match = false;
+
+			ReconstructionGeometryFinder::rg_container_type::const_iterator found_rg_iter;
+			for (found_rg_iter = rg_finder.found_rgs_begin();
+				found_rg_iter != rg_finder.found_rgs_end();
+				++found_rg_iter)
+			{
+				const ReconstructionGeometry::non_null_ptr_type &found_rg = *found_rg_iter;
+
+				// If the found reconstruction geometry is not in the input reconstruction geometries then skip it.
+				if (std::find(
+					reconstruction_geometries_subset.begin(),
+					reconstruction_geometries_subset.end(),
+					found_rg) == reconstruction_geometries_subset.end())
+				{
+					continue;
+				}
+
+				// We found a match so add it to the caller's sequence.
+				reconstruction_geometries_observing_feature.push_back(found_rg);
+
+				found_match = true;
+			}
+
+			return found_match;
+		}
+	}
+}
+
+
+bool
+GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_observing_feature(
+		reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
+		const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 		const ReconstructionGeometry &reconstruction_geometry,
-		const ReconstructionTree &reconstruction_tree)
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree)
 {
 	// Get the feature referenced by the old reconstruction geometry.
 	boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
-			get_feature_ref(&reconstruction_geometry);
+			ReconstructionGeometryUtils::get_feature_ref(&reconstruction_geometry);
 	if (!feature_ref)
 	{
-		return boost::none;
+		return false;
 	}
 
 	// Get the geometry property iterator from the old reconstruction geometry.
 	boost::optional<GPlatesModel::FeatureHandle::iterator> geometry_property =
-			get_geometry_property_iterator(&reconstruction_geometry);
+			ReconstructionGeometryUtils::get_geometry_property_iterator(&reconstruction_geometry);
 	if (!geometry_property)
 	{
-		return boost::none;
+		return false;
 	}
 
-	return find_reconstruction_geometry(
+	return find_reconstruction_geometries_observing_feature(
+			reconstruction_geometries_observing_feature,
+			reconstruction_geometries_subset,
 			feature_ref.get(),
 			geometry_property.get(),
 			reconstruction_tree);
 }
 
 
-boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>
-GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
+bool
+GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_observing_feature(
+		reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
+		const reconstruction_geom_seq_type &reconstruction_geometries_subset,
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree)
+{
+	if ( !feature_ref.is_valid())
+	{
+		return false;
+	}
+
+	//
+	// Iterate through the ReconstructionGeometrys that are observing 'feature_ref'.
+	//
+	// Of those ReconstructionGeometries, we're only interested in those that exist inside
+	// the reconstruction geometries subset passed to us.
+	//
+
+	// Iterate over the ReconstructionGeometries that observe 'feature_ref' and were optionally
+	// reconstructed from the reconstruction tree.
+	ReconstructionGeometryFinder rg_finder(reconstruction_tree);
+	rg_finder.find_rgs_of_feature(feature_ref);
+
+	return get_reconstruction_geometries_subset(
+			reconstruction_geometries_observing_feature, reconstruction_geometries_subset, rg_finder);
+}
+
+
+bool
+GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_observing_feature(
+		reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
+		const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
-		const ReconstructionTree &reconstruction_tree)
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree)
 {
-	if ( !feature_ref.is_valid() || !geometry_property_iterator.is_still_valid() )
+	if ( !feature_ref.is_valid() || !geometry_property_iterator.is_still_valid())
 	{
-		return boost::none;
+		return false;
 	}
 
 	//
 	// Iterate through the ReconstructionGeometrys that are observing 'feature_ref' and
 	// that were generated from 'feature_ref's geometry property 'geometry_property_iterator'.
 	//
-	// Of those ReconstructionGeometries, we're only interested in those that were reconstructed
-	// using the reconstruction tree 'reconstruction_tree'.
-	//
-	// This is necessary because there might be more than one tree (because the user might
-	// have multiple reconstruction tree layers - in other words, some geometries are
-	// reconstructed with one tree and other geometries with another tree).
-	// It is up to the caller to make sure the reconstruction tree is not an old one from
-	// a previous reconstruction time (ie, the reconstruction geomety returned will have
-	// been reconstructed using the specified reconstruction tree so if it's an old tree
-	// then either an old geometry or nothing will be returned).
+	// Of those ReconstructionGeometries, we're only interested in those that exist inside
+	// the reconstruction geometries subset passed to us.
 	//
 
-	// Iterate over the ReconstructionGeometries that were reconstructed using
-	// 'reconstruction_tree' and that observe 'feature_ref'.
-	ReconstructionGeometryFinder rgFinder(&reconstruction_tree);
-	rgFinder.find_rgs_of_feature(feature_ref);
+	// Iterate over the ReconstructionGeometries that observe 'feature_ref' and were reconstructed
+	// from its 'geometry_property_iterator' feature property and optionally from the reconstruction tree.
+	ReconstructionGeometryFinder rg_finder(geometry_property_iterator, reconstruction_tree);
+	rg_finder.find_rgs_of_feature(feature_ref);
 
-	ReconstructionGeometryFinder::rg_container_type::const_iterator rgIter;
-	for (rgIter = rgFinder.found_rgs_begin();
-		rgIter != rgFinder.found_rgs_end();
-		++rgIter)
-	{
-		const ReconstructionGeometry *new_rg = rgIter->get();
-
-		// See if the new ReconstructionGeometry has a geometry property.
-		boost::optional<GPlatesModel::FeatureHandle::iterator> new_geometry_property =
-				get_geometry_property_iterator(new_rg);
-		if (!new_geometry_property)
-		{
-			continue;
-		}
-
-		if (new_geometry_property.get() == geometry_property_iterator)
-		{
-			// We found a match so returned a shared pointer.
-			return GPlatesUtils::get_non_null_pointer(new_rg);
-		}
-	}
-
-	// It appears that there is no ReconstructionGeometry that was reconstructed by
-	// the specified reconstruction tree and which corresponds to the geometry property.
-	return boost::none;
+	return get_reconstruction_geometries_subset(
+			reconstruction_geometries_observing_feature, reconstruction_geometries_subset, rg_finder);
 }

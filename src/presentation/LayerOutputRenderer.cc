@@ -146,6 +146,15 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		resolved_topological_network->accept_visitor(d_reconstruction_geometry_renderer);
 	}
 
+	// Each network now also outputs a resolved topological boundary for the boundary of the network.
+	// Render each boundary.
+	BOOST_FOREACH(
+			const GPlatesAppLogic::resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary,
+			resolved_topological_boundaries)
+	{
+		resolved_topological_boundary->accept_visitor(d_reconstruction_geometry_renderer);
+	}
+
 	d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);
 }
 

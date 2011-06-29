@@ -30,6 +30,7 @@
 #include "PlateVelocityUtils.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructMethodFiniteRotation.h"
+#include "ReconstructParams.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/MultiPointOnSphere.h"
@@ -48,6 +49,8 @@
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
+
+#include "utils/Profile.h"
 
 
 namespace GPlatesAppLogic
@@ -143,10 +146,6 @@ namespace GPlatesAppLogic
 			{
 				const GPlatesModel::FeatureHandle::const_weak_ref feature_ref = feature_handle.reference();
 
-				// Firstly find a reconstruction plate ID and reconstruct method.
-				ReconstructionFeatureProperties reconstruction_params;
-				reconstruction_params.visit_feature(feature_ref);
-
 				// Feature must have a plate id or a BY_PLATE_ID reconstruct method property.
 				// We are lenient here because a lot of features have a reconstruction plate id
 				// but don't have 'ReconstructMethod::BY_PLATE_ID' specified.
@@ -159,7 +158,12 @@ namespace GPlatesAppLogic
 				// sequence which also lists least specialised to most specialised reconstruct
 				// methods and so we are the least specialised and also get queried last - so if
 				// there are any more specialised methods then they will have precedence.
+
 #if 0
+				// Firstly find a reconstruction plate ID and reconstruct method.
+				ReconstructionFeatureProperties reconstruction_params;
+				reconstruction_params.visit_feature(feature_ref);
+
 				if (!reconstruction_params.get_recon_plate_id() &&
 					reconstruction_params.get_reconstruction_method() != ReconstructMethod::BY_PLATE_ID)
 				{
@@ -321,13 +325,17 @@ namespace GPlatesAppLogic
 		 * Reconstructs a feature using its present day geometry and its plate Id.
 		 */
 		class ReconstructFeature :
-				public GPlatesModel::FeatureVisitor
+				public GPlatesModel::FeatureVisitorThatGuaranteesNotToModify
 		{
 		public:
 			explicit
 			ReconstructFeature(
 					std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+					const ReconstructHandle::type &reconstruct_handle,
+					const ReconstructParams &reconstruct_params,
 					const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree) :
+				d_reconstruct_handle(reconstruct_handle),
+				d_reconstruct_params(reconstruct_params),
 				d_reconstruction_tree(reconstruction_tree),
 				d_reconstruction_params(reconstruction_tree->get_reconstruction_time()),
 				d_reconstructed_feature_geometries(reconstructed_feature_geometries)
@@ -338,13 +346,17 @@ namespace GPlatesAppLogic
 			initialise_pre_feature_properties(
 					GPlatesModel::FeatureHandle &feature_handle)
 			{
+				//PROFILE_FUNC();
+
 				const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature_handle.reference();
 
 				// Firstly find the reconstruction plate ID.
 				d_reconstruction_params.visit_feature(feature_ref);
 
-				// Secondly the feature must be defined at the reconstruction time.
-				if (!d_reconstruction_params.is_feature_defined_at_recon_time())
+				// Secondly the feature must be defined at the reconstruction time, *unless* we've been
+				// requested to reconstruct for all times (even times when the feature is not defined).
+				if (!d_reconstruct_params.get_reconstruct_by_plate_id_outside_active_time_period() &&
+					!d_reconstruction_params.is_feature_defined_at_recon_time())
 				{
 					// Don't reconstruct.
 					return false;
@@ -404,7 +416,8 @@ namespace GPlatesAppLogic
 								gml_line_string.polyline(),
 								d_reconstruction_rotation.get(),
 								d_reconstruction_params.get_recon_plate_id(),
-								d_reconstruction_params.get_time_of_appearance());
+								d_reconstruction_params.get_time_of_appearance(),
+								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
 			}
 
@@ -423,7 +436,8 @@ namespace GPlatesAppLogic
 								gml_multi_point.multipoint(),
 								d_reconstruction_rotation.get(),
 								d_reconstruction_params.get_recon_plate_id(),
-								d_reconstruction_params.get_time_of_appearance());
+								d_reconstruction_params.get_time_of_appearance(),
+								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
 			}
 
@@ -450,7 +464,8 @@ namespace GPlatesAppLogic
 								gml_point.point(),
 								d_reconstruction_rotation.get(),
 								d_reconstruction_params.get_recon_plate_id(),
-								d_reconstruction_params.get_time_of_appearance());
+								d_reconstruction_params.get_time_of_appearance(),
+								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
 			}
 
@@ -469,7 +484,8 @@ namespace GPlatesAppLogic
 								gml_polygon.exterior(),
 								d_reconstruction_rotation.get(),
 								d_reconstruction_params.get_recon_plate_id(),
-								d_reconstruction_params.get_time_of_appearance());
+								d_reconstruction_params.get_time_of_appearance(),
+								d_reconstruct_handle);
 				d_reconstructed_feature_geometries.push_back(rfg_ptr);
 					
 				// Repeat the same procedure for each of the interior rings, if any.
@@ -487,7 +503,8 @@ namespace GPlatesAppLogic
 									polygon_interior,
 									d_reconstruction_rotation.get(),
 									d_reconstruction_params.get_recon_plate_id(),
-									d_reconstruction_params.get_time_of_appearance());
+									d_reconstruction_params.get_time_of_appearance(),
+									d_reconstruct_handle);
 					d_reconstructed_feature_geometries.push_back(rfg_p);
 				}
 			}
@@ -501,6 +518,8 @@ namespace GPlatesAppLogic
 			}
 
 		private:
+			const ReconstructHandle::type &d_reconstruct_handle;
+			const ReconstructParams &d_reconstruct_params;
 			ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
 			ReconstructionFeatureProperties d_reconstruction_params;
 			boost::optional<Transform::non_null_ptr_type> d_reconstruction_rotation;
@@ -541,15 +560,19 @@ void
 GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
-		const ReconstructParams &/*reconstruct_params*/,
+		const ReconstructHandle::type &reconstruct_handle,
+		const ReconstructParams &reconstruct_params,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time)
 {
+	//PROFILE_FUNC();
+
 	// Get the reconstruction tree for the reconstruction time.
 	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
 
-	ReconstructFeature recon_feature(reconstructed_feature_geometries, reconstruction_tree);
+	ReconstructFeature recon_feature(
+			reconstructed_feature_geometries, reconstruct_handle, reconstruct_params, reconstruction_tree);
 
 	recon_feature.visit_feature(feature_weak_ref);
 }

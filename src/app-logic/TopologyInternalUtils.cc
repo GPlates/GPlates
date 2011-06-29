@@ -743,7 +743,8 @@ GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-		const boost::optional<const ReconstructionTree &> &reconstruction_tree)
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree,
+		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
 			geometry_delegate.feature_id());
@@ -760,9 +761,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 			property_name_qstring);
 
 	// Find the RFGs, optionally in the reconstruction_tree, for the feature ref and target property.
-	ReconstructedFeatureGeometryFinder rfg_finder(
-			property_name,
-			reconstruction_tree ? &reconstruction_tree.get() : NULL); 
+	ReconstructedFeatureGeometryFinder rfg_finder(property_name, reconstruction_tree, reconstruct_handles); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
 // FIXME: MULTIPLE GEOM
@@ -786,14 +785,9 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
         }
         qDebug() << "  property name =" << property_name_qstring;
         qDebug() << "  Unable to use any RFG.";
+
         return boost::none;
     }
-// Disabling debug output for multiple found RFGs because with the new layer proxy setup
-// it's hard to ensure only one RFG is hanging around.
-// The problem is the global nature of the RFG lookup from a feature - it is faster to lookup
-// a RFG by searching feature observers but anyone could be holding a reference to an RFG thus
-// keeping it alive and interfering with this RFG search.
-#if 0
     else if (rfg_finder.num_rfgs_found() > 1)
     {
         // We should only return boost::none for the case == 0, as above.
@@ -812,20 +806,17 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
         qDebug() << "  property name =" << property_name_qstring;
         qDebug() << "  Using the first RFG found.";
     }
-#endif
 
-	// Get the first RFG found.
-	const ReconstructedFeatureGeometry::non_null_ptr_type rfg = *rfg_finder.found_rfgs_begin();
-
-	// Return the RFG.
-	return rfg;
+	// Return the first RFG found.
+	return *rfg_finder.found_rfgs_begin();
 }
 
 
 boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
-		const ReconstructionTree &reconstruction_tree)
+		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	/*
 	if (!geometry_property.is_valid())
@@ -839,21 +830,8 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 			geometry_property.handle_weak_ref();
 
 	// Find the RFGs, referencing 'reconstruction_tree', for the feature ref and geometry property.
-	ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, &reconstruction_tree); 
+	ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, reconstruction_tree, reconstruct_handles); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
-
-	// It's currently proving too difficult to ensure only one RFG is created per geometry property
-	// per reconstruction time.
-	// FIXME: An overhaul of the method of finding RFGs from features is required as is
-	// default reconstruction tree layers.
-#if 0
-	// Because we are searching using a geometry properties iterator we can only
-	// find at most one RFG (unless the geometry got reconstructed twice and hence added to
-	// the Reconstruction twice - in which case this is an programming bug).
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			rfg_finder.num_rfgs_found() <= 1,
-			GPLATES_ASSERTION_SOURCE);
-#endif
 
 	// If we found no RFG (referencing 'reconstruction_tree') that is reconstructed from
 	// 'geometry_property' then it probably means the reconstruction time is
@@ -861,14 +839,21 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	// This is ok - it's not necessarily an error.
 	if (rfg_finder.num_rfgs_found() == 0)
 	{
+		qDebug() <<
+			"WARNING: TopologyInternalUtils::find_reconstructed_feature_geometry: "
+			"Found no Reconstruction Feature Geometries (RFGs) - ignoring.";
+
 		return boost::none;
 	}
+	else if (rfg_finder.num_rfgs_found() > 1)
+	{
+		qDebug() <<
+			"WARNING: TopologyInternalUtils::find_reconstructed_feature_geometry: "
+			"Found more than one Reconstruction Feature Geometry (RFG) - using the first one found.";
+	}
 
-	// Get the first RFG found.
-	const ReconstructedFeatureGeometry::non_null_ptr_type rfg = *rfg_finder.found_rfgs_begin();
-
-	// Return the RFG.
-	return rfg;
+	// Return the first RFG found.
+	return *rfg_finder.found_rfgs_begin();
 }
 
 

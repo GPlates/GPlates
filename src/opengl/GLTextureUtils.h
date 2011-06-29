@@ -144,6 +144,14 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Creates a new 2x1 texel clip texture whose first texel is black and second texel white (including alpha channel).
+		 */
+		GLTexture::shared_ptr_type
+		create_z_clip_texture(
+				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager);
+
+
+		/**
 		 * Initialise clip texture transform to convert the clip-space range [-1, 1] to
 		 * range [0.25, 0.75] to map to the interior 2x2 texel region of the 4x4 clip texture.
 		 */

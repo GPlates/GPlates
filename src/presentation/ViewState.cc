@@ -34,7 +34,6 @@
 
 #include "api/Sleeper.h"
 #include "app-logic/ApplicationState.h"
-#include "app-logic/VGPRenderSettings.h"
 
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
@@ -101,7 +100,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_geometry_focus_highlight(
 			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection,d_feature_type_symbol_map)),
 	d_feature_focus(
-			new GPlatesGui::FeatureFocus(application_state)),
+			new GPlatesGui::FeatureFocus(*this)),
 	d_visual_layers(
 			new VisualLayers(
 				d_application_state,
@@ -115,8 +114,6 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::MapTransform(
 				*d_viewport_zoom)),
 	d_main_viewport_dimensions(0, 0),
-	d_vgp_render_settings(
-			GPlatesAppLogic::VGPRenderSettings::instance()),
 	d_last_open_directory(QDir::currentPath()),
 	d_show_stars(false),
 	d_background_colour(
@@ -400,13 +397,6 @@ GPlatesPresentation::ViewState::connect_to_feature_focus()
 			d_geometry_focus_highlight.get(),
 			SLOT(set_focus(
 					GPlatesGui::FeatureFocus &)));
-}
-
-
-GPlatesAppLogic::VGPRenderSettings &
-GPlatesPresentation::ViewState::get_vgp_render_settings()
-{
-	return *d_vgp_render_settings;
 }
 
 
