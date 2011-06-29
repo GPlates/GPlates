@@ -88,8 +88,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 	d_cube_subdivision_bounds_cache(cube_subdivision_bounds_cache),
 	d_tile_texel_dimension(cube_subdivision_projection_transforms_cache->get_tile_texel_dimension()),
 	d_texture_resource_manager(texture_resource_manager),
-	d_vertex_buffer_resource_manager(vertex_buffer_resource_manager),
 	d_age_masked_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(200)),
+	d_vertex_buffer_resource_manager(vertex_buffer_resource_manager),
 	// NOTE: An OpenGL context must be active at this point...
 	d_xy_clip_texture(GLTextureUtils::create_xy_clip_texture(texture_resource_manager)),
 	d_z_clip_texture(GLTextureUtils::create_z_clip_texture(texture_resource_manager)),
