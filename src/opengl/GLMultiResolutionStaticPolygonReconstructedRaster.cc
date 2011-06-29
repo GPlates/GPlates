@@ -170,7 +170,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	// Get the transform groups of reconstructed polygon meshes that are visible in the view frustum.
 	reconstructed_polygon_mesh_transform_groups_type::non_null_ptr_to_const_type
 			reconstructed_polygon_mesh_transform_groups =
-					d_reconstructed_static_polygon_meshes->get_visible_reconstructed_polygon_meshes(
+					d_reconstructed_static_polygon_meshes->get_reconstructed_polygon_meshes(
 							// Determines the view frustum...
 							renderer.get_transform_state());
 
@@ -341,7 +341,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	// group or the current quad tree node is outside the view frustum then we can return early.
 	if (cull_quad_tree(
 			// We're rendering using only *active* reconstructed polygons.
-			reconstructed_polygon_mesh_transform_group.get_present_day_polygon_meshes_for_active_reconstructions(),
+			reconstructed_polygon_mesh_transform_group.get_visible_present_day_polygon_meshes_for_active_reconstructions(),
 			polygon_mesh_node_intersections,
 			intersections_quad_tree_node,
 			bounds_cache_node,
@@ -479,7 +479,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	if (cull_quad_tree(
 			// We're rendering using active *and* inactive reconstructed polygons since the
 			// age grid now decides the begin times of oceanic crust.
-			reconstructed_polygon_mesh_transform_group.get_present_day_polygon_meshes_for_active_or_inactive_reconstructions(),
+			reconstructed_polygon_mesh_transform_group.get_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions(),
 			polygon_mesh_node_intersections,
 			intersections_quad_tree_node,
 			bounds_cache_node,
@@ -602,7 +602,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 				// and so we simply render the current child directly.
 				if (!cull_quad_tree(
 						// We're rendering using only *active* reconstructed polygons.
-						reconstructed_polygon_mesh_transform_group.get_present_day_polygon_meshes_for_active_reconstructions(),
+						reconstructed_polygon_mesh_transform_group.get_visible_present_day_polygon_meshes_for_active_reconstructions(),
 						polygon_mesh_node_intersections,
 						*child_intersections_quad_tree_node,
 						child_bounds_cache_node,
@@ -681,7 +681,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	if (cull_quad_tree(
 			// We're rendering using active *and* inactive reconstructed polygons since the
 			// age grid now decides the begin times of oceanic crust.
-			reconstructed_polygon_mesh_transform_group.get_present_day_polygon_meshes_for_active_or_inactive_reconstructions(),
+			reconstructed_polygon_mesh_transform_group.get_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions(),
 			polygon_mesh_node_intersections,
 			intersections_quad_tree_node,
 			bounds_cache_node,
@@ -846,7 +846,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	if (cull_quad_tree(
 			// We're rendering using active *and* inactive reconstructed polygons since the
 			// age grid now decides the begin times of oceanic crust.
-			reconstructed_polygon_mesh_transform_group.get_present_day_polygon_meshes_for_active_or_inactive_reconstructions(),
+			reconstructed_polygon_mesh_transform_group.get_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions(),
 			polygon_mesh_node_intersections,
 			intersections_quad_tree_node,
 			bounds_cache_node,
@@ -983,7 +983,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 					// and so we simply render the current child directly.
 					if (!cull_quad_tree(
 							// We're rendering using only *active* reconstructed polygons.
-							reconstructed_polygon_mesh_transform_group.get_present_day_polygon_meshes_for_active_reconstructions(),
+							reconstructed_polygon_mesh_transform_group.get_visible_present_day_polygon_meshes_for_active_reconstructions(),
 							polygon_mesh_node_intersections,
 							*child_intersections_quad_tree_node,
 							child_bounds_cache_node,
@@ -1307,7 +1307,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_source_
 	render_tile_to_scene(
 			renderer,
 			render_traversal_cube_quad_tree_node.get_element().scene_tile_state_set.get(),
-			reconstructed_polygon_mesh_transform_group.get_present_day_polygon_meshes_for_active_reconstructions(),
+			reconstructed_polygon_mesh_transform_group.get_visible_present_day_polygon_meshes_for_active_reconstructions(),
 			polygon_mesh_node_intersections,
 			intersections_quad_tree_node,
 			polygon_mesh_drawables);
@@ -1425,7 +1425,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_source_
 			// Rendering using active *and* inactive reconstructed polygons because the age grid
 			// decides the begin time of oceanic crust not the polygons. We still need the polygons
 			// but we just don't obey their begin times (we treat them as distant past begin times).
-			reconstructed_polygon_mesh_transform_group.get_present_day_polygon_meshes_for_active_or_inactive_reconstructions(),
+			reconstructed_polygon_mesh_transform_group.get_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions(),
 			polygon_mesh_node_intersections,
 			intersections_quad_tree_node,
 			polygon_mesh_drawables);
@@ -1824,9 +1824,15 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_second_
 	// Of those polygons intersecting the current cube quad tree node find those that
 	// are still active after being reconstructed to the current reconstruction time.
 	// Any that are not active for the current reconstruction time will not get drawn.
+	//
+	// IMPORTANT: We need to draw *all* polygons that are active at the current reconstruction time
+	// and not just those that are visible in the current view frustum - this is because the
+	// age-masked quad tree node texture is cached and reused for other frames and the user might
+	// rotate the globe bringing into view a cached tile texture that wasn't properly covered
+	// with polygons thus leaving gaps in the end result.
 	const boost::dynamic_bitset<> reconstructed_polygons_for_all_rotation_groups =
 			present_day_polygons_intersecting_tile.get_polygon_meshes_membership() &
-			reconstructed_polygon_mesh_transform_groups.get_present_day_polygon_meshes_for_active_reconstructions()
+			reconstructed_polygon_mesh_transform_groups.get_all_present_day_polygon_meshes_for_active_reconstructions()
 					.get_polygon_meshes_membership();
 
 	render_polygon_drawables(
