@@ -879,7 +879,6 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::add_layer_row(
 	// Add a row.
 	layer_state_collection.table_widget->insertRow(row);
 	layer_state_collection.layer_state_seq.push_back(LayerState(visual_layer));
-	const LayerState &row_layer_state = layer_state_collection.layer_state_seq.back();
 	
 	// Add layer name item.
 	QTableWidgetItem *layer_name_item = new QTableWidgetItem(layer_name);
