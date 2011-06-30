@@ -464,6 +464,13 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the current reconstruction layer proxy used for reconstructions.
+		 */
+		ReconstructionLayerProxy::non_null_ptr_type
+		get_reconstruction_layer_proxy();
+
+
+		/**
 		 * Returns the subject token that clients can use to determine if the reconstructed
 		 * feature geometries have changed since they were last retrieved.
 		 *

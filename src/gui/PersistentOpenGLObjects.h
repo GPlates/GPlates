@@ -264,7 +264,7 @@ namespace GPlatesGui
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const = 0;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const = 0;
 
 			/**
 			 * Notifies that a layer (proxy) is about to be removed.
@@ -276,7 +276,7 @@ namespace GPlatesGui
 			virtual
 			void
 			removing_layer(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy)
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy)
 			{  }
 		};
 
@@ -313,7 +313,7 @@ namespace GPlatesGui
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
 			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
@@ -358,7 +358,7 @@ namespace GPlatesGui
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
 			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
@@ -417,7 +417,7 @@ namespace GPlatesGui
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
 			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
@@ -482,7 +482,7 @@ namespace GPlatesGui
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
 			boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> d_vertex_buffer_resource_manager;
@@ -551,12 +551,12 @@ namespace GPlatesGui
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 			virtual
 			void
 			removing_layer(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy);
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy);
 
 		private:
 			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
@@ -647,7 +647,7 @@ namespace GPlatesGui
 			 */
 			void
 			remove_references_to_layer(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy_to_be_removed);
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_to_be_removed);
 
 		private:
 			//! Typedef for a sequence of optional layer usage objects.
@@ -710,11 +710,11 @@ namespace GPlatesGui
 
 			void
 			remove_layer(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy);
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle);
 
 		private:
 			typedef std::map<
-					GPlatesAppLogic::LayerProxy::non_null_ptr_type,
+					GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type,
 					GLLayer::non_null_ptr_type> layer_map_type;
 
 			GPlatesOpenGL::GLCubeSubdivision::non_null_ptr_to_const_type d_cube_subdivision;

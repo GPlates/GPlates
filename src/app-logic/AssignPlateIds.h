@@ -36,6 +36,7 @@
 
 #include "AppLogicFwd.h"
 #include "GeometryCookieCutter.h"
+#include "LayerProxy.h"
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructUtils.h"
 
@@ -204,6 +205,33 @@ namespace GPlatesAppLogic
 		}
 
 
+		/**
+		 * The partitioning static or dynamic polygons come from a layer output.
+		 *
+		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy
+		 * (for static partitioning polygons) or @a TopologyBoundaryResolverLayerProxy,
+		 * otherwise no partitioning will occur.
+		 *
+		 * The default value of @a feature_properties_to_assign only assigns
+		 * the reconstruction plate id.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				AssignPlateIdMethodType assign_plate_id_method,
+				const LayerProxy::non_null_ptr_type &partitioning_layer_proxy,
+				const double &reconstruction_time,
+				const feature_property_flags_type &feature_property_types_to_assign =
+						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG)
+		{
+			return non_null_ptr_type(new AssignPlateIds(
+					assign_plate_id_method,
+					partitioning_layer_proxy,
+					reconstruction_time,
+					feature_property_types_to_assign));
+		}
+
+
 		~AssignPlateIds();
 
 
@@ -259,23 +287,6 @@ namespace GPlatesAppLogic
 		feature_property_flags_type d_feature_property_types_to_assign;
 
 		/**
-		 * Reconstruction tree cache.
-		 */
-		ReconstructionTreeCreator d_reconstruction_tree_cache;
-
-		/**
-		 * Contains the reconstructed static polygons used for cookie-cutting.
-		 *
-		 * Can also contain the topological section geometries referenced by topological polygons.
-		 */
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> d_reconstructed_feature_geometries;
-
-		/**
-		 * Contains the resolved topological polygons used for cookie-cutting.
-		 */
-		std::vector<resolved_topological_boundary_non_null_ptr_type> d_resolved_topological_boundaries;
-
-		/**
 		 * Used to cookie cut geometries to find partitioning polygons.
 		 */
 		boost::scoped_ptr<GeometryCookieCutter> d_geometry_cookie_cutter;
@@ -300,6 +311,19 @@ namespace GPlatesAppLogic
 				const feature_property_flags_type &feature_property_types_to_assign,
 				bool allow_partitioning_using_topological_plate_polygons,
 				bool allow_partitioning_using_static_polygons);
+
+
+		/**
+		 * The partitioning static or dynamic polygons come from a layer output.
+		 *
+		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy or
+		 * @a TopologyBoundaryResolverLayerProxy, otherwise no partitioning will occur.
+		 */
+		AssignPlateIds(
+				AssignPlateIdMethodType assign_plate_id_method,
+				const LayerProxy::non_null_ptr_type &partitioning_layer_proxy,
+				const double &reconstruction_time,
+				const feature_property_flags_type &feature_property_types_to_assign);
 	};
 }
 

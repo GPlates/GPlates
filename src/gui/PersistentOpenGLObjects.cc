@@ -207,9 +207,9 @@ GPlatesGui::PersistentOpenGLObjects::handle_layer_about_to_be_removed(
 		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		GPlatesAppLogic::Layer layer)
 {
-	GPlatesAppLogic::LayerProxy::non_null_ptr_type layer_proxy = layer.get_layer_proxy();
+	GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type layer_proxy_handle = layer.get_layer_proxy_handle();
 
-	d_list_objects->gl_layers.remove_layer(layer_proxy.get());
+	d_list_objects->gl_layers.remove_layer(layer_proxy_handle);
 }
 
 
@@ -376,9 +376,9 @@ GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::get_rebuild_subject_token
 
 bool
 GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::is_required_direct_or_indirect_dependency(
-		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
 {
-	return layer_proxy == d_raster_layer_proxy;
+	return layer_proxy_handle == d_raster_layer_proxy;
 }
 
 
@@ -448,9 +448,9 @@ GPlatesGui::PersistentOpenGLObjects::CubeRasterLayerUsage::get_rebuild_subject_t
 
 bool
 GPlatesGui::PersistentOpenGLObjects::CubeRasterLayerUsage::is_required_direct_or_indirect_dependency(
-		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
 {
-	return d_raster_layer_usage->is_required_direct_or_indirect_dependency(layer_proxy);
+	return d_raster_layer_usage->is_required_direct_or_indirect_dependency(layer_proxy_handle);
 }
 
 
@@ -613,9 +613,9 @@ GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_rebuild_subject_toke
 
 bool
 GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::is_required_direct_or_indirect_dependency(
-		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
 {
-	return layer_proxy == d_age_grid_raster_layer_proxy;
+	return layer_proxy_handle == d_age_grid_raster_layer_proxy;
 }
 
 
@@ -812,9 +812,9 @@ GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage:
 
 bool
 GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage::is_required_direct_or_indirect_dependency(
-		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
 {
-	return layer_proxy == d_reconstructed_static_polygon_meshes_layer_proxy;
+	return layer_proxy_handle == d_reconstructed_static_polygon_meshes_layer_proxy;
 }
 
 
@@ -1029,24 +1029,24 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 
 bool
 GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage::is_required_direct_or_indirect_dependency(
-		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
 {
 	// We require the source cube raster and the static polygon raster reconstructor.
 	// But the age grid is optional.
-	return d_cube_raster_layer_usage->is_required_direct_or_indirect_dependency(layer_proxy) ||
+	return d_cube_raster_layer_usage->is_required_direct_or_indirect_dependency(layer_proxy_handle) ||
 		(d_reconstructed_polygon_meshes_layer_usage &&
-			d_reconstructed_polygon_meshes_layer_usage.get()->is_required_direct_or_indirect_dependency(layer_proxy));
+			d_reconstructed_polygon_meshes_layer_usage.get()->is_required_direct_or_indirect_dependency(layer_proxy_handle));
 }
 
 
 void
 GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage::removing_layer(
-		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy)
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle)
 {
 	// Return early if we not using an age grid or the age grid we're using does not
 	// depend on the layer about to be removed.
 	if (!d_age_grid_layer_usage ||
-		!d_age_grid_layer_usage.get()->is_required_direct_or_indirect_dependency(layer_proxy))
+		!d_age_grid_layer_usage.get()->is_required_direct_or_indirect_dependency(layer_proxy_handle))
 	{
 		return;
 	}
@@ -1220,7 +1220,7 @@ GPlatesGui::PersistentOpenGLObjects::GLLayer::get_static_polygon_reconstructed_r
 
 void
 GPlatesGui::PersistentOpenGLObjects::GLLayer::remove_references_to_layer(
-		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy_to_be_removed)
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_to_be_removed)
 {
 	// We can remove each layer usage as we come across it even if it depends on another
 	// layer usage inside *this* layer because of the power of shared pointers.
@@ -1314,7 +1314,7 @@ GPlatesGui::PersistentOpenGLObjects::GLLayers::get_layer(
 
 void
 GPlatesGui::PersistentOpenGLObjects::GLLayers::remove_layer(
-		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy_to_be_removed)
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_to_be_removed)
 {
 	// Look for the layer proxy in our map and remove it to release the memory and
 	// OpenGL resources used by it.

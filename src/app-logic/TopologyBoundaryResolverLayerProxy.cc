@@ -129,6 +129,13 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 }
 
 
+GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type
+GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_reconstruction_layer_proxy()
+{
+	return d_current_reconstruction_layer_proxy.get_input_layer_proxy();
+}
+
+
 const GPlatesUtils::SubjectToken &
 GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_subject_token()
 {

@@ -344,6 +344,13 @@ GPlatesAppLogic::ReconstructLayerProxy::get_present_day_geometries_spatial_parti
 }
 
 
+GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type
+GPlatesAppLogic::ReconstructLayerProxy::get_reconstruction_layer_proxy()
+{
+	return d_current_reconstruction_layer_proxy.get_input_layer_proxy();
+}
+
+
 const GPlatesUtils::SubjectToken &
 GPlatesAppLogic::ReconstructLayerProxy::get_subject_token()
 {

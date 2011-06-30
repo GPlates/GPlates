@@ -370,8 +370,8 @@ GPlatesAppLogic::Layer::get_layer_output() const
 }
 
 
-GPlatesAppLogic::LayerProxy::non_null_ptr_type
-GPlatesAppLogic::Layer::get_layer_proxy() const
+GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type
+GPlatesAppLogic::Layer::get_layer_proxy_handle() const
 {
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
