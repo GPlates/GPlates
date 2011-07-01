@@ -62,6 +62,7 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/XsString.h"
 
+#include "utils/Profile.h"
 #include "utils/QtFormattingUtils.h"
 #include "utils/UnicodeStringUtils.h"
 
@@ -792,11 +793,23 @@ GPlatesGui::FeatureTableModel::handle_feature_modified(
 void
 GPlatesGui::FeatureTableModel::handle_rendered_geometry_collection_update()
 {
+	//PROFILE_FUNC();
+
 	std::vector<int> rows_to_remove;
+
+	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
+	// NOTE: This is done here (ie, outside the loop below) because it only needs to be done once for all features.
+	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type all_reconstruction_geoms_in_reconstruction_layer;
+	GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
+			all_reconstruction_geoms_in_reconstruction_layer,
+			d_rendered_geometry_collection,
+			// All reconstruction geometries go into the RECONSTRUCTION_LAYER...
+			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
 	// Iterate over the reconstruction geometries and update them if possible for
 	// the new reconstruction.
-	int row = 0;
+	const int start_row = 0;
+	int row = start_row;
 	geometry_sequence_type::iterator it = d_sequence.begin();
 	geometry_sequence_type::iterator end = d_sequence.end();
 	for ( ; it != end; ++it, ++row)
@@ -810,10 +823,10 @@ GPlatesGui::FeatureTableModel::handle_rendered_geometry_collection_update()
 		// current reconstruction time is outside the begin/end valid time range of the
 		// current feature in which case we'll just leave it in case the time changes back again
 		// in which case the reconstruction geometry will become highlighted again.
-		GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geometries_observing_feature;
-		if (!GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_observing_feature(
+		GPlatesAppLogic::ReconstructionGeometryUtils::reconstruction_geom_seq_type reconstruction_geometries_observing_feature;
+		if (!GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_observing_feature(
 				reconstruction_geometries_observing_feature,
-				d_rendered_geometry_collection,
+				all_reconstruction_geoms_in_reconstruction_layer,
 				old_rg))
 		{
 			//rows_to_remove.push_back(row);
@@ -869,10 +882,17 @@ GPlatesGui::FeatureTableModel::handle_rendered_geometry_collection_update()
 		// Change the reconstruction geometry for the current row.
 		it->reconstruction_geometry = new_rg.get();
 #endif
+	}
 
-		// Notify of the change.
-		QModelIndex idx_begin = index(row, 0);
-		QModelIndex idx_end = index(row, NUM_ELEMS(column_heading_info_table) - 1);
+	if (row > 0)
+	{
+		PROFILE_BLOCK("dataChanged");
+
+		const int last_row = row - 1;
+
+		// Notify of the changed rows.
+		QModelIndex idx_begin = index(start_row, 0);
+		QModelIndex idx_end = index(last_row, NUM_ELEMS(column_heading_info_table) - 1);
 		emit dataChanged(idx_begin, idx_end);
 	}
 
