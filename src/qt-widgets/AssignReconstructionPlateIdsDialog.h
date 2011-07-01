@@ -240,7 +240,7 @@ namespace GPlatesQtWidgets
 		};
 
 
-		GPlatesQtWidgets::InformationDialog *d_help_partitioning_layers_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_partitioning_layer_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_partitioned_files_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_reconstruction_time_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_partition_options_dialog;
@@ -260,6 +260,11 @@ namespace GPlatesQtWidgets
 		 * The user selects a layer to be the polygon partitioning layer.
 		 */
 		GPlatesPresentation::VisualLayers &d_visual_layers;
+
+		/**
+		 * Used to obtain the layer type names.
+		 */
+		GPlatesPresentation::VisualLayerRegistry &d_visual_layer_registry;
 
 		/**
 		 * Keeps track of which partitioning layers are enabled by the user in the GUI.

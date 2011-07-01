@@ -50,18 +50,22 @@
 #include "gui/FeatureFocus.h"
 
 #include "presentation/ViewState.h"
+#include "presentation/VisualLayerRegistry.h"
 #include "presentation/VisualLayers.h"
 
 
 namespace
 {
-	const QString HELP_PARTITIONING_LAYERS_DIALOG_TITLE = QObject::tr("Selecting partitioning layers");
-	const QString HELP_PARTITIONING_LAYERS_DIALOG_TEXT = QObject::tr(
+	const QString HELP_PARTITIONING_LAYER_DIALOG_TITLE = QObject::tr("Selecting the partitioning layer");
+	const QString HELP_PARTITIONING_LAYER_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
-			"<h3>Select either a 'Resolved Topological Closed Plate Boundaries' layer or "
-			"a 'Reconstructed Geometries' layer that contains static polygon geometry.</h3>"
+			"<h3>Select the layer containing the polygons used to partition features</h3>"
+			"<p>Select a 'Resolved Topological Closed Plate Boundaries' layer to partition using "
+			"topological plate polygons, otherwise select a 'Reconstructed Geometries' layer "
+			"to partition using static polygon geometry (<em>note that the layer should contain "
+			"polygon geometries</em>).</p>"
 			"<p>These polygons will be intersected with features and a subset of the polygon's "
-			"feature properties will be copied over.</p>"
+			"feature properties (such a reconstruction plate ID) will be copied over.</p>"
 			"</body></html>\n");
 	const QString HELP_PARTITIONED_FILES_DIALOG_TITLE = QObject::tr("Selecting feature collections");
 	const QString HELP_PARTITIONED_FILES_DIALOG_TEXT = QObject::tr(
@@ -187,10 +191,10 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
-	d_help_partitioning_layers_dialog(
+	d_help_partitioning_layer_dialog(
 			new InformationDialog(
-					HELP_PARTITIONING_LAYERS_DIALOG_TEXT,
-					HELP_PARTITIONING_LAYERS_DIALOG_TITLE,
+					HELP_PARTITIONING_LAYER_DIALOG_TEXT,
+					HELP_PARTITIONING_LAYER_DIALOG_TITLE,
 					this)),
 	d_help_partitioned_files_dialog(
 			new InformationDialog(
@@ -222,6 +226,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 	d_application_state(view_state.get_application_state()),
 	d_feature_focus(view_state.get_feature_focus()),
 	d_visual_layers(view_state.get_visual_layers()),
+	d_visual_layer_registry(view_state.get_visual_layer_registry()),
 	d_reconstruction_time_type(PRESENT_DAY_RECONSTRUCTION_TIME),
 	d_spin_box_reconstruction_time(0),
 	d_respect_feature_time_period(false),
@@ -630,7 +635,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_partitioning_layers
 {
 	// Connect the help dialogs.
 	QObject::connect(push_button_help_partitioning_layers, SIGNAL(clicked()),
-			d_help_partitioning_layers_dialog, SLOT(show()));
+			d_help_partitioning_layer_dialog, SLOT(show()));
 
 	// Try to adjust column widths.
 	QHeaderView *header = table_partitioning_layers->horizontalHeader();
@@ -894,7 +899,15 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::add_layer_row(
 		return;
 	}
 
-	QString layer_name = locked_visual_layer->get_name();
+	// Set the layer name.
+	// Append the layer type name to the layer name since two different layers may have the same
+	// name but different layer types (eg, a reconstruct layer and a topology may be created
+	// from the same input file if it contains both topological polygon features and
+	// topological section features).
+	const QString layer_name = locked_visual_layer->get_name()
+			+ " (" +
+			d_visual_layer_registry.get_name(locked_visual_layer->get_layer_type())
+			+ ')';
 	
 	// The rows in the QTableWidget and our internal layer sequence should be in sync.
 	const int row = layer_state_collection.table_widget->rowCount();
