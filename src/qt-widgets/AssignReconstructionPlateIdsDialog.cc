@@ -144,6 +144,16 @@ namespace
 			"<p>These options are not mutually exclusive.</p>"
 			"<p>These properties are copied from the polygon feature to the feature being partitioned.</p>"
 			"</body></html>\n");
+	const QString HELP_RESPECT_FEATURE_TIME_PERIOD_TITLE = QObject::tr("Reconstruction options");
+	const QString HELP_RESPECT_FEATURE_TIME_PERIOD_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<h3>Specify whether to only partition features that exist at the reconstruction time</h3>"
+			"<p>If this option is checked then a feature is partitioned <b>only</b> if the specified "
+			"reconstruction time falls between the feature's time of appearance and time of disappearance.</p>"
+			"<p>For example you may want to leave this <b>unchecked</b> if you are partitioning at "
+			"present day and the feature's time period does not include present day.</p>"
+			"<p><em><b>Note:</b> This option is ignored for VirtualGeomagneticPole features.</em></p>"
+			"</body></html>\n");
 }
 
 
@@ -202,6 +212,11 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 					HELP_PROPERTIES_TO_ASSIGN_DIALOG_TEXT,
 					HELP_PROPERTIES_TO_ASSIGN_DIALOG_TITLE,
 					this)),
+	d_help_respect_feature_time_period(
+			new InformationDialog(
+					HELP_RESPECT_FEATURE_TIME_PERIOD_TEXT,
+					HELP_RESPECT_FEATURE_TIME_PERIOD_TITLE,
+					this)),
 	d_button_create(NULL),
 	d_feature_collection_file_state(application_state.get_feature_collection_file_state()),
 	d_application_state(view_state.get_application_state()),
@@ -209,6 +224,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 	d_visual_layers(view_state.get_visual_layers()),
 	d_reconstruction_time_type(PRESENT_DAY_RECONSTRUCTION_TIME),
 	d_spin_box_reconstruction_time(0),
+	d_respect_feature_time_period(false),
 	d_assign_plate_id_method(
 			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE),
 	d_assign_plate_ids(true),
@@ -351,7 +367,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 			d_assign_plate_id_method,
 			partitioning_layer_proxy,
 			reconstruction_time,
-			feature_property_types_to_assign);
+			feature_property_types_to_assign,
+			d_respect_feature_time_period);
 }
 
 
@@ -654,6 +671,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 			d_help_partition_options_dialog, SLOT(show()));
 	QObject::connect(push_button_help_properties_to_assign, SIGNAL(clicked()),
 			d_help_properties_to_assign_dialog, SLOT(show()));
+	QObject::connect(push_button_help_respect_feature_time_period, SIGNAL(clicked()),
+			d_help_respect_feature_time_period, SLOT(show()));
 
 	// Listen for reconstruction time radio button selections.
 	QObject::connect(radio_button_present_day, SIGNAL(toggled(bool)),
@@ -666,6 +685,9 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 	// Listen for reconstruction time changes in the double spin box.
 	QObject::connect(double_spin_box_reconstruction_time, SIGNAL(valueChanged(double)),
 			this, SLOT(react_spin_box_reconstruction_time_changed(double)));
+
+	QObject::connect(check_box_respect_feature_time_period, SIGNAL(stateChanged(int)),
+			this, SLOT(react_respect_feature_time_period_check_box_changed()));
 
 	// Listen for partition options radio button selections.
 	QObject::connect(radio_button_assign_features, SIGNAL(toggled(bool)),
@@ -683,6 +705,10 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 
 	// Set the initial reconstruction time for the double spin box.
 	double_spin_box_reconstruction_time->setValue(d_spin_box_reconstruction_time);
+
+	// Set the default radio button for respecting feature time periods.
+	// The default is not to respect a feature's time period (ie, to partition it regardless).
+	check_box_respect_feature_time_period->setChecked(false);
 
 	// Set the default radio button to be present day reconstruction time.
 	// This will also disable the reconstruction time spin box.
@@ -989,6 +1015,13 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_spin_box_reconstruct
 		double reconstruction_time)
 {
 	d_spin_box_reconstruction_time = reconstruction_time;
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_respect_feature_time_period_check_box_changed()
+{
+	d_respect_feature_time_period = check_box_respect_feature_time_period->isChecked();
 }
 
 

@@ -129,6 +129,9 @@ namespace GPlatesQtWidgets
 				double reconstruction_time);
 
 		void
+		react_respect_feature_time_period_check_box_changed();
+
+		void
 		react_partition_options_radio_button(
 				bool checked);
 
@@ -242,6 +245,7 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::InformationDialog *d_help_reconstruction_time_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_partition_options_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_properties_to_assign_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_respect_feature_time_period;
 		
 		/**
 		 * Button added to buttonbox for 'Apply' button that partitions the features.
@@ -276,6 +280,14 @@ namespace GPlatesQtWidgets
 		 * The reconstruction time set by the double spin box.
 		 */
 		double d_spin_box_reconstruction_time;
+
+		/**
+		 * Determines if features are only partitioned if the reconstruction time is within
+		 * the time period over which the features are defined.
+		 *
+		 * This may not apply to some feature types (eg, virtual geomagnetic poles).
+		 */
+		bool d_respect_feature_time_period;
 
 		/**
 		 * How to assign plate ids to features.

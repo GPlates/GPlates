@@ -55,9 +55,11 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const feature_property_flags_type &feature_property_types_to_assign,
 		bool allow_partitioning_using_topological_plate_polygons,
-		bool allow_partitioning_using_static_polygons) :
+		bool allow_partitioning_using_static_polygons,
+		bool respect_feature_time_period) :
 	d_assign_plate_id_method(assign_plate_id_method),
-	d_feature_property_types_to_assign(feature_property_types_to_assign)
+	d_feature_property_types_to_assign(feature_property_types_to_assign),
+	d_respect_feature_time_period(respect_feature_time_period)
 {
 	ReconstructionTreeCreator reconstruction_tree_cache =
 			get_cached_reconstruction_tree_creator(
@@ -124,9 +126,11 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		AssignPlateIdMethodType assign_plate_id_method,
 		const LayerProxy::non_null_ptr_type &partitioning_layer_proxy,
 		const double &reconstruction_time,
-		const feature_property_flags_type &feature_property_types_to_assign) :
+		const feature_property_flags_type &feature_property_types_to_assign,
+		bool respect_feature_time_period) :
 	d_assign_plate_id_method(assign_plate_id_method),
-	d_feature_property_types_to_assign(feature_property_types_to_assign)
+	d_feature_property_types_to_assign(feature_property_types_to_assign),
+	d_respect_feature_time_period(respect_feature_time_period)
 {
 	// Contains the reconstructed static polygons used for cookie-cutting.
 	std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_static_polygons;
@@ -269,7 +273,8 @@ GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_id(
 			assign_task->partition_feature(
 					feature_ref,
 					feature_collection_ref,
-					*d_geometry_cookie_cutter);
+					*d_geometry_cookie_cutter,
+					d_respect_feature_time_period);
 
 			return;
 		}

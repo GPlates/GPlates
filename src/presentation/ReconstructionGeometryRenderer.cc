@@ -119,7 +119,7 @@ namespace
 		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
 				feature_type_symbol_map, reconstruction_geometry);
 		
-		qDebug() << "hehe, the dummy draw style is : " << style.dummy;
+		//qDebug() << "hehe, the dummy draw style is : " << style.dummy;
 
 		// Create a RenderedGeometry for drawing the reconstructed geometry.
 		// Draw it in the specified colour (if specified) otherwise defer colouring to a later time

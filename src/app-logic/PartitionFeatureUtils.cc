@@ -390,10 +390,12 @@ namespace
 boost::shared_ptr<const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature>
 GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
-		const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter)
+		const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter,
+		bool respect_feature_time_period)
 {
-	// Only partition features that exist at the partitioning reconstruction time.
-	if (!does_feature_exist_at_reconstruction_time(
+	// Only partition features that exist at the partitioning reconstruction time if we've been requested.
+	if (respect_feature_time_period &&
+		!does_feature_exist_at_reconstruction_time(
 			feature_ref,
 			geometry_cookie_cutter.get_reconstruction_time()))
 	{

@@ -105,11 +105,16 @@ namespace GPlatesAppLogic
 		 * doesn't exist at the reconstruction time of @a geometry_cookie_cutter.
 		 *
 		 * NOTE: This does not modify @a feature_ref.
+		 *
+		 * If @a respect_feature_time_period is true (the default) then the feature is only
+		 * partitioned if the reconstruction time (stored in @a geometry_cookie_cutter) is within
+		 * the time period over which the feature is defined.
 		 */
 		boost::shared_ptr<const PartitionedFeature>
 		partition_feature(
 				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
-				const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter);
+				const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter,
+				bool respect_feature_time_period = true);
 
 
 		/**

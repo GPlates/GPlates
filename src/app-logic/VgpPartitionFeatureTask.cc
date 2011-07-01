@@ -57,7 +57,9 @@ void
 GPlatesAppLogic::VgpPartitionFeatureTask::partition_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter)
+		const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter,
+		// 'respect_feature_time_period' is ignored for VGP features...
+		bool /*respect_feature_time_period*/)
 {
 	// Look for the 'gpml:averageSampleSitePosition' property.
 	static const GPlatesModel::PropertyName sample_site_property_name =

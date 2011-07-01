@@ -177,6 +177,11 @@ namespace GPlatesAppLogic
 		 *
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
+		 *
+		 * If @a respect_feature_time_period is true (the default) then the feature is only
+		 * partitioned if the reconstruction time (stored in derived class instance) is within
+		 * the time period over which the feature is defined.
+		 * This may not apply to some feature types (eg, virtual geomagnetic poles).
 		 */
 		static
 		non_null_ptr_type
@@ -191,7 +196,8 @@ namespace GPlatesAppLogic
 				const feature_property_flags_type &feature_property_types_to_assign =
 						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
 				bool allow_partitioning_using_topological_plate_polygons = true,
-				bool allow_partitioning_using_static_polygons = true)
+				bool allow_partitioning_using_static_polygons = true,
+				bool respect_feature_time_period = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
 					assign_plate_id_method,
@@ -201,7 +207,8 @@ namespace GPlatesAppLogic
 					anchor_plate_id,
 					feature_property_types_to_assign,
 					allow_partitioning_using_topological_plate_polygons,
-					allow_partitioning_using_static_polygons));
+					allow_partitioning_using_static_polygons,
+					respect_feature_time_period));
 		}
 
 
@@ -214,6 +221,11 @@ namespace GPlatesAppLogic
 		 *
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
+		 *
+		 * If @a respect_feature_time_period is true (the default) then the feature is only
+		 * partitioned if the reconstruction time (stored in derived class instance) is within
+		 * the time period over which the feature is defined.
+		 * This may not apply to some feature types (eg, virtual geomagnetic poles).
 		 */
 		static
 		non_null_ptr_type
@@ -222,13 +234,15 @@ namespace GPlatesAppLogic
 				const LayerProxy::non_null_ptr_type &partitioning_layer_proxy,
 				const double &reconstruction_time,
 				const feature_property_flags_type &feature_property_types_to_assign =
-						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG)
+						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
+				bool respect_feature_time_period = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
 					assign_plate_id_method,
 					partitioning_layer_proxy,
 					reconstruction_time,
-					feature_property_types_to_assign));
+					feature_property_types_to_assign,
+					respect_feature_time_period));
 		}
 
 
@@ -294,6 +308,14 @@ namespace GPlatesAppLogic
 		//! Tasks that do the actual assigning of properties like plate id.
 		std::vector< boost::shared_ptr<PartitionFeatureTask> > d_partition_feature_tasks;
 
+		/**
+		 * Determines if features are only partitioned if the reconstruction time is within
+		 * the time period over which the features are defined.
+		 *
+		 * This may not apply to some feature types (eg, virtual geomagnetic poles).
+		 */
+		bool d_respect_feature_time_period;
+
 
 		/**
 		 * Create an internal @a Reconstruction using @a partitioning_feature_collections,
@@ -310,7 +332,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign,
 				bool allow_partitioning_using_topological_plate_polygons,
-				bool allow_partitioning_using_static_polygons);
+				bool allow_partitioning_using_static_polygons,
+				bool respect_feature_time_period);
 
 
 		/**
@@ -323,7 +346,8 @@ namespace GPlatesAppLogic
 				AssignPlateIdMethodType assign_plate_id_method,
 				const LayerProxy::non_null_ptr_type &partitioning_layer_proxy,
 				const double &reconstruction_time,
-				const feature_property_flags_type &feature_property_types_to_assign);
+				const feature_property_flags_type &feature_property_types_to_assign,
+				bool respect_feature_time_period);
 	};
 }
 
