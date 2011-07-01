@@ -49,6 +49,8 @@
 
 #include "gui/FeatureFocus.h"
 
+#include "model/NotificationGuard.h"
+
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayerRegistry.h"
 #include "presentation/VisualLayers.h"
@@ -406,6 +408,17 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 	partition_progress_dialog->setValue(0);
 	partition_progress_dialog->show();
 
+	// Merge model events across this scope to avoid excessive number of model callbacks
+	// due to modifying features by partitioning them.
+	//
+	// IMPORTANT: This gives a HUGE speed improvement - several orders of magnitude !!!
+	// This is because without it each feature to be partitioned will result in at least one
+	// model notification which means anyone listening to model callbacks will get notified and
+	// this is currently quite expensive (last measured at 0.25 seconds) - so tens of thousands of
+	// features to be partitioned can result in quite a lengthy wait.
+	GPlatesModel::NotificationGuard model_notification_guard(
+			d_application_state.get_model_interface().access_model());
+
 	// Iterate through the partitioned feature collections accepted by the user.
 	feature_collection_seq_type::const_iterator feature_collection_iter =
 			selected_partitioned_feature_collections.begin();
@@ -437,12 +450,20 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 			// See if feature is the focused feature.
 			if ((*feature_iter).get() == d_feature_focus.focused_feature().handle_ptr())
 			{
+				// Let any model notifications get through before we announce that the
+				// focused feature has been modified.
+				model_notification_guard.release_guard();
 				d_feature_focus.announce_modification_of_focused_feature();
+				model_notification_guard.acquire_guard();
 			}
 
 			if (partition_progress_dialog->canceled())
 			{
 				partition_progress_dialog->close();
+
+				// Release the model notification guard before doing a reconstruction so other
+				// observers can adjust to the modified features first.
+				model_notification_guard.release_guard();
 
 				// Reconstruct since we most likely modified a few features before
 				// the user pressed "Cancel".
@@ -455,6 +476,10 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 	}
 
 	partition_progress_dialog->close();
+
+	// Release the model notification guard before doing a reconstruction so other
+	// observers can adjust to the modified features first.
+	model_notification_guard.release_guard();
 
 	// If any plate ids were assigned then we need to do another reconstruction.
 	// Note we'll do one anyway since the feature may have been modified even if

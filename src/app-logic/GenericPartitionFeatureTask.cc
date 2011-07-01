@@ -31,6 +31,10 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "model/NotificationGuard.h"
+
+#include "utils/Profile.h"
+
 
 GPlatesAppLogic::GenericPartitionFeatureTask::GenericPartitionFeatureTask(
 		const ReconstructionTree &reconstruction_tree,
@@ -50,6 +54,11 @@ GPlatesAppLogic::GenericPartitionFeatureTask::partition_feature(
 		const GeometryCookieCutter &geometry_cookie_cutter,
 		bool respect_feature_time_period)
 {
+	//PROFILE_FUNC();
+
+	// Merge model events across this scope to avoid excessive number of model callbacks.
+	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+
 	// Partition the feature and get the partitioned results in return.
 	// NOTE: This does not modify the feature referenced by 'feature_ref'.
 	// NOTE: We call this here before any modifications (such as removing geometry properties)
@@ -225,6 +234,8 @@ GPlatesAppLogic::GenericPartitionFeatureTask::partition_feature_into_plates(
 		const boost::shared_ptr<const PartitionFeatureUtils::PartitionedFeature> &partitioned_feature,
 		PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager)
 {
+	//PROFILE_FUNC();
+
 	//
 	// Iterate over the results of the partitioned feature.
 	//

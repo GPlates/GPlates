@@ -886,7 +886,7 @@ GPlatesGui::FeatureTableModel::handle_rendered_geometry_collection_update()
 
 	if (row > 0)
 	{
-		PROFILE_BLOCK("dataChanged");
+		//PROFILE_BLOCK("dataChanged");
 
 		const int last_row = row - 1;
 

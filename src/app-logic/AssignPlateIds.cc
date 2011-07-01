@@ -38,6 +38,10 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "model/NotificationGuard.h"
+
+#include "utils/Profile.h"
+
 
 const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type
 		GPlatesAppLogic::AssignPlateIds::RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG =
@@ -254,10 +258,16 @@ GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_id(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref)
 {
+	//PROFILE_FUNC();
+
 	if (!feature_ref.is_valid())
 	{
 		return;
 	}
+
+	// Merge model events across this scope to avoid excessive number of model callbacks
+	// due to modifying features by partitioning them.
+	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
 
 	// Iterate through the tasks until we find one that can partition the feature.
 	partition_feature_task_ptr_seq_type::const_iterator assign_task_iter =

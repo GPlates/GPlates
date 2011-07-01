@@ -48,6 +48,7 @@
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/PropertyName.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -560,6 +561,9 @@ void
 GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
+	// Merge model events across this scope to avoid excessive number of model callbacks.
+	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+
 	// Iterate over the feature properties of the feature.
 	GPlatesModel::FeatureHandle::iterator feature_properties_iter =
 			feature_ref->begin();

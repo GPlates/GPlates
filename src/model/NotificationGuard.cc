@@ -54,3 +54,15 @@ GPlatesModel::NotificationGuard::release_guard()
 		d_guard_released = true;
 	}
 }
+
+
+void
+GPlatesModel::NotificationGuard::acquire_guard()
+{
+	if (d_guard_released)
+	{
+		d_model_ptr->increment_notification_guard_count();
+
+		d_guard_released = false;
+	}
+}
