@@ -206,7 +206,7 @@ GPlatesOpenGL::GLTextureTransformState::enter_tex_gen_state(
 
 	if (tex_gen_coord_state.d_eye_plane)
 	{
-		glTexGendv(coord, GL_OBJECT_PLANE, tex_gen_coord_state.d_eye_plane->plane);
+		glTexGendv(coord, GL_EYE_PLANE, tex_gen_coord_state.d_eye_plane->plane);
 	}
 }
 
