@@ -27,6 +27,7 @@ set(srcs
     GeometryTypeFinder.h
     KeyValueDictionaryFinder.cc
     KeyValueDictionaryFinder.h
+    PropertyValueFinder.cc
     PropertyValueFinder.h
     QueryFeaturePropertiesWidgetPopulator.cc
     QueryFeaturePropertiesWidgetPopulator.h
