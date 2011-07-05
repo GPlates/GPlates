@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <list>
 #include <boost/foreach.hpp>
 #include "global/CompilerWarnings.h"
 PUSH_MSVC_WARNINGS
@@ -41,9 +42,27 @@ POP_MSVC_WARNINGS
 #include "ResolvedTopologicalBoundaryExportImpl.h"
 #include "OgrFormatResolvedTopologicalBoundaryExport.h"
 
+#include "app-logic/GeometryUtils.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
+
+#include "model/PropertyName.h"
+
+#include "property-values/GmlPoint.h"
+
+
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 using namespace GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl;
 
+//
+// This is a temporary hack to be removed when deformation of subduction zones
+// is implemented as an overlaying deforming mesh that deforms a subduction *polyline*.
+// In the meantime a subduction zone is deformed by individually moving point geometries
+// spread out along the subduction zone (each moving according to a separate Plate ID).
+// To export subduction boundary segments of a topological polygon we need to join adjacent
+// subduction point geometries into one subduction polyline subsegment.
+//
+#define HACK_FOR_DEFORMING_SUBDUCTION_ZONE
 
 namespace GPlatesFileIO
 {
@@ -105,6 +124,14 @@ namespace GPlatesFileIO
 				// plate polygons
 				resolved_geom_seq_type platepolygons;
 
+#if defined(HACK_FOR_DEFORMING_SUBDUCTION_ZONE)
+				// We create new lists of sub segments (containing potentially merged subduction zone points
+				// and we need to keep the new sub segments structures alive until the export is finished.
+				typedef std::list<GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_seq_type>
+						merged_sub_segment_seq_type;
+				merged_sub_segment_seq_type merged_platepolygon_sub_segments;
+#endif
+
 				// plate polygon sub_segment types
 				sub_segment_group_seq_type ridge_transforms;
 				sub_segment_group_seq_type subductions;
@@ -130,6 +157,212 @@ namespace GPlatesFileIO
 				sub_segment_group_seq_type slab_edge_trench;
 				sub_segment_group_seq_type slab_edge_side;
 			};
+
+
+#if defined(HACK_FOR_DEFORMING_SUBDUCTION_ZONE)
+			void
+			merge_adjacent_subduction_zone_points(
+					GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_seq_type &merged_sub_segments,
+					const GPlatesAppLogic::ResolvedTopologicalBoundary &resolved_geom,
+					const double &reconstruction_time)
+			{
+				// A flag for each subsegment that's true if it's a subduction point.
+				std::vector<bool> subduction_point_flags;
+
+				// Iterate over the subsegments in the merged sub-segments list.
+				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_iter =
+						resolved_geom.sub_segment_begin();
+				const GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_end =
+						resolved_geom.sub_segment_end();
+				bool found_subduction_points = false;
+				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
+				{
+					const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment = *sub_segment_iter;
+
+					bool is_subduction_point = false;
+					const SubSegmentType sub_segment_type = get_sub_segment_type(sub_segment, reconstruction_time);
+					if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT ||
+						sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT ||
+						sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN)
+					{
+						// Look for a geometry property with property name "gpml:unclassifiedGeometry"
+						// and if it's a point then we've found a subduction point that can be merged. 
+						static const GPlatesModel::PropertyName unclassified_geometry_property_name =
+								GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry");
+						const GPlatesPropertyValues::GmlPoint *subduction_point_geom = NULL;
+						if (GPlatesFeatureVisitors::get_property_value(
+								sub_segment.get_feature_ref(),
+								unclassified_geometry_property_name,
+								subduction_point_geom,
+								reconstruction_time))
+						{
+							found_subduction_points = true;
+							is_subduction_point = true;
+						}
+					}
+
+					subduction_point_flags.push_back(is_subduction_point);
+				}
+
+				if (!found_subduction_points)
+				{
+					// No subduction points so just copy the input subsegment sequence to the output sequence.
+					merged_sub_segments.insert(
+							merged_sub_segments.end(),
+							resolved_geom.sub_segment_begin(),
+							resolved_geom.sub_segment_end());
+					return;
+				}
+
+				bool prev_is_subduction_point = true;
+				const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment *prev_sub_segment = NULL;
+
+				// Find the start of a sequence of subduction points.
+				unsigned int sub_segment_index = 0;
+				for (sub_segment_iter = resolved_geom.sub_segment_begin();
+					sub_segment_index < subduction_point_flags.size();
+					++sub_segment_iter, ++sub_segment_index)
+				{
+					const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment = *sub_segment_iter;
+					const bool is_subduction_point = subduction_point_flags[sub_segment_index];
+
+					if (is_subduction_point)
+					{
+						if (!prev_is_subduction_point)
+						{
+							// We've found the start of a sequence of subduction points.
+							break;
+						}
+					}
+
+					prev_is_subduction_point = is_subduction_point;
+					prev_sub_segment = &sub_segment;
+				}
+
+				if (sub_segment_index == subduction_point_flags.size())
+				{
+					// All subsegments are subduction points so just create a single subduction polyline
+					// and return it as a single subsegment in the output sequence.
+
+					std::vector<GPlatesMaths::PointOnSphere> merged_subduction_polyline_points;
+
+					for (sub_segment_iter = resolved_geom.sub_segment_begin();
+						sub_segment_iter != sub_segment_end;
+						++sub_segment_iter)
+					{
+						// Add the current subduction point to the merged subduction polyline.
+						GPlatesAppLogic::GeometryUtils::get_geometry_points(
+								*sub_segment_iter->get_geometry(),
+								merged_subduction_polyline_points,
+								false/*reverse_points*/);
+					}
+
+					// Create the merged subduction polyline.
+					const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_subduction_polyline =
+							GPlatesMaths::PolylineOnSphere::create_on_heap(
+									merged_subduction_polyline_points);
+
+					// Add to the final list of subsegments.
+					merged_sub_segments.push_back(
+							GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment(
+									merged_subduction_polyline,
+									// Note: We'll use the previous subsegment subduction point,
+									// out of all the merged subduction points, as the feature
+									// for the merged subduction polyline. This is quite dodgy
+									// which is why this whole thing is a big hack.
+									prev_sub_segment->get_feature_ref(),
+									false/*use_reverse*/));
+					return;
+				}
+
+				std::vector<GPlatesMaths::PointOnSphere> merged_subduction_polyline_points;
+
+				// Iterate over the sub-segments at our new start point and merge contiguous sequences
+				// of subduction points into subduction polylines.
+				unsigned int sub_segment_count = 0;
+				for ( ;
+					sub_segment_count < subduction_point_flags.size();
+					++sub_segment_iter, ++sub_segment_index, ++sub_segment_count)
+				{
+					// Handle wraparound...
+					if (sub_segment_index == subduction_point_flags.size())
+					{
+						sub_segment_index = 0;
+						sub_segment_iter = resolved_geom.sub_segment_begin();
+					}
+
+					const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment = *sub_segment_iter;
+					const bool is_subduction_point = subduction_point_flags[sub_segment_index];
+
+					if (is_subduction_point)
+					{
+						if (!prev_is_subduction_point)
+						{
+							// Start of a merged subduction line.
+							// Grab the end point of the last subsegment as the first point.
+							std::pair<
+								GPlatesMaths::PointOnSphere/*start point*/,
+								GPlatesMaths::PointOnSphere/*end point*/>
+									prev_sub_segment_geometry_end_points =
+										GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+												*prev_sub_segment->get_geometry(),
+												prev_sub_segment->get_use_reverse());
+							merged_subduction_polyline_points.push_back(
+									prev_sub_segment_geometry_end_points.second/*end point*/);
+						}
+
+						// Add the current subduction point to the merged subduction polyline.
+						GPlatesAppLogic::GeometryUtils::get_geometry_points(
+								*sub_segment.get_geometry(),
+								merged_subduction_polyline_points,
+								false/*reverse_points*/);
+					}
+					else // current subsegment is *not* a subduction point...
+					{
+						if (prev_is_subduction_point)
+						{
+							// End of current merged subduction line.
+							// Grab the start point of the current subsegment as the end point.
+							std::pair<
+								GPlatesMaths::PointOnSphere/*start point*/,
+								GPlatesMaths::PointOnSphere/*end point*/>
+									sub_segment_geometry_end_points =
+										GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+												*sub_segment.get_geometry(),
+												sub_segment.get_use_reverse());
+							merged_subduction_polyline_points.push_back(
+									sub_segment_geometry_end_points.first/*start point*/);
+
+							// Create the merged subduction polyline.
+							const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_subduction_polyline =
+									GPlatesMaths::PolylineOnSphere::create_on_heap(
+											merged_subduction_polyline_points);
+
+							// Add to the final list of subsegments.
+							merged_sub_segments.push_back(
+									GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment(
+											merged_subduction_polyline,
+											// Note: We'll use the previous subsegment subduction point,
+											// out of all the merged subduction points, as the feature
+											// for the merged subduction polyline. This is quite dodgy
+											// which is why this whole thing is a big hack.
+											prev_sub_segment->get_feature_ref(),
+											false/*use_reverse*/));
+
+							// Clear for the next merged sequence of subduction points.
+							merged_subduction_polyline_points.clear();
+						}
+
+						// The current subsegment is not a subduction point so just output it
+						// to the final list of subsegments.
+						merged_sub_segments.push_back(sub_segment);
+					}
+
+					prev_is_subduction_point = is_subduction_point;
+					prev_sub_segment = &sub_segment;
+				}
+			}
+#endif
 
 
 			/**
@@ -185,67 +418,100 @@ namespace GPlatesFileIO
 
 
 			void
-			add_topological_closed_plate_boundary_sub_segment(
-					const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment,
+			add_topological_closed_plate_boundary_sub_segments(
+					const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_geom,
 					const double &reconstruction_time,
 					const OutputOptions &output_options,
 					Output &output)
 			{
-				// The export file with all subsegments (regardless of type).
-				if (output_options.export_plate_polygon_subsegments_to_lines)
+#if defined(HACK_FOR_DEFORMING_SUBDUCTION_ZONE)
+				// Add an empty sequence of sub-segments simply to keep the merged subsegments
+				// alive until we've finished exporting.
+				output.merged_platepolygon_sub_segments.push_back(
+						GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_seq_type());
+				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_seq_type &merged_sub_segments =
+						output.merged_platepolygon_sub_segments.back();
+				// Merge adjacent deforming points that are spread along a subduction zone.
+				// We should end up with each sequence of merged points becoming a single
+				// subduction polyline subsegment of the topology's boundary.
+				merge_adjacent_subduction_zone_points(
+						merged_sub_segments,
+						*resolved_geom,
+						reconstruction_time);
+
+				// Iterate over the subsegments in the merged sub-segments list.
+				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_iter =
+						merged_sub_segments.begin();
+				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_end =
+						merged_sub_segments.end();
+#else
+				// Iterate over the subsegments contained in the current resolved topological geometry.
+				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_iter =
+						resolved_geom->sub_segment_begin();
+				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_end =
+						resolved_geom->sub_segment_end();
+#endif
+				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
 				{
-					output.lines.back().sub_segments.push_back(&sub_segment);
-				}
+					const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment = *sub_segment_iter;
 
-				// Also export the sub segment to another file based on its feature type.
+					// The export file with all subsegments (regardless of type).
+					if (output_options.export_plate_polygon_subsegments_to_lines)
+					{
+						output.lines.back().sub_segments.push_back(&sub_segment);
+					}
 
-				// Determine the feature type of subsegment.
-				const SubSegmentType sub_segment_type =
-						get_sub_segment_type(sub_segment, reconstruction_time);
+					// Also export the sub segment to another file based on its feature type.
 
-				// Export subsegment depending on its feature type.
-				switch (sub_segment_type)
-				{
-				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT:
-					if (output_options.export_subductions)
-					{
-						output.subductions.back().sub_segments.push_back(&sub_segment);
-					}
-					if (output_options.export_left_subductions)
-					{
-						output.left_subductions.back().sub_segments.push_back(&sub_segment);
-					}
-					break;
+					// Determine the feature type of subsegment.
+					const SubSegmentType sub_segment_type =
+							get_sub_segment_type(sub_segment, reconstruction_time);
 
-				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT:
-					if (output_options.export_subductions)
+					// Export subsegment depending on its feature type.
+					switch (sub_segment_type)
 					{
-						output.subductions.back().sub_segments.push_back(&sub_segment);
-					}
-					if (output_options.export_right_subductions)
-					{
-						output.right_subductions.back().sub_segments.push_back(&sub_segment);
-					}
-					break;
+					case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT:
+						if (output_options.export_subductions)
+						{
+							output.subductions.back().sub_segments.push_back(&sub_segment);
+						}
+						if (output_options.export_left_subductions)
+						{
+							output.left_subductions.back().sub_segments.push_back(&sub_segment);
+						}
+						break;
 
-				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN:
-					// We know it's a subduction zone but don't know if left or right
-					// so export to the subduction zone file only.
-					if (output_options.export_subductions)
-					{
-						output.subductions.back().sub_segments.push_back(&sub_segment);
-					}
-					break;
+					case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT:
+						if (output_options.export_subductions)
+						{
+							output.subductions.back().sub_segments.push_back(&sub_segment);
+						}
+						if (output_options.export_right_subductions)
+						{
+							output.right_subductions.back().sub_segments.push_back(&sub_segment);
+						}
+						break;
 
-				case SUB_SEGMENT_TYPE_OTHER:
-				default:
-					if (output_options.export_ridge_transforms)
-					{
-						output.ridge_transforms.back().sub_segments.push_back(&sub_segment);
+					case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN:
+						// We know it's a subduction zone but don't know if left or right
+						// so export to the subduction zone file only.
+						if (output_options.export_subductions)
+						{
+							output.subductions.back().sub_segments.push_back(&sub_segment);
+						}
+						break;
+
+					case SUB_SEGMENT_TYPE_OTHER:
+					default:
+						if (output_options.export_ridge_transforms)
+						{
+							output.ridge_transforms.back().sub_segments.push_back(&sub_segment);
+						}
+						break;
 					}
-					break;
 				}
 			}
+
 
 			void
 			add_topological_network_boundary_sub_segment(
@@ -311,7 +577,6 @@ namespace GPlatesFileIO
 			}
 
 
-
 			void
 			add_topological_network_boundary(
 					const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_geom,
@@ -367,6 +632,7 @@ namespace GPlatesFileIO
 				}
 			}
 
+
 			void
 			add_topological_closed_plate_boundary(
 					const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_geom,
@@ -407,19 +673,11 @@ namespace GPlatesFileIO
 					output.ridge_transforms.push_back(SubSegmentGroup(resolved_geom));
 				}
 
-				// Iterate over the subsegments contained in the current resolved topological geometry.
-				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_iter =
-						resolved_geom->sub_segment_begin();
-				GPlatesAppLogic::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_end =
-						resolved_geom->sub_segment_end();
-				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
-				{
-					add_topological_closed_plate_boundary_sub_segment(
-							*sub_segment_iter,
-							reconstruction_time,
-							output_options,
-							output);
-				}
+				add_topological_closed_plate_boundary_sub_segments(
+						resolved_geom,
+						reconstruction_time,
+						output_options,
+						output);
 			}
 
 

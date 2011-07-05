@@ -744,9 +744,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 	// This will also disable the reconstruction time spin box.
 	radio_button_present_day->setChecked(true);
 
-	// Set the default radio button to assign each feature to the plate id
-	// it overlaps the most.
-	radio_button_assign_features->setChecked(true);
+	// Set the default radio button to partition each feature into the partitioning polygons.
+	radio_button_partition_features->setChecked(true);
 
 	// Copy plate ids from partitioning polygon?
 	check_box_assign_plate_id->setChecked(d_assign_plate_ids);
