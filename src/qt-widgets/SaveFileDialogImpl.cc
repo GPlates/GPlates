@@ -177,6 +177,10 @@ boost::optional<QString>
 GPlatesQtWidgets::SaveFileDialogInternals::QtSaveFileDialog::get_file_name(
 		QString *selected_filter)
 {
+	if(d_file_dialog_ptr->defaultSuffix().isEmpty())
+	{
+		handle_filter_changed();
+	}
 	// If no file currently selected, use the last open directory.
 	if (!QFileInfo(d_file_dialog_ptr->selectedFiles().front()).isFile())
 	{
