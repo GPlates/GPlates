@@ -291,15 +291,13 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
 		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-		bool restrict_boundary_sections_to_same_reconstruction_tree)
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
 {
 	// Visit topological boundary features.
 	TopologyBoundaryResolver topology_boundary_resolver(
 			resolved_topological_boundaries,
 			reconstruction_tree,
-			topological_sections_reconstruct_handles,
-			restrict_boundary_sections_to_same_reconstruction_tree);
+			topological_sections_reconstruct_handles);
 
 	AppLogicUtils::visit_feature_collections(
 		topological_closed_plate_polygon_features_collection.begin(),
@@ -607,16 +605,14 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-		bool restrict_sections_to_same_reconstruction_tree)
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
 {
 	// Visit topological network features.
 	TopologyNetworkResolver topology_network_resolver(
 			resolved_topological_boundaries,
 			resolved_topological_networks,
 			reconstruction_tree,
-			topological_sections_reconstruct_handles,
-			restrict_sections_to_same_reconstruction_tree);
+			topological_sections_reconstruct_handles);
 
 	AppLogicUtils::visit_feature_collections(
 		topological_network_features_collection.begin(),

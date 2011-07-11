@@ -78,13 +78,11 @@ GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
 		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-		bool restrict_topological_sections_to_same_reconstruction_tree) :
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
 	d_resolved_topological_boundaries(resolved_topological_boundaries),
 	d_resolved_topological_networks(resolved_topological_networks),
 	d_reconstruction_tree(reconstruction_tree),
 	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
-	d_restrict_topological_sections_to_same_reconstruction_tree(restrict_topological_sections_to_same_reconstruction_tree),
 	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
 {  
 	d_num_topologies = 0;
@@ -388,14 +386,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_section_reconstruct
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
 	// Get the reconstructed geometry of the topological section's delegate.
-	// The referenced RFGs must be in our sequence of reconstructed topological sections
-	// and optionally have been reconstructed by the same reconstruction tree associated with
-	// the resolved topological networks being generated.
-	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> restricted_reconstruction_tree;
-	if (d_restrict_topological_sections_to_same_reconstruction_tree)
-	{
-		restricted_reconstruction_tree = d_reconstruction_tree;
-	}
+	// The referenced RFGs must be in our sequence of reconstructed topological sections.
 	// If we need to restrict the topological section RFGs to specific reconstruct handles...
 	boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles;
 	if (d_topological_sections_reconstruct_handles)
@@ -406,7 +397,6 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_section_reconstruct
 	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
 					geometry_delegate,
-					restricted_reconstruction_tree,
 					topological_sections_reconstruct_handles);
 
 	// If no RFG was found then it's possible that the current reconstruction time is

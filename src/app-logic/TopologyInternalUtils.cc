@@ -743,7 +743,6 @@ GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree,
 		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
@@ -760,15 +759,14 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	const GPlatesModel::PropertyName property_name = GPlatesModel::PropertyName::create_gpml(
 			property_name_qstring);
 
-	// Find the RFGs, optionally in the reconstruction_tree, for the feature ref and target property.
-	ReconstructedFeatureGeometryFinder rfg_finder(property_name, reconstruction_tree, reconstruct_handles); 
+	// Find the RFGs for the feature ref and target property.
+	ReconstructedFeatureGeometryFinder rfg_finder(property_name, reconstruct_handles); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
 // FIXME: MULTIPLE GEOM
 
-	// If we found no RFG (optionally referencing 'reconstruction_tree') that is reconstructed from
-	// 'geometry_property' then it probably means the reconstruction time is
-	// outside the age range of the feature containing 'geometry_property'.
+	// If we found no RFG that is reconstructed from 'geometry_property' then it probably means
+	// the reconstruction time is outside the age range of the feature containing 'geometry_property'.
 	// This is ok - it's not necessarily an error.
 	if (rfg_finder.num_rfgs_found() == 0)
 	{ 
@@ -815,7 +813,6 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
-		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	/*
@@ -830,12 +827,11 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 			geometry_property.handle_weak_ref();
 
 	// Find the RFGs, referencing 'reconstruction_tree', for the feature ref and geometry property.
-	ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, reconstruction_tree, reconstruct_handles); 
+	ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, reconstruct_handles); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
-	// If we found no RFG (referencing 'reconstruction_tree') that is reconstructed from
-	// 'geometry_property' then it probably means the reconstruction time is
-	// outside the age range of the feature containing 'geometry_property'.
+	// If we found no RFG that is reconstructed from 'geometry_property' then it probably means
+	// the reconstruction time is outside the age range of the feature containing 'geometry_property'.
 	// This is ok - it's not necessarily an error.
 	if (rfg_finder.num_rfgs_found() == 0)
 	{

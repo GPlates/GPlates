@@ -123,19 +123,13 @@ namespace GPlatesAppLogic
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        that should be searched when resolving the topological boundaries.
 		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
-		 * @param restrict_boundary_sections_to_same_reconstruction_tree is used to restrict the
-		 *        reconstructed topological boundary sections, specified with
-		 *        @a reconstructed_topological_boundary_sections, to those that were reconstructed
-		 *        using @a reconstruction_tree (ie, the same reconstruction tree associated with
-		 *        the resolved topological boundaries being generated).
 		 */
 		void
 		resolve_topological_boundaries(
 				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none,
-				bool restrict_boundary_sections_to_same_reconstruction_tree = true);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
 
 
 		/**
@@ -295,11 +289,6 @@ namespace GPlatesAppLogic
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        that should be searched when resolving the topological boundaries.
 		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
-		 * @param restrict_sections_to_same_reconstruction_tree is used to restrict the
-		 *        reconstructed topological sections, specified with
-		 *        @a reconstructed_topological_sections, to those that were reconstructed
-		 *        using @a reconstruction_tree (ie, the same reconstruction tree associated with
-		 *        the resolved topological networks being generated).
 		 */
 		void
 		resolve_topological_networks(
@@ -307,8 +296,7 @@ namespace GPlatesAppLogic
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-				bool restrict_sections_to_same_reconstruction_tree = true);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
 
 
 		/**

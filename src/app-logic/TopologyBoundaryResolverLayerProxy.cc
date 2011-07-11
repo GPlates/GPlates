@@ -106,18 +106,11 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 		if (!reconstructed_topological_boundary_sections.empty())
 		{
 			// Resolve our closed plate polygon features into our sequence of resolved topological boundaries.
-			//
-			// NOTE: Should we restrict the topological sections to be reconstructed using
-			// the same reconstruction tree that's associated with the resolved topological boundaries?
-			// This means both the Reconstruct layer and the Topology layer must both be connected
-			// to the same ReconstructionTree layer otherwise the topologies are not generated.
-			// This is the current behaviour but it might be too restrictive?
 			TopologyUtils::resolve_topological_boundaries(
 					d_cached_resolved_topological_boundaries.get(),
 					d_current_topological_closed_plate_polygon_feature_collections,
 					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree(reconstruction_time),
-					topological_sections_reconstruct_handles,
-					true/*restrict_boundary_sections_to_same_reconstruction_tree*/);
+					topological_sections_reconstruct_handles);
 		}
 	}
 

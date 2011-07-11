@@ -107,19 +107,12 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 		if (!reconstructed_topological_sections.empty())
 		{
 			// Resolve our networks features into our sequence of resolved topological networks.
-			//
-			// NOTE: Should we restrict the topological sections to be reconstructed using
-			// the same reconstruction tree that's associated with the resolved topological networks?
-			// This means both the Reconstruct layer and the Topology layer must both be connected
-			// to the same ReconstructionTree layer otherwise the topologies are not generated.
-			// This is the current behaviour but it might be too restrictive?
 			TopologyUtils::resolve_topological_networks(
 					d_cached_resolved_topologies->resolved_topological_boundaries,
 					d_cached_resolved_topologies->resolved_topological_networks,
 					d_current_topological_network_feature_collections,
 					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree(reconstruction_time),
-					topological_sections_reconstruct_handles,
-					true/*restrict_sections_to_same_reconstruction_tree*/);
+					topological_sections_reconstruct_handles);
 		}
 	}
 

@@ -2204,13 +2204,6 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 			reconstruct_handles,
 			d_application_state_ptr->get_current_reconstruction());
 
-	// Get the reconstruction tree output of the default reconstruction tree layer.
-	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
-	// as input to other layers - when that happens we'll need to handle non-default trees too.
-	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-			d_application_state_ptr->get_current_reconstruction()
-				.get_default_reconstruction_layer_output()->get_reconstruction_tree();
-
 	const section_info_seq_type::size_type num_sections = d_boundary_section_info_seq.size();
 
 	section_info_seq_type::size_type section_index;
@@ -2226,7 +2219,6 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 		const boost::optional<VisibleSection> visible_section =
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
-						reconstruction_tree,
 						reconstruct_handles);
 
 		if (!visible_section)
@@ -2259,13 +2251,6 @@ GPlatesGui::TopologyTools::reconstruct_interior_sections()
 			reconstruct_handles,
 			d_application_state_ptr->get_current_reconstruction());
 
-	// Get the reconstruction tree output of the default reconstruction tree layer.
-	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
-	// as input to other layers - when that happens we'll need to handle non-default trees too.
-	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-		d_application_state_ptr->get_current_reconstruction()
-			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
-
 	const section_info_seq_type::size_type num_sections = d_interior_section_info_seq.size();
 
 	section_info_seq_type::size_type section_index;
@@ -2281,7 +2266,6 @@ GPlatesGui::TopologyTools::reconstruct_interior_sections()
 		const boost::optional<VisibleSection> visible_section =
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
-						reconstruction_tree,
 						reconstruct_handles);
 
 		if (!visible_section)
@@ -3760,14 +3744,12 @@ GPlatesGui::TopologyTools::VisibleSection::VisibleSection(
 boost::optional<GPlatesGui::TopologyTools::VisibleSection>
 GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		std::size_t section_index,
-		const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 		const std::vector<GPlatesAppLogic::ReconstructHandle::type> &reconstruct_handles) const
 {
 	// Find the RFG, in the current Reconstruction, for the current topological section.
 	boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> section_rfg =
 			GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 					d_table_row.get_geometry_property(),
-					reconstruction_tree,
 					reconstruct_handles);
 
 	// If no RFG was found then either:

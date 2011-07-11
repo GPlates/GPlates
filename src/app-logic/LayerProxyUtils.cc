@@ -74,7 +74,7 @@ GPlatesAppLogic::LayerProxyUtils::find_reconstructed_feature_geometries_of_featu
 	get_reconstructed_feature_geometries(rfgs_in_reconstruction, reconstruct_handles, reconstruction);
 
 	// Iterate through all RFGs observing 'feature_ref' and that were reconstructed just now (above).
-	ReconstructedFeatureGeometryFinder rfg_finder(boost::none, reconstruct_handles);
+	ReconstructedFeatureGeometryFinder rfg_finder(reconstruct_handles);
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
 	// Add the found RFGs to the caller's sequence.

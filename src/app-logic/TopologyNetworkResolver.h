@@ -78,18 +78,12 @@ namespace GPlatesAppLogic
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        that should be searched when resolving the topological boundaries.
 		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
-		 * @param restrict_topological_sections_to_same_reconstruction_tree is used to restrict the
-		 *        reconstructed topological boundary sections, specified with
-		 *        @a reconstructed_topological_sections, to those that were reconstructed
-		 *        using @a reconstruction_tree (ie, the same reconstruction tree associated with
-		 *        the resolved topological networks being generated).
 		 */
 		TopologyNetworkResolver(
 				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-				bool restrict_topological_sections_to_same_reconstruction_tree = true);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
 
 		virtual
 		~TopologyNetworkResolver() 
@@ -259,13 +253,6 @@ namespace GPlatesAppLogic
 		 * If the client didn't produce them, or forgot to, then we'd find no RFGs during the global search.
 		 */
 		boost::optional<std::vector<ReconstructHandle::type> > d_topological_sections_reconstruct_handles;
-
-		/**
-		 * Boolean to determine whether to restrict the reconstructed topological sections
-		 * to those that were reconstructed using the same reconstruction tree associated with
-		 * the resolved topological networks being generated.
-		 */
-		bool d_restrict_topological_sections_to_same_reconstruction_tree;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;
