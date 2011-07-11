@@ -110,7 +110,7 @@ FIND_PATH(GDAL_INCLUDE_DIR gdal.h
 # The various possible library names for the GDAL library are listed here.
 # 
 set(GDAL_LIBRARY_NAMES
-	gdal gdal_i
+	gdal_i gdal
 	gdal1.8.0
 	gdal1.7.0
 	gdal1.6.2 gdal1.6.1 gdal1.6.0

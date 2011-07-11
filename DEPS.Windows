@@ -96,13 +96,20 @@ Boost
   3. Add the \boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
      environment variable.
 
-FWTools (for GDAL and Proj4)
+GDAL
 
-  1. Get and install FWTools 2.4.5 from http://home.gdal.org/fwtools/ 
-  2. Add the FWTools \bin folder to the PATH environment variable (see above).
-  3. If you downloaded a version of FWTools prior to 2.4.5, make a copy of
-     proj.dll in the \bin folder and call it proj_fw.dll.
+	1.Get GDAL source code from http://trac.osgeo.org/gdal/wiki/DownloadSource.
+	2.Use Vistual Studio to build GDAL.
+	3.Add $GDAL_ROOT\gcore; $GDAL_ROOT\ogr; $GDAL_ROOT\port; $GDAL_ROOT/ogr/ogrsf_frmts 
+	  into CMAKE_INCLUDE_PATH
+	4.Add $GDAL_ROOT to CMAKE_LIBRARY_PATH
 
+Proj4
+
+  1. Get Proj4 source file from http://trac.osgeo.org/proj/.
+  2. Read $Proj4_ROOT/readme.txt and build Proj4.
+  3. Add $Proj4_ROOT/src into CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH.
+  
 CGAL
 
   1. Get and install the CGAL 3.5 source code from http://www.cgal.org/:
