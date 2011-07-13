@@ -98,7 +98,7 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 const QString &
 GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::get_title()
 {
-	static const QString TITLE = tr("Velocity & Interoplation options");
+	static const QString TITLE = tr("Velocity & Interpolation options");
 	return TITLE;
 }
 

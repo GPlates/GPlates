@@ -137,10 +137,9 @@ namespace
 				properties.push_back(std::make_pair(node, (pc->second)(node, params.errors)));
 				return;
 			} catch (const IO::PropertyCreationUtils::GpmlReaderException &ex) {
-				// FIXME: Remove this eventually:
-				std::cerr << "Caught exception originating at " 
-					<< ex.source_location() << std::endl;
-
+				qWarning()
+					<< "GpmlOnePointSixReader.cc:read_property: caught exception originating at "
+					<< ex.source_location();
 				Utils::append_warning(
 						ex.location(), params, ex.description(),
 						IO::ReadErrors::FeatureNotInterpreted);
