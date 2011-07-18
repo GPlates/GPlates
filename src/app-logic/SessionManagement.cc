@@ -134,6 +134,12 @@ GPlatesAppLogic::SessionManagement::SessionManagement(
 void
 GPlatesAppLogic::SessionManagement::clear_session()
 {
+	// Block any signaled calls to 'ApplicationState::reconstruct' until we exit this scope.
+	// Blocking calls to 'reconstruct' during this scope prevents multiple calls caused by
+	// layer signals, etc, which is unnecessary if we're going to call 'reconstruct' anyway.
+	ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			*d_app_state_ptr, true/*reconstruct_on_scope_exit*/);
+
 	// Unloading all files should remove all auto-created layers but any user-created layers
 	// will not be removed so we'll have to remove them explicitly - if we don't then the number
 	// of user-created layers increases continuously as we switch between sessions.
@@ -160,6 +166,12 @@ GPlatesAppLogic::SessionManagement::load_session(
 		// How did we get here? Menu shouldn't contain empty listings.
 		return;
 	}
+
+	// Block any signaled calls to 'ApplicationState::reconstruct' until we exit this scope.
+	// Blocking calls to 'reconstruct' during this scope prevents multiple calls caused by
+	// layer signals, etc, which is unnecessary if we're going to call 'reconstruct' anyway.
+	ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			*d_app_state_ptr, true/*reconstruct_on_scope_exit*/);
 
 	Session original_session = new_session_from_current_state();
 	if (original_session == session_to_load) {
@@ -263,6 +275,12 @@ GPlatesAppLogic::SessionManagement::load_previous_session(
 void
 GPlatesAppLogic::SessionManagement::unload_all_files()
 {
+	// Block any signaled calls to 'ApplicationState::reconstruct' until we exit this scope.
+	// Blocking calls to 'reconstruct' during this scope prevents multiple calls caused by
+	// layer signals, etc, which is unnecessary if we're going to call 'reconstruct' anyway.
+	ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			*d_app_state_ptr, true/*reconstruct_on_scope_exit*/);
+
 	GPlatesAppLogic::FeatureCollectionFileState &file_state = d_app_state_ptr->get_feature_collection_file_state();
 	GPlatesAppLogic::FeatureCollectionFileIO &file_io = d_app_state_ptr->get_feature_collection_file_io();
 
@@ -280,6 +298,12 @@ GPlatesAppLogic::SessionManagement::unload_all_files()
 void
 GPlatesAppLogic::SessionManagement::unload_all_unnamed_files()
 {
+	// Block any signaled calls to 'ApplicationState::reconstruct' until we exit this scope.
+	// Blocking calls to 'reconstruct' during this scope prevents multiple calls caused by
+	// layer signals, etc, which is unnecessary if we're going to call 'reconstruct' anyway.
+	ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			*d_app_state_ptr, true/*reconstruct_on_scope_exit*/);
+
 	GPlatesAppLogic::FeatureCollectionFileState &file_state = d_app_state_ptr->get_feature_collection_file_state();
 	GPlatesAppLogic::FeatureCollectionFileIO &file_io = d_app_state_ptr->get_feature_collection_file_io();
 
