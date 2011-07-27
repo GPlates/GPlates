@@ -123,14 +123,14 @@ GPlatesQtWidgets::ConnectWFSDialog::~ConnectWFSDialog()
 
 void
 GPlatesQtWidgets::ConnectWFSDialog::set_request_geometry( 
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere)
 {
 	QString geom_str = "";
 
 	qDebug() << "ConnectWFSDialog::set_request_geometry(): ";
 	// double check on geom type 
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
-	geometry->accept_visitor(finder);
+	geometry_on_sphere->accept_visitor(finder);
 	if ( ( finder.found_polyline_geometries() ) || ( finder.found_point_geometries() ) )
 	{
 		QErrorMessage *e = new QErrorMessage( this );
@@ -386,17 +386,17 @@ GPlatesQtWidgets::ConnectWFSDialog::httpReadyRead()
 	// We read all of its new data and write it into the d_xml_file.
 	// That way we use less RAM than when reading it at the finished()
 	// signal of the QNetworkReply
-	QByteArray data = d_reply->readAll();
+	QByteArray data_array = d_reply->readAll();
 
 	// qDebug() << "GPlatesQtWidgets::ConnectWFSDialog::httpReadyRead() data=";
 	// qDebug() << data;
 	// qDebug() << "===";
 
-	d_xml_data.append( data );
+	d_xml_data.append( data_array );
 
 	if (d_xml_file)
 	{
-		d_xml_file->write( data );
+		d_xml_file->write( data_array );
 	}
 }
 
