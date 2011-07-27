@@ -725,6 +725,9 @@ namespace
 		map[ PropertyName::create_gpml("slabEdgeType") ] = 
 			GET_PROP_VAL_NAME(create_xs_string);
 
+		map[ PropertyName::create_gpml("rheaFault") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+
 		return map;
 	}
 

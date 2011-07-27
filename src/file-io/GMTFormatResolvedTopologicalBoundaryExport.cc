@@ -233,9 +233,6 @@ namespace GPlatesFileIO
 					QString &depth,
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 			{
-				// Look for a property with property name "gml:name" and use its value
-				// to help generate the header line. If that property doesn't exist
-				// then use the geographic description in the old plates header instead.
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("subductionZoneDepth");
 				const GPlatesPropertyValues::XsDouble *property_value = NULL;
@@ -249,6 +246,29 @@ namespace GPlatesFileIO
 				QString d_as_str( GPlatesUtils::formatted_double_to_string(d, 6, 1).c_str() );
 				depth = d_as_str;
 
+				return true;
+			}
+
+			/**
+			 * Looks for "gpml:rheaFault" property in feature 
+			 * otherwise returns false.
+			 */
+			bool
+			get_feature_rhea_fault(
+					QString &rhea_fault,
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+			{
+				static const GPlatesModel::PropertyName property_name =
+					GPlatesModel::PropertyName::create_gpml("rheaFault");
+				const GPlatesPropertyValues::XsString *property_value = NULL;
+				if (!GPlatesFeatureVisitors::get_property_value(
+						feature, property_name, property_value))
+				{
+					rhea_fault = "Unknown";
+					return false;
+				}
+
+				rhea_fault = GPlatesUtils::make_qstring_from_icu_string(property_value->value().get());
 				return true;
 			}
 
@@ -506,6 +526,14 @@ namespace GPlatesFileIO
 					if ( get_feature_sz_depth(depth, feature) )
 					{
 						d_header_line.append( depth );
+					}
+					else { d_header_line.append( unk ); }
+
+					QString rhea_fault;
+					d_header_line.append( " # rheaFault: " );
+					if ( get_feature_rhea_fault(rhea_fault, feature) )
+					{
+						d_header_line.append( rhea_fault );
 					}
 					else { d_header_line.append( unk ); }
 

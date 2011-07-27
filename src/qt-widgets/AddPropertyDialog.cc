@@ -127,6 +127,7 @@ namespace
 		{ "gpml:subductionZoneAge", "xs:double", false, false }, 
 		{ "gpml:subductionZoneDeepDip", "xs:double", false, false }, 
 		{ "gpml:subductionZoneDepth", "xs:double", false, false }, 
+		{ "gpml:rheaFault", "xs:string", false, false }, 
 
 	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true, false }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
 	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false, false }, // Enumeration. For AbsoluteReferenceFrame.
