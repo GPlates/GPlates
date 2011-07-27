@@ -703,8 +703,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					PolylineOnSphere::create_on_heap(points);
 			GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 					GPlatesPropertyValues::GmlLineString::create(polyline);
+
 			GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =
 					GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
+
 			GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
 					GPlatesModel::ModelUtils::create_gpml_constant_value(
 							gml_orientable_curve, 

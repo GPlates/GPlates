@@ -43,6 +43,7 @@ namespace GPlatesViewOperations
 	class RenderedSmallCircle;
 	class RenderedSmallCircleArc;	
 	class RenderedSquareSymbol;
+	class RenderedCircleSymbol;
 	class RenderedString;
 	class RenderedTriangleSymbol;
 
@@ -137,6 +138,12 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_square_symbol(
 			const RenderedSquareSymbol &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_circle_symbol(
+			const RenderedCircleSymbol &)
 		{  }
 
 		virtual

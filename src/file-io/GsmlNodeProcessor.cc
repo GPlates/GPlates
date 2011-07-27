@@ -57,6 +57,3 @@ GPlatesFileIO::GsmlNodeProcessor::execute(
 		buffer.close();
 	}
 }
-
-
-

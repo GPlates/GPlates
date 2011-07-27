@@ -41,6 +41,7 @@
 #include "ExportCoordinatesDialog.h"
 #include "LatLonCoordinatesTable.h"
 #include "QtWidgetUtils.h"
+#include "ConnectWFSDialog.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -69,6 +70,7 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
 	TaskPanelWidget(parent_),
+	d_viewport_window( &viewport_window_ ),
 	d_export_coordinates_dialog(
 			new ExportCoordinatesDialog(
 				view_state_,
@@ -91,6 +93,7 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 	int desired_height = button_create_feature->sizeHint().height();
 	action_button_box->setFixedHeight(desired_height);
 	button_export_coordinates->setFixedHeight(desired_height);
+	button_use_in_wfs->setFixedHeight(desired_height);
 #endif
 	QtWidgetUtils::add_widget_to_placeholder(
 			action_button_box,
@@ -167,6 +170,26 @@ GPlatesQtWidgets::DigitisationWidget::handle_export()
 }
 
 void
+GPlatesQtWidgets::DigitisationWidget::handle_use_in_wfs()
+{
+	GPlatesViewOperations::GeometryBuilder::geometry_opt_ptr_type geometry_opt_ptr =
+		d_new_geom_builder->get_geometry_on_sphere();
+
+	// Feed the dialog the GeometryOnSphere you've set up for the current points. 
+	if (geometry_opt_ptr) {
+
+		// Give a GeometryOnSphere::non_null_ptr_to_const_type to the dialog.
+		d_viewport_window->pop_up_connect_wfs();
+		d_viewport_window->wfs_dialog().set_request_geometry( *geometry_opt_ptr );
+		
+	} else {
+		QMessageBox::warning(this, tr("No geometry to export"),
+				tr("There is no valid geometry to export."),
+				QMessageBox::Ok);
+	}
+}
+
+void
 GPlatesQtWidgets::DigitisationWidget::make_signal_slot_connections()
 {
 	// Export... button to open the Export Coordinates dialog.
@@ -175,6 +198,13 @@ GPlatesQtWidgets::DigitisationWidget::make_signal_slot_connections()
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_export()));
+
+	// Use in WFS button to open the WFS dialog.
+	QObject::connect(
+			button_use_in_wfs,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_use_in_wfs()));
 
 	// Create... button to open the Create Feature dialog.
 	QObject::connect(
@@ -245,5 +275,6 @@ GPlatesQtWidgets::DigitisationWidget::handle_geometry_changed()
 	bool has_geometry = d_new_geom_builder->has_geometry();
 	emit_clear_action_enabled_changed(has_geometry);
 	button_export_coordinates->setEnabled(has_geometry);
+	button_use_in_wfs->setEnabled(has_geometry);
 }
 

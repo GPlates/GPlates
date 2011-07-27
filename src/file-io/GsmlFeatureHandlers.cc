@@ -43,13 +43,47 @@ GPlatesFileIO::GsmlFeatureHandler::handle_gsml_feature(
 		FeatureCollectionHandle::weak_ref fc,
 		QBuffer& xml_data)
 {
-	FeatureHandle::weak_ref feature = FeatureHandle::create(
+	if ( feature_type_str == "UnclassifiedFeature")
+	{
+		FeatureHandle::weak_ref feature = FeatureHandle::create(
 			fc,
-			FeatureType(PropertyName::create_gml(feature_type_str)));
+			FeatureType(PropertyName::create_gpml( feature_type_str )));
 
-	GsmlNodeProcessorFactory(feature).process_with_property_processors(
+		GsmlNodeProcessorFactory(feature).process_with_property_processors(
 			feature_type_str, 
 			xml_data);
+	}
+	else if ( feature_type_str.startsWith("RockUnit_") )
+	{
+		FeatureHandle::weak_ref feature = FeatureHandle::create(
+			fc,
+			FeatureType(PropertyName::create_gpml( feature_type_str )));
+
+		GsmlNodeProcessorFactory(feature).process_with_property_processors(
+			feature_type_str, 
+			xml_data);
+	}
+	else if ( feature_type_str.startsWith("FossilCollection_") )
+	{
+		FeatureHandle::weak_ref feature = FeatureHandle::create(
+			fc,
+			FeatureType(PropertyName::create_gpml( feature_type_str )));
+
+		GsmlNodeProcessorFactory(feature).process_with_property_processors(
+			feature_type_str, 
+			xml_data);
+	}
+	else
+	{
+		FeatureHandle::weak_ref feature = FeatureHandle::create(
+			fc,
+			FeatureType(PropertyName::create_gml( feature_type_str )));
+
+		GsmlNodeProcessorFactory(feature).process_with_property_processors(
+			feature_type_str, 
+			xml_data);
+	}
+
 	return;
 }
 
@@ -68,14 +102,40 @@ GPlatesFileIO::GsmlFeatureHandler::handle_feature_memeber(
 	}
 	QXmlStreamReader reader(&buffer);
 	XQuery::next_start_element(reader);//gml:featureMember
-	XQuery::next_start_element(reader);//gsml:MappedFeature -- real feature type
+	XQuery::next_start_element(reader);//gsml:MappedFeature -- or other real feature type
 	QString feature_type = reader.name().toString();
 
-	std::vector<QByteArray> results = 
-		XQuery::evaluate(
+#if 0
+qDebug() << "GsmlFeatureHandler::handle_feature_memeber(): feature_type" << feature_type;
+qDebug() << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+qDebug() << xml_data;
+qDebug() << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+#endif
+
+	std::vector<QByteArray> results;
+
+	if ( feature_type.startsWith("UnclassifiedFeature") )
+	{
+		results = XQuery::evaluate(
 				xml_data,
 				"//gsml:"+ feature_type ,
 				boost::bind(&XQuery::is_empty,_1));
+	}
+	else if ( feature_type.startsWith("RockUnit_") )
+	{
+		results = XQuery::evaluate(
+				xml_data,
+				"//gpml:"+ feature_type ,
+				boost::bind(&XQuery::is_empty,_1));
+	}
+	else if ( feature_type.startsWith("FossilCollection_") )
+	{
+		results = XQuery::evaluate(
+				xml_data,
+				"//gpml:"+ feature_type ,
+				boost::bind(&XQuery::is_empty,_1));
+	}
+
 
 	if(results.size() != 1)
 	{
@@ -92,11 +152,8 @@ GPlatesFileIO::GsmlFeatureHandler::handle_feature_memeber(
 			GPLATES_EXCEPTION_SOURCE,	
 			"Unable to open buffer.");
 	}
-	handle_gsml_feature(feature_type,fc,buf);
+
+	handle_gsml_feature( feature_type, fc, buf);
 }
-
-
-
-
 
 

@@ -191,6 +191,14 @@ namespace GPlatesFeatureVisitors
 			d_num_multi_point_geometries_found = 0;
 			d_num_polyline_geometries_found = 0;
 			d_num_polygon_geometries_found = 0;
+			d_points_list.clear();
+		}
+
+		//
+		std::vector<GPlatesMaths::PointOnSphere>
+		get_points()
+		{
+			return d_points_list;
 		}
 
 	private:
@@ -199,6 +207,8 @@ namespace GPlatesFeatureVisitors
 		int d_num_multi_point_geometries_found;
 		int d_num_polyline_geometries_found;
 		int d_num_polygon_geometries_found;
+
+		std::vector<GPlatesMaths::PointOnSphere> d_points_list;
 	};
 
 	/**

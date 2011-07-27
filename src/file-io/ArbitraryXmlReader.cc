@@ -47,10 +47,12 @@ GPlatesFileIO::ArbitraryXmlReader::read_xml_data(
 		QByteArray& data,
 		ReadErrorAccumulation &read_errors)
 {
+qDebug() << "GPlatesFileIO::ArbitraryXmlReader::read_xml_data()";
 	SetErrorAccumulation setter(&read_errors,this);
 	profile->populate(
 			data,
 			file_ref.get_feature_collection());
+qDebug() << "GPlatesFileIO::ArbitraryXmlReader::read_xml_data() END";
 }
 
 

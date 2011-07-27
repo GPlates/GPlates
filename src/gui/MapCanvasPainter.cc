@@ -60,6 +60,7 @@
 #include "view-operations/RenderedSmallCircle.h"
 #include "view-operations/RenderedSmallCircleArc.h"
 #include "view-operations/RenderedSquareSymbol.h"
+#include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedString.h"
 #include "view-operations/RenderedTriangleSymbol.h"
 
@@ -1317,6 +1318,20 @@ GPlatesGui::MapCanvasPainter::visit_rendered_square_symbol(
 		rendered_square_symbol.get_centre(),
 		rendered_square_symbol.get_colour(),
 		rendered_square_symbol.get_line_width_hint());
+
+    point_on_sphere.accept_visitor(*this);
+}
+
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_circle_symbol(
+	const GPlatesViewOperations::RenderedCircleSymbol &rendered_circle_symbol)
+{
+    // visit a point on sphere for now.
+    GPlatesViewOperations::RenderedGeometry point_on_sphere =
+	    GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
+		rendered_circle_symbol.get_centre(),
+		rendered_circle_symbol.get_colour(),
+		rendered_circle_symbol.get_line_width_hint());
 
     point_on_sphere.accept_visitor(*this);
 }

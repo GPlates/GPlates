@@ -73,6 +73,7 @@
 #include "view-operations/RenderedPolylineOnSphere.h"
 #include "view-operations/RenderedResolvedRaster.h"
 #include "view-operations/RenderedSquareSymbol.h"
+#include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedString.h"
 #include "view-operations/RenderedSmallCircle.h"
 #include "view-operations/RenderedSmallCircleArc.h"
@@ -1656,7 +1657,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
     }
 }
 
-
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 	const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol)
@@ -1757,6 +1757,77 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 		stream_line_strips.add_vertex(ve);
 		stream_line_strips.add_vertex(vb);
 		stream_line_strips.end_line_strip();
+    }
+}
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
+	const GPlatesViewOperations::RenderedCircleSymbol &rendered_circle_symbol)
+{
+    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_circle_symbol);
+    if (!colour)
+    {
+	    return;
+    }
+
+    bool filled = rendered_circle_symbol.get_is_filled();
+	
+	// FIXME: copied this stuff from other visit_rendered_* functions 
+    double d = 0.01 * d_inverse_zoom_factor * rendered_circle_symbol.get_size(); 
+
+	const float line_width = rendered_circle_symbol.get_size() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	const float point_size =
+			rendered_circle_symbol.get_size() * POINT_SIZE_ADJUSTMENT * d_scale;
+
+#if 0
+	const float point_size =
+			rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
+
+    const GPlatesMaths::PointOnSphere &pos =
+		    rendered_circle_symbol.get_centre();
+
+    GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
+#endif
+
+    if (filled)
+    {
+		// FIXME: copied from rendered_point_on_sphere
+
+		// Get the stream for points of the current point size.
+		GPlatesOpenGL::GLStreamPrimitives<coloured_vertex_type> &stream =
+				d_paint_params->translucent_drawables_on_the_sphere.get_point_drawables(point_size);
+
+		// Get the point position.
+		const GPlatesMaths::UnitVector3D &pos =
+			rendered_circle_symbol.get_centre().position_vector();
+
+		// Vertex representing the point's position and colour.
+		// Convert colour from floats to bytes to use less vertex memory.
+		const coloured_vertex_type vertex(pos, Colour::to_rgba8(*colour));
+
+		// Used to add points to the stream.
+		GPlatesOpenGL::GLStreamPoints<coloured_vertex_type> stream_points(stream);
+
+		stream_points.begin_points();
+		stream_points.add_vertex(vertex);
+		stream_points.end_points();
+
+    }
+    else
+    {
+		// FIXME: this was lifted from small cicle ... 
+
+		// Get the drawables for lines of the current line width.
+		LineDrawables &line_drawables =
+				d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+		line_drawables.nurbs_drawables.push_back(
+				d_nurbs_renderer->draw_small_circle(
+						rendered_circle_symbol.get_centre(),
+						d,
+						colour.get()));
+
     }
 }
 

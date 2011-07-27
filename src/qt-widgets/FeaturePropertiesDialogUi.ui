@@ -52,7 +52,7 @@
         <string>Change Feature Type</string>
        </property>
        <property name="text">
-        <string>...</string>
+        <string>Change Type ...</string>
        </property>
       </widget>
      </item>

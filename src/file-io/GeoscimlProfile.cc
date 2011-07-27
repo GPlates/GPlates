@@ -66,23 +66,36 @@ GPlatesFileIO::GeoscimlProfile::populate(
 		QByteArray& xml_data,
 		GPlatesModel::FeatureCollectionHandle::weak_ref fch)
 {
+qDebug() << "GPlatesFileIO::GeoscimlProfile::populate:";
 	try
 	{
+#if 0
 		std::vector<QByteArray> results = 
 			XQuery::evaluate(
 					xml_data,
 					"/wfs:FeatureCollection/gml:featureMember",
 					boost::bind(&XQuery::is_empty,_1));
+#endif
+
+		std::vector<QByteArray> results = 
+			XQuery::evaluate_features(
+					xml_data,
+					"/wfs:FeatureCollection/gml:featureMember");
+
+qDebug() << "-------------------------------------------------------";
+qDebug() << "GPlatesFileIO::GeoscimlProfile::populate: results=" << results.size();
+qDebug() << "-------------------------------------------------------";
+
 		if(results.size() == 0)
 		{
 			//This case covers GeoSciML data which has not been wrapped in wfs:FeatureCollection.
-			GsmlFeatureHandlerFactory::get_instance()->handle_feature_memeber(fch,xml_data);
+			GsmlFeatureHandlerFactory::get_instance()->handle_feature_memeber(fch, xml_data);
 		}
 		else
 		{
 			BOOST_FOREACH(QByteArray& array, results)
 			{
-				GsmlFeatureHandlerFactory::get_instance()->handle_feature_memeber(fch,array);
+				GsmlFeatureHandlerFactory::get_instance()->handle_feature_memeber(fch, array);
 			}
 		}
 	}

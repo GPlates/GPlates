@@ -801,6 +801,8 @@ namespace
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_abstract_rock_unit_properties();
 
+		map[ PropertyName::create_gpml("position") ] =
+			GET_PROP_VAL_NAME(create_point);
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] =
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("outlineOf") ] =
@@ -1127,10 +1129,22 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_political_boundary_properties();
 
 
-
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =
 		get_basic_rock_unit_properties();
+		
+	d_map[ FeatureType::create_gpml("RockUnit_carbonate") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_siliciclastic") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_evaporite") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_organic") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_chemical") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_volcanic") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_metamorphic") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_indeterminate_igneous") ] = get_basic_rock_unit_properties();
+
+	d_map[ FeatureType::create_gpml("FossilCollection_small") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("FossilCollection_medium") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("FossilCollection_large") ] = get_basic_rock_unit_properties();
 		
 	// Abstract Geological Plane & Contact features.
 	d_map[ FeatureType::create_gpml("GeologicalPlane") ] =

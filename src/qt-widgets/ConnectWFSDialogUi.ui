@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>554</width>
-    <height>382</height>
+    <width>599</width>
+    <height>361</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="minimumSize">
    <size>
@@ -26,7 +32,7 @@
    <bool>true</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="2" column="1">
+   <item row="6" column="1">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QLineEdit" name="lineEdit_proxy"/>
@@ -43,59 +49,127 @@
      </item>
     </layout>
    </item>
-   <item row="0" column="0">
+   <item row="1" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>Name:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QLineEdit" name="lineEdit_name"/>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>URL:</string>
+      <string>Query Name:</string>
      </property>
     </widget>
    </item>
    <item row="1" column="1">
-    <widget class="QLineEdit" name="lineEdit_url"/>
+    <widget class="QLineEdit" name="lineEdit_name"/>
    </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="label_3">
-     <property name="text">
-      <string>Request:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0" colspan="2">
-    <widget class="QPlainTextEdit" name="plainTextEdit_request"/>
-   </item>
-   <item row="5" column="1">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
+   <item row="6" column="0">
     <widget class="QCheckBox" name="checkBox_proxy">
      <property name="text">
       <string>Proxy</string>
      </property>
     </widget>
    </item>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="comboBox_url">
+     <property name="editable">
+      <bool>true</bool>
+     </property>
+     <item>
+      <property name="text">
+       <string>http://teststrata.geology.wisc.edu/testbin/strat_test.php</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>http://teststrata.geology.wisc.edu/testbin/paleodb_test.php</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>http://www-a.ga.gov.au/geows/geologicunits/oneg_aus_2_5m/wfs</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Select a WFS site, or type in a valid url...</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>URL:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0">
+    <widget class="QPushButton" name="pushButton_apply">
+     <property name="text">
+      <string>Apply Valid Time</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="1">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>begin:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="spinbox_begin">
+       <property name="maximum">
+        <double>1000.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>200.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>end:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="spinbox_end">
+       <property name="maximum">
+        <double>1000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item row="10" column="0" colspan="2">
+    <widget class="QPlainTextEdit" name="plainTextEdit_request">
+     <property name="plainText">
+      <string/>
+     </property>
+    </widget>
+   </item>
   </layout>
-  <zorder>label_2</zorder>
-  <zorder>lineEdit_name</zorder>
-  <zorder>label</zorder>
-  <zorder>lineEdit_url</zorder>
-  <zorder>label_3</zorder>
-  <zorder>plainTextEdit_request</zorder>
-  <zorder>buttonBox</zorder>
-  <zorder>checkBox_proxy</zorder>
  </widget>
  <resources/>
  <connections/>

@@ -40,6 +40,7 @@
 #include "RenderedSmallCircle.h"
 #include "RenderedSmallCircleArc.h"
 #include "RenderedSquareSymbol.h"
+#include "RenderedCircleSymbol.h"
 #include "RenderedString.h"
 #include "RenderedTriangleSymbol.h"
 #include "gui/Symbol.h"
@@ -112,6 +113,11 @@ namespace GPlatesViewOperations
 
 				    case GPlatesGui::Symbol::SQUARE:
 					d_rendered_geom = GPlatesViewOperations::create_rendered_square_symbol(
+						*point_on_sphere, d_colour, d_symbol->d_size, d_symbol->d_filled, d_line_width_hint);
+					break;
+
+				    case GPlatesGui::Symbol::CIRCLE:
+					d_rendered_geom = GPlatesViewOperations::create_rendered_circle_symbol(
 						*point_on_sphere, d_colour, d_symbol->d_size, d_symbol->d_filled, d_line_width_hint);
 					break;
 
@@ -442,6 +448,20 @@ GPlatesViewOperations::create_rendered_square_symbol(
 	const float line_width_hint)
 {
     RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedSquareSymbol(
+	    centre,colour,size,filled,line_width_hint));
+
+    return RenderedGeometry(rendered_geom_impl);
+}
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_circle_symbol(
+	const GPlatesMaths::PointOnSphere &centre,
+	const GPlatesGui::ColourProxy &colour,
+	const unsigned int size,
+	bool filled,
+	const float line_width_hint)
+{
+    RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedCircleSymbol(
 	    centre,colour,size,filled,line_width_hint));
 
     return RenderedGeometry(rendered_geom_impl);

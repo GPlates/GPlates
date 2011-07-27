@@ -41,6 +41,12 @@ namespace GPlatesUtils
 	namespace XQuery
 	{
 		typedef boost::function<bool (QBuffer&)> IsEmptyFun;
+
+		std::vector<QByteArray>
+		evaluate_features(
+				QByteArray& xml_data,
+				const QString& query_str);
+		
 		/*
 		* Run the query_str on xml_data 
 		* return the result in std::vector<QByteArray>

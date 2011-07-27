@@ -278,7 +278,7 @@ int internal_main(int argc, char* argv[])
 	using namespace GPlatesUtils;
 	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::symbology()))
 	{
-		main_window_widget.hide_symbol_menu();
+		// main_window_widget.hide_symbol_menu();
 	}
     	
 	main_window_widget.show();

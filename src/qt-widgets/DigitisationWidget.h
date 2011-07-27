@@ -36,6 +36,7 @@
 #include "DigitisationWidgetUi.h"
 #include "LatLonCoordinatesTable.h"
 #include "TaskPanelWidget.h"
+#include "ViewportWindow.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "model/ModelInterface.h"
@@ -66,7 +67,7 @@ namespace GPlatesQtWidgets
 	// Forward declaration to avoid the GUI header spaghetti as much as possible.
 	class ExportCoordinatesDialog;
 	class CreateFeatureDialog;
-	class ViewportWindow;
+	//class ViewportWindow;
 	class LatLonCoordinatesTable;
 
 	class DigitisationWidget :
@@ -145,6 +146,13 @@ namespace GPlatesQtWidgets
 		handle_export();
 
 		/**
+		 * Feeds the ExportCoordinatesDialog a GeometryOnSphere, and
+		 * then displays it.
+		 */
+		void
+		handle_use_in_wfs();
+
+		/**
 		 * The slot that gets called when the geometry inside the geometry
 		 * builder is changed.
 		 */
@@ -152,6 +160,10 @@ namespace GPlatesQtWidgets
 		handle_geometry_changed();
 
 	private:
+
+		// The almighty Viewport Window , holder of all dialogs!
+		ViewportWindow *d_viewport_window;
+		
 		/**
 		 * The dialog the user sees when they hit the Export button.
 		 * Memory managed by Qt.

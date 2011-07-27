@@ -27,10 +27,29 @@
 #define GPLATES_QTWIDGETS_CONNECTWFSDIALOG_H
 #include <set>
 #include <boost/shared_ptr.hpp>
-#include <QHttp>
+
+#include <QDialog>
+#include <QNetworkAccessManager>
+#include <QUrl>
 #include <QProgressDialog>
 
+#include "maths/GeometryOnSphere.h"
+
+#include "feature-visitors/GeometryTypeFinder.h"
+
 #include "ConnectWFSDialogUi.h"
+
+#include "EditTimePeriodWidget.h"
+
+class QDialogButtonBox;
+class QFile;
+class QLabel;
+class QLineEdit;
+class QProgressDialog;
+class QPushButton;
+class QSslError;
+class QAuthenticator;
+class QNetworkReply;
 
 namespace GPlatesAppLogic
 {
@@ -48,43 +67,59 @@ namespace GPlatesQtWidgets
 
 	public:
 
-		/**
-		*
-		*/
 		ConnectWFSDialog(
 				GPlatesAppLogic::ApplicationState& app_state);
 
 		~ConnectWFSDialog();
 
+		void
+		set_request_geometry( GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ );
+
+		void
+		startRequest(QUrl url);
+
+		void
+		process_xml();
+
 	private slots:
-		void
-		handle_accept();
-		
-		void
-		handle_reject();
 
-		void
-		hanle_wfs_response(
-				int id, 
-				bool err);
+		void downloadFile(); // will call startRequest(url);
+		void cancelDownload();
 
-		void
-		handle_proxy_state_change(int);
+		// These slots are connected to d_reply within startRequest()
+		void httpFinished();
+		void httpReadyRead();
+		void updateDataReadProgress(qint64 bytesRead, qint64 totalBytes);
 
-		void
-		handle_canceled();
+		// These slots are connected to widgets on the dialog 
+		void handle_apply_valid_time();
+		void handle_proxy_state_change(int);
 
 	private:
-		boost::shared_ptr<QHttp> d_http;
-		int d_current_request_id;
+
 		GPlatesAppLogic::ApplicationState& d_app_state;
+
 		QProgressDialog* d_progress_dlg;
-		bool d_canceled;
-		std::set<int> d_finished_request_id;
+
+		QUrl d_url;
+		QNetworkAccessManager d_qnam;
+		QNetworkReply *d_reply;
+
+		QFile *d_xml_file; // to save the xml results for debugging
+
+		int d_request_id;
+
+		bool d_httpRequestAborted;
 
 	private:
 		ConnectWFSDialog();
 		ConnectWFSDialog(const ConnectWFSDialog&);
+
+		QString d_request_geom_string;
+		QString d_request_time_string;
+		QString d_request_type_string;
+
+		QByteArray d_xml_data;
 	};
 }
 

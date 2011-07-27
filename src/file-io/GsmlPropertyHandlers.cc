@@ -191,13 +191,13 @@ namespace
 		
 		if(srs_name.size() == 0)
 		{
-			qWarning() << "No Spatial Reference System name found. Use default EPSG:4326.";
+			//qWarning() << "No Spatial Reference System name found. Use default EPSG:4326.";
 			srs_name = "EPSG:4326";
 		}
 		else if(is_epsg_4326(srs_name))
 		{
 			//if it is already EPSG:4326, do nothing.
-			qDebug() << "The Spatial Reference System is already EPSG:4326. Do nothing and return";
+			// qDebug() << "The Spatial Reference System is already EPSG:4326. Do nothing and return";
 			return;
 		}
 
@@ -216,7 +216,7 @@ namespace
 
 			if(idx_end == -1)
 			{
-				qWarning() << "The XML data is not well-formedin convert_to_EPSG_4326().";
+				// qWarning() << "The XML data is not well-formedin convert_to_EPSG_4326().";
 				break;
 			}
 
@@ -249,10 +249,12 @@ namespace
 										srs_dimension)));
 			}
 
+#if 0
 			transform(
 					CoordinateReferenceSystem::create_by_name(srs_name,srs_dimension),
 					CoordinateReferenceSystem::espg_4326(),
 					coordinates);
+#endif
 
 			list.clear();
 			std::vector<Coordinates>::const_iterator c_it = coordinates.begin();
@@ -331,42 +333,97 @@ GPlatesFileIO::GsmlPropertyHandlers::process_geometries(
 	
 	BOOST_FOREACH(QByteArray& array, results)
 	{
-		XQuery::wrap_xml_data(array,"gml:baseCurve");
-		convert_to_epsg_4326(array);
-		normalize_geometry_coord(array);
-			
-		//gplates doesn't support gml:outerBoundaryIs and gml:innerBoundaryIs
-		//replace them with gml:exterior and gml:interior
+		// GPlates doesn't support gml:outerBoundaryIs and gml:innerBoundaryIs
+		// replace them with gml:exterior and gml:interior
 		array.replace("outerBoundaryIs", "exterior");
 		array.replace("innerBoundaryIs", "interior");
 
-		XmlElementNode::non_null_ptr_type xml_node = 
-			create_xml_node(array);
-
 		boost::optional<PropertyValue::non_null_ptr_type> geometry_property = boost::none;
 
-		if(query_str.indexOf("LineString") != -1)
+		if(query_str.indexOf("Point") != -1)
 		{
+			XQuery::wrap_xml_data(array,"gpml:poistion");
+
+			convert_to_epsg_4326(array);
+			normalize_geometry_coord(array);
+
+			XmlElementNode::non_null_ptr_type xml_node = create_xml_node(array);
+
 			geometry_property = 
-					PropertyCreationUtils::create_line_string(
-							xml_node,
-							*d_read_errors);
+				PropertyCreationUtils::create_point(
+					xml_node,
+					*d_read_errors);
+
+			ModelUtils::add_property(
+				d_feature,
+				PropertyName::create_gpml("position"),
+				*geometry_property);
+		}
+		else if(query_str.indexOf("LineString") != -1)
+		{
+			// need to reorder the xml nesting 
+			XQuery::wrap_xml_data(array,"gml:baseCurve");
+
+			convert_to_epsg_4326(array);
+			normalize_geometry_coord(array);
+
+			XmlElementNode::non_null_ptr_type xml_node = create_xml_node(array);
+
+			GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
+				PropertyCreationUtils::create_line_string( xml_node, *d_read_errors);
+
+            GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =
+                    GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
+
+            GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
+                    GPlatesModel::ModelUtils::create_gpml_constant_value(
+                            gml_orientable_curve, 
+                            GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
+
+			d_feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+				PropertyName::create_gpml("centerLineOf"),
+				property_value)
+			);
 		}
 		else if(query_str.indexOf("Polygon") != -1)
 		{
-			geometry_property = 
-					PropertyCreationUtils::create_gml_polygon(
-							xml_node,
-							*d_read_errors);
+			// need to reorder the xml nesting to match gpml
+			array.replace("Polygon", "LinearRing");
+			XQuery::wrap_xml_data(array,"gml:exterior");
+			XQuery::wrap_xml_data(array,"gml:Polygon");
+			XQuery::wrap_xml_data(array,"gpml:ConstantValue");
+
+			convert_to_epsg_4326(array);
+			normalize_geometry_coord(array);
+			
+			XmlElementNode::non_null_ptr_type xml_node = create_xml_node(array);
+
+			GPlatesPropertyValues::GmlPolygon::non_null_ptr_type gml_polygon = 
+				PropertyCreationUtils::create_gml_polygon( xml_node, *d_read_errors);
+
+            GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
+                    GPlatesModel::ModelUtils::create_gpml_constant_value(
+                            gml_polygon, 
+                            GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon"));
+
+			d_feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+				PropertyName::create_gpml("outlineOf"),
+				property_value)
+			);
+
+
 		}
-		else if(query_str.indexOf("Point") != -1)
+		else
 		{
-			geometry_property = 
-				PropertyCreationUtils::create_point(
-							xml_node,
-							*d_read_errors);
+			qDebug() << "Unknown Geometry type?";
 		}
 
+#if 0
+// FIXME: do we need to do this? 
+
+		// Add the geom as a GsmlGeometry prop
 		if(!geometry_property)
 		{
 			qWarning() << "Failed to create geometry property.";
@@ -378,7 +435,9 @@ GPlatesFileIO::GsmlPropertyHandlers::process_geometries(
 					PropertyName::create_gpml("GsmlGeometry"),
 					*geometry_property);
 		}
-	}
+#endif
+
+	} // end of loop over results
 }
 
 
@@ -386,9 +445,9 @@ void
 GPlatesFileIO::GsmlPropertyHandlers::handle_geometry_property(
 		QBuffer& xml_data)
 {
-	//keep the query strings locally for better readability.
+	// keep the query strings locally for better readability.
+	process_geometries(xml_data, "/gsml:shape/gml:Point");
 	process_geometries(xml_data, "/gsml:shape/gml:LineString");
-	process_geometries(xml_data, "/gsml:shape/gml:point");
 	process_geometries(xml_data, "/gsml:shape/gml:Polygon");
 }
 
@@ -451,18 +510,157 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_occurrence_property(
 
 
 
+void
+GPlatesFileIO::GsmlPropertyHandlers::handle_gml_valid_time(
+		QBuffer& xml_data)
+{
+// FIXME: remove; used for reference :
+#if 0
+<gml:validTime>
+<gml:TimePeriod>
+<gml:begin>
+<gml:TimeInstant>
+<gml:timePosition gml:frame="http://gplates.org/TRS/flat">22
+</gml:timePosition> 
+</gml:TimeInstant> 
+</gml:begin> 
+<gml:end> 
+<gml:TimeInstant> 
+<gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition> 
+</gml:TimeInstant> 
+</gml:end> 
+</gml:TimePeriod> 
+</gml:validTime>
+#endif
+
+	QXmlStreamReader reader(&xml_data);
+
+	QString b = "";
+	QString e = "";
+	bool get_begin = true;
+
+	while(reader.readNext() != QXmlStreamReader::Invalid) 
+	{
+		//qDebug() << "while: tokenString =" << reader.tokenString();
+		//qDebug() << "while: name =" << reader.name().toString();
+		//qDebug() << "while: text =" << reader.text();
+
+		if( reader.tokenString() == "StartElement")
+		{
+			if(reader.name() == "begin") { get_begin = true; }
+			else if( reader.name() == "end") { get_begin = false; }
+		}
+
+		if (reader.name() == "timePosition")
+		{
+			reader.readNext();
+			if( get_begin )
+			{
+				b.append( reader.text() );
+			}
+			else
+			{
+				e.append( reader.text() );
+			}
+		}
+	}
+
+	b = b.trimmed();
+	e = e.trimmed();
+	//qDebug() << "handle_gml_valid_time: b =" << b;
+	//qDebug() << "handle_gml_valid_time: e =" << e;
+
+	const double begin 	= b.toDouble();
+	const double end 	= e.toDouble();
+	
+	GmlTimePeriod::non_null_ptr_type gml_valid_time =
+		ModelUtils::create_gml_time_period( 
+			GPlatesPropertyValues::GeoTimeInstant( begin ),
+			GPlatesPropertyValues::GeoTimeInstant( end )
+		);
+
+	ModelUtils::add_property(
+		d_feature,
+		PropertyName::create_gml("validTime"),
+		gml_valid_time);
+}
 
 
+// FIXME: remove?  
+// this was as test to see how to pass data...maybe not be needed
+void
+GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_valid_time_range(
+		QBuffer& xml_data)
+{
+	QString range = get_element_text(xml_data);
+	QStringList l = range.split(",");
+	QString b = l[0];
+	QString e = l[1];
+
+	const double begin 	= b.toDouble();
+	const double end 	= e.toDouble();
+	
+	GmlTimePeriod::non_null_ptr_type gml_valid_time =
+		ModelUtils::create_gml_time_period( 
+			GPlatesPropertyValues::GeoTimeInstant( begin ),
+			GPlatesPropertyValues::GeoTimeInstant( end )
+		);
+
+	d_feature->add(
+		TopLevelPropertyInline::create( 
+			PropertyName::create_gml("validTime"), 
+			gml_valid_time) );
+
+	// above call is equivalent to: as used elsewhere
+	//ModelUtils::add_property(
+	//	d_feature,
+	//	PropertyName::create_gml("validTime"),
+	//	gml_valid_time);
+}
+
+void
+GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_rock_type(
+		QBuffer& xml_data)
+{
+	ModelUtils::add_property<XsString>(
+			d_feature,
+			PropertyName::create_gpml("rock_type"),
+			UnicodeString(get_element_text(xml_data)));
+}
 
 
+void
+GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_rock_max_thick(
+		QBuffer& xml_data)
+{
+	ModelUtils::add_property<XsDouble>(
+			d_feature,
+			PropertyName::create_gpml("rock_min_thick"),
+			get_element_text(xml_data).toDouble() 
+	);
 
 
+}
 
+void
+GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_rock_min_thick(
+		QBuffer& xml_data)
+{
+	ModelUtils::add_property<XsDouble>(
+			d_feature,
+			PropertyName::create_gpml("rock_min_thick"),
+			get_element_text(xml_data).toDouble() 
+	);
+}
 
-
-
-
-
-
-
+void
+GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_fossil_diversity(
+		QBuffer& xml_data)
+{
+	ModelUtils::add_property<XsDouble>(
+			d_feature,
+			PropertyName::create_gpml("fossil_diversity"),
+			get_element_text(xml_data).toDouble() 
+	);
+}
 

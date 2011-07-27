@@ -265,6 +265,8 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 	const FileInfo file_info(name);
 	File::non_null_ptr_type file = File::create_file(file_info);
 
+qDebug() << "GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data()";
+
 	ArbitraryXmlReader::instance()->read_xml_data(
 			file->get_reference(), 
 			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
@@ -275,6 +277,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 
 	// Emit one signal for all loaded files.
 	emit_handle_read_errors_signal(read_errors);
+qDebug() << "GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data() END =========";
 }
 
 

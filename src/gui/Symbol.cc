@@ -32,6 +32,7 @@ GPlatesGui::get_symbol_type_from_string(
     static GPlatesGui::symbol_text_map_type map;
     map[QString("TRIANGLE")] = Symbol::TRIANGLE;
     map[QString("SQUARE")] = Symbol::SQUARE;
+    map[QString("CIRCLE")] = Symbol::CIRCLE;
     map[QString("CROSS")] = Symbol::CROSS;
 
     GPlatesGui::symbol_text_map_type::const_iterator it = map.find(symbol_string);

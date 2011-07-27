@@ -49,12 +49,15 @@ namespace GPlatesFileIO
 			"declare namespace cgu=\"urn:cgi:xmlns:CGI:Utilities:1.0\";";
 		const QString xlink_ns = 
 			"declare namespace xlink=\"http://www.w3.org/1999/xlink\";";
+		const QString gpml_ns = 
+			"declare namespace gpml=\"http://www.gplates.org/gplates\";";
+
 
 		inline
 		const QString 
 		all_namespaces()
 		{
-			return xsi_ns + gml_ns + wfs_ns + gsml_ns + sa_ns + om_ns + cgu_ns + xlink_ns;
+			return xsi_ns + gml_ns + wfs_ns + gsml_ns + sa_ns + om_ns + cgu_ns + xlink_ns + gpml_ns;
 		}
 
 		const QString declare_idx = "declare variable $idx external;";

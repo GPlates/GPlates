@@ -79,6 +79,25 @@ namespace GPlatesFileIO
 		handle_occurrence_property(
 				QBuffer&);
 
+		/*
+		* Copy the gml:validTime property.
+		*/
+		void
+		handle_gml_valid_time(
+				QBuffer&);
+
+		void
+		handle_gpml_valid_time_range(
+				QBuffer&);
+
+		void handle_gpml_rock_type(QBuffer&);
+
+		void handle_gpml_rock_max_thick(QBuffer&);
+
+		void handle_gpml_rock_min_thick(QBuffer&);
+
+		void handle_gpml_fossil_diversity(QBuffer&);
+
 	protected:
 		void
 		process_geometries(

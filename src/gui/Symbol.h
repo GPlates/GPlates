@@ -37,6 +37,7 @@ namespace GPlatesGui
 	{
 	    TRIANGLE,
 	    SQUARE,
+	    CIRCLE,
 	    CROSS,
 	    NUM_SYMBOLS
 	};

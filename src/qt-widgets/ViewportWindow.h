@@ -174,6 +174,12 @@ namespace GPlatesQtWidgets
 			return *d_reconstruction_view_widget_ptr;
 		}
 
+		GPlatesQtWidgets::ConnectWFSDialog &
+		wfs_dialog()
+		{
+			return *d_connect_wfs_dialog_ptr;
+		}
+
 		GlobeCanvas &
 		globe_canvas();
 

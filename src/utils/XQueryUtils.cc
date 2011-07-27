@@ -28,9 +28,139 @@
 #include <QXmlQuery>
 #include <QXmlResultItems>
 #include <QXmlSerializer>
+#include <QStringList>
+#include <QXmlResultItems>
 
 #include "XQueryUtils.h"
 #include "file-io/GsmlConst.h"
+
+std::vector<QByteArray>
+GPlatesUtils::XQuery::evaluate_features(
+		QByteArray& xml_data,
+		const QString& query_str)
+{
+qDebug() << "GPlatesUtils::XQuery::evaluate_features()";
+
+	std::vector<QByteArray> ret;
+
+	// using namespace GPlatesFileIO::GsmlConst;
+
+	QBuffer buffer(&xml_data);
+	buffer.open(QIODevice::ReadOnly | QIODevice::Text);
+	if(!buffer.isOpen())
+	{
+		qWarning() << "Cannot open input buffer.";
+		return ret;
+	}
+	buffer.reset();
+
+	// Create the query
+	QXmlQuery query;
+
+	QString q_s = "";
+	q_s.append( 
+		GPlatesFileIO::GsmlConst::all_namespaces() + 
+		"doc($data_source)" + 
+		"//gml:featureMember");
+qDebug() << "GPlatesUtils::XQuery::evaluate_features(): q_s=" << q_s;
+
+	query.bindVariable("data_source", &buffer);
+
+	query.setQuery( q_s );
+
+	QByteArray out_array;
+	QBuffer out_buf(&out_array);
+	out_buf.open(QIODevice::ReadWrite | QIODevice::Text);
+
+	if(!out_buf.isOpen())
+	{
+		qWarning() << "Cannot open temporary buffer.";
+	}
+
+
+	// Evaluate query to QXmlSerializer
+	QXmlSerializer serializer(query, &out_buf);
+	if(query.evaluateTo(&serializer))
+	{
+
+		qDebug() << "######################################################################";
+		qDebug() << "GPlatesUtils::XQuery::evaluate_features(): out_array=";
+		// qDebug() << out_array;
+		qDebug() << "######################################################################";
+
+		// split the out_array by gml:featureMember tags
+		out_array.replace(
+			"</gml:featureMember><gml:featureMember",
+			"</gml:featureMember>;<gml:featureMember");
+		QList<QByteArray> list = out_array.split(';');
+		QList<QByteArray>::iterator itr = list.begin();
+qDebug() << "GPlatesUtils::XQuery::evaluate_features(): list.size() =" << list.size();
+		for ( ; itr != list.end(); ++itr )
+		{
+			itr->replace(';', "");
+			ret.push_back( *itr );
+		}
+	}
+	else
+	{
+		qDebug() << "GPlatesUtils::XQuery::evaluate_features(): query.evaluateTo(serializer) false!";
+	}
+
+// FIXME: if this the way to do it ...
+#if 0
+	out_array.clear();
+
+	// evaulate to results
+	QXmlResultItems items;
+	query.evaluateTo(&items);
+
+	// double check for errors
+	if (items.hasError())
+	{
+		qDebug() << "GPlatesUtils::XQuery::evaluate_features(): items.hasError()";
+		return ret;
+	}
+
+	// Process results 
+	QXmlItem item(items.next());
+	int i = 1;
+	while (!item.isNull()) 
+	{
+		qDebug() << "GPlatesUtils::XQuery::evaluate_features(): item number i =" << i;
+		if (item.isAtomicValue()) 
+		{
+			qDebug() << "GPlatesUtils::XQuery::evaluate_features(): item.isAtomicValue()";
+			QVariant v = item.toAtomicValue();
+			switch (v.type()) 
+			{
+                 case QVariant::LongLong:
+                     // xs:integer
+                     break;
+                 case QVariant::String:
+                     // xs:string
+                     break;
+                 default:
+                     // error
+                     break;
+			}
+		}
+		else if (item.isNode()) 
+		{
+			// QXmlNodeModelIndex i = item.toNodeModelIndex();
+			qDebug() << "GPlatesUtils::XQuery::evaluate_features(): item.isNode()";
+
+			// FIXME: how to transform the QXmlItem item 
+			// into somthing to append to std::vector<QByteArray> ret??
+
+		}
+		item = items.next();
+	}
+#endif
+
+qDebug() << "GPlatesUtils::XQuery::evaluate_features(): ret.size() =" << ret.size();
+	return ret;
+}
+
 
 std::vector<QByteArray>
 GPlatesUtils::XQuery::evaluate(
@@ -49,11 +179,15 @@ GPlatesUtils::XQuery::evaluate(
 	}
 
 	QXmlQuery query;
-	for(int i=1; ;i++)
+
+	int i = 1;
+	for( ; ; i++)
 	{
+// qDebug() << "GPlatesUtils::XQuery::evaluate(): i=" << i;
 		buffer.reset();
 		query.bindVariable("idx", QVariant(i));
 		query.bindVariable("data_source", &buffer);
+
 		query.setQuery(
 				all_namespaces() + 
 				declare_idx + 
@@ -63,6 +197,7 @@ GPlatesUtils::XQuery::evaluate(
 		QByteArray array;
 		QBuffer out_buf(&array);
 		out_buf.open(QIODevice::ReadWrite | QIODevice::Text);
+
 		if(!out_buf.isOpen())
 		{
 			qWarning() << "Cannot open temporary buffer.";
@@ -74,7 +209,7 @@ GPlatesUtils::XQuery::evaluate(
 		{
 			if(is_empty(out_buf))
 			{
-				qDebug() << "No more data.";
+				//qDebug() << "No more data.";
 				break;
 			}
 			ret.push_back(array);

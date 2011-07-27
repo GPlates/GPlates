@@ -42,6 +42,7 @@ GPlatesFileIO::GsmlNodeProcessorFactory::process_with_property_processors(
 {
 	std::vector<boost::shared_ptr<GsmlNodeProcessor> > processors = 
 		create_property_processors(feature_type);
+
 	BOOST_FOREACH(boost::shared_ptr<GsmlNodeProcessor> p, processors)
 	{
 		p->execute(buf);
@@ -53,16 +54,28 @@ std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> >
 GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors(
 		const QString& feature_name)
 {
+
+//qDebug() << "GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors() feature_name=" << feature_name;
 	std::vector<boost::shared_ptr<GsmlNodeProcessor> > processors;
 	const FeatureInfo* feature = NULL; 
 	for(unsigned i=0; i<sizeof(AllFeatures)/sizeof(FeatureInfo); i++)
 	{
+		// Search for exact match on feature type name
 		if(feature_name == AllFeatures[i].name)
 		{
 			feature = &AllFeatures[i];
 			break;
 		}
+
+		// NOTE: this is simple way to get all of RockUnit_* features to process 
+		// search for common prefix on feature type name 
+		if( feature_name.section('_',0,0) == AllFeatures[i].name )
+		{
+			feature = &AllFeatures[i];
+			break;
+		}
 	}
+
 	if(!feature)
 	{
 		qWarning() << "Cannot find property processors for " + feature_name + ".";
@@ -73,13 +86,16 @@ GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors(
 		for(unsigned j=0; j<feature->property_num; j++)
 		{
 			processors.push_back(
-					boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor>(           
-							new GsmlNodeProcessor(                                 
-									feature->properties[j]->query,                                
-									boost::bind(                                   
-											feature->properties[j]->handler, 
-											d_property_handler,      
-											_1))));
+				boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor>(           
+					new GsmlNodeProcessor(                                 
+						feature->properties[j]->query,                                
+						boost::bind(                                   
+							feature->properties[j]->handler, 
+							d_property_handler,      
+							_1)
+					)
+				)
+			);
 		}
 	}
 	return processors;

@@ -142,6 +142,11 @@ namespace GPlatesGui
 
 		virtual
 		void
+		visit_rendered_circle_symbol(
+			const GPlatesViewOperations::RenderedCircleSymbol &rendered_circle_symbol);
+
+		virtual
+		void
 		visit_rendered_string(
 				const GPlatesViewOperations::RenderedString &rendered_string);
 

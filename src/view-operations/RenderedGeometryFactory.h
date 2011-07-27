@@ -463,26 +463,39 @@ namespace GPlatesViewOperations
 			const float arrowline_width_hint =
 				RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 
-        /**
-         * Creates a triangle centred at @a centre. Size not yet controllable.  Triangle will
-         * be rendered on a tangent plane at the centre.
-         */
-        RenderedGeometry
+
+	/**
+	* Creates a triangle centred at @a centre. Triangle will
+	* be rendered on a tangent plane at the centre.
+	*/
+	RenderedGeometry
 	create_rendered_triangle_symbol(
-			const GPlatesMaths::PointOnSphere &centre,
-                        const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
-			const unsigned int size = RenderedGeometryFactory::DEFAULT_SYMBOL_SIZE,
-                        const bool filled = TRUE,
-			const float line_width_hint =
-                             RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+		const GPlatesMaths::PointOnSphere &centre,
+		const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+		const unsigned int size = RenderedGeometryFactory::DEFAULT_SYMBOL_SIZE,
+		const bool filled = TRUE,
+		const float line_width_hint =
+			RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 
 
 	/**
-	 * Creates a square centred at @a centre. Size not yet controllable.  Square will
+	 * Creates a square centred at @a centre. Square will
 	 * be rendered on a tangent plane at the centre.
 	 */
 	RenderedGeometry
 	create_rendered_square_symbol(
+			const GPlatesMaths::PointOnSphere &centre,
+			const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			const unsigned int size = RenderedGeometryFactory::DEFAULT_SYMBOL_SIZE,
+			const bool filled = TRUE,
+			const float line_width_hint =
+			     RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+
+	/**
+	 * Creates a circle centred at @a centre. 
+	 */
+	RenderedGeometry
+	create_rendered_circle_symbol(
 			const GPlatesMaths::PointOnSphere &centre,
 			const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
 			const unsigned int size = RenderedGeometryFactory::DEFAULT_SYMBOL_SIZE,
