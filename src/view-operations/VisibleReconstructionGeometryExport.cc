@@ -68,7 +68,9 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
 	RenderedGeometryUtils::get_unique_reconstruction_geometries(
 			reconstruction_geom_seq,
-			rendered_geom_collection);
+			rendered_geom_collection,
+			// Don't want to export a duplicate reconstructed geometry if one is currently in focus...
+			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
 	reconstructed_feature_geom_seq_type reconstruct_feature_geom_seq;
@@ -105,7 +107,9 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
 	RenderedGeometryUtils::get_unique_reconstruction_geometries(
 		reconstruction_geom_seq,
-		rendered_geom_collection);
+		rendered_geom_collection,
+		// Don't want to export a duplicate reconstructed flowline if one is currently in focus...
+		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFlowline.
 	reconstructed_flowline_seq_type reconstructed_flowline_seq;
@@ -141,7 +145,9 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
 	RenderedGeometryUtils::get_unique_reconstruction_geometries(
 		reconstruction_geom_seq,
-		rendered_geom_collection);
+		rendered_geom_collection,
+		// Don't want to export a duplicate reconstructed motion path if one is currently in focus...
+		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedMotionPath.
 	reconstructed_motion_path_seq_type reconstructed_motion_path_seq;

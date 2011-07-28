@@ -122,7 +122,9 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
 	GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
 			reconstruction_geom_seq,
-			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection());
+			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
+			// Don't want to export a duplicate resolved topology if one is currently in focus...
+			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
 	// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalBoundary.
 	resolved_geom_seq_type resolved_geom_seq;
