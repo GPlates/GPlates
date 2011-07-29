@@ -132,6 +132,15 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Same as @a get_reconstruct_method_type but returns 'BY_PLATE_ID' if no reconstruct
+		 * method types could be found.
+		 */
+		ReconstructMethod::Type
+		get_reconstruct_method_type_or_default(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref) const;
+
+
+		/**
 		 * Returns an internally stored reconstruct method associated with the specified
 		 * reconstruct method type.
 		 *

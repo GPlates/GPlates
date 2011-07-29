@@ -94,6 +94,26 @@ namespace GPlatesAppLogic
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time);
 
+
+		/**
+		 * Reconstructs the specified geometry from present day to the specified reconstruction time -
+		 * unless @a reverse_reconstruct is true in which case the geometry is assumed to be
+		 * the reconstructed geometry (at the reconstruction time) and the returned geometry will
+		 * then be the present day geometry.
+		 *
+		 * NOTE: The specified feature is called @a reconstruction_properties since its geometry(s)
+		 * is not reconstructed - it is only used as a source of properties that determine how
+		 * to perform the reconstruction (for example, a reconstruction plate ID).
+		 */
+		virtual
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_geometry(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				bool reverse_reconstruct);
+
 	private:
 		ReconstructMethodFlowline()
 		{  }

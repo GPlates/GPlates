@@ -561,3 +561,36 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature(
 
 	visitor.visit_feature(feature_weak_ref);
 }
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
+		bool reverse_reconstruct)
+{
+	// Get the values of the properties at present day.
+	ReconstructionFeatureProperties reconstruction_feature_properties(0/*reconstruction_time*/);
+
+	reconstruction_feature_properties.visit_feature(reconstruction_properties);
+
+	// If we have left/right plate IDs then we can reconstruct.
+	if (reconstruction_feature_properties.get_left_plate_id() &&
+		reconstruction_feature_properties.get_right_plate_id())
+	{
+		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+				reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+
+		return ReconstructUtils::reconstruct_as_half_stage(
+				geometry,
+				reconstruction_feature_properties.get_left_plate_id().get(),
+				reconstruction_feature_properties.get_right_plate_id().get(),
+				*reconstruction_tree,
+				reverse_reconstruct);
+	}
+
+	// Otherwise just return the original geometry.
+	return geometry;
+}

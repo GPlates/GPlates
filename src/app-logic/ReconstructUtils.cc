@@ -47,11 +47,11 @@ namespace
 	 * Can either rotate a present day @a GeometryOnSphere into the past or
 	 * rotate a @a GeometryOnSphere from the past back to present day.
 	 */
-	class ReconstructGeometryOnSphere :
+	class ReconstructGeometryOnSphereByPlateId :
 		private GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
-		ReconstructGeometryOnSphere(
+		ReconstructGeometryOnSphereByPlateId(
 				const GPlatesModel::integer_plate_id_type plate_id,
 				const GPlatesAppLogic::ReconstructionTree &recon_tree,
 				bool reverse_reconstruct) :
@@ -77,7 +77,7 @@ namespace
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 		{
 			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct(
+					GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 							multi_point_on_sphere,
 							d_plate_id,
 							d_recon_tree,
@@ -90,7 +90,7 @@ namespace
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct(
+					GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 							point_on_sphere,
 							d_plate_id,
 							d_recon_tree,
@@ -103,7 +103,7 @@ namespace
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
 			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct(
+					GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 							polygon_on_sphere,
 							d_plate_id,
 							d_recon_tree,
@@ -116,7 +116,7 @@ namespace
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 		{
 			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct(
+					GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 							polyline_on_sphere,
 							d_plate_id,
 							d_recon_tree,
@@ -313,17 +313,121 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 }
 
 
-GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructUtils::reconstruct(
+		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const ReconstructParams &reconstruct_params,
+		unsigned int reconstruction_tree_cache_size)
+{
+	ReconstructMethodRegistry reconstruct_method_registry;
+	register_default_reconstruct_method_types(reconstruct_method_registry);
+
+	ReconstructionTreeCreator reconstruction_tree_creator =
+			get_cached_reconstruction_tree_creator(
+					reconstruction_features_collection,
+					reconstruction_time,
+					anchor_plate_id,
+					reconstruction_tree_cache_size);
+
+	return reconstruct(
+			reconstructed_feature_geometries,
+			reconstruction_time,
+			anchor_plate_id,
+			reconstruct_method_registry,
+			reconstructable_features_collection,
+			reconstruction_tree_creator,
+			reconstruct_params);
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const ReconstructMethodRegistry &reconstruct_method_registry,
+		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
+		bool reverse_reconstruct)
+{
+	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
+	const ReconstructMethod::Type reconstruct_method_type =
+			reconstruct_method_registry.get_reconstruct_method_type_or_default(reconstruction_properties);
+
+	// Get the reconstruct method so we can reconstruct (or reverse reconstruct) the geometry.
+	ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
+			reconstruct_method_registry.get_reconstruct_method(reconstruct_method_type);
+
+	return reconstruct_method->reconstruct_geometry(
+			geometry,
+			reconstruction_properties,
+			reconstruction_tree_creator,
+			reconstruction_time,
+			reverse_reconstruct);
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		bool reverse_reconstruct,
+		unsigned int reconstruction_tree_cache_size)
+{
+	ReconstructionTreeCreator reconstruction_tree_creator =
+			get_cached_reconstruction_tree_creator(
+					reconstruction_features_collection,
+					reconstruction_time,
+					anchor_plate_id,
+					reconstruction_tree_cache_size);
+
+	ReconstructMethodRegistry reconstruct_method_registry;
+	register_default_reconstruct_method_types(reconstruct_method_registry);
+
+	return reconstruct_geometry(
+			geometry,
+			reconstruct_method_registry,
+			reconstruction_properties,
+			reconstruction_tree_creator,
+			reconstruction_time,
+			reverse_reconstruct);
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const ReconstructionTree &reconstruction_tree,
+		bool reverse_reconstruct)
+{
+	return reconstruct_geometry(
+			geometry,
+			reconstruction_properties,
+			reconstruction_tree.get_reconstruction_time(),
+			reconstruction_tree.get_anchor_plate_id(),
+			reconstruction_tree.get_reconstruction_features(),
+			reverse_reconstruct);
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 		const GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 		const ReconstructionTree &reconstruction_tree,
 		bool reverse_reconstruct)
 {
-	ReconstructGeometryOnSphere reconstruct_geom_on_sphere(
+	ReconstructGeometryOnSphereByPlateId reconstruct_geom_on_sphere_by_plate_id(
 			reconstruction_plate_id, reconstruction_tree, reverse_reconstruct);
 
-	return reconstruct_geom_on_sphere.reconstruct(geometry);
+	return reconstruct_geom_on_sphere_by_plate_id.reconstruct(geometry);
 }
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type

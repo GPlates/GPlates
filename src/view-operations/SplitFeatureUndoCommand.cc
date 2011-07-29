@@ -106,7 +106,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 		if (rfg)
 		{
 			GPlatesMaths::PointOnSphere reconstructed_point =
-			GPlatesAppLogic::ReconstructUtils::reconstruct(
+			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 					*d_oriented_pos_on_globe,
 					*rfg.get()->reconstruction_plate_id(),
 					*rfg.get()->reconstruction_tree(),

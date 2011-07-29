@@ -141,6 +141,21 @@ GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_type(
 }
 
 
+GPlatesAppLogic::ReconstructMethod::Type
+GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_type_or_default(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref) const
+{
+	const boost::optional<ReconstructMethod::Type> reconstruct_method_type_opt =
+			get_reconstruct_method_type(feature_ref);
+	if (reconstruct_method_type_opt)
+	{
+		return reconstruct_method_type_opt.get();
+	}
+
+	return ReconstructMethod::BY_PLATE_ID;
+}
+
+
 GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type
 GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method(
 		ReconstructMethod::Type reconstruct_method_type) const

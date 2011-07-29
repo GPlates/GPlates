@@ -413,81 +413,9 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
 	bool reverse_reconstruct)
 {
-
-	// Handle flowline features specially, until MOR reconstruction can be used for flowlines.
-
-	static const GPlatesModel::FeatureType flowline_type = GPlatesModel::FeatureType::create_gpml("Flowline");
-
-	if (d_feature->feature_type() == flowline_type)
-	{
-		// The reconstruction tree.
-		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-				d_focused_geometry->reconstruction_tree();
-		// A function to get reconstruction trees with.
-		GPlatesAppLogic::ReconstructionTreeCreator
-				reconstruction_tree_creator =
-						GPlatesAppLogic::get_cached_reconstruction_tree_creator(
-								reconstruction_tree->get_reconstruction_features(),
-								reconstruction_tree->get_reconstruction_time(),
-								reconstruction_tree->get_anchor_plate_id());
-
-	    return GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
+	return GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			geometry_on_sphere,
-			reconstruction_tree->get_reconstruction_time(),
-			reconstruction_tree_creator,
 			d_feature,
-			true /* reverse reconstruct */);
-	}
-
-	GPlatesAppLogic::ReconstructionFeatureProperties visitor(
-		d_application_state->get_current_reconstruction_time());
-
-	visitor.visit_feature(d_feature);
-
-
-	if (visitor.get_reconstruction_method() == 
-		GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION)
-	{
-		boost::optional<GPlatesModel::integer_plate_id_type> left_plate = visitor.get_left_plate_id();
-		boost::optional<GPlatesModel::integer_plate_id_type> right_plate = visitor.get_right_plate_id();
-
-		if (left_plate && right_plate)
-		{
-
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				d_focused_geometry,
-				GPLATES_ASSERTION_SOURCE);
-
-			geometry_on_sphere = GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
-					geometry_on_sphere,
-					left_plate.get(),
-					right_plate.get(),
-					*d_focused_geometry->reconstruction_tree(),
-					reverse_reconstruct);
-		}
-	}
-	else
-	{
-		// If feature is reconstructable then need to convert geometry to present day
-		// coordinates first. This is because the geometry is currently reconstructed
-		// geometry at the current reconstruction time.
-		boost::optional<GPlatesModel::integer_plate_id_type> plate_id = get_plate_id_from_feature();
-		if (plate_id)
-		{
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				d_focused_geometry,
-				GPLATES_ASSERTION_SOURCE);
-
-			// Get current reconstruction tree from the focused geometry.
-			const GPlatesAppLogic::ReconstructionTree &recon_tree =
-				*d_focused_geometry->reconstruction_tree();
-
-			geometry_on_sphere = GPlatesAppLogic::ReconstructUtils::reconstruct(
-				geometry_on_sphere, plate_id.get(), recon_tree, reverse_reconstruct);
-		}
-	}
-
-
-	// If feature wasn't reconstructed then we'll be returning the geometry passed in.
-	return geometry_on_sphere;
+			*d_focused_geometry->reconstruction_tree(),
+			reverse_reconstruct);
 }

@@ -175,7 +175,7 @@ namespace
 		// Note that we're reversing the plate-id and conjugate-plate-ids which have been 
 		// passed to this function, so we use the conjugate here.
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
-			GPlatesAppLogic::ReconstructUtils::reconstruct(
+			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 			geometry,
 			conjugate_plate_id_widget->create_integer_plate_id_from_widget(),
 			*application_state_ptr->get_current_reconstruction()
@@ -1147,7 +1147,7 @@ GPlatesQtWidgets::CreateFeatureDialog::add_geometry(
     }
     else
     {
-		present_day_geometry = GPlatesAppLogic::ReconstructUtils::reconstruct(
+		present_day_geometry = GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 			d_geometry_opt_ptr.get(),
 			d_plate_id_widget->create_integer_plate_id_from_widget(),
 			*default_reconstruction_tree,

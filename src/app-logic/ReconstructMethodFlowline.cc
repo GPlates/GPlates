@@ -156,3 +156,20 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature(
 
 	visitor.visit_feature(feature_weak_ref);
 }
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
+		bool reverse_reconstruct)
+{
+    return GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
+			geometry,
+			reconstruction_time,
+			reconstruction_tree_creator,
+			reconstruction_properties,
+			reverse_reconstruct);
+}

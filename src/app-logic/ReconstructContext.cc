@@ -85,25 +85,19 @@ GPlatesAppLogic::ReconstructContext::reassign_reconstruct_methods_to_features(
 			const GPlatesModel::FeatureHandle::weak_ref feature_ref = (*features_iter)->reference();
 
 			// See if any reconstruct methods can reconstruct the current feature.
-			boost::optional<ReconstructMethod::Type> reconstruct_method_type =
-					reconstruct_method_registry.get_reconstruct_method_type(feature_ref);
-
-			if (!reconstruct_method_type)
-			{
-				// If no reconstruct method can reconstruct the current feature then
-				// default to the by-plate-id reconstruct method.
-				reconstruct_method_type = ReconstructMethod::BY_PLATE_ID;
-			}
+			// If no reconstruct method can reconstruct the current feature then
+			// it defaults to the 'BY_PLATE_ID' reconstruct method.
+			const ReconstructMethod::Type reconstruct_method_type =
+					reconstruct_method_registry.get_reconstruct_method_type_or_default(feature_ref);
 
 			// Create a new reconstruct method if one hasn't already been.
-			if (reconstruct_method_indices.find(reconstruct_method_type.get()) ==
+			if (reconstruct_method_indices.find(reconstruct_method_type) ==
 				reconstruct_method_indices.end())
 			{
 				const ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-						reconstruct_method_registry.get_reconstruct_method(
-								reconstruct_method_type.get());
+						reconstruct_method_registry.get_reconstruct_method(reconstruct_method_type);
 
-				reconstruct_method_indices[reconstruct_method_type.get()] =
+				reconstruct_method_indices[reconstruct_method_type] =
 						d_reconstruct_method_features_seq.size();
 
 				// Add the new reconstruct method.
@@ -113,7 +107,7 @@ GPlatesAppLogic::ReconstructContext::reassign_reconstruct_methods_to_features(
 
 			// Add the current feature to be reconstructed by the reconstruction method.
 			const unsigned int reconstruct_method_index =
-					reconstruct_method_indices[reconstruct_method_type.get()];
+					reconstruct_method_indices[reconstruct_method_type];
 			d_reconstruct_method_features_seq[reconstruct_method_index]
 					.features.push_back(ReconstructMethodFeature(feature_ref));
 		}
