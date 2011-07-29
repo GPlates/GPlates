@@ -324,7 +324,9 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_geometry_from_feat
 					const GPlatesAppLogic::ResolvedTopologicalBoundary>(d_focused_geometry);
 	if (focused_rtb)
 	{
-		return focused_rtb.get()->resolved_topology_geometry();
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geom =
+				focused_rtb.get()->resolved_topology_geometry();
+		return resolved_geom;
 	}
 
 	return boost::none;
