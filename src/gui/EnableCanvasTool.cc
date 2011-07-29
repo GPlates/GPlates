@@ -215,6 +215,17 @@ GPlatesGui::EnableCanvasTool::update_move_vertex_tool()
 		return;
 	}
 
+	// If we operating on the focused feature then it can't be a topological feature.
+	if (d_geom_operation_target->get_current_geometry_builder() ==
+		d_geom_operation_target->get_focused_feature_geometry_builder())
+	{
+		if (is_focused_feature_topological_boundary_or_network())
+		{
+			d_viewport_window->enable_move_vertex_tool(false);
+			return;
+		}
+	}
+
 	//
 	// Enable the move vertex tool if there are vertices.
 	// 
@@ -242,6 +253,17 @@ GPlatesGui::EnableCanvasTool::update_insert_vertex_tool()
 	{
 		d_viewport_window->enable_insert_vertex_tool(false);
 		return;
+	}
+
+	// If we operating on the focused feature then it can't be a topological feature.
+	if (d_geom_operation_target->get_current_geometry_builder() ==
+		d_geom_operation_target->get_focused_feature_geometry_builder())
+	{
+		if (is_focused_feature_topological_boundary_or_network())
+		{
+			d_viewport_window->enable_insert_vertex_tool(false);
+			return;
+		}
 	}
 
 	//
@@ -315,6 +337,13 @@ GPlatesGui::EnableCanvasTool::update_split_feature_tool()
 		return;
 	}
 
+	// The focused feature can't be a topological feature.
+	if (is_focused_feature_topological_boundary_or_network())
+	{
+		d_viewport_window->enable_split_feature_tool(false);
+		return;
+	}
+
 
 	unsigned int num_vertices;
 	GPlatesViewOperations::GeometryType::Value geometry_type;
@@ -356,6 +385,17 @@ GPlatesGui::EnableCanvasTool::update_delete_vertex_tool()
 	{
 		d_viewport_window->enable_delete_vertex_tool(false);
 		return;
+	}
+
+	// If we operating on the focused feature then it can't be a topological feature.
+	if (d_geom_operation_target->get_current_geometry_builder() ==
+		d_geom_operation_target->get_focused_feature_geometry_builder())
+	{
+		if (is_focused_feature_topological_boundary_or_network())
+		{
+			d_viewport_window->enable_delete_vertex_tool(false);
+			return;
+		}
 	}
 
 	//
@@ -449,7 +489,7 @@ GPlatesGui::EnableCanvasTool::update_manipulate_pole_tool()
 
 	if (d_feature_geom_is_in_focus)
 	{
-		if(is_focused_feature_topological_boundary_or_network())
+		if (is_focused_feature_topological_boundary_or_network())
 		{
 			enable_manipulate_topology_tool = false;
 		}

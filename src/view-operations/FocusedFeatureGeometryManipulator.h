@@ -153,7 +153,7 @@ namespace GPlatesViewOperations
 		 * Note that there may not be a focused reconstructed feature geometry,
 		 * in which case this would be a null pointer.
 		 */
-		GPlatesAppLogic::ReconstructedFeatureGeometry::maybe_null_ptr_to_const_type d_focused_geometry;
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_geometry;
 
 		/**
 		 * Is true if we've received an update signal from @a GeometryBuilder
@@ -177,6 +177,12 @@ namespace GPlatesViewOperations
 		 */
 		void
 		convert_geom_from_feature_to_builder();
+
+		/**
+		 * Returns the geometry of the focused feature (either an RFG or resolved topological boundary).
+		 */
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_geometry_from_feature();
 
 		/**
 		 * Gets geometry from @a GeometryBuilder and sets it in the focused feature.
