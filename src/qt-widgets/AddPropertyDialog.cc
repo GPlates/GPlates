@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -101,7 +101,7 @@ namespace
 	//	{ "gml:metaDataProperty", "gml:_MetaData", false, false },
 		{ "gpml:motion", "gpml:StrikeSlipEnumeration", true, false }, // Enumeration. Just for fun, it's also time-dependent.
 		{ "gml:name", "xs:string", false, true },
-		{ "gpml:oldPlatesHeader", "gpml:OldPlatesHeader", false, false },
+//		{ "gpml:oldPlatesHeader", "gpml:OldPlatesHeader", false, false }, // Removed as OldPlatesHeaderWidget is no longer editable.
 		{ "gpml:outlineOf", "gml:Polygon", true, false }, // _Geometry
 		{ "gpml:polarityChronId", "gpml:PolarityChronId", false, false },
 		{ "gpml:polarityChronOffset", "xs:double", false, false },
@@ -187,6 +187,9 @@ namespace
 		
 		list.sort();
 		list.unique();
+		// Hack: Since OldPlatesHeaderWidget is no longer editable, we need to exclude this from the list
+		// of addable value types (despite it being a valid option for the EditWidgetGroupBox).
+		list.remove(QString("gpml:OldPlatesHeader"));
 		
 		// Populate the combobox from the list of handled types.
 		GPlatesQtWidgets::EditWidgetGroupBox::property_types_list_const_iterator it =

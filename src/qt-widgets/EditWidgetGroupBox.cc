@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -405,7 +405,10 @@ void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_old_plates_header_widget(
 		GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
-	setTitle(tr("%1 Old PLATES Header").arg(d_edit_verb));
+	// A bit of a hack: OldPlatesHeader can no longer be edited, so specifying "Edit Old PLATES Header" in the
+	// groupbox title is a tease. We ignore d_edit_verb in this case; Add Property has similarly been hacked to
+	// prevent users from adding a new OldPlatesHeader which doesn't make a *whole* lot of sense.
+	setTitle(tr("View Old PLATES Header"));
 	show();
 	d_edit_old_plates_header_widget_ptr->update_widget_from_old_plates_header(gpml_old_plates_header);
 	d_active_widget_ptr = d_edit_old_plates_header_widget_ptr;
