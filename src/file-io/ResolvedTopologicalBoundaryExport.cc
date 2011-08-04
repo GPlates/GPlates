@@ -223,8 +223,10 @@ namespace GPlatesFileIO
 					return;
 				}
 
-				bool prev_is_deforming_point = true;
-				const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment *prev_sub_segment = NULL;
+				// The first previous subsegment is the last entry (its previous to the first entry).
+				bool prev_is_deforming_point = deforming_point_flags.back();
+				const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment *prev_sub_segment =
+						&*--resolved_geom.sub_segment_end();
 
 				// Find the start of a sequence of deforming points.
 				unsigned int sub_segment_index = 0;
