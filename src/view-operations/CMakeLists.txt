@@ -41,6 +41,7 @@ set(srcs
     MoveVertexGeometryOperation.h
     QueryProximityThreshold.h
     RenderedArrowedPolyline.h
+    RenderedCircleSymbol.h
     RenderedCrossSymbol.h
     RenderedDirectionArrow.h
     RenderedEllipse.h
@@ -70,7 +71,6 @@ set(srcs
     RenderedSmallCircle.h
     RenderedSmallCircleArc.h
     RenderedSquareSymbol.h
-    RenderedCircleSymbol.h
     RenderedString.h
     RenderedTriangleSymbol.h
     SplitFeatureGeometryOperation.cc

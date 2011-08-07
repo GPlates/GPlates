@@ -25,6 +25,8 @@ set(srcs
     CubeQuadTreeLocation.h
     CubeQuadTreePartition.h
     CubeQuadTreePartitionUtils.h
+    DateLineWrapper.cc
+    DateLineWrapper.h
     EllipseGenerator.cc
     EllipseGenerator.h
     FiniteRotation.cc

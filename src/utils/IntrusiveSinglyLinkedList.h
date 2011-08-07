@@ -127,6 +127,14 @@ namespace GPlatesUtils
 			{  }
 
 			/**
+			 * Implicit conversion constructor from 'iterator' to 'const_iterator'.
+			 */
+			Iterator(
+					const Iterator<ElementNodeType> &rhs) :
+				d_node(rhs.d_node)
+			{  }
+
+			/**
 			 * Dereference operator returns the list element of type 'ElementNodeQualifiedType'
 			 * which is either 'ElementNodeType' or 'const ElementNodeType' depending on whether
 			 * this is an 'iterator' or 'const_iterator'.
@@ -163,6 +171,8 @@ namespace GPlatesUtils
 
 		private:
 			ElementNodeQualifiedType *d_node;
+
+			friend class Iterator<typename boost::add_const<ElementNodeType>::type>; // The const iterator.
 		};
 
 		//! Typedef for iterator.

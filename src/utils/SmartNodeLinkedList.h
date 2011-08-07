@@ -30,6 +30,9 @@
 
 #include <iterator>  // std::iterator, std::bidirectional_iterator_tag
 #include <boost/operators.hpp>
+#include <boost/type_traits/add_const.hpp>
+
+#include "CopyConst.h"
 
 
 namespace GPlatesUtils
@@ -99,6 +102,12 @@ namespace GPlatesUtils
 			~Node()
 			{
 				splice_self_out();
+			}
+
+			const element_type &
+			element() const
+			{
+				return d_element;
 			}
 
 			element_type &
@@ -179,24 +188,48 @@ namespace GPlatesUtils
 					const Node &other);
 		};
 
+		/**
+		 * Iterator over the list.
+		 *
+		 * 'ElementNodeQualifiedType' can be either 'element_type' or 'const element_type'.
+		 */
+		template <class ElementNodeQualifiedType>
 		class NodeIterator:
-				public std::iterator<std::bidirectional_iterator_tag, element_type>,
-				public boost::bidirectional_iteratable<NodeIterator, element_type *>
+				public std::iterator<std::bidirectional_iterator_tag, ElementNodeQualifiedType>,
+				public boost::bidirectional_iteratable<NodeIterator<ElementNodeQualifiedType>, ElementNodeQualifiedType *>
 		{
 		public:
+			//! Typedef for this @a NodeIterator.
+			typedef NodeIterator<ElementNodeQualifiedType> node_iterator_type;
+
+			//! Typedef for the const or non-const @a element_type.
+			typedef ElementNodeQualifiedType element_node_qualified_type;
+			
+			//! Typedef for a const or non-const @a Node.
+			typedef typename GPlatesUtils::CopyConst<ElementNodeQualifiedType, Node>::type node_qualified_type;
+
 			explicit
 			NodeIterator(
-					Node &node):
+					node_qualified_type &node) :
 				d_node_ptr(&node)
 			{  }
 
-			element_type &
+			/**
+			 * Implicit conversion constructor from 'iterator' to 'const_iterator'.
+			 */
+			NodeIterator(
+					const NodeIterator<element_type> &rhs) :
+				d_node_ptr(rhs.d_node_ptr)
+			{  }
+
+			// Note that 'operator->()' provided by base class boost::bidirectional_iteratable.
+			element_node_qualified_type &
 			operator*() const
 			{
 				return access_element();
 			}
 
-			Node *
+			node_qualified_type *
 			get() const
 			{
 				return d_node_ptr;
@@ -205,7 +238,7 @@ namespace GPlatesUtils
 			/**
 			 * Pre-increment the iterator.
 			 */
-			NodeIterator &
+			node_iterator_type &
 			operator++()
 			{
 				increment();
@@ -215,7 +248,7 @@ namespace GPlatesUtils
 			/**
 			 * Pre-decrement the iterator.
 			 */
-			NodeIterator &
+			node_iterator_type &
 			operator--()
 			{
 				decrement();
@@ -224,15 +257,15 @@ namespace GPlatesUtils
 
 			bool
 			operator==(
-					const NodeIterator &other) const
+					const node_iterator_type &other) const
 			{
 				return (other.d_node_ptr == d_node_ptr);
 			}
 
 		private:
-			Node *d_node_ptr;
+			node_qualified_type *d_node_ptr;
 
-			element_type &
+			element_node_qualified_type &
 			access_element() const
 			{
 				return d_node_ptr->element();
@@ -249,9 +282,15 @@ namespace GPlatesUtils
 			{
 				d_node_ptr = d_node_ptr->prev();
 			}
+
+			friend class NodeIterator<typename boost::add_const<element_type>::type>; // The const iterator.
 		};
 
-		typedef NodeIterator iterator;
+		//! Typedef for a const iterator.
+		typedef NodeIterator<typename boost::add_const<element_type>::type> const_iterator;
+
+		//! Typedef for a non-const iterator.
+		typedef NodeIterator<element_type> iterator;
 
 		/**
 		 * Construct a new SmartNodeLinkedList, using @a null_elem_for_sentinel as the
@@ -284,6 +323,18 @@ namespace GPlatesUtils
 		empty() const
 		{
 			return !d_sentinel.has_neighbours();
+		}
+
+		const_iterator
+		begin() const
+		{
+			return const_iterator(*(d_sentinel.next()));
+		}
+
+		const_iterator
+		end() const
+		{
+			return const_iterator(d_sentinel);
 		}
 
 		iterator

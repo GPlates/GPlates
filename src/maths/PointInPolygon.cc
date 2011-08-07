@@ -196,6 +196,7 @@ namespace GPlatesMaths
 
 			// See if the arc endpoints are antipodal.
 			const Vector3D gca_midpoint = Vector3D(gca_start_point) + Vector3D(gca_end_point);
+			// NOTE: We're avoiding the more expensive square-root calculation here.
 			if (gca_midpoint.magSqrd().dval() < 1e-6 /*equivalent to a magnitude of 1e-3*/)
 			{
 				// The arc endpoints are antipodal (shouldn't be able to get an arc
