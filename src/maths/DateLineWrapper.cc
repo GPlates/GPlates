@@ -302,7 +302,11 @@ GPlatesMaths::DateLineWrapper::generate_intersection_graph(
 		case CLASSIFY_OFF_DATELINE_ARC_ON_PLANE:
 			graph.add_vertex(first_line_segment.start_point());
 			break;
-		// Note that we don't add a vertex if it's on the dateline (or its poles).
+		case CLASSIFY_ON_DATELINE_ARC:
+		case CLASSIFY_ON_NORTH_POLE:
+		case CLASSIFY_ON_SOUTH_POLE:
+			// Note that we don't add a vertex if it's on the dateline (or its poles).
+			break;
 		}
 	}
 	// Note that if the geometry *is* a polygon then its last line segment will wrap around
