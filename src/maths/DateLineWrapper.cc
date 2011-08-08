@@ -177,7 +177,7 @@ namespace GPlatesMaths
 							FRONT_HALF_SPACE_NORMAL).dval();
 
 			// We can be quite lenient here because have both paths covered well.
-			static const double EPSILON = 1 - 1e-4;
+			const double EPSILON = 1 - 1e-4;
 
 			if (dot_line_segment_normal_and_front_half_space_normal > EPSILON)
 			{
