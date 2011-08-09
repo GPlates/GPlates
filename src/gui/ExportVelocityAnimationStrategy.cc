@@ -65,6 +65,8 @@ POP_MSVC_WARNINGS
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
 
+#include "model/NotificationGuard.h"
+
 #include "presentation/ViewState.h"
 
 #include "property-values/GmlDataBlock.h"
@@ -258,6 +260,11 @@ GPlatesGui::ExportVelocityAnimationStrategy::export_velocity_fields_to_file(
 		const vector_field_seq_type &velocity_fields,
 		QString filename)
 {
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many in case we incrementally modify the features below.
+	GPlatesModel::NotificationGuard model_notification_guard(
+			d_export_animation_context_ptr->view_state().get_application_state().get_model_interface().access_model());
+
 	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = 
 			GPlatesModel::FeatureCollectionHandle::create(
 					d_export_animation_context_ptr->view_state()
@@ -436,6 +443,11 @@ bool
 GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many in case we incrementally modify the features below.
+	GPlatesModel::NotificationGuard model_notification_guard(
+			d_export_animation_context_ptr->view_state().get_application_state().get_model_interface().access_model());
+
 	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 

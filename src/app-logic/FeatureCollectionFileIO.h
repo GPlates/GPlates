@@ -161,7 +161,6 @@ namespace GPlatesAppLogic
 		 * NOTE: this differs from @a create_file in that it only saves the feature collection
 		 * to the file and doesn't register with FeatureCollectionFileState.
 		 */
-		static
 		void
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,

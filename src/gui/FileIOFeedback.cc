@@ -630,7 +630,7 @@ GPlatesGui::FileIOFeedback::save_file(
 	try
 	{
 		// Save the feature collection. This is where we finally dip down into the file-io level.
-		GPlatesAppLogic::FeatureCollectionFileIO::save_file(
+		d_feature_collection_file_io_ptr->save_file(
 				file_info,
 				feature_collection,
 				feature_collection_write_format);

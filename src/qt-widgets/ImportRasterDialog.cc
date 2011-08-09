@@ -393,11 +393,10 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 		{
 			try
 			{
-				GPlatesAppLogic::FeatureCollectionFileIO::save_file(
+				d_file_io_feedback->save_file(
 						file_info,
 						feature_collection,
 						GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
-				d_unsaved_changes_tracker->handle_model_has_changed();
 			}
 			catch (std::exception &exc)
 			{

@@ -47,6 +47,7 @@
 #include "model/ChangesetHandle.h"
 #include "model/Model.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 #include "model/QualifiedXmlName.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
@@ -1779,6 +1780,11 @@ GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
 	GPlatesModel::ModelInterface &model,
 	ReadErrorAccumulation &read_errors)
 {
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many in case we incrementally modify the features below.
+	// Probably won't be modifying the model so much when loading but we should keep this anyway.
+	GPlatesModel::NotificationGuard model_notification_guard(model.access_model());
+
 	const FileInfo &file_info = file.get_file_info();
 
 	QString absolute_path_filename = file_info.get_qfileinfo().absoluteFilePath();
