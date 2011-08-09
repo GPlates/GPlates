@@ -26,7 +26,7 @@
 #include "CliFeatureCollectionFileIO.h"
 #include "CliInvalidOptionValue.h"
 
-#include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/AppLogicUtils.h"
 
 #include "file-io/FeatureCollectionReaderWriter.h"
 #include "file-io/ReadErrorAccumulation.h"
@@ -191,8 +191,15 @@ GPlatesCli::FeatureCollectionFileIO::save_file(
 		write_format = GPlatesFileIO::FeatureCollectionWriteFormat::GMT_VERBOSE_HEADER;
 	}
 
-	GPlatesAppLogic::FeatureCollectionFileIO::save_file(
-			file_info, feature_collection, write_format);
+	boost::shared_ptr<GPlatesModel::ConstFeatureVisitor> feature_collection_writer =
+			GPlatesFileIO::get_feature_collection_writer(
+					file_info,
+					feature_collection,
+					write_format);
+
+	// Write the feature collection.
+	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
+			feature_collection, *feature_collection_writer);
 }
 
 
