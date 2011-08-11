@@ -302,8 +302,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_file_format(
 		const QString &short_description,
 		const std::vector<QString> &filename_extensions,
 		const classifications_type &feature_classification,
-		const is_read_file_format_function_type &is_read_file_format_function_type,
-		const is_write_file_format_function_type &is_write_file_format_function_type,
+		const is_read_file_format_function_type &is_read_file_format_function,
+		const is_write_file_format_function_type &is_write_file_format_function,
 		const boost::optional<read_feature_collection_function_type> &read_feature_collection_function,
 		const boost::optional<create_feature_collection_writer_function_type> &create_feature_collection_writer_function,
 		const boost::optional<ReadWriteOptions::non_null_ptr_to_const_type> &default_read_write_options)
@@ -319,8 +319,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_file_format(
 					short_description,
 					filename_extensions,
 					feature_classification,
-					is_read_file_format_function_type,
-					is_write_file_format_function_type,
+					is_read_file_format_function,
+					is_write_file_format_function,
 					read_feature_collection_function,
 					create_feature_collection_writer_function,
 					default_read_write_options)));
