@@ -28,6 +28,7 @@
 #include "FeatureCollectionFileFormat.h"
 
 #include "app-logic/AppLogicUtils.h"
+#include "app-logic/ExtractRasterFeatureProperties.h"
 #include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/TopologyUtils.h"
 
@@ -73,19 +74,25 @@ namespace GPlatesFileIO
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 					const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry)
 			{
-				// Check if the feature is topological.
-				if (GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(*feature.handle_ptr()) ||
-					GPlatesAppLogic::TopologyUtils::is_topological_network_feature(*feature.handle_ptr()))
-				{
-					classifications.set(TOPOLOGICAL);
-				}
-
 				// Check if the feature is reconstructable - and if so record its reconstruct method type.
 				const boost::optional<GPlatesAppLogic::ReconstructMethod::Type> reconstruction_method_type =
 						reconstruct_method_registry.get_reconstruct_method_type(feature);
 				if (reconstruction_method_type)
 				{
 					classifications.set(reconstruction_method_type.get());
+				}
+
+				// Check if the feature is a raster.
+				if (GPlatesAppLogic::is_raster_feature(feature))
+				{
+					classifications.set(RASTER);
+				}
+
+				// Check if the feature is topological.
+				if (GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(*feature.handle_ptr()) ||
+					GPlatesAppLogic::TopologyUtils::is_topological_network_feature(*feature.handle_ptr()))
+				{
+					classifications.set(TOPOLOGICAL);
 				}
 
 				// Check if the feature is a reconstruction features.

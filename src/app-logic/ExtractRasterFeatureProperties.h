@@ -46,6 +46,21 @@
 namespace GPlatesAppLogic
 {
 	/**
+	 * Returns true if the specified feature is a raster feature.
+	 */
+	bool
+	is_raster_feature(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature);
+
+	/**
+	 * Returns true if the specified feature collection contains a raster feature.
+	 */
+	bool
+	contains_raster_feature(
+			const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
+
+
+	/**
 	 * Visits a raster feature and extracts the following properties from it:
 	 *  - GmlRectifiedGrid inside a GpmlConstantValue inside a gpml:domainSet
 	 *    top level property.

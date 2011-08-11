@@ -59,10 +59,10 @@ namespace GPlatesFileIO
 			//
 
 			/**
-			 * Topological features contain topological geometry that references other feature geometries.
+			 * Rasters features contain image data.
 			 *
-			 * These are thought as as resolvable instead of reconstructable because they are not
-			 * strictly reconstructed (just resolve the reconstructions of referenced feature geometries).
+			 * These can be reconstructed by, unlike the other reconstructable features, these
+			 * features require other reconstructable features (polygons) to reconstruct them..
 			 *
 			 * Even though they are not explicitly defined, the first values of this
 			 * enumeration are taken to be all of the members of the enumeration
@@ -70,7 +70,15 @@ namespace GPlatesFileIO
 			 * member of this enumeration must have the value of
 			 * GPlatesAppLogic::ReconstructMethod::NUM_TYPES to avoid conflict between values.
 			 */
-			TOPOLOGICAL = static_cast<unsigned int>(GPlatesAppLogic::ReconstructMethod::NUM_TYPES), // See note above.
+			RASTER = static_cast<unsigned int>(GPlatesAppLogic::ReconstructMethod::NUM_TYPES), // See note above.
+
+			/**
+			 * Topological features contain topological geometry that references other feature geometries.
+			 *
+			 * These are thought as as resolvable instead of reconstructable because they are not
+			 * strictly reconstructed (just resolve the reconstructions of referenced feature geometries).
+			 */
+			TOPOLOGICAL,
 
 			/**
 			 * Reconstruction features have 'fixedReferenceFrame' and 'movingReferenceFrame' plate ids and
