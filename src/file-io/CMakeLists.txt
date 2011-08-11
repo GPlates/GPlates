@@ -35,10 +35,11 @@ set(srcs
     ExportTemplateFilenameSequenceImpl.h
     ExternalProgram.cc
     ExternalProgram.h
-    FeatureCollectionFileFormat.cc
     FeatureCollectionFileFormat.h
-    FeatureCollectionReaderWriter.cc
-    FeatureCollectionReaderWriter.h
+    FeatureCollectionFileFormatClassify.cc
+    FeatureCollectionFileFormatClassify.h
+    FeatureCollectionFileFormatRegistry.cc
+    FeatureCollectionFileFormatRegistry.h
     FeaturePropertiesMap.cc
     FeaturePropertiesMap.h
     File.cc

@@ -20,8 +20,6 @@ set(srcs
     AssignPlateIds.h
     CgalUtils.cc
     CgalUtils.h
-    ClassifyFeatureCollection.cc
-    ClassifyFeatureCollection.h
     CoRegistrationData.cc
     CoRegistrationData.h
     CoRegistrationLayerProxy.cc

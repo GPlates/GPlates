@@ -26,9 +26,6 @@
 #include "CliFeatureCollectionFileIO.h"
 #include "CliInvalidOptionValue.h"
 
-#include "app-logic/AppLogicUtils.h"
-
-#include "file-io/FeatureCollectionReaderWriter.h"
 #include "file-io/ReadErrorAccumulation.h"
 
 
@@ -108,8 +105,10 @@ GPlatesCli::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		GPlatesModel::ModelInterface &model,
 		const boost::program_options::variables_map &command_line_variables) :
 	d_model(model),
+	d_file_format_registry(),
 	d_command_line_variables(&command_line_variables)
 {
+	register_default_file_formats(d_file_format_registry, d_model);
 }
 
 
@@ -154,7 +153,7 @@ GPlatesCli::FeatureCollectionFileIO::load_feature_collections(
 		// Read new features from the file into the feature collection.
 		// Both the filename and target feature collection are in 'file_ref'.
 		GPlatesFileIO::ReadErrorAccumulation read_errors;
-		GPlatesFileIO::read_feature_collection(file->get_reference(), d_model, read_errors);
+		d_file_format_registry.read_feature_collection(file->get_reference(), read_errors);
 
 		files.push_back(file);
 	}
@@ -181,25 +180,7 @@ GPlatesCli::FeatureCollectionFileIO::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	// The write format is based on the file extension except for GMT where we choose
-	// to have the verbose header.
-	GPlatesFileIO::FeatureCollectionWriteFormat::Format write_format =
-			GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION;
-	if (GPlatesFileIO::get_feature_collection_file_format(file_info) ==
-			GPlatesFileIO::FeatureCollectionFileFormat::GMT)
-	{
-		write_format = GPlatesFileIO::FeatureCollectionWriteFormat::GMT_VERBOSE_HEADER;
-	}
-
-	boost::shared_ptr<GPlatesModel::ConstFeatureVisitor> feature_collection_writer =
-			GPlatesFileIO::get_feature_collection_writer(
-					file_info,
-					feature_collection,
-					write_format);
-
-	// Write the feature collection.
-	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-			feature_collection, *feature_collection_writer);
+	d_file_format_registry.write_feature_collection(feature_collection, file_info);
 }
 
 
@@ -229,7 +210,7 @@ GPlatesCli::FeatureCollectionFileIO::get_save_file_format(
 	}
 	else if (save_file_type == SAVE_FILE_TYPE_GMT)
 	{
-		return GPlatesFileIO::FeatureCollectionFileFormat::GMT;
+		return GPlatesFileIO::FeatureCollectionFileFormat::WRITE_ONLY_XY_GMT;
 	}
 	else if (save_file_type == SAVE_FILE_TYPE_GMAP)
 	{
@@ -258,7 +239,7 @@ GPlatesCli::FeatureCollectionFileIO::get_save_file_info(
 	append_filename_suffix(output_filename, filename_suffix);
 	append_filename_extension(
 			output_filename,
-			GPlatesFileIO::get_filename_extension(save_file_format));
+			d_file_format_registry.get_primary_filename_extension(save_file_format));
 
 	return GPlatesFileIO::FileInfo(output_filename);
 }
@@ -275,7 +256,7 @@ GPlatesCli::FeatureCollectionFileIO::get_save_file_info(
 	QString output_filename(filename_no_extension);
 	append_filename_extension(
 			output_filename,
-			GPlatesFileIO::get_filename_extension(save_file_format));
+			d_file_format_registry.get_primary_filename_extension(save_file_format));
 
 	return GPlatesFileIO::FileInfo(output_filename);
 }

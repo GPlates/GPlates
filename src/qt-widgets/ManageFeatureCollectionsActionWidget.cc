@@ -25,6 +25,7 @@
 
 #include "ManageFeatureCollectionsDialog.h"
 #include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 
 #include "ManageFeatureCollectionsActionWidget.h"
 
@@ -32,6 +33,7 @@
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollectionsActionWidget(
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &feature_collections_dialog,
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_collections_dialog(feature_collections_dialog),
@@ -47,33 +49,26 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollections
 	QObject::connect(button_reload, SIGNAL(clicked()), this, SLOT(reload()));
 	QObject::connect(button_unload, SIGNAL(clicked()), this, SLOT(unload()));
 
-	update_state();
+	update_state(file_format_registry);
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state()
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state(
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 {
 	const GPlatesFileIO::FileInfo &fileinfo = d_file_reference.get_file().get_file_info();
 
 	// Enable the buttons in question first, then disable if needed.
 	button_save->setDisabled(false);
 	button_reload->setDisabled(false);
-	
-	// Disable specific buttons for specific formats.
-	switch ( GPlatesFileIO::get_feature_collection_file_format(fileinfo) )
-	{
-			
-	case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
-			// Disable reload button for formats we can't read yet.
-			// (If you're thinking, "ah, but then how did it get into GPlates?",
-			// we can currently export GMT xy format but not read it back in.
-			// So the reload button makes no sense.)
-			button_reload->setDisabled(true);
-			break;
 
-	default:
-			break;
+	// Disable reload button for file formats we can't read yet.
+	// These are file formats that were read into GPlates via another format and
+	// then saved as the current file format.
+	if (!file_format_registry.get_read_file_format(fileinfo.get_qfileinfo()))
+	{
+		button_reload->setDisabled(true);
 	}
 
 	// Edge case - if the FileInfo has been created for a FeatureCollection

@@ -31,6 +31,7 @@
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
 
 namespace GPlatesUnitTest{
@@ -38,8 +39,7 @@ namespace GPlatesUnitTest{
 	class MeshGeneratorTest
 	{
 	public:
-		MeshGeneratorTest()
-		{ }
+		MeshGeneratorTest();
 
 		void 
 		test_case_1();
@@ -64,6 +64,7 @@ namespace GPlatesUnitTest{
 
 	private:
 		GPlatesModel::ModelInterface  d_model;
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry d_file_format_registry;
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_files;
 		
 		bool

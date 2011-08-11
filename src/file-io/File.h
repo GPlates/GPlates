@@ -97,22 +97,6 @@ namespace GPlatesFileIO
 			}
 
 
-			/**
-			 * Returns the file format associated with this file when it was loaded.
-			 *
-			 * Returns FeatureCollectionFileFormat::UNKNOWN if this was created with
-			 * @a create_empty_file or if the file format was not recognised.
-			 *
-			 * NOTE: Even if the file info was modified with @a set_file_info
-			 * the file format *still* represents the file format when the file was loaded.
-			 */
-			FeatureCollectionFileFormat::Format
-			get_loaded_file_format() const
-			{
-				return d_loaded_file_format;
-			}
-
-
 			//
 			// Note: setting or modifying the internal @a FileInfo is a bit fragile at the moment.
 			//
@@ -127,14 +111,11 @@ namespace GPlatesFileIO
 			// only be reconstruction features. If the file format allows both types only then
 			// does it look at the features in the collection itself.
 			//
-			// Code that does this sort of thing should use @a get_loaded_file_format instead
+			// Code that does this sort of thing should use
+			// 'FeatureCollectionFileFormat::Registry::get_read_file_format()' instead
 			// of looking at the @a FileInfo since the @a File object may have had its @a FileInfo
 			// modified and therefore have a different @a FileInfo that does not
 			// reflect the classification of the feature collection.
-			//
-			// FIXME: Perhaps we should remove @a get_loaded_file_format thus forcing clients
-			// to look at the internal feature collection to determine things like which
-			// file types can be saved.
 			//
 
 		private:
@@ -149,9 +130,6 @@ namespace GPlatesFileIO
 			//! Information about the file that the feature collection was loaded from or saved to.
 			FileInfo d_file_info;
 
-			//! The format of the file that the feature collection was loaded from.
-			FeatureCollectionFileFormat::Format d_loaded_file_format;
-
 
 			/**
 			 * Constructor.
@@ -160,8 +138,7 @@ namespace GPlatesFileIO
 			 */
 			Reference(
 					const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-					const FileInfo &file_info,
-					const FeatureCollectionFileFormat::Format file_format);
+					const FileInfo &file_info);
 
 			friend class File;
 		};
@@ -186,7 +163,7 @@ namespace GPlatesFileIO
 		 *
 		 * The file format is determined from the file extension in @a file_info.
 		 *
-		 * The default value for @a file_info represents no filename and the file format UNKNOWN.
+		 * The default value for @a file_info represents no filename.
 		 *
 		 * The default value for @a feature_collection is a new empty feature collection.
 		 *
@@ -252,12 +229,11 @@ namespace GPlatesFileIO
 		/**
 		 * Constructor.
 		 *
-		 * Is private so that only way to create is via @a create_loaded_file or @a create_empty_file.
+		 * Is private so that only way to create is via @a create_file.
 		 */
 		File(
 				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-				const FileInfo &file_info,
-				const FeatureCollectionFileFormat::Format file_format);
+				const FileInfo &file_info);
 	};
 }
 

@@ -33,7 +33,7 @@
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/FileInfo.h"
 #include "file-io/File.h"
-#include "file-io/FeatureCollectionReaderWriter.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "feature-visitors/GeometryFinder.h"
 
 //copy the following code into directory level test suite file
@@ -95,8 +95,7 @@ GPlatesUnitTest::MeshGeneratorTest::load_mesh_files(
 		}
 
 		// Read the feature collection from file.
-		GPlatesFileIO::read_feature_collection(
-				file->get_reference(), d_model, read_errors);
+		d_file_format_registry.read_feature_collection(file->get_reference(), read_errors);
 
 		d_files.push_back(file);
 
@@ -177,6 +176,10 @@ GPlatesUnitTest::MeshGeneratorTest::check(
 }
 
 
+GPlatesUnitTest::MeshGeneratorTest::MeshGeneratorTest()
+{
+	register_default_file_formats(d_file_format_registry, d_model);
+}
 
 void 
 GPlatesUnitTest::MeshGeneratorTest::test_case_1()

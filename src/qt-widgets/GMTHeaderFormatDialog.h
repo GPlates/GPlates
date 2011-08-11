@@ -42,6 +42,17 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
+		/**
+		 * GMT header formats.
+		 */
+		enum HeaderFormat
+		{
+			GMT_WITH_PLATES4_STYLE_HEADER,  //!< GMT format with PLATES4 style header (otherwise) short unhelpful header.
+			GMT_VERBOSE_HEADER,             //!< GMT format with header containing string values of all feature properties.
+			GMT_PREFER_PLATES4_STYLE_HEADER //!< GMT format with PLATES4 style header preferred over verbose header.
+		};
+
+
 		explicit
 		GMTHeaderFormatDialog(
 				QWidget *parent_ = NULL);
@@ -49,8 +60,8 @@ namespace GPlatesQtWidgets
 		/**
 		 * Returns GMT header format selected by user after dialog closes.
 		 */
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format
-				get_header_format() const
+		HeaderFormat
+		get_header_format() const
 		{
 			return d_header_format;
 		}
@@ -60,7 +71,7 @@ namespace GPlatesQtWidgets
 		finished();
 
 	private:
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format d_header_format;
+		HeaderFormat d_header_format;
 	};
 }
 

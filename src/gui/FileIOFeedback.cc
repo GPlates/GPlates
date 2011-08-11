@@ -37,13 +37,13 @@
 #include "UnsavedChangesTracker.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/ClassifyFeatureCollection.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/SessionManagement.h"
 
 #include "file-io/FileInfo.h"
-#include "file-io/ExternalProgram.h"
 #include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/FeatureCollectionFileFormatClassify.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
@@ -61,56 +61,38 @@
 #include "qt-widgets/FileDialogFilter.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
-#include "qt-widgets/GMTHeaderFormatDialog.h"
 
 
 namespace
 {
 	using GPlatesQtWidgets::FileDialogFilter;
 
-	FileDialogFilter
-	create_gmt_filter()
+	void
+	add_filename_extensions_to_file_dialog_filter(
+			FileDialogFilter &filter,
+			GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 	{
-		return FileDialogFilter(QObject::tr("GMT xy"), "xy");
+		// Add the filename extensions for the specified file format.
+		const std::vector<QString> &filename_extensions =
+				file_format_registry.get_all_filename_extensions(file_format);
+		BOOST_FOREACH(const QString& filename_extension, filename_extensions)
+		{
+			filter.add_extension(filename_extension);
+		}
 	}
 
 	FileDialogFilter
-	create_line_filter()
+	create_file_dialog_filter(
+			GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 	{
-		FileDialogFilter filter(QObject::tr("PLATES4 line"), "dat");
-		filter.add_extension("pla");
-		return filter;
-	}
+		FileDialogFilter filter(
+				QObject::tr(
+						file_format_registry.get_short_description(file_format).toAscii().constData()));
 
-	FileDialogFilter
-	create_rotation_filter()
-	{
-		return FileDialogFilter(QObject::tr("PLATES4 rotation"), "rot");
-	}
+		add_filename_extensions_to_file_dialog_filter(filter, file_format, file_format_registry);
 
-	FileDialogFilter
-	create_shapefile_filter()
-	{
-		return FileDialogFilter(QObject::tr("ESRI shapefile"), "shp");
-	}
-
-	FileDialogFilter
-	create_ogrgmt_filter()
-	{
-		return FileDialogFilter(QObject::tr("OGR GMT"), "gmt");
-	}
-
-	FileDialogFilter
-	create_gpml_filter()
-	{
-		return FileDialogFilter(QObject::tr("GPlates Markup Language"), "gpml");
-	}
-
-	FileDialogFilter
-	create_gpmlz_filter()
-	{
-		FileDialogFilter filter(QObject::tr("Compressed GPML"), "gpmlz");
-		filter.add_extension("gpml.gz");
 		return filter;
 	}
 
@@ -121,169 +103,90 @@ namespace
 	}
 
 	/**
+	 * Builds a list of input filters for opening all types of feature collections.
+	 */
+	GPlatesQtWidgets::OpenFileDialog::filter_list_type
+	get_input_filters(
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
+	{
+		GPlatesQtWidgets::OpenFileDialog::filter_list_type filters;
+
+		// We want a list of file formats that can read feature collections.
+		std::vector<GPlatesFileIO::FeatureCollectionFileFormat::Format> read_file_formats;
+
+		// Iterate over the registered file formats to find those that can read feature collections.
+		const std::vector<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_formats =
+				file_format_registry.get_registered_file_formats();
+		BOOST_FOREACH(GPlatesFileIO::FeatureCollectionFileFormat::Format file_format, file_formats)
+		{
+			// If the file format supports reading of feature collections then add it to the list.
+			if (file_format_registry.does_file_format_support_reading(file_format))
+			{
+				read_file_formats.push_back(file_format);
+			}
+		}
+
+		GPlatesQtWidgets::FileDialogFilter all_loadable_files_filter(QObject::tr("All loadable files"));
+
+		// Iterate over the file formats that can read.
+		BOOST_FOREACH(GPlatesFileIO::FeatureCollectionFileFormat::Format read_file_format, read_file_formats)
+		{
+			// Add a filter for the current file format.
+			filters.push_back(create_file_dialog_filter(read_file_format, file_format_registry));
+
+			// Also add the filename extensions of the current file format to the "All loadable files" filter.
+			add_filename_extensions_to_file_dialog_filter(
+					all_loadable_files_filter, read_file_format, file_format_registry);
+		}
+
+		// Add the 'All loadable files' filter to the front so it appears first.
+		filters.insert(filters.begin(), all_loadable_files_filter);
+
+		// Also add an 'all files' filter.
+		filters.push_back(create_all_filter());
+
+		return filters;
+	}
+
+	/**
 	 * Builds the specially-formatted list of suitable output filters given a file
 	 * to be saved. The result can be fed into the Save As or Save a Copy dialogs.
 	 */
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type
 	get_output_filters_for_file(
-			GPlatesAppLogic::FeatureCollectionFileState &file_state,
 			GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
-			bool has_gzip)
+			const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 	{
-		// Appropriate filters for available output formats.
-		static const FileDialogFilter gmt_filter(create_gmt_filter());
-		static const FileDialogFilter line_filter(create_line_filter());
-		static const FileDialogFilter rotation_filter(create_rotation_filter());
-		static const FileDialogFilter shapefile_filter(create_shapefile_filter());
-		static const FileDialogFilter ogrgmt_filter(create_ogrgmt_filter());
-		static const FileDialogFilter gpml_filter(create_gpml_filter());
-		static const FileDialogFilter gpmlz_filter(create_gpmlz_filter());
-		static const FileDialogFilter all_filter(create_all_filter());
-		
-		// Determine whether file contains reconstructable and/or reconstruction features.
-		const GPlatesAppLogic::ClassifyFeatureCollection::classifications_type classification =
-				GPlatesAppLogic::ClassifyFeatureCollection::classify_feature_collection(
-						file_ref.get_file());
-
-		const bool has_features_with_geometry =
-				GPlatesAppLogic::ClassifyFeatureCollection::found_geometry_feature(classification);
-		const bool has_reconstruction_features =
-				GPlatesAppLogic::ClassifyFeatureCollection::found_reconstruction_feature(classification);
-
 		GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
-		
-		// Build the list of filters depending on the original file format.
-		switch ( file_ref.get_file().get_loaded_file_format() )
+
+		// Classify the feature collection so we can determine which file formats support it.
+		const GPlatesFileIO::FeatureCollectionFileFormat::classifications_type feature_collection_classification =
+				GPlatesFileIO::FeatureCollectionFileFormat::classify(
+						file_ref.get_file().get_feature_collection(),
+						reconstruct_method_registry);
+
+		// Iterate over the registered file formats.
+		const std::vector<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_formats =
+				file_format_registry.get_registered_file_formats();
+		BOOST_FOREACH(GPlatesFileIO::FeatureCollectionFileFormat::Format file_format, file_formats)
 		{
-		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
+			// The file format must support writing of feature collections.
+			if (file_format_registry.does_file_format_support_writing(file_format))
 			{
-				filters.push_back(gmt_filter);
-				if (has_gzip)
+				// If the feature collection to be written contains features that the current
+				// file format can handle then add it to the list.
+				if (GPlatesFileIO::FeatureCollectionFileFormat::intersect(
+					file_format_registry.get_feature_classification(file_format),
+					feature_collection_classification))
 				{
-					filters.push_back(gpmlz_filter);
+					filters.push_back(create_file_dialog_filter(file_format, file_format_registry));
 				}
-				filters.push_back(gpml_filter);
-				filters.push_back(line_filter);
-				filters.push_back(shapefile_filter);
-				filters.push_back(ogrgmt_filter);
-				filters.push_back(all_filter);
 			}
-			break;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
-			{
-				filters.push_back(line_filter);
-				if (has_gzip)
-				{
-					filters.push_back(gpmlz_filter);
-				}
-				filters.push_back(gpml_filter);
-				filters.push_back(gmt_filter);
-				filters.push_back(shapefile_filter);
-				filters.push_back(ogrgmt_filter);
-				filters.push_back(all_filter);
-			}
-			break;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
-			{
-				filters.push_back(rotation_filter);
-				if (has_gzip)
-				{
-					filters.push_back(gpmlz_filter);
-				}
-				filters.push_back(gpml_filter);
-				filters.push_back(all_filter);
-			}
-			break;
-			
-		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-			{
-				filters.push_back(shapefile_filter);
-				filters.push_back(ogrgmt_filter);
-				filters.push_back(line_filter);
-				if (has_gzip)
-				{
-					filters.push_back(gpmlz_filter);
-				}
-				filters.push_back(gpml_filter);
-				filters.push_back(gmt_filter);
-				filters.push_back(all_filter);
-			}
-			break;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
-			{
-#if 0			
-				// Disable any kind of export from GMAP data. 
-#else			
-				// No writing to GMAP format, but offer gmpl/gpmlz export.
-				// 
-				// (Probably not useful to export these in shapefile or plates formats
-				// for example - users would get the geometries but nothing else).
-				filters.push_back(gpml_filter);
-				if (has_gzip)
-				{
-					filters.push_back(gpmlz_filter);
-				}
-#endif
-			}
-			break;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPMLZ:
-			{
-				if (has_gzip)
-				{
-					filters.push_back(gpmlz_filter); // Save compressed by default, assuming we can.
-				}
-				filters.push_back(gpml_filter); // Option to change to uncompressed version.
-				if (has_features_with_geometry)
-				{
-					// Only offer to save in line-only formats if feature collection
-					// actually has reconstructable features in it!
-					filters.push_back(gmt_filter);
-					filters.push_back(line_filter);
-					filters.push_back(shapefile_filter);
-					filters.push_back(ogrgmt_filter);
-				}
-				if (has_reconstruction_features)
-				{
-					// Only offer to save as PLATES4 .rot if feature collection
-					// actually has rotations in it!
-					filters.push_back(rotation_filter);
-				}
-				filters.push_back(all_filter);
-			}
-			break;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
-		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
-		default: // If no file extension then use same options as GPML.
-			{
-				filters.push_back(gpml_filter); // Save uncompressed by default, same as original
-				if (has_gzip)
-				{
-					filters.push_back(gpmlz_filter); // Option to change to compressed version.
-				}
-				if (has_features_with_geometry)
-				{
-					// Only offer to save in line-only formats if feature collection
-					// actually has reconstructable features in it!
-					filters.push_back(gmt_filter);
-					filters.push_back(line_filter);
-					filters.push_back(shapefile_filter);
-					filters.push_back(ogrgmt_filter);
-				}
-				if (has_reconstruction_features)
-				{
-					// Only offer to save as PLATES4 .rot if feature collection
-					// actually has rotations in it!
-					filters.push_back(rotation_filter);
-				}
-				filters.push_back(all_filter);
-			}
-			break;
 		}
+
+		// Also add an 'all files' filter.
+		filters.push_back(create_all_filter());
 
 		return filters;
 	}
@@ -333,25 +236,10 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 	d_open_files_dialog(
 			d_viewport_window_ptr,
 			tr("Open Files"),
-			tr(
-				"All loadable files (*.dat *.pla *.rot *.shp *.gpml *.gpmlz *.gpml.gz *.vgp);;"
-				"PLATES4 line (*.dat *.pla);;"
-				"PLATES4 rotation (*.rot);;"
-				"ESRI shapefile (*.shp);;"
-				"GPlates Markup Language (*.gpml *.gpmlz *.gpml.gz);;"
-				"GMAP VGP file (*.vgp);;"
-				"All files (*)"),
-			view_state_),
-	d_gzip_available(false)
+			get_input_filters(app_state_.get_feature_collection_file_format_registry()),
+			view_state_)
 {
 	setObjectName("FileIOFeedback");
-
-	// Test if we can offer on-the-fly gzip compression.
-	// FIXME: Ideally we should let the user know WHY we're concealing this option.
-	// The user will still be able to type in a .gpml.gz file name and activate the
-	// gzipped saving code, however this will produce an exception which pops up
-	// a suitable message box (See ViewportWindow.cc)
-	d_gzip_available = GPlatesFileIO::GpmlOnePointSixOutputVisitor::gzip_program().test();
 }
 
 
@@ -502,17 +390,10 @@ bool
 GPlatesGui::FileIOFeedback::save_file_in_place(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
-	// Get the format to write feature collection in.
-	// This is usually determined by file extension but some format also
-	// require user preferences (eg, style of feature header in file).
-	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
-		get_feature_collection_write_format(file.get_file().get_file_info());
-	
 	// Save the feature collection with GUI feedback.
 	bool ok = save_file(
 			file.get_file().get_file_info(),
-			file.get_file().get_feature_collection(),
-			feature_collection_write_format);
+			file.get_file().get_feature_collection());
 	return ok;
 }
 
@@ -524,9 +405,9 @@ GPlatesGui::FileIOFeedback::save_file_as(
 	// Configure and open the Save As dialog.
 	d_save_file_as_dialog.set_filters(
 			get_output_filters_for_file(
-				*d_file_state_ptr,
 				file,
-				d_gzip_available));
+				d_app_state_ptr->get_reconstruct_method_registry(),
+				d_app_state_ptr->get_feature_collection_file_format_registry()));
 	QString file_path = file.get_file().get_file_info().get_qfileinfo().filePath();
 	d_save_file_as_dialog.select_file(file_path);
 	boost::optional<QString> filename_opt = d_save_file_as_dialog.get_file_name();
@@ -546,17 +427,10 @@ GPlatesGui::FileIOFeedback::save_file_as(
 	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
 			filename, file.get_file().get_file_info());
 
-	// Get the format to write feature collection in.
-	// This is usually determined by file extension but some format also
-	// require user preferences (eg, style of feature header in file).
-	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
-		get_feature_collection_write_format(new_fileinfo);
-
 	// Save the feature collection, with GUI feedback.
 	bool ok = save_file(
 			new_fileinfo,
-			file.get_file().get_feature_collection(),
-			feature_collection_write_format);
+			file.get_file().get_feature_collection());
 	
 	// If there was an error saving, don't change the fileinfo.
 	if ( ! ok) {
@@ -577,9 +451,9 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 	// Configure and pop up the Save a Copy dialog.
 	d_save_file_copy_dialog.set_filters(
 			get_output_filters_for_file(
-				*d_file_state_ptr,
 				file,
-				d_gzip_available));
+				d_app_state_ptr->get_reconstruct_method_registry(),
+				d_app_state_ptr->get_feature_collection_file_format_registry()));
 	QString file_path = file.get_file().get_file_info().get_qfileinfo().filePath();
 	d_save_file_copy_dialog.select_file(file_path);
 	boost::optional<QString> filename_opt = d_save_file_copy_dialog.get_file_name();
@@ -599,17 +473,10 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
 			filename, file.get_file().get_file_info());
 
-	// Get the format to write feature collection in.
-	// This is usually determined by file extension but some format also
-	// require user preferences (eg, style of feature header in file).
-	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
-			get_feature_collection_write_format(new_fileinfo);
-
 	// Save the feature collection, with GUI feedback.
 	save_file(
 			new_fileinfo,
-			file.get_file().get_feature_collection(),
-			feature_collection_write_format);
+			file.get_file().get_feature_collection());
 
 	return true;
 }
@@ -620,8 +487,7 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 bool
 GPlatesGui::FileIOFeedback::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
 	// the screen.
@@ -632,8 +498,7 @@ GPlatesGui::FileIOFeedback::save_file(
 		// Save the feature collection. This is where we finally dip down into the file-io level.
 		d_feature_collection_file_io_ptr->save_file(
 				file_info,
-				feature_collection,
-				feature_collection_write_format);
+				feature_collection);
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
 	{
@@ -750,35 +615,6 @@ GPlatesGui::FileIOFeedback::save_all(
 	}
 
 	return all_ok;
-}
-
-
-
-
-// FIXME: a few problems with this method.
-//  - it doesn't remember the GMT header setting. Should be stored in file info somewhere.
-//  - because it's here, it pops up on Save In Place as well as Save As. Save As is fine,
-//    but Save In Place causes problems with Save All, because the user will have no clue
-//    which file is popping up this dialog.
-//  - maybe it could be merged into the shapefile configuration button, but that would ideally
-//    depend on being able to *read* and write gmt xy files.
-GPlatesFileIO::FeatureCollectionWriteFormat::Format
-GPlatesGui::FileIOFeedback::get_feature_collection_write_format(
-		const GPlatesFileIO::FileInfo& file_info)
-{
-	switch (get_feature_collection_file_format(file_info) )
-	{
-	case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
-		{
-			GPlatesQtWidgets::GMTHeaderFormatDialog gmt_header_format_dialog(d_viewport_window_ptr);
-			gmt_header_format_dialog.exec();
-
-			return gmt_header_format_dialog.get_header_format();
-		}
-
-	default:
-		return GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION;
-	}
 }
 
 

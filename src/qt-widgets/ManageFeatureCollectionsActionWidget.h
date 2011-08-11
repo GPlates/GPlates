@@ -33,6 +33,14 @@
 #include "app-logic/FeatureCollectionFileState.h"
 
 
+namespace GPlatesFileIO
+{
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+}
+
 namespace GPlatesQtWidgets
 {
 	class ManageFeatureCollectionsDialog;
@@ -49,13 +57,15 @@ namespace GPlatesQtWidgets
 		ManageFeatureCollectionsActionWidget(
 				ManageFeatureCollectionsDialog &feature_collections_dialog,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				QWidget *parent_ = NULL);
 		
 		/**
 		 * Enables and disables buttons according to various criteria.
 		 */
 		void
-		update_state();
+		update_state(
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry);
 		
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference
 		get_file_reference() const

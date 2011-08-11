@@ -57,6 +57,7 @@ void
 GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_feature_geometries(
 		const QString &filename,
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		const files_collection_type &active_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
@@ -82,7 +83,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the RFGs to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 			filename,
-			GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(filename),
+			GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(filename, file_format_registry),
 			reconstruct_feature_geom_seq,
 			active_files,
 			reconstruction_anchor_plate_id,
@@ -96,6 +97,7 @@ void
 GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_flowlines(
 	const QString &filename,
 	const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+	const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 	const files_collection_type &active_files,
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 	const double &reconstruction_time,
@@ -121,7 +123,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the flowlines to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedFlowlineExport::export_reconstructed_flowlines(
 		filename,
-		GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(filename),
+		GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(filename, file_format_registry),
 		reconstructed_flowline_seq,
 		active_files,
 		reconstruction_anchor_plate_id,
@@ -134,6 +136,7 @@ void
 GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_motion_paths(
 	const QString &filename,
 	const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+	const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 	const files_collection_type &active_files,
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 	const double &reconstruction_time,
@@ -159,7 +162,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the flowlines to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 		filename,
-		GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(filename),
+		GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(filename, file_format_registry),
 		reconstructed_motion_path_seq,
 		active_files,
 		reconstruction_anchor_plate_id,

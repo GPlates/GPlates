@@ -28,6 +28,7 @@
 
 #include "GMTFormatFlowlineExport.h"
 #include "FeatureCollectionFileFormat.h"
+#include "FeatureCollectionFileFormatRegistry.h"
 #include "FileFormatNotSupportedException.h"
 #include "ReconstructionGeometryExportImpl.h"
 #include "OgrFormatFlowlineExport.h"
@@ -126,20 +127,25 @@ namespace GPlatesFileIO
 
 GPlatesFileIO::ReconstructedFlowlineExport::Format
 GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(
-		const QFileInfo& file_info)
+		const QFileInfo& file_info,
+		const FeatureCollectionFileFormat::Registry &file_format_registry)
 {
 	// Since we're using a feature collection file format to export
 	// our RFGs we'll use the feature collection file format code.
-	const FeatureCollectionFileFormat::Format feature_collection_file_format =
-			get_feature_collection_file_format(file_info);
+	const boost::optional<FeatureCollectionFileFormat::Format> feature_collection_file_format =
+			file_format_registry.get_write_file_format(file_info);
+	if (!feature_collection_file_format)
+	{
+		return UNKNOWN;
+	}
 
 	// Only some feature collection file formats are used for exporting
 	// reconstructed feature geometries because most file formats only
 	// make sense for unreconstructed geometry (since they provide the
 	// information required to do the reconstructions).
-	switch (feature_collection_file_format)
+	switch (feature_collection_file_format.get())
 	{
-	case FeatureCollectionFileFormat::GMT:
+	case FeatureCollectionFileFormat::WRITE_ONLY_XY_GMT:
 		return GMT;
 	case FeatureCollectionFileFormat::SHAPEFILE:
 		return SHAPEFILE;

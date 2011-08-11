@@ -34,7 +34,7 @@
 #include "global/python.h"
 #include "model/ModelInterface.h"
 #include "file-io/ReadErrorAccumulation.h"
-#include "file-io/FeatureCollectionReaderWriter.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 
 using namespace GPlatesAppLogic;
 using namespace GPlatesFileIO;

@@ -34,6 +34,14 @@
 #include "model/types.h"
 
 
+namespace GPlatesFileIO
+{
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+}
+
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
@@ -61,6 +69,7 @@ namespace GPlatesViewOperations
 		export_visible_reconstructed_feature_geometries(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
@@ -86,6 +95,7 @@ namespace GPlatesViewOperations
 		export_visible_reconstructed_flowlines(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
@@ -111,6 +121,7 @@ namespace GPlatesViewOperations
 		export_visible_reconstructed_motion_paths(
 				const QString &filename,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				const files_collection_type &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,

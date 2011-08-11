@@ -40,6 +40,8 @@
 #include "SessionManagement.h"
 #include "UserPreferences.h"
 
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -74,9 +76,13 @@ namespace
 GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_feature_collection_file_state(
 			new FeatureCollectionFileState(d_model)),
+	d_feature_collection_file_format_registry(
+			new GPlatesFileIO::FeatureCollectionFileFormat::Registry()),
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
-					d_model, *d_feature_collection_file_state)),
+					d_model,
+					*d_feature_collection_file_format_registry,
+					*d_feature_collection_file_state)),
 	d_serialization_ptr(new Serialization(*this)),
 	d_session_management_ptr(new SessionManagement(*this)),
 	d_user_preferences_ptr(new UserPreferences()),
@@ -93,6 +99,9 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_reconstruct_on_scope_exit(false),
 	d_suppress_auto_layer_creation(false)
 {
+	// Register the default file formats for reading and/or writing feature collections.
+	register_default_file_formats(*d_feature_collection_file_format_registry, d_model);
+
 	// Register default reconstruct method types with the reconstruct method registry.
 	register_default_reconstruct_method_types(*d_reconstruct_method_registry);
 
@@ -244,6 +253,11 @@ GPlatesAppLogic::ApplicationState::get_feature_collection_file_state()
 	return *d_feature_collection_file_state;
 }
 
+GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+GPlatesAppLogic::ApplicationState::get_feature_collection_file_format_registry()
+{
+	return *d_feature_collection_file_format_registry;
+}
 
 GPlatesAppLogic::FeatureCollectionFileIO &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_io()

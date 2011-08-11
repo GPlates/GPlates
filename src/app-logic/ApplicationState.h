@@ -50,6 +50,15 @@
 // This header gets included in a lot of other files and we want to reduce compile times.
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+namespace GPlatesFileIO
+{
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+}
+
 namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileIO;
@@ -106,6 +115,12 @@ namespace GPlatesAppLogic
 		 */
 		FeatureCollectionFileState &
 		get_feature_collection_file_state();
+
+		/**
+		 * Handling file formats for reading and/or writing feature collection files.
+		 */
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+		get_feature_collection_file_format_registry();
 
 		/**
 		 * Handling reading/writing feature collection files and notification of read errors.
@@ -337,6 +352,13 @@ namespace GPlatesAppLogic
 		 * Central access point and notification of loaded files.
 		 */
 		boost::scoped_ptr<FeatureCollectionFileState> d_feature_collection_file_state;
+
+		/**
+		 * A registry of the file formats for reading/writing feature collections.
+		 *
+		 * NOTE: This must be declared *before* @a d_feature_collection_file_io.
+		 */
+		boost::scoped_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry> d_feature_collection_file_format_registry;
 
 		/**
 		 * All file reading/writing goes through here.

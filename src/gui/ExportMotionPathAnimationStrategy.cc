@@ -122,6 +122,7 @@ GPlatesGui::ExportMotionPathAnimationStrategy::do_export_iteration(
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_motion_paths(
 			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
+			d_export_animation_context_ptr->view_state().get_application_state().get_feature_collection_file_format_registry(),
 			d_loaded_files,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 			d_export_animation_context_ptr->view_time(),

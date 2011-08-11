@@ -43,6 +43,11 @@ namespace GPlatesAppLogic
 
 namespace GPlatesFileIO
 {
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+
 	namespace ReconstructedFlowlineExport
 	{
 		//! Formats of files that can export reconstructed flowlines.
@@ -65,7 +70,8 @@ namespace GPlatesFileIO
 		 */
 		Format
 		get_export_file_format(
-				const QFileInfo& file_info);
+				const QFileInfo& file_info,
+				const FeatureCollectionFileFormat::Registry &file_format_registry);
 
 
 		/**

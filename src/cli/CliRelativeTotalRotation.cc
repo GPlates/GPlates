@@ -38,7 +38,6 @@
 #include "app-logic/ReconstructionTreeCreator.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
-#include "file-io/FeatureCollectionReaderWriter.h"
 #include "file-io/FileInfo.h"
 #include "file-io/ReadErrorAccumulation.h"
 

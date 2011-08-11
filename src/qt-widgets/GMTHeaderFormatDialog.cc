@@ -29,7 +29,7 @@
 GPlatesQtWidgets::GMTHeaderFormatDialog::GMTHeaderFormatDialog(
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
-	d_header_format(GPlatesFileIO::FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER)
+	d_header_format(GMT_WITH_PLATES4_STYLE_HEADER)
 {
 	setupUi(this);
 
@@ -43,23 +43,19 @@ GPlatesQtWidgets::GMTHeaderFormatDialog::finished()
 {
 	if (radio_button_plates4_header->isChecked())
 	{
-		d_header_format =
-			GPlatesFileIO::FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER;
+		d_header_format = GMT_WITH_PLATES4_STYLE_HEADER;
 	}
 	else if (radio_button_feature_properties->isChecked())
 	{
-		d_header_format =
-			GPlatesFileIO::FeatureCollectionWriteFormat::GMT_VERBOSE_HEADER;
+		d_header_format = GMT_VERBOSE_HEADER;
 	}
 	else if (radio_button_prefer_plate4_style->isChecked())
 	{
-		d_header_format =
-			GPlatesFileIO::FeatureCollectionWriteFormat::GMT_PREFER_PLATES4_STYLE_HEADER;
+		d_header_format = GMT_PREFER_PLATES4_STYLE_HEADER;
 	}
 	else
 	{
-		d_header_format =
-			GPlatesFileIO::FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER;
+		d_header_format = GMT_WITH_PLATES4_STYLE_HEADER;
 	}
 
 	close();

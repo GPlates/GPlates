@@ -56,6 +56,14 @@ namespace GPlatesFileIO
 			const FileInfo &file_info);
 
 
+	// NOTE: This is known to not work correctly on Windows Vista and above when
+	// saving to the Desktop and certain other directories (in particular, those
+	// that the user can write to, but does not explicitly own). The test on
+	// Windows should probably be on the fileName() not the path(). However, if
+	// you are writing to a file, just try and open the file for writing, and if
+	// it fails, then throw an exception (instead of explicitly checking whether
+	// the file can be written to).
+#if 0
 	//@{
 	/**
 	 * Returns 'true' if specified file is writable.
@@ -71,6 +79,7 @@ namespace GPlatesFileIO
 	is_writable(
 			const FileInfo &file_info);
 	//@}
+#endif
 
 
 	/**
@@ -182,15 +191,6 @@ namespace GPlatesFileIO
 			const FileInfo &file_info)
 	{
 		return file_info.get_qfileinfo().exists();
-	}
-
-
-	inline
-	bool
-	is_writable(
-			const FileInfo &file_info)
-	{
-		return is_writable(file_info.get_qfileinfo());
 	}
 }
 

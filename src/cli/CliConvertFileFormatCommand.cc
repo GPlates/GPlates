@@ -140,14 +140,14 @@ GPlatesCli::ConvertFileFormatCommand::run(
 
 		// Get the save filename.
 		const GPlatesFileIO::FileInfo save_file_info =
-				FeatureCollectionFileIO::get_save_file_info(
+				file_io.get_save_file_info(
 						input_file.get_reference().get_file_info(),
 						d_save_file_type,
 						d_save_file_prefix.c_str(),
 						d_save_file_suffix.c_str());
 
 		// Save the file with (re)assigned plate ids.
-		FeatureCollectionFileIO::save_file(save_file_info, feature_collection);
+		file_io.save_file(save_file_info, feature_collection);
 	}
 
 	return 0;

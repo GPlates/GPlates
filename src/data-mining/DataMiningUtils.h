@@ -44,6 +44,14 @@ namespace GPlatesAppLogic
 	class ReconstructedFeatureGeometry;
 }
 
+namespace GPlatesFileIO
+{
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+}
+
 namespace GPlatesDataMining
 {
 	class CoRegConfigurationTable;
@@ -125,6 +133,7 @@ namespace GPlatesDataMining
 		GPlatesFileIO::File::non_null_ptr_type 
 		load_file(
 				const QString fn,
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL);
 		
 		/*
@@ -135,6 +144,7 @@ namespace GPlatesDataMining
 		load_files(
 				const std::vector<QString>& filenames,
 				std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL);
 
 		
@@ -143,6 +153,7 @@ namespace GPlatesDataMining
 		load_files(
 				const std::vector<const char*>& filenames,
 				std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL)
 		{
 			std::vector<QString> new_filenames;
@@ -150,7 +161,7 @@ namespace GPlatesDataMining
 			{
 				new_filenames.push_back(QString(filename));
 			}
-			return load_files(new_filenames,files);
+			return load_files(new_filenames,files,file_format_registry);
 		}
 		
 		/*

@@ -147,8 +147,7 @@ namespace GPlatesGui
 		 * bars and/or error dialogs.
 		 *
 		 * NOTE: This will likely result in a "Unable to save files of that type" error if
-		 * the file has not been named yet. This could be handled better. See also
-		 * GMT header problem in @a get_feature_collection_write_format().
+		 * the file has not been named yet. This could be handled better.
 		 */
 		bool
 		save_file_in_place(
@@ -182,8 +181,7 @@ namespace GPlatesGui
 		bool
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		/**
@@ -224,14 +222,6 @@ namespace GPlatesGui
 
 
 	private:
-
-		/**
-		 * Get format for writing to feature collection file.
-		 */
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format
-		get_feature_collection_write_format(
-				const GPlatesFileIO::FileInfo& file_info);
-
 		/**
 		 * Allows calling multiple functions that throw the same types of exceptions and
 		 * handles those exceptions in one place.
@@ -318,11 +308,6 @@ namespace GPlatesGui
 		 * The open files dialog box.
 		 */
 		GPlatesQtWidgets::OpenFileDialog d_open_files_dialog;
-		
-		/**
-		 * Controls whether Save File dialogs include a Compressed GPML option.
-		 */
-		bool d_gzip_available;
 	};
 }
 

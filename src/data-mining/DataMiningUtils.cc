@@ -27,7 +27,7 @@
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/ShapefileAttributeFinder.h"
-#include "file-io/FeatureCollectionReaderWriter.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "global/LogException.h"
 
 #include "CoRegConfigurationTable.h"
@@ -201,6 +201,7 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 GPlatesFileIO::File::non_null_ptr_type
 GPlatesDataMining::DataMiningUtils::load_file(
 		const QString fn,
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		GPlatesFileIO::ReadErrorAccumulation* read_errors)
 {
 	using namespace GPlatesFileIO;
@@ -211,7 +212,8 @@ GPlatesDataMining::DataMiningUtils::load_file(
 		read_errors = &acc;
 
 	File::non_null_ptr_type file = File::create_file(FileInfo(fn));
-	read_feature_collection(file->get_reference(), model, *read_errors);
+	file_format_registry.read_feature_collection(file->get_reference(), *read_errors);
+
 	return file;	
 }
 
@@ -219,6 +221,7 @@ std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
 GPlatesDataMining::DataMiningUtils::load_files(
 		const std::vector<QString>& filenames,
 		std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		GPlatesFileIO::ReadErrorAccumulation* read_errors)
 {
 	using namespace GPlatesFileIO;
@@ -232,7 +235,7 @@ GPlatesDataMining::DataMiningUtils::load_files(
 	{
 		File::non_null_ptr_type file = File::create_file(FileInfo(filename));
 		files.push_back(file);
-		read_feature_collection(file->get_reference(), model, *read_errors);
+		file_format_registry.read_feature_collection(file->get_reference(), *read_errors);
 		ret.push_back(file->get_reference().get_feature_collection());
 	}
 	return ret;

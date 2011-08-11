@@ -41,7 +41,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 #include "data-mining/RegionOfInterestFilter.h"
 #include "model/ModelInterface.h"
 #include "file-io/ReadErrorAccumulation.h"
-#include "file-io/FeatureCollectionReaderWriter.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 
 //./gplates-unit-test --detect_memory_leaks=0 --G_test_to_run=*/Coreg
 
@@ -61,6 +61,8 @@ GPlatesUnitTest::CoregTestSuite::CoregTestSuite(
 
 GPlatesUnitTest::CoregTest::CoregTest()
 {
+	register_default_file_formats(d_file_format_registry, d_model);
+
 	load_test_data();
 }
 
@@ -72,21 +74,24 @@ GPlatesUnitTest::CoregTest::load_test_data()
 				load_cfg(
 						unit_test_data_path + cfg_file,
 						"rotation files"),
-				d_loaded_files);
+				d_loaded_files,
+				d_file_format_registry);
 
 	d_seed_fc =
 		DataMiningUtils::load_files(
 				load_cfg(
 						unit_test_data_path + cfg_file,
 						"seed files"),
-				d_loaded_files);
+				d_loaded_files,
+				d_file_format_registry);
 
 	d_coreg_fc =
 		DataMiningUtils::load_files(
 				load_cfg(
 						unit_test_data_path + cfg_file,
 						"coreg files"),
-				d_loaded_files);
+				d_loaded_files,
+				d_file_format_registry);
 	
 	if(d_rotation_fc.empty()) 
 		qDebug() << "No rotation file.";

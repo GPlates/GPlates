@@ -25,7 +25,6 @@
 
 #include "AssignPlateIds.h"
 
-#include "ClassifyFeatureCollection.h"
 #include "LayerProxyUtils.h"
 #include "PartitionFeatureTask.h"
 #include "ReconstructLayerProxy.h"

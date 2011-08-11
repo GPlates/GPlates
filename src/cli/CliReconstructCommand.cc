@@ -37,7 +37,6 @@
 
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/FeatureCollectionFileFormat.h"
-#include "file-io/FeatureCollectionReaderWriter.h"
 #include "file-io/FileInfo.h"
 #include "file-io/ReadErrorAccumulation.h"
 
@@ -225,7 +224,7 @@ GPlatesCli::ReconstructCommand::run(
 
 	// Export filename.
 	const GPlatesFileIO::FileInfo export_filename =
-			FeatureCollectionFileIO::get_save_file_info(
+			file_io.get_save_file_info(
 					d_export_filename.c_str(),
 					export_file_type);
 
@@ -233,7 +232,8 @@ GPlatesCli::ReconstructCommand::run(
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 				export_filename.get_qfileinfo().filePath(),
 				GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
-						export_filename.get_qfileinfo().filePath()),
+						export_filename.get_qfileinfo().filePath(),
+						file_io.get_file_format_registry()),
 				reconstruct_feature_geom_seq,
 				reconstructable_file_ptrs,
 				d_anchor_plate_id,

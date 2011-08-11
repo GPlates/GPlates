@@ -395,8 +395,7 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 			{
 				d_file_io_feedback->save_file(
 						file_info,
-						feature_collection,
-						GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+						feature_collection);
 			}
 			catch (std::exception &exc)
 			{

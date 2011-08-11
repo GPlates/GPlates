@@ -37,19 +37,26 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
-#include "file-io/FileInfo.h"
-#include "file-io/ExternalProgram.h"
-#include "file-io/FeatureCollectionFileFormat.h"
+
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
+#include "file-io/ExternalProgram.h"
+#include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/FileFormatNotSupportedException.h"
+#include "file-io/FileInfo.h"
 #include "file-io/OgrException.h"
+
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
+
 #include "gui/FileIOFeedback.h"
+
 #include "model/FeatureCollectionHandle.h"
+
 #include "presentation/ViewState.h"
+
 #include "ManageFeatureCollectionsActionWidget.h"
 
 #include "ManageFeatureCollectionsDialog.h"
@@ -77,50 +84,29 @@ namespace
 	 * Returns a text string that identifies the file format for a file.
 	 * Used to set the 'FORMAT' column in the table.
 	 */
-	const QString &
+	QString
 	get_format_for_file(
-			const QFileInfo &qfileinfo)
+			const QFileInfo &qfileinfo,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 	{
-		static const QString format_line(QObject::tr("PLATES4 line"));
-		static const QString format_rotation(QObject::tr("PLATES4 rotation"));
-		static const QString format_shapefile(QObject::tr("ESRI shapefile"));
-		static const QString format_ogrgmt(QObject::tr("OGR GMT"));
-		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
-		static const QString format_gpmlz(QObject::tr("Compressed GPML"));
-		static const QString format_gmt(QObject::tr("GMT xy"));
-		static const QString format_gmap(QObject::tr("GMAP VGP"));
-		static const QString format_unknown(QObject::tr(""));
-		
-		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
+		// Look for a *read* format for the specified file.
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format =
+				file_format_registry.get_read_file_format(qfileinfo);
+		if (!file_format)
 		{
-		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
-			return format_line;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
-			return format_rotation;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-			return format_shapefile;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::OGRGMT:
-			return format_ogrgmt;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
-			return format_gpml;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPMLZ:
-			return format_gpmlz;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
-			return format_gmt;
-			
-		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
-			return format_gmap;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
-		default:
-			return format_unknown;
+			// Look for a *write* format for the specified file.
+			file_format = file_format_registry.get_write_file_format(qfileinfo);
+			if (!file_format)
+			{
+				// Could not find a read or write format for the specified file so return an
+				// empty format string to indicate an unknown file format.
+				return QObject::tr("");
+			}
 		}
+
+		return QObject::tr(
+				file_format_registry.get_short_description(file_format.get())
+						.toAscii().constData());
 	}
 
 
@@ -420,7 +406,9 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	
 	QString filename_str = qfileinfo.fileName();
 	QString filepath_str = QDir::toNativeSeparators(qfileinfo.path());
-	QString format_str = get_format_for_file(qfileinfo);
+	QString format_str = get_format_for_file(
+			qfileinfo,
+			d_view_state.get_application_state().get_feature_collection_file_format_registry());
 
 	// Add blank row.
 	int row = table_feature_collections->rowCount();
@@ -439,7 +427,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	
 	// Add action buttons widget.
 	ManageFeatureCollectionsActionWidget *action_widget_ptr =
-			new ManageFeatureCollectionsActionWidget(*this, file, this);
+			new ManageFeatureCollectionsActionWidget(
+					*this,
+					file,
+					d_view_state.get_application_state().get_feature_collection_file_format_registry(),
+					this);
 	table_feature_collections->setCellWidget(row, ColumnNames::ACTIONS, action_widget_ptr);
 	
 	// Enable the edit_configuration button if we have a shapefile. 

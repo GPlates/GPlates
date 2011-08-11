@@ -73,6 +73,7 @@ GPlatesFileIO::create_copy_with_new_filename(
 }
 
 
+#if 0
 bool
 GPlatesFileIO::is_writable(
 		const QFileInfo &file_info)
@@ -88,3 +89,4 @@ GPlatesFileIO::is_writable(
 	QFileInfo dir(file_info.path());
 	return dir.permission(QFile::WriteUser);
 }
+#endif

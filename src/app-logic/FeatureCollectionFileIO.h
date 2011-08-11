@@ -48,6 +48,11 @@
 
 namespace GPlatesFileIO
 {
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+
 	class PropertyMapper;
 	struct ReadErrorAccumulation;
 }
@@ -70,6 +75,7 @@ namespace GPlatesAppLogic
 	public:
 		FeatureCollectionFileIO(
 				GPlatesModel::ModelInterface &model,
+				GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 
@@ -150,9 +156,7 @@ namespace GPlatesAppLogic
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference
 		create_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
-					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection);
 
 
 		/**
@@ -164,9 +168,7 @@ namespace GPlatesAppLogic
 		void
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
-					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		/**
@@ -205,6 +207,11 @@ namespace GPlatesAppLogic
 
 
 		GPlatesModel::ModelInterface d_model;
+
+		/**
+		 * A registry of the file formats for reading/writing feature collections.
+		 */
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry &d_file_format_registry;
 
 		/**
 		 * The loaded feature collection files.
