@@ -78,6 +78,7 @@
 #include "ImportRasterDialog.h"
 #include "InformationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
+#include "ManageFeatureCollectionsEditConfigurations.h"
 #include "MapView.h"
 #include "MeshDialog.h"
 #include "PreferencesDialog.h"
@@ -397,6 +398,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// some of this state so just get the ViewportWindow reference from ViewState -
 	// the method will eventually get removed when the state has been moved over.
 	get_view_state().set_other_view_state(*this);
+
+	// Register the default edit configurations for those file formats that have configurations.
+	ManageFeatureCollections::register_default_edit_configurations(*d_manage_feature_collections_dialog_ptr);
 
 	// Initialise the Shapefile property mapper before we start reading.
 	// FIXME: Not sure where this should go since it involves qt widgets (logical place is

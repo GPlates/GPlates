@@ -408,6 +408,7 @@ GPlatesGui::FileIOFeedback::save_file_as(
 				file,
 				d_app_state_ptr->get_reconstruct_method_registry(),
 				d_app_state_ptr->get_feature_collection_file_format_registry()));
+
 	QString file_path = file.get_file().get_file_info().get_qfileinfo().filePath();
 	d_save_file_as_dialog.select_file(file_path);
 	boost::optional<QString> filename_opt = d_save_file_as_dialog.get_file_name();
@@ -454,6 +455,7 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 				file,
 				d_app_state_ptr->get_reconstruct_method_registry(),
 				d_app_state_ptr->get_feature_collection_file_format_registry()));
+
 	QString file_path = file.get_file().get_file_info().get_qfileinfo().filePath();
 	d_save_file_copy_dialog.select_file(file_path);
 	boost::optional<QString> filename_opt = d_save_file_copy_dialog.get_file_name();
@@ -474,9 +476,14 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 			filename, file.get_file().get_file_info());
 
 	// Save the feature collection, with GUI feedback.
+	//
+	// NOTE: The 'clear_unsaved_changes' flag is set to false because we are not really
+	// saving the changes to the original file (only making a copy) whereas the original file
+	// is still associated with the unsaved feature collection.
 	save_file(
 			new_fileinfo,
-			file.get_file().get_feature_collection());
+			file.get_file().get_feature_collection(),
+			false/*clear_unsaved_changes*/);
 
 	return true;
 }
@@ -487,7 +494,8 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 bool
 GPlatesGui::FileIOFeedback::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		bool clear_unsaved_changes)
 {
 	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
 	// the screen.
@@ -498,7 +506,8 @@ GPlatesGui::FileIOFeedback::save_file(
 		// Save the feature collection. This is where we finally dip down into the file-io level.
 		d_feature_collection_file_io_ptr->save_file(
 				file_info,
-				feature_collection);
+				feature_collection,
+				clear_unsaved_changes);
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
 	{

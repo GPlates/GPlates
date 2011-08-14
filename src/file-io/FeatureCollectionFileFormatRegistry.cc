@@ -34,6 +34,7 @@
 #include "ArbitraryXmlReader.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "ExternalProgram.h"
+#include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileFormatNotSupportedException.h"
 #include "FileInfo.h"
 #include "GeoscimlProfile.h"
@@ -79,9 +80,11 @@ namespace GPlatesFileIO
 				QString filename(file_info.filePath());
 				QFile f(filename);
 
+				// If we can't open the file then maybe it doesn't exist yet so we
+				// report UNKNOWN format instead of throwing an exception.
 				if ( ! f.open(QIODevice::ReadOnly)) 
 				{
-					throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
+					return FILE_MAGIC_UNKNOWN;
 				}
 
 				FileMagic magic = FILE_MAGIC_UNKNOWN;
@@ -203,15 +206,15 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * A convenience function to dynamic cast a shared pointer to a @a ReadWriteOptions
+			 * A convenience function to dynamic cast a shared pointer to a @a Configuration
 			 * into a shared pointer to a derived type 'WriteOptionsDerivedType'.
 			 */
 			template <class WriteOptionsDerivedType>
-			typename WriteOptionsDerivedType::non_null_ptr_to_const_type
+			typename WriteOptionsDerivedType::shared_ptr_to_const_type
 			dynamic_cast_write_options(
-					const ReadWriteOptions::non_null_ptr_to_const_type &write_options)
+					const Configuration::shared_ptr_to_const_type &write_options)
 			{
-				typename WriteOptionsDerivedType::non_null_ptr_to_const_type
+				typename WriteOptionsDerivedType::shared_ptr_to_const_type
 						derived_write_options =
 								boost::dynamic_pointer_cast<
 										const WriteOptionsDerivedType>(
@@ -306,10 +309,20 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_file_format(
 		const is_write_file_format_function_type &is_write_file_format_function,
 		const boost::optional<read_feature_collection_function_type> &read_feature_collection_function,
 		const boost::optional<create_feature_collection_writer_function_type> &create_feature_collection_writer_function,
-		const boost::optional<ReadWriteOptions::non_null_ptr_to_const_type> &default_read_write_options)
+		const boost::optional<Configuration::shared_ptr_to_const_type> &default_configuration_opt)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!filename_extensions.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// If a default configuration is not provided then just create a base 'Configuration' object.
+	Configuration::shared_ptr_to_const_type default_configuration =
+			default_configuration_opt
+			? default_configuration_opt.get()
+			: Configuration::create(file_format);
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			default_configuration->get_file_format() == file_format,
 			GPLATES_ASSERTION_SOURCE);
 
 	d_file_format_info_map.insert(
@@ -323,7 +336,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_file_format(
 					is_write_file_format_function,
 					read_feature_collection_function,
 					create_feature_collection_writer_function,
-					default_read_write_options)));
+					default_configuration)));
 }
 
 
@@ -468,33 +481,40 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_feature_classification
 
 void
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
-		Format file_format,
 		const File::Reference &file_ref,
 		ReadErrorAccumulation &read_errors,
-		const boost::optional<ReadWriteOptions::non_null_ptr_to_const_type> &non_default_read_options) const
+		boost::optional<Configuration::shared_ptr_to_const_type> configuration) const
 {
-	const FileFormatInfo &file_format_info = get_file_format_info(file_format);
+	// If a configuration was not specified then use the registered default configuration.
+	if (!configuration)
+	{
+		const boost::optional<Format> file_format = get_read_file_format(file_ref.get_file_info().get_qfileinfo());
+		if (!file_format)
+		{
+			throw FileFormatNotSupportedException(
+					GPLATES_EXCEPTION_SOURCE,
+					"No registered file formats suitable for reading feature collection from this file.");
+		}
+
+		configuration = get_default_configuration(file_format.get());
+	}
+
+	const FileFormatInfo &file_format_info = get_file_format_info(configuration.get()->get_file_format());
 
 	// If there's no reader then don't read anything.
 	// We shouldn't really get here since the caller should have checked 'get_read_file_format()'.
 	if (!file_format_info.read_feature_collection_function)
 	{
-		qWarning() << "Reading feature collections from file's with format '"
+		qWarning() << "Reading feature collections from file's with extension '."
 			<< file_format_info.filename_extensions.front() << "' is not currently supported.";
 		return;
 	}
 	const read_feature_collection_function_type &read_feature_collection_function =
 			file_format_info.read_feature_collection_function.get();
 
-	// Use default read options unless the caller has specified some.
-	const boost::optional<ReadWriteOptions::non_null_ptr_to_const_type> read_options =
-			non_default_read_options
-			? non_default_read_options.get()
-			: file_format_info.default_read_write_options;
-
 	try
 	{
-		read_feature_collection_function(file_ref, read_errors, read_options);
+		read_feature_collection_function(file_ref, read_errors, configuration.get());
 	}
 	catch (ErrorOpeningFileForReadingException &e)
 	{
@@ -523,60 +543,44 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 
 
 void
-GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
-		const File::Reference &file_ref,
-		ReadErrorAccumulation &read_errors,
-		const boost::optional<ReadWriteOptions::non_null_ptr_to_const_type> &non_default_read_options) const
-{
-	const boost::optional<Format> file_format =
-			get_read_file_format(file_ref.get_file_info().get_qfileinfo());
-	if (!file_format)
-	{
-		throw FileFormatNotSupportedException(
-				GPLATES_EXCEPTION_SOURCE,
-				"No registered file formats suitable for reading feature collection from this file.");
-	}
-
-	read_feature_collection(
-			file_format.get(),
-			file_ref,
-			read_errors,
-			non_default_read_options);
-}
-
-
-void
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::write_feature_collection(
-		Format file_format,
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
 		const FileInfo &file_info,
-		const boost::optional<ReadWriteOptions::non_null_ptr_to_const_type> &non_default_write_options) const
+		boost::optional<Configuration::shared_ptr_to_const_type> configuration) const
 {
-	const FileFormatInfo &file_format_info = get_file_format_info(file_format);
+	// If a configuration was not specified then use the registered default configuration.
+	if (!configuration)
+	{
+		const boost::optional<Format> file_format = get_write_file_format(file_info.get_qfileinfo());
+		if (!file_format)
+		{
+			throw FileFormatNotSupportedException(
+					GPLATES_EXCEPTION_SOURCE,
+					"No registered file formats suitable for writing feature collection to this file.");
+		}
+
+		configuration = get_default_configuration(file_format.get());
+	}
+
+	const FileFormatInfo &file_format_info = get_file_format_info(configuration.get()->get_file_format());
 
 	// If there's no writer then don't write anything.
 	// We shouldn't really get here since the caller should have checked 'get_write_file_format()'.
 	if (!file_format_info.create_feature_collection_writer_function)
 	{
-		qWarning() << "Writing feature collections to file's with format '"
+		qWarning() << "Writing feature collections to file's with extension '."
 			<< file_format_info.filename_extensions.front() << "' is not currently supported.";
 		return;
 	}
 	const create_feature_collection_writer_function_type &create_feature_collection_writer_function =
 			file_format_info.create_feature_collection_writer_function.get();
 
-	// Use default write options unless the caller has specified some.
-	const boost::optional<ReadWriteOptions::non_null_ptr_to_const_type> write_options =
-			non_default_write_options
-			? non_default_write_options.get()
-			: file_format_info.default_read_write_options;
-
 	// Create the feature collection writer.
 	const boost::shared_ptr<GPlatesModel::ConstFeatureVisitor> feature_collection_writer =
 			create_feature_collection_writer_function(
 					feature_collection,
 					file_info,
-					write_options);
+					configuration.get());
 
 	// Write the feature collection.
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
@@ -585,43 +589,20 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::write_feature_collection(
 }
 
 
-void
-GPlatesFileIO::FeatureCollectionFileFormat::Registry::write_feature_collection(
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
-		const FileInfo &file_info,
-		const boost::optional<ReadWriteOptions::non_null_ptr_to_const_type> &write_options) const
-{
-	const boost::optional<Format> file_format =
-			get_write_file_format(file_info.get_qfileinfo());
-	if (!file_format)
-	{
-		throw FileFormatNotSupportedException(
-				GPLATES_EXCEPTION_SOURCE,
-				"No registered file formats suitable for writing feature collection to this file.");
-	}
-
-	write_feature_collection(
-			file_format.get(),
-			feature_collection,
-			file_info,
-			write_options);
-}
-
-
-const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::ReadWriteOptions::non_null_ptr_to_const_type> &
-GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_default_read_write_options(
+const GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type &
+GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_default_configuration(
 		Format file_format) const
 {
-	return get_file_format_info(file_format).default_read_write_options;
+	return get_file_format_info(file_format).default_configuration;
 }
 
 
 void
-GPlatesFileIO::FeatureCollectionFileFormat::Registry::set_default_read_write_options(
+GPlatesFileIO::FeatureCollectionFileFormat::Registry::set_default_configuration(
 		Format file_format,
-		const ReadWriteOptions::non_null_ptr_to_const_type &default_read_write_options)
+		const Configuration::shared_ptr_to_const_type &default_read_write_options)
 {
-	get_file_format_info(file_format).default_read_write_options = default_read_write_options;
+	get_file_format_info(file_format).default_configuration = default_read_write_options;
 }
 
 

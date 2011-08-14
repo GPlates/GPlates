@@ -177,11 +177,15 @@ namespace GPlatesGui
 		 * Pops up simple dialogs if there are problems, and returns false.
 		 *
 		 * This is called by the other @a save_file_* methods above.
+		 * NOTE: @a clear_unsaved_changes can be set to false when this method is used by
+		 * @a save_file_copy - that is the original file has not been saved and so it still
+		 * has unsaved changes.
 		 */
 		bool
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				bool clear_unsaved_changes = true);
 
 
 		/**

@@ -183,7 +183,8 @@ GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
 void
 GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		bool clear_unsaved_changes)
 {
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
@@ -208,7 +209,10 @@ GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 	
 	d_file_format_registry.write_feature_collection(feature_collection, file_info);
 
-	feature_collection->clear_unsaved_changes();
+	if (clear_unsaved_changes)
+	{
+		feature_collection->clear_unsaved_changes();
+	}
 }
 
 

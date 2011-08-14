@@ -23,17 +23,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "ManageFeatureCollectionsActionWidget.h"
+
 #include "ManageFeatureCollectionsDialog.h"
+
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
-
-#include "ManageFeatureCollectionsActionWidget.h"
 
 
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollectionsActionWidget(
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &feature_collections_dialog,
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
-		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_collections_dialog(feature_collections_dialog),
@@ -42,33 +42,59 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollections
 	setupUi(this);
 
 	// Set up slots for each button
-	QObject::connect(button_edit_configuration, SIGNAL(clicked()), this, SLOT(edit_configuration()));
-	QObject::connect(button_save, SIGNAL(clicked()), this, SLOT(save()));
-	QObject::connect(button_save_as, SIGNAL(clicked()), this, SLOT(save_as()));
-	QObject::connect(button_save_copy, SIGNAL(clicked()), this, SLOT(save_copy()));
-	QObject::connect(button_reload, SIGNAL(clicked()), this, SLOT(reload()));
-	QObject::connect(button_unload, SIGNAL(clicked()), this, SLOT(unload()));
+	QObject::connect(button_edit_configuration, SIGNAL(clicked()), this, SLOT(handle_edit_configuration()));
+	QObject::connect(button_save, SIGNAL(clicked()), this, SLOT(handle_save()));
+	QObject::connect(button_save_as, SIGNAL(clicked()), this, SLOT(handle_save_as()));
+	QObject::connect(button_save_copy, SIGNAL(clicked()), this, SLOT(handle_save_copy()));
+	QObject::connect(button_reload, SIGNAL(clicked()), this, SLOT(handle_reload()));
+	QObject::connect(button_unload, SIGNAL(clicked()), this, SLOT(handle_unload()));
 
-	update_state(file_format_registry);
+	// Disable all buttons initially.
+	// The caller needs to call 'update()' to enable the appropriate buttons.
+	button_edit_configuration->setDisabled(true);
+	button_save->setDisabled(true);
+	button_save_as->setDisabled(true);
+	button_save_copy->setDisabled(true);
+	button_reload->setDisabled(true);
+	button_unload->setDisabled(true);
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state(
-		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update(
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
+		const GPlatesFileIO::FileInfo &fileinfo,
+		file_format_type file_format,
+		const file_configuration_type &file_configuration,
+		bool enable_edit_configuration)
 {
-	const GPlatesFileIO::FileInfo &fileinfo = d_file_reference.get_file().get_file_info();
+	d_file_format = file_format;
+	d_file_configuration = file_configuration;
 
-	// Enable the buttons in question first, then disable if needed.
-	button_save->setDisabled(false);
-	button_reload->setDisabled(false);
+	// Start out with the all buttons enabled and then disable as needed.
+	button_edit_configuration->setEnabled(true);
+	button_save->setEnabled(true);
+	button_save_as->setEnabled(true);
+	button_save_copy->setEnabled(true);
+	button_reload->setEnabled(true);
+	button_unload->setEnabled(true);
 
-	// Disable reload button for file formats we can't read yet.
-	// These are file formats that were read into GPlates via another format and
-	// then saved as the current file format.
-	if (!file_format_registry.get_read_file_format(fileinfo.get_qfileinfo()))
+	// Disable reload button for file formats that we cannot read.
+	if (!file_format_registry.does_file_format_support_reading(d_file_format))
 	{
-		button_reload->setDisabled(true);
+		button_reload->setEnabled(false);
+	}
+
+	// Disable save button for file formats that we cannot write.
+	if (!file_format_registry.does_file_format_support_writing(d_file_format))
+	{
+		button_save->setEnabled(false);
+	}
+
+	// Disable the edit configuration button if a edit configuration is not available.
+	if (!enable_edit_configuration)
+	{
+		button_edit_configuration->setEnabled(false);
 	}
 
 	// Edge case - if the FileInfo has been created for a FeatureCollection
@@ -76,51 +102,46 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state(
 	// feature collection at the end of d10n), then any "Save" function
 	// should be disabled in favour of "Save As". Similarly, the FeatureCollection
 	// cannot be "Reloaded".
-	if ( ! GPlatesFileIO::file_exists(fileinfo)) {
-		button_save->setDisabled(true);
-		button_reload->setDisabled(true);
+	if ( ! GPlatesFileIO::file_exists(fileinfo))
+	{
+		button_save->setEnabled(false);
+		button_reload->setEnabled(false);
 	}
 }
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::edit_configuration()
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::handle_edit_configuration()
 {
 	d_feature_collections_dialog.edit_configuration(this);
 }
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::save()
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::handle_save()
 {
 	d_feature_collections_dialog.save_file(this);
 }
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::save_as()
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::handle_save_as()
 {
 	d_feature_collections_dialog.save_file_as(this);
 }
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::save_copy()
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::handle_save_copy()
 {
 	d_feature_collections_dialog.save_file_copy(this);
 }
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::reload()
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::handle_reload()
 {
 	d_feature_collections_dialog.reload_file(this);
 }
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::unload()
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::handle_unload()
 {
 	d_feature_collections_dialog.unload_file(this);
-}
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::enable_edit_configuration_button()
-{
-	button_edit_configuration->setEnabled(true);
 }

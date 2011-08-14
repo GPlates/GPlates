@@ -53,7 +53,6 @@ namespace GPlatesFileIO
 		class Registry;
 	}
 
-	class PropertyMapper;
 	struct ReadErrorAccumulation;
 }
 
@@ -164,11 +163,16 @@ namespace GPlatesAppLogic
 		 *
 		 * NOTE: this differs from @a create_file in that it only saves the feature collection
 		 * to the file and doesn't register with FeatureCollectionFileState.
+		 *
+		 * NOTE: @a clear_unsaved_changes can be set to false when saving a *copy* of a
+		 * feature collection - that is the original file has not been saved and so it still
+		 * has unsaved changes.
 		 */
 		void
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				bool clear_unsaved_changes = true);
 
 
 		/**

@@ -48,6 +48,8 @@
 #include "file-io/FileInfo.h"
 #include "file-io/OgrException.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
@@ -81,10 +83,9 @@ namespace
 	}
 	
 	/**
-	 * Returns a text string that identifies the file format for a file.
-	 * Used to set the 'FORMAT' column in the table.
+	 * Returns the file format for a file if it was identified, otherwise throws @a FileFormatNotSupportedException.
 	 */
-	QString
+	GPlatesFileIO::FeatureCollectionFileFormat::Format
 	get_format_for_file(
 			const QFileInfo &qfileinfo,
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
@@ -96,16 +97,42 @@ namespace
 		{
 			// Look for a *write* format for the specified file.
 			file_format = file_format_registry.get_write_file_format(qfileinfo);
-			if (!file_format)
-			{
-				// Could not find a read or write format for the specified file so return an
-				// empty format string to indicate an unknown file format.
-				return QObject::tr("");
-			}
 		}
 
+		// If still can't find a file format then throw an exception.
+		// This shouldn't happen since the file was read in which meant it's file format was
+		// previously determined. This would probably only happen if the filename somehow was
+		// changed between then and now (and the new filename has an unsupported filename extension).
+		if (!file_format)
+		{
+			throw GPlatesFileIO::FileFormatNotSupportedException(
+					GPLATES_EXCEPTION_SOURCE,
+					"No registered file formats suitable for reading or writing file.");
+		}
+
+		return file_format.get();
+	}
+	
+	/**
+	 * Returns the file format for a file.
+	 * Used to set the 'FORMAT' column in the table.
+	 */
+	QString
+	get_format_description_for_file(
+			GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
+	{
+#if 0
+		if (!file_format)
+		{
+			// Could not find a read or write format for the specified file so return an
+			// empty format string to indicate an unknown file format.
+			return QObject::tr("");
+		}
+#endif
+
 		return QObject::tr(
-				file_format_registry.get_short_description(file_format.get())
+				file_format_registry.get_short_description(file_format)
 						.toAscii().constData());
 	}
 
@@ -204,20 +231,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::update()
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::register_edit_configuration(
+		GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
+		const boost::shared_ptr<const ManageFeatureCollections::EditConfiguration> &edit_configuration)
 {
-	clear_rows();
-
-	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
-			d_file_state.get_loaded_files();
-	BOOST_FOREACH(
-			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
-			loaded_files)
-	{
-		add_row(file_ref);
-	}
-
-	highlight_unsaved_changes();
+	d_edit_configurations[file_format] = edit_configuration;
 }
 
 
@@ -225,6 +243,15 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
+	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration =
+			action_widget_ptr->get_file_configuration();
+
+	// The edit configuration button (in the action widget) should only be enabled if we have a file configuration.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			file_configuration,
+			GPLATES_ASSERTION_SOURCE);
+
+#if 0
 	// The "edit configuration" method only makes sense for shapefiles 
 	// (until there is some sort of equivalent requirement for other types of 
 	// feature collection), and as such, only shapefiles have the "edit configuration" 
@@ -236,6 +263,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
 			action_widget_ptr->get_file_reference();
 
 	d_feature_collection_file_io->remap_shapefile_attributes(file_ref);
+#endif
 }
 
 
@@ -310,8 +338,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_files_added(
 			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
 			new_files)
 	{
-		add_row(file_ref);
+		add_row(file_ref, false/*should_highlight_unsaved_changes*/);
 	}
+
+	highlight_unsaved_changes();
 }
 
 
@@ -334,8 +364,18 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_file_info_ch
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref)
 {
-	// Row text needs to be updated.
-	update();
+	// Find the existing row for the specified file.
+	const int row = find_row(file_ref);
+	if (row == table_feature_collections->rowCount())
+	{
+		// We should assert here but printing a warning instead.
+		qWarning() << "Internal Error: Unable to find renamed file in ManageFeatureCollectionsDialog.";
+		return;
+	}
+
+	// Row text needs to be updated to reflect a new filename and a new default file configuration
+	// if the file's format needs a file configuration.
+	update_row(row, file_ref);
 }
 
 
@@ -384,7 +424,30 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::clear_rows()
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
+		bool should_highlight_unsaved_changes)
+{
+	// Add blank row.
+	const int row = table_feature_collections->rowCount();
+	table_feature_collections->insertRow(row);
+	
+	// Add action buttons widget.
+	ManageFeatureCollectionsActionWidget *action_widget_ptr =
+			new ManageFeatureCollectionsActionWidget(
+					*this,
+					file,
+					this);
+	table_feature_collections->setCellWidget(row, ColumnNames::ACTIONS, action_widget_ptr);
+
+	update_row(row, file, should_highlight_unsaved_changes);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
+		int row,
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
+		bool should_highlight_unsaved_changes)
 {
 	const GPlatesFileIO::FileInfo &file_info = file.get_file().get_file_info();
 
@@ -403,45 +466,52 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 		// The file doesn't exist so give it a filename to indicate this.
 		display_name = "New Feature Collection";
 	}
-	
+
+	const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry =
+			d_view_state.get_application_state().get_feature_collection_file_format_registry();
+
+	// Determine the file format of the file if possible.
+	const GPlatesFileIO::FeatureCollectionFileFormat::Format file_format =
+			get_format_for_file(qfileinfo, file_format_registry);
+
+	QString format_str = get_format_description_for_file(file_format, file_format_registry);
 	QString filename_str = qfileinfo.fileName();
 	QString filepath_str = QDir::toNativeSeparators(qfileinfo.path());
-	QString format_str = get_format_for_file(
-			qfileinfo,
-			d_view_state.get_application_state().get_feature_collection_file_format_registry());
-
-	// Add blank row.
-	int row = table_feature_collections->rowCount();
-	table_feature_collections->insertRow(row);
 	
-	// Add filename item.
+	// Set the filename item.
 	QTableWidgetItem *filename_item = new QTableWidgetItem(display_name);
 	filename_item->setToolTip(tr("Location: %1").arg(filepath_str));
 	filename_item->setFlags(Qt::ItemIsEnabled);
 	table_feature_collections->setItem(row, ColumnNames::FILENAME, filename_item);
 
-	// Add file format item.
+	// Set the file format item.
 	QTableWidgetItem *format_item = new QTableWidgetItem(format_str);
 	format_item->setFlags(Qt::ItemIsEnabled);
 	table_feature_collections->setItem(row, ColumnNames::FORMAT, format_item);
 	
-	// Add action buttons widget.
-	ManageFeatureCollectionsActionWidget *action_widget_ptr =
-			new ManageFeatureCollectionsActionWidget(
-					*this,
-					file,
-					d_view_state.get_application_state().get_feature_collection_file_format_registry(),
-					this);
-	table_feature_collections->setCellWidget(row, ColumnNames::ACTIONS, action_widget_ptr);
-	
-	// Enable the edit_configuration button if we have a shapefile. 
-	if (format_str == "ESRI shapefile")
+	// Update the action buttons widget.
+	ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(table_feature_collections, row);
+	if (action_widget)
 	{
-		action_widget_ptr->enable_edit_configuration_button();
+		// If we have an edit configuration for the current file format then we can enable the
+		// edit configuration button in the action widget.
+		const bool enable_edit_configuration =
+				d_edit_configurations.find(file_format) != d_edit_configurations.end();
+
+		action_widget->update(
+				file_format_registry,
+				file_info,
+				file_format,
+				file_format_registry.get_default_configuration(file_format),
+				enable_edit_configuration);
 	}
 
-	// A bit inefficient, but highlight everything now that we have a new row.
-	highlight_unsaved_changes();
+	// This might be false if many rows are being added in which case the unsaved changes
+	// will be highlighted by the caller once *all* rows have been added.
+	if (should_highlight_unsaved_changes)
+	{
+		highlight_unsaved_changes();
+	}
 }
 
 

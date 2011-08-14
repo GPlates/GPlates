@@ -228,6 +228,8 @@ set(srcs
     ManageFeatureCollectionsDialog.cc
     ManageFeatureCollectionsDialog.h
     ManageFeatureCollectionsDialogUi.ui
+    ManageFeatureCollectionsEditConfigurations.cc
+    ManageFeatureCollectionsEditConfigurations.h
     MapCanvas.cc
     MapCanvas.h
     MapView.cc

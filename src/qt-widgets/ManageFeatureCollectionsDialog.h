@@ -26,6 +26,9 @@
 #ifndef GPLATES_GUI_MANAGEFEATURECOLLECTIONSDIALOG_H
 #define GPLATES_GUI_MANAGEFEATURECOLLECTIONSDIALOG_H
 
+#include <map>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QObject>
 #include <QPointer>
 #include <QString>
@@ -39,6 +42,14 @@
 namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileIO;
+}
+
+namespace GPlatesFileIO
+{
+	namespace FeatureCollectionFileFormat
+	{
+		class Configuration;
+	}
 }
 
 namespace GPlatesGui
@@ -56,6 +67,10 @@ namespace GPlatesQtWidgets
 {
 	class ManageFeatureCollectionsActionWidget;
 	
+	namespace ManageFeatureCollections
+	{
+		class EditConfiguration;
+	}
 
 	class ManageFeatureCollectionsDialog:
 			public QDialog, 
@@ -64,7 +79,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
-	
+
 		explicit
 		ManageFeatureCollectionsDialog(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
@@ -73,6 +88,16 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState& d_view_state,
 				QWidget *parent_ = NULL);
 		
+		/**
+		 * Registers an edit configuration for the specified file format.
+		 *
+		 * When the 'edit configuration' button is pressed the edit configuration GUI will be triggered.
+		 * Also the 'edit configuration' button is only enabled for registered file formats.
+		 */
+		void
+		register_edit_configuration(
+				GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
+				const boost::shared_ptr<const ManageFeatureCollections::EditConfiguration> &edit_configuration);
 
 		/**
 		 * Initiates editing of the file configuration. 
@@ -126,18 +151,6 @@ namespace GPlatesQtWidgets
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
 	
 	public slots:
-	
-		/**
-		 * Updates the contents of the table to match the current FeatureCollectionFileState.
-		 * This clears the table completely, and adds a new row for each loaded file.
-		 * Doing this makes the scroll pane jump to the top of the table, which may not be
-		 * desirable - so avoid doing this unless the set of loaded files has @em actually changed.
-		 *
-		 * It also calls @a highlight_unsaved_changes().
-		 */
-		void
-		update();
-
 
 		/**
 		 * Recolours table rows' background colours based on saved/unsaved state.
@@ -187,11 +200,28 @@ namespace GPlatesQtWidgets
 		/**
 		 * Adds a row to the table, creating a ManageFeatureCollectionsActionWidget to
 		 * store the FileInfo and the buttons used to interact with the file.
+		 *
+		 * @a should_highlight_unsaved_changes might be false if you're adding many rows
+		 * and you want to highlight unsaved changes only once at the end.
 		 */
 		void
 		add_row(
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it);
-		
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it,
+				bool should_highlight_unsaved_changes = true);
+
+		/**
+		 * Updates the specified row in the table to a new filename (FileInfo) and default
+		 * file configuration if one is required for the file's format.
+		 *
+		 * @a should_highlight_unsaved_changes might be false if you're updatin many rows
+		 * and you want to highlight unsaved changes only once at the end.
+		 */
+		void
+		update_row(
+				int row,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
+				bool should_highlight_unsaved_changes = true);
+
 		/**
 		 * Locates the current row of the table used by the given action widget.
 		 * Will return table_feature_collections->rowCount() if not found.
@@ -255,6 +285,13 @@ namespace GPlatesQtWidgets
 				QDropEvent *ev);
 
 	private:
+		//! Typedef for a mapping of file formats to registered edit configurations.
+		typedef std::map<
+				GPlatesFileIO::FeatureCollectionFileFormat::Format,
+				boost::shared_ptr<const ManageFeatureCollections::EditConfiguration> >
+						edit_configuration_map_type;
+
+
 		/**
 		 * The loaded feature collection files.
 		 */
@@ -273,6 +310,12 @@ namespace GPlatesQtWidgets
 		QPointer<GPlatesGui::FileIOFeedback> d_gui_file_io_feedback_ptr;
 
 		GPlatesPresentation::ViewState& d_view_state;
+
+		/**
+		 * The registered edit configurations (mapped to file formats).
+		 */
+		edit_configuration_map_type d_edit_configurations;
+
 
 		/**
 		 * Connect to signals from a @a FeatureCollectionFileState object.

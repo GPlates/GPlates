@@ -26,17 +26,22 @@
 #ifndef GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSACTIONWIDGET_H
 #define GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSACTIONWIDGET_H
 
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QWidget>
 
 #include "ManageFeatureCollectionsActionWidgetUi.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
 
+#include "file-io/FeatureCollectionFileFormat.h"
+
 
 namespace GPlatesFileIO
 {
 	namespace FeatureCollectionFileFormat
 	{
+		class Configuration;
 		class Registry;
 	}
 }
@@ -51,56 +56,89 @@ namespace GPlatesQtWidgets
 			protected Ui_ManageFeatureCollectionsActionWidget
 	{
 		Q_OBJECT
-		
+
 	public:
+		//! Typedef for a file format.
+		typedef GPlatesFileIO::FeatureCollectionFileFormat::Format file_format_type;
+
+		//! Typedef for a file configuration.
+		typedef boost::shared_ptr<const GPlatesFileIO::FeatureCollectionFileFormat::Configuration>
+				file_configuration_type;
+
+
+		/**
+		 * Constructor.
+		 *
+		 * NOTE: This disables all buttons and functionality.
+		 * You need to call @a update at least once to set things up.
+		 */
 		explicit
 		ManageFeatureCollectionsActionWidget(
 				ManageFeatureCollectionsDialog &feature_collections_dialog,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
-				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				QWidget *parent_ = NULL);
-		
+
 		/**
-		 * Enables and disables buttons according to various criteria.
+		 * Updates with a new filename and optional file configuration.
 		 */
 		void
-		update_state(
-				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry);
-		
+		update(
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
+				const GPlatesFileIO::FileInfo &fileinfo,
+				file_format_type file_format,
+				const file_configuration_type &file_configuration,
+				bool enable_edit_configuration);
+
+		//! Returns the file referenced by this action widget.
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference
 		get_file_reference() const
 		{
 			return d_file_reference;
 		}
-	
-		void
-		enable_edit_configuration_button();
-	
-	public slots:
+
+		//! Returns the file format.
+		file_format_type
+		get_file_format() const
+		{
+			return d_file_format;
+		}
+
+		//! Returns the file configuration.
+		const file_configuration_type &
+		get_file_configuration() const
+		{
+			return d_file_configuration;
+		}
+
+	private slots:
 		
 		void
-		edit_configuration();
+		handle_edit_configuration();
 
 		void
-		save();
+		handle_save();
 		
 		void
-		save_as();
+		handle_save_as();
 		
 		void
-		save_copy();
+		handle_save_copy();
 		
 		void
-		reload();
+		handle_reload();
 
 		void
-		unload();
+		handle_unload();
 	
 	private:
-	
 		ManageFeatureCollectionsDialog &d_feature_collections_dialog;
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference d_file_reference;
-		
+
+		//! The file format.
+		file_format_type d_file_format;
+
+		//! The file configuration.
+		file_configuration_type d_file_configuration;
 	};
 }
 

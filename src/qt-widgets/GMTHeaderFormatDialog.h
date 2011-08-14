@@ -28,7 +28,11 @@
 #define GPLATES_QTWIDGETS_GMTHEADERFORMATDIALOG_H
 
 #include "GMTHeaderFormatDialogUi.h"
+
 #include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/FeatureCollectionFileFormatConfigurations.h"
+#include "file-io/GMTFormatWriter.h"
+
 
 namespace GPlatesQtWidgets
 {
@@ -42,28 +46,17 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
-		/**
-		 * GMT header formats.
-		 */
-		enum HeaderFormat
-		{
-			GMT_WITH_PLATES4_STYLE_HEADER,  //!< GMT format with PLATES4 style header (otherwise) short unhelpful header.
-			GMT_VERBOSE_HEADER,             //!< GMT format with header containing string values of all feature properties.
-			GMT_PREFER_PLATES4_STYLE_HEADER //!< GMT format with PLATES4 style header preferred over verbose header.
-		};
-
-
 		explicit
 		GMTHeaderFormatDialog(
+				const GPlatesFileIO::FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type &
+						configuration,
 				QWidget *parent_ = NULL);
 
-		/**
-		 * Returns GMT header format selected by user after dialog closes.
-		 */
-		HeaderFormat
-		get_header_format() const
+		//! Returns configuration selected by user after dialog closes.
+		GPlatesFileIO::FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type
+		get_configuration() const
 		{
-			return d_header_format;
+			return d_configuration;
 		}
 
 	public slots:
@@ -71,7 +64,7 @@ namespace GPlatesQtWidgets
 		finished();
 
 	private:
-		HeaderFormat d_header_format;
+		GPlatesFileIO::FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_type d_configuration;
 	};
 }
 
