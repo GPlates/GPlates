@@ -97,7 +97,7 @@ namespace GPlatesQtWidgets
 		void
 		register_edit_configuration(
 				GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
-				const boost::shared_ptr<const ManageFeatureCollections::EditConfiguration> &edit_configuration);
+				const boost::shared_ptr<const ManageFeatureCollections::EditConfiguration> &edit_configuration_ptr);
 
 		/**
 		 * Initiates editing of the file configuration. 
