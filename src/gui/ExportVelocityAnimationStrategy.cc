@@ -265,24 +265,24 @@ GPlatesGui::ExportVelocityAnimationStrategy::export_velocity_fields_to_file(
 	GPlatesModel::NotificationGuard model_notification_guard(
 			d_export_animation_context_ptr->view_state().get_application_state().get_model_interface().access_model());
 
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = 
-			GPlatesModel::FeatureCollectionHandle::create(
-					d_export_animation_context_ptr->view_state()
-							.get_application_state()
-							.get_model_interface()->root());
+	// NOTE: We don't add it to the feature store otherwise it'll remain there but
+	// we want to release it (and its memory) after export.
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection = 
+			GPlatesModel::FeatureCollectionHandle::create();
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = feature_collection->reference();
 
 	vector_field_seq_type::const_iterator velocity_fields_iter = velocity_fields.begin();
 	vector_field_seq_type::const_iterator velocity_fields_end = velocity_fields.end();
 	for ( ; velocity_fields_iter != velocity_fields_end; ++velocity_fields_iter)
 	{
 		insert_velocity_field_into_feature_collection(
-				feature_collection, *velocity_fields_iter);
+				feature_collection_ref, *velocity_fields_iter);
 	}
 
 	GPlatesFileIO::FileInfo export_file_info(filename);
 	GPlatesFileIO::GpmlOnePointSixOutputVisitor gpml_writer(export_file_info, false);
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-			feature_collection, gpml_writer);
+			feature_collection_ref, gpml_writer);
 }
 
 
