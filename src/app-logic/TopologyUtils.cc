@@ -135,7 +135,7 @@ namespace GPlatesAppLogic
 				resolved_network.network->get_delaunay_triangulation_2(),
 				resolved_network.network->get_constrained_delaunay_triangulation_2() );
 
-			qDebug() << "interpolate_resolved_topology_network: in_mesh ?" << in_mesh;
+			//qDebug() << "interpolate_resolved_topology_network: in_mesh ?" << in_mesh;
 			if ( ! in_mesh )
 			{
 				return boost::none;
