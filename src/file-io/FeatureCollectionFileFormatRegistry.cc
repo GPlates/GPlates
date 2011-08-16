@@ -25,6 +25,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 #include <QByteArray>
 #include <QDebug>
 #include <QFile>
@@ -67,7 +68,11 @@ namespace GPlatesFileIO
 				FILE_MAGIC_UNKNOWN, FILE_MAGIC_XML, FILE_MAGIC_GZIP
 			};
 
-			FileMagic
+			/**
+			 * Returns file type (or @a FILE_MAGIC_UNKNOWN if not recognised), or boost::none
+			 * if unable to open file for reading.
+			 */
+			boost::optional<FileMagic>
 			identify_gpml_or_gpmlz_by_magic_number(
 					const QFileInfo& file_info)
 			{
@@ -84,7 +89,7 @@ namespace GPlatesFileIO
 				// report UNKNOWN format instead of throwing an exception.
 				if ( ! f.open(QIODevice::ReadOnly)) 
 				{
-					return FILE_MAGIC_UNKNOWN;
+					return boost::none;
 				}
 
 				FileMagic magic = FILE_MAGIC_UNKNOWN;
@@ -140,51 +145,59 @@ namespace GPlatesFileIO
 
 
 			bool
-			can_read_gpml_format_file(
+			is_gpml_format_file(
 					const QFileInfo &file_info,
 					const QString &filename_extension)
 			{
-				return file_name_ends_with(file_info, filename_extension) &&
-					identify_gpml_or_gpmlz_by_magic_number(file_info) != FILE_MAGIC_GZIP;
+				if (!file_name_ends_with(file_info, filename_extension))
+				{
+					return false;
+				}
+
+				boost::optional<FileMagic> file_magic = identify_gpml_or_gpmlz_by_magic_number(file_info);
+				if (file_magic &&
+					(file_magic.get() == FILE_MAGIC_GZIP))
+				{
+					// We're ok with the file type being unknown.
+					return false;
+				}
+
+				// NOTE: This includes the case where boost::none was returned meaning
+				// that the file could not be read in which case we're fine with just the
+				// filename extension matching.
+				return true;
 			}
 
 			bool
-			can_read_gpmlz_format_file(
+			is_gpmlz_format_file(
 					const QFileInfo &file_info,
 					const QString &filename_extension)
 			{
-				return file_name_ends_with(file_info, filename_extension) &&
-					identify_gpml_or_gpmlz_by_magic_number(file_info) == FILE_MAGIC_GZIP;
-			}
+				if (!file_name_ends_with(file_info, filename_extension))
+				{
+					return false;
+				}
 
-			bool
-			can_write_gpmlz_format_file(
-					const QFileInfo &file_info,
-					const QString &filename_extension)
-			{
-				return file_name_ends_with(file_info, filename_extension) &&
-					// Test if we can offer on-the-fly gzip compression.
-					// FIXME: Ideally we should let the user know WHY we're concealing this option.
-					// The user will still be able to type in a .gpml.gz file name and activate the
-					// gzipped saving code, however this will produce an exception which pops up
-					// a suitable message box (See ViewportWindow.cc)
-					GpmlOnePointSixOutputVisitor::gzip_program().test();
-			}
+				boost::optional<FileMagic> file_magic = identify_gpml_or_gpmlz_by_magic_number(file_info);
+				if (file_magic &&
+					(file_magic.get() != FILE_MAGIC_GZIP))
+				{
+					// The file type, if determined, must match gzip.
+					return false;
+				}
 
-			bool
-			read_not_supported(
-					const QFileInfo &file_info,
-					const QString &filename_extension)
-			{
-				return false;
-			}
+				// NOTE: This includes the case where boost::none was returned meaning
+				// that the file could not be read in which case we're fine with just the
+				// filename extension matching.
 
-			bool
-			write_not_supported(
-					const QFileInfo &file_info,
-					const QString &filename_extension)
-			{
-				return false;
+				// Test if we can offer on-the-fly gzip decompression/compression.
+				// FIXME: Ideally we should let the user know WHY we're concealing this option.
+				// The user will still be able to type in a .gpml.gz file name and activate the
+				// gzipped saving code, however this will produce an exception which pops up
+				// a suitable message box (See ViewportWindow.cc).
+				//
+				// There's also 'gunzip_program' but testing either determines if both are available.
+				return GpmlOnePointSixOutputVisitor::gzip_program().test();
 			}
 
 
@@ -207,25 +220,25 @@ namespace GPlatesFileIO
 
 			/**
 			 * A convenience function to dynamic cast a shared pointer to a @a Configuration
-			 * into a shared pointer to a derived type 'WriteOptionsDerivedType'.
+			 * into a shared pointer to a derived type 'ConfigurationDerivedType'.
 			 */
-			template <class WriteOptionsDerivedType>
-			typename WriteOptionsDerivedType::shared_ptr_to_const_type
-			dynamic_cast_write_options(
-					const Configuration::shared_ptr_to_const_type &write_options)
+			template <class ConfigurationDerivedType>
+			typename ConfigurationDerivedType::shared_ptr_to_const_type
+			dynamic_cast_file_configuration(
+					const Configuration::shared_ptr_to_const_type &configuration)
 			{
-				typename WriteOptionsDerivedType::shared_ptr_to_const_type
-						derived_write_options =
+				typename ConfigurationDerivedType::shared_ptr_to_const_type
+						derived_configuration =
 								boost::dynamic_pointer_cast<
-										const WriteOptionsDerivedType>(
-												write_options);
+										const ConfigurationDerivedType>(
+												configuration);
 
 				// The cast failed - this shouldn't happen - assert so programmer can fix bug.
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						derived_write_options,
+						derived_configuration,
 						GPLATES_ASSERTION_SOURCE);
 
-				return derived_write_options;
+				return derived_configuration;
 			}
 
 
@@ -289,10 +302,16 @@ namespace GPlatesFileIO
 			 */
 			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
 			create_write_only_xy_gmt_feature_collection_writer(
-					const FileInfo &file_info)
+					const FileInfo &file_info,
+					const Configuration::shared_ptr_to_const_type &configuration)
 			{
+				GMTConfiguration::shared_ptr_to_const_type gmt_configuration =
+						dynamic_cast_file_configuration<GMTConfiguration>(configuration);
+
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new GMTFormatWriter(file_info));
+						new GMTFormatWriter(
+								file_info,
+								gmt_configuration->get_header_format()));
 			}
 		}
 	}
@@ -305,8 +324,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_file_format(
 		const QString &short_description,
 		const std::vector<QString> &filename_extensions,
 		const classifications_type &feature_classification,
-		const is_read_file_format_function_type &is_read_file_format_function,
-		const is_write_file_format_function_type &is_write_file_format_function,
+		const is_file_format_function_type &is_file_format_function,
 		const boost::optional<read_feature_collection_function_type> &read_feature_collection_function,
 		const boost::optional<create_feature_collection_writer_function_type> &create_feature_collection_writer_function,
 		const boost::optional<Configuration::shared_ptr_to_const_type> &default_configuration_opt)
@@ -332,8 +350,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_file_format(
 					short_description,
 					filename_extensions,
 					feature_classification,
-					is_read_file_format_function,
-					is_write_file_format_function,
+					is_file_format_function,
 					read_feature_collection_function,
 					create_feature_collection_writer_function,
 					default_configuration)));
@@ -364,6 +381,39 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_registered_file_format
 }
 
 
+boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format>
+GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_file_format(
+		const QFileInfo& file_info) const
+{
+	BOOST_FOREACH(
+			const file_format_info_map_type::value_type &file_format_entry,
+			d_file_format_info_map)
+	{
+		const FileFormatInfo &file_format_info = file_format_entry.second;
+
+		//
+		// See if the file is recognised by the current file format.
+		//
+
+		// Iterate over the filename extensions supported by the current file format.
+		std::vector<QString>::const_iterator ext_iter = file_format_info.filename_extensions.begin();
+		std::vector<QString>::const_iterator ext_end = file_format_info.filename_extensions.end();
+		for ( ; ext_iter != ext_end; ++ext_iter)
+		{
+			const QString &filename_extension = *ext_iter;
+
+			if (file_format_info.is_file_format_function(file_info, filename_extension))
+			{
+				const Format file_format = file_format_entry.first;
+				return file_format;
+			}
+		}
+	}
+
+	return boost::none;
+}
+
+
 bool
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::does_file_format_support_reading(
 		Format file_format) const
@@ -372,77 +422,11 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::does_file_format_support_r
 }
 
 
-boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format>
-GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_read_file_format(
-		const QFileInfo& file_info) const
-{
-	BOOST_FOREACH(
-			const file_format_info_map_type::value_type &file_format_entry,
-			d_file_format_info_map)
-	{
-		const FileFormatInfo &file_format_info = file_format_entry.second;
-
-		//
-		// See if the file is recognised by the current file format.
-		//
-
-		// Iterate over the filename extensions supported by the current file format.
-		std::vector<QString>::const_iterator ext_iter = file_format_info.filename_extensions.begin();
-		std::vector<QString>::const_iterator ext_end = file_format_info.filename_extensions.end();
-		for ( ; ext_iter != ext_end; ++ext_iter)
-		{
-			const QString &filename_extension = *ext_iter;
-
-			if (file_format_info.is_read_file_format_function(file_info, filename_extension))
-			{
-				const Format file_format = file_format_entry.first;
-				return file_format;
-			}
-		}
-	}
-
-	return boost::none;
-}
-
-
 bool
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::does_file_format_support_writing(
 		Format file_format) const
 {
 	return get_file_format_info(file_format).create_feature_collection_writer_function;
-}
-
-
-boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format>
-GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_write_file_format(
-		const QFileInfo& file_info) const
-{
-	BOOST_FOREACH(
-			const file_format_info_map_type::value_type &file_format_entry,
-			d_file_format_info_map)
-	{
-		const FileFormatInfo &file_format_info = file_format_entry.second;
-
-		//
-		// See if the file is recognised by the current file format.
-		//
-
-		// Iterate over the filename extensions supported by the current file format.
-		std::vector<QString>::const_iterator ext_iter = file_format_info.filename_extensions.begin();
-		std::vector<QString>::const_iterator ext_end = file_format_info.filename_extensions.end();
-		for ( ; ext_iter != ext_end; ++ext_iter)
-		{
-			const QString &filename_extension = *ext_iter;
-
-			if (file_format_info.is_write_file_format_function(file_info, filename_extension))
-			{
-				const Format file_format = file_format_entry.first;
-				return file_format;
-			}
-		}
-	}
-
-	return boost::none;
 }
 
 
@@ -482,13 +466,13 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_feature_classification
 void
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 		const File::Reference &file_ref,
-		ReadErrorAccumulation &read_errors,
-		boost::optional<Configuration::shared_ptr_to_const_type> configuration) const
+		ReadErrorAccumulation &read_errors) const
 {
+	boost::optional<Configuration::shared_ptr_to_const_type> configuration = file_ref.get_file_configuration();
 	// If a configuration was not specified then use the registered default configuration.
 	if (!configuration)
 	{
-		const boost::optional<Format> file_format = get_read_file_format(file_ref.get_file_info().get_qfileinfo());
+		const boost::optional<Format> file_format = get_file_format(file_ref.get_file_info().get_qfileinfo());
 		if (!file_format)
 		{
 			throw FileFormatNotSupportedException(
@@ -502,9 +486,9 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 	const FileFormatInfo &file_format_info = get_file_format_info(configuration.get()->get_file_format());
 
 	// If there's no reader then don't read anything.
-	// We shouldn't really get here since the caller should have checked 'get_read_file_format()'.
 	if (!file_format_info.read_feature_collection_function)
 	{
+		// We shouldn't really get here since the caller should have checked 'does_file_format_support_reading()'.
 		qWarning() << "Reading feature collections from file's with extension '."
 			<< file_format_info.filename_extensions.front() << "' is not currently supported.";
 		return;
@@ -551,7 +535,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::write_feature_collection(
 	// If a configuration was not specified then use the registered default configuration.
 	if (!configuration)
 	{
-		const boost::optional<Format> file_format = get_write_file_format(file_info.get_qfileinfo());
+		const boost::optional<Format> file_format = get_file_format(file_info.get_qfileinfo());
 		if (!file_format)
 		{
 			throw FileFormatNotSupportedException(
@@ -565,9 +549,9 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::write_feature_collection(
 	const FileFormatInfo &file_format_info = get_file_format_info(configuration.get()->get_file_format());
 
 	// If there's no writer then don't write anything.
-	// We shouldn't really get here since the caller should have checked 'get_write_file_format()'.
 	if (!file_format_info.create_feature_collection_writer_function)
 	{
+		// We shouldn't really get here since the caller should have checked 'does_file_format_support_writing()'.
 		qWarning() << "Writing feature collections to file's with extension '."
 			<< file_format_info.filename_extensions.front() << "' is not currently supported.";
 		return;
@@ -643,23 +627,22 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 		Registry &registry,
 		GPlatesModel::ModelInterface &model)
 {
-	FeatureCollectionFileFormat::classifications_type gpml_classification;
+	classifications_type gpml_classification;
 	gpml_classification.set(); // Set all flags - GPML can handle everything.
 	registry.register_file_format(
 			GPML,
 			"GPlates Markup Language",
 			std::vector<QString>(1, FILE_FORMAT_EXT_GPML),
 			gpml_classification,
-			&can_read_gpml_format_file, // Check when reading file
-			&file_name_ends_with,       // Check when writing file
+			&is_gpml_format_file,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&GpmlOnePointSixReader::read_file, _1, boost::ref(model), _2, false)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_gpml_feature_collection_writer, _2)),
-			// No write options yet for this file format...
+			// No configuration options yet for this file format...
 			boost::none);
 
-	FeatureCollectionFileFormat::classifications_type gpmlz_classification;
+	classifications_type gpmlz_classification;
 	gpmlz_classification.set(); // Set all flags - GPMLZ can handle everything.
 	std::vector<QString> gpmlz_filename_extensions;
 	gpmlz_filename_extensions.push_back(FILE_FORMAT_EXT_GPMLZ);
@@ -669,16 +652,15 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			"Compressed GPML",
 			gpmlz_filename_extensions,
 			gpmlz_classification,
-			&can_read_gpmlz_format_file,  // Check when reading file
-			&can_write_gpmlz_format_file, // Check when writing file
+			&is_gpmlz_format_file,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&GpmlOnePointSixReader::read_file, _1, boost::ref(model), _2, true)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_gpmlz_feature_collection_writer, _2)),
-			// No write options yet for this file format...
+			// No configuration options yet for this file format...
 			boost::none);
 
-	FeatureCollectionFileFormat::classifications_type plate4_line_classification;
+	classifications_type plate4_line_classification;
 	plate4_line_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	std::vector<QString> plate4_line_filename_extensions;
 	plate4_line_filename_extensions.push_back(FILE_FORMAT_EXT_PLATES4_LINE);
@@ -689,31 +671,29 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			plate4_line_filename_extensions,
 			plate4_line_classification,
 			&file_name_ends_with,
-			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&PlatesLineFormatReader::read_file, _1, boost::ref(model), _2)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_plates_line_feature_collection_writer, _2)),
-			// No write options yet for this file format...
+			// No configuration options yet for this file format...
 			boost::none);
 
-	FeatureCollectionFileFormat::classifications_type plate4_rotation_classification;
-	plate4_rotation_classification.set(FeatureCollectionFileFormat::RECONSTRUCTION);
+	classifications_type plate4_rotation_classification;
+	plate4_rotation_classification.set(RECONSTRUCTION);
 	registry.register_file_format(
 			PLATES4_ROTATION,
 			"PLATES4 rotation",
 			std::vector<QString>(1, FILE_FORMAT_EXT_PLATES4_ROTATION),
 			plate4_rotation_classification,
 			&file_name_ends_with,
-			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&PlatesRotationFormatReader::read_file, _1, boost::ref(model), _2)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_plates_rotation_feature_collection_writer, _2)),
-			// No write options yet for this file format...
+			// No configuration options yet for this file format...
 			boost::none);
 
-	FeatureCollectionFileFormat::classifications_type shapefile_classification;
+	classifications_type shapefile_classification;
 	shapefile_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	shapefile_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 	registry.register_file_format(
@@ -722,15 +702,14 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			std::vector<QString>(1, FILE_FORMAT_EXT_SHAPEFILE),
 			shapefile_classification,
 			&file_name_ends_with,
-			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&ShapefileReader::read_file, _1, boost::ref(model), _2)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_gmt_feature_collection_writer, _2, _1)),
-			// No write options yet for this file format...
+			// No configuration options yet for this file format...
 			boost::none);
 
-	FeatureCollectionFileFormat::classifications_type ogr_gmt_classification;
+	classifications_type ogr_gmt_classification;
 	ogr_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	ogr_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 	registry.register_file_format(
@@ -738,35 +717,31 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			"OGR GMT",
 			std::vector<QString>(1, FILE_FORMAT_EXT_OGRGMT),
 			ogr_gmt_classification,
-			// Reading not currently supported...
-			&read_not_supported,
 			&file_name_ends_with,
 			// Reading not currently supported...
 			boost::none,
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_gmt_feature_collection_writer, _2, _1)),
-			// No write options yet for this file format...
+			// No configuration options yet for this file format...
 			boost::none);
 
-	FeatureCollectionFileFormat::classifications_type write_only_gmt_classification;
+	classifications_type write_only_gmt_classification;
 	write_only_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	write_only_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+	Configuration::shared_ptr_to_const_type write_only_gmt_default_configuration(new GMTConfiguration());
 	registry.register_file_format(
 			WRITE_ONLY_XY_GMT,
 			"GMT xy",
 			std::vector<QString>(1, FILE_FORMAT_EXT_WRITE_ONLY_XY_GMT),
 			write_only_gmt_classification,
-			// Reading not currently supported...
-			&read_not_supported,
 			&file_name_ends_with,
 			// Reading not currently supported...
 			boost::none,
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_write_only_xy_gmt_feature_collection_writer, _2)),
-			// No write options yet for this file format...
-			boost::none);
+					boost::bind(&create_write_only_xy_gmt_feature_collection_writer, _2, _3)),
+			write_only_gmt_default_configuration);
 
-	FeatureCollectionFileFormat::classifications_type gmap_classification;
+	classifications_type gmap_classification;
 	gmap_classification.set(GPlatesAppLogic::ReconstructMethod::VIRTUAL_GEOMAGNETIC_POLE);
 	registry.register_file_format(
 			GMAP,
@@ -774,16 +749,14 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			std::vector<QString>(1, FILE_FORMAT_EXT_GMAP),
 			gmap_classification,
 			&file_name_ends_with,
-			// Writing not currently supported...
-			&write_not_supported,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&GmapReader::read_file, _1, boost::ref(model), _2)),
 			// Writing not currently supported...
 			boost::none,
-			// No write options yet for this file format...
+			// No configuration options yet for this file format...
 			boost::none);
 
-	FeatureCollectionFileFormat::classifications_type gsml_classification;
+	classifications_type gsml_classification;
 	gsml_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	registry.register_file_format(
 			GSML,
@@ -791,12 +764,10 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			std::vector<QString>(1, FILE_FORMAT_EXT_GSML),
 			gsml_classification,
 			&file_name_ends_with,
-			// Writing not currently supported...
-			&write_not_supported,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&gsml_read_feature_collection, _1, boost::ref(model), _2)),
 			// Writing not currently supported...
 			boost::none,
-			// No write options yet for this file format...
+			// No configuration options yet for this file format...
 			boost::none);
 }

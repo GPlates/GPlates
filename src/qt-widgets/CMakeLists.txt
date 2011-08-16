@@ -199,9 +199,9 @@ set(srcs
     GMenuButton.cc
     GMenuButton.h
     GMenuButtonUi.ui
-    GMTHeaderFormatDialog.cc
-    GMTHeaderFormatDialog.h
-    GMTHeaderFormatDialogUi.ui
+    GMTFileFormatConfigurationDialog.cc
+    GMTFileFormatConfigurationDialog.h
+    GMTFileFormatConfigurationDialogUi.ui
     ImportRasterDialog.cc
     ImportRasterDialog.h
     InformationDialog.cc

@@ -26,6 +26,8 @@
 #ifndef GPLATES_FILE_IO_FILE_H
 #define GPLATES_FILE_IO_FILE_H
 
+#include <boost/optional.hpp>
+
 #include "FeatureCollectionFileFormat.h"
 #include "FileInfo.h"
 
@@ -82,41 +84,33 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * Modifies the file information.
+			 * Returns the file configuration.
 			 *
-			 * This is useful when you want to save the file with a different filename.
-			 *
-			 * NOTE: The loaded file format will still represent the format of the file
-			 * that the feature collection was originally loaded from.
+			 * This is used when reading/writing the feature collection from/to a file.
+			 * If boost::none is returned then the default file configuration for this file's format
+			 * is used when reading/writing the file.
 			 */
-			void
-			set_file_info(
-					const FileInfo &file_info)
+			const boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> &
+			get_file_configuration() const
 			{
-				d_file_info = file_info;
+				return d_file_configuration;
 			}
 
 
-			//
-			// Note: setting or modifying the internal @a FileInfo is a bit fragile at the moment.
-			//
-			// This is because the feature collection and @a FileInfo can go out of sync - actually
-			// it's also possible to alter the feature collection under the hood so
-			// this situation needs to be dealt with better.
-			//
-			// An example of getting out of sync is classifying the feature collection as
-			// reconstructable or reconstruction which could be done by first looking at the
-			// file format in FileInfo (currently based on the filename extension) and if
-			// it was loaded from a PLATES rotation file for example then we know it can
-			// only be reconstruction features. If the file format allows both types only then
-			// does it look at the features in the collection itself.
-			//
-			// Code that does this sort of thing should use
-			// 'FeatureCollectionFileFormat::Registry::get_read_file_format()' instead
-			// of looking at the @a FileInfo since the @a File object may have had its @a FileInfo
-			// modified and therefore have a different @a FileInfo that does not
-			// reflect the classification of the feature collection.
-			//
+			/**
+			 * Modifies the file information and the file configuration (read/write options).
+			 *
+			 * This is useful when you want to save the file with a different filename or change the
+			 * read/write options.
+			 */
+			void
+			set_file_info(
+					const FileInfo &file_info,
+					boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration = boost::none)
+			{
+				d_file_info = file_info;
+				d_file_configuration = file_configuration;
+			}
 
 		private:
 			/**
@@ -130,6 +124,9 @@ namespace GPlatesFileIO
 			//! Information about the file that the feature collection was loaded from or saved to.
 			FileInfo d_file_info;
 
+			//! Optional file configuration (used when reading and writing feature collection from/to file).
+			boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> d_file_configuration;
+
 
 			/**
 			 * Constructor.
@@ -138,7 +135,8 @@ namespace GPlatesFileIO
 			 */
 			Reference(
 					const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-					const FileInfo &file_info);
+					const FileInfo &file_info,
+					boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration);
 
 			friend class File;
 		};
@@ -161,11 +159,13 @@ namespace GPlatesFileIO
 		 * Note: In order to populate the internal feature collection pass the File::Reference
 		 * of the returned @a File to a feature collection file reader.
 		 *
-		 * The file format is determined from the file extension in @a file_info.
-		 *
 		 * The default value for @a file_info represents no filename.
 		 *
 		 * The default value for @a feature_collection is a new empty feature collection.
+		 *
+		 * @a file_configuration determines the file format and any options to use when reading/writing
+		 *        the file - if not provided then the file format is determined from @a file_info
+		 *        and the file configuration used is the one registered for its file format.
 		 *
 		 * The internal feature_collection is a non_null_ptr_type and has not been added
 		 * to the model so the returned @a File is now responsible for managing its lifetime
@@ -175,8 +175,10 @@ namespace GPlatesFileIO
 		File::non_null_ptr_type
 		create_file(
 				const FileInfo &file_info = FileInfo(),
-				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection =
-						GPlatesModel::FeatureCollectionHandle::create());
+				boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+						file_configuration = boost::none,
+				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &
+						feature_collection = GPlatesModel::FeatureCollectionHandle::create());
 
 
 		/**
@@ -222,8 +224,7 @@ namespace GPlatesFileIO
 		 * It is optional so we can release it when we add it to the model since
 		 * the model will then 'own' it.
 		 */
-		boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
-				d_feature_collection_handle;
+		boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_feature_collection_handle;
 
 
 		/**
@@ -233,7 +234,8 @@ namespace GPlatesFileIO
 		 */
 		File(
 				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-				const FileInfo &file_info);
+				const FileInfo &file_info,
+				boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration);
 	};
 }
 

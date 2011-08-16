@@ -52,52 +52,6 @@ namespace GPlatesFileIO
 	namespace FeatureCollectionFileFormat
 	{
 		/**
-		 * Base class for specifying configuration options (such as for reading and/or writing a
-		 * feature collection from/to a file).
-		 *
-		 * If a file format requires specialised options then create a derived
-		 * @a Configuration class for it and register that with @a Registry.
-		 */
-		class Configuration
-		{
-		public:
-			//! Typedef for a shared pointer to const @a Configuration.
-			typedef boost::shared_ptr<const Configuration> shared_ptr_to_const_type;
-			//! Typedef for a shared pointer to @a Configuration.
-			typedef boost::shared_ptr<Configuration> shared_ptr_type;
-
-			//! Creates a non-derived @a Configuration.
-			static
-			shared_ptr_type
-			create(
-					Format file_format)
-			{
-				return shared_ptr_type(new Configuration(file_format));
-			}
-
-			virtual
-			~Configuration()
-			{  }
-
-			//! Returns the file format of this configuration.
-			Format
-			get_file_format() const
-			{
-				return d_file_format;
-			}
-
-		protected:
-			Format d_file_format;
-
-			explicit
-			Configuration(
-					Format file_format) :
-				d_file_format(file_format)
-			{  }
-		};
-
-
-		/**
 		 * Stores information concerning feature collection file formats and reading/writing to/from them.
 		 */
 		class Registry :
@@ -105,7 +59,7 @@ namespace GPlatesFileIO
 		{
 		public:
 			/**
-			 * Convenience typedef for a function that determines if a specified file format is recognised for reading.
+			 * Convenience typedef for a function that determines if a specified file format is recognised.
 			 *
 			 * The function takes the following arguments:
 			 * - A 'QFileInfo' representing a filename.
@@ -113,18 +67,7 @@ namespace GPlatesFileIO
 			 *
 			 * Returns true if the file format is recognised.
 			 */
-			typedef boost::function<bool (const QFileInfo&, const QString &)> is_read_file_format_function_type;
-
-			/**
-			 * Convenience typedef for a function that determines if a specified file format is recognised for writing.
-			 *
-			 * The function takes the following arguments:
-			 * - A 'QFileInfo' representing a filename.
-			 * - A 'QString' that is the registered filename extension for the file format.
-			 *
-			 * Returns true if the file format is recognised.
-			 */
-			typedef boost::function<bool (const QFileInfo&, const QString &)> is_write_file_format_function_type;
+			typedef boost::function<bool (const QFileInfo&, const QString &)> is_file_format_function_type;
 
 			/**
 			 * Convenience typedef for a function that reads a feature collection from a file.
@@ -168,7 +111,7 @@ namespace GPlatesFileIO
 			 * @param is_file_format_function used to recognise a file format.
 			 * @param read_feature_collection_function used to read a feature collection.
 			 *        Is boost::none if file format does not support reading feature collections.
-			 * @param write_feature_collection_function used to write a feature collection.
+			 * @param create_feature_collection_writer_function used to write a feature collection.
 			 *        Is boost::none if file format does not support writing feature collections.
 			 * @param default_configuration the default configuration to use when reading/writing a feature collection.
 			 *        Is boost::none if file format does not have configuration options.
@@ -179,8 +122,7 @@ namespace GPlatesFileIO
 					const QString &short_description,
 					const std::vector<QString> &filename_extensions,
 					const classifications_type &feature_classification,
-					const is_read_file_format_function_type &is_read_file_format_function_type,
-					const is_write_file_format_function_type &is_write_file_format_function_type,
+					const is_file_format_function_type &is_file_format_function,
 					const boost::optional<read_feature_collection_function_type> &read_feature_collection_function,
 					const boost::optional<create_feature_collection_writer_function_type> &create_feature_collection_writer_function,
 					const boost::optional<Configuration::shared_ptr_to_const_type> &default_configuration);
@@ -248,6 +190,19 @@ namespace GPlatesFileIO
 
 
 			/**
+			 * Determine the feature collection file format of the file described by @a file_info.
+			 *
+			 * Returns boost::none if no file formats are recognised.
+			 *
+			 * This is determined by looking at the filename extension (and/or the file contents
+			 * if the file exists).
+			 */
+			boost::optional<Format>
+			get_file_format(
+					const QFileInfo& file_info) const;
+
+
+			/**
 			 * Returns true if the specified file format supports *reading* feature collections from files.
 			 *
 			 * This is determined by looking at the filename extension and/or the file contents.
@@ -257,17 +212,6 @@ namespace GPlatesFileIO
 			bool
 			does_file_format_support_reading(
 					Format file_format) const;
-
-			/**
-			 * Determine the feature collection file format that supports *reading* from the file described by @a file_info.
-			 *
-			 * Returns boost::none if a recognised file format does not support reading (eg, only writing).
-			 *
-			 * This is determined by looking at the filename extension and/or the file contents.
-			 */
-			boost::optional<Format>
-			get_read_file_format(
-					const QFileInfo& file_info) const;
 
 
 			/**
@@ -283,29 +227,16 @@ namespace GPlatesFileIO
 			does_file_format_support_writing(
 					Format file_format) const;
 
-			/**
-			 * Determine the feature collection file format that supports *writing* to the file described by @a file_info.
-			 *
-			 * Returns boost::none if a recognised file format does not support writing (eg, only reading).
-			 * 
-			 * Also note that this differs from @a get_read_file_format in that the file contents
-			 * cannot be read to help determine the file format (because the file is being written to).
-			 * Hence the determination is purely based on the filename (extension).
-			 */
-			boost::optional<Format>
-			get_write_file_format(
-					const QFileInfo& file_info) const;
-
 
 			/**
 			 * Reads features from file @a file_ref into the file's feature collection.
 			 *
+			 * Note that the file configurations options contained in @a file_ref are used
+			 * when reading the feature collection. If it has none then the default configuration
+			 * registered (for its file format) is used.
+			 *
 			 * @param file_ref both filename of file to read from and feature collection to store in.
 			 * @param read_errors to contain errors reading file.
-			 * @param configuration determines the file format and any options to use when reading
-			 *        from the file - if none are provided then the file format is determined from
-			 *        the filename of @a file_ref and the default configuration registered for that
-			 *        file format is used.
 			 *
 			 * @throws FileFormatNotSupportedException if file format does not support reading
 			 * (eg, only writing) or file format is not registered.
@@ -313,8 +244,7 @@ namespace GPlatesFileIO
 			void
 			read_feature_collection(
 					const File::Reference &file_ref,
-					ReadErrorAccumulation &read_errors,
-					boost::optional<Configuration::shared_ptr_to_const_type> configuration = boost::none) const;
+					ReadErrorAccumulation &read_errors) const;
 
 			/**
 			 * Writes features from the specified feature collection to the specified output file.
@@ -368,16 +298,14 @@ namespace GPlatesFileIO
 						const QString &short_description_,
 						const std::vector<QString> &filename_extensions_,
 						const classifications_type &feature_classification_,
-						const is_read_file_format_function_type &is_read_file_format_function_,
-						const is_write_file_format_function_type &is_write_file_format_function_,
+						const is_file_format_function_type &is_file_format_function_,
 						const boost::optional<read_feature_collection_function_type> &read_feature_collection_function_,
 						const boost::optional<create_feature_collection_writer_function_type> &create_feature_collection_writer_function_,
 						const Configuration::shared_ptr_to_const_type &default_configuration_) :
 					short_description(short_description_),
 					filename_extensions(filename_extensions_),
 					feature_classification(feature_classification_),
-					is_read_file_format_function(is_read_file_format_function_),
-					is_write_file_format_function(is_write_file_format_function_),
+					is_file_format_function(is_file_format_function_),
 					read_feature_collection_function(read_feature_collection_function_),
 					create_feature_collection_writer_function(create_feature_collection_writer_function_),
 					default_configuration(default_configuration_)
@@ -386,8 +314,7 @@ namespace GPlatesFileIO
 				QString short_description;
 				std::vector<QString> filename_extensions;
 				classifications_type feature_classification;
-				is_read_file_format_function_type is_read_file_format_function;
-				is_write_file_format_function_type is_write_file_format_function;
+				is_file_format_function_type is_file_format_function;
 				boost::optional<read_feature_collection_function_type> read_feature_collection_function;
 				boost::optional<create_feature_collection_writer_function_type> create_feature_collection_writer_function;
 				Configuration::shared_ptr_to_const_type default_configuration;

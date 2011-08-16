@@ -314,7 +314,7 @@ GPlatesGui::FileIOFeedback::open_previous_session(
 
 void
 GPlatesGui::FileIOFeedback::reload_file(
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference &file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
 	// If the currently focused feature is in the feature collection that is to
 	// be reloaded, save the feature id and the property name of the focused
@@ -391,10 +391,7 @@ GPlatesGui::FileIOFeedback::save_file_in_place(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
 	// Save the feature collection with GUI feedback.
-	bool ok = save_file(
-			file.get_file().get_file_info(),
-			file.get_file().get_feature_collection());
-	return ok;
+	return save_file(file);
 }
 
 
@@ -431,7 +428,9 @@ GPlatesGui::FileIOFeedback::save_file_as(
 	// Save the feature collection, with GUI feedback.
 	bool ok = save_file(
 			new_fileinfo,
-			file.get_file().get_feature_collection());
+			file.get_file().get_feature_collection(),
+			// New filename means new file format which means we can't use configuration of original file...
+			boost::none);
 	
 	// If there was an error saving, don't change the fileinfo.
 	if ( ! ok) {
@@ -483,18 +482,32 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 	save_file(
 			new_fileinfo,
 			file.get_file().get_feature_collection(),
+			// New filename means new file format which means we can't use configuration of original file...
+			boost::none,
 			false/*clear_unsaved_changes*/);
 
 	return true;
 }
 
 
+bool
+GPlatesGui::FileIOFeedback::save_file(
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
+{
+	return save_file(
+			file.get_file().get_file_info(),
+			file.get_file().get_feature_collection(),
+			// Use file's configuration when writing it out...
+			file.get_file().get_file_configuration(),
+			false/*clear_unsaved_changes*/);
+}
 
 
 bool
 GPlatesGui::FileIOFeedback::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration,
 		bool clear_unsaved_changes)
 {
 	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
@@ -507,6 +520,7 @@ GPlatesGui::FileIOFeedback::save_file(
 		d_feature_collection_file_io_ptr->save_file(
 				file_info,
 				feature_collection,
+				file_configuration,
 				clear_unsaved_changes);
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)

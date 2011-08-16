@@ -24,10 +24,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "GMTHeaderFormatDialog.h"
+#include "GMTFileFormatConfigurationDialog.h"
 
 
-GPlatesQtWidgets::GMTHeaderFormatDialog::GMTHeaderFormatDialog(
+GPlatesQtWidgets::GMTFileFormatConfigurationDialog::GMTFileFormatConfigurationDialog(
 		const GPlatesFileIO::FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type &configuration,
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
@@ -52,7 +52,7 @@ GPlatesQtWidgets::GMTHeaderFormatDialog::GMTHeaderFormatDialog(
 }
 
 void
-GPlatesQtWidgets::GMTHeaderFormatDialog::finished()
+GPlatesQtWidgets::GMTFileFormatConfigurationDialog::finished()
 {
 	if (radio_button_plates4_header->isChecked())
 	{

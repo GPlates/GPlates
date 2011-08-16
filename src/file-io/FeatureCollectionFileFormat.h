@@ -28,6 +28,8 @@
 #ifndef GPLATES_FILEIO_FEATURECOLLECTIONFILEFORMAT_H
 #define GPLATES_FILEIO_FEATURECOLLECTIONFILEFORMAT_H
 
+#include <boost/shared_ptr.hpp>
+
 
 namespace GPlatesFileIO
 {
@@ -47,6 +49,52 @@ namespace GPlatesFileIO
 			GSML,              //!< '.gsml' extension.
 
 			NUM_FORMATS
+		};
+
+
+		/**
+		 * Base class for specifying configuration options (such as for reading and/or writing a
+		 * feature collection from/to a file).
+		 *
+		 * If a file format requires specialised options then create a derived
+		 * @a Configuration class for it and register that with @a Registry.
+		 */
+		class Configuration
+		{
+		public:
+			//! Typedef for a shared pointer to const @a Configuration.
+			typedef boost::shared_ptr<const Configuration> shared_ptr_to_const_type;
+			//! Typedef for a shared pointer to @a Configuration.
+			typedef boost::shared_ptr<Configuration> shared_ptr_type;
+
+			//! Creates a non-derived @a Configuration.
+			static
+			shared_ptr_type
+			create(
+					Format file_format)
+			{
+				return shared_ptr_type(new Configuration(file_format));
+			}
+
+			virtual
+			~Configuration()
+			{  }
+
+			//! Returns the file format of this configuration.
+			Format
+			get_file_format() const
+			{
+				return d_file_format;
+			}
+
+		protected:
+			Format d_file_format;
+
+			explicit
+			Configuration(
+					Format file_format) :
+				d_file_format(file_format)
+			{  }
 		};
 	}
 }

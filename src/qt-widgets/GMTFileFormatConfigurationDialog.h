@@ -24,10 +24,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QTWIDGETS_GMTHEADERFORMATDIALOG_H
-#define GPLATES_QTWIDGETS_GMTHEADERFORMATDIALOG_H
+#ifndef GPLATES_QTWIDGETS_GMTFILEFORMATCONFIGURATIONDIALOG_H
+#define GPLATES_QTWIDGETS_GMTFILEFORMATCONFIGURATIONDIALOG_H
 
-#include "GMTHeaderFormatDialogUi.h"
+#include "GMTFileFormatConfigurationDialogUi.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatConfigurations.h"
@@ -37,17 +37,20 @@
 namespace GPlatesQtWidgets
 {
 	/**
-	 * Dialog for inputing the style GMT header to write to file.
+	 * Dialog for configuring write-only ".xy" GMT file format.
+	 *
+	 * Current configuration includes:
+	 *  - the style GMT header to write to file.
 	 */
-	class GMTHeaderFormatDialog :
+	class GMTFileFormatConfigurationDialog :
 		public QDialog,
-		protected Ui_GMTHeaderFormatDialog
+		protected Ui_GMTFileFormatConfigurationDialog
 	{
 		Q_OBJECT
 
 	public:
 		explicit
-		GMTHeaderFormatDialog(
+		GMTFileFormatConfigurationDialog(
 				const GPlatesFileIO::FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type &
 						configuration,
 				QWidget *parent_ = NULL);
@@ -68,4 +71,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif // GPLATES_QTWIDGETS_GMTHEADERFORMATDIALOG_H
+#endif // GPLATES_QTWIDGETS_GMTFILEFORMATCONFIGURATIONDIALOG_H

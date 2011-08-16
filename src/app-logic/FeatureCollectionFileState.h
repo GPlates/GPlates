@@ -35,6 +35,7 @@
 #include <boost/shared_ptr.hpp>
 #include <QObject>
 
+#include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/File.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -113,16 +114,19 @@ namespace GPlatesAppLogic
 			}
 
 			/**
-			 * Changes the file information to @a new_file_info.
+			 * Changes the file information to @a new_file_info and the file configuration to
+			 * @a new_file_configuration (such as changed read/write options).
 			 *
 			 * @a FeatureCollectionFileState emits signals @a file_state_file_info_changed and
 			 * @a file_state_changed after setting the file info.
 			 */
 			void
 			set_file_info(
-					const GPlatesFileIO::FileInfo &new_file_info)
+					const GPlatesFileIO::FileInfo &new_file_info,
+					boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+							new_file_configuration = boost::none)
 			{
-				d_file_state->set_file_info(d_file_handle, new_file_info);
+				d_file_state->set_file_info(d_file_handle, new_file_info, new_file_configuration);
 			}
 
 			/**
@@ -418,7 +422,9 @@ namespace GPlatesAppLogic
 		void
 		set_file_info(
 				file_handle_type file_handle,
-				const GPlatesFileIO::FileInfo &new_file_info);
+				const GPlatesFileIO::FileInfo &new_file_info,
+				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+						new_file_configuration);
 
 		void
 		deactivated_feature_collection(

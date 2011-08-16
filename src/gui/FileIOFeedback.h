@@ -32,6 +32,8 @@
 #include <QList>
 #include <QUrl>
 #include <boost/function.hpp>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "app-logic/FeatureCollectionFileState.h"
 
@@ -108,6 +110,9 @@ namespace GPlatesGui
 		 * appropriate error dialogs.
 		 *
 		 * See the slot open_files() for the version which pops up a file selection dialog.
+		 *
+		 * Each file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		open_files(
@@ -116,6 +121,9 @@ namespace GPlatesGui
 		/**
 		 * As @a open_files(QStringList), but for a list of QUrl. For drag-and-drop
 		 * functionality.
+		 *
+		 * The file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		open_urls(
@@ -127,7 +135,7 @@ namespace GPlatesGui
 		 */
 		void
 		reload_file(
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_it);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 
 		/**
@@ -173,19 +181,12 @@ namespace GPlatesGui
 
 
 		/**
-		 * Saves specified feature collection into a file described by @a file_info.
+		 * Save a file, given by FileState file_reference @a file.
 		 * Pops up simple dialogs if there are problems, and returns false.
-		 *
-		 * This is called by the other @a save_file_* methods above.
-		 * NOTE: @a clear_unsaved_changes can be set to false when this method is used by
-		 * @a save_file_copy - that is the original file has not been saved and so it still
-		 * has unsaved changes.
 		 */
 		bool
 		save_file(
-				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				bool clear_unsaved_changes = true);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 
 		/**
@@ -202,6 +203,9 @@ namespace GPlatesGui
 		/**
 		 * Opens an Open File dialog allowing the user to select zero or more files,
 		 * then opens them.
+		 *
+		 * Each file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		open_files();
@@ -226,6 +230,28 @@ namespace GPlatesGui
 
 
 	private:
+		/**
+		 * Saves specified feature collection into a file described by @a file_info.
+		 * Pops up simple dialogs if there are problems, and returns false.
+		 *
+		 * @a file_configuration determines the file format and any options to use when writing
+		 *        to the file - if not provided then the file format is determined from @a file_info
+		 *        and the file configuration used is the one registered for its file format.
+		 *
+		 * This is called by the other @a save_file_* methods above.
+		 * NOTE: @a clear_unsaved_changes can be set to false when this method is used by
+		 * @a save_file_copy - that is the original file has not been saved and so it still
+		 * has unsaved changes.
+		 */
+		bool
+		save_file(
+				const GPlatesFileIO::FileInfo &file_info,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+						file_configuration = boost::none,
+				bool clear_unsaved_changes = true);
+
+
 		/**
 		 * Allows calling multiple functions that throw the same types of exceptions and
 		 * handles those exceptions in one place.

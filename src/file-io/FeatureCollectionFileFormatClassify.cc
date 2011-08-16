@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
+
 #include "FeatureCollectionFileFormatClassify.h"
 
 #include "FeatureCollectionFileFormat.h"
@@ -72,36 +74,54 @@ namespace GPlatesFileIO
 			get_feature_classification(
 					classifications_type &classifications,
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-					const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry)
+					const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry,
+					const std::vector<GPlatesAppLogic::ReconstructMethod::Type> &reconstruct_methods)
 			{
-				// Check if the feature is reconstructable - and if so record its reconstruct method type.
-				const boost::optional<GPlatesAppLogic::ReconstructMethod::Type> reconstruction_method_type =
-						reconstruct_method_registry.get_reconstruct_method_type(feature);
-				if (reconstruction_method_type)
+				// Check the reconstruction method types that can reconstruct the feature.
+				BOOST_FOREACH(GPlatesAppLogic::ReconstructMethod::Type reconstruct_method, reconstruct_methods)
 				{
-					classifications.set(reconstruction_method_type.get());
+					if (!classifications.test(reconstruct_method)) // Only test if not classified already...
+					{
+						// Check if the feature is can be reconstructed with the current reconstruct method type.
+						if (reconstruct_method_registry.can_reconstruct_feature(reconstruct_method, feature))
+						{
+							classifications.set(reconstruct_method);
+							// Each feature has one reconstruct method so no need to test the
+							// remaining reconstruct methods for *this* feature.
+							break;
+						}
+					}
 				}
 
 				// Check if the feature is a raster.
-				if (GPlatesAppLogic::is_raster_feature(feature))
+				if (!classifications.test(RASTER)) // Only test if not classified already...
 				{
-					classifications.set(RASTER);
+					if (GPlatesAppLogic::is_raster_feature(feature))
+					{
+						classifications.set(RASTER);
+					}
 				}
 
 				// Check if the feature is topological.
-				if (GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(*feature.handle_ptr()) ||
-					GPlatesAppLogic::TopologyUtils::is_topological_network_feature(*feature.handle_ptr()))
+				if (!classifications.test(TOPOLOGICAL)) // Only test if not classified already...
 				{
-					classifications.set(TOPOLOGICAL);
+					if (GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(*feature.handle_ptr()) ||
+						GPlatesAppLogic::TopologyUtils::is_topological_network_feature(*feature.handle_ptr()))
+					{
+						classifications.set(TOPOLOGICAL);
+					}
 				}
 
 				// Check if the feature is a reconstruction features.
-				GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder reconstruction_sequence_finder;
-				reconstruction_sequence_finder.visit_feature(feature);
-				if (reconstruction_sequence_finder.fixed_ref_frame_plate_id() ||
-					reconstruction_sequence_finder.moving_ref_frame_plate_id())
+				if (!classifications.test(RECONSTRUCTION)) // Only test if not classified already...
 				{
-					classifications.set(RECONSTRUCTION);
+					GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder reconstruction_sequence_finder;
+					reconstruction_sequence_finder.visit_feature(feature);
+					if (reconstruction_sequence_finder.fixed_ref_frame_plate_id() ||
+						reconstruction_sequence_finder.moving_ref_frame_plate_id())
+					{
+						classifications.set(RECONSTRUCTION);
+					}
 				}
 			}
 		}
@@ -116,12 +136,19 @@ GPlatesFileIO::FeatureCollectionFileFormat::classify(
 {
 	classifications_type classification;
 
+	const std::vector<GPlatesAppLogic::ReconstructMethod::Type> registered_reconstruct_methods =
+			reconstruct_method_registry.get_registered_reconstruct_methods();
+
 	// Iterate through the features in the feature collection.
 	GPlatesModel::FeatureCollectionHandle::const_iterator feature_iter = feature_collection->begin();
 	GPlatesModel::FeatureCollectionHandle::const_iterator feature_end = feature_collection->end();
 	for ( ; feature_iter != feature_end; ++feature_iter)
 	{
-		get_feature_classification(classification, (*feature_iter)->reference(), reconstruct_method_registry);
+		get_feature_classification(
+				classification,
+				(*feature_iter)->reference(),
+				reconstruct_method_registry,
+				registered_reconstruct_methods);
 	}
 
 	return classification;
@@ -135,7 +162,11 @@ GPlatesFileIO::FeatureCollectionFileFormat::classify(
 {
 	classifications_type classification;
 
-	get_feature_classification(classification, feature, reconstruct_method_registry);
+	get_feature_classification(
+			classification,
+			feature,
+			reconstruct_method_registry,
+			reconstruct_method_registry.get_registered_reconstruct_methods());
 
 	return classification;
 }
@@ -170,6 +201,9 @@ GPlatesFileIO::FeatureCollectionFileFormat::find_classified_features(
 
 	bool found = false;
 
+	const std::vector<GPlatesAppLogic::ReconstructMethod::Type> registered_reconstruct_methods =
+			reconstruct_method_registry.get_registered_reconstruct_methods();
+
 	// Iterate through the features in the feature collection.
 	GPlatesModel::FeatureCollectionHandle::iterator feature_iter = feature_collection->begin();
 	GPlatesModel::FeatureCollectionHandle::iterator feature_end = feature_collection->end();
@@ -178,7 +212,11 @@ GPlatesFileIO::FeatureCollectionFileFormat::find_classified_features(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref = (*feature_iter)->reference();
 
 		classifications_type classification;
-		get_feature_classification(classification, feature_ref, reconstruct_method_registry);
+		get_feature_classification(
+				classification,
+				feature_ref,
+				reconstruct_method_registry,
+				registered_reconstruct_methods);
 
 		// If the feature has the required classification then add it to the caller's sequence.
 		if (classification_predicate(classification))

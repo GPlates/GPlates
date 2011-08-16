@@ -48,7 +48,7 @@ namespace GPlatesFileIO
 {
 	namespace FeatureCollectionFileFormat
 	{
-		class Configuration;
+		class Registry;
 	}
 }
 
@@ -97,7 +97,7 @@ namespace GPlatesQtWidgets
 		void
 		register_edit_configuration(
 				GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
-				const boost::shared_ptr<const ManageFeatureCollections::EditConfiguration> &edit_configuration_ptr);
+				const boost::shared_ptr<ManageFeatureCollections::EditConfiguration> &edit_configuration_ptr);
 
 		/**
 		 * Initiates editing of the file configuration. 
@@ -288,9 +288,14 @@ namespace GPlatesQtWidgets
 		//! Typedef for a mapping of file formats to registered edit configurations.
 		typedef std::map<
 				GPlatesFileIO::FeatureCollectionFileFormat::Format,
-				boost::shared_ptr<const ManageFeatureCollections::EditConfiguration> >
+				boost::shared_ptr<ManageFeatureCollections::EditConfiguration> >
 						edit_configuration_map_type;
 
+
+		/**
+		 * Registry of file formats.
+		 */
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &d_file_format_registry;
 
 		/**
 		 * The loaded feature collection files.

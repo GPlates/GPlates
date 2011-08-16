@@ -285,7 +285,8 @@ GPlatesAppLogic::FeatureCollectionFileState::get_file_index(
 void
 GPlatesAppLogic::FeatureCollectionFileState::set_file_info(
 		file_handle_type file_handle,
-		const GPlatesFileIO::FileInfo &new_file_info)
+		const GPlatesFileIO::FileInfo &new_file_info,
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> new_file_configuration)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			file_handle < d_file_slots.size() &&
@@ -293,7 +294,7 @@ GPlatesAppLogic::FeatureCollectionFileState::set_file_info(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the new file info.
-	d_file_slots[file_handle].d_file_slot_extra->d_file_ref->set_file_info(new_file_info);
+	d_file_slots[file_handle].d_file_slot_extra->d_file_ref->set_file_info(new_file_info, new_file_configuration);
 
 	file_reference file_ref(*this, file_handle);
 	emit file_state_file_info_changed(*this, file_ref);

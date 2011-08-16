@@ -184,6 +184,7 @@ void
 GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration,
 		bool clear_unsaved_changes)
 {
 	// We want to merge model events across this scope so that only one model event
@@ -207,7 +208,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 				"Attempted to write an invalid feature collection.");
 	}
 	
-	d_file_format_registry.write_feature_collection(feature_collection, file_info);
+	d_file_format_registry.write_feature_collection(feature_collection, file_info, file_configuration);
 
 	if (clear_unsaved_changes)
 	{
@@ -232,7 +233,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::create_file(
 		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection)
 {
 	const GPlatesFileIO::File::non_null_ptr_type file =
-			GPlatesFileIO::File::create_file(file_info, feature_collection);
+			GPlatesFileIO::File::create_file(file_info, boost::none, feature_collection);
 
 	save_file(file_info, file->get_reference().get_feature_collection());
 

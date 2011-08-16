@@ -134,8 +134,9 @@ GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(
 	// Since we're using a feature collection file format to export
 	// our RFGs we'll use the feature collection file format code.
 	const boost::optional<FeatureCollectionFileFormat::Format> feature_collection_file_format =
-			file_format_registry.get_write_file_format(file_info);
-	if (!feature_collection_file_format)
+			file_format_registry.get_file_format(file_info);
+	if (!feature_collection_file_format ||
+		!file_format_registry.does_file_format_support_writing(feature_collection_file_format.get()))
 	{
 		return UNKNOWN;
 	}

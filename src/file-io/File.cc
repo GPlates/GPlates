@@ -33,16 +33,18 @@
 GPlatesFileIO::File::non_null_ptr_type
 GPlatesFileIO::File::create_file(
 		const FileInfo &file_info,
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration,
 		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection)
 {
-	return non_null_ptr_type(new File(feature_collection, file_info));
+	return non_null_ptr_type(new File(feature_collection, file_info, file_configuration));
 }
 
 
 GPlatesFileIO::File::File(
 		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-		const FileInfo &file_info) :
-	d_file(new Reference(feature_collection->reference(), file_info)),
+		const FileInfo &file_info,
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration) :
+	d_file(new Reference(feature_collection->reference(), file_info, file_configuration)),
 	d_feature_collection_handle(feature_collection)
 {
 }
@@ -81,8 +83,10 @@ GPlatesFileIO::File::add_feature_collection_to_model(
 
 GPlatesFileIO::File::Reference::Reference(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		const FileInfo &file_info) :
+		const FileInfo &file_info,
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration) :
 	d_feature_collection(feature_collection),
-	d_file_info(file_info)
+	d_file_info(file_info),
+	d_file_configuration(file_configuration)
 {
 }

@@ -27,7 +27,7 @@
 
 #include "ManageFeatureCollectionsEditConfigurations.h"
 
-#include "GMTHeaderFormatDialog.h"
+#include "GMTFileFormatConfigurationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 
 
@@ -37,7 +37,7 @@ GPlatesQtWidgets::ManageFeatureCollections::register_default_edit_configurations
 {
 	manage_feature_collections_dialog.register_edit_configuration(
 			GPlatesFileIO::FeatureCollectionFileFormat::WRITE_ONLY_XY_GMT,
-			GMTEditConfiguration::shared_ptr_to_const_type(new GMTEditConfiguration()));
+			GMTEditConfiguration::shared_ptr_type(new GMTEditConfiguration()));
 }
 
 
@@ -65,7 +65,7 @@ GPlatesQtWidgets::ManageFeatureCollections::GMTEditConfiguration::edit_configura
 		return current_configuration;
 	}
 
-	GMTHeaderFormatDialog dialog(current_gmt_configuration, parent_widget);
+	GMTFileFormatConfigurationDialog dialog(current_gmt_configuration, parent_widget);
 	dialog.exec();
 
 	return dialog.get_configuration();

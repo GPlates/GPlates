@@ -29,6 +29,8 @@
 #include <list>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -103,6 +105,9 @@ namespace GPlatesAppLogic
 		 * instead so that the application state sends one notification instead of
 		 * multiple notifications (for each @a load_file) which is beneficial
 		 * if some files in the group depend on each other.
+		 *
+		 * The file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		load_file(
@@ -112,6 +117,9 @@ namespace GPlatesAppLogic
 		/**
 		 * As @a load_files, but for QUrl instances of file:// urls.
 		 * Included for drag and drop support.
+		 *
+		 * The file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		load_urls(
@@ -161,6 +169,10 @@ namespace GPlatesAppLogic
 		/**
 		 * Write the feature collection associated to a file described by @a file_info.
 		 *
+		 * @a file_configuration determines the file format and any options to use when writing
+		 *        to the file - if not provided then the file format is determined from @a file_info
+		 *        and the file configuration used is the one registered for its file format.
+		 *
 		 * NOTE: this differs from @a create_file in that it only saves the feature collection
 		 * to the file and doesn't register with FeatureCollectionFileState.
 		 *
@@ -172,6 +184,8 @@ namespace GPlatesAppLogic
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+						file_configuration = boost::none,
 				bool clear_unsaved_changes = true);
 
 

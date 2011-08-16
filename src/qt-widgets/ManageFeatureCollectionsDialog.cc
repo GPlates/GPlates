@@ -60,6 +60,7 @@
 #include "presentation/ViewState.h"
 
 #include "ManageFeatureCollectionsActionWidget.h"
+#include "ManageFeatureCollectionsEditConfigurations.h"
 
 #include "ManageFeatureCollectionsDialog.h"
 
@@ -87,20 +88,22 @@ namespace
 	 */
 	GPlatesFileIO::FeatureCollectionFileFormat::Format
 	get_format_for_file(
-			const QFileInfo &qfileinfo,
+			GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 	{
-		// Look for a *read* format for the specified file.
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format =
-				file_format_registry.get_read_file_format(qfileinfo);
-		if (!file_format)
+		// If the file has a file configuration then get the file format from that.
+		if (file.get_file().get_file_configuration())
 		{
-			// Look for a *write* format for the specified file.
-			file_format = file_format_registry.get_write_file_format(qfileinfo);
+			return file.get_file().get_file_configuration().get()->get_file_format();
 		}
 
-		// If still can't find a file format then throw an exception.
-		// This shouldn't happen since the file was read in which meant it's file format was
+		// Determine the file format from the filename.
+		const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format =
+				file_format_registry.get_file_format(
+						file.get_file().get_file_info().get_qfileinfo());
+
+		// If can't find a file format then throw an exception.
+		// This shouldn't happen since the file was read in which meant its file format was
 		// previously determined. This would probably only happen if the filename somehow was
 		// changed between then and now (and the new filename has an unsupported filename extension).
 		if (!file_format)
@@ -192,6 +195,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 		GPlatesPresentation::ViewState &view_state, 
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
+	d_file_format_registry(view_state.get_application_state().get_feature_collection_file_format_registry()),
 	d_file_state(file_state),
 	d_feature_collection_file_io(&feature_collection_file_io),
 	d_gui_file_io_feedback_ptr(&gui_file_io_feedback),
@@ -233,7 +237,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::register_edit_configuration(
 		GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
-		const boost::shared_ptr<const ManageFeatureCollections::EditConfiguration> &edit_configuration_ptr)
+		const ManageFeatureCollections::EditConfiguration::shared_ptr_type &edit_configuration_ptr)
 {
 	d_edit_configurations[file_format] = edit_configuration_ptr;
 }
@@ -243,13 +247,34 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
-	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration =
-			action_widget_ptr->get_file_configuration();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file = action_widget_ptr->get_file_reference();
 
-	// The edit configuration button (in the action widget) should only be enabled if we have a file configuration.
+	GPlatesFileIO::FeatureCollectionFileFormat::Format file_format =
+			get_format_for_file(file, d_file_format_registry);
+
+	// Get the file configuration from the file if it has one otherwise use the default configuration
+	// associated with its file format.
+	GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type file_configuration =
+			file.get_file().get_file_configuration()
+			? file.get_file().get_file_configuration().get()
+			: d_file_format_registry.get_default_configuration(file_format);
+
+	// The edit configuration button (in the action widget) should only be enabled we have an
+	// edit configuration (ability to edit the file configuration).
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			file_configuration,
+			d_edit_configurations.find(file_format) != d_edit_configurations.end(),
 			GPLATES_ASSERTION_SOURCE);
+
+	// The user can now edit the file configuration.
+	file_configuration =
+			d_edit_configurations[file_format]->edit_configuration(
+					file,
+					file_configuration,
+					parentWidget());
+
+	// Store the (potentially) updated file configuration back in the file.
+	// NOTE: This will trigger a signal that will call our 'handle_file_state_file_info_changed' method.
+	file.set_file_info(file.get_file().get_file_info(), file_configuration);
 
 #if 0
 	// The "edit configuration" method only makes sense for shapefiles 
@@ -449,10 +474,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
 		bool should_highlight_unsaved_changes)
 {
-	const GPlatesFileIO::FileInfo &file_info = file.get_file().get_file_info();
-
 	// Obtain information from the FileInfo
-	const QFileInfo &qfileinfo = file_info.get_qfileinfo();
+	const GPlatesFileIO::FileInfo &file_info = file.get_file().get_file_info();
 
 	// Some files might not actually exist yet if the user created a new
 	// feature collection internally and hasn't saved it to file yet.
@@ -467,16 +490,13 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
 		display_name = "New Feature Collection";
 	}
 
-	const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry =
-			d_view_state.get_application_state().get_feature_collection_file_format_registry();
-
 	// Determine the file format of the file if possible.
 	const GPlatesFileIO::FeatureCollectionFileFormat::Format file_format =
-			get_format_for_file(qfileinfo, file_format_registry);
+			get_format_for_file(file, d_file_format_registry);
 
-	QString format_str = get_format_description_for_file(file_format, file_format_registry);
-	QString filename_str = qfileinfo.fileName();
-	QString filepath_str = QDir::toNativeSeparators(qfileinfo.path());
+	QString format_str = get_format_description_for_file(file_format, d_file_format_registry);
+	QString filename_str = file_info.get_qfileinfo().fileName();
+	QString filepath_str = QDir::toNativeSeparators(file_info.get_qfileinfo().path());
 	
 	// Set the filename item.
 	QTableWidgetItem *filename_item = new QTableWidgetItem(display_name);
@@ -498,12 +518,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
 		const bool enable_edit_configuration =
 				d_edit_configurations.find(file_format) != d_edit_configurations.end();
 
-		action_widget->update(
-				file_format_registry,
-				file_info,
-				file_format,
-				file_format_registry.get_default_configuration(file_format),
-				enable_edit_configuration);
+		action_widget->update(d_file_format_registry, file_info, file_format, enable_edit_configuration);
 	}
 
 	// This might be false if many rows are being added in which case the unsaved changes
