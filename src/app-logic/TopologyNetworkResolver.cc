@@ -363,7 +363,6 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
 	// this will become a seed point , not a point in the triangulation
 	if ( section->d_source_rfg->get_feature_ref()->feature_type() == test_type )
 	{
-//qDebug() << "PolygonCentroidPoint -> seed point";
 		section->d_is_seed_point = true;
 	}
 
@@ -826,7 +825,8 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_boundary(
 	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalBoundary.
 	std::vector<ResolvedTopologicalBoundary::SubSegment> output_subsegments;
 
-qDebug() << "\ncreate_resolved_topology_boundary: Loop over BOUNDARY d_resolved_network.d_sections\n";
+// qDebug() << "\ncreate_resolved_topology_boundary: Loop over BOUNDARY d_resolved_network.d_sections\n";
+
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
 	ResolvedNetwork::section_seq_type::const_iterator section_iter =
@@ -1011,7 +1011,7 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network(
 	// GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolation
 	std::vector<ResolvedTopologicalNetwork::Node> output_nodes;
 
-qDebug() << "\ncreate_resolved_topology_network: Loop over BOUNDARY d_resolved_network.d_sections\n";
+// qDebug() << "\ncreate_resolved_topology_network: Loop over BOUNDARY d_resolved_network.d_sections\n";
 	//
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
@@ -1024,7 +1024,9 @@ qDebug() << "\ncreate_resolved_topology_network: Loop over BOUNDARY d_resolved_n
 	{
 		const ResolvedNetwork::Section &section = *section_iter;
 
-debug_output_topological_section(section);
+		# if 0
+		debug_output_topological_section(section);
+		#endif
 
 		// clear out the old list of points
 		section_points.clear();
@@ -1198,9 +1200,10 @@ debug_output_topological_section(section);
 
 	} // end of loop over sections
 
-/// ZZZZ 
+#if 0
 qDebug() << "all_network_points.size(): " << all_network_points.size();
 qDebug() << "boundary_points.size(): " << boundary_points.size();
+#endif
 
 	// 2D + C
 	// add boundary_points as contrained ; do contrain begin and end
@@ -1210,9 +1213,7 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 		boundary_points.end(),
 		true);
 
-
-
-qDebug() << "\ncreate_resolved_topology_network: Loop over INTERIOR d_resolved_network.d_sections_interior\n";
+// qDebug() << "\ncreate_resolved_topology_network: Loop over INTERIOR d_resolved_network.d_sections_interior\n";
 
 	// 
 	// Iterate over the sections of the interior 
@@ -1223,7 +1224,9 @@ qDebug() << "\ncreate_resolved_topology_network: Loop over INTERIOR d_resolved_n
 	{
 		const ResolvedNetwork::Section &section = *section_iter;
 
-debug_output_topological_section(section);
+		#if 0
+		debug_output_topological_section(section);
+		#endif
 
 		// clear out the old list of points
 		section_points.clear();
@@ -1413,6 +1416,7 @@ debug_output_topological_section(section);
 					qDebug() << "====> property rigidBlock = NOT FOUND";
 				}
 #endif
+
 				continue; // to next section of the topology
 			}
 
@@ -1478,20 +1482,26 @@ debug_output_topological_section(section);
 	// Mesh the data 
 	constrained_mesher->refine_mesh();
 
+#if 0
 std::cout << "constrained_delaunay_triangulation_2 verts: " 
 << constrained_delaunay_triangulation_2->number_of_vertices() << std::endl;
+#endif
 
 	// make it conforming Delaunay
 	CGAL::make_conforming_Delaunay_2(*constrained_delaunay_triangulation_2);
 
+#if 0
 std::cout << "Number of vertices after make_conforming_Delaunay_2: "
 << constrained_delaunay_triangulation_2->number_of_vertices() << std::endl;
+#endif
 
 	// then make it conforming Gabriel
 	CGAL::make_conforming_Gabriel_2(*constrained_delaunay_triangulation_2);
 
+#if 0
 std::cout << "Number of vertices after make_conforming_Gabriel_2: "
 << constrained_delaunay_triangulation_2->number_of_vertices() << std::endl;
+#endif
 	
 	// Create the network RTN 
 	const ResolvedTopologicalNetwork::non_null_ptr_type network =
