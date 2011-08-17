@@ -136,6 +136,7 @@
 #include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "gui/ChooseCanvasTool.h"
 #include "gui/DockState.h"
+#include "gui/Dialogs.h"
 #include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
@@ -283,6 +284,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				this)),
 	d_dock_state_ptr(
 			new GPlatesGui::DockState(
+				*this,
+				this)),
+	d_dialogs_ptr(
+			new GPlatesGui::Dialogs(
+				get_application_state(),
+				get_view_state(),
 				*this,
 				this)),
 	d_info_dock_ptr(NULL),
@@ -1087,11 +1094,15 @@ GPlatesQtWidgets::ViewportWindow::connect_window_menu_actions()
 	// ----
 	QObject::connect(action_Show_Layers, SIGNAL(triggered(bool)),
 			this, SLOT(set_visual_layers_dialog_visibility(bool)));
+
 	QAction *action_show_bottom_panel = d_info_dock_ptr->toggleViewAction();
 	action_show_bottom_panel->setText(tr("Show &Bottom Panel"));
 	action_show_bottom_panel->setObjectName("action_Show_Bottom_Panel");
 	menu_Window->insertAction(action_Show_Bottom_Panel_Placeholder, action_show_bottom_panel);
 	menu_Window->removeAction(action_Show_Bottom_Panel_Placeholder);
+
+	QObject::connect(action_Log_Dialog, SIGNAL(triggered()),
+			&dialogs(), SLOT(lazy_pop_up_log_dialog()));
 	// ----
 	QObject::connect(action_Full_Screen, SIGNAL(triggered(bool)),
 			&d_full_screen_mode, SLOT(toggle_full_screen(bool)));
@@ -1134,6 +1145,13 @@ const GPlatesQtWidgets::MapView &
 GPlatesQtWidgets::ViewportWindow::map_view() const
 {
 	return d_reconstruction_view_widget_ptr->map_view();
+}
+
+
+GPlatesGui::Dialogs &
+GPlatesQtWidgets::ViewportWindow::dialogs() const
+{
+	return *d_dialogs_ptr;
 }
 
 
@@ -2116,19 +2134,6 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file(
 
 
 void
-GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
-{
-	BOOST_FOREACH(QObject *obj, children())
-	{
-		QDialog *dialog = dynamic_cast<QDialog *>(obj);
-		if (dialog)
-		{
-			dialog->reject();
-		}
-	}
-}
-
-void
 GPlatesQtWidgets::ViewportWindow::closeEvent(
 		QCloseEvent *close_event)
 {
@@ -2158,7 +2163,7 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 	// User is OK with quitting GPlates at this point.
 	close_event->accept();
 	// If we decide to accept the close event, we should also tidy up after ourselves.
-	close_all_dialogs();
+	dialogs().close_all_dialogs();
 	// Make sure we really do quit - stray dialogs not caught by @a close_all_dialogs()
 	// (e.g. PyQt windows) will keep GPlates open.
 	QCoreApplication::quit();

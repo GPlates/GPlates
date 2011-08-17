@@ -94,6 +94,8 @@ set(srcs
     GsmlPropertyHandlers.h
     LineReader.cc
     LineReader.h
+    LogToFileHandler.cc
+    LogToFileHandler.h
     MipmappedRasterFormat.cc
     MipmappedRasterFormat.h
     MipmappedRasterFormatReader.h

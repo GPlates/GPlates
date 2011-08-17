@@ -64,6 +64,7 @@ namespace GPlatesAppLogic
 	class FeatureCollectionFileIO;
 	class LayerTask;
 	class LayerTaskRegistry;
+	class LogModel;
 	class ReconstructGraph;
 	class ReconstructMethodRegistry;
 	class Serialization;
@@ -161,6 +162,12 @@ namespace GPlatesAppLogic
 		 */
 		LayerTaskRegistry &
 		get_layer_task_registry();
+
+		/**
+		 * The Log Model is a Qt Model/View class that does the back-end work for the LogDialog.
+		 */
+		LogModel &
+		get_log_model();
 
 		/**
 		 * Returns the reconstruct graph containing the connected layer tasks.
@@ -379,6 +386,11 @@ namespace GPlatesAppLogic
 		 * The layer task registry is used to create layer tasks.
 		 */
 		boost::scoped_ptr<LayerTaskRegistry> d_layer_task_registry;
+		
+		/**
+		 * The Log Model is a Qt Model/View class that does the back-end work for the LogDialog.
+		 */
+		boost::scoped_ptr<LogModel> d_log_model;
 
 		/**
 		 * The reconstruct graph connects the inputs/outputs of layer tasks to each other and

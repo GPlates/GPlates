@@ -202,6 +202,8 @@ set(srcs
     GMTFileFormatConfigurationDialog.cc
     GMTFileFormatConfigurationDialog.h
     GMTFileFormatConfigurationDialogUi.ui
+    GPlatesDialog.cc
+    GPlatesDialog.h
     ImportRasterDialog.cc
     ImportRasterDialog.h
     InformationDialog.cc
@@ -222,6 +224,9 @@ set(srcs
     LicenseDialog.h
     LinkWidget.cc
     LinkWidget.h
+    LogDialog.cc
+    LogDialog.h
+    LogDialogUi.ui
     ManageFeatureCollectionsActionWidget.cc
     ManageFeatureCollectionsActionWidget.h
     ManageFeatureCollectionsActionWidgetUi.ui

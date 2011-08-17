@@ -68,6 +68,7 @@ namespace GPlatesFileIO
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+	class Dialogs;
 	class DockState;
 	class EnableCanvasTool;
 	class FeatureFocus;
@@ -191,6 +192,15 @@ namespace GPlatesQtWidgets
 
 		const MapView &
 		map_view() const;
+		
+		
+		/**
+		 * Accessor for the Dialogs class which manages all the instances of major dialogs/windows
+		 * that would ordinarily hang off of ViewportWindow and clutter things up.
+		 */
+		GPlatesGui::Dialogs &
+		dialogs() const;
+
 
 		void
 		create_svg_file(
@@ -617,9 +627,6 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_window_menu_about_to_show();
-
-		void
-		close_all_dialogs();
 		
 		void
 		dock_search_results_at_top();
@@ -806,6 +813,11 @@ namespace GPlatesQtWidgets
 		 * Deals with all the micro-management of the ViewportWindow's docks.
 		 */
 		QPointer<GPlatesGui::DockState> d_dock_state_ptr;
+
+		/**
+		 * Manages all the major dialogs that would otherwise clutter up ViewportWindow.
+		 */
+		QPointer<GPlatesGui::Dialogs> d_dialogs_ptr;
 
 		/**
 		 * A temporary position for the new DockWidget for Clicked/Topology

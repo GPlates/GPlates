@@ -35,6 +35,8 @@
 #include <QTextStream>
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/GPlatesQtMsgHandler.h"
+
 #include "api/PythonInterpreterLocker.h"
 #include "api/Sleeper.h"
 
@@ -42,7 +44,6 @@
 #include "global/python.h"
 
 #include "gui/GPlatesQApplication.h"
-#include "gui/GPlatesQtMsgHandler.h"
 
 #include "maths/MathsUtils.h"
 
@@ -248,7 +249,7 @@ int internal_main(int argc, char* argv[])
 	//      "true", "1", "yes" or "on".
 	// Note: Installing handler overrides default Qt message handler.
 	//       And does not log messages to the console.
-	GPlatesGui::GPlatesQtMsgHandler::install_qt_message_handler();
+	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler();
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions
 	// in the Qt event thread.
@@ -260,7 +261,7 @@ int internal_main(int argc, char* argv[])
 			qapplication.argc(), qapplication.argv());
 
 	
-	GPlatesPresentation::Application* app = GPlatesPresentation::Application::instance();
+	GPlatesPresentation::Application *app = GPlatesPresentation::Application::instance();
 	GPlatesQtWidgets::ViewportWindow &main_window_widget = app->get_viewport_window();
 	
 	// Set up the main window widget.

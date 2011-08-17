@@ -1,11 +1,11 @@
 /* $Id$ */
 
 /**
- * \file A @a QtMsgHandler used to output debug, warning, critical and fatal Qt messages.
+ * \file A @a QtMsgHandler that delegates messages to other logging classes.
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,34 +23,48 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_GPLATESQTMSGHANDLER_H
-#define GPLATES_GUI_GPLATESQTMSGHANDLER_H
+#ifndef GPLATES_APP_LOGIC_GPLATESQTMSGHANDLER_H
+#define GPLATES_APP_LOGIC_GPLATESQTMSGHANDLER_H
 
 #include "utils/Singleton.h"
 
-#include <boost/scoped_ptr.hpp>
-#include <QFile>
-#include <QString>
-#include <QTextStream>
+#include <vector>
+#include <boost/shared_ptr.hpp>
 #include <QtGlobal>
+#include <QString>
 
 
-namespace GPlatesGui
+namespace GPlatesAppLogic
 {
 	/**
-	 * A Qt message handler to log qDebug, qWarning, qFatal, etc messages to a file.
+	 * A Qt message handler to log qDebug, qWarning, qFatal, etc messages to file and to a log dialog.
+	 * It delegates responsibility to GPlatesFileIO::LogToFileHandler and GPlatesAppLogic::LogToModelHandler.
 	 */
 	class GPlatesQtMsgHandler :
 			public GPlatesUtils::Singleton<GPlatesQtMsgHandler>
 	{
-
 		GPLATES_SINGLETON_CONSTRUCTOR_DECL(GPlatesQtMsgHandler)
 
 	public:
 		~GPlatesQtMsgHandler();
 
-		//! Default filename to log Qt messages to.
-		static const QString DEFAULT_LOG_FILENAME;
+		/**
+		 * Abstract base for a simple handler class that we can use to delegate
+		 * message handling to a variety of different destinations.
+		 */
+		class MessageHandler
+		{
+		public:
+			virtual
+			~MessageHandler()
+			{ }
+			
+			virtual
+			void
+			handle_qt_message(
+					QtMsgType msg_type,
+					const char * msg) = 0;
+		};
 
 		/**
 		 * Uses @a qInstallMsgHandler to @a install_qt_message_handler as the sole Qt message handler.
@@ -61,22 +75,41 @@ namespace GPlatesGui
 		 * If handler is not installed then default Qt handler applies.
 		 * This handler is uninstalled when its singleton instance is destroyed
 		 * at application exit (and the previous handler is reinstalled).
+		 *
+		 * @param log_filename - an optional override to the default LogToFileHandler's filename.
 		 */
 		static
 		void
 		install_qt_message_handler(
-				const QString &log_filename = DEFAULT_LOG_FILENAME);
+				const QString &log_filename = QString());
+
 
 		/**
 		 * The message handler function called by Qt.
-		 *
-		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 */
 		static
 		void
 		qt_message_handler(
 				QtMsgType msg_type,
-				const char * msg);
+				const char *msg);
+
+		/**
+		 * Add one of our own MessageHandler derivatives to the list of handlers that
+		 * can process messages.
+		 */
+		void
+		add_handler(
+				boost::shared_ptr<MessageHandler> handler);
+
+
+		/**
+		 * This delegates the message to our various MessageHandler derivations.
+		 */
+		void
+		handle_qt_message(
+				QtMsgType msg_type,
+				const char *msg);
+
 
 	private:
 		//
@@ -85,30 +118,20 @@ namespace GPlatesGui
 
 		//! Next Qt message handler in the chain of message handlers.
 		static QtMsgHandler s_prev_msg_handler;
-
-		//! Name of the log file to write to.
-		static QString s_log_filename;
-
+		
 		//
-		// Instance data members
+		// Instance member data
 		//
 
-		QFile d_log_file;
-		boost::scoped_ptr<QTextStream> d_log_stream;
-
-		int d_log_level;
+		/**
+		 * Store all MessageHandler derivations registered with this class, so we can pass
+		 * the messages to them all.
+		 */
+		std::vector<boost::shared_ptr<MessageHandler> > d_message_handlers;
 
 		//
 		// Instance methods
 		//
-
-		/**
-		 * Handler method for Qt messages.
-		 */
-		void
-		handle_qt_message(
-				QtMsgType msg_type,
-				const char * msg);
 
 		/**
 		 * Returns true if should install message handler.
@@ -119,4 +142,4 @@ namespace GPlatesGui
 	};
 }
 
-#endif // GPLATES_GUI_GPLATESQTMSGHANDLER_H
+#endif // GPLATES_APP_LOGIC_GPLATESQTMSGHANDLER_H

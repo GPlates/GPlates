@@ -33,6 +33,7 @@
 #include "Layer.h"
 #include "LayerTask.h"
 #include "LayerTaskRegistry.h"
+#include "LogModel.h"
 #include "ReconstructGraph.h"
 #include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
@@ -88,6 +89,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_user_preferences_ptr(new UserPreferences()),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
+	d_log_model(new LogModel(NULL)),
 	d_reconstruct_graph(new ReconstructGraph(*d_layer_task_registry)),
 	d_update_default_reconstruction_tree_layer(true),
 	d_reconstruction_time(0.0),
@@ -298,6 +300,13 @@ GPlatesAppLogic::LayerTaskRegistry &
 GPlatesAppLogic::ApplicationState::get_layer_task_registry()
 {
 	return *d_layer_task_registry;
+}
+
+
+GPlatesAppLogic::LogModel &
+GPlatesAppLogic::ApplicationState::get_log_model()
+{
+	return *d_log_model;
 }
 
 

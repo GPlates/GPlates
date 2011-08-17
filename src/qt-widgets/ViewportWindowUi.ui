@@ -199,6 +199,7 @@
     <addaction name="separator"/>
     <addaction name="action_Show_Layers"/>
     <addaction name="action_Show_Bottom_Panel_Placeholder"/>
+    <addaction name="action_Log_Dialog"/>
     <addaction name="separator"/>
     <addaction name="action_Full_Screen"/>
    </widget>
@@ -1574,6 +1575,11 @@
    </property>
    <property name="visible">
     <bool>true</bool>
+   </property>
+  </action>
+  <action name="action_Log_Dialog">
+   <property name="text">
+    <string>Lo&amp;g</string>
    </property>
   </action>
  </widget>

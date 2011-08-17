@@ -42,6 +42,8 @@ set(srcs
     CptColourPalette.h
     CsvExport.cc
     CsvExport.h
+    Dialogs.cc
+    Dialogs.h
     DockState.cc
     DockState.h
     DrawStyleManager.cc
@@ -115,8 +117,6 @@ set(srcs
     GMTColourNames.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
-    GPlatesQtMsgHandler.cc
-    GPlatesQtMsgHandler.h
     GraticuleSettings.h
     GuiDebug.cc
     GuiDebug.h
@@ -125,6 +125,8 @@ set(srcs
     HTMLColourNames.h
     ImportMenu.cc
     ImportMenu.h
+    LogFilterModel.cc
+    LogFilterModel.h
     Map.cc
     Map.h
     MapCanvasPainter.cc

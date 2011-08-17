@@ -42,6 +42,8 @@ set(srcs
     GeometryCookieCutter.h
     GeometryUtils.cc
     GeometryUtils.h
+    GPlatesQtMsgHandler.cc
+    GPlatesQtMsgHandler.h
     Layer.cc
     Layer.h
     LayerInputChannelType.h
@@ -55,6 +57,10 @@ set(srcs
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
     LayerTaskType.h
+    LogModel.cc
+    LogModel.h
+    LogToModelHandler.cc
+    LogToModelHandler.h
     MeshGenerator.cc
     MeshGenerator.h
     MotionPathGeometryPopulator.cc
