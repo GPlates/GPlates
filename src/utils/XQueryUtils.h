@@ -43,10 +43,27 @@ namespace GPlatesUtils
 		typedef boost::function<bool (QBuffer&)> IsEmptyFun;
 
 		std::vector<QByteArray>
+		evaluate_query(
+				QByteArray& xml_data,
+				const QString& query_str);
+
+		inline
+		std::vector<QByteArray>
+		evaluate_query(
+				QBuffer& buf,
+				const QString& query_str)
+		{
+			QByteArray data = buf.data();
+			return evaluate_query(data, query_str);
+		}
+
+		// FIXME: could this test be replaced with above? 
+		std::vector<QByteArray>
 		evaluate_features(
 				QByteArray& xml_data,
 				const QString& query_str);
-		
+
+#if 0
 		/*
 		* Run the query_str on xml_data 
 		* return the result in std::vector<QByteArray>
@@ -67,6 +84,7 @@ namespace GPlatesUtils
 			QByteArray data = buf.data();
 			return evaluate(data, query_str, is_empty);
 		}
+#endif
 
 		/*
 		* retrieve the attribute value from xml_data as string.

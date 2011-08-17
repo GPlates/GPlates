@@ -84,6 +84,7 @@ namespace GPlatesQtWidgets
 	private slots:
 
 		void downloadFile(); // will call startRequest(url);
+
 		void cancelDownload();
 
 		// These slots are connected to d_reply within startRequest()

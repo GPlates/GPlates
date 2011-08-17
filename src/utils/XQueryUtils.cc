@@ -34,12 +34,16 @@
 #include "XQueryUtils.h"
 #include "file-io/GsmlConst.h"
 
+
+
+
 std::vector<QByteArray>
 GPlatesUtils::XQuery::evaluate_features(
 		QByteArray& xml_data,
 		const QString& query_str)
 {
-qDebug() << "GPlatesUtils::XQuery::evaluate_features()";
+//qDebug() << "GPlatesUtils::XQuery::evaluate_features()";
+//qDebug() << "GPlatesUtils::XQuery::evaluate_features(): query_str=" << query_str;
 
 	std::vector<QByteArray> ret;
 
@@ -62,7 +66,6 @@ qDebug() << "GPlatesUtils::XQuery::evaluate_features()";
 		GPlatesFileIO::GsmlConst::all_namespaces() + 
 		"doc($data_source)" + 
 		"//gml:featureMember");
-qDebug() << "GPlatesUtils::XQuery::evaluate_features(): q_s=" << q_s;
 
 	query.bindVariable("data_source", &buffer);
 
@@ -82,11 +85,13 @@ qDebug() << "GPlatesUtils::XQuery::evaluate_features(): q_s=" << q_s;
 	QXmlSerializer serializer(query, &out_buf);
 	if(query.evaluateTo(&serializer))
 	{
-
-		qDebug() << "######################################################################";
-		qDebug() << "GPlatesUtils::XQuery::evaluate_features(): out_array=";
-		// qDebug() << out_array;
-		qDebug() << "######################################################################";
+		//qDebug() << "GPlatesUtils::XQuery::evaluate_features(): out_array.size() =" << out_array.size();
+		if (out_array.size() == 0)
+		{
+			//qDebug() << "WARN: GPlatesUtils::XQuery::evaluate_features(): out_array.size()=" << out_array.size();
+			// query returned no elements to out_array
+			return ret;
+		}
 
 		// split the out_array by gml:featureMember tags
 		out_array.replace(
@@ -94,7 +99,7 @@ qDebug() << "GPlatesUtils::XQuery::evaluate_features(): q_s=" << q_s;
 			"</gml:featureMember>;<gml:featureMember");
 		QList<QByteArray> list = out_array.split(';');
 		QList<QByteArray>::iterator itr = list.begin();
-qDebug() << "GPlatesUtils::XQuery::evaluate_features(): list.size() =" << list.size();
+//qDebug() << "GPlatesUtils::XQuery::evaluate_features(): list.size() =" << list.size();
 		for ( ; itr != list.end(); ++itr )
 		{
 			itr->replace(';', "");
@@ -157,11 +162,108 @@ qDebug() << "GPlatesUtils::XQuery::evaluate_features(): list.size() =" << list.s
 	}
 #endif
 
-qDebug() << "GPlatesUtils::XQuery::evaluate_features(): ret.size() =" << ret.size();
+//qDebug() << "GPlatesUtils::XQuery::evaluate_features(): ret.size() =" << ret.size();
 	return ret;
 }
 
 
+std::vector<QByteArray>
+GPlatesUtils::XQuery::evaluate_query(
+		QByteArray& xml_data,
+		const QString& query_str)
+{
+#if 0
+qDebug() << "GPlatesUtils::XQuery::evaluate_query()";
+qDebug() << "GPlatesUtils::XQuery::evaluate_query(): query_str=" << query_str;
+#endif
+
+	std::vector<QByteArray> ret;
+
+	// fill input buffer with xml data to query
+	QBuffer in_buf(&xml_data);
+	in_buf.open(QIODevice::ReadOnly | QIODevice::Text);
+
+	if(!in_buf.isOpen())
+	{
+		qWarning() << "Cannot open input buffer.";
+		return ret;
+	}
+	in_buf.reset();
+
+	// Create the query
+	QXmlQuery query;
+
+	QString q_s = "";
+	q_s.append( 
+		GPlatesFileIO::GsmlConst::all_namespaces() + 
+		"doc($data_source)" + 
+		query_str);
+
+	query.bindVariable("data_source", &in_buf);
+	query.setQuery( q_s );
+
+	QByteArray out_array;
+	QBuffer out_buf(&out_array);
+	out_buf.open(QIODevice::ReadWrite | QIODevice::Text);
+
+	if(!out_buf.isOpen())
+	{
+		qWarning() << "ERROR Cannot open temporary output buffer.";
+		return ret;
+	}
+
+	// Evaluate query to QXmlSerializer
+	QXmlSerializer serializer(query, &out_buf);
+
+	if(query.evaluateTo(&serializer))
+	{
+		//qDebug() << "GPlatesUtils::XQuery::evaluate_query(): out_array.size()=" << out_array.size();
+		if (out_array.size() == 0)
+		{
+			// query returned no elements to out_array
+			// qDebug() << "WARN: GPlatesUtils::XQuery::evaluate_query(): out_array.size()=" << out_array.size();
+			return ret;
+		}
+
+		// else, there is some data to process 
+
+		// build the tag pairs like:				"</gml:featureMember><gml:featureMember"
+        // and insert a ^ chars to split on:		"</gml:featureMember>^<gml:featureMember"
+
+		// extract the tag_name string from query_str like 
+		// "//gpml:RockUnit_siliciclastic" or "/gsml:shape/gml:Point" 
+
+		QString tag_name = query_str.mid( query_str.lastIndexOf("/") );
+
+		QByteArray tag_i; tag_i.append("</" + tag_name + "><" + tag_name);
+		QByteArray tag_o; tag_o.append("</" + tag_name + ">^<" + tag_name);
+
+		out_array.replace( tag_i, tag_o );
+
+		// split the out_array by input tags
+
+		QList<QByteArray> list = out_array.split('^');
+// qDebug() << "GPlatesUtils::XQuery::evaluate_query(): list.size() =" << list.size();
+		QList<QByteArray>::iterator itr = list.begin();
+		for ( ; itr != list.end(); ++itr )
+		{
+			itr->replace('^', "");
+			ret.push_back( *itr );
+		}
+	}
+	else
+	{
+		qDebug() << "GPlatesUtils::XQuery::evaluate_query(): query.evaluateTo(serializer) false!";
+		return ret;
+	}
+
+// qDebug() << "GPlatesUtils::XQuery::evaluate_query(): ret.size() =" << ret.size();
+	return ret;
+}
+
+
+
+#if 0
 std::vector<QByteArray>
 GPlatesUtils::XQuery::evaluate(
 		QByteArray& xml_data,
@@ -183,7 +285,6 @@ GPlatesUtils::XQuery::evaluate(
 	int i = 1;
 	for( ; ; i++)
 	{
-// qDebug() << "GPlatesUtils::XQuery::evaluate(): i=" << i;
 		buffer.reset();
 		query.bindVariable("idx", QVariant(i));
 		query.bindVariable("data_source", &buffer);
@@ -209,7 +310,7 @@ GPlatesUtils::XQuery::evaluate(
 		{
 			if(is_empty(out_buf))
 			{
-				//qDebug() << "No more data.";
+				qDebug() << "No more data.";
 				break;
 			}
 			ret.push_back(array);
@@ -218,6 +319,7 @@ GPlatesUtils::XQuery::evaluate(
 	}
 	return ret;
 }
+#endif 
 
 
 std::vector<QVariant>

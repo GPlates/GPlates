@@ -37,7 +37,7 @@ namespace GPlatesFileIO
 {
 	/*
 	* Add new feature type:
-	* 1. Add an entry in AllFeatures.
+	* 1. Add an entry in AllFeatureTypes.
 	* 2. Determine the properties contained in the new feature and initialize a properties array.
 	* 3. If you want to use a new properties, check GsmlPropertyDef.h.
 	*/
@@ -98,7 +98,7 @@ namespace GPlatesFileIO
 
 
 	// define all features.
-	static const FeatureInfo AllFeatures[] = 
+	static const FeatureInfo AllFeatureTypes[] = 
 	{
 		{
 			"MappedFeature",
@@ -130,5 +130,4 @@ namespace GPlatesFileIO
 }
 
 #endif  // GPLATES_FILEIO_GSMLFEATURESDEF_H
-
 

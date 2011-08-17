@@ -31,6 +31,7 @@
 
 #include <QtGui>
 #include <QtNetwork>
+#include <QMessageBox>
 
 #include <time.h>
 
@@ -74,6 +75,8 @@ GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
 		SLOT(cancelDownload()));
 
 	// Proxy 
+
+
 	QObject::connect(
 			checkBox_proxy,
 			SIGNAL(stateChanged(int)),
@@ -102,17 +105,15 @@ GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
 			SLOT(handle_apply_valid_time()));
 	
 
-	// FIXME:  remove this default request
-	// Request
+	// FIXME:  remove default requests
 	// plainTextEdit_request->setPlainText("?&polygon=-121.9 46.73, -121.6 44.26, -116 44.7, -115.8 46.76, -121.9 46.73&age_bottom=1&age_top=0");
-	//plainTextEdit_request->setPlainText("?&polygon=-109.5 41.5, -109.7 36.55, -99.22 36.19, -99.77 41.4, -109.5 41.5&age_bottom=100&age_top=0");
-
+	// plainTextEdit_request->setPlainText("?&polygon=-109.5 41.5, -109.7 36.55, -99.22 36.19, -99.77 41.4, -109.5 41.5&age_bottom=100&age_top=0");
 	// good for paleo db
-	//plainTextEdit_request->setPlainText("?&polygon=-103.3 37.22, -103.2 36.17, -99.78 36.11, -99.67 37.31, -103.3 37.22&age_bottom=100&age_top=0");
+	// plainTextEdit_request->setPlainText("?&polygon=-103.3 37.22, -103.2 36.17, -99.78 36.11, -99.67 37.31, -103.3 37.22&age_bottom=100&age_top=0");
 
 	plainTextEdit_request->setPlainText("?&polygon=-104.3 37.88, -104.2 35.77, -99.38 35.6, -99.23 37.82, -104.3 37.88&age_bottom=200&age_top=0");
 
-
+	d_request_geom_string = "?&polygon=-104.3 37.88, -104.2 35.77, -99.38 35.6, -99.23 37.82, -104.3 37.88";
 }
 
 GPlatesQtWidgets::ConnectWFSDialog::~ConnectWFSDialog()
@@ -123,14 +124,14 @@ GPlatesQtWidgets::ConnectWFSDialog::~ConnectWFSDialog()
 
 void
 GPlatesQtWidgets::ConnectWFSDialog::set_request_geometry( 
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere)
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
 {
 	QString geom_str = "";
 
-	qDebug() << "ConnectWFSDialog::set_request_geometry(): ";
+	//qDebug() << "ConnectWFSDialog::set_request_geometry(): ";
 	// double check on geom type 
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
-	geometry_on_sphere->accept_visitor(finder);
+	geometry->accept_visitor(finder);
 	if ( ( finder.found_polyline_geometries() ) || ( finder.found_point_geometries() ) )
 	{
 		QErrorMessage *e = new QErrorMessage( this );
@@ -164,7 +165,7 @@ GPlatesQtWidgets::ConnectWFSDialog::set_request_geometry(
 	}
 	else
 	{
-		qDebug() << "ConnectWFSDialog::set_request_geometry(): NO GEOM = ";
+		//qDebug() << "ConnectWFSDialog::set_request_geometry(): NO GEOM = ";
 		QErrorMessage *e = new QErrorMessage( this );
 		e->showMessage("No valid geometry found from digitization tool?");
 		return;
@@ -180,9 +181,9 @@ GPlatesQtWidgets::ConnectWFSDialog::set_request_geometry(
 void 
 GPlatesQtWidgets::ConnectWFSDialog::startRequest(QUrl url)
 {
-qDebug() << "ConnectWFSDialog::startRequest: url=" << url;
+// qDebug() << "ConnectWFSDialog::startRequest: url=" << url;
 
-	d_reply = d_qnam.get(QNetworkRequest(url));
+	d_reply = d_qnam.get( QNetworkRequest(url) );
 
 #if 0
 	// Set proxy info if needed 
@@ -196,19 +197,19 @@ qDebug() << "ConnectWFSDialog::startRequest: url=" << url;
 
 	QObject::connect(
 		d_reply, 
-		SIGNAL(finished()),
+		SIGNAL( finished()),
 		this, 
-		SLOT(httpFinished()));
+		SLOT( httpFinished()));
 
 	QObject::connect(
 		d_reply, 
-		SIGNAL(readyRead()),
+		SIGNAL( readyRead()),
 		this, 
-		SLOT(httpReadyRead()));
+		SLOT( httpReadyRead()));
 
 	QObject::connect(
 		d_reply, 
-		SIGNAL(downloadProgress(qint64,qint64)),
+		SIGNAL( downloadProgress(qint64,qint64)),
 		this, 
 		SLOT(updateDataReadProgress(qint64,qint64)));
 }
@@ -246,7 +247,7 @@ GPlatesQtWidgets::ConnectWFSDialog::downloadFile()
 	{
 		fileName = "TEST.xml";
 	}
-
+	// fix test filename
 	fileName = "TEST.xml";
 
 	if (QFile::exists(fileName)) 
@@ -276,23 +277,25 @@ GPlatesQtWidgets::ConnectWFSDialog::downloadFile()
 		return;
 	}
 
-
 	// Set up progress bar
 	QLabel* progress_label = 
 		new QLabel(
 			QApplication::translate(
 				"QProgressDialog", 
-				"Connecting to WFS server...", 
+				"Connecting to WFS server ...    ", 
 				0, 
 				QApplication::UnicodeUTF8),
 		d_progress_dlg);
 
-	progress_label->setAlignment(Qt::AlignHCenter);
-	d_progress_dlg->setMinimumSize(350,80);
 	d_progress_dlg->setLabel(progress_label);
-	d_progress_dlg->setRange(0,9);
-	srand ( time(NULL) );
-	d_progress_dlg->setValue(rand() % 10);
+	d_progress_dlg->setMinimumSize(350,80);
+	// FIXME: upper value on range is very arbitrary:
+	// NOTE : with the Macrostrat rocktype tests,
+	// a coverage of the US, from 0Ma to 200 Ma is about 6178735 bytes
+	// NOTE : with the Macrostrat paleodb tests,
+	// a coverage of the US, from 0Ma to 500 Ma is about 25595412 bytes
+	d_progress_dlg->setRange(0, 50000000); 
+	d_progress_dlg->setValue(0);
 	d_progress_dlg->show();
 
 	// set the flags 
@@ -307,12 +310,14 @@ GPlatesQtWidgets::ConnectWFSDialog::cancelDownload()
 {
 	d_httpRequestAborted = true;
 	d_reply->abort();
-	// d_progress_dlg->hide();
+	d_progress_dlg->hide();
 }   
 
 void 
 GPlatesQtWidgets::ConnectWFSDialog::httpFinished()
 {
+// qDebug() << "GPlatesQtWidgets::ConnectWFSDialog::httpFinished()";
+
 	if ( d_httpRequestAborted ) 
 	{
 		if (d_xml_file) 
@@ -323,9 +328,12 @@ GPlatesQtWidgets::ConnectWFSDialog::httpFinished()
              d_xml_file = 0;
 		}
 		d_reply->deleteLater();
+
 		d_progress_dlg->hide();
 		return;
 	}
+
+	d_httpRequestAborted = false;
      
 	d_progress_dlg->hide();
 	d_xml_file->flush();
@@ -370,12 +378,16 @@ GPlatesQtWidgets::ConnectWFSDialog::httpFinished()
 	delete d_xml_file;
 	d_xml_file = 0;
 
+	// translate the xml into gpml
 	process_xml();
 
 	// Update widgets for next request
 	QString s = "Untitled-";
 	s.append ( QString::number( d_request_id ) );
 	lineEdit_name->setText( s );
+
+	// close the dialog
+	close();
 }
 
 
@@ -386,17 +398,13 @@ GPlatesQtWidgets::ConnectWFSDialog::httpReadyRead()
 	// We read all of its new data and write it into the d_xml_file.
 	// That way we use less RAM than when reading it at the finished()
 	// signal of the QNetworkReply
-	QByteArray data_array = d_reply->readAll();
+	QByteArray data = d_reply->readAll();
 
-	// qDebug() << "GPlatesQtWidgets::ConnectWFSDialog::httpReadyRead() data=";
-	// qDebug() << data;
-	// qDebug() << "===";
-
-	d_xml_data.append( data_array );
+	d_xml_data.append( data );
 
 	if (d_xml_file)
 	{
-		d_xml_file->write( data_array );
+		d_xml_file->write( data );
 	}
 }
 
@@ -406,17 +414,19 @@ GPlatesQtWidgets::ConnectWFSDialog::updateDataReadProgress(
 	qint64 bytesRead, qint64 totalBytes)
 {
 	if (d_httpRequestAborted) { return; }
-	d_progress_dlg->setMaximum(totalBytes);
 	d_progress_dlg->setValue(bytesRead);
+
+	QString label = "Transfering XML (";
+	label.append( QString::number( bytesRead ) );
+	label.append( " bytes)" );
+	d_progress_dlg->setLabelText( label );
 }
 
 
 void 
 GPlatesQtWidgets::ConnectWFSDialog::process_xml()
 {
-qDebug() << "ALL XML ===========================================================";
-// qDebug() << d_xml_data;
-qDebug() << "END XML ===========================================================";
+// qDebug() << "GPlatesQtWidgets::ConnectWFSDialog::process_xml(): d_xml_data.size() = " << d_xml_data.size();
 
 	// Double check on return
 	if ( !d_xml_data.startsWith("<?xml") )
@@ -431,8 +441,34 @@ qDebug() << "END XML ===========================================================
 	QString file_base_name = lineEdit_name->text();
 	QString filename = tmp_dir + "/" + file_base_name;
 	
-	// Process xml_data as a new file 
-	d_app_state.get_feature_collection_file_io().load_xml_data(filename, d_xml_data);
+	// First step: check for number of features 
+	int count = d_app_state.get_feature_collection_file_io().count_features(filename, d_xml_data);
+
+	// Ask to proceed
+	bool process = false;
+	QMessageBox msgBox;
+	QString msg = QString("Web Feature Service query returned %1 features").arg( count );
+	msgBox.setText( msg );
+ 	msgBox.setInformativeText("Do you want to load features into a new, temporary layer?");
+ 	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+ 	msgBox.setDefaultButton(QMessageBox::Yes);
+ 	int ret = msgBox.exec();
+
+ 	switch (ret) 
+	{
+		case QMessageBox::No:
+			break;
+		case QMessageBox::Yes:
+			process = true;
+			break;
+		default:
+			break;
+	}
+
+	if ( process ) 
+	{
+		d_app_state.get_feature_collection_file_io().load_xml_data(filename, d_xml_data);
+	}
 
 	// clear out old data for next query 
 	d_xml_data.clear();
@@ -445,7 +481,7 @@ qDebug() << "END XML ===========================================================
 void
 GPlatesQtWidgets::ConnectWFSDialog::handle_apply_valid_time()
 {
-qDebug() << "ConnectWFSDialog::handle_apply_valid_time():";
+//qDebug() << "ConnectWFSDialog::handle_apply_valid_time():";
 
 	// double check on geom string 
 	if (d_request_geom_string == "")
@@ -458,8 +494,8 @@ qDebug() << "ConnectWFSDialog::handle_apply_valid_time():";
 	double b = spinbox_begin->value();
 	double e = spinbox_end->value();
 
-qDebug() << "ConnectWFSDialog::handle_apply_valid_time(): b =" << QString::number(b, 'g', 4);
-qDebug() << "ConnectWFSDialog::handle_apply_valid_time(): e =" << QString::number(e, 'g', 4);
+//qDebug() << "ConnectWFSDialog::handle_apply_valid_time(): b =" << QString::number(b, 'g', 4);
+//qDebug() << "ConnectWFSDialog::handle_apply_valid_time(): e =" << QString::number(e, 'g', 4);
 
 	// build time string 
 	d_request_time_string = "";
@@ -474,7 +510,7 @@ qDebug() << "ConnectWFSDialog::handle_apply_valid_time(): e =" << QString::numbe
 	request_string.append( d_request_time_string );
 
 	// set the dialog's info
-	qDebug() << "ConnectWFSDialog::set_request_geometry(): request_string = " << request_string;
+	//qDebug() << "ConnectWFSDialog::set_request_geometry(): request_string = " << request_string;
 	plainTextEdit_request->setPlainText( request_string );
 }
 
@@ -494,6 +530,4 @@ GPlatesQtWidgets::ConnectWFSDialog::handle_proxy_state_change(int state)
 		spinBox_proxy_port->setDisabled(false);
 	}
 }
-
-
 

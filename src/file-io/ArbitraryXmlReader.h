@@ -98,6 +98,14 @@ namespace GPlatesFileIO
 				QByteArray& data,
 				ReadErrorAccumulation &read_errors);
 		
+		int
+		count_features(
+				const File::Reference &file,
+				boost::shared_ptr<ArbitraryXmlProfile> profile,
+				GPlatesModel::ModelInterface &model,
+				QByteArray& data,
+				ReadErrorAccumulation &read_errors);
+		
 		ReadErrorAccumulation*
 		get_read_error_accumulation() const
 		{

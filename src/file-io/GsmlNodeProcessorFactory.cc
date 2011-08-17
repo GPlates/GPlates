@@ -40,11 +40,14 @@ GPlatesFileIO::GsmlNodeProcessorFactory::process_with_property_processors(
 		const QString& feature_type,
 		QBuffer& buf)
 {
+//qDebug() << "GPlatesFileIO::GsmlNodeProcessorFactory::process_with_property_processors()";
+
 	std::vector<boost::shared_ptr<GsmlNodeProcessor> > processors = 
 		create_property_processors(feature_type);
 
 	BOOST_FOREACH(boost::shared_ptr<GsmlNodeProcessor> p, processors)
 	{
+//qDebug() << "GPlatesFileIO::GsmlNodeProcessorFactory::process_with_property_processors(): query_string=" << p->get_query_string();
 		p->execute(buf);
 	}
 }
@@ -52,33 +55,37 @@ GPlatesFileIO::GsmlNodeProcessorFactory::process_with_property_processors(
 
 std::vector<boost::shared_ptr<GPlatesFileIO::GsmlNodeProcessor> >
 GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors(
-		const QString& feature_name)
+		const QString& feature_type)
 {
+//qDebug() << "GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors() feature_type=" << feature_type;
+//qDebug() << "GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors() feature_type.section('_',0,0)=" << feature_type.section('_',0,0);
 
-//qDebug() << "GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors() feature_name=" << feature_name;
+	// Loop over types defined in: src/file-io/GsmlFeaturesDef.h
+	// looking for specific type 
 	std::vector<boost::shared_ptr<GsmlNodeProcessor> > processors;
 	const FeatureInfo* feature = NULL; 
-	for(unsigned i=0; i<sizeof(AllFeatures)/sizeof(FeatureInfo); i++)
+
+	for(unsigned i=0; i<sizeof( GPlatesFileIO::AllFeatureTypes)/sizeof(FeatureInfo); i++)
 	{
 		// Search for exact match on feature type name
-		if(feature_name == AllFeatures[i].name)
+		if(feature_type == GPlatesFileIO::AllFeatureTypes[i].name)
 		{
-			feature = &AllFeatures[i];
+			feature = &GPlatesFileIO::AllFeatureTypes[i];
 			break;
 		}
-
-		// NOTE: this is simple way to get all of RockUnit_* features to process 
+		// NOTE: this is simple way to get all of RockUnit_* (features to process 
 		// search for common prefix on feature type name 
-		if( feature_name.section('_',0,0) == AllFeatures[i].name )
+		if( feature_type.section('_',0,0) == GPlatesFileIO::AllFeatureTypes[i].name )
 		{
-			feature = &AllFeatures[i];
+			feature = &GPlatesFileIO::AllFeatureTypes[i];
 			break;
 		}
 	}
 
+
 	if(!feature)
 	{
-		qWarning() << "Cannot find property processors for " + feature_name + ".";
+		qWarning() << "Cannot find property processors for " + feature_type + ".";
 		return std::vector<boost::shared_ptr<GsmlNodeProcessor> >();
 	}
 	else
@@ -118,10 +125,4 @@ GPlatesFileIO::GsmlNodeProcessorFactory::process_with_property_processors(
 	buffer.close();
 	return;
 }
-
-
-
-
-
-
 

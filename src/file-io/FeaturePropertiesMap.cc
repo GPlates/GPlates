@@ -1141,6 +1141,7 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	d_map[ FeatureType::create_gpml("RockUnit_evaporite") ] = get_basic_rock_unit_properties();
 	d_map[ FeatureType::create_gpml("RockUnit_organic") ] = get_basic_rock_unit_properties();
 	d_map[ FeatureType::create_gpml("RockUnit_chemical") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_plutonic") ] = get_basic_rock_unit_properties();
 	d_map[ FeatureType::create_gpml("RockUnit_volcanic") ] = get_basic_rock_unit_properties();
 	d_map[ FeatureType::create_gpml("RockUnit_metamorphic") ] = get_basic_rock_unit_properties();
 	d_map[ FeatureType::create_gpml("RockUnit_indeterminate_igneous") ] = get_basic_rock_unit_properties();

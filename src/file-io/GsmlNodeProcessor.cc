@@ -39,10 +39,9 @@ GPlatesFileIO::GsmlNodeProcessor::execute(
 		QBuffer& xml_data)
 {
 	std::vector<QByteArray> results = 
-		GPlatesUtils::XQuery::evaluate(
+		GPlatesUtils::XQuery::evaluate_query(
 				xml_data,
-				d_query_str,
-				&GPlatesUtils::XQuery::is_empty);
+				d_query_str);
 
 	BOOST_FOREACH(QByteArray& data, results)
 	{

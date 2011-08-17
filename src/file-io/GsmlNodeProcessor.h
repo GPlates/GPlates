@@ -58,6 +58,12 @@ namespace GPlatesFileIO
 		execute(
 				QBuffer& xml_data);
 
+		QString
+		get_query_string()
+		{
+			return d_query_str;
+		}
+
 	protected:
 		QXmlQuery d_query;
 		QString d_query_str;

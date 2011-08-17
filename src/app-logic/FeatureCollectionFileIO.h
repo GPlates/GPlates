@@ -197,6 +197,14 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it);
 
 		/*
+		* Check for features in xml data;
+		*/
+		int 
+		count_features(
+				const QString& name,
+				QByteArray &data);
+
+		/*
 		* Load xml data in QByteArray.
 		*/
 		void

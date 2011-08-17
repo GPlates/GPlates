@@ -121,6 +121,7 @@ namespace
 	{
 		std::vector<QVariant> results = 
 			GPlatesUtils::XQuery::evaluate_attribute(array_buf,"srsName");
+
 		std::size_t s = results.size();
 		if( s >= 1)
 		{
@@ -191,12 +192,12 @@ namespace
 		
 		if(srs_name.size() == 0)
 		{
-			//qWarning() << "No Spatial Reference System name found. Use default EPSG:4326.";
+			// qWarning() << "No Spatial Reference System name found. Use default EPSG:4326.";
 			srs_name = "EPSG:4326";
 		}
 		else if(is_epsg_4326(srs_name))
 		{
-			//if it is already EPSG:4326, do nothing.
+			// if it is already EPSG:4326, do nothing.
 			// qDebug() << "The Spatial Reference System is already EPSG:4326. Do nothing and return";
 			return;
 		}
@@ -216,7 +217,7 @@ namespace
 
 			if(idx_end == -1)
 			{
-				// qWarning() << "The XML data is not well-formedin convert_to_EPSG_4326().";
+				qWarning() << "The XML data is not well-formedin convert_to_EPSG_4326().";
 				break;
 			}
 
@@ -325,12 +326,20 @@ GPlatesFileIO::GsmlPropertyHandlers::process_geometries(
 		const QString& query_str)
 {
 	QByteArray buf_array = xml_data.data();
+
+#if 0
+qDebug() << "======================================================================";
+qDebug() << "GPlatesFileIO::GsmlPropertyHandlers::process_geometries() buf_array = " << buf_array;
+qDebug() << "======================================================================";
+#endif
+
 	std::vector<QByteArray> results = 
-		XQuery::evaluate(
+		XQuery::evaluate_query(
 				buf_array,
-				query_str,
-				boost::bind(&XQuery::is_empty,_1));
+				query_str);
 	
+// qDebug() << "GPlatesFileIO::GsmlPropertyHandlers::process_geometries() results.size() = " << results.size();
+
 	BOOST_FOREACH(QByteArray& array, results)
 	{
 		// GPlates doesn't support gml:outerBoundaryIs and gml:innerBoundaryIs
@@ -441,6 +450,7 @@ GPlatesFileIO::GsmlPropertyHandlers::process_geometries(
 }
 
 
+// used to process GeometryProperty
 void
 GPlatesFileIO::GsmlPropertyHandlers::handle_geometry_property(
 		QBuffer& xml_data)
@@ -489,11 +499,19 @@ void
 GPlatesFileIO::GsmlPropertyHandlers::handle_occurrence_property(
 		QBuffer& xml_data)
 {
+#if 0
 	std::vector<QByteArray> results = 
 		XQuery::evaluate(
 				xml_data,
 				"/gsml:occurrence/gsml:MappedFeature/gsml:shape",
 				boost::bind(&XQuery::is_empty,_1));
+#endif
+
+	std::vector<QByteArray> results = 
+		XQuery::evaluate_query(
+				xml_data,
+				"/gsml:occurrence/gsml:MappedFeature/gsml:shape");
+
 	BOOST_FOREACH(QByteArray& array, results)
 	{
 		QBuffer buffer(&array);
@@ -541,10 +559,6 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_gml_valid_time(
 
 	while(reader.readNext() != QXmlStreamReader::Invalid) 
 	{
-		//qDebug() << "while: tokenString =" << reader.tokenString();
-		//qDebug() << "while: name =" << reader.name().toString();
-		//qDebug() << "while: text =" << reader.text();
-
 		if( reader.tokenString() == "StartElement")
 		{
 			if(reader.name() == "begin") { get_begin = true; }
@@ -567,8 +581,6 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_gml_valid_time(
 
 	b = b.trimmed();
 	e = e.trimmed();
-	//qDebug() << "handle_gml_valid_time: b =" << b;
-	//qDebug() << "handle_gml_valid_time: e =" << e;
 
 	const double begin 	= b.toDouble();
 	const double end 	= e.toDouble();

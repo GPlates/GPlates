@@ -64,7 +64,7 @@ namespace GPlatesFileIO
 
 		std::vector<boost::shared_ptr<GsmlNodeProcessor> >
 		create_property_processors(
-				const QString& feature_name);
+				const QString& feature_type);
 
 	private:
 		boost::shared_ptr<GsmlPropertyHandlers> d_property_handler;
