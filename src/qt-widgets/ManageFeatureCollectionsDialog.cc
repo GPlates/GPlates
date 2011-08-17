@@ -84,9 +84,9 @@ namespace
 	}
 	
 	/**
-	 * Returns the file format for a file if it was identified, otherwise throws @a FileFormatNotSupportedException.
+	 * Returns the file format for a file if it was identified, otherwise returns boost::none.
 	 */
-	GPlatesFileIO::FeatureCollectionFileFormat::Format
+	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format>
 	get_format_for_file(
 			GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
@@ -102,18 +102,11 @@ namespace
 				file_format_registry.get_file_format(
 						file.get_file().get_file_info().get_qfileinfo());
 
-		// If can't find a file format then throw an exception.
-		// This shouldn't happen since the file was read in which meant its file format was
-		// previously determined. This would probably only happen if the filename somehow was
-		// changed between then and now (and the new filename has an unsupported filename extension).
-		if (!file_format)
-		{
-			throw GPlatesFileIO::FileFormatNotSupportedException(
-					GPLATES_EXCEPTION_SOURCE,
-					"No registered file formats suitable for reading or writing file.");
-		}
+		// Note that we don't throw a 'FileFormatNotSupportedException' exception here since
+		// it's possible for generic XML data to now be loaded into GPlates and it seems the
+		// filename extension could be anything.
 
-		return file_format.get();
+		return file_format;
 	}
 	
 	/**
@@ -122,20 +115,18 @@ namespace
 	 */
 	QString
 	get_format_description_for_file(
-			GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
+			boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format,
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 	{
-#if 0
 		if (!file_format)
 		{
 			// Could not find a read or write format for the specified file so return an
 			// empty format string to indicate an unknown file format.
 			return QObject::tr("");
 		}
-#endif
 
 		return QObject::tr(
-				file_format_registry.get_short_description(file_format)
+				file_format_registry.get_short_description(file_format.get())
 						.toAscii().constData());
 	}
 
@@ -249,8 +240,21 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
 {
 	GPlatesAppLogic::FeatureCollectionFileState::file_reference file = action_widget_ptr->get_file_reference();
 
-	GPlatesFileIO::FeatureCollectionFileFormat::Format file_format =
+	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format_opt =
 			get_format_for_file(file, d_file_format_registry);
+
+	// The edit configuration button (in the action widget) should only be enabled we have
+	// identified a file format for the file.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			file_format_opt,
+			GPLATES_ASSERTION_SOURCE);
+	const GPlatesFileIO::FeatureCollectionFileFormat::Format file_format = file_format_opt.get();
+
+	// The edit configuration button (in the action widget) should only be enabled we have an
+	// edit configuration (ability to edit the file configuration).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_edit_configurations.find(file_format) != d_edit_configurations.end(),
+			GPLATES_ASSERTION_SOURCE);
 
 	// Get the file configuration from the file if it has one otherwise use the default configuration
 	// associated with its file format.
@@ -258,12 +262,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
 			file.get_file().get_file_configuration()
 			? file.get_file().get_file_configuration().get()
 			: d_file_format_registry.get_default_configuration(file_format);
-
-	// The edit configuration button (in the action widget) should only be enabled we have an
-	// edit configuration (ability to edit the file configuration).
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_edit_configurations.find(file_format) != d_edit_configurations.end(),
-			GPLATES_ASSERTION_SOURCE);
 
 	// The user can now edit the file configuration.
 	file_configuration =
@@ -491,7 +489,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
 	}
 
 	// Determine the file format of the file if possible.
-	const GPlatesFileIO::FeatureCollectionFileFormat::Format file_format =
+	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format =
 			get_format_for_file(file, d_file_format_registry);
 
 	QString format_str = get_format_description_for_file(file_format, d_file_format_registry);
@@ -516,9 +514,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
 		// If we have an edit configuration for the current file format then we can enable the
 		// edit configuration button in the action widget.
 		const bool enable_edit_configuration =
-				d_edit_configurations.find(file_format) != d_edit_configurations.end();
+				file_format &&
+					(d_edit_configurations.find(file_format.get()) != d_edit_configurations.end());
 
-		action_widget->update(d_file_format_registry, file_info, file_format, enable_edit_configuration);
+		action_widget->update(d_file_format_registry, file_info, file_format.get(), enable_edit_configuration);
 	}
 
 	// This might be false if many rows are being added in which case the unsaved changes

@@ -71,12 +71,14 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Updates with a new filename.
+		 *
+		 * @a file_format is boost::none if the file's format could not be determined.
 		 */
 		void
 		update(
 				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				const GPlatesFileIO::FileInfo &fileinfo,
-				GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
+				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format,
 				bool enable_edit_configuration);
 
 		//! Returns the file referenced by this action widget.

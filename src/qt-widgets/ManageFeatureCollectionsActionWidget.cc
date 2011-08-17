@@ -64,7 +64,7 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update(
 		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		const GPlatesFileIO::FileInfo &fileinfo,
-		GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format,
 		bool enable_edit_configuration)
 {
 	// Start out with the all buttons enabled and then disable as needed.
@@ -76,13 +76,15 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update(
 	button_unload->setEnabled(true);
 
 	// Disable reload button for file formats that we cannot read.
-	if (!file_format_registry.does_file_format_support_reading(file_format))
+	if (!file_format ||
+		!file_format_registry.does_file_format_support_reading(file_format.get()))
 	{
 		button_reload->setEnabled(false);
 	}
 
 	// Disable save button for file formats that we cannot write.
-	if (!file_format_registry.does_file_format_support_writing(file_format))
+	if (!file_format ||
+		!file_format_registry.does_file_format_support_writing(file_format.get()))
 	{
 		button_save->setEnabled(false);
 	}
