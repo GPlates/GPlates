@@ -1325,7 +1325,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	ogr_file_configuration.get()->get_model_to_attribute_map() = d_model_to_shapefile_map;
 
 	// Store the file configuration in the file reference.
-	boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+	FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
 			file_configuration = ogr_file_configuration.get();
 	file_ref.set_file_info(file_info, file_configuration);
 }

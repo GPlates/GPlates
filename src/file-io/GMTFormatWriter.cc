@@ -74,7 +74,7 @@ GPlatesFileIO::GMTFormatWriter::GMTFormatWriter(
 		gmt_file_configuration = default_gmt_file_configuration;
 
 		// Store the file configuration in the file reference.
-		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+		FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
 				file_configuration = gmt_file_configuration.get();
 		file_ref.set_file_info(file_info, file_configuration);
 	}

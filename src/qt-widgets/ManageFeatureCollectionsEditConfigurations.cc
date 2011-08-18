@@ -118,12 +118,12 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 	// Store the (potentially) updated file configuration back in the file.
 	// We need to do this here before we remap the model with the updated attributes because
 	// 'ShapefileReader::remap_shapefile_attributes' looks at the file configuration on the file reference.
-	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+	GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
 			file_configuration = current_ogr_configuration.get();
 	file.set_file_info(file.get_file_info(), file_configuration);
 
 	// Remap the model with the updated attributes.
 	GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(file, d_model, read_errors);
 
-	return file_configuration.get();
+	return file_configuration;
 }

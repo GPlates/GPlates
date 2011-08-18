@@ -612,7 +612,7 @@ namespace
 		shapefile_file_configuration.get()->get_model_to_attribute_map() = model_to_attribute_map;
 
 		// Store the new file configuration in the file object.
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+		GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
 				file_configuration = shapefile_file_configuration.get();
 		file_ref.set_file_info(file_ref.get_file_info(), file_configuration);
 	}
