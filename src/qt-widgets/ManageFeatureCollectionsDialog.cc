@@ -517,7 +517,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
 				file_format &&
 					(d_edit_configurations.find(file_format.get()) != d_edit_configurations.end());
 
-		action_widget->update(d_file_format_registry, file_info, file_format.get(), enable_edit_configuration);
+		action_widget->update(d_file_format_registry, file_info, file_format, enable_edit_configuration);
 	}
 
 	// This might be false if many rows are being added in which case the unsaved changes
