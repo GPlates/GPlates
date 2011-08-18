@@ -33,6 +33,7 @@
 
 #include "file-io/FeatureCollectionFileFormatConfigurations.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
+#include "file-io/File.h"
 
 
 namespace GPlatesQtWidgets
@@ -60,11 +61,14 @@ namespace GPlatesQtWidgets
 			 * Allow the user to edit @a current_configuration.
 			 *
 			 * The edited configuration is returned (or @a current_configuration if it wasn't edited).
+			 *
+			 * NOTE: The original @a current_configuration should be returned if its derived type
+			 * is not what was expected - this can happen when files are saved to different formats.
 			 */
 			virtual
 			GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
 			edit_configuration(
-					const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_reference,
+					GPlatesFileIO::File::Reference &file_reference,
 					const GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type &
 							current_configuration,
 					QWidget *parent_widget) = 0;
@@ -76,7 +80,8 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		register_default_edit_configurations(
-				ManageFeatureCollectionsDialog &manage_feature_collections_dialog);
+				ManageFeatureCollectionsDialog &manage_feature_collections_dialog,
+				GPlatesModel::ModelInterface &model);
 
 
 		/**
@@ -92,10 +97,39 @@ namespace GPlatesQtWidgets
 			virtual
 			GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
 			edit_configuration(
-					const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_reference,
+					GPlatesFileIO::File::Reference &file_reference,
 					const GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type &
 							current_configuration,
 					QWidget *parent_widget);
+		};
+
+
+		/**
+		 * Handles input/output options for the Shapefile format.
+		 */
+		class ShapefileEditConfiguration :
+				public EditConfiguration
+		{
+		public:
+			typedef boost::shared_ptr<const ShapefileEditConfiguration> shared_ptr_to_const_type;
+			typedef boost::shared_ptr<ShapefileEditConfiguration> shared_ptr_type;
+
+			explicit
+			ShapefileEditConfiguration(
+					GPlatesModel::ModelInterface &model) :
+				d_model(model)
+			{  }
+
+			virtual
+			GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
+			edit_configuration(
+					GPlatesFileIO::File::Reference &file_reference,
+					const GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type &
+							current_configuration,
+					QWidget *parent_widget);
+
+		private:
+			GPlatesModel::ModelInterface d_model;
 		};
 	}
 }

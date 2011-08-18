@@ -376,11 +376,11 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 		GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file(file_info);
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference app_logic_file_ref =
 			d_application_state.get_feature_collection_file_state().add_file(file);
-		const GPlatesFileIO::File::Reference &file_io_file_ref = app_logic_file_ref.get_file();
+		GPlatesFileIO::File::Reference &file_io_file_ref = app_logic_file_ref.get_file();
 
 		// Add feature to feature collection in file.
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-			file_io_file_ref.get_feature_collection();
+				file_io_file_ref.get_feature_collection();
 		feature_collection->add(feature);
 		
 		// Release the model notification guard now that we've finished modifying the feature.

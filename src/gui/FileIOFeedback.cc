@@ -391,7 +391,7 @@ GPlatesGui::FileIOFeedback::save_file_in_place(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
 	// Save the feature collection with GUI feedback.
-	return save_file(file);
+	return save_file(file.get_file());
 }
 
 
@@ -422,15 +422,22 @@ GPlatesGui::FileIOFeedback::save_file_as(
 
 	// Make a new FileInfo object to tell save_file() what the new name should be.
 	// This also copies any other info stored in the FileInfo.
-	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
-			filename, file.get_file().get_file_info());
+	const GPlatesFileIO::FileInfo new_fileinfo(filename);
+
+	// Create a temporary file reference to contain the relevant file information.
+	//
+	// NOTE: We use the file configuration of original file even though it may be for a different
+	// file format because it might still be usable in a new file format (eg, model-to-attribute
+	// mapping can be shared across the variety of OGR file formats) - if it doesn't match then
+	// it will just get replace by the file writer.
+	GPlatesFileIO::File::Reference::non_null_ptr_type file_ref =
+			GPlatesFileIO::File::create_file_reference(
+					new_fileinfo,
+					file.get_file().get_feature_collection(),
+					file.get_file().get_file_configuration());
 
 	// Save the feature collection, with GUI feedback.
-	bool ok = save_file(
-			new_fileinfo,
-			file.get_file().get_feature_collection(),
-			// New filename means new file format which means we can't use configuration of original file...
-			boost::none);
+	bool ok = save_file(*file_ref);
 	
 	// If there was an error saving, don't change the fileinfo.
 	if ( ! ok) {
@@ -438,7 +445,10 @@ GPlatesGui::FileIOFeedback::save_file_as(
 	}
 
 	// Change the file info in the file - this will emit signals to interested observers.
-	file.set_file_info(new_fileinfo);
+	//
+	// NOTE: We get the file configuration from the temporary file reference because the file
+	// writer may have created a new file configuration and attached it there.
+	file.set_file_info(new_fileinfo, file_ref->get_file_configuration());
 	
 	return true;
 }
@@ -471,20 +481,26 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 
 	// Make a new FileInfo object to tell save_file() what the copy name should be.
 	// This also copies any other info stored in the FileInfo.
-	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
-			filename, file.get_file().get_file_info());
+	const GPlatesFileIO::FileInfo new_fileinfo(filename);
+
+	// Create a temporary file reference to contain the relevant file information.
+	//
+	// NOTE: We use the file configuration of original file even though it may be for a different
+	// file format because it might still be usable in a new file format (eg, model-to-attribute
+	// mapping can be shared across the variety of OGR file formats) - if it doesn't match then
+	// it will just get replace by the file writer.
+	GPlatesFileIO::File::Reference::non_null_ptr_type file_ref =
+			GPlatesFileIO::File::create_file_reference(
+					new_fileinfo,
+					file.get_file().get_feature_collection(),
+					file.get_file().get_file_configuration());
 
 	// Save the feature collection, with GUI feedback.
 	//
 	// NOTE: The 'clear_unsaved_changes' flag is set to false because we are not really
 	// saving the changes to the original file (only making a copy) whereas the original file
 	// is still associated with the unsaved feature collection.
-	save_file(
-			new_fileinfo,
-			file.get_file().get_feature_collection(),
-			// New filename means new file format which means we can't use configuration of original file...
-			boost::none,
-			false/*clear_unsaved_changes*/);
+	save_file(*file_ref, false/*clear_unsaved_changes*/);
 
 	return true;
 }
@@ -494,20 +510,13 @@ bool
 GPlatesGui::FileIOFeedback::save_file(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
-	return save_file(
-			file.get_file().get_file_info(),
-			file.get_file().get_feature_collection(),
-			// Use file's configuration when writing it out...
-			file.get_file().get_file_configuration(),
-			false/*clear_unsaved_changes*/);
+	return save_file(file.get_file());
 }
 
 
 bool
 GPlatesGui::FileIOFeedback::save_file(
-		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration,
+		GPlatesFileIO::File::Reference &file_ref,
 		bool clear_unsaved_changes)
 {
 	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
@@ -517,33 +526,32 @@ GPlatesGui::FileIOFeedback::save_file(
 	try
 	{
 		// Save the feature collection. This is where we finally dip down into the file-io level.
-		d_feature_collection_file_io_ptr->save_file(
-				file_info,
-				feature_collection,
-				file_configuration,
-				clear_unsaved_changes);
+		d_feature_collection_file_io_ptr->save_file(file_ref, clear_unsaved_changes);
 	}
-	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
+	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		QString message = tr("An error occurred while saving the file '%1'")
-				.arg(e.filename());
+				.arg(exc.filename());
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 		return false;
 	}
-	catch (GPlatesFileIO::ErrorOpeningPipeToGzipException &e)
+	catch (GPlatesFileIO::ErrorOpeningPipeToGzipException &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		QString message = tr("GPlates was unable to use the '%1' program to save the file '%2'."
 				" Please check that gzip is installed and in your PATH. You will still be able to save"
 				" files without compression.")
-				.arg(e.command())
-				.arg(e.filename());
+				.arg(exc.command())
+				.arg(exc.filename());
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 		return false;
 	}
-	catch (GPlatesGlobal::InvalidFeatureCollectionException &)
+	catch (GPlatesGlobal::InvalidFeatureCollectionException &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		// FIXME: Needs an attempt to report the filename.
@@ -552,8 +560,9 @@ GPlatesGui::FileIOFeedback::save_file(
 				QMessageBox::Ok, QMessageBox::Ok);
 		return false;
 	}
-	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &)
+	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		// FIXME: Report the filename.
@@ -562,8 +571,9 @@ GPlatesGui::FileIOFeedback::save_file(
 				QMessageBox::Ok, QMessageBox::Ok);
 		return false;
 	}
-	catch (GPlatesFileIO::FileFormatNotSupportedException &)
+	catch (GPlatesFileIO::FileFormatNotSupportedException &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		// FIXME: Report the filename.
@@ -572,8 +582,9 @@ GPlatesGui::FileIOFeedback::save_file(
 				QMessageBox::Ok, QMessageBox::Ok);
 		return false;
 	}
-	catch (GPlatesFileIO::OgrException &)
+	catch (GPlatesFileIO::OgrException &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		// FIXME: Report the filename.
 		QString message = tr("An OGR error occurred.");
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
@@ -654,36 +665,38 @@ GPlatesGui::FileIOFeedback::try_catch_file_load_with_feedback(
 	{
 		file_load_func();
 	}
-	catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &e)
+	catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		QString message = tr("GPlates was unable to use the '%1' program to read the file '%2'."
 				" Please check that gzip is installed and in your PATH. You will still be able to open"
 				" files which are not compressed.")
-				.arg(e.command())
-				.arg(e.filename());
+				.arg(exc.command())
+				.arg(exc.filename());
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
-	catch (GPlatesFileIO::FileFormatNotSupportedException &)
+	catch (GPlatesFileIO::FileFormatNotSupportedException &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		QString message = tr("Error: Loading files in this format is currently not supported.");
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
-	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
+	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		QString message = tr("Error: GPlates was unable to read the file '%1'.")
-				.arg(e.filename());
+				.arg(exc.filename());
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
-	catch (GPlatesGlobal::Exception &e)
+	catch (GPlatesGlobal::Exception &exc)
 	{
+		qWarning() << exc; // Detailed error message.
 		QString message = tr("Error: Unexpected error loading file - ignoring file.");
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
-
-		std::cerr << "Caught exception: " << e << std::endl;
 	}
 }
 

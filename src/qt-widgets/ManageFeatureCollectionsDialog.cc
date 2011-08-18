@@ -43,6 +43,7 @@
 #include "file-io/ErrorOpeningPipeToGzipException.h"
 #include "file-io/ExternalProgram.h"
 #include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/FeatureCollectionFileFormatConfiguration.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/FileFormatNotSupportedException.h"
 #include "file-io/FileInfo.h"
@@ -91,12 +92,6 @@ namespace
 			GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 	{
-		// If the file has a file configuration then get the file format from that.
-		if (file.get_file().get_file_configuration())
-		{
-			return file.get_file().get_file_configuration().get()->get_file_format();
-		}
-
 		// Determine the file format from the filename.
 		const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format =
 				file_format_registry.get_file_format(
@@ -258,35 +253,30 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
 
 	// Get the file configuration from the file if it has one otherwise use the default configuration
 	// associated with its file format.
-	GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type file_configuration =
-			file.get_file().get_file_configuration()
-			? file.get_file().get_file_configuration().get()
-			: d_file_format_registry.get_default_configuration(file_format);
+	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+			file_configuration = file.get_file().get_file_configuration();
+	if (!file_configuration)
+	{
+		file_configuration = d_file_format_registry.get_default_configuration(file_format);
+	}
+
+	// If there's no default configuration then return early without editing.
+	if (!file_configuration)
+	{
+		qWarning() << "ERROR: Unable to edit file configuration because the file format has no default configuration.";
+		return;
+	}
 
 	// The user can now edit the file configuration.
 	file_configuration =
 			d_edit_configurations[file_format]->edit_configuration(
-					file,
-					file_configuration,
+					file.get_file(),
+					file_configuration.get(),
 					parentWidget());
 
 	// Store the (potentially) updated file configuration back in the file.
 	// NOTE: This will trigger a signal that will call our 'handle_file_state_file_info_changed' method.
 	file.set_file_info(file.get_file().get_file_info(), file_configuration);
-
-#if 0
-	// The "edit configuration" method only makes sense for shapefiles 
-	// (until there is some sort of equivalent requirement for other types of 
-	// feature collection), and as such, only shapefiles have the "edit configuration" 
-	// icon enabled in the ManageFeatureCollectionsActionWidget. 
-	//  
-	// For shapefiles, "edit configuration" translates to "re-map shapefile attributes to model properties". 
-	// 
-	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref =
-			action_widget_ptr->get_file_reference();
-
-	d_feature_collection_file_io->remap_shapefile_attributes(file_ref);
-#endif
 }
 
 

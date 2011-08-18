@@ -38,6 +38,7 @@ set(srcs
     FeatureCollectionFileFormat.h
     FeatureCollectionFileFormatClassify.cc
     FeatureCollectionFileFormatClassify.h
+    FeatureCollectionFileFormatConfiguration.h
     FeatureCollectionFileFormatConfigurations.h
     FeatureCollectionFileFormatRegistry.cc
     FeatureCollectionFileFormatRegistry.h

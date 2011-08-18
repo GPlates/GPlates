@@ -149,12 +149,12 @@ namespace GPlatesQtWidgets
 			//! Files are disabled by default - user will need to enable them.
 			explicit
 			FileState(
-					const GPlatesFileIO::File::Reference &file_) :
+					GPlatesFileIO::File::Reference &file_) :
 				file(&file_),
 				enabled(false)
 			{  }
 
-			const GPlatesFileIO::File::Reference *file;
+			GPlatesFileIO::File::Reference *file;
 			bool enabled;
 		};
 		typedef std::vector<FileState> file_state_seq_type;
@@ -179,7 +179,7 @@ namespace GPlatesQtWidgets
 		};
 
 		//! Typedef for a sequence of file pointers.
-		typedef std::vector<const GPlatesFileIO::File::Reference *> file_ptr_seq_type;
+		typedef std::vector<GPlatesFileIO::File::Reference *> file_ptr_seq_type;
 
 		//! Typedef for a sequence of feature collection weak refs.
 		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
@@ -339,7 +339,7 @@ namespace GPlatesQtWidgets
 		void
 		add_file_row(
 				FileStateCollection &file_state_collection,
-				const GPlatesFileIO::File::Reference &file);
+				GPlatesFileIO::File::Reference &file);
 
 		void
 		initialise_layer_list(

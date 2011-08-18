@@ -27,7 +27,10 @@
 #define GPLATES_FILE_IO_FEATURECOLLECTIONFILEFORMATCONFIGURATIONS_H
 
 #include <boost/shared_ptr.hpp>
+#include <QMap>
+#include <QString>
 
+#include "FeatureCollectionFileFormatConfiguration.h"
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "GMTFormatWriter.h"
 
@@ -51,7 +54,6 @@ namespace GPlatesFileIO
 			GMTConfiguration(
 					GPlatesFileIO::GMTFormatWriter::HeaderFormat header_format =
 							GPlatesFileIO::GMTFormatWriter::PLATES4_STYLE_HEADER) :
-				Configuration(WRITE_ONLY_XY_GMT),
 				d_header_format(header_format)
 			{  }
 
@@ -72,6 +74,50 @@ namespace GPlatesFileIO
 
 		private:
 			GPlatesFileIO::GMTFormatWriter::HeaderFormat d_header_format;
+		};
+
+
+		/**
+		 * Configuration options for the OGRGMT and SHAPEFILE file formats.
+		 */
+		class OGRConfiguration :
+				public Configuration
+		{
+		public:
+			typedef boost::shared_ptr<const OGRConfiguration> shared_ptr_to_const_type;
+			typedef boost::shared_ptr<OGRConfiguration> shared_ptr_type;
+
+			//! Typedef for a model-to-attribute mapping.
+			typedef QMap<QString, QString> model_to_attribute_map_type;
+
+			/**
+			 * Constructor - the default model-to-attribute map is empty.
+			 *
+			 * NOTE: @a file_format must currently be either OGRGMT or SHAPEFILE.
+			 */
+			explicit
+			OGRConfiguration(
+					Format file_format,
+					const model_to_attribute_map_type model_to_shapefile_map = model_to_attribute_map_type()) :
+				d_model_to_attribute_map(model_to_shapefile_map)
+			{  }
+
+			//! Returns the 'const' model-to-attribute map.
+			const model_to_attribute_map_type &
+			get_model_to_attribute_map() const
+			{
+				return d_model_to_attribute_map;
+			}
+
+			//! Returns the 'non-const' model-to-attribute map.
+			model_to_attribute_map_type &
+			get_model_to_attribute_map()
+			{
+				return d_model_to_attribute_map;
+			}
+
+		private:
+			model_to_attribute_map_type d_model_to_attribute_map;
 		};
 	}
 }

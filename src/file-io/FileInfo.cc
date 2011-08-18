@@ -59,20 +59,6 @@ GPlatesFileIO::FileInfo::get_file_name_without_extension() const
 }
 
 
-GPlatesFileIO::FileInfo
-GPlatesFileIO::create_copy_with_new_filename(
-		const QString &filename,
-		const FileInfo &other_file_info)
-{
-	FileInfo file_info(filename);
-
-	file_info.set_model_to_shapefile_map(
-			other_file_info.get_model_to_shapefile_map());
-
-	return file_info;
-}
-
-
 #if 0
 bool
 GPlatesFileIO::is_writable(

@@ -43,7 +43,7 @@
 
 void
 GPlatesFileIO::GeoscimlProfile::populate(
-		const File::Reference& file_ref)
+		File::Reference& file_ref)
 {
 	QString filename = file_ref.get_file_info().get_display_name(true);
 	QFile source(filename);

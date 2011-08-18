@@ -29,7 +29,7 @@
 
 void
 GPlatesFileIO::ArbitraryXmlReader::read_file(
-		const File::Reference &file_ref,
+		File::Reference &file_ref,
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
@@ -41,7 +41,7 @@ GPlatesFileIO::ArbitraryXmlReader::read_file(
 
 void
 GPlatesFileIO::ArbitraryXmlReader::read_xml_data(
-		const File::Reference &file_ref,
+		File::Reference &file_ref,
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
 		GPlatesModel::ModelInterface &model,
 		QByteArray& data,
@@ -58,7 +58,7 @@ GPlatesFileIO::ArbitraryXmlReader::read_xml_data(
 
 int
 GPlatesFileIO::ArbitraryXmlReader::count_features(
-		const File::Reference &file_ref,
+		File::Reference &file_ref,
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
 		GPlatesModel::ModelInterface &model,
 		QByteArray& data,

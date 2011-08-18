@@ -33,9 +33,12 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QFile>
 #include <QString>
 
+#include "FeatureCollectionFileFormatConfiguration.h"
+#include "FeatureCollectionFileFormatRegistry.h"
 #include "FileInfo.h"
 #include "OgrWriter.h"
 #include "maths/MultiPointOnSphere.h"
@@ -49,6 +52,11 @@
 
 namespace GPlatesFileIO
 {
+	namespace FeatureCollectionFileFormat
+	{
+		class OGRConfiguration;
+	}
+
 	/**
 	 * Visits a feature collection and exports the contents to an OGR format determined
 	 * by the file extension.
@@ -61,14 +69,16 @@ namespace GPlatesFileIO
 
 		/**
 		* @pre is_writable(file_info) is true.
-		* @param file_info file to write to.
-		* @param feature_collection_ref feature collection that will be written
-		*        using calls to @a write_feature.
+		* @param file_ref feature collection and file to write to.
+		*
+		* Configuration parameters such as the model-to-attribute map is determined by the file
+		* configuration in @a file_ref. If it contains no file configuration, or it's not an
+		* OGR configuration, then @a default_file_configuration is used and attached to @a file_ref.
 		*/
 		explicit
 		OgrFeatureCollectionWriter(
-				const FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref);
+				File::Reference &file_ref,
+				const boost::shared_ptr<const FeatureCollectionFileFormat::OGRConfiguration> &default_file_configuration);
 
 		virtual
 			~OgrFeatureCollectionWriter()

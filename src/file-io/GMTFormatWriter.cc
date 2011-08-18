@@ -32,6 +32,8 @@
 
 #include "GMTFormatWriter.h"
 
+#include "FeatureCollectionFileFormatConfigurations.h"
+#include "FileInfo.h"
 #include "GMTFormatGeometryExporter.h"
 #include "PlatesLineFormatHeaderVisitor.h"
 #include "ErrorOpeningFileForWritingException.h"
@@ -47,9 +49,11 @@
 
 
 GPlatesFileIO::GMTFormatWriter::GMTFormatWriter(
-	const FileInfo &file_info,
-	HeaderFormat header_format)
+	File::Reference &file_ref,
+	const FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type &default_gmt_file_configuration)
 {
+	const FileInfo &file_info = file_ref.get_file_info();
+
 	// Open the file.
 	d_output_file.reset( new QFile(file_info.get_qfileinfo().filePath()) );
 	if ( ! d_output_file->open(QIODevice::WriteOnly | QIODevice::Text) )
@@ -59,6 +63,24 @@ GPlatesFileIO::GMTFormatWriter::GMTFormatWriter(
 	}
 
 	d_output_stream.reset( new QTextStream(d_output_file.get()) );
+
+	// If there's a GMT file configuration then use it to determine the header format.
+	boost::optional<FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type> gmt_file_configuration =
+			FeatureCollectionFileFormat::dynamic_cast_configuration<
+					const FeatureCollectionFileFormat::GMTConfiguration>(file_ref.get_file_configuration());
+	// Otherwise use the default GMT configuration and attach it to the file reference.
+	if (!gmt_file_configuration)
+	{
+		gmt_file_configuration = default_gmt_file_configuration;
+
+		// Store the file configuration in the file reference.
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+				file_configuration = gmt_file_configuration.get();
+		file_ref.set_file_info(file_info, file_configuration);
+	}
+
+	// The header format.
+	HeaderFormat header_format = gmt_file_configuration.get()->get_header_format();
 
 	switch (header_format)
 	{

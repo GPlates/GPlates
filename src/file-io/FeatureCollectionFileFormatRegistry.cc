@@ -202,11 +202,35 @@ namespace GPlatesFileIO
 
 
 			/**
+			 * Reads a SHAPEFILE feature collection.
+			 */
+			void
+			shapefile_read_feature_collection(
+					File::Reference &file_ref,
+					const Registry &file_format_registry,
+					GPlatesModel::ModelInterface &model,
+					ReadErrorAccumulation &read_errors)
+			{
+				// Get the current default OGR configuration in case file does not have one.
+				boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type>
+						ogr_file_configuration =
+								FeatureCollectionFileFormat::dynamic_cast_configuration<
+										const FeatureCollectionFileFormat::OGRConfiguration>(
+												file_format_registry.get_default_configuration(SHAPEFILE));
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						ogr_file_configuration,
+						GPLATES_ASSERTION_SOURCE);
+
+				ShapefileReader::read_file(file_ref, ogr_file_configuration.get(), model, read_errors);
+			}
+
+
+			/**
 			 * Reads a GSML feature collection.
 			 */
 			void
 			gsml_read_feature_collection(
-					const File::Reference &file_ref,
+					File::Reference &file_ref,
 					GPlatesModel::ModelInterface &model,
 					ReadErrorAccumulation &read_errors)
 			{
@@ -219,38 +243,14 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * A convenience function to dynamic cast a shared pointer to a @a Configuration
-			 * into a shared pointer to a derived type 'ConfigurationDerivedType'.
-			 */
-			template <class ConfigurationDerivedType>
-			typename ConfigurationDerivedType::shared_ptr_to_const_type
-			dynamic_cast_file_configuration(
-					const Configuration::shared_ptr_to_const_type &configuration)
-			{
-				typename ConfigurationDerivedType::shared_ptr_to_const_type
-						derived_configuration =
-								boost::dynamic_pointer_cast<
-										const ConfigurationDerivedType>(
-												configuration);
-
-				// The cast failed - this shouldn't happen - assert so programmer can fix bug.
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						derived_configuration,
-						GPLATES_ASSERTION_SOURCE);
-
-				return derived_configuration;
-			}
-
-
-			/**
 			 * Creates a GPML feature visitor writer.
 			 */
 			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
 			create_gpml_feature_collection_writer(
-					const FileInfo &file_info)
+					File::Reference &file_ref)
 			{
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new GpmlOnePointSixOutputVisitor(file_info, false/*use_gzip*/));
+						new GpmlOnePointSixOutputVisitor(file_ref.get_file_info(), false/*use_gzip*/));
 			}
 
 			/**
@@ -258,20 +258,20 @@ namespace GPlatesFileIO
 			 */
 			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
 			create_gpmlz_feature_collection_writer(
-					const FileInfo &file_info)
+					File::Reference &file_ref)
 			{
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new GpmlOnePointSixOutputVisitor(file_info, true/*use_gzip*/));
+						new GpmlOnePointSixOutputVisitor(file_ref.get_file_info(), true/*use_gzip*/));
 			}
 			/**
 			 * Creates a PLATES4_LINE feature visitor writer.
 			 */
 			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
 			create_plates_line_feature_collection_writer(
-					const FileInfo &file_info)
+					File::Reference &file_ref)
 			{
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new PlatesLineFormatWriter(file_info));
+						new PlatesLineFormatWriter(file_ref.get_file_info()));
 			}
 
 			/**
@@ -279,22 +279,33 @@ namespace GPlatesFileIO
 			 */
 			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
 			create_plates_rotation_feature_collection_writer(
-					const FileInfo &file_info)
+					File::Reference &file_ref)
 			{
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new PlatesRotationFormatWriter(file_info));
+						new PlatesRotationFormatWriter(file_ref.get_file_info()));
 			}
 
 			/**
-			 * Creates a feature visitor writer for OGR formats (such as SHAPEFILE and OGRGMT).
+			 * Creates a feature visitor writer for the SHAPEFILE and OGRGMT file formats.
 			 */
 			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
-			create_ogr_gmt_feature_collection_writer(
-					const FileInfo &file_info,
-					const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+			create_ogr_feature_collection_writer(
+					File::Reference &file_ref,
+					const Registry &file_format_registry,
+					Format file_format)
 			{
+				// Get the current default OGR configuration in case file does not have one.
+				boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type>
+						ogr_file_configuration =
+								FeatureCollectionFileFormat::dynamic_cast_configuration<
+										const FeatureCollectionFileFormat::OGRConfiguration>(
+												file_format_registry.get_default_configuration(file_format));
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						ogr_file_configuration,
+						GPLATES_ASSERTION_SOURCE);
+
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new OgrFeatureCollectionWriter(file_info, feature_collection));
+						new OgrFeatureCollectionWriter(file_ref, ogr_file_configuration.get()));
 			}
 
 			/**
@@ -302,16 +313,22 @@ namespace GPlatesFileIO
 			 */
 			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
 			create_write_only_xy_gmt_feature_collection_writer(
-					const FileInfo &file_info,
-					const Configuration::shared_ptr_to_const_type &configuration)
+					File::Reference &file_ref,
+					const Registry &file_format_registry)
 			{
-				GMTConfiguration::shared_ptr_to_const_type gmt_configuration =
-						dynamic_cast_file_configuration<GMTConfiguration>(configuration);
+				// Get the current default GMT configuration in case file does not have one.
+				boost::optional<FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type>
+						gmt_file_configuration =
+								FeatureCollectionFileFormat::dynamic_cast_configuration<
+										const FeatureCollectionFileFormat::GMTConfiguration>(
+												file_format_registry.get_default_configuration(
+														FeatureCollectionFileFormat::WRITE_ONLY_XY_GMT));
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						gmt_file_configuration,
+						GPLATES_ASSERTION_SOURCE);
 
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new GMTFormatWriter(
-								file_info,
-								gmt_configuration->get_header_format()));
+						new GMTFormatWriter(file_ref, gmt_file_configuration.get()));
 			}
 		}
 	}
@@ -327,20 +344,10 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_file_format(
 		const is_file_format_function_type &is_file_format_function,
 		const boost::optional<read_feature_collection_function_type> &read_feature_collection_function,
 		const boost::optional<create_feature_collection_writer_function_type> &create_feature_collection_writer_function,
-		const boost::optional<Configuration::shared_ptr_to_const_type> &default_configuration_opt)
+		const boost::optional<Configuration::shared_ptr_to_const_type> &default_configuration)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!filename_extensions.empty(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// If a default configuration is not provided then just create a base 'Configuration' object.
-	Configuration::shared_ptr_to_const_type default_configuration =
-			default_configuration_opt
-			? default_configuration_opt.get()
-			: Configuration::create(file_format);
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			default_configuration->get_file_format() == file_format,
 			GPLATES_ASSERTION_SOURCE);
 
 	d_file_format_info_map.insert(
@@ -465,25 +472,18 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_feature_classification
 
 void
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
-		const File::Reference &file_ref,
+		File::Reference &file_ref,
 		ReadErrorAccumulation &read_errors) const
 {
-	boost::optional<Configuration::shared_ptr_to_const_type> configuration = file_ref.get_file_configuration();
-	// If a configuration was not specified then use the registered default configuration.
-	if (!configuration)
+	const boost::optional<Format> file_format = get_file_format(file_ref.get_file_info().get_qfileinfo());
+	if (!file_format)
 	{
-		const boost::optional<Format> file_format = get_file_format(file_ref.get_file_info().get_qfileinfo());
-		if (!file_format)
-		{
-			throw FileFormatNotSupportedException(
-					GPLATES_EXCEPTION_SOURCE,
-					"No registered file formats suitable for reading feature collection from this file.");
-		}
-
-		configuration = get_default_configuration(file_format.get());
+		throw FileFormatNotSupportedException(
+				GPLATES_EXCEPTION_SOURCE,
+				"No registered file formats for this file.");
 	}
 
-	const FileFormatInfo &file_format_info = get_file_format_info(configuration.get()->get_file_format());
+	const FileFormatInfo &file_format_info = get_file_format_info(file_format.get());
 
 	// If there's no reader then don't read anything.
 	if (!file_format_info.read_feature_collection_function)
@@ -498,7 +498,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 
 	try
 	{
-		read_feature_collection_function(file_ref, read_errors, configuration.get());
+		read_feature_collection_function(file_ref, read_errors);
 	}
 	catch (ErrorOpeningFileForReadingException &e)
 	{
@@ -528,25 +528,17 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 
 void
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::write_feature_collection(
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
-		const FileInfo &file_info,
-		boost::optional<Configuration::shared_ptr_to_const_type> configuration) const
+		File::Reference &file_ref) const
 {
-	// If a configuration was not specified then use the registered default configuration.
-	if (!configuration)
+	const boost::optional<Format> file_format = get_file_format(file_ref.get_file_info().get_qfileinfo());
+	if (!file_format)
 	{
-		const boost::optional<Format> file_format = get_file_format(file_info.get_qfileinfo());
-		if (!file_format)
-		{
-			throw FileFormatNotSupportedException(
-					GPLATES_EXCEPTION_SOURCE,
-					"No registered file formats suitable for writing feature collection to this file.");
-		}
-
-		configuration = get_default_configuration(file_format.get());
+		throw FileFormatNotSupportedException(
+				GPLATES_EXCEPTION_SOURCE,
+				"No registered file formats for this file.");
 	}
 
-	const FileFormatInfo &file_format_info = get_file_format_info(configuration.get()->get_file_format());
+	const FileFormatInfo &file_format_info = get_file_format_info(file_format.get());
 
 	// If there's no writer then don't write anything.
 	if (!file_format_info.create_feature_collection_writer_function)
@@ -561,19 +553,16 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::write_feature_collection(
 
 	// Create the feature collection writer.
 	const boost::shared_ptr<GPlatesModel::ConstFeatureVisitor> feature_collection_writer =
-			create_feature_collection_writer_function(
-					feature_collection,
-					file_info,
-					configuration.get());
+			create_feature_collection_writer_function(file_ref);
 
 	// Write the feature collection.
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-			feature_collection,
+			file_ref.get_feature_collection(),
 			*feature_collection_writer);
 }
 
 
-const GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type &
+const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> &
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_default_configuration(
 		Format file_format) const
 {
@@ -638,7 +627,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			Registry::read_feature_collection_function_type(
 					boost::bind(&GpmlOnePointSixReader::read_file, _1, boost::ref(model), _2, false)),
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_gpml_feature_collection_writer, _2)),
+					boost::bind(&create_gpml_feature_collection_writer, _1)),
 			// No configuration options yet for this file format...
 			boost::none);
 
@@ -656,7 +645,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			Registry::read_feature_collection_function_type(
 					boost::bind(&GpmlOnePointSixReader::read_file, _1, boost::ref(model), _2, true)),
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_gpmlz_feature_collection_writer, _2)),
+					boost::bind(&create_gpmlz_feature_collection_writer, _1)),
 			// No configuration options yet for this file format...
 			boost::none);
 
@@ -674,7 +663,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			Registry::read_feature_collection_function_type(
 					boost::bind(&PlatesLineFormatReader::read_file, _1, boost::ref(model), _2)),
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_plates_line_feature_collection_writer, _2)),
+					boost::bind(&create_plates_line_feature_collection_writer, _1)),
 			// No configuration options yet for this file format...
 			boost::none);
 
@@ -689,13 +678,15 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			Registry::read_feature_collection_function_type(
 					boost::bind(&PlatesRotationFormatReader::read_file, _1, boost::ref(model), _2)),
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_plates_rotation_feature_collection_writer, _2)),
+					boost::bind(&create_plates_rotation_feature_collection_writer, _1)),
 			// No configuration options yet for this file format...
 			boost::none);
 
 	classifications_type shapefile_classification;
 	shapefile_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	shapefile_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
+	Configuration::shared_ptr_to_const_type shapefile_default_configuration(new OGRConfiguration(SHAPEFILE));
 	registry.register_file_format(
 			SHAPEFILE,
 			"ESRI shapefile",
@@ -703,15 +694,18 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			shapefile_classification,
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
-					boost::bind(&ShapefileReader::read_file, _1, boost::ref(model), _2)),
+					boost::bind(&shapefile_read_feature_collection,
+							_1, boost::cref(registry), boost::ref(model), _2)),
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_ogr_gmt_feature_collection_writer, _2, _1)),
-			// No configuration options yet for this file format...
-			boost::none);
+					boost::bind(&create_ogr_feature_collection_writer,
+							_1, boost::cref(registry), SHAPEFILE)),
+			shapefile_default_configuration);
 
 	classifications_type ogr_gmt_classification;
 	ogr_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	ogr_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
+	Configuration::shared_ptr_to_const_type ogr_gmt_default_configuration(new OGRConfiguration(OGRGMT));
 	registry.register_file_format(
 			OGRGMT,
 			"OGR GMT",
@@ -721,9 +715,9 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			// Reading not currently supported...
 			boost::none,
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_ogr_gmt_feature_collection_writer, _2, _1)),
-			// No configuration options yet for this file format...
-			boost::none);
+					boost::bind(&create_ogr_feature_collection_writer,
+							_1, boost::cref(registry), OGRGMT)),
+			ogr_gmt_default_configuration);
 
 	classifications_type write_only_gmt_classification;
 	write_only_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
@@ -738,7 +732,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			// Reading not currently supported...
 			boost::none,
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_write_only_xy_gmt_feature_collection_writer, _2, _3)),
+					boost::bind(&create_write_only_xy_gmt_feature_collection_writer,
+							_1, boost::cref(registry))),
 			write_only_gmt_default_configuration);
 
 	classifications_type gmap_classification;

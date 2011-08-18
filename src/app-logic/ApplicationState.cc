@@ -99,7 +99,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 			Reconstruction::create(d_reconstruction_time, d_anchored_plate_id)),
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
-	d_suppress_auto_layer_creation(false)
+	d_suppress_auto_layer_creation(false),
+	d_callback_feature_store(d_model->root())
 {
 	// Register the default file formats for reading and/or writing feature collections.
 	register_default_file_formats(*d_feature_collection_file_format_registry, d_model);
@@ -111,6 +112,9 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	register_default_layer_task_types(*d_layer_task_registry, *this);
 
 	mediate_signal_slot_connections();
+
+	// Register a model callback so we can reconstruct whenever the feature store is modified.
+	d_callback_feature_store.attach_callback(new ReconstructWhenFeatureStoreIsModified(*this));
 }
 
 
@@ -341,21 +345,6 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 			SLOT(handle_file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
-
-	//
-	// Perform a new reconstruction whenever shapefile attributes are modified.
-	//
-	// FIXME: This should be handled by listening for model modification events on the
-	// feature collections of currently loaded files (since remapping shapefile attributes
-	// modifies the model).
-	//
-	QObject::connect(
-			&get_feature_collection_file_io(),
-			SIGNAL(remapped_shapefile_attributes(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
-			this,
-			SLOT(reconstruct()));
 
 	//
 	// Perform a new reconstruction whenever layers are modified.

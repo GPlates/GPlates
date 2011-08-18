@@ -180,7 +180,11 @@ GPlatesCli::FeatureCollectionFileIO::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	d_file_format_registry.write_feature_collection(feature_collection, file_info);
+	// Create a temporary file reference to contain the relevant file information.
+	GPlatesFileIO::File::Reference::non_null_ptr_type file_ref =
+			GPlatesFileIO::File::create_file_reference(file_info, feature_collection);
+
+	d_file_format_registry.write_feature_collection(*file_ref);
 }
 
 

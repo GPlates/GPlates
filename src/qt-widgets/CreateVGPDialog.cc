@@ -339,7 +339,8 @@ GPlatesQtWidgets::CreateVGPDialog::handle_create()
 		// We want any observers to see the changes before we emit signals because we don't
 		// know whose listening on those signals and they may be expecting model observers to
 		// be up-to-date with the modified model.
-		// Also this should be done before getting the application state to reconstruct.
+		// Also this should be done before getting the application state reconstructs which
+		// happens when the guard is released (because we modified the model).
 		model_notification_guard.release_guard();
 
 		emit feature_created(feature);
@@ -353,7 +354,6 @@ GPlatesQtWidgets::CreateVGPDialog::handle_create()
 			emit feature_collection_created(collection, collection_file_iter.first);
 		}
 
-		d_application_state_ptr->reconstruct();
 		accept();
 	}
 	catch (const ChooseFeatureCollectionWidget::NoFeatureCollectionSelectedException &)

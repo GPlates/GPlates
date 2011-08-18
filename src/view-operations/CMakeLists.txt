@@ -71,7 +71,6 @@ set(srcs
     RenderedSmallCircle.h
     RenderedSmallCircleArc.h
     RenderedSquareSymbol.h
-    RenderedCircleSymbol.h
     RenderedString.h
     RenderedTriangleSymbol.h
     SplitFeatureGeometryOperation.cc

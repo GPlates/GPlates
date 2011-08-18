@@ -72,13 +72,13 @@ GPlatesAppLogic::FeatureCollectionFileState::~FeatureCollectionFileState()
 }
 
 
-std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
-GPlatesAppLogic::FeatureCollectionFileState::get_loaded_files()
+std::vector<GPlatesAppLogic::FeatureCollectionFileState::const_file_reference>
+GPlatesAppLogic::FeatureCollectionFileState::get_loaded_files() const
 {
 	// Resize the vector to the number of currently loaded files.
-	std::vector<file_reference> file_references(
+	std::vector<const_file_reference> file_references(
 			d_num_currently_loaded_files,
-			file_reference(*this, 0/*dummy file handle*/));
+			const_file_reference(*this, 0/*dummy file handle*/));
 
 	// For assertion checking.
 	std::size_t num_loaded_files = 0;
@@ -110,7 +110,7 @@ GPlatesAppLogic::FeatureCollectionFileState::get_loaded_files()
 			file_index_used[file_index] = true;
 
 			// Store file reference in the correct location in the caller's array.
-			file_references[file_index] = file_reference(*this, file_handle);
+			file_references[file_index] = const_file_reference(*this, file_handle);
 
 			++num_loaded_files;
 		}
@@ -121,6 +121,26 @@ GPlatesAppLogic::FeatureCollectionFileState::get_loaded_files()
 			GPLATES_ASSERTION_SOURCE);
 
 	return file_references;
+}
+
+
+std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
+GPlatesAppLogic::FeatureCollectionFileState::get_loaded_files()
+{
+	// Re-use the 'const' version of this method.
+	const std::vector<const_file_reference> const_loaded_files =
+			static_cast<const FeatureCollectionFileState *>(this)
+					->get_loaded_files();
+
+	// Convert from const file references to non-const file references.
+	std::vector<file_reference> loaded_files;
+	loaded_files.reserve(const_loaded_files.size());
+	BOOST_FOREACH(const const_file_reference &const_loaded_file, const_loaded_files)
+	{
+		loaded_files.push_back(file_reference(*this, const_loaded_file.get_file_handle()));
+	}
+
+	return loaded_files;
 }
 
 
@@ -267,6 +287,17 @@ GPlatesAppLogic::FeatureCollectionFileState::get_file(
 			GPLATES_ASSERTION_SOURCE);
 
 	return *d_file_slots[file_handle].d_file_slot_extra->d_file_ref;
+}
+
+
+GPlatesFileIO::File::Reference &
+GPlatesAppLogic::FeatureCollectionFileState::get_file(
+		file_handle_type file_handle)
+{
+	// Re-use the 'const' version of this method.
+	return const_cast<GPlatesFileIO::File::Reference &>(
+			static_cast<const FeatureCollectionFileState *>(this)
+					->get_file(file_handle));
 }
 
 

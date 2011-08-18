@@ -35,6 +35,8 @@
 #include <QVariant>
 
 #include "ErrorOpeningFileForReadingException.h"
+#include "FeatureCollectionFileFormat.h"
+#include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileLoadAbortedException.h"
 #include "PropertyMapper.h"
 #include "ShapefileReader.h"
@@ -74,10 +76,6 @@
 
 boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::ShapefileReader::s_property_mapper;
 
-QMap<QString,QString> GPlatesFileIO::ShapefileReader::s_model_to_attribute_map;
-
-QStringList GPlatesFileIO::ShapefileReader::s_field_names;
-	
 namespace
 {
 
@@ -331,7 +329,7 @@ namespace
 	void
 	map_attributes_to_properties(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
-		QMap<QString,QString> model_to_attribute_map,
+		const QMap<QString,QString> &model_to_attribute_map,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors,
 		const boost::shared_ptr<GPlatesFileIO::DataSource> source,
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location)
@@ -461,8 +459,8 @@ namespace
 	 */
 	void
 	remap_feature_collection(
-		const GPlatesFileIO::File::Reference &file,
-		QMap< QString,QString > model_to_attribute_map,
+		GPlatesFileIO::File::Reference &file,
+		const QMap< QString,QString > &model_to_attribute_map,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		QString filename = file.get_file_info().get_qfileinfo().filePath();
@@ -556,6 +554,67 @@ namespace
 		// precedence), but we'll copy OGR so that we'll get exactly the same behaviour,
 		// unintended expression evaluation and all.
 		return static_cast<OGRwkbGeometryType>(type & (~wkb25DBit));
+	}
+
+
+	/**
+	 * Loads a model-to-attribute map from the specified file reference object.
+	 */
+	void
+	load_model_to_attribute_map_from_file_reference(
+			QMap<QString, QString> &model_to_attribute_map,
+			GPlatesFileIO::File::Reference &file_ref)
+	{
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type>
+				shapefile_file_configuration =
+						GPlatesFileIO::FeatureCollectionFileFormat::dynamic_cast_configuration<
+								const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(
+										file_ref.get_file_configuration());
+		// If we don't have a file configuration then return early and emit a warning message.
+		if (!shapefile_file_configuration)
+		{
+			qWarning() << "ERROR: Unable to load a model-to-attribute mapping from file.";
+			return;
+		}
+
+		// Load the map from the file configuration.
+		model_to_attribute_map = shapefile_file_configuration.get()->get_model_to_attribute_map();
+	}
+
+
+	/**
+	 * Stores the specified model-to-attribute map in the specified file reference object.
+	 */
+	void
+	store_model_to_attribute_map_in_file_reference(
+			const QMap<QString, QString> &model_to_attribute_map,
+			GPlatesFileIO::File::Reference &file_ref,
+			const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &
+					default_shapefile_file_configuration)
+	{
+		// Create a new file configuration that is a copy of the current one, if there is one.
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type>
+				shapefile_file_configuration =
+						GPlatesFileIO::FeatureCollectionFileFormat::copy_cast_configuration<
+								GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(
+										file_ref.get_file_configuration());
+		// Otherwise use the default shapefile configuration.
+		if (!shapefile_file_configuration)
+		{
+			// We have to copy the default configuration since we're going to modify it.
+			shapefile_file_configuration =
+					GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
+							new GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration(
+									*default_shapefile_file_configuration));
+		}
+
+		// Store the map in the new file configuration.
+		shapefile_file_configuration.get()->get_model_to_attribute_map() = model_to_attribute_map;
+
+		// Store the new file configuration in the file object.
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+				file_configuration = shapefile_file_configuration.get();
+		file_ref.set_file_info(file_ref.get_file_info(), file_configuration);
 	}
 }
 
@@ -737,11 +796,11 @@ GPlatesFileIO::ShapefileReader::read_features(
 
 		// Check if we have a shapefile attribute corresponding to the Feature Type.
 		QMap<QString,QString>::const_iterator it = 
-			s_model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_TYPE]);
+			d_model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_TYPE]);
 
-		if ((it != s_model_to_attribute_map.constEnd()) && s_field_names.contains(it.value())) {
+		if ((it != d_model_to_attribute_map.constEnd()) && d_field_names.contains(it.value())) {
 		
-			int index = s_field_names.indexOf(it.value());
+			int index = d_field_names.indexOf(it.value());
 	
 			// d_field_names should be the same size as d_attributes, but check that we
 			// don't try to go beyond the bounds of d_attributes. If somehow we are trying to do 
@@ -766,12 +825,12 @@ GPlatesFileIO::ShapefileReader::read_features(
 		// Check if we have a shapefile attribute corresponding to the Feature ID.
 		d_feature_id.reset();
 		
-		it = s_model_to_attribute_map.find(
+		it = d_model_to_attribute_map.find(
 			ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID]);
 
-		if ((it != s_model_to_attribute_map.constEnd()) && s_field_names.contains(it.value())) {
+		if ((it != d_model_to_attribute_map.constEnd()) && d_field_names.contains(it.value())) {
 
-			int index = s_field_names.indexOf(it.value());
+			int index = d_field_names.indexOf(it.value());
 
 			// d_field_names should be the same size as d_attributes, but check that we
 			// don't try to go beyond the bounds of d_attributes. If somehow we are trying to do 
@@ -993,7 +1052,7 @@ GPlatesFileIO::ShapefileReader::get_field_names(
 	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
 		new GPlatesFileIO::LineNumber(0));
 				
-	s_field_names.clear();
+	d_field_names.clear();
 	if (!d_feature_ptr){
 		return;
 	}
@@ -1003,7 +1062,7 @@ GPlatesFileIO::ShapefileReader::get_field_names(
 
 	for ( count=0; count< num_fields; count++){
 		OGRFieldDefn *field_def_ptr = feature_def_ptr->GetFieldDefn(count);
-		s_field_names.push_back(QString::fromAscii(field_def_ptr->GetNameRef()));
+		d_field_names.push_back(QString::fromAscii(field_def_ptr->GetNameRef()));
 	}
 
 }
@@ -1062,13 +1121,13 @@ GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
 
 	// If for any reason we've found more attributes than we have field names, only 
 	// go as far as the number of field names. 
-	if (n > s_field_names.size())
+	if (n > d_field_names.size())
 	{
-		n = s_field_names.size();
+		n = d_field_names.size();
 	}
 
 	for (int count = 0; count < n ; count++){
-		QString fieldname = s_field_names[count];
+		QString fieldname = d_field_names[count];
 		QVariant attribute = d_attributes[count];
 
 		QVariant::Type type_ = attribute.type();
@@ -1133,7 +1192,7 @@ GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
 				dictionary));
 
 	// Map the shapefile attributes to model properties.
-	map_attributes_to_properties(feature,s_model_to_attribute_map,read_errors,source,location);
+	map_attributes_to_properties(feature,d_model_to_attribute_map,read_errors,source,location);
 
 }
 
@@ -1191,7 +1250,8 @@ GPlatesFileIO::ShapefileReader::is_valid_shape_data(
 
 void
 GPlatesFileIO::ShapefileReader::read_file(
-		const GPlatesFileIO::File::Reference &file_ref,
+		GPlatesFileIO::File::Reference &file_ref,
+		const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_file_configuration,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
@@ -1219,21 +1279,28 @@ GPlatesFileIO::ShapefileReader::read_file(
 
 	QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(fileinfo.get_qfileinfo());
 
-	s_model_to_attribute_map.clear();
+	reader.d_model_to_attribute_map.clear();
 
-	if (!fill_attribute_map_from_xml_file(shapefile_xml_filename,s_model_to_attribute_map))
+	if (!fill_attribute_map_from_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map))
 	{
 		// Set the last argument to false, because this is an initial mapping, not a re-mapping. 
-		if (!fill_attribute_map_from_dialog(filename,s_field_names,s_model_to_attribute_map,s_property_mapper,false))
+		if (!fill_attribute_map_from_dialog(
+				filename,
+				reader.d_field_names,
+				reader.d_model_to_attribute_map,
+				s_property_mapper,
+				false))
 		{
 			// The user has cancelled the mapper-dialog routine, so cancel the whole shapefile loading procedure.
 			throw FileLoadAbortedException(GPLATES_EXCEPTION_SOURCE, "File load aborted.");
 		}
-		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
+		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map);
 	}
 
-	// Store the map in the feature collection's file-info
-	fileinfo.set_model_to_shapefile_map(s_model_to_attribute_map);
+	// Store the model-to-attribute map in the file reference object so we can access it if the
+	// file gets written back out.
+	store_model_to_attribute_map_in_file_reference(
+			reader.d_model_to_attribute_map, file_ref, default_file_configuration);
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection = file_ref.get_feature_collection();
 
@@ -1242,6 +1309,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 
 	//reader.display_feature_counts();
 }
+
 
 void
 GPlatesFileIO::ShapefileReader::set_property_mapper(
@@ -1774,9 +1842,42 @@ GPlatesFileIO::ShapefileReader::add_ring_to_points_list(
 
 }
 
+
+QStringList
+GPlatesFileIO::ShapefileReader::read_field_names(
+		GPlatesFileIO::File::Reference &file_ref,
+		GPlatesModel::ModelInterface &model,
+		ReadErrorAccumulation &read_errors)
+{
+	const FileInfo &fileinfo = file_ref.get_file_info();
+
+	// By placing all changes to the model under the one changeset, we ensure that
+	// feature revision ids don't get changed from what was loaded from file no
+	// matter what we do to the features.
+	GPlatesModel::ChangesetHandle changeset(
+			model.access_model(),
+			"read_field_names " + fileinfo.get_qfileinfo().fileName().toStdString());
+
+	QString absolute_path_filename = fileinfo.get_qfileinfo().absoluteFilePath();
+	QString filename = fileinfo.get_qfileinfo().fileName();
+
+	ShapefileReader reader;
+	if (!reader.open_file(absolute_path_filename)){
+		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
+	}
+
+	if (!reader.check_file_format(read_errors)){
+		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
+	}
+	reader.get_field_names(read_errors);
+
+	return reader.d_field_names;
+}
+
+
 void
 GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
-	const GPlatesFileIO::File::Reference &file,
+	GPlatesFileIO::File::Reference &file,
 	GPlatesModel::ModelInterface &model,
 	ReadErrorAccumulation &read_errors)
 {
@@ -1787,40 +1888,15 @@ GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
 
 	const FileInfo &file_info = file.get_file_info();
 
-	QString absolute_path_filename = file_info.get_qfileinfo().absoluteFilePath();
-	QString filename = file_info.get_qfileinfo().fileName();
+	// Load the model-to-attribute map from the file's configuration.
+	QMap<QString,QString> model_to_attribute_map;
+	load_model_to_attribute_map_from_file_reference(model_to_attribute_map, file);
 
-	ShapefileReader reader;
-	if (!reader.open_file(absolute_path_filename)){
-		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
-	}
+	// Save the model-to-attribute map to the mapping xml file.
+	ShapefileUtils::save_attribute_map_as_xml_file(
+			ShapefileUtils::make_shapefile_xml_filename(file_info.get_qfileinfo()),
+			model_to_attribute_map);
 
-	if (!reader.check_file_format(read_errors)){
-		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
-	}
-
-	reader.get_field_names(read_errors);
-
-	QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(
-			file_info.get_qfileinfo());
-
-	s_model_to_attribute_map.clear();
-
-	fill_attribute_map_from_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
-
-	// Set the last argument to true because we are remapping. 
-	if (!fill_attribute_map_from_dialog(filename,s_field_names,s_model_to_attribute_map,s_property_mapper,true))
-	{
-		// The user has cancelled the mapper-dialog, so cancel the whole shapefile re-mapping procedure.
-		return;
-	}
-	ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
-
-	file_info.set_model_to_shapefile_map(s_model_to_attribute_map);
-
-	remap_feature_collection(
-							file,
-							s_model_to_attribute_map,
-							read_errors);
+	remap_feature_collection(file, model_to_attribute_map, read_errors);
 }
 

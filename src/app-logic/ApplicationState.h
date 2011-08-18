@@ -40,9 +40,11 @@
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 
+#include "model/FeatureStoreRootHandle.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
+#include "model/WeakReferenceCallback.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // NOTE: Please use forward declarations (and boost::scoped_ptr) instead of including headers
@@ -348,6 +350,33 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
+		/**
+		 * The model callback that notifies us when the feature store is modified so that
+		 * we can do a reconstruction.
+		 */
+		struct ReconstructWhenFeatureStoreIsModified :
+				public GPlatesModel::WeakReferenceCallback<const GPlatesModel::FeatureStoreRootHandle>
+		{
+			explicit
+			ReconstructWhenFeatureStoreIsModified(
+					ApplicationState &application_state) :
+				d_application_state(&application_state)
+			{  }
+
+			void
+			publisher_modified(
+					const modified_event_type &event)
+			{
+				// Perform a reconstruction every time the model (feature store) is modified.
+				// We'll need to put model notification guards in the appropriate places to
+				// avoid excessive reconstructions.
+				d_application_state->reconstruct();
+			}
+
+			ApplicationState *d_application_state;
+		};
+
+
 		//! The model store.
 		GPlatesModel::ModelInterface d_model;
 
@@ -441,6 +470,16 @@ namespace GPlatesAppLogic
 		 * which would normally be triggered by a call to FeatureCollectionFileIO::load_files().
 		 */
 		bool d_suppress_auto_layer_creation;
+
+		/**
+		 * Keep a weak reference to the feature store root handle just for our callback.
+		 *
+		 * Only we have access to this weak ref and we make sure the client doesn't have
+		 * access to it. This is because any copies of this weak reference also get
+		 * copies of the callback thus allowing it to get called more than once per modification.
+		 */
+		GPlatesModel::FeatureStoreRootHandle::const_weak_ref d_callback_feature_store;
+
 
 		/**
 		 * Make signal/slot connections that coordinate the application logic structure

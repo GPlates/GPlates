@@ -33,10 +33,20 @@
 GPlatesFileIO::File::non_null_ptr_type
 GPlatesFileIO::File::create_file(
 		const FileInfo &file_info,
-		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration,
-		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration)
 {
 	return non_null_ptr_type(new File(feature_collection, file_info, file_configuration));
+}
+
+
+GPlatesFileIO::File::Reference::non_null_ptr_type
+GPlatesFileIO::File::create_file_reference(
+		const FileInfo &file_info,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration)
+{
+	return File::Reference::non_null_ptr_type(new File::Reference(feature_collection, file_info, file_configuration));
 }
 
 

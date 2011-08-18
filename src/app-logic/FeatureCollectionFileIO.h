@@ -163,15 +163,13 @@ namespace GPlatesAppLogic
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference
 		create_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection);
+				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
+				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+						file_configuration = boost::none);
 
 
 		/**
-		 * Write the feature collection associated to a file described by @a file_info.
-		 *
-		 * @a file_configuration determines the file format and any options to use when writing
-		 *        to the file - if not provided then the file format is determined from @a file_info
-		 *        and the file configuration used is the one registered for its file format.
+		 * Write the feature collection in @a file_ref to the filename in @a file_ref.
 		 *
 		 * NOTE: this differs from @a create_file in that it only saves the feature collection
 		 * to the file and doesn't register with FeatureCollectionFileState.
@@ -182,19 +180,9 @@ namespace GPlatesAppLogic
 		 */
 		void
 		save_file(
-				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
-						file_configuration = boost::none,
+				GPlatesFileIO::File::Reference &file_ref,
 				bool clear_unsaved_changes = true);
 
-
-		/**
-		 * Temporary method for initiating shapefile attribute remapping. 
-		 */
-		void
-		remap_shapefile_attributes(
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it);
 
 		/*
 		* Check for features in xml data;
@@ -221,11 +209,6 @@ namespace GPlatesAppLogic
 		handle_read_errors(
 				GPlatesAppLogic::FeatureCollectionFileIO &,
 				const GPlatesFileIO::ReadErrorAccumulation &read_errors);
-
-		void
-		remapped_shapefile_attributes(
-				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_manager,
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
 		//! Typedef for a sequence of file shared refs.
@@ -254,7 +237,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		read_feature_collection(
-				const GPlatesFileIO::File::Reference &file_ref);
+				GPlatesFileIO::File::Reference &file_ref);
 
 		void
 		emit_handle_read_errors_signal(

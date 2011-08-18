@@ -85,14 +85,14 @@ namespace GPlatesFileIO
 
 		void
 		read_file(
-				const File::Reference &file,
+				File::Reference &file,
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 
 		void
 		read_xml_data(
-				const File::Reference &file,
+				File::Reference &file,
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
 				GPlatesModel::ModelInterface &model,
 				QByteArray& data,
@@ -100,7 +100,7 @@ namespace GPlatesFileIO
 		
 		int
 		count_features(
-				const File::Reference &file,
+				File::Reference &file,
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
 				GPlatesModel::ModelInterface &model,
 				QByteArray& data,

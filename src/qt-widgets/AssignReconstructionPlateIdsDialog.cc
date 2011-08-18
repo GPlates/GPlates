@@ -461,13 +461,9 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 			{
 				partition_progress_dialog->close();
 
-				// Release the model notification guard before doing a reconstruction so other
-				// observers can adjust to the modified features first.
+				// We release the model notification guard which will cause a reconstruction
+				// to occur if we modified the model.
 				model_notification_guard.release_guard();
-
-				// Reconstruct since we most likely modified a few features before
-				// the user pressed "Cancel".
-				d_application_state.reconstruct();
 
 				// Return without closing this dialog (the assign plate id dialog).
 				return false;
@@ -477,14 +473,9 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 
 	partition_progress_dialog->close();
 
-	// Release the model notification guard before doing a reconstruction so other
-	// observers can adjust to the modified features first.
+	// We release the model notification guard which will cause a reconstruction
+	// to occur if we modified the model.
 	model_notification_guard.release_guard();
-
-	// If any plate ids were assigned then we need to do another reconstruction.
-	// Note we'll do one anyway since the feature may have been modified even if
-	// a plate id was not assigned (such as removing an existing plate id).
-	d_application_state.reconstruct();
 
 	// Let the caller know it can close this dialog since files were selected.
 	return true;
@@ -543,7 +534,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_loaded_files()
 			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &loaded_file_ref,
 			loaded_file_refs)
 	{
-		const GPlatesFileIO::File::Reference &loaded_file = loaded_file_ref.get_file();
+		GPlatesFileIO::File::Reference &loaded_file = loaded_file_ref.get_file();
 		loaded_files.push_back(&loaded_file);
 	}
 
@@ -839,7 +830,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::clear_file_rows(
 void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::add_file_row(
 		FileStateCollection &file_state_collection,
-		const GPlatesFileIO::File::Reference &file)
+		GPlatesFileIO::File::Reference &file)
 {
 	const GPlatesFileIO::FileInfo &file_info = file.get_file_info();
 

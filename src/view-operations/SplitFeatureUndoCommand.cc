@@ -34,12 +34,18 @@
 #include "feature-visitors/GeometrySetter.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/NotificationGuard.h"
 #include "model/TopLevelPropertyInline.h"
 
 void
 GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 {
 	RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many as we incrementally modify the feature below.
+	GPlatesModel::NotificationGuard model_notification_guard(
+			d_view_state->get_application_state().get_model_interface().access_model());
 
 	d_old_feature = 
 		d_feature_focus->focused_feature();
@@ -207,6 +213,10 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 						points.end(),
 						GPlatesViewOperations::GeometryType::POLYLINE)));
 
+	// We release the model notification guard which will cause a reconstruction to occur
+	// because we modified the model.
+	model_notification_guard.release_guard();
+
 	// Disabling setting of focus for now since we now need to know the reconstruction tree
 	// used to reconstruct the original feature - this is doable - but I wonder if we really
 	// need to set focus anyway (it's kind of arbitrary which geometry we're setting focus
@@ -214,7 +224,6 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	// clicking on geometry. In any case they probably only split a feature once.
 	// For now let's only set focus when the user sets focus.
 #if 1
-	d_view_state->get_application_state().reconstruct();
 	d_feature_focus->unset_focus();
 #else
 	d_feature_focus->set_focus(
@@ -236,6 +245,11 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 
 	RenderedGeometryCollection::UpdateGuard update_guard;
 	
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many as we incrementally modify the feature below.
+	GPlatesModel::NotificationGuard model_notification_guard(
+			d_view_state->get_application_state().get_model_interface().access_model());
+
 	//restore the old geometry
 	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);
 	(*d_old_feature)->add(*d_old_geometry_property);
@@ -256,6 +270,11 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 			*GPlatesFeatureVisitors::find_first_geometry_property(
 					*d_old_feature);
 	
+	// We release the model notification guard which will cause a reconstruction to occur
+	// because we modified the model.
+	// NOTE: DON'T USE ANY DATA MEMBER OF "UNDO OBJECT" AFTER RECONSTRUCTIOIN HAS BEEN CALLED.
+	model_notification_guard.release_guard();
+
 	// Disabling setting of focus for now since we now need to know the reconstruction tree
 	// used to reconstruct the original feature - this is doable - but I wonder if we really
 	// need to set focus anyway (it's kind of arbitrary which geometry we're setting focus
@@ -265,8 +284,6 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 #if 1
 	//save the 	d_feature_focus pointer to local variable before it is destroyed by reconstruct.
 	GPlatesGui::FeatureFocus * feature_focus = d_feature_focus;
-	//DON'T USE ANY DATA MEMBER OF "UNDO OBJECT" AFTER RECONSTRUCTIOIN HAS BEEN CALLED.
-	d_view_state->get_application_state().reconstruct();
 	feature_focus->unset_focus();
 #else
 	d_feature_focus->set_focus(*d_old_feature, it);

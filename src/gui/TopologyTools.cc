@@ -3380,12 +3380,6 @@ GPlatesGui::TopologyTools::convert_topology_to_feature_property(
 					interior_prop_name,
 					interior_property_value));
 	}
-
-	// Do a new reconstruction since the feature has changed.
-	// But first release the model notification guard so other observers can adjust to the
-	// modified feature first.
-	model_notification_guard.release_guard();
-	d_application_state_ptr->reconstruct(); 
 }
 
 

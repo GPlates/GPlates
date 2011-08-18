@@ -407,7 +407,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	get_view_state().set_other_view_state(*this);
 
 	// Register the default edit configurations for those file formats that have configurations.
-	ManageFeatureCollections::register_default_edit_configurations(*d_manage_feature_collections_dialog_ptr);
+	ManageFeatureCollections::register_default_edit_configurations(
+			*d_manage_feature_collections_dialog_ptr,
+			get_application_state().get_model_interface());
 
 	// Initialise the Shapefile property mapper before we start reading.
 	// FIXME: Not sure where this should go since it involves qt widgets (logical place is

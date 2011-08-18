@@ -35,6 +35,7 @@
 #include <QMap>
 #include <QString>
 
+#include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileInfo.h"
 #include "OgrException.h"
 #include "PropertyMapper.h"
@@ -430,7 +431,6 @@ namespace
 			model_to_shapefile_map.insert(
 				ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID],
 				ShapefileAttributes::default_attributes[ShapefileAttributes::FEATURE_ID]);
-			file_info.set_model_to_shapefile_map(model_to_shapefile_map);
 		}	
 	
 	}
@@ -460,8 +460,6 @@ namespace
 					ShapefileAttributes::default_attributes[i]);			
 			}			
 		}
-		
-		file_info.set_model_to_shapefile_map(model_to_shapefile_map);
 	}
 	
 	void
@@ -1115,18 +1113,15 @@ namespace
 	
 	void
 	create_default_model_to_shapefile_map(
-		const GPlatesFileIO::FileInfo &file_info)
+		const GPlatesFileIO::FileInfo &file_info,
+		QMap< QString, QString > &model_to_shapefile_map)
 	{
-		QMap< QString, QString > model_to_shapefile_map;
-		
 		for (unsigned int i = 0; i < ShapefileAttributes::NUM_PROPERTIES; ++i)
 		{
 			model_to_shapefile_map.insert(
 				ShapefileAttributes::model_properties[i],
 				ShapefileAttributes::default_attributes[i]);		
 		}
-			
-		file_info.set_model_to_shapefile_map(model_to_shapefile_map);					
 	}
 
 	void
@@ -1217,9 +1212,13 @@ namespace
 }
 
 GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
-	const FileInfo &file_info,
-	const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref)
+	File::Reference &file_ref,
+	const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_ogr_file_configuration)
 {
+	const FileInfo &file_info = file_ref.get_file_info();
+	const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref =
+			file_ref.get_feature_collection();
+
 	// Check what types of geometries exist in the feature collection.
 
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
@@ -1239,14 +1238,29 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	// The file_info might not have a model_to_shapefile_map - the feature collection
 	// might have originated from a plates file, for example. If we don't have one,
 	// create a default map.
-	
-	if (file_info.get_model_to_shapefile_map().isEmpty())
+
+	// If there's an OGR file configuration then use it to get the model-to-attribute map.
+	boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type> ogr_file_configuration =
+			FeatureCollectionFileFormat::copy_cast_configuration<
+					FeatureCollectionFileFormat::OGRConfiguration>(
+							file_ref.get_file_configuration());
+	// Otherwise use the default OGR configuration.
+	if (!ogr_file_configuration)
 	{
-		create_default_model_to_shapefile_map(file_info);
+		// We have to copy the default configuration since we're going to modify it.
+		ogr_file_configuration =
+				FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
+						new FeatureCollectionFileFormat::OGRConfiguration(
+								*default_ogr_file_configuration));
 	}
 
+	d_model_to_shapefile_map = ogr_file_configuration.get()->get_model_to_attribute_map();
 
-	d_model_to_shapefile_map = file_info.get_model_to_shapefile_map();	
+	if (d_model_to_shapefile_map.isEmpty())
+	{
+		create_default_model_to_shapefile_map(file_info, d_model_to_shapefile_map);
+	}
+
 
 	// New properties may have been added to features in the collection. If these properties are
 	// "mappable", then we should add them to the model-to-shapefile map. Rather than checking 
@@ -1303,11 +1317,17 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 		// Not exporting an individual mapping file for each layer isn't a disaster - it just means the user
 		// will have to go through the mapping dialog the next time they load any of the newly created files.
 		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,
-			file_info.get_model_to_shapefile_map());
+			d_model_to_shapefile_map);
 	}
 
+	// Store the (potentially) modified model-to-shapefile map back to the file configuration on the file reference.
+	// Store the map back into the file configuration.
+	ogr_file_configuration.get()->get_model_to_attribute_map() = d_model_to_shapefile_map;
 
-
+	// Store the file configuration in the file reference.
+	boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+			file_configuration = ogr_file_configuration.get();
+	file_ref.set_file_info(file_info, file_configuration);
 }
 
 

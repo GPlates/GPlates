@@ -38,6 +38,7 @@
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/FeatureCollectionFileFormatConfiguration.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -231,12 +232,8 @@ namespace GPlatesGui
 
 	private:
 		/**
-		 * Saves specified feature collection into a file described by @a file_info.
+		 * Saves the feature collection in @a file_ref to the filename in @a file_ref.
 		 * Pops up simple dialogs if there are problems, and returns false.
-		 *
-		 * @a file_configuration determines the file format and any options to use when writing
-		 *        to the file - if not provided then the file format is determined from @a file_info
-		 *        and the file configuration used is the one registered for its file format.
 		 *
 		 * This is called by the other @a save_file_* methods above.
 		 * NOTE: @a clear_unsaved_changes can be set to false when this method is used by
@@ -245,10 +242,7 @@ namespace GPlatesGui
 		 */
 		bool
 		save_file(
-				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
-						file_configuration = boost::none,
+				GPlatesFileIO::File::Reference &file_ref,
 				bool clear_unsaved_changes = true);
 
 

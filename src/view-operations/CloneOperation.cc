@@ -114,12 +114,10 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature(
 	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 	target_feature_collection->add(new_feature_ptr);
 		
-	// Release the model notification guard now that we've finished modifying the feature.
-	// Provided there are no nested guards this should notify model observers.
-	// We want any observers to see the changes before do a new reconstruction.
+	// We release the model notification guard which will cause a reconstruction to occur
+	// because we modified the model - provided there are no nested higher-level guards.
 	model_notification_guard.release_guard();
 
-	d_view_state.get_application_state().reconstruct();
 	// transaction.commit();
 
 #if 0

@@ -55,8 +55,8 @@ namespace GPlatesQtWidgets
 
 		void
 		setup(
-			QString &filename,
-			QStringList &field_names,
+			const QString &filename,
+			const QStringList &field_names,
 			QMap<QString,QString> &model_to_attribute_map);
 
 	public slots:

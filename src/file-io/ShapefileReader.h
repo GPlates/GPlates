@@ -29,6 +29,7 @@
 #ifndef GPLATES_FILEIO_SHAPEFILEREADER_H
 #define GPLATES_FILEIO_SHAPEFILEREADER_H
 
+#include <boost/shared_ptr.hpp>
 #ifdef HAVE_CONFIG_H
 // We're building on a UNIX-y system, and can thus expect "global/config.h".
 
@@ -56,6 +57,11 @@
 
 namespace GPlatesFileIO
 {
+	namespace FeatureCollectionFileFormat
+	{
+		class OGRConfiguration;
+	}
+
 	const double SHAPE_NO_DATA = -1e38; 
 
 	class ShapefileReader
@@ -66,7 +72,8 @@ namespace GPlatesFileIO
 		static
 		void
 		read_file(
-				const GPlatesFileIO::File::Reference &file_ref,
+				GPlatesFileIO::File::Reference &file_ref,
+				const boost::shared_ptr<const FeatureCollectionFileFormat::OGRConfiguration> &default_file_configuration,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 
@@ -75,10 +82,28 @@ namespace GPlatesFileIO
 		set_property_mapper(
 			boost::shared_ptr< PropertyMapper > property_mapper);
 
+		/**
+		 * Reads only the field names from the file @a file_ref.
+		 */
+		static
+		QStringList
+		read_field_names(
+				GPlatesFileIO::File::Reference &file_ref,
+				GPlatesModel::ModelInterface &model,
+				ReadErrorAccumulation &read_errors);
+
+		/**
+		 * Remaps the attributes stored in the file configuration of @a file to the
+		 * mapped feature properties of the features in the feature collection in @a file.
+		 *
+		 * NOTE: This does not pop-up a remapper dialog anymore. That must already have been done.
+		 * Instead, @a file *must* have a valid file configuration - this is now the source of the
+		 * model-to-attribute mapping.
+		 */
 		static
 		void
 		remap_shapefile_attributes(
-			const GPlatesFileIO::File::Reference &file,
+			GPlatesFileIO::File::Reference &file,
 			GPlatesModel::ModelInterface &model,
 			ReadErrorAccumulation &read_errors);
 
@@ -255,14 +280,14 @@ namespace GPlatesFileIO
 		OGRwkbGeometryType d_type;
 
 		/// The shapefile attribute field names. 
-		static QStringList s_field_names;
+		QStringList d_field_names;
 
 		/// The shapefile attributes for the current geometry.
 		std::vector<QVariant> d_attributes;
 
 		/// Map for associating a model property with a shapefile attribute.
 //		std::map<int, int> d_model_to_attribute_map;
-		static QMap<QString,QString> s_model_to_attribute_map;
+		QMap<QString,QString> d_model_to_attribute_map;
 
 #if 0
 		/// The feature type and the geometry type

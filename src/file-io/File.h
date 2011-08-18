@@ -28,7 +28,7 @@
 
 #include <boost/optional.hpp>
 
-#include "FeatureCollectionFileFormat.h"
+#include "FeatureCollectionFileFormatConfiguration.h"
 #include "FileInfo.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -59,15 +59,19 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * Returns non-const reference to feature collection.
-			 *
-			 * FIXME: May want to consider whether this const method should be
-			 * returning a non-const weak ref ?  For the time being there are lots of
-			 * places where a fix like this would propagate so for the time being
-			 * will just leave it as is.
+			 * Returns 'const' reference to feature collection.
+			 */
+			GPlatesModel::FeatureCollectionHandle::const_weak_ref
+			get_feature_collection() const
+			{
+				return d_feature_collection;
+			}
+
+			/**
+			 * Returns 'non-const' reference to feature collection.
 			 */
 			GPlatesModel::FeatureCollectionHandle::weak_ref
-			get_feature_collection() const
+			get_feature_collection()
 			{
 				return d_feature_collection;
 			}
@@ -175,10 +179,27 @@ namespace GPlatesFileIO
 		File::non_null_ptr_type
 		create_file(
 				const FileInfo &file_info = FileInfo(),
-				boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
-						file_configuration = boost::none,
 				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &
-						feature_collection = GPlatesModel::FeatureCollectionHandle::create());
+						feature_collection = GPlatesModel::FeatureCollectionHandle::create(),
+				boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+						file_configuration = boost::none);
+
+
+		/**
+		 * Create a @a Reference object with feature collection @a feature_collection.
+		 *
+		 * Note that this references an existing feature collection and does not create a new one.
+		 *
+		 * @a file_info should represent the file that @a feature_collection was read from
+		 * (or will be saved to).
+		 */
+		static
+		File::Reference::non_null_ptr_type
+		create_file_reference(
+				const FileInfo &file_info,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+						file_configuration = boost::none);
 
 
 		/**

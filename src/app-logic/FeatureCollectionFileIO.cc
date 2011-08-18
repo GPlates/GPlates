@@ -182,9 +182,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::save_file(
-		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration,
+		GPlatesFileIO::File::Reference &file_ref,
 		bool clear_unsaved_changes)
 {
 	// We want to merge model events across this scope so that only one model event
@@ -202,17 +200,18 @@ GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 	}
 #endif
 
-	if (!feature_collection.is_valid())
+	if (!file_ref.get_feature_collection().is_valid())
 	{
 		throw GPlatesGlobal::InvalidFeatureCollectionException(GPLATES_EXCEPTION_SOURCE,
 				"Attempted to write an invalid feature collection.");
 	}
-	
-	d_file_format_registry.write_feature_collection(feature_collection, file_info, file_configuration);
+
+	// Write the feature collection to the file.
+	d_file_format_registry.write_feature_collection(file_ref);
 
 	if (clear_unsaved_changes)
 	{
-		feature_collection->clear_unsaved_changes();
+		file_ref.get_feature_collection()->clear_unsaved_changes();
 	}
 }
 
@@ -230,30 +229,15 @@ GPlatesAppLogic::FeatureCollectionFileIO::create_empty_file()
 GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::FeatureCollectionFileIO::create_file(
 		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration)
 {
 	const GPlatesFileIO::File::non_null_ptr_type file =
-			GPlatesFileIO::File::create_file(file_info, boost::none, feature_collection);
+			GPlatesFileIO::File::create_file(file_info, feature_collection, file_configuration);
 
-	save_file(file_info, file->get_reference().get_feature_collection());
+	save_file(file->get_reference());
 
 	return d_file_state.add_file(file);
-}
-
-
-void
-GPlatesAppLogic::FeatureCollectionFileIO::remap_shapefile_attributes(
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref)
-{
-	GPlatesFileIO::ReadErrorAccumulation read_errors;
-	GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
-			file_ref.get_file(),
-			d_model,
-			read_errors);
-
-	emit_handle_read_errors_signal(read_errors);
-
-	emit remapped_shapefile_attributes(*this, file_ref);
 }
 
 
@@ -362,7 +346,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
-		const GPlatesFileIO::File::Reference &file_ref)
+		GPlatesFileIO::File::Reference &file_ref)
 {
 	GPlatesFileIO::ReadErrorAccumulation read_errors;
 

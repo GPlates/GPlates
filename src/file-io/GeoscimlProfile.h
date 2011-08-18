@@ -58,7 +58,7 @@ namespace GPlatesFileIO
 		
 		void
 		populate(
-				const File::Reference& xml_file);
+				File::Reference& xml_file);
 
 		void
 		populate(

@@ -35,8 +35,9 @@
 #include <QTextStream>
 #include <QString>
 
+#include "FeatureCollectionFileFormatRegistry.h"
+#include "File.h"
 #include "GMTFormatHeader.h"
-#include "FileInfo.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
@@ -49,6 +50,11 @@
 
 namespace GPlatesFileIO
 {
+	namespace FeatureCollectionFileFormat
+	{
+		class GMTConfiguration;
+	}
+
 	class GMTFormatWriter :
 		public GPlatesModel::ConstFeatureVisitor
 	{
@@ -72,13 +78,16 @@ namespace GPlatesFileIO
 
 		/**
 		* @pre is_writable(file_info) is true.
-		* @param file_info file to write to.
-		* @param header_format determines what information is printed in each feature header.
+		* @param file_ref feature collection and filename to write to.
+		*
+		* The header format is determined by the file configuration in @a file_ref.
+		* If it contains no file configuration, or it's not a GMT configuration, then the
+		* @a default_file_configuration is used and attached to @a file_ref.
 		*/
 		explicit
 		GMTFormatWriter(
-				const FileInfo &file_info,
-				HeaderFormat header_format = PLATES4_STYLE_HEADER);
+				File::Reference &file_ref,
+				const boost::shared_ptr<const FeatureCollectionFileFormat::GMTConfiguration> &default_gmt_file_configuration);
 
 		virtual
 		~GMTFormatWriter();

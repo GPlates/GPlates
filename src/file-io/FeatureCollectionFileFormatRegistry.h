@@ -37,6 +37,7 @@
 
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatClassify.h"
+#include "FeatureCollectionFileFormatConfiguration.h"
 #include "File.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -75,30 +76,24 @@ namespace GPlatesFileIO
 			 * The function takes the following arguments:
 			 * - A reference to the file to contain the feature collection that is read,
 			 * - A structure to report read errors to.
-			 * - Options to use when reading from feature collection.
 			 */
 			typedef boost::function<
 					void (
-							const File::Reference &,
-							ReadErrorAccumulation &,
-							const Configuration::shared_ptr_to_const_type &)>
+							File::Reference &,
+							ReadErrorAccumulation &)>
 									read_feature_collection_function_type;
 
 			/**
 			 * Convenience typedef for a function that creates a feature visitor that writes features to a file.
 			 *
 			 * The function takes the following arguments:
-			 * - A feature collection,
-			 * - The file to write the feature collection to,
-			 * - Options to use when writing the feature collection.
+			 * - A reference to the file containing the feature collection to write,
 			 *
 			 * Returns the create feature visitor.
 			 */
 			typedef boost::function<
 					boost::shared_ptr<GPlatesModel::ConstFeatureVisitor> (
-							const GPlatesModel::FeatureCollectionHandle::const_weak_ref &,
-							const FileInfo &,
-							const Configuration::shared_ptr_to_const_type &)>
+							File::Reference &)>
 									create_feature_collection_writer_function_type;
 
 
@@ -231,10 +226,6 @@ namespace GPlatesFileIO
 			/**
 			 * Reads features from file @a file_ref into the file's feature collection.
 			 *
-			 * Note that the file configurations options contained in @a file_ref are used
-			 * when reading the feature collection. If it has none then the default configuration
-			 * registered (for its file format) is used.
-			 *
 			 * @param file_ref both filename of file to read from and feature collection to store in.
 			 * @param read_errors to contain errors reading file.
 			 *
@@ -243,20 +234,13 @@ namespace GPlatesFileIO
 			 */
 			void
 			read_feature_collection(
-					const File::Reference &file_ref,
+					File::Reference &file_ref,
 					ReadErrorAccumulation &read_errors) const;
 
 			/**
-			 * Writes features from the specified feature collection to the specified output file.
+			 * Writes features to the specified file @a file_ref.
 			 *
-			 * @param feature_collection the feature collection that will be written.
-			 * @param file_info output file that feature collection is written to.
-			 * @param configuration options used when writing to the file - if none are provided
-			 *        then the default configuration registered for the file format is used.
-			 * @param configuration determines the file format and any options to use when writing
-			 *        to the file - if none are provided then the file format is determined from
-			 *        the filename of @a file_ref and the default configuration registered for that
-			 *        file format is used.
+			 * @param file_ref both filename of file to write to and feature collection to write.
 			 *
 			 * @throws ErrorOpeningFileForWritingException if file is not writable.
 			 * @throws FileFormatNotSupportedException if file format does not support writing
@@ -264,20 +248,20 @@ namespace GPlatesFileIO
 			 */
 			void
 			write_feature_collection(
-					const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
-					const FileInfo &file_info,
-					boost::optional<Configuration::shared_ptr_to_const_type> configuration = boost::none) const;
+					File::Reference &file_ref) const;
 
 
 			/**
 			 * Returns the default configuration options for the specified file format.
+			 *
+			 * If there is no default then boost::none is returned.
 			 *
 			 * If a base @a Configuration instance is returned then the file format has no configuration options.
 			 * Some file formats don't really need any options.
 			 *
 			 * @throws FileFormatNotSupportedException if file format no been registered.
 			 */
-			const Configuration::shared_ptr_to_const_type &
+			const boost::optional<Configuration::shared_ptr_to_const_type> &
 			get_default_configuration(
 					Format file_format) const;
 
@@ -301,7 +285,7 @@ namespace GPlatesFileIO
 						const is_file_format_function_type &is_file_format_function_,
 						const boost::optional<read_feature_collection_function_type> &read_feature_collection_function_,
 						const boost::optional<create_feature_collection_writer_function_type> &create_feature_collection_writer_function_,
-						const Configuration::shared_ptr_to_const_type &default_configuration_) :
+						const boost::optional<Configuration::shared_ptr_to_const_type> &default_configuration_) :
 					short_description(short_description_),
 					filename_extensions(filename_extensions_),
 					feature_classification(feature_classification_),
@@ -317,7 +301,7 @@ namespace GPlatesFileIO
 				is_file_format_function_type is_file_format_function;
 				boost::optional<read_feature_collection_function_type> read_feature_collection_function;
 				boost::optional<create_feature_collection_writer_function_type> create_feature_collection_writer_function;
-				Configuration::shared_ptr_to_const_type default_configuration;
+				boost::optional<Configuration::shared_ptr_to_const_type> default_configuration;
 			};
 
 			typedef std::map<Format, FileFormatInfo> file_format_info_map_type;

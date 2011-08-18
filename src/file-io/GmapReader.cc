@@ -503,7 +503,7 @@ namespace
  
 void
 GPlatesFileIO::GmapReader::read_file(
-	const File::Reference &file_ref,
+	File::Reference &file_ref,
 	GPlatesModel::ModelInterface &model,
 	ReadErrorAccumulation &read_errors)
 {

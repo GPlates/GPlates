@@ -48,7 +48,7 @@ namespace GPlatesFileIO
 		virtual
 		void
 		populate(
-				const File::Reference&) = 0;
+				File::Reference&) = 0;
 
 		virtual
 		void
