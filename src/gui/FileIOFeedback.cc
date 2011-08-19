@@ -26,10 +26,11 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
-#include <QDebug>
-#include <QString>
-#include <QMessageBox>
 #include <QCoreApplication>
+#include <QDebug>
+#include <QMessageBox>
+#include <QString>
+#include <QTextStream>
 
 #include "FileIOFeedback.h"
 
@@ -260,7 +261,7 @@ GPlatesGui::FileIOFeedback::open_files(
 		return;
 	}
 
-	try_catch_file_load_with_feedback(
+	try_catch_file_or_session_load_with_feedback(
 			boost::bind(
 					&GPlatesAppLogic::FeatureCollectionFileIO::load_files,
 					d_feature_collection_file_io_ptr,
@@ -279,7 +280,7 @@ GPlatesGui::FileIOFeedback::open_urls(
 		return;
 	}
 
-	try_catch_file_load_with_feedback(
+	try_catch_file_or_session_load_with_feedback(
 			boost::bind(
 					&GPlatesAppLogic::FeatureCollectionFileIO::load_urls,
 					d_feature_collection_file_io_ptr,
@@ -302,7 +303,7 @@ GPlatesGui::FileIOFeedback::open_previous_session(
 		sm.unload_all_unnamed_files();
 		
 		// Load the new session.
-		try_catch_file_load_with_feedback(
+		try_catch_file_or_session_load_with_feedback(
 				boost::bind(
 						&GPlatesAppLogic::SessionManagement::load_previous_session,
 						&sm,
@@ -336,11 +337,12 @@ GPlatesGui::FileIOFeedback::reload_file(
 		}
 	}
 
-	try_catch_file_load_with_feedback(
+	try_catch_file_or_session_load_with_feedback(
 			boost::bind(
 					&GPlatesAppLogic::FeatureCollectionFileIO::reload_file,
 					d_feature_collection_file_io_ptr,
-					file));
+					file),
+			file.get_file().get_file_info().get_display_name(false/*use_absolute_path_name*/));
 
 	if (focused_property_name)
 	{
@@ -530,65 +532,76 @@ GPlatesGui::FileIOFeedback::save_file(
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		QString message = tr("An error occurred while saving the file '%1'")
-				.arg(exc.filename());
+		QString message;
+		QTextStream(&message)
+				<< tr("An error occurred while saving the file '%1': \n").arg(exc.filename())
+				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 		return false;
 	}
 	catch (GPlatesFileIO::ErrorOpeningPipeToGzipException &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		QString message = tr("GPlates was unable to use the '%1' program to save the file '%2'."
+		QString message;
+		QTextStream(&message)
+				<< tr("GPlates was unable to use the '%1' program to save the file '%2'."
 				" Please check that gzip is installed and in your PATH. You will still be able to save"
-				" files without compression.")
-				.arg(exc.command())
-				.arg(exc.filename());
+				" files without compression: \n")
+						.arg(exc.command())
+						.arg(exc.filename())
+				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 		return false;
 	}
 	catch (GPlatesGlobal::InvalidFeatureCollectionException &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-		// FIXME: Needs an attempt to report the filename.
-		QString message = tr("Error: Attempted to write an invalid feature collection.");
+		QString message;
+		QTextStream(&message)
+				<< tr("Error: Attempted to write an invalid feature collection to '%1': \n")
+						.arg(file_ref.get_file_info().get_display_name(false/*use_absolute_path_name*/))
+				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 		return false;
 	}
 	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-		// FIXME: Report the filename.
-		QString message = tr("Error: Attempted to write an empty feature collection.");
+		QString message;
+		QTextStream(&message)
+				<< tr("Error: Attempted to write an empty feature collection to '%1': \n")
+						.arg(file_ref.get_file_info().get_display_name(false/*use_absolute_path_name*/))
+				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 		return false;
 	}
 	catch (GPlatesFileIO::FileFormatNotSupportedException &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-		// FIXME: Report the filename.
-		QString message = tr("Error: Writing files in this format is currently not supported.");
+		QString message;
+		QTextStream(&message)
+				<< tr("Error: Writing files in the format of '%1' is currently not supported: \n")
+						.arg(file_ref.get_file_info().get_display_name(false/*use_absolute_path_name*/))
+				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 		return false;
 	}
 	catch (GPlatesFileIO::OgrException &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		// FIXME: Report the filename.
-		QString message = tr("An OGR error occurred.");
+		QString message;
+		QTextStream(&message)
+				<< tr("An OGR error occurred while saving the file '%1': \n")
+						.arg(file_ref.get_file_info().get_display_name(false/*use_absolute_path_name*/))
+				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 		return false;
 	}
 
@@ -653,8 +666,9 @@ GPlatesGui::FileIOFeedback::save_all(
 
 
 void
-GPlatesGui::FileIOFeedback::try_catch_file_load_with_feedback(
-		boost::function<void ()> file_load_func)
+GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
+		boost::function<void ()> file_load_func,
+		boost::optional<QString> filename)
 {
 	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
 	// the screen.
@@ -667,36 +681,63 @@ GPlatesGui::FileIOFeedback::try_catch_file_load_with_feedback(
 	}
 	catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		QString message = tr("GPlates was unable to use the '%1' program to read the file '%2'."
+		QString message;
+		QTextStream(&message)
+				<< tr("GPlates was unable to use the '%1' program to read the file '%2'."
 				" Please check that gzip is installed and in your PATH. You will still be able to open"
-				" files which are not compressed.")
-				.arg(exc.command())
-				.arg(exc.filename());
+				" files which are not compressed: \n")
+						.arg(exc.command())
+						.arg(exc.filename())
+				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 	}
 	catch (GPlatesFileIO::FileFormatNotSupportedException &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		QString message = tr("Error: Loading files in this format is currently not supported.");
+		QString message;
+		QTextStream message_stream(&message);
+		if (filename)
+		{
+			message_stream << tr("Error: Loading files in the format of '%1' is currently not supported: \n")
+						.arg(filename.get());
+		}
+		else
+		{
+			message_stream << tr("Error: Loading files in this format is currently not supported: \n");
+		}
+		message_stream << exc;
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		QString message = tr("Error: GPlates was unable to read the file '%1'.")
-				.arg(exc.filename());
+		QString message;
+		QTextStream(&message)
+				<< tr("Error: GPlates was unable to read the file '%1': \n").arg(exc.filename())
+				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 	}
 	catch (GPlatesGlobal::Exception &exc)
 	{
-		qWarning() << exc; // Detailed error message.
-		QString message = tr("Error: Unexpected error loading file - ignoring file.");
+		QString message;
+		QTextStream message_stream(&message);
+		if (filename)
+		{
+			message_stream << tr("Error: Unexpected error loading file '%1' - ignoring file: \n")
+						.arg(filename.get());
+		}
+		else
+		{
+			message_stream << tr("Error: Unexpected error loading file - ignoring file: \n");
+		}
+		message_stream << exc;
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
 	}
 }
 

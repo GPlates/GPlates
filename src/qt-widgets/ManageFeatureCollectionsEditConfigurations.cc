@@ -24,6 +24,7 @@
  */
 
 #include <QDebug>
+#include <QMessageBox>
 
 #include "ManageFeatureCollectionsEditConfigurations.h"
 
@@ -94,11 +95,27 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 		return current_configuration;
 	}
 
+	// It's possible that another file format is 'save as' a shapefile but the shapefile has
+	// more than one layer - in this case the shapefile writer writes out multiple shapefiles
+	// (eg, <filename>_point.shp and <filename>_polyline.shp)
+	if (!GPlatesFileIO::file_exists(file.get_file_info()))
+	{
+		QString message =
+				QObject::tr("Error: File '%1' does not exist: \nUnable to edit its configuration.")
+						.arg(file.get_file_info().get_display_name(false/*use_absolute_path_name*/));
+		QMessageBox::critical(
+				parent_widget, QObject::tr("Error Opening File"), message, QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
+
+		return current_configuration;
+	}
+
 	// FIXME: These errors should get reported somehow.
 	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
 	const QString filename = file.get_file_info().get_qfileinfo().fileName();
-	const QStringList field_names = GPlatesFileIO::ShapefileReader::read_field_names(file, d_model, read_errors);
+	const QStringList field_names =
+			GPlatesFileIO::ShapefileReader::read_field_names(file, d_model, read_errors);
 
 	// This is the model-to-attribute map that will be modified.
 	// NOTE: We're modifying the new file configuration in-place.

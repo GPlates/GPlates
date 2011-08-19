@@ -69,6 +69,15 @@ namespace GPlatesFileIO
 
 	public:
 
+		/**
+		 * Reads shapefile specified by the filename in @a file_ref and stores into feature collection
+		 * in @a file_ref.
+		 *
+		 * @a default_file_configuration should be the current default shapefile file configuration
+		 * as determined by 'FeatureCollectionFileFormat::Registry'.
+		 *
+		 * @throws ErrorOpeningFileForReadingException if unable to open file for reading.
+		 */
 		static
 		void
 		read_file(
@@ -84,6 +93,8 @@ namespace GPlatesFileIO
 
 		/**
 		 * Reads only the field names from the file @a file_ref.
+		 *
+		 * @throws ErrorOpeningFileForReadingException if unable to open file for reading.
 		 */
 		static
 		QStringList

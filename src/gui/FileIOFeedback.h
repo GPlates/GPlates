@@ -251,8 +251,9 @@ namespace GPlatesGui
 		 * handles those exceptions in one place.
 		 */
 		void
-		try_catch_file_load_with_feedback(
-				boost::function<void ()> file_load_func);
+		try_catch_file_or_session_load_with_feedback(
+				boost::function<void ()> file_load_func,
+				boost::optional<QString> filename = boost::none);
 
 
 		/**

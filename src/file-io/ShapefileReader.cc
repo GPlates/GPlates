@@ -1862,11 +1862,13 @@ GPlatesFileIO::ShapefileReader::read_field_names(
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
 	ShapefileReader reader;
-	if (!reader.open_file(absolute_path_filename)){
+	if (!reader.open_file(absolute_path_filename))
+	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
-	if (!reader.check_file_format(read_errors)){
+	if (!reader.check_file_format(read_errors))
+	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 	reader.get_field_names(read_errors);
