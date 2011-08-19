@@ -343,6 +343,9 @@ set(srcs
     ShapefileAttributeWidget.cc
     ShapefileAttributeWidget.h
     ShapefileAttributeWidgetUi.ui
+    ShapefileFileFormatConfigurationDialog.cc
+    ShapefileFileFormatConfigurationDialog.h
+    ShapefileFileFormatConfigurationDialogUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
     SmallCircleManager.cc

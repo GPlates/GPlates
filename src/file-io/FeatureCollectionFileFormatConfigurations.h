@@ -94,13 +94,34 @@ namespace GPlatesFileIO
 			 * Constructor - the default model-to-attribute map is empty.
 			 *
 			 * NOTE: @a file_format must currently be either OGRGMT or SHAPEFILE.
+			 *
+			 * @a wrap_to_dateline enables wrapping of polyline/polygon geometries to dateline (disabled by default).
 			 */
 			explicit
 			OGRConfiguration(
 					Format file_format,
+					bool wrap_to_dateline = false,
 					const model_to_attribute_map_type model_to_shapefile_map = model_to_attribute_map_type()) :
+				d_wrap_to_dateline(wrap_to_dateline),
 				d_model_to_attribute_map(model_to_shapefile_map)
 			{  }
+
+
+			//! Returns dateline wrapping flag.
+			bool
+			get_wrap_to_dateline() const
+			{
+				return d_wrap_to_dateline;
+			}
+
+			//! Sets dateline wrapping flag.
+			void
+			set_wrap_to_dateline(
+					bool wrap_to_dateline)
+			{
+				d_wrap_to_dateline = wrap_to_dateline;
+			}
+
 
 			//! Returns the 'const' model-to-attribute map.
 			const model_to_attribute_map_type &
@@ -117,6 +138,7 @@ namespace GPlatesFileIO
 			}
 
 		private:
+			bool d_wrap_to_dateline;
 			model_to_attribute_map_type d_model_to_attribute_map;
 		};
 	}

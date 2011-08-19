@@ -30,7 +30,7 @@
 
 #include "GMTFileFormatConfigurationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
-#include "ShapefileAttributeRemapperDialog.h"
+#include "ShapefileFileFormatConfigurationDialog.h"
 
 #include "file-io/ShapefileReader.h"
 
@@ -110,6 +110,8 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 		return current_configuration;
 	}
 
+	bool wrap_to_dateline = current_ogr_configuration.get()->get_wrap_to_dateline();
+
 	// FIXME: These errors should get reported somehow.
 	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
@@ -122,8 +124,8 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 	QMap<QString,QString> &model_to_attribute_map =
 			current_ogr_configuration.get()->get_model_to_attribute_map();
 
-	ShapefileAttributeRemapperDialog dialog(parent_widget);
-	dialog.setup(filename, field_names, model_to_attribute_map);
+	ShapefileFileFormatConfigurationDialog dialog(parent_widget);
+	dialog.setup(wrap_to_dateline, filename, field_names, model_to_attribute_map);
 	dialog.exec();
 
 	// If the user cancelled then just return the configuration passed to us.
@@ -131,6 +133,9 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 	{
 		return current_configuration;
 	}
+
+	// Store the updated wrap-to-dateline flag.
+	current_ogr_configuration.get()->set_wrap_to_dateline(wrap_to_dateline);
 
 	// Store the (potentially) updated file configuration back in the file.
 	// We need to do this here before we remap the model with the updated attributes because

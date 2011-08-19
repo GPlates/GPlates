@@ -42,7 +42,7 @@ namespace GPlatesFileIO
 	{
 	public:
 		void
-		handle_feature_memeber(
+		handle_feature_member(
 				FeatureCollectionHandle::weak_ref fc,
 				QByteArray&);
 		virtual 

@@ -93,7 +93,7 @@ GPlatesFileIO::GeoscimlProfile::populate(
 		if( results.size() == 0)
 		{
 			//This case covers GeoSciML data which has not been wrapped in wfs:FeatureCollection.
-			GsmlFeatureHandlerFactory::get_instance()->handle_feature_memeber(fch, xml_data);
+			GsmlFeatureHandlerFactory::get_instance()->handle_feature_member(fch, xml_data);
 		}
 		else
 		{
@@ -115,7 +115,7 @@ GPlatesFileIO::GeoscimlProfile::populate(
 				pd->setValue( i );
 				pd->setLabelText( label );
 
-				GsmlFeatureHandlerFactory::get_instance()->handle_feature_memeber(fch, array);
+				GsmlFeatureHandlerFactory::get_instance()->handle_feature_member(fch, array);
 
 				++i;
 			}

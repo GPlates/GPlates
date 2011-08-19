@@ -88,7 +88,7 @@ GPlatesFileIO::GsmlFeatureHandler::handle_gsml_feature(
 }
 
 void
-GPlatesFileIO::GsmlFeatureHandler::handle_feature_memeber(
+GPlatesFileIO::GsmlFeatureHandler::handle_feature_member(
 		FeatureCollectionHandle::weak_ref fc,
 		QByteArray& xml_data)
 {
@@ -111,7 +111,7 @@ GPlatesFileIO::GsmlFeatureHandler::handle_feature_memeber(
 	QString feature_type = reader.name().toString();
 
 #if 0
-qDebug() << "GsmlFeatureHandler::handle_feature_memeber(): feature_type" << feature_type;
+qDebug() << "GsmlFeatureHandler::handle_feature_member(): feature_type" << feature_type;
 qDebug() << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 qDebug() << xml_data;
 qDebug() << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
