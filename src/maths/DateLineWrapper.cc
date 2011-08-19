@@ -162,11 +162,12 @@ namespace GPlatesMaths
 		 * Returns true if the specified line segment crosses north pole, otherwise it crosses south pole.
 		 *
 		 * @pre line segment must lie on the 'thick' plane containing the dateline *and* the
-		 * line segment must cross on of the poles.
+		 * line segment must cross one of the poles.
 		 */
 		bool
 		does_line_segment_on_dateline_plane_cross_north_pole(
-				const GreatCircleArc &line_segment)
+				const GreatCircleArc &line_segment,
+				bool is_line_segment_start_point_on_dateline)
 		{
 			// Dot the front half-space normal with the normal to the plane the line segment is on.
 			const double dot_line_segment_normal_and_front_half_space_normal =
@@ -177,16 +178,16 @@ namespace GPlatesMaths
 							FRONT_HALF_SPACE_NORMAL).dval();
 
 			// We can be quite lenient here because have both paths covered well.
-			const double EPSILON = 1 - 1e-4;
+			const double EPSILON = 1e-4;
 
 			if (dot_line_segment_normal_and_front_half_space_normal > EPSILON)
 			{
-				return true;
+				return is_line_segment_start_point_on_dateline;
 			}
 
 			if (dot_line_segment_normal_and_front_half_space_normal < -EPSILON)
 			{
-				return false;
+				return !is_line_segment_start_point_on_dateline;
 			}
 
 			// The start/end points of the current line segment are too close together so
@@ -495,7 +496,9 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 			// Also note that we add the 'start' point, and not the end point, since it's off
 			// the dateline and hence it's longitude is used for intersection point.
 			// The longitude will be very close to zero since both start and end are on the 'thick' plane.
-			if (does_line_segment_on_dateline_plane_cross_north_pole(line_segment))
+			if (does_line_segment_on_dateline_plane_cross_north_pole(
+					line_segment,
+					false/*is_line_segment_start_point_on_dateline*/))
 			{
 				graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true);
 			}
@@ -535,7 +538,9 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 			// Also note that we add the 'end' point, and not the start point, since it's off
 			// the dateline and hence it's longitude is used for intersection point.
 			// The longitude will be very close to zero since both start and end are on the 'thick' plane.
-			if (does_line_segment_on_dateline_plane_cross_north_pole(line_segment))
+			if (does_line_segment_on_dateline_plane_cross_north_pole(
+					line_segment,
+					true/*is_line_segment_start_point_on_dateline*/))
 			{
 				graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false);
 			}
@@ -826,7 +831,7 @@ GPlatesMaths::DateLineWrapper::classify_vertex(
 
 	// NOTE: 'dval' means bypassing the epsilon test of 'real_t'.
 	// No epsilon is used for this test because that's been covered by the poles above.
-	if (dot(vertex, DATELINE_HEMISPHERE_NORMAL).dval() > 0)
+	if (dot(vertex, DATELINE_HEMISPHERE_NORMAL).dval() < 0)
 	{
 		return CLASSIFY_OFF_DATELINE_ARC_ON_PLANE;
 	}
@@ -905,6 +910,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polylines(
 
 			if (geometry_vertex.is_intersection)
 			{
+				++geometry_vertices_iter;
 				// End the current polyline.
 				break;
 			}
@@ -1139,6 +1145,11 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_intersecting_polygons(
 
 				// Switch iteration over to the other vertex list (geometry <-> dateline).
 				output_polygon_vertices_iter = vertex_list_type::iterator(*intersection_neighbour);
+
+				// There are two intersection vertices that are the same point.
+				// One is in the dateline vertices list and the other in the geometry list.
+				// Both copies need to be marked as used.
+				output_polygon_vertices_iter->used_to_output_polygon = true;
 
 				// Determine the traversal direction of the other polygon vertex list.
 				// If normal forward list traversal means exiting other polygon then we need
