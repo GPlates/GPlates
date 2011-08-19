@@ -59,8 +59,7 @@ namespace GPlatesFileIO
 		virtual
 		int
 		count_features(
-				QByteArray& xml_data,
-				GPlatesModel::FeatureCollectionHandle::weak_ref fch) = 0;
+				QByteArray& xml_data) = 0;
 		
 		virtual
 			~ArbitraryXmlProfile(){}

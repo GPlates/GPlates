@@ -139,8 +139,7 @@ GPlatesFileIO::GeoscimlProfile::cancel()
 
 int 
 GPlatesFileIO::GeoscimlProfile::count_features(
-		QByteArray& xml_data,
-		GPlatesModel::FeatureCollectionHandle::weak_ref fch)
+		QByteArray& xml_data)
 {
 // qDebug() << "GPlatesFileIO::GeoscimlProfile::count_features:";
 	std::vector<QByteArray> results;

@@ -442,7 +442,7 @@ GPlatesQtWidgets::ConnectWFSDialog::process_xml()
 	QString filename = tmp_dir + "/" + file_base_name;
 	
 	// First step: check for number of features 
-	int count = d_app_state.get_feature_collection_file_io().count_features(filename, d_xml_data);
+	int count = d_app_state.get_feature_collection_file_io().count_features_in_xml_data(d_xml_data);
 
 	// Ask to proceed
 	bool process = false;

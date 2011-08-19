@@ -100,9 +100,7 @@ namespace GPlatesFileIO
 		
 		int
 		count_features(
-				File::Reference &file,
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
-				GPlatesModel::ModelInterface &model,
 				QByteArray& data,
 				ReadErrorAccumulation &read_errors);
 		

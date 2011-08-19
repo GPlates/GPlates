@@ -58,16 +58,12 @@ GPlatesFileIO::ArbitraryXmlReader::read_xml_data(
 
 int
 GPlatesFileIO::ArbitraryXmlReader::count_features(
-		File::Reference &file_ref,
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
-		GPlatesModel::ModelInterface &model,
 		QByteArray& data,
 		ReadErrorAccumulation &read_errors)
 {
 // qDebug() << "GPlatesFileIO::ArbitraryXmlReader::count_features()";
 	SetErrorAccumulation setter(&read_errors,this);
-	return profile->count_features(
-			data,
-			file_ref.get_feature_collection());
+	return profile->count_features(data);
 }
 

@@ -68,8 +68,7 @@ namespace GPlatesFileIO
 		// check for features, return the number 
 		int 
 		count_features(
-				QByteArray& xml_data,
-				GPlatesModel::FeatureCollectionHandle::weak_ref fch);
+				QByteArray& xml_data);
 
 	public slots:
 

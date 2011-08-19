@@ -241,32 +241,18 @@ GPlatesAppLogic::FeatureCollectionFileIO::create_file(
 }
 
 
-
 int
-GPlatesAppLogic::FeatureCollectionFileIO::count_features(
-		const QString& name,
+GPlatesAppLogic::FeatureCollectionFileIO::count_features_in_xml_data(
 		QByteArray &data)
 {
 	using namespace GPlatesFileIO;
 	ReadErrorAccumulation read_errors;
 
-	//create temp file
-	QFile tmp_file(name);
-	tmp_file.open(QIODevice::ReadWrite | QIODevice::Text);
-	tmp_file.close();
-
-	const FileInfo file_info(name);
-	File::non_null_ptr_type file = File::create_file(file_info);
-
 	int i = ArbitraryXmlReader::instance()->count_features(
-			file->get_reference(), 
 			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
-			d_model,
 			data,
 			read_errors);
-	d_file_state.add_file(file);
 
-	// Emit one signal for all loaded files.
 	emit_handle_read_errors_signal(read_errors);
 	return i;
 }
@@ -274,18 +260,18 @@ GPlatesAppLogic::FeatureCollectionFileIO::count_features(
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
-		const QString& name,
+		const QString& filename,
 		QByteArray &data)
 {
 	using namespace GPlatesFileIO;
 	ReadErrorAccumulation read_errors;
 
 	//create temp file
-	QFile tmp_file(name);
+	QFile tmp_file(filename);
 	tmp_file.open(QIODevice::ReadWrite | QIODevice::Text);
 	tmp_file.close();
 
-	const FileInfo file_info(name);
+	const FileInfo file_info(filename);
 	File::non_null_ptr_type file = File::create_file(file_info);
 
 //qDebug() << "GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data()";

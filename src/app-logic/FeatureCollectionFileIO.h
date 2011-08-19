@@ -185,11 +185,10 @@ namespace GPlatesAppLogic
 
 
 		/*
-		* Check for features in xml data;
+		* Returns the number of features in the xml data @a data;
 		*/
 		int 
-		count_features(
-				const QString& name,
+		count_features_in_xml_data(
 				QByteArray &data);
 
 		/*
@@ -197,7 +196,7 @@ namespace GPlatesAppLogic
 		*/
 		void
 		load_xml_data(
-				const QString& name,
+				const QString& filename,
 				QByteArray &data);
 
 	signals:
