@@ -1219,6 +1219,21 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref =
 			file_ref.get_feature_collection();
 
+	// If there's an OGR file configuration then use it.
+	boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type> ogr_file_configuration =
+			FeatureCollectionFileFormat::copy_cast_configuration<
+					FeatureCollectionFileFormat::OGRConfiguration>(
+							file_ref.get_file_configuration());
+	// Otherwise use the default OGR configuration.
+	if (!ogr_file_configuration)
+	{
+		// We have to copy the default configuration since we're going to modify it.
+		ogr_file_configuration =
+				FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
+						new FeatureCollectionFileFormat::OGRConfiguration(
+								*default_ogr_file_configuration));
+	}
+
 	// Check what types of geometries exist in the feature collection.
 
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
@@ -1233,26 +1248,16 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	}
 
 	// Set up an appropriate OgrWriter.
-	d_ogr_writer.reset(new OgrWriter(file_info.get_qfileinfo().filePath(),finder.has_found_multiple_geometry_types()));
+	d_ogr_writer.reset(
+			new OgrWriter(
+					file_info.get_qfileinfo().filePath(),
+					finder.has_found_multiple_geometry_types(),
+					// Should polyline/polygon geometries be wrapped/clipped to the dateline...
+					ogr_file_configuration.get()->get_wrap_to_dateline()));
 
 	// The file_info might not have a model_to_shapefile_map - the feature collection
 	// might have originated from a plates file, for example. If we don't have one,
 	// create a default map.
-
-	// If there's an OGR file configuration then use it to get the model-to-attribute map.
-	boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type> ogr_file_configuration =
-			FeatureCollectionFileFormat::copy_cast_configuration<
-					FeatureCollectionFileFormat::OGRConfiguration>(
-							file_ref.get_file_configuration());
-	// Otherwise use the default OGR configuration.
-	if (!ogr_file_configuration)
-	{
-		// We have to copy the default configuration since we're going to modify it.
-		ogr_file_configuration =
-				FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
-						new FeatureCollectionFileFormat::OGRConfiguration(
-								*default_ogr_file_configuration));
-	}
 
 	d_model_to_shapefile_map = ogr_file_configuration.get()->get_model_to_attribute_map();
 

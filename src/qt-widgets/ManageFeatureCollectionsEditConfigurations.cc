@@ -32,6 +32,7 @@
 #include "ManageFeatureCollectionsDialog.h"
 #include "ShapefileFileFormatConfigurationDialog.h"
 
+#include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/ShapefileReader.h"
 
 
@@ -80,7 +81,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_t
 GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_configuration(
 		GPlatesFileIO::File::Reference &file,
 		const GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type &
-				current_configuration,
+				original_configuration,
 		QWidget *parent_widget)
 {
 	// Copy cast to the correct derived configuration type.
@@ -88,26 +89,11 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 			current_ogr_configuration =
 					GPlatesFileIO::FeatureCollectionFileFormat::copy_cast_configuration<
 							GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(
-									current_configuration);
+									original_configuration);
 	// If, for some reason, we were passed the wrong derived type then just return the configuration passed to us.
 	if (!current_ogr_configuration)
 	{
-		return current_configuration;
-	}
-
-	// It's possible that another file format is 'save as' a shapefile but the shapefile has
-	// more than one layer - in this case the shapefile writer writes out multiple shapefiles
-	// (eg, <filename>_point.shp and <filename>_polyline.shp)
-	if (!GPlatesFileIO::file_exists(file.get_file_info()))
-	{
-		QString message =
-				QObject::tr("Error: File '%1' does not exist: \nUnable to edit its configuration.")
-						.arg(file.get_file_info().get_display_name(false/*use_absolute_path_name*/));
-		QMessageBox::critical(
-				parent_widget, QObject::tr("Error Opening File"), message, QMessageBox::Ok, QMessageBox::Ok);
-		qWarning() << message; // Also log the detailed error message.
-
-		return current_configuration;
+		return original_configuration;
 	}
 
 	bool wrap_to_dateline = current_ogr_configuration.get()->get_wrap_to_dateline();
@@ -115,37 +101,60 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 	// FIXME: These errors should get reported somehow.
 	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
-	const QString filename = file.get_file_info().get_qfileinfo().fileName();
-	const QStringList field_names =
-			GPlatesFileIO::ShapefileReader::read_field_names(file, d_model, read_errors);
-
-	// This is the model-to-attribute map that will be modified.
-	// NOTE: We're modifying the new file configuration in-place.
-	QMap<QString,QString> &model_to_attribute_map =
-			current_ogr_configuration.get()->get_model_to_attribute_map();
-
-	ShapefileFileFormatConfigurationDialog dialog(parent_widget);
-	dialog.setup(wrap_to_dateline, filename, field_names, model_to_attribute_map);
-	dialog.exec();
-
-	// If the user cancelled then just return the configuration passed to us.
-	if (dialog.result() == QDialog::Rejected)
+	// It's possible that another file format is 'save as' a shapefile but the shapefile has
+	// more than one layer - in this case the shapefile writer writes out multiple shapefiles
+	// (eg, <filename>_point.shp and <filename>_polyline.shp).
+	//
+	// NOTE: Not using an early test with 'GPlatesFileIO::file_exists(file.get_file_info())' because
+	// that uses 'QFileInfo::exists()' which uses a cached result and it's still possible someone
+	// could delete the Shapefile in the file system and then click 'Edit Configuration' to get here.
+	try
 	{
-		return current_configuration;
+		const QString filename = file.get_file_info().get_qfileinfo().fileName();
+
+		const QStringList field_names =
+				GPlatesFileIO::ShapefileReader::read_field_names(file, d_model, read_errors);
+
+		// This is the model-to-attribute map that will be modified.
+		// NOTE: We're modifying the new file configuration in-place.
+		QMap<QString,QString> &model_to_attribute_map =
+				current_ogr_configuration.get()->get_model_to_attribute_map();
+
+		ShapefileFileFormatConfigurationDialog dialog(parent_widget);
+		dialog.setup(wrap_to_dateline, filename, field_names, model_to_attribute_map);
+		dialog.exec();
+
+		// If the user cancelled then just return the configuration passed to us.
+		if (dialog.result() == QDialog::Rejected)
+		{
+			return original_configuration;
+		}
+
+		// Store the updated wrap-to-dateline flag.
+		current_ogr_configuration.get()->set_wrap_to_dateline(wrap_to_dateline);
+
+		// Store the (potentially) updated file configuration back in the file.
+		// We need to do this here before we remap the model with the updated attributes because
+		// 'ShapefileReader::remap_shapefile_attributes' looks at the file configuration on the file reference.
+		GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
+				file_configuration = current_ogr_configuration.get();
+		file.set_file_info(file.get_file_info(), file_configuration);
+
+		// Remap the model with the updated attributes.
+		GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(file, d_model, read_errors);
+	}
+	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &exc)
+	{
+		QString message =
+				QObject::tr("Error: File '%1' does not exist: \nUnable to edit its configuration.")
+						.arg(exc.filename());
+		QMessageBox::critical(
+				parent_widget, QObject::tr("Error Opening File"), message, QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
+
+		// Just return the original configuration passed to us.
+		return original_configuration;
 	}
 
-	// Store the updated wrap-to-dateline flag.
-	current_ogr_configuration.get()->set_wrap_to_dateline(wrap_to_dateline);
-
-	// Store the (potentially) updated file configuration back in the file.
-	// We need to do this here before we remap the model with the updated attributes because
-	// 'ShapefileReader::remap_shapefile_attributes' looks at the file configuration on the file reference.
-	GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
-			file_configuration = current_ogr_configuration.get();
-	file.set_file_info(file.get_file_info(), file_configuration);
-
-	// Remap the model with the updated attributes.
-	GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(file, d_model, read_errors);
-
-	return file_configuration;
+	return current_ogr_configuration.get();
 }

@@ -385,20 +385,264 @@ namespace{
 		}
 	}
 
+
+	//! Typedef for a sequence of lat/lon points.
+	typedef std::vector<GPlatesMaths::LatLonPoint> lat_lon_points_seq_type;
+
+	//! Typedef for a polyline containing lat/lon points.
+	typedef boost::shared_ptr<lat_lon_points_seq_type> lat_lon_polyline_type;
+
+	/**
+	 * Typedef for a polygon containing lat/lon points.
+	 *
+	 * NOTE: This mirrors @a PolygonOnSphere in that the start and end points are *not* the same.
+	 * So you may need to explicitly close the polygon by appending the start point (eg, OGR library).
+	 */
+	typedef boost::shared_ptr<lat_lon_points_seq_type> lat_lon_polygon_type;
+
+	/**
+	 * Converts the specified polyline-on-sphere to a lat/lon geometry.
+	 */
+	template <typename PointsForwardIter>
+	void
+	convert_points_to_lat_lon(
+			lat_lon_points_seq_type &lat_lon_points,
+			PointsForwardIter const points_begin,
+			PointsForwardIter const points_end,
+			const unsigned int num_points)
+	{
+		lat_lon_points.reserve(num_points);
+
+		// Iterate over the vertices of the current polyline or polygon.
+		PointsForwardIter line_iter = points_begin;
+		PointsForwardIter line_end = points_end;
+		for (; line_iter != line_end ; ++line_iter)
+		{
+			const GPlatesMaths::PointOnSphere &point = *line_iter;
+			const GPlatesMaths::LatLonPoint lat_lon_point = GPlatesMaths::make_lat_lon_point(point);
+			lat_lon_points.push_back(lat_lon_point);
+		}
+	}
+
+	/**
+	 * Converts the specified polyline-on-sphere geometries to lat/lon geometries with optional dateline wrapping.
+	 */
+	void
+	convert_polylines_to_lat_lon(
+			std::vector<lat_lon_polyline_type> &lat_lon_polylines,
+			const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polylines,
+			boost::optional<GPlatesMaths::DateLineWrapper &> dateline_wrapper = boost::none)
+	{
+		typedef std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline_seq_type;
+
+		lat_lon_polylines.reserve(polylines.size()); // Though might end up with more if clipped to dateline.
+
+		// Iterate over the polyline-on-sphere's.
+		polyline_seq_type::const_iterator polylines_iter = polylines.begin();
+		polyline_seq_type::const_iterator polylines_end = polylines.end();
+		for ( ; polylines_iter != polylines_end; ++polylines_iter)
+		{
+			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline = *polylines_iter;
+
+			if (dateline_wrapper)
+			{
+				// Wrap (clip) the current polyline to the dateline.
+				// This could turn one polyline into multiple polylines.
+				// Note that lat/lon polylines just get appended to 'lat_lon_polylines'.
+				dateline_wrapper.get().wrap_polyline_to_dateline(polyline, lat_lon_polylines);
+			}
+			else
+			{
+				// No dateline wrapping so just straight conversion to lat/lon.
+				const lat_lon_polyline_type lat_lon_polyline(new lat_lon_points_seq_type());
+				convert_points_to_lat_lon(
+						*lat_lon_polyline,
+						polyline->vertex_begin(),
+						polyline->vertex_end(),
+						polyline->number_of_vertices());
+				lat_lon_polylines.push_back(lat_lon_polyline);
+			}
+		}
+	}
+
+	/**
+	 * Converts the specified polygon-on-sphere geometries to lat/lon geometries with optional dateline wrapping.
+	 */
+	void
+	convert_polygons_to_lat_lon(
+			std::vector<lat_lon_polygon_type> &lat_lon_polygons,
+			const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygons,
+			boost::optional<GPlatesMaths::DateLineWrapper &> dateline_wrapper = boost::none)
+	{
+		typedef std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon_seq_type;
+
+		lat_lon_polygons.reserve(polygons.size()); // Though might end up with more if clipped to dateline.
+
+		// Iterate over the polygon-on-sphere's.
+		polygon_seq_type::const_iterator polygons_iter = polygons.begin();
+		polygon_seq_type::const_iterator polygons_end = polygons.end();
+		for ( ; polygons_iter != polygons_end; ++polygons_iter)
+		{
+			const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon = *polygons_iter;
+
+			if (dateline_wrapper)
+			{
+				// Wrap (clip) the current polygon to the dateline.
+				// This could turn one polygon into multiple polygons.
+				// Note that lat/lon polygons just get appended to 'lat_lon_polygons'.
+				dateline_wrapper.get().wrap_polygon_to_dateline(polygon, lat_lon_polygons);
+			}
+			else
+			{
+				// No dateline wrapping so just straight conversion to lat/lon.
+				const lat_lon_polygon_type lat_lon_polygon(new lat_lon_points_seq_type());
+				convert_points_to_lat_lon(
+						*lat_lon_polygon,
+						polygon->vertex_begin(),
+						polygon->vertex_end(),
+						polygon->number_of_vertices());
+				lat_lon_polygons.push_back(lat_lon_polygon);
+			}
+		}
+	}
+
+	void
+	add_polyline_to_ogr_line_string(
+			OGRLineString &ogr_line_string,
+			const lat_lon_polyline_type &lat_lon_polyline)
+	{
+		lat_lon_points_seq_type::const_iterator 
+			line_iter = lat_lon_polyline->begin(),
+			line_end = lat_lon_polyline->end();
+
+		for (; line_iter != line_end ; ++line_iter)
+		{
+			OGRPoint ogr_point;
+
+			const GPlatesMaths::LatLonPoint &llp = *line_iter;
+			ogr_point.setX(llp.longitude());
+			ogr_point.setY(llp.latitude());
+
+			ogr_line_string.addPoint(&ogr_point);
+		}
+	}
+
+	void
+	add_multi_polyline_to_ogr_feature(
+			OGRFeature &ogr_feature,
+			const std::vector<lat_lon_polyline_type> &lat_lon_polylines)
+	{
+		OGRMultiLineString ogr_multi_line_string;
+
+		std::vector<lat_lon_polyline_type>::const_iterator 
+			it = lat_lon_polylines.begin(),
+			end = lat_lon_polylines.end();
+			
+		for (; it != end ; ++it)
+		{
+			const lat_lon_polyline_type &lat_lon_polyline = *it;
+
+			OGRLineString ogr_line_string;
+			add_polyline_to_ogr_line_string(ogr_line_string, lat_lon_polyline);
+
+			ogr_multi_line_string.addGeometry(&ogr_line_string);
+		}
+
+		ogr_feature.SetGeometry(&ogr_multi_line_string);
+	}
+
+	void
+	add_polyline_to_ogr_feature(
+			OGRFeature &ogr_feature,
+			const lat_lon_polyline_type &lat_lon_polyline)
+	{
+		OGRLineString ogr_line_string;
+		add_polyline_to_ogr_line_string(ogr_line_string, lat_lon_polyline);
+
+		ogr_feature.SetGeometry(&ogr_line_string);
+	}
+
+	void
+	add_polygon_to_ogr_polygon(
+			OGRPolygon &ogr_polygon,
+			const lat_lon_polygon_type &lat_lon_polygon)
+	{
+		OGRLinearRing ogr_linear_ring;
+
+		lat_lon_points_seq_type::const_iterator 
+			line_iter = lat_lon_polygon->begin(),
+			line_end = lat_lon_polygon->end();
+
+		for (; line_iter != line_end ; ++line_iter)
+		{
+			OGRPoint ogr_point;
+
+			const GPlatesMaths::LatLonPoint &llp = *line_iter;
+			ogr_point.setX(llp.longitude());
+			ogr_point.setY(llp.latitude());
+
+			ogr_linear_ring.addPoint(&ogr_point);
+		}
+
+		// Close the ring. GPlates stores polygons such that first-point != last-point; the 
+		// ESRI shapefile specification says that polygon rings must be closed (first-point == last-point). 
+		ogr_linear_ring.closeRings();
+
+		// This will be the external ring. 
+		ogr_polygon.addRing(&ogr_linear_ring);
+	}
+
+	void
+	add_multi_polygon_to_ogr_feature(
+			OGRFeature &ogr_feature,
+			const std::vector<lat_lon_polygon_type> &lat_lon_polygons)
+	{
+		OGRMultiPolygon ogr_multi_polygon;
+
+		std::vector<lat_lon_polygon_type>::const_iterator 
+			it = lat_lon_polygons.begin(),
+			end = lat_lon_polygons.end();
+			
+		for (; it != end ; ++it)
+		{
+			const lat_lon_polygon_type &lat_lon_polygon = *it;
+
+			OGRPolygon ogr_polygon;
+			add_polygon_to_ogr_polygon(ogr_polygon, lat_lon_polygon);
+
+			ogr_multi_polygon.addGeometry(&ogr_polygon);
+		}
+
+		ogr_feature.SetGeometry(&ogr_multi_polygon);
+	}
+
+	void
+	add_polygon_to_ogr_feature(
+			OGRFeature &ogr_feature,
+			const lat_lon_polygon_type &lat_lon_polygon)
+	{
+		OGRPolygon ogr_polygon;
+		add_polygon_to_ogr_polygon(ogr_polygon, lat_lon_polygon);
+
+		ogr_feature.SetGeometry(&ogr_polygon);
+	}
 }
 
 GPlatesFileIO::OgrWriter::OgrWriter(
 	QString filename,
-	bool multiple_geometry_types):
+	bool multiple_geometry_types,
+	bool wrap_to_dateline):
 	d_ogr_driver_ptr(0),
 	d_filename(filename),
 	d_layer_basename(QString()),
 	d_extension(QString()),
 	d_multiple_geometry_types(multiple_geometry_types),
+	d_wrap_to_dateline(wrap_to_dateline),
 	d_ogr_data_source_ptr(0),
 	d_ogr_point_data_source_ptr(0),
 	d_ogr_line_data_source_ptr(0),
-	d_ogr_polygon_data_source_ptr(0)
+	d_ogr_polygon_data_source_ptr(0),
+	d_dateline_wrapper(GPlatesMaths::DateLineWrapper::create())
 {
 	OGRRegisterAll();
 
@@ -618,6 +862,25 @@ GPlatesFileIO::OgrWriter::write_polyline_feature(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere, 
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {	
+	// It's one polyline but if dateline wrapping is enabled it could end up being multiple polylines.
+	std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polylines(1, polyline_on_sphere);
+	write_single_or_multi_polyline_feature(polylines, key_value_dictionary);
+}
+
+
+void
+GPlatesFileIO::OgrWriter::write_multi_polyline_feature(
+	const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polylines, 
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+{
+	write_single_or_multi_polyline_feature(polylines, key_value_dictionary);
+}
+
+void
+GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
+	const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polylines, 
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+{
 #if 0
 	// Check that we have a valid data_source.
 	if (d_ogr_data_source_ptr == NULL)
@@ -627,76 +890,22 @@ GPlatesFileIO::OgrWriter::write_polyline_feature(
 	}
 #endif
 
-	// Create line data source if it doesn't already exist.
-	if (d_ogr_line_data_source_ptr == NULL)
-	{
-		QString data_source_name = d_filename;
-		if (d_multiple_geometry_types)
-		{
-			data_source_name.append("_polyline");
-		}
-		data_source_name.append(".").append(d_extension);
-
-		create_data_source(d_ogr_driver_ptr, d_ogr_line_data_source_ptr, data_source_name);
-	}
-
-	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_line_data_source_ptr,d_ogr_polyline_layer,wkbLineString,
-		QString(d_layer_basename + "_polyline"),key_value_dictionary);
-
-	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polyline_layer)->GetLayerDefn());
-
-	if (ogr_feature == NULL)
-	{
-		qDebug() << "Error creating OGR feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
-	}
-
-	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
-	{
-		set_feature_field_values(*d_ogr_polyline_layer,ogr_feature,*key_value_dictionary);
-	}
-
-	OGRLineString ogr_line_string;
-
-	GPlatesMaths::PolylineOnSphere::vertex_const_iterator 
-		iter = polyline_on_sphere->vertex_begin(),
-		end = polyline_on_sphere->vertex_end();
-
-	for (; iter != end ; ++iter)
-	{
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
-		OGRPoint ogr_point;
-		ogr_point.setX(llp.longitude());
-		ogr_point.setY(llp.latitude());
-		ogr_line_string.addPoint(&ogr_point);
-	}
-
-	ogr_feature->SetGeometry(&ogr_line_string);
-
-
-	// Add the new feature to the layer.
-	if ((*d_ogr_polyline_layer)->CreateFeature(ogr_feature) != OGRERR_NONE)
-	{
-		qDebug() << "Failed to create polyline feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create polyline feature.");
-	}
-
-	OGRFeature::DestroyFeature(ogr_feature);
-}
-
-
-void
-GPlatesFileIO::OgrWriter::write_multi_polyline_feature(
-	const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polylines, 
-	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
-{
-	
 	if (polylines.empty())
 	{
 		return;
 	}
 
+	// Convert the polylines to lat/lon coordinates (with optional dateline wrapping/clipping).
+	std::vector<lat_lon_polyline_type> lat_lon_polylines;
+	boost::optional<GPlatesMaths::DateLineWrapper &> dateline_wrapper;
+	if (d_wrap_to_dateline)
+	{
+		dateline_wrapper = *d_dateline_wrapper;
+	}
+	convert_polylines_to_lat_lon(lat_lon_polylines, polylines, dateline_wrapper);
+
+	const bool is_multi_line_string = lat_lon_polylines.size() > 1;
+
 	// Create line data source if it doesn't already exist.
 	if (d_ogr_line_data_source_ptr == NULL)
 	{
@@ -711,8 +920,13 @@ GPlatesFileIO::OgrWriter::write_multi_polyline_feature(
 	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_line_data_source_ptr,d_ogr_polyline_layer,wkbMultiLineString,
-		QString(d_layer_basename + "_polyline"),key_value_dictionary);
+	setup_layer(
+			d_ogr_line_data_source_ptr,
+			d_ogr_polyline_layer,
+			// Multiple polylines or a single polyline...
+			is_multi_line_string ? wkbMultiLineString : wkbLineString,
+			QString(d_layer_basename + "_polyline"),
+			key_value_dictionary);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polyline_layer)->GetLayerDefn());
 
@@ -727,35 +941,14 @@ GPlatesFileIO::OgrWriter::write_multi_polyline_feature(
 		set_feature_field_values(*d_ogr_polyline_layer,ogr_feature,*key_value_dictionary);
 	}
 
-	OGRMultiLineString ogr_multi_line_string;
-
-	std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::const_iterator 
-		it = polylines.begin(),
-		end = polylines.end();
-		
-	for (; it != end ; ++it)
+	if (is_multi_line_string)
 	{
-	
-		OGRLineString ogr_line_string;
-
-		GPlatesMaths::PolylineOnSphere::vertex_const_iterator 
-			line_iter = (*it)->vertex_begin(),
-			line_end = (*it)->vertex_end();
-
-		for (; line_iter != line_end ; ++line_iter)
-		{
-			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*line_iter);
-			OGRPoint ogr_point;
-			ogr_point.setX(llp.longitude());
-			ogr_point.setY(llp.latitude());
-			ogr_line_string.addPoint(&ogr_point);
-		}
-
-		ogr_multi_line_string.addGeometry(&ogr_line_string);
-	
+		add_multi_polyline_to_ogr_feature(*ogr_feature, lat_lon_polylines);
 	}
-
-	ogr_feature->SetGeometry(&ogr_multi_line_string);
+	else
+	{
+		add_polyline_to_ogr_feature(*ogr_feature, lat_lon_polylines.front());
+	}
 
 
 	// Add the new feature to the layer.
@@ -768,89 +961,46 @@ GPlatesFileIO::OgrWriter::write_multi_polyline_feature(
 	OGRFeature::DestroyFeature(ogr_feature);
 }
 
-
 void
 GPlatesFileIO::OgrWriter::write_polygon_feature(
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere, 
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {	
-
-	// Create polygon data source if it doesn't already exist.
-	if (d_ogr_polygon_data_source_ptr == NULL)
-	{
-		QString data_source_name = d_filename;
-		if (d_multiple_geometry_types)
-		{
-			data_source_name.append("_polygon");
-		}
-		data_source_name.append(".").append(d_extension);
-
-		create_data_source(d_ogr_driver_ptr, d_ogr_polygon_data_source_ptr, data_source_name);
-	}
-
-	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_polygon_data_source_ptr,d_ogr_polygon_layer,wkbPolygon,
-		QString(d_layer_basename + "_polygon"),key_value_dictionary);
-
-
-	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polygon_layer)->GetLayerDefn());
-
-	if (ogr_feature == NULL)
-	{
-		qDebug() << "Error creating OGR feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
-	}
-
-	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
-	{
-		set_feature_field_values(*d_ogr_polygon_layer,ogr_feature,*key_value_dictionary);
-	}
-
-	OGRPolygon ogr_polygon;
-	OGRLinearRing ogr_linear_ring;
-
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator 
-		iter = polygon_on_sphere->vertex_begin(),
-		end = polygon_on_sphere->vertex_end();
-
-	for (; iter != end ; ++iter)
-	{
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
-		OGRPoint ogr_point;
-		ogr_point.setX(llp.longitude());
-		ogr_point.setY(llp.latitude());
-		ogr_linear_ring.addPoint(&ogr_point);
-	}
-
-	// Close the ring. GPlates stores polygons such that first-point != last-point; the 
-	// ESRI shapefile specification says that polygon rings must be closed (first-point == last-point). 
-	ogr_linear_ring.closeRings();
-
-	// This will be the external ring. 
-	ogr_polygon.addRing(&ogr_linear_ring);
-
-	ogr_feature->SetGeometry(&ogr_polygon);
-
-	// Add the new feature to the layer.
-	if ((*d_ogr_polygon_layer)->CreateFeature(ogr_feature) != OGRERR_NONE)
-	{
-		qDebug() << "Failed to create polygon feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create polygon feature.");
-	}
-
-	OGRFeature::DestroyFeature(ogr_feature);
+	// It's one polygon but if dateline wrapping is enabled it could end up being multiple polygons.
+	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygons(1, polygon_on_sphere);
+	write_single_or_multi_polygon_feature(polygons, key_value_dictionary);
 }
+
 
 void
 GPlatesFileIO::OgrWriter::write_multi_polygon_feature(
 	const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygons, 
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {
+	write_single_or_multi_polygon_feature(polygons, key_value_dictionary);
+}
 
+
+void
+GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
+	const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygons, 
+	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+{	
 	if (polygons.empty())
 	{
 		return;
 	}
+
+	// Convert the polygons to lat/lon coordinates (with optional dateline wrapping/clipping).
+	std::vector<lat_lon_polygon_type> lat_lon_polygons;
+	boost::optional<GPlatesMaths::DateLineWrapper &> dateline_wrapper;
+	if (d_wrap_to_dateline)
+	{
+		dateline_wrapper = *d_dateline_wrapper;
+	}
+	convert_polygons_to_lat_lon(lat_lon_polygons, polygons, dateline_wrapper);
+
+	const bool is_multi_polygon = lat_lon_polygons.size() > 1;
 
 	// Create polygon data source if it doesn't already exist.
 	if (d_ogr_polygon_data_source_ptr == NULL)
@@ -866,9 +1016,13 @@ GPlatesFileIO::OgrWriter::write_multi_polygon_feature(
 	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_polygon_data_source_ptr,d_ogr_polygon_layer,wkbMultiPolygon,
-		QString(d_layer_basename + "_polygon"),key_value_dictionary);
-
+	setup_layer(
+			d_ogr_polygon_data_source_ptr,
+			d_ogr_polygon_layer,
+			// Multiple polygons or a single polygon...
+			is_multi_polygon ? wkbMultiPolygon : wkbPolygon,
+			QString(d_layer_basename + "_polygon"),
+			key_value_dictionary);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polygon_layer)->GetLayerDefn());
 
@@ -883,50 +1037,20 @@ GPlatesFileIO::OgrWriter::write_multi_polygon_feature(
 		set_feature_field_values(*d_ogr_polygon_layer,ogr_feature,*key_value_dictionary);
 	}
 
-	OGRMultiPolygon ogr_multi_polygon;
-
-	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>::const_iterator 
-		it = polygons.begin(),
-		end = polygons.end();
-
-	for (; it != end ; ++it)
+	if (is_multi_polygon)
 	{
-
-
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator 
-			polygon_iter = (*it)->vertex_begin(),
-			polygon_end = (*it)->vertex_end();
-
-		OGRPolygon ogr_polygon;
-		OGRLinearRing ogr_linear_ring;
-
-
-		for (; polygon_iter != polygon_end ; ++polygon_iter)
-		{
-			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*polygon_iter);
-			OGRPoint ogr_point;
-			ogr_point.setX(llp.longitude());
-			ogr_point.setY(llp.latitude());
-			ogr_linear_ring.addPoint(&ogr_point);
-		}
-
-		// Close the ring. GPlates stores polygons such that first-point != last-point; the 
-		// ESRI shapefile specification says that polygon rings must be closed (first-point == last-point). 
-		ogr_linear_ring.closeRings();
-
-		// This will be the external ring. 
-		ogr_polygon.addRing(&ogr_linear_ring);
-
-		ogr_multi_polygon.addGeometry(&ogr_polygon);
+		add_multi_polygon_to_ogr_feature(*ogr_feature, lat_lon_polygons);
 	}
-	
-	ogr_feature->SetGeometry(&ogr_multi_polygon);
+	else
+	{
+		add_polygon_to_ogr_feature(*ogr_feature, lat_lon_polygons.front());
+	}
 
 	// Add the new feature to the layer.
 	if ((*d_ogr_polygon_layer)->CreateFeature(ogr_feature) != OGRERR_NONE)
 	{
 		qDebug() << "Failed to create polygon feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create multi-polygon feature.");
+		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create polygon feature.");
 	}
 
 	OGRFeature::DestroyFeature(ogr_feature);
