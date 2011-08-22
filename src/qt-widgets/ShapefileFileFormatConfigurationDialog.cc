@@ -26,47 +26,20 @@
 
 #include "ShapefileFileFormatConfigurationDialog.h"
 
-#include "InformationDialog.h"
 #include "ShapefileAttributeWidget.h"
 #include "QtWidgetUtils.h"
 
 #include "utils/UnicodeStringUtils.h"
 
 
-namespace GPlatesQtWidgets
-{
-	namespace
-	{
-		const QString HELP_DATELINE_WRAP_DIALOG_TITLE = QObject::tr("Dateline wrap");
-		const QString HELP_DATELINE_WRAP_DIALOG_TEXT = QObject::tr(
-				"<html><body>\n"
-				"<h3>Enable/disable dateline wrapping</h3>"
-				"<p>If this option is enabled then polyline and polygon geometries will be clipped "
-				"to the dateline (if they intersect it) and wrapped to the other side as needed.</p>"
-				"<p>Note that this can break a polyline into multiple polylines or a polygon into "
-				"multiple polygons - and once saved this process is irreversible - in other words "
-				"reloading the saved file will not undo the wrapping.</p>"
-				"<p><em>This option is provided to support ArcGIS users - it prevents horizontal "
-				"lines across the display when viewing geometries, in ArcGIS, that cross the dateline.</em></p>"
-				"</body></html>\n");
-	}
-}
-
 GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::ShapefileFileFormatConfigurationDialog(
 		QWidget *parent_) :
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_help_dateline_wrap_dialog(
-			new InformationDialog(
-					HELP_DATELINE_WRAP_DIALOG_TEXT,
-					HELP_DATELINE_WRAP_DIALOG_TITLE,
-					this))
+	d_dateline_wrap(NULL),
+	d_dateline_wrap_options_widget(NULL),
+	d_shapefile_attribute_widget(NULL)
 {
 	setupUi(this);
-
-	// Connect the help dialogs.
-	QObject::connect(
-			push_button_help_dateline_wrap, SIGNAL(clicked()),
-			d_help_dateline_wrap_dialog, SLOT(show()));
 
 	// Button box signals.
 	QObject::connect(
@@ -89,14 +62,15 @@ GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::ShapefileFileFormatCon
 
 void
 GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::setup(
-		bool &dateline_wrap,
+		bool dateline_wrap,
 		const QString &filename,
 		const QStringList &field_names,
 		QMap< QString,QString > &model_to_attribute_map)
 {
-	// Dateline wrapping check box.
-	d_dateline_wrap = &dateline_wrap;
-	check_box_wrap_dateline->setChecked(dateline_wrap);
+	d_dateline_wrap_options_widget = new DatelineWrapOptionsWidget(this, dateline_wrap);
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_dateline_wrap_options_widget,
+			widget_shapefile_dateline_wrap);
 
 	d_shapefile_attribute_widget = new ShapefileAttributeWidget(this,filename,field_names,model_to_attribute_map,true);
 	QtWidgetUtils::add_widget_to_placeholder(
@@ -108,11 +82,6 @@ GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::setup(
 void
 GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::accept()
 {
-	if (d_dateline_wrap)
-	{
-		*d_dateline_wrap = check_box_wrap_dateline->isChecked();
-	}
-
 	d_shapefile_attribute_widget->accept_fields();
 
 	done(QDialog::Accepted);
@@ -120,12 +89,17 @@ GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::accept()
 
 
 void
-GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::reset_fields()
+GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::reset()
 {
+	d_dateline_wrap_options_widget->reset_options();
 	d_shapefile_attribute_widget->reset_fields();
+}
 
-	// Default is to disable dateline wrapping.
-	check_box_wrap_dateline->setChecked(false);
+
+bool
+GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::get_wrap_to_dateline() const
+{
+	return d_dateline_wrap_options_widget->get_wrap_to_dateline();
 }
 
 
@@ -135,7 +109,7 @@ GPlatesQtWidgets::ShapefileFileFormatConfigurationDialog::handle_buttonbox_click
 {
 	if (main_buttonbox->buttonRole(button) == QDialogButtonBox::ResetRole)
 	{
-		reset_fields();
+		reset();
 	}
 }
 

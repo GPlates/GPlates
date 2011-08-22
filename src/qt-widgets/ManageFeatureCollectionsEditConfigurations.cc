@@ -130,6 +130,9 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 			return original_configuration;
 		}
 
+		// Get the updated wrap-to-dateline option.
+		wrap_to_dateline = dialog.get_wrap_to_dateline();
+
 		// Store the updated wrap-to-dateline flag.
 		current_ogr_configuration.get()->set_wrap_to_dateline(wrap_to_dateline);
 

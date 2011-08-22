@@ -33,14 +33,13 @@
 
 #include "model/FeatureCollectionHandle.h"
 
+#include "DatelineWrapOptionsWidget.h"
 #include "ShapefileFileFormatConfigurationDialogUi.h"
 #include "ShapefileAttributeWidget.h"
 
 
 namespace GPlatesQtWidgets
 {
-	class InformationDialog;
-
 	class ShapefileFileFormatConfigurationDialog: 
 			public QDialog,
 			protected Ui_ShapefileFileFormatConfiguration
@@ -59,10 +58,16 @@ namespace GPlatesQtWidgets
 
 		void
 		setup(
-			bool &dateline_wrap,
+			bool dateline_wrap,
 			const QString &filename,
 			const QStringList &field_names,
 			QMap<QString,QString> &model_to_attribute_map);
+
+		/**
+		 * Get the wrap-to-dateline option.
+		 */ 
+		bool
+		get_wrap_to_dateline() const;
 
 	public slots:
 
@@ -78,7 +83,7 @@ namespace GPlatesQtWidgets
 		 * dialog was created. 
 		 */
 		void
-		reset_fields();
+		reset();
 
 	private slots:
 
@@ -87,10 +92,9 @@ namespace GPlatesQtWidgets
 				QAbstractButton *button);
 
 	private:
-		InformationDialog *d_help_dateline_wrap_dialog;
-
 		bool *d_dateline_wrap;
 
+		DatelineWrapOptionsWidget *d_dateline_wrap_options_widget;
 		ShapefileAttributeWidget *d_shapefile_attribute_widget;
 	};
 }

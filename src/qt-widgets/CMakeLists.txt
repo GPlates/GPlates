@@ -92,6 +92,9 @@ set(srcs
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
+    DatelineWrapOptionsWidget.cc
+    DatelineWrapOptionsWidget.h
+    DatelineWrapOptionsWidgetUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
