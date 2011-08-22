@@ -58,7 +58,8 @@ namespace GPlatesFileIO
 					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
 					const std::vector<const File::Reference *> &referenced_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-					const double &reconstruction_time)
+					const double &reconstruction_time,
+					bool wrap_to_dateline)
 			{
 				switch (export_format)
 				{
@@ -68,7 +69,8 @@ namespace GPlatesFileIO
 						filename,
 						referenced_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);		
+						reconstruction_time,
+						wrap_to_dateline);
 					break;
 
 				case OGRGMT:
@@ -102,7 +104,8 @@ namespace GPlatesFileIO
 					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
 					const std::vector<const File::Reference *> &referenced_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-					const double &reconstruction_time)
+					const double &reconstruction_time,
+					bool wrap_to_dateline)
 			{
 				switch(export_format)
 				{
@@ -112,7 +115,8 @@ namespace GPlatesFileIO
 						filename,
 						referenced_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						wrap_to_dateline);
 					break;
 				case OGRGMT:
 					OgrFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
@@ -184,7 +188,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool export_single_output_file,
-		bool export_per_input_file)
+		bool export_per_input_file,
+		bool wrap_to_dateline)
 {
 	// Get the list of active reconstructable feature collection files that contain
 	// the features referenced by the ReconstructionGeometry objects.
@@ -207,7 +212,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 				grouped_recon_geom_seq,
 				referenced_files,
 				reconstruction_anchor_plate_id,
-				reconstruction_time);
+				reconstruction_time,
+				wrap_to_dateline);
 	}
 
 	if (export_per_input_file)
@@ -234,7 +240,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 					grouped_features_iter->feature_geometry_groups,
 					referenced_files,
 					reconstruction_anchor_plate_id,
-					reconstruction_time);
+					reconstruction_time,
+					wrap_to_dateline);
 		}
 	}
 }

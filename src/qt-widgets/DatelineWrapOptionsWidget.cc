@@ -42,7 +42,7 @@ namespace GPlatesQtWidgets
 				"multiple polygons - and once saved this process is irreversible - in other words "
 				"reloading the saved file will not undo the wrapping.</p>"
 				"<p><em>This option is provided to support ArcGIS users - it prevents horizontal "
-				"lines across the display when viewing geometries, in ArcGIS, that cross the dateline.</em></p>"
+				"lines across the display when viewing geometries.</em></p>"
 				"</body></html>\n");
 	}
 }

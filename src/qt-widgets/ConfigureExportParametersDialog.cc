@@ -33,10 +33,12 @@
 #include <QColorGroup>
 #include <QMessageBox>
 #include <QHeaderView>
+#include <QScrollArea>
 
 #include "ConfigureExportParametersDialog.h"
 #include "ExportAnimationDialog.h"
 #include "ExportOptionsWidget.h"
+#include "QtWidgetUtils.h"
 
 #include "gui/ExportAnimationRegistry.h"
 #include "gui/ExportAnimationType.h"
@@ -44,16 +46,19 @@
 #include "presentation/ViewState.h"
 
 
-namespace
+namespace GPlatesQtWidgets
 {
-	void
-	set_fixed_size_for_item_view(
-			QAbstractItemView *view)
+	namespace
 	{
-		int num_rows = view->model()->rowCount();
-		if (num_rows > 0)
+		void
+		set_fixed_size_for_item_view(
+				QAbstractItemView *view)
 		{
-			view->setFixedHeight(view->sizeHintForRow(0) * (num_rows + 1));
+			int num_rows = view->model()->rowCount();
+			if (num_rows > 0)
+			{
+				view->setFixedHeight(view->sizeHintForRow(0) * (num_rows + 1));
+			}
 		}
 	}
 }
@@ -70,6 +75,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 	d_export_animation_context_ptr(
 			export_animation_context_ptr),
 	d_is_single_frame(false),
+	d_listWidget_format(NULL),
 	d_export_options_widget_layout(NULL)
 {
 	setupUi(this);
@@ -77,9 +83,25 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 	treeWidget_template->setHeaderHidden(true);
 	treeWidget_template->header()->setResizeMode(0, QHeaderView::ResizeToContents);
 
+	// We use our own list widget that resizes to the contents of the list.
+	// This is needed so that the scroll area, just below it, has all remaining space available to it.
+	d_listWidget_format = new ResizeToContentsListWidget(this);
+	QtWidgetUtils::add_widget_to_placeholder(d_listWidget_format, list_widget_format_placeholder);
+    QSizePolicy list_widget_format_size_policy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    d_listWidget_format->setSizePolicy(list_widget_format_size_policy);
+
+	// Make the export options a scroll area since we don't know how many options
+	// will be dynamically placed there.
+	QWidget *scrollarea_widget = new QWidget(this);
+
 	// Give the export options widget a layout.
-	d_export_options_widget_layout = new QVBoxLayout(widget_export_options);
+	d_export_options_widget_layout = new QVBoxLayout(scrollarea_widget);
 	d_export_options_widget_layout->setContentsMargins(0, 0, 0, 0);
+	// If there's not enough options to fill the scroll area then take up extra space with a spacer item.
+	d_export_options_widget_layout->addStretch();
+
+	// Qt advises setting the widget on the scroll area after its layout has been set.
+	widget_export_options->setWidget(scrollarea_widget);
 
 	initialize_export_type_list_widget();
 
@@ -96,7 +118,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 			this,
 			SLOT(react_export_type_selection_changed()));
 	QObject::connect(
-			listWidget_format,
+			d_listWidget_format,
 			SIGNAL(itemSelectionChanged()),
 			this,
 			SLOT(react_export_format_selection_changed()));
@@ -129,7 +151,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 			this,
 			SLOT(focus_on_listwidget_format()));
 	QObject::connect(
-			listWidget_format,
+			d_listWidget_format,
 			SIGNAL(itemPressed(QListWidgetItem *)),
 			this,
 			SLOT(focus_on_lineedit_filename()));
@@ -140,7 +162,7 @@ void
 GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_type_list_widget()
 {
 	listWidget_export_items->clear();
-	listWidget_format->clear();
+	d_listWidget_format->clear();
 	clear_export_options_widget();
 
 	//
@@ -215,7 +237,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_type_selection_c
 
 	lineEdit_filename->clear();
 	label_file_extension->clear();
-	listWidget_format->clear();
+	d_listWidget_format->clear();
 	clear_export_options_widget();
 
 	const GPlatesGui::ExportAnimationType::Type selected_export_type =
@@ -253,7 +275,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_type_selection_c
 		}
 
 		QListWidgetItem *item = new ExportFormatWidgetItem<QListWidgetItem>(export_format);
-		listWidget_format->addItem(item);
+		d_listWidget_format->addItem(item);
 		item->setText(get_export_format_description(export_format));
 	}
 }
@@ -262,7 +284,7 @@ void
 GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection_changed()
 {
 	if (!listWidget_export_items->currentItem() ||
-		!listWidget_format->currentItem())
+		!d_listWidget_format->currentItem())
 	{
 		return;
 	}
@@ -270,7 +292,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection
 	const GPlatesGui::ExportAnimationType::Type selected_export_type =
 			get_export_type(listWidget_export_items->currentItem());
 	const GPlatesGui::ExportAnimationType::Format selected_export_format =
-			get_export_format(listWidget_format->currentItem());
+			get_export_format(d_listWidget_format->currentItem());
 	
 	if (selected_export_type == GPlatesGui::ExportAnimationType::INVALID_TYPE ||
 		selected_export_format == GPlatesGui::ExportAnimationType::INVALID_FORMAT)
@@ -344,7 +366,7 @@ void
 GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 {
 	if(!listWidget_export_items->currentItem() ||
-		!listWidget_format->currentItem())
+		!d_listWidget_format->currentItem())
 	{
 		return;
 	}
@@ -355,7 +377,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 	const GPlatesGui::ExportAnimationType::Type selected_export_type = get_export_type(
 			listWidget_export_items->currentItem());
 	const GPlatesGui::ExportAnimationType::Format selected_export_format = get_export_format(
-			listWidget_format->currentItem());
+			d_listWidget_format->currentItem());
 
 	// Determine the corresponding export ID.
 	const GPlatesGui::ExportAnimationType::ExportID selected_export_id =
@@ -412,9 +434,9 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 		export_cfg = default_export_cfg;
 	}
 
-	delete listWidget_format->takeItem(listWidget_format->currentRow());
+	delete d_listWidget_format->takeItem(d_listWidget_format->currentRow());
 
-	if (listWidget_format->count() == 0)
+	if (d_listWidget_format->count() == 0)
 	{
 		delete listWidget_export_items->takeItem(listWidget_export_items->currentRow());
 	}
@@ -469,7 +491,7 @@ void
 GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_changing()
 {
 	if (!listWidget_export_items->currentItem() ||
-		!listWidget_format->currentItem())
+		!d_listWidget_format->currentItem())
 	{
 		return;
 	}
@@ -477,7 +499,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_chang
 	const GPlatesGui::ExportAnimationType::Type selected_export_type = get_export_type(
 			listWidget_export_items->currentItem());
 	const GPlatesGui::ExportAnimationType::Format selected_export_format = get_export_format(
-			listWidget_format->currentItem());
+			d_listWidget_format->currentItem());
 
 	if (selected_export_type == GPlatesGui::ExportAnimationType::INVALID_TYPE ||
 		selected_export_format == GPlatesGui::ExportAnimationType::INVALID_FORMAT)
@@ -526,7 +548,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_chang
 void
 GPlatesQtWidgets::ConfigureExportParametersDialog::focus_on_listwidget_format()
 {
-	listWidget_format->setFocus();
+	d_listWidget_format->setFocus();
 }
 
 
@@ -570,7 +592,9 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::set_export_options_widget(
 	if (d_current_export_options_widget)
 	{
 		d_current_export_options_widget.get()->layout()->setContentsMargins(0, 0, 0, 0);
-		d_export_options_widget_layout->addWidget(d_current_export_options_widget.get());
+		// We 'insert' rather than 'add' the widget so that it the spacer item added in constructor
+		// is always last.
+		d_export_options_widget_layout->insertWidget(0, d_current_export_options_widget.get());
 
 		widget_export_options->setEnabled(true);
 		widget_export_options->setVisible(true);

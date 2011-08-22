@@ -289,12 +289,13 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		bool wrap_to_dateline)
 {
 	// Set up the appropriate form of ShapefileGeometryExporter.
 	// All the geometries are resolved polygons so 'multiple_geometries' is false.
 	QString file_path = file_info.filePath();
-	GPlatesFileIO::OgrGeometryExporter geom_exporter(file_path, false/*multiple_geometries*/);
+	GPlatesFileIO::OgrGeometryExporter geom_exporter(file_path, false/*multiple_geometries*/, wrap_to_dateline);
 
 	// Iterate through the resolved topological boundaries and write to output.
 	resolved_geom_seq_type::const_iterator resolved_geom_iter;
@@ -340,7 +341,8 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		bool wrap_to_dateline)
 {
 	// Iterate through the subsegment groups and check which geometry types we have.
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
@@ -373,7 +375,8 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 	QString file_path = file_info.filePath();
 	GPlatesFileIO::OgrGeometryExporter geom_exporter(
 		file_path,
-		finder.has_found_multiple_geometry_types());
+		finder.has_found_multiple_geometry_types(),
+		wrap_to_dateline);
 
 	// Iterate through the subsegment groups and write them out.
 	for (sub_segment_group_iter = sub_segments.begin();

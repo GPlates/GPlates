@@ -25,15 +25,30 @@
 
 #include "ExportResolvedTopologicalBoundaryOptionsWidget.h"
 
+#include "DatelineWrapOptionsWidget.h"
+#include "QtWidgetUtils.h"
+
 
 GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget::ExportResolvedTopologicalBoundaryOptionsWidget(
 		QWidget *parent_,
 		const GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr &
-				default_export_configuration) :
+				default_export_configuration,
+		bool configure_dateline_wrapping) :
 	ExportOptionsWidget(parent_),
-	d_export_configuration(*default_export_configuration)
+	d_export_configuration(*default_export_configuration),
+	d_dateline_wrap_options_widget(NULL)
 {
 	setupUi(this);
+
+	if (configure_dateline_wrapping)
+	{
+		d_dateline_wrap_options_widget = new DatelineWrapOptionsWidget(
+				this,
+				d_export_configuration.output_options.wrap_geometries_to_the_dateline);
+		QtWidgetUtils::add_widget_to_placeholder(
+				d_dateline_wrap_options_widget,
+				widget_shapefile_dateline_wrap);
+	}
 
 	//
 	// Set the state of the export options widget according to the default export configuration
@@ -138,6 +153,13 @@ GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
 GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget::create_export_animation_strategy_configuration(
 		const QString &filename_template)
 {
+	// Get the dateline wrapping options if they've been configured to allow the user to edit them.
+	if (d_dateline_wrap_options_widget)
+	{
+		d_export_configuration.output_options.wrap_geometries_to_the_dateline =
+				d_dateline_wrap_options_widget->get_wrap_to_dateline();
+	}
+
 	d_export_configuration.set_filename_template(filename_template);
 
 	return GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(

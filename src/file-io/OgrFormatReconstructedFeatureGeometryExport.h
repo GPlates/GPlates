@@ -58,6 +58,8 @@ namespace GPlatesFileIO
 
 		/**
 		* Exports @a ReconstructedFeatureGeometry objects to ESRI Shapefile format.
+		*
+		* If @a wrap_to_dateline is true then exported polyline/polygon geometrie sare wrapped/clipped to the dateline.
 		*/
 		void
 		export_geometries(
@@ -65,10 +67,13 @@ namespace GPlatesFileIO
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				bool wrap_to_dateline = false);
 
 		/**
 		* Exports @a ReconstructedFeatureGeometry objects to ESRI Shapefile format.
+		*
+		* If @a wrap_to_dateline is true then exported polyline/polygon geometrie sare wrapped/clipped to the dateline.
 		*/
 		void
 		export_geometries_per_collection(
@@ -76,7 +81,8 @@ namespace GPlatesFileIO
 				const QFileInfo& file_info,
 				const std::vector<const File::Reference *> &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				bool wrap_to_dateline = false);
 	}
 }
 

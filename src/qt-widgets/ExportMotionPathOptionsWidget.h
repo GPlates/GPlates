@@ -26,10 +26,12 @@
 #ifndef GPLATES_QT_WIDGETS_EXPORTMOTIONPATHOPTIONSWIDGET_H
 #define GPLATES_QT_WIDGETS_EXPORTMOTIONPATHOPTIONSWIDGET_H
 
+#include <QVBoxLayout>
 #include <QWidget>
 
 #include "ExportOptionsWidget.h"
 
+#include "DatelineWrapOptionsWidget.h"
 #include "ExportFileOptionsWidget.h"
 #include "QtWidgetUtils.h"
 
@@ -57,9 +59,11 @@ namespace GPlatesQtWidgets
 		create(
 				QWidget *parent,
 				const GPlatesGui::ExportMotionPathAnimationStrategy::const_configuration_ptr &
-						default_export_configuration)
+						default_export_configuration,
+				bool configure_dateline_wrapping)
 		{
-			return new ExportMotionPathOptionsWidget(parent, default_export_configuration);
+			return new ExportMotionPathOptionsWidget(
+					parent, default_export_configuration, configure_dateline_wrapping);
 		}
 
 
@@ -77,6 +81,8 @@ namespace GPlatesQtWidgets
 			// Get the export file options from the export file options widget.
 			d_export_configuration.file_options =
 					d_export_file_options_widget->get_export_file_options();
+			d_export_configuration.wrap_to_dateline =
+					d_dateline_wrap_options_widget->get_wrap_to_dateline();
 
 			return GPlatesGui::ExportMotionPathAnimationStrategy::const_configuration_ptr(
 					new GPlatesGui::ExportMotionPathAnimationStrategy::Configuration(
@@ -88,20 +94,32 @@ namespace GPlatesQtWidgets
 		ExportMotionPathOptionsWidget(
 				QWidget *parent_,
 				const GPlatesGui::ExportMotionPathAnimationStrategy::const_configuration_ptr &
-						default_export_configuration) :
+						default_export_configuration,
+				bool configure_dateline_wrapping) :
 			ExportOptionsWidget(parent_),
 			d_export_configuration(*default_export_configuration)
 		{
+			QVBoxLayout *widget_layout = new QVBoxLayout(this);
+			widget_layout->setContentsMargins(0, 0, 0, 0);
+
+			if (configure_dateline_wrapping)
+			{
+				d_dateline_wrap_options_widget = new DatelineWrapOptionsWidget(
+						this,
+						d_export_configuration.wrap_to_dateline);
+				widget_layout->addWidget(d_dateline_wrap_options_widget);
+			}
+
 			// Delegate to the export file options widget to collection the file options.
 			d_export_file_options_widget =
 					ExportFileOptionsWidget::create(
 							parent_,
 							default_export_configuration->file_options);
-
-			QtWidgetUtils::add_widget_to_placeholder(d_export_file_options_widget, this);
+			widget_layout->addWidget(d_export_file_options_widget);
 		}
 
 
+		DatelineWrapOptionsWidget *d_dateline_wrap_options_widget;
 		ExportFileOptionsWidget *d_export_file_options_widget;
 		GPlatesGui::ExportMotionPathAnimationStrategy::Configuration d_export_configuration;
 	};

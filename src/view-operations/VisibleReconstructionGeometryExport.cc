@@ -62,7 +62,8 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool export_single_output_file,
-		bool export_per_input_file)
+		bool export_per_input_file,
+		bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
@@ -89,7 +90,8 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 			reconstruction_anchor_plate_id,
 			reconstruction_time,
 			export_single_output_file,
-			export_per_input_file);
+			export_per_input_file,
+			wrap_to_dateline);
 }
 
 
@@ -102,7 +104,8 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 	const double &reconstruction_time,
 	bool export_single_output_file,
-	bool export_per_input_file)
+	bool export_per_input_file,
+	bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
@@ -129,7 +132,8 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 		reconstruction_anchor_plate_id,
 		reconstruction_time,
 		export_single_output_file,
-		export_per_input_file);
+		export_per_input_file,
+		wrap_to_dateline);
 }
 
 void
@@ -141,7 +145,8 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 	const double &reconstruction_time,
 	bool export_single_output_file,
-	bool export_per_input_file)
+	bool export_per_input_file,
+	bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
@@ -168,5 +173,6 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 		reconstruction_anchor_plate_id,
 		reconstruction_time,
 		export_single_output_file,
-		export_per_input_file);
+		export_per_input_file,
+		wrap_to_dateline);
 }

@@ -295,7 +295,8 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		bool wrap_to_dateline)
 {
 
 	// Iterate through the reconstructed geometries and check which geometry types we have.
@@ -330,7 +331,8 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 	QString file_path = file_info.filePath();
 	GPlatesFileIO::OgrGeometryExporter geom_exporter(
 		file_path,
-		finder.has_found_multiple_geometry_types());
+		finder.has_found_multiple_geometry_types(),
+		wrap_to_dateline);
 
 
 
@@ -394,7 +396,8 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		bool wrap_to_dateline)
 {
 
 	// Iterate through the reconstructed geometries and check which geometry types we have.
@@ -429,7 +432,8 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 	QString file_path = file_info.filePath();
 	GPlatesFileIO::OgrGeometryExporter geom_exporter(
 		file_path,
-		finder.has_found_multiple_geometry_types());
+		finder.has_found_multiple_geometry_types(),
+		wrap_to_dateline);
 
 
 

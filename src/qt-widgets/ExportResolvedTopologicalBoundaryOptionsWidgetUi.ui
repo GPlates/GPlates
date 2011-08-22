@@ -6,113 +6,125 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>522</width>
-    <height>365</height>
+    <width>540</width>
+    <height>373</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Export Options</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="QCheckBox" name="checkBox_export_individual_plate_polygon_files">
-     <property name="text">
-      <string>Export each Plate Polygon to a separate file (%P='plate_'+rotation id)</string>
-     </property>
-    </widget>
+    <widget class="QWidget" name="widget_shapefile_dateline_wrap" native="true"/>
    </item>
    <item>
-    <widget class="QCheckBox" name="checkBox_export_all_plate_polygons_to_single_file">
-     <property name="text">
-      <string>Export all Plate Polygons to a single file (%P='platepolygons')</string>
+    <widget class="QGroupBox" name="group_box_feature_types">
+     <property name="title">
+      <string>Feature Type Options</string>
      </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="checkBox_export_plate_polygon_subsegments_to_type_files">
-     <property name="text">
-      <string>Export Plate Polygon segments to files based on feature type:</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="label_3">
-     <property name="text">
-      <string>(%P='ridge_transform_boundaries', 'subduction_boundaries',
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_individual_plate_polygon_files">
+        <property name="text">
+         <string>Export each Plate Polygon to a separate file (%P='plate_'+rotation id)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_all_plate_polygons_to_single_file">
+        <property name="text">
+         <string>Export all Plate Polygons to a single file (%P='platepolygons')</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_plate_polygon_subsegments_to_type_files">
+        <property name="text">
+         <string>Export Plate Polygon segments to files based on feature type:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>(%P='ridge_transform_boundaries', 'subduction_boundaries',
 'subduction_boundaries_sL', 'subduction_boundaries_sR')</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="checkBox_export_individual_network_polygon_files">
-     <property name="text">
-      <string>Export each Network boundary to a separate file (%P='network_'+rotation id)</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="checkBox_export_all_network_polygons_to_single_file">
-     <property name="text">
-      <string>Export all Network boundaries to a single file (%P='network_polygons')</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="checkBox_export_network_polygon_subsegments_to_type_files">
-     <property name="text">
-      <string>Export Network boundary segments to files based on feature type:</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>(%P='network_ridge_transform_boundaries', 'network_subduction_boundaries',
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_individual_network_polygon_files">
+        <property name="text">
+         <string>Export each Network boundary to a separate file (%P='network_'+rotation id)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_all_network_polygons_to_single_file">
+        <property name="text">
+         <string>Export all Network boundaries to a single file (%P='network_polygons')</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_network_polygon_subsegments_to_type_files">
+        <property name="text">
+         <string>Export Network boundary segments to files based on feature type:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>(%P='network_ridge_transform_boundaries', 'network_subduction_boundaries',
 'network_subduction_boundaries_sL', 'network_subduction_boundaries_sR')</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="Line" name="line_3">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="checkBox_export_individual_slab_polygon_files">
-     <property name="text">
-      <string>Export each Slab polygon to a separate file (%P='slab_' + rotation id)</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="checkBox_export_all_slab_polygons_to_single_file">
-     <property name="text">
-      <string>Export all Slab polygons to a single file (%P='slab_polygons')</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="checkBox_export_slab_polygon_subsegments_to_type_files">
-     <property name="text">
-      <string>Export Slab polygon segments to files based on feature type:</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="label_4">
-     <property name="text">
-      <string>(%P='slab_edges_leading', 'slab_edges_leading_sL', 'slab_edges_leading_sR',
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_individual_slab_polygon_files">
+        <property name="text">
+         <string>Export each Slab polygon to a separate file (%P='slab_' + rotation id)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_all_slab_polygons_to_single_file">
+        <property name="text">
+         <string>Export all Slab polygons to a single file (%P='slab_polygons')</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_slab_polygon_subsegments_to_type_files">
+        <property name="text">
+         <string>Export Slab polygon segments to files based on feature type:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>(%P='slab_edges_leading', 'slab_edges_leading_sL', 'slab_edges_leading_sR',
 'slab_edges_trench', 'slab_edge_side')</string>
-     </property>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>

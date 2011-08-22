@@ -5,26 +5,41 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>317</width>
-    <height>60</height>
+    <width>323</width>
+    <height>94</height>
    </rect>
   </property>
   <property name="windowTitle" >
    <string>Export Options</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" >
+   <property name="spacing" >
+    <number>0</number>
+   </property>
+   <property name="margin" >
+    <number>0</number>
+   </property>
    <item>
-    <widget class="QCheckBox" name="checkBox_export_to_single_file" >
-     <property name="text" >
-      <string>Export to a single file</string>
+    <widget class="QGroupBox" name="groupBox_file_options" >
+     <property name="title" >
+      <string>File Options</string>
      </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="checkBox_export_to_multiple_files" >
-     <property name="text" >
-      <string>Export to multiple files (one output file per input file)</string>
-     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2" >
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_to_single_file" >
+        <property name="text" >
+         <string>Export to a single file</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_export_to_multiple_files" >
+        <property name="text" >
+         <string>Export to multiple files (one output file per input file)</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>

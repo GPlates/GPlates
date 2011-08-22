@@ -35,6 +35,8 @@
 
 namespace GPlatesQtWidgets
 {
+	class DatelineWrapOptionsWidget;
+
 	/**
 	 * RasterLayerOptionsWidget is used to show additional options for raster
 	 * layers in the visual layers widget.
@@ -54,9 +56,11 @@ namespace GPlatesQtWidgets
 		create(
 				QWidget *parent,
 				const GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr &
-						default_export_configuration)
+						default_export_configuration,
+				bool configure_dateline_wrapping)
 		{
-			return new ExportResolvedTopologicalBoundaryOptionsWidget(parent, default_export_configuration);
+			return new ExportResolvedTopologicalBoundaryOptionsWidget(
+					parent, default_export_configuration, configure_dateline_wrapping);
 		}
 
 
@@ -79,13 +83,16 @@ namespace GPlatesQtWidgets
 		ExportResolvedTopologicalBoundaryOptionsWidget(
 				QWidget *parent_,
 				const GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr &
-						default_export_configuration);
+						default_export_configuration,
+				bool configure_dateline_wrapping);
 
 
 		void
 		make_signal_slot_connections();
 
 		GPlatesGui::ExportResolvedTopologyAnimationStrategy::Configuration d_export_configuration;
+
+		DatelineWrapOptionsWidget *d_dateline_wrap_options_widget;
 	};
 }
 

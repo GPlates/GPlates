@@ -127,7 +127,8 @@ GPlatesGui::ExportMotionPathAnimationStrategy::do_export_iteration(
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 			d_export_animation_context_ptr->view_time(),
 			d_configuration->file_options.export_to_a_single_file,
-			d_configuration->file_options.export_to_multiple_files);
+			d_configuration->file_options.export_to_multiple_files,
+			d_configuration->wrap_to_dateline);
 
 	}
 	catch (std::exception &exc)

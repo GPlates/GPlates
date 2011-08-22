@@ -95,6 +95,9 @@ namespace GPlatesFileIO
 		{
 			explicit
 			OutputOptions(
+					// Wrap polyline/polygon geometries to the dateline (mainly useful for ArcGIS shapefile users)...
+					bool wrap_geometries_to_the_dateline_ = false,
+
 					// plate polygon options
 					bool export_individual_plate_polygon_files_         = false,
 					bool export_all_plate_polygons_to_a_single_file_    = false,
@@ -153,6 +156,7 @@ namespace GPlatesFileIO
 					const QString &placeholder_slab_edge_leading_right_ = "slab_edges_leading_sR",
 					const QString &placeholder_slab_edge_trench_ = "slab_edges_trench",
 					const QString &placeholder_slab_edge_side_ = "slab_edges_side") :
+				wrap_geometries_to_the_dateline(wrap_geometries_to_the_dateline_),
 				// plate polygon options
 				export_individual_plate_polygon_files(export_individual_plate_polygon_files_),
 				export_all_plate_polygons_to_a_single_file(export_all_plate_polygons_to_a_single_file_),
@@ -213,6 +217,10 @@ namespace GPlatesFileIO
 				placeholder_slab_edge_side(placeholder_slab_edge_side_)
 
 			{  }
+
+
+			// Wrap polyline/polygon geometries to the dateline (mainly useful for ArcGIS shapefile users)...
+			bool wrap_geometries_to_the_dateline;
 
 			// plate polygon options 
 			bool export_individual_plate_polygon_files;

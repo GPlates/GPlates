@@ -62,6 +62,8 @@ namespace GPlatesFileIO
 
 		/**
 		* Exports @a ResolvedTopologicalBoundary objects to Shapefile format.
+		*
+		* If @a wrap_to_dateline is true then exported polygon boundaries are wrapped/clipped to the dateline.
 		*/
 		void
 		export_resolved_topological_boundaries(
@@ -69,11 +71,14 @@ namespace GPlatesFileIO
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				bool wrap_to_dateline = false);
 
 
 		/**
 		 * Exports subsegments of resolved topological boundaries to Shapefile format.
+		*
+		* If @a wrap_to_dateline is true then exported geometries are wrapped/clipped to the dateline.
 		 */
 		void
 		export_sub_segments(
@@ -81,7 +86,8 @@ namespace GPlatesFileIO
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				bool wrap_to_dateline = false);
 	}
 }
 
