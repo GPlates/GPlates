@@ -35,6 +35,7 @@
 #include "AppLogicFwd.h"
 #include "CgalUtils.h"
 #include "PlateVelocityUtils.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometry.h"
 
 #include "maths/PolygonOnSphere.h"
@@ -115,112 +116,50 @@ namespace GPlatesAppLogic
 			GPlatesModel::FeatureHandle::const_weak_ref d_feature_ref;
 		};
 
-
 		//! Typedef for a sequence of @a Node objects.
 		typedef std::vector<Node> node_seq_type;
-
-
-#if 0
-		/**
-		 * Forward iterator over export template filename sequence.
-		 * Dereferencing iterator returns a 'const Node &'.
-		 */
-		class NodeConstIterator :
-				public std::iterator<std::bidirectional_iterator_tag, const Node>,
-				public boost::bidirectional_iteratable<NodeConstIterator, const Node *>
-		{
-		public:
-			//! Create begin iterator.
-			static
-			NodeConstIterator
-			create_begin(
-					const node_seq_type &node_seq)
-			{
-				return NodeConstIterator(node_seq, 0);
-			}
-
-
-			//! Create end iterator.
-			static
-			NodeConstIterator
-			create_end(
-					const node_seq_type &node_seq)
-			{
-				return NodeConstIterator(node_seq, node_seq.size());
-			}
-
-
-			/**
-			 * Dereference operator.
-			 * Operator->() provided by class boost::bidirectional_iteratable.
-			 */
-			const Node &
-			operator*() const
-			{
-				return (*d_node_seq)[d_node_index];
-			}
-
-
-			/**
-			 * Pre-increment operator.
-			 * Post-increment operator provided by base class boost::bidirectional_iteratable.
-			 */
-			NodeConstIterator &
-			operator++()
-			{
-				++d_node_index;
-				return *this;
-			}
-
-
-			/**
-			 * Pre-decrement operator.
-			 * Post-decrement operator provided by base class boost::bidirectional_iteratable.
-			 */
-			NodeConstIterator &
-			operator--()
-			{
-				--d_node_index;
-				return *this;
-			}
-
-
-			/**
-			 * Equality comparison.
-			 * Inequality operator provided by base class boost::bidirectional_iteratable.
-			 */
-			friend
-			bool
-			operator==(
-					const NodeConstIterator &lhs,
-					const NodeConstIterator &rhs)
-			{
-				return lhs.d_node_seq == rhs.d_node_seq &&
-					lhs.d_node_index == rhs.d_node_index;
-			}
-
-		private:
-			const node_seq_type *d_node_seq;
-			std::size_t d_node_index;
-
-
-			NodeConstIterator(
-					const node_seq_type &node_seq,
-					std::size_t sequence_index) :
-				d_node_seq(&node_seq),
-				d_node_index(sequence_index)
-			{  }
-		};
-#endif
-
 
 		/**
 		 * The type used to const_iterate over the nodes.
 		 */
-#if 0
-		typedef NodeConstIterator node_const_iterator;
-#endif
 		typedef node_seq_type::const_iterator node_const_iterator;
+
+
+		/**
+		 * Records the reconstructed geometry, and any other relevant information,
+		 * of a node that is part of the topology network.
+		 * Each node will typically reference a different feature and possibly
+		 * different reconstruction plate id.
+		 */
+		class InteriorPolygon
+		{
+		public:
+			explicit
+			InteriorPolygon(
+					const reconstructed_feature_geometry_non_null_ptr_type &source_rfg) :
+				d_source_rfg(source_rfg)
+			{  }
+
+			/**
+			 * The reconstructed feature geometry.
+			 */
+			reconstructed_feature_geometry_non_null_ptr_type
+			get_reconstructed_feature_geometry() const
+			{
+				return d_source_rfg;
+			}
+
+		private:
+			reconstructed_feature_geometry_non_null_ptr_type d_source_rfg;
+		};
+
+		//! Typedef for a sequence of @a InteriorPolygon objects.
+		typedef std::vector<InteriorPolygon> interior_polygon_seq_type;
+
+		/**
+		 * The type used to const_iterate over the interior polygons.
+		 */
+		typedef interior_polygon_seq_type::const_iterator interior_polygon_const_iterator;
 
 
 		virtual
@@ -231,7 +170,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Create a ResolvedTopologicalNetwork instance.
 		 */
-		template<typename NodeForwardIter>
+		template<typename NodeForwardIter, typename InteriorPolygonForwardIter>
 		static
 		const non_null_ptr_type
 		create(
@@ -242,6 +181,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				NodeForwardIter node_sequence_begin,
 				NodeForwardIter node_sequence_end,
+				InteriorPolygonForwardIter interior_polygon_sequence_begin,
+				InteriorPolygonForwardIter interior_polygon_sequence_end,
 				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none)
 		{
@@ -254,6 +195,8 @@ namespace GPlatesAppLogic
 							property_iterator_,
 							node_sequence_begin,
 							node_sequence_end,
+							interior_polygon_sequence_begin,
+							interior_polygon_sequence_end,
 							plate_id_,
 							time_of_formation_),
 					GPlatesUtils::NullIntrusivePointerHandler());
@@ -265,9 +208,6 @@ namespace GPlatesAppLogic
 		node_const_iterator
 		nodes_begin() const
 		{
-#if 0
-			return node_const_iterator::create_begin(d_node_seq);
-#endif
 			return d_node_seq.begin();
 		}
 
@@ -277,10 +217,25 @@ namespace GPlatesAppLogic
 		node_const_iterator
 		nodes_end() const
 		{
-#if 0
-			return node_const_iterator::create_end(d_node_seq);
-#endif
 			return d_node_seq.end();
+		}
+
+		/**
+		 * Returns const iterator to beginning of the internal sequence of @a InteriorPolygon objects.
+		 */
+		interior_polygon_const_iterator
+		interior_polygons_begin() const
+		{
+			return d_interior_polygon_seq.begin();
+		}
+
+		/**
+		 * Returns const iterator to end of the internal sequence of @a InteriorPolygon objects.
+		 */
+		interior_polygon_const_iterator
+		interior_polygons_end() const
+		{
+			return d_interior_polygon_seq.end();
 		}
 
 		/**
@@ -506,6 +461,11 @@ namespace GPlatesAppLogic
 		node_seq_type d_node_seq;
 
 		/**
+		 * The sequence of @a InteriorPolygn objects.
+		 */
+		interior_polygon_seq_type d_interior_polygon_seq;
+
+		/**
 		 * The delaunay triangulation of all the points in the network.
 		 */
 		boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_2_type> d_delaunay_triangulation_2;
@@ -525,7 +485,7 @@ namespace GPlatesAppLogic
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		template <typename NodeForwardIter>
+		template <typename NodeForwardIter, typename InteriorPolygonForwardIter>
 		ResolvedTopologicalNetwork(
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree_,
 				boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_2_type> delaunay_triangulation_2,
@@ -534,6 +494,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				NodeForwardIter node_sequence_begin,
 				NodeForwardIter node_sequence_end,
+				InteriorPolygonForwardIter interior_polygon_sequence_begin,
+				InteriorPolygonForwardIter interior_polygon_sequence_end,
 				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none) :
 			ReconstructionGeometry(reconstruction_tree_),
@@ -542,6 +504,7 @@ namespace GPlatesAppLogic
 			d_plate_id(plate_id_),
 			d_time_of_formation(time_of_formation_),
 			d_node_seq(node_sequence_begin, node_sequence_end),
+			d_interior_polygon_seq(interior_polygon_sequence_begin, interior_polygon_sequence_end),
 			d_delaunay_triangulation_2(delaunay_triangulation_2),
 			d_constrained_delaunay_triangulation_2(constrained_delaunay_triangulation_2)
 		{  }

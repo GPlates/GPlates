@@ -185,7 +185,7 @@ namespace GPlatesFeatureVisitors
 
 
 		void
-		clear_found_geometries()
+		clear()
 		{
 			d_num_point_geometries_found = 0;
 			d_num_multi_point_geometries_found = 0;

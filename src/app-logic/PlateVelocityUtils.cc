@@ -262,6 +262,37 @@ namespace
 		return GPlatesAppLogic::PlateVelocityUtils::convert_velocity_colatitude_longitude_to_scalars(
 				velocity_colat_lon);
 	}
+
+
+	/**
+	 * Accumulates the interior polygons of the specified topological networks.
+	 */
+	void
+	get_resolved_networks_interior_polygons(
+			std::vector<GPlatesAppLogic::reconstructed_feature_geometry_non_null_ptr_type> &resolved_networks_interior_polygons,
+			const std::vector<GPlatesAppLogic::resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
+	{
+		std::vector<GPlatesAppLogic::resolved_topological_network_non_null_ptr_type>::const_iterator networks_iter =
+				resolved_topological_networks.begin();
+		std::vector<GPlatesAppLogic::resolved_topological_network_non_null_ptr_type>::const_iterator networks_end =
+				resolved_topological_networks.end();
+		for ( ; networks_iter != networks_end; ++networks_iter)
+		{
+			const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type &network = *networks_iter;
+
+			GPlatesAppLogic::ResolvedTopologicalNetwork::interior_polygon_const_iterator interior_polys_iter =
+					network->interior_polygons_begin();
+			GPlatesAppLogic::ResolvedTopologicalNetwork::interior_polygon_const_iterator interior_polys_end =
+					network->interior_polygons_end();
+			for ( ; interior_polys_iter != interior_polys_end; ++interior_polys_iter)
+			{
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::InteriorPolygon &interior_poly = *interior_polys_iter;
+
+				resolved_networks_interior_polygons.push_back(
+						interior_poly.get_reconstructed_feature_geometry());
+			}
+		}
+	}
 }
 
 
@@ -411,6 +442,21 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 					boost::any(velocity_calc_info),
 					callback_function);
 
+	// Get the topological network interior polygons (if any) and wrap them in a structure
+	// that can do point-in-polygon tests.
+	// These are static (shape) interior regions of topological networks whose velocities
+	// are treated like regular static polygons (except these are given preference since they
+	// belong to a topological network).
+	std::vector<reconstructed_feature_geometry_non_null_ptr_type> resolved_networks_interior_polygons;
+	get_resolved_networks_interior_polygons(
+			resolved_networks_interior_polygons,
+			resolved_topological_networks);
+	GeometryCookieCutter resolved_networks_interior_polygons_query(
+			reconstruction_time,
+			resolved_networks_interior_polygons,
+			boost::none/*resolved_topological_boundaries*/,
+			true/*partition_using_static_polygons*/);
+
 	// Visit the multi-point feature collections and calculate velocities.
 	GPlatesFeatureVisitors::ComputationalMeshSolver velocity_solver(
 			multi_point_velocity_fields,
@@ -420,6 +466,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 			reconstructed_static_polygons_query,
 			resolved_boundaries_query,
 			resolved_networks_query,
+			resolved_networks_interior_polygons_query,
 			true); // keep features without recon plate id
 
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collections(

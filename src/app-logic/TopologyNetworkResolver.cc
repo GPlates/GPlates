@@ -401,7 +401,8 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_section_reconstruct
 	// If no RFG was found then it's possible that the current reconstruction time is
 	// outside the age range of the feature this section is referencing.
 	// This is ok - it's not necessarily an error.
-	// We just won't add it to the list of boundary sections. This means either:
+	// If we're currently processing boundary sections (as opposed to interior sections) then
+	// we just won't add it to the list of boundary sections. For boundary sections this means either:
 	//  - rubber banding will occur between the two sections adjacent to this section
 	//    since this section is now missing, or
 	//  - one of the adjacent sections did not exist until just now (because of its age range)
@@ -1011,6 +1012,10 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network(
 	// GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolation
 	std::vector<ResolvedTopologicalNetwork::Node> output_nodes;
 
+	// Any interior section that is a polygon - these are regions that are inside the network but are
+	// not part of the network (ie, not triangulated) and hence are effectively outside the network.
+	std::vector<ResolvedTopologicalNetwork::InteriorPolygon> interior_polygons;
+
 // qDebug() << "\ncreate_resolved_topology_network: Loop over BOUNDARY d_resolved_network.d_sections\n";
 	//
 	// Iterate over the sections of the resolved boundary and construct
@@ -1281,10 +1286,23 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 					all_network_points,
 					section.d_use_reverse);
 
+			// Keep track of any interior polygon regions.
+			// These will be needed for calculating velocities since they are not part of the triangulation
+			// generated (velocities will be calculated in the normal manner for static polygons).
+			GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
+			section.d_source_rfg->reconstructed_geometry()->accept_visitor(geometry_type_finder);
+			if (geometry_type_finder.num_polygon_geometries_found() > 0)
+			{
+				// Create a subsegment structure that'll get used when
+				// creating the resolved topological geometry.
+				const ResolvedTopologicalNetwork::InteriorPolygon interior_polygon(section.d_source_rfg);
+				interior_polygons.push_back(interior_polygon);
+			}
+			geometry_type_finder.clear();
+
 			//
 			// Determine the subsegments orginal geometry type 
 			//
-			GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
  			geometry_type_finder.visit_feature( subsegment_feature_ref );
 
 //qDebug() << "geom_type_finder: points :" << geometry_type_finder.num_point_geometries_found();
@@ -1513,6 +1531,8 @@ std::cout << "Number of vertices after make_conforming_Gabriel_2: "
 					*d_topological_polygon_feature_iterator,
 					output_nodes.begin(),
 					output_nodes.end(),
+					interior_polygons.begin(),
+					interior_polygons.end(),
 					d_reconstruction_params.get_recon_plate_id(),
 					d_reconstruction_params.get_time_of_appearance());
 

@@ -106,6 +106,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 				resolved_boundaries_for_partitioning_geometry_query,
 		const GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type &
 				resolved_networks_for_velocity_interpolation,
+		const GPlatesAppLogic::GeometryCookieCutter &resolved_networks_interior_polygons_query,
 		bool should_keep_features_without_recon_plate_id):
 	d_velocity_fields_to_populate(velocity_fields_to_populate),
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
@@ -114,6 +115,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	d_reconstructed_static_polygons_query(reconstructed_static_polygons_query),
 	d_resolved_boundaries_for_partitioning_geometry_query(resolved_boundaries_for_partitioning_geometry_query),
 	d_resolved_networks_for_velocity_interpolation(resolved_networks_for_velocity_interpolation),
+	d_resolved_networks_interior_polygons_query(resolved_networks_interior_polygons_query),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id),
 	d_feature_handle_ptr(NULL)
 {  
@@ -397,6 +399,28 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_base_triangula
 
 
 	//
+	// Next see if point is inside an interior polygon of any topological network.
+	// These are really part of the topological network but their velocities are not calculated
+	// by interpolating a triangulation (but by treating them as a static rigid polygon).
+	//
+
+	const boost::optional<const GPlatesAppLogic::ReconstructionGeometry *>
+			resolved_network_interior_polygon_containing_point = 
+					d_resolved_networks_interior_polygons_query.partition_point(point);
+
+	if (resolved_network_interior_polygon_containing_point)
+	{
+		process_point_in_static_polygon(
+				point,
+				range_element,
+				resolved_network_interior_polygon_containing_point.get(),
+				// FIXME: Should this be 'InDeformationNetwork' ? ...
+				GPlatesAppLogic::MultiPointVectorField::CodomainElement::InStaticPolygon);
+		return;
+	}
+
+
+	//
 	// Next see if point is inside any topological boundaries.
 	//
 
@@ -427,7 +451,10 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_base_triangula
 	if (reconstructed_static_polygon_containing_point)
 	{
 		process_point_in_static_polygon(
-				point, range_element, reconstructed_static_polygon_containing_point.get());
+				point,
+				range_element,
+				reconstructed_static_polygon_containing_point.get(),
+				GPlatesAppLogic::MultiPointVectorField::CodomainElement::InStaticPolygon);
 		return;
 	}
 
@@ -540,7 +567,8 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_static_polygon(
 		const GPlatesMaths::PointOnSphere &point,
 		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
-		const GPlatesAppLogic::ReconstructionGeometry *reconstructed_static_polygon_containing_point)
+		const GPlatesAppLogic::ReconstructionGeometry *reconstructed_static_polygon_containing_point,
+		const GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason)
 {
 
 #ifdef DEBUG
@@ -555,9 +583,9 @@ std::cout << "ComputationalMeshSolver::process_point_in_static_polygon: " << llp
 		// FIXME: do not paint the point any color ; leave it ?
 
 		GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
-		GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason =
-				GPlatesAppLogic::MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
-		range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(zero_velocity, reason);
+		range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(
+				zero_velocity,
+				GPlatesAppLogic::MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork);
 
 		// In the previous code, the point wasn't rendered if it wasn't in any boundary or
 		// network.
@@ -572,10 +600,8 @@ std::cout << "ComputationalMeshSolver::process_point_in_static_polygon: " << llp
 			GPlatesAppLogic::PlateVelocityUtils::calc_velocity_vector(
 					point, *d_recon_tree_ptr, *d_recon_tree_2_ptr, recon_plate_id);
 
-	GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason =
-			GPlatesAppLogic::MultiPointVectorField::CodomainElement::InStaticPolygon;
-	range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(vector_xyz, reason,
-			recon_plate_id, reconstructed_static_polygon_containing_point);
+	range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(
+			vector_xyz, reason, recon_plate_id, reconstructed_static_polygon_containing_point);
 }
 
 
