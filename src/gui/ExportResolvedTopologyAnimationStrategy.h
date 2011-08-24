@@ -178,7 +178,7 @@ namespace GPlatesGui
 		
 	private:
 		//! Typedef for a sequence of resolved topological geometries.
-		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_geom_seq_type;
+		typedef std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_geom_seq_type;
 
 
 		/**

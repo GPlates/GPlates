@@ -31,6 +31,8 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
+
+#include "maths/PolygonOnSphere.h"
 	
 #include "model/FeatureVisitor.h"
 
@@ -42,6 +44,7 @@
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
 #include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalBoundarySubSegment.h"
 #include "ResolvedTopologicalNetwork.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -173,6 +176,31 @@ namespace GPlatesAppLogic
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant>
 		get_time_of_formation(
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
+
+
+		/**
+		 * Returns the boundary subsegment sequence for the specified resolved topological geometry.
+		 *
+		 * @a reconstruction_geom_ptr should be either @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 *
+		 * Returns boost::none if the specified reconstruction geometry is not a resolved topological geometry.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<const sub_segment_seq_type &>
+		get_resolved_topological_boundary_sub_segment_sequence(
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
+
+		/**
+		 * Returns the boundary polygon of the specified resolved topological geometry.
+		 *
+		 * @a reconstruction_geom_ptr should be either @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 *
+		 * Returns boost::none if the specified reconstruction geometry is not a resolved topological geometry.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		get_resolved_topological_boundary_polygon(
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
@@ -825,6 +853,98 @@ namespace GPlatesAppLogic
 			reconstruction_geom_ptr->accept_visitor(get_time_of_formation_visitor);
 
 			return get_time_of_formation_visitor.get_time_of_formation();
+		}
+
+
+		class GetResolvedTopologicalBoundarySubSegmentSequence :
+				public ConstReconstructionGeometryVisitor
+		{
+		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
+			boost::optional<const sub_segment_seq_type &>
+			get_sub_segment_sequence() const
+			{
+				return d_sub_segment_sequence;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+			{
+				d_sub_segment_sequence = rtb->get_sub_segment_sequence();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+			{
+				d_sub_segment_sequence = rtn->get_boundary_sub_segment_sequence();
+			}
+
+		private:
+			boost::optional<const sub_segment_seq_type &> d_sub_segment_sequence;
+		};
+
+
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<const sub_segment_seq_type &>
+		get_resolved_topological_boundary_sub_segment_sequence(
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
+		{
+			GetResolvedTopologicalBoundarySubSegmentSequence visitor;
+			reconstruction_geom_ptr->accept_visitor(visitor);
+
+			return visitor.get_sub_segment_sequence();
+		}
+
+
+		class GetResolvedTopologicalBoundaryPolygon :
+				public ConstReconstructionGeometryVisitor
+		{
+		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+			get_boundary_polygon() const
+			{
+				return d_boundary_polygon;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+			{
+				d_boundary_polygon = rtb->resolved_topology_geometry();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+			{
+				d_boundary_polygon = rtn->boundary_polygon();
+			}
+
+		private:
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;
+		};
+
+
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		get_resolved_topological_boundary_polygon(
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
+		{
+			GetResolvedTopologicalBoundaryPolygon visitor;
+			reconstruction_geom_ptr->accept_visitor(visitor);
+
+			return visitor.get_boundary_polygon();
 		}
 	}
 }

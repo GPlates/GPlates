@@ -35,7 +35,9 @@
 #include "OgrGeometryExporter.h"
 #include "ShapefileUtils.h"
 
-#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ReconstructionGeometry.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
+
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/KeyValueDictionaryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
@@ -285,7 +287,7 @@ namespace
 
 void
 GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
-		const resolved_geom_seq_type &resolved_topological_boundaries,
+		const resolved_geom_seq_type &resolved_topological_geometries,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -297,16 +299,34 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 	QString file_path = file_info.filePath();
 	GPlatesFileIO::OgrGeometryExporter geom_exporter(file_path, false/*multiple_geometries*/, wrap_to_dateline);
 
-	// Iterate through the resolved topological boundaries and write to output.
+	// Iterate through the resolved topological geometries and write to output.
 	resolved_geom_seq_type::const_iterator resolved_geom_iter;
-	for (resolved_geom_iter = resolved_topological_boundaries.begin();
-		resolved_geom_iter != resolved_topological_boundaries.end();
+	for (resolved_geom_iter = resolved_topological_geometries.begin();
+		resolved_geom_iter != resolved_topological_geometries.end();
 		++resolved_geom_iter)
 	{
-		const GPlatesAppLogic::ResolvedTopologicalBoundary * resolved_geom = *resolved_geom_iter;
+		const GPlatesAppLogic::ReconstructionGeometry *resolved_geom = *resolved_geom_iter;
 
-		const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolved_geom->get_feature_ref();
-		if (!feature_ref.is_valid())
+		// Get the resolved boundary subsegments.
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment> &> boundary_sub_segments =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
+		if (!boundary_sub_segments)
+		{
+			continue;
+		}
+
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_geom);
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
+		if (!boundary_polygon)
+		{
+			continue;
+		}
+
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(resolved_geom);
+		if (!feature_ref || !feature_ref->is_valid())
 		{
 			continue;
 		}
@@ -314,7 +334,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd_for_export =
 			GPlatesPropertyValues::GpmlKeyValueDictionary::create();
 
-		add_plate_id_to_kvd(feature_ref, kvd_for_export);
+		add_plate_id_to_kvd(feature_ref.get(), kvd_for_export);
 
 		add_reconstruction_fields_to_kvd(kvd_for_export,
 										reconstruction_anchor_plate_id,
@@ -330,7 +350,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 									reconstruction_time);
 #endif
 		// Write the resolved topological boundary.
-		geom_exporter.export_geometry(resolved_geom->resolved_topology_geometry(), kvd_for_export); 
+		geom_exporter.export_geometry(boundary_polygon.get(), kvd_for_export); 
 	}
 }
 
@@ -353,20 +373,21 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 	{
 		const SubSegmentGroup &sub_segment_group = *sub_segment_group_iter;
 
-		const GPlatesModel::FeatureHandle::weak_ref feature_ref =
-				sub_segment_group.resolved_topological_boundary->get_feature_ref();
-		if (!feature_ref.is_valid())
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+						sub_segment_group.resolved_topological_geometry);
+		if (!feature_ref || !feature_ref->is_valid())
 		{
 			continue;
 		}
 
 		// Iterate through the subsegment geometries of the current resolved topological boundary.
-		sub_segment_seq_type::const_iterator sub_segment_iter;
+		sub_segment_ptr_seq_type::const_iterator sub_segment_iter;
 		for (sub_segment_iter = sub_segment_group.sub_segments.begin();
 			sub_segment_iter != sub_segment_group.sub_segments.end();
 			++sub_segment_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment *sub_segment = *sub_segment_iter;
+			const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment *sub_segment = *sub_segment_iter;
 			sub_segment->get_geometry()->accept_visitor(finder);
 		}
 	}
@@ -396,12 +417,12 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 #endif
 
 		// Iterate through the subsegment geometries of the current resolved topological boundary.
-		sub_segment_seq_type::const_iterator sub_segment_iter;
+		sub_segment_ptr_seq_type::const_iterator sub_segment_iter;
 		for (sub_segment_iter = sub_segment_group.sub_segments.begin();
 			sub_segment_iter != sub_segment_group.sub_segments.end();
 			++sub_segment_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment *sub_segment = *sub_segment_iter;
+			const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment *sub_segment = *sub_segment_iter;
 
 			// The subsegment feature.
 			const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_ref =

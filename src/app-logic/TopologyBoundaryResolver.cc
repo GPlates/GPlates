@@ -516,7 +516,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 #endif
 
 	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalBoundary.
-	std::vector<ResolvedTopologicalBoundary::SubSegment> output_subsegments;
+	std::vector<ResolvedTopologicalBoundarySubSegment> output_subsegments;
 
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
@@ -544,7 +544,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 
 		// Create a subsegment structure that'll get used when
 		// creating the resolved topological geometry.
-		const ResolvedTopologicalBoundary::SubSegment output_subsegment(
+		const ResolvedTopologicalBoundarySubSegment output_subsegment(
 				section.d_final_boundary_segment_unreversed_geom.get(),
 				subsegment_feature_const_ref,
 				section.d_use_reverse);

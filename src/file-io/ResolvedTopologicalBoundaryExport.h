@@ -39,7 +39,7 @@
 
 namespace GPlatesAppLogic
 {
-	class ResolvedTopologicalBoundary;
+	class ReconstructionGeometry;
 }
 
 namespace GPlatesFileIO
@@ -286,7 +286,7 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a ResolvedTopologicalBoundary objects and associated subsegments as specified
+		 * Exports resolved topological geometries and associated subsegments as specified
 		 * by the options in @a output_options.
 		 *
 		 * @param export_format specifies which format to write.
@@ -301,7 +301,7 @@ namespace GPlatesFileIO
 				const QString &placeholder_format_string,
 				const OutputOptions &output_options,
 				Format export_format,
-				const std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> &resolved_topological_boundary_seq,
+				const std::vector<const GPlatesAppLogic::ReconstructionGeometry *> &resolved_topological_geometry_seq,
 				const std::vector<const File::Reference *> &loaded_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);

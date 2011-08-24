@@ -151,6 +151,7 @@ set(srcs
     ResolvedRaster.h
     ResolvedTopologicalBoundary.cc
     ResolvedTopologicalBoundary.h
+    ResolvedTopologicalBoundarySubSegment.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
     Serialization.cc

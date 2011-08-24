@@ -37,6 +37,7 @@
 #include "PlateVelocityUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometry.h"
+#include "ResolvedTopologicalBoundarySubSegment.h"
 
 #include "maths/PolygonOnSphere.h"
 
@@ -69,11 +70,17 @@ namespace GPlatesAppLogic
 		//! A convenience typedef for the WeakObserver base class of this class.
 		typedef GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle> WeakObserverType;
 
+		//! A convenience typedef for the polygon boundary of this @a ResolvedTopologicalNetwork.
+		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type boundary_polygon_ptr_type;
+
 		//! A convenience typedef for the geometry of this @a ResolvedTopologicalNetwork.
 		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_geometry_ptr_type;
 
 		//! A convenience typedef for the geometry of a node of this RTN.
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type node_geometry_ptr_type;
+
+		//! Typedef for a sequence of @a ResolvedTopologicalBoundarySubSegment objects.
+		typedef sub_segment_seq_type boundary_sub_segment_seq_type;
 
 
 		/**
@@ -170,7 +177,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Create a ResolvedTopologicalNetwork instance.
 		 */
-		template<typename NodeForwardIter, typename InteriorPolygonForwardIter>
+		template<typename NodeForwardIter, typename BoundarySubSegmentForwardIter, typename InteriorPolygonForwardIter>
 		static
 		const non_null_ptr_type
 		create(
@@ -181,6 +188,9 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				NodeForwardIter node_sequence_begin,
 				NodeForwardIter node_sequence_end,
+				BoundarySubSegmentForwardIter boundary_sub_segment_sequence_begin,
+				BoundarySubSegmentForwardIter boundary_sub_segment_sequence_end,
+				const boundary_polygon_ptr_type &boundary_polygon_ptr,
 				InteriorPolygonForwardIter interior_polygon_sequence_begin,
 				InteriorPolygonForwardIter interior_polygon_sequence_end,
 				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_ = boost::none,
@@ -195,6 +205,9 @@ namespace GPlatesAppLogic
 							property_iterator_,
 							node_sequence_begin,
 							node_sequence_end,
+							boundary_sub_segment_sequence_begin,
+							boundary_sub_segment_sequence_end,
+							boundary_polygon_ptr,
 							interior_polygon_sequence_begin,
 							interior_polygon_sequence_end,
 							plate_id_,
@@ -219,6 +232,27 @@ namespace GPlatesAppLogic
 		{
 			return d_node_seq.end();
 		}
+
+
+		/**
+		 * Returns the *boundary* subsegments.
+		 */
+		const boundary_sub_segment_seq_type &
+		get_boundary_sub_segment_sequence() const
+		{
+			return d_boundary_sub_segment_seq;
+		}
+
+
+		/**
+		 * Access the boundary polygon of this resolved topology network.
+		 */
+		const boundary_polygon_ptr_type
+		boundary_polygon() const
+		{
+			return d_boundary_polygon_ptr;
+		}
+
 
 		/**
 		 * Returns const iterator to beginning of the internal sequence of @a InteriorPolygon objects.
@@ -461,6 +495,20 @@ namespace GPlatesAppLogic
 		node_seq_type d_node_seq;
 
 		/**
+		 * The sequence of @a SubSegment objects that form the resolved topology geometry *boundary*.
+		 *
+		 * This contains the subset of vertices of each reconstructed topological section
+		 * used to generate the resolved topology geometry.
+		 */
+		boundary_sub_segment_seq_type d_boundary_sub_segment_seq;
+
+		/**
+		 * The boundary polygon of this resolved topology network.
+		 */
+		boundary_polygon_ptr_type d_boundary_polygon_ptr;
+
+
+		/**
 		 * The sequence of @a InteriorPolygn objects.
 		 */
 		interior_polygon_seq_type d_interior_polygon_seq;
@@ -485,7 +533,7 @@ namespace GPlatesAppLogic
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		template <typename NodeForwardIter, typename InteriorPolygonForwardIter>
+		template<typename NodeForwardIter, typename BoundarySubSegmentForwardIter, typename InteriorPolygonForwardIter>
 		ResolvedTopologicalNetwork(
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree_,
 				boost::shared_ptr<CgalUtils::cgal_delaunay_triangulation_2_type> delaunay_triangulation_2,
@@ -494,6 +542,9 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				NodeForwardIter node_sequence_begin,
 				NodeForwardIter node_sequence_end,
+				BoundarySubSegmentForwardIter boundary_sub_segment_sequence_begin,
+				BoundarySubSegmentForwardIter boundary_sub_segment_sequence_end,
+				const boundary_polygon_ptr_type &boundary_polygon_ptr,
 				InteriorPolygonForwardIter interior_polygon_sequence_begin,
 				InteriorPolygonForwardIter interior_polygon_sequence_end,
 				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_ = boost::none,
@@ -504,6 +555,8 @@ namespace GPlatesAppLogic
 			d_plate_id(plate_id_),
 			d_time_of_formation(time_of_formation_),
 			d_node_seq(node_sequence_begin, node_sequence_end),
+			d_boundary_sub_segment_seq(boundary_sub_segment_sequence_begin, boundary_sub_segment_sequence_end),
+			d_boundary_polygon_ptr(boundary_polygon_ptr),
 			d_interior_polygon_seq(interior_polygon_sequence_begin, interior_polygon_sequence_end),
 			d_delaunay_triangulation_2(delaunay_triangulation_2),
 			d_constrained_delaunay_triangulation_2(constrained_delaunay_triangulation_2)

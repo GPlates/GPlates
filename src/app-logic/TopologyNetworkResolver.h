@@ -278,15 +278,6 @@ namespace GPlatesAppLogic
 		boost::optional<feature_iterator_type> d_topological_polygon_feature_iterator;
 
 		/**
-		 * Create a @a ResolvedTopologicalBoundary from information gathered
-		 * from the most recently visited topological polygon
-		 * (stored in @a d_resolved_network) and add it to the @a Reconstruction.
-		 */
-		void
-		create_resolved_topology_boundary(
-				GPlatesModel::FeatureHandle &feature_handle);
-
-		/**
 		 * Create a @a ResolvedTopologicalNetwork from information gathered
 		 * from the most recently visited topological polygon
 		 * (stored in @a d_resolved_network) and add it to the @a Reconstruction.
