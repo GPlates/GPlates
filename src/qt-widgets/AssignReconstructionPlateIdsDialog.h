@@ -121,6 +121,17 @@ namespace GPlatesQtWidgets
 		react_select_all_partitioned_files();
 
 		void
+		react_cell_changed_partitioning_layers(
+				int row,
+				int column);
+
+		void
+		react_clear_all_partitioning_layers();
+
+		void
+		react_select_all_partitioning_layers();
+
+		void
 		react_reconstruction_time_radio_button(
 				bool checked);
 
@@ -198,10 +209,12 @@ namespace GPlatesQtWidgets
 			explicit
 			LayerState(
 					const layer_ptr_type &layer_) :
-				layer(layer_)
+				layer(layer_),
+				enabled(false)
 			{  }
 
 			layer_ptr_type layer;
+			bool enabled;
 		};
 		typedef std::vector<LayerState> layer_state_seq_type;
 
@@ -217,12 +230,10 @@ namespace GPlatesQtWidgets
 		struct LayerStateCollection
 		{
 			LayerStateCollection() :
-				table_widget(NULL),
-				layer_selection_group(NULL)
+				table_widget(NULL)
 			{  }
 
 			QTableWidget *table_widget; // Needs to be initialised after setupUi()
-			QButtonGroup *layer_selection_group; // Initialised with 'table_widget' as parent
 			layer_state_seq_type layer_state_seq;
 		};
 
@@ -365,8 +376,8 @@ namespace GPlatesQtWidgets
 		get_selected_feature_collections(
 				FileStateCollection &file_state_collection);
 
-		boost::optional<layer_ptr_type>
-		get_selected_layer(
+		layer_ptr_seq_type
+		get_selected_layers(
 				LayerStateCollection &layer_state_collection);
 
 		bool

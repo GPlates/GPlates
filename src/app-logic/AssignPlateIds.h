@@ -231,7 +231,7 @@ namespace GPlatesAppLogic
 		non_null_ptr_type
 		create(
 				AssignPlateIdMethodType assign_plate_id_method,
-				const LayerProxy::non_null_ptr_type &partitioning_layer_proxy,
+				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 				const double &reconstruction_time,
 				const feature_property_flags_type &feature_property_types_to_assign =
 						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
@@ -239,7 +239,7 @@ namespace GPlatesAppLogic
 		{
 			return non_null_ptr_type(new AssignPlateIds(
 					assign_plate_id_method,
-					partitioning_layer_proxy,
+					partitioning_layer_proxies,
 					reconstruction_time,
 					feature_property_types_to_assign,
 					respect_feature_time_period));
@@ -337,14 +337,16 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * The partitioning static or dynamic polygons come from a layer output.
+		 * The partitioning static or dynamic polygons come from layer outputs.
 		 *
 		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy or
 		 * @a TopologyBoundaryResolverLayerProxy, otherwise no partitioning will occur.
+		 *
+		 * @throws PreconditionViolationError exception if @a partitioning_layer_proxies is empty.
 		 */
 		AssignPlateIds(
 				AssignPlateIdMethodType assign_plate_id_method,
-				const LayerProxy::non_null_ptr_type &partitioning_layer_proxy,
+				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 				const double &reconstruction_time,
 				const feature_property_flags_type &feature_property_types_to_assign,
 				bool respect_feature_time_period);

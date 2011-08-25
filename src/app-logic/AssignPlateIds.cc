@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
+
 #include "AssignPlateIds.h"
 
 #include "LayerProxyUtils.h"
@@ -36,6 +38,7 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "model/NotificationGuard.h"
 
@@ -127,7 +130,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 
 GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		AssignPlateIdMethodType assign_plate_id_method,
-		const LayerProxy::non_null_ptr_type &partitioning_layer_proxy,
+		const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 		const double &reconstruction_time,
 		const feature_property_flags_type &feature_property_types_to_assign,
 		bool respect_feature_time_period) :
@@ -135,6 +138,10 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	d_feature_property_types_to_assign(feature_property_types_to_assign),
 	d_respect_feature_time_period(respect_feature_time_period)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!partitioning_layer_proxies.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
 	// Contains the reconstructed static polygons used for cookie-cutting.
 	std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_static_polygons;
 
@@ -144,33 +151,36 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	// The reconstruction tree of the static/dynamic polygons - used to reverse reconstruct if necessary.
 	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree;
 
-
-	// See if the input layer proxy is a reconstruct layer proxy.
-	boost::optional<ReconstructLayerProxy *> static_polygons_layer_proxy =
-			LayerProxyUtils::get_layer_proxy_derived_type<
-					ReconstructLayerProxy>(partitioning_layer_proxy);
-	if (static_polygons_layer_proxy)
+	// Iterate over the partitioning layer  proxies.
+	BOOST_FOREACH(const LayerProxy::non_null_ptr_type &partitioning_layer_proxy, partitioning_layer_proxies)
 	{
-		static_polygons_layer_proxy.get()->get_reconstructed_feature_geometries(
-				reconstructed_static_polygons,
-				reconstruction_time);
+		// See if the input layer proxy is a reconstruct layer proxy.
+		boost::optional<ReconstructLayerProxy *> static_polygons_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						ReconstructLayerProxy>(partitioning_layer_proxy);
+		if (static_polygons_layer_proxy)
+		{
+			static_polygons_layer_proxy.get()->get_reconstructed_feature_geometries(
+					reconstructed_static_polygons,
+					reconstruction_time);
 
-		reconstruction_tree = static_polygons_layer_proxy.get()->get_reconstruction_layer_proxy()
-				->get_reconstruction_tree(reconstruction_time);
-	}
+			reconstruction_tree = static_polygons_layer_proxy.get()->get_reconstruction_layer_proxy()
+					->get_reconstruction_tree(reconstruction_time);
+		}
 
-	// See if the input layer proxy is a topology boundary resolver layer proxy.
-	boost::optional<TopologyBoundaryResolverLayerProxy *> dynamic_polygons_layer_proxy =
-			LayerProxyUtils::get_layer_proxy_derived_type<
-					TopologyBoundaryResolverLayerProxy>(partitioning_layer_proxy);
-	if (dynamic_polygons_layer_proxy)
-	{
-		dynamic_polygons_layer_proxy.get()->get_resolved_topological_boundaries(
-				resolved_topological_boundaries,
-				reconstruction_time);
+		// See if the input layer proxy is a topology boundary resolver layer proxy.
+		boost::optional<TopologyBoundaryResolverLayerProxy *> dynamic_polygons_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						TopologyBoundaryResolverLayerProxy>(partitioning_layer_proxy);
+		if (dynamic_polygons_layer_proxy)
+		{
+			dynamic_polygons_layer_proxy.get()->get_resolved_topological_boundaries(
+					resolved_topological_boundaries,
+					reconstruction_time);
 
-		reconstruction_tree = dynamic_polygons_layer_proxy.get()->get_reconstruction_layer_proxy()
-				->get_reconstruction_tree(reconstruction_time);
+			reconstruction_tree = dynamic_polygons_layer_proxy.get()->get_reconstruction_layer_proxy()
+					->get_reconstruction_tree(reconstruction_time);
+		}
 	}
 
 	d_geometry_cookie_cutter.reset(

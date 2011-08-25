@@ -241,7 +241,6 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 
 	// NOTE: This needs to be done first thing after setupUi() is called.
 	d_partitioning_layer_state_seq.table_widget = table_partitioning_layers;
-	d_partitioning_layer_state_seq.layer_selection_group = new QButtonGroup(table_partitioning_layers);
 	d_partitioned_file_state_seq.table_widget = table_partitioned_files;
 
 	set_up_button_box();
@@ -314,27 +313,40 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features()
 boost::optional<GPlatesAppLogic::AssignPlateIds::non_null_ptr_type>
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 {
-	// Get the partitioning polygon layer proxy.
-	const boost::optional<layer_ptr_type> partitioning_layer = get_selected_layer(d_partitioning_layer_state_seq);
-	if (!partitioning_layer)
+	// Get the selected partitioning polygon layers.
+	const layer_ptr_seq_type partitioning_layers = get_selected_layers(d_partitioning_layer_state_seq);
+	if (partitioning_layers.empty())
 	{
 		// Either there are no partitioning layers to choose from or the user hasn't selected one.
 		pop_up_no_partitioning_layers_found_or_selected_message_box();
 		return boost::none;
 	}
 
-	boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_partitioning_layer = partitioning_layer->lock();
-	const boost::optional<GPlatesAppLogic::LayerProxy::non_null_ptr_type> partitioning_layer_proxy_opt =
-			locked_partitioning_layer->get_reconstruct_graph_layer().get_layer_output();
-	if (!partitioning_layer_proxy_opt)
+	// Get the layer proxies from the selected partitioning layers.
+	std::vector<GPlatesAppLogic::LayerProxy::non_null_ptr_type> partitioning_layer_proxies;
+	BOOST_FOREACH(const layer_ptr_type &partitioning_layer, partitioning_layers)
 	{
-		// NOTE: We should probably assert here since this shouldn't happen since the user is only
-		// presented with *active* layers to choose from but let's get the user to try again in case
-		// somehow the layer was deactivated while this dialog is active.
+		boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_partitioning_layer = partitioning_layer.lock();
+		const boost::optional<GPlatesAppLogic::LayerProxy::non_null_ptr_type> partitioning_layer_proxy_opt =
+				locked_partitioning_layer->get_reconstruct_graph_layer().get_layer_output();
+		if (!partitioning_layer_proxy_opt)
+		{
+			// NOTE: We should probably assert here since this shouldn't happen since the user is only
+			// presented with *active* layers to choose from but let's get the user to try again in case
+			// somehow the layer was deactivated while this dialog is active.
+			continue;
+		}
+		partitioning_layer_proxies.push_back(partitioning_layer_proxy_opt.get());
+	}
+
+	// NOTE: Shouldn't really need this since each selected layer should have an active layer proxy
+	// because only layers with *active* layer proxies are avialable to the user for selection.
+	if (partitioning_layer_proxies.empty())
+	{
+		// Either there are no partitioning layers to choose from or the user hasn't selected one.
 		pop_up_no_partitioning_layers_found_or_selected_message_box();
 		return boost::none;
 	}
-	const GPlatesAppLogic::LayerProxy::non_null_ptr_type partitioning_layer_proxy = partitioning_layer_proxy_opt.get();
 
 	double reconstruction_time = 0;
 
@@ -372,7 +384,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 
 	return GPlatesAppLogic::AssignPlateIds::create(
 			d_assign_plate_id_method,
-			partitioning_layer_proxy,
+			partitioning_layer_proxies,
 			reconstruction_time,
 			feature_property_types_to_assign,
 			d_respect_feature_time_period);
@@ -567,7 +579,17 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_possible_partitioning_
 
 			// If the layer type can generate topological plate polygons or reconstruction geometries
 			// (the latter may contain static polygons) then add it to the list of possible layers.
+			//
+			// NOTE: We also include topological network here even though they are deforming
+			// and not rigid regions. This is because the current topological closed plate polygons
+			// do *not* cover the entire globe and leave holes where there are topological networks.
+			// So we assign plate ids using the topological networks with the understanding that
+			// these are to be treated as rigid regions as a first order approximation (although the
+			// plate ids don't exist in the rotation file so they'll need to be added - for example
+			// the Andes deforming region has plate id 29201 which should be mapped to 201 in
+			// the rotation file).
 			if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER ||
+				//layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER ||
 				layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
 			{
 				possible_partitioning_layers.push_back(visual_layer);
@@ -605,24 +627,26 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_selected_feature_colle
 }
 
 
-boost::optional<GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::layer_ptr_type>
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_selected_layer(
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::layer_ptr_seq_type
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_selected_layers(
 		LayerStateCollection &layer_state_collection)
 {
-	const int checked_button_id = d_partitioning_layer_state_seq.layer_selection_group->checkedId();
-	if (checked_button_id < 0) // No button is selected...
+	layer_ptr_seq_type selected_layers;
+
+	// Iterate through the layers accepted by the user.
+	layer_state_seq_type::const_iterator layer_state_iter = layer_state_collection.layer_state_seq.begin();
+	layer_state_seq_type::const_iterator layer_state_end = layer_state_collection.layer_state_seq.end();
+	for ( ; layer_state_iter != layer_state_end; ++layer_state_iter)
 	{
-		// Either there are no possible partitioning layers or the user has not yet selected any layer.
-		return boost::none;
+		const LayerState &layer_state = *layer_state_iter;
+
+		if (layer_state.enabled)
+		{
+			selected_layers.push_back(layer_state.layer);
+		}
 	}
-	const unsigned int checked_button_row = checked_button_id;
 
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			checked_button_row < d_partitioning_layer_state_seq.layer_state_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Return the currently selected partitioning layer.
-	return d_partitioning_layer_state_seq.layer_state_seq[checked_button_row].layer;
+	return selected_layers;
 }
 
 
@@ -652,6 +676,14 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_partitioning_layers
 	// Connect the help dialogs.
 	QObject::connect(push_button_help_partitioning_layers, SIGNAL(clicked()),
 			d_help_partitioning_layer_dialog, SLOT(show()));
+
+	// Listen for changes to the checkbox that enables/disables partitioning layers.
+	QObject::connect(table_partitioning_layers, SIGNAL(cellChanged(int, int)),
+			this, SLOT(react_cell_changed_partitioning_layers(int, int)));
+	QObject::connect(button_clear_all_partitioning_layers, SIGNAL(clicked()),
+			this, SLOT(react_clear_all_partitioning_layers()));
+	QObject::connect(button_select_all_partitioning_layers, SIGNAL(clicked()),
+			this, SLOT(react_select_all_partitioning_layers()));
 
 	// Try to adjust column widths.
 	QHeaderView *header = table_partitioning_layers->horizontalHeader();
@@ -781,7 +813,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::handle_page_change(
 	switch (page)
 	{
 	case 0:
-			partitioning_files->setFocus();
+			partitioning_layers->setFocus();
 			button_prev->setEnabled(false);
 			d_button_create->setEnabled(false);
 			break;
@@ -869,9 +901,9 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::add_file_row(
 	filename_item->setFlags(Qt::ItemIsEnabled);
 	file_state_collection.table_widget->setItem(row, FILENAME_COLUMN, filename_item);
 
-	// Add checkbox item to enable/disable the layer.
+	// Add checkbox item to enable/disable the file.
 	QTableWidgetItem *file_enabled_item = new QTableWidgetItem();
-	file_enabled_item->setToolTip(tr("Select to enable layer for partitioning"));
+	file_enabled_item->setToolTip(tr("Select to enable file to be partitioned"));
 	file_enabled_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
 	file_enabled_item->setCheckState(row_file_state.enabled ? Qt::Checked : Qt::Unchecked);
 	file_state_collection.table_widget->setItem(row, ENABLE_FILE_COLUMN, file_enabled_item);
@@ -933,23 +965,19 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::add_layer_row(
 	// Add a row.
 	layer_state_collection.table_widget->insertRow(row);
 	layer_state_collection.layer_state_seq.push_back(LayerState(visual_layer));
-	
+	const LayerState &row_layer_state = layer_state_collection.layer_state_seq.back();
+
 	// Add layer name item.
 	QTableWidgetItem *layer_name_item = new QTableWidgetItem(layer_name);
 	layer_name_item->setFlags(Qt::ItemIsEnabled);
 	layer_state_collection.table_widget->setItem(row, LAYER_NAME_COLUMN, layer_name_item);
 
-	// Add radio button to select the layer.
-	QRadioButton* layer_selection_button = new QRadioButton(layer_state_collection.table_widget);
-	layer_selection_button->setToolTip(tr("Select the layer for partitioning"));
-	// Add to button group so we can identify which row it's in when user selects it.
-	d_partitioning_layer_state_seq.layer_selection_group->addButton(layer_selection_button);
-	d_partitioning_layer_state_seq.layer_selection_group->setId(layer_selection_button, row);
-	// Set radio button in appropriate row/column of table widget.
-	layer_state_collection.table_widget->setCellWidget(
-			row,
-			ENABLE_LAYER_COLUMN,
-			layer_selection_button);
+	// Add checkbox item to enable/disable the layer.
+	QTableWidgetItem* layer_enabled_item = new QTableWidgetItem();
+	layer_enabled_item->setToolTip(tr("Select to enable layer for partitioning"));
+	layer_enabled_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+	layer_enabled_item->setCheckState(row_layer_state.enabled ? Qt::Checked : Qt::Unchecked);
+	layer_state_collection.table_widget->setItem(row, ENABLE_LAYER_COLUMN, layer_enabled_item);
 }
 
 
@@ -1006,6 +1034,53 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_select_all_partition
 	for (int row = 0; row < d_partitioned_file_state_seq.table_widget->rowCount(); ++row)
 	{
 		d_partitioned_file_state_seq.table_widget->item(row, ENABLE_FILE_COLUMN)
+				->setCheckState(Qt::Checked);
+	}
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_cell_changed_partitioning_layers(
+		int row,
+		int column)
+{
+	if (row < 0 ||
+			boost::numeric_cast<layer_state_seq_type::size_type>(row) >
+					d_partitioning_layer_state_seq.layer_state_seq.size())
+	{
+		return;
+	}
+
+	// It should be the enable layer checkbox column as that's the only
+	// cell that's editable.
+	if (column != ENABLE_LAYER_COLUMN)
+	{
+		return;
+	}
+
+	// Set the enable flag in our internal layer sequence.
+	d_partitioning_layer_state_seq.layer_state_seq[row].enabled =
+			d_partitioning_layer_state_seq.table_widget->item(row, column)->checkState() == Qt::Checked;
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_clear_all_partitioning_layers()
+{
+	for (int row = 0; row < d_partitioning_layer_state_seq.table_widget->rowCount(); ++row)
+	{
+		d_partitioning_layer_state_seq.table_widget->item(row, ENABLE_LAYER_COLUMN)
+				->setCheckState(Qt::Unchecked);
+	}
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_select_all_partitioning_layers()
+{
+	for (int row = 0; row < d_partitioning_layer_state_seq.table_widget->rowCount(); ++row)
+	{
+		d_partitioning_layer_state_seq.table_widget->item(row, ENABLE_LAYER_COLUMN)
 				->setCheckState(Qt::Checked);
 	}
 }
