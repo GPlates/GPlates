@@ -75,11 +75,9 @@ POP_MSVC_WARNINGS
 
 
 GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
-		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
-	d_resolved_topological_boundaries(resolved_topological_boundaries),
 	d_resolved_topological_networks(resolved_topological_networks),
 	d_reconstruction_tree(reconstruction_tree),
 	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),

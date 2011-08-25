@@ -120,12 +120,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
 				d_current_topological_network_resolver_layer_proxies.get_input_layer_proxies())
 		{
-			// NOTE: We don't pass the resolved boundaries of the networks to the velocity calculation.
-			// The velocity calculation on networks only needs the ResolvedTopologicalNetwork objects.
-			std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_network_boundaries;
-
 			topological_network_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_networks(
-					resolved_topological_network_boundaries,
 					resolved_topological_networks,
 					reconstruction_time);
 		}

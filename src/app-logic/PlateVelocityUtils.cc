@@ -396,7 +396,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 			reconstruction_time,
 			reconstructed_static_polygons,
 			boost::none/*resolved_topological_boundaries*/,
-			true/*partition_using_static_polygons*/);
+			boost::none/*resolved_topological_networks*/);
 
 
 	// Get the resolved topological boundaries and optimise them for point-in-polygon tests.
@@ -455,7 +455,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 			reconstruction_time,
 			resolved_networks_interior_polygons,
 			boost::none/*resolved_topological_boundaries*/,
-			true/*partition_using_static_polygons*/);
+			boost::none/*resolved_topological_networks*/);
 
 	// Visit the multi-point feature collections and calculate velocities.
 	GPlatesFeatureVisitors::ComputationalMeshSolver velocity_solver(

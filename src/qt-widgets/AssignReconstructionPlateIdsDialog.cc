@@ -589,7 +589,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_possible_partitioning_
 			// the Andes deforming region has plate id 29201 which should be mapped to 201 in
 			// the rotation file).
 			if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER ||
-				//layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER ||
+				layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER ||
 				layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
 			{
 				possible_partitioning_layers.push_back(visual_layer);

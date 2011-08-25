@@ -53,7 +53,6 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::~TopologyNetworkResolverLaye
 
 void
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_networks(
-		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 		const double &reconstruction_time)
 {
@@ -108,7 +107,6 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 		{
 			// Resolve our networks features into our sequence of resolved topological networks.
 			TopologyUtils::resolve_topological_networks(
-					d_cached_resolved_topologies->resolved_topological_boundaries,
 					d_cached_resolved_topologies->resolved_topological_networks,
 					d_current_topological_network_feature_collections,
 					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree(reconstruction_time),
@@ -121,11 +119,13 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 			resolved_topological_networks.end(),
 			d_cached_resolved_topologies->resolved_topological_networks.begin(),
 			d_cached_resolved_topologies->resolved_topological_networks.end());
+}
 
-	resolved_topological_boundaries.insert(
-			resolved_topological_boundaries.end(),
-			d_cached_resolved_topologies->resolved_topological_boundaries.begin(),
-			d_cached_resolved_topologies->resolved_topological_boundaries.end());
+
+GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_reconstruction_layer_proxy()
+{
+	return d_current_reconstruction_layer_proxy.get_input_layer_proxy();
 }
 
 

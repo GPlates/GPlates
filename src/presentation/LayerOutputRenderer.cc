@@ -129,12 +129,9 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<topology_network_resolver_layer_proxy_type> &topology_network_resolver_layer_proxy)
 {
 	// Get the resolved topological networks for the current reconstruction time.
-	std::vector<GPlatesAppLogic::resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
 	std::vector<GPlatesAppLogic::resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
 
-	topology_network_resolver_layer_proxy->get_resolved_topological_networks(
-		resolved_topological_boundaries,
-		resolved_topological_networks);
+	topology_network_resolver_layer_proxy->get_resolved_topological_networks(resolved_topological_networks);
 
 	d_reconstruction_geometry_renderer.begin_render();
 
@@ -144,15 +141,6 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 			resolved_topological_networks)
 	{
 		resolved_topological_network->accept_visitor(d_reconstruction_geometry_renderer);
-	}
-
-	// Each network now also outputs a resolved topological boundary for the boundary of the network.
-	// Render each boundary.
-	BOOST_FOREACH(
-			const GPlatesAppLogic::resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary,
-			resolved_topological_boundaries)
-	{
-		resolved_topological_boundary->accept_visitor(d_reconstruction_geometry_renderer);
 	}
 
 	d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);

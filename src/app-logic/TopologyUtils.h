@@ -292,7 +292,6 @@ namespace GPlatesAppLogic
 		 */
 		void
 		resolve_topological_networks(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,

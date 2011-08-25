@@ -71,29 +71,31 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns the resolved topological networks, for the current reconstruction time,
-		 * by appending them to them to @a resolved_topological_networks and @a resolved_topological_boundaries
+		 * by appending them to them to @a resolved_topological_networks.
 		 */
 		void
 		get_resolved_topological_networks(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
 		{
-			get_resolved_topological_networks(
-				resolved_topological_boundaries, 
-				resolved_topological_networks, 
-				d_current_reconstruction_time);
+			get_resolved_topological_networks(resolved_topological_networks, d_current_reconstruction_time);
 		}
 
 
 		/**
-		 * Returns the resolved topological boundaries, at the specified time, by appending
+		 * Returns the resolved topological networks, at the specified time, by appending
 		 * them to them to @a resolved_topological_networks.
 		 */
 		void
 		get_resolved_topological_networks(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time);
+
+
+		/**
+		 * Returns the current reconstruction layer proxy used for reconstructions.
+		 */
+		ReconstructionLayerProxy::non_null_ptr_type
+		get_reconstruction_layer_proxy();
 
 
 		/**

@@ -161,8 +161,17 @@ namespace GPlatesAppLogic
 		 *
 		 * @a partitioning_feature_collections can be a source of dynamic polygons or
 		 * static polygons.
-		 * That is they can contain TopologicalClosedPlateBoundary features or
+		 * That is they can contain TopologicalClosedPlateBoundary features or TopologicalNetwork or
 		 * regular static polygon features.
+		 *
+		 * NOTE: We also include topological network here even though they are deforming
+		 * and not rigid regions. This is because the current topological closed plate polygons
+		 * do *not* cover the entire globe and leave holes where there are topological networks.
+		 * So we assign plate ids using the topological networks with the understanding that
+		 * these are to be treated as rigid regions as a first order approximation (although the
+		 * plate ids don't exist in the rotation file so they'll need to be added - for example
+		 * the Andes deforming region has plate id 29201 which should be mapped to 201 in
+		 * the rotation file).
 		 *
 		 * @a reconstruction_feature_collections contains rotations required to reconstruct
 		 * the partitioning polygon features and to reverse reconstruct any features
@@ -172,8 +181,6 @@ namespace GPlatesAppLogic
 		 * topological closed plate boundary features can be used as partitioning polygons.
 		 * @a allow_partitioning_using_static_polygons determines if
 		 * regular features (with static polygon geometry) can be used as partitioning polygons.
-		 * By default they both are allowed but the features in @a partitioning_feature_collections
-		 * should ideally only contain one type.
 		 *
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
@@ -196,6 +203,7 @@ namespace GPlatesAppLogic
 				const feature_property_flags_type &feature_property_types_to_assign =
 						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
 				bool allow_partitioning_using_topological_plate_polygons = true,
+				bool allow_partitioning_using_topological_networks = true,
 				bool allow_partitioning_using_static_polygons = true,
 				bool respect_feature_time_period = true)
 		{
@@ -207,6 +215,7 @@ namespace GPlatesAppLogic
 					anchor_plate_id,
 					feature_property_types_to_assign,
 					allow_partitioning_using_topological_plate_polygons,
+					allow_partitioning_using_topological_networks,
 					allow_partitioning_using_static_polygons,
 					respect_feature_time_period));
 		}
@@ -216,8 +225,17 @@ namespace GPlatesAppLogic
 		 * The partitioning static or dynamic polygons come from a layer output.
 		 *
 		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy
-		 * (for static partitioning polygons) or @a TopologyBoundaryResolverLayerProxy,
-		 * otherwise no partitioning will occur.
+		 * (for static partitioning polygons) or @a TopologyBoundaryResolverLayerProxy or
+		 * @a TopologicalNetwork, otherwise no partitioning will occur.
+		 *
+		 * NOTE: We also include topological network here even though they are deforming
+		 * and not rigid regions. This is because the current topological closed plate polygons
+		 * do *not* cover the entire globe and leave holes where there are topological networks.
+		 * So we assign plate ids using the topological networks with the understanding that
+		 * these are to be treated as rigid regions as a first order approximation (although the
+		 * plate ids don't exist in the rotation file so they'll need to be added - for example
+		 * the Andes deforming region has plate id 29201 which should be mapped to 201 in
+		 * the rotation file).
 		 *
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
@@ -332,6 +350,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign,
 				bool allow_partitioning_using_topological_plate_polygons,
+				bool allow_partitioning_using_topological_networks,
 				bool allow_partitioning_using_static_polygons,
 				bool respect_feature_time_period);
 
@@ -340,7 +359,8 @@ namespace GPlatesAppLogic
 		 * The partitioning static or dynamic polygons come from layer outputs.
 		 *
 		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy or
-		 * @a TopologyBoundaryResolverLayerProxy, otherwise no partitioning will occur.
+		 * @a TopologyBoundaryResolverLayerProxy or @a TopologyNetworkResolverLayerProxy,
+		 * otherwise no partitioning will occur.
 		 *
 		 * @throws PreconditionViolationError exception if @a partitioning_layer_proxies is empty.
 		 */

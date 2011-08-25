@@ -36,7 +36,6 @@
 #include "AppLogicFwd.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionFeatureProperties.h"
-#include "ResolvedTopologicalBoundary.h"
 #include "TopologyBoundaryIntersections.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -80,7 +79,6 @@ namespace GPlatesAppLogic
 		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
 		 */
 		TopologyNetworkResolver(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
@@ -229,11 +227,6 @@ namespace GPlatesAppLogic
 			section_seq_type d_sections_interior;
 		};
 
-
-		/**
-		 * The resolved topological boundaries we're generating.
-		 */
-		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &d_resolved_topological_boundaries;
 
 		/**
 		 * The resolved topological networks we're generating.
