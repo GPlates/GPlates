@@ -81,8 +81,11 @@ namespace GPlatesQtWidgets
 			// Get the export file options from the export file options widget.
 			d_export_configuration.file_options =
 					d_export_file_options_widget->get_export_file_options();
-			d_export_configuration.wrap_to_dateline =
-					d_dateline_wrap_options_widget->get_wrap_to_dateline();
+			if (d_dateline_wrap_options_widget)
+			{
+				d_export_configuration.wrap_to_dateline =
+						d_dateline_wrap_options_widget->get_wrap_to_dateline();
+			}
 
 			return GPlatesGui::ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
 					new GPlatesGui::ExportReconstructedGeometryAnimationStrategy::Configuration(
@@ -97,6 +100,8 @@ namespace GPlatesQtWidgets
 						default_export_configuration,
 				bool configure_dateline_wrapping) :
 			ExportOptionsWidget(parent_),
+			d_dateline_wrap_options_widget(NULL),
+			d_export_file_options_widget(NULL),
 			d_export_configuration(*default_export_configuration)
 		{
 			QVBoxLayout *widget_layout = new QVBoxLayout(this);
