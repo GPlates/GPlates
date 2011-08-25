@@ -314,8 +314,8 @@ boost::optional<GPlatesAppLogic::AssignPlateIds::non_null_ptr_type>
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 {
 	// Get the selected partitioning polygon layers.
-	const layer_ptr_seq_type partitioning_layers = get_selected_layers(d_partitioning_layer_state_seq);
-	if (partitioning_layers.empty())
+	const layer_ptr_seq_type partitioning_layer_ptrs = get_selected_layers(d_partitioning_layer_state_seq);
+	if (partitioning_layer_ptrs.empty())
 	{
 		// Either there are no partitioning layers to choose from or the user hasn't selected one.
 		pop_up_no_partitioning_layers_found_or_selected_message_box();
@@ -324,7 +324,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 
 	// Get the layer proxies from the selected partitioning layers.
 	std::vector<GPlatesAppLogic::LayerProxy::non_null_ptr_type> partitioning_layer_proxies;
-	BOOST_FOREACH(const layer_ptr_type &partitioning_layer, partitioning_layers)
+	BOOST_FOREACH(const layer_ptr_type &partitioning_layer, partitioning_layer_ptrs)
 	{
 		boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_partitioning_layer = partitioning_layer.lock();
 		const boost::optional<GPlatesAppLogic::LayerProxy::non_null_ptr_type> partitioning_layer_proxy_opt =
