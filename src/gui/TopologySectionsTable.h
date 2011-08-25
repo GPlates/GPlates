@@ -36,6 +36,11 @@
 #include "gui/FeatureFocus.h"
 
 
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
 namespace GPlatesQtWidgets
 {
 	class ActionButtonBox;
@@ -62,6 +67,7 @@ namespace GPlatesGui
 				QTableWidget &table,
 				TopologySectionsContainer &boundary_container,
 				TopologySectionsContainer &interior_container,
+				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesGui::FeatureFocus &feature_focus);
 
 		virtual
@@ -343,6 +349,11 @@ namespace GPlatesGui
 		 * between user cell modifications and our own table updates.
 		 */
 		bool d_suppress_update_notification_guard;
+
+		/**
+		 * Application state used to retrieve the current reconstruction.
+		 */
+		GPlatesAppLogic::ApplicationState &d_application_state;
 
 		/**
 		 * Feature focus, so that the user can click on entries in the table

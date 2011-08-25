@@ -91,7 +91,6 @@ GPlatesAppLogic::TopologyNetworkResolver::finalise_post_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// If we visited a GpmlTopologicalPolygon property then create:
-	// ResolvedTopologicalBoundary,
 	// ResolvedTopologicalNetwork.
 
 	if (d_topological_polygon_feature_iterator)

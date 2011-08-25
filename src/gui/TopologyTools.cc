@@ -658,6 +658,12 @@ std::cout << "GPlatesGui::TopologyTools::handle_reconstruction() " << std::endl;
 
 	// re-display feature focus
 	display_focused_feature();
+
+	// Update topology sections tables.
+	// We do this because topological section features that don't exist at the current reconstruction
+	// time are displayed in a different row colour.
+	d_boundary_sections_container_ptr->update_table_from_container();
+	d_interior_sections_container_ptr->update_table_from_container();
 }
 
 

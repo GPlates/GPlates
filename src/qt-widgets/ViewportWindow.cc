@@ -521,7 +521,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::TopologySectionsTable(
 					*table_widget_topology_sections,
 					*d_topology_boundary_sections_container_ptr, 
-					*d_topology_interior_sections_container_ptr, 
+					*d_topology_interior_sections_container_ptr,
+					get_application_state(),
 					get_view_state().get_feature_focus()));
 
 	// If the focused feature is modified, we may need to update the ShapefileAttributeViewerDialog.

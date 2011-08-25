@@ -33,10 +33,13 @@
 
 #include "TopologySectionsTable.h"
 
+#include "TopologySectionsContainer.h"
+
+#include "app-logic/ApplicationState.h"
+#include "app-logic/LayerProxyUtils.h"
+
 #include "qt-widgets/ActionButtonBox.h"
 #include "qt-widgets/InsertionPointWidget.h"
-
-#include "gui/TopologySectionsContainer.h"
 
 
 namespace
@@ -89,6 +92,23 @@ namespace
 	{
 		return entry.get_geometry_property().is_still_valid();
 	}
+
+	bool
+	check_row_validity_reconstructed_geometry(
+			const GPlatesGui::TopologySectionsContainer::TableRow &entry,
+			const GPlatesAppLogic::Reconstruction &reconstruction)
+	{
+		// Get the RFGs (and generate if not already), for all active ReconstructLayer's, that reference the feature.
+		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> found_rfgs;
+		GPlatesAppLogic::LayerProxyUtils::find_reconstructed_feature_geometries_of_feature(
+				found_rfgs,
+				entry.get_feature_ref(),
+				reconstruction);
+
+		// If we found any RFGs in the current reconstruction then it means the topological section
+		// feature exists at the current reconstruction time (of 'reconstruction').
+		return !found_rfgs.empty();
+	}
 	
 	
 	const QString
@@ -137,6 +157,7 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 		QTableWidget &table,
 		TopologySectionsContainer &boundary_container,
 		TopologySectionsContainer &interior_container,
+		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesGui::FeatureFocus &feature_focus):
 	d_table(&table),
 	d_boundary_container_ptr(&boundary_container),
@@ -147,6 +168,7 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	d_insert_below_action(new QAction(&table)),
 	d_cancel_insertion_point_action(new QAction(&table)),
 	d_suppress_update_notification_guard(false),
+	d_application_state(application_state),
 	d_feature_focus_ptr(&feature_focus)
 {
 	// Set up the actions we can use.
@@ -675,6 +697,12 @@ qDebug() << "update_table_row()"
 				{
 					// Draw a nice normal valid row, with color for next neighbor.
 					render_valid_row(row, entry, QColor("green") ); // green
+				}
+				else if ( !check_row_validity_reconstructed_geometry(entry, d_application_state.get_current_reconstruction()) )
+				{
+					// Draw a nice normal valid row, with color indicating section does not
+					// contribute to the topology at the current reconstruction time.
+					render_valid_row(row, entry, Qt::gray );
 				}
 				else 
 				{
