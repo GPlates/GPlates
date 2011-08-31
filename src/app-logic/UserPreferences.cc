@@ -37,21 +37,12 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "utils/ConfigBundle.h"
+#include "utils/ConfigBundleUtils.h"
+
 
 namespace
 {
-	/**
-	 * Necessary when dealing with generated key names.
-	 */
-	QString
-	sanitise_key(
-			const QString &key_with_slashes)
-	{
-		QString sane = key_with_slashes;
-		sane.replace('/', '_');
-		return sane;
-	}
-
 	/**
 	 * Returns "magic" default preference values that are derived from system calls.
 	 * Returns null QVariant if no such magic key exists.
@@ -188,6 +179,10 @@ GPlatesAppLogic::UserPreferences::set_value(
 		const QString &key,
 		const QVariant &value)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			key.startsWith('/') == false,
+			GPLATES_ASSERTION_SOURCE);
+
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
 		settings.beginGroup(d_key_root);
@@ -201,7 +196,7 @@ GPlatesAppLogic::UserPreferences::set_value(
 }
 
 void
-GPlatesAppLogic::UserPreferences::clear_value(
+GPlatesAppLogic::UserPreferences::clear_prefix(
 		const QString &key)
 {
 	QSettings settings;
@@ -248,6 +243,34 @@ GPlatesAppLogic::UserPreferences::subkeys(
 }
 
 
+GPlatesUtils::ConfigBundle *
+GPlatesAppLogic::UserPreferences::extract_keyvalues_as_configbundle(
+		const QString &prefix)
+{
+	QStringList keys = subkeys(prefix);
+	GPlatesUtils::ConfigBundle *bundle = new GPlatesUtils::ConfigBundle(this);
+	
+	Q_FOREACH(QString subkey, keys) {
+		QString fullkey = GPlatesUtils::compose_keyname(prefix, subkey);
+		bundle->set_value(subkey, get_value(fullkey));
+	}
+	return bundle;	// Memory handled by Qt, object parented to UserPreferences.
+}
+
+
+void
+GPlatesAppLogic::UserPreferences::insert_keyvalues_from_configbundle(
+		const QString &prefix,
+		const GPlatesUtils::ConfigBundle &bundle)
+{
+	clear_prefix(prefix);
+	Q_FOREACH(QString subkey, bundle.subkeys()) {
+		QString fullkey = GPlatesUtils::compose_keyname(prefix, subkey);
+		set_value(fullkey, bundle.get_value(subkey));
+	}
+}
+
+
 GPlatesAppLogic::UserPreferences::KeyValueMap
 GPlatesAppLogic::UserPreferences::get_keyvalues_as_map(
 		const QString &prefix)
@@ -256,7 +279,7 @@ GPlatesAppLogic::UserPreferences::get_keyvalues_as_map(
 	KeyValueMap map;
 	
 	Q_FOREACH(QString subkey, keys) {
-		QString fullkey = QString("%1/%2").arg(prefix, subkey);
+		QString fullkey = GPlatesUtils::compose_keyname(prefix, subkey);
 		map.insert(subkey, get_value(fullkey));
 	}
 	return map;	// Is a Qt container, uses pimpl idiom, is fine to return by value.
@@ -268,9 +291,9 @@ GPlatesAppLogic::UserPreferences::set_keyvalues_from_map(
 		const QString &prefix,
 		const GPlatesAppLogic::UserPreferences::KeyValueMap &keyvalues)
 {
-	clear_value(prefix);
+	clear_prefix(prefix);
 	Q_FOREACH(QString subkey, keyvalues.keys()) {
-		QString fullkey = QString("%1/%2").arg(prefix, subkey);
+		QString fullkey = GPlatesUtils::compose_keyname(prefix, subkey);
 		set_value(fullkey, keyvalues.value(subkey));
 	}
 }

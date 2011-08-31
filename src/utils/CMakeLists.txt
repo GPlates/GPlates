@@ -18,6 +18,10 @@ set(srcs
     CommandLineParser.cc
     CommandLineParser.h
     ComponentManager.h
+    ConfigBundle.cc
+    ConfigBundle.h
+    ConfigBundleUtils.cc
+    ConfigBundleUtils.h
     CopyConst.h
     Counter64.h
     DeferredCallEvent.cc

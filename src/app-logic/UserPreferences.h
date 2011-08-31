@@ -35,6 +35,12 @@
 #include <QMap>
 
 
+namespace GPlatesUtils
+{
+	class ConfigBundle;
+}
+
+
 namespace GPlatesAppLogic
 {
 	/**
@@ -43,7 +49,7 @@ namespace GPlatesAppLogic
 	 * A few handy guidelines:-
 	 *
 	 *  - Keys are set using a hierarchy with a unix-like '/' path delimiter.
-	 *    There is no initial '/' as the first character.
+	 *    There is NO initial '/' as the first character.
 	 *
 	 *  - Treat keys as though they were case-sensitive, because they might be.
 	 *
@@ -134,10 +140,14 @@ namespace GPlatesAppLogic
 				const QVariant &value);
 
 		/**
-		 * Clears any user-set value, reverting to compiled-in defaults.
+		 * Clears any user-set value for all keys with the given prefix, reverting to
+		 * a default value if one exists.
+		 * 
+		 * If the key supplied is being used as a 'directory' (a common prefix of other
+		 * keys) then all those keys will be removed.
 		 */
 		void
-		clear_value(
+		clear_prefix(
 				const QString &key);
 
 		/**
@@ -148,6 +158,53 @@ namespace GPlatesAppLogic
 		subkeys(
 				const QString &prefix = "");
 
+
+		/**
+		 * Given a @a prefix to a set of keys, extract all those keys and
+		 * values into a GPlatesUtils::ConfigBundle.
+		 *
+		 * This is intended to make working with groups of related sub-keys as
+		 * a single "object" easier - for example, python colouring configuration.
+		 *
+		 * All key names will have the prefix stripped - they will be
+		 * "relative pathnames" from the given root. It is assumed that
+		 * the prefix itself does not have a value stored.
+		 *
+		 * For example, you could get the keyvalues for prefix "session/recent/1"
+		 * and this method would return a map containing keys such as "loaded_files"
+		 * and "date" - corresponding to "session/recent/1/loaded_files" and
+		 * "session/recent/1/date".
+		 *
+		 * The ConfigBundle returned will be parented to the UserPreferences system,
+		 * and cleaned up when GPlates exits. If you want it to have a shorter lifespan,
+		 * use QObject::setParent().
+		 *
+		 * FIXME: Defaults handling?
+		 */
+		GPlatesUtils::ConfigBundle *
+		extract_keyvalues_as_configbundle(
+				const QString &prefix);
+		
+
+		/**
+		 * Given a @a prefix in the key-value store, and a GPlatesUtils::ConfigBundle,
+		 * set all the given keys in one pass.
+		 *
+		 * This is intended to make working with groups of related sub-keys as
+		 * a single "object" easier - for example, python colouring configuration.
+		 *
+		 * All key names should have the prefix stripped - they will be
+		 * "relative pathnames" from the given root. All pre-existing keys for that
+		 * prefix are cleared before setting the new values.
+		 */
+		void
+		insert_keyvalues_from_configbundle(
+				const QString &prefix,
+				const GPlatesUtils::ConfigBundle &bundle);
+
+
+		
+		
 		/**
 		 * Given a @a prefix to a set of keys, slurp all those keys and
 		 * values into a QMap<QString, QVariant>.
