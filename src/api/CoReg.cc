@@ -42,10 +42,22 @@ using namespace GPlatesDataMining;
 using namespace GPlatesModel;
 #if !defined(GPLATES_NO_PYTHON)
 using namespace boost::python;
-namespace{
+
+namespace
+{
 	class CoRegistration
 	{
 	public:
+
+		CoRegistration() :
+			d_registry(new FeatureCollectionFileFormat::Registry())
+		{ }
+
+		~CoRegistration()
+		{
+			delete d_registry;
+		}
+
 		bool
 		exec(const char* cfg_file)
 		{
@@ -96,7 +108,7 @@ namespace{
 			{
 				files.push_back(QString(extract<const char*>(fl[i])));
 			}
-			d_rotation_fc = DataMiningUtils::load_files(files, d_rotation_files);
+			d_rotation_fc = DataMiningUtils::load_files(files, d_rotation_files, *d_registry);
 		}
 
 		void 
@@ -107,7 +119,7 @@ namespace{
 			{
 				files.push_back(QString(extract<const char*>(fl[i])));
 			}
-			d_seed_fc = DataMiningUtils::load_files(files, d_seed_files);
+			d_seed_fc = DataMiningUtils::load_files(files, d_seed_files, *d_registry);
 		}
 
 		void 
@@ -118,7 +130,7 @@ namespace{
 			{
 				files.push_back(QString(extract<const char*>(fl[i])));
 			}
-			d_coreg_fc = DataMiningUtils::load_files(files, d_coreg_files);
+			d_coreg_fc = DataMiningUtils::load_files(files, d_coreg_files, *d_registry);
 		}
 
 		void
@@ -216,7 +228,7 @@ namespace{
 		{
 			boost::python::list ret;
 			File::non_null_ptr_type file_ptr = 
-				DataMiningUtils::load_file(QString(boost::python::extract<const char*>(file)));
+				DataMiningUtils::load_file(QString(boost::python::extract<const char*>(file)), *d_registry);
 			FeatureCollectionHandle::weak_ref fch = file_ptr->get_reference().get_feature_collection();
 			BOOST_FOREACH(FeatureHandle::non_null_ptr_to_const_type fh, *fch)
 			{
@@ -366,17 +378,17 @@ namespace{
 			d_rotation_fc = 
 				load_files(
 						load_cfg(d_cfg_file, "rotation files"),
-						d_rotation_files);
+						d_rotation_files, *d_registry);
 
 			d_seed_fc =
 				load_files(
 						load_cfg(d_cfg_file, "seed files"),
-						d_seed_files);
+						d_seed_files, *d_registry);
 
 			d_coreg_fc =
 				load_files(
 						load_cfg(d_cfg_file, "coreg files"),
-						d_coreg_files);
+						d_coreg_files, *d_registry);
 
 			if(d_rotation_fc.empty()) 
 				qDebug() << "No rotation file.";
@@ -477,6 +489,7 @@ namespace{
 		double d_s_time, d_e_time, d_inc_time;
 		CoRegConfigurationTable d_cfg_table;
 		std::vector<DataTable> d_result_table;
+		FeatureCollectionFileFormat::Registry* d_registry;  
 	};
 }
 
