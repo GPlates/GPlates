@@ -222,7 +222,8 @@ namespace GPlatesAPI
 				QString file_path = file_ref.get_file_info().get_qfileinfo().absoluteFilePath();
 				if (file_path == qstring_filename)
 				{
-					return object(GPlatesApi::FeatureCollection::create(file_ref.get_feature_collection()));
+					return object();
+					//return object(GPlatesApi::FeatureCollection::create(file_ref.get_feature_collection()));
 				}
 			}
 
