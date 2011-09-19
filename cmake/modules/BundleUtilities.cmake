@@ -489,6 +489,10 @@ function(copy_resolved_item_into_bundle resolved_item resolved_embedded_item)
   else()
     #message(STATUS "copying COMMAND ${CMAKE_COMMAND} -E copy ${resolved_item} ${resolved_embedded_item}")
     execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${resolved_item}" "${resolved_embedded_item}")
+    # Make sure the copied item has write permissions so we can later modify (eg, with 'install_name_tool').
+    if(UNIX) # Includes MacOS
+      execute_process(COMMAND chmod u+w "${resolved_embedded_item}")
+    endif(UNIX)
     if(UNIX AND NOT APPLE)
       file(RPATH_REMOVE FILE "${resolved_embedded_item}")
     endif(UNIX AND NOT APPLE)
