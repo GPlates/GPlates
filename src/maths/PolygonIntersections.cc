@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
+#include <QDebug>
 
 #include "PolygonIntersections.h"
 
@@ -268,6 +269,34 @@ namespace
 			const GPlatesMaths::GreatCircleArc &polygon_prev_gca,
 			const GPlatesMaths::GreatCircleArc &polygon_next_gca)
 	{
+		// We must handle degenerate such as one or both arcs having no rotation axis.
+		if (polygon_prev_gca.is_zero_length())
+		{
+			if (polygon_next_gca.is_zero_length())
+			{
+				qWarning() << "PolygonIntersections: Encountered two zero length segments - result may be incorrect.";
+
+				// Returning a random result.
+				// FIXME: The whole way intersections are calculated needs to be overhauled to
+				// deal with numerical robustness issues better.
+				return true;
+			}
+
+			// Test if the start point of the previous GCA is in front of the plane containing the next GCA.
+			return dot(
+					polygon_prev_gca.start_point().position_vector(),
+					polygon_next_gca.rotation_axis())
+							> 0;
+		}
+		else if (polygon_next_gca.is_zero_length())
+		{
+			// Test if the end point of the next GCA is in front of the plane containing the previous GCA.
+			return dot(
+					polygon_next_gca.end_point().position_vector(),
+					polygon_prev_gca.rotation_axis())
+							> 0;
+		}
+
 		// Unless the two GCAs are parallel there they will form a smaller acute angle
 		// on one side and a larger obtuse angle on the other side.
 		// If the acute angle is to the left (meaning the next GCA bends to the left
