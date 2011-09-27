@@ -820,9 +820,6 @@ GPlatesFileIO::ShapefileReader::read_features(
 			}
 		}
 		
-		// Check if we have a shapefile attribute corresponding to the Feature ID.
-		d_feature_id.reset();
-		
 		it = d_model_to_attribute_map.find(
 			ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID]);
 
@@ -838,8 +835,16 @@ GPlatesFileIO::ShapefileReader::read_features(
 
 				QString feature_id = d_attributes[index].toString();
 
-				d_feature_id.reset(GPlatesUtils::make_icu_string_from_qstring(feature_id));
-				//*d_feature_id = GPlatesUtils::make_icu_string_from_qstring(feature_id);
+				// FIXME: should we check here that the provided string is of valid feature-id form,
+				// rather than just checking if it's not empty? 
+				if (feature_id.isEmpty())
+				{
+					d_feature_id.reset();
+				}
+				else
+				{
+					d_feature_id.reset(GPlatesUtils::make_icu_string_from_qstring(feature_id));
+				}
 			}
 		}		
 		
