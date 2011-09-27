@@ -204,9 +204,7 @@ namespace
 		feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
-					GPlatesModel::ModelUtils::create_gpml_constant_value(
-						conjugate_plate_id,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("conjugateplateId"))));
+					conjugate_plate_id));
 	}
 
 
