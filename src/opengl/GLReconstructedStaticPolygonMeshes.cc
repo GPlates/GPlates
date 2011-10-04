@@ -92,7 +92,6 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 	//
 
 	reconstructed_polygon_mesh_transform_group_seq_type reconstructed_polygon_mesh_transform_groups;
-
 	// Keep track of which reconstructed polygon mesh transform groups are associated with
 	// which finite rotations.
 	reconstructed_polygon_mesh_transform_group_map_type reconstructed_polygon_mesh_transform_group_map;
@@ -180,8 +179,25 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 				GLFrustum::ALL_PLANES_ACTIVE_MASK);
 	}
 
+	// Re-order the transform groups sorted by transform (the same order as 'reconstructed_polygon_mesh_transform_group_map').
+	// This is only being done to retain ordering by plate id (the most common transform) so that
+	// users can get a consistent ordering when the reconstructed polygons overlap.
+	reconstructed_polygon_mesh_transform_group_seq_type sorted_reconstructed_polygon_mesh_transform_groups;
+	sorted_reconstructed_polygon_mesh_transform_groups.reserve(reconstructed_polygon_mesh_transform_groups.size());
+	BOOST_FOREACH(
+			const reconstructed_polygon_mesh_transform_group_map_type::value_type &transform_group_value,
+			reconstructed_polygon_mesh_transform_group_map)
+	{
+		const reconstructed_polygon_mesh_transform_group_seq_type::size_type transform_group_index =
+				transform_group_value.second;
+		const ReconstructedPolygonMeshTransformGroup &transform_group =
+			reconstructed_polygon_mesh_transform_groups[transform_group_index];
+
+		sorted_reconstructed_polygon_mesh_transform_groups.push_back(transform_group);
+	}
+
 	return ReconstructedPolygonMeshTransformsGroups::create(
-			reconstructed_polygon_mesh_transform_groups,
+			sorted_reconstructed_polygon_mesh_transform_groups,
 			num_polygon_meshes);
 }
 
@@ -384,7 +400,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 								reconstructed_polygon_mesh_transform_groups.size()));
 
 		// If we successfully inserted a new transform group then we need to create it.
-		// Because we only inserted it's index into the client's sequence.
+		// Because we only inserted its index into the client's sequence.
 		if (inserted.second)
 		{
 			// Convert the finite rotation from a unit quaternion to a matrix so we can feed it to OpenGL.
