@@ -53,6 +53,7 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::~TopologyBoundaryResolverLa
 void
 GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_boundaries(
 		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &rfgs,
 		const double &reconstruction_time)
 {
 	// If we have no topological features or we are not attached to a reconstruct layer then we
@@ -84,6 +85,10 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 		// Create empty vector of resolved topological boundaries.
 		d_cached_resolved_topological_boundaries =
 				std::vector<resolved_topological_boundary_non_null_ptr_type>();
+		
+		// Create empty vector of reconstructed feature geometries
+		d_cached_reconstructed_feature_geometries =
+				std::vector<reconstructed_feature_geometry_non_null_ptr_type>();
 
 		// Topological sections...
 		std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_topological_boundary_sections;
@@ -108,6 +113,7 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 			// Resolve our closed plate polygon features into our sequence of resolved topological boundaries.
 			TopologyUtils::resolve_topological_boundaries(
 					d_cached_resolved_topological_boundaries.get(),
+					d_cached_reconstructed_feature_geometries.get(),
 					d_current_topological_closed_plate_polygon_feature_collections,
 					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree(reconstruction_time),
 					topological_sections_reconstruct_handles);
@@ -119,6 +125,12 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::get_resolved_topological_bo
 			resolved_topological_boundaries.end(),
 			d_cached_resolved_topological_boundaries->begin(),
 			d_cached_resolved_topological_boundaries->end());
+
+	// Append our cached RFGs to the caller's sequence.
+	rfgs.insert(
+			rfgs.end(),
+			d_cached_reconstructed_feature_geometries->begin(),
+			d_cached_reconstructed_feature_geometries->end());
 }
 
 
@@ -235,6 +247,7 @@ GPlatesAppLogic::TopologyBoundaryResolverLayerProxy::reset_cache()
 {
 	// Clear any cached resolved topological boundaries.
 	d_cached_resolved_topological_boundaries = boost::none;
+	d_cached_reconstructed_feature_geometries = boost::none;
 	d_cached_reconstruction_time = boost::none;
 }
 

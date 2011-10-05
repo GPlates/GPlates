@@ -2090,6 +2090,28 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_polygon(
 }
 
 
+GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_topological_line(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
+{
+	static const GPlatesModel::PropertyName 
+		STRUCTURAL_TYPE = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalLine"),
+		SECTION = 
+			GPlatesModel::PropertyName::create_gpml("section");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> sections;
+
+	find_and_create_one_or_more(elem, &create_topological_section, SECTION, sections, read_errors);
+
+	return GPlatesPropertyValues::GpmlTopologicalLine::create( sections );
+}
+
+
 GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_topological_section(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,

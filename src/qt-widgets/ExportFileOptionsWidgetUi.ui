@@ -42,6 +42,13 @@
      </layout>
     </widget>
    </item>
+  <item>
+    <widget class="QCheckBox" name="checkBox_export_to_multiple_files" >
+     <property name="text" >
+      <string>Export to multiple files (one output directory per input file/layer)</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>

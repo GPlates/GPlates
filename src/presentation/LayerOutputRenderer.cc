@@ -107,8 +107,9 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<topology_boundary_resolver_layer_proxy_type> &topology_boundary_resolver_layer_proxy)
 {
 	// Get the resolved topological boundaries for the current reconstruction time.
+	std::vector<GPlatesAppLogic::reconstructed_feature_geometry_non_null_ptr_type> rfgs;
 	std::vector<GPlatesAppLogic::resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
-	topology_boundary_resolver_layer_proxy->get_resolved_topological_boundaries(resolved_topological_boundaries);
+	topology_boundary_resolver_layer_proxy->get_resolved_topological_boundaries(resolved_topological_boundaries, rfgs);
 
 	d_reconstruction_geometry_renderer.begin_render();
 

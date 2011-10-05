@@ -37,7 +37,10 @@
 #include "ReconstructionGeometry.h"
 #include "ResolvedTopologicalBoundarySubSegment.h"
 
+#include "maths/GeometryOnSphere.h"
 #include "maths/PolygonOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+#include "maths/PointOnSphere.h"
 
 #include "model/FeatureHandle.h"
 #include "model/types.h"
@@ -70,7 +73,15 @@ namespace GPlatesAppLogic
 
 		//! A convenience typedef for the geometry of this @a ResolvedTopologicalBoundary.
 		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_geometry_ptr_type;
+		typedef GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type resolved_topology_geometry_as_line_ptr_type;
 
+		// FIXME: We probably want to generalize the above two into just :
+		// typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_topology_geometry_base_ptr_type;
+		// and then use casting as needed in the resolved_topology_geometry() function 
+		// to get back the correct geom on sphere type from the ResolvedTopologicalBoundary in client code.
+
+		//! A convenience typedef for the geometry of subsegments of this RTB.
+		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type sub_segment_geometry_ptr_type;
 
 
 		/**
@@ -87,6 +98,8 @@ namespace GPlatesAppLogic
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
+				resolved_topology_geometry_as_line_ptr_type resolved_topology_geometry_as_line_ptr,
+				bool is_polygon_,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				SubSegmentForwardIter sub_segment_sequence_begin,
@@ -98,6 +111,8 @@ namespace GPlatesAppLogic
 					new ResolvedTopologicalBoundary(
 							reconstruction_tree,
 							resolved_topology_geometry_ptr,
+							resolved_topology_geometry_as_line_ptr,
+							is_polygon_,
 							feature_handle,
 							property_iterator_,
 							sub_segment_sequence_begin,
@@ -194,6 +209,13 @@ namespace GPlatesAppLogic
 		{
 			return d_property_iterator;
 		}
+		
+		// FIXME: hack to let RTB hold both polygon and line geom
+		bool 
+		is_polygon() const
+		{
+			return d_is_polygon;
+		}
 
 		/**
 		 * Access the resolved topology polygon geometry.
@@ -202,6 +224,12 @@ namespace GPlatesAppLogic
 		resolved_topology_geometry() const
 		{
 			return d_resolved_topology_geometry_ptr;
+		}
+
+		const resolved_topology_geometry_as_line_ptr_type
+		resolved_topology_geometry_as_line() const
+		{
+			return d_resolved_topology_geometry_as_line_ptr;
 		}
 
 		/**
@@ -266,6 +294,10 @@ namespace GPlatesAppLogic
 		 * The resolved topology geometry.
 		 */
 		resolved_topology_geometry_ptr_type d_resolved_topology_geometry_ptr;
+		resolved_topology_geometry_as_line_ptr_type d_resolved_topology_geometry_as_line_ptr;
+
+		// FIXME: hack to let RTB hold both polygon and line 
+		bool d_is_polygon;
 
 		/**
 		 * This is an iterator to the (topological-geometry-valued) property from which
@@ -314,6 +346,8 @@ namespace GPlatesAppLogic
 		ResolvedTopologicalBoundary(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
+				resolved_topology_geometry_as_line_ptr_type resolved_topology_as_line_geometry_ptr,
+				bool is_polygon_,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				SubSegmentForwardIter sub_segment_sequence_begin,
@@ -323,6 +357,8 @@ namespace GPlatesAppLogic
 			ReconstructionGeometry(reconstruction_tree_),
 			WeakObserverType(feature_handle),
 			d_resolved_topology_geometry_ptr(resolved_topology_geometry_ptr),
+			d_resolved_topology_geometry_as_line_ptr(resolved_topology_as_line_geometry_ptr),
+			d_is_polygon( is_polygon_ ),
 			d_property_iterator(property_iterator_),
 			d_plate_id(plate_id_),
 			d_time_of_formation(time_of_formation_),

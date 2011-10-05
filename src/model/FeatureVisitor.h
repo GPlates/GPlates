@@ -77,6 +77,7 @@ namespace GPlatesPropertyValues
 	class GpmlStringList;
 	class GpmlTopologicalInterior;
 	class GpmlTopologicalPolygon;
+	class GpmlTopologicalLine;
 	class GpmlTopologicalLineSection;
 	class GpmlTopologicalIntersection;
 	class GpmlTopologicalPoint;
@@ -211,6 +212,7 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlStringList>::type gpml_string_list_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalInterior>::type gpml_topological_interior_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPolygon>::type gpml_topological_polygon_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLine>::type gpml_topological_line_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLineSection>::type gpml_topological_line_section_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalIntersection>::type gpml_topological_intersection_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPoint>::type gpml_topological_point_type;
@@ -577,6 +579,12 @@ namespace GPlatesModel
 		void
 		visit_gpml_topological_polygon(
 				gpml_topological_polygon_type &gpml_toplogical_polygon)
+		{  }
+
+		virtual
+		void
+		visit_gpml_topological_line(
+				gpml_topological_line_type &gpml_toplogical_line)
 		{  }
 
 		virtual

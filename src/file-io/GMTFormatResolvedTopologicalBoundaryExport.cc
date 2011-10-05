@@ -114,6 +114,20 @@ namespace GPlatesFileIO
 			// Functions to look for specific property values in a feature
 			//
 
+			/**
+			 * Looks for "<gpml:identity>" property in feature
+			 * otherwise returns false.
+			 */
+			bool
+			get_feature_id(
+					QString &id,
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+			{
+				const GPlatesModel::FeatureId &feature_id = feature->feature_id();
+				id.append( GPlatesUtils::make_qstring_from_icu_string( feature_id.get() ) );
+				return true;
+			}
+
 
 			/**
 			 * Looks for "gml:name" property in feature otherwise
@@ -464,7 +478,7 @@ namespace GPlatesFileIO
 			/**
 			 * Formats an export GMT header:
 			 *
-			 * ">sL # name: Trenched_on NAP_PAC_1 # ... # polygon: NAM # use_reverse: no"
+			 * ">sL # name: Trenched_on NAP_PAC_1 # ... # polygon: NAM # use_reverse: no # identity: GPlates-blah-blah-blah"
 			 */
 			class PlatePolygonSubSegmentHeader :
 					public GMTExportHeader
@@ -551,6 +565,14 @@ namespace GPlatesFileIO
 
 					d_header_line.append( " # use_reverse: ");
 					d_header_line.append( sub_segment.get_use_reverse() ? "yes" : "no");
+
+
+					// Feature id 
+					QString id;
+					if (!get_feature_id( id, feature) ) { id = unk; }
+					d_header_line.append( " # identity: ");
+					d_header_line.append( id );
+
 				}
 
 
@@ -571,6 +593,7 @@ namespace GPlatesFileIO
 
 			/**
 			 * Formats GMT header for Slab Polygon Sub Segments
+			 * ">sL # name: Trenched_on NAP_PAC_1 # ... # polygon: NAM # use_reverse: no # identity: GPlates-blah-blah-blah"
 			 */
 			class SlabPolygonSubSegmentHeader :
 					public GMTExportHeader
@@ -651,6 +674,13 @@ namespace GPlatesFileIO
 
 					d_header_line.append( " # polygon: ");
 					d_header_line.append( platepolygon_feature_name );
+
+					// Feature id 
+					QString id;
+					if (!get_feature_id( id, feature) ) { id = unk; }
+					d_header_line.append( " # identity: ");
+					d_header_line.append( id );
+
 				}
 
 				virtual

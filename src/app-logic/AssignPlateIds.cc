@@ -105,6 +105,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	{
 		TopologyUtils::resolve_topological_boundaries(
 				resolved_topological_boundaries,
+				reconstructed_feature_geometries,
 				partitioning_feature_collections,
 				reconstruction_tree_cache.get_reconstruction_tree(),
 				reconstruct_handles);
@@ -162,6 +163,9 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	// Contains the resolved topological polygons used for cookie-cutting.
 	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
 
+	// Contains the resolved topological lines as RFGs ( not really used here, included to make proxy happy )
+	std::vector<reconstructed_feature_geometry_non_null_ptr_type> rfgs;
+
 	// Contains the resolved topological networks used for cookie-cutting.
 	// See comment in header for why a deforming region is currently used to assign plate ids.
 	std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
@@ -186,6 +190,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 					->get_reconstruction_tree(reconstruction_time);
 		}
 
+
 		// See if the input layer proxy is a topology boundary resolver layer proxy.
 		boost::optional<TopologyBoundaryResolverLayerProxy *> dynamic_polygons_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<
@@ -193,8 +198,9 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		if (dynamic_polygons_layer_proxy)
 		{
 			dynamic_polygons_layer_proxy.get()->get_resolved_topological_boundaries(
-					resolved_topological_boundaries,
-					reconstruction_time);
+				resolved_topological_boundaries,
+				rfgs,
+				reconstruction_time);
 
 			reconstruction_tree = dynamic_polygons_layer_proxy.get()->get_reconstruction_layer_proxy()
 					->get_reconstruction_tree(reconstruction_time);

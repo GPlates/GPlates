@@ -452,6 +452,21 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_ophiolite_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
+
+		map[ PropertyName::create_gpml("position") ] = 
+			GET_PROP_VAL_NAME(create_point);
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("outlineOf") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_aseismic_ridge_properties()
@@ -955,6 +970,13 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_unclassified_topological_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_topological_closed_plate_boundary_properties();
+
+		return map;
+	}
 
 
 	const PropertyCreationUtils::PropertyCreatorMap
@@ -1102,6 +1124,9 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_topological_slab_boundary_properties();
 	d_map[ FeatureType::create_gpml("TopologicalNetwork") ] =
 		get_topological_network_properties();
+	d_map[ FeatureType::create_gpml("UnclassifiedTopologcialFeature") ] =
+		get_unclassified_topological_properties();
+
 
 	// Reconstruction features.
 	d_map[ FeatureType::create_gpml("TotalReconstructionSequence") ] = 
@@ -1237,6 +1262,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_volcano_properties();
 	d_map[ FeatureType::create_gpml("Pluton") ] =
 		get_pluton_properties();
+	d_map[ FeatureType::create_gpml("Ophiolite") ] =
+		get_ophiolite_properties();
 	d_map[ FeatureType::create_gpml("NavdatSampleMafic") ] =
 		get_navdat_sample_properties();
 	d_map[ FeatureType::create_gpml("NavdatSampleIntermediate") ] =

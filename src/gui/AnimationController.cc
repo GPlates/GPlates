@@ -39,7 +39,7 @@
 GPlatesGui::AnimationController::AnimationController(
 		GPlatesAppLogic::ApplicationState &application_state):
 	d_application_state_ptr(&application_state),
-	d_start_time(140.0),
+	d_start_time(250.0),
 	d_end_time(0.0),
 	d_time_increment(-1.0),
 	d_frames_per_second(5.0),

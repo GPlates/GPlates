@@ -276,6 +276,10 @@ namespace
 		{ "TopologicalClosedPlateBoundary", "boundary" },
 		{ "TopologicalSlabBoundary", "boundary" },
 		{ "TopologicalNetwork", "boundary" },
+		{ "UnclassifiedTopologcialFeature", "boundary" },
+		{ "UnclassifiedTopologcialFeature", "centerLineOf" },
+		{ "UnclassifiedTopologcialFeature", "outlineOf" },
+		{ "UnclassifiedTopologcialFeature", "unclassifiedGeometry" },
 		{ "Transform", "centerLineOf" },
 		{ "Transform", "outlineOf" },
 		{ "Transform", "unclassifiedGeometry" },
@@ -295,8 +299,15 @@ namespace
 		{ "Volcano", "outlineOf" },
 		{ "Volcano", "position" },
 		{ "Volcano", "unclassifiedGeometry" },
+		{ "Ophiolite", "outlineOf" },
+		{ "Ophiolite", "position" },
+		{ "Ophiolite", "unclassifiedGeometry" },
 	};
 	
+
+   
+	// NOTE: this is duplicated from above, 
+	// as a simple way to isolate only topological features
 
 	static const FeatureTypeInfo topological_feature_type_info_table[] = {
 		{ "TopologicalClosedPlateBoundary", "boundary" },
@@ -322,8 +333,12 @@ namespace
 		const FeatureTypeInfo *end = it + NUM_ELEMS(feature_type_info_table);
 		for ( ; it != end; ++it)
 		{
-			map.insert(std::make_pair(GPlatesModel::FeatureType::create_gpml(it->gpml_type),
-					GPlatesModel::PropertyName::create_gpml(it->geometric_property) ));
+			map.insert(
+				std::make_pair(
+					GPlatesModel::FeatureType::create_gpml(it->gpml_type),
+					GPlatesModel::PropertyName::create_gpml(it->geometric_property) 
+				)
+			);
 		}
 		return map;
 	}

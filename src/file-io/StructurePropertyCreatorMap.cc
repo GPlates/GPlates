@@ -137,6 +137,8 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_topological_interior);
 	d_map[TemplateTypeParameterType::create_gpml("TopologicalPolygon")] = 
 		GET_PROP_VAL_NAME(create_topological_polygon);
+	d_map[TemplateTypeParameterType::create_gpml("TopologicalLine")] = 
+		GET_PROP_VAL_NAME(create_topological_line);
 	d_map[TemplateTypeParameterType::create_gpml("KeyValueDictionary")] =
 		GET_PROP_VAL_NAME(create_key_value_dictionary);
 

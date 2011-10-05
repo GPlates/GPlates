@@ -79,6 +79,7 @@
 #include "property-values/GpmlTopologicalInterior.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
+#include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlOldPlatesHeader.h"
@@ -1247,6 +1248,27 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_polygon(
 	}
 	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
 }
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_line(
+	const GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line)
+{
+	d_output.writeStartGpmlElement("TopologicalLine");
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator iter;
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator end;
+	iter = gpml_toplogical_line.sections().begin();
+	end = gpml_toplogical_line.sections().end();
+
+	for ( ; iter != end; ++iter) 
+	{
+		d_output.writeStartGpmlElement("section");
+		(*iter)->accept_visitor(*this);
+		d_output.writeEndElement();
+	}
+	d_output.writeEndElement();  // </gpml:TopologicalLine>
+}
+
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_line_section(

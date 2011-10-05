@@ -488,15 +488,33 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
 
-	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+	// FIXME: POLYGON, POLYLINE
+
+	if ( rtb->is_polygon() )
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
 					rtb->resolved_topology_geometry(), 
 					rtb, 
 					d_render_params, 
 					d_colour);
 
-	// Render the rendered geometry.
-	render(rendered_geometry);
+		// Render the rendered geometry.
+		render(rendered_geometry);
+	}
+	else
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			create_rendered_reconstruction_geometry(
+					rtb->resolved_topology_geometry_as_line(), 
+					rtb, 
+					d_render_params, 
+					d_colour);
+
+		// Render the rendered geometry.
+		render(rendered_geometry);
+	}
+
 }
 
 

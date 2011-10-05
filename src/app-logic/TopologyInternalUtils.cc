@@ -765,6 +765,8 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 
 // FIXME: MULTIPLE GEOM
 
+// FIXME: get this code able to use RTB 
+
 	// If we found no RFG that is reconstructed from 'geometry_property' then it probably means
 	// the reconstruction time is outside the age range of the feature containing 'geometry_property'.
 	// This is ok - it's not necessarily an error.
