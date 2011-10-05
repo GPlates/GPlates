@@ -28,7 +28,6 @@
 
 #include "PlatesLineFormatReader.h"
 
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <list>
@@ -36,6 +35,7 @@
 #include <boost/bind.hpp>
 
 #include <QDebug>
+#include <QFile>
 
 #include "ReadErrors.h"
 #include "LineReader.h"
@@ -2343,8 +2343,10 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 
 	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
-	std::ifstream input(filename.toAscii().constData());
-	if ( ! input) {
+	// Open the file for reading.
+	QFile input(filename);
+	if (!input.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 

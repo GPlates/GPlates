@@ -26,15 +26,15 @@
 #include "LineReader.h"
 
 GPlatesFileIO::LineReader::LineReader(
-		std::istream &stream) :
-	d_stream_ptr(&stream),
+		QFile &input) :
+	d_text_stream(&input),
 	d_line_number(0),
 	d_have_buffered_line(false)
 {
 }
 
 
-GPlatesFileIO::LineReader &
+bool
 GPlatesFileIO::LineReader::getline(
 		std::string &line)
 {
@@ -43,31 +43,39 @@ GPlatesFileIO::LineReader::getline(
 		line = d_buffered_line;
 		d_have_buffered_line = false;
 		d_line_number++;
+
+		return true;
 	}
 	else if (readline(line))
 	{
 		d_line_number++;
+
+		return true;
 	}
 	
-	return *this;
+	return false;
 }
 
 
-GPlatesFileIO::LineReader &
+bool
 GPlatesFileIO::LineReader::peekline(
 		std::string &line)
 {
 	if (d_have_buffered_line)
 	{
 		line = d_buffered_line;
+
+		return true;
 	}
 	else if (readline(d_buffered_line))
 	{
 		line = d_buffered_line;
 		d_have_buffered_line = true;
+
+		return true;
 	}
 
-	return *this;
+	return false;
 }
 
 
@@ -75,8 +83,20 @@ bool
 GPlatesFileIO::LineReader::readline(
 		std::string &line)
 {
-	return std::getline(*d_stream_ptr, line).good();
+	if (d_text_stream.atEnd())
+	{
+		return false;
+	}
 
+	// Using QFile but still returning std::string to avoid introducing bugs into clients of this class.
+	// TODO: Change this class and clients to use 'QString' instead of 'std::string'.
+	line = d_text_stream.readLine().toStdString();
+
+	return true;
+
+	//
+	// TODO: Handle mixtures of newline conventions.
+	//
 #if defined(__WINDOWS__)
 	// On windows std::getline:
 	// CR/LF -> NULL

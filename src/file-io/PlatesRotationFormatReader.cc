@@ -29,9 +29,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <fstream>
 #include <sstream>
 #include <string>
+#include <QFile>
 
 #include "PlatesRotationFormatReader.h"
 
@@ -676,8 +676,10 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
 
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
-	std::ifstream input(filename.toAscii().constData());
-	if ( ! input) {
+	// Open the file for reading.
+	QFile input(filename);
+	if (!input.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 	LineReader line_buffer(input);
